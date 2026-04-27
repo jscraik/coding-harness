@@ -4,6 +4,7 @@ import type {
 	OverrideReviewerRegistry,
 	ProductSurfaceClass,
 	ProductSurfaceRegistry,
+	ReviewCadence,
 	SurfaceRegistration,
 	TrustedReviewerStatus,
 	TrustedReviewerType,
@@ -50,6 +51,12 @@ const VALID_PRODUCT_SURFACE_TYPES = [
 	"policy",
 	"workflow",
 ] as const;
+const VALID_REVIEW_CADENCE_VALUES = ["weekly", "per_release"] as const;
+const isReviewCadence = (value: unknown): value is ReviewCadence =>
+	typeof value === "string" &&
+	VALID_REVIEW_CADENCE_VALUES.includes(
+		value as (typeof VALID_REVIEW_CADENCE_VALUES)[number],
+	);
 const VALID_OVERRIDE_REVIEWER_REGISTRY_KEYS = ["trustedReviewers"] as const;
 const VALID_TRUSTED_REVIEWER_KEYS = [
 	"reviewerId",
@@ -109,6 +116,9 @@ function isValidNorthStarDecisionQuestions(
 	return true;
 }
 
+/**
+ * Validate whether a value satisfies the canonical north-star contract shape.
+ */
 export function isValidNorthStarContract(
 	value: unknown,
 ): value is NorthStarContract {
@@ -233,15 +243,13 @@ function isValidSurfaceRegistration(
 	}
 	if (
 		surface.reviewCadence !== undefined &&
-		(typeof surface.reviewCadence !== "string" ||
-			surface.reviewCadence.trim().length === 0)
+		!isReviewCadence(surface.reviewCadence)
 	) {
 		return false;
 	}
 	if (
 		(surface.class === "adjacent" || surface.class === "experimental") &&
-		(typeof surface.reviewCadence !== "string" ||
-			surface.reviewCadence.trim().length === 0)
+		!isReviewCadence(surface.reviewCadence)
 	) {
 		return false;
 	}
@@ -249,6 +257,9 @@ function isValidSurfaceRegistration(
 	return true;
 }
 
+/**
+ * Validate whether a value satisfies the product-surface registry shape.
+ */
 export function isValidProductSurfaceRegistry(
 	value: unknown,
 ): value is ProductSurfaceRegistry {
@@ -288,6 +299,9 @@ export function isValidProductSurfaceRegistry(
 	return true;
 }
 
+/**
+ * Validate whether a value satisfies the trusted-reviewer override registry shape.
+ */
 export function isValidOverrideReviewerRegistry(
 	value: unknown,
 ): value is OverrideReviewerRegistry {

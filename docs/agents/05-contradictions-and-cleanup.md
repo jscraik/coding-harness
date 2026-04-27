@@ -19,7 +19,7 @@ Conflicting instructions are common across global and repo-local guidance. This 
 For repo execution:
 
 - Prefer repository evidence (`package.json`, `pnpm-lock.yaml`, `tsconfig.json`) over inherited defaults.
-- Keep command and security guidance consistent with `AGENTS.md` + `CLAUDE.md`.
+- Keep command and security guidance consistent with `AGENTS.md`.
 
 ## Resolution process
 

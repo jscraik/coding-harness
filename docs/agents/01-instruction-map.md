@@ -80,7 +80,7 @@ Load only the layer you need. Never require a higher layer to execute a lower-la
 | `02`, `03`, `04`, `06`, `08`, `13` | 2 | Core operational SOPs. |
 | All other `docs/agents/*.md` | 3 | Extended governance references and deep-dive specs. |
 | `README.md` | — | Repo-facing overview, install, and primary workflows (not agent-policy). |
-| `CLAUDE.md` / `GEMINI.md` | — | Mirrored tool-facing guidance aligned with `AGENTS.md`. |
+
 
 ## Conflict resolution
 
@@ -96,7 +96,7 @@ If instructions conflict:
 - Keep the map truthful by removing stale links and adding newly introduced docs.
 - Prefer single-purpose updates over broad rewrites.
 - Keep `docs/README.md` aligned when introducing, moving, or retiring stable docs families.
-- Keep `CLAUDE.md` and `GEMINI.md` aligned with `AGENTS.md` when canonical routing changes.
+
 - Assign new docs to exactly one layer; respect line budgets for Layer 0 (130 lines) and Layer 1 (80 lines).
 
 ## Operational spec companions
@@ -112,7 +112,7 @@ Layer 3 deep-dive specs live alongside their parent SOPs. Open only for implemen
 
 ## Canonical links
 
-- Core surfaces: [Root AGENTS](../../AGENTS.md), [Docs index](../README.md), [Quickstart](./quickstart.md), [Root CLAUDE](../../CLAUDE.md), [Root GEMINI](../../GEMINI.md)
+- Core surfaces: [Root AGENTS](../../AGENTS.md), [Docs index](../README.md), [Quickstart](./quickstart.md)
 - Reference index: [CLI reference](../cli-reference.md), [Advanced workflows](../advanced-workflows.md)
 - Documentation architecture: [Documentation layers](../architecture/documentation-layers.md)
 - Governance and workflow SOPs:

@@ -601,8 +601,14 @@ describe("runInit", () => {
 			expect(content.version).toBe(CURRENT_SCHEMA_VERSION);
 			expect(content.reviewPolicy).toBeUndefined();
 			expect(content.ciProviderPolicy.activeProvider).toBe("circleci");
-			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
+			expect(content.branchProtection.requiredChecks).toContain("pr-pipeline");
+			expect(content.branchProtection.requiredChecks).toContain(
+				"security-scan",
+			);
 			expect(content.branchProtection.requiredChecks).toContain("CodeRabbit");
+			expect(content.branchProtection.requiredChecks).toContain(
+				"semgrep-cloud-platform/scan",
+			);
 			expect(content.branchProtection.requiredApprovingReviewCount).toBe(1);
 			expect(content.branchProtection.requireCodeOwnerReview).toBe(false);
 			expect(content.branchProtection.requireLastPushApproval).toBe(false);

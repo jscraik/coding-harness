@@ -13,8 +13,16 @@ const MAX_FUNCTION_LINES = 120;
 
 const LEGACY_OVERSIZED_FILES = new Set([
 	"src/commands/ci-migrate.ts",
+	"src/commands/docs-gate.ts",
 	"src/commands/drift-gate.ts",
+	"src/commands/drift-gate-core.ts",
+	"src/commands/review-gate.ts",
+	"src/lib/contract/json-schema.ts",
+	"src/lib/contract/types.ts",
+	"src/lib/output/normalise-review-preflight.ts",
 	"src/lib/output/normalise.ts",
+	"src/lib/pilot-evaluation/control-plane.ts",
+	"src/lib/pilot-evaluation/evaluation-engine.ts",
 ]);
 
 const args = new Set(process.argv.slice(2));

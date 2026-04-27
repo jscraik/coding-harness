@@ -786,6 +786,7 @@ describe("normaliseReviewGateResult", () => {
 		expect(result.findings[0]?.id).toBe(
 			"review-gate.blocker.required_check_failed",
 		);
+		expect(result.findings[0]?.failureClass).toBe("required_check_failed");
 		expect(result.action_now[0]).toContain("Required check");
 		expect(result.meta?.blockedFailureClasses).toContain(
 			"required_check_failed",
@@ -1130,6 +1131,7 @@ describe("normalisePreflightGateResult (additional edge cases)", () => {
 		expect(result.findings[0]?.id).toBe(
 			"preflight-gate.blocker.admission_incomplete",
 		);
+		expect(result.findings[0]?.failureClass).toBe("admission_incomplete");
 		expect(result.meta?.blockedFailureClasses).toContain(
 			"admission_incomplete",
 		);
@@ -1157,6 +1159,7 @@ describe("normalisePreflightGateResult (additional edge cases)", () => {
 		expect(result.findings[0]?.id).toBe(
 			"preflight-gate.blocker.admission_unjustified",
 		);
+		expect(result.findings[0]?.failureClass).toBe("admission_unjustified");
 		expect(result.meta?.blockedFailureClasses).toContain(
 			"admission_unjustified",
 		);
@@ -1185,6 +1188,8 @@ describe("normalisePreflightGateResult (additional edge cases)", () => {
 			"preflight-gate.blocker.admission_incomplete",
 			"preflight-gate.blocker.admission_unjustified",
 		]);
+		expect(result.findings[0]?.failureClass).toBe("admission_incomplete");
+		expect(result.findings[1]?.failureClass).toBe("admission_unjustified");
 		expect(result.meta?.blockedFailureClasses).toEqual(
 			expect.arrayContaining(["admission_incomplete", "admission_unjustified"]),
 		);

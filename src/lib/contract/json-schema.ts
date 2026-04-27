@@ -367,7 +367,11 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 								manualGlueReductionClaim: { type: "string", minLength: 1 },
 								reliabilityContribution: { type: "string", minLength: 1 },
 								evidenceReference: { type: "string", minLength: 1 },
-								reviewCadence: { type: "string", minLength: 1 },
+								// Restrict cadence to known governance intervals.
+								reviewCadence: {
+									type: "string",
+									enum: ["weekly", "per_release"],
+								},
 								ownedPaths: {
 									type: "array",
 									minItems: 1,

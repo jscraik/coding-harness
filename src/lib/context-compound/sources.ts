@@ -10,10 +10,14 @@ import {
 import { dirname, join, relative } from "node:path";
 import type { DocumentMetadata } from "./types.js";
 
+/** Context Source Authority. */
 export type ContextSourceAuthority = "canonical" | "governed" | "supporting";
+/** Context Source Kind. */
 export type ContextSourceKind = "file" | "directory";
+/** Context Staleness State. */
 export type ContextStalenessState = "fresh" | "unknown" | "stale";
 
+/** Context Source Definition. */
 export interface ContextSourceDefinition {
 	id: string;
 	path: string;
@@ -22,6 +26,7 @@ export interface ContextSourceDefinition {
 	documentType: DocumentMetadata["type"];
 }
 
+/** Context Source Document. */
 export interface ContextSourceDocument {
 	filepath: string;
 	relativePath: string;
@@ -31,6 +36,7 @@ export interface ContextSourceDocument {
 	stalenessState: ContextStalenessState;
 }
 
+/** Context Source Inventory Entry. */
 export interface ContextSourceInventoryEntry {
 	id: string;
 	path: string;
@@ -43,6 +49,7 @@ export interface ContextSourceInventoryEntry {
 	documentPaths: string[];
 }
 
+/** Context Source Inventory. */
 export interface ContextSourceInventory {
 	schemaVersion: "context-source-inventory/v1";
 	generatedAt: string;
@@ -69,13 +76,6 @@ export const CONTEXT_SOURCE_DEFINITIONS: ContextSourceDefinition[] = [
 	{
 		id: "agents",
 		path: "AGENTS.md",
-		kind: "file",
-		authority: "canonical",
-		documentType: "reference",
-	},
-	{
-		id: "claude",
-		path: "CLAUDE.md",
 		kind: "file",
 		authority: "canonical",
 		documentType: "reference",
@@ -209,6 +209,7 @@ function discoverMarkdownFiles(dir: string): string[] {
 	return files.sort();
 }
 
+/** Discover Context Source Documents. */
 export function discoverContextSourceDocuments(
 	baseDir: string,
 ): ContextSourceDocument[] {
@@ -231,6 +232,7 @@ export function discoverContextSourceDocuments(
 	});
 }
 
+/** Build Context Source Inventory. */
 export function buildContextSourceInventory(
 	baseDir: string,
 	indexedRelativePaths?: Iterable<string>,
@@ -297,6 +299,7 @@ export function buildContextSourceInventory(
 export const CONTEXT_SOURCE_INVENTORY_PATH =
 	"artifacts/context-integrity/index-source-inventory.json";
 
+/** Write Context Source Inventory. */
 export function writeContextSourceInventory(
 	baseDir: string,
 	indexedRelativePaths?: Iterable<string>,
@@ -317,6 +320,7 @@ export function writeContextSourceInventory(
 	};
 }
 
+/** Read Context Source Inventory. */
 export function readContextSourceInventory(
 	baseDir: string,
 ): ContextSourceInventory | null {
@@ -340,11 +344,13 @@ export function readContextSourceInventory(
 	return null;
 }
 
+/** Compute Artifact Checksum. */
 export function computeArtifactChecksum(path: string): string {
 	const content = readFileSync(path, "utf-8");
 	return createHash("sha256").update(content).digest("hex");
 }
 
+/** Summarize Artifact Window. */
 export function summarizeArtifactWindow(paths: string[]): {
 	latestMtimeMs: number | null;
 	oldestMtimeMs: number | null;

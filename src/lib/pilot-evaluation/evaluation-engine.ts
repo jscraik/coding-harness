@@ -817,7 +817,7 @@ const BLOCKER_ACTION_MAP: Record<string, string> = {
 	instruction_parity_failed:
 		"Fix instruction parity failures — ensure derived instruction files reference AGENTS.md",
 	missing_required_instruction_surface:
-		"Create missing instruction surface files (e.g., CLAUDE.md, AGENTS.md)",
+		"Create missing instruction surface files (e.g., AGENTS.md)",
 	adapter_unresolved:
 		"Register a provider adapter in the agent-adapter-registry or resolve client family",
 	identity_degraded:

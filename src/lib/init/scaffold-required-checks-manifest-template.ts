@@ -1,5 +1,5 @@
 import { deriveRequiredCheckMetadata } from "../ci/required-check-metadata.js";
-import { BRANCH_PROTECTION_REQUIRED_CHECKS } from "../policy/required-checks.js";
+import { ECOSYSTEM_PROFILES } from "../policy/required-checks.js";
 import type { CIProvider, TemplateRenderContext } from "./types.js";
 
 /**
@@ -12,12 +12,12 @@ export function getBranchProtectionRequiredChecks(
 	context?: Pick<TemplateRenderContext, "issueTracker">,
 ): readonly string[] {
 	if (context?.issueTracker === "github" || context?.issueTracker === "none") {
-		return BRANCH_PROTECTION_REQUIRED_CHECKS.filter(
+		return ECOSYSTEM_PROFILES.harness.filter(
 			(check) => check !== "linear-gate",
 		);
 	}
 
-	return BRANCH_PROTECTION_REQUIRED_CHECKS;
+	return ECOSYSTEM_PROFILES.harness;
 }
 
 /**

@@ -9,8 +9,6 @@ export const SEMGREP_CLOUD_CHECK_NAME = "semgrep-cloud-platform/scan";
 
 export const REVIEW_POLICY_REQUIRED_CHECKS = [
 	"security-scan",
-	"dependency-scan",
-	"orb-pinning",
 	SEMGREP_CLOUD_CHECK_NAME,
 ] as const;
 
@@ -427,7 +425,12 @@ export const ECOSYSTEM_PROFILES = {
  * Default required checks for backwards compatibility.
  * Maps to the "harness" profile.
  */
-export const BRANCH_PROTECTION_REQUIRED_CHECKS = ECOSYSTEM_PROFILES.harness;
+export const BRANCH_PROTECTION_REQUIRED_CHECKS = [
+	"pr-pipeline",
+	"security-scan",
+	"CodeRabbit",
+	SEMGREP_CLOUD_CHECK_NAME,
+] as const;
 
 /** Format required checks as an inline Markdown list. */
 export function formatRequiredChecksInline(

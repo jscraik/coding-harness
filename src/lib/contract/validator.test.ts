@@ -253,6 +253,38 @@ describe("validateContract", () => {
 			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
 		});
 
+		it("rejects invalid reviewCadence values", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					productSurface: {
+						surfaces: [
+							{
+								surfaceId: "drift-gate",
+								surfaceType: "command",
+								class: "adjacent",
+								owner: "workflow",
+								northStarContribution:
+									"Monitors contract and quality drift automatically",
+								manualGlueReductionClaim:
+									"Replaces manual status checks with deterministic drift reporting",
+								reliabilityContribution:
+									"Flags stale policy surfaces before they block throughput",
+								evidenceReference: "artifacts/north-star/drift-gate.json",
+								reviewCadence: "daily",
+								ownedPaths: ["src/commands/drift-gate.ts"],
+								lastReviewedAt: "2026-04-21",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("productSurface");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
 		it("accepts productSurface entries with required cadence on non-core classes", () => {
 			const result = validateContract(
 				withCanonicalNorthStarSurfaces({

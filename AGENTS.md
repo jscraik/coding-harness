@@ -46,7 +46,7 @@ harness risk-tier --files src/payments.ts --json
 Notes:
 - `README.md` is the repo-facing product surface (overview, install, workflows), not an operator-policy file.
 - `docs/agents/*.md` are progressive-disclosure governance references, not auto-discovered instruction files.
-- `CLAUDE.md` and `GEMINI.md` are mirrored tool-specific surfaces in this repo, not part of Codex's default project-doc discovery unless fallback filenames are explicitly configured.
+- This repo is OpenAI Codex only; no mirrored tool-specific instruction surfaces are maintained.
 - If instruction precedence is unclear, stop and resolve it before editing behavior.
 
 ## Startup Workflow
@@ -127,5 +127,5 @@ Core routing (Layer 2):
 
 ## References
 - [Docs index](./docs/README.md) · [Instruction map](./docs/agents/01-instruction-map.md) · [Quickstart](./docs/agents/quickstart.md)
-- [CONTRIBUTING.md](./CONTRIBUTING.md) · [CLAUDE.md](./CLAUDE.md) · [GEMINI.md](./GEMINI.md)
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
 - Global: `~/.codex/AGENTS.md`, `~/.codex/instructions/standards.md`, `~/.codex/instructions/rvcp-common.md`

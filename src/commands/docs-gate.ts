@@ -19,13 +19,17 @@ import {
 } from "../lib/output/normalise.js";
 import { isNonWorkflowRequiredCheck } from "../lib/policy/required-checks.js";
 
+/** Docs Gate Mode. */
 export type DocsGateMode = "advisory" | "required";
+/** Docs Gate Trigger. */
 export type DocsGateTrigger =
 	| "local"
 	| "pull_request"
 	| "merge_group"
 	| "manual_ci";
+/** Docs Gate Status. */
 export type DocsGateStatus = "success" | "partial" | "blocked";
+/** Docs Gate Outcome. */
 export type DocsGateOutcome =
 	| "ok"
 	| "drift_detected"
@@ -33,15 +37,19 @@ export type DocsGateOutcome =
 	| "trust_mismatch"
 	| "policy_error"
 	| "runtime_error";
+/** Docs Gate Error Class. */
 export type DocsGateErrorClass =
 	| "none"
 	| "io"
 	| "schema"
 	| "runtime"
 	| "trust_loading";
+/** Docs Rule Result. */
 export type DocsRuleResult = "pass" | "fail" | "not_applicable" | "error";
+/** Docs Severity. */
 export type DocsSeverity = "info" | "warning" | "error";
 
+/** Docs Gate Options. */
 export interface DocsGateOptions {
 	mode?: DocsGateMode;
 	trigger?: DocsGateTrigger;
@@ -57,6 +65,7 @@ export interface DocsGateOptions {
 	mergeQueueBaseSha?: string;
 }
 
+/** Docs Finding. */
 export interface DocsFinding {
 	rule_id: string;
 	category: DocsImpactCategory | ContextContradictionCategory | "system";
@@ -70,6 +79,7 @@ export interface DocsFinding {
 	source_of_truth_ref?: string;
 }
 
+/** Docs Gate Execution Context. */
 export interface DocsGateExecutionContext {
 	trigger: DocsGateTrigger;
 	policyMode: DocsGateMode;
@@ -86,6 +96,7 @@ export interface DocsGateExecutionContext {
 	outputRoot: string;
 }
 
+/** Docs Gate Report. */
 export interface DocsGateReport {
 	schemaVersion: "1.0.0";
 	command: "docs-gate";
@@ -112,6 +123,7 @@ export interface DocsGateReport {
 	findings: DocsFinding[];
 }
 
+/** Docs Gate Result. */
 export interface DocsGateResult {
 	report: DocsGateReport;
 	exitCode: number;
@@ -127,7 +139,6 @@ const INSTRUCTION_PRECEDENCE_SOURCE_PATHS = [
 	"AGENTS.md",
 	"README.md",
 	"CONTRIBUTING.md",
-	"CLAUDE.md",
 ] as const;
 const WORKFLOW_AUTHORITY_DOC_PATHS = Array.from(
 	new Set(
@@ -437,12 +448,7 @@ function collectContradictionFindings(
 		repoRoot,
 	);
 	if (expectedPackageManager) {
-		for (const sourcePath of [
-			"README.md",
-			"AGENTS.md",
-			"CLAUDE.md",
-			"CONTRIBUTING.md",
-		]) {
+		for (const sourcePath of ["README.md", "AGENTS.md", "CONTRIBUTING.md"]) {
 			const content = loadFileIfPresent(join(repoRoot, sourcePath));
 			if (!content) {
 				continue;

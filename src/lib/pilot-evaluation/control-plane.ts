@@ -200,6 +200,7 @@ function writeJsonFile(path: string, value: unknown): void {
 	writeFileSync(path, JSON.stringify(value, null, 2), "utf-8");
 }
 
+/** Build File Ref. */
 export function buildFileRef(
 	path: string,
 	options?: { required?: boolean },
@@ -696,14 +697,9 @@ function buildGovernanceSnapshot(
 	}
 
 	const canonicalInstructionRef = buildFileRef("AGENTS.md", { required: true });
-	const mirrorInstructionRef = buildFileRef("CLAUDE.md", { required: true });
-	const optionalMirrorRef = buildFileRef("GEMINI.md");
 
 	if (!canonicalInstructionRef.exists) {
 		warnings.push("Canonical AGENTS.md missing");
-	}
-	if (!mirrorInstructionRef.exists) {
-		warnings.push("Required mirror CLAUDE.md missing");
 	}
 
 	const requiredChecks = compareRequiredChecks(
@@ -731,11 +727,7 @@ function buildGovernanceSnapshot(
 				branch: git.branch,
 				headSha: git.headSha,
 			},
-			instructionPolicyRefs: [
-				canonicalInstructionRef,
-				mirrorInstructionRef,
-				...(optionalMirrorRef.exists ? [optionalMirrorRef] : []),
-			],
+			instructionPolicyRefs: [canonicalInstructionRef],
 			prTemplateRef,
 			prTemplateValidationStatus: options.prTemplateStatus ?? "missing",
 			prTemplateValidationRef: options.prTemplateRef ?? null,
@@ -765,22 +757,11 @@ function buildInstructionSurfaces(
 			};
 		}
 
-		if (fileName === "CLAUDE.md") {
-			return {
-				surfaceId: "claude-root",
-				path: ref.path,
-				kind: "mirror",
-				clientFamily: "claude_family",
-				requiredMode: "required",
-				sourceOfTruth: resolve("AGENTS.md"),
-			};
-		}
-
 		return {
-			surfaceId: "gemini-root",
+			surfaceId: "custom-root",
 			path: ref.path,
 			kind: "provider_specific",
-			clientFamily: "gemini_family",
+			clientFamily: "custom",
 			requiredMode: "optional",
 			sourceOfTruth: resolve("AGENTS.md"),
 		};
@@ -1926,6 +1907,7 @@ function unique(values: string[]): string[] {
 	return [...new Set(values.filter(Boolean))];
 }
 
+/** Build Control Plane Artifacts. */
 export function buildControlPlaneArtifacts(input: ControlPlaneBuildInput): {
 	summary: ControlPlaneSummary;
 	warnings: string[];
@@ -2261,6 +2243,7 @@ function validateCompatibilityMetadata(
 	}
 }
 
+/** Load Control Plane Artifact Set. */
 export function loadControlPlaneArtifactSet(artifactRoot: string): {
 	artifacts: ControlPlaneArtifactSet | null;
 	errors: string[];

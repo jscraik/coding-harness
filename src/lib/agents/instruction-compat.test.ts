@@ -27,7 +27,7 @@ This is a test project.
 - Run tests before merge
 `;
 
-const DERIVED_CLAUDE = `# CLAUDE.md
+const DERIVED_CURSOR = `# .cursorrules
 
 ## Canonical source
 - Use AGENTS.md as the canonical source for repo-wide, cross-tool instructions.
@@ -36,13 +36,13 @@ const DERIVED_CLAUDE = `# CLAUDE.md
 - Run shell commands with zsh
 `;
 
-const DERIVED_NO_REF = `# CLAUDE.md
+const DERIVED_NO_REF = `# .cursorrules
 
 ## Operator defaults
 - Run shell commands with zsh
 `;
 
-const DERIVED_WRONG_REF = `# CLAUDE.md
+const DERIVED_WRONG_REF = `# .cursorrules
 
 ## Canonical source
 - README.md
@@ -80,12 +80,12 @@ describe("detectPresentSurfaces", () => {
 		const dir = createTempRepo();
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
-			writeFileSync(join(dir, "CLAUDE.md"), DERIVED_CLAUDE);
+			writeFileSync(join(dir, ".cursorrules"), DERIVED_CURSOR);
 			const surfaces = detectPresentSurfaces(dir);
 			expect(surfaces.length).toBe(2);
 			const agents = surfaces.map((s) => s.agent);
 			expect(agents).toContain("codex");
-			expect(agents).toContain("claude");
+			expect(agents).toContain("cursor");
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -122,30 +122,11 @@ describe("validateInstructionConsistency", () => {
 		}
 	});
 
-	it("warns when required derived surfaces are missing", () => {
-		const dir = createTempRepo();
-		try {
-			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
-			const report = validateInstructionConsistency(dir);
-			const requiredMissing = report.findings.find(
-				(f) =>
-					f.file === "CLAUDE.md" &&
-					f.severity === "warning" &&
-					f.message.includes("Required derived instruction surface"),
-			);
-			expect(report.consistent).toBe(false);
-			expect(report.surfacesChecked).toBe(1);
-			expect(requiredMissing).toBeDefined();
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-
 	it("passes when derived file references canonical source", () => {
 		const dir = createTempRepo();
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
-			writeFileSync(join(dir, "CLAUDE.md"), DERIVED_CLAUDE);
+			writeFileSync(join(dir, ".cursorrules"), DERIVED_CURSOR);
 			const report = validateInstructionConsistency(dir);
 			expect(report.consistent).toBe(true);
 			const warnings = report.findings.filter((f) => f.severity === "warning");
@@ -159,11 +140,11 @@ describe("validateInstructionConsistency", () => {
 		const dir = createTempRepo();
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
-			writeFileSync(join(dir, "CLAUDE.md"), DERIVED_NO_REF);
+			writeFileSync(join(dir, ".cursorrules"), DERIVED_NO_REF);
 			const report = validateInstructionConsistency(dir);
 			const refWarning = report.findings.find(
 				(f) =>
-					f.file === "CLAUDE.md" &&
+					f.file === ".cursorrules" &&
 					f.message.includes("does not reference canonical source"),
 			);
 			expect(report.consistent).toBe(false);
@@ -179,11 +160,11 @@ describe("validateInstructionConsistency", () => {
 		const dir = createTempRepo();
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
-			writeFileSync(join(dir, "CLAUDE.md"), DERIVED_WRONG_REF);
+			writeFileSync(join(dir, ".cursorrules"), DERIVED_WRONG_REF);
 			const report = validateInstructionConsistency(dir);
 			const refWarning = report.findings.find(
 				(f) =>
-					f.file === "CLAUDE.md" &&
+					f.file === ".cursorrules" &&
 					f.message.includes("does not reference canonical source"),
 			);
 			expect(report.consistent).toBe(false);
@@ -200,10 +181,10 @@ describe("validateInstructionConsistency", () => {
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
 			// Exact copy of canonical — 100% overlap
-			writeFileSync(join(dir, "CLAUDE.md"), CANONICAL_AGENTS);
+			writeFileSync(join(dir, ".cursorrules"), CANONICAL_AGENTS);
 			const report = validateInstructionConsistency(dir);
 			const dupWarning = report.findings.find(
-				(f) => f.file === "CLAUDE.md" && f.message.includes("line overlap"),
+				(f) => f.file === ".cursorrules" && f.message.includes("line overlap"),
 			);
 			expect(dupWarning).toBeDefined();
 		} finally {
@@ -216,12 +197,12 @@ describe("validateInstructionConsistency", () => {
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
 			writeFileSync(
-				join(dir, "CLAUDE.md"),
+				join(dir, ".cursorrules"),
 				`${CANONICAL_AGENTS}\n## Extra\n- Agent-specific addendum`,
 			);
 			const report = validateInstructionConsistency(dir);
 			const dupWarning = report.findings.find(
-				(f) => f.file === "CLAUDE.md" && f.message.includes("line overlap"),
+				(f) => f.file === ".cursorrules" && f.message.includes("line overlap"),
 			);
 			expect(report.consistent).toBe(false);
 			expect(dupWarning).toBeDefined();
@@ -234,11 +215,11 @@ describe("validateInstructionConsistency", () => {
 		const dir = createTempRepo();
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
-			mkdirSync(join(dir, "CLAUDE.md"));
+			mkdirSync(join(dir, ".cursorrules"));
 			const report = validateInstructionConsistency(dir);
 			const derivedReadError = report.findings.find(
 				(f) =>
-					f.file === "CLAUDE.md" && f.message.includes("could not be read"),
+					f.file === ".cursorrules" && f.message.includes("could not be read"),
 			);
 			expect(report.consistent).toBe(false);
 			expect(derivedReadError).toBeDefined();
@@ -267,7 +248,7 @@ describe("validateInstructionConsistency", () => {
 		const dir = createTempRepo();
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
-			writeFileSync(join(dir, "CLAUDE.md"), DERIVED_CLAUDE);
+			writeFileSync(join(dir, ".cursorrules"), DERIVED_CURSOR);
 			const report = validateInstructionConsistency(dir);
 			expect(report.surfacesChecked).toBe(2);
 		} finally {
@@ -283,17 +264,12 @@ describe("generateDerivedHeader", () => {
 		);
 	});
 
-	it("generates header for claude", () => {
-		const header = generateDerivedHeader("claude");
-		expect(header).toContain("# Claude Instructions");
-		expect(header).toContain("Canonical source");
-		expect(header).toContain("AGENTS.md");
-		expect(header).toContain("@./AGENTS.md");
-	});
-
 	it("generates header for cursor", () => {
 		const header = generateDerivedHeader("cursor");
 		expect(header).toContain("# Cursor Instructions");
+		expect(header).toContain("Canonical source");
+		expect(header).toContain("AGENTS.md");
+		expect(header).toContain("@./AGENTS.md");
 	});
 
 	it("generates header for copilot", () => {
@@ -309,11 +285,10 @@ describe("AGENT_SURFACES", () => {
 		expect(canonical[0]!.filePath).toBe("AGENTS.md");
 	});
 
-	it("has derived surfaces for all major agents", () => {
+	it("has derived surfaces for supported agents", () => {
 		const derived = AGENT_SURFACES.filter((s) => s.role === "derived");
 		const agents = derived.map((s) => s.agent);
-		expect(agents).toContain("claude");
-		expect(agents).toContain("gemini");
 		expect(agents).toContain("cursor");
+		expect(agents).toContain("copilot");
 	});
 });

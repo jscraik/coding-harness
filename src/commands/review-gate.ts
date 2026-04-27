@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
+import { resolveActiveOverrides } from "../lib/contract/north-star-artifact-io.js";
 import {
 	DEFAULT_REVIEW_POLICY,
 	type HarnessContract,
@@ -434,7 +435,7 @@ function evaluateNorthStarDecisionQuestions(params: {
 	if (params.decisionQuestions.length === 0) {
 		return params.requireQuestions
 			? [
-					"contract_invalid: Canonical north-star contracts must declare at least one decision question.",
+					"contract_invalid:contract-missing-questions: Canonical north-star contracts must declare at least one decision question.",
 				]
 			: [];
 	}
@@ -471,21 +472,37 @@ function evaluateNorthStarDecisionQuestions(params: {
 
 	const blockers: string[] = [];
 	if (missingQuestionIds.length > 0) {
+		const findingId = `missing-${[...missingQuestionIds].sort().join(",")}`;
 		blockers.push(
-			`review_evidence_contradiction: North-star decision questions missing from PR context: ${missingQuestionIds.join(", ")}`,
+			`review_evidence_contradiction:${findingId}: North-star decision questions missing from PR context: ${missingQuestionIds.join(", ")}`,
 		);
 	}
 	if (questionIdsMissingEvidence.length > 0) {
+		const findingId = `evidence-${[...questionIdsMissingEvidence].sort().join(",")}`;
 		blockers.push(
-			`review_evidence_contradiction: North-star decision responses must include evidence references for each question (URL, artifact path, or file:line link); missing evidence for: ${questionIdsMissingEvidence.join(", ")}`,
+			`review_evidence_contradiction:${findingId}: North-star decision responses must include evidence references for each question (URL, artifact path, or file:line link); missing evidence for: ${questionIdsMissingEvidence.join(", ")}`,
 		);
 	}
 	if (questionIdsWithNegativeAnswer.length > 0) {
+		const findingId = `negative-${[...questionIdsWithNegativeAnswer].sort().join(",")}`;
 		blockers.push(
-			`safety_floor_violation: North-star decision responses contradict throughput intent unless explicitly declared as no-impact (metric_impact_declared:none with non-positive policy_surface_delta); negative answers found for: ${questionIdsWithNegativeAnswer.join(", ")}`,
+			`safety_floor_violation:${findingId}: North-star decision responses contradict throughput intent unless explicitly declared as no-impact (metric_impact_declared:none with non-positive policy_surface_delta); negative answers found for: ${questionIdsWithNegativeAnswer.join(", ")}`,
 		);
 	}
 	return blockers;
+}
+
+/**
+ * Extract the encoded finding ID from a review-gate north-star blocker string.
+ *
+ * Blocker format: `failureClass:findingId: message`
+ * Returns the `findingId` portion, or undefined if not present.
+ */
+function extractFindingIdFromBlocker(blocker: string): string | undefined {
+	const match = blocker.match(
+		/^\b(?:contract_invalid|review_evidence_contradiction|safety_floor_violation):([^:]+):/u,
+	);
+	return match?.[1];
 }
 
 function resolveCurrentApprovers(
@@ -1163,6 +1180,34 @@ export async function runReviewGate(
 				: [],
 			requireQuestions: requiresCanonicalNorthStarSurfaces(contract.version),
 		});
+
+		// Apply override acknowledgements for north-star decision question blockers
+		let filteredDecisionQuestionBlockers = decisionQuestionBlockers;
+		if (
+			contract.overrideReviewerRegistry &&
+			contract.overrideReviewerRegistry.trustedReviewers.length > 0 &&
+			decisionQuestionBlockers.length > 0
+		) {
+			const findingIds = decisionQuestionBlockers
+				.map((b) => extractFindingIdFromBlocker(b))
+				.filter((id): id is string => id !== undefined);
+			if (findingIds.length > 0) {
+				const activeOverrides = resolveActiveOverrides(
+					resolvePath(options.contractPath, ".."),
+					contract.overrideReviewerRegistry,
+					{ activeFindingIds: findingIds },
+				);
+				if (activeOverrides.size > 0) {
+					filteredDecisionQuestionBlockers = decisionQuestionBlockers.filter(
+						(b) => {
+							const id = extractFindingIdFromBlocker(b);
+							return id === undefined || !activeOverrides.has(id);
+						},
+					);
+				}
+			}
+		}
+
 		const requiredCheckAliases = resolveRequiredCheckAliases(
 			contract,
 			options.contractPath,
@@ -1285,7 +1330,7 @@ export async function runReviewGate(
 					...threadReadiness.blockers,
 					...requiredCheckBlockers,
 					...planTraceability.blockers,
-					...decisionQuestionBlockers,
+					...filteredDecisionQuestionBlockers,
 				];
 				return {
 					ok: true,
@@ -1329,7 +1374,7 @@ export async function runReviewGate(
 							checkName: resolvedCheckName,
 							additionalBlockers: [
 								...planTraceability.blockers,
-								...decisionQuestionBlockers,
+								...filteredDecisionQuestionBlockers,
 							],
 							planTraceability: {
 								status: planTraceability.status,
@@ -1382,7 +1427,7 @@ export async function runReviewGate(
 								]
 							: []),
 						...planTraceability.blockers,
-						...decisionQuestionBlockers,
+						...filteredDecisionQuestionBlockers,
 					],
 					planTraceability: {
 						status: planTraceability.status,

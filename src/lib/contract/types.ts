@@ -18,31 +18,39 @@ import {
 	TOOLING_READINESS_SCRIPT_PATH,
 } from "../policy/tooling-baseline.js";
 
+/** Risk Tier. */
 export type RiskTier = "high" | "medium" | "low";
 
+/** Policy Action. */
 export type PolicyAction = "allow" | "block" | "warn";
 
+/** Gate Verdict. */
 export type GateVerdict = "pass" | "fail";
 
+/** Policy Chain Tier To Action. */
 export interface PolicyChainTierToAction {
 	high: PolicyAction;
 	medium: PolicyAction;
 	low: PolicyAction;
 }
 
+/** Policy Chain Action To Verdict. */
 export interface PolicyChainActionToVerdict {
 	allow: GateVerdict;
 	block: GateVerdict;
 	warn: GateVerdict;
 }
 
+/** Policy Chain Policy. */
 export interface PolicyChainPolicy {
 	tierToAction: PolicyChainTierToAction;
 	actionToVerdict: PolicyChainActionToVerdict;
 }
 
+/** Timeout Action. */
 export type TimeoutAction = "fail" | "warn";
 
+/** Image Format. */
 export type ImageFormat = "png" | "jpeg";
 
 /**
@@ -72,18 +80,22 @@ export interface DiffBudget {
 	overrideLabel?: string;
 }
 
+/** Merge Policy. */
 export interface MergePolicy {
 	[severity: string]: MergePolicyValue;
 }
 
+/** Docs Drift Rules. */
 export interface DocsDriftRules {
 	[pattern: string]: string[];
 }
 
 // === Docs Gate Policy Types ===
 
+/** Docs Gate Mode. */
 export type DocsGateMode = "advisory" | "required";
 
+/** Docs Impact Category. */
 export type DocsImpactCategory =
 	| "cli_surface"
 	| "contract_policy"
@@ -101,18 +113,21 @@ export type DocsImpactCategory =
 	| "doc_only"
 	| "unknown_governance_change";
 
+/** Docs Surface Type. */
 export type DocsSurfaceType =
 	| "root_doc"
 	| "governance_doc"
 	| "generated_template"
 	| "workflow_doc";
 
+/** Docs Surface Owner. */
 export type DocsSurfaceOwner =
 	| "implementation"
 	| "contract"
 	| "workflow"
 	| "template";
 
+/** Docs Surface. */
 export interface DocsSurface {
 	path: string;
 	surfaceType: DocsSurfaceType;
@@ -120,6 +135,7 @@ export interface DocsSurface {
 	requiredFor: DocsImpactCategory[];
 }
 
+/** Docs Gate Rule. */
 export interface DocsGateRule {
 	ruleId: string;
 	when: {
@@ -131,6 +147,7 @@ export interface DocsGateRule {
 	allowDocOnly?: boolean;
 }
 
+/** Docs Gate Policy. */
 export interface DocsGatePolicy {
 	/** Whether docs-gate is enabled for this repository */
 	enabled: boolean;
@@ -144,6 +161,7 @@ export interface DocsGatePolicy {
 	localHookEnabled?: boolean;
 }
 
+/** U I Loop S L O. */
 export interface UILoopSLO {
 	/** Target seconds to reach stable "fast" loop execution */
 	fastLoopSeconds: number;
@@ -151,6 +169,7 @@ export interface UILoopSLO {
 	verifyLoopSeconds: number;
 }
 
+/** U I Loop Policy. */
 export interface UILoopPolicy {
 	fastCommand: string;
 	verifyCommand: string;
@@ -158,12 +177,14 @@ export interface UILoopPolicy {
 	sloTargets: UILoopSLO;
 }
 
+/** Runtime Policy. */
 export interface RuntimePolicy {
 	nodeVersion: string;
 	/** Require issue creation/update when agents find reproducible harness issues */
 	createIssueOnAgentFindings?: boolean;
 }
 
+/** Memory Policy. */
 export interface MemoryPolicy {
 	enabled: boolean;
 	provider: string;
@@ -183,6 +204,7 @@ export interface MemoryPolicy {
 	sessionLogPath?: string;
 }
 
+/** Memory Maintenance Policy. */
 export interface MemoryMaintenancePolicy {
 	validateSchedule: string;
 	reflectSchedule: string;
@@ -190,17 +212,20 @@ export interface MemoryMaintenancePolicy {
 	duplicateThreshold: number;
 }
 
+/** Memory Eval Policy. */
 export interface MemoryEvalPolicy {
 	trialsPerTask: number;
 	requiredMetrics: string[];
 	passPowKThreshold: number;
 }
 
+/** Observability Policy. */
 export interface ObservabilityPolicy {
 	provider: string;
 	collectorEndpoint: string;
 }
 
+/** Package Manager Policy. */
 export interface PackageManagerPolicy {
 	allowedManagers: string[];
 	requiredManager: string | null;
@@ -209,7 +234,9 @@ export interface PackageManagerPolicy {
 export const NORTH_STAR_PRIMARY_METRIC = "pr_lead_time" as const;
 export const NORTH_STAR_PRIMARY_BOTTLENECK = "review_rework_loop" as const;
 
+/** North Star Primary Metric. */
 export type NorthStarPrimaryMetric = typeof NORTH_STAR_PRIMARY_METRIC;
+/** North Star Primary Bottleneck. */
 export type NorthStarPrimaryBottleneck = typeof NORTH_STAR_PRIMARY_BOTTLENECK;
 
 export const NORTH_STAR_DECISION_QUESTION_SPECS = [
@@ -235,14 +262,17 @@ export const NORTH_STAR_DECISION_QUESTION_SPECS = [
 	},
 ] as const;
 
+/** North Star Decision Question Id. */
 export type NorthStarDecisionQuestionId =
 	(typeof NORTH_STAR_DECISION_QUESTION_SPECS)[number]["id"];
 
+/** North Star Decision Question. */
 export interface NorthStarDecisionQuestion {
 	id: NorthStarDecisionQuestionId;
 	prompt: string;
 }
 
+/** North Star Contract. */
 export interface NorthStarContract {
 	mission: string;
 	primaryMetric: NorthStarPrimaryMetric;
@@ -253,9 +283,15 @@ export interface NorthStarContract {
 	decisionQuestions: NorthStarDecisionQuestion[];
 }
 
+/** Product Surface Class. */
 export type ProductSurfaceClass = "core" | "adjacent" | "experimental";
+/** Product Surface Type. */
 export type ProductSurfaceType = "command" | "document" | "policy" | "workflow";
 
+/** Allowed product-surface review cadence frequencies. */
+export type ReviewCadence = "weekly" | "per_release";
+
+/** Surface registration entry for governing runtime behavior. */
 export interface SurfaceRegistration {
 	surfaceId: string;
 	surfaceType: ProductSurfaceType;
@@ -265,18 +301,22 @@ export interface SurfaceRegistration {
 	manualGlueReductionClaim: string;
 	reliabilityContribution: string;
 	evidenceReference: string;
-	reviewCadence?: string;
+	reviewCadence?: ReviewCadence;
 	ownedPaths: string[];
 	lastReviewedAt: string;
 }
 
+/** Product Surface Registry. */
 export interface ProductSurfaceRegistry {
 	surfaces: SurfaceRegistration[];
 }
 
+/** Trusted Reviewer Type. */
 export type TrustedReviewerType = "user" | "team" | "service";
+/** Trusted Reviewer Status. */
 export type TrustedReviewerStatus = "active" | "revoked";
 
+/** Trusted Reviewer. */
 export interface TrustedReviewer {
 	reviewerId: string;
 	reviewerType: TrustedReviewerType;
@@ -285,6 +325,7 @@ export interface TrustedReviewer {
 	status: TrustedReviewerStatus;
 }
 
+/** Override Reviewer Registry. */
 export interface OverrideReviewerRegistry {
 	trustedReviewers: TrustedReviewer[];
 }
@@ -354,27 +395,36 @@ export const PREFLIGHT_PRE_HOOK_IDS = [
 ] as const;
 export const PREFLIGHT_POST_HOOK_IDS = ["fail-on-warnings"] as const;
 
+/** Preflight Pre Hook Id. */
 export type PreflightPreHookId = (typeof PREFLIGHT_PRE_HOOK_IDS)[number];
+/** Preflight Post Hook Id. */
 export type PreflightPostHookId = (typeof PREFLIGHT_POST_HOOK_IDS)[number];
+/** Gate Extension Hook Id. */
 export type GateExtensionHookId = PreflightPreHookId | PreflightPostHookId;
 
+/** Gate Extension Hook. */
 export interface GateExtensionHook<HookId extends GateExtensionHookId> {
 	id: HookId;
 	enabled?: boolean | undefined;
 }
 
+/** Preflight Pre Hook. */
 export type PreflightPreHook = GateExtensionHook<PreflightPreHookId>;
+/** Preflight Post Hook. */
 export type PreflightPostHook = GateExtensionHook<PreflightPostHookId>;
 
+/** Preflight Gate Extensions Policy. */
 export interface PreflightGateExtensionsPolicy {
 	pre?: PreflightPreHook[] | undefined;
 	post?: PreflightPostHook[] | undefined;
 }
 
+/** Gate Extensions Policy. */
 export interface GateExtensionsPolicy {
 	preflightGate?: PreflightGateExtensionsPolicy | undefined;
 }
 
+/** Blast Radius Rule. */
 export interface BlastRadiusRule {
 	/** Glob pattern for matching file paths */
 	pattern: string;
@@ -384,6 +434,7 @@ export interface BlastRadiusRule {
 	description?: string | undefined;
 }
 
+/** Blast Radius Rules Mode. */
 export type BlastRadiusRulesMode = "merge" | "replace";
 
 /**
@@ -410,6 +461,7 @@ export interface DiffBudgetOverride {
 	timestamp: string;
 }
 
+/** Review Policy. */
 export interface ReviewPolicy {
 	timeoutSeconds: number;
 	timeoutAction: TimeoutAction;
@@ -423,33 +475,39 @@ export interface ReviewPolicy {
 	enforceReviewerIndependence?: boolean | undefined;
 }
 
+/** Code Quality Severity. */
 export type CodeQualitySeverity =
 	| "errors"
 	| "warnings_and_higher"
 	| "notes_and_higher"
 	| "all";
 
+/** Code Scanning Alerts Threshold. */
 export type CodeScanningAlertsThreshold =
 	| "errors"
 	| "errors_and_warnings"
 	| "all";
 
+/** Code Scanning Security Alerts Threshold. */
 export type CodeScanningSecurityAlertsThreshold =
 	| "high_or_higher"
 	| "medium_or_higher"
 	| "all";
 
+/** Branch Protection Merge Methods. */
 export interface BranchProtectionMergeMethods {
 	mergeCommit: boolean;
 	squash: boolean;
 	rebase: boolean;
 }
 
+/** Branch Protection Code Quality Policy. */
 export interface BranchProtectionCodeQualityPolicy {
 	required: boolean;
 	severity: CodeQualitySeverity;
 }
 
+/** Branch Protection Code Scanning Policy. */
 export interface BranchProtectionCodeScanningPolicy {
 	required: boolean;
 	publicOnly: boolean;
@@ -458,6 +516,7 @@ export interface BranchProtectionCodeScanningPolicy {
 	securityAlertsThreshold: CodeScanningSecurityAlertsThreshold;
 }
 
+/** Branch Protection Policy. */
 export interface BranchProtectionPolicy {
 	requiredChecks?: string[] | undefined;
 	restrictDeletions?: boolean | undefined;
@@ -475,46 +534,56 @@ export interface BranchProtectionPolicy {
 	publicCodeScanning?: BranchProtectionCodeScanningPolicy | undefined;
 }
 
+/** Tooling Action Icon. */
 export type ToolingActionIcon = "tool" | "run" | "debug" | "test";
 
+/** Tooling Mise Tool. */
 export interface ToolingMiseTool {
 	tool: string;
 	version: string;
 }
 
+/** Tooling Codex Action. */
 export interface ToolingCodexAction {
 	name: string;
 	icon: ToolingActionIcon;
 }
 
+/** Tooling Codex Environment Policy. */
 export interface ToolingCodexEnvironmentPolicy {
 	path: string;
 	requiredActions: ToolingCodexAction[];
 }
 
+/** Tooling Makefile Policy. */
 export interface ToolingMakefilePolicy {
 	path: string;
 	requiredTargets: string[];
 }
 
+/** Tooling Capability. */
 export type ToolingCapability = "ui" | "chatgpt_apps_sdk";
 
+/** Tooling Package Dependency Type. */
 export type ToolingPackageDependencyType =
 	| "dependencies"
 	| "devDependencies"
 	| "either";
 
+/** Tooling Capability Detector. */
 export interface ToolingCapabilityDetector {
 	capability: ToolingCapability;
 	dependencyMarkers: string[];
 }
 
+/** Tooling Package Requirement. */
 export interface ToolingPackageRequirement {
 	package: string;
 	dependencyType: ToolingPackageDependencyType;
 	requiredWhenCapabilities: ToolingCapability[];
 }
 
+/** Tooling Package Policy. */
 export interface ToolingPackagePolicy {
 	packageJsonPath: string;
 	explicitCapabilities?: ToolingCapability[] | undefined;
@@ -522,11 +591,13 @@ export interface ToolingPackagePolicy {
 	requiredPackages: ToolingPackageRequirement[];
 }
 
+/** Tooling Project Brain Memory Extension Policy. */
 export interface ToolingProjectBrainMemoryExtensionPolicy {
 	enabled: boolean;
 	requiredPaths: string[];
 }
 
+/** Tooling Policy. */
 export interface ToolingPolicy {
 	requiredDocumentationTerms: string[];
 	requiredBinaries: string[];
@@ -541,10 +612,13 @@ export interface ToolingPolicy {
 		| undefined;
 }
 
+/** Issue Tracking Provider. */
 export type IssueTrackingProvider = "linear";
 
+/** Pr Reference Mode. */
 export type PrReferenceMode = "refs" | "fixes" | "either";
 
+/** Issue Tracking Policy. */
 export interface IssueTrackingPolicy {
 	provider: IssueTrackingProvider;
 	projectUrl?: string | undefined;
@@ -556,8 +630,10 @@ export interface IssueTrackingPolicy {
 	branchPrefix?: string | undefined;
 }
 
+/** Loop Stage Fail Policy. */
 export type LoopStageFailPolicy = "fail_closed" | "warn_only";
 
+/** Loop Stage Name. */
 export type LoopStageName =
 	| "risk-policy-gate"
 	| "review-gate"
@@ -579,6 +655,7 @@ export interface LoopStageContract {
 	concurrency: string;
 }
 
+/** Loop Stage Contracts. */
 export type LoopStageContracts = Record<LoopStageName, LoopStageContract>;
 
 /**
@@ -670,17 +747,20 @@ export interface PilotAuthzPolicy {
 	enforceBranchProtection: boolean;
 }
 
+/** Control Plane Override Scope. */
 export type ControlPlaneOverrideScope =
 	| "advisory_hold"
 	| "temporary_unblock"
 	| "temporary_promote";
 
+/** Control Plane Non Overridable Control. */
 export type ControlPlaneNonOverridableControl =
 	| "canonical_runtime_invalid"
 	| "governance_trust_mismatch"
 	| "missing_required_instruction_surface"
 	| "missing_snapshot_integrity_verification";
 
+/** Control Plane Override Policy. */
 export interface ControlPlaneOverridePolicy {
 	/** Principals allowed to request or approve control-plane overrides */
 	authorizedPrincipals: string[];
@@ -692,11 +772,14 @@ export interface ControlPlaneOverridePolicy {
 	nonOverridableControls: ControlPlaneNonOverridableControl[];
 }
 
+/** Control Plane Policy. */
 export interface ControlPlanePolicy {
 	overridePolicy: ControlPlaneOverridePolicy;
 }
 
+/** C I Provider Policy Mode. */
 export type CIProviderPolicyMode = "shadow" | "primary" | "required";
+/** C I Provider Migration Stage. */
 export type CIProviderMigrationStage =
 	| "pre-migration"
 	| "dual-provider"
@@ -709,6 +792,7 @@ export type CIProviderMigrationStage =
 /** Operating model tier for the repository. */
 export type CommitMode = "solo" | "team" | "enterprise";
 
+/** C I Provider Policy. */
 export interface CIProviderPolicy {
 	activeProvider: "github-actions" | "circleci";
 	mode: CIProviderPolicyMode;
@@ -729,10 +813,13 @@ export interface CIProviderPolicy {
 	commitMode?: CommitMode | undefined;
 }
 
+/** Context Integrity Mode. */
 export type ContextIntegrityMode = "shadow" | "advisory" | "required";
 
+/** Context Compact Strategy. */
 export type ContextCompactStrategy = "balanced" | "aggressive" | "micro";
 
+/** Context Compact Policy. */
 export interface ContextCompactPolicy {
 	/** Percent of context budget used before compaction tuning is applied (1-100). */
 	thresholdPercent: number;
@@ -742,10 +829,13 @@ export interface ContextCompactPolicy {
 	strategy: ContextCompactStrategy;
 }
 
+/** Context Integrity Source Kind. */
 export type ContextIntegritySourceKind = "file" | "directory";
 
+/** Context Integrity Truth Source Authority. */
 export type ContextIntegrityTruthSourceAuthority = "canonical" | "governed";
 
+/** Context Contradiction Category. */
 export type ContextContradictionCategory =
 	| "command_contract_conflict"
 	| "required_check_conflict"
@@ -753,6 +843,7 @@ export type ContextContradictionCategory =
 	| "workflow_policy_conflict"
 	| "source_truth_missing";
 
+/** Context Integrity Truth Source. */
 export interface ContextIntegrityTruthSource {
 	path: string;
 	kind: ContextIntegritySourceKind;
@@ -760,6 +851,7 @@ export interface ContextIntegrityTruthSource {
 	required: boolean;
 }
 
+/** Context Contradiction Catalog Entry. */
 export interface ContextContradictionCatalogEntry {
 	id: string;
 	category: ContextContradictionCategory;
@@ -767,8 +859,10 @@ export interface ContextContradictionCatalogEntry {
 	description: string;
 }
 
+/** Context Health Trigger Type. */
 export type ContextHealthTriggerType = "current_checkout" | "recent_artifacts";
 
+/** Context Health Sampling Policy. */
 export interface ContextHealthSamplingPolicy {
 	fixtureSetPath: string;
 	fixtureSetId: string;
@@ -777,6 +871,7 @@ export interface ContextHealthSamplingPolicy {
 	dedupeScope: "query" | "run";
 }
 
+/** Context Integrity Policy. */
 export interface ContextIntegrityPolicy {
 	mode: ContextIntegrityMode;
 	truthSources: ContextIntegrityTruthSource[];
@@ -874,12 +969,6 @@ export const DEFAULT_CONTEXT_INTEGRITY_POLICY: ContextIntegrityPolicy = {
 		},
 		{
 			path: "AGENTS.md",
-			kind: "file",
-			authority: "canonical",
-			required: true,
-		},
-		{
-			path: "CLAUDE.md",
 			kind: "file",
 			authority: "canonical",
 			required: true,
@@ -1341,6 +1430,7 @@ export const DEFAULT_POLICY_CHAIN: PolicyChainPolicy = {
 
 // === Contract Interface ===
 
+/** Harness Contract. */
 export interface HarnessContract {
 	version: string;
 	riskTierRules: Record<string, RiskTier>;

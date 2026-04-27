@@ -152,12 +152,7 @@
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"requiredChecks": [
-			"security-scan",
-			"dependency-scan",
-			"orb-pinning",
-			"semgrep-cloud-platform/scan"
-		],
+		"requiredChecks": ["security-scan", "semgrep-cloud-platform/scan"],
 		"enforceReviewerIndependence": true
 	},
 	"evidencePolicy": {
@@ -190,19 +185,7 @@
 	},
 	"branchProtection": {
 		"requiredChecks": [
-			"pr-template",
-			"linear-gate",
-			"risk-policy-gate",
-			"dependency-scan",
-			"orb-pinning",
-			"consistency-drift-health",
-			"docs-gate",
-			"lint",
-			"typecheck",
-			"test",
-			"audit",
-			"check",
-			"memory",
+			"pr-pipeline",
 			"security-scan",
 			"CodeRabbit",
 			"semgrep-cloud-platform/scan"

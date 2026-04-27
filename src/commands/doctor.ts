@@ -25,6 +25,11 @@ import {
 	writeNorthStarSurfaceClassificationSnapshot,
 } from "./doctor-artifacts.js";
 import { DOCTOR_CHECKS } from "./doctor-checks.js";
+import {
+	type RecoveryGuidance,
+	attachRecoveryGuidance,
+	renderRecoveryGuidance,
+} from "./doctor-recovery.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,6 +68,8 @@ export interface DoctorReport {
 	artifact_refs?: NorthStarSurfaceClassificationArtifactRef[];
 	/** Post-init manual step checklist (shown when installing) */
 	postInitChecklist?: string[];
+	/** Human-readable recovery guidance derived from failed north-star checks */
+	recovery_guidance?: RecoveryGuidance[];
 }
 
 /** Options accepted by the doctor command runner. */
@@ -130,6 +137,8 @@ function renderReport(report: DoctorReport): string {
 		`  Results: ${ok}/${total} ok, ${warn} warning${warn !== 1 ? "s" : ""}, ${fail} failure${fail !== 1 ? "s" : ""}${skippedNote}`,
 	);
 
+	lines.push(...renderRecoveryGuidance(report.recovery_guidance ?? []));
+
 	if (report.hasFailures) {
 		lines.push(
 			"  ❌ Prerequisites not satisfied — fix failures above before running gates\n",
@@ -184,6 +193,8 @@ export function runDoctor(options: DoctorOptions = {}): DoctorReport {
 		postInitChecklist: POST_INIT_CHECKLIST,
 	};
 	report.hasFailures = report.counts.fail > 0;
+
+	attachRecoveryGuidance(report);
 
 	try {
 		writeNorthStarSurfaceClassificationSnapshot(dir, report);

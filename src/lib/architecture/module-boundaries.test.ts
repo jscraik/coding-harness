@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const LEGACY_MODULE_RATCHETS = [
+const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 	{
 		path: "src/commands/ci-migrate.ts",
 		maxLines: 10_400,
@@ -156,8 +156,8 @@ describe("module boundaries", () => {
 		expect(countFileLines(validatorPath)).toBeLessThanOrEqual(2700);
 	});
 
-	it("ratchets legacy drift seams while they are decomposed", () => {
-		expectRatchetsWithinBudget(LEGACY_MODULE_RATCHETS);
+	it("ratchets seam decomposition while they are extracted", () => {
+		expectRatchetsWithinBudget(COMMAND_SURFACE_DECOMPOSITION_RATCHETS);
 	});
 
 	it("keeps doctor surfaces split after decomposition", () => {
