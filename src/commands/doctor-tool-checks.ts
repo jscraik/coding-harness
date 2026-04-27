@@ -167,6 +167,16 @@ export const DOCTOR_TOOL_CHECKS: DoctorCheckFn[] = [
 			encoding: "utf-8",
 			timeout: 5000,
 		});
+		if (authResult.error) {
+			return {
+				id: "tool:gh",
+				category: "tool",
+				label: "GitHub CLI (gh)",
+				status: "warn",
+				message: `gh auth check failed: ${authResult.error.message}`,
+				fix: "Verify gh installation/PATH, then run gh auth login",
+			};
+		}
 		if (authResult.status !== 0) {
 			return {
 				id: "tool:gh",
