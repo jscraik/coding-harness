@@ -137,16 +137,19 @@ export function createNorthStarGuardrailId(input: {
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, "-")
 		.replace(/^-+|-+$/g, "");
-	const normalizedSurfaces = [...input.surfaceIds]
-		.map((surfaceId) =>
-			surfaceId
-				.trim()
-				.toLowerCase()
-				.replace(/[^a-z0-9]+/g, "-")
-				.replace(/^-+|-+$/g, ""),
-		)
-		.filter((surfaceId) => surfaceId.length > 0)
-		.sort();
+	const normalizedSurfaces = Array.from(
+		new Set(
+			[...input.surfaceIds]
+				.map((surfaceId) =>
+					surfaceId
+						.trim()
+						.toLowerCase()
+						.replace(/[^a-z0-9]+/g, "-")
+						.replace(/^-+|-+$/g, ""),
+				)
+				.filter((surfaceId) => surfaceId.length > 0),
+		),
+	).sort();
 	const surfaceSuffix =
 		normalizedSurfaces.length > 0 ? normalizedSurfaces.join("-") : "global";
 

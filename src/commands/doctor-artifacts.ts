@@ -66,10 +66,12 @@ export function getNorthStarSurfaceClassificationArtifactPath(): string {
  * @returns `true` if the check's `id` or `message` contains `"north-star"`, or the `message` contains `"productSurface"`, `false` otherwise.
  */
 function isNorthStarSurfaceCheck(check: DoctorCheck): boolean {
+	const idLower = check.id?.toLowerCase() ?? "";
+	const messageLower = check.message?.toLowerCase() ?? "";
 	return (
-		check.id.includes("north-star") ||
-		check.message.includes("north-star") ||
-		check.message.includes("productSurface")
+		idLower.includes("north-star") ||
+		messageLower.includes("north-star") ||
+		messageLower.includes("productsurface")
 	);
 }
 
