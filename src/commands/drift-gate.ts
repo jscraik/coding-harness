@@ -868,7 +868,6 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	) {
 		report.status = "blocked";
 	}
-
 	try {
 		writeNorthStarDriftFindingsArtifact(repoRoot, report);
 		report.artifact_refs = [createNorthStarDriftArtifactRef()];
@@ -889,6 +888,7 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 			baseline.fingerprints,
 		);
 		report.summary = summarizeDriftFindings(report.findings, suppressed);
+		// Note: hasHealthBlockingFinding is stale but report.outcome="error" takes precedence in exit code logic
 	}
 
 	const outPath =
