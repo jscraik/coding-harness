@@ -1,220 +1,51 @@
-import {
-	existsSync,
-	lstatSync,
-	mkdirSync,
-	readFileSync,
-	realpathSync,
-	rmSync,
-} from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { cwd } from "node:process";
-import { sanitizeError } from "../input/sanitize.js";
 import { detectProjectType } from "../project-type/detector.js";
 import {
 	type ProjectType,
 	VALID_OVERRIDE_TYPES,
 } from "../project-type/types.js";
-import { getVersion } from "../version.js";
 import {
-	applyProposedChange,
-	collectProposedChanges,
-	generateDiff,
-} from "./interactive.js";
+	getExitCodeFromError,
+	probeManifest,
+	validateModeExclusivity,
+} from "./init-helpers.js";
+import { applyApprovedChanges, promptForChanges } from "./init-interactive.js";
 import {
-	CONTRACT_FILE,
-	atomicWrite,
-	detectContractVersion,
-	executeMigration,
-} from "./migration.js";
+	handleCheckUpdates,
+	handleInteractive,
+	handleMigrate,
+	handleRollback,
+	handleUpdate,
+} from "./init-modes.js";
+import { executeNormalInstall } from "./init-ops.js";
 import {
-	formatBootstrapSummary,
-	generateBootstrapSummary,
-} from "./post-bootstrap-summary.js";
-import { createBackup, executeRollback, loadManifest } from "./rollback.js";
+	printCheckUpdatesOutput,
+	printErrorOutput,
+	printInstallOutput,
+	printInteractiveSummary,
+	printMigrateOutput,
+	printRollbackOutput,
+	printUpdateOutput,
+	warnIfUnknownProjectType,
+} from "./init-output.js";
+import { CONTRACT_FILE, detectContractVersion } from "./migration.js";
 import {
-	TEMPLATES,
 	createTemplateRenderContext,
 	detectPackageManager,
 	getTemplatesForProvider,
-	getToolingVersionDecision,
 	normalizeCIProvider,
-	shouldAutoUpdateTemplate,
 } from "./scaffold.js";
 import {
 	BACKUPS_DIR,
 	CURRENT_SCHEMA_VERSION,
 	EXIT_CODES,
 	HARNESS_DIR,
-	type InitErrorOutput,
 	type InitOptions,
 	type InitResult,
 	MANIFEST_FILE,
-	type ManifestEntry,
-	type ProposedChange,
-	type RestoreManifest,
 } from "./types.js";
-import { checkForUpdates, executeUpdate } from "./update.js";
-
-// Retired template paths that should be cleaned up during init
-const RETIRED_TEMPLATE_PATHS = [
-	".github/ISSUE_TEMPLATE/issue.yml",
-	".github/ISSUE_TEMPLATE/feature.yml",
-	".github/ISSUE_TEMPLATE/security.yml",
-] as const;
-
-// === Path Sanitization ===
-
-type PathResult =
-	| { ok: true; value: string }
-	| { ok: false; error: InitErrorOutput };
-
-/**
- * Validate and canonicalize a path resolved from a base directory while blocking traversal and symlink escapes.
- *
- * Performs strict checks to ensure `resolve(base, relativePath)` remains within `base`: validates inputs, requires
- * the base directory to exist, performs a lexical containment check, rejects any existing path segment that is a
- * symbolic link, and verifies the nearest existing ancestor's canonical realpath remains inside the base realpath.
- *
- * @param base - The base directory against which `relativePath` will be resolved; must be an existing, resolvable path.
- * @param relativePath - The path (possibly relative) to resolve under `base`.
- * @returns An object with `ok: true` and `value` equal to the resolved absolute path when safe; otherwise `ok: false`
- * and an `error` describing the failure. Common error codes:
- * - `INVALID_PATH`: input validation failures, inability to resolve the base, or filesystem errors encountered during checks.
- * - `PATH_TRAVERSAL`: the resolved path lies outside the base or contains a symbolic link that would allow escape.
- */
-function sanitizePath(base: string, relativePath: string): PathResult {
-	// Validate inputs
-	if (!base || typeof base !== "string") {
-		return {
-			ok: false,
-			error: {
-				code: "INVALID_PATH",
-				message: "Base directory must be a non-empty string",
-			},
-		};
-	}
-
-	if (!relativePath || typeof relativePath !== "string") {
-		return {
-			ok: false,
-			error: {
-				code: "INVALID_PATH",
-				message: "Relative path must be a non-empty string",
-			},
-		};
-	}
-
-	// Normalize paths
-	const normalizedBase = resolve(base);
-	const resolved = resolve(base, relativePath);
-
-	// Resolve the true canonical base dir — reject if it doesn't exist yet.
-	let baseRealPath: string;
-	try {
-		baseRealPath = realpathSync(normalizedBase);
-	} catch {
-		return {
-			ok: false,
-			error: {
-				code: "INVALID_PATH",
-				message: `Base directory must exist and be resolvable: ${base}`,
-			},
-		};
-	}
-
-	// Ensure base ends with separator for proper prefix matching
-	// This prevents /app from matching /app-secrets
-	const baseWithSep = normalizedBase.endsWith(sep)
-		? normalizedBase
-		: normalizedBase + sep;
-
-	// Lexical containment check (fast path — still needed for the no-symlink case)
-	if (resolved !== normalizedBase && !resolved.startsWith(baseWithSep)) {
-		return {
-			ok: false,
-			error: {
-				code: "PATH_TRAVERSAL",
-				message: `Path traversal blocked: ${relativePath} resolves outside target directory`,
-				path: relativePath,
-			},
-		};
-	}
-
-	// SECURITY: Walk each existing path segment and reject any symlink.
-	// resolve() is purely lexical — it doesn't follow symlinks, so a
-	// directory symlink (.github -> /etc) passes the prefix check above
-	// but mkdirSync/renameSync will follow it at write time.
-	const relToBase = relative(normalizedBase, resolved);
-	const segments = relToBase.split(sep).filter((s) => s.length > 0);
-	let walkPath = normalizedBase;
-	for (const segment of segments) {
-		walkPath = join(walkPath, segment);
-		if (!existsSync(walkPath)) {
-			// Not yet created — safe to skip (atomicWrite will create it)
-			break;
-		}
-		try {
-			if (lstatSync(walkPath).isSymbolicLink()) {
-				return {
-					ok: false,
-					error: {
-						code: "PATH_TRAVERSAL",
-						message: `Path traversal blocked: ${relativePath} contains a symbolic link`,
-						path: relativePath,
-					},
-				};
-			}
-		} catch (e) {
-			return {
-				ok: false,
-				error: {
-					code: "INVALID_PATH",
-					message: `Failed to validate path safety: ${sanitizeError(e)}`,
-					path: relativePath,
-				},
-			};
-		}
-	}
-
-	// SECURITY: Canonical ancestor check — realpathSync on the nearest
-	// existing ancestor to catch symlink-based escapes in parent dirs.
-	let nearestExisting = resolved;
-	while (!existsSync(nearestExisting)) {
-		const parent = dirname(nearestExisting);
-		if (parent === nearestExisting) break; // filesystem root
-		nearestExisting = parent;
-	}
-	try {
-		const realNearest = realpathSync(nearestExisting);
-		const baseRealWithSep = baseRealPath.endsWith(sep)
-			? baseRealPath
-			: `${baseRealPath}${sep}`;
-		if (
-			realNearest !== baseRealPath &&
-			!realNearest.startsWith(baseRealWithSep)
-		) {
-			return {
-				ok: false,
-				error: {
-					code: "PATH_TRAVERSAL",
-					message: `Path traversal blocked: ${relativePath} resolves outside target directory`,
-					path: relativePath,
-				},
-			};
-		}
-	} catch (e) {
-		return {
-			ok: false,
-			error: {
-				code: "INVALID_PATH",
-				message: `Failed to resolve path safety: ${sanitizeError(e)}`,
-				path: relativePath,
-			},
-		};
-	}
-
-	return { ok: true, value: resolved };
-}
 
 /**
  * Perform initialization (install, update, migrate, rollback, or interactive changes) for a repository directory and return a structured result describing created/skipped files and metadata.
@@ -238,7 +69,7 @@ export function runInit(
 	}
 	const requestedCiProvider = requestedCiProviderResult.value;
 	let ciProvider = requestedCiProvider;
-	let existingManifest: RestoreManifest | null = null;
+	let existingManifest: import("./types.js").RestoreManifest | null = null;
 
 	// P2: Validate --project-type flag if provided (SA10, SA16)
 	if (options.projectType !== undefined) {
@@ -292,425 +123,52 @@ export function runInit(
 	);
 	const templates = getTemplatesForProvider(ciProvider, options);
 
-	if (options.migrate && options.dryRun) {
-		return {
-			ok: false,
-			error: {
-				code: "INVALID_PATH",
-				message: "--migrate cannot be combined with --dry-run.",
-			},
-		};
+	const modeError = validateModeExclusivity(options);
+	if (modeError) {
+		return modeError;
 	}
 
-	if (options.migrate && options.interactive) {
-		return {
-			ok: false,
-			error: {
-				code: "INVALID_PATH",
-				message: "--migrate cannot be combined with --interactive.",
-			},
-		};
+	const probeResult = probeManifest(dir, options, requestedCiProvider);
+	if (probeResult.error) {
+		return probeResult.error;
 	}
-
-	if (options.update && options.track) {
-		return {
-			ok: false,
-			error: {
-				code: "INVALID_OPTIONS",
-				message:
-					"--update cannot be combined with --track. Use `harness upgrade --dry-run` for existing installs, or run `harness init --track` separately when bootstrapping tracked files.",
-			},
-		};
-	}
-
-	if (
-		options.update &&
-		(options.minimal !== undefined || options.issueTracker !== undefined)
-	) {
-		return {
-			ok: false,
-			error: {
-				code: "INVALID_OPTIONS",
-				message:
-					"--update reuses the tracked scaffold configuration and cannot be combined with --minimal or --issue-tracker. Re-run without those flags.",
-			},
-		};
-	}
-
-	const shouldReuseTrackedProvider =
-		!options.ciProvider &&
-		(options.rollback || options.checkUpdates || options.update);
-	if (shouldReuseTrackedProvider) {
-		const manifestProbeResult = loadManifest(dir, {
-			requireMetadata: options.update === true,
-			operation: options.update
-				? "update"
-				: options.rollback
-					? "rollback"
-					: "check-updates",
-			preferredCiProvider: requestedCiProvider,
-		});
-		if (!manifestProbeResult.ok) {
-			if (options.rollback || options.update) {
-				return manifestProbeResult;
-			}
-		} else {
-			existingManifest = manifestProbeResult.value;
-			ciProvider = manifestProbeResult.value.ciProvider ?? requestedCiProvider;
-		}
-	}
+	existingManifest = probeResult.existingManifest;
+	ciProvider = probeResult.ciProvider;
 
 	// Handle --rollback: restore from manifest
 	if (options.rollback) {
-		const manifestResult =
-			existingManifest !== null
-				? ({ ok: true, value: existingManifest } as const)
-				: loadManifest(dir);
-		if (!manifestResult.ok) {
-			return manifestResult;
-		}
-		if (
-			manifestResult.value.ciProvider &&
-			manifestResult.value.ciProvider !== ciProvider
-		) {
-			return {
-				ok: false,
-				error: {
-					code: "INVALID_PATH",
-					message: `manifest provider "${manifestResult.value.ciProvider}" does not match current CI provider "${ciProvider}"`,
-					path: MANIFEST_FILE,
-				},
-			};
-		}
-
-		const rollbackResult = executeRollback(dir, manifestResult.value);
-		if (!rollbackResult.ok) {
-			return rollbackResult;
-		}
-
-		return {
-			ok: true,
-			output: {
-				packageManager,
-				created: [], // Rollback doesn't create files
-				skipped: rollbackResult.value.restored.concat(
-					rollbackResult.value.deleted,
-				),
-			},
-		};
+		return handleRollback(dir, existingManifest, ciProvider, packageManager);
 	}
 
 	// Handle --check-updates: compare versions
 	if (options.checkUpdates) {
-		const checkResult = checkForUpdates(dir, ciProvider);
-		if (!checkResult.ok) {
-			return checkResult;
-		}
-
-		return {
-			ok: true,
-			output: {
-				packageManager,
-				created: [], // Check doesn't create files
-				skipped: [], // Check doesn't skip files
-				updateCheck: checkResult.value,
-			},
-		};
+		return handleCheckUpdates(dir, ciProvider, packageManager);
 	}
 
 	// Handle --update: apply template updates
 	if (options.update) {
-		const manifestResult =
-			existingManifest !== null
-				? ({ ok: true, value: existingManifest } as const)
-				: loadManifest(dir, {
-						requireMetadata: true,
-						operation: "update",
-						preferredCiProvider: ciProvider,
-					});
-		if (!manifestResult.ok) {
-			return manifestResult;
-		}
-		if (
-			manifestResult.value.ciProvider &&
-			manifestResult.value.ciProvider !== ciProvider
-		) {
-			return {
-				ok: false,
-				error: {
-					code: "INVALID_PATH",
-					message: `manifest provider "${manifestResult.value.ciProvider}" does not match current CI provider "${ciProvider}"`,
-					path: MANIFEST_FILE,
-				},
-			};
-		}
-
-		const updateResult = executeUpdate(dir, manifestResult.value, ciProvider);
-		if (!updateResult.ok) {
-			return updateResult;
-		}
-
-		return {
-			ok: true,
-			output: {
-				packageManager,
-				created: updateResult.value.updated,
-				skipped: updateResult.value.skipped,
-				...(updateResult.value.ownershipDecisions
-					? { ownershipDecisions: updateResult.value.ownershipDecisions }
-					: {}),
-			},
-		};
+		return handleUpdate(dir, existingManifest, ciProvider, packageManager);
 	}
 
 	// Handle --migrate: apply schema migrations to contract
 	if (options.migrate) {
-		const migrationResult = executeMigration(dir);
-		if (!migrationResult.ok) {
-			return migrationResult;
-		}
-
-		return {
-			ok: true,
-			output: {
-				packageManager,
-				created:
-					migrationResult.value.migrationsApplied.length > 0
-						? [CONTRACT_FILE]
-						: [],
-				skipped: [],
-			},
-		};
+		return handleMigrate(dir, packageManager);
 	}
 
 	// Handle --interactive: collect proposed changes without writing
 	if (options.interactive) {
-		const proposedChanges = collectProposedChanges(dir, options, ciProvider);
-		return {
-			ok: true,
-			output: {
-				packageManager,
-				created: [],
-				skipped: [],
-				proposedChanges,
-			},
-		};
+		return handleInteractive(dir, options, ciProvider, packageManager);
 	}
 
-	const created: string[] = [];
-	const skipped: string[] = [];
-	const manifestEntries: ManifestEntry[] = [];
-	const sanitizedTemplatePaths = new Map<string, string>();
-	let sanitizedHarnessDir: string | null = null;
-	let sanitizedBackupsDir: string | null = null;
-	let sanitizedManifestPath: string | null = null;
-
-	// Validate all target paths before creating directories or writing files.
-	for (const template of templates) {
-		const pathResult = sanitizePath(dir, template.path);
-		if (!pathResult.ok) {
-			return pathResult;
-		}
-		sanitizedTemplatePaths.set(template.path, pathResult.value);
-	}
-
-	if (options.track && !options.dryRun) {
-		const harnessDirResult = sanitizePath(dir, HARNESS_DIR);
-		if (!harnessDirResult.ok) {
-			return harnessDirResult;
-		}
-		sanitizedHarnessDir = harnessDirResult.value;
-
-		const backupsDirResult = sanitizePath(dir, `${HARNESS_DIR}/${BACKUPS_DIR}`);
-		if (!backupsDirResult.ok) {
-			return backupsDirResult;
-		}
-		sanitizedBackupsDir = backupsDirResult.value;
-
-		const manifestPathResult = sanitizePath(
-			dir,
-			`${HARNESS_DIR}/${MANIFEST_FILE}`,
-		);
-		if (!manifestPathResult.ok) {
-			return manifestPathResult;
-		}
-		sanitizedManifestPath = manifestPathResult.value;
-	}
-
-	// Ensure .harness dir exists if tracking
-	if (options.track && !options.dryRun) {
-		mkdirSync(sanitizedHarnessDir as string, { recursive: true });
-		mkdirSync(sanitizedBackupsDir as string, { recursive: true });
-	}
-
-	for (const template of templates) {
-		const targetPath = sanitizedTemplatePaths.get(template.path);
-		if (!targetPath) {
-			return {
-				ok: false,
-				error: {
-					code: "INVALID_PATH",
-					message: `missing validated template path for ${template.path}`,
-					path: template.path,
-				},
-			};
-		}
-		const exists = existsSync(targetPath);
-		const autoUpdate =
-			exists && shouldAutoUpdateTemplate(template.path, targetPath);
-
-		// JSC-57: Version-aware handling for tooling configs (e.g. biome.json)
-		// - existing newer  → skip (don't downgrade)
-		// - existing older  → allow overwrite even without --force (upgrade)
-		// - no version info → fall through to normal skip/force logic
-		const versionDecision =
-			exists && !options.force
-				? getToolingVersionDecision(template.path, targetPath)
-				: "no_opinion";
-
-		if (versionDecision === "skip") {
-			skipped.push(template.path);
-			continue;
-		}
-
-		const versionForcedUpdate = versionDecision === "force_update";
-
-		// Skip existing files unless --force or auto-update or version-forced
-		if (exists && !options.force && !autoUpdate && !versionForcedUpdate) {
-			skipped.push(template.path);
-			continue;
-		}
-
-		// Dry-run: don't write, just track what would happen
-		if (options.dryRun) {
-			created.push(template.path); // Track as "would create"
-			continue;
-		}
-
-		// Create backup if tracking and file exists
-		if (options.track && exists) {
-			const backupResult = createBackup(dir, template.path);
-			if (!backupResult.ok) {
-				return backupResult;
-			}
-			if (backupResult.value !== null) {
-				manifestEntries.push({
-					path: template.path,
-					action: "modified",
-					backupHash: backupResult.value,
-				});
-			} else {
-				manifestEntries.push({
-					path: template.path,
-					action: "created",
-				});
-			}
-		} else if (options.track) {
-			// New file, track as created
-			manifestEntries.push({
-				path: template.path,
-				action: "created",
-			});
-		}
-
-		// Render and write
-		const content = template.render(packageManager, renderContext);
-		const writeResult = atomicWrite(targetPath, content);
-		if (!writeResult.ok) {
-			return writeResult;
-		}
-
-		created.push(template.path);
-	}
-
-	if (options.force && !options.dryRun) {
-		const activeTemplatePaths = new Set(
-			templates.map((template) => template.path),
-		);
-		for (const retiredPath of RETIRED_TEMPLATE_PATHS) {
-			const retiredResult = sanitizePath(dir, retiredPath);
-			if (!retiredResult.ok) {
-				return retiredResult;
-			}
-			if (existsSync(retiredResult.value)) {
-				rmSync(retiredResult.value, { force: true });
-			}
-		}
-		for (const template of TEMPLATES) {
-			if (activeTemplatePaths.has(template.path)) {
-				continue;
-			}
-			const legacyResult = sanitizePath(dir, template.path);
-			if (!legacyResult.ok) {
-				return legacyResult;
-			}
-			if (existsSync(legacyResult.value)) {
-				rmSync(legacyResult.value, { force: true });
-			}
-		}
-	}
-
-	// I3: If --project-type was explicitly provided and harness.contract.json already existed
-	// (and was skipped by the template loop), patch only the projectType field atomically.
-	// This avoids requiring --force alongside --project-type (which would be a footgun).
-	if (options.projectType && !options.dryRun) {
-		const contractPath = resolve(dir, CONTRACT_FILE);
-		if (existsSync(contractPath)) {
-			try {
-				const raw = readFileSync(contractPath, "utf-8");
-				const parsed = JSON.parse(raw) as Record<string, unknown>;
-				parsed.projectType = options.projectType;
-				const patchResult = atomicWrite(
-					contractPath,
-					`${JSON.stringify(parsed, null, 2)}\n`,
-				);
-				if (!patchResult.ok) {
-					return patchResult;
-				}
-				// Track in created if not already there (template loop may have skipped it)
-				if (!created.includes(CONTRACT_FILE)) {
-					created.push(CONTRACT_FILE);
-					// Remove from skipped if it was recorded there
-					const skipIdx = skipped.indexOf(CONTRACT_FILE);
-					if (skipIdx !== -1) skipped.splice(skipIdx, 1);
-				}
-			} catch {
-				// Malformed JSON — skip the patch; contract will be regenerated on next --force init
-			}
-		}
-	}
-
-	// Write manifest if tracking
-	if (options.track && !options.dryRun && manifestEntries.length > 0) {
-		const manifest: RestoreManifest = {
-			harnessVersion: getVersion(),
-			ciProvider,
-			...(options.minimal ? { minimal: true } : {}),
-			...(options.issueTracker
-				? { issueTracker: options.issueTracker }
-				: options.minimal
-					? { issueTracker: "none" }
-					: {}),
-			files: manifestEntries,
-		};
-		const manifestResult = atomicWrite(
-			sanitizedManifestPath as string,
-			JSON.stringify(manifest, null, 2),
-		);
-		if (!manifestResult.ok) {
-			return manifestResult;
-		}
-	}
-
-	return {
-		ok: true,
-		output: {
-			packageManager,
-			created,
-			skipped,
-			projectTypeDetection: detectionResult,
-		},
-	};
+	return executeNormalInstall(
+		dir,
+		templates,
+		options,
+		packageManager,
+		renderContext,
+		ciProvider,
+		detectionResult,
+	);
 }
 
 /**
@@ -721,9 +179,6 @@ export async function runInteractiveInitCLI(
 	targetDir: string | undefined,
 	options: InitOptions,
 ): Promise<number> {
-	// Dynamic import for ESM compatibility with inquirer
-	const { select, confirm } = await import("@inquirer/prompts");
-
 	const dir = targetDir ?? cwd();
 	const packageManager = detectPackageManager(dir);
 
@@ -735,118 +190,25 @@ export async function runInteractiveInitCLI(
 
 	console.info(`Installing harness (package manager: ${packageManager})\n`);
 
-	// Collect proposed changes
 	const result = runInit(targetDir, { ...options, interactive: true });
 	if (!result.ok) {
 		console.error(`Error: ${result.error.message}`);
 		if (result.error.path) {
 			console.error(`  Path: ${result.error.path}`);
 		}
-		if (result.error.code === "PATH_TRAVERSAL") {
-			return EXIT_CODES.PATH_TRAVERSAL;
-		}
-		if (
-			result.error.code === "WRITE_ERROR" ||
-			result.error.code === "INCOMPLETE_MANIFEST"
-		) {
-			return EXIT_CODES.WRITE_ERROR;
-		}
-		return EXIT_CODES.INVALID_PATH;
+		return getExitCodeFromError(result.error);
 	}
 
 	const proposedChanges = result.output.proposedChanges ?? [];
-	const approved: ProposedChange[] = [];
-	const rejected: string[] = [];
-
-	// Process each proposed change
-	for (const change of proposedChanges) {
-		// Format the prompt message based on action type
-		let message: string;
-		if (change.action === "create") {
-			message = `${change.path} does not exist. Create?`;
-		} else if (change.action === "modify") {
-			message = `${change.path} exists. Overwrite?`;
-		} else {
-			// Skip action - no prompt needed, just record
-			rejected.push(change.path);
-			continue;
-		}
-
-		try {
-			const answer = await select({
-				message,
-				choices: [
-					{ value: "yes", name: "Yes" },
-					{ value: "no", name: "No" },
-					{ value: "diff", name: "Show diff" },
-				],
-				default: change.action === "create" ? "yes" : "no",
-			});
-
-			if (answer === "diff") {
-				// Show the diff
-				console.info(`\n${generateDiff(change)}\n`);
-
-				// Confirm after showing diff
-				const confirmApply = await confirm({
-					message: "Apply this change?",
-					default: false,
-				});
-
-				if (confirmApply) {
-					approved.push(change);
-				} else {
-					rejected.push(change.path);
-				}
-			} else if (answer === "yes") {
-				approved.push(change);
-			} else {
-				rejected.push(change.path);
-			}
-		} catch (e) {
-			// Handle Ctrl+C gracefully
-			if (e instanceof Error && e.name === "ExitPromptError") {
-				console.info("\nCancelled by user");
-				return EXIT_CODES.SUCCESS;
-			}
-			throw e;
-		}
+	const { approved, rejected, cancelled } =
+		await promptForChanges(proposedChanges);
+	if (cancelled) {
+		return EXIT_CODES.SUCCESS;
 	}
 
-	// Apply approved changes
-	const applied: string[] = [];
-	const failed: string[] = [];
+	const { applied, failed } = applyApprovedChanges(dir, approved);
 
-	for (const change of approved) {
-		const applyResult = applyProposedChange(dir, change);
-		if (applyResult.ok) {
-			applied.push(change.path);
-			console.info(`  ✓ ${change.path}`);
-		} else {
-			failed.push(change.path);
-			console.error(`  ✗ ${change.path}: ${applyResult.error.message}`);
-		}
-	}
-
-	// Summary
-	console.info("\n✓ Harness installed!");
-	console.info(`  Created: ${applied.length}, Skipped: ${rejected.length}`);
-
-	if (failed.length > 0) {
-		console.info(`  Failed: ${failed.length}`);
-		return EXIT_CODES.WRITE_ERROR;
-	}
-
-	// Show rollback tip if tracking enabled
-	if (options.track && applied.length > 0) {
-		console.info("\n  Rollback: harness init --rollback");
-	} else if (applied.length > 0) {
-		console.info(
-			"\n  Tip: Review changes with 'git diff', undo with 'git checkout .'",
-		);
-	}
-
-	return EXIT_CODES.SUCCESS;
+	return printInteractiveSummary(applied, rejected, failed, !!options.track);
 }
 
 /**
@@ -879,154 +241,46 @@ export function runInitCLI(
 
 		// Handle rollback output
 		if (options.rollback) {
-			console.info("Rollback complete\n");
-			for (const path of skipped) {
-				console.info(`  restored ${path}`);
-			}
-			console.info("\n✓ Restored to pre-install state");
+			printRollbackOutput(skipped);
 			return EXIT_CODES.SUCCESS;
 		}
 
 		// Handle --check-updates output
 		if (options.checkUpdates && updateCheck) {
-			if (updateCheck.updateAvailable) {
-				console.info(
-					`Update available: v${updateCheck.installedVersion} → v${updateCheck.currentVersion}`,
-				);
-				console.info("\n  Run: harness upgrade --dry-run");
-			} else {
-				console.info(`Up to date (v${updateCheck.currentVersion})`);
-			}
+			printCheckUpdatesOutput(updateCheck);
 			return EXIT_CODES.SUCCESS;
 		}
 
 		// Handle --update output
 		if (options.update) {
-			if (created.length === 0 && skipped.length === 0) {
-				console.info("Already up to date.");
-			} else {
-				console.info(`Refreshing tracked templates (v${getVersion()})\n`);
-				for (const path of created) {
-					console.info(`  updated ${path}`);
-				}
-				for (const path of skipped) {
-					console.info(`  skipped ${path}`);
-				}
-				console.info(`\n✓ Updated ${created.length} file(s)`);
-				console.info(
-					"  Prefer `harness upgrade --dry-run` for routine upgrades in existing installs.",
-				);
-				if (options.explainOwnership && ownershipDecisions?.length) {
-					console.info("\n  Ownership decisions:");
-					for (const decision of ownershipDecisions) {
-						console.info(
-							`    ${decision.action.padEnd(9)} ${decision.owner.padEnd(8)} ${decision.path}`,
-						);
-					}
-				}
-			}
+			printUpdateOutput(created, skipped, ownershipDecisions, options);
 			return EXIT_CODES.SUCCESS;
 		}
 
 		// Handle --migrate output
 		if (options.migrate) {
-			if (created.length === 0) {
-				console.info(
-					`Contract already up to date (v${migrationStartVersion ?? "unknown"})`,
-				);
-			} else {
-				console.info("Migrating contract schema\n");
-				console.info(
-					`  ${CONTRACT_FILE}: v${migrationStartVersion ?? "unknown"} → v${CURRENT_SCHEMA_VERSION}`,
-				);
-				console.info("\n✓ Contract migrated");
-			}
-			console.info("  Note: --migrate only updates harness.contract.json.");
-			console.info("  Use `harness ci-migrate ...` for CI provider cutovers.");
+			printMigrateOutput(created, migrationStartVersion);
 			return EXIT_CODES.SUCCESS;
 		}
 
 		// SA9: warn when detection returned unknown
-		if (projectTypeDetection?.projectType === "unknown") {
-			console.warn(
-				"Warning: Could not detect project type. Using universal defaults.",
-			);
-			console.warn(
-				"  Run `harness init --project-type <cli|desktop|library|web>` to specify it explicitly.",
-			);
-		}
+		warnIfUnknownProjectType(projectTypeDetection);
 
-		console.info(`Installing harness (package manager: ${packageManager})\n`);
-
-		// Show what happened
-		for (const path of skipped) {
-			console.info(`  skip ${path} (exists)`);
-		}
-		for (const path of created) {
-			if (options.dryRun) {
-				console.info(`  would create ${path}`);
-			} else {
-				console.info(`  + ${path}`);
-			}
-		}
-
-		if (options.dryRun) {
-			console.info("\nDry run complete. No files were modified.");
-			console.info("  Run without --dry-run to apply changes.");
-		} else {
-			console.info("\n✓ Harness installed!");
-
-			// Detection context line
-			const detectedType = projectTypeDetection?.projectType ?? "unknown";
-			const typeLabel =
-				detectedType === "unknown"
-					? "unknown (use --project-type to set)"
-					: projectTypeDetection?.confidence === "low"
-						? `${detectedType} (low confidence)`
-						: detectedType;
-			console.info(`  Type: ${typeLabel} • Manager: ${packageManager}`);
-			console.info(
-				`  Created: ${created.length} file${created.length === 1 ? "" : "s"}, Skipped: ${skipped.length}`,
-			);
-
-			// JSC-126: Post-bootstrap summary for immediate value
-			const summary = generateBootstrapSummary(result.output, packageManager);
-			console.info(formatBootstrapSummary(summary));
-
-			// Rollback tip
-			if (options.track) {
-				console.info("\n  Rollback: harness init --rollback");
-			} else if (created.length > 0) {
-				console.info(
-					"\n  Tip: Review changes with 'git diff', undo with 'git checkout .'",
-				);
-			}
-		}
+		printInstallOutput(
+			packageManager,
+			created,
+			skipped,
+			options,
+			projectTypeDetection,
+			result.output,
+		);
 
 		return EXIT_CODES.SUCCESS;
 	}
 
 	// Error output
-	if (options.json) {
-		console.info(JSON.stringify({ error: result.error }, null, 2));
-	} else {
-		console.error(`Error: ${result.error.message}`);
-		if (result.error.path) {
-			console.error(`  Path: ${result.error.path}`);
-		}
-		console.error("\n  Try: harness init --dry-run to preview changes");
-	}
-
-	if (result.error.code === "PATH_TRAVERSAL") {
-		return EXIT_CODES.PATH_TRAVERSAL;
-	}
-	if (
-		result.error.code === "WRITE_ERROR" ||
-		result.error.code === "INCOMPLETE_MANIFEST"
-	) {
-		return EXIT_CODES.WRITE_ERROR;
-	}
-	return EXIT_CODES.INVALID_PATH;
+	printErrorOutput(options, result.error);
+	return getExitCodeFromError(result.error);
 }
 
 // Re-export types for backward compatibility

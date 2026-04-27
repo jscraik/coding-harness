@@ -3151,7 +3151,7 @@ describe("--track flag", () => {
 		if (!result.ok) {
 			// sanitizePath now detects the symlink before any write occurs
 			expect(result.error.code).toBe("PATH_TRAVERSAL");
-			expect(result.error.message).toContain("symbolic link");
+			expect(result.error.message).toMatch(/symlink/i);
 		}
 	});
 
