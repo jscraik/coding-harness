@@ -106,7 +106,7 @@ describe("runDoctor — tool checks", () => {
 		expect(nodeCheck?.status).toBe("ok");
 	});
 
-	it("warns for node <24", () => {
+	it("fails for node <24", () => {
 		mockAllToolsOk();
 		mockSpawnSync.mockImplementation((cmd) => {
 			if (String(cmd) === "node") return makeSpawnResult(0, "v20.0.0");
@@ -115,7 +115,7 @@ describe("runDoctor — tool checks", () => {
 
 		const report = runDoctor({ dir });
 		const nodeCheck = report.checks.find((c) => c.id === "tool:node");
-		expect(nodeCheck?.status).toBe("warn");
+		expect(nodeCheck?.status).toBe("fail");
 		expect(nodeCheck?.fix).toContain("mise");
 	});
 
