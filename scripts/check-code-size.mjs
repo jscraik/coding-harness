@@ -95,7 +95,7 @@ function isFunctionLike(node) {
 function checkFile(path) {
 	if (LEGACY_OVERSIZED_FILES.has(path) || SPLIT_LEGACY_CORE_RE.test(path)) {
 		return {
-			skippedLegacy: true,
+			skippedLegacy: !SPLIT_LEGACY_CORE_RE.test(path),
 			findings: [],
 		};
 	}
