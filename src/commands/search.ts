@@ -21,13 +21,9 @@ import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import type { SearchResult as SemanticSearchResult } from "../lib/context-compound/types.js";
-import {
-	MAX_INPUT_LENGTH,
-	validateLength,
-	validatePathComponent,
-} from "../lib/input/validation.js";
 import { validatePath } from "../lib/input/validator.js";
 import { type CliResult, createError, err, ok } from "../lib/result/types.js";
+import { parseSearchArgs } from "./search-cli-args.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -37,9 +33,18 @@ export const EXIT_CODES = {
 	VALIDATION_ERROR: 4,
 } as const;
 
+/**
+ * Search execution mode.
+ */
 export type SearchMode = "lexical" | "semantic" | "hybrid";
+/**
+ * Source label for a search match.
+ */
 export type SearchSource = "lexical" | "semantic";
 
+/**
+ * Options for `harness search` execution.
+ */
 export interface SearchOptions {
 	query: string;
 	mode?: SearchMode;
@@ -54,6 +59,9 @@ export interface SearchOptions {
 	strictSemantic?: boolean;
 }
 
+/**
+ * Individual search match result.
+ */
 export interface SearchMatch {
 	path: string;
 	line?: number;
@@ -64,6 +72,9 @@ export interface SearchMatch {
 	metadata?: SemanticSearchResult["metadata"];
 }
 
+/**
+ * Structured search command output.
+ */
 export interface SearchOutput {
 	success: boolean;
 	query: string;
@@ -120,108 +131,6 @@ function matchesPathFilters(
 			normalizedPath.startsWith(`${normalizedPrefix}/`)
 		);
 	});
-}
-
-interface PathFilterResult {
-	include: string[];
-	exclude: string[];
-	warnings: string[];
-}
-
-function parsePathFilters(parts: string[]): PathFilterResult {
-	const include: string[] = [];
-	const exclude: string[] = [];
-	const warnings: string[] = [];
-
-	for (const rawPart of parts) {
-		const part = rawPart.trim();
-		if (!part) continue;
-		const [kind, value] = part.split(":");
-		if (!kind || !value) {
-			warnings.push(
-				`Invalid filter format: "${rawPart}" (expected format: include:path or exclude:path)`,
-			);
-			continue;
-		}
-		if (kind !== "include" && kind !== "exclude") {
-			warnings.push(
-				`Unknown filter kind: "${kind}" (expected include or exclude)`,
-			);
-			continue;
-		}
-		const tokens = value
-			.split(",")
-			.map((item) => item.trim())
-			.filter((item) => item.length > 0);
-		if (tokens.length === 0) {
-			warnings.push(`Empty ${kind} filter value: "${rawPart}"`);
-			continue;
-		}
-		if (kind === "include") {
-			include.push(...tokens);
-		} else {
-			exclude.push(...tokens);
-		}
-	}
-	return { include, exclude, warnings };
-}
-
-function validatePathPrefix(value: string, field: string): CliResult<string> {
-	const normalized = normalizeRelativePath(value).replace(/\/+$/, "");
-	if (!normalized) {
-		return err(
-			createError("VALIDATION_ERROR", `${field} cannot be empty`, {
-				field,
-				value,
-			}),
-		);
-	}
-	if (normalized.startsWith("/")) {
-		return err(
-			createError(
-				"VALIDATION_ERROR",
-				`${field} must be a relative path prefix`,
-				{
-					field,
-					value,
-				},
-			),
-		);
-	}
-	if (normalized.includes("\0")) {
-		return err(
-			createError("VALIDATION_ERROR", `${field} cannot contain null bytes`, {
-				field,
-				value,
-			}),
-		);
-	}
-
-	const segments = normalized.split("/");
-	for (const segment of segments) {
-		if (segment === "" || segment === "." || segment === "..") {
-			return err(
-				createError(
-					"VALIDATION_ERROR",
-					`${field} cannot contain relative path segments`,
-					{
-						field,
-						value,
-					},
-				),
-			);
-		}
-		const segmentValidation = validatePathComponent(
-			segment,
-			undefined,
-			`${field} segment`,
-		);
-		if (!segmentValidation.ok) {
-			return err(segmentValidation.error);
-		}
-	}
-
-	return ok(normalized);
 }
 
 /**
@@ -452,7 +361,25 @@ function mergeResults(
 	return merged;
 }
 
-export async function runSearch(options: SearchOptions): Promise<number> {
+interface ResolvedSearchConfig {
+	mode: SearchMode;
+	baseDir: string;
+	outputJson: boolean;
+	limit: number;
+	threshold: number;
+	harnessDir: string;
+	includePaths: string[];
+	excludePaths: string[];
+}
+
+/**
+ * Resolve and validate search configuration from options.
+ */
+function resolveSearchConfig(
+	options: SearchOptions,
+):
+	| { ok: true; config: ResolvedSearchConfig }
+	| { ok: false; exitCode: number } {
 	const mode = options.mode ?? "hybrid";
 	if (!isSearchMode(mode)) {
 		const error = `Invalid mode: ${String(options.mode)}. Use lexical|semantic|hybrid`;
@@ -470,7 +397,7 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 		} else {
 			console.error(`✗ ${error}`);
 		}
-		return EXIT_CODES.ERROR;
+		return { ok: false, exitCode: EXIT_CODES.ERROR };
 	}
 
 	const baseDir = options.baseDir ?? process.cwd();
@@ -504,7 +431,7 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 			} else {
 				console.error(`✗ ${message}`);
 			}
-			return EXIT_CODES.ERROR;
+			return { ok: false, exitCode: EXIT_CODES.ERROR };
 		}
 	}
 	const limit = options.limit ?? compactDefaults?.limit ?? DEFAULT_SEARCH_LIMIT;
@@ -524,7 +451,7 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 		} else {
 			console.error(`✗ ${error}`);
 		}
-		return EXIT_CODES.ERROR;
+		return { ok: false, exitCode: EXIT_CODES.ERROR };
 	}
 
 	const threshold =
@@ -534,11 +461,92 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
 	const includePaths = options.includePaths ?? [];
 	const excludePaths = options.excludePaths ?? [];
-	const warnings: string[] = [];
+
+	return {
+		ok: true,
+		config: {
+			mode,
+			baseDir,
+			outputJson,
+			limit,
+			threshold,
+			harnessDir,
+			includePaths,
+			excludePaths,
+		},
+	};
+}
+
+/**
+ * Print search results to stdout in JSON or human-readable format.
+ */
+function printSearchOutput(
+	options: SearchOptions,
+	mode: SearchMode,
+	results: SearchMatch[],
+	warnings: string[],
+	outputJson: boolean,
+): void {
+	const output: SearchOutput = {
+		success: true,
+		query: options.query,
+		mode,
+		count: results.length,
+		results,
+		...(warnings.length > 0 ? { warnings } : {}),
+	};
+
+	if (outputJson) {
+		console.info(JSON.stringify(output, null, 2));
+	} else if (results.length === 0) {
+		console.info(`No results found for: "${options.query}"`);
+		for (const warning of warnings) {
+			console.info(`Warning: ${warning}`);
+		}
+	} else {
+		console.info(
+			`Found ${results.length} result(s) for "${options.query}" [${mode}]`,
+		);
+		for (const [index, result] of results.entries()) {
+			console.info(`${index + 1}. ${result.path}`);
+			if (result.line !== undefined) {
+				console.info(`   Line: ${result.line}`);
+			}
+			console.info(
+				`   Source: ${result.source} | Score: ${(result.score * 100).toFixed(1)}%`,
+			);
+			if (result.snippet) {
+				console.info(`   ${result.snippet.slice(0, 200)}`);
+			}
+		}
+		for (const warning of warnings) {
+			console.info(`Warning: ${warning}`);
+		}
+	}
+}
+/**
+ * Execute search retrieval and print formatted output.
+ */
+export async function runSearch(options: SearchOptions): Promise<number> {
+	const configResult = resolveSearchConfig(options);
+	if (!configResult.ok) {
+		return configResult.exitCode;
+	}
+	const {
+		mode,
+		baseDir,
+		outputJson,
+		limit,
+		threshold,
+		harnessDir,
+		includePaths,
+		excludePaths,
+	} = configResult.config;
 
 	let lexicalResults: SearchMatch[] = [];
 	let semanticResults: SearchMatch[] = [];
 	let semanticUnavailable = false;
+	const warnings: string[] = [];
 
 	if (mode === "lexical" || mode === "hybrid") {
 		const lexicalResult = runLexicalSearch(
@@ -613,42 +621,7 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 				? semanticResults
 				: mergeResults(lexicalResults, semanticResults, limit);
 
-	const output: SearchOutput = {
-		success: true,
-		query: options.query,
-		mode,
-		count: results.length,
-		results,
-		...(warnings.length > 0 ? { warnings } : {}),
-	};
-
-	if (outputJson) {
-		console.info(JSON.stringify(output, null, 2));
-	} else if (results.length === 0) {
-		console.info(`No results found for: "${options.query}"`);
-		for (const warning of warnings) {
-			console.info(`Warning: ${warning}`);
-		}
-	} else {
-		console.info(
-			`Found ${results.length} result(s) for "${options.query}" [${mode}]`,
-		);
-		for (const [index, result] of results.entries()) {
-			console.info(`${index + 1}. ${result.path}`);
-			if (result.line !== undefined) {
-				console.info(`   Line: ${result.line}`);
-			}
-			console.info(
-				`   Source: ${result.source} | Score: ${(result.score * 100).toFixed(1)}%`,
-			);
-			if (result.snippet) {
-				console.info(`   ${result.snippet.slice(0, 200)}`);
-			}
-		}
-		for (const warning of warnings) {
-			console.info(`Warning: ${warning}`);
-		}
-	}
+	printSearchOutput(options, mode, results, warnings, outputJson);
 
 	if (results.length > 0) return EXIT_CODES.SUCCESS;
 	if (mode === "semantic" && semanticUnavailable) {
@@ -656,170 +629,13 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 	}
 	return EXIT_CODES.NO_RESULTS;
 }
-
+/**
+ * Parse CLI args and execute the search command.
+ */
 export async function runSearchCLI(args: string[]): Promise<number> {
-	let rawQuery = "";
-	let mode: SearchMode = "hybrid";
-	let limit: number | undefined;
-	let threshold: number | undefined;
-	let json: boolean | undefined;
-	let text = false;
-	let rawHarnessDir: string | undefined;
-	const rawIncludePaths: string[] = [];
-	const rawExcludePaths: string[] = [];
-	let strictSemantic = false;
-
-	for (let i = 0; i < args.length; i++) {
-		const arg = args[i];
-
-		if (arg === "--mode" || arg === "-m") {
-			const value = args[i + 1];
-			if (!isSearchMode(value)) {
-				console.error("Error: --mode requires lexical, semantic, or hybrid");
-				return EXIT_CODES.ERROR;
-			}
-			i++;
-			mode = value;
-		} else if (arg === "--limit" || arg === "-l") {
-			const value = args[i + 1];
-			if (!value || value.startsWith("-")) {
-				console.error("Error: --limit requires a numeric value");
-				return EXIT_CODES.ERROR;
-			}
-			i++;
-			limit = Number.parseInt(value, 10);
-		} else if (arg === "--threshold" || arg === "-t") {
-			const value = args[i + 1];
-			if (!value || value.startsWith("-")) {
-				console.error("Error: --threshold requires a numeric value");
-				return EXIT_CODES.ERROR;
-			}
-			i++;
-			threshold = Number.parseFloat(value);
-		} else if (arg === "--json" || arg === "-j") {
-			json = true;
-		} else if (arg === "--text") {
-			text = true;
-			if (json === undefined) {
-				json = false;
-			}
-		} else if (arg === "--harness-dir") {
-			const value = args[i + 1];
-			if (!value || value.startsWith("-")) {
-				console.error("Error: --harness-dir requires a value");
-				return EXIT_CODES.ERROR;
-			}
-			// Validate harness-dir as a path component (no path traversal)
-			const dirValidation = validatePathComponent(
-				value,
-				undefined,
-				"harness-dir",
-			);
-			if (!dirValidation.ok) {
-				console.error(`Error: ${dirValidation.error.message}`);
-				return EXIT_CODES.VALIDATION_ERROR;
-			}
-			i++;
-			rawHarnessDir = dirValidation.value;
-		} else if (arg === "--paths") {
-			const value = args[i + 1];
-			if (!value || value.startsWith("-")) {
-				console.error(
-					"Error: --paths requires a value like include:src,docs;exclude:dist,node_modules",
-				);
-				return EXIT_CODES.ERROR;
-			}
-			i++;
-			const parsed = parsePathFilters(value.split(";"));
-			// Report warnings for malformed filters
-			for (const warning of parsed.warnings) {
-				console.warn(`Warning: ${warning}`);
-			}
-			// Validate each path component
-			for (const p of parsed.include) {
-				const v = validatePathPrefix(p, "include path");
-				if (!v.ok) {
-					console.error(`Error: ${v.error.message}`);
-					return EXIT_CODES.VALIDATION_ERROR;
-				}
-				rawIncludePaths.push(v.value);
-			}
-			for (const p of parsed.exclude) {
-				const v = validatePathPrefix(p, "exclude path");
-				if (!v.ok) {
-					console.error(`Error: ${v.error.message}`);
-					return EXIT_CODES.VALIDATION_ERROR;
-				}
-				rawExcludePaths.push(v.value);
-			}
-		} else if (arg === "--strict-semantic") {
-			strictSemantic = true;
-		} else if (arg === "--help" || arg === "-h") {
-			console.info("Usage: harness search <query> [options]");
-			console.info("");
-			console.info("Options:");
-			console.info("  --mode, -m        Search mode: lexical|semantic|hybrid");
-			console.info(
-				"  --limit, -l       Maximum results (if omitted: contextCompact policy, then DEFAULT_SEARCH_LIMIT)",
-			);
-			console.info(
-				"  --threshold, -t   Semantic similarity threshold 0-1 (if omitted: contextCompact policy, then DEFAULT_SIMILARITY_THRESHOLD)",
-			);
-			console.info(
-				"  --harness-dir     Directory for semantic index (default: .harness)",
-			);
-			console.info(
-				"  --paths           Path filters: include:src,docs;exclude:dist,node_modules",
-			);
-			console.info(
-				"  --strict-semantic Fail if semantic retrieval is unavailable",
-			);
-			console.info("  --json, -j        Output as JSON (default)");
-			console.info("  --text            Output human-readable text");
-			console.info("  --help, -h        Show this help");
-			console.info("");
-			console.info("Examples:");
-			console.info('  harness search "policy gate"');
-			console.info('  harness search "risk tier" --mode lexical --text');
-			console.info('  harness search "oauth" --mode semantic --threshold 0.8');
-			console.info(
-				'  harness search "gate" --paths "include:src;exclude:src/generated"',
-			);
-			console.info('  harness search "authz" --mode hybrid --strict-semantic');
-			return EXIT_CODES.SUCCESS;
-		} else if (arg && !arg.startsWith("-") && !rawQuery) {
-			rawQuery = arg;
-		} else if (arg && !arg.startsWith("-")) {
-			rawQuery += ` ${arg}`;
-		}
+	const parseResult = parseSearchArgs(args);
+	if (!parseResult.ok) {
+		return parseResult.exitCode;
 	}
-
-	if (!rawQuery) {
-		console.error("Usage: harness search <query> [options]");
-		console.error("Try: harness search --help");
-		return EXIT_CODES.ERROR;
-	}
-
-	// Validate query length (prevent DoS with extremely long queries)
-	const queryValidation = validateLength(rawQuery, MAX_INPUT_LENGTH, "query");
-	if (!queryValidation.ok) {
-		console.error(`Error: ${queryValidation.error.message}`);
-		return EXIT_CODES.VALIDATION_ERROR;
-	}
-	const query = queryValidation.value;
-
-	const options: SearchOptions = {
-		query,
-		mode,
-		text,
-		strictSemantic,
-		...(rawIncludePaths.length > 0 ? { includePaths: rawIncludePaths } : {}),
-		...(rawExcludePaths.length > 0 ? { excludePaths: rawExcludePaths } : {}),
-		...(limit !== undefined ? { limit } : {}),
-		...(threshold !== undefined ? { threshold } : {}),
-		...(json !== undefined ? { json } : {}),
-		...(rawHarnessDir !== undefined ? { harnessDir: rawHarnessDir } : {}),
-	};
-
-	return runSearch(options);
+	return runSearch(parseResult.options);
 }
