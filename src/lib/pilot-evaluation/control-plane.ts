@@ -200,7 +200,13 @@ function writeJsonFile(path: string, value: unknown): void {
 	writeFileSync(path, JSON.stringify(value, null, 2), "utf-8");
 }
 
-/** Build File Ref. */
+/**
+ * Build a file reference for a given path, checking existence and computing metadata.
+ *
+ * `@param` path - Filesystem path to inspect (resolved against cwd)
+ * `@param` options - Optional settings; `required` marks the file as mandatory for validation
+ * `@returns` An ArtifactFileRef with existence status, sha256 hash (if file exists), and size
+ */
 export function buildFileRef(
 	path: string,
 	options?: { required?: boolean },
