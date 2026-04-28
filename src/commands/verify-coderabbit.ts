@@ -309,6 +309,15 @@ async function verifyCodeRabbitRuleset(
 					'No "protect" ruleset found. Run `harness branch-protect` to create one.',
 			};
 		}
+		if (protectRuleset.enforcement === "disabled") {
+			return {
+				name: "Ruleset Configuration",
+				status: "fail",
+				message:
+					'Ruleset "protect" is disabled. Enable enforcement to require "CodeRabbit".',
+				details: { rulesetId: protectRuleset.id, enforcement: "disabled" },
+			};
+		}
 		const fullRuleset = await client.getRuleset(protectRuleset.id);
 		const statusChecksRule = fullRuleset.rules.find(
 			(r) => r.type === "required_status_checks",
@@ -373,8 +382,11 @@ async function verifyRemoteCodeRabbitSetup(
 	}
 
 	const client = new GitHubClient({ token, owner, repo });
-	checks.push(await verifyCodeRabbitCheckRuns(client));
-	checks.push(await verifyCodeRabbitRuleset(client));
+	const [checkRunCheck, rulesetCheck] = await Promise.all([
+		verifyCodeRabbitCheckRuns(client),
+		verifyCodeRabbitRuleset(client),
+	]);
+	checks.push(checkRunCheck, rulesetCheck);
 
 	return checks;
 }

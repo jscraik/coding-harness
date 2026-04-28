@@ -474,13 +474,13 @@ function evaluateNorthStarDecisionQuestions(params: {
 	if (missingQuestionIds.length > 0) {
 		const findingId = `missing-${[...missingQuestionIds].sort().join(",")}`;
 		blockers.push(
-			`review_evidence_contradiction:${findingId}: North-star decision questions missing from PR context: ${missingQuestionIds.join(", ")}`,
+			`review_evidence_incomplete:${findingId}: North-star decision questions missing from PR context: ${missingQuestionIds.join(", ")}`,
 		);
 	}
 	if (questionIdsMissingEvidence.length > 0) {
 		const findingId = `evidence-${[...questionIdsMissingEvidence].sort().join(",")}`;
 		blockers.push(
-			`review_evidence_contradiction:${findingId}: North-star decision responses must include evidence references for each question (URL, artifact path, or file:line link); missing evidence for: ${questionIdsMissingEvidence.join(", ")}`,
+			`review_evidence_incomplete:${findingId}: North-star decision responses must include evidence references for each question (URL, artifact path, or file:line link); missing evidence for: ${questionIdsMissingEvidence.join(", ")}`,
 		);
 	}
 	if (questionIdsWithNegativeAnswer.length > 0) {
@@ -500,7 +500,7 @@ function evaluateNorthStarDecisionQuestions(params: {
  */
 function extractFindingIdFromBlocker(blocker: string): string | undefined {
 	const match = blocker.match(
-		/^\b(?:contract_invalid|review_evidence_contradiction|safety_floor_violation):([^:]+):/u,
+		/^\b(?:contract_invalid|review_evidence_contradiction|review_evidence_incomplete|safety_floor_violation):([^:]+):/u,
 	);
 	return match?.[1];
 }

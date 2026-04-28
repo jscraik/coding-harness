@@ -609,6 +609,9 @@ describe("runInit", () => {
 			expect(content.branchProtection.requiredChecks).toContain(
 				"semgrep-cloud-platform/scan",
 			);
+			expect(content.branchProtection.requiredChecks).not.toContain(
+				"linear-gate",
+			);
 			expect(content.branchProtection.requiredApprovingReviewCount).toBe(1);
 			expect(content.branchProtection.requireCodeOwnerReview).toBe(false);
 			expect(content.branchProtection.requireLastPushApproval).toBe(false);

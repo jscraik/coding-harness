@@ -39,67 +39,13 @@ function isLegacyGreptilePath(path: string): boolean {
 	);
 }
 
-/**
- * Ejects coding-harness integration artifacts from the repository at the given path.
- *
- * Detects a harness integration (contract file or manifest), optionally prompts for confirmation, and removes known harness files and any manifest-recorded files created by the integration. Workflow files under `.github/workflows` are left for manual review (except recognized legacy Greptile workflow paths) and reported in `warnings`.
- *
- * @param targetDir - Path to the repository or directory containing the harness integration; resolved to an absolute repository root.
- * @param options - Optional controls:
- *   - `force` — skip interactive confirmation when deletion would occur;
- *   - `dryRun` — do not delete files, only report what would be deleted;
- *   - `json` — suppress console logging while still collecting `warnings`/`deleted`;
- *   - `confirmPrompt` — optional async custom confirmation provider;
- *   - `rmSyncImpl` — optional override for the filesystem deletion implementation.
- * @returns An object containing `deleted` (relative paths deleted or listed in a dry run), `warnings` (messages about left-behind or failed items), and `dryRun` indicating whether the operation was a dry run.
- *
- * @throws Error If no harness integration is detected in the resolved repository root.
- * @throws EjectCancelledError If interactive confirmation is required and not granted.
- * @throws Error If manifest loading or path sanitization fails.
- * @throws Error If one or more deletions failed during a non-dry run (the thrown message lists the failed relative paths).
- */
-export async function ejectHarness(
-	targetDir: string,
-	options: EjectOptions = {},
-): Promise<EjectResult> {
-	const repoRoot = resolve(targetDir);
-	const deleted: string[] = [];
-	const warnings: string[] = [];
-	const removePath = options.rmSyncImpl ?? fs.rmSync;
-	const info = (message: string): void => {
-		if (!options.json) {
-			console.info(message);
-		}
-	};
-	const warn = (message: string): void => {
-		warnings.push(message);
-		if (!options.json) {
-			console.warn(message);
-		}
-	};
-
-	// Execution Context Check: prevent deleting things in ~ or places where it wasn't initialized
-	const hasContract = fs.existsSync(join(repoRoot, "harness.contract.json"));
-	const manifestPath = join(repoRoot, HARNESS_DIR, MANIFEST_FILE);
-	const hasManifest = fs.existsSync(manifestPath);
-
-	// Ensure we only eject if we actually detect our footprint.
-	if (!hasContract && !hasManifest) {
-		throw new Error(`No harness integration found in ${repoRoot}.`);
-	}
-
-	if (!options.force && !options.dryRun && !options.json) {
-		const answer = options.confirmPrompt
-			? await options.confirmPrompt(
-					"Are you sure you want to remove the coding-harness integration? [y/N] ",
-				)
-			: await promptForConfirmation();
-		const normalizedAnswer = (answer ?? "").trim().toLowerCase();
-		if (normalizedAnswer !== "y") {
-			throw new EjectCancelledError();
-		}
-	}
-
+function collectEjectPaths(
+	repoRoot: string,
+	hasManifest: boolean,
+): {
+	pathsToRemove: Map<string, string>;
+	workflowPaths: Map<string, string>;
+} {
 	const workflowPaths = new Map<string, string>();
 	const pathsToRemove = new Map<string, string>();
 	for (const relativePath of [
@@ -144,6 +90,18 @@ export async function ejectHarness(
 			pathsToRemove.set(entry.path, pathResult.value);
 		}
 	}
+	return { pathsToRemove, workflowPaths };
+}
+
+function executeEjectDeletions(
+	workflowPaths: Map<string, string>,
+	pathsToRemove: Map<string, string>,
+	options: EjectOptions,
+	info: (message: string) => void,
+	warn: (message: string) => void,
+	deleted: string[],
+): string[] {
+	const removePath = options.rmSyncImpl ?? fs.rmSync;
 	const deletionFailedPaths: string[] = [];
 
 	for (const [workflowPath, validatedPath] of workflowPaths) {
@@ -173,6 +131,79 @@ export async function ejectHarness(
 			}
 		}
 	}
+
+	return deletionFailedPaths;
+}
+
+/**
+ * Ejects coding-harness integration artifacts from the repository at the given path.
+ *
+ * Detects a harness integration (contract file or manifest), optionally prompts for confirmation, and removes known harness files and any manifest-recorded files created by the integration. Workflow files under `.github/workflows` are left for manual review (except recognized legacy Greptile workflow paths) and reported in `warnings`.
+ *
+ * @param targetDir - Path to the repository or directory containing the harness integration; resolved to an absolute repository root.
+ * @param options - Optional controls:
+ *   - `force` — skip interactive confirmation when deletion would occur;
+ *   - `dryRun` — do not delete files, only report what would be deleted;
+ *   - `json` — suppress console logging while still collecting `warnings`/`deleted`;
+ *   - `confirmPrompt` — optional async custom confirmation provider;
+ *   - `rmSyncImpl` — optional override for the filesystem deletion implementation.
+ * @returns An object containing `deleted` (relative paths deleted or listed in a dry run), `warnings` (messages about left-behind or failed items), and `dryRun` indicating whether the operation was a dry run.
+ *
+ * @throws Error If no harness integration is detected in the resolved repository root.
+ * @throws EjectCancelledError If interactive confirmation is required and not granted.
+ * @throws Error If manifest loading or path sanitization fails.
+ * @throws Error If one or more deletions failed during a non-dry run (the thrown message lists the failed relative paths).
+ */
+export async function ejectHarness(
+	targetDir: string,
+	options: EjectOptions = {},
+): Promise<EjectResult> {
+	const repoRoot = resolve(targetDir);
+	const deleted: string[] = [];
+	const warnings: string[] = [];
+	const info = (message: string): void => {
+		if (!options.json) {
+			console.info(message);
+		}
+	};
+	const warn = (message: string): void => {
+		warnings.push(message);
+		if (!options.json) {
+			console.warn(message);
+		}
+	};
+
+	// Execution Context Check: prevent deleting things in ~ or places where it wasn't initialized
+	const hasContract = fs.existsSync(join(repoRoot, "harness.contract.json"));
+	const manifestPath = join(repoRoot, HARNESS_DIR, MANIFEST_FILE);
+	const hasManifest = fs.existsSync(manifestPath);
+
+	// Ensure we only eject if we actually detect our footprint.
+	if (!hasContract && !hasManifest) {
+		throw new Error(`No harness integration found in ${repoRoot}.`);
+	}
+
+	if (!options.force && !options.dryRun && !options.json) {
+		const answer = options.confirmPrompt
+			? await options.confirmPrompt(
+					"Are you sure you want to remove the coding-harness integration? [y/N] ",
+				)
+			: await promptForConfirmation();
+		const normalizedAnswer = (answer ?? "").trim().toLowerCase();
+		if (normalizedAnswer !== "y") {
+			throw new EjectCancelledError();
+		}
+	}
+
+	const { pathsToRemove, workflowPaths } = collectEjectPaths(repoRoot, hasManifest);
+	const deletionFailedPaths = executeEjectDeletions(
+		workflowPaths,
+		pathsToRemove,
+		options,
+		info,
+		warn,
+		deleted,
+	);
 
 	if (options.dryRun) {
 		info(
