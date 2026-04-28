@@ -225,7 +225,12 @@ function resolveContractBranchProtectionPolicy(
 			...(activeProvider ? { activeProvider } : {}),
 			...(requiredCheckManifestPath ? { requiredCheckManifestPath } : {}),
 		};
-	} catch {
+	} catch (error) {
+		// Contract not found or invalid - fall back to defaults.
+		// This is intentional to allow running without a contract file.
+		if (process.env.DEBUG) {
+			console.warn(`[branch-protect] Contract loading failed, using defaults: ${error}`);
+		}
 		return {
 			branchProtectionPolicy: { ...DEFAULT_BRANCH_PROTECTION_POLICY },
 		};
