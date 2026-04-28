@@ -240,13 +240,14 @@ function buildContextHealthReport(
 	triggerType: ContextHealthTriggerType,
 	policy: ContextIntegrityPolicy,
 	warnings: string[],
-	artifactRefs: ArtifactRef[],
+	artifactRefs: readonly ArtifactRef[],
 	inventory: ReturnType<typeof readContextSourceInventory>,
 	memorySnapshot: ReturnType<typeof writeMemoryMetricsSnapshot> | null,
 ): ContextHealthReport {
+	const reportArtifactRefs = [...artifactRefs];
 	const contradictionEntries = latestContradictions(repoRoot);
 	maybeAddArtifactRef(
-		artifactRefs,
+		reportArtifactRefs,
 		repoRoot,
 		"contradiction_history",
 		CONTRADICTION_HISTORY_PATH,
@@ -293,7 +294,7 @@ function buildContextHealthReport(
 		mode: policy.mode,
 		status: warnings.length > 0 ? "partial" : "ok",
 		warnings,
-		artifactRefs,
+		artifactRefs: reportArtifactRefs,
 		metrics: {
 			authoritative_coverage_rate: authoritativeCoverageRate,
 			contradiction_open_count: openContradictions.length,
