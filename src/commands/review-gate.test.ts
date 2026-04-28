@@ -923,21 +923,23 @@ describe("runReviewGate", () => {
 			ack,
 		);
 
-		const resultWithOverride = await runReviewGate({
-			...defaultOptions,
-			contractPath,
+			try {
+				const resultWithOverride = await runReviewGate({
+					...defaultOptions,
+					contractPath,
+				});
+				expect(resultWithOverride.ok).toBe(true);
+				if (resultWithOverride.ok) {
+					expect(
+						resultWithOverride.output.blockers.some((b) =>
+							b.includes("lead_time_path"),
+						),
+					).toBe(false);
+				}
+			} finally {
+				rmSync(repoRoot, { recursive: true, force: true });
+			}
 		});
-		expect(resultWithOverride.ok).toBe(true);
-		if (resultWithOverride.ok) {
-			expect(
-				resultWithOverride.output.blockers.some((b) =>
-					b.includes("lead_time_path"),
-				),
-			).toBe(false);
-		}
-
-		rmSync(repoRoot, { recursive: true, force: true });
-	});
 
 	it("passes north-star decision checks when PR context includes canonical answers with evidence", async () => {
 		mockLoadContract.mockReturnValue({

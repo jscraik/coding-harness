@@ -1,15 +1,14 @@
 ---
 title: "feat: North-Star Contract Product-Surface Realignment"
 type: feat
-status: completed
+status: in_progress
 date: 2026-04-21
 plan_id: feat-north-star-contract-product-surface-realignment
 origin: docs/roadmap/north-star.md
 spec: docs/specs/2026-04-20-feat-north-star-contract-product-surface-realignment-spec.md
 linear_issue: JSC-237
 deepened: 2026-04-21
-last_validated: 2026-04-27
-completed: 2026-04-27
+last_validated: 2026-04-28
 ---
 
 # feat: North-Star Contract Product-Surface Realignment
@@ -601,9 +600,9 @@ Completion rubric:
 
 - [x] `AC1` Contract layer ships with canonical north-star, product-surface, and reviewer-registry support. Verified: `src/lib/contract/validator.test.ts` (112 tests), `src/lib/contract/loader.test.ts` (17 tests), `src/commands/contract.test.ts` (85 tests) pass; `harness.contract.json` contains canonical north-star block and product-surface inventory.
 - [x] `AC2` Shared north-star helper layer exists and is reused by runtime gates. Verified: `src/lib/contract/north-star-validators.test.ts` (12 tests), `src/lib/contract/north-star-alignment.test.ts` (13 tests), `src/lib/contract/north-star-artifact-io.test.ts` (19 tests), `src/lib/contract/north-star-artifacts.test.ts` (4 tests) pass.
-- [ ] `AC3` Preflight/review/drift/doctor behavior matches the spec’s admission and gate blocker classes, question contract, artifact model, and Project Brain preflight/closeout memory loop. Current state: functional slice tests pass, but `pnpm check` is blocked by `scripts/check-code-size.mjs` regressions in `src/commands/drift-gate-core.ts` and existing oversized legacy files.
+- [ ] `AC3` Preflight/review/drift/doctor behavior matches the spec’s admission and gate blocker classes, question contract, artifact model, and Project Brain preflight/closeout memory loop. Current state: functional slice tests pass, but full merge-gate validation remains blocked pending current CI outcomes (`ci/circleci: docs-gate` and `ci/circleci: test`) and unresolved review threads on `drift-gate`/artifact admission behavior.
 - [x] `AC4` Preflight and scaffolded output are contract-sourced and remain in parity. Verified: `src/lib/init/scaffold.test.ts` (15 tests), `src/commands/init.test.ts` (124 tests) pass; `scripts/codex-preflight.sh` and `src/templates/codex-preflight.sh` both derive north-star summary from runtime contract.
-- [x] `AC5` README and status reporting align to runtime truth and are covered by drift-oriented tests or fixtures. Verified: drift-gate fixtures verify `README.md`, `docs/roadmap/north-star.md`, and `docs/roadmap/agent-first-status.md` parity against runtime contract; `pnpm docs:lint` (0 errors); `pnpm check` green.
+- [x] `AC5` README and status reporting align to runtime truth and are covered by drift-oriented tests or fixtures. Verified: drift-gate fixtures verify `README.md`, `docs/roadmap/north-star.md`, and `docs/roadmap/agent-first-status.md` parity against runtime contract; `pnpm docs:lint` (0 errors).
 
 ## Execution Ledger (Planning Mode)
 
@@ -611,10 +610,10 @@ Completion rubric:
 | ------- | ------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P0      | `completed`   | implementation | `pnpm exec vitest run src/lib/contract/validator.test.ts src/lib/contract/loader.test.ts src/commands/contract.test.ts` (214 tests pass); `pnpm check` green.                                                                                                                                                                    |
 | P1      | `completed`   | implementation | `pnpm exec vitest run src/lib/contract/north-star-validators.test.ts` (12 tests pass); `pnpm check` green.                                                                                                                                                                                                                                                                  |
-| P2      | `completed`   | implementation | `pnpm exec vitest run src/commands/preflight-gate.test.ts src/commands/drift-gate.test.ts src/commands/review-gate.test.ts src/commands/doctor.test.ts src/lib/contract/north-star-validators.test.ts src/lib/contract/north-star-alignment.test.ts src/lib/contract/north-star-artifact-io.test.ts src/lib/output/normalise.test.ts` (233 tests pass); `pnpm check` green. |
-| P2a     | `completed`   | implementation | `src/commands/drift-gate-core.ts` extracted into `drift-gate-types.ts` (189 lines), `drift-gate-rules.ts` (715 lines), and `drift-gate-core.ts` (452 lines). Removed from `LEGACY_OVERSIZED_FILES`; `scripts/check-code-size.mjs` passes for the slice. All drift-gate tests pass.                                                                                                                                                                                                                                                                                |
-| P3      | `completed`   | implementation | `pnpm exec vitest run src/lib/init/scaffold.test.ts src/commands/init.test.ts` (139 tests pass); `scripts/codex-preflight.sh` and `src/templates/codex-preflight.sh` in parity; `pnpm check` green.                                                                                                                                                                                                                                                                         |
-| P4      | `completed`   | implementation | Drift-gate fixtures verify `README.md`, `docs/roadmap/north-star.md`, and `docs/roadmap/agent-first-status.md` parity against runtime contract; `pnpm docs:lint` (0 errors); `pnpm check` green.                                                                                                                                                                                                                                                                         |
+| P2      | `in_progress` | implementation | `pnpm exec vitest run src/commands/preflight-gate.test.ts src/commands/drift-gate.test.ts src/commands/review-gate.test.ts src/commands/doctor.test.ts src/lib/contract/north-star-validators.test.ts src/lib/contract/north-star-alignment.test.ts src/lib/contract/north-star-artifact-io.test.ts src/lib/output/normalise.test.ts` (targeted slice pass previously captured); merge-gate validation currently pending active CI reruns. |
+| P2a     | `in_progress` | implementation | `src/commands/drift-gate-core.ts` extraction landed (`drift-gate-types.ts`, `drift-gate-rules.ts`, `drift-gate-core.ts`) and follow-up hardening is in progress while unresolved drift-gate review findings are being closed. |
+| P3      | `completed`   | implementation | `pnpm exec vitest run src/lib/init/scaffold.test.ts src/commands/init.test.ts` (139 tests pass); `scripts/codex-preflight.sh` and `src/templates/codex-preflight.sh` in parity. |
+| P4      | `in_progress` | implementation | Drift-gate fixtures verify `README.md`, `docs/roadmap/north-star.md`, and `docs/roadmap/agent-first-status.md` parity against runtime contract; `pnpm docs:lint` (0 errors); `bash scripts/run-harness-gate.sh docs-gate --mode required --json` is the required gate evidence and is currently being re-run via CI (`ci/circleci: docs-gate`). |
 
 ## Sources & References
 
