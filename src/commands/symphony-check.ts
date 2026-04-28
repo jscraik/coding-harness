@@ -12,6 +12,9 @@ export const EXIT_CODES = {
 // 1. Types
 // ---------------------------------------------------------------------------
 
+/**
+ * CLI options for `harness symphony-check`.
+ */
 export interface SymphonyCheckOptions {
 	/** Path to the project root (defaults to cwd) */
 	repoRoot?: string;
@@ -29,6 +32,9 @@ interface Finding {
 	message: string;
 }
 
+/**
+ * Structured result for Symphony readiness checks.
+ */
 export interface SymphonyCheckResult {
 	pass: boolean;
 	findings: Finding[];
@@ -166,20 +172,19 @@ function extractNestedYamlValue(
 // 3. Core check logic
 // ---------------------------------------------------------------------------
 
-export function runSymphonyCheck(
-	options: SymphonyCheckOptions,
-): SymphonyCheckResult {
-	const findings: Finding[] = [];
-	const repoRoot = resolve(options.repoRoot ?? process.cwd());
-	const workflowPath = options.workflowPath
-		? isAbsolute(options.workflowPath)
-			? options.workflowPath
-			: resolve(repoRoot, options.workflowPath)
-		: resolve(repoRoot, "WORKFLOW.md");
-
+/**
+ * Audit WORKFLOW.md existence and YAML front-matter content.
+ *
+ * @param findings - Mutable array of findings to append to.
+ * @param workflowPath - Resolved absolute path to WORKFLOW.md.
+ * @returns The extracted project slug and body text.
+ */
+function auditWorkflowFrontMatter(
+	findings: Finding[],
+	workflowPath: string,
+): { projectSlug: string | null; body: string } {
 	let projectSlug: string | null = null;
 	let body = "";
-	let yaml = "";
 
 	// ── Check 1: WORKFLOW.md exists ──────────────────────────────────
 	if (!existsSync(workflowPath)) {
@@ -201,7 +206,7 @@ export function runSymphonyCheck(
 					"WORKFLOW.md has no YAML front matter. Add a `---` delimited YAML block at the top.",
 			});
 		} else {
-			yaml = parsed.yaml;
+			const yaml = parsed.yaml;
 			body = parsed.body;
 
 			// ── Check 3: tracker.kind is linear ────────────────────────
@@ -266,6 +271,86 @@ export function runSymphonyCheck(
 		}
 	}
 
+	return { projectSlug, body };
+}
+
+/**
+ * Audit harness.contract.json and Codex environment template presence.
+ *
+ * @param findings - Mutable array of findings to append to.
+ * @param repoPath - Resolved absolute path to the repository root.
+ */
+function auditContractAndEnvironment(
+	findings: Finding[],
+	repoPath: string,
+): void {
+	// ── Check 11: harness.contract.json exists ───────────────────────
+	const contractPath = resolve(repoPath, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		findings.push({
+			severity: "warning",
+			code: "MISSING_CONTRACT",
+			message:
+				"harness.contract.json not found. Run `harness init` to scaffold the full harness.",
+		});
+	} else {
+		try {
+			const contract = JSON.parse(readFileSync(contractPath, "utf-8"));
+			const policy = contract?.issueTrackingPolicy;
+			if (!policy || policy.provider !== "linear") {
+				findings.push({
+					severity: "warning",
+					code: "CONTRACT_NOT_LINEAR",
+					message:
+						"harness.contract.json issueTrackingPolicy.provider is not set to 'linear'.",
+				});
+			}
+		} catch {
+			findings.push({
+				severity: "warning",
+				code: "CONTRACT_PARSE_ERROR",
+				message: "Could not parse harness.contract.json.",
+			});
+		}
+	}
+
+	// ── Check 12: Codex environment template exists ──────────────────
+	const codexEnvPath = resolve(
+		repoPath,
+		".codex/environments/environment.toml",
+	);
+	if (!existsSync(codexEnvPath)) {
+		findings.push({
+			severity: "warning",
+			code: "MISSING_CODEX_ENVIRONMENT",
+			message:
+				".codex/environments/environment.toml not found. Codex agents need this for runtime actions.",
+		});
+	}
+}
+
+/**
+ * Execute Symphony readiness validation for a repository.
+ *
+ * @param options - Parsed symphony-check options
+ * @returns Structured readiness findings
+ */
+export function runSymphonyCheck(
+	options: SymphonyCheckOptions,
+): SymphonyCheckResult {
+	const findings: Finding[] = [];
+	const repoRoot = resolve(options.repoRoot ?? process.cwd());
+	const workflowPath = options.workflowPath
+		? isAbsolute(options.workflowPath)
+			? options.workflowPath
+			: resolve(repoRoot, options.workflowPath)
+		: resolve(repoRoot, "WORKFLOW.md");
+
+	const { projectSlug, body } = auditWorkflowFrontMatter(
+		findings,
+		workflowPath,
+	);
+
 	// ── Check 8: Transition table references harness linear commands ──
 	const requiredCommands = [
 		{ cmd: "harness linear claim", code: "MISSING_CLAIM_CMD" },
@@ -305,49 +390,7 @@ export function runSymphonyCheck(
 		});
 	}
 
-	// ── Check 11: harness.contract.json exists ───────────────────────
-	const contractPath = resolve(repoRoot, "harness.contract.json");
-	if (!existsSync(contractPath)) {
-		findings.push({
-			severity: "warning",
-			code: "MISSING_CONTRACT",
-			message:
-				"harness.contract.json not found. Run `harness init` to scaffold the full harness.",
-		});
-	} else {
-		try {
-			const contract = JSON.parse(readFileSync(contractPath, "utf-8"));
-			const policy = contract?.issueTrackingPolicy;
-			if (!policy || policy.provider !== "linear") {
-				findings.push({
-					severity: "warning",
-					code: "CONTRACT_NOT_LINEAR",
-					message:
-						"harness.contract.json issueTrackingPolicy.provider is not set to 'linear'.",
-				});
-			}
-		} catch {
-			findings.push({
-				severity: "warning",
-				code: "CONTRACT_PARSE_ERROR",
-				message: "Could not parse harness.contract.json.",
-			});
-		}
-	}
-
-	// ── Check 12: Codex environment template exists ──────────────────
-	const codexEnvPath = resolve(
-		repoRoot,
-		".codex/environments/environment.toml",
-	);
-	if (!existsSync(codexEnvPath)) {
-		findings.push({
-			severity: "warning",
-			code: "MISSING_CODEX_ENVIRONMENT",
-			message:
-				".codex/environments/environment.toml not found. Codex agents need this for runtime actions.",
-		});
-	}
+	auditContractAndEnvironment(findings, repoRoot);
 
 	const errors = findings.filter((f) => f.severity === "error").length;
 	const warnings = findings.filter((f) => f.severity === "warning").length;
@@ -369,6 +412,12 @@ export function runSymphonyCheck(
 // 4. CLI runner
 // ---------------------------------------------------------------------------
 
+/**
+ * Execute Symphony check in CLI mode and return process exit code.
+ *
+ * @param options - Parsed symphony-check options
+ * @returns Exit code for shell usage
+ */
 export function runSymphonyCheckCLI(options: SymphonyCheckOptions): number {
 	try {
 		const result = runSymphonyCheck(options);

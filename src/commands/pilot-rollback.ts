@@ -32,8 +32,14 @@ export const EXIT_CODES = {
 	INTERNAL: 10,
 } as const;
 
+/**
+ * Rollback operating mode values.
+ */
 export type PilotMode = "autonomous" | "manual";
 
+/**
+ * Canonical rollback completion marker payload.
+ */
 export interface RollbackMarker {
 	schemaVersion: "pilot-rollback-marker/v1";
 	incidentId: string;
@@ -46,6 +52,9 @@ export interface RollbackMarker {
 	reason: string;
 }
 
+/**
+ * One rollback event entry persisted to the events store.
+ */
 export interface RollbackEventsRecord {
 	id: string;
 	incidentId: string;
@@ -55,11 +64,17 @@ export interface RollbackEventsRecord {
 	triggerReason: string;
 }
 
+/**
+ * Rollback event log container persisted as JSON.
+ */
 export interface RollbackEventsStore {
 	schemaVersion: "pilot-rollback-events/v1";
 	events: RollbackEventsRecord[];
 }
 
+/**
+ * CLI options accepted by `harness pilot-rollback`.
+ */
 export interface PilotRollbackOptions {
 	/** Incident ID that triggered the rollback */
 	incidentId: string;
@@ -81,6 +96,9 @@ export interface PilotRollbackOptions {
 	runRecordsDir?: string;
 }
 
+/**
+ * Success result envelope for pilot rollback execution.
+ */
 export interface PilotRollbackResult {
 	ok: true;
 	output: {
@@ -95,6 +113,9 @@ export interface PilotRollbackResult {
 	};
 }
 
+/**
+ * Error result envelope for pilot rollback execution.
+ */
 export interface PilotRollbackError {
 	ok: false;
 	error: {
@@ -204,24 +225,29 @@ function writeRollbackMarker(markerPath: string, marker: RollbackMarker): void {
 	writeFileSync(markerPath, JSON.stringify(marker, null, 2), "utf-8");
 }
 
-export async function runPilotRollback(
+type WriteRunRecord = (params: {
+	outcome: "success" | "failed" | "blocked";
+	classification:
+		| "ok"
+		| "validation_failed"
+		| "precondition_failed"
+		| "runtime_failed";
+	exitCode: number;
+	payload: Record<string, unknown>;
+	artifacts?: Array<{ type: string; path: string; checksum?: string }>;
+	contractPath?: string;
+	headSha?: string;
+	strict?: boolean;
+}) => string | null;
+
+/**
+ * Build a run-record writer for pilot-rollback.
+ */
+function buildRunRecordWriter(
 	options: PilotRollbackOptions,
-): Promise<PilotRollbackResult | PilotRollbackError> {
-	const startedAt = new Date().toISOString();
-	const writeRunRecord = (params: {
-		outcome: "success" | "failed" | "blocked";
-		classification:
-			| "ok"
-			| "validation_failed"
-			| "precondition_failed"
-			| "runtime_failed";
-		exitCode: number;
-		payload: Record<string, unknown>;
-		artifacts?: Array<{ type: string; path: string; checksum?: string }>;
-		contractPath?: string;
-		headSha?: string;
-		strict?: boolean;
-	}): string | null => {
+	startedAt: string,
+): WriteRunRecord {
+	return (params): string | null => {
 		try {
 			const record = emitTerminalRunRecord({
 				command: "pilot-rollback",
@@ -278,48 +304,191 @@ export async function runPilotRollback(
 			return sanitizeError(error);
 		}
 	};
+}
+
+/**
+ * Validate required rollback inputs.
+ */
+function validateRollbackInputs(
+	options: PilotRollbackOptions,
+	writeRunRecord: WriteRunRecord,
+): PilotRollbackError | null {
+	if (!options.incidentId?.trim()) {
+		writeRunRecord({
+			outcome: "failed",
+			classification: "validation_failed",
+			exitCode: EXIT_CODES.VALIDATION,
+			payload: { error: "missing_incident_id" },
+			strict: false,
+		});
+		return {
+			ok: false,
+			error: {
+				code: "E_VALIDATION",
+				message: "Missing required option: --incident-id",
+			},
+		};
+	}
+
+	if (options.mode !== "autonomous" && options.mode !== "manual") {
+		writeRunRecord({
+			outcome: "failed",
+			classification: "validation_failed",
+			exitCode: EXIT_CODES.VALIDATION,
+			payload: {
+				error: "invalid_mode",
+				mode: options.mode,
+			},
+			strict: false,
+		});
+		return {
+			ok: false,
+			error: {
+				code: "E_VALIDATION",
+				message: `Invalid mode: ${options.mode}. Must be 'autonomous' or 'manual'`,
+			},
+		};
+	}
+
+	return null;
+}
+
+/**
+ * Emit a success run record for a completed rollback.
+ */
+function emitRollbackSuccess(
+	options: PilotRollbackOptions,
+	writeRunRecord: WriteRunRecord,
+	contractPath: string,
+	modeBefore: PilotMode,
+	rollbackEventsId: string,
+	eventsPath: string,
+	markerPath: string,
+): void {
+	writeRunRecord({
+		outcome: "success",
+		classification: "ok",
+		exitCode: EXIT_CODES.SUCCESS,
+		contractPath,
+		payload: {
+			incidentId: options.incidentId,
+			modeBefore,
+			modeAfter: options.mode,
+			rollbackEventsId,
+		},
+		artifacts: [
+			{
+				type: "rollback-events",
+				path: eventsPath,
+			},
+			{
+				type: "rollback-marker",
+				path: markerPath,
+			},
+			...(options.outputPath
+				? [{ type: "rollback-output", path: options.outputPath }]
+				: []),
+		],
+		strict: true,
+	});
+}
+
+/**
+ * Handle rollback errors and emit run records.
+ */
+function handleRollbackError(
+	error: unknown,
+	writeRunRecord: WriteRunRecord,
+): PilotRollbackError {
+	if (error instanceof PathTraversalError) {
+		writeRunRecord({
+			outcome: "failed",
+			classification: "validation_failed",
+			exitCode: EXIT_CODES.VALIDATION,
+			payload: {
+				error: "path_traversal",
+			},
+			strict: false,
+		});
+		return {
+			ok: false,
+			error: {
+				code: "E_VALIDATION",
+				message: "Path traversal detected in provided paths",
+			},
+		};
+	}
+	writeRunRecord({
+		outcome: "failed",
+		classification: "runtime_failed",
+		exitCode: EXIT_CODES.INTERNAL,
+		payload: {
+			error: "rollback_failed",
+			message: sanitizeError(error),
+		},
+		strict: false,
+	});
+	return {
+		ok: false,
+		error: {
+			code: "E_INTERNAL",
+			message: `Rollback failed: ${sanitizeError(error)}`,
+		},
+	};
+}
+
+/**
+ * Verify the contract file exists and emit a precondition record if missing.
+ */
+function ensureContractExists(
+	contractPath: string,
+	writeRunRecord: WriteRunRecord,
+): PilotRollbackError | null {
+	if (existsSync(contractPath)) {
+		return null;
+	}
+	const runRecordError = writeRunRecord({
+		outcome: "blocked",
+		classification: "precondition_failed",
+		exitCode: EXIT_CODES.PRECONDITION,
+		contractPath,
+		payload: {
+			error: "missing_contract",
+			contractPath,
+		},
+		strict: false,
+	});
+	return {
+		ok: false,
+		error: {
+			code: "E_PRECONDITION",
+			message: `Contract not found: ${contractPath}`,
+			context: {
+				contractPath,
+				...(runRecordError ? { runRecordError } : {}),
+			},
+		},
+	};
+}
+
+/**
+ * Execute the pilot rollback workflow.
+ *
+ * @param options - Parsed pilot-rollback options
+ * @returns Success or typed error payload
+ */
+export async function runPilotRollback(
+	options: PilotRollbackOptions,
+): Promise<PilotRollbackResult | PilotRollbackError> {
+	const startedAt = new Date().toISOString();
+	const writeRunRecord = buildRunRecordWriter(options, startedAt);
 
 	try {
-		// 1. Validate incident ID
-		if (!options.incidentId?.trim()) {
-			writeRunRecord({
-				outcome: "failed",
-				classification: "validation_failed",
-				exitCode: EXIT_CODES.VALIDATION,
-				payload: { error: "missing_incident_id" },
-				strict: false,
-			});
-			return {
-				ok: false,
-				error: {
-					code: "E_VALIDATION",
-					message: "Missing required option: --incident-id",
-				},
-			};
+		const validationError = validateRollbackInputs(options, writeRunRecord);
+		if (validationError) {
+			return validationError;
 		}
 
-		// 2. Validate mode
-		if (options.mode !== "autonomous" && options.mode !== "manual") {
-			writeRunRecord({
-				outcome: "failed",
-				classification: "validation_failed",
-				exitCode: EXIT_CODES.VALIDATION,
-				payload: {
-					error: "invalid_mode",
-					mode: options.mode,
-				},
-				strict: false,
-			});
-			return {
-				ok: false,
-				error: {
-					code: "E_VALIDATION",
-					message: `Invalid mode: ${options.mode}. Must be 'autonomous' or 'manual'`,
-				},
-			};
-		}
-
-		// 3. Resolve paths
 		const cwd = process.cwd();
 		const contractPath = resolve(
 			cwd,
@@ -327,39 +496,14 @@ export async function runPilotRollback(
 		);
 		const artifactsDir = resolveArtifactsDir(options.artifactsDir);
 
-		// 4. Check contract exists
-		if (!existsSync(contractPath)) {
-			const runRecordError = writeRunRecord({
-				outcome: "blocked",
-				classification: "precondition_failed",
-				exitCode: EXIT_CODES.PRECONDITION,
-				contractPath,
-				payload: {
-					error: "missing_contract",
-					contractPath,
-				},
-				strict: false,
-			});
-			return {
-				ok: false,
-				error: {
-					code: "E_PRECONDITION",
-					message: `Contract not found: ${contractPath}`,
-					context: {
-						contractPath,
-						...(runRecordError ? { runRecordError } : {}),
-					},
-				},
-			};
+		const contractError = ensureContractExists(contractPath, writeRunRecord);
+		if (contractError) {
+			return contractError;
 		}
 
-		// 5. Read current mode from contract
 		const rollbackPolicy = readRollbackPolicy(contractPath);
 		const modeBefore = rollbackPolicy?.mode ?? readCurrentMode(contractPath);
 
-		// 6. Validate transition: warn if the requested mode is the same as
-		// the current mode (self-transition). Cross-mode transitions
-		// (autonomous ↔ manual) are always allowed.
 		if (modeBefore === options.mode) {
 			process.stderr.write(
 				`[pilot-rollback] Warning: requested mode '${options.mode}' is already the active mode \u2014 recording event but no state change will occur.\n`,
@@ -367,10 +511,7 @@ export async function runPilotRollback(
 		}
 		const requestedAt = nowIso();
 
-		// 7. Generate event ID and create event record
 		const rollbackEventsId = generateEventsId();
-		// Validate each file path individually: a symlink placed at the file
-		// itself (not just the directory) would otherwise bypass directory validation.
 		const eventsPath = normalizePath(
 			cwd,
 			resolve(artifactsDir, ROLLBACK_EVENTS_FILE),
@@ -385,10 +526,8 @@ export async function runPilotRollback(
 			triggerReason: options.reason ?? "Manual rollback requested",
 		};
 
-		// 8. Append event to events store
 		appendRollbackEvent(eventsPath, eventRecord);
 
-		// 9. Write completion marker
 		const completedAt = nowIso();
 		const markerPath = normalizePath(
 			cwd,
@@ -411,39 +550,21 @@ export async function runPilotRollback(
 
 		writeRollbackMarker(markerPath, marker);
 
-		// 10. Write to output file if specified
 		if (options.outputPath) {
 			const outputPath = normalizePath(cwd, options.outputPath);
 			mkdirSync(dirname(outputPath), { recursive: true });
 			writeFileSync(outputPath, JSON.stringify(marker, null, 2), "utf-8");
 		}
 
-		writeRunRecord({
-			outcome: "success",
-			classification: "ok",
-			exitCode: EXIT_CODES.SUCCESS,
+		emitRollbackSuccess(
+			options,
+			writeRunRecord,
 			contractPath,
-			payload: {
-				incidentId: options.incidentId,
-				modeBefore,
-				modeAfter: options.mode,
-				rollbackEventsId,
-			},
-			artifacts: [
-				{
-					type: "rollback-events",
-					path: eventsPath,
-				},
-				{
-					type: "rollback-marker",
-					path: markerPath,
-				},
-				...(options.outputPath
-					? [{ type: "rollback-output", path: options.outputPath }]
-					: []),
-			],
-			strict: true,
-		});
+			modeBefore,
+			rollbackEventsId,
+			eventsPath,
+			markerPath,
+		);
 
 		return {
 			ok: true,
@@ -459,44 +580,16 @@ export async function runPilotRollback(
 			},
 		};
 	} catch (error) {
-		if (error instanceof PathTraversalError) {
-			writeRunRecord({
-				outcome: "failed",
-				classification: "validation_failed",
-				exitCode: EXIT_CODES.VALIDATION,
-				payload: {
-					error: "path_traversal",
-				},
-				strict: false,
-			});
-			return {
-				ok: false,
-				error: {
-					code: "E_VALIDATION",
-					message: "Path traversal detected in provided paths",
-				},
-			};
-		}
-		writeRunRecord({
-			outcome: "failed",
-			classification: "runtime_failed",
-			exitCode: EXIT_CODES.INTERNAL,
-			payload: {
-				error: "rollback_failed",
-				message: sanitizeError(error),
-			},
-			strict: false,
-		});
-		return {
-			ok: false,
-			error: {
-				code: "E_INTERNAL",
-				message: `Rollback failed: ${sanitizeError(error)}`,
-			},
-		};
+		return handleRollbackError(error, writeRunRecord);
 	}
 }
 
+/**
+ * Execute pilot rollback in CLI mode and return process exit code.
+ *
+ * @param options - Parsed CLI options
+ * @returns Exit code for shell usage
+ */
 export async function runPilotRollbackCLI(
 	options: PilotRollbackOptions,
 ): Promise<number> {
