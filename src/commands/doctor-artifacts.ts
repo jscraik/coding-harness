@@ -83,6 +83,7 @@ function isNorthStarSurfaceCheck(check: DoctorCheck): boolean {
  */
 function buildNorthStarSurfaceClassificationSnapshot(
 	report: DoctorReport,
+	repoRoot: string,
 ): NorthStarSurfaceClassificationSnapshot {
 	const surfaces = report.checks.filter(isNorthStarSurfaceCheck);
 	return {
@@ -90,7 +91,7 @@ function buildNorthStarSurfaceClassificationSnapshot(
 			NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.surfaceClassificationSnapshot,
 		command: "doctor",
 		generatedAt: report.timestamp,
-		repoRoot: report.dir,
+		repoRoot,
 		sourceReport: {
 			version: report.version,
 			generatedAt: report.timestamp,
@@ -125,7 +126,7 @@ export function writeNorthStarSurfaceClassificationSnapshot(
 	mkdirSync(dirname(resolvedArtifactPath), { recursive: true });
 	writeFileSync(
 		resolvedArtifactPath,
-		`${JSON.stringify(buildNorthStarSurfaceClassificationSnapshot(report), null, 2)}\n`,
+		`${JSON.stringify(buildNorthStarSurfaceClassificationSnapshot(report, repoRoot), null, 2)}\n`,
 		"utf-8",
 	);
 	return artifactPath;

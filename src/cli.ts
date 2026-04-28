@@ -129,7 +129,7 @@ export { parseIntegerArg, parseCsvList };
 /**
  * Attempt fuzzy command resolution and dispatch if a match is found.
  *
- * @returns `true` if fuzzy dispatch occurred (function has already exited the process)
+ * @returns `true` if fuzzy dispatch occurred and process termination has been scheduled
  */
 function tryFuzzyDispatch(
 	command: string | undefined,

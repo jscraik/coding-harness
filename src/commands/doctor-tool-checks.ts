@@ -127,18 +127,18 @@ export const DOCTOR_TOOL_CHECKS: DoctorCheckFn[] = [
 	},
 
 	// ── Tool: git ─────────────────────────────────────────────────────────────
-	(_dir) => {
-		const version = getCommandVersion("git");
-		if (!version) {
-			return {
+		(_dir) => {
+			const version = getCommandVersion("git");
+			if (!version) {
+				return {
 				id: "tool:git",
 				category: "tool",
-				label: "git",
-				status: "fail",
-				message: "git not found in PATH",
-				fix: "Install git via Homebrew: brew install git",
-			};
-		}
+					label: "git",
+					status: "fail",
+					message: "git not found in PATH",
+					fix: "Install git using your system package manager and verify with: git --version",
+				};
+			}
 		return {
 			id: "tool:git",
 			category: "tool",
@@ -149,18 +149,18 @@ export const DOCTOR_TOOL_CHECKS: DoctorCheckFn[] = [
 	},
 
 	// ── Tool: gh (GitHub CLI) ─────────────────────────────────────────────────
-	(_dir) => {
-		const exists = commandExists("gh");
-		if (!exists) {
-			return {
+		(_dir) => {
+			const exists = commandExists("gh");
+			if (!exists) {
+				return {
 				id: "tool:gh",
 				category: "tool",
-				label: "GitHub CLI (gh)",
-				status: "warn",
-				message: "gh not found — required for branch-protect and PR workflows",
-				fix: "brew install gh && gh auth login",
-			};
-		}
+					label: "GitHub CLI (gh)",
+					status: "warn",
+					message: "gh not found — required for branch-protect and PR workflows",
+					fix: "Install GitHub CLI (gh) with your package manager, then run: gh auth login",
+				};
+			}
 		// Check auth status
 		const authResult = spawnSync("gh", ["auth", "status"], {
 			stdio: "pipe",

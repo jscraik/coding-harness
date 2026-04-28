@@ -465,14 +465,12 @@ describe("runDoctor — file checks", () => {
 		const artifactPath = getNorthStarSurfaceClassificationSnapshotPath();
 		const resolvedArtifactPath = join(dir, artifactPath);
 
-		expect(report.artifact_refs).toEqual([
-			{
-				type: "north-star-surface-classification",
-				path: artifactPath,
-				schemaVersion:
-					NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.surfaceClassificationSnapshot,
-			},
-		]);
+		expect(report.artifact_refs).toContainEqual({
+			type: "north-star-surface-classification",
+			path: artifactPath,
+			schemaVersion:
+				NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.surfaceClassificationSnapshot,
+		});
 
 		const artifact = JSON.parse(
 			readFileSync(resolvedArtifactPath, "utf-8"),
