@@ -21,6 +21,11 @@ import {
 	getActiveGHAJobNames,
 } from "../lib/ci/branch-protect-sync.js";
 import {
+	hasValidExternalControlPlaneStateSnapshotShape,
+	hasValidMigrationStateAttestationShape,
+	hasValidSnapshotAttestationShape,
+} from "../lib/ci/ci-migrate-attestation-validators.js";
+import {
 	type CIMigrateAction,
 	DEFAULT_CI_MIGRATE_PROVIDER,
 	VALID_CI_MIGRATE_ACTIONS,
@@ -956,21 +961,10 @@ function isValidSnapshotAttestation(
 	value: unknown,
 	snapshotId: string,
 ): value is SnapshotAttestation {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-	const parsed = value as Partial<SnapshotAttestation>;
-	return (
-		parsed.schemaVersion === "ci-migrate-snapshot-attestation/v1" &&
-		parsed.snapshotId === snapshotId &&
-		typeof parsed.createdAt === "string" &&
-		typeof parsed.expiresAt === "string" &&
-		typeof parsed.payloadPath === "string" &&
-		typeof parsed.payloadDigest === "string" &&
-		typeof parsed.externalControlPlaneStatePath === "string" &&
-		typeof parsed.externalControlPlaneStateDigest === "string" &&
-		parsed.signatureAlgorithm === SNAPSHOT_SIGNATURE_ALGORITHM &&
-		typeof parsed.signingKeyId === "string"
+	return hasValidSnapshotAttestationShape(
+		value,
+		snapshotId,
+		SNAPSHOT_SIGNATURE_ALGORITHM,
 	);
 }
 
@@ -978,66 +972,21 @@ function isValidExternalControlPlaneStateSnapshot(
 	value: unknown,
 	snapshotId: string,
 ): value is ExternalControlPlaneStateSnapshot {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-	const parsed = value as Partial<ExternalControlPlaneStateSnapshot>;
-	if (
-		parsed.schemaVersion !== "ci-migrate-external-control-plane-state/v1" ||
-		parsed.snapshotId !== snapshotId ||
-		typeof parsed.capturedAt !== "string" ||
-		!Array.isArray(parsed.artifacts)
-	) {
-		return false;
-	}
-	return parsed.artifacts.every((artifact) => {
-		if (!artifact || typeof artifact !== "object") {
-			return false;
-		}
-		const parsedArtifact =
-			artifact as Partial<ExternalControlPlaneStateArtifact>;
-		if (
-			typeof parsedArtifact.relativePath !== "string" ||
-			typeof parsedArtifact.existed !== "boolean" ||
-			!EXTERNAL_CONTROL_PLANE_PATH_SET.has(parsedArtifact.relativePath)
-		) {
-			return false;
-		}
-		if (parsedArtifact.existed) {
-			return (
-				typeof parsedArtifact.content === "string" &&
-				typeof parsedArtifact.contentDigest === "string"
-			);
-		}
-		return true;
-	});
+	return hasValidExternalControlPlaneStateSnapshotShape(
+		value,
+		snapshotId,
+		EXTERNAL_CONTROL_PLANE_PATH_SET,
+	);
 }
 
 function isValidMigrationStateAttestation(
 	value: unknown,
 	snapshotId: string,
 ): value is MigrationStateAttestation {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-	const parsed = value as Partial<MigrationStateAttestation>;
-	return (
-		parsed.schemaVersion === "ci-migrate-state-attestation/v1" &&
-		parsed.snapshotId === snapshotId &&
-		(parsed.stage === "prepared" ||
-			parsed.stage === "committed" ||
-			parsed.stage === "aborted" ||
-			parsed.stage === "rollback-failed") &&
-		typeof parsed.createdAt === "string" &&
-		typeof parsed.expiresAt === "string" &&
-		typeof parsed.payloadPath === "string" &&
-		typeof parsed.payloadDigest === "string" &&
-		typeof parsed.reportDigest === "string" &&
-		typeof parsed.requiredChecksDigest === "string" &&
-		(parsed.proofPackPayloadSha256 === undefined ||
-			typeof parsed.proofPackPayloadSha256 === "string") &&
-		parsed.signatureAlgorithm === STATE_SIGNATURE_ALGORITHM &&
-		typeof parsed.signingKeyId === "string"
+	return hasValidMigrationStateAttestationShape(
+		value,
+		snapshotId,
+		STATE_SIGNATURE_ALGORITHM,
 	);
 }
 

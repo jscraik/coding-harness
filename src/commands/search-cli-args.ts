@@ -156,6 +156,38 @@ function parsePathsArg(
 	return { ok: true };
 }
 
+function parsePositiveIntegerOption(
+	value: string | undefined,
+	flag: "--limit",
+): { ok: true; value: number } | { ok: false; exitCode: number } {
+	if (!value || value.startsWith("-")) {
+		console.error(`Error: ${flag} requires a numeric value`);
+		return { ok: false, exitCode: PARSE_EXIT_CODES.ERROR };
+	}
+	const parsed = Number.parseInt(value, 10);
+	if (!Number.isInteger(parsed) || parsed <= 0) {
+		console.error(`Error: ${flag} must be a positive integer`);
+		return { ok: false, exitCode: PARSE_EXIT_CODES.VALIDATION_ERROR };
+	}
+	return { ok: true, value: parsed };
+}
+
+function parseUnitIntervalOption(
+	value: string | undefined,
+	flag: "--threshold",
+): { ok: true; value: number } | { ok: false; exitCode: number } {
+	if (!value || value.startsWith("-")) {
+		console.error(`Error: ${flag} requires a numeric value`);
+		return { ok: false, exitCode: PARSE_EXIT_CODES.ERROR };
+	}
+	const parsed = Number.parseFloat(value);
+	if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+		console.error(`Error: ${flag} must be between 0 and 1`);
+		return { ok: false, exitCode: PARSE_EXIT_CODES.VALIDATION_ERROR };
+	}
+	return { ok: true, value: parsed };
+}
+
 interface ParsedSearchState {
 	rawQuery: string;
 	mode: SearchMode;
@@ -237,44 +269,34 @@ export function parseSearchArgs(
 			mode = value;
 			continue;
 		}
-			if (arg === "--limit" || arg === "-l") {
-			const value = args[i + 1];
-			if (!value || value.startsWith("-")) {
-				console.error("Error: --limit requires a numeric value");
-				return { ok: false, exitCode: PARSE_EXIT_CODES.ERROR };
+		if (arg === "--limit" || arg === "-l") {
+			const parsed = parsePositiveIntegerOption(args[i + 1], "--limit");
+			if (!parsed.ok) {
+				return parsed;
 			}
-				i++;
-				limit = Number.parseInt(value, 10);
-				if (!Number.isInteger(limit) || limit <= 0) {
-					console.error("Error: --limit must be a positive integer");
-					return { ok: false, exitCode: PARSE_EXIT_CODES.VALIDATION_ERROR };
-				}
-				continue;
-			}
+			i++;
+			limit = parsed.value;
+			continue;
+		}
 		if (arg === "--threshold" || arg === "-t") {
-			const value = args[i + 1];
-			if (!value || value.startsWith("-")) {
-				console.error("Error: --threshold requires a numeric value");
-				return { ok: false, exitCode: PARSE_EXIT_CODES.ERROR };
+			const parsed = parseUnitIntervalOption(args[i + 1], "--threshold");
+			if (!parsed.ok) {
+				return parsed;
 			}
-				i++;
-				threshold = Number.parseFloat(value);
-				if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1) {
-					console.error("Error: --threshold must be between 0 and 1");
-					return { ok: false, exitCode: PARSE_EXIT_CODES.VALIDATION_ERROR };
-				}
-				continue;
-			}
-			if (arg === "--json" || arg === "-j") {
-				json = true;
-				text = false;
-				continue;
-			}
-			if (arg === "--text") {
-				text = true;
-				json = false;
-				continue;
-			}
+			i++;
+			threshold = parsed.value;
+			continue;
+		}
+		if (arg === "--json" || arg === "-j") {
+			json = true;
+			text = false;
+			continue;
+		}
+		if (arg === "--text") {
+			text = true;
+			json = false;
+			continue;
+		}
 		if (arg === "--harness-dir") {
 			const value = args[i + 1];
 			if (!value || value.startsWith("-")) {
