@@ -296,21 +296,27 @@ export function validateOverrideAcknowledgement(
 		}
 	}
 
-	const matchingReviewer = options.registry.trustedReviewers.filter(
-		(r) =>
-			r.signatureRef === acknowledgement.signatureRef && r.status === "active",
+	const matchingReviewers = options.registry.trustedReviewers.filter(
+		(r) => r.signatureRef === acknowledgement.signatureRef,
 	);
-	if (matchingReviewer.length === 0) {
+	if (matchingReviewers.length === 0) {
 		return {
 			valid: false,
 			reason:
 				"Override signatureRef does not resolve to an active trusted reviewer",
 		};
 	}
-	if (matchingReviewer.length > 1) {
+	if (matchingReviewers.length > 1) {
 		return {
 			valid: false,
 			reason: "Override signatureRef resolves to multiple trusted reviewers",
+		};
+	}
+	if (matchingReviewers[0]?.status !== "active") {
+		return {
+			valid: false,
+			reason:
+				"Override signatureRef does not resolve to an active trusted reviewer",
 		};
 	}
 
