@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process";
-import { createHash, createHmac } from "node:crypto";
 import {
 	copyFileSync,
 	existsSync,
@@ -27,6 +26,12 @@ import {
 	VALID_CI_MIGRATE_ACTIONS,
 	VALID_CI_MIGRATE_PROVIDERS,
 } from "../lib/ci/ci-migrate-command-contract.js";
+import {
+	SNAPSHOT_SIGNATURE_ALGORITHM,
+	hashContent,
+	resolveSnapshotSigningKey,
+	signContent,
+} from "../lib/ci/ci-migrate-signing.js";
 import {
 	defaultSnapshotId,
 	getExternalControlPlaneStatePath,
@@ -94,9 +99,6 @@ export function setCIMigrateTestOverrides(
 }
 
 const MAX_SNAPSHOT_AGE_DAYS = 30;
-const SNAPSHOT_SIGNATURE_ALGORITHM = "hmac-sha256";
-const SNAPSHOT_SIGNING_KEY_ENV = "HARNESS_CI_MIGRATE_SIGNING_KEY";
-const MIN_SNAPSHOT_SIGNING_KEY_BYTES = 16;
 const STATE_SIGNATURE_ALGORITHM = SNAPSHOT_SIGNATURE_ALGORITHM;
 const PARITY_PROOF_PACK_PATH = ".harness/ci-parity-proof-pack.json";
 const PARITY_PROOF_PACK_SIGNATURE_PATH = ".harness/ci-parity-proof-pack.sig";
@@ -948,36 +950,6 @@ function assertNoBlockingMergeQueueCutoverWindow(
 		};
 	}
 	return { ok: true };
-}
-
-function hashContent(content: string): string {
-	return createHash("sha256").update(content, "utf-8").digest("hex");
-}
-
-function signContent(content: string, signingKey: string): string {
-	return createHmac("sha256", signingKey)
-		.update(content, "utf-8")
-		.digest("hex");
-}
-
-function resolveSnapshotSigningKey():
-	| { ok: true; key: string; keyId: string }
-	| { ok: false; error: string } {
-	const rawKey = env[SNAPSHOT_SIGNING_KEY_ENV];
-	if (!rawKey || rawKey.trim().length === 0) {
-		return {
-			ok: false,
-			error: `${SNAPSHOT_SIGNING_KEY_ENV} is required for signed ci-migrate snapshots.`,
-		};
-	}
-	const key = rawKey.trim();
-	if (Buffer.byteLength(key, "utf-8") < MIN_SNAPSHOT_SIGNING_KEY_BYTES) {
-		return {
-			ok: false,
-			error: `${SNAPSHOT_SIGNING_KEY_ENV} must be at least ${MIN_SNAPSHOT_SIGNING_KEY_BYTES} bytes.`,
-		};
-	}
-	return { ok: true, key, keyId: hashContent(key).slice(0, 16) };
 }
 
 function isValidSnapshotAttestation(
