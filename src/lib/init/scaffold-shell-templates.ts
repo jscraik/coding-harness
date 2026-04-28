@@ -235,10 +235,6 @@ if is_harness_source_repo; then
 		echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2
 		exit 1
 	fi
-	if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then
-		echo "Error: source checkout detected but tsx is unavailable via pnpm exec; refusing fallback to avoid stale harness binaries." >&2
-		exit 1
-	fi
 	tsx_stderr_file="$(mktemp "\${TMPDIR:-/tmp}/harness-gate-tsx-stderr.XXXXXX")"
 	tsx_exit=0
 	if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then
@@ -248,7 +244,7 @@ if is_harness_source_repo; then
 		tsx_exit=$?
 	fi
 	if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-		if rg -q 'listen EPERM: operation not permitted.*(/tmp/tsx-|\\.pipe)' "$tsx_stderr_file"; then
+		if grep -Eq 'listen EPERM: operation not permitted.*(/tmp/tsx-|\\.pipe)' "$tsx_stderr_file"; then
 			echo "Warning: tsx IPC startup failed with EPERM; falling back to node dist/cli.js." >&2
 			rm -f "$tsx_stderr_file"
 			exec node "$REPO_ROOT/dist/cli.js" "$@"

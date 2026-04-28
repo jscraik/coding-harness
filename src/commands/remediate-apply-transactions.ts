@@ -198,28 +198,28 @@ function applyFindingTransaction(
 		const endLine =
 			patchResult.patch.endLine ??
 			(finding.lineEnd !== undefined ? finding.lineEnd : finding.lineStart);
-			const updatedContent = applyReplaceRange(
-				originalContent,
-				startLine,
-				endLine,
-				patchResult.patch.content,
-			);
-			writeFileSync(tempPath, updatedContent, "utf-8");
-			const currentContent = readFileSync(targetPath, "utf-8");
-			if (currentContent !== originalContent) {
-				unlinkSync(backupPath);
-				unlinkSync(tempPath);
-				return writeTransactionArtifact(artifactUri, {
-					findingId: finding.id,
-					status: "rolled_back",
-					reason:
-						"Target file changed during apply transaction; patch rolled back for safety",
-					preSha,
-					postSha: preSha,
-					artifactUri,
-				});
-			}
-			renameSync(tempPath, targetPath);
+		const updatedContent = applyReplaceRange(
+			originalContent,
+			startLine,
+			endLine,
+			patchResult.patch.content,
+		);
+		writeFileSync(tempPath, updatedContent, "utf-8");
+		const currentContent = readFileSync(targetPath, "utf-8");
+		if (currentContent !== originalContent) {
+			unlinkSync(backupPath);
+			unlinkSync(tempPath);
+			return writeTransactionArtifact(artifactUri, {
+				findingId: finding.id,
+				status: "rolled_back",
+				reason:
+					"Target file changed during apply transaction; patch rolled back for safety",
+				preSha,
+				postSha: preSha,
+				artifactUri,
+			});
+		}
+		renameSync(tempPath, targetPath);
 
 		const postSha = getHeadSha();
 		if (postSha !== preSha) {

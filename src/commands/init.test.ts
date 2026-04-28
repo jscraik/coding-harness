@@ -1799,13 +1799,10 @@ describe("runInit", () => {
 				'echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then',
-			);
-			expect(runHarnessGate).toContain(
 				'if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then',
 			);
 			expect(runHarnessGate).toContain(
-				"rg -q 'listen EPERM: operation not permitted.*(/tmp/tsx-|\\.pipe)'",
+				"grep -Eq 'listen EPERM: operation not permitted.*(/tmp/tsx-|\\.pipe)'",
 			);
 			expect(runHarnessGate).toContain(
 				'echo "Warning: tsx IPC startup failed with EPERM; falling back to node dist/cli.js." >&2',
