@@ -219,33 +219,23 @@ function extractErrorsSection(
 				const code = cells[0];
 				const condition = cells[1];
 				const routing = cells[2];
-				if (
-					code &&
-					condition &&
-					routing &&
-					[
-						"VALIDATION_ERROR",
-						"BLOCKED_DEPENDENCY",
-						"POLICY_FAIL",
-						"SYSTEM_ERROR",
-					].includes(code)
-				) {
-					errors.push({ code, condition, routing });
-				}
+			if (
+				code &&
+				condition &&
+				routing &&
+				(REQUIRED_ERROR_CODES as readonly string[]).includes(code)
+			) {
+				errors.push({ code, condition, routing });
 			}
-			continue;
 		}
+		continue;
+	}
 
-		const bulletMatch = trimmed.match(/^[-*]\s+`?([A-Z_]+)`?\s*:\s*(.+)$/);
-		if (
-			bulletMatch?.[1] &&
-			bulletMatch[2] &&
-			[
-				"VALIDATION_ERROR",
-				"BLOCKED_DEPENDENCY",
-				"POLICY_FAIL",
-				"SYSTEM_ERROR",
-			].includes(bulletMatch[1])
+	const bulletMatch = trimmed.match(/^[-*]\s+`?([A-Z_]+)`?\s*:\s*(.+)$/);
+	if (
+		bulletMatch?.[1] &&
+		bulletMatch[2] &&
+		(REQUIRED_ERROR_CODES as readonly string[]).includes(bulletMatch[1])
 		) {
 			errors.push({
 				code: bulletMatch[1],
