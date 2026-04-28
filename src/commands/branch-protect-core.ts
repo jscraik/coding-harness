@@ -987,9 +987,10 @@ export async function runBranchProtectCLI(
 		return EXIT_CODES.SUCCESS;
 	}
 
-	console.error(result.error.message);
 	if (options.json) {
 		console.error(JSON.stringify({ error: result.error }));
+	} else {
+		console.error(result.error.message);
 	}
 	if (result.error.code === "VALIDATION_ERROR") {
 		return EXIT_CODES.VALIDATION_ERROR;
