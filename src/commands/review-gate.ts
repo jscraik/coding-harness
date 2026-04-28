@@ -500,7 +500,7 @@ function evaluateNorthStarDecisionQuestions(params: {
  */
 function extractFindingIdFromBlocker(blocker: string): string | undefined {
 	const match = blocker.match(
-		/^\b(?:contract_invalid|review_evidence_contradiction|review_evidence_incomplete|safety_floor_violation):([^:]+):/u,
+		/^(?:contract_invalid|review_evidence_contradiction|review_evidence_incomplete|safety_floor_violation):([^:]+):/u,
 	);
 	return match?.[1];
 }

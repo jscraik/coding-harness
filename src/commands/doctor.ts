@@ -78,6 +78,8 @@ export interface DoctorOptions {
 	json?: boolean;
 	/** If true, attempt auto-fix where possible (e.g. seeding files) */
 	fix?: boolean;
+	/** Harness version used for artifact/report provenance */
+	version?: string;
 }
 
 // ─── Post-init checklist ──────────────────────────────────────────────────────
@@ -184,7 +186,7 @@ export function runDoctor(options: DoctorOptions = {}): DoctorReport {
 	const checks = DOCTOR_CHECKS.map((fn) => fn(dir));
 
 	const report: DoctorReport = {
-		version: "unknown",
+		version: options.version ?? "unknown",
 		dir,
 		timestamp: new Date().toISOString(),
 		checks,
@@ -235,8 +237,8 @@ export function runDoctorCLI(args: string[], getVersion: () => string): number {
 	const opts: DoctorOptions = {};
 	if (dirFlag.value) opts.dir = dirFlag.value;
 
+	opts.version = getVersion();
 	const report = runDoctor(opts);
-	report.version = getVersion();
 
 	if (checklistFlag) {
 		// checklist display removed; future: render POST_INIT_CHECKLIST here

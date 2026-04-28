@@ -386,7 +386,7 @@ export function runSymphonyCheck(
 			severity: "error",
 			code: "MISSING_LINEAR_API_KEY",
 			message:
-				"LINEAR_API_KEY not found in environment or ~/.codex/.env. Symphony requires this at runtime.",
+				"LINEAR_API_KEY not found in environment, configured --env-file path, ~/.codex/.env, or ~/.codex/env. Symphony requires this at runtime.",
 		});
 	}
 

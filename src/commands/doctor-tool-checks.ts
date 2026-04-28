@@ -136,7 +136,7 @@ export const DOCTOR_TOOL_CHECKS: DoctorCheckFn[] = [
 				label: "git",
 				status: "fail",
 				message: "git not found in PATH",
-				fix: "Install git via Homebrew: brew install git",
+				fix: "Install git using your system package manager and verify with: git --version",
 			};
 		}
 		return {
@@ -158,7 +158,7 @@ export const DOCTOR_TOOL_CHECKS: DoctorCheckFn[] = [
 				label: "GitHub CLI (gh)",
 				status: "warn",
 				message: "gh not found — required for branch-protect and PR workflows",
-				fix: "brew install gh && gh auth login",
+				fix: "Install GitHub CLI (gh) with your package manager, then run: gh auth login",
 			};
 		}
 		// Check auth status

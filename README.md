@@ -130,7 +130,7 @@ carry evidence between tools without guessing path or schema names. Current
 stable artifact paths include
 `.harness/guardrails/north-star/drift-findings.json` for `drift-gate`,
 `.harness/guardrails/north-star/surface-classification-snapshot.json` for
-`doctor`, and `.harness/review-gate/north-star-alignment.json` for
+`doctor`, and `.harness/guardrails/north-star/alignment-decision.json` for
 review-gate alignment decisions.
 
 ## Why Teams Use It

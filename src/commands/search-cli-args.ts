@@ -223,7 +223,6 @@ export function parseSearchArgs(
 	const rawIncludePaths: string[] = [];
 	const rawExcludePaths: string[] = [];
 	let strictSemantic = false;
-
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
 		if (arg === "--mode" || arg === "-m") {
@@ -306,15 +305,18 @@ export function parseSearchArgs(
 		if (arg === "--help" || arg === "-h") {
 			return { ok: false, exitCode: printSearchUsage() };
 		}
-		if (arg && !arg.startsWith("-") && !rawQuery) {
+		if (arg?.startsWith("-")) {
+			console.error(`Error: unknown argument '${arg}'`);
+			return { ok: false, exitCode: PARSE_EXIT_CODES.ERROR };
+		}
+		if (arg && !rawQuery) {
 			rawQuery = arg;
 			continue;
 		}
-		if (arg && !arg.startsWith("-")) {
+		if (arg) {
 			rawQuery += ` ${arg}`;
 		}
 	}
-
 	return finalizeParsedSearchState({
 		rawQuery,
 		mode,
