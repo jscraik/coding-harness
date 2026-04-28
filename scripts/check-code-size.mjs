@@ -15,7 +15,6 @@ const LEGACY_OVERSIZED_FILES = new Set([
 	"src/commands/ci-migrate.ts",
 	"src/commands/docs-gate.ts",
 	"src/commands/drift-gate.ts",
-	"src/commands/drift-gate-core.ts",
 	"src/commands/review-gate.ts",
 	"src/lib/contract/json-schema.ts",
 	"src/lib/contract/types.ts",

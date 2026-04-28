@@ -59,7 +59,7 @@
 					"src/commands/review-gate.ts",
 					"src/commands/review-gate.test.ts"
 				],
-				"lastReviewedAt": "2026-04-21"
+				"lastReviewedAt": "2026-04-28"
 			},
 			{
 				"surfaceId": "drift-gate",
@@ -80,7 +80,7 @@
 					"docs/agents/review-gate-workflow-contract.md",
 					"README.md"
 				],
-				"lastReviewedAt": "2026-04-21"
+				"lastReviewedAt": "2026-04-28"
 			},
 			{
 				"surfaceId": "preflight-gate",
@@ -122,7 +122,7 @@
 				"evidenceReference": "docs/roadmap/agent-first-status.md",
 				"reviewCadence": "weekly",
 				"ownedPaths": ["docs/roadmap/agent-first-status.md"],
-				"lastReviewedAt": "2026-04-21"
+				"lastReviewedAt": "2026-04-28"
 			}
 		]
 	},
