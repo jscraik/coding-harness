@@ -32,13 +32,15 @@ function parsePathFilters(parts: string[]): PathFilterResult {
 	for (const rawPart of parts) {
 		const part = rawPart.trim();
 		if (!part) continue;
-		const [kind, value] = part.split(":");
-		if (!kind || !value) {
+		const separatorIndex = part.indexOf(":");
+		if (separatorIndex <= 0 || separatorIndex === part.length - 1) {
 			warnings.push(
 				`Invalid filter format: "${rawPart}" (expected format: include:path or exclude:path)`,
 			);
 			continue;
 		}
+		const kind = part.slice(0, separatorIndex);
+		const value = part.slice(separatorIndex + 1);
 		if (kind !== "include" && kind !== "exclude") {
 			warnings.push(
 				`Unknown filter kind: "${kind}" (expected include or exclude)`,
@@ -236,37 +238,44 @@ export function parseSearchArgs(
 			mode = value;
 			continue;
 		}
-		if (arg === "--limit" || arg === "-l") {
+			if (arg === "--limit" || arg === "-l") {
 			const value = args[i + 1];
 			if (!value || value.startsWith("-")) {
 				console.error("Error: --limit requires a numeric value");
 				return { ok: false, exitCode: PARSE_EXIT_CODES.ERROR };
 			}
-			i++;
-			limit = Number.parseInt(value, 10);
-			continue;
-		}
+				i++;
+				limit = Number.parseInt(value, 10);
+				if (!Number.isInteger(limit) || limit <= 0) {
+					console.error("Error: --limit must be a positive integer");
+					return { ok: false, exitCode: PARSE_EXIT_CODES.VALIDATION_ERROR };
+				}
+				continue;
+			}
 		if (arg === "--threshold" || arg === "-t") {
 			const value = args[i + 1];
 			if (!value || value.startsWith("-")) {
 				console.error("Error: --threshold requires a numeric value");
 				return { ok: false, exitCode: PARSE_EXIT_CODES.ERROR };
 			}
-			i++;
-			threshold = Number.parseFloat(value);
-			continue;
-		}
-		if (arg === "--json" || arg === "-j") {
-			json = true;
-			continue;
-		}
-		if (arg === "--text") {
-			text = true;
-			if (json === undefined) {
-				json = false;
+				i++;
+				threshold = Number.parseFloat(value);
+				if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1) {
+					console.error("Error: --threshold must be between 0 and 1");
+					return { ok: false, exitCode: PARSE_EXIT_CODES.VALIDATION_ERROR };
+				}
+				continue;
 			}
-			continue;
-		}
+			if (arg === "--json" || arg === "-j") {
+				json = true;
+				text = false;
+				continue;
+			}
+			if (arg === "--text") {
+				text = true;
+				json = false;
+				continue;
+			}
 		if (arg === "--harness-dir") {
 			const value = args[i + 1];
 			if (!value || value.startsWith("-")) {

@@ -530,5 +530,52 @@ describe("search command", () => {
 
 			expect(code).not.toBe(EXIT_CODES.VALIDATION_ERROR);
 		});
+
+		it("preserves additional colons in --paths values", async () => {
+			mockSpawnSync.mockReturnValue(createSpawnResult(""));
+			const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+				// noop
+			});
+
+			const code = await runSearchCLI([
+				"query",
+				"--paths",
+				"include:docs:notes;exclude:dist",
+			]);
+
+			expect(code).not.toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(warnSpy).not.toHaveBeenCalledWith(
+				expect.stringContaining("Invalid filter format"),
+			);
+			warnSpy.mockRestore();
+		});
+
+		it("rejects non-positive --limit", async () => {
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			const code = await runSearchCLI(["query", "--limit", "0"]);
+
+			expect(code).toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: --limit must be a positive integer",
+			);
+			errorSpy.mockRestore();
+		});
+
+		it("rejects out-of-range --threshold", async () => {
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			const code = await runSearchCLI(["query", "--threshold", "1.2"]);
+
+			expect(code).toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: --threshold must be between 0 and 1",
+			);
+			errorSpy.mockRestore();
+		});
 	});
 });
