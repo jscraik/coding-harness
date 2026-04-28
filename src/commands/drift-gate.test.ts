@@ -149,6 +149,37 @@ describe("drift-gate command", () => {
 		expect(result.report.error_class).toBe("schema");
 	});
 
+	it("keeps invalid baseline load errors and does not auto-seed", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-8");
+		roots.push(root);
+		createRepoFixture(root);
+
+		const baselinePath = join(
+			root,
+			"artifacts/consistency-gate/consistency-baseline-latest.json",
+		);
+		write(baselinePath, `${JSON.stringify({ wrong: true }, null, 2)}\n`);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.outcome).toBe("error");
+		expect(result.report.error_class).toBe("schema");
+		expect(
+			result.report.findings.some((f) => f.rule_id === "baseline.load.error"),
+		).toBe(true);
+		expect(
+			result.report.findings.some((f) => f.rule_id === "baseline.seed.missing"),
+		).toBe(false);
+		expect(result.report.baseline_seeded).toBeUndefined();
+		expect(JSON.parse(readFileSync(baselinePath, "utf-8"))).toEqual({
+			wrong: true,
+		});
+	});
+
 	it("treats stale findings as preexisting when baseline omits dynamic message text", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-test-4");
 		roots.push(root);

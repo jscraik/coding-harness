@@ -1,7 +1,4 @@
-export {
-	runDriftGate,
-	runDriftGateCLI,
-} from "./drift-gate-core.js";
+export { runDriftGate, runDriftGateCLI } from "./drift-gate-core.js";
 export type {
 	DriftBaselineState,
 	DriftErrorClass,
@@ -15,4 +12,4 @@ export type {
 	DriftSeverity,
 	DriftSurface,
 	DriftStatus,
-} from "./drift-gate-core.js";
+} from "./drift-gate-types.js";
