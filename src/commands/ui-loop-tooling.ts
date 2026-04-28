@@ -81,6 +81,7 @@ export function hasPlaywright(cwd = process.cwd()): boolean {
 	return (
 		existsSync(join(cwd, "playwright.config.js")) ||
 		existsSync(join(cwd, "playwright.config.ts")) ||
-		existsSync(join(cwd, "playwright.config.mjs"))
+		existsSync(join(cwd, "playwright.config.mjs")) ||
+		existsSync(join(cwd, "playwright.config.cjs"))
 	);
 }

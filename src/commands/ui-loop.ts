@@ -36,7 +36,6 @@ export type {
 	UILoopMode,
 	UIVerifyOptions,
 } from "./ui-loop-shared.js";
-
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -312,10 +311,10 @@ function resolveFastCommandSpec(
 		const commandSpec = appendForwardedArgsToPolicyCommand(
 			parsedPolicyCommand.value,
 			[
+				...(options.ci ? ["--ci"] : []),
 				...(typeof options.port === "number"
 					? ["--port", String(options.port)]
 					: []),
-				...(options.ci ? ["--ci"] : []),
 			],
 		);
 		return {
@@ -339,10 +338,10 @@ function resolveFastCommandSpec(
 	}
 	const pm = detectPackageManager();
 	const storybookArgs = [
+		...(options.ci ? ["--ci"] : []),
 		...(typeof options.port === "number"
 			? ["--port", String(options.port)]
 			: []),
-		...(options.ci ? ["--ci"] : []),
 	];
 	const commandSpec = buildScriptCommand(pm, "storybook", storybookArgs);
 	return {
@@ -659,9 +658,8 @@ function resolveExploreCommandSpec(
 	}
 
 	const commandSpec: CommandSpec = {
-		command: "pnpm",
+		command: "npx",
 		args: [
-			"exec",
 			"@agent-browser/cli",
 			"explore",
 			url,
@@ -774,33 +772,24 @@ export function runUIExplore(options: UIExploreOptions = {}): {
  * CLI entry point for ui:fast
  */
 export function runUIFastCLI(options: UIFastOptions = {}): number {
-	const result = runUIFast(options);
-	if (result.exitCode === EXIT_CODES.SUCCESS) {
-		console.info(result.message);
-	} else {
-		console.error(result.message);
-	}
-	return result.exitCode;
+	return printCLIResult(runUIFast(options));
 }
 
 /**
  * CLI entry point for ui:verify
  */
 export function runUIVerifyCLI(options: UIVerifyOptions = {}): number {
-	const result = runUIVerify(options);
-	if (result.exitCode === EXIT_CODES.SUCCESS) {
-		console.info(result.message);
-	} else {
-		console.error(result.message);
-	}
-	return result.exitCode;
+	return printCLIResult(runUIVerify(options));
 }
 
 /**
  * CLI entry point for ui:explore
  */
 export function runUIExploreCLI(options: UIExploreOptions = {}): number {
-	const result = runUIExplore(options);
+	return printCLIResult(runUIExplore(options));
+}
+
+function printCLIResult(result: { exitCode: number; message: string }): number {
 	if (result.exitCode === EXIT_CODES.SUCCESS) {
 		console.info(result.message);
 	} else {

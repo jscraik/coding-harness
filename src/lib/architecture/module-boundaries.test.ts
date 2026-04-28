@@ -89,8 +89,10 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
+	"src/lib/cli/registry/command-specs-core.ts",
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
+	"src/lib/output/normalise-core-v2.ts",
 ]);
 
 const COMMAND_IMPORT_PATTERN = /from\s+["'](?:\.\.\/)+commands\//;

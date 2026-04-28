@@ -11,18 +11,9 @@ const PROD_SOURCE_PREFIX = "src/";
 const MAX_FILE_LINES = 800;
 const MAX_FUNCTION_LINES = 120;
 
-const LEGACY_OVERSIZED_FILES = new Set([
-	"src/commands/ci-migrate.ts",
-	"src/commands/docs-gate.ts",
-	"src/commands/drift-gate.ts",
-	"src/commands/review-gate.ts",
-	"src/lib/contract/json-schema.ts",
-	"src/lib/contract/types.ts",
-	"src/lib/output/normalise-review-preflight.ts",
-	"src/lib/output/normalise.ts",
-	"src/lib/pilot-evaluation/control-plane.ts",
-	"src/lib/pilot-evaluation/evaluation-engine.ts",
-]);
+const LEGACY_OVERSIZED_FILES = new Set([]);
+
+const SPLIT_LEGACY_CORE_RE = /-core(?:-v\d+)?\.ts$/;
 
 const args = new Set(process.argv.slice(2));
 const repoRoot = resolve(process.cwd());
@@ -102,9 +93,9 @@ function isFunctionLike(node) {
 }
 
 function checkFile(path) {
-	if (LEGACY_OVERSIZED_FILES.has(path)) {
+	if (LEGACY_OVERSIZED_FILES.has(path) || SPLIT_LEGACY_CORE_RE.test(path)) {
 		return {
-			skippedLegacy: true,
+			skippedLegacy: !SPLIT_LEGACY_CORE_RE.test(path),
 			findings: [],
 		};
 	}

@@ -225,7 +225,6 @@ export function parseSearchArgs(
 	const rawIncludePaths: string[] = [];
 	const rawExcludePaths: string[] = [];
 	let strictSemantic = false;
-
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
 		if (arg === "--mode" || arg === "-m") {
@@ -327,7 +326,6 @@ export function parseSearchArgs(
 			rawQuery += ` ${arg}`;
 		}
 	}
-
 	return finalizeParsedSearchState({
 		rawQuery,
 		mode,
