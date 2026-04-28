@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { loadContract } from "../lib/contract/loader.js";
@@ -10,6 +10,32 @@ import {
 	type UILoopCommandSpec,
 	parseUILoopCommandSpec,
 } from "../lib/contract/ui-loop-command.js";
+import {
+	type CommandExecutionResult,
+	type UIEvidence,
+	type UIExploreOptions,
+	type UIFastOptions,
+	type UILoopMode,
+	type UIVerifyOptions,
+	buildExecutionDisabledResult,
+	buildPrepareResult,
+	hasUnsafeShellChars,
+	isExecutionDisabled,
+	resolveMode,
+} from "./ui-loop-shared.js";
+import {
+	buildScriptCommand,
+	detectPackageManager,
+	hasPlaywright,
+	hasStorybook,
+} from "./ui-loop-tooling.js";
+export type {
+	UIEvidence,
+	UIExploreOptions,
+	UIFastOptions,
+	UILoopMode,
+	UIVerifyOptions,
+} from "./ui-loop-shared.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -20,65 +46,6 @@ export const EXIT_CODES = {
 	TIMEOUT: 4,
 	EXECUTION_DISABLED: 5,
 } as const;
-
-export type UILoopMode = "execute" | "prepare";
-
-interface UIBaseOptions {
-	mode?: UILoopMode;
-	dryRun?: boolean;
-}
-
-export interface UIFastOptions extends UIBaseOptions {
-	port?: number;
-	ci?: boolean;
-	json?: boolean;
-	contractPath?: string;
-}
-
-export interface UIVerifyOptions extends UIBaseOptions {
-	outputDir?: string;
-	json?: boolean;
-	timeout?: number;
-	shard?: string;
-	contractPath?: string;
-}
-
-export interface UIExploreOptions extends UIBaseOptions {
-	url?: string;
-	outputDir?: string;
-	json?: boolean;
-	interactions?: boolean;
-	contractPath?: string;
-}
-
-export interface UIEvidence {
-	timestamp: string;
-	command: string;
-	durationMs: number;
-	passed: boolean;
-	mode: UILoopMode;
-	executed: boolean;
-	exitCode: number;
-	headSha: string;
-	contractVersion: string;
-	artifactUri: string;
-	artifactChecksum: string;
-	timedOut?: boolean;
-	stdout?: string;
-	stderr?: string;
-	screenshots?: string[];
-	logs?: string[];
-}
-
-interface CommandExecutionResult {
-	executed: boolean;
-	passed: boolean;
-	exitCode: number;
-	durationMs: number;
-	timedOut: boolean;
-	stdout?: string;
-	stderr?: string;
-}
 
 type CommandSpec = UILoopCommandSpec;
 
@@ -96,46 +63,6 @@ const EXECUTION_DISABLE_ENV = "HARNESS_UI_EXECUTION_DISABLED";
 const EXECUTION_DISABLED_CODE = "execution_disabled";
 const EXECUTION_DISABLED_MESSAGE =
 	"UI execution backend disabled by kill switch";
-
-function isExecutionDisabled(): boolean {
-	const raw = process.env[EXECUTION_DISABLE_ENV]?.trim().toLowerCase();
-	if (!raw) {
-		return false;
-	}
-	return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
-}
-
-function buildExecutionDisabledResult(): CommandExecutionResult {
-	return {
-		executed: false,
-		passed: false,
-		exitCode: EXIT_CODES.EXECUTION_DISABLED,
-		durationMs: 0,
-		timedOut: false,
-		stderr: EXECUTION_DISABLED_MESSAGE,
-	};
-}
-
-function hasUnsafeShellChars(command: string): boolean {
-	return /[;&|`$<>]/.test(command) || /[\n\r]/.test(command);
-}
-
-function resolveMode(mode?: UILoopMode, dryRun?: boolean): UILoopMode {
-	if (dryRun) {
-		return "prepare";
-	}
-	return mode ?? "execute";
-}
-
-function buildPrepareResult(): CommandExecutionResult {
-	return {
-		executed: false,
-		passed: true,
-		exitCode: EXIT_CODES.SUCCESS,
-		durationMs: 0,
-		timedOut: false,
-	};
-}
 
 function parseCommandSpec(
 	command: string,
@@ -296,45 +223,6 @@ function createEvidence(
 }
 
 /**
- * Detect package manager and return run command
- */
-function detectPackageManager(cwd = process.cwd()): {
-	name: string;
-	command: string;
-} {
-	if (existsSync(join(cwd, "pnpm-lock.yaml"))) {
-		return { name: "pnpm", command: "pnpm" };
-	}
-	if (existsSync(join(cwd, "bun.lockb")) || existsSync(join(cwd, "bun.lock"))) {
-		return { name: "bun", command: "bun" };
-	}
-	if (existsSync(join(cwd, "yarn.lock"))) {
-		return { name: "yarn", command: "yarn" };
-	}
-	return { name: "npm", command: "npm" };
-}
-
-/**
- * Build package-manager command for script execution.
- */
-function buildScriptCommand(
-	pm: { name: string; command: string },
-	script: string,
-	args: string[] = [],
-): CommandSpec {
-	if (pm.name === "npm") {
-		return {
-			command: pm.command,
-			args: ["run", script, ...(args.length > 0 ? ["--", ...args] : [])],
-		};
-	}
-	return {
-		command: pm.command,
-		args: [script, ...args],
-	};
-}
-
-/**
  * Resolve shared execution context used for parity fields.
  */
 function getContractUILoopContext(
@@ -382,26 +270,77 @@ function withExecutionDisabledError<T extends Record<string, unknown>>(
 }
 
 /**
- * Check if Storybook is configured
+ * Resolve the command spec for ui:fast.
  */
-function hasStorybook(cwd = process.cwd()): boolean {
-	return (
-		existsSync(join(cwd, ".storybook")) ||
-		existsSync(join(cwd, "storybook")) ||
-		existsSync(join(cwd, "storybook.config.js")) ||
-		existsSync(join(cwd, "storybook.config.ts"))
-	);
-}
+function resolveFastCommandSpec(
+	options: UIFastOptions,
+	policy: UILoopPolicy | undefined,
+	json: boolean,
+):
+	| {
+			ok: true;
+			commandSpec: CommandSpec;
+			fullCmd: string;
+			packageManager: string;
+	  }
+	| { ok: false; exitCode: number; message: string } {
+	if (policy?.fastCommand) {
+		if (hasUnsafeShellChars(policy.fastCommand)) {
+			const message =
+				"Invalid uiLoopPolicy.fastCommand: unsafe shell characters";
+			if (json) {
+				return {
+					ok: false,
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		const parsedPolicyCommand = parseCommandSpec(policy.fastCommand);
+		if (!parsedPolicyCommand.ok) {
+			const message = `Invalid uiLoopPolicy.fastCommand: ${parsedPolicyCommand.error}`;
+			if (json) {
+				return {
+					ok: false,
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		const commandSpec = appendForwardedArgsToPolicyCommand(
+			parsedPolicyCommand.value,
+			[...(options.ci ? ["--ci"] : [])],
+		);
+		return {
+			ok: true,
+			commandSpec,
+			fullCmd: formatCommandDisplay(commandSpec),
+			packageManager: "contract",
+		};
+	}
 
-/**
- * Check if Playwright is configured
- */
-function hasPlaywright(cwd = process.cwd()): boolean {
-	return (
-		existsSync(join(cwd, "playwright.config.js")) ||
-		existsSync(join(cwd, "playwright.config.ts")) ||
-		existsSync(join(cwd, "playwright.config.mjs"))
-	);
+	if (!hasStorybook()) {
+		const message = "Storybook not found. Ensure .storybook/ directory exists.";
+		if (json) {
+			return {
+				ok: false,
+				exitCode: EXIT_CODES.NOT_FOUND,
+				message: JSON.stringify({ error: message, code: "NOT_FOUND" }),
+			};
+		}
+		return { ok: false, exitCode: EXIT_CODES.NOT_FOUND, message };
+	}
+	const pm = detectPackageManager();
+	const storybookArgs = options.ci ? ["--ci"] : [];
+	const commandSpec = buildScriptCommand(pm, "storybook", storybookArgs);
+	return {
+		ok: true,
+		commandSpec,
+		fullCmd: formatCommandDisplay(commandSpec),
+		packageManager: pm.name,
+	};
 }
 
 /**
@@ -422,64 +361,21 @@ export function runUIFast(options: UIFastOptions = {}): {
 		contractVersion: contractContext.contractVersion,
 	};
 
-	let fullCmd: string;
-	let packageManager: string;
-	let commandSpec: CommandSpec;
-
-	if (policy?.fastCommand) {
-		if (hasUnsafeShellChars(policy.fastCommand)) {
-			const message =
-				"Invalid uiLoopPolicy.fastCommand: unsafe shell characters";
-			if (json) {
-				return {
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		const parsedPolicyCommand = parseCommandSpec(policy.fastCommand);
-		if (!parsedPolicyCommand.ok) {
-			const message = `Invalid uiLoopPolicy.fastCommand: ${parsedPolicyCommand.error}`;
-			if (json) {
-				return {
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		commandSpec = appendForwardedArgsToPolicyCommand(
-			parsedPolicyCommand.value,
-			[...(options.ci ? ["--ci"] : [])],
-		);
-		fullCmd = formatCommandDisplay(commandSpec);
-		packageManager = "contract";
-	} else {
-		if (!hasStorybook()) {
-			const message =
-				"Storybook not found. Ensure .storybook/ directory exists.";
-			if (json) {
-				return {
-					exitCode: EXIT_CODES.NOT_FOUND,
-					message: JSON.stringify({ error: message, code: "NOT_FOUND" }),
-				};
-			}
-			return { exitCode: EXIT_CODES.NOT_FOUND, message };
-		}
-		const pm = detectPackageManager();
-		packageManager = pm.name;
-		const storybookArgs = options.ci ? ["--ci"] : [];
-		commandSpec = buildScriptCommand(pm, "storybook", storybookArgs);
-		fullCmd = formatCommandDisplay(commandSpec);
+	const resolved = resolveFastCommandSpec(options, policy, json);
+	if (!resolved.ok) {
+		return { exitCode: resolved.exitCode, message: resolved.message };
 	}
+	const { commandSpec, fullCmd, packageManager } = resolved;
 
 	const execution =
 		mode === "execute"
-			? isExecutionDisabled()
-				? buildExecutionDisabledResult()
+			? isExecutionDisabled(EXECUTION_DISABLE_ENV)
+				? buildExecutionDisabledResult(
+						EXIT_CODES.EXECUTION_DISABLED,
+						EXECUTION_DISABLED_MESSAGE,
+					)
 				: executeCommand(commandSpec, 8000, true)
-			: buildPrepareResult();
+			: buildPrepareResult(EXIT_CODES.SUCCESS);
 	const artifact = createEvidence(
 		"ui:fast",
 		mode,
@@ -531,6 +427,91 @@ export function runUIFast(options: UIFastOptions = {}): {
 }
 
 /**
+ * Resolve the command spec for ui:verify.
+ */
+function resolveVerifyCommandSpec(
+	options: UIVerifyOptions,
+	policy: UILoopPolicy | undefined,
+	json: boolean,
+):
+	| {
+			ok: true;
+			commandSpec: CommandSpec;
+			fullCmd: string;
+			packageManager: string;
+	  }
+	| { ok: false; exitCode: number; message: string } {
+	const args: string[] = ["test"];
+	if (options.shard) {
+		args.push(`--shard=${options.shard}`);
+	}
+	if (typeof options.timeout === "number" && Number.isFinite(options.timeout)) {
+		args.push(`--timeout=${options.timeout}`);
+	}
+	if (options.outputDir) {
+		args.push(`--output=${options.outputDir}`);
+	}
+
+	if (policy?.verifyCommand) {
+		if (hasUnsafeShellChars(policy.verifyCommand)) {
+			const message =
+				"Invalid uiLoopPolicy.verifyCommand: unsafe shell characters";
+			if (json) {
+				return {
+					ok: false,
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		const parsedPolicyCommand = parseCommandSpec(policy.verifyCommand);
+		if (!parsedPolicyCommand.ok) {
+			const message = `Invalid uiLoopPolicy.verifyCommand: ${parsedPolicyCommand.error}`;
+			if (json) {
+				return {
+					ok: false,
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		const commandSpec = appendForwardedArgsToPolicyCommand(
+			parsedPolicyCommand.value,
+			args,
+		);
+		return {
+			ok: true,
+			commandSpec,
+			fullCmd: formatCommandDisplay(commandSpec),
+			packageManager: "contract",
+		};
+	}
+
+	if (!hasPlaywright()) {
+		const message =
+			"Playwright not found. Ensure playwright.config.{js,ts,mjs} exists.";
+		if (json) {
+			return {
+				ok: false,
+				exitCode: EXIT_CODES.NOT_FOUND,
+				message: JSON.stringify({ error: message, code: "NOT_FOUND" }),
+			};
+		}
+		return { ok: false, exitCode: EXIT_CODES.NOT_FOUND, message };
+	}
+	const pm = detectPackageManager();
+	const commandSpec = buildScriptCommand(pm, "playwright", args);
+	return {
+		ok: true,
+		commandSpec,
+		fullCmd: formatCommandDisplay(commandSpec),
+		packageManager: pm.name,
+	};
+}
+
+/**
  * Run UI verify - Playwright smoke suite with evidence
  */
 export function runUIVerify(options: UIVerifyOptions = {}): {
@@ -548,73 +529,21 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 		contractVersion: contractContext.contractVersion,
 	};
 
-	const args: string[] = ["test"];
-	if (options.shard) {
-		args.push(`--shard=${options.shard}`);
+	const resolved = resolveVerifyCommandSpec(options, policy, json);
+	if (!resolved.ok) {
+		return { exitCode: resolved.exitCode, message: resolved.message };
 	}
-	if (typeof options.timeout === "number" && Number.isFinite(options.timeout)) {
-		args.push(`--timeout=${options.timeout}`);
-	}
-	if (options.outputDir) {
-		args.push(`--output=${options.outputDir}`);
-	}
-
-	let fullCmd: string;
-	let packageManager: string;
-	let commandSpec: CommandSpec;
-	if (policy?.verifyCommand) {
-		if (hasUnsafeShellChars(policy.verifyCommand)) {
-			const message =
-				"Invalid uiLoopPolicy.verifyCommand: unsafe shell characters";
-			if (json) {
-				return {
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		const parsedPolicyCommand = parseCommandSpec(policy.verifyCommand);
-		if (!parsedPolicyCommand.ok) {
-			const message = `Invalid uiLoopPolicy.verifyCommand: ${parsedPolicyCommand.error}`;
-			if (json) {
-				return {
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		commandSpec = appendForwardedArgsToPolicyCommand(
-			parsedPolicyCommand.value,
-			args,
-		);
-		fullCmd = formatCommandDisplay(commandSpec);
-		packageManager = "contract";
-	} else {
-		if (!hasPlaywright()) {
-			const message =
-				"Playwright not found. Ensure playwright.config.{js,ts,mjs} exists.";
-			if (json) {
-				return {
-					exitCode: EXIT_CODES.NOT_FOUND,
-					message: JSON.stringify({ error: message, code: "NOT_FOUND" }),
-				};
-			}
-			return { exitCode: EXIT_CODES.NOT_FOUND, message };
-		}
-		const pm = detectPackageManager();
-		packageManager = pm.name;
-		commandSpec = buildScriptCommand(pm, "playwright", args);
-		fullCmd = formatCommandDisplay(commandSpec);
-	}
+	const { commandSpec, fullCmd, packageManager } = resolved;
 
 	const execution =
 		mode === "execute"
-			? isExecutionDisabled()
-				? buildExecutionDisabledResult()
+			? isExecutionDisabled(EXECUTION_DISABLE_ENV)
+				? buildExecutionDisabledResult(
+						EXIT_CODES.EXECUTION_DISABLED,
+						EXECUTION_DISABLED_MESSAGE,
+					)
 				: executeCommand(commandSpec, 10 * 60 * 1000)
-			: buildPrepareResult();
+			: buildPrepareResult(EXIT_CODES.SUCCESS);
 	const evidence = createEvidence(
 		"ui:verify",
 		mode,
@@ -672,6 +601,68 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 }
 
 /**
+ * Resolve the command spec for ui:explore.
+ */
+function resolveExploreCommandSpec(
+	policy: UILoopPolicy | undefined,
+	url: string,
+	outputDir: string,
+	interactionArgs: string[],
+	json: boolean,
+):
+	| { ok: true; commandSpec: CommandSpec; fullCmd: string }
+	| { ok: false; exitCode: number; message: string } {
+	if (policy?.exploreCommand) {
+		if (hasUnsafeShellChars(policy.exploreCommand)) {
+			const message =
+				"Invalid uiLoopPolicy.exploreCommand: unsafe shell characters";
+			if (json) {
+				return {
+					ok: false,
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		const parsedPolicyCommand = parseCommandSpec(policy.exploreCommand);
+		if (!parsedPolicyCommand.ok) {
+			const message = `Invalid uiLoopPolicy.exploreCommand: ${parsedPolicyCommand.error}`;
+			if (json) {
+				return {
+					ok: false,
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		const commandSpec = appendForwardedArgsToPolicyCommand(
+			parsedPolicyCommand.value,
+			[url, outputDir, ...interactionArgs],
+		);
+		return {
+			ok: true,
+			commandSpec,
+			fullCmd: formatCommandDisplay(commandSpec),
+		};
+	}
+
+	const commandSpec: CommandSpec = {
+		command: "npx",
+		args: [
+			"@agent-browser/cli",
+			"explore",
+			url,
+			"--output",
+			outputDir,
+			...interactionArgs,
+		],
+	};
+	return { ok: true, commandSpec, fullCmd: formatCommandDisplay(commandSpec) };
+}
+
+/**
  * Run UI explore - Agent browser exploratory testing
  */
 export function runUIExplore(options: UIExploreOptions = {}): {
@@ -693,57 +684,27 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 	const outputDir = options.outputDir ?? "./ui-explore-output";
 	const interactionArgs = options.interactions ? ["--interactions"] : [];
 
-	let fullCmd: string;
-	let commandSpec: CommandSpec;
-	if (policy?.exploreCommand) {
-		if (hasUnsafeShellChars(policy.exploreCommand)) {
-			const message =
-				"Invalid uiLoopPolicy.exploreCommand: unsafe shell characters";
-			if (json) {
-				return {
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		const parsedPolicyCommand = parseCommandSpec(policy.exploreCommand);
-		if (!parsedPolicyCommand.ok) {
-			const message = `Invalid uiLoopPolicy.exploreCommand: ${parsedPolicyCommand.error}`;
-			if (json) {
-				return {
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		commandSpec = appendForwardedArgsToPolicyCommand(
-			parsedPolicyCommand.value,
-			[url, outputDir, ...interactionArgs],
-		);
-		fullCmd = formatCommandDisplay(commandSpec);
-	} else {
-		commandSpec = {
-			command: "npx",
-			args: [
-				"@agent-browser/cli",
-				"explore",
-				url,
-				"--output",
-				outputDir,
-				...interactionArgs,
-			],
-		};
-		fullCmd = formatCommandDisplay(commandSpec);
+	const resolved = resolveExploreCommandSpec(
+		policy,
+		url,
+		outputDir,
+		interactionArgs,
+		json,
+	);
+	if (!resolved.ok) {
+		return { exitCode: resolved.exitCode, message: resolved.message };
 	}
+	const { commandSpec, fullCmd } = resolved;
 
 	const execution =
 		mode === "execute"
-			? isExecutionDisabled()
-				? buildExecutionDisabledResult()
+			? isExecutionDisabled(EXECUTION_DISABLE_ENV)
+				? buildExecutionDisabledResult(
+						EXIT_CODES.EXECUTION_DISABLED,
+						EXECUTION_DISABLED_MESSAGE,
+					)
 				: executeCommand(commandSpec, 5 * 60 * 1000)
-			: buildPrepareResult();
+			: buildPrepareResult(EXIT_CODES.SUCCESS);
 	const evidence = createEvidence(
 		"ui:explore",
 		mode,
