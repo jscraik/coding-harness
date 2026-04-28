@@ -56,6 +56,11 @@ export interface BrainStatusResult {
 	valid: boolean;
 	harnessDir: string;
 	validation: BrainValidationResult;
+	maturity: {
+		level: "seeded" | "partial" | "mature";
+		placeholderDomains: string[];
+		recommendations: string[];
+	};
 }
 
 /** Public API export. */
@@ -152,10 +157,31 @@ function getFlagValue(args: string[], index: number): string | undefined {
 /** Public API export. */
 export function runBrainStatus(harnessDir: string): BrainStatusResult {
 	const validation = validateProjectBrain(harnessDir);
+	const placeholderDomains = Object.keys(
+		validation.summary.placeholderDomains ?? {},
+	).sort();
+	const level =
+		placeholderDomains.length === 0
+			? "mature"
+			: validation.summary.errors > 0
+				? "seeded"
+				: "partial";
+	const recommendations =
+		placeholderDomains.length === 0
+			? []
+			: [
+					`Populate non-placeholder focus/knowledge content for: ${placeholderDomains.join(", ")}`,
+					"Re-run: harness brain status --json",
+				];
 	return {
 		valid: validation.valid,
 		harnessDir,
 		validation,
+		maturity: {
+			level,
+			placeholderDomains,
+			recommendations,
+		},
 	};
 }
 
@@ -178,6 +204,12 @@ function renderBrainStatusHuman(result: BrainStatusResult): string {
 	lines.push(`    Missing:   ${s.missingFiles}`);
 	lines.push(`    Placeholders: ${s.placeholderCount}`);
 	lines.push(`    Missing metadata: ${s.missingMetadata}`);
+	if (result.maturity.placeholderDomains.length > 0) {
+		lines.push(
+			`    Placeholder domains: ${result.maturity.placeholderDomains.join(", ")}`,
+		);
+	}
+	lines.push(`    Maturity: ${result.maturity.level}`);
 
 	if (validation.findings.length > 0) {
 		lines.push("");

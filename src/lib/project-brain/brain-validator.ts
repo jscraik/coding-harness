@@ -15,8 +15,10 @@ import { join } from "node:path";
 // Types
 // ---------------------------------------------------------------------------
 
+/** Severity levels emitted by the Project Brain validator. */
 export type BrainValidationSeverity = "error" | "warning" | "info";
 
+/** Single Project Brain validation finding. */
 export interface BrainValidationFinding {
 	/** File path relative to .harness/ */
 	path: string;
@@ -28,6 +30,7 @@ export interface BrainValidationFinding {
 	message: string;
 }
 
+/** Project Brain validation summary and findings payload. */
 export interface BrainValidationResult {
 	/** Whether the brain passes all required validations */
 	valid: boolean;
@@ -43,6 +46,7 @@ export interface BrainValidationResult {
 		missingFiles: number;
 		placeholderCount: number;
 		missingMetadata: number;
+		placeholderDomains: Record<string, number>;
 	};
 }
 
@@ -96,6 +100,11 @@ function extractMetadataValue(content: string, field: string): string | null {
 	const regex = new RegExp(`\\*\\*${escaped}:\\*\\*\\s*(.+)`, "i");
 	const match = regex.exec(content);
 	return match?.[1]?.trim() ?? null;
+}
+
+function extractDomainFromPath(path: string): string | null {
+	const match = /^knowledge\/([^/]+)\//.exec(path);
+	return match?.[1] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -313,6 +322,7 @@ export function validateProjectBrain(
 				missingFiles: 1,
 				placeholderCount: 0,
 				missingMetadata: 0,
+				placeholderDomains: {},
 			},
 		};
 	}
@@ -350,6 +360,21 @@ export function validateProjectBrain(
 	const placeholderCount = findings.filter(
 		(f) => f.field === "content" || f.field?.includes("focus"),
 	).length;
+	const placeholderDomains: Record<string, number> = {};
+	for (const finding of findings) {
+		if (
+			finding.severity !== "warning" ||
+			!(finding.field === "content" || finding.field.includes("focus"))
+		) {
+			continue;
+		}
+		const domain =
+			extractDomainFromPath(finding.path) ??
+			/^domain:([^:]+):focus$/.exec(finding.field)?.[1] ??
+			null;
+		if (!domain) continue;
+		placeholderDomains[domain] = (placeholderDomains[domain] ?? 0) + 1;
+	}
 	const missingMetadata = findings.filter((f) =>
 		(REQUIRED_METADATA_FIELDS as readonly string[]).includes(f.field),
 	).length;
@@ -365,6 +390,7 @@ export function validateProjectBrain(
 			missingFiles,
 			placeholderCount,
 			missingMetadata,
+			placeholderDomains,
 		},
 	};
 }

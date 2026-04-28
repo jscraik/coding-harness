@@ -88,7 +88,15 @@ describe("scaffold shell templates", () => {
 		const runner = renderHarnessGateRunner("pnpm");
 
 		expect(runner).toContain("Usage: bash scripts/run-harness-gate.sh");
-		expect(runner).toContain('exec pnpm --dir "$REPO_ROOT" exec tsx');
+		expect(runner).toContain(
+			'if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then',
+		);
+		expect(runner).toContain(
+			"rg -q 'listen EPERM: operation not permitted.*(/tmp/tsx-|\\.pipe)'",
+		);
+		expect(runner).toContain(
+			"Warning: tsx IPC startup failed with EPERM; falling back to node dist/cli.js.",
+		);
 		expect(runner).toContain('exec node "$REPO_ROOT/dist/cli.js" "$@"');
 		expect(runner).toContain('bash "$REPO_ROOT/scripts/harness-cli.sh"');
 		expect(runner).toContain("mise which harness");
