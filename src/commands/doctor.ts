@@ -196,8 +196,6 @@ export function runDoctor(options: DoctorOptions = {}): DoctorReport {
 	};
 	report.hasFailures = report.counts.fail > 0;
 
-	attachRecoveryGuidance(report);
-
 	try {
 		writeNorthStarSurfaceClassificationSnapshot(dir, report);
 		report.artifact_refs = [createNorthStarSurfaceClassificationArtifactRef()];
@@ -213,6 +211,8 @@ export function runDoctor(options: DoctorOptions = {}): DoctorReport {
 		report.counts = countChecks(report.checks);
 		report.hasFailures = true;
 	}
+
+	attachRecoveryGuidance(report);
 
 	return report;
 }

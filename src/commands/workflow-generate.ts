@@ -11,6 +11,8 @@ import { resolve } from "node:path";
 
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 import {
+	REQUIRED_ERROR_CODES,
+	REQUIRED_LOG_FIELDS,
 	type WorkflowGenerateOptions,
 	parseSourceFile,
 } from "./workflow-generate-parser.js";
@@ -22,22 +24,6 @@ export type {
 	WorkflowGenerateOptions,
 	WorkflowSpec,
 } from "./workflow-generate-parser.js";
-
-const REQUIRED_ERROR_CODES = [
-	"VALIDATION_ERROR",
-	"BLOCKED_DEPENDENCY",
-	"POLICY_FAIL",
-	"SYSTEM_ERROR",
-];
-
-const REQUIRED_LOG_FIELDS = [
-	"workflow_id",
-	"transition_code",
-	"from_state",
-	"to_state",
-	"correlation_id",
-	"result",
-];
 
 /**
  * Parse CLI args for the workflow generate command.

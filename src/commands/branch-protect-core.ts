@@ -225,7 +225,14 @@ function resolveContractBranchProtectionPolicy(
 			...(activeProvider ? { activeProvider } : {}),
 			...(requiredCheckManifestPath ? { requiredCheckManifestPath } : {}),
 		};
-	} catch {
+	} catch (error) {
+		// Contract not found or invalid - fall back to defaults.
+		// This is intentional to allow running without a contract file.
+		if (process.env.DEBUG) {
+			console.warn(
+				`[branch-protect] Contract loading failed, using defaults: ${error}`,
+			);
+		}
 		return {
 			branchProtectionPolicy: { ...DEFAULT_BRANCH_PROTECTION_POLICY },
 		};
@@ -982,9 +989,10 @@ export async function runBranchProtectCLI(
 		return EXIT_CODES.SUCCESS;
 	}
 
-	console.error(result.error.message);
 	if (options.json) {
 		console.error(JSON.stringify({ error: result.error }));
+	} else {
+		console.error(result.error.message);
 	}
 	if (result.error.code === "VALIDATION_ERROR") {
 		return EXIT_CODES.VALIDATION_ERROR;

@@ -74,6 +74,28 @@ export interface WorkflowSpec {
  */
 export type WorkflowOutputFormat = "json" | "segarn" | "segaprn";
 
+/**
+ * Required error taxonomy codes that every workflow spec must define.
+ */
+export const REQUIRED_ERROR_CODES = [
+	"VALIDATION_ERROR",
+	"BLOCKED_DEPENDENCY",
+	"POLICY_FAIL",
+	"SYSTEM_ERROR",
+] as const;
+
+/**
+ * Required observability log fields that every workflow spec must define.
+ */
+export const REQUIRED_LOG_FIELDS = [
+	"workflow_id",
+	"transition_code",
+	"from_state",
+	"to_state",
+	"correlation_id",
+	"result",
+] as const;
+
 function extractFrontmatter(content: string): Record<string, string> {
 	const match = content.match(/^---\n([\s\S]*?)\n---/);
 	if (!match?.[1]) return {};
@@ -223,12 +245,7 @@ function extractErrorsSection(
 					code &&
 					condition &&
 					routing &&
-					[
-						"VALIDATION_ERROR",
-						"BLOCKED_DEPENDENCY",
-						"POLICY_FAIL",
-						"SYSTEM_ERROR",
-					].includes(code)
+					(REQUIRED_ERROR_CODES as readonly string[]).includes(code)
 				) {
 					errors.push({ code, condition, routing });
 				}
@@ -240,12 +257,7 @@ function extractErrorsSection(
 		if (
 			bulletMatch?.[1] &&
 			bulletMatch[2] &&
-			[
-				"VALIDATION_ERROR",
-				"BLOCKED_DEPENDENCY",
-				"POLICY_FAIL",
-				"SYSTEM_ERROR",
-			].includes(bulletMatch[1])
+			(REQUIRED_ERROR_CODES as readonly string[]).includes(bulletMatch[1])
 		) {
 			errors.push({
 				code: bulletMatch[1],
