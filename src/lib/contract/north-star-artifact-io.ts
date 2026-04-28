@@ -5,7 +5,7 @@ import {
 	readdirSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 
 import {
 	type NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
@@ -173,7 +173,7 @@ export function* listNorthStarDurableGuardrails(
 			const path = join(classDir, file);
 			const guardrail = safeReadJson<DurableGuardrail>(path);
 			if (guardrail) {
-				yield { guardrail, path: path.slice(repoRoot.length + 1) };
+				yield { guardrail, path: relative(repoRoot, path) };
 			}
 		}
 	}

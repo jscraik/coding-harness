@@ -1,9 +1,10 @@
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	type DurableGuardrail,
 	type OverrideAcknowledgement,
+	listNorthStarDurableGuardrails,
 	listNorthStarOverrideAcknowledgements,
 	readNorthStarDurableGuardrail,
 	readNorthStarOverrideAcknowledgement,
@@ -359,6 +360,58 @@ describe("listNorthStarOverrideAcknowledgements", () => {
 			date: "2026-04-28",
 			overrideId: "override-3",
 		});
+	});
+});
+
+describe("listNorthStarDurableGuardrails", () => {
+	let root: string;
+
+	beforeEach(() => {
+		root = mkdtemp("guardrail-list-");
+	});
+
+	afterEach(() => {
+		cleanup(root);
+	});
+
+	it("returns guardrails with repo-relative paths", () => {
+		const guardrail: DurableGuardrail = {
+			schemaVersion: "north-star-durable-guardrail/v1",
+			guardrailId: createNorthStarGuardrailId({
+				failureClass: "drift_blocking",
+				surfaceIds: ["surface-a"],
+			}),
+			failureClass: "drift_blocking",
+			triggeredByFindingIds: ["finding-1"],
+			recurrenceCount: 1,
+			createdAtUtc: new Date().toISOString(),
+			owner: "workflow",
+			implementationTarget: "src/lib/fix.ts",
+			status: "proposed",
+		};
+		const classDir = join(
+			root,
+			".harness/guardrails/north-star",
+			"drift_blocking",
+		);
+		mkdirSync(classDir, { recursive: true });
+		writeFileSync(
+			join(classDir, "guardrail.json"),
+			`${JSON.stringify(guardrail, null, 2)}\n`,
+		);
+
+		const slashRoot = `${root}/`;
+		const result = Array.from(listNorthStarDurableGuardrails(slashRoot));
+		const [firstResult] = result;
+
+		expect(result).toHaveLength(1);
+		expect(firstResult).toBeDefined();
+		if (!firstResult) {
+			throw new Error("Expected at least one durable guardrail result");
+		}
+		expect(firstResult.path).toBe(
+			".harness/guardrails/north-star/drift_blocking/guardrail.json",
+		);
 	});
 });
 
