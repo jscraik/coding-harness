@@ -191,6 +191,19 @@ interface TemplateUpgradeResult {
 	forced: string[];
 }
 
+function printNoExistingInstallNotice(): void {
+	console.info(
+		[
+			"",
+			"ℹ️  No existing harness installation detected.",
+			"   Run `harness init` to install harness in this directory.",
+			"   For downstream repair flows, run `harness init --track` so future",
+			"   `harness init --update`/`harness upgrade` can repair contract defaults.",
+			"",
+		].join("\n"),
+	);
+}
+
 function upgradeTemplates(
 	targetDir: string,
 	ciProvider: CIProvider,
@@ -282,8 +295,79 @@ function upgradeTemplates(
 	return { ok: true, value: result };
 }
 
+function resolveUpgradeCiProvider(
+	targetDir: string,
+	options: HarnessUpgradeOptions,
+	preferredCiProvider: CIProvider | undefined,
+): { ok: true; value: CIProvider } | { ok: false; exitCode: number } {
+	const manifestOptions = {
+		requireMetadata: true,
+		operation: "upgrade",
+		...(preferredCiProvider ? { preferredCiProvider } : {}),
+	};
+	const manifestResult = loadManifest(targetDir, {
+		...manifestOptions,
+	});
+	if (!manifestResult.ok && options.provider === undefined) {
+		console.error(`Error: ${manifestResult.error.message}`);
+		return { ok: false, exitCode: EXIT_CODES.WRITE_ERROR };
+	}
+
+	const rawProvider =
+		options.provider ??
+		(manifestResult.ok ? manifestResult.value.ciProvider : undefined);
+	if (!rawProvider) {
+		console.error(
+			"Error: Restore manifest is incomplete for upgrade: missing ciProvider.",
+		);
+		return { ok: false, exitCode: EXIT_CODES.WRITE_ERROR };
+	}
+
+	const providerResult = normalizeCIProvider(rawProvider);
+	if (!providerResult.ok) {
+		console.error(`Error: invalid CI provider "${rawProvider}"`);
+		return { ok: false, exitCode: EXIT_CODES.INVALID_PATH };
+	}
+
+	return { ok: true, value: providerResult.value };
+}
+
+function printTemplateUpgradeSummary(
+	result: TemplateUpgradeResult,
+	dryRun: boolean,
+): void {
+	const { updated, skipped, forced } = result;
+	const prefix = dryRun ? "[DRY RUN] " : "";
+	if (updated.length > 0) {
+		console.info(`${prefix}Updated ${updated.length} stock template(s):`);
+		for (const filePath of updated) {
+			console.info(`  ✓ ${filePath}`);
+		}
+	}
+	if (forced.length > 0) {
+		console.info(`${prefix}Force-updated ${forced.length} customized file(s):`);
+		for (const filePath of forced) {
+			console.info(`  ⚠️  ${filePath}`);
+		}
+	}
+	if (skipped.length > 0 && (updated.length > 0 || forced.length > 0)) {
+		console.info(
+			`${prefix}Skipped ${skipped.length} file(s) (unchanged or customized).`,
+		);
+	}
+
+	if (updated.length === 0 && forced.length === 0) {
+		console.info(
+			`${prefix}No templates updated — all files are current or customized.`,
+		);
+	}
+}
+
 // ─── CLI entrypoint ───────────────────────────────────────────────────────────
 
+/**
+ * CLI options accepted by `harness upgrade`.
+ */
 export interface HarnessUpgradeOptions {
 	force?: boolean | undefined;
 	dryRun?: boolean | undefined;
@@ -314,16 +398,7 @@ export function runUpgradeCLI(
 	// 1. Detect existing install
 	const installCheck = detectExistingInstall(dir);
 	if (!installCheck.isExistingInstall) {
-		console.info(
-			[
-				"",
-				"ℹ️  No existing harness installation detected.",
-				"   Run `harness init` to install harness in this directory.",
-				"   For downstream repair flows, run `harness init --track` so future",
-				"   `harness init --update`/`harness upgrade` can repair contract defaults.",
-				"",
-			].join("\n"),
-		);
+		printNoExistingInstallNotice();
 		return EXIT_CODES.SUCCESS;
 	}
 
@@ -360,31 +435,15 @@ export function runUpgradeCLI(
 	}
 
 	// 4. Determine CI provider
-	const manifestResult = loadManifest(dir, {
-		requireMetadata: true,
-		operation: "upgrade",
+	const ciProviderResult = resolveUpgradeCiProvider(
+		dir,
+		options,
 		preferredCiProvider,
-	});
-	if (!manifestResult.ok && options.provider === undefined) {
-		console.error(`Error: ${manifestResult.error.message}`);
-		return EXIT_CODES.WRITE_ERROR;
+	);
+	if (!ciProviderResult.ok) {
+		return ciProviderResult.exitCode;
 	}
-	const rawProvider =
-		options.provider ??
-		(manifestResult.ok ? manifestResult.value.ciProvider : undefined);
-	if (!rawProvider) {
-		console.error(
-			"Error: Restore manifest is incomplete for upgrade: missing ciProvider.",
-		);
-		return EXIT_CODES.WRITE_ERROR;
-	}
-
-	const providerResult = normalizeCIProvider(rawProvider);
-	if (!providerResult.ok) {
-		console.error(`Error: invalid CI provider "${rawProvider}"`);
-		return EXIT_CODES.INVALID_PATH;
-	}
-	const ciProvider = providerResult.value;
+	const ciProvider = ciProviderResult.value;
 
 	// 5. Contract schema migration
 	if (!options.skipContractMigration) {
@@ -416,29 +475,8 @@ export function runUpgradeCLI(
 		console.error(`Error: ${templateResult.error}`);
 		return EXIT_CODES.WRITE_ERROR;
 	}
-	const { updated, skipped, forced } = templateResult.value;
-
 	// 7. Summary
-	const prefix = dryRun ? "[DRY RUN] " : "";
-	if (updated.length > 0) {
-		console.info(`${prefix}Updated ${updated.length} stock template(s):`);
-		for (const f of updated) console.info(`  ✓ ${f}`);
-	}
-	if (forced.length > 0) {
-		console.info(`${prefix}Force-updated ${forced.length} customized file(s):`);
-		for (const f of forced) console.info(`  ⚠️  ${f}`);
-	}
-	if (skipped.length > 0 && (updated.length > 0 || forced.length > 0)) {
-		console.info(
-			`${prefix}Skipped ${skipped.length} file(s) (unchanged or customized).`,
-		);
-	}
-
-	if (updated.length === 0 && forced.length === 0) {
-		console.info(
-			`${prefix}No templates updated — all files are current or customized.`,
-		);
-	}
+	printTemplateUpgradeSummary(templateResult.value, dryRun);
 
 	if (dryRun) {
 		console.info(
@@ -448,7 +486,10 @@ export function runUpgradeCLI(
 		console.info(
 			`\n✅ Upgrade complete: ${ctx.fromVersion} → ${ctx.toVersion}`,
 		);
-		if (updated.length > 0 || forced.length > 0) {
+		if (
+			templateResult.value.updated.length > 0 ||
+			templateResult.value.forced.length > 0
+		) {
 			console.info(
 				"   Run `harness doctor` to verify the installation is healthy.",
 			);
