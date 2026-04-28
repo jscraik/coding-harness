@@ -29,8 +29,14 @@ export const EXIT_CODES = {
 	ERROR: 3,
 } as const;
 
+/**
+ * Selects whether context-health analyzes current checkout sources or recent artifacts.
+ */
 export type ContextHealthTriggerType = "current_checkout" | "recent_artifacts";
 
+/**
+ * Options for running the context-health report generator.
+ */
 export interface ContextHealthOptions {
 	baseDir?: string;
 	json?: boolean;
@@ -72,6 +78,9 @@ interface ContradictionHistoryEntry {
 	resolvedAt?: string;
 }
 
+/**
+ * Canonical context-health report payload written to artifact output.
+ */
 export interface ContextHealthReport {
 	schemaVersion: "context-health-report/v1";
 	command: "context-health";
@@ -297,6 +306,12 @@ function buildContextHealthReport(
 	};
 }
 
+/**
+ * Executes context-health validation and writes a report artifact.
+ *
+ * @param options - Command options controlling path, output, and trigger mode
+ * @returns Success payload with report or structured failure with exit code
+ */
 export function runContextHealth(
 	options: ContextHealthOptions = {},
 ):
@@ -386,6 +401,12 @@ export function runContextHealth(
 	return { ok: true, report };
 }
 
+/**
+ * CLI entrypoint for `harness context-health`.
+ *
+ * @param args - Raw CLI arguments
+ * @returns Process exit code
+ */
 export function runContextHealthCLI(args: string[]): number {
 	let json = false;
 	let outPath: string | undefined;

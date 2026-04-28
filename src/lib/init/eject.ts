@@ -4,6 +4,9 @@ import * as readline from "node:readline/promises";
 import { loadManifest, sanitizePath } from "./rollback.js";
 import { HARNESS_DIR, MANIFEST_FILE } from "./types.js";
 
+/**
+ * Options controlling harness eject behavior.
+ */
 export interface EjectOptions {
 	force?: boolean;
 	dryRun?: boolean;
@@ -12,12 +15,18 @@ export interface EjectOptions {
 	rmSyncImpl?: typeof fs.rmSync;
 }
 
+/**
+ * Structured result returned by harness eject operations.
+ */
 export interface EjectResult {
 	deleted: string[];
 	warnings: string[];
 	dryRun: boolean;
 }
 
+/**
+ * Error thrown when an interactive eject confirmation is declined.
+ */
 export class EjectCancelledError extends Error {
 	constructor() {
 		super("Ejection aborted.");

@@ -43,6 +43,7 @@ dockercfg*
 # Logs
 *.log
 logs/
+.cache/
 
 # Test coverage
 coverage/
