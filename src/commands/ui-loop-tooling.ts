@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -8,6 +8,28 @@ export function detectPackageManager(cwd = process.cwd()): {
 	name: string;
 	command: string;
 } {
+	const packageJsonPath = join(cwd, "package.json");
+	if (existsSync(packageJsonPath)) {
+		try {
+			const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as {
+				packageManager?: string;
+			};
+			if (pkg.packageManager?.startsWith("pnpm@")) {
+				return { name: "pnpm", command: "pnpm" };
+			}
+			if (pkg.packageManager?.startsWith("bun@")) {
+				return { name: "bun", command: "bun" };
+			}
+			if (pkg.packageManager?.startsWith("yarn@")) {
+				return { name: "yarn", command: "yarn" };
+			}
+			if (pkg.packageManager?.startsWith("npm@")) {
+				return { name: "npm", command: "npm" };
+			}
+		} catch {
+			// Fall through to lockfile detection.
+		}
+	}
 	if (existsSync(join(cwd, "pnpm-lock.yaml"))) {
 		return { name: "pnpm", command: "pnpm" };
 	}

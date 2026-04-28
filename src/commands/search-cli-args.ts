@@ -306,11 +306,15 @@ export function parseSearchArgs(
 		if (arg === "--help" || arg === "-h") {
 			return { ok: false, exitCode: printSearchUsage() };
 		}
-		if (arg && !arg.startsWith("-") && !rawQuery) {
+		if (arg?.startsWith("-")) {
+			console.error(`Error: unknown argument '${arg}'`);
+			return { ok: false, exitCode: PARSE_EXIT_CODES.ERROR };
+		}
+		if (arg && !rawQuery) {
 			rawQuery = arg;
 			continue;
 		}
-		if (arg && !arg.startsWith("-")) {
+		if (arg) {
 			rawQuery += ` ${arg}`;
 		}
 	}

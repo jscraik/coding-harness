@@ -311,7 +311,12 @@ function resolveFastCommandSpec(
 		}
 		const commandSpec = appendForwardedArgsToPolicyCommand(
 			parsedPolicyCommand.value,
-			[...(options.ci ? ["--ci"] : [])],
+			[
+				...(typeof options.port === "number"
+					? ["--port", String(options.port)]
+					: []),
+				...(options.ci ? ["--ci"] : []),
+			],
 		);
 		return {
 			ok: true,
@@ -333,7 +338,12 @@ function resolveFastCommandSpec(
 		return { ok: false, exitCode: EXIT_CODES.NOT_FOUND, message };
 	}
 	const pm = detectPackageManager();
-	const storybookArgs = options.ci ? ["--ci"] : [];
+	const storybookArgs = [
+		...(typeof options.port === "number"
+			? ["--port", String(options.port)]
+			: []),
+		...(options.ci ? ["--ci"] : []),
+	];
 	const commandSpec = buildScriptCommand(pm, "storybook", storybookArgs);
 	return {
 		ok: true,
@@ -649,8 +659,9 @@ function resolveExploreCommandSpec(
 	}
 
 	const commandSpec: CommandSpec = {
-		command: "npx",
+		command: "pnpm",
 		args: [
+			"exec",
 			"@agent-browser/cli",
 			"explore",
 			url,
