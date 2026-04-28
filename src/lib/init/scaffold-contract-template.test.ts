@@ -36,6 +36,7 @@ describe("contract scaffold template", () => {
 		expect(contract.branchProtection.requiredApprovingReviewCount).toBe(1);
 		expect(contract.uiLoopPolicy.fastCommand).toBe("pnpm ui:fast");
 		expect(contract.loopStageContracts["review-gate"].timeoutMinutes).toBe(15);
+		expect(contract.docsGatePolicy.enabled).toBe(true);
 		expect(contract.controlPlanePolicy.overridePolicy.maxTtlHours).toBe(24);
 		expect(contract.contextIntegrityPolicy.mode).toBe("shadow");
 	});

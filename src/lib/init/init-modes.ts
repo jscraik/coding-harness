@@ -89,6 +89,7 @@ export function handleUpdate(
 	existingManifest: RestoreManifest | null,
 	ciProvider: CIProvider,
 	packageManager: string,
+	options: InitOptions,
 ): InitResult {
 	const manifestResult =
 		existingManifest !== null
@@ -115,7 +116,9 @@ export function handleUpdate(
 		};
 	}
 
-	const updateResult = executeUpdate(dir, manifestResult.value, ciProvider);
+	const updateResult = executeUpdate(dir, manifestResult.value, ciProvider, {
+		dryRun: options.dryRun,
+	});
 	if (!updateResult.ok) {
 		return updateResult;
 	}

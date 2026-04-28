@@ -4150,6 +4150,104 @@ describe("--update flag", () => {
 		}
 	});
 
+	it("backfills existing untracked contracts during tracked update", () => {
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					version: "1.5.0",
+					riskTierRules: {},
+					mergePolicy: { high: [], medium: [], low: [] },
+					branchProtection: {
+						requiredChecks: ["security-scan", "CodeRabbit"],
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toContain("harness.contract.json");
+			const updatedContract = JSON.parse(
+				readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+			) as Record<string, unknown>;
+			expect(updatedContract.northStar).toBeDefined();
+			expect(updatedContract.docsGatePolicy).toBeDefined();
+			expect(updatedContract.ciProviderPolicy).toBeDefined();
+			expect(
+				(
+					updatedContract.branchProtection as {
+						requiredChecks: string[];
+					}
+				).requiredChecks,
+			).toEqual(
+				expect.arrayContaining([
+					"security-scan",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				]),
+			);
+			expect(result.output.ownershipDecisions ?? []).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						file: "harness.contract.json",
+						path: "docsGatePolicy.enabled",
+						owner: "template",
+						action: "added",
+					}),
+				]),
+			);
+		}
+	});
+
+	it("previews tracked updates without mutating existing contracts", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const contractPath = join(tempDir, "harness.contract.json");
+		const existingContract = JSON.stringify(
+			{
+				version: "1.5.0",
+				riskTierRules: {},
+				mergePolicy: { high: [], medium: [], low: [] },
+			},
+			null,
+			2,
+		);
+		writeFileSync(contractPath, existingContract);
+
+		const result = runInit(tempDir, {
+			dryRun: true,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toContain("harness.contract.json");
+		}
+		expect(readFileSync(contractPath, "utf-8")).toBe(existingContract);
+	});
+
 	it("rejects updates that would downgrade the contract version", () => {
 		const installResult = runInit(tempDir, {
 			dryRun: false,

@@ -39,6 +39,16 @@ import {
 	type UpdateCheckResult,
 	type UpdateResult,
 } from "./types.js";
+
+/**
+ * Controls how tracked template updates are applied.
+ */
+export interface ExecuteUpdateOptions {
+	/**
+	 * Preview update results and ownership decisions without writing files.
+	 */
+	dryRun?: boolean | undefined;
+}
 const PROTECTED_CONTRACT_KEYS = [
 	"ciProviderPolicy",
 	"contextIntegrityPolicy",
@@ -198,6 +208,59 @@ function collectOwnershipDecisions(
 	return decisions;
 }
 
+function getRecordEntry(
+	value: Record<string, unknown>,
+	key: string,
+): Record<string, unknown> | null {
+	const entry = value[key];
+	return entry && typeof entry === "object" && !Array.isArray(entry)
+		? (entry as Record<string, unknown>)
+		: null;
+}
+
+function mergeStringArrayDefaults(
+	merged: Record<string, unknown>,
+	rendered: Record<string, unknown>,
+	sectionKey: string,
+	arrayKey: string,
+): void {
+	const mergedSection = getRecordEntry(merged, sectionKey);
+	const renderedSection = getRecordEntry(rendered, sectionKey);
+	if (!mergedSection || !renderedSection) {
+		return;
+	}
+
+	const mergedValues = mergedSection[arrayKey];
+	const renderedValues = renderedSection[arrayKey];
+	if (!Array.isArray(mergedValues) || !Array.isArray(renderedValues)) {
+		return;
+	}
+
+	const nextValues = [...mergedValues];
+	for (const renderedValue of renderedValues) {
+		if (
+			typeof renderedValue === "string" &&
+			!nextValues.includes(renderedValue)
+		) {
+			nextValues.push(renderedValue);
+		}
+	}
+	mergedSection[arrayKey] = nextValues;
+}
+
+function backfillGeneratedRequiredChecks(
+	merged: Record<string, unknown>,
+	rendered: Record<string, unknown>,
+): void {
+	mergeStringArrayDefaults(
+		merged,
+		rendered,
+		"branchProtection",
+		"requiredChecks",
+	);
+	mergeStringArrayDefaults(merged, rendered, "reviewPolicy", "requiredChecks");
+}
+
 function prepareContractRefresh(
 	targetPath: string,
 	renderedContent: string,
@@ -257,6 +320,7 @@ function prepareContractRefresh(
 	if (renderedVersion) {
 		mergedContract.version = renderedVersion;
 	}
+	backfillGeneratedRequiredChecks(mergedContract, renderedContract.value);
 	const ownershipDecisions = collectOwnershipDecisions(
 		existingContract.value,
 		renderedContract.value,
@@ -367,13 +431,16 @@ export function checkForUpdates(
  * @param targetDir - Filesystem root of the workspace to update.
  * @param manifest - The loaded restore manifest describing tracked files and preserved options.
  * @param ciProvider - The CI provider whose templates should be applied.
+ * @param options - Execution controls for update application, including dry-run previews.
  * @returns On success, an object listing updated paths, skipped paths, and accumulated ownership decisions; on failure, an error record describing the write/validation or contract merge error (e.g., `WRITE_ERROR` conditions such as path escapes, missing contract, invalid contract merge, or atomic write failures).
  */
 export function executeUpdate(
 	targetDir: string,
 	manifest: RestoreManifest,
 	ciProvider: CIProvider,
+	options: ExecuteUpdateOptions = {},
 ): UpdateResult {
+	const dryRun = options.dryRun === true;
 	const packageManager = detectPackageManager(targetDir);
 
 	const extractedOptions: InitOptions = {
@@ -402,12 +469,14 @@ export function executeUpdate(
 					: {}),
 			};
 			const manifestPath = resolve(targetDir, HARNESS_DIR, MANIFEST_FILE);
-			const manifestResult = atomicWrite(
-				manifestPath,
-				JSON.stringify(newManifest, null, 2),
-			);
-			if (!manifestResult.ok) {
-				return manifestResult;
+			if (!dryRun) {
+				const manifestResult = atomicWrite(
+					manifestPath,
+					JSON.stringify(newManifest, null, 2),
+				);
+				if (!manifestResult.ok) {
+					return manifestResult;
+				}
 			}
 
 			return {
@@ -543,9 +612,11 @@ export function executeUpdate(
 					...contractRefreshResult.value.ownershipDecisions,
 				);
 			}
-			const writeResult = atomicWrite(targetPath, content);
-			if (!writeResult.ok) {
-				return writeResult;
+			if (!dryRun) {
+				const writeResult = atomicWrite(targetPath, content);
+				if (!writeResult.ok) {
+					return writeResult;
+				}
 			}
 
 			updated.push(entry.path);
@@ -617,9 +688,11 @@ export function executeUpdate(
 				...contractRefreshResult.value.ownershipDecisions,
 			);
 		}
-		const writeResult = atomicWrite(targetPath, content);
-		if (!writeResult.ok) {
-			return writeResult;
+		if (!dryRun) {
+			const writeResult = atomicWrite(targetPath, content);
+			if (!writeResult.ok) {
+				return writeResult;
+			}
 		}
 
 		updated.push(entry.path);
@@ -637,6 +710,29 @@ export function executeUpdate(
 
 		const targetPath = pathResult.value;
 		if (existsSync(targetPath)) {
+			if (template.path === CONTRACT_FILE) {
+				let content = template.render(packageManager, renderContext);
+				const contractRefreshResult = prepareContractRefresh(
+					targetPath,
+					content,
+				);
+				if (!contractRefreshResult.ok) {
+					return contractRefreshResult;
+				}
+				content = contractRefreshResult.value.content;
+				ownershipDecisions.push(
+					...contractRefreshResult.value.ownershipDecisions,
+				);
+				if (!dryRun) {
+					const writeResult = atomicWrite(targetPath, content);
+					if (!writeResult.ok) {
+						return writeResult;
+					}
+				}
+				updated.push(template.path);
+				nextManifestEntries.push({ path: template.path, action: "created" });
+				continue;
+			}
 			skipped.push(template.path);
 			continue;
 		}
@@ -653,9 +749,11 @@ export function executeUpdate(
 			);
 		}
 
-		const writeResult = atomicWrite(targetPath, content);
-		if (!writeResult.ok) {
-			return writeResult;
+		if (!dryRun) {
+			const writeResult = atomicWrite(targetPath, content);
+			if (!writeResult.ok) {
+				return writeResult;
+			}
 		}
 
 		updated.push(template.path);
@@ -674,12 +772,14 @@ export function executeUpdate(
 		files: nextManifestEntries,
 	};
 	const manifestPath = resolve(targetDir, HARNESS_DIR, MANIFEST_FILE);
-	const manifestResult = atomicWrite(
-		manifestPath,
-		JSON.stringify(newManifest, null, 2),
-	);
-	if (!manifestResult.ok) {
-		return manifestResult;
+	if (!dryRun) {
+		const manifestResult = atomicWrite(
+			manifestPath,
+			JSON.stringify(newManifest, null, 2),
+		);
+		if (!manifestResult.ok) {
+			return manifestResult;
+		}
 	}
 
 	return { ok: true, value: { updated, skipped, ownershipDecisions } };

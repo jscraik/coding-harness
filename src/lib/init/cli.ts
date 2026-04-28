@@ -147,7 +147,13 @@ export function runInit(
 
 	// Handle --update: apply template updates
 	if (options.update) {
-		return handleUpdate(dir, existingManifest, ciProvider, packageManager);
+		return handleUpdate(
+			dir,
+			existingManifest,
+			ciProvider,
+			packageManager,
+			options,
+		);
 	}
 
 	// Handle --migrate: apply schema migrations to contract
