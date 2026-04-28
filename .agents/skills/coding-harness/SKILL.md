@@ -83,10 +83,12 @@ Core boundaries to enforce:
 **Enforced** — `harness init --update` will overwrite; do not hand-edit:
 - `harness.contract.json`, `.harness/ci-required-checks.json`, `memory.json`
 - `.circleci/config.yml` (full CI pipeline)
+- `.coderabbit.yaml` (CodeRabbit baseline)
+- `scripts/check-semgrep-changed.sh`, `scripts/check-semgrep-full.sh`
+- `scripts/semgrep-bootstrap.sh`, `scripts/semgrep-pre-push.yml`
 - `scripts/check-environment.sh` (generated from tooling baseline)
 
 **Adaptable** — harness writes a starter, project owns it after:
-- `.coderabbit.yaml`
 - `.github/CODEOWNERS`, `.github/PULL_REQUEST_TEMPLATE.md`, `CONTRIBUTING.md`
 - `Makefile`, `biome.json`, `prek.toml`, `.mise.toml`, `.gitleaks.toml`
 - `scripts/codex-preflight.sh`

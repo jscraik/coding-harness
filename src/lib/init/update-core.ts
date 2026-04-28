@@ -56,6 +56,18 @@ const PROTECTED_CONTRACT_KEYS = [
 	"mergeQueueEvidenceBinding",
 ] as const;
 
+const ENFORCED_UPDATE_TEMPLATE_PATHS = new Set([
+	".coderabbit.yaml",
+	".circleci/config.yml",
+	".github/workflows/pr-pipeline.yml",
+	".github/workflows/secret-scan.yml",
+	".harness/ci-required-checks.json",
+	"scripts/check-semgrep-changed.sh",
+	"scripts/check-semgrep-full.sh",
+	"scripts/semgrep-bootstrap.sh",
+	"scripts/semgrep-pre-push.yml",
+]);
+
 function parseContractRecord(
 	content: string,
 	path: string,
@@ -105,6 +117,59 @@ function isIssueTracker(value: unknown): value is IssueTracker {
 
 function valuesEqual(left: unknown, right: unknown): boolean {
 	return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function isEnforcedUpdateTemplatePath(templatePath: string): boolean {
+	return ENFORCED_UPDATE_TEMPLATE_PATHS.has(templatePath);
+}
+
+function validateUpdateTargetPath(
+	targetDir: string,
+	templatePath: string,
+	targetPath: string,
+): { ok: true } | { ok: false; error: InitErrorOutput } {
+	try {
+		if (existsSync(targetPath) && lstatSync(targetPath).isSymbolicLink()) {
+			return {
+				ok: false,
+				error: {
+					code: "WRITE_ERROR",
+					message: `Symlink detected at update target: ${templatePath} — update rejected`,
+					path: templatePath,
+				},
+			};
+		}
+
+		const realTargetDir = realpathSync(targetDir);
+		const parentDir = dirname(targetPath);
+		const realParent = existsSync(parentDir)
+			? realpathSync(parentDir)
+			: parentDir;
+		if (
+			realParent !== realTargetDir &&
+			!realParent.startsWith(`${realTargetDir}${sep}`)
+		) {
+			return {
+				ok: false,
+				error: {
+					code: "WRITE_ERROR",
+					message: `Update path escaped workspace: ${templatePath}`,
+					path: templatePath,
+				},
+			};
+		}
+	} catch (e) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Failed to validate update target: ${sanitizeError(e)}`,
+				path: templatePath,
+			},
+		};
+	}
+
+	return { ok: true };
 }
 
 function collectOwnershipDecisions(
@@ -723,6 +788,27 @@ export function executeUpdate(
 				ownershipDecisions.push(
 					...contractRefreshResult.value.ownershipDecisions,
 				);
+				if (!dryRun) {
+					const writeResult = atomicWrite(targetPath, content);
+					if (!writeResult.ok) {
+						return writeResult;
+					}
+				}
+				updated.push(template.path);
+				nextManifestEntries.push({ path: template.path, action: "created" });
+				continue;
+			}
+			if (isEnforcedUpdateTemplatePath(template.path)) {
+				const targetValidation = validateUpdateTargetPath(
+					targetDir,
+					template.path,
+					targetPath,
+				);
+				if (!targetValidation.ok) {
+					return targetValidation;
+				}
+
+				const content = template.render(packageManager, renderContext);
 				if (!dryRun) {
 					const writeResult = atomicWrite(targetPath, content);
 					if (!writeResult.ok) {
