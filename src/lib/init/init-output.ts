@@ -194,13 +194,16 @@ export function printInteractiveSummary(
 	failed: string[],
 	track: boolean,
 ): number {
-	console.info("\n✓ Harness installed!");
-	console.info(`  Created: ${applied.length}, Skipped: ${rejected.length}`);
-
 	if (failed.length > 0) {
-		console.info(`  Failed: ${failed.length}`);
+		console.error("\nHarness install completed with errors.");
+		console.error(
+			`  Created: ${applied.length}, Skipped: ${rejected.length}, Failed: ${failed.length}`,
+		);
 		return EXIT_CODES.WRITE_ERROR;
 	}
+
+	console.info("\n✓ Harness installed!");
+	console.info(`  Created: ${applied.length}, Skipped: ${rejected.length}`);
 
 	if (track && applied.length > 0) {
 		console.info("\n  Rollback: harness init --rollback");
