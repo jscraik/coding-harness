@@ -228,49 +228,17 @@ function calculateMetrics(summary: MemorySummary): ReliabilityMetrics {
 }
 
 /**
- * Run memory gate validation
+ * Collect memory validation violations across all checks.
+ *
+ * @returns Object with violations array and parsed summary (null if schema validation fails)
  */
-export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
-	const baseDir = process.cwd();
-	let memoryPath: string;
-	let forjamiePath: string;
-
-	try {
-		const memoryCandidate = options.memoryPath ?? "memory.json";
-		const forjamieCandidate = options.forjamiePath ?? "FORJAMIE.md";
-
-		// Absolute paths are resolved as-is (direct invocation); relative paths
-		// are validated to stay within the repository working directory.
-		memoryPath = isAbsolute(memoryCandidate)
-			? resolve(memoryCandidate)
-			: validatePath(baseDir, memoryCandidate);
-		forjamiePath = isAbsolute(forjamieCandidate)
-			? resolve(forjamieCandidate)
-			: validatePath(baseDir, forjamieCandidate);
-	} catch {
-		return {
-			ok: false,
-			code: EXIT_CODES.SYSTEM_ERROR,
-			message: "Invalid file path: path escapes repository",
-			violations: [
-				{ type: "schema", message: "Invalid file path: outside repository" },
-			],
-		};
-	}
-
-	// Read memory file
-	const data = readMemoryFile(memoryPath);
-	if (!data) {
-		return {
-			ok: false,
-			code: EXIT_CODES.SYSTEM_ERROR,
-			message: `Cannot read memory file: ${memoryPath}`,
-			violations: [
-				{ type: "schema", message: "Memory file not found or unreadable" },
-			],
-		};
-	}
-
+function collectMemoryViolations(
+	data: unknown,
+	forjamiePath: string,
+): {
+	violations: MemoryGateResult["violations"];
+	summary: MemorySummary | null;
+} {
 	const violations: MemoryGateResult["violations"] = [];
 
 	// 1. Schema validation
@@ -282,12 +250,7 @@ export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
 				message: `${error.path}: ${error.message}`,
 			});
 		}
-		return {
-			ok: false,
-			code: EXIT_CODES.SCHEMA_VIOLATION,
-			message: `Schema validation failed: ${schemaResult.errors.length} errors`,
-			violations,
-		};
+		return { violations, summary: null };
 	}
 
 	const summary = schemaResult.data as MemorySummary;
@@ -334,21 +297,86 @@ export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
 		}
 	}
 
-	// Determine exit code
-	let code: number = EXIT_CODES.SUCCESS;
-	if (violations.length > 0) {
-		if (violations.some((v) => v.type === "schema")) {
-			code = EXIT_CODES.SCHEMA_VIOLATION;
-		} else if (violations.some((v) => v.type === "preamble")) {
-			code = EXIT_CODES.MISSING_PREAMBLE;
-		} else if (violations.some((v) => v.type === "discipline")) {
-			code = EXIT_CODES.WRITE_DISCIPLINE_ERROR;
-		} else if (violations.some((v) => v.type === "closeout")) {
-			code = EXIT_CODES.CLOSEOUT_INCOMPLETE;
-		}
+	return { violations, summary };
+}
+
+function determineMemoryExitCode(
+	violations: MemoryGateResult["violations"],
+): number {
+	if (violations.length === 0) {
+		return EXIT_CODES.SUCCESS;
+	}
+	if (violations.some((v) => v.type === "schema")) {
+		return EXIT_CODES.SCHEMA_VIOLATION;
+	}
+	if (violations.some((v) => v.type === "preamble")) {
+		return EXIT_CODES.MISSING_PREAMBLE;
+	}
+	if (violations.some((v) => v.type === "discipline")) {
+		return EXIT_CODES.WRITE_DISCIPLINE_ERROR;
+	}
+	if (violations.some((v) => v.type === "closeout")) {
+		return EXIT_CODES.CLOSEOUT_INCOMPLETE;
+	}
+	return EXIT_CODES.SUCCESS;
+}
+
+/**
+ * Run memory gate validation
+ */
+export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
+	const baseDir = process.cwd();
+	let memoryPath: string;
+	let forjamiePath: string;
+
+	try {
+		const memoryCandidate = options.memoryPath ?? "memory.json";
+		const forjamieCandidate = options.forjamiePath ?? "FORJAMIE.md";
+
+		// Absolute paths are resolved as-is (direct invocation); relative paths
+		// are validated to stay within the repository working directory.
+		memoryPath = isAbsolute(memoryCandidate)
+			? resolve(memoryCandidate)
+			: validatePath(baseDir, memoryCandidate);
+		forjamiePath = isAbsolute(forjamieCandidate)
+			? resolve(forjamieCandidate)
+			: validatePath(baseDir, forjamieCandidate);
+	} catch {
+		return {
+			ok: false,
+			code: EXIT_CODES.SYSTEM_ERROR,
+			message: "Invalid file path: path escapes repository",
+			violations: [
+				{ type: "schema", message: "Invalid file path: outside repository" },
+			],
+		};
 	}
 
-	// Calculate metrics
+	// Read memory file
+	const data = readMemoryFile(memoryPath);
+	if (!data) {
+		return {
+			ok: false,
+			code: EXIT_CODES.SYSTEM_ERROR,
+			message: `Cannot read memory file: ${memoryPath}`,
+			violations: [
+				{ type: "schema", message: "Memory file not found or unreadable" },
+			],
+		};
+	}
+
+	const { violations, summary } = collectMemoryViolations(data, forjamiePath);
+
+	if (!summary) {
+		return {
+			ok: false,
+			code: EXIT_CODES.SCHEMA_VIOLATION,
+			message: "Schema validation failed",
+			violations,
+		};
+	}
+
+	const code = determineMemoryExitCode(violations);
 	const metrics = calculateMetrics(summary);
 
 	return {

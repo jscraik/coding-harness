@@ -116,8 +116,7 @@ function mergeBranchProtectionDefaults(
 						? T
 						: never)
 				: {
-						...(DEFAULT_CONTRACT.branchProtection
-							?.allowedMergeMethods ?? {}),
+						...(DEFAULT_CONTRACT.branchProtection?.allowedMergeMethods ?? {}),
 						...branchProtection.allowedMergeMethods,
 					},
 		codeQuality:
@@ -131,8 +130,7 @@ function mergeBranchProtectionDefaults(
 			branchProtection.publicCodeScanning === undefined
 				? DEFAULT_CONTRACT.branchProtection?.publicCodeScanning
 				: {
-						...(DEFAULT_CONTRACT.branchProtection?.publicCodeScanning ??
-							{}),
+						...(DEFAULT_CONTRACT.branchProtection?.publicCodeScanning ?? {}),
 						...branchProtection.publicCodeScanning,
 					},
 	} as HarnessContract["branchProtection"];
@@ -164,8 +162,7 @@ function mergeToolingPolicyDefaults(
 						...toolingPolicy.codexEnvironment,
 						requiredActions:
 							toolingPolicy.codexEnvironment.requiredActions ??
-							DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment
-								?.requiredActions,
+							DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment?.requiredActions,
 					},
 		makefile:
 			toolingPolicy.makefile === undefined
@@ -193,8 +190,7 @@ function mergeToolingPolicyDefaults(
 								?.capabilityDetectors,
 						requiredPackages:
 							toolingPolicy.packagePolicy.requiredPackages ??
-							DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
-								?.requiredPackages,
+							DEFAULT_CONTRACT.toolingPolicy?.packagePolicy?.requiredPackages,
 					},
 	} as HarnessContract["toolingPolicy"];
 }

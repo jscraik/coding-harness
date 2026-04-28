@@ -226,6 +226,77 @@ function maybeAddArtifactRef(
 	});
 }
 
+function buildContextHealthReport(
+	repoRoot: string,
+	triggerType: ContextHealthTriggerType,
+	policy: ContextIntegrityPolicy,
+	warnings: string[],
+	artifactRefs: ArtifactRef[],
+	inventory: ReturnType<typeof readContextSourceInventory>,
+	memorySnapshot: ReturnType<typeof writeMemoryMetricsSnapshot> | null,
+): ContextHealthReport {
+	const contradictionEntries = latestContradictions(repoRoot);
+	maybeAddArtifactRef(
+		artifactRefs,
+		repoRoot,
+		"contradiction_history",
+		CONTRADICTION_HISTORY_PATH,
+	);
+	const latestContradictionValues = Array.from(contradictionEntries.values());
+	const openContradictions = latestContradictionValues.filter(
+		(entry) => entry.status === "open",
+	);
+
+	const authoritativeSources =
+		inventory?.sources.filter((source) => source.authority !== "supporting") ??
+		[];
+	const authoritativeCovered = authoritativeSources.filter(
+		(source) => source.exists && source.indexedDocumentCount > 0,
+	).length;
+	const authoritativeCoverageRate = createRateMetric(
+		authoritativeCovered,
+		authoritativeSources.length,
+		1,
+	);
+	const staleAuthoritativeSourceCount = authoritativeSources.filter(
+		(source) => source.stalenessState === "stale",
+	).length;
+	const unknownAuthoritativeSourceCount = authoritativeSources.filter(
+		(source) => source.stalenessState === "unknown",
+	).length;
+
+	const decisionConsistencyProxy = createRateMetric(
+		latestContradictionValues.filter((entry) => entry.status === "resolved")
+			.length,
+		latestContradictionValues.length,
+		10,
+	);
+	const degradedRetrievalRate = createRateMetric(0, 0, 10);
+	const memoryUnresolvedQuestionCount =
+		memorySnapshot?.unresolvedQuestionCount ?? 0;
+
+	return {
+		schemaVersion: "context-health-report/v1",
+		command: "context-health",
+		generatedAt: new Date().toISOString(),
+		repoRoot,
+		triggerType,
+		mode: policy.mode,
+		status: warnings.length > 0 ? "partial" : "ok",
+		warnings,
+		artifactRefs,
+		metrics: {
+			authoritative_coverage_rate: authoritativeCoverageRate,
+			contradiction_open_count: openContradictions.length,
+			stale_authoritative_source_count: staleAuthoritativeSourceCount,
+			unknown_authoritative_source_count: unknownAuthoritativeSourceCount,
+			degraded_retrieval_rate: degradedRetrievalRate,
+			memory_unresolved_question_count: memoryUnresolvedQuestionCount,
+			decision_consistency_proxy: decisionConsistencyProxy,
+		},
+	};
+}
+
 export function runContextHealth(
 	options: ContextHealthOptions = {},
 ):
@@ -287,66 +358,15 @@ export function runContextHealth(
 		);
 	}
 
-	const contradictionEntries = latestContradictions(repoRoot);
-	maybeAddArtifactRef(
-		artifactRefs,
-		repoRoot,
-		"contradiction_history",
-		CONTRADICTION_HISTORY_PATH,
-	);
-	const latestContradictionValues = Array.from(contradictionEntries.values());
-	const openContradictions = latestContradictionValues.filter(
-		(entry) => entry.status === "open",
-	);
-
-	const authoritativeSources =
-		inventory?.sources.filter((source) => source.authority !== "supporting") ??
-		[];
-	const authoritativeCovered = authoritativeSources.filter(
-		(source) => source.exists && source.indexedDocumentCount > 0,
-	).length;
-	const authoritativeCoverageRate = createRateMetric(
-		authoritativeCovered,
-		authoritativeSources.length,
-		1,
-	);
-	const staleAuthoritativeSourceCount = authoritativeSources.filter(
-		(source) => source.stalenessState === "stale",
-	).length;
-	const unknownAuthoritativeSourceCount = authoritativeSources.filter(
-		(source) => source.stalenessState === "unknown",
-	).length;
-
-	const decisionConsistencyProxy = createRateMetric(
-		latestContradictionValues.filter((entry) => entry.status === "resolved")
-			.length,
-		latestContradictionValues.length,
-		10,
-	);
-	const degradedRetrievalRate = createRateMetric(0, 0, 10);
-	const memoryUnresolvedQuestionCount =
-		memorySnapshot?.unresolvedQuestionCount ?? 0;
-
-	const report: ContextHealthReport = {
-		schemaVersion: "context-health-report/v1",
-		command: "context-health",
-		generatedAt: new Date().toISOString(),
+	const report = buildContextHealthReport(
 		repoRoot,
 		triggerType,
-		mode: policy.mode,
-		status: warnings.length > 0 ? "partial" : "ok",
+		policy,
 		warnings,
 		artifactRefs,
-		metrics: {
-			authoritative_coverage_rate: authoritativeCoverageRate,
-			contradiction_open_count: openContradictions.length,
-			stale_authoritative_source_count: staleAuthoritativeSourceCount,
-			unknown_authoritative_source_count: unknownAuthoritativeSourceCount,
-			degraded_retrieval_rate: degradedRetrievalRate,
-			memory_unresolved_question_count: memoryUnresolvedQuestionCount,
-			decision_consistency_proxy: decisionConsistencyProxy,
-		},
-	};
+		inventory,
+		memorySnapshot,
+	);
 
 	try {
 		const outPath = validatePath(

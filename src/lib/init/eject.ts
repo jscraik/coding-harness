@@ -195,7 +195,10 @@ export async function ejectHarness(
 		}
 	}
 
-	const { pathsToRemove, workflowPaths } = collectEjectPaths(repoRoot, hasManifest);
+	const { pathsToRemove, workflowPaths } = collectEjectPaths(
+		repoRoot,
+		hasManifest,
+	);
 	const deletionFailedPaths = executeEjectDeletions(
 		workflowPaths,
 		pathsToRemove,

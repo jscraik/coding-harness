@@ -634,7 +634,9 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 					async () =>
 						[makeRulesetSummary("protect", 1, "disabled")] as RulesetSummary[],
 				),
-				getRuleset: vi.fn(async () => makeRuleset(["CodeRabbit", "security-scan"])),
+				getRuleset: vi.fn(async () =>
+					makeRuleset(["CodeRabbit", "security-scan"]),
+				),
 			}),
 		);
 
