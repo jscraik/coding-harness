@@ -373,8 +373,11 @@ async function verifyRemoteCodeRabbitSetup(
 	}
 
 	const client = new GitHubClient({ token, owner, repo });
-	checks.push(await verifyCodeRabbitCheckRuns(client));
-	checks.push(await verifyCodeRabbitRuleset(client));
+	const [checkRunCheck, rulesetCheck] = await Promise.all([
+		verifyCodeRabbitCheckRuns(client),
+		verifyCodeRabbitRuleset(client),
+	]);
+	checks.push(checkRunCheck, rulesetCheck);
 
 	return checks;
 }
