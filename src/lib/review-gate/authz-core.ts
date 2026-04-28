@@ -1,0 +1,285 @@
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { loadContract } from "../contract/loader.js";
+import type { HarnessContract, PilotAuthzPolicy } from "../contract/types.js";
+import { DEFAULT_PILOT_AUTHZ_POLICY } from "../contract/types.js";
+import { sanitizeError } from "../input/sanitize.js";
+
+/** Public API export. */
+export interface CheckAuthzOptions {
+	/** Path to contract file */
+	contractPath?: string;
+	/** Repository being targeted (owner/repo format) */
+	repo?: string;
+	/** Branch being targeted */
+	branch?: string;
+	/** Check token scopes (requires GITHUB_TOKEN env) */
+	checkScopes?: boolean;
+	/** Output as JSON */
+	json?: boolean;
+}
+
+/** Public API export. */
+export interface AuthzViolation {
+	/** Violation type */
+	type:
+		| "repo_not_allowed"
+		| "branch_not_allowed"
+		| "branch_protected"
+		| "scope_missing"
+		| "gitignore_missing";
+	/** Human-readable message */
+	message: string;
+	/** The value that caused the violation */
+	value?: string;
+	/** Expected policy value */
+	expected?: string;
+}
+
+/** Public API export. */
+export interface CheckAuthzOutput {
+	/** Whether all checks passed */
+	passed: boolean;
+	/** Any policy violations found */
+	violations: AuthzViolation[];
+	/** Policy that was applied */
+	policyApplied: PilotAuthzPolicy;
+	/** Repository checked (if provided) */
+	repoChecked?: string;
+	/** Branch checked (if provided) */
+	branchChecked?: string;
+	/** Token scopes detected (if checkScopes enabled) */
+	tokenScopes?: string[];
+}
+
+/** Public API export. */
+export type CheckAuthzResult =
+	| { ok: true; output: CheckAuthzOutput }
+	| { ok: false; error: { code: string; message: string } };
+
+/**
+ * Check if a value matches any pattern in an allowlist.
+ * Supports glob-style patterns with * and **.
+ */
+function matchesPattern(value: string, patterns: string[]): boolean {
+	if (patterns.length === 0) {
+		return false; // Empty allowlist = deny all
+	}
+
+	for (const pattern of patterns) {
+		// Exact match
+		if (pattern === value) {
+			return true;
+		}
+
+		// Escape regex metacharacters so policy values are interpreted as globs,
+		// not raw regular expressions.
+		const escapedPattern = pattern.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
+		const regexPattern = escapedPattern.replace(/\\\*\\\*|\\\*/g, (token) =>
+			token === "\\*\\*" ? ".*" : "[^/]*",
+		);
+
+		const regex = new RegExp(`^${regexPattern}$`);
+		if (regex.test(value)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Check if a branch is in the protected denylist.
+ */
+function isProtectedBranch(branch: string, denylist: string[]): boolean {
+	return matchesPattern(branch, denylist);
+}
+
+/**
+ * Get token scopes from GitHub API headers.
+ * This is a best-effort check that requires GITHUB_TOKEN to be set.
+ */
+async function getTokenScopes(): Promise<string[]> {
+	const token = process.env.GITHUB_TOKEN;
+	if (!token) {
+		return [];
+	}
+
+	try {
+		// Use GitHub API to get rate limit (which returns X-OAuth-Scopes header)
+		const response = await fetch("https://api.github.com/rate_limit", {
+			headers: {
+				Authorization: `Bearer ${token}`,
+				Accept: "application/vnd.github.v3+json",
+				"User-Agent": "harness-check-authz",
+			},
+		});
+
+		const scopesHeader = response.headers.get("X-OAuth-Scopes");
+		if (scopesHeader) {
+			return scopesHeader.split(", ").map((s) => s.trim());
+		}
+		return [];
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * Run authorization preflight check.
+ * This function is usable as a library (does not output to console).
+ */
+export async function runCheckAuthz(
+	options: CheckAuthzOptions,
+): Promise<CheckAuthzResult> {
+	const contractPath = options.contractPath ?? "harness.contract.json";
+	const resolvedContractPath = resolve(contractPath);
+	const repoRoot = dirname(resolvedContractPath);
+	// Load contract
+	let contract: HarnessContract;
+	try {
+		contract = loadContract(resolvedContractPath, repoRoot);
+	} catch (e) {
+		return {
+			ok: false,
+			error: {
+				code: "CONTRACT_ERROR",
+				message: `Failed to load contract: ${sanitizeError(e)}`,
+			},
+		};
+	}
+
+	const policy = contract.pilotAuthzPolicy ?? DEFAULT_PILOT_AUTHZ_POLICY;
+	const violations: AuthzViolation[] = [];
+
+	// Check repository against allowlist
+	if (options.repo) {
+		if (policy.repoAllowlist.length === 0) {
+			violations.push({
+				type: "repo_not_allowed",
+				message: `Repository '${options.repo}' not allowed: repo allowlist is empty (deny all by default)`,
+				value: options.repo,
+				expected: "At least one pattern in pilotAuthzPolicy.repoAllowlist",
+			});
+		} else if (!matchesPattern(options.repo, policy.repoAllowlist)) {
+			violations.push({
+				type: "repo_not_allowed",
+				message: `Repository '${options.repo}' does not match any pattern in allowlist`,
+				value: options.repo,
+				expected: `One of: ${policy.repoAllowlist.join(", ")}`,
+			});
+		}
+	}
+
+	// Check branch against allowlist and denylist
+	if (options.branch) {
+		// First check if branch is protected
+		if (isProtectedBranch(options.branch, policy.protectedBranchDenylist)) {
+			violations.push({
+				type: "branch_protected",
+				message: `Branch '${options.branch}' is protected and cannot be targeted for mutative operations`,
+				value: options.branch,
+				expected: `Branch not matching: ${policy.protectedBranchDenylist.join(", ")}`,
+			});
+		}
+
+		// Then check against allowlist (empty allowlist = deny all, matching repo behaviour)
+		if (policy.branchAllowlist.length === 0) {
+			violations.push({
+				type: "branch_not_allowed",
+				message: `Branch '${options.branch}' not allowed: branch allowlist is empty (deny all by default)`,
+				value: options.branch,
+				expected: "At least one pattern in pilotAuthzPolicy.branchAllowlist",
+			});
+		} else if (!matchesPattern(options.branch, policy.branchAllowlist)) {
+			violations.push({
+				type: "branch_not_allowed",
+				message: `Branch '${options.branch}' does not match any pattern in allowlist`,
+				value: options.branch,
+				expected: `One of: ${policy.branchAllowlist.join(", ")}`,
+			});
+		}
+	}
+
+	// Check token scopes if requested
+	let tokenScopes: string[] | undefined;
+	if (options.checkScopes) {
+		tokenScopes = await getTokenScopes();
+
+		// Check if required scopes are present
+		const missingScopes = policy.githubScopeAllowlist.filter(
+			(scope) => !tokenScopes?.includes(scope),
+		);
+
+		if (missingScopes.length > 0) {
+			violations.push({
+				type: "scope_missing",
+				message: `Token is missing required scopes: ${missingScopes.join(", ")}`,
+				value: tokenScopes?.join(", ") ?? "none",
+				expected: `All of: ${policy.githubScopeAllowlist.join(", ")}`,
+			});
+		}
+	}
+
+	// Check that artifacts/pilot/ is excluded from git tracking
+	// to prevent pilot artifacts from being accidentally committed.
+	const gitignorePath = resolve(repoRoot, ".gitignore");
+	if (existsSync(gitignorePath)) {
+		try {
+			const gitignoreContent = readFileSync(gitignorePath, "utf-8");
+			// Parse non-comment, non-empty lines and check for coverage of artifacts/pilot/
+			const patterns = gitignoreContent
+				.split("\n")
+				.map((l) => l.trim())
+				.filter(
+					(l) => l.length > 0 && !l.startsWith("#") && !l.startsWith("!"),
+				);
+			const covered = patterns.some(
+				(p) =>
+					p === "artifacts/pilot/" ||
+					p === "artifacts/pilot" ||
+					p === "artifacts/" ||
+					p === "/artifacts/pilot/" ||
+					p === "artifacts/**",
+			);
+			if (!covered) {
+				violations.push({
+					type: "gitignore_missing",
+					message:
+						"artifacts/pilot/ is not covered by .gitignore — pilot artifacts may be committed accidentally. Add 'artifacts/pilot/' to .gitignore.",
+					value: "not covered",
+					expected: "artifacts/pilot/ listed in .gitignore",
+				});
+			}
+		} catch {
+			// .gitignore read failed; skip the check rather than hard-fail
+		}
+	} else {
+		violations.push({
+			type: "gitignore_missing",
+			message:
+				".gitignore not found — create one and add 'artifacts/pilot/' to prevent pilot artifacts from being committed.",
+			value: "missing",
+			expected: ".gitignore with artifacts/pilot/ entry",
+		});
+	}
+
+	const output: CheckAuthzOutput = {
+		passed: violations.length === 0,
+		violations,
+		policyApplied: policy,
+	};
+
+	// Only add optional fields if they have values
+	if (options.repo !== undefined) {
+		output.repoChecked = options.repo;
+	}
+	if (options.branch !== undefined) {
+		output.branchChecked = options.branch;
+	}
+	if (tokenScopes !== undefined) {
+		output.tokenScopes = tokenScopes;
+	}
+
+	return { ok: true, output };
+}
