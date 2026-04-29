@@ -79,6 +79,9 @@ function normalizeMergePolicy(policy: MergePolicy): MergePolicy {
 	return normalized;
 }
 
+/**
+ * Structured error thrown when a harness contract cannot be loaded safely.
+ */
 export class ContractLoadError extends Error {
 	constructor(
 		message: string,
@@ -118,6 +121,67 @@ function safeParseJson(content: string): unknown {
 	return data;
 }
 
+/**
+ * Merge validated contract data with defaults, preserving user values.
+ *
+ * @param data - Validated contract data from schema validation
+ * @returns Fully merged and normalized HarnessContract
+ */
+function mergeContractDefaults(
+	data: HarnessContract | undefined,
+): HarnessContract {
+	const validatedData = data ?? {};
+	const normalizedData = Object.fromEntries(
+		Object.entries(validatedData).filter(([, value]) => value !== undefined),
+	) as Partial<HarnessContract>;
+	const {
+		northStar: _defaultNorthStar,
+		productSurface: _defaultProductSurface,
+		overrideReviewerRegistry: _defaultOverrideReviewerRegistry,
+		...legacyCompatibleDefaults
+	} = DEFAULT_CONTRACT;
+	const resolvedVersion =
+		normalizedData.version ??
+		legacyCompatibleDefaults.version ??
+		DEFAULT_CONTRACT.version;
+	const mergeDefaults = requiresCanonicalNorthStarSurfaces(resolvedVersion)
+		? DEFAULT_CONTRACT
+		: legacyCompatibleDefaults;
+	const contract: HarnessContract = {
+		...mergeDefaults,
+		...normalizedData,
+	};
+	const canonicalNorthStarRequired =
+		requiresCanonicalNorthStarSurfaces(resolvedVersion);
+	if (!canonicalNorthStarRequired) {
+		if (!Object.prototype.hasOwnProperty.call(normalizedData, "northStar")) {
+			contract.northStar = undefined;
+		}
+		if (
+			!Object.prototype.hasOwnProperty.call(normalizedData, "productSurface")
+		) {
+			contract.productSurface = undefined;
+		}
+		if (
+			!Object.prototype.hasOwnProperty.call(
+				normalizedData,
+				"overrideReviewerRegistry",
+			)
+		) {
+			contract.overrideReviewerRegistry = undefined;
+		}
+	}
+	return contract;
+}
+
+/**
+ * Loads and validates a harness contract from disk.
+ *
+ * @param path - Contract path (absolute or repository-relative)
+ * @param baseDir - Repository root used for safe-path validation
+ * @param options - Loader options
+ * @returns Parsed and normalized harness contract
+ */
 export function loadContract(
 	path: string,
 	baseDir = process.cwd(),
@@ -199,51 +263,7 @@ export function loadContract(
 		);
 	}
 
-	// Merge with defaults and normalize merge policy to canonical form.
-	// Validation returns a fully-typed data object where optional keys may be
-	// present with `undefined`; drop those keys before merging so DEFAULT_CONTRACT
-	// values are preserved when callers omit optional sections.
-	const validatedData = result.data ?? {};
-	const normalizedData = Object.fromEntries(
-		Object.entries(validatedData).filter(([, value]) => value !== undefined),
-	) as Partial<HarnessContract>;
-	const {
-		northStar: _defaultNorthStar,
-		productSurface: _defaultProductSurface,
-		overrideReviewerRegistry: _defaultOverrideReviewerRegistry,
-		...legacyCompatibleDefaults
-	} = DEFAULT_CONTRACT;
-	const resolvedVersion =
-		normalizedData.version ??
-		legacyCompatibleDefaults.version ??
-		DEFAULT_CONTRACT.version;
-	const mergeDefaults = requiresCanonicalNorthStarSurfaces(resolvedVersion)
-		? DEFAULT_CONTRACT
-		: legacyCompatibleDefaults;
-	const contract: HarnessContract = {
-		...mergeDefaults,
-		...normalizedData,
-	};
-	const canonicalNorthStarRequired =
-		requiresCanonicalNorthStarSurfaces(resolvedVersion);
-	if (!canonicalNorthStarRequired) {
-		if (!Object.prototype.hasOwnProperty.call(normalizedData, "northStar")) {
-			contract.northStar = undefined;
-		}
-		if (
-			!Object.prototype.hasOwnProperty.call(normalizedData, "productSurface")
-		) {
-			contract.productSurface = undefined;
-		}
-		if (
-			!Object.prototype.hasOwnProperty.call(
-				normalizedData,
-				"overrideReviewerRegistry",
-			)
-		) {
-			contract.overrideReviewerRegistry = undefined;
-		}
-	}
+	const contract = mergeContractDefaults(result.data);
 
 	// Normalize merge policy if present
 	if (contract.mergePolicy) {

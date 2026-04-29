@@ -33,6 +33,7 @@ dockercfg*
 # IDE
 .idea/
 .vscode/
+.obsidian/
 *.swp
 *.code-workspace
 
@@ -42,6 +43,7 @@ dockercfg*
 # Logs
 *.log
 logs/
+.cache/
 
 # Test coverage
 coverage/
@@ -109,3 +111,4 @@ docs/sketches/
 /.codex/hook-conformance.json
 .local/
 /codex-scripts/
+.codex/config.toml

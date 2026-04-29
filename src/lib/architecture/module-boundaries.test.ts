@@ -2,16 +2,67 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const LEGACY_MODULE_RATCHETS = [
+const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 	{
 		path: "src/commands/ci-migrate.ts",
 		maxLines: 10_400,
 		reason: "CI migration must move toward a control-plane service seam.",
 	},
 	{
+		path: "src/commands/drift-gate.ts",
+		maxLines: 1_000,
+		reason:
+			"Drift gate must move toward evaluator, artifact, and runner seams before it absorbs more policy.",
+	},
+	{
 		path: "src/lib/output/normalise.ts",
 		maxLines: 1_100,
 		reason: "Output normalisation should not keep absorbing command types.",
+	},
+] as const;
+
+const DOCTOR_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/doctor.ts",
+		maxLines: 260,
+		reason:
+			"Doctor runner must stay thin; move prerequisite checks and artifacts behind focused command seams before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-checks.ts",
+		maxLines: 40,
+		reason:
+			"Doctor check catalogue must stay a thin composition module after check families have been split.",
+	},
+	{
+		path: "src/commands/doctor-check-utils.ts",
+		maxLines: 80,
+		reason:
+			"Doctor check utilities must stay generic; move surface-specific behavior into check-family modules.",
+	},
+	{
+		path: "src/commands/doctor-tool-checks.ts",
+		maxLines: 200,
+		reason:
+			"Doctor tool checks must stay focused; split larger tool groups before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-file-checks.ts",
+		maxLines: 260,
+		reason:
+			"Doctor file checks must stay focused; split baseline checks before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-config-checks.ts",
+		maxLines: 220,
+		reason:
+			"Doctor config checks must stay focused; split contract policy families before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-ci-checks.ts",
+		maxLines: 200,
+		reason:
+			"Doctor CI checks must stay focused; split provider-specific checks before raising this limit.",
 	},
 ] as const;
 
@@ -38,8 +89,10 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
+	"src/lib/cli/registry/command-specs-core.ts",
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
+	"src/lib/output/normalise-core-v2.ts",
 ]);
 
 const COMMAND_IMPORT_PATTERN = /from\s+["'](?:\.\.\/)+commands\//;
@@ -105,8 +158,12 @@ describe("module boundaries", () => {
 		expect(countFileLines(validatorPath)).toBeLessThanOrEqual(2700);
 	});
 
-	it("ratchets legacy drift seams while they are decomposed", () => {
-		expectRatchetsWithinBudget(LEGACY_MODULE_RATCHETS);
+	it("ratchets seam decomposition while they are extracted", () => {
+		expectRatchetsWithinBudget(COMMAND_SURFACE_DECOMPOSITION_RATCHETS);
+	});
+
+	it("keeps doctor surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(DOCTOR_SURFACE_RATCHETS);
 	});
 
 	it("keeps scaffold surfaces split after decomposition", () => {

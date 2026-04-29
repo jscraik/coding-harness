@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { writeNorthStarOverrideAcknowledgement } from "../lib/contract/north-star-artifact-io.js";
 import {
 	NORTH_STAR_DECISION_QUESTION_SPECS,
 	NORTH_STAR_PRIMARY_BOTTLENECK,
@@ -808,8 +809,135 @@ describe("runReviewGate", () => {
 		if (result.ok) {
 			expect(result.output.verified).toBe(false);
 			expect(result.output.blockers).toContain(
-				"contract_invalid: Canonical north-star contracts must declare at least one decision question.",
+				"contract_invalid:contract-missing-questions: Canonical north-star contracts must declare at least one decision question.",
 			);
+		}
+	});
+
+	it("suppresses decision question blockers overridden by a valid acknowledgement (SA15 runtime)", async () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "review-gate-override-"));
+		const contractPath = join(repoRoot, "harness.contract.json");
+		writeFileSync(contractPath, JSON.stringify({ version: "1.6.0" }), "utf-8");
+
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission: "Test mission",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary: "Test boundary",
+				safetyFloor: ["evidence"],
+				nonGoals: [],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((q) => ({
+					id: q.id,
+					prompt: q.prompt,
+				})),
+			},
+			overrideReviewerRegistry: {
+				trustedReviewers: [
+					{
+						reviewerId: "jamie-craik",
+						reviewerType: "user",
+						signatureRef: "refs/reviewers/jamie-craik",
+						displayName: "Jamie Craik",
+						status: "active",
+					},
+				],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		const resultWithoutOverride = await runReviewGate({
+			...defaultOptions,
+			contractPath,
+		});
+		expect(resultWithoutOverride.ok).toBe(true);
+		if (resultWithoutOverride.ok) {
+			expect(resultWithoutOverride.output.blockers.length).toBeGreaterThan(0);
+			expect(
+				resultWithoutOverride.output.blockers.some((b) =>
+					b.includes("lead_time_path"),
+				),
+			).toBe(true);
+		}
+
+		const ack = {
+			schemaVersion: "north-star-override-acknowledgement/v1" as const,
+			overrideId: "ovr-missing-lead-time",
+			timestampUtc: new Date().toISOString(),
+			actor: "jamie-craik",
+			reason: "Lead time path is implicit in this refactor",
+			linkedFindingIds: ["missing-lead_time_path,manual_glue"],
+			approvedUntilUtc: new Date(Date.now() + 86400000).toISOString(),
+			compensatingControls: ["post-merge-metrics"],
+			signatureRef: "refs/reviewers/jamie-craik",
+		};
+		writeNorthStarOverrideAcknowledgement(
+			repoRoot,
+			"2026-04-27",
+			"ovr-missing-lead-time",
+			ack,
+		);
+
+		try {
+			const resultWithOverride = await runReviewGate({
+				...defaultOptions,
+				contractPath,
+			});
+			expect(resultWithOverride.ok).toBe(true);
+			if (resultWithOverride.ok) {
+				expect(
+					resultWithOverride.output.blockers.some((b) =>
+						b.includes("lead_time_path"),
+					),
+				).toBe(false);
+			}
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
 		}
 	});
 

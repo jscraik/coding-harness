@@ -35,18 +35,7 @@ describe("runBranchProtect", () => {
 			riskTierRules: {},
 			branchProtection: {
 				requiredChecks: [
-					"pr-template",
-					"linear-gate",
-					"risk-policy-gate",
-					"dependency-scan",
-					"orb-pinning",
-					"consistency-drift-health",
-					"lint",
-					"typecheck",
-					"test",
-					"audit",
-					"check",
-					"memory",
+					"pr-pipeline",
 					"security-scan",
 					"CodeRabbit",
 					"semgrep-cloud-platform/scan",
@@ -276,10 +265,7 @@ describe("runBranchProtect", () => {
 		);
 		expect(requiredRule).toBeDefined();
 		expect(requiredRule?.parameters).toMatchObject({
-			required_status_checks: [
-				{ context: "existing-check" },
-				{ context: "CodeRabbit" },
-			],
+			required_status_checks: [{ context: "CodeRabbit" }],
 		});
 		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
 	});
@@ -413,6 +399,43 @@ describe("runBranchProtect", () => {
 		);
 	});
 
+	it("keeps managed code scanning rules when visibility lookup is unavailable", async () => {
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 90,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const getRepositoryVisibility = vi.fn(async () => undefined);
+
+		mockGitHubClient.mockImplementation(() =>
+			mockBranchProtectClient({
+				listRulesets,
+				createRuleset,
+				getRepositoryVisibility,
+			}),
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = createRuleset.mock.calls[0]?.[0];
+		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
+			true,
+		);
+	});
+
 	it("uses branchProtection.requiredChecks from contract by default", async () => {
 		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
 		const createRuleset = vi.fn(
@@ -449,18 +472,7 @@ describe("runBranchProtect", () => {
 		);
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
-				{ context: "pr-template" },
-				{ context: "linear-gate" },
-				{ context: "risk-policy-gate" },
-				{ context: "dependency-scan" },
-				{ context: "orb-pinning" },
-				{ context: "consistency-drift-health" },
-				{ context: "lint" },
-				{ context: "typecheck" },
-				{ context: "test" },
-				{ context: "audit" },
-				{ context: "check" },
-				{ context: "memory" },
+				{ context: "pr-pipeline" },
 				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
 				{ context: "semgrep-cloud-platform/scan" },
@@ -555,19 +567,7 @@ describe("runBranchProtect", () => {
 		);
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
-				{ context: "pr-template" },
-				{ context: "linear-gate" },
-				{ context: "risk-policy-gate" },
-				{ context: "dependency-scan" },
-				{ context: "orb-pinning" },
-				{ context: "consistency-drift-health" },
-				{ context: "docs-gate" },
-				{ context: "lint" },
-				{ context: "typecheck" },
-				{ context: "test" },
-				{ context: "audit" },
-				{ context: "check" },
-				{ context: "memory" },
+				{ context: "pr-pipeline" },
 				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
 				{ context: "semgrep-cloud-platform/scan" },
@@ -1199,10 +1199,7 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "required_status_checks",
 		);
 		expect(requiredRule?.parameters).toMatchObject({
-			required_status_checks: [
-				{ context: "existing-check", integration_id: 1234 },
-				{ context: "check" },
-			],
+			required_status_checks: [{ context: "check" }],
 		});
 	});
 

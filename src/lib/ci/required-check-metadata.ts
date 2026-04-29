@@ -33,7 +33,6 @@ const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
 	"risk-policy-gate",
 	"consistency-drift-health",
 	"pr-template",
-	"security-scan",
 ]);
 
 /**

@@ -29,7 +29,7 @@ The expanded `AGENTS.md` duplicates content from `docs/agents/02-tooling-policy.
 This duplicates the table in `docs/agents/02-tooling-policy.md:25-35`.
 
 **Additional Issue:**
-- Code block uses `ts` language tag while project convention in `CLAUDE.md` uses `typescript`
+- Code block uses `ts` language tag while project convention uses `typescript`
 - Documentation map links don't use `./` prefix for clarity
 
 ## Proposed Solutions

@@ -7,6 +7,12 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { writeNorthStarOverrideAcknowledgement } from "../lib/contract/north-star-artifact-io.js";
+import type { OverrideAcknowledgement } from "../lib/contract/north-star-artifact-io.js";
+import {
+	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
+	getNorthStarDriftFindingsPath,
+} from "../lib/contract/north-star-artifacts.js";
 import { runDriftGate, runDriftGateCLI } from "./drift-gate.js";
 
 function write(path: string, content: string): void {
@@ -141,6 +147,37 @@ describe("drift-gate command", () => {
 		expect(result.exitCode).toBe(2);
 		expect(result.report.outcome).toBe("error");
 		expect(result.report.error_class).toBe("schema");
+	});
+
+	it("keeps invalid baseline load errors and does not auto-seed", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-8");
+		roots.push(root);
+		createRepoFixture(root);
+
+		const baselinePath = join(
+			root,
+			"artifacts/consistency-gate/consistency-baseline-latest.json",
+		);
+		write(baselinePath, `${JSON.stringify({ wrong: true }, null, 2)}\n`);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.outcome).toBe("error");
+		expect(result.report.error_class).toBe("schema");
+		expect(
+			result.report.findings.some((f) => f.rule_id === "baseline.load.error"),
+		).toBe(true);
+		expect(
+			result.report.findings.some((f) => f.rule_id === "baseline.seed.missing"),
+		).toBe(false);
+		expect(result.report.baseline_seeded).toBeUndefined();
+		expect(JSON.parse(readFileSync(baselinePath, "utf-8"))).toEqual({
+			wrong: true,
+		});
 	});
 
 	it("treats stale findings as preexisting when baseline omits dynamic message text", () => {
@@ -432,6 +469,200 @@ describe("drift-gate command", () => {
 					f.rule_id ===
 						"status.north_star.contract_parity.agent_first_status" &&
 					f.path === "docs/roadmap/agent-first-status.md",
+			),
+		).toBe(true);
+		// AC3: parity findings carry the drift_blocking failure class
+		const readmeFinding = result.report.findings.find(
+			(f) => f.rule_id === "status.north_star.contract_parity.readme",
+		);
+		expect(readmeFinding?.failureClass).toBe("drift_blocking");
+	});
+
+	it("flags cadence breach for stale non-core surfaces", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-cadence-breach",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		copyRepoFile(root, "harness.contract.json");
+		copyRepoFile(root, "docs/roadmap/north-star.md");
+		copyRepoFile(root, "README.md");
+		copyRepoFile(root, "docs/roadmap/agent-first-status.md");
+
+		// Inject a stale adjacent surface into the contract
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8"));
+		contract.productSurface = {
+			surfaces: [
+				{
+					surfaceId: "stale-surface",
+					surfaceType: "command",
+					class: "adjacent",
+					owner: "workflow",
+					northStarContribution: "test",
+					manualGlueReductionClaim: "test",
+					reliabilityContribution: "test",
+					evidenceReference: "src/stale.ts",
+					reviewCadence: "weekly",
+					ownedPaths: ["src/stale.ts"],
+					lastReviewedAt: "2026-03-01",
+				},
+			],
+		};
+		writeFileSync(contractPath, JSON.stringify(contract, null, 2));
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		expect(result.exitCode).toBe(1);
+		const cadenceFinding = result.report.findings.find(
+			(f) => f.rule_id === "status.north_star.cadence.breach",
+		);
+		expect(cadenceFinding).toBeDefined();
+		expect(cadenceFinding?.failureClass).toBe("cadence_breach");
+		expect(cadenceFinding?.severity).toBe("error");
+	});
+
+	it("emits durable guardrail artifacts for blocking findings (SA10)", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-guardrail");
+		roots.push(root);
+		createRepoFixture(root);
+		copyRepoFile(root, "harness.contract.json");
+		copyRepoFile(root, "docs/roadmap/north-star.md");
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		// Drift-blocking findings should emit guardrail artifacts
+		expect(result.report.guardrail_refs?.length).toBeGreaterThan(0);
+		expect(
+			result.report.guardrail_refs?.some((ref) =>
+				ref.includes("guardrails/north-star/drift_blocking"),
+			),
+		).toBe(true);
+	});
+
+	it("suppresses findings overridden by a valid acknowledgement (SA15 runtime)", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-override");
+		roots.push(root);
+		createRepoFixture(root);
+		copyRepoFile(root, "harness.contract.json");
+		copyRepoFile(root, "docs/roadmap/north-star.md");
+
+		// Add overrideReviewerRegistry to contract
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8"));
+		contract.overrideReviewerRegistry = {
+			trustedReviewers: [
+				{
+					reviewerId: "jamie-craik",
+					reviewerType: "user",
+					signatureRef: "refs/reviewers/jamie-craik",
+					displayName: "Jamie Craik",
+					status: "active",
+				},
+			],
+		};
+		writeFileSync(contractPath, JSON.stringify(contract, null, 2));
+
+		// Write an override that covers the README parity finding
+		const ack: OverrideAcknowledgement = {
+			schemaVersion: "north-star-override-acknowledgement/v1",
+			overrideId: "ovr-readme-parity",
+			timestampUtc: new Date().toISOString(),
+			actor: "jamie-craik",
+			reason: "Readme divergence is expected during rebranding",
+			linkedFindingIds: ["status.north_star.contract_parity.readme"],
+			approvedUntilUtc: new Date(Date.now() + 86400000).toISOString(),
+			compensatingControls: ["rebrand-tracker"],
+			signatureRef: "refs/reviewers/jamie-craik",
+		};
+		writeNorthStarOverrideAcknowledgement(
+			root,
+			"2026-04-27",
+			"ovr-readme-parity",
+			ack,
+		);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		// The overridden finding should be in suppressed, not findings
+		expect(
+			result.report.findings.some(
+				(f) => f.rule_id === "status.north_star.contract_parity.readme",
+			),
+		).toBe(false);
+		expect(
+			result.report.suppressed?.some(
+				(f) => f.rule_id === "status.north_star.contract_parity.readme",
+			),
+		).toBe(true);
+		// Other north-star findings should still be present
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id === "status.north_star.contract_parity.agent_first_status",
+			),
+		).toBe(true);
+	});
+
+	it("writes canonical north-star drift findings artifact", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-north-star-artifact",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		copyRepoFile(root, "harness.contract.json");
+		copyRepoFile(root, "docs/roadmap/north-star.md");
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		const artifactPath = getNorthStarDriftFindingsPath();
+		const artifact = JSON.parse(
+			readFileSync(join(root, artifactPath), "utf-8"),
+		) as {
+			schemaVersion: string;
+			sourceReport: { schemaVersion: string; status: string; outcome: string };
+			findings: Array<{ rule_id: string }>;
+		};
+
+		expect(result.report.artifact_refs).toEqual([
+			{
+				type: "north-star-drift-findings",
+				path: artifactPath,
+				schemaVersion: NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.driftFindings,
+			},
+		]);
+		expect(artifact.schemaVersion).toBe(
+			NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.driftFindings,
+		);
+		expect(artifact.sourceReport).toMatchObject({
+			schemaVersion: "1.0.0",
+			status: result.report.status,
+			outcome: result.report.outcome,
+		});
+		expect(artifact.findings.length).toBeGreaterThan(0);
+		expect(
+			artifact.findings.every((finding) =>
+				finding.rule_id.startsWith("status.north_star."),
 			),
 		).toBe(true);
 	});

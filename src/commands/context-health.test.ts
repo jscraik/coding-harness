@@ -99,7 +99,6 @@ describe("context-health command", () => {
 		write(join(root, "README.md"), "# README\n");
 		write(join(root, "AGENTS.md"), "# AGENTS\n");
 		write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
-		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
 		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
 		write(
 			join(root, "docs/agents/00-architecture-bootstrap.md"),
@@ -121,7 +120,7 @@ describe("context-health command", () => {
 		}
 
 		expect(result.report.status).toBe("ok");
-		expect(result.report.metrics.authoritative_coverage_rate.value).toBe(0.75);
+		expect(result.report.metrics.authoritative_coverage_rate.value).toBe(5 / 7);
 		expect(
 			result.report.metrics.authoritative_coverage_rate.insufficient_evidence,
 		).toBe(false);
@@ -273,7 +272,6 @@ describe("context-health command", () => {
 		write(join(root, "README.md"), "# README\n");
 		write(join(root, "AGENTS.md"), "# AGENTS\n");
 		write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
-		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
 		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
 		write(
 			join(root, "docs/agents/00-architecture-bootstrap.md"),

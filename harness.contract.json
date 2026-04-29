@@ -59,7 +59,7 @@
 					"src/commands/review-gate.ts",
 					"src/commands/review-gate.test.ts"
 				],
-				"lastReviewedAt": "2026-04-21"
+				"lastReviewedAt": "2026-04-28"
 			},
 			{
 				"surfaceId": "drift-gate",
@@ -80,7 +80,7 @@
 					"docs/agents/review-gate-workflow-contract.md",
 					"README.md"
 				],
-				"lastReviewedAt": "2026-04-21"
+				"lastReviewedAt": "2026-04-28"
 			},
 			{
 				"surfaceId": "preflight-gate",
@@ -122,7 +122,7 @@
 				"evidenceReference": "docs/roadmap/agent-first-status.md",
 				"reviewCadence": "weekly",
 				"ownedPaths": ["docs/roadmap/agent-first-status.md"],
-				"lastReviewedAt": "2026-04-21"
+				"lastReviewedAt": "2026-04-28"
 			}
 		]
 	},
@@ -152,12 +152,7 @@
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"requiredChecks": [
-			"security-scan",
-			"dependency-scan",
-			"orb-pinning",
-			"semgrep-cloud-platform/scan"
-		],
+		"requiredChecks": ["security-scan", "semgrep-cloud-platform/scan"],
 		"enforceReviewerIndependence": true
 	},
 	"evidencePolicy": {
@@ -190,19 +185,7 @@
 	},
 	"branchProtection": {
 		"requiredChecks": [
-			"pr-template",
-			"linear-gate",
-			"risk-policy-gate",
-			"dependency-scan",
-			"orb-pinning",
-			"consistency-drift-health",
-			"docs-gate",
-			"lint",
-			"typecheck",
-			"test",
-			"audit",
-			"check",
-			"memory",
+			"pr-pipeline",
 			"security-scan",
 			"CodeRabbit",
 			"semgrep-cloud-platform/scan"
@@ -580,12 +563,6 @@
 			},
 			{
 				"path": "AGENTS.md",
-				"kind": "file",
-				"authority": "canonical",
-				"required": true
-			},
-			{
-				"path": "CLAUDE.md",
 				"kind": "file",
 				"authority": "canonical",
 				"required": true

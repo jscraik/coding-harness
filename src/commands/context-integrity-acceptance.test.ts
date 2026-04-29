@@ -75,7 +75,6 @@ describe("context-integrity acceptance", () => {
 				"README.md": "canonical",
 				"AGENTS.md": "canonical",
 				"CONTRIBUTING.md": "canonical",
-				"CLAUDE.md": "canonical",
 				"AI/context/diagram-context.md": "canonical",
 				// Governed
 				"docs/agents": "governed",
@@ -317,23 +316,10 @@ Run tests with \`pnpm test\`.
 `,
 			);
 
-			write(
-				join(root, "CLAUDE.md"),
-				`# CLAUDE.md
-
-## Test commands
-
-Run tests with \`npm test\`. (This contradicts AGENTS.md)
-`,
-			);
-
 			// Verify fixture was created
 			const agentsContent = readFileSync(join(root, "AGENTS.md"), "utf-8");
-			const claudeContent = readFileSync(join(root, "CLAUDE.md"), "utf-8");
 
 			expect(agentsContent).toContain("pnpm test");
-			expect(claudeContent).toContain("npm test");
-			expect(claudeContent).toContain("contradicts");
 		});
 	});
 });

@@ -228,6 +228,7 @@ function renderScaffoldContract(
 			requireEvidence: true,
 		},
 		loopStageContracts: DEFAULT_CONTRACT.loopStageContracts,
+		docsGatePolicy: DEFAULT_CONTRACT.docsGatePolicy,
 		pilotGapCasePolicy: DEFAULT_CONTRACT.pilotGapCasePolicy,
 		pilotRollbackPolicy: DEFAULT_CONTRACT.pilotRollbackPolicy,
 		pilotAuthzPolicy: DEFAULT_CONTRACT.pilotAuthzPolicy,

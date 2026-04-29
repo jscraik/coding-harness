@@ -158,6 +158,7 @@ Exception for harness readiness:
   2. `bash scripts/harness-cli.sh`
   3. `mise which harness`
   4. global `harness` binary
+- `scripts/run-harness-gate.sh` should treat the real source CLI command as the source-checkout probe. Do not gate fallback on a separate runner version probe; in sandboxed runners, that probe can hit the same IPC `EPERM` startup failure that the fallback is meant to handle. Fallback to `node dist/cli.js` is allowed only for the explicit `listen EPERM: operation not permitted` runner temp-pipe signature.
 - This lookup order avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - Keep `scripts/check-environment.sh` validation-only for `mise`: it may assert that `mise` exists, is trusted, and can activate the repo, but CI/bootstrap flows must install `mise` and run `mise trust --yes .mise.toml` before invoking the gate.
 - The global fallback install path is `npm i -g @brainwav/coding-harness`.

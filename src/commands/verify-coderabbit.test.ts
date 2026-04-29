@@ -67,8 +67,12 @@ function createRepoFixture(
 	return repoPath;
 }
 
-function makeRulesetSummary(name: string, id = 1): RulesetSummary {
-	return { id, name, target: "branch", enforcement: "active" };
+function makeRulesetSummary(
+	name: string,
+	id = 1,
+	enforcement: RulesetSummary["enforcement"] = "active",
+): RulesetSummary {
+	return { id, name, target: "branch", enforcement };
 }
 
 function makeRuleset(checks: string[]): Ruleset {
@@ -616,6 +620,42 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 		expect(String(rulesetCheck?.details?.hint ?? "")).not.toContain(
 			"--add-check",
 		);
+		expect(result.ok).toBe(false);
+	});
+
+	it("fails ruleset check when protect ruleset is disabled", async () => {
+		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
+
+		mockGitHubClient.mockImplementation(() =>
+			mockVerifyCodeRabbitClient({
+				getDefaultBranch: vi.fn(async () => "main"),
+				listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
+				listRulesets: vi.fn(
+					async () =>
+						[makeRulesetSummary("protect", 1, "disabled")] as RulesetSummary[],
+				),
+				getRuleset: vi.fn(async () =>
+					makeRuleset(["CodeRabbit", "security-scan"]),
+				),
+			}),
+		);
+
+		const result = await runVerifyCodeRabbit({
+			repoPath,
+			token: "ghp_test",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		const rulesetCheck = result.checks.find(
+			(c) => c.name === "Ruleset Configuration",
+		);
+		expect(rulesetCheck?.status).toBe("fail");
+		expect(rulesetCheck?.message).toContain(
+			'Ruleset "protect" is disabled. Enable enforcement to require "CodeRabbit".',
+		);
+		expect(rulesetCheck?.details?.rulesetId).toBe(1);
+		expect(rulesetCheck?.details?.enforcement).toBe("disabled");
 		expect(result.ok).toBe(false);
 	});
 

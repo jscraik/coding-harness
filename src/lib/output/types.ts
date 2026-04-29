@@ -34,6 +34,8 @@ export interface GateFinding {
 	 * Binary-result gates always emit baseline: false (no baseline concept).
 	 */
 	baseline: boolean;
+	/** Spec-aligned failure class for blocked-state resume routing */
+	failureClass?: string;
 	/** Actionable fix guidance */
 	fix: {
 		/** Exact harness CLI command to resolve (when automatable) */

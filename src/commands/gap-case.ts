@@ -18,7 +18,7 @@ import {
 import { dirname, relative, resolve, sep } from "node:path";
 
 import { loadContract } from "../lib/contract/loader.js";
-import type { RiskTier } from "../lib/contract/types.js";
+import type { PilotGapCasePolicy, RiskTier } from "../lib/contract/types.js";
 import { DEFAULT_PILOT_GAP_CASE_POLICY } from "../lib/contract/types.js";
 import type {
 	GapCaseOpenOptions,
@@ -219,40 +219,56 @@ function findExistingCase(
 }
 
 /**
- * Open a new gap-case (idempotent - returns existing if fingerprint matches)
+ * Load gap-case policy from contract, falling back to the default.
+ * Verifies that gap-case tracking is enabled.
+ * @returns The loaded policy and an optional error result.
  */
-export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
-	// Load contract for policy
+function loadGapCasePolicy(contractPath?: string): {
+	policy: PilotGapCasePolicy;
+	error?: GapCaseResult;
+} {
 	let policy = DEFAULT_PILOT_GAP_CASE_POLICY;
-	if (options.contractPath) {
+	if (contractPath) {
 		try {
-			const contract = loadContract(options.contractPath);
+			const contract = loadContract(contractPath);
 			if (contract.pilotGapCasePolicy) {
 				policy = contract.pilotGapCasePolicy;
 			}
 		} catch (error) {
 			return {
-				ok: false,
+				policy: DEFAULT_PILOT_GAP_CASE_POLICY,
 				error: {
-					code: "E_CONTRACT_LOAD",
-					message: `Failed to load contract: ${error instanceof Error ? error.message : "Unknown error"}`,
+					ok: false,
+					error: {
+						code: "E_CONTRACT_LOAD",
+						message: `Failed to load contract: ${error instanceof Error ? error.message : "Unknown error"}`,
+					},
 				},
 			};
 		}
 	}
-
-	// Check if gap-case is enabled
 	if (!policy.enabled) {
 		return {
-			ok: false,
+			policy,
 			error: {
-				code: "E_DISABLED",
-				message: "Gap-case tracking is disabled in policy",
+				ok: false,
+				error: {
+					code: "E_DISABLED",
+					message: "Gap-case tracking is disabled in policy",
+				},
 			},
 		};
 	}
+	return { policy };
+}
 
-	// Validate required fields
+/**
+ * Validate all required fields for opening a gap-case.
+ * @returns A GapCaseResult error if validation fails, otherwise undefined.
+ */
+function validateOpenOptions(
+	options: GapCaseOpenOptions,
+): GapCaseResult | undefined {
 	if (!options.incidentId?.trim()) {
 		return {
 			ok: false,
@@ -284,7 +300,6 @@ export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
 		};
 	}
 
-	// Validate SHA format if provided
 	if (options.headSha && !isValidSha(options.headSha)) {
 		return {
 			ok: false,
@@ -295,12 +310,11 @@ export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
 		};
 	}
 
-	// Validate SLA hours if provided
 	if (options.slaHours !== undefined) {
 		if (
 			!Number.isInteger(options.slaHours) ||
 			options.slaHours <= 0 ||
-			options.slaHours > 8760 // Max 1 year
+			options.slaHours > 8760
 		) {
 			return {
 				ok: false,
@@ -312,34 +326,29 @@ export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
 		}
 	}
 
-	const storePath = resolveStorePath(options.storePath, policy.storePath);
+	return undefined;
+}
 
-	// Load store
-	let store: GapCaseStoreV1;
-	try {
-		store = loadStore(storePath);
-	} catch (error) {
+/**
+ * Create a new gap-case record, add it to the store, and persist.
+ */
+function persistNewGapCase(
+	options: GapCaseOpenOptions,
+	policy: PilotGapCasePolicy,
+	store: GapCaseStoreV1,
+	storePath: string,
+): GapCaseResult {
+	const severity = options.severity;
+	if (!severity) {
 		return {
 			ok: false,
 			error: {
-				code: "E_STORE_CORRUPT",
-				message: error instanceof Error ? error.message : "Store load failed",
+				code: "E_VALIDATION",
+				message: "severity must be one of: high, medium, low",
 			},
 		};
 	}
 
-	// Check for duplicate (idempotent open)
-	const existing = findExistingCase(
-		store,
-		options.incidentId,
-		options.headSha,
-		options.findingId,
-	);
-	if (existing) {
-		return { ok: true, output: existing };
-	}
-
-	// Create new case
 	const now = new Date().toISOString();
 	const slaHours = options.slaHours ?? policy.defaultSlaHours;
 	const slaDueAt = new Date(
@@ -350,7 +359,7 @@ export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
 		id: generateCaseId(),
 		incidentId: options.incidentId.trim(),
 		status: "open",
-		severity: options.severity,
+		severity,
 		summary: options.summary.trim(),
 		owner: options.owner.trim(),
 		openedAt: now,
@@ -361,10 +370,8 @@ export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
 		headSha: options.headSha,
 	};
 
-	// Add to store
 	store.cases.push(newCase);
 
-	// Save store
 	try {
 		saveStore(storePath, store);
 	} catch (error) {
@@ -381,40 +388,53 @@ export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
 }
 
 /**
- * Resolve an existing gap-case
+ * Open a new gap-case (idempotent - returns existing if fingerprint matches)
  */
-export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
-	// Load contract for policy
-	let policy = DEFAULT_PILOT_GAP_CASE_POLICY;
-	if (options.contractPath) {
-		try {
-			const contract = loadContract(options.contractPath);
-			if (contract.pilotGapCasePolicy) {
-				policy = contract.pilotGapCasePolicy;
-			}
-		} catch (error) {
-			return {
-				ok: false,
-				error: {
-					code: "E_CONTRACT_LOAD",
-					message: `Failed to load contract: ${error instanceof Error ? error.message : "Unknown error"}`,
-				},
-			};
-		}
-	}
+export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
+	const { policy, error: policyError } = loadGapCasePolicy(
+		options.contractPath,
+	);
+	if (policyError) return policyError;
 
-	// Check if gap-case is enabled
-	if (!policy.enabled) {
+	const validationError = validateOpenOptions(options);
+	if (validationError) return validationError;
+
+	const storePath = resolveStorePath(options.storePath, policy.storePath);
+
+	let store: GapCaseStoreV1;
+	try {
+		store = loadStore(storePath);
+	} catch (error) {
 		return {
 			ok: false,
 			error: {
-				code: "E_DISABLED",
-				message: "Gap-case tracking is disabled in policy",
+				code: "E_STORE_CORRUPT",
+				message: error instanceof Error ? error.message : "Store load failed",
 			},
 		};
 	}
 
-	// Validate required fields
+	const existing = findExistingCase(
+		store,
+		options.incidentId,
+		options.headSha,
+		options.findingId,
+	);
+	if (existing) {
+		return { ok: true, output: existing };
+	}
+
+	return persistNewGapCase(options, policy, store, storePath);
+}
+
+/**
+ * Validate all required fields for resolving a gap-case.
+ * @returns A GapCaseResult error if validation fails, otherwise undefined.
+ */
+function validateResolveOptions(
+	options: GapCaseResolveOptions,
+	policy: PilotGapCasePolicy,
+): GapCaseResult | undefined {
 	if (!options.caseId?.trim()) {
 		return {
 			ok: false,
@@ -422,7 +442,6 @@ export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
 		};
 	}
 
-	// Validate evidence URL
 	if (!options.evidenceUrl?.trim()) {
 		return {
 			ok: false,
@@ -443,57 +462,19 @@ export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
 		};
 	}
 
-	const storePath = resolveStorePath(options.storePath, policy.storePath);
+	return undefined;
+}
 
-	// Load store
-	let store: GapCaseStoreV1;
-	try {
-		store = loadStore(storePath);
-	} catch (error) {
-		return {
-			ok: false,
-			error: {
-				code: "E_STORE_CORRUPT",
-				message: error instanceof Error ? error.message : "Store load failed",
-			},
-		};
-	}
-
-	// Find case
-	const caseIndex = store.cases.findIndex((c) => c.id === options.caseId);
-	if (caseIndex === -1) {
-		return {
-			ok: false,
-			error: {
-				code: "E_NOT_FOUND",
-				message: `Gap-case not found: ${options.caseId}`,
-			},
-		};
-	}
-
-	const existingCase = store.cases[caseIndex];
-	if (!existingCase) {
-		return {
-			ok: false,
-			error: {
-				code: "E_NOT_FOUND",
-				message: `Gap-case not found: ${options.caseId}`,
-			},
-		};
-	}
-
-	// Check if already resolved
-	if (existingCase.status === "resolved") {
-		return {
-			ok: false,
-			error: {
-				code: "E_ALREADY_RESOLVED",
-				message: `Gap-case ${options.caseId} is already resolved`,
-			},
-		};
-	}
-
-	// Update case - explicitly build the resolved case to avoid spread type issues
+/**
+ * Build a resolved gap-case record, update the store, and persist.
+ */
+function persistResolvedGapCase(
+	existingCase: GapCaseRecord,
+	options: GapCaseResolveOptions,
+	store: GapCaseStoreV1,
+	caseIndex: number,
+	storePath: string,
+): GapCaseResult {
 	const now = new Date().toISOString();
 	const resolvedCase: GapCaseRecord = {
 		id: existingCase.id,
@@ -519,7 +500,6 @@ export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
 
 	store.cases[caseIndex] = resolvedCase;
 
-	// Save store
 	try {
 		saveStore(storePath, store);
 	} catch (error) {
@@ -533,6 +513,74 @@ export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
 	}
 
 	return { ok: true, output: resolvedCase };
+}
+
+/**
+ * Resolve an existing gap-case
+ */
+export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
+	const { policy, error: policyError } = loadGapCasePolicy(
+		options.contractPath,
+	);
+	if (policyError) return policyError;
+
+	const validationError = validateResolveOptions(options, policy);
+	if (validationError) return validationError;
+
+	const storePath = resolveStorePath(options.storePath, policy.storePath);
+
+	let store: GapCaseStoreV1;
+	try {
+		store = loadStore(storePath);
+	} catch (error) {
+		return {
+			ok: false,
+			error: {
+				code: "E_STORE_CORRUPT",
+				message: error instanceof Error ? error.message : "Store load failed",
+			},
+		};
+	}
+
+	const caseIndex = store.cases.findIndex((c) => c.id === options.caseId);
+	if (caseIndex === -1) {
+		return {
+			ok: false,
+			error: {
+				code: "E_NOT_FOUND",
+				message: `Gap-case not found: ${options.caseId}`,
+			},
+		};
+	}
+
+	const existingCase = store.cases[caseIndex];
+	if (!existingCase) {
+		return {
+			ok: false,
+			error: {
+				code: "E_NOT_FOUND",
+				message: `Gap-case not found: ${options.caseId}`,
+			},
+		};
+	}
+
+	if (existingCase.status === "resolved") {
+		return {
+			ok: false,
+			error: {
+				code: "E_ALREADY_RESOLVED",
+				message: `Gap-case ${options.caseId} is already resolved`,
+			},
+		};
+	}
+
+	return persistResolvedGapCase(
+		existingCase,
+		options,
+		store,
+		caseIndex,
+		storePath,
+	);
 }
 
 /**

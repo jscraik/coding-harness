@@ -17,7 +17,6 @@ function seedRequiredTruthSources(root: string): void {
 	write(join(root, "README.md"), "# README\nUse `pnpm test`.\n");
 	write(join(root, "AGENTS.md"), "# AGENTS\nRun `pnpm test`.\n");
 	write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
-	write(join(root, "CLAUDE.md"), "# CLAUDE\n");
 	write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
 	write(
 		join(root, "docs/agents/00-architecture-bootstrap.md"),
@@ -728,7 +727,6 @@ describe("docs-gate command", () => {
 
 		write(join(root, "README.md"), "# README\n");
 		write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
-		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
 		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
 		write(
 			join(root, "package.json"),
@@ -777,7 +775,6 @@ describe("docs-gate command", () => {
 		);
 		write(join(root, "AGENTS.md"), "# AGENTS\nRun `pnpm test`.\n");
 		write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
-		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
 		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
 		write(
 			join(root, "docs/agents/00-architecture-bootstrap.md"),
@@ -821,7 +818,6 @@ describe("docs-gate command", () => {
 		write(join(root, "README.md"), "# README\nUse `pnpm test`.\n");
 		write(join(root, "AGENTS.md"), "# AGENTS\nRun `pnpm test`.\n");
 		write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
-		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
 		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
 		write(
 			join(root, "docs/agents/00-architecture-bootstrap.md"),
@@ -889,7 +885,6 @@ describe("docs-gate command", () => {
 			join(root, "CONTRIBUTING.md"),
 			"# CONTRIBUTING\n\n- Require status checks: `lint`, `CodeRabbit`\n",
 		);
-		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
 		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
 		write(
 			join(root, "docs/agents/00-architecture-bootstrap.md"),

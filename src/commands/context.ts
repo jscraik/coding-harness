@@ -33,6 +33,9 @@ export const EXIT_CODES = {
 	ERROR: 3,
 } as const;
 
+/**
+ * CLI options for `harness context`.
+ */
 export interface ContextOptions {
 	/** Query string */
 	query: string;
@@ -50,6 +53,9 @@ export interface ContextOptions {
 	lexicalFallback?: boolean | undefined;
 }
 
+/**
+ * Structured output for context query execution.
+ */
 export interface ContextOutput {
 	/** Whether the query succeeded */
 	success: boolean;
@@ -125,14 +131,16 @@ function parseThreshold(value: string | undefined): number | undefined {
 }
 
 /**
- * Run a context query.
+ * Resolve search limit and threshold from options and compact policy.
  *
  * @param options - Query options
- * @returns Exit code
+ * @param baseDir - Base directory
+ * @returns Resolved parameters, or null if policy loading failed
  */
-export async function runContext(options: ContextOptions): Promise<number> {
-	const baseDir = options.baseDir ?? process.cwd();
-	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
+function resolveSearchParameters(
+	options: ContextOptions,
+	baseDir: string,
+): { limit: number; threshold: number } | null {
 	let compactDefaults: { limit: number; threshold: number } | undefined;
 	if (options.limit === undefined || options.threshold === undefined) {
 		try {
@@ -160,7 +168,7 @@ export async function runContext(options: ContextOptions): Promise<number> {
 			} else {
 				console.error(`Error: ${message}`);
 			}
-			return EXIT_CODES.ERROR;
+			return null;
 		}
 	}
 	const limit = options.limit ?? compactDefaults?.limit ?? DEFAULT_SEARCH_LIMIT;
@@ -168,94 +176,161 @@ export async function runContext(options: ContextOptions): Promise<number> {
 		options.threshold ??
 		compactDefaults?.threshold ??
 		DEFAULT_SIMILARITY_THRESHOLD;
+	return { limit, threshold };
+}
+
+/**
+ * Attempt lexical fallback search when semantic backend is unavailable.
+ *
+ * @param options - Query options
+ * @param baseDir - Base directory
+ * @param harnessDir - Harness directory name
+ * @param limit - Maximum results
+ * @returns Exit code if fallback was executed, or null if Ollama is available
+ */
+async function tryLexicalFallback(
+	options: ContextOptions,
+	baseDir: string,
+	harnessDir: string,
+	limit: number,
+): Promise<number | null> {
+	const ollama = new OllamaClient();
+	if (await ollama.isAvailable()) return null;
+
+	const results = searchLexicalFallback(baseDir, options.query, {
+		harnessDir,
+		limit,
+	});
+	printSearchResults(options, results, "lexical_degraded");
+	return results.length > 0 ? EXIT_CODES.SUCCESS : EXIT_CODES.NO_RESULTS;
+}
+
+/**
+ * Write a context failure message in JSON or plain text format.
+ *
+ * @param options - Query options
+ * @param error - Error message
+ */
+function writeContextFailure(options: ContextOptions, error: string): void {
+	if (options.json) {
+		console.info(
+			JSON.stringify({
+				success: false,
+				query: options.query,
+				count: 0,
+				results: [],
+				error,
+			}),
+		);
+	} else {
+		console.error(`✗ ${error}`);
+	}
+}
+
+/**
+ * Print search results in JSON or plain text format.
+ *
+ * @param options - Query options
+ * @param results - Search results
+ * @param source - Result source lane
+ * @param threshold - Similarity threshold (for semantic output only)
+ */
+function printSearchResults(
+	options: ContextOptions,
+	results: SearchResult[],
+	source: "semantic" | "lexical_degraded",
+	threshold?: number,
+): void {
+	if (options.json) {
+		const output: ContextOutput = {
+			success: true,
+			query: options.query,
+			count: results.length,
+			results,
+			source,
+		};
+		console.info(JSON.stringify(output, null, 2));
+		return;
+	}
+
+	if (results.length === 0) {
+		if (source === "lexical_degraded") {
+			console.info(`No lexical fallback results found for: "${options.query}"`);
+		} else {
+			console.info(`No results found for: "${options.query}"`);
+			if (threshold !== undefined) {
+				console.info(`Threshold: ${threshold}`);
+			}
+		}
+		return;
+	}
+
+	const label =
+		source === "lexical_degraded" ? "lexical fallback result(s)" : "result(s)";
+	console.info(`Found ${results.length} ${label} for: "${options.query}"`);
+	console.info();
+
+	for (const [i, r] of results.entries()) {
+		console.info(`${i + 1}. ${r.path}`);
+		console.info(`   Similarity: ${(r.similarity * 100).toFixed(1)}%`);
+		if (r.metadata) {
+			console.info(`   Type: ${r.metadata.type}`);
+			console.info(`   Topic: ${r.metadata.topic}`);
+			console.info(`   Date: ${r.metadata.date}`);
+		}
+		if (source === "lexical_degraded") {
+			console.info("   Mode: lexical_degraded");
+		}
+		console.info();
+	}
+}
+
+/**
+ * Run a context query.
+ *
+ * @param options - Query options
+ * @returns Exit code
+ */
+export async function runContext(options: ContextOptions): Promise<number> {
+	const baseDir = options.baseDir ?? process.cwd();
+	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
+	const params = resolveSearchParameters(options, baseDir);
+	if (!params) return EXIT_CODES.ERROR;
+	const { limit, threshold } = params;
 	const dbPath = join(baseDir, harnessDir, DEFAULT_DB_FILENAME);
 	const lexicalFallbackEnabled = isCp4bLexicalFallbackEnabled(
 		options.lexicalFallback,
 	);
 
 	if (lexicalFallbackEnabled) {
-		const ollama = new OllamaClient();
-		const isAvailable = await ollama.isAvailable();
-		if (!isAvailable) {
-			const results = searchLexicalFallback(baseDir, options.query, {
-				harnessDir,
-				limit,
-			});
-			if (options.json) {
-				const output: ContextOutput = {
-					success: true,
-					query: options.query,
-					count: results.length,
-					results,
-					source: "lexical_degraded",
-				};
-				console.info(JSON.stringify(output, null, 2));
-			} else if (results.length === 0) {
-				console.info(
-					`No lexical fallback results found for: "${options.query}"`,
-				);
-			} else {
-				console.info(
-					`Found ${results.length} lexical fallback result(s) for: "${options.query}"`,
-				);
-				console.info();
-				for (const [i, r] of results.entries()) {
-					console.info(`${i + 1}. ${r.path}`);
-					console.info(`   Similarity: ${(r.similarity * 100).toFixed(1)}%`);
-					if (r.metadata) {
-						console.info(`   Type: ${r.metadata.type}`);
-						console.info(`   Topic: ${r.metadata.topic}`);
-						console.info(`   Date: ${r.metadata.date}`);
-					}
-					console.info("   Mode: lexical_degraded");
-					console.info();
-				}
-			}
-			return results.length > 0 ? EXIT_CODES.SUCCESS : EXIT_CODES.NO_RESULTS;
-		}
+		const fallbackResult = await tryLexicalFallback(
+			options,
+			baseDir,
+			harnessDir,
+			limit,
+		);
+		if (fallbackResult !== null) return fallbackResult;
 	}
 
-	// Initialize store
 	const store = new VectorStore(dbPath);
 	const initResult = store.init();
-
 	if (!initResult.ok) {
 		const normalized = normalizeStoreInitError(initResult.error.message);
-		const error = `Failed to initialize store: ${normalized.message}`;
-		if (options.json) {
-			console.info(
-				JSON.stringify({
-					success: false,
-					query: options.query,
-					count: 0,
-					results: [],
-					error,
-				}),
-			);
-		} else {
-			console.error(`✗ ${error}`);
-		}
+		writeContextFailure(
+			options,
+			`Failed to initialize store: ${normalized.message}`,
+		);
 		return EXIT_CODES.ERROR;
 	}
 
-	// Check Ollama availability
 	const ollama = new OllamaClient();
 	const isAvailable = await ollama.isAvailable();
-
 	if (!isAvailable) {
-		const error = "Ollama not available. Please start Ollama or install it.";
-		if (options.json) {
-			console.info(
-				JSON.stringify({
-					success: false,
-					query: options.query,
-					count: 0,
-					results: [],
-					error,
-				}),
-			);
-		} else {
-			console.error(`✗ ${error}`);
+		writeContextFailure(
+			options,
+			"Ollama not available. Please start Ollama or install it.",
+		);
+		if (!options.json) {
 			console.error("   Install: https://ollama.com");
 			console.error("   Start: ollama serve");
 		}
@@ -263,24 +338,12 @@ export async function runContext(options: ContextOptions): Promise<number> {
 		return EXIT_CODES.OLLAMA_UNAVAILABLE;
 	}
 
-	// Generate query embedding
 	const embedResult = await ollama.embed(options.query);
-
 	if (!embedResult.ok) {
-		const error = `Embedding failed: ${embedResult.error.message}`;
-		if (options.json) {
-			console.info(
-				JSON.stringify({
-					success: false,
-					query: options.query,
-					count: 0,
-					results: [],
-					error,
-				}),
-			);
-		} else {
-			console.error(`✗ ${error}`);
-		}
+		writeContextFailure(
+			options,
+			`Embedding failed: ${embedResult.error.message}`,
+		);
 		store.close();
 		return EXIT_CODES.ERROR;
 	}
@@ -290,61 +353,20 @@ export async function runContext(options: ContextOptions): Promise<number> {
 		limit,
 		includeMetadata: true,
 	});
-
 	store.close();
 
 	if (!searchResult.ok) {
-		const error = `Search failed: ${searchResult.error.message}`;
-		if (options.json) {
-			console.info(
-				JSON.stringify({
-					success: false,
-					query: options.query,
-					count: 0,
-					results: [],
-					error,
-				}),
-			);
-		} else {
-			console.error(`✗ ${error}`);
-		}
+		writeContextFailure(
+			options,
+			`Search failed: ${searchResult.error.message}`,
+		);
 		return EXIT_CODES.ERROR;
 	}
 
-	const results = searchResult.value;
-
-	// Output results
-	if (options.json) {
-		const output: ContextOutput = {
-			success: true,
-			query: options.query,
-			count: results.length,
-			results,
-			source: "semantic",
-		};
-		console.info(JSON.stringify(output, null, 2));
-	} else {
-		if (results.length === 0) {
-			console.info(`No results found for: "${options.query}"`);
-			console.info(`Threshold: ${threshold}`);
-		} else {
-			console.info(`Found ${results.length} result(s) for: "${options.query}"`);
-			console.info();
-
-			for (const [i, r] of results.entries()) {
-				console.info(`${i + 1}. ${r.path}`);
-				console.info(`   Similarity: ${(r.similarity * 100).toFixed(1)}%`);
-				if (r.metadata) {
-					console.info(`   Type: ${r.metadata.type}`);
-					console.info(`   Topic: ${r.metadata.topic}`);
-					console.info(`   Date: ${r.metadata.date}`);
-				}
-				console.info();
-			}
-		}
-	}
-
-	return results.length > 0 ? EXIT_CODES.SUCCESS : EXIT_CODES.NO_RESULTS;
+	printSearchResults(options, searchResult.value, "semantic", threshold);
+	return searchResult.value.length > 0
+		? EXIT_CODES.SUCCESS
+		: EXIT_CODES.NO_RESULTS;
 }
 
 /**

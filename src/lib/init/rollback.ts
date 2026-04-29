@@ -1,28 +1,19 @@
-/**
- * Rollback and backup functions for init command.
- *
- * Provides secure backup/restore operations with:
- * - Hash-based backup file naming
- * - Manifest-based tracking
- * - Symlink attack prevention
- * - Path traversal defense
- *
- * @module lib/init/rollback
- */
-
 import { createHash } from "node:crypto";
 import {
 	copyFileSync,
 	existsSync,
 	lstatSync,
 	mkdirSync,
-	readFileSync,
 	realpathSync,
 	rmSync,
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { sanitizeError } from "../input/sanitize.js";
 import { atomicWrite } from "./migration.js";
+import {
+	type LoadManifestOptions,
+	loadManifestData,
+} from "./rollback-manifest-validation.js";
 import {
 	BACKUPS_DIR,
 	type BackupResult,
@@ -44,12 +35,6 @@ export type {
 	RestoreManifest,
 	CIProvider,
 };
-
-interface LoadManifestOptions {
-	requireMetadata?: boolean;
-	operation?: string;
-	preferredCiProvider?: CIProvider;
-}
 
 /**
  * Calculate backup hash from relative path.
@@ -77,20 +62,85 @@ function isPathWithinBase(
 	);
 }
 
-/**
- * Sanitize a path to prevent directory traversal attacks.
- * Returns resolved absolute path or error.
- *
- * Guards applied (in order):
- * 1. Input validation — base and relativePath must be non-empty strings.
- * 2. Lexical containment — resolved path must start with base.
- * 3. Symlink-walk — every existing segment is checked with lstatSync;
- *    a symlinked directory anywhere in the chain is rejected.
- *    Prevents ".github -> /etc" style escapes that pass the prefix check.
- * 4. Realpath ancestor check — the nearest existing ancestor is canonicalised
- *    with realpathSync and verified to reside within the real base dir.
- *    This catches races and any edge case the walk misses.
- */
+function checkPathSymlinks(
+	normalizedBase: string,
+	resolvedPath: string,
+	relativePath: string,
+): PathResult {
+	const relToBase = relative(normalizedBase, resolvedPath);
+	const segments = relToBase.split(sep).filter((segment) => segment.length > 0);
+	let walkPath = normalizedBase;
+	for (const segment of segments) {
+		walkPath = join(walkPath, segment);
+		if (!existsSync(walkPath)) {
+			break;
+		}
+		try {
+			if (lstatSync(walkPath).isSymbolicLink()) {
+				return {
+					ok: false,
+					error: {
+						code: "PATH_TRAVERSAL",
+						message: `Symlink detected in path: ${relativePath}`,
+						path: relativePath,
+					},
+				};
+			}
+		} catch (error) {
+			return {
+				ok: false,
+				error: {
+					code: "INVALID_PATH",
+					message: `Failed to validate path safety: ${sanitizeError(error)}`,
+					path: relativePath,
+				},
+			};
+		}
+	}
+	return { ok: true, value: resolvedPath };
+}
+
+function verifyRealpathContained(
+	resolvedPath: string,
+	baseRealPath: string,
+	relativePath: string,
+): PathResult {
+	let nearestExisting = resolvedPath;
+	while (!existsSync(nearestExisting)) {
+		const parent = dirname(nearestExisting);
+		if (parent === nearestExisting) {
+			break;
+		}
+		nearestExisting = parent;
+	}
+
+	try {
+		const realNearest = realpathSync(nearestExisting);
+		if (!isPathWithinBase(baseRealPath, realNearest)) {
+			return {
+				ok: false,
+				error: {
+					code: "PATH_TRAVERSAL",
+					message: `Path traversal blocked: ${relativePath}`,
+					path: relativePath,
+				},
+			};
+		}
+	} catch (error) {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: `Failed to resolve path safety: ${sanitizeError(error)}`,
+				path: relativePath,
+			},
+		};
+	}
+
+	return { ok: true, value: resolvedPath };
+}
+
+/** Sanitize a path to prevent traversal and symlink escapes. */
 export function sanitizePath(base: string, relativePath: string): PathResult {
 	if (!base || typeof base !== "string") {
 		return {
@@ -144,84 +194,34 @@ export function sanitizePath(base: string, relativePath: string): PathResult {
 		};
 	}
 
-	// SECURITY: Walk each existing path segment and reject any symlink.
-	// resolve() is purely lexical — it doesn't follow symlinks, so a
-	// directory symlink (.github -> /etc) passes the prefix check above
-	// but would redirect reads/writes outside the workspace.
-	const relToBase = relative(normalizedBase, resolved);
-	const segments = relToBase.split(sep).filter((s) => s.length > 0);
-	let walkPath = normalizedBase;
-	for (const segment of segments) {
-		walkPath = join(walkPath, segment);
-		if (!existsSync(walkPath)) {
-			break;
-		}
-		try {
-			if (lstatSync(walkPath).isSymbolicLink()) {
-				return {
-					ok: false,
-					error: {
-						code: "PATH_TRAVERSAL",
-						message: `Symlink detected in path: ${relativePath}`,
-						path: relativePath,
-					},
-				};
-			}
-		} catch (e) {
-			return {
-				ok: false,
-				error: {
-					code: "INVALID_PATH",
-					message: `Failed to validate path safety: ${sanitizeError(e)}`,
-					path: relativePath,
-				},
-			};
-		}
+	const symlinkCheck = checkPathSymlinks(
+		normalizedBase,
+		resolved,
+		relativePath,
+	);
+	if (!symlinkCheck.ok) {
+		return symlinkCheck;
 	}
 
-	// SECURITY: Realpath check on the nearest existing ancestor.
-	// This is a second line of defence: even if the walk missed something,
-	// canonicalising the ancestor and verifying it stays within the real
-	// base dir catches cases where a symlink was created between the walk
-	// and the eventual file operation (TOCTOU hardening).
-	let nearestExisting = resolved;
-	while (!existsSync(nearestExisting)) {
-		const parent = dirname(nearestExisting);
-		if (parent === nearestExisting) break; // filesystem root
-		nearestExisting = parent;
-	}
-	try {
-		const realNearest = realpathSync(nearestExisting);
-		const baseRealWithSep = baseRealPath.endsWith(sep)
-			? baseRealPath
-			: `${baseRealPath}${sep}`;
-		if (
-			realNearest !== baseRealPath &&
-			!realNearest.startsWith(baseRealWithSep)
-		) {
-			return {
-				ok: false,
-				error: {
-					code: "PATH_TRAVERSAL",
-					message: `Path traversal blocked: ${relativePath}`,
-					path: relativePath,
-				},
-			};
-		}
-	} catch (e) {
-		return {
-			ok: false,
-			error: {
-				code: "INVALID_PATH",
-				message: `Failed to resolve path safety: ${sanitizeError(e)}`,
-				path: relativePath,
-			},
-		};
+	const realpathCheck = verifyRealpathContained(
+		resolved,
+		baseRealPath,
+		relativePath,
+	);
+	if (!realpathCheck.ok) {
+		return realpathCheck;
 	}
 
 	return { ok: true, value: resolved };
 }
 
+/**
+ * Resolves a known workspace symlink and verifies its real target stays within the repository.
+ *
+ * @param base - Repository root directory
+ * @param relativePath - Repository-relative symlink path
+ * @returns Resolved real target path or structured validation error
+ */
 export function resolveSafeWorkspaceSymlink(
 	base: string,
 	relativePath: string,
@@ -348,114 +348,12 @@ export function createBackup(
 }
 
 /**
- * Load and validate manifest from disk.
- * Re-validates all paths to prevent manifest tampering.
+ * Loads and validates the harness restore manifest from `.harness/restore-manifest.json`.
+ *
+ * @param targetDir - Repository root
+ * @param options - Load behavior flags and CI provider hint
+ * @returns Validated manifest entries or structured load error
  */
-function buildIncompleteManifestError(
-	missingFields: string[],
-	options: LoadManifestOptions,
-): ManifestResult {
-	const operationSuffix = options.operation ? ` for ${options.operation}` : "";
-	return {
-		ok: false,
-		error: {
-			code: "INCOMPLETE_MANIFEST",
-			message: `Restore manifest is incomplete${operationSuffix}: missing ${missingFields.join(", ")}. Repair .harness/${MANIFEST_FILE} from a known-good tracked install, or remove .harness and re-run \`harness init --track\` when bootstrapping a fresh repo.`,
-			path: MANIFEST_FILE,
-		},
-	};
-}
-
-function readContractProvider(targetDir: string): CIProvider | null {
-	const contractPath = resolve(targetDir, "harness.contract.json");
-	if (!existsSync(contractPath)) {
-		return null;
-	}
-
-	try {
-		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
-			ciProviderPolicy?: { activeProvider?: string | undefined } | undefined;
-		};
-		const activeProvider = parsed.ciProviderPolicy?.activeProvider;
-		if (activeProvider === "github-actions" || activeProvider === "circleci") {
-			return activeProvider;
-		}
-	} catch {
-		// Best-effort legacy detection only.
-	}
-
-	return null;
-}
-
-function inferLegacyManifestProvider(
-	targetDir: string,
-	preferredCiProvider?: CIProvider,
-): { provider: CIProvider; source: string } | null {
-	const contractProvider = readContractProvider(targetDir);
-	if (contractProvider) {
-		return {
-			provider: contractProvider,
-			source: "harness.contract.json ciProviderPolicy.activeProvider",
-		};
-	}
-
-	const hasCircleCIConfig = existsSync(
-		resolve(targetDir, ".circleci", "config.yml"),
-	);
-	const hasGitHubWorkflows = existsSync(
-		resolve(targetDir, ".github", "workflows"),
-	);
-
-	if (hasCircleCIConfig && !hasGitHubWorkflows) {
-		return { provider: "circleci", source: ".circleci/config.yml" };
-	}
-	if (hasGitHubWorkflows && !hasCircleCIConfig) {
-		return { provider: "github-actions", source: ".github/workflows" };
-	}
-	if (preferredCiProvider) {
-		return {
-			provider: preferredCiProvider,
-			source: "requested/default CI provider",
-		};
-	}
-
-	return null;
-}
-
-function maybeRepairLegacyManifestProvider(
-	targetDir: string,
-	manifestPath: string,
-	manifest: Record<string, unknown>,
-	preferredCiProvider?: CIProvider,
-): ManifestResult | null {
-	const inferred = inferLegacyManifestProvider(targetDir, preferredCiProvider);
-	if (!inferred) {
-		return null;
-	}
-
-	const repairedManifest = {
-		...manifest,
-		ciProvider: inferred.provider,
-	};
-	const writeResult = atomicWrite(
-		manifestPath,
-		JSON.stringify(repairedManifest, null, 2),
-	);
-	if (!writeResult.ok) {
-		return {
-			ok: false,
-			error: {
-				code: "WRITE_ERROR",
-				message: `Failed to repair legacy restore manifest with inferred ciProvider "${inferred.provider}" from ${inferred.source}: ${writeResult.error.message}`,
-				path: MANIFEST_FILE,
-			},
-		};
-	}
-
-	manifest.ciProvider = inferred.provider;
-	return null;
-}
-
 export function loadManifest(
 	targetDir: string,
 	options: LoadManifestOptions = {},
@@ -473,192 +371,12 @@ export function loadManifest(
 		};
 	}
 
-	try {
-		const content = readFileSync(manifestPath, "utf-8");
-		const data = JSON.parse(content) as unknown;
-
-		// Validate manifest structure
-		if (typeof data !== "object" || data === null) {
-			return {
-				ok: false,
-				error: {
-					code: "WRITE_ERROR",
-					message: "Restore manifest is corrupted: not an object",
-					path: MANIFEST_FILE,
-				},
-			};
-		}
-
-		const manifest = data as Record<string, unknown>;
-
-		if (!Array.isArray(manifest.files)) {
-			return {
-				ok: false,
-				error: {
-					code: "WRITE_ERROR",
-					message: "Restore manifest is corrupted: missing files array",
-					path: MANIFEST_FILE,
-				},
-			};
-		}
-
-		const shouldRepairProvider =
-			manifest.ciProvider !== "github-actions" &&
-			manifest.ciProvider !== "circleci";
-		if (shouldRepairProvider) {
-			const repairResult = maybeRepairLegacyManifestProvider(
-				targetDir,
-				manifestPath,
-				manifest,
-				options.preferredCiProvider,
-			);
-			if (repairResult) {
-				return repairResult;
-			}
-		}
-
-		// CRITICAL: Re-validate all paths to prevent manifest tampering attacks
-		const validatedFiles: ManifestEntry[] = [];
-		const allowSafeRepoSymlinks =
-			options.operation === "check-updates" ||
-			options.operation === "update" ||
-			options.operation === "upgrade";
-		for (const entry of manifest.files) {
-			if (typeof entry !== "object" || entry === null) {
-				return {
-					ok: false,
-					error: {
-						code: "WRITE_ERROR",
-						message: "Restore manifest is corrupted: invalid entry",
-						path: MANIFEST_FILE,
-					},
-				};
-			}
-
-			const e = entry as Record<string, unknown>;
-			if (typeof e.path !== "string") {
-				return {
-					ok: false,
-					error: {
-						code: "WRITE_ERROR",
-						message: "Restore manifest is corrupted: missing path",
-						path: MANIFEST_FILE,
-					},
-				};
-			}
-
-			// Re-apply path sanitization to every entry
-			const pathResult = sanitizePath(targetDir, e.path);
-			if (
-				!pathResult.ok &&
-				!(
-					allowSafeRepoSymlinks &&
-					resolveSafeWorkspaceSymlink(targetDir, e.path).ok
-				)
-			) {
-				return {
-					ok: false,
-					error: {
-						code: "WRITE_ERROR",
-						message: `Path traversal blocked in manifest: ${e.path}`,
-						path: e.path,
-					},
-				};
-			}
-
-			// Validate action and backupHash
-			if (e.action === "created") {
-				validatedFiles.push({ path: e.path, action: "created" });
-			} else if (e.action === "modified" && typeof e.backupHash === "string") {
-				// Validate backupHash format (16-char hex)
-				if (!/^[a-f0-9]{16}$/.test(e.backupHash)) {
-					return {
-						ok: false,
-						error: {
-							code: "WRITE_ERROR",
-							message: `Invalid backup hash format: ${e.backupHash}`,
-							path: e.path,
-						},
-					};
-				}
-				const expectedBackupHash = calculateBackupHash(e.path);
-				if (e.backupHash !== expectedBackupHash) {
-					return {
-						ok: false,
-						error: {
-							code: "WRITE_ERROR",
-							message: `Manifest backup hash mismatch for ${e.path}`,
-							path: e.path,
-						},
-					};
-				}
-				validatedFiles.push({
-					path: e.path,
-					action: "modified",
-					backupHash: e.backupHash,
-				});
-			} else {
-				return {
-					ok: false,
-					error: {
-						code: "WRITE_ERROR",
-						message: `Invalid manifest entry: action=${e.action}, backupHash=${e.backupHash}`,
-						path: e.path,
-					},
-				};
-			}
-		}
-
-		const missingFields: string[] = [];
-		if (
-			typeof manifest.harnessVersion !== "string" ||
-			manifest.harnessVersion.length === 0
-		) {
-			missingFields.push("harnessVersion");
-		}
-		if (
-			manifest.ciProvider !== "github-actions" &&
-			manifest.ciProvider !== "circleci"
-		) {
-			missingFields.push("ciProvider");
-		}
-		if (options.requireMetadata && missingFields.length > 0) {
-			return buildIncompleteManifestError(missingFields, options);
-		}
-
-		const harnessVersion =
-			typeof manifest.harnessVersion === "string"
-				? manifest.harnessVersion
-				: "0.0.0";
-		const ciProvider =
-			manifest.ciProvider === "circleci" ? "circleci" : "github-actions";
-		const issueTracker =
-			manifest.issueTracker === "github" || manifest.issueTracker === "none"
-				? manifest.issueTracker
-				: manifest.issueTracker === "linear"
-					? "linear"
-					: undefined;
-
-		return {
-			ok: true,
-			value: {
-				harnessVersion,
-				ciProvider,
-				...(manifest.minimal === true ? { minimal: true } : {}),
-				...(issueTracker ? { issueTracker } : {}),
-				files: validatedFiles,
-			},
-		};
-	} catch (e) {
-		return {
-			ok: false,
-			error: {
-				code: "WRITE_ERROR",
-				message: `Failed to load manifest: ${sanitizeError(e)}`,
-				path: MANIFEST_FILE,
-			},
-		};
-	}
+	return loadManifestData(targetDir, manifestPath, options, {
+		atomicWrite,
+		calculateBackupHash,
+		resolveSafeWorkspaceSymlink,
+		sanitizePath,
+	});
 }
 
 /**

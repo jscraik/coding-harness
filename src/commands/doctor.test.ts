@@ -12,6 +12,10 @@ import { dirname, join } from "node:path";
  * Tests for harness doctor command (JSC-65)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
+	getNorthStarSurfaceClassificationSnapshotPath,
+} from "../lib/contract/north-star-artifacts.js";
 import { runDoctor, runDoctorCLI } from "./doctor.js";
 
 // Mock spawnSync for tool checks (node, pnpm, git, gh)
@@ -102,7 +106,7 @@ describe("runDoctor — tool checks", () => {
 		expect(nodeCheck?.status).toBe("ok");
 	});
 
-	it("warns for node <24", () => {
+	it("fails for node <24", () => {
 		mockAllToolsOk();
 		mockSpawnSync.mockImplementation((cmd) => {
 			if (String(cmd) === "node") return makeSpawnResult(0, "v20.0.0");
@@ -111,7 +115,7 @@ describe("runDoctor — tool checks", () => {
 
 		const report = runDoctor({ dir });
 		const nodeCheck = report.checks.find((c) => c.id === "tool:node");
-		expect(nodeCheck?.status).toBe("warn");
+		expect(nodeCheck?.status).toBe("fail");
 		expect(nodeCheck?.fix).toContain("mise");
 	});
 
@@ -450,6 +454,56 @@ describe("runDoctor — file checks", () => {
 			(c) => c.id === "config:north-star-contract",
 		);
 		expect(check?.status).toBe("ok");
+	});
+
+	it("writes a north-star surface classification snapshot artifact", () => {
+		copyRepoFile(dir, "harness.contract.json");
+		copyRepoFile(dir, "docs/roadmap/north-star.md");
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const artifactPath = getNorthStarSurfaceClassificationSnapshotPath();
+		const resolvedArtifactPath = join(dir, artifactPath);
+
+		expect(report.artifact_refs).toContainEqual({
+			type: "north-star-surface-classification",
+			path: artifactPath,
+			schemaVersion:
+				NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.surfaceClassificationSnapshot,
+		});
+
+		const artifact = JSON.parse(
+			readFileSync(resolvedArtifactPath, "utf-8"),
+		) as {
+			schemaVersion: string;
+			command: string;
+			repoRoot: string;
+			sourceReport: {
+				hasFailures: boolean;
+				counts: typeof report.counts;
+			};
+			summary: {
+				checkCount: number;
+				northStarSurfaceCount: number;
+			};
+			surfaces: { id: string }[];
+		};
+
+		expect(artifact.schemaVersion).toBe(
+			NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.surfaceClassificationSnapshot,
+		);
+		expect(artifact.command).toBe("doctor");
+		expect(artifact.repoRoot).toBe(dir);
+		expect(artifact.sourceReport.hasFailures).toBe(report.hasFailures);
+		expect(artifact.sourceReport.counts).toEqual(report.counts);
+		expect(artifact.summary.checkCount).toBe(report.checks.length);
+		expect(artifact.summary.northStarSurfaceCount).toBeGreaterThanOrEqual(2);
+		expect(artifact.surfaces.map((surface) => surface.id)).toContain(
+			"config:north-star-contract",
+		);
+		expect(artifact.surfaces.map((surface) => surface.id)).toContain(
+			"file:north-star-doc",
+		);
 	});
 });
 

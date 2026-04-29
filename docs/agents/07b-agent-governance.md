@@ -33,11 +33,15 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 - Code-review pass-through via PR workflow (no direct `main` commits).
 
 When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
+
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`
 - workflow-authority routing and validation behavior changes should update `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, and `docs/agents/14-docs-gate-rollout.md`
 - agent-governance/category updates should keep `AGENTS.md` and this guide synchronized in the same PR
 - north-star contract/scaffold updates that affect architecture context should update `docs/agents/00-architecture-bootstrap.md` and this guide in the same PR
+- north-star artifact contract changes should keep the README command evidence
+  surface, AGENTS shared-vocabulary guidance, and this guide synchronized in
+  the same PR
 
 ## Evidence and communication
 
@@ -49,6 +53,12 @@ Every agent handoff should include:
 - clear next step.
 - CodeRabbit Semgrep disposition when findings were raised: fixed, explicitly waived with rationale, or not applicable.
 - Exact behavior evidence whenever executable behavior changed, or a clear blocker note when the touched production path could not run safely.
+- Canonical north-star artifact references when commands emit them; for
+  example `drift-gate` writes
+  `.harness/guardrails/north-star/drift-findings.json`, `doctor` writes
+  `.harness/guardrails/north-star/surface-classification-snapshot.json`, and
+  review-gate alignment decisions live at
+  `.harness/review-gate/north-star-alignment.json`.
 
 When executable behavior changes, broad gates are necessary but not sufficient
 on their own. Run the smallest real executable path that exercises the exact

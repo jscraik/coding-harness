@@ -98,6 +98,103 @@ export function atomicWrite(filePath: string, content: string): WriteResult {
 
 // === Schema Defaults ===
 
+function mergeBranchProtectionDefaults(
+	branchProtection: ContractSchema["branchProtection"],
+): HarnessContract["branchProtection"] {
+	if (branchProtection === undefined) {
+		return DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"];
+	}
+	return {
+		...(DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"]),
+		...branchProtection,
+		allowedMergeMethods:
+			branchProtection.allowedMergeMethods === undefined
+				? (DEFAULT_CONTRACT.branchProtection
+						?.allowedMergeMethods as HarnessContract["branchProtection"] extends {
+						allowedMergeMethods?: infer T;
+					}
+						? T
+						: never)
+				: {
+						...(DEFAULT_CONTRACT.branchProtection?.allowedMergeMethods ?? {}),
+						...branchProtection.allowedMergeMethods,
+					},
+		codeQuality:
+			branchProtection.codeQuality === undefined
+				? DEFAULT_CONTRACT.branchProtection?.codeQuality
+				: {
+						...(DEFAULT_CONTRACT.branchProtection?.codeQuality ?? {}),
+						...branchProtection.codeQuality,
+					},
+		publicCodeScanning:
+			branchProtection.publicCodeScanning === undefined
+				? DEFAULT_CONTRACT.branchProtection?.publicCodeScanning
+				: {
+						...(DEFAULT_CONTRACT.branchProtection?.publicCodeScanning ?? {}),
+						...branchProtection.publicCodeScanning,
+					},
+	} as HarnessContract["branchProtection"];
+}
+
+function mergeToolingPolicyDefaults(
+	toolingPolicy: ContractSchema["toolingPolicy"],
+): HarnessContract["toolingPolicy"] {
+	if (toolingPolicy === undefined) {
+		return DEFAULT_CONTRACT.toolingPolicy;
+	}
+	return {
+		...(DEFAULT_CONTRACT.toolingPolicy ?? {}),
+		...toolingPolicy,
+		requiredDocumentationTerms:
+			toolingPolicy.requiredDocumentationTerms ??
+			DEFAULT_CONTRACT.toolingPolicy?.requiredDocumentationTerms,
+		requiredBinaries:
+			toolingPolicy.requiredBinaries ??
+			DEFAULT_CONTRACT.toolingPolicy?.requiredBinaries,
+		requiredMiseTools:
+			toolingPolicy.requiredMiseTools ??
+			DEFAULT_CONTRACT.toolingPolicy?.requiredMiseTools,
+		codexEnvironment:
+			toolingPolicy.codexEnvironment === undefined
+				? DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment
+				: {
+						...(DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment ?? {}),
+						...toolingPolicy.codexEnvironment,
+						requiredActions:
+							toolingPolicy.codexEnvironment.requiredActions ??
+							DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment?.requiredActions,
+					},
+		makefile:
+			toolingPolicy.makefile === undefined
+				? DEFAULT_CONTRACT.toolingPolicy?.makefile
+				: {
+						...(DEFAULT_CONTRACT.toolingPolicy?.makefile ?? {}),
+						...toolingPolicy.makefile,
+						requiredTargets:
+							toolingPolicy.makefile.requiredTargets ??
+							DEFAULT_CONTRACT.toolingPolicy?.makefile?.requiredTargets,
+					},
+		packagePolicy:
+			toolingPolicy.packagePolicy === undefined
+				? DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+				: {
+						...(DEFAULT_CONTRACT.toolingPolicy?.packagePolicy ?? {}),
+						...toolingPolicy.packagePolicy,
+						explicitCapabilities:
+							toolingPolicy.packagePolicy.explicitCapabilities ??
+							DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+								?.explicitCapabilities,
+						capabilityDetectors:
+							toolingPolicy.packagePolicy.capabilityDetectors ??
+							DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+								?.capabilityDetectors,
+						requiredPackages:
+							toolingPolicy.packagePolicy.requiredPackages ??
+							DEFAULT_CONTRACT.toolingPolicy?.packagePolicy?.requiredPackages,
+					},
+	} as HarnessContract["toolingPolicy"];
+}
+
 /**
  * Add default values for missing schema fields.
  * Merges user contract with defaults, preserving user values.
@@ -143,99 +240,8 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 		gapCasePolicy:
 			contract.gapCasePolicy ??
 			(DEFAULT_CONTRACT.gapCasePolicy as HarnessContract["gapCasePolicy"]),
-		branchProtection:
-			contract.branchProtection === undefined
-				? (DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"])
-				: ({
-						...(DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"]),
-						...contract.branchProtection,
-						allowedMergeMethods:
-							contract.branchProtection.allowedMergeMethods === undefined
-								? (DEFAULT_CONTRACT.branchProtection
-										?.allowedMergeMethods as HarnessContract["branchProtection"] extends {
-										allowedMergeMethods?: infer T;
-									}
-										? T
-										: never)
-								: {
-										...(DEFAULT_CONTRACT.branchProtection
-											?.allowedMergeMethods ?? {}),
-										...contract.branchProtection.allowedMergeMethods,
-									},
-						codeQuality:
-							contract.branchProtection.codeQuality === undefined
-								? DEFAULT_CONTRACT.branchProtection?.codeQuality
-								: {
-										...(DEFAULT_CONTRACT.branchProtection?.codeQuality ?? {}),
-										...contract.branchProtection.codeQuality,
-									},
-						publicCodeScanning:
-							contract.branchProtection.publicCodeScanning === undefined
-								? DEFAULT_CONTRACT.branchProtection?.publicCodeScanning
-								: {
-										...(DEFAULT_CONTRACT.branchProtection?.publicCodeScanning ??
-											{}),
-										...contract.branchProtection.publicCodeScanning,
-									},
-					} as HarnessContract["branchProtection"]),
-		toolingPolicy:
-			contract.toolingPolicy === undefined
-				? DEFAULT_CONTRACT.toolingPolicy
-				: ({
-						...(DEFAULT_CONTRACT.toolingPolicy ?? {}),
-						...contract.toolingPolicy,
-						requiredDocumentationTerms:
-							contract.toolingPolicy.requiredDocumentationTerms ??
-							DEFAULT_CONTRACT.toolingPolicy?.requiredDocumentationTerms,
-						requiredBinaries:
-							contract.toolingPolicy.requiredBinaries ??
-							DEFAULT_CONTRACT.toolingPolicy?.requiredBinaries,
-						requiredMiseTools:
-							contract.toolingPolicy.requiredMiseTools ??
-							DEFAULT_CONTRACT.toolingPolicy?.requiredMiseTools,
-						codexEnvironment:
-							contract.toolingPolicy.codexEnvironment === undefined
-								? DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment
-								: {
-										...(DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment ?? {}),
-										...contract.toolingPolicy.codexEnvironment,
-										requiredActions:
-											contract.toolingPolicy.codexEnvironment.requiredActions ??
-											DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment
-												?.requiredActions,
-									},
-						makefile:
-							contract.toolingPolicy.makefile === undefined
-								? DEFAULT_CONTRACT.toolingPolicy?.makefile
-								: {
-										...(DEFAULT_CONTRACT.toolingPolicy?.makefile ?? {}),
-										...contract.toolingPolicy.makefile,
-										requiredTargets:
-											contract.toolingPolicy.makefile.requiredTargets ??
-											DEFAULT_CONTRACT.toolingPolicy?.makefile?.requiredTargets,
-									},
-						packagePolicy:
-							contract.toolingPolicy.packagePolicy === undefined
-								? DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
-								: {
-										...(DEFAULT_CONTRACT.toolingPolicy?.packagePolicy ?? {}),
-										...contract.toolingPolicy.packagePolicy,
-										explicitCapabilities:
-											contract.toolingPolicy.packagePolicy
-												.explicitCapabilities ??
-											DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
-												?.explicitCapabilities,
-										capabilityDetectors:
-											contract.toolingPolicy.packagePolicy
-												.capabilityDetectors ??
-											DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
-												?.capabilityDetectors,
-										requiredPackages:
-											contract.toolingPolicy.packagePolicy.requiredPackages ??
-											DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
-												?.requiredPackages,
-									},
-					} as HarnessContract["toolingPolicy"]),
+		branchProtection: mergeBranchProtectionDefaults(contract.branchProtection),
+		toolingPolicy: mergeToolingPolicyDefaults(contract.toolingPolicy),
 		ciProviderPolicy:
 			contract.ciProviderPolicy ??
 			(DEFAULT_CONTRACT.ciProviderPolicy as HarnessContract["ciProviderPolicy"]),

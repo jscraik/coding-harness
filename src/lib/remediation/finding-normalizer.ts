@@ -203,66 +203,16 @@ function validateFindingPath(
 }
 
 /**
- * Normalizes a CodeQL finding into canonical format.
+ * Validate CodeQL finding location and build the canonical finding object.
  *
- * @param input - Raw CodeQL finding data (unknown for safety)
- * @param repoRoot - Repository root directory for path validation
+ * @param input - Validated CodeQL finding input
+ * @param pathResult - Result from path validation
  * @returns NormalizerOutcome with canonical finding or error
  */
-export function normalizeCodeqlFinding(
-	input: unknown,
-	repoRoot: string = process.cwd(),
+function validateCodeqlLocation(
+	input: CodeqlFindingInput,
+	pathResult: { safePath: string },
 ): NormalizerOutcome {
-	// Use type guard instead of unsafe `as`
-	if (!isCodeqlFindingInput(input)) {
-		return {
-			ok: false,
-			error: {
-				code: "E_MISSING_FIELD",
-				message: "Invalid CodeQL finding structure",
-				raw: input,
-			},
-		};
-	}
-
-	// Validate ID
-	const idResult = validateId(input.id);
-	if (!idResult.ok) {
-		return {
-			ok: false,
-			error: {
-				code: "E_MISSING_FIELD",
-				message: idResult.error,
-				raw: input,
-			},
-		};
-	}
-
-	// Validate commit SHA
-	if (!isValidSha(input.commitSha)) {
-		return {
-			ok: false,
-			error: {
-				code: "E_INVALID_SHA",
-				message: `Invalid commit SHA: ${input.commitSha}`,
-				raw: input,
-			},
-		};
-	}
-
-	// Validate path
-	const pathResult = validateFindingPath(input.location.path, repoRoot);
-	if (!pathResult.ok) {
-		return {
-			ok: false,
-			error: {
-				code: pathResult.code as "E_INVALID_PATH",
-				message: pathResult.error,
-				raw: input,
-			},
-		};
-	}
-
 	// Validate line numbers
 	const startLineResult = validateLineNumber(
 		input.location.startLine,
@@ -338,6 +288,75 @@ export function normalizeCodeqlFinding(
 	};
 
 	return { ok: true, finding };
+}
+
+/**
+ * Normalizes a CodeQL finding into canonical format.
+ *
+ * @param input - Raw CodeQL finding data (unknown for safety)
+ * @param repoRoot - Repository root directory for path validation
+ * @returns NormalizerOutcome with canonical finding or error
+ */
+export function normalizeCodeqlFinding(
+	input: unknown,
+	repoRoot: string = process.cwd(),
+): NormalizerOutcome {
+	// Use type guard instead of unsafe `as`
+	if (!isCodeqlFindingInput(input)) {
+		return {
+			ok: false,
+			error: {
+				code: "E_MISSING_FIELD",
+				message: "Invalid CodeQL finding structure",
+				raw: input,
+			},
+		};
+	}
+
+	// Validate ID
+	const idResult = validateId(input.id);
+	if (!idResult.ok) {
+		return {
+			ok: false,
+			error: {
+				code: "E_MISSING_FIELD",
+				message: idResult.error,
+				raw: input,
+			},
+		};
+	}
+
+	// Validate commit SHA
+	if (!isValidSha(input.commitSha)) {
+		return {
+			ok: false,
+			error: {
+				code: "E_INVALID_SHA",
+				message: `Invalid commit SHA: ${input.commitSha}`,
+				raw: input,
+			},
+		};
+	}
+
+	// Validate path
+	const pathResult = validateFindingPath(input.location.path, repoRoot);
+	if (!pathResult.ok) {
+		return {
+			ok: false,
+			error: {
+				code: pathResult.code as "E_INVALID_PATH",
+				message: pathResult.error,
+				raw: input,
+			},
+		};
+	}
+
+	const locationValidation = validateCodeqlLocation(input, pathResult);
+	if (!locationValidation.ok) {
+		return locationValidation;
+	}
+
+	return { ok: true, finding: locationValidation.finding };
 }
 
 /**

@@ -61,6 +61,8 @@ describe("brain status", () => {
 			const result = runBrainStatus(join(dir, ".harness"));
 			expect(result.valid).toBe(true);
 			expect(result.validation.summary.errors).toBe(0);
+			expect(result.maturity.level).toBe("mature");
+			expect(result.maturity.placeholderDomains).toEqual([]);
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -82,6 +84,11 @@ describe("brain status", () => {
 			);
 			const result = runBrainStatus(join(dir, ".harness"));
 			expect(result.validation.summary.warnings).toBeGreaterThan(0);
+			expect(result.validation.summary.placeholderDomains.api).toBeGreaterThan(
+				0,
+			);
+			expect(result.maturity.level).toBe("partial");
+			expect(result.maturity.placeholderDomains).toContain("api");
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}

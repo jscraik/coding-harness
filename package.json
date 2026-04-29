@@ -37,7 +37,7 @@
 		"harness": "dist/cli.js"
 	},
 	"scripts": {
-		"check": "pnpm lint && pnpm docs:lint && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm test:related && pnpm test:ci && pnpm audit",
+		"check": "pnpm lint && pnpm docs:lint && pnpm docs:ubiquitous:guard && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm test:related && pnpm test:ci && pnpm audit",
 
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && biome check .",
@@ -50,13 +50,14 @@
 		"test:deep": "pnpm check && pnpm test:artifacts",
 		"test:integration": "pnpm vitest run src/commands/agent-first-throughput.integration.test.ts",
 		"test:e2e": "pnpm e2e",
-		"build": "tsc && cp -r src/presets dist/presets && cp -r src/templates dist/templates && chmod +x dist/cli.js",
+		"build": "rm -rf dist && tsc && cp -r src/presets dist/presets && cp -r src/templates dist/templates && chmod +x dist/cli.js",
 		"prepublishOnly": "pnpm check && pnpm build",
 		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",
 		"release": "standard-version",
 		"audit": "bash scripts/run-audit-with-timeout.sh",
 		"audit:strict": "pnpm audit --audit-level=high",
 		"docs:lint": "pnpm markdownlint",
+		"docs:ubiquitous:guard": "bash scripts/check-ubiquitous-language-link.sh",
 		"docs:style:changed": "bash scripts/check-doc-style.sh",
 		"skill:validate": "node scripts/validate-packaged-skill.cjs",
 		"workflow:normalize": "node scripts/normalize-workflow-contracts.cjs",
@@ -79,7 +80,7 @@
 		"e2e:pipeline": "tsx e2e/run-e2e.ts command-pipeline",
 		"e2e:ci": "tsx e2e/run-e2e.ts --reporter json --parallel 2",
 		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
-		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs",
+		"vale": "vale --config .vale.ini AGENTS.md docs",
 		"codex-preflight:check": "node scripts/sync-codex-preflight.cjs --check",
 		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write"
 	},

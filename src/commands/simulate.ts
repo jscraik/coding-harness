@@ -10,44 +10,32 @@
  * - Policy edit suggestions as non-binding hints
  */
 
-import { createHash } from "node:crypto";
-import {
-	existsSync,
-	mkdirSync,
-	readFileSync,
-	readdirSync,
-	statSync,
-	writeFileSync,
-} from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 import { loadContract } from "../lib/contract/loader.js";
-import type { HarnessContract, PolicyAction } from "../lib/contract/types.js";
+import type { HarnessContract } from "../lib/contract/types.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 import {
-	resolveGateVerdict,
-	resolvePolicyChain,
-} from "../lib/policy/policy-chain.js";
-import {
-	CONFIDENCE_SCORES,
-	type ConfidenceAssessment,
 	type CounterfactualSimulationReport,
-	type DataQualityAssessment,
-	type DecisionDelta,
-	type DeltaSummary,
-	type DeltaType,
-	type MetricDelta,
 	SIMULATE_EXIT_CODES,
-	SIMULATION_LIMITS,
 	SIMULATION_SCHEMA_VERSION,
 	type SimulateOptions,
 	type SimulateResult,
-	type SimulationFlag,
 	type SimulationInputs,
-	type SimulationMetrics,
-	type SimulationRecommendation,
 	type SimulationWindow,
 } from "../lib/simulate/types.js";
+import {
+	assessDataQuality,
+	computeConfidence,
+	computeContractHash,
+	computeDeltas,
+	computeMetrics,
+	determineFlags,
+	generateRecommendations,
+	readArtifactManifests,
+	readTraceFiles,
+} from "./simulate-analysis.js";
 
 // ============================================================================
 // HELP TEXT
@@ -137,943 +125,170 @@ type SimulateValidationResult =
  * `E_INVALID_PATH`, `E_CONTRACT_A_NOT_FOUND`, `E_ARTIFACTS_NOT_FOUND`, `E_TRACES_NOT_FOUND`) and
  * `exitCode` is either `SIMULATE_EXIT_CODES.VALIDATION_ERROR` or `SIMULATE_EXIT_CODES.INPUT_NOT_FOUND` depending on the failure.
  */
+
+/**
+ * Validate a required contract file path.
+ */
+function validateContractFile(
+	path: string | undefined,
+	missingCode: string,
+	missingMessage: string,
+	notFoundCode: string,
+	label: string,
+	cwd: string,
+): SimulateValidationResult {
+	if (!path) {
+		return {
+			ok: false,
+			error: { code: missingCode, message: missingMessage },
+			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
+		};
+	}
+	try {
+		validatePath(cwd, path);
+	} catch (e) {
+		if (e instanceof PathTraversalError) {
+			return {
+				ok: false,
+				error: {
+					code: "E_PATH_TRAVERSAL",
+					message: `${label} path escapes working directory: ${path}`,
+				},
+				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
+			};
+		}
+		return {
+			ok: false,
+			error: {
+				code: "E_INVALID_PATH",
+				message: `Invalid ${label.toLowerCase()} path: ${e instanceof Error ? e.message : "Unknown error"}`,
+			},
+			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
+		};
+	}
+	if (!existsSync(resolve(path))) {
+		return {
+			ok: false,
+			error: {
+				code: notFoundCode,
+				message: `${label} file not found: ${resolve(path)}`,
+			},
+			exitCode: SIMULATE_EXIT_CODES.INPUT_NOT_FOUND,
+		};
+	}
+	return { ok: true };
+}
+
+/**
+ * Validate an optional directory path.
+ */
+function validateOptionalDir(
+	dir: string | undefined,
+	notFoundCode: string,
+	label: string,
+	cwd: string,
+): SimulateValidationResult {
+	if (!dir) return { ok: true };
+	try {
+		validatePath(cwd, dir);
+	} catch (e) {
+		return {
+			ok: false,
+			error: {
+				code: "E_INVALID_PATH",
+				message: `Invalid ${label.toLowerCase()} directory: ${e instanceof Error ? e.message : "Unknown error"}`,
+			},
+			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
+		};
+	}
+	if (!existsSync(resolve(dir))) {
+		return {
+			ok: false,
+			error: {
+				code: notFoundCode,
+				message: `${label} directory not found: ${resolve(dir)}`,
+			},
+			exitCode: SIMULATE_EXIT_CODES.INPUT_NOT_FOUND,
+		};
+	}
+	return { ok: true };
+}
+
+/**
+ * Validate an optional output file path.
+ */
+function validateOutputPath(
+	outputPath: string | undefined,
+	cwd: string,
+): SimulateValidationResult {
+	if (!outputPath) return { ok: true };
+	try {
+		validatePath(cwd, outputPath);
+	} catch (e) {
+		if (e instanceof PathTraversalError) {
+			return {
+				ok: false,
+				error: {
+					code: "E_PATH_TRAVERSAL",
+					message: `Output path escapes working directory: ${outputPath}`,
+				},
+				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
+			};
+		}
+		return {
+			ok: false,
+			error: {
+				code: "E_INVALID_PATH",
+				message: `Invalid output path: ${e instanceof Error ? e.message : "Unknown error"}`,
+			},
+			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
+		};
+	}
+	return { ok: true };
+}
 function validateOptions(options: SimulateOptions): SimulateValidationResult {
 	const cwd = process.cwd();
 
-	// Validate contract A
-	if (!options.contractA) {
-		return {
-			ok: false,
-			error: {
-				code: "E_MISSING_CONTRACT_A",
-				message: "Contract A path required (--contract-a)",
-			},
-			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-		};
-	}
-
-	// Validate contract B
-	if (!options.contractB) {
-		return {
-			ok: false,
-			error: {
-				code: "E_MISSING_CONTRACT_B",
-				message: "Contract B path required (--contract-b)",
-			},
-			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-		};
-	}
-
-	// Validate paths stay within cwd (symlink-aware)
-	try {
-		validatePath(cwd, options.contractA);
-	} catch (e) {
-		if (e instanceof PathTraversalError) {
-			return {
-				ok: false,
-				error: {
-					code: "E_PATH_TRAVERSAL",
-					message: `Contract A path escapes working directory: ${options.contractA}`,
-				},
-				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-			};
-		}
-		return {
-			ok: false,
-			error: {
-				code: "E_INVALID_PATH",
-				message: `Invalid contract A path: ${e instanceof Error ? e.message : "Unknown error"}`,
-			},
-			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-		};
-	}
-
-	try {
-		validatePath(cwd, options.contractB);
-	} catch (e) {
-		if (e instanceof PathTraversalError) {
-			return {
-				ok: false,
-				error: {
-					code: "E_PATH_TRAVERSAL",
-					message: `Contract B path escapes working directory: ${options.contractB}`,
-				},
-				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-			};
-		}
-		return {
-			ok: false,
-			error: {
-				code: "E_INVALID_PATH",
-				message: `Invalid contract B path: ${e instanceof Error ? e.message : "Unknown error"}`,
-			},
-			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-		};
-	}
-
-	// Check contract files exist
-	if (!existsSync(resolve(options.contractA))) {
-		return {
-			ok: false,
-			error: {
-				code: "E_CONTRACT_A_NOT_FOUND",
-				message: `Contract A file not found: ${resolve(options.contractA)}`,
-			},
-			exitCode: SIMULATE_EXIT_CODES.INPUT_NOT_FOUND,
-		};
-	}
-
-	if (!existsSync(resolve(options.contractB))) {
-		return {
-			ok: false,
-			error: {
-				code: "E_CONTRACT_B_NOT_FOUND",
-				message: `Contract B file not found: ${resolve(options.contractB)}`,
-			},
-			exitCode: SIMULATE_EXIT_CODES.INPUT_NOT_FOUND,
-		};
-	}
-
-	// Validate artifacts directory if specified
-	if (options.artifactsDir) {
-		try {
-			validatePath(cwd, options.artifactsDir);
-		} catch (e) {
-			return {
-				ok: false,
-				error: {
-					code: "E_INVALID_PATH",
-					message: `Invalid artifacts directory: ${e instanceof Error ? e.message : "Unknown error"}`,
-				},
-				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-			};
-		}
-
-		if (!existsSync(resolve(options.artifactsDir))) {
-			return {
-				ok: false,
-				error: {
-					code: "E_ARTIFACTS_NOT_FOUND",
-					message: `Artifacts directory not found: ${resolve(options.artifactsDir)}`,
-				},
-				exitCode: SIMULATE_EXIT_CODES.INPUT_NOT_FOUND,
-			};
-		}
-	}
-
-	// Validate traces directory if specified
-	if (options.tracesDir) {
-		try {
-			validatePath(cwd, options.tracesDir);
-		} catch (e) {
-			return {
-				ok: false,
-				error: {
-					code: "E_INVALID_PATH",
-					message: `Invalid traces directory: ${e instanceof Error ? e.message : "Unknown error"}`,
-				},
-				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-			};
-		}
-
-		if (!existsSync(resolve(options.tracesDir))) {
-			return {
-				ok: false,
-				error: {
-					code: "E_TRACES_NOT_FOUND",
-					message: `Traces directory not found: ${resolve(options.tracesDir)}`,
-				},
-				exitCode: SIMULATE_EXIT_CODES.INPUT_NOT_FOUND,
-			};
-		}
-	}
-
-	// Validate output path if specified
-	if (options.outputPath) {
-		try {
-			validatePath(cwd, options.outputPath);
-		} catch (e) {
-			if (e instanceof PathTraversalError) {
-				return {
-					ok: false,
-					error: {
-						code: "E_PATH_TRAVERSAL",
-						message: `Output path escapes working directory: ${options.outputPath}`,
-					},
-					exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-				};
-			}
-			return {
-				ok: false,
-				error: {
-					code: "E_INVALID_PATH",
-					message: `Invalid output path: ${e instanceof Error ? e.message : "Unknown error"}`,
-				},
-				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
-			};
-		}
-	}
-
-	return {
-		ok: true,
-	};
-}
-
-// ============================================================================
-// HASH UTILITIES
-// ============================================================================
-
-/**
- * Compute deterministic hash of a contract.
- */
-function computeContractHash(contract: HarnessContract): string {
-	const content = JSON.stringify(contract, Object.keys(contract).sort());
-	return createHash("sha256").update(content).digest("hex").slice(0, 16);
-}
-
-// ============================================================================
-// ARTIFACT / TRACE READER HELPERS
-// ============================================================================
-
-interface AgentRunManifest {
-	schemaVersion: string;
-	runId: string;
-	command: string;
-	startedAt: string;
-	finishedAt?: string;
-	durationMs?: number;
-	contract?: { hash?: string };
-	outcome: string;
-	exit?: { code?: number; classification?: string };
-}
-
-interface AgentRunEvent {
-	schemaVersion: string;
-	eventType: string;
-	status: string;
-	payload?: {
-		outcome?: string;
-		exitCode?: number;
-		effectiveMode?: string;
-		findingsProcessed?: number;
-	};
-}
-
-/**
- * Read all agent-run manifests from an artifacts directory.
- * Bounded by SIMULATION_LIMITS.maxArtifactCount.
- */
-function readArtifactManifests(artifactsDir: string): {
-	manifests: AgentRunManifest[];
-	fileCount: number;
-} {
-	if (!existsSync(artifactsDir)) return { manifests: [], fileCount: 0 };
-
-	let fileCount = 0;
-	const manifests: AgentRunManifest[] = [];
-
-	try {
-		const entries = readdirSync(artifactsDir, { withFileTypes: true });
-		for (const entry of entries) {
-			if (manifests.length >= SIMULATION_LIMITS.maxArtifactCount) break;
-			if (!entry.isDirectory()) continue;
-
-			const manifestPath = join(artifactsDir, entry.name, "manifest.json");
-			if (!existsSync(manifestPath)) continue;
-
-			try {
-				const stat = statSync(manifestPath);
-				if (stat.size > SIMULATION_LIMITS.maxArtifactSizeMB * 1024 * 1024) {
-					continue; // skip oversized
-				}
-				const raw = readFileSync(manifestPath, "utf-8");
-				const parsed = JSON.parse(raw) as AgentRunManifest;
-				if (parsed.schemaVersion?.startsWith("agent-run-manifest/")) {
-					manifests.push(parsed);
-				}
-				fileCount++;
-			} catch {
-				// skip malformed manifests
-			}
-		}
-	} catch {
-		// directory read error — return empty
-	}
-
-	return { manifests, fileCount };
-}
-
-/**
- * Read JSONL events for a single run directory.
- * Bounded by SIMULATION_LIMITS.maxEventCount.
- */
-function readRunEvents(
-	artifactsDir: string,
-	runId: string,
-	total: { count: number },
-): AgentRunEvent[] {
-	const eventsPath = join(artifactsDir, runId, "events.jsonl");
-	if (!existsSync(eventsPath)) return [];
-
-	try {
-		const stat = statSync(eventsPath);
-		if (stat.size > SIMULATION_LIMITS.maxArtifactSizeMB * 1024 * 1024) {
-			return [];
-		}
-		const lines = readFileSync(eventsPath, "utf-8").split("\n");
-		const events: AgentRunEvent[] = [];
-		for (const line of lines) {
-			if (total.count >= SIMULATION_LIMITS.maxEventCount) break;
-			const trimmed = line.trim();
-			if (!trimmed) continue;
-			try {
-				events.push(JSON.parse(trimmed) as AgentRunEvent);
-				total.count++;
-			} catch {
-				// skip malformed lines
-			}
-		}
-		return events;
-	} catch {
-		return [];
-	}
-}
-
-/**
- * Read trace files from the traces directory.
- * Returns count of valid trace files found.
- */
-function readTraceFiles(tracesDir: string): {
-	traceCount: number;
-	legacyCount: number;
-} {
-	if (!existsSync(tracesDir)) return { traceCount: 0, legacyCount: 0 };
-
-	let traceCount = 0;
-	let legacyCount = 0;
-
-	try {
-		const entries = readdirSync(tracesDir, { recursive: false });
-		for (const entry of entries) {
-			if (traceCount >= SIMULATION_LIMITS.maxTraceCount) break;
-			const name = typeof entry === "string" ? entry : entry.toString();
-			if (!name.endsWith(".json") && !name.endsWith(".jsonl")) continue;
-			try {
-				const stat = statSync(join(tracesDir, name));
-				if (stat.size > SIMULATION_LIMITS.maxTraceSizeMB * 1024 * 1024) {
-					continue;
-				}
-				// Detect legacy format by filename convention
-				if (name.includes("-legacy-") || name.includes("_v0")) {
-					legacyCount++;
-				}
-				traceCount++;
-			} catch {
-				// skip
-			}
-		}
-	} catch {
-		// directory read error
-	}
-
-	return { traceCount, legacyCount };
-}
-
-// ============================================================================
-// PHASE 2 — DATA QUALITY ASSESSMENT
-// ============================================================================
-
-/**
- * Assess data quality from available artifact manifests and trace files.
- * Reads actual files from disk; bounded by SIMULATION_LIMITS.
- */
-function assessDataQuality(
-	contractA: HarnessContract,
-	_contractB: HarnessContract,
-	artifactsDirOverride: string | undefined,
-	tracesDirOverride: string | undefined,
-): DataQualityAssessment {
-	const artifactsDir = artifactsDirOverride
-		? resolve(artifactsDirOverride)
-		: resolve("./artifacts/agent-runs");
-	const tracesDir = tracesDirOverride
-		? resolve(tracesDirOverride)
-		: resolve("./.traces");
-
-	// Read artifacts
-	const { manifests, fileCount } = readArtifactManifests(artifactsDir);
-
-	// Read traces
-	const { traceCount } = readTraceFiles(tracesDir);
-
-	// Compute effective sample size: manifests with matching contract hash
-	const baselineHash = computeContractHash(contractA);
-	const matchingManifests = manifests.filter(
-		(m) => m.contract?.hash === baselineHash,
+	const contractA = validateContractFile(
+		options.contractA,
+		"E_MISSING_CONTRACT_A",
+		"Contract A path required (--contract-a)",
+		"E_CONTRACT_A_NOT_FOUND",
+		"Contract A",
+		cwd,
 	);
-	const effectiveSampleSize = matchingManifests.length || manifests.length;
+	if (!contractA.ok) return contractA;
 
-	// Artifact completeness: ratio of runs that have both manifest + events
-	const withEvents = manifests.filter((m) =>
-		existsSync(join(artifactsDir, m.runId, "events.jsonl")),
-	).length;
-	const artifactCompleteness =
-		manifests.length > 0
-			? Math.round((withEvents / manifests.length) * 100)
-			: 0;
-
-	// Trace coverage: ratio of trace files to artifact runs (capped at 100)
-	const traceCoverage =
-		fileCount > 0
-			? Math.min(100, Math.round((traceCount / fileCount) * 100))
-			: traceCount > 0
-				? 100
-				: 0;
-
-	// Sample size classification
-	let sampleSize: "adequate" | "marginal" | "insufficient";
-	if (effectiveSampleSize >= 20) {
-		sampleSize = "adequate";
-	} else if (effectiveSampleSize >= 5) {
-		sampleSize = "marginal";
-	} else {
-		sampleSize = "insufficient";
-	}
-
-	return {
-		sampleSize,
-		traceCoverage,
-		artifactCompleteness,
-		effectiveSampleSize,
-	};
-}
-
-// ============================================================================
-// PHASE 3 — METRIC AND DELTA COMPUTATION
-// ============================================================================
-
-/**
- * Build MetricDelta from two counts with safe percent-change.
- */
-function buildMetricDelta(
-	baseline: number,
-	candidate: number,
-	ciHalfWidth?: number,
-): MetricDelta {
-	const delta = candidate - baseline;
-	const percentChange =
-		baseline !== 0 ? (delta / baseline) * 100 : candidate !== 0 ? 100 : 0;
-	return {
-		baseline,
-		candidate,
-		delta,
-		percentChange,
-		...(ciHalfWidth !== undefined ? { ciHalfWidth } : {}),
-	};
-}
-
-/**
- * Compute simulation metrics comparing baseline vs candidate contract hashes
- * against the actual event log in the artifacts directory.
- */
-function computeMetrics(
-	contractA: HarnessContract,
-	contractB: HarnessContract,
-	dataQuality: DataQualityAssessment,
-): SimulationMetrics {
-	const zeroDelta = buildMetricDelta(0, 0);
-
-	if (dataQuality.sampleSize === "insufficient") {
-		return {
-			preventedRisk: zeroDelta,
-			falseBlockRate: zeroDelta,
-			leadTimeDelta: zeroDelta,
-			rollbackPressureDelta: zeroDelta,
-		};
-	}
-
-	const artifactsDir = resolve("./artifacts/agent-runs");
-	const { manifests } = readArtifactManifests(artifactsDir);
-	if (manifests.length === 0) {
-		return {
-			preventedRisk: zeroDelta,
-			falseBlockRate: zeroDelta,
-			leadTimeDelta: zeroDelta,
-			rollbackPressureDelta: zeroDelta,
-		};
-	}
-
-	const hashA = computeContractHash(contractA);
-	const hashB = computeContractHash(contractB);
-
-	// Separate manifests by which contract hash they used
-	const manifestsA = manifests.filter((m) => m.contract?.hash === hashA);
-	const manifestsB = manifests.filter((m) => m.contract?.hash === hashB);
-	// If both contracts are same hash, split evenly for comparison
-	const baselineSet =
-		manifestsA.length > 0
-			? manifestsA
-			: manifests.slice(0, Math.ceil(manifests.length / 2));
-	const candidateSet =
-		manifestsB.length > 0
-			? manifestsB
-			: manifests.slice(Math.ceil(manifests.length / 2));
-
-	// Count outcomes for baseline set
-	const baselineStats = computeOutcomeStats(baselineSet);
-	const candidateStats = computeOutcomeStats(candidateSet);
-
-	// preventedRisk: fraction of remediations that succeeded
-	const baselinePreventedRisk =
-		baselineStats.total > 0
-			? baselineStats.remediateSuccess / baselineStats.total
-			: 0;
-	const candidatePreventedRisk =
-		candidateStats.total > 0
-			? candidateStats.remediateSuccess / candidateStats.total
-			: 0;
-
-	// falseBlockRate: fraction that failed unexpectedly (non-remediate failures)
-	const baselineFalseBlock =
-		baselineStats.total > 0
-			? baselineStats.unexpectedFailures / baselineStats.total
-			: 0;
-	const candidateFalseBlock =
-		candidateStats.total > 0
-			? candidateStats.unexpectedFailures / candidateStats.total
-			: 0;
-
-	// leadTimeDelta: average duration in hours
-	const baselineLeadTime = baselineStats.avgDurationMs / 3600000;
-	const candidateLeadTime = candidateStats.avgDurationMs / 3600000;
-
-	// rollbackPressureDelta: fraction of rollback runs
-	const baselineRollback =
-		baselineStats.total > 0
-			? baselineStats.rollbackCount / baselineStats.total
-			: 0;
-	const candidateRollback =
-		candidateStats.total > 0
-			? candidateStats.rollbackCount / candidateStats.total
-			: 0;
-
-	// Confidence interval half-width: simple normal approximation (n=effective sample)
-	const n = Math.max(dataQuality.effectiveSampleSize, 1);
-	const ciHW = 1 / Math.sqrt(n); // ~1 std err at 68% CI; advisory only
-
-	return {
-		preventedRisk: buildMetricDelta(
-			baselinePreventedRisk,
-			candidatePreventedRisk,
-			ciHW,
-		),
-		falseBlockRate: buildMetricDelta(
-			baselineFalseBlock,
-			candidateFalseBlock,
-			ciHW,
-		),
-		leadTimeDelta: buildMetricDelta(baselineLeadTime, candidateLeadTime, ciHW),
-		rollbackPressureDelta: buildMetricDelta(
-			baselineRollback,
-			candidateRollback,
-			ciHW,
-		),
-	};
-}
-
-interface OutcomeStats {
-	total: number;
-	remediateSuccess: number;
-	unexpectedFailures: number;
-	rollbackCount: number;
-	avgDurationMs: number;
-}
-
-function computeOutcomeStats(manifests: AgentRunManifest[]): OutcomeStats {
-	let remediateSuccess = 0;
-	let unexpectedFailures = 0;
-	let rollbackCount = 0;
-	let totalDurationMs = 0;
-
-	for (const m of manifests) {
-		const isRollback =
-			m.command?.includes("rollback") || m.runId?.includes("rollback");
-		const isRemediate = m.command === "remediate";
-		const isSuccess = m.outcome === "success";
-		const isFailure = m.outcome === "failed";
-
-		if (isRollback) rollbackCount++;
-		if (isRemediate && isSuccess) remediateSuccess++;
-		if (isFailure && !isRollback) unexpectedFailures++;
-		totalDurationMs += m.durationMs ?? 0;
-	}
-
-	return {
-		total: manifests.length,
-		remediateSuccess,
-		unexpectedFailures,
-		rollbackCount,
-		avgDurationMs:
-			manifests.length > 0 ? totalDurationMs / manifests.length : 0,
-	};
-}
-
-/**
- * Compute decision deltas between baseline and candidate contracts
- * by walking event logs and classifying each decision event.
- */
-function computeDeltas(
-	contractA: HarnessContract,
-	contractB: HarnessContract,
-): { summary: DeltaSummary; topDeltas: DecisionDelta[] } {
-	const artifactsDir = resolve("./artifacts/agent-runs");
-	const { manifests } = readArtifactManifests(artifactsDir);
-
-	if (manifests.length === 0) {
-		return {
-			summary: {
-				total: 0,
-				blockedToAllowed: 0,
-				allowedToBlocked: 0,
-				confidenceChanges: 0,
-				unchanged: 0,
-			},
-			topDeltas: [],
-		};
-	}
-
-	const hashA = computeContractHash(contractA);
-	const candidateManifests = manifests.filter(
-		(m) => m.contract?.hash !== hashA,
+	const contractB = validateContractFile(
+		options.contractB,
+		"E_MISSING_CONTRACT_B",
+		"Contract B path required (--contract-b)",
+		"E_CONTRACT_B_NOT_FOUND",
+		"Contract B",
+		cwd,
 	);
-	const baselineManifests = manifests.filter((m) => m.contract?.hash === hashA);
+	if (!contractB.ok) return contractB;
 
-	// If no split, use outcome-based synthetic delta
-	const usingBaseline =
-		baselineManifests.length > 0 ? baselineManifests : manifests;
-	const usingCandidate =
-		candidateManifests.length > 0 ? candidateManifests : [];
+	const artifacts = validateOptionalDir(
+		options.artifactsDir,
+		"E_ARTIFACTS_NOT_FOUND",
+		"Artifacts",
+		cwd,
+	);
+	if (!artifacts.ok) return artifacts;
 
-	const eventsTotal = { count: 0 };
-	const topDeltas: DecisionDelta[] = [];
+	const traces = validateOptionalDir(
+		options.tracesDir,
+		"E_TRACES_NOT_FOUND",
+		"Traces",
+		cwd,
+	);
+	if (!traces.ok) return traces;
 
-	let blockedToAllowed = 0;
-	let allowedToBlocked = 0;
-	let confidenceChanges = 0;
-	let unchanged = 0;
-	let eventIndex = 0;
-	const baselinePolicyChain = resolvePolicyChain(contractA);
-	const candidatePolicyChain = resolvePolicyChain(contractB);
+	const output = validateOutputPath(options.outputPath, cwd);
+	if (!output.ok) return output;
 
-	for (const manifest of usingBaseline) {
-		const baselineEvents = readRunEvents(
-			artifactsDir,
-			manifest.runId,
-			eventsTotal,
-		);
-		// Find matching candidate run (same command, different set)
-		const matchingCandidate = usingCandidate.find(
-			(m) => m.command === manifest.command,
-		);
-
-		for (const evt of baselineEvents) {
-			if (evt.eventType !== "decision") continue;
-			const baselineAction = mapOutcomeToAction(evt.payload?.outcome);
-			const baselineVerdict = resolveGateVerdict(
-				baselineAction,
-				baselinePolicyChain,
-			);
-			const baselineConfidence = mapStatusToConfidence(evt.status);
-
-			// Candidate decision: use matching run or infer from contract change
-			let candidateAction: PolicyAction = baselineAction;
-			let candidateVerdict = resolveGateVerdict(
-				candidateAction,
-				candidatePolicyChain,
-			);
-			let candidateConfidence = baselineConfidence;
-
-			if (matchingCandidate) {
-				// Use the candidate run's overall outcome as a signal
-				candidateAction = mapOutcomeToAction(matchingCandidate.outcome);
-				candidateVerdict = resolveGateVerdict(
-					candidateAction,
-					candidatePolicyChain,
-				);
-				candidateConfidence =
-					matchingCandidate.outcome === "success" ? 0.9 : 0.5;
-			}
-
-			const changed = candidateAction !== baselineAction;
-			let deltaType: DeltaType = "none";
-
-			if (changed) {
-				if (baselineAction === "block" && candidateAction !== "block") {
-					deltaType = "blocked_to_allowed";
-					blockedToAllowed++;
-				} else if (baselineAction !== "block" && candidateAction === "block") {
-					deltaType = "allowed_to_blocked";
-					allowedToBlocked++;
-				}
-			} else if (Math.abs(candidateConfidence - baselineConfidence) > 0.1) {
-				deltaType = "confidence_change";
-				confidenceChanges++;
-			} else {
-				unchanged++;
-			}
-
-			const delta: DecisionDelta = {
-				eventIndex,
-				baseline: {
-					action: baselineAction,
-					verdict: baselineVerdict,
-					reason: `baseline outcome: ${evt.payload?.outcome ?? evt.status}`,
-					confidence: baselineConfidence,
-					traceEventIndex: eventIndex,
-				},
-				candidate: {
-					action: candidateAction,
-					verdict: candidateVerdict,
-					reason: matchingCandidate
-						? `candidate outcome: ${matchingCandidate.outcome}`
-						: "no matching candidate run",
-					confidence: candidateConfidence,
-					traceEventIndex: eventIndex,
-				},
-				changed,
-				deltaType,
-			};
-
-			// Keep top-5 most impactful (changed only)
-			if (changed && topDeltas.length < 5) {
-				topDeltas.push(delta);
-			}
-			eventIndex++;
-		}
-	}
-
-	return {
-		summary: {
-			total: eventIndex,
-			blockedToAllowed,
-			allowedToBlocked,
-			confidenceChanges,
-			unchanged,
-		},
-		topDeltas,
-	};
-}
-
-function mapOutcomeToAction(outcome: string | undefined): PolicyAction {
-	if (!outcome) return "warn";
-	if (outcome === "success" || outcome === "ok") return "allow";
-	if (
-		outcome === "failed" ||
-		outcome === "error" ||
-		outcome === "validation_failed"
-	)
-		return "block";
-	return "warn";
-}
-
-function mapStatusToConfidence(status: string | undefined): number {
-	if (status === "completed") return 0.9;
-	if (status === "failed") return 0.3;
-	if (status === "skipped") return 0.5;
-	return 0.6;
-}
-
-// ============================================================================
-// PHASE 4 — RECOMMENDATION GENERATION
-// ============================================================================
-
-/**
- * Generate advisory recommendations from simulation metric signals.
- * All recommendations are non-binding (advisory only).
- */
-function generateRecommendations(
-	metrics: SimulationMetrics,
-	deltas: { summary: DeltaSummary; topDeltas: DecisionDelta[] },
-	confidence: ConfidenceAssessment,
-): SimulationRecommendation[] {
-	const recs: SimulationRecommendation[] = [];
-
-	// Insufficient data: always recommend gathering more
-	if (confidence.level === "insufficient-data") {
-		recs.push({
-			id: "rec-insufficient-data",
-			severity: "high",
-			category: "evidence",
-			title: "Insufficient data for reliable simulation",
-			rationale: `Only ${confidence.dataQuality.effectiveSampleSize} effective sample(s) found. Results are not statistically meaningful.`,
-			suggestion:
-				"Run at least 20 remediation cycles against the baseline contract before comparing.",
-			relatedMetrics: ["effectiveSampleSize", "traceCoverage"],
-			confidence: "high",
-		});
-	}
-
-	// High false block rate increase
-	if (metrics.falseBlockRate.delta > 0.05) {
-		recs.push({
-			id: "rec-high-false-block-rate",
-			severity: "high",
-			category: "policy",
-			title: "Candidate policy increases false block rate",
-			rationale: `False block rate increased by ${(metrics.falseBlockRate.delta * 100).toFixed(1)}% (${(metrics.falseBlockRate.baseline * 100).toFixed(1)}% → ${(metrics.falseBlockRate.candidate * 100).toFixed(1)}%). This may increase developer friction without proportional risk reduction.`,
-			suggestion:
-				"Review risk-tier thresholds in the candidate contract. Consider raising autoApplyMaxTier or adjusting pattern specificity.",
-			relatedMetrics: ["falseBlockRate"],
-			confidence: confidence.level === "high" ? "high" : "medium",
-		});
-	}
-
-	// Lead time regression
-	if (metrics.leadTimeDelta.delta > 0.5) {
-		recs.push({
-			id: "rec-lead-time-regression",
-			severity: "medium",
-			category: "workflow",
-			title: "Candidate policy increases average lead time",
-			rationale: `Average run duration increased by ${metrics.leadTimeDelta.delta.toFixed(2)}h under the candidate contract.`,
-			suggestion:
-				"Check if new required checks or stricter timeoutAction settings are causing slowdowns.",
-			relatedMetrics: ["leadTimeDelta"],
-			confidence: "medium",
-		});
-	}
-
-	// Lead time improvement — positive signal
-	if (metrics.leadTimeDelta.delta < -0.5) {
-		recs.push({
-			id: "rec-lead-time-improvement",
-			severity: "info",
-			category: "workflow",
-			title: "Candidate policy reduces average lead time",
-			rationale: `Average run duration decreased by ${Math.abs(metrics.leadTimeDelta.delta).toFixed(2)}h. This is a positive throughput signal.`,
-			suggestion:
-				"Confirm improvement is not due to fewer checks being enforced (verify requiredChecks coverage).",
-			relatedMetrics: ["leadTimeDelta"],
-			confidence: "medium",
-		});
-	}
-
-	// Rollback pressure increase
-	if (metrics.rollbackPressureDelta.delta > 0.1) {
-		recs.push({
-			id: "rec-rollback-pressure",
-			severity: "critical",
-			category: "policy",
-			title: "Candidate policy increases rollback pressure",
-			rationale: `Rollback rate increased by ${(metrics.rollbackPressureDelta.delta * 100).toFixed(1)}% (${(metrics.rollbackPressureDelta.baseline * 100).toFixed(1)}% → ${(metrics.rollbackPressureDelta.candidate * 100).toFixed(1)}%). This suggests the candidate policy creates unsafe conditions that trigger auto-rollback.`,
-			suggestion:
-				"Do not promote the candidate contract until rollback triggers are fully investigated.",
-			relatedMetrics: ["rollbackPressureDelta"],
-			confidence: "high",
-		});
-	}
-
-	// High delta churn: many decisions changed
-	if (deltas.summary.total > 0) {
-		const changeRate =
-			(deltas.summary.blockedToAllowed + deltas.summary.allowedToBlocked) /
-			deltas.summary.total;
-		if (changeRate > 0.3) {
-			recs.push({
-				id: "rec-high-delta-churn",
-				severity: "medium",
-				category: "threshold",
-				title: "High decision churn between baseline and candidate",
-				rationale: `${(changeRate * 100).toFixed(0)}% of evaluated decisions changed outcome (${deltas.summary.blockedToAllowed} blocked→allowed, ${deltas.summary.allowedToBlocked} allowed→blocked). Large-scale changes increase deployment risk.`,
-				suggestion:
-					"Consider a staged rollout: apply the candidate to a subset of repos first and monitor for regressions.",
-				relatedMetrics: ["blockedToAllowed", "allowedToBlocked"],
-				confidence: "medium",
-			});
-		}
-	}
-
-	// Prevented risk improvement
-	if (metrics.preventedRisk.delta > 0.05) {
-		recs.push({
-			id: "rec-prevented-risk-improvement",
-			severity: "info",
-			category: "policy",
-			title: "Candidate policy prevents more risk",
-			rationale: `Remediation success rate increased by ${(metrics.preventedRisk.delta * 100).toFixed(1)}% under the candidate contract. This is a positive safety signal.`,
-			suggestion:
-				"Verify improvements are not coming from reduced enforcement scope (confirm requiredChecks coverage).",
-			relatedMetrics: ["preventedRisk"],
-			confidence: confidence.level === "high" ? "high" : "medium",
-		});
-	}
-
-	return recs;
-}
-
-/**
- * Determine simulation flags from results.
- */
-function determineFlags(
-	dataQuality: DataQualityAssessment,
-	metrics: SimulationMetrics,
-): SimulationFlag[] {
-	const flags: SimulationFlag[] = [];
-
-	if (dataQuality.sampleSize === "insufficient") {
-		flags.push("insufficient_data");
-	}
-
-	if (dataQuality.traceCoverage < 50) {
-		flags.push("partial_coverage");
-	}
-
-	if (metrics.falseBlockRate.delta > 0.1) {
-		flags.push("high_false_block_risk");
-	}
-
-	if (Math.abs(metrics.leadTimeDelta.delta) > 2) {
-		flags.push("significant_lead_time_impact");
-	}
-
-	return flags;
-}
-
-/**
- * Compute confidence assessment from data quality.
- */
-function computeConfidence(
-	dataQuality: DataQualityAssessment,
-): ConfidenceAssessment {
-	let level: ConfidenceAssessment["level"] = "insufficient-data";
-	const rationale: string[] = [];
-
-	if (
-		dataQuality.effectiveSampleSize >= 20 &&
-		dataQuality.traceCoverage >= 80
-	) {
-		level = "high";
-		rationale.push("Adequate sample size with good trace coverage");
-	} else if (
-		dataQuality.effectiveSampleSize >= 10 &&
-		dataQuality.traceCoverage >= 50
-	) {
-		level = "medium";
-		rationale.push("Marginal sample size or partial trace coverage");
-	} else if (dataQuality.effectiveSampleSize >= 5) {
-		level = "low";
-		rationale.push("Limited sample size or poor trace coverage");
-	} else {
-		level = "insufficient-data";
-		rationale.push("Insufficient data for reliable simulation");
-	}
-
-	return {
-		level,
-		score: CONFIDENCE_SCORES[level],
-		rationale,
-		dataQuality,
-	};
+	return { ok: true };
 }
 
 // ============================================================================
@@ -1083,46 +298,70 @@ function computeConfidence(
 /**
  * Run counterfactual policy simulation.
  */
-export function runSimulate(options: SimulateOptions): SimulateResult {
-	const startTime = Date.now();
 
-	// Validate options
-	const validation = validateOptions(options);
-	if (!validation.ok) {
-		return validation;
-	}
-
-	// Load contracts
+/**
+ * Load both contracts safely, returning a structured error on failure.
+ */
+function loadContractsSafely(
+	options: SimulateOptions,
+):
+	| { ok: true; contractA: HarnessContract; contractB: HarnessContract }
+	| { ok: false; result: SimulateResult } {
 	let contractA: HarnessContract;
 	let contractB: HarnessContract;
-
 	try {
 		contractA = loadContract(options.contractA);
 	} catch (e) {
 		return {
 			ok: false,
-			error: {
-				code: "E_CONTRACT_A_LOAD_FAILED",
-				message: `Failed to load contract A: ${e instanceof Error ? e.message : "Unknown error"}`,
+			result: {
+				ok: false,
+				error: {
+					code: "E_CONTRACT_A_LOAD_FAILED",
+					message: `Failed to load contract A: ${e instanceof Error ? e.message : "Unknown error"}`,
+				},
+				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
 			},
-			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
 		};
 	}
-
 	try {
 		contractB = loadContract(options.contractB);
 	} catch (e) {
 		return {
 			ok: false,
-			error: {
-				code: "E_CONTRACT_B_LOAD_FAILED",
-				message: `Failed to load contract B: ${e instanceof Error ? e.message : "Unknown error"}`,
+			result: {
+				ok: false,
+				error: {
+					code: "E_CONTRACT_B_LOAD_FAILED",
+					message: `Failed to load contract B: ${e instanceof Error ? e.message : "Unknown error"}`,
+				},
+				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
 			},
-			exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
 		};
 	}
+	return { ok: true, contractA, contractB };
+}
 
-	// Determine paths
+/**
+ * Run deterministic counterfactual policy simulation between two contracts.
+ *
+ * @param options - CLI options including baseline/candidate contract paths and optional artifact/trace/output controls
+ * @returns A structured simulation result with report payload on success, or a typed validation/runtime error on failure
+ */
+export function runSimulate(options: SimulateOptions): SimulateResult {
+	const startTime = Date.now();
+
+	const validation = validateOptions(options);
+	if (!validation.ok) {
+		return validation;
+	}
+
+	const contracts = loadContractsSafely(options);
+	if (!contracts.ok) {
+		return contracts.result;
+	}
+	const { contractA, contractB } = contracts;
+
 	const artifactsDir = options.artifactsDir
 		? resolve(options.artifactsDir)
 		: resolve("./artifacts/pilot");
@@ -1130,11 +369,9 @@ export function runSimulate(options: SimulateOptions): SimulateResult {
 		? resolve(options.tracesDir)
 		: resolve("./.traces");
 
-	// Compute contract hashes
 	const contractAHash = computeContractHash(contractA);
 	const contractBHash = computeContractHash(contractB);
 
-	// Build simulation inputs
 	const inputs: SimulationInputs = {
 		contractBaseline: resolve(options.contractA),
 		contractCandidate: resolve(options.contractB),
@@ -1144,38 +381,25 @@ export function runSimulate(options: SimulateOptions): SimulateResult {
 		contractCandidateHash: contractBHash,
 	};
 
-	// Determine simulation window
 	const now = new Date();
-	const windowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+	const windowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 	const window: SimulationWindow = {
 		start: windowStart.toISOString(),
 		end: now.toISOString(),
 	};
 
-	// Assess data quality
 	const dataQuality = assessDataQuality(
 		contractA,
 		contractB,
 		options.artifactsDir,
 		options.tracesDir,
 	);
-
-	// Compute metrics
 	const metrics = computeMetrics(contractA, contractB, dataQuality);
-
-	// Compute deltas
 	const deltas = computeDeltas(contractA, contractB);
-
-	// Compute confidence
 	const confidence = computeConfidence(dataQuality);
-
-	// Generate recommendations
 	const recommendations = generateRecommendations(metrics, deltas, confidence);
-
-	// Determine flags
 	const flags = determineFlags(dataQuality, metrics);
 
-	// Build report
 	const report: CounterfactualSimulationReport = {
 		schemaVersion: SIMULATION_SCHEMA_VERSION,
 		generatedAt: new Date().toISOString(),
@@ -1202,7 +426,6 @@ export function runSimulate(options: SimulateOptions): SimulateResult {
 		flags,
 	};
 
-	// Write output file if specified
 	if (options.outputPath) {
 		const outputPath = resolve(options.outputPath);
 		const dir = dirname(outputPath);

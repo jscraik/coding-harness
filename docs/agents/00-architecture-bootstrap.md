@@ -34,7 +34,6 @@ scripts/harness-cli.sh source-outline <path> --json` before opening full
    source, then unwrap only the needed symbol with `--symbol <name>`.
 5. Route to deeper SOPs in `docs/agents/` after architecture context is loaded.
 
-
 ## Artifact validation gates
 
 Run these checks before architecture-sensitive edits:
@@ -48,6 +47,8 @@ harness docs-gate --mode advisory --json
 If either command fails, refresh artifacts before proceeding.
 When `docs-gate` reports required documentation surfaces for the same change category, update the listed operator guides in that PR before merge.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
+
+<!-- last_validated: 2026-04-26 -->
 For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
 
 ## Exact behavior evidence

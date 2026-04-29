@@ -190,6 +190,99 @@ function validateFileSize(filepath: string): Result<void, IndexerError> {
 }
 
 /**
+ * Read and validate a file for indexing, returning content and metadata.
+ *
+ * @returns Object with ok flag and either result data or error result
+ */
+function readIndexFile(
+	filepath: string,
+	basePath: string,
+	force: boolean,
+	store: VectorStore,
+):
+	| {
+			ok: true;
+			content: string;
+			contentHash: string;
+			relativePath: string;
+			frontmatter: Record<string, unknown>;
+			body: string;
+	  }
+	| { ok: false; result: IndexResult } {
+	// Validate file exists
+	if (!existsSync(filepath)) {
+		return {
+			ok: false,
+			result: {
+				indexed: false,
+				path: filepath,
+				error: {
+					code: "READ_FAILED",
+					message: "File not found",
+					path: filepath,
+				},
+			},
+		};
+	}
+
+	// Check file size
+	const sizeResult = validateFileSize(filepath);
+	if (!sizeResult.ok) {
+		return {
+			ok: false,
+			result: { indexed: false, path: filepath, error: sizeResult.error },
+		};
+	}
+
+	// Read file
+	let content: string;
+	try {
+		content = readFileSync(filepath, "utf-8");
+	} catch (error) {
+		return {
+			ok: false,
+			result: {
+				indexed: false,
+				path: filepath,
+				error: {
+					code: "READ_FAILED",
+					message: error instanceof Error ? error.message : "Unknown error",
+					path: filepath,
+				},
+			},
+		};
+	}
+
+	// Compute content hash
+	const contentHash = computeHash(content);
+
+	// Check if already indexed with same hash
+	const relativePathResult = getRelativePathWithinBase(filepath, basePath);
+	if (!relativePathResult.ok) {
+		return {
+			ok: false,
+			result: {
+				indexed: false,
+				path: filepath,
+				error: relativePathResult.error,
+			},
+		};
+	}
+	const relativePath = relativePathResult.value;
+	const existingHash = store.getContentHash(relativePath);
+	if (!force && existingHash === contentHash) {
+		return {
+			ok: false,
+			result: { indexed: false, path: filepath },
+		};
+	}
+
+	// Parse frontmatter
+	const { frontmatter, body } = parseFrontmatter(content);
+	return { ok: true, content, contentHash, relativePath, frontmatter, body };
+}
+
+/**
  * Index a single file.
  *
  * @param options - Index options
@@ -210,61 +303,11 @@ export async function indexFile(
 		metadata: metadataOverrides,
 	} = options;
 
-	// Validate file exists
-	if (!existsSync(filepath)) {
-		return {
-			indexed: false,
-			path: filepath,
-			error: {
-				code: "READ_FAILED",
-				message: "File not found",
-				path: filepath,
-			},
-		};
+	const readResult = readIndexFile(filepath, basePath, force, store);
+	if (!readResult.ok) {
+		return readResult.result;
 	}
-
-	// Check file size
-	const sizeResult = validateFileSize(filepath);
-	if (!sizeResult.ok) {
-		return { indexed: false, path: filepath, error: sizeResult.error };
-	}
-
-	// Read file
-	let content: string;
-	try {
-		content = readFileSync(filepath, "utf-8");
-	} catch (error) {
-		return {
-			indexed: false,
-			path: filepath,
-			error: {
-				code: "READ_FAILED",
-				message: error instanceof Error ? error.message : "Unknown error",
-				path: filepath,
-			},
-		};
-	}
-
-	// Compute content hash
-	const contentHash = computeHash(content);
-
-	// Check if already indexed with same hash
-	const relativePathResult = getRelativePathWithinBase(filepath, basePath);
-	if (!relativePathResult.ok) {
-		return {
-			indexed: false,
-			path: filepath,
-			error: relativePathResult.error,
-		};
-	}
-	const relativePath = relativePathResult.value;
-	const existingHash = store.getContentHash(relativePath);
-	if (!force && existingHash === contentHash) {
-		return { indexed: false, path: filepath }; // Skip: unchanged
-	}
-
-	// Parse frontmatter
-	const { frontmatter, body } = parseFrontmatter(content);
+	const { contentHash, relativePath, frontmatter, body } = readResult;
 
 	// Build metadata
 	const today = new Date().toISOString().split("T")[0] ?? "2026-01-01";

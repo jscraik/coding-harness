@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import {
+	type ContextSourceInventory,
 	computeArtifactChecksum,
 	discoverContextSourceDocuments,
 	readContextSourceInventory,
@@ -29,8 +30,14 @@ export const EXIT_CODES = {
 	ERROR: 3,
 } as const;
 
+/**
+ * Selects whether context-health analyzes current checkout sources or recent artifacts.
+ */
 export type ContextHealthTriggerType = "current_checkout" | "recent_artifacts";
 
+/**
+ * Options for running the context-health report generator.
+ */
 export interface ContextHealthOptions {
 	baseDir?: string;
 	json?: boolean;
@@ -72,6 +79,9 @@ interface ContradictionHistoryEntry {
 	resolvedAt?: string;
 }
 
+/**
+ * Canonical context-health report payload written to artifact output.
+ */
 export interface ContextHealthReport {
 	schemaVersion: "context-health-report/v1";
 	command: "context-health";
@@ -226,6 +236,84 @@ function maybeAddArtifactRef(
 	});
 }
 
+function buildContextHealthReport(
+	repoRoot: string,
+	triggerType: ContextHealthTriggerType,
+	policy: ContextIntegrityPolicy,
+	warnings: string[],
+	artifactRefs: readonly ArtifactRef[],
+	inventory: ContextSourceInventory | null,
+	memorySnapshot: MemoryMetricsSnapshot | null,
+): ContextHealthReport {
+	const reportArtifactRefs = [...artifactRefs];
+	const contradictionEntries = latestContradictions(repoRoot);
+	maybeAddArtifactRef(
+		reportArtifactRefs,
+		repoRoot,
+		"contradiction_history",
+		CONTRADICTION_HISTORY_PATH,
+	);
+	const latestContradictionValues = Array.from(contradictionEntries.values());
+	const openContradictions = latestContradictionValues.filter(
+		(entry) => entry.status === "open",
+	);
+
+	const authoritativeSources =
+		inventory?.sources.filter((source) => source.authority !== "supporting") ??
+		[];
+	const authoritativeCovered = authoritativeSources.filter(
+		(source) => source.exists && source.indexedDocumentCount > 0,
+	).length;
+	const authoritativeCoverageRate = createRateMetric(
+		authoritativeCovered,
+		authoritativeSources.length,
+		1,
+	);
+	const staleAuthoritativeSourceCount = authoritativeSources.filter(
+		(source) => source.stalenessState === "stale",
+	).length;
+	const unknownAuthoritativeSourceCount = authoritativeSources.filter(
+		(source) => source.stalenessState === "unknown",
+	).length;
+
+	const decisionConsistencyProxy = createRateMetric(
+		latestContradictionValues.filter((entry) => entry.status === "resolved")
+			.length,
+		latestContradictionValues.length,
+		10,
+	);
+	const degradedRetrievalRate = createRateMetric(0, 0, 10);
+	const memoryUnresolvedQuestionCount =
+		memorySnapshot?.unresolvedQuestionCount ?? 0;
+
+	return {
+		schemaVersion: "context-health-report/v1",
+		command: "context-health",
+		generatedAt: new Date().toISOString(),
+		repoRoot,
+		triggerType,
+		mode: policy.mode,
+		status: warnings.length > 0 ? "partial" : "ok",
+		warnings,
+		artifactRefs: reportArtifactRefs,
+		metrics: {
+			authoritative_coverage_rate: authoritativeCoverageRate,
+			contradiction_open_count: openContradictions.length,
+			stale_authoritative_source_count: staleAuthoritativeSourceCount,
+			unknown_authoritative_source_count: unknownAuthoritativeSourceCount,
+			degraded_retrieval_rate: degradedRetrievalRate,
+			memory_unresolved_question_count: memoryUnresolvedQuestionCount,
+			decision_consistency_proxy: decisionConsistencyProxy,
+		},
+	};
+}
+
+/**
+ * Executes context-health validation and writes a report artifact.
+ *
+ * @param options - Command options controlling path, output, and trigger mode
+ * @returns Success payload with report or structured failure with exit code
+ */
 export function runContextHealth(
 	options: ContextHealthOptions = {},
 ):
@@ -287,66 +375,15 @@ export function runContextHealth(
 		);
 	}
 
-	const contradictionEntries = latestContradictions(repoRoot);
-	maybeAddArtifactRef(
-		artifactRefs,
-		repoRoot,
-		"contradiction_history",
-		CONTRADICTION_HISTORY_PATH,
-	);
-	const latestContradictionValues = Array.from(contradictionEntries.values());
-	const openContradictions = latestContradictionValues.filter(
-		(entry) => entry.status === "open",
-	);
-
-	const authoritativeSources =
-		inventory?.sources.filter((source) => source.authority !== "supporting") ??
-		[];
-	const authoritativeCovered = authoritativeSources.filter(
-		(source) => source.exists && source.indexedDocumentCount > 0,
-	).length;
-	const authoritativeCoverageRate = createRateMetric(
-		authoritativeCovered,
-		authoritativeSources.length,
-		1,
-	);
-	const staleAuthoritativeSourceCount = authoritativeSources.filter(
-		(source) => source.stalenessState === "stale",
-	).length;
-	const unknownAuthoritativeSourceCount = authoritativeSources.filter(
-		(source) => source.stalenessState === "unknown",
-	).length;
-
-	const decisionConsistencyProxy = createRateMetric(
-		latestContradictionValues.filter((entry) => entry.status === "resolved")
-			.length,
-		latestContradictionValues.length,
-		10,
-	);
-	const degradedRetrievalRate = createRateMetric(0, 0, 10);
-	const memoryUnresolvedQuestionCount =
-		memorySnapshot?.unresolvedQuestionCount ?? 0;
-
-	const report: ContextHealthReport = {
-		schemaVersion: "context-health-report/v1",
-		command: "context-health",
-		generatedAt: new Date().toISOString(),
+	const report = buildContextHealthReport(
 		repoRoot,
 		triggerType,
-		mode: policy.mode,
-		status: warnings.length > 0 ? "partial" : "ok",
+		policy,
 		warnings,
 		artifactRefs,
-		metrics: {
-			authoritative_coverage_rate: authoritativeCoverageRate,
-			contradiction_open_count: openContradictions.length,
-			stale_authoritative_source_count: staleAuthoritativeSourceCount,
-			unknown_authoritative_source_count: unknownAuthoritativeSourceCount,
-			degraded_retrieval_rate: degradedRetrievalRate,
-			memory_unresolved_question_count: memoryUnresolvedQuestionCount,
-			decision_consistency_proxy: decisionConsistencyProxy,
-		},
-	};
+		inventory,
+		memorySnapshot,
+	);
 
 	try {
 		const outPath = validatePath(
@@ -366,6 +403,12 @@ export function runContextHealth(
 	return { ok: true, report };
 }
 
+/**
+ * CLI entrypoint for `harness context-health`.
+ *
+ * @param args - Raw CLI arguments
+ * @returns Process exit code
+ */
 export function runContextHealthCLI(args: string[]): number {
 	let json = false;
 	let outPath: string | undefined;

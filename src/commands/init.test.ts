@@ -601,8 +601,17 @@ describe("runInit", () => {
 			expect(content.version).toBe(CURRENT_SCHEMA_VERSION);
 			expect(content.reviewPolicy).toBeUndefined();
 			expect(content.ciProviderPolicy.activeProvider).toBe("circleci");
-			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
+			expect(content.branchProtection.requiredChecks).toContain("pr-pipeline");
+			expect(content.branchProtection.requiredChecks).toContain(
+				"security-scan",
+			);
 			expect(content.branchProtection.requiredChecks).toContain("CodeRabbit");
+			expect(content.branchProtection.requiredChecks).toContain(
+				"semgrep-cloud-platform/scan",
+			);
+			expect(content.branchProtection.requiredChecks).not.toContain(
+				"linear-gate",
+			);
 			expect(content.branchProtection.requiredApprovingReviewCount).toBe(1);
 			expect(content.branchProtection.requireCodeOwnerReview).toBe(false);
 			expect(content.branchProtection.requireLastPushApproval).toBe(false);
@@ -1790,10 +1799,13 @@ describe("runInit", () => {
 				'echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then',
+				'if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then',
 			);
 			expect(runHarnessGate).toContain(
-				'exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+				'[[ "$tsx_stderr_text" =~ EPERM|operation\\ not\\ permitted ]]',
+			);
+			expect(runHarnessGate).toContain(
+				'echo "Warning: tsx IPC startup failed (EPERM/IPC); falling back to node dist/cli.js." >&2',
 			);
 			expect(runHarnessGate).toContain(
 				'if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
@@ -3145,7 +3157,7 @@ describe("--track flag", () => {
 		if (!result.ok) {
 			// sanitizePath now detects the symlink before any write occurs
 			expect(result.error.code).toBe("PATH_TRAVERSAL");
-			expect(result.error.message).toContain("symbolic link");
+			expect(result.error.message).toMatch(/symlink/i);
 		}
 	});
 
@@ -4136,6 +4148,292 @@ describe("--update flag", () => {
 				]),
 			);
 		}
+	});
+
+	it("backfills existing untracked contracts during tracked update", () => {
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					version: "1.5.0",
+					riskTierRules: {},
+					mergePolicy: { high: [], medium: [], low: [] },
+					branchProtection: {
+						requiredChecks: ["security-scan", "CodeRabbit"],
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toContain("harness.contract.json");
+			const updatedContract = JSON.parse(
+				readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+			) as Record<string, unknown>;
+			expect(updatedContract.northStar).toBeDefined();
+			expect(updatedContract.docsGatePolicy).toBeDefined();
+			expect(updatedContract.ciProviderPolicy).toBeDefined();
+			expect(
+				(
+					updatedContract.branchProtection as {
+						requiredChecks: string[];
+					}
+				).requiredChecks,
+			).toEqual(
+				expect.arrayContaining([
+					"pr-pipeline",
+					"security-scan",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				]),
+			);
+			expect(result.output.ownershipDecisions ?? []).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						file: "harness.contract.json",
+						path: "docsGatePolicy.enabled",
+						owner: "template",
+						action: "added",
+					}),
+				]),
+			);
+		}
+	});
+
+	it("previews tracked updates without mutating existing contracts", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const contractPath = join(tempDir, "harness.contract.json");
+		const existingContract = JSON.stringify(
+			{
+				version: "1.5.0",
+				riskTierRules: {},
+				mergePolicy: { high: [], medium: [], low: [] },
+			},
+			null,
+			2,
+		);
+		writeFileSync(contractPath, existingContract);
+
+		const result = runInit(tempDir, {
+			dryRun: true,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toContain("harness.contract.json");
+		}
+		expect(readFileSync(contractPath, "utf-8")).toBe(existingContract);
+	});
+
+	it("enforces existing untracked CI and review templates during update", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const enforcedPaths = [
+			".coderabbit.yaml",
+			".circleci/config.yml",
+			".harness/ci-required-checks.json",
+			"scripts/check-semgrep-changed.sh",
+			"scripts/check-semgrep-full.sh",
+			"scripts/semgrep-bootstrap.sh",
+			"scripts/semgrep-pre-push.yml",
+		];
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			harnessVersion?: string;
+			files: Array<{ path: string; action: string }>;
+		};
+		manifest.harnessVersion = "0.0.1";
+		manifest.files = manifest.files.filter(
+			(entry) => !enforcedPaths.includes(entry.path),
+		);
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+		writeFileSync(join(tempDir, ".coderabbit.yaml"), "language: en-US\n");
+		writeFileSync(join(tempDir, ".circleci/config.yml"), "version: 2.1\n");
+		writeFileSync(
+			join(tempDir, ".harness/ci-required-checks.json"),
+			JSON.stringify({ schemaVersion: 1, requiredChecks: [] }, null, 2),
+		);
+		writeFileSync(
+			join(tempDir, "scripts/check-semgrep-changed.sh"),
+			"#!/usr/bin/env bash\necho old changed\n",
+		);
+		writeFileSync(
+			join(tempDir, "scripts/check-semgrep-full.sh"),
+			"#!/usr/bin/env bash\necho old full\n",
+		);
+		writeFileSync(
+			join(tempDir, "scripts/semgrep-bootstrap.sh"),
+			"#!/usr/bin/env bash\necho old bootstrap\n",
+		);
+		writeFileSync(join(tempDir, "scripts/semgrep-pre-push.yml"), "rules: []\n");
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toEqual(
+				expect.arrayContaining(enforcedPaths),
+			);
+		}
+		expect(readFileSync(join(tempDir, ".coderabbit.yaml"), "utf-8")).toContain(
+			"Harness-managed CodeRabbit baseline",
+		);
+		const circleConfig = readFileSync(
+			join(tempDir, ".circleci/config.yml"),
+			"utf-8",
+		);
+		expect(circleConfig).toContain("security-scan");
+		expect(circleConfig).toContain("bash scripts/check-semgrep-full.sh");
+		const requiredChecks = JSON.parse(
+			readFileSync(join(tempDir, ".harness/ci-required-checks.json"), "utf-8"),
+		) as { requiredChecks: Array<{ displayName: string }> };
+		expect(
+			requiredChecks.requiredChecks.map((check) => check.displayName),
+		).toEqual(
+			expect.arrayContaining(["CodeRabbit", "semgrep-cloud-platform/scan"]),
+		);
+		expect(
+			readFileSync(join(tempDir, "scripts/check-semgrep-changed.sh"), "utf-8"),
+		).toContain("run_semgrep scan");
+		expect(
+			readFileSync(join(tempDir, "scripts/check-semgrep-full.sh"), "utf-8"),
+		).toContain("run_semgrep scan");
+		expect(
+			readFileSync(join(tempDir, "scripts/semgrep-bootstrap.sh"), "utf-8"),
+		).toContain("install_semgrep_with_site_packages()");
+		expect(
+			readFileSync(join(tempDir, "scripts/semgrep-pre-push.yml"), "utf-8"),
+		).toContain("ts-no-eval");
+
+		const updatedManifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			files: Array<{ path: string }>;
+		};
+		for (const enforcedPath of enforcedPaths) {
+			expect(
+				updatedManifest.files.some((entry) => entry.path === enforcedPath),
+			).toBe(true);
+		}
+	});
+
+	it("previews enforced untracked template updates without mutating files", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifestBefore = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			harnessVersion?: string;
+			files: Array<{ path: string; action: string }>;
+		};
+		manifestBefore.harnessVersion = "0.0.1";
+		manifestBefore.files = manifestBefore.files.filter(
+			(entry) =>
+				entry.path !== ".coderabbit.yaml" &&
+				entry.path !== ".circleci/config.yml",
+		);
+		const staleManifestContent = JSON.stringify(manifestBefore);
+		writeFileSync(manifestPath, staleManifestContent);
+		const staleCodeRabbit = "language: en-US\n";
+		const staleCircle = "version: 2.1\n";
+		writeFileSync(join(tempDir, ".coderabbit.yaml"), staleCodeRabbit);
+		writeFileSync(join(tempDir, ".circleci/config.yml"), staleCircle);
+
+		const result = runInit(tempDir, {
+			dryRun: true,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toEqual(
+				expect.arrayContaining([".coderabbit.yaml", ".circleci/config.yml"]),
+			);
+		}
+		expect(readFileSync(join(tempDir, ".coderabbit.yaml"), "utf-8")).toBe(
+			staleCodeRabbit,
+		);
+		expect(readFileSync(join(tempDir, ".circleci/config.yml"), "utf-8")).toBe(
+			staleCircle,
+		);
+		expect(readFileSync(manifestPath, "utf-8")).toBe(staleManifestContent);
+	});
+
+	it("rejects enforced untracked update targets that are symlinks", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			harnessVersion?: string;
+			files: Array<{ path: string; action: string }>;
+		};
+		manifest.harnessVersion = "0.0.1";
+		manifest.files = manifest.files.filter(
+			(entry) => entry.path !== ".coderabbit.yaml",
+		);
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+		const outsideConfig = join(
+			tmpdir(),
+			`harness-coderabbit-${Date.now()}.yaml`,
+		);
+		writeFileSync(outsideConfig, "language: en-US\n");
+		rmSync(join(tempDir, ".coderabbit.yaml"), { force: true });
+		symlinkSync(outsideConfig, join(tempDir, ".coderabbit.yaml"));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(["PATH_TRAVERSAL", "WRITE_ERROR"]).toContain(result.error.code);
+			expect(result.error.path).toBe(".coderabbit.yaml");
+		}
+		expect(readFileSync(outsideConfig, "utf-8")).toBe("language: en-US\n");
+		rmSync(outsideConfig, { force: true });
 	});
 
 	it("rejects updates that would downgrade the contract version", () => {

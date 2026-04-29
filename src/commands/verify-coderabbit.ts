@@ -22,6 +22,7 @@ export const EXIT_CODES = {
 	SYSTEM_ERROR: 10,
 } as const;
 
+/** CLI options accepted by `verify-coderabbit`. */
 export interface VerifyCodeRabbitOptions {
 	token?: string;
 	owner?: string;
@@ -31,6 +32,7 @@ export interface VerifyCodeRabbitOptions {
 	verbose?: boolean;
 }
 
+/** Structured verification result returned by `runVerifyCodeRabbit`. */
 export interface CodeRabbitVerificationResult {
 	ok: boolean;
 	checks: CodeRabbitCheck[];
@@ -41,6 +43,7 @@ export interface CodeRabbitVerificationResult {
 	};
 }
 
+/** One verification check outcome within a CodeRabbit verification run. */
 export interface CodeRabbitCheck {
 	name: string;
 	status: "pass" | "fail" | "warn";
@@ -249,6 +252,112 @@ function verifyNpmrc(repoPath: string): CodeRabbitCheck {
  * @param repo - Repository name.
  * @returns An array of `CodeRabbitCheck` entries describing the outcome of each remote verification step. Each check has `name`, `status` (`pass`/`warn`/`fail`), a human-readable `message`, and optional `details`. Errors encountered while querying GitHub are surfaced as `warn` checks with a sanitized error message.
  */
+async function verifyCodeRabbitCheckRuns(
+	client: GitHubClient,
+): Promise<CodeRabbitCheck> {
+	try {
+		const defaultBranch = await client.getDefaultBranch();
+		const checkRuns = await client.listCheckRunsForRef(
+			`refs/heads/${defaultBranch}`,
+		);
+		const codeRabbitRuns = checkRuns.filter(
+			(run) => run.name === CODERABBIT_CHECK_NAME,
+		);
+
+		if (codeRabbitRuns.length === 0) {
+			return {
+				name: "CodeRabbit check run presence",
+				status: "warn",
+				message: `No "${CODERABBIT_CHECK_NAME}" check run found on ${defaultBranch}. CodeRabbit may not be installed or has not reviewed a PR yet.`,
+				details: {
+					hint: "Install the CodeRabbit GitHub App from https://github.com/marketplace/coderabbitai",
+					branch: defaultBranch,
+				},
+			};
+		}
+		// biome-ignore lint/style/noNonNullAssertion: length checked above
+		const latest = codeRabbitRuns[0]!;
+		return {
+			name: "CodeRabbit check run presence",
+			status: "pass",
+			message: `CodeRabbit check found on ${defaultBranch} (status: ${latest.status}, conclusion: ${latest.conclusion ?? "pending"})`,
+			details: { branch: defaultBranch, checkRunId: latest.id },
+		};
+	} catch (e) {
+		return {
+			name: "CodeRabbit check run presence",
+			status: "warn",
+			message: `Failed to verify check runs: ${sanitizeError(e)}`,
+		};
+	}
+}
+
+async function verifyCodeRabbitRuleset(
+	client: GitHubClient,
+): Promise<CodeRabbitCheck> {
+	try {
+		const rulesets = await client.listRulesets();
+		const protectRuleset = rulesets.find(
+			(r) => r.name === "protect" && r.target === "branch",
+		);
+
+		if (!protectRuleset) {
+			return {
+				name: "Ruleset Configuration",
+				status: "warn",
+				message:
+					'No "protect" ruleset found. Run `harness branch-protect` to create one.',
+			};
+		}
+		if (protectRuleset.enforcement === "disabled") {
+			return {
+				name: "Ruleset Configuration",
+				status: "fail",
+				message:
+					'Ruleset "protect" is disabled. Enable enforcement to require "CodeRabbit".',
+				details: { rulesetId: protectRuleset.id, enforcement: "disabled" },
+			};
+		}
+		const fullRuleset = await client.getRuleset(protectRuleset.id);
+		const statusChecksRule = fullRuleset.rules.find(
+			(r) => r.type === "required_status_checks",
+		);
+		const requiredChecks =
+			(statusChecksRule?.parameters?.required_status_checks as
+				| { context: string }[]
+				| undefined) || [];
+
+		const hasCodeRabbit = requiredChecks.some(
+			(c) => c.context === CODERABBIT_CHECK_NAME,
+		);
+
+		if (hasCodeRabbit) {
+			return {
+				name: "Ruleset Configuration",
+				status: "pass",
+				message: `Ruleset "protect" requires "${CODERABBIT_CHECK_NAME}" status check`,
+				details: { rulesetId: protectRuleset.id },
+			};
+		}
+		return {
+			name: "Ruleset Configuration",
+			status: "fail",
+			message: `Ruleset "protect" does not require "${CODERABBIT_CHECK_NAME}" status check. Run \`harness branch-protect\` to update.`,
+			details: {
+				rulesetId: protectRuleset.id,
+				currentChecks: requiredChecks.map((c) => c.context),
+				hint: "Add CodeRabbit to required checks: harness branch-protect --checks CodeRabbit",
+			},
+		};
+	} catch (e) {
+		return {
+			name: "Ruleset Configuration",
+			status: "warn",
+			message: `Failed to check ruleset: ${sanitizeError(e)}`,
+		};
+	}
+}
+
 async function verifyRemoteCodeRabbitSetup(
 	token: string | undefined,
 	owner: string,
@@ -273,100 +382,11 @@ async function verifyRemoteCodeRabbitSetup(
 	}
 
 	const client = new GitHubClient({ token, owner, repo });
-
-	// Check that CodeRabbit has run on the default branch
-	try {
-		const defaultBranch = await client.getDefaultBranch();
-		const checkRuns = await client.listCheckRunsForRef(
-			`refs/heads/${defaultBranch}`,
-		);
-		const codeRabbitRuns = checkRuns.filter(
-			(run) => run.name === CODERABBIT_CHECK_NAME,
-		);
-
-		if (codeRabbitRuns.length === 0) {
-			checks.push({
-				name: "CodeRabbit check run presence",
-				status: "warn",
-				message: `No "${CODERABBIT_CHECK_NAME}" check run found on ${defaultBranch}. CodeRabbit may not be installed or has not reviewed a PR yet.`,
-				details: {
-					hint: "Install the CodeRabbit GitHub App from https://github.com/marketplace/coderabbitai",
-					branch: defaultBranch,
-				},
-			});
-		} else {
-			// biome-ignore lint/style/noNonNullAssertion: length checked above
-			const latest = codeRabbitRuns[0]!;
-			checks.push({
-				name: "CodeRabbit check run presence",
-				status: "pass",
-				message: `CodeRabbit check found on ${defaultBranch} (status: ${latest.status}, conclusion: ${latest.conclusion ?? "pending"})`,
-				details: { branch: defaultBranch, checkRunId: latest.id },
-			});
-		}
-	} catch (e) {
-		checks.push({
-			name: "CodeRabbit check run presence",
-			status: "warn",
-			message: `Failed to verify check runs: ${sanitizeError(e)}`,
-		});
-	}
-
-	// Check ruleset requires "CodeRabbit" status check
-	try {
-		const rulesets = await client.listRulesets();
-		const protectRuleset = rulesets.find(
-			(r) => r.name === "protect" && r.target === "branch",
-		);
-
-		if (!protectRuleset) {
-			checks.push({
-				name: "Ruleset Configuration",
-				status: "warn",
-				message:
-					'No "protect" ruleset found. Run `harness branch-protect` to create one.',
-			});
-		} else {
-			const fullRuleset = await client.getRuleset(protectRuleset.id);
-			const statusChecksRule = fullRuleset.rules.find(
-				(r) => r.type === "required_status_checks",
-			);
-			const requiredChecks =
-				(statusChecksRule?.parameters?.required_status_checks as
-					| { context: string }[]
-					| undefined) || [];
-
-			const hasCodeRabbit = requiredChecks.some(
-				(c) => c.context === CODERABBIT_CHECK_NAME,
-			);
-
-			if (hasCodeRabbit) {
-				checks.push({
-					name: "Ruleset Configuration",
-					status: "pass",
-					message: `Ruleset "protect" requires "${CODERABBIT_CHECK_NAME}" status check`,
-					details: { rulesetId: protectRuleset.id },
-				});
-			} else {
-				checks.push({
-					name: "Ruleset Configuration",
-					status: "fail",
-					message: `Ruleset "protect" does not require "${CODERABBIT_CHECK_NAME}" status check. Run \`harness branch-protect\` to update.`,
-					details: {
-						rulesetId: protectRuleset.id,
-						currentChecks: requiredChecks.map((c) => c.context),
-						hint: "Add CodeRabbit to required checks: harness branch-protect --checks CodeRabbit",
-					},
-				});
-			}
-		}
-	} catch (e) {
-		checks.push({
-			name: "Ruleset Configuration",
-			status: "warn",
-			message: `Failed to check ruleset: ${sanitizeError(e)}`,
-		});
-	}
+	const [checkRunCheck, rulesetCheck] = await Promise.all([
+		verifyCodeRabbitCheckRuns(client),
+		verifyCodeRabbitRuleset(client),
+	]);
+	checks.push(checkRunCheck, rulesetCheck);
 
 	return checks;
 }
