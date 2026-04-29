@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
 	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
 	getNorthStarAlignmentDecisionPath,
@@ -109,8 +110,9 @@ type ReviewGateRunRecordArtifacts = {
  */
 function resolveProducerVersion(): string {
 	try {
+		const moduleDir = dirname(fileURLToPath(import.meta.url));
 		const packageJson = JSON.parse(
-			readFileSync(resolve("package.json"), "utf-8"),
+			readFileSync(resolve(moduleDir, "../../..", "package.json"), "utf-8"),
 		) as { version?: string };
 		return packageJson.version?.trim() || "0.0.0-dev";
 	} catch {
