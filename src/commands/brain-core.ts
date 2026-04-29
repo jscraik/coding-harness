@@ -870,10 +870,10 @@ Examples:
 			const r = cliBrainStale(subArgs);
 			return r.exitCode;
 		}
-			default:
-				process.stderr.write(
-					`Error: Unknown brain subcommand "${subcommand}"\n  Available: status, query, add, preflight, stale\n`,
-				);
-				return EXIT_CODES.INVALID_ARGS;
-		}
+		default:
+			process.stderr.write(
+				`Error: Unknown brain subcommand "${subcommand}"\n  Available: status, query, add, preflight, stale\n`,
+			);
+			return EXIT_CODES.INVALID_ARGS;
+	}
 }

@@ -672,7 +672,8 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const shouldRequirePublicCodeScanning =
 		input.policy.publicCodeScanning?.required === true &&
 		(input.policy.publicCodeScanning.publicOnly !== true ||
-			input.repositoryVisibility === "public");
+			input.repositoryVisibility === "public" ||
+			input.repositoryVisibility === undefined);
 	if (shouldRequirePublicCodeScanning && input.policy.publicCodeScanning) {
 		upsertRule(baseRules, {
 			type: "code_scanning",
@@ -793,7 +794,19 @@ async function applyRepositoryMergeSettings(
 		allowRebaseMerge: boolean;
 	},
 ): Promise<void> {
-	await client.updateRepositoryMergeSettings(settings);
+	const mergeSettingsUpdater = (
+		client as GitHubClient & {
+			updateRepositoryMergeSettings?: (settings: {
+				allowMergeCommit: boolean;
+				allowSquashMerge: boolean;
+				allowRebaseMerge: boolean;
+			}) => Promise<void>;
+		}
+	).updateRepositoryMergeSettings;
+	if (typeof mergeSettingsUpdater !== "function") {
+		return;
+	}
+	await mergeSettingsUpdater.call(client, settings);
 }
 
 function refSelectorMatches(

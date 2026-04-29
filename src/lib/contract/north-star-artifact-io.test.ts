@@ -328,7 +328,8 @@ describe("validateOverrideAcknowledgement (SA15)", () => {
 		const date = "2026-04-26";
 		const overrideId = "ov-wrong-schema";
 		writeNorthStarOverrideAcknowledgement(root, date, overrideId, {
-			schemaVersion: "north-star-durable-guardrail/v1" as OverrideAcknowledgement["schemaVersion"],
+			schemaVersion:
+				"north-star-durable-guardrail/v1" as OverrideAcknowledgement["schemaVersion"],
 			overrideId,
 			timestampUtc: "2026-04-26T00:00:00.000Z",
 			actor: "jamie-craik",

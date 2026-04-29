@@ -9,7 +9,6 @@ import { dirname, join, relative } from "node:path";
 
 import {
 	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
-	type NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
 	NORTH_STAR_OVERRIDE_ROOT,
 	createNorthStarGuardrailId,
 	getNorthStarDurableGuardrailPath,
@@ -125,7 +124,8 @@ export function resolveGuardrailRecurrence(
 		guardrailId,
 	);
 	const resolvedPath = join(repoRoot, artifactPath);
-	const existingGuardrail = readJsonWithParseError<DurableGuardrail>(resolvedPath);
+	const existingGuardrail =
+		readJsonWithParseError<DurableGuardrail>(resolvedPath);
 	if ("error" in existingGuardrail) {
 		if (existingGuardrail.error === "invalid_json") {
 			throw new Error(
@@ -291,7 +291,10 @@ export function validateOverrideAcknowledgement(
 		activeFindingIds?: string[];
 	},
 ): OverrideValidationResult {
-	const artifactPath = getNorthStarOverrideAcknowledgementPath(date, overrideId);
+	const artifactPath = getNorthStarOverrideAcknowledgementPath(
+		date,
+		overrideId,
+	);
 	const resolvedPath = join(repoRoot, artifactPath);
 	const parsedAcknowledgement =
 		readJsonForValidation<OverrideAcknowledgement>(resolvedPath);
@@ -322,7 +325,10 @@ export function validateOverrideAcknowledgement(
 		typeof acknowledgement.actor !== "string" ||
 		acknowledgement.actor.trim().length === 0
 	) {
-		return { valid: false, reason: "Override acknowledgement actor is required" };
+		return {
+			valid: false,
+			reason: "Override acknowledgement actor is required",
+		};
 	}
 	if (
 		typeof acknowledgement.signatureRef !== "string" ||

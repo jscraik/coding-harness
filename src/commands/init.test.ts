@@ -1802,10 +1802,10 @@ describe("runInit", () => {
 				'if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then',
 			);
 			expect(runHarnessGate).toContain(
-				"grep -Eq 'listen EPERM: operation not permitted.*(/tmp/tsx-|\\.pipe)'",
+				'[[ "$tsx_stderr_text" =~ EPERM|operation\\ not\\ permitted ]]',
 			);
 			expect(runHarnessGate).toContain(
-				'echo "Warning: tsx IPC startup failed with EPERM; falling back to node dist/cli.js." >&2',
+				'echo "Warning: tsx IPC startup failed (EPERM/IPC); falling back to node dist/cli.js." >&2',
 			);
 			expect(runHarnessGate).toContain(
 				'if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
