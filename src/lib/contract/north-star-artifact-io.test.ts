@@ -1,5 +1,5 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	type DurableGuardrail,
@@ -239,6 +239,27 @@ describe("validateOverrideAcknowledgement (SA15)", () => {
 		expect(result.reason).toContain("not found");
 	});
 
+	it("fails when artifact JSON is invalid", () => {
+		const date = "2026-04-26";
+		const overrideId = "ov-invalid-json";
+		const overridePath = join(
+			root,
+			".harness/overrides/north-star-alignment",
+			date,
+			overrideId,
+			"override-acknowledgement.json",
+		);
+		mkdirSync(dirname(overridePath), { recursive: true });
+		writeFileSync(overridePath, "{not-json", "utf-8");
+
+		const result = validateOverrideAcknowledgement(root, date, overrideId, {
+			registry,
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.reason).toContain("not valid JSON");
+	});
+
 	it("fails when approval has expired", () => {
 		const { date, overrideId } = writeValidOverride({
 			approvedUntilUtc: "2026-01-01T00:00:00.000Z",
@@ -301,6 +322,52 @@ describe("validateOverrideAcknowledgement (SA15)", () => {
 		});
 		expect(result.valid).toBe(false);
 		expect(result.reason).toContain("active trusted reviewer");
+	});
+
+	it("fails when schemaVersion is not the canonical override schema", () => {
+		const date = "2026-04-26";
+		const overrideId = "ov-wrong-schema";
+		writeNorthStarOverrideAcknowledgement(root, date, overrideId, {
+			schemaVersion: "north-star-durable-guardrail/v1" as OverrideAcknowledgement["schemaVersion"],
+			overrideId,
+			timestampUtc: "2026-04-26T00:00:00.000Z",
+			actor: "jamie-craik",
+			reason: "test",
+			linkedFindingIds: ["finding-1"],
+			approvedUntilUtc: "2026-12-31T00:00:00.000Z",
+			compensatingControls: [],
+			signatureRef: "refs/reviewers/jamie-craik",
+		});
+
+		const result = validateOverrideAcknowledgement(root, date, overrideId, {
+			registry,
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.reason).toContain("schemaVersion");
+	});
+
+	it("fails when actor does not match the reviewer referenced by signatureRef", () => {
+		const date = "2026-04-26";
+		const overrideId = "ov-actor-mismatch";
+		writeNorthStarOverrideAcknowledgement(root, date, overrideId, {
+			schemaVersion: "north-star-override-acknowledgement/v1",
+			overrideId,
+			timestampUtc: "2026-04-26T00:00:00.000Z",
+			actor: "different-actor",
+			reason: "test",
+			linkedFindingIds: ["finding-1"],
+			approvedUntilUtc: "2026-12-31T00:00:00.000Z",
+			compensatingControls: [],
+			signatureRef: "refs/reviewers/jamie-craik",
+		});
+
+		const result = validateOverrideAcknowledgement(root, date, overrideId, {
+			registry,
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.reason).toContain("actor must match");
 	});
 });
 

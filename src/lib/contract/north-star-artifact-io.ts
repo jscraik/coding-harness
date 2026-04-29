@@ -8,6 +8,7 @@ import {
 import { dirname, join, relative } from "node:path";
 
 import {
+	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
 	type NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
 	NORTH_STAR_OVERRIDE_ROOT,
 	createNorthStarGuardrailId,
@@ -73,6 +74,19 @@ function safeReadJson<T>(path: string): T | undefined {
 		return JSON.parse(readFileSync(path, "utf-8")) as T;
 	} catch {
 		return undefined;
+	}
+}
+
+function readJsonForValidation<T>(
+	path: string,
+): { value: T } | { error: string } {
+	if (!existsSync(path)) {
+		return { error: "missing" };
+	}
+	try {
+		return { value: JSON.parse(readFileSync(path, "utf-8")) as T };
+	} catch {
+		return { error: "invalid_json" };
 	}
 }
 
@@ -258,15 +272,58 @@ export function validateOverrideAcknowledgement(
 		activeFindingIds?: string[];
 	},
 ): OverrideValidationResult {
-	const acknowledgement = readNorthStarOverrideAcknowledgement(
-		repoRoot,
-		date,
-		overrideId,
-	);
-	if (!acknowledgement) {
+	const artifactPath = getNorthStarOverrideAcknowledgementPath(date, overrideId);
+	const resolvedPath = join(repoRoot, artifactPath);
+	const parsedAcknowledgement =
+		readJsonForValidation<OverrideAcknowledgement>(resolvedPath);
+	if ("error" in parsedAcknowledgement) {
+		if (parsedAcknowledgement.error === "missing") {
+			return {
+				valid: false,
+				reason: "Override acknowledgement artifact not found",
+			};
+		}
 		return {
 			valid: false,
-			reason: "Override acknowledgement artifact not found",
+			reason: "Override acknowledgement artifact is not valid JSON",
+		};
+	}
+	const acknowledgement = parsedAcknowledgement.value;
+	if (
+		acknowledgement.schemaVersion !==
+		NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.overrideAcknowledgement
+	) {
+		return {
+			valid: false,
+			reason:
+				"Override acknowledgement schemaVersion does not match canonical override schema",
+		};
+	}
+	if (
+		typeof acknowledgement.actor !== "string" ||
+		acknowledgement.actor.trim().length === 0
+	) {
+		return { valid: false, reason: "Override acknowledgement actor is required" };
+	}
+	if (
+		typeof acknowledgement.signatureRef !== "string" ||
+		acknowledgement.signatureRef.trim().length === 0
+	) {
+		return {
+			valid: false,
+			reason: "Override acknowledgement signatureRef is required",
+		};
+	}
+	if (
+		!Array.isArray(acknowledgement.linkedFindingIds) ||
+		acknowledgement.linkedFindingIds.length === 0 ||
+		!acknowledgement.linkedFindingIds.every(
+			(id) => typeof id === "string" && id.trim().length > 0,
+		)
+	) {
+		return {
+			valid: false,
+			reason: "Override acknowledgement has no linked finding IDs",
 		};
 	}
 
@@ -274,13 +331,6 @@ export function validateOverrideAcknowledgement(
 	const approvedUntil = Date.parse(acknowledgement.approvedUntilUtc);
 	if (Number.isNaN(approvedUntil) || approvedUntil <= referenceDate.getTime()) {
 		return { valid: false, reason: "Override approval has expired" };
-	}
-
-	if (acknowledgement.linkedFindingIds.length === 0) {
-		return {
-			valid: false,
-			reason: "Override acknowledgement has no linked finding IDs",
-		};
 	}
 
 	if (options.activeFindingIds) {
@@ -317,6 +367,13 @@ export function validateOverrideAcknowledgement(
 			valid: false,
 			reason:
 				"Override signatureRef does not resolve to an active trusted reviewer",
+		};
+	}
+	if (matchingReviewers[0]?.reviewerId !== acknowledgement.actor) {
+		return {
+			valid: false,
+			reason:
+				"Override actor must match the trusted reviewer referenced by signatureRef",
 		};
 	}
 

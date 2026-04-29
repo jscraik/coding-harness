@@ -19,7 +19,6 @@ export const EXIT_CODES = {
 	SUCCESS: 0,
 	POLICY_VIOLATION: 1,
 	VALIDATION_ERROR: 2,
-	CONTRACT_ERROR: 3,
 } as const;
 
 /** Public API export. */
@@ -276,7 +275,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	const prText = [prTitle, prBody].filter(Boolean).join("\n");
 	const bugsUrl = readPackageJsonBugsUrl(repoRoot);
 	const issueTemplateConfig = readIssueTemplateConfig(repoRoot);
-	const expectedLinearUrl = bugsUrl ?? policy.projectUrl;
+	const expectedLinearUrl = policy.projectUrl || bugsUrl;
 	const branchIssueKeys = extractIssueKeys(branch);
 	const prIssueKeys = extractIssueKeys(prText);
 	const referenceMode = policy.prReferenceMode ?? "either";
@@ -463,7 +462,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 		}
 	}
 
-	if (prText) {
+	if ((policy.requirePrIssueKey ?? true) && prText) {
 		const requiredReferenceKeys =
 			referenceMode === "refs"
 				? refsIssueKeys
@@ -566,9 +565,7 @@ export async function runLinearGateCLI(
 		const gateResult = normaliseLinearGateResult(result);
 		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 		if (!result.ok) {
-			return result.error.code === "CONTRACT_ERROR"
-				? EXIT_CODES.CONTRACT_ERROR
-				: EXIT_CODES.VALIDATION_ERROR;
+			return EXIT_CODES.VALIDATION_ERROR;
 		}
 		return result.output.passed
 			? EXIT_CODES.SUCCESS
@@ -581,9 +578,7 @@ export async function runLinearGateCLI(
 			console.error(`Failure class: ${failure.failureClass}`);
 			console.error(`Next action: ${failure.nextAction}`);
 		}
-		return result.error.code === "CONTRACT_ERROR"
-			? EXIT_CODES.CONTRACT_ERROR
-			: EXIT_CODES.VALIDATION_ERROR;
+		return EXIT_CODES.VALIDATION_ERROR;
 	}
 
 	const statusIcon = result.output.passed ? "✓" : "✗";

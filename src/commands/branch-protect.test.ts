@@ -265,10 +265,7 @@ describe("runBranchProtect", () => {
 		);
 		expect(requiredRule).toBeDefined();
 		expect(requiredRule?.parameters).toMatchObject({
-			required_status_checks: [
-				{ context: "existing-check" },
-				{ context: "CodeRabbit" },
-			],
+			required_status_checks: [{ context: "CodeRabbit" }],
 		});
 		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
 	});
@@ -399,6 +396,43 @@ describe("runBranchProtect", () => {
 		const payload = updateRuleset.mock.calls[0]?.[1];
 		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
 			false,
+		);
+	});
+
+	it("keeps managed code scanning rules when visibility lookup is unavailable", async () => {
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 90,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const getRepositoryVisibility = vi.fn(async () => undefined);
+
+		mockGitHubClient.mockImplementation(() =>
+			mockBranchProtectClient({
+				listRulesets,
+				createRuleset,
+				getRepositoryVisibility,
+			}),
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = createRuleset.mock.calls[0]?.[0];
+		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
+			true,
 		);
 	});
 
@@ -1165,10 +1199,7 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "required_status_checks",
 		);
 		expect(requiredRule?.parameters).toMatchObject({
-			required_status_checks: [
-				{ context: "existing-check", integration_id: 1234 },
-				{ context: "check" },
-			],
+			required_status_checks: [{ context: "check" }],
 		});
 	});
 

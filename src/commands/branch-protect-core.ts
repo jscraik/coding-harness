@@ -604,11 +604,6 @@ interface BuildPayloadInput {
 	existingRuleset?: Ruleset | undefined;
 }
 
-type RequiredStatusCheckEntry = {
-	context: string;
-	[key: string]: unknown;
-};
-
 function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const baseRules = Array.isArray(input.existingRuleset?.rules)
 		? [...input.existingRuleset.rules]
@@ -651,14 +646,7 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const existingChecksParameters = normalizeParameters(
 		existingChecksRule?.parameters,
 	);
-	const existingRequiredChecks = normalizeRequiredStatusCheckEntries(
-		existingChecksParameters.required_status_checks,
-	);
 	const requiredContexts = normalizeChecks(input.requiredChecks);
-	const mergedRequiredChecks = mergeRequiredStatusChecks(
-		existingRequiredChecks,
-		requiredContexts,
-	);
 	const statusChecksRule: RulesetRule = {
 		type: "required_status_checks",
 		parameters: {
@@ -666,7 +654,7 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 			strict_required_status_checks_policy:
 				input.policy.requireBranchesUpToDate,
 			do_not_enforce_on_create: false,
-			required_status_checks: mergedRequiredChecks,
+			required_status_checks: requiredContexts.map((context) => ({ context })),
 		},
 	};
 	upsertRule(baseRules, statusChecksRule);
@@ -685,7 +673,7 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const shouldRequirePublicCodeScanning =
 		input.policy.publicCodeScanning?.required === true &&
 		(input.policy.publicCodeScanning.publicOnly !== true ||
-			input.repositoryVisibility === "public");
+			input.repositoryVisibility !== "private");
 	if (shouldRequirePublicCodeScanning && input.policy.publicCodeScanning) {
 		upsertRule(baseRules, {
 			type: "code_scanning",
@@ -765,53 +753,6 @@ function mergeRefNameIncludes(
 	return Array.from(merged);
 }
 
-function normalizeRequiredStatusCheckEntries(
-	value: unknown,
-): RequiredStatusCheckEntry[] {
-	if (!Array.isArray(value)) return [];
-	const checks: RequiredStatusCheckEntry[] = [];
-	for (const item of value) {
-		if (
-			typeof item === "object" &&
-			item !== null &&
-			typeof (item as { context?: unknown }).context === "string"
-		) {
-			const context = (item as { context: string }).context.trim();
-			if (context.length > 0) {
-				checks.push({
-					...(item as Record<string, unknown>),
-					context,
-				});
-			}
-		}
-	}
-	return checks;
-}
-
-function mergeRequiredStatusChecks(
-	existingChecks: RequiredStatusCheckEntry[],
-	requiredContexts: string[],
-): RequiredStatusCheckEntry[] {
-	const merged: RequiredStatusCheckEntry[] = [];
-	const seenContexts = new Set<string>();
-
-	for (const check of existingChecks) {
-		if (!seenContexts.has(check.context)) {
-			merged.push(check);
-			seenContexts.add(check.context);
-		}
-	}
-
-	for (const context of requiredContexts) {
-		if (!seenContexts.has(context)) {
-			merged.push({ context });
-			seenContexts.add(context);
-		}
-	}
-
-	return merged;
-}
-
 async function resolveDefaultBranchRef(client: GitHubClient): Promise<string> {
 	try {
 		const defaultBranchResolver = (
@@ -850,14 +791,7 @@ async function applyRepositoryMergeSettings(
 		allowRebaseMerge: boolean;
 	},
 ): Promise<void> {
-	try {
-		await client.updateRepositoryMergeSettings(settings);
-	} catch (error) {
-		if (error instanceof TypeError) {
-			return;
-		}
-		throw error;
-	}
+	await client.updateRepositoryMergeSettings(settings);
 }
 
 function refSelectorMatches(
@@ -919,10 +853,7 @@ function findMatchingRuleset(
 }
 
 function normalizeChecks(checks: string[] | undefined): string[] {
-	const baseChecks =
-		checks === undefined || checks.length === 0
-			? DEFAULT_REQUIRED_CHECKS
-			: checks;
+	const baseChecks = checks === undefined ? DEFAULT_REQUIRED_CHECKS : checks;
 	const deduped = new Set<string>();
 	for (const check of baseChecks) {
 		const trimmed = check.trim();
