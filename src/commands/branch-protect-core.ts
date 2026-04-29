@@ -685,7 +685,8 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const shouldRequirePublicCodeScanning =
 		input.policy.publicCodeScanning?.required === true &&
 		(input.policy.publicCodeScanning.publicOnly !== true ||
-			input.repositoryVisibility === "public");
+			input.repositoryVisibility === "public" ||
+			input.repositoryVisibility === undefined);
 	if (shouldRequirePublicCodeScanning && input.policy.publicCodeScanning) {
 		upsertRule(baseRules, {
 			type: "code_scanning",
@@ -700,7 +701,10 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 				],
 			},
 		});
-	} else {
+	} else if (
+		input.policy.publicCodeScanning?.publicOnly !== true ||
+		input.repositoryVisibility !== undefined
+	) {
 		removeRule(baseRules, "code_scanning");
 	}
 
