@@ -123,17 +123,26 @@ Port-free wrapping is expected only for app run actions backed by `dev`/`start` 
 
 ## Repository command contract
 
-| Surface                        | Primary command                      | Purpose                                                                                            |
-| ------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Install/deps                   | `pnpm install`                       | Dependency installation                                                                            |
-| Code-style gate                | `bash scripts/validate-codestyle.sh` | Fail-closed repo-local code-style validation                                                       |
-| Quality gate                   | `pnpm check`                         | `lint + typecheck + test + audit`                                                                  |
-| Lint                           | `pnpm lint`                          | `biome check .`                                                                                    |
-| Typecheck                      | `pnpm typecheck`                     | `tsc --noEmit`                                                                                     |
-| Tests                          | `pnpm test`                          | `vitest run`                                                                                       |
-| Tests (CircleCI hardened lane) | `pnpm test:ci`                       | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation |
-| Audit                          | `pnpm audit`                         | dependency risk check                                                                              |
-| Build                          | `pnpm build`                         | compile TypeScript and generate `dist/cli.js`                                                      |
+| Surface                        | Primary command                                                                                     | Purpose                                                                                                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Install/deps                   | `pnpm install`                                                                                      | Dependency installation                                                                                                                                 |
+| Code-style gate                | `bash scripts/validate-codestyle.sh`                                                                | Fail-closed repo-local code-style validation                                                                                                            |
+| Quality gate                   | `pnpm check`                                                                                        | `lint + typecheck + test + audit`                                                                                                                       |
+| Lint                           | `pnpm lint`                                                                                         | `biome check .`                                                                                                                                         |
+| Typecheck                      | `pnpm typecheck`                                                                                    | `tsc --noEmit`                                                                                                                                          |
+| Tests                          | `pnpm test`                                                                                         | `vitest run`                                                                                                                                            |
+| Tests (CircleCI hardened lane) | `pnpm test:ci`                                                                                      | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation                                                      |
+| Audit                          | `pnpm audit`                                                                                        | dependency risk check                                                                                                                                   |
+| Build                          | `pnpm build`                                                                                        | compile TypeScript and generate `dist/cli.js`                                                                                                           |
+| CodeRabbit learnings import    | `harness learnings import --provider coderabbit-csv --source <csv> --repo <repo> --json`            | Import local CodeRabbit CSV evidence into `.harness/learnings/coderabbit.local.json`                                                                    |
+| CodeRabbit learnings gate      | `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <files> --json`   | Match imported learning evidence to exact files and explicit path-prefix targets before review                                                          |
+| CodeRabbit learnings promote   | `harness learnings promote --source .harness/learnings/coderabbit.local.json --min-usage 25 --json` | Generate high-usage promotion candidates so repeated learnings can become permanent gates, validators, scaffold rules, or documented exceptions         |
+| Review context pack            | `harness review-context --source .harness/learnings/coderabbit.local.json --files <files> --json`   | Generate PR review context with applicable learning evidence and validation-plan entries                                                                |
+| Validation plan                | `harness validation-plan --source .harness/learnings/coderabbit.local.json --files <files> --json`  | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated    |
+| Existing-repo upgrade matrix   | `pnpm test:harness-upgrade-matrix -- <repo>...`                                                     | Run the built CLI's `init --update --dry-run --json` path across existing repos and fail if any target git status changes or omits update-mode evidence |
+| Current-repo upgrade preview   | `harness upgrade --dry-run --json`                                                                  | Preview tracked updates or existing-repo adoption with structured `updateMode`, `trackedManifest`, and `updateDetails` evidence                         |
+
+Phase 1A supports `harness learnings import`, Phase 1B supports `harness learnings gate` for exact-file and explicit path-prefix matching, Phase 1C supports `harness learnings promote` for promotion-candidate reporting, and Phase 3 supports advisory `harness review-context` plus `harness validation-plan` output. Treat imported CodeRabbit CSV rows as local, non-live operational evidence (`source.live=false`) unless a later sanitized snapshot flow explicitly promotes them. Keyword-only fuzzy blocking, shared snapshot publication, and mandatory review-gate enforcement of review-context artifacts remain reserved for later phases and must stay rejected until those command contracts land.
 
 ## Code-style parity gate
 
@@ -197,7 +206,6 @@ related mode without a no-tests pass-through. These commands are part of
 ## Recommended command order
 
 For code changes:
-
 
 1. Inspect TypeScript-family target files with `bash scripts/harness-cli.sh
 source-outline <path> --json`; unwrap only the needed symbol with `--symbol

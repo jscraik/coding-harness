@@ -243,7 +243,26 @@ export function resolveSafeWorkspaceSymlink(
 	}
 
 	try {
-		if (!existsSync(targetPath) || !lstatSync(targetPath).isSymbolicLink()) {
+		const relToBase = relative(normalizedBase, targetPath);
+		const segments = relToBase
+			.split(sep)
+			.filter((segment) => segment.length > 0);
+		let walkPath = normalizedBase;
+		let nearestExisting = normalizedBase;
+		let sawWorkspaceSymlink = false;
+
+		for (const segment of segments) {
+			walkPath = join(walkPath, segment);
+			if (!existsSync(walkPath)) {
+				break;
+			}
+			nearestExisting = walkPath;
+			if (lstatSync(walkPath).isSymbolicLink()) {
+				sawWorkspaceSymlink = true;
+			}
+		}
+
+		if (!sawWorkspaceSymlink) {
 			return {
 				ok: false,
 				error: {
@@ -254,8 +273,8 @@ export function resolveSafeWorkspaceSymlink(
 			};
 		}
 
-		const realTargetPath = realpathSync(targetPath);
-		if (!isPathWithinBase(baseRealPath, realTargetPath)) {
+		const realNearestPath = realpathSync(nearestExisting);
+		if (!isPathWithinBase(baseRealPath, realNearestPath)) {
 			return {
 				ok: false,
 				error: {
@@ -266,7 +285,10 @@ export function resolveSafeWorkspaceSymlink(
 			};
 		}
 
-		return { ok: true, value: realTargetPath };
+		return {
+			ok: true,
+			value: existsSync(targetPath) ? realpathSync(targetPath) : targetPath,
+		};
 	} catch (e) {
 		return {
 			ok: false,

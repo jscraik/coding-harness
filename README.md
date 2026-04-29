@@ -488,7 +488,7 @@ harness commands --json | jq '
 | `health`            | Unified gate status scorecard across all gates                                                                                                                            |
 | `brain`             | Query and update Project Brain context artifacts                                                                                                                          |
 | `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                  |
-| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run` supported)                                                                                                        |
+| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                      |
 | `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                  |
 | `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                               |
 | `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                              |
@@ -541,15 +541,18 @@ harness commands --json | jq '
 
 ### Drift, Search, And Evidence
 
-| Command          | Purpose                                                                                                                                                                                                                           |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `drift-gate`     | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
-| `org-audit`      | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
-| `tooling-audit`  | Audit managed repo tooling baselines                                                                                                                                                                                              |
-| `gardener`       | Detect stale docs and broken links                                                                                                                                                                                                |
-| `context-health` | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
-| `search`         | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
-| `context`        | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
+| Command           | Purpose                                                                                                                                                                                                                           |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `drift-gate`      | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
+| `org-audit`       | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
+| `tooling-audit`   | Audit managed repo tooling baselines                                                                                                                                                                                              |
+| `gardener`        | Detect stale docs and broken links                                                                                                                                                                                                |
+| `context-health`  | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
+| `learnings`       | Import local operational review evidence, run exact-file learning gates, and generate high-usage promotion candidates via `learnings import`, `learnings gate`, and `learnings promote`                                           |
+| `review-context`  | Generate PR review context from changed files and imported operational learnings, including applicable learned constraints and validation-plan entries                                                                            |
+| `validation-plan` | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated                                                                              |
+| `search`          | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
+| `context`         | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 
 | `source-outline` | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol` |
 

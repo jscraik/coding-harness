@@ -26,6 +26,7 @@ export const EXIT_CODES = {
 
 // === Init Options ===
 
+/** Flags and operator selections accepted by the init command. */
 export interface InitOptions {
 	dryRun: boolean;
 	force: boolean;
@@ -43,7 +44,9 @@ export interface InitOptions {
 	issueTracker?: IssueTracker;
 }
 
+/** Supported CI template families for scaffolded governance files. */
 export type CIProvider = "github-actions" | "circleci";
+/** Supported issue tracker integrations for workflow scaffolding. */
 export type IssueTracker = "linear" | "github" | "none";
 
 // === Rollback Types ===
@@ -67,22 +70,26 @@ export type BackupResult =
 	| { ok: true; value: string | null } // backupHash or null for new files
 	| { ok: false; error: InitErrorOutput };
 
+/** Result from reading or validating a restore manifest. */
 export type ManifestResult =
 	| { ok: true; value: RestoreManifest }
 	| { ok: false; error: InitErrorOutput };
 
+/** Result from restoring tracked scaffold files from a manifest. */
 export type RollbackResult =
 	| { ok: true; value: { restored: string[]; deleted: string[] } }
 	| { ok: false; error: InitErrorOutput };
 
 // === Update Detection Types ===
 
+/** Version comparison details for init update checks. */
 export interface UpdateCheckInfo {
 	currentVersion: string;
 	installedVersion: string;
 	updateAvailable: boolean;
 }
 
+/** Schema-aware ownership action recorded while merging template updates. */
 export interface OwnershipDecision {
 	file: string;
 	path: string;
@@ -90,10 +97,38 @@ export interface OwnershipDecision {
 	action: "preserved" | "added" | "updated";
 }
 
+/** Structured reason for a template update preview or skip entry. */
+export interface InitUpdateDetail {
+	path: string;
+	status: "updated" | "skipped";
+	category:
+		| "contract"
+		| "ci"
+		| "code-review"
+		| "security"
+		| "project-brain"
+		| "tooling"
+		| "workflow"
+		| "docs"
+		| "other";
+	reason:
+		| "contract-template-drift"
+		| "ci-policy-template-drift"
+		| "code-review-policy-template-drift"
+		| "security-template-drift"
+		| "project-brain-template-drift"
+		| "tooling-template-drift"
+		| "workflow-template-drift"
+		| "docs-template-drift"
+		| "template-current-or-repo-owned";
+}
+
+/** Result from checking whether the installed scaffold can be updated. */
 export type UpdateCheckResult =
 	| { ok: true; value: UpdateCheckInfo }
 	| { ok: false; error: InitErrorOutput };
 
+/** Result from applying scaffold template updates. */
 export type UpdateResult =
 	| {
 			ok: true;
@@ -107,6 +142,7 @@ export type UpdateResult =
 
 // === Interactive Mode Types ===
 
+/** Proposed file mutation shown during interactive or dry-run init flows. */
 export interface ProposedChange {
 	path: string;
 	action: "create" | "modify" | "skip";
@@ -249,6 +285,7 @@ export interface MigrationResult {
 	migratedContract: ContractSchema;
 }
 
+/** Result from migrating a harness contract schema. */
 export type MigrationResultType =
 	| { ok: true; value: MigrationResult }
 	| { ok: false; error: InitErrorOutput };
@@ -258,28 +295,36 @@ export const CURRENT_SCHEMA_VERSION = "1.6.0";
 
 // === Init Output Types ===
 
+/** Machine-readable successful output emitted by init modes. */
 export interface InitOutput {
 	packageManager: string;
 	created: string[];
+	updated?: string[];
 	skipped: string[];
+	updateMode?: "tracked-update" | "adoption-preview";
+	trackedManifest?: boolean;
+	updateDetails?: InitUpdateDetail[];
 	updateCheck?: UpdateCheckInfo; // Populated when --check-updates used
 	proposedChanges?: ProposedChange[]; // Populated in interactive dry-run
 	projectTypeDetection?: DetectionResult; // Populated on all normal init runs
 	ownershipDecisions?: OwnershipDecision[]; // Populated for schema-aware update paths
 }
 
+/** Machine-readable error payload emitted by init modes. */
 export interface InitErrorOutput {
 	code: string;
 	message: string;
 	path?: string;
 }
 
+/** Top-level result envelope returned by init orchestration. */
 export type InitResult =
 	| { ok: true; output: InitOutput }
 	| { ok: false; error: InitErrorOutput };
 
 // === Template Types ===
 
+/** Data passed to template renderers while scaffold files are generated. */
 export interface TemplateRenderContext {
 	targetDir: string;
 	ciProvider?: CIProvider;
@@ -302,11 +347,13 @@ export interface TemplateRenderContext {
 	issueTracker?: IssueTracker;
 }
 
+/** Packaged scaffold template renderer and destination path. */
 export interface Template {
 	path: string;
 	render: (pm: string, context: TemplateRenderContext) => string;
 }
 
+/** Package managers supported by init package-script rendering. */
 export type PackageManager = "pnpm" | "yarn" | "npm";
 
 // === Codex Environment Types ===

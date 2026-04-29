@@ -235,6 +235,7 @@ export function runInitCLI(
 			created,
 			skipped,
 			ownershipDecisions,
+			updateMode,
 			updateCheck,
 			projectTypeDetection,
 		} = result.output;
@@ -259,7 +260,13 @@ export function runInitCLI(
 
 		// Handle --update output
 		if (options.update) {
-			printUpdateOutput(created, skipped, ownershipDecisions, options);
+			printUpdateOutput(
+				created,
+				skipped,
+				ownershipDecisions,
+				options,
+				updateMode,
+			);
 			return EXIT_CODES.SUCCESS;
 		}
 

@@ -1801,8 +1801,9 @@ describe("runInit", () => {
 			expect(runHarnessGate).toContain(
 				'if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then',
 			);
+			expect(runHarnessGate).toContain("const stderr = readFileSync");
 			expect(runHarnessGate).toContain(
-				"grep -Eq 'listen EPERM: operation not permitted.*(/tmp/tsx-|\\.pipe)'",
+				"/listen EPERM: operation not permitted.*(\\/tmp\\/tsx-|\\.pipe)/.test(stderr)",
 			);
 			expect(runHarnessGate).toContain(
 				'echo "Warning: tsx IPC startup failed with EPERM; falling back to node dist/cli.js." >&2',
@@ -3598,6 +3599,94 @@ describe("--update flag", () => {
 		}
 	});
 
+	it("fails closed for mutating untracked adoption while dry-run previews it", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+		});
+		expect(installResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
+			false,
+		);
+		const staleCodeRabbit = "language: en-US\n";
+		writeFileSync(join(tempDir, ".coderabbit.yaml"), staleCodeRabbit);
+
+		const mutatingResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(mutatingResult.ok).toBe(false);
+		if (!mutatingResult.ok) {
+			expect(mutatingResult.error.message).toContain(
+				"No restore manifest found",
+			);
+		}
+		expect(readFileSync(join(tempDir, ".coderabbit.yaml"), "utf-8")).toBe(
+			staleCodeRabbit,
+		);
+
+		const dryRunResult = runInit(tempDir, {
+			dryRun: true,
+			force: false,
+			update: true,
+		});
+
+		expect(dryRunResult.ok).toBe(true);
+		if (dryRunResult.ok) {
+			expect(dryRunResult.output.updateMode).toBe("adoption-preview");
+			expect(dryRunResult.output.trackedManifest).toBe(false);
+		}
+		expect(readFileSync(join(tempDir, ".coderabbit.yaml"), "utf-8")).toBe(
+			staleCodeRabbit,
+		);
+	});
+
+	it("previews untracked existing repo adoption without a restore manifest in dry-run", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+		});
+		expect(installResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
+			false,
+		);
+
+		const staleCodeRabbit = "language: en-US\n";
+		writeFileSync(join(tempDir, ".coderabbit.yaml"), staleCodeRabbit);
+
+		const result = runInit(tempDir, {
+			dryRun: true,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.updated).toEqual(
+				expect.arrayContaining(["harness.contract.json", ".coderabbit.yaml"]),
+			);
+			expect(result.output.created).toEqual(result.output.updated);
+			expect(result.output.updateDetails).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						path: ".coderabbit.yaml",
+						status: "updated",
+						category: "code-review",
+						reason: "code-review-policy-template-drift",
+					}),
+				]),
+			);
+		}
+		expect(readFileSync(join(tempDir, ".coderabbit.yaml"), "utf-8")).toBe(
+			staleCodeRabbit,
+		);
+		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
+			false,
+		);
+	});
+
 	it("rejects --update when combined with --track", () => {
 		const result = runInit(tempDir, {
 			dryRun: false,
@@ -4501,6 +4590,35 @@ describe("--update flag", () => {
 		expect(readFileSync(targetPath, "utf-8")).not.toContain("legacy = true");
 	});
 
+	it("updates tracked files through safe in-repo symlinked directories", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const scriptsLink = join(tempDir, "scripts");
+		const scriptsTarget = join(tempDir, "Infrastructure/scripts");
+		const targetPath = join(scriptsTarget, "validate-commit-msg.js");
+		rmSync(scriptsLink, { recursive: true, force: true });
+		mkdirSync(scriptsTarget, { recursive: true });
+		writeFileSync(targetPath, "console.log('legacy');\n");
+		symlinkSync("Infrastructure/scripts", scriptsLink);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(lstatSync(scriptsLink).isSymbolicLink()).toBe(true);
+		expect(realpathSync(scriptsLink)).toBe(realpathSync(scriptsTarget));
+		expect(readFileSync(targetPath, "utf-8")).toContain("validate-commit-msg");
+		expect(readFileSync(targetPath, "utf-8")).not.toContain("legacy");
+	});
+
 	// Security regression: executeUpdate must not follow symlinks when writing
 	// template files. An attacker-controlled repo can replace a tracked directory
 	// (e.g. .github) with a symlink to an outside path; --update must detect
@@ -5363,5 +5481,104 @@ describe("runInitCLI --json error output", () => {
 		};
 		expect(emitted).not.toHaveProperty("error");
 		expect(emitted).toHaveProperty("updateCheck");
+	});
+
+	it("--json update exposes updated paths while preserving created compatibility", () => {
+		runInit(tempDir, { dryRun: false, force: false, track: true });
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			files: Array<{ path: string; action: string }>;
+		};
+		manifest.files = manifest.files.filter(
+			(entry) => entry.path !== ".coderabbit.yaml",
+		);
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+		writeFileSync(join(tempDir, ".coderabbit.yaml"), "language: en-US\n");
+
+		const code = runInitCLI(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+			json: true,
+		});
+
+		expect(code).toBe(0);
+		expect(infoSpy).toHaveBeenCalledOnce();
+		const emitted = JSON.parse(infoSpy.mock.calls[0]![0] as string) as {
+			created?: string[];
+			updated?: string[];
+			updateDetails?: Array<Record<string, unknown>>;
+			updateMode?: string;
+			trackedManifest?: boolean;
+			error?: unknown;
+		};
+		expect(emitted).not.toHaveProperty("error");
+		expect(emitted.updateMode).toBe("tracked-update");
+		expect(emitted.trackedManifest).toBe(true);
+		expect(emitted.updated).toEqual(
+			expect.arrayContaining([".coderabbit.yaml"]),
+		);
+		expect(emitted.created).toEqual(emitted.updated);
+		expect(emitted.updateDetails).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: ".coderabbit.yaml",
+					status: "updated",
+					category: "code-review",
+				}),
+			]),
+		);
+	});
+
+	it("--json update dry-run previews untracked adoption without creating a manifest", () => {
+		runInit(tempDir, { dryRun: false, force: false });
+		writeFileSync(join(tempDir, ".coderabbit.yaml"), "language: en-US\n");
+
+		const code = runInitCLI(tempDir, {
+			dryRun: true,
+			force: false,
+			update: true,
+			json: true,
+		});
+
+		expect(code).toBe(0);
+		expect(infoSpy).toHaveBeenCalledOnce();
+		const emitted = JSON.parse(infoSpy.mock.calls[0]![0] as string) as {
+			created?: string[];
+			updated?: string[];
+			skipped?: string[];
+			updateDetails?: Array<Record<string, unknown>>;
+			updateMode?: string;
+			trackedManifest?: boolean;
+			error?: unknown;
+		};
+		expect(emitted).not.toHaveProperty("error");
+		expect(emitted.updateMode).toBe("adoption-preview");
+		expect(emitted.trackedManifest).toBe(false);
+		expect(emitted.updated).toEqual(
+			expect.arrayContaining(["harness.contract.json", ".coderabbit.yaml"]),
+		);
+		expect(emitted.skipped).toEqual(expect.any(Array));
+		expect(emitted.created).toEqual(emitted.updated);
+		expect(emitted.updateDetails).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "harness.contract.json",
+					status: "updated",
+					category: "contract",
+				}),
+				expect.objectContaining({
+					path: ".coderabbit.yaml",
+					status: "updated",
+					category: "code-review",
+				}),
+			]),
+		);
+		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
+			false,
+		);
+		expect(readFileSync(join(tempDir, ".coderabbit.yaml"), "utf-8")).toBe(
+			"language: en-US\n",
+		);
 	});
 });

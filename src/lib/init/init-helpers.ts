@@ -4,6 +4,7 @@ import {
 	EXIT_CODES,
 	type InitOptions,
 	type InitResult,
+	MANIFEST_FILE,
 	type RestoreManifest,
 } from "./types.js";
 
@@ -89,6 +90,14 @@ export function probeManifest(
 		preferredCiProvider: requestedCiProvider,
 	});
 	if (!manifestProbeResult.ok) {
+		if (
+			options.update &&
+			options.dryRun &&
+			manifestProbeResult.error.path === MANIFEST_FILE &&
+			manifestProbeResult.error.message.includes("No restore manifest found")
+		) {
+			return { existingManifest: null, ciProvider: requestedCiProvider };
+		}
 		if (options.rollback || options.update) {
 			return {
 				existingManifest: null,

@@ -48,11 +48,16 @@ export function printUpdateOutput(
 	skipped: string[],
 	ownershipDecisions: OwnershipDecision[] | undefined,
 	options: InitOptions,
+	updateMode: InitOutput["updateMode"],
 ): void {
 	if (created.length === 0 && skipped.length === 0) {
 		console.info("Already up to date.");
 	} else {
-		console.info(`Refreshing tracked templates (v${getVersion()})\n`);
+		const label =
+			updateMode === "adoption-preview"
+				? "Previewing existing-repo adoption"
+				: "Refreshing tracked templates";
+		console.info(`${label} (v${getVersion()})\n`);
 		for (const path of created) {
 			console.info(`  updated ${path}`);
 		}

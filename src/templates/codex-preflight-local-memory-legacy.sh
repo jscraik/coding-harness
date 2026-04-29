@@ -32,6 +32,25 @@ extract_local_memory_rest_value() {
 	' "${config_path}"
 }
 
+# extract_local_memory_qdrant_value extracts the value for a key from the `qdrant:` section of a YAML-like config file and echoes it.
+extract_local_memory_qdrant_value() {
+	local config_path="$1"
+	local key="$2"
+	awk -v wanted="${key}" '
+		BEGIN { in_qdrant = 0 }
+		/^[[:space:]]*qdrant:[[:space:]]*$/ { in_qdrant = 1; next }
+		in_qdrant && /^[^[:space:]]/ { in_qdrant = 0 }
+		in_qdrant && $1 == wanted ":" {
+			sub(/^[^:]+:[[:space:]]*/, "", $0)
+			gsub(/"/, "", $0)
+			gsub(/[[:space:]]+#.*/, "", $0)
+			gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0)
+			print $0
+			exit
+		}
+	' "${config_path}"
+}
+
 # is_local_memory_pidfile_sandbox_block returns success if the provided output contains both "failed to write PID file" and "operation not permitted".
 is_local_memory_pidfile_sandbox_block() {
 	local output="${1:-}"
@@ -144,6 +163,33 @@ post_json_to_file() {
 		"${url}"
 }
 
+verify_local_memory_qdrant_backend() {
+	local lm_config_path="$1"
+	local qdrant_enabled
+	qdrant_enabled="$(extract_local_memory_qdrant_value "${lm_config_path}" enabled)"
+	if [[ "${qdrant_enabled}" != 'true' ]]; then
+		echo 'ℹ️ qdrant disabled in local-memory config; skipping backend probe'
+		return 0
+	fi
+
+	local qdrant_url
+	qdrant_url="$(extract_local_memory_qdrant_value "${lm_config_path}" url)"
+	qdrant_url="${qdrant_url:-http://localhost:6333}"
+	qdrant_url="${qdrant_url%/}"
+
+	local collections_url="${qdrant_url}/collections"
+	local collections_json
+	if ! collections_json="$(curl -fsS --connect-timeout 2 --max-time 5 "${collections_url}")"; then
+		log_err "qdrant backend unreachable at ${collections_url}"
+		return 1
+	fi
+	if [[ "$(echo "${collections_json}" | jq -r '(.status // "ok") == "ok" and (.result.collections | type == "array")')" != 'true' ]]; then
+		log_err "qdrant backend did not return a healthy collections payload at ${collections_url}"
+		return 1
+	fi
+	log_ok "qdrant backend ok: ${collections_url}"
+}
+
 # preflight_local_memory_shell_fallback performs a local-memory preflight: verifies required binaries and config policy, ensures or starts the daemon until REST health is OK, exercises observe/relationship/search endpoints (including malformed and duplicate checks), inspects daemon logs for migration signals, and returns non-zero on any failure.
 preflight_local_memory_shell_fallback() {
 	log_section "Local Memory Preflight"
@@ -237,6 +283,10 @@ preflight_local_memory_shell_fallback() {
 		return 1
 	fi
 	log_ok "REST health ok: ${health_url}"
+
+	if ! verify_local_memory_qdrant_backend "${lm_config_path}"; then
+		return 1
+	fi
 
 	local probe
 	probe="LM-PREFLIGHT-$(date +%Y%m%d-%H%M%S)-$$"

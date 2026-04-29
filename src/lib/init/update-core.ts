@@ -172,6 +172,21 @@ function validateUpdateTargetPath(
 	return { ok: true };
 }
 
+function resolveUpdateTemplateTargetPath(
+	targetDir: string,
+	templatePath: string,
+): { ok: true; value: string } | { ok: false; error: InitErrorOutput } {
+	const pathResult = sanitizePath(targetDir, templatePath);
+	if (pathResult.ok) {
+		return pathResult;
+	}
+	const symlinkPathResult = resolveSafeWorkspaceSymlink(
+		targetDir,
+		templatePath,
+	);
+	return symlinkPathResult.ok ? symlinkPathResult : pathResult;
+}
+
 function collectOwnershipDecisions(
 	existingValue: Record<string, unknown>,
 	renderedValue: Record<string, unknown>,
@@ -626,6 +641,11 @@ export function executeUpdate(
 			}
 			const targetPath = symlinkPathResult.value;
 
+			if (!existsSync(targetPath)) {
+				skipped.push(entry.path);
+				continue;
+			}
+
 			// SECURITY: keep rejecting escaping parent-directory hops even when the
 			// tracked path is a safe in-repo symlink such as .mise.toml -> mise/config.toml.
 			try {
@@ -656,11 +676,6 @@ export function executeUpdate(
 						path: entry.path,
 					},
 				};
-			}
-
-			if (!existsSync(targetPath)) {
-				skipped.push(entry.path);
-				continue;
 			}
 
 			let content = template.render(packageManager, renderContext);
@@ -768,11 +783,13 @@ export function executeUpdate(
 			continue;
 		}
 
-		const pathResult = sanitizePath(targetDir, template.path);
+		const pathResult = resolveUpdateTemplateTargetPath(
+			targetDir,
+			template.path,
+		);
 		if (!pathResult.ok) {
 			return pathResult;
 		}
-
 		const targetPath = pathResult.value;
 		if (existsSync(targetPath)) {
 			if (template.path === CONTRACT_FILE) {

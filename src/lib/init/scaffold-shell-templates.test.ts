@@ -91,8 +91,9 @@ describe("scaffold shell templates", () => {
 		expect(runner).toContain(
 			'if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then',
 		);
+		expect(runner).toContain("const stderr = readFileSync");
 		expect(runner).toContain(
-			"grep -Eq 'listen EPERM: operation not permitted.*(/tmp/tsx-|\\.pipe)'",
+			"/listen EPERM: operation not permitted.*(\\/tmp\\/tsx-|\\.pipe)/.test(stderr)",
 		);
 		expect(runner).toContain(
 			"Warning: tsx IPC startup failed with EPERM; falling back to node dist/cli.js.",

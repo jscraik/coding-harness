@@ -41,13 +41,13 @@ Every change must be checked by the smallest gate needed for risk, then by the f
 Enforces documentation parity for governance-sensitive changes.
 
 - **Trigger**: Pull requests and merge queue events.
-- **Behavior**: Classifies changed files into impact categories; verifies required docs exist, including tracked workflow-authority docs such as `docs/agents/01-instruction-map.md`, `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, `docs/agents/13-linear-production-workflow.md`, `docs/agents/14-docs-gate-rollout.md`, `docs/agents/15-context-integrity-compact.md`, and `docs/agents/16-linear-production-compact.md`, plus tracked compound-workflow artifacts under `docs/adr/`, `docs/specs/`, `docs/plans/`, and `docs/brainstorms/`.
+- **Behavior**: Classifies changed files into impact categories; verifies required docs exist, including tracked workflow-authority docs such as `docs/agents/01-instruction-map.md`, `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, `docs/agents/13-linear-production-workflow.md`, `docs/agents/14-docs-gate-rollout.md`, `docs/agents/15-context-integrity-compact.md`, and `docs/agents/16-linear-production-compact.md`, plus tracked compound-workflow artifacts under `docs/adr/`, `docs/specs/`, `docs/plans/`, and `docs/brainstorms/`. It also enforces the promoted CodeRabbit frontmatter learning: policy docs with YAML frontmatter fields such as `schema_version`, `status`, or `applies_to` must keep those fields as metadata, not body headings or Table of Contents entries.
 - **Mode**: `advisory` (logs warnings) or `required` (fails CI).
 - **Exit codes**:
   - `0`: No drift or advisory mode
   - `10`: Drift detected (required mode)
   - `11-14`: Bootstrap gap, trust mismatch, policy error, runtime error
-- **Remediation**: Add missing docs or update `harness.contract.json` `docsGatePolicy.surfaces` to reflect new doc locations.
+- **Remediation**: Add missing docs, update `harness.contract.json` `docsGatePolicy.surfaces` to reflect new doc locations, or remove duplicated frontmatter metadata from policy-doc body headings and Table of Contents entries.
 
 ### plan-gate
 
@@ -85,6 +85,8 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - Run `bash scripts/validate-codestyle.sh`.
 - Add any targeted tests if behavior changed.
 - Run `pnpm test:deep` when runtime/artifact behavior changed or when deeper promotion evidence is required.
+- For CodeRabbit learning evidence imports, prove the exact command surface with a fixture-backed `harness learnings import --provider coderabbit-csv --source <csv> --repo <repo> --json` path, prove exact-file or explicit path-prefix enforcement with `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <files> --json`, prove high-usage promotion reporting with `harness learnings promote --source .harness/learnings/coderabbit.local.json --min-usage 25 --json`, prove review context with `harness review-context --source .harness/learnings/coderabbit.local.json --files <files> --json`, and prove validation guidance with `harness validation-plan --source .harness/learnings/coderabbit.local.json --files <files> --json` before treating matched learnings as review-blocking context.
+- For existing-repo harness upgrades, use `pnpm test:harness-upgrade-matrix -- <repo>...` after `pnpm build` to prove `init --update --dry-run --json` emits valid update evidence (`updateMode`, `trackedManifest`, `updated`, `skipped`, `updateDetails`) without mutating target git status. For operator-facing current-repo previews, prefer `harness upgrade --dry-run --json`; it delegates to the same safe update/adoption preview contract.
 - Keep validation evidence explicit that `scripts/validate-codestyle.sh` sanitizes hook-exported `GIT_*` values before nested `pnpm run` calls, rather than assuming inherited hook env is safe.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
 - When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
@@ -159,6 +161,8 @@ For each gate run, include:
 ## Non-code verification options
 
 When dependency tooling is unavailable, run the strongest alternative checks possible and mark explicitly that the full gate is environment-blocked.
+
+For local CodeRabbit CSV imports, distinguish evidence preparation from enforcement. The Phase 1A import path can produce `.harness/learnings/coderabbit.local.json`, the Phase 1B gate can enforce exact-file and explicit path-prefix matches, the Phase 1C promotion report can identify high-usage learnings that deserve permanent rules or exceptions, and Phase 3 can generate advisory review-context and validation-plan output from changed files. Mandatory review-gate enforcement, fuzzy keyword blocking, and shared snapshot publication are later-phase validation surfaces and should be reported as deferred rather than implied.
 
 ## Failure handling
 

@@ -30,6 +30,7 @@ import { runGardenerCLI } from "../../../commands/gardener.js";
 import { runHealthCLI } from "../../../commands/health.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
+import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runLicenseGateCLI } from "../../../commands/license-gate.js";
 import { runLinearGateCLI } from "../../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../../commands/linear-prepare.js";
@@ -59,6 +60,7 @@ import {
 	runRemediateCLI,
 } from "../../../commands/remediate.js";
 import { runReplayCLI } from "../../../commands/replay.js";
+import { runReviewContextCLI } from "../../../commands/review-context.js";
 import type { runReviewGateCLI } from "../../../commands/review-gate.js";
 import { runRiskTierCLI } from "../../../commands/risk-tier.js";
 import { runSearchCLI } from "../../../commands/search.js";
@@ -78,6 +80,7 @@ import {
 	type HarnessUpgradeOptions,
 	runUpgradeCLI,
 } from "../../../commands/upgrade.js";
+import { runValidationPlanCLI } from "../../../commands/validation-plan.js";
 import { runVerifyCodeRabbitCLI } from "../../../commands/verify-coderabbit.js";
 import {
 	EXIT_CODES as VERIFY_WORK_EXIT_CODES,
@@ -1925,12 +1928,40 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		},
 	},
 	{
+		name: "learnings",
+		summary:
+			"Import, gate, and promote operational review learnings from provider exports",
+		example:
+			"learnings import --provider coderabbit-csv --source learnings.csv --repo coding-harness --json",
+		errorLabel: "Learnings Error",
+		execute: (args) => runLearningsCLI(args),
+	},
+	{
+		name: "review-context",
+		summary:
+			"Generate PR review context from changed files and imported operational learnings",
+		example:
+			"review-context --source .harness/learnings/coderabbit.local.json --files src/cli.ts --json",
+		errorLabel: "Review Context Error",
+		execute: (args) => runReviewContextCLI(args),
+	},
+	{
+		name: "validation-plan",
+		summary:
+			"Recommend repo-canonical validation commands from changed files and learning evidence",
+		example:
+			"validation-plan --source .harness/learnings/coderabbit.local.json --files src/cli.ts --json",
+		errorLabel: "Validation Plan Error",
+		execute: (args) => runValidationPlanCLI(args),
+	},
+	{
 		name: "upgrade",
 		summary: "Upgrade harness to the latest version",
 		errorLabel: "Upgrade Error",
 		execute: (args) => {
 			const dryRunFlag = args.includes("--dry-run");
 			const forceFlag = args.includes("--force");
+			const jsonFlag = args.includes("--json");
 			const skipContractFlag = args.includes("--skip-contract-migration");
 			const providerIndex = args.indexOf("--provider");
 			const provider = getFlagValue(args, providerIndex);
@@ -1944,6 +1975,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const upgradeOptions: HarnessUpgradeOptions = {
 				dryRun: dryRunFlag,
 				force: forceFlag,
+				json: jsonFlag,
 				provider: provider ?? undefined,
 				skipContractMigration: skipContractFlag,
 			};

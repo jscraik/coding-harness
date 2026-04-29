@@ -20,6 +20,7 @@ import {
 	DEFAULT_CONTRACT,
 	type HarnessContract,
 } from "../lib/contract/types.js";
+import { runInitCLI } from "../lib/init/cli.js";
 import { atomicWrite } from "../lib/init/migration.js";
 import { loadManifest } from "../lib/init/rollback.js";
 import {
@@ -371,6 +372,7 @@ function printTemplateUpgradeSummary(
 export interface HarnessUpgradeOptions {
 	force?: boolean | undefined;
 	dryRun?: boolean | undefined;
+	json?: boolean | undefined;
 	provider?: string | undefined;
 	skipContractMigration?: boolean | undefined;
 }
@@ -394,6 +396,22 @@ export function runUpgradeCLI(
 		return EXIT_CODES.INVALID_PATH;
 	}
 	const preferredCiProvider = preferredProviderResult.value;
+
+	if (options.json === true) {
+		if (!dryRun) {
+			console.error(
+				"Error: --json is currently supported for upgrade dry-runs only.",
+			);
+			return EXIT_CODES.WRITE_ERROR;
+		}
+		return runInitCLI(dir, {
+			dryRun: true,
+			force,
+			update: true,
+			json: true,
+			...(preferredCiProvider ? { ciProvider: preferredCiProvider } : {}),
+		});
+	}
 
 	// 1. Detect existing install
 	const installCheck = detectExistingInstall(dir);

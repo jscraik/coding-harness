@@ -708,6 +708,104 @@ describe("docs-gate command", () => {
 		expect(result.report.categories).not.toContain("agent_governance");
 	});
 
+	it("blocks policy docs that duplicate frontmatter metadata as headings or TOC entries", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"docs-gate-test-frontmatter-metadata",
+		);
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+		write(
+			join(root, "docs/agents/policy.md"),
+			`---
+schema_version: 1
+status: active
+applies_to:
+  - docs
+---
+
+# Policy
+
+## Table of Contents
+- [schema_version](#schema_version)
+- [applies_to](#applies_to)
+
+## schema_version
+
+Machine metadata does not belong here.
+`,
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["docs/agents/policy.md"],
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.outcome).toBe("drift_detected");
+		const finding = result.report.findings.find(
+			(f) => f.rule_id === "docs.frontmatter.metadata_not_prose",
+		);
+		expect(finding?.severity).toBe("error");
+		expect(finding?.source_of_truth_ref).toBe(
+			"coderabbit.coding-harness.docs-frontmatter-machine-readable",
+		);
+		expect(finding?.details).toContain("applies_to");
+		expect(finding?.details).toContain("schema_version");
+	});
+
+	it("allows frontmatter metadata keys inside fenced examples", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"docs-gate-test-frontmatter-example",
+		);
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+		write(
+			join(root, "docs/agents/policy.md"),
+			`---
+schema_version: 1
+status: active
+applies_to:
+  - docs
+---
+
+# Policy
+
+\`\`\`yaml
+schema_version: 1
+status: active
+applies_to:
+  - docs
+\`\`\`
+`,
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["docs/agents/policy.md"],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(
+			result.report.findings.some(
+				(f) => f.rule_id === "docs.frontmatter.metadata_not_prose",
+			),
+		).toBe(false);
+	});
+
 	it("emits source_truth_missing contradictions for missing required truth sources", () => {
 		const root = join(
 			process.cwd(),

@@ -5,10 +5,147 @@ import {
 	type CIProvider,
 	type InitOptions,
 	type InitResult,
+	type InitUpdateDetail,
 	MANIFEST_FILE,
 	type RestoreManifest,
 } from "./types.js";
 import { checkForUpdates, executeUpdate } from "./update.js";
+
+type SuccessfulInitOutput = Extract<InitResult, { ok: true }>["output"];
+type UpdateOutputMetadata = Pick<
+	SuccessfulInitOutput,
+	"trackedManifest" | "updateMode"
+>;
+
+function updateReason(
+	status: InitUpdateDetail["status"],
+	reason: Exclude<InitUpdateDetail["reason"], "template-current-or-repo-owned">,
+): InitUpdateDetail["reason"] {
+	return status === "skipped" ? "template-current-or-repo-owned" : reason;
+}
+
+function updateDetailFor(
+	path: string,
+	status: InitUpdateDetail["status"],
+): InitUpdateDetail {
+	if (path === "harness.contract.json") {
+		return {
+			path,
+			status,
+			category: "contract",
+			reason: updateReason(status, "contract-template-drift"),
+		};
+	}
+	if (path === ".coderabbit.yaml") {
+		return {
+			path,
+			status,
+			category: "code-review",
+			reason: updateReason(status, "code-review-policy-template-drift"),
+		};
+	}
+	if (
+		path.startsWith(".circleci/") ||
+		path.startsWith(".github/workflows/") ||
+		path === ".harness/ci-required-checks.json"
+	) {
+		return {
+			path,
+			status,
+			category: "ci",
+			reason: updateReason(status, "ci-policy-template-drift"),
+		};
+	}
+	if (path.includes("semgrep") || path === ".gitleaks.toml") {
+		return {
+			path,
+			status,
+			category: "security",
+			reason: updateReason(status, "security-template-drift"),
+		};
+	}
+	if (
+		path.startsWith(".harness/knowledge/") ||
+		path.startsWith(".harness/memory/")
+	) {
+		return {
+			path,
+			status,
+			category: "project-brain",
+			reason: updateReason(status, "project-brain-template-drift"),
+		};
+	}
+	if (
+		path === "package.json" ||
+		path === "Makefile" ||
+		path === ".mise.toml" ||
+		path === "prek.toml" ||
+		path === "biome.json" ||
+		path.startsWith("scripts/")
+	) {
+		return {
+			path,
+			status,
+			category: "tooling",
+			reason: updateReason(status, "tooling-template-drift"),
+		};
+	}
+	if (
+		path === ".github/PULL_REQUEST_TEMPLATE.md" ||
+		path === "CONTRIBUTING.md"
+	) {
+		return {
+			path,
+			status,
+			category: "workflow",
+			reason: updateReason(status, "workflow-template-drift"),
+		};
+	}
+	if (path.endsWith(".md") || path.startsWith("codestyle/")) {
+		return {
+			path,
+			status,
+			category: "docs",
+			reason: updateReason(status, "docs-template-drift"),
+		};
+	}
+	return {
+		path,
+		status,
+		category: "other",
+		reason:
+			status === "skipped"
+				? "template-current-or-repo-owned"
+				: "tooling-template-drift",
+	};
+}
+
+function buildUpdateOutput(
+	packageManager: string,
+	updateResult: Extract<ReturnType<typeof executeUpdate>, { ok: true }>,
+	metadata: UpdateOutputMetadata,
+): SuccessfulInitOutput {
+	return {
+		packageManager,
+		...metadata,
+		updated: updateResult.value.updated,
+		updateDetails: [
+			...updateResult.value.updated.map((path) =>
+				updateDetailFor(path, "updated"),
+			),
+			...updateResult.value.skipped.map((path) =>
+				updateDetailFor(path, "skipped"),
+			),
+		],
+		// Compatibility: older JSON consumers read update-mode paths from
+		// `created`. Keep it populated while exposing the accurate field.
+		created: updateResult.value.updated,
+		skipped: updateResult.value.skipped,
+		...(updateResult.value.ownershipDecisions
+			? { ownershipDecisions: updateResult.value.ownershipDecisions }
+			: {}),
+	};
+}
 
 /**
  * Execute rollback mode: restore files from manifest.
@@ -100,6 +237,28 @@ export function handleUpdate(
 					preferredCiProvider: ciProvider,
 				});
 	if (!manifestResult.ok) {
+		if (
+			options.dryRun &&
+			manifestResult.error.path === MANIFEST_FILE &&
+			manifestResult.error.message.includes("No restore manifest found")
+		) {
+			const updateResult = executeUpdate(
+				dir,
+				{ harnessVersion: "0.0.0", ciProvider, files: [] },
+				ciProvider,
+				{ dryRun: true },
+			);
+			if (!updateResult.ok) {
+				return updateResult;
+			}
+			return {
+				ok: true,
+				output: buildUpdateOutput(packageManager, updateResult, {
+					trackedManifest: false,
+					updateMode: "adoption-preview",
+				}),
+			};
+		}
 		return manifestResult;
 	}
 	if (
@@ -125,14 +284,10 @@ export function handleUpdate(
 
 	return {
 		ok: true,
-		output: {
-			packageManager,
-			created: updateResult.value.updated,
-			skipped: updateResult.value.skipped,
-			...(updateResult.value.ownershipDecisions
-				? { ownershipDecisions: updateResult.value.ownershipDecisions }
-				: {}),
-		},
+		output: buildUpdateOutput(packageManager, updateResult, {
+			trackedManifest: true,
+			updateMode: "tracked-update",
+		}),
 	};
 }
 

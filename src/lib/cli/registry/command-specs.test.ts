@@ -131,6 +131,9 @@ describe("COMMAND_SPECS structural integrity", () => {
 			"index-context",
 			"context-health",
 			"init",
+			"learnings",
+			"review-context",
+			"validation-plan",
 			"upgrade",
 			"ci-migrate",
 			"diff-budget",
@@ -642,6 +645,69 @@ describe("policy-gate execute validation", () => {
 			const result = await spec.execute(["--max-tier", tier]);
 			expect(result).not.toBe(2);
 		}
+	});
+});
+
+describe("learnings execute validation", () => {
+	const spec = findSpec("learnings");
+
+	it("rejects missing subcommands", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		expect(spec.execute([])).toBe(2);
+
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error: harness learnings requires subcommand `import`, `gate`, or `promote`.",
+		);
+		errorSpy.mockRestore();
+	});
+
+	it("routes learnings gate to artifact validation", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(spec.execute(["gate", "--json"])).toBe(2);
+
+		const output = String(infoSpy.mock.calls.at(-1)?.[0] ?? "");
+		expect(output).toContain("harness learnings gate requires --files.");
+		infoSpy.mockRestore();
+	});
+
+	it("routes learnings promote to artifact validation", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(spec.execute(["promote", "--json"])).toBe(1);
+
+		const output = String(infoSpy.mock.calls.at(-1)?.[0] ?? "");
+		expect(output).toContain("learnings.artifact_missing");
+		infoSpy.mockRestore();
+	});
+});
+
+describe("review-context execute validation", () => {
+	const spec = findSpec("review-context");
+
+	it("routes missing files to usage output", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(spec.execute(["--json"])).toBe(2);
+
+		const output = String(infoSpy.mock.calls.at(-1)?.[0] ?? "");
+		expect(output).toContain("review-context.files_required");
+		infoSpy.mockRestore();
+	});
+});
+
+describe("validation-plan execute validation", () => {
+	const spec = findSpec("validation-plan");
+
+	it("routes missing files to usage output", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(spec.execute(["--json"])).toBe(2);
+
+		const output = String(infoSpy.mock.calls.at(-1)?.[0] ?? "");
+		expect(output).toContain("validation-plan.files_required");
+		infoSpy.mockRestore();
 	});
 });
 

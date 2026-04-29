@@ -35,7 +35,15 @@ if is_harness_source_repo; then
 		tsx_exit=$?
 	fi
 	if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-		if grep -Eq 'listen EPERM: operation not permitted.*(/tmp/tsx-|\.pipe)' "$tsx_stderr_file"; then
+		if node -e '
+			const { readFileSync } = require("node:fs");
+			const stderr = readFileSync(process.argv[1], "utf8");
+			process.exit(
+				/listen EPERM: operation not permitted.*(\/tmp\/tsx-|\.pipe)/.test(stderr)
+					? 0
+					: 1,
+			);
+		' "$tsx_stderr_file"; then
 			echo "Warning: tsx IPC startup failed with EPERM; falling back to node dist/cli.js." >&2
 			rm -f "$tsx_stderr_file"
 			exec node "$REPO_ROOT/dist/cli.js" "$@"

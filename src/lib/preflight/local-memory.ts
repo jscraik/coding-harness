@@ -25,6 +25,8 @@ interface ParsedLocalMemoryConfig {
 	autoPortPolicyOk: boolean;
 	restHost: string;
 	restPort: number;
+	qdrantEnabled: boolean;
+	qdrantUrl: string;
 }
 
 const DEFAULT_CONFIG_PATH = `${process.env.HOME}/.local-memory/config.yaml`;
@@ -129,34 +131,61 @@ function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 	let autoPortPolicyOk = false;
 	let restHost = "127.0.0.1";
 	let restPort = 3002;
+	let inQdrantBlock = false;
+	let qdrantEnabled = false;
+	let qdrantUrl = "http://localhost:6333";
 
 	for (const line of lines) {
 		if (/^[\t ]*rest_api:[\t ]*$/.test(line)) {
 			inRestApiBlock = true;
+			inQdrantBlock = false;
+			continue;
+		}
+		if (/^[\t ]*qdrant:[\t ]*$/.test(line)) {
+			inQdrantBlock = true;
+			inRestApiBlock = false;
 			continue;
 		}
 		if (inRestApiBlock && /^[^ \t]/.test(line) && line.trim().length > 0) {
 			inRestApiBlock = false;
 		}
-		if (!inRestApiBlock) {
+		if (inQdrantBlock && /^[^ \t]/.test(line) && line.trim().length > 0) {
+			inQdrantBlock = false;
+		}
+		if (!inRestApiBlock && !inQdrantBlock) {
 			continue;
 		}
 
-		const hostMatch = line.match(/^[\t ]*host:[\t ]*"?([^"#]+)"?/);
-		if (hostMatch) {
-			restHost = hostMatch[1]?.trim() || restHost;
-			hostPolicyOk = restHost === "127.0.0.1";
+		if (inRestApiBlock) {
+			const hostMatch = line.match(/^[\t ]*host:[\t ]*"?([^"#]+)"?/);
+			if (hostMatch) {
+				restHost = hostMatch[1]?.trim() || restHost;
+				hostPolicyOk = restHost === "127.0.0.1";
+				continue;
+			}
+
+			if (/^[\t ]*auto_port:[\t ]*false([\t ]*#.*)?$/.test(line)) {
+				autoPortPolicyOk = true;
+				continue;
+			}
+
+			const portMatch = line.match(/^[\t ]*port:[\t ]*([0-9]+)/);
+			if (portMatch?.[1]) {
+				restPort = Number.parseInt(portMatch[1], 10);
+			}
 			continue;
 		}
 
-		if (/^[\t ]*auto_port:[\t ]*false([\t ]*#.*)?$/.test(line)) {
-			autoPortPolicyOk = true;
-			continue;
-		}
+		if (inQdrantBlock) {
+			if (/^[\t ]*enabled:[\t ]*true([\t ]*#.*)?$/.test(line)) {
+				qdrantEnabled = true;
+				continue;
+			}
 
-		const portMatch = line.match(/^[\t ]*port:[\t ]*([0-9]+)/);
-		if (portMatch?.[1]) {
-			restPort = Number.parseInt(portMatch[1], 10);
+			const urlMatch = line.match(/^[\t ]*url:[\t ]*"?([^"#]+)"?/);
+			if (urlMatch) {
+				qdrantUrl = (urlMatch[1]?.trim() || qdrantUrl).replace(/\/+$/, "");
+			}
 		}
 	}
 
@@ -165,6 +194,8 @@ function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 		autoPortPolicyOk,
 		restHost,
 		restPort,
+		qdrantEnabled,
+		qdrantUrl,
 	};
 }
 
@@ -345,6 +376,22 @@ function isSuccessPayload(payload: unknown): boolean {
 		return record.success;
 	}
 	return true;
+}
+
+/** Determines whether the Qdrant collections endpoint returned a healthy payload. */
+function isQdrantCollectionsPayload(payload: unknown): boolean {
+	if (!payload || typeof payload !== "object") {
+		return false;
+	}
+	const record = payload as Record<string, unknown>;
+	if (typeof record.status === "string" && record.status !== "ok") {
+		return false;
+	}
+	if (!record.result || typeof record.result !== "object") {
+		return false;
+	}
+	const result = record.result as Record<string, unknown>;
+	return Array.isArray(result.collections);
 }
 
 /**
@@ -566,6 +613,43 @@ async function ensureDaemonHealth(
 	return { ok: true, healthUrl, healthJson };
 }
 
+/** Verifies the configured Qdrant backend when local-memory is configured to use it. */
+async function verifyQdrantBackend(
+	parsedConfig: ParsedLocalMemoryConfig,
+	messages: string[],
+	version: string,
+): Promise<{ ok: false; output: LocalMemoryPreflightOutput } | { ok: true }> {
+	if (!parsedConfig.qdrantEnabled) {
+		messages.push(
+			"ℹ️ qdrant disabled in local-memory config; skipping backend probe",
+		);
+		return { ok: true };
+	}
+
+	const collectionsUrl = `${parsedConfig.qdrantUrl}/collections`;
+	let response: { ok: boolean; status: number; json?: unknown };
+	try {
+		response = await fetchJson(collectionsUrl);
+	} catch {
+		return failOutput(
+			messages,
+			`qdrant backend unreachable at ${collectionsUrl}`,
+			{ version },
+		);
+	}
+
+	if (!response.ok || !isQdrantCollectionsPayload(response.json)) {
+		return failOutput(
+			messages,
+			`qdrant backend did not return a healthy collections payload at ${collectionsUrl}`,
+			{ version },
+		);
+	}
+
+	messages.push(`✅ qdrant backend ok: ${collectionsUrl}`);
+	return { ok: true };
+}
+
 /** Runs the smoke cycle using extracted helper dependencies. */
 async function runSmokeCycleWithHelpers(
 	baseUrl: string,
@@ -644,6 +728,15 @@ export async function runLocalMemoryPreflight(
 	const { healthUrl } = healthResult;
 
 	const baseUrl = `http://${parsedConfig.restHost}:${parsedConfig.restPort}/api/v1`;
+
+	const qdrantResult = await verifyQdrantBackend(
+		parsedConfig,
+		messages,
+		version,
+	);
+	if (!qdrantResult.ok) {
+		return qdrantResult.output;
+	}
 
 	const smokeResult = await runSmokeCycleWithHelpers(
 		baseUrl,
