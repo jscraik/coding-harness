@@ -38,7 +38,7 @@ export interface GateResult {
 	/** Human-friendly display name */
 	displayName: string;
 	status: GateStatus;
-	/** Short summary line shown in the scorecardoutput */
+	/** Short summary line shown in the scorecard output */
 	summary: string;
 	/** Exit code returned by the gate subprocess */
 	exitCode: number | null;
