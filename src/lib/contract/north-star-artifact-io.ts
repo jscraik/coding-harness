@@ -77,6 +77,19 @@ function safeReadJson<T>(path: string): T | undefined {
 	}
 }
 
+function readJsonWithParseError<T>(
+	path: string,
+): { value: T } | { error: "missing" | "invalid_json" } {
+	if (!existsSync(path)) {
+		return { error: "missing" };
+	}
+	try {
+		return { value: JSON.parse(readFileSync(path, "utf-8")) as T };
+	} catch {
+		return { error: "invalid_json" };
+	}
+}
+
 function readJsonForValidation<T>(
 	path: string,
 ): { value: T } | { error: string } {
@@ -112,11 +125,17 @@ export function resolveGuardrailRecurrence(
 		guardrailId,
 	);
 	const resolvedPath = join(repoRoot, artifactPath);
-	const existing = safeReadJson<DurableGuardrail>(resolvedPath);
-	if (existing) {
+	const existingGuardrail = readJsonWithParseError<DurableGuardrail>(resolvedPath);
+	if ("error" in existingGuardrail) {
+		if (existingGuardrail.error === "invalid_json") {
+			throw new Error(
+				`Durable guardrail artifact is invalid JSON: ${artifactPath}`,
+			);
+		}
+	} else {
 		return {
 			exists: true,
-			recurrenceCount: existing.recurrenceCount,
+			recurrenceCount: existingGuardrail.value.recurrenceCount,
 			guardrailId,
 		};
 	}

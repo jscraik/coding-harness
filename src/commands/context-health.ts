@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import {
+	type ContextSourceInventory,
 	computeArtifactChecksum,
 	discoverContextSourceDocuments,
 	readContextSourceInventory,
@@ -241,8 +242,8 @@ function buildContextHealthReport(
 	policy: ContextIntegrityPolicy,
 	warnings: string[],
 	artifactRefs: readonly ArtifactRef[],
-	inventory: ReturnType<typeof readContextSourceInventory>,
-	memorySnapshot: ReturnType<typeof writeMemoryMetricsSnapshot> | null,
+	inventory: ContextSourceInventory | null,
+	memorySnapshot: MemoryMetricsSnapshot | null,
 ): ContextHealthReport {
 	const reportArtifactRefs = [...artifactRefs];
 	const contradictionEntries = latestContradictions(repoRoot);

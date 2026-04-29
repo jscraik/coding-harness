@@ -35,8 +35,10 @@ if is_harness_source_repo; then
 		tsx_exit=$?
 	fi
 	if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-		if grep -Eq 'listen EPERM: operation not permitted.*(/tmp/tsx-|\.pipe)' "$tsx_stderr_file"; then
-			echo "Warning: tsx IPC startup failed with EPERM; falling back to node dist/cli.js." >&2
+		tsx_stderr_text="$(<"$tsx_stderr_file")"
+		if [[ "$tsx_stderr_text" =~ EPERM|operation\ not\ permitted ]] &&
+			[[ "$tsx_stderr_text" =~ IPC|pipe|socket|/tmp/tsx- ]]; then
+			echo "Warning: tsx IPC startup failed (EPERM/IPC); falling back to node dist/cli.js." >&2
 			rm -f "$tsx_stderr_file"
 			exec node "$REPO_ROOT/dist/cli.js" "$@"
 		fi

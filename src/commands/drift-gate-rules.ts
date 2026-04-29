@@ -702,10 +702,22 @@ export function emitGuardrailsForFindings(
 	}
 
 	const emittedPaths: string[] = [];
-	const processedKeys = new Set<string>();
+	const groupedFindings = new Map<
+		string,
+		{
+			failureClass: string;
+			surfaceIds: string[];
+			pathValue: string;
+			ruleIds: Set<string>;
+		}
+	>();
 
 	for (const finding of findings) {
-		if (!finding.failureClass) {
+		if (
+			!finding.failureClass ||
+			(finding.severity !== "error" &&
+				!(finding.surface === "status" && finding.rule_result === "fail"))
+		) {
 			continue;
 		}
 		const pathValue = finding.path ?? "";
@@ -718,27 +730,37 @@ export function emitGuardrailsForFindings(
 				? matchingSurfaces.map((s) => s.surfaceId)
 				: ["global"];
 
-		const recurrence = resolveGuardrailRecurrence(
-			repoRoot,
-			finding.failureClass,
-			surfaceIds,
-		);
-		const key = `${finding.failureClass}::${recurrence.guardrailId}`;
-		if (processedKeys.has(key)) {
+		const key = `${finding.failureClass}::${surfaceIds.join(",")}`;
+		const existing = groupedFindings.get(key);
+		if (existing) {
+			existing.ruleIds.add(finding.rule_id);
 			continue;
 		}
-		processedKeys.add(key);
+		groupedFindings.set(key, {
+			failureClass: finding.failureClass,
+			surfaceIds,
+			pathValue,
+			ruleIds: new Set([finding.rule_id]),
+		});
+	}
+
+	for (const entry of groupedFindings.values()) {
+		const recurrence = resolveGuardrailRecurrence(
+			repoRoot,
+			entry.failureClass,
+			entry.surfaceIds,
+		);
 
 		const now = new Date().toISOString();
 		const guardrail: DurableGuardrail = {
 			schemaVersion: "north-star-durable-guardrail/v1",
 			guardrailId: recurrence.guardrailId,
-			failureClass: finding.failureClass,
-			triggeredByFindingIds: [finding.rule_id],
+			failureClass: entry.failureClass,
+			triggeredByFindingIds: Array.from(entry.ruleIds).sort(),
 			recurrenceCount: recurrence.exists ? recurrence.recurrenceCount + 1 : 1,
 			createdAtUtc: now,
 			owner: "workflow",
-			implementationTarget: pathValue || "repo-root",
+			implementationTarget: entry.pathValue || "repo-root",
 			status: recurrence.exists ? "implemented" : "proposed",
 		};
 

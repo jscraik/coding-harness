@@ -28,3 +28,10 @@ branches and branch-scoped release or governance changes.
   - north-star override validation is now fail-closed for invalid JSON/schema,
     validates `linkedFindingIds` structure strictly, and requires actor/signature
     identity consistency (`actor` must match the reviewer tied to `signatureRef`).
+- 2026-04-29: completed follow-up thread fixes for guardrail integrity, command policy, and CLI hardening.
+  - `scripts/run-harness-gate.sh` now uses shell-native EPERM/IPC detection (no `grep`) and preserves fallback behavior to `dist/cli.js`.
+  - `drift-gate` now records structured I/O findings if durable guardrail emission fails and guardrails are emitted only for blocking findings while preserving all triggering finding IDs.
+  - `north-star-artifact-io` now fails closed when durable guardrail JSON is unreadable during recurrence resolution.
+  - `brain-core` now validates `--domain` segments for rule/hypothesis writes, always creates the real target parent directory, escapes regex headers, and lists all supported subcommands in unknown-command help.
+  - `health-core` fix execution now respects quoted arguments by running fix commands via `sh -c`.
+  - `validate-branch-protection-alignment` now ignores disabled/shadow/informational checks while still enforcing active-provider and independent required checks (including external apps like CodeRabbit/Semgrep).

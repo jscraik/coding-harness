@@ -537,9 +537,7 @@ export function runAutoFix(
 		process.stderr.write(
 			`[auto-fix] Applying [${finding.id}]: ${finding.command}\n`,
 		);
-		// Parse the command string into argv: split on whitespace
-		const [bin, ...fixArgs] = finding.command.split(/\s+/);
-		const fixResult = spawnSync(bin ?? finding.command, fixArgs, {
+		const fixResult = spawnSync("sh", ["-c", finding.command], {
 			cwd: dir,
 			encoding: "utf-8",
 			stdio: ["ignore", "pipe", "pipe"],

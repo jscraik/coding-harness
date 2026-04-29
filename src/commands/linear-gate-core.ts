@@ -275,7 +275,11 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	const prText = [prTitle, prBody].filter(Boolean).join("\n");
 	const bugsUrl = readPackageJsonBugsUrl(repoRoot);
 	const issueTemplateConfig = readIssueTemplateConfig(repoRoot);
-	const expectedLinearUrl = policy.projectUrl || bugsUrl;
+	const expectedLinearUrl = policy.projectUrl
+		? normalizeUrl(policy.projectUrl)
+		: bugsUrl && isLinearProjectUrl(bugsUrl)
+			? normalizeUrl(bugsUrl)
+			: undefined;
 	const branchIssueKeys = extractIssueKeys(branch);
 	const prIssueKeys = extractIssueKeys(prText);
 	const referenceMode = policy.prReferenceMode ?? "either";

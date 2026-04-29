@@ -273,12 +273,11 @@ function resolveManifestBackedRequiredCheckContexts(input: {
 			]),
 	);
 
-	return normalizeChecks(
-		input.requiredChecks.map((check) => {
-			const matchedGate = gateByName.get(check);
-			return matchedGate?.githubCheckName ?? check;
-		}),
-	);
+	const remappedChecks = input.requiredChecks.map((check) => {
+		const matchedGate = gateByName.get(check);
+		return matchedGate?.githubCheckName ?? check;
+	});
+	return normalizeChecks(remappedChecks);
 }
 
 function resolveProviderBackedRequiredCheckContexts(input: {
@@ -673,7 +672,7 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const shouldRequirePublicCodeScanning =
 		input.policy.publicCodeScanning?.required === true &&
 		(input.policy.publicCodeScanning.publicOnly !== true ||
-			input.repositoryVisibility !== "private");
+			input.repositoryVisibility === "public");
 	if (shouldRequirePublicCodeScanning && input.policy.publicCodeScanning) {
 		upsertRule(baseRules, {
 			type: "code_scanning",
@@ -688,7 +687,10 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 				],
 			},
 		});
-	} else {
+	} else if (
+		input.policy.publicCodeScanning?.publicOnly !== true ||
+		input.repositoryVisibility !== undefined
+	) {
 		removeRule(baseRules, "code_scanning");
 	}
 
