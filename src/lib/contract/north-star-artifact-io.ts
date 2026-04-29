@@ -351,13 +351,11 @@ export function validateOverrideAcknowledgement(
 			reason: "Override acknowledgement has no linked finding IDs",
 		};
 	}
-
 	const referenceDate = options.referenceDate ?? new Date();
 	const approvedUntil = Date.parse(acknowledgement.approvedUntilUtc);
 	if (Number.isNaN(approvedUntil) || approvedUntil <= referenceDate.getTime()) {
 		return { valid: false, reason: "Override approval has expired" };
 	}
-
 	if (options.activeFindingIds) {
 		const activeFindingIds = options.activeFindingIds;
 		const allLinkedActive = acknowledgement.linkedFindingIds.every((id) =>
@@ -370,7 +368,6 @@ export function validateOverrideAcknowledgement(
 			};
 		}
 	}
-
 	const matchingReviewers = options.registry.trustedReviewers.filter(
 		(r) => r.signatureRef === acknowledgement.signatureRef,
 	);
@@ -401,7 +398,6 @@ export function validateOverrideAcknowledgement(
 				"Override actor must match the trusted reviewer referenced by signatureRef",
 		};
 	}
-
 	return { valid: true };
 }
 
