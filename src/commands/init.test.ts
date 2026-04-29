@@ -4197,6 +4197,7 @@ describe("--update flag", () => {
 				).requiredChecks,
 			).toEqual(
 				expect.arrayContaining([
+					"pr-pipeline",
 					"security-scan",
 					"CodeRabbit",
 					"semgrep-cloud-platform/scan",
