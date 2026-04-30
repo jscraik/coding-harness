@@ -28,7 +28,7 @@ function updateDetailFor(
 	path: string,
 	status: InitUpdateDetail["status"],
 ): InitUpdateDetail {
-	if (path === "harness.contract.json") {
+	if (path === CONTRACT_FILE) {
 		return {
 			path,
 			status,
