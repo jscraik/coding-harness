@@ -47,8 +47,35 @@ export function collectFrontmatterMetadataViolations(options: {
 		) {
 			continue;
 		}
-		const content = loadFileIfPresent(join(options.repoRoot, file));
-		if (!content) continue;
+import { join, resolve, sep } from "node:path";
+
+// ... other code ...
+
+export function collectFrontmatterMetadataViolations(options: {
+  repoRoot: string;
+  changedFiles: readonly string[];
+  // ... other options
+}): FrontmatterViolation[] {
+  const violations: FrontmatterViolation[] = [];
+  const repoRootResolved = resolve(options.repoRoot);
+  
+  for (const file of [...new Set(options.changedFiles)].sort()) {
+    if (!isPolicyDocCandidate(file)) continue;
+    
+    const candidatePath = resolve(join(options.repoRoot, file));
+    const withinRepo =
+      candidatePath === repoRootResolved ||
+      candidatePath.startsWith(`${repoRootResolved}${sep}`);
+    if (!withinRepo) continue;
+    
+    const content = loadFileIfPresent(candidatePath);
+    if (!content) continue;
+    
+    // ... rest of processing ...
+  }
+  
+  return violations;
+}
 		const parsed = parseMarkdownFrontmatter(content);
 		if (!parsed) continue;
 		const metadataKeys = FRONTMATTER_METADATA_KEYS.filter((key) =>
