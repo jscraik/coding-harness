@@ -49,14 +49,16 @@ describe("normalizeLearningRows", () => {
 			},
 		];
 
-		const result = normalizeLearningRows(rows, { sourceUri });
+		const first = normalizeLearningRows(rows, { sourceUri });
+		const second = normalizeLearningRows(rows, { sourceUri });
 
-		expect(result.items[0]?.id).toBe(
+		expect(first.items[0]?.id).toBe(
 			"coderabbit.coding-harness.docs-repeated-topic-docs-surface",
 		);
-		expect(result.items[1]?.id).toMatch(
+		expect(first.items[1]?.id).toMatch(
 			/^coderabbit\.coding-harness\.docs-repeated-topic-docs-surface-[a-f0-9]{8}$/,
 		);
+		expect(first.items[1]?.id).toBe(second.items[1]?.id);
 	});
 
 	it("sorts items by repository, file, usage descending, then ID", () => {
