@@ -102,8 +102,11 @@ describe("test-harness-upgrade-matrix", () => {
 	it("fails when dry-run mutates the target repository", () => {
 		writeFakeCli(
 			fakeCliPath,
-			`const fs = await import("node:fs");
-			const path = await import("node:path");
+			`const fs = require("node:fs");
+			const path = require("node:path");
+ 			const repo = process.argv[3];
+ 			fs.writeFileSync(path.join(repo, "mutated.txt"), "changed");
+ 			console.log(JSON.stringify({
 			const repo = process.argv[3];
 			fs.writeFileSync(path.join(repo, "mutated.txt"), "changed");
 			console.log(JSON.stringify({
