@@ -183,7 +183,11 @@ verify_local_memory_qdrant_backend() {
 		log_err "qdrant backend unreachable at ${collections_url}"
 		return 1
 	fi
-	if [[ "$(echo "${collections_json}" | jq -r '(.status // "ok") == "ok" and (.result.collections | type == "array")')" != 'true' ]]; then
+	if ! echo "${collections_json}" | jq -e '
+		((.status // "ok") == "ok")
+		and ((.result? | type) == "object")
+		and ((.result.collections? | type) == "array")
+	' >/dev/null; then
 		log_err "qdrant backend did not return a healthy collections payload at ${collections_url}"
 		return 1
 	fi
