@@ -1233,15 +1233,17 @@ function resolveChangedFiles(
 }
 
 /**
- * Execute the docs-gate evaluation for the repository and produce a JSON report and an exit code.
+ * Evaluate repository documentation policy and produce a report plus an exit code.
  *
- * Performs contract/policy validation, classifies changed files, derives required documentation surfaces,
- * checks presence, collects context-integrity contradictions, writes a report artifact, and appends contradiction history when applicable.
+ * Runs contract and policy validation, resolves changed files, classifies impact,
+ * determines required documentation surfaces and their presence, collects context-integrity
+ * contradictions and frontmatter metadata violations, writes a JSON report artifact, and
+ * appends contradiction history when applicable.
  *
- * @param options - Optional configuration for evaluation (mode, trigger, explicit changedFiles, repo root, trusted refs, output path, and related flags).
- * @returns An object with `report` (the generated DocsGateReport) and `exitCode` (numeric code indicating the outcome).
- *          Relevant exit codes: 0 for success/advisory pass, 10 for detected drift in required mode, 11 for bootstrap gap,
- *          12 for trust mismatch, 13 for policy error, and 14 for runtime/IO errors.
+ * @param options - Optional configuration (mode, trigger, explicit changedFiles/deletedFiles, repo root, trusted refs/SHAs, output path, and related flags).
+ * @returns An object containing `report` (the generated DocsGateReport) and `exitCode`:
+ *          `0` for success/advisory pass, `10` for detected drift in required mode, `11` for bootstrap gap,
+ *          `12` for trust mismatch, `13` for policy error, and `14` for runtime/IO errors.
  */
 export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const mode: DocsGateMode = options.mode ?? "advisory";

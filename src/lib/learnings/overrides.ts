@@ -62,12 +62,26 @@ export type OverrideAwareGateFinding = GateFinding & {
 	match?: LearningFileMatch;
 };
 
-/** Redact override diagnostics before they are emitted to command output. */
+/**
+ * Sanitize a diagnostic string derived from an override by redacting sensitive content.
+ *
+ * @param value - The original diagnostic text potentially containing sensitive data
+ * @returns The input string with sensitive information redacted
+ */
 export function sanitizeLearningOverrideDiagnostic(value: string): string {
 	return redactSensitiveText(value);
 }
 
-/** Load and validate an optional learning override file. */
+/**
+ * Load and validate an optional learning overrides JSON file and return parsed suppressions or validation findings.
+ *
+ * @param options - Loader options.
+ * @param options.path - Path to the overrides JSON file; if omitted or the file does not exist, an empty overrides set is returned.
+ * @param options.repoRoot - Directory used to resolve `path`; defaults to the current working directory.
+ * @param options.mode - Expiration handling mode; `"strict"` makes expired suppressions produce error findings, `"advisory"` makes them produce warnings. Defaults to `"strict"`.
+ * @param options.now - Reference time used when evaluating `expiresAt`; defaults to the current time.
+ * @returns A `LearningOverrideLoadResult`: `ok: true` with `overrides` and optional `warnings` for expired suppressions when parsing/validation succeeds, or `ok: false` with `findings` describing parse or schema validation errors.
+ */
 export function loadLearningOverrides(options: {
 	path?: string;
 	repoRoot?: string;
@@ -129,7 +143,11 @@ export function loadLearningOverrides(options: {
 	};
 }
 
-/** Apply valid learning overrides to gate findings and return audit findings. */
+/**
+ * Applies active learning suppressions to gate findings, replacing matched findings with audit findings that indicate suppression and attaching sanitized override metadata.
+ *
+ * @returns An array where findings matched by a non-expired suppression are replaced by an `info` audit finding describing the suppression (id follows `learnings-gate.override.suppressed.<learningId>`, `fix.manual` is set to the suppression's `replacementAction`, and `overrideSupport.override` contains sanitized override audit data); findings not matched remain unchanged except that each will have `overrideSupport.suppressible` set to indicate whether it was eligible for suppression.
+ */
 export function applyLearningOverrides(options: {
 	findings: OverrideAwareGateFinding[];
 	overrides: LearningOverrideFile;
@@ -177,6 +195,13 @@ export function applyLearningOverrides(options: {
 	return output;
 }
 
+/**
+ * Parses and validates a parsed overrides JSON object and extracts valid suppressions.
+ *
+ * @param value - The parsed JSON value of an overrides file to validate and parse
+ * @param now - Reference time used to classify suppressions as expired
+ * @returns An object containing `suppressions` (valid entries), `expired` (valid entries whose `expiresAt` is before `now`), and `errors` (schema or entry-level findings)
+ */
 function parseOverrideFile(
 	value: unknown,
 	now: Date,
@@ -221,6 +246,13 @@ function parseOverrideFile(
 	return { suppressions, expired, errors };
 }
 
+/**
+ * Validate and parse a single suppression entry from the overrides file.
+ *
+ * @param value - The raw value to validate (an item from the parsed `suppressions` array)
+ * @param index - The zero-based index of the entry in the `suppressions` array (used in generated finding IDs)
+ * @returns `{ ok: true, suppression }` with a fully-typed `LearningSuppression` when the entry is valid; `{ ok: false, finding }` with a schema validation `GateFinding` describing the error otherwise.
+ */
 function parseSuppression(
 	value: unknown,
 	index: number,
@@ -278,6 +310,15 @@ function parseSuppression(
 	return { ok: true, suppression };
 }
 
+/**
+ * Create a GateFinding that indicates a learning override has expired.
+ *
+ * The finding's severity is `"error"` when `mode` is `"strict"` and `"warning"` otherwise.
+ *
+ * @param suppression - The expired suppression entry
+ * @param mode - Determines whether expiry is treated as an error (`"strict"`) or a warning
+ * @returns A `GateFinding` whose `id` is `learnings-gate.override.expired.<learningId>`, with a message instructing the owner to renew or remove the override and a manual fix pointing to the overrides file
+ */
 function expiredOverrideFinding(
 	suppression: LearningSuppression,
 	mode: LearningOverrideMode,
@@ -289,6 +330,14 @@ function expiredOverrideFinding(
 	);
 }
 
+/**
+ * Create a standardized GateFinding referencing the learnings override file for schema or entry errors.
+ *
+ * @param id - Unique finding identifier
+ * @param severity - Finding severity level (`"info" | "warning" | "error"`)
+ * @param message - Human-readable description of the issue
+ * @returns A GateFinding for the "learnings-gate" with a non-suppressible manual fix pointing to `.harness/learnings/overrides.json`
+ */
 function overrideFileFinding(
 	id: string,
 	severity: GateFinding["severity"],
@@ -308,12 +357,24 @@ function overrideFileFinding(
 	};
 }
 
+/**
+ * Extracts the learning identifier from a findings ID that uses the `learnings-gate.learning.` prefix.
+ *
+ * @param findingId - The finding identifier to parse
+ * @returns The learning identifier substring when `findingId` starts with `learnings-gate.learning.`, `undefined` otherwise
+ */
 function extractLearningId(findingId: string): string | undefined {
 	return findingId.startsWith("learnings-gate.learning.")
 		? findingId.slice("learnings-gate.learning.".length)
 		: undefined;
 }
 
+/**
+ * Builds a sanitized audit object describing a learning suppression.
+ *
+ * @param suppression - The suppression entry to convert into audit metadata; sensitive fields are sanitized
+ * @returns An object containing `learningId`, `pathPattern`, `reason`, `owner`, `expiresAt`, and `replacementAction`, where `reason`, `owner`, and `replacementAction` are sanitized for diagnostics
+ */
 function buildOverrideAudit(suppression: LearningSuppression) {
 	return {
 		learningId: suppression.learningId,
@@ -327,10 +388,26 @@ function buildOverrideAudit(suppression: LearningSuppression) {
 	};
 }
 
+/**
+ * Determines whether a suppression has expired at the provided time.
+ *
+ * @param suppression - The suppression entry whose `expiresAt` timestamp will be checked
+ * @param now - The reference time used to evaluate expiration
+ * @returns `true` if `suppression.expiresAt` is earlier than `now`, `false` otherwise
+ */
 function isExpired(suppression: LearningSuppression, now: Date): boolean {
 	return Date.parse(suppression.expiresAt) < now.getTime();
 }
 
+/**
+ * Determines whether a file path matches a path pattern supporting exact matches, single-level (`/*`) and recursive (`/**`) wildcards.
+ *
+ * Both `pattern` and `file` are normalized (trimmed, backslashes converted to forward slashes, leading `./` removed) before matching.
+ *
+ * @param pattern - The path pattern to test; may be an exact path, end with `/*` to match a single directory level, or end with `/**` to match the prefix and any nested paths.
+ * @param file - The file path to test against `pattern`.
+ * @returns `true` if `file` matches `pattern`, `false` otherwise.
+ */
 function patternMatchesFile(pattern: string, file: string): boolean {
 	const normalized = normalizePath(pattern);
 	const normalizedFile = normalizePath(file);
@@ -348,6 +425,12 @@ function patternMatchesFile(pattern: string, file: string): boolean {
 	return normalized === normalizedFile;
 }
 
+/**
+ * Normalizes a file path for pattern matching.
+ *
+ * @param path - The input file path to normalize
+ * @returns The path trimmed of surrounding whitespace, with backslashes converted to forward slashes and a leading "./" removed if present
+ */
 function normalizePath(path: string): string {
 	return path.trim().replace(/\\/g, "/").replace(/^\.\//, "");
 }

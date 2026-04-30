@@ -6,7 +6,14 @@ const EXIT_CODES = {
 	USAGE: 2,
 } as const;
 
-/** Run the `harness validation-plan` command. */
+/**
+ * Handle the `harness validation-plan` CLI command.
+ *
+ * Parses `args` for the flags `--json` (output as JSON), optional `--source <value>`, and required `--files <comma-separated>`.
+ *
+ * @param args - Command-line arguments passed to the command; expects `--files` with a comma-separated list of file paths, optionally `--source <value>`, and optionally `--json`.
+ * @returns CLI exit code: `0` on success, `1` if the validation plan failed, `2` for usage errors (e.g., missing or empty `--files`).
+ */
 export function runValidationPlanCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const source = readOptionalFlag(args, "--source").value;
@@ -52,6 +59,13 @@ export function runValidationPlanCLI(args: string[]): number {
 	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
 }
 
+/**
+ * Retrieves the value for a required CLI flag from an argument list.
+ *
+ * @param args - Argument vector to search (e.g., process.argv.slice(2))
+ * @param flag - Flag name to find (e.g., "--files")
+ * @returns `{ ok: true, value }` when the flag is present and followed by a non-flag value, `{ ok: false }` when the flag is absent or not followed by a valid value
+ */
 function readRequiredFlag(
 	args: string[],
 	flag: string,
@@ -60,6 +74,13 @@ function readRequiredFlag(
 	return value === undefined ? { ok: false } : { ok: true, value };
 }
 
+/**
+ * Finds `flag` in an argv-style `args` array and, if present, returns the next token as its value.
+ *
+ * @param args - Argument list to search (e.g., process.argv slice)
+ * @param flag - Flag to locate (exact match)
+ * @returns An object containing `value` when the flag has a following token that is not undefined and does not start with `-`; otherwise an empty object
+ */
 function readOptionalFlag(args: string[], flag: string): { value?: string } {
 	const index = args.indexOf(flag);
 	if (index === -1) return {};
@@ -68,6 +89,19 @@ function readOptionalFlag(args: string[], flag: string): { value?: string } {
 	return { value };
 }
 
+/**
+ * Emit an error response (JSON or plain text) and return the specified exit code.
+ *
+ * If `options.json` is true, writes a structured validation-plan error payload to stdout;
+ * otherwise writes `Error: <message>` to stderr.
+ *
+ * @param options - Configuration for the emitted error
+ * @param options.json - When true, output a structured JSON payload to stdout
+ * @param options.errorCode - Machine-readable error code included in the JSON payload
+ * @param options.message - Human-readable error message
+ * @param options.exitCode - Exit code to return
+ * @returns The `options.exitCode` value
+ */
 function emitError(options: {
 	json: boolean;
 	errorCode: string;

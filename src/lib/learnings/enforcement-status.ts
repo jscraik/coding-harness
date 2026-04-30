@@ -63,7 +63,13 @@ const PROMOTION_STATUSES = new Set<LearningPromotionStatus>([
 	"non_goal",
 ]);
 
-/** Load and validate the local enforcement-status ledger. */
+/**
+ * Load, validate, and normalize the local enforcement-status ledger at the given path.
+ *
+ * @param ledgerPath - Relative path to the ledger file (resolved against `repoRoot`); defaults to the module's default ledger path.
+ * @param repoRoot - Repository root directory used to resolve `ledgerPath`; defaults to `process.cwd()`.
+ * @returns On success, an object with `ok: true`, the resolved `path`, a validated `ledger` (an empty valid ledger if the file is absent), and a `fingerprint` computed from the raw file content (empty string when the file did not exist). On failure, an object with `ok: false`, a `code`, `message`, and optional `fix` describing the problem (for example, `learnings.enforcement_status.invalid_json` when JSON parsing fails).
+ */
 export function loadLearningEnforcementStatusLedger(
 	ledgerPath = DEFAULT_LEARNING_ENFORCEMENT_STATUS_LEDGER,
 	repoRoot = process.cwd(),
@@ -99,7 +105,21 @@ export function loadLearningEnforcementStatusLedger(
 	};
 }
 
-/** Write the local enforcement-status ledger atomically. */
+/**
+ * Persist a validated learning enforcement-status ledger to disk, atomically.
+ *
+ * Validates and normalizes the provided ledger, optionally refuses to overwrite when
+ * `expectedFingerprint` is supplied and the on-disk ledger has changed, and writes a
+ * deterministically ordered ledger file. On success returns the resolved path and the new
+ * fingerprint; on failure returns a structured error with a machine-readable `code`, a human
+ * `message`, and an optional `fix` instruction.
+ *
+ * @param options.ledger - The ledger object to persist; must conform to the enforcement-status schema.
+ * @param options.ledgerPath - Optional filesystem path (relative to `repoRoot`) where the ledger will be written. Defaults to the module default path.
+ * @param options.repoRoot - Optional repository root used to resolve `ledgerPath`. Defaults to the current working directory.
+ * @param options.expectedFingerprint - Optional fingerprint to detect concurrent modifications; if provided and the existing file's fingerprint differs, the write is refused with a stale-write error.
+ * @returns On success, `{ ok: true, path, fingerprint }`. On failure, `{ ok: false, code, message, fix? }`.
+ */
 export function writeLearningEnforcementStatusLedger(options: {
 	ledger: LearningEnforcementStatusLedger;
 	ledgerPath?: string;
@@ -152,7 +172,13 @@ export function writeLearningEnforcementStatusLedger(options: {
 	}
 }
 
-/** Merge imported learning items with local enforcement-status decisions. */
+/**
+ * Apply enforcement-status decisions from a ledger to a list of learning items.
+ *
+ * @param items - The imported learning items to transform
+ * @param ledger - The enforcement-status ledger whose decisions should be applied
+ * @returns The input items with `promotionStatus` replaced by ledger decisions and `enforcedBy` copied when present
+ */
 export function applyLearningEnforcementStatus(
 	items: LearningItem[],
 	ledger: LearningEnforcementStatusLedger,
@@ -171,7 +197,11 @@ export function applyLearningEnforcementStatus(
 	});
 }
 
-/** Build an empty valid enforcement-status ledger. */
+/**
+ * Create an empty enforcement-status ledger using the module schema version.
+ *
+ * @returns A ledger object with `schemaVersion` set to `LEARNING_ENFORCEMENT_STATUS_SCHEMA_VERSION` and an empty `items` array
+ */
 export function emptyLearningEnforcementStatusLedger(): LearningEnforcementStatusLedger {
 	return {
 		schemaVersion: LEARNING_ENFORCEMENT_STATUS_SCHEMA_VERSION,
@@ -179,6 +209,12 @@ export function emptyLearningEnforcementStatusLedger(): LearningEnforcementStatu
 	};
 }
 
+/**
+ * Validates and normalizes a parsed enforcement-status ledger JSON object.
+ *
+ * @param value - The parsed JSON value to validate as an enforcement-status ledger
+ * @returns `{ ok: true, ledger }` when valid with a normalized ledger whose `items` are deterministically sorted by `learningId`; `{ ok: false, code, message, fix? }` when invalid describing the validation failure.
+ */
 function parseLearningEnforcementStatusLedger(value: unknown):
 	| { ok: true; ledger: LearningEnforcementStatusLedger }
 	| {
@@ -229,6 +265,19 @@ function parseLearningEnforcementStatusLedger(value: unknown):
 	};
 }
 
+/**
+ * Validates and normalizes a single enforcement-status ledger item.
+ *
+ * Parses `value` as a ledger entry, enforcing allowed fields, required shapes,
+ * conditional requirements (e.g., `enforcedBy` required for `promotionStatus === "enforced"`,
+ * `reason` required for certain rejection statuses), and normalizing `enforcedBy` to a
+ * deduplicated, sorted array when present.
+ *
+ * @param value - The raw JSON value for the ledger item to validate.
+ * @param index - The zero-based index of the item in the original `items` array; used in error messages.
+ * @returns `{ ok: true, entry }` with a validated and normalized `LearningEnforcementStatusEntry` on success;
+ *          otherwise `{ ok: false, code, message, fix? }` describing the validation failure.
+ */
 function parseEntry(
 	value: unknown,
 	index: number,
@@ -317,6 +366,12 @@ function parseEntry(
 	return { ok: true, entry };
 }
 
+/**
+ * Create a new ledger whose items are deterministically sorted by `learningId`.
+ *
+ * @param ledger - The ledger to normalize; `schemaVersion` is preserved.
+ * @returns A ledger with the same `schemaVersion` and `items` sorted lexicographically by `learningId`.
+ */
 function sortLearningEnforcementStatusLedger(
 	ledger: LearningEnforcementStatusLedger,
 ): LearningEnforcementStatusLedger {
@@ -328,6 +383,12 @@ function sortLearningEnforcementStatusLedger(
 	};
 }
 
+/**
+ * Create a standardized invalid-ledger result object for validation failures.
+ *
+ * @param message - Human-readable explanation of why the ledger is invalid
+ * @returns An error result with `ok: false`, `code: "learnings.enforcement_status.invalid"`, the provided `message`, and a `fix` instruction to regenerate or align the ledger with `learning-enforcement-status/v1`
+ */
 function invalidLedger(message: string): {
 	ok: false;
 	code: string;
@@ -342,10 +403,21 @@ function invalidLedger(message: string): {
 	};
 }
 
+/**
+ * Compute a SHA-256 hexadecimal fingerprint of a string.
+ *
+ * @param value - The input string to fingerprint
+ * @returns The SHA-256 hex digest of `value`
+ */
 function fingerprint(value: string): string {
 	return createHash("sha256").update(value).digest("hex");
 }
 
+/**
+ * Determines whether a value is an object that is not `null` and not an array.
+ *
+ * @returns `true` if `value` is an object (not `null` and not an array), `false` otherwise.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

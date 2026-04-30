@@ -66,7 +66,15 @@ const DEFAULT_CI_OWNERSHIP = {
 	fallbackWorkflows: [],
 };
 
-/** Evaluate the repo CI ownership contract for primary provider and external review/security checks. */
+/**
+ * Evaluate a repository's CI ownership contract and produce machine-readable findings about primary provider, review, and security check requirements.
+ *
+ * @param options - Optional overrides:
+ *   - repoRoot: filesystem root of the repository (defaults to `process.cwd()`).
+ *   - contractPath: path to the CI ownership contract relative to `repoRoot` (defaults to `harness.contract.json`).
+ *   - expectedPrimaryProvider: expected active CI provider for the primary PR gate (defaults to `"circleci"`).
+ * @returns The gate result containing schemaVersion, overall status (`"pass"` or `"fail"`), the resolved contractPath, an array of findings, and a summary with counts of errors and info findings.
+ */
 export function runCIOwnershipGate(
 	options: RunCIOwnershipGateOptions = {},
 ): CIOwnershipGateResult {
@@ -170,6 +178,23 @@ export function runCIOwnershipGate(
 	return buildResult(contractPath, findings);
 }
 
+/**
+ * Normalize a possibly missing or malformed `ciOwnership` contract section into a deterministic structure.
+ *
+ * @param value - The raw `ciOwnership` value from a parsed harness contract; may be undefined, null, or not an object.
+ * @returns An object with the normalized fields:
+ * - `schemaVersion`: the schema version string.
+ * - `primaryPrGate`: the designated primary PR gate name.
+ * - `reviewProvider`: the designated review provider name.
+ * - `securityChecks`: an array of security check names (only string entries are kept).
+ * - `fallbackWorkflows`: an array of fallback workflow descriptors, each containing:
+ *   - `path`: workflow file path (string).
+ *   - `role`: workflow role (string).
+ *   - `purpose`: workflow purpose (string).
+ *   - `allowAutomaticPrTriggers`: boolean indicating whether automatic PR triggers are allowed.
+ *
+ * When `value` is missing or not an object, the function returns the module's default CI ownership structure.
+ */
 function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 	schemaVersion: string;
 	primaryPrGate: string;
@@ -218,6 +243,17 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 	};
 }
 
+/**
+ * Validate a normalized CI ownership contract and append any resulting findings.
+ *
+ * Validates schema version, primary PR gate, review provider, and required security checks; it also validates each configured fallback workflow and pushes corresponding findings into the supplied findings array.
+ *
+ * @param input - Validation inputs
+ * @param input.findings - Array that will receive new findings describing validation errors or informational notes
+ * @param input.ciOwnership - Normalized CI ownership object to validate
+ * @param input.contractPath - Path to the contract file used as the `path` in any findings
+ * @param input.repoRoot - Repository root directory used when validating fallback workflow file paths
+ */
 function validateCIOwnershipContract(input: {
 	findings: CIOwnershipGateFinding[];
 	ciOwnership: ReturnType<typeof normalizeCIOwnership>;
@@ -270,6 +306,19 @@ function validateCIOwnershipContract(input: {
 	}
 }
 
+/**
+ * Validate a single configured fallback workflow and append findings describing its status.
+ *
+ * Checks that the referenced workflow file exists, treats non-`fallback_pr_gate` roles as informational,
+ * and for `fallback_pr_gate` workflows ensures they do not contain automatic PR-like triggers unless
+ * `allowAutomaticPrTriggers` is true. Findings describing errors or informational status (and suggested fixes)
+ * are pushed into `input.findings`.
+ *
+ * @param input - Validation inputs
+ * @param input.findings - Array that will receive generated findings describing problems or OK statuses
+ * @param input.workflow - A normalized fallback workflow entry (from `normalizeCIOwnership(...).fallbackWorkflows`)
+ * @param input.repoRoot - Repository root used to resolve the workflow file path
+ */
 function validateFallbackWorkflow(input: {
 	findings: CIOwnershipGateFinding[];
 	workflow: ReturnType<
@@ -317,6 +366,12 @@ function validateFallbackWorkflow(input: {
 	});
 }
 
+/**
+ * Normalize a branch-protection `requiredChecks`-like value into a set of check names.
+ *
+ * @param value - The `branchProtection.requiredChecks`-style input (expected to be an array of values)
+ * @returns A Set containing string entries from `value`; empty if `value` is not an array
+ */
 function normalizeRequiredChecks(value: unknown): Set<string> {
 	if (!Array.isArray(value)) return new Set();
 	return new Set(
@@ -324,6 +379,17 @@ function normalizeRequiredChecks(value: unknown): Set<string> {
 	);
 }
 
+/**
+ * Adds an "info" finding when a specific required check exists in the normalized set, otherwise adds an "error" finding that includes a suggested fix to add the check.
+ *
+ * @param input - Function inputs
+ * @param input.findings - Array to which the generated finding will be appended
+ * @param input.requiredChecks - Normalized set of required branch-protection checks
+ * @param input.check - The check name to verify presence of in `requiredChecks`
+ * @param input.id - Finding identifier to use when the check is missing (".missing" will be replaced with ".ok" for the present case)
+ * @param input.message - Error message to use when the check is missing
+ * @param input.contractPath - Path to the contract file used as the finding's `path`
+ */
 function requireCheck(input: {
 	findings: CIOwnershipGateFinding[];
 	requiredChecks: Set<string>;
@@ -350,6 +416,13 @@ function requireCheck(input: {
 	});
 }
 
+/**
+ * Assembles the final CI ownership gate result object.
+ *
+ * @param contractPath - Filesystem path to the resolved contract used to produce the result
+ * @param findings - All findings produced by the gate checks
+ * @returns The gate result object containing `schemaVersion`, `status` (`"fail"` if any finding has `severity === "error"`, otherwise `"pass"`), the provided `contractPath`, `findings`, and a `summary` with counts of errors, info, and total findings
+ */
 function buildResult(
 	contractPath: string,
 	findings: CIOwnershipGateFinding[],

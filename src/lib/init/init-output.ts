@@ -41,7 +41,13 @@ export function printCheckUpdatesOutput(updateCheck: UpdateCheckInfo): void {
 }
 
 /**
- * Print template update result output.
+ * Log a summary of template update results to the console.
+ *
+ * @param created - File paths that were created or updated
+ * @param skipped - File paths that were skipped
+ * @param ownershipDecisions - Ownership decisions to display when `options.explainOwnership` is true
+ * @param options - Initialization options; `explainOwnership` controls whether ownership decisions are printed
+ * @param updateMode - Update mode; `"adoption-preview"` causes a preview-style label, other values indicate a refresh
  */
 export function printUpdateOutput(
 	created: string[],

@@ -359,13 +359,10 @@ function isHealthSuccessPayload(payload: unknown): boolean {
 }
 
 /**
- * Determines whether a parsed API/service payload should be considered successful.
+ * Determine whether a parsed API/service payload should be considered successful.
  *
- * If the payload is an object and contains a boolean `success` property, that value is used;
- * otherwise any object payload is treated as successful. Non-object or falsy payloads are treated as failures.
- *
- * @param payload - The value to inspect for an explicit `success` boolean or implicit success.
- * @returns `true` if the payload represents success, `false` otherwise.
+ * @param payload - The payload to evaluate; may be any value parsed from a service response.
+ * @returns `true` if `payload` is an object and either has a boolean `success` property equal to `true` or has no `success` property; `false` otherwise.
  */
 function isSuccessPayload(payload: unknown): boolean {
 	if (!payload || typeof payload !== "object") {
@@ -378,7 +375,11 @@ function isSuccessPayload(payload: unknown): boolean {
 	return true;
 }
 
-/** Determines whether the Qdrant collections endpoint returned a healthy payload. */
+/**
+ * Checks whether an object matches the expected Qdrant collections response shape.
+ *
+ * @returns `true` if `payload` is an object, `status` is not a string other than `"ok"`, `result` is an object, and `result.collections` is an array; `false` otherwise.
+ */
 function isQdrantCollectionsPayload(payload: unknown): boolean {
 	if (!payload || typeof payload !== "object") {
 		return false;
@@ -493,7 +494,17 @@ async function probeBinaryAndConfig(
 	return { ok: true, version, parsedConfig };
 }
 
-/** Ensures the daemon is running and healthy. */
+/**
+ * Ensure the local-memory daemon is running and its REST health endpoint reports success.
+ *
+ * This function may append informational, warning, or error lines to the provided `messages` array
+ * while probing and attempting to start the daemon.
+ *
+ * @param parsedConfig - Parsed local-memory configuration containing REST host and port (and related flags).
+ * @param messages - Mutable array used to accumulate human-readable probe messages; this function appends to it.
+ * @param version - The detected local-memory binary version used for context in failure messages.
+ * @returns On success: an object with `healthUrl` and the parsed `healthJson`. On failure: an object containing a `LocalMemoryPreflightOutput` describing the failure and accumulated messages.
+ */
 async function ensureDaemonHealth(
 	parsedConfig: ParsedLocalMemoryConfig,
 	messages: string[],
@@ -613,7 +624,18 @@ async function ensureDaemonHealth(
 	return { ok: true, healthUrl, healthJson };
 }
 
-/** Verifies the configured Qdrant backend when local-memory is configured to use it. */
+/**
+ * Probes the configured Qdrant HTTP endpoint when Qdrant is enabled in the parsed config and records the result.
+ *
+ * Appends informational or failure lines to `messages`. If Qdrant is enabled, attempts to fetch `<qdrantUrl>/collections`
+ * and validates the response shape; on failure returns a failing preflight output that includes accumulated messages
+ * and the provided `version`.
+ *
+ * @param parsedConfig - Parsed local-memory config containing `qdrantEnabled` and `qdrantUrl`
+ * @param messages - Mutable array used to collect human-readable preflight messages
+ * @param version - Local-memory binary version string to include in failure output
+ * @returns `{ ok: true }` on success, or `{ ok: false; output: LocalMemoryPreflightOutput }` when the backend is unreachable or returns an unexpected payload
+ */
 async function verifyQdrantBackend(
 	parsedConfig: ParsedLocalMemoryConfig,
 	messages: string[],
@@ -650,7 +672,15 @@ async function verifyQdrantBackend(
 	return { ok: true };
 }
 
-/** Runs the smoke cycle using extracted helper dependencies. */
+/**
+ * Executes the smoke test cycle against the local-memory REST API and health endpoint.
+ *
+ * @param baseUrl - Base REST API URL (e.g., `http://127.0.0.1:3002/api/v1`)
+ * @param healthUrl - Full health endpoint URL used for health checks
+ * @param version - Reported local-memory version string
+ * @param messages - Mutable array that will be appended with diagnostic lines
+ * @returns An object with `ok: true` and a `probe` name on success, or `ok: false` and an `output` containing a `LocalMemoryPreflightOutput` on failure
+ */
 async function runSmokeCycleWithHelpers(
 	baseUrl: string,
 	healthUrl: string,
@@ -696,12 +726,10 @@ function scanDaemonLog(daemonLogPath: string, messages: string[]): void {
 }
 
 /**
- * Verifies a local "local-memory" installation and runs a full smoke test.
- *
- * Performs these high-level checks and actions: confirms the `local-memory` binary and reports its version; validates REST-related config policy (`rest_api.host` must be `127.0.0.1` and `auto_port: false`); probes daemon status (may attempt to start the daemon and wait for health); ensures the REST `/api/v1/health` endpoint reports success; exercises a smoke cycle (POST two observations, create a relationship, and verify search returns the probe); validates rejection of a malformed observe payload and records duplicate-observe behavior; and optionally scans the daemon log tail for migration/version markers. On any fatal check the function returns early with a failing result and an ordered list of human-readable messages.
+ * Performs a comprehensive preflight of a local-memory installation, validating binary, config and daemon health, exercising a smoke test cycle, and optionally verifying a Qdrant backend and scanning daemon logs.
  *
  * @param options - Optional overrides: `configPath` to use a non-default local-memory YAML config, and `daemonLogPath` to inspect a non-default daemon log file.
- * @returns A result object containing `passed` (true only if all checks and the smoke cycle succeeded), an ordered `messages` array describing each step and any errors, and optionally `healthUrl` and `version` when available.
+ * @returns An object with `passed` set to `true` only if all checks and the smoke cycle succeeded, an ordered `messages` array of human-readable steps and errors, and optionally `healthUrl` and `version` when available.
  */
 export async function runLocalMemoryPreflight(
 	options: LocalMemoryPreflightOptions = {},

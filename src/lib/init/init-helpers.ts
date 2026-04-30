@@ -63,7 +63,15 @@ export function validateModeExclusivity(
 }
 
 /**
- * Probe for an existing manifest when reusing tracked provider state.
+ * Determine whether to reuse an existing restore manifest and, when appropriate, probe for and return it along with the chosen CI provider.
+ *
+ * @param dir - Filesystem directory in which to look for a restore manifest
+ * @param options - Initialization options that affect probing (notably `ciProvider`, `rollback`, `checkUpdates`, `update`, and `dryRun`)
+ * @param requestedCiProvider - CI provider to prefer when no tracked provider is present
+ * @returns An object with:
+ *  - `existingManifest`: the discovered `RestoreManifest` or `null` if none is used or found
+ *  - `ciProvider`: the CI provider to use (from the manifest when present, otherwise `requestedCiProvider`)
+ *  - `error` (optional): an `InitResult` describing a manifest-loading failure returned when probing fails during `rollback` or `update`
  */
 export function probeManifest(
 	dir: string,

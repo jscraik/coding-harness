@@ -6,7 +6,16 @@ const EXIT_CODES = {
 	USAGE: 2,
 } as const;
 
-/** Run the `harness review-context` command. */
+/**
+ * Execute the `harness review-context` CLI workflow.
+ *
+ * Parses command-line flags (including `--json`, required `--files`, and optional
+ * `--source`, `--output`, `--repo-root`, `--enforcement-status`), builds a
+ * review context, and prints either a JSON payload or a human-readable summary.
+ *
+ * @param args - The CLI arguments to parse (e.g., `--files`, `--json`, and other flags listed above)
+ * @returns The process exit code: `EXIT_CODES.SUCCESS` (0) for success, `EXIT_CODES.FAILURE` (1) for runtime errors, or `EXIT_CODES.USAGE` (2) for usage/flag errors
+ */
 export function runReviewContextCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const source = readOptionalFlag(args, "--source").value;
@@ -62,6 +71,13 @@ export function runReviewContextCLI(args: string[]): number {
 	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
 }
 
+/**
+ * Retrieves the value for a required command-line flag from an argv-style array.
+ *
+ * @param args - The argument list to search (e.g., process.argv.slice(2))
+ * @param flag - The flag token to find (e.g., `--files`)
+ * @returns `{ ok: true, value }` when `flag` is present and followed by a non-flag value, `{ ok: false }` when the flag is missing or has no valid value
+ */
 function readRequiredFlag(
 	args: string[],
 	flag: string,
@@ -70,6 +86,16 @@ function readRequiredFlag(
 	return value === undefined ? { ok: false } : { ok: true, value };
 }
 
+/**
+ * Read an optional flag value from an argv-style array.
+ *
+ * Finds `flag` in `args` and, if a following argument exists and does not start with `-`,
+ * returns it as `value`.
+ *
+ * @param args - The command-line arguments array to search.
+ * @param flag - The flag name to locate (for example, `--files`).
+ * @returns An object with `value` set to the flag's argument when present and not another flag; otherwise an empty object.
+ */
 function readOptionalFlag(args: string[], flag: string): { value?: string } {
 	const index = args.indexOf(flag);
 	if (index === -1) return {};
@@ -78,6 +104,16 @@ function readOptionalFlag(args: string[], flag: string): { value?: string } {
 	return { value };
 }
 
+/**
+ * Emit an error message in either structured JSON form or a human-readable line, then return the provided exit code.
+ *
+ * @param options - Configuration for the emitted error
+ * @param options.json - When `true`, output a structured JSON error payload; otherwise output a plain error line
+ * @param options.errorCode - Machine-readable error code included in the JSON payload
+ * @param options.message - Human-readable error message to include in the output
+ * @param options.exitCode - Exit code to return
+ * @returns The `exitCode` value from `options`
+ */
 function emitError(options: {
 	json: boolean;
 	errorCode: string;

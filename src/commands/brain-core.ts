@@ -384,7 +384,20 @@ const VALID_ADD_TYPES = new Set<BrainAddType>([
 
 const VALID_SEVERITIES = new Set(["must", "should", "may"]);
 
-/** Public API export. */
+/**
+ * Adds a knowledge item to the harness repository by creating or appending the appropriate file for the given type.
+ *
+ * The function writes or appends a formatted entry for `type` into the harness directory structure (e.g., knowledge/<domain>/rules.md,
+ * knowledge/<domain>/hypotheses.md, decisions/<date>-<slug>.md, or memory/LEARNINGS.md) and returns metadata about the created/updated file.
+ *
+ * @param harnessDir - Path to the root harness directory (the function writes under this directory)
+ * @param type - One of `"learning" | "rule" | "hypothesis" | "decision"` selecting the target file and formatting
+ * @param domain - Domain name used for domain-scoped files (e.g., `knowledge/<domain>/...`); ignored for decisions and global learnings
+ * @param content - The textual content to be inserted into the selected file
+ * @param options - Optional settings
+ * @param options.severity - Severity label used when `type` is `"rule"` (default: `"should"`)
+ * @returns An object describing the addition: `type`, `domain`, `path` (relative to the harness dir), the `content` written, and `appended: true`
+ */
 export function runBrainAdd(
 	harnessDir: string,
 	type: BrainAddType,
@@ -447,6 +460,17 @@ export function runBrainAdd(
 	};
 }
 
+/**
+ * Handle the `brain add` CLI subcommand: validate flags, perform the add action, and emit output.
+ *
+ * Processes expected flags from `args` (e.g., `--type`, `--domain`, `--content`, `--severity`, `--dir`, and `--json`),
+ * writes human or JSON output to stdout (and error messages to stderr), and invokes the add operation.
+ *
+ * @param args - The CLI token array passed to the `add` subcommand
+ * @returns A `BrainCliResult` containing an `exitCode` and, on success, the `result` produced by `runBrainAdd`.
+ *          Returns `EXIT_CODES.INVALID_ARGS` when required flags are missing or invalid, and
+ *          `EXIT_CODES.NOT_FOUND` when a `.harness` directory cannot be located.
+ */
 function cliBrainAdd(args: string[]): BrainCliResult {
 	const typeIndex = args.indexOf("--type");
 	const typeVal = getFlagValue(args, typeIndex);
@@ -531,7 +555,11 @@ function extractRules(content: string): string[] {
 }
 
 /**
- * Extract list items from a section of a markdown file.
+ * Extracts list items from a second-level (##) markdown section with the given header.
+ *
+ * @param content - The full markdown document to search.
+ * @param sectionHeader - The literal section header text (omit the leading `##`); matching is case-insensitive and captures until the next `##` header or end of file.
+ * @returns An array of trimmed list item strings (lines starting with `-`) found in the section; an empty array if the section is not present or contains no list items.
  */
 function extractListItems(content: string, sectionHeader: string): string[] {
 	const items: string[] = [];
@@ -803,7 +831,10 @@ function cliBrainStale(args: string[]): BrainCliResult {
 // ─── CLI entry point ─────────────────────────────────────────────────────────
 
 /**
- * Main CLI entry point for `harness brain`.
+ * Entrypoint that parses arguments and dispatches the `harness brain` subcommands.
+ *
+ * @param args - Command-line arguments passed to the CLI (subcommand followed by its options)
+ * @returns An integer exit code: 0 for success, 1 for warnings, 2 for errors, 3 for not found, 4 for invalid arguments
  */
 export function runBrainCLI(args: string[]): number {
 	if (args.includes("--help") || args.includes("-h") || args.length === 0) {

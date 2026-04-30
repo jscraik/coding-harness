@@ -53,7 +53,11 @@ const SENSITIVE_PATTERNS: Array<{
 	},
 ];
 
-/** Detect sensitive or local-only text without returning the matching value. */
+/**
+ * Detects sensitive or local-only text in the provided string and returns metadata for each detector that matches.
+ *
+ * @returns An array of findings; each finding contains the detector `code` and human-readable `label` for a pattern that matched the input.
+ */
 export function detectSensitiveText(value: string): SensitiveTextFinding[] {
 	const findings: SensitiveTextFinding[] = [];
 	for (const detector of SENSITIVE_PATTERNS) {
@@ -65,7 +69,12 @@ export function detectSensitiveText(value: string): SensitiveTextFinding[] {
 	return findings;
 }
 
-/** Redact sensitive or local-only text while preserving non-sensitive context. */
+/**
+ * Redacts sensitive or local-only substrings in the provided text by replacing each match with a fixed redaction marker.
+ *
+ * @param value - The input text to scan and redact
+ * @returns The input text with all detected sensitive or local-only substrings replaced by "[REDACTED]"
+ */
 export function redactSensitiveText(value: string): string {
 	let redacted = value;
 	for (const detector of SENSITIVE_PATTERNS) {

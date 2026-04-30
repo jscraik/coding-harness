@@ -105,7 +105,12 @@ interface LoadRegistryResult {
 	finding?: ArtifactGateFinding;
 }
 
-/** Evaluate changed files against the artifact provenance registry. */
+/**
+ * Produces an artifact gate result by comparing provided changed files to the artifact provenance registry.
+ *
+ * @param options - Options controlling the run. `options.files` is the list of file paths to evaluate (these are normalized to repo-relative forward-slash paths). `options.repoRoot` overrides the repository root used for path resolution (defaults to the current working directory). `options.registryPath` overrides the registry file path (defaults to .harness/artifact-provenance.json).
+ * @returns An ArtifactGateResult containing the normalized registry path, the normalized and sorted unique changed files, collected findings describing synchronized or drifting artifacts, counts of errors/warnings/info, the overall gate status (`pass`/`warn`/`fail`), and the number of tracked artifacts.
+ */
 export function runArtifactGate(
 	options: RunArtifactGateOptions,
 ): ArtifactGateResult {
@@ -190,6 +195,13 @@ export function runArtifactGate(
 	});
 }
 
+/**
+ * Loads and validates an artifact provenance registry file from disk.
+ *
+ * @param repoRoot - Repository root path used to resolve relative registry paths
+ * @param registryPath - Path to the registry file (absolute or repo-relative)
+ * @returns An object with `ok: true` and the parsed `registry` when a valid registry is found; otherwise `ok: false` and a `finding` describing why the registry is missing, unreadable, or invalid
+ */
 function loadArtifactProvenanceRegistry(
 	repoRoot: string,
 	registryPath: string,
@@ -237,6 +249,15 @@ function loadArtifactProvenanceRegistry(
 	}
 }
 
+/**
+ * Builds a normalized artifact gate result envelope summarizing findings and changed files.
+ *
+ * @param registry - Repo-relative normalized path of the provenance registry used for the check
+ * @param changedFiles - Unique, sorted, repo-relative forward-slash paths of changed files
+ * @param findings - Collected artifact gate findings to include in the result
+ * @param trackedArtifacts - Number of artifacts recorded in the provided registry
+ * @returns An ArtifactGateResult envelope with `schemaVersion: "artifact-gate/v1"`, the provided `registry`, `changedFiles`, and `findings`. The `status` is `fail` if any finding has severity `error`, otherwise `warn` if any finding has severity `warning`, otherwise `pass`. The `summary` includes counts for `errors`, `warnings`, `info`, `total` (total findings), and `trackedArtifacts`.
+ */
 function buildArtifactGateResult(input: {
 	registry: string;
 	changedFiles: string[];
@@ -268,6 +289,12 @@ function buildArtifactGateResult(input: {
 	};
 }
 
+/**
+ * Type guard that determines whether a value conforms to the `artifact-provenance/v1` registry schema.
+ *
+ * @param value - The value to validate
+ * @returns `true` if `value` has `schemaVersion` equal to `"artifact-provenance/v1"` and an `artifacts` array of valid entries, `false` otherwise.
+ */
 function isArtifactProvenanceRegistry(
 	value: unknown,
 ): value is ArtifactProvenanceRegistry {
@@ -277,6 +304,17 @@ function isArtifactProvenanceRegistry(
 	return value.artifacts.every(isArtifactProvenanceEntry);
 }
 
+/**
+ * Determines whether a value conforms to the ArtifactProvenanceEntry shape.
+ *
+ * Checks that required `path` and `source` properties are strings, that
+ * `enforcement` (if present) is `"advisory"` or `"required"`, and that
+ * optional fields `checkCommand`, `writeCommand`, `reviewPolicy`, and
+ * `description` (if present) are strings.
+ *
+ * @param value - The value to validate as an ArtifactProvenanceEntry
+ * @returns `true` if `value` matches the ArtifactProvenanceEntry shape, `false` otherwise.
+ */
 function isArtifactProvenanceEntry(
 	value: unknown,
 ): value is ArtifactProvenanceEntry {
@@ -318,21 +356,49 @@ function isArtifactProvenanceEntry(
 	return true;
 }
 
+/**
+ * Determine whether a value is a non-null object that is not an array.
+ *
+ * @param value - The value to test
+ * @returns `true` if `value` is an object, not `null`, and not an array; `false` otherwise.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Normalize a filesystem path to a repository-relative, forward-slash path without a leading "./".
+ *
+ * @param path - The input path; may be absolute or already repo-relative.
+ * @param repoRoot - Repository root used to convert an absolute `path` into a repo-relative path.
+ * @returns The normalized repo-relative path with Windows backslashes converted to `/` and any leading `./` removed.
+ */
 function normalizeRepoRelativePath(path: string, repoRoot: string): string {
 	const relativePath = isAbsolute(path) ? relative(repoRoot, path) : path;
 	return relativePath.replace(/\\/g, "/").replace(/^\.\//, "");
 }
 
+/**
+ * Resolve a registry path to an absolute filesystem path.
+ *
+ * @param repoRoot - Base directory used when `registryPath` is relative.
+ * @param registryPath - Absolute path or a path relative to `repoRoot`.
+ * @returns The resolved absolute filesystem path to the registry.
+ */
 function resolveRegistryPath(repoRoot: string, registryPath: string): string {
 	return isAbsolute(registryPath)
 		? registryPath
 		: resolve(repoRoot, registryPath);
 }
 
+/**
+ * Builds a human-readable remediation message for resolving drift between a generated artifact and its source.
+ *
+ * @param artifactPath - Repo-relative path to the generated artifact
+ * @param sourcePath - Repo-relative path to the source or template that should produce the artifact
+ * @param artifact - Registry entry that may contain `writeCommand` or `checkCommand` used to tailor the remediation
+ * @returns A remediation message advising how to update the source or run the entry's commands to regenerate or verify the artifact
+ */
 function buildArtifactFix(
 	artifactPath: string,
 	sourcePath: string,
@@ -347,6 +413,14 @@ function buildArtifactFix(
 	return `Update ${sourcePath} alongside ${artifactPath}, or document why this generated artifact change is intentional.`;
 }
 
+/**
+ * Constructs a short remediation message for when only the source file changed.
+ *
+ * @param sourcePath - Repo-relative path to the source/template file that changed
+ * @param artifactPath - Repo-relative path to the generated artifact affected by the source
+ * @param artifact - The registry entry for the artifact (may contain `writeCommand` or `checkCommand` used to tailor the message)
+ * @returns A concise instruction string advising how to remediate the mismatch between the source and its generated artifact
+ */
 function buildSourceOnlyFix(
 	sourcePath: string,
 	artifactPath: string,
