@@ -798,10 +798,15 @@ function mergeRequiredStatusChecks(
 ): RequiredStatusCheckEntry[] {
 	const merged: RequiredStatusCheckEntry[] = [];
 	const seenContexts = new Set<string>();
+	const requiredContextSet = new Set(requiredContexts);
 
 	for (const check of existingChecks) {
 		if (!seenContexts.has(check.context)) {
-			merged.push(check);
+			merged.push(
+				requiredContextSet.has(check.context)
+					? { context: check.context }
+					: check,
+			);
 			seenContexts.add(check.context);
 		}
 	}

@@ -78,8 +78,8 @@ describe("scaffold default promotions", () => {
 		const codestyleTemplate = fileURLToPath(
 			new URL("../../templates/CODESTYLE.md", import.meta.url),
 		);
-		expect(readFileSync(codestyleTemplate, "utf-8")).toContain(
-			"# CODESTYLE.md",
-		);
+		const codestyle = renderTemplate("CODESTYLE.md", targetDir);
+		expect(codestyle).toContain("# CODESTYLE.md");
+		expect(codestyle).toBe(readFileSync(codestyleTemplate, "utf-8"));
 	});
 });

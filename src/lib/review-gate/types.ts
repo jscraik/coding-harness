@@ -78,4 +78,4 @@ export interface ReviewGateOutput {
 /** Success or structured-error result returned by review-gate execution. */
 export type ReviewGateResult =
 	| { ok: true; output: ReviewGateOutput }
-	| { ok: false; error: { code: string; message: string } };
+	| { ok: false; error: { code: ReviewGateErrorCode; message: string } };

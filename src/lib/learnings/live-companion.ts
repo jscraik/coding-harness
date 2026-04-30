@@ -58,7 +58,7 @@ export function validateLearningLiveCompanion(
 	}
 	if (value.schemaVersion !== LEARNING_LIVE_COMPANION_SCHEMA_VERSION) {
 		return invalid(
-			`Unsupported live companion schemaVersion: ${String(value.schemaVersion)}.`,
+			`Unsupported live companion schemaVersion: ${safeDiagnosticValue(value.schemaVersion)}.`,
 		);
 	}
 	if (value.provider !== "coderabbit") {
@@ -144,12 +144,39 @@ function isStatsRecord(
 function sanitizeStats(
 	stats: Record<string, string | number | boolean | null>,
 ): Record<string, string | number | boolean | null> {
-	return Object.fromEntries(
-		Object.entries(stats).map(([key, value]) => [
-			key,
+	const sanitized: Record<string, string | number | boolean | null> = {};
+	for (const [key, value] of Object.entries(stats)) {
+		const sanitizedKey = uniqueStatsKey(
+			sanitized,
+			sanitizeLearningLiveCompanionDiagnostic(key) || "[REDACTED]",
+		);
+		sanitized[sanitizedKey] =
 			typeof value === "string"
 				? sanitizeLearningLiveCompanionDiagnostic(value)
-				: value,
-		]),
-	);
+				: value;
+	}
+	return sanitized;
+}
+
+function uniqueStatsKey(
+	stats: Record<string, string | number | boolean | null>,
+	key: string,
+): string {
+	if (!(key in stats)) return key;
+	let suffix = 2;
+	while (`${key}_${suffix}` in stats) suffix += 1;
+	return `${key}_${suffix}`;
+}
+
+function safeDiagnosticValue(value: unknown): string {
+	if (
+		typeof value === "string" ||
+		typeof value === "number" ||
+		typeof value === "boolean"
+	) {
+		return sanitizeLearningLiveCompanionDiagnostic(String(value));
+	}
+	if (value === null) return "null";
+	if (Array.isArray(value)) return "[array]";
+	return `[${typeof value}]`;
 }

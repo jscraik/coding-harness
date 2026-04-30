@@ -386,7 +386,7 @@ export function loadManifest(
 		return {
 			ok: false,
 			error: {
-				code: "WRITE_ERROR",
+				code: "MANIFEST_NOT_FOUND",
 				message: "No restore manifest found. Run `harness init --track` first.",
 				path: MANIFEST_FILE,
 			},

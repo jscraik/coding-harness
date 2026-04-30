@@ -94,7 +94,7 @@ export function probeManifest(
 			options.update &&
 			options.dryRun &&
 			manifestProbeResult.error.path === MANIFEST_FILE &&
-			manifestProbeResult.error.message.includes("No restore manifest found")
+			manifestProbeResult.error.code === "MANIFEST_NOT_FOUND"
 		) {
 			return { existingManifest: null, ciProvider: requestedCiProvider };
 		}
@@ -120,7 +120,11 @@ export function getExitCodeFromError(error: { code: string }): number {
 	if (error.code === "PATH_TRAVERSAL") {
 		return EXIT_CODES.PATH_TRAVERSAL;
 	}
-	if (error.code === "WRITE_ERROR" || error.code === "INCOMPLETE_MANIFEST") {
+	if (
+		error.code === "WRITE_ERROR" ||
+		error.code === "INCOMPLETE_MANIFEST" ||
+		error.code === "MANIFEST_NOT_FOUND"
+	) {
 		return EXIT_CODES.WRITE_ERROR;
 	}
 	return EXIT_CODES.INVALID_PATH;

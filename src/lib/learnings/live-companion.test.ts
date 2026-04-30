@@ -48,4 +48,39 @@ describe("live companion metadata", () => {
 			expect(result.code).toBe("learnings.live_companion.invalid_json");
 		}
 	});
+
+	it("redacts schema diagnostics and stats keys", () => {
+		const invalid = validateLearningLiveCompanion({
+			schemaVersion: "/Users/jamiecraik/private/schema.json",
+			provider: "coderabbit",
+			evidenceLevel: "coarse_provider_metadata",
+			rowLevelEvidence: false,
+		});
+
+		expect(invalid.ok).toBe(false);
+		if (!invalid.ok) {
+			expect(invalid.message).not.toContain("/Users/jamiecraik");
+		}
+
+		const valid = validateLearningLiveCompanion({
+			schemaVersion: "live-companion/v1",
+			provider: "coderabbit",
+			evidenceLevel: "coarse_provider_metadata",
+			rowLevelEvidence: false,
+			stats: {
+				"/Users/jamiecraik/private/path": "safe",
+				"/home/jamie/private/path": "/home/jamie/secret",
+			},
+		});
+
+		expect(valid.ok).toBe(true);
+		if (valid.ok) {
+			expect(JSON.stringify(valid.companion.stats)).not.toContain(
+				"/Users/jamiecraik",
+			);
+			expect(JSON.stringify(valid.companion.stats)).not.toContain(
+				"/home/jamie",
+			);
+		}
+	});
 });

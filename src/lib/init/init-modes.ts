@@ -28,7 +28,7 @@ function updateDetailFor(
 	path: string,
 	status: InitUpdateDetail["status"],
 ): InitUpdateDetail {
-	if (path === "harness.contract.json") {
+	if (path === CONTRACT_FILE) {
 		return {
 			path,
 			status,
@@ -240,7 +240,7 @@ export function handleUpdate(
 		if (
 			options.dryRun &&
 			manifestResult.error.path === MANIFEST_FILE &&
-			manifestResult.error.message.includes("No restore manifest found")
+			manifestResult.error.code === "MANIFEST_NOT_FOUND"
 		) {
 			const updateResult = executeUpdate(
 				dir,

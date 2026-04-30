@@ -3320,7 +3320,7 @@ describe("--rollback flag", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.code).toBe("MANIFEST_NOT_FOUND");
 			expect(result.error.message).toContain("No restore manifest found");
 		}
 	});
@@ -3478,7 +3478,7 @@ describe("--check-updates flag", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.code).toBe("MANIFEST_NOT_FOUND");
 			expect(result.error.message).toContain("No restore manifest found");
 		}
 	});
@@ -3592,7 +3592,7 @@ describe("--update flag", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.code).toBe("MANIFEST_NOT_FOUND");
 			expect(result.error.message).toContain("No restore manifest found");
 		}
 	});

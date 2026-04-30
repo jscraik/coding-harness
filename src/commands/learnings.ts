@@ -252,11 +252,16 @@ function readRequiredFlag(
 	return value === undefined ? { ok: false } : { ok: true, value };
 }
 
-function readOptionalFlag(args: string[], flag: string): { value?: string } {
+function readOptionalFlag(
+	args: string[],
+	flag: string,
+): { value: string | undefined } {
 	const index = args.indexOf(flag);
-	if (index === -1) return {};
+	if (index === -1) return { value: undefined };
 	const value = args[index + 1];
-	if (value === undefined || value.startsWith("-")) return {};
+	if (value === undefined || value.startsWith("-")) {
+		return { value: undefined };
+	}
 	return { value };
 }
 

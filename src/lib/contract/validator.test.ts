@@ -937,7 +937,31 @@ describe("validateContract", () => {
 			});
 
 			expect(result.success).toBe(false);
-			expect(result.errors[0]?.path).toBe("ciOwnership");
+			expect(result.errors.some((error) => error.path === "ciOwnership")).toBe(
+				true,
+			);
+		});
+
+		it("rejects CI ownership security checks missing from branch protection", () => {
+			const result = validateContract({
+				version: "1.0",
+				branchProtection: {
+					requiredChecks: ["CodeRabbit"],
+				},
+				ciOwnership: {
+					schemaVersion: "ci-ownership/v1",
+					primaryPrGate: "circleci",
+					reviewProvider: "coderabbit",
+					securityChecks: ["semgrep-cloud-platform/scan"],
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(
+				result.errors.some(
+					(error) => error.path === "ciOwnership.securityChecks",
+				),
+			).toBe(true);
 		});
 	});
 

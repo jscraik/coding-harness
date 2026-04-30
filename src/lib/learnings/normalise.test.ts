@@ -24,6 +24,22 @@ describe("normalizeLearningRows", () => {
 		expect(result.items[0]?.id).toBe(
 			"coderabbit.coding-harness.docs-frontmatter-machine-readable",
 		);
+		expect(
+			normalizeLearningRows(
+				[
+					{
+						row: 2,
+						repository: "coding-harness",
+						file: "docs/ai-assistant-security-policy.md",
+						pullRequest: "148",
+						usage: 516,
+						learning:
+							"YAML frontmatter fields are machine-readable metadata and must not be represented as prose sections.",
+					},
+				],
+				{ sourceUri },
+			).items[0]?.id,
+		).toBe(result.items[0]?.id);
 		expect(result.items[0]?.githubUrl).toBe(
 			"https://github.com/jscraik/coding-harness/pull/148",
 		);
@@ -76,13 +92,21 @@ describe("normalizeLearningRows", () => {
 					usage: 10,
 					learning: "Alpha learning.",
 				},
+				{
+					row: 4,
+					repository: "coding-harness",
+					file: "src/a.ts",
+					usage: 1,
+					learning: "Lower usage alpha learning.",
+				},
 			],
 			{ sourceUri },
 		);
 
-		expect(result.items.map((item) => item.file)).toEqual([
-			"src/a.ts",
-			"src/b.ts",
+		expect(result.items.map((item) => `${item.file}:${item.usage}`)).toEqual([
+			"src/a.ts:10",
+			"src/a.ts:1",
+			"src/b.ts:1",
 		]);
 	});
 });

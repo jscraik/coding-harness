@@ -265,7 +265,10 @@ describe("runBranchProtect", () => {
 		);
 		expect(requiredRule).toBeDefined();
 		expect(requiredRule?.parameters?.required_status_checks).toEqual(
-			expect.arrayContaining([{ context: "CodeRabbit" }]),
+			expect.arrayContaining([
+				{ context: "existing-check" },
+				{ context: "CodeRabbit" },
+			]),
 		);
 		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
 	});
@@ -1199,7 +1202,10 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "required_status_checks",
 		);
 		expect(requiredRule?.parameters?.required_status_checks).toEqual(
-			expect.arrayContaining([{ context: "check" }]),
+			expect.arrayContaining([
+				{ context: "existing-check", integration_id: 1234 },
+				{ context: "check" },
+			]),
 		);
 	});
 

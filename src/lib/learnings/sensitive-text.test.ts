@@ -21,11 +21,15 @@ describe("sensitive text handling", () => {
 
 	it("redacts local user paths and token assignments", () => {
 		const redacted = redactSensitiveText(
-			"Read /Users/jamiecraik/Downloads/learnings.csv with api_key=secret123456",
+			"Read /Users/jamiecraik/Downloads/learnings.csv, /home/jamie/learnings.csv, ~/private/learnings.csv, C:\\Users\\Jamie\\secret.txt, and \\\\server\\share\\secret.txt with api_key=secret123456",
 		);
 
 		expect(redacted).toContain(SENSITIVE_TEXT_REDACTION);
 		expect(redacted).not.toContain("/Users/jamiecraik");
+		expect(redacted).not.toContain("/home/jamie");
+		expect(redacted).not.toContain("~/private");
+		expect(redacted).not.toContain("C:\\Users\\Jamie");
+		expect(redacted).not.toContain("\\\\server\\share");
 		expect(redacted).not.toContain("secret123456");
 	});
 });

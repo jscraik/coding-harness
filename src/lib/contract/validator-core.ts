@@ -2616,6 +2616,26 @@ export function validateContract(
 			});
 		}
 	}
+	if (
+		ciOwnership?.securityChecks !== undefined &&
+		branchProtection?.requiredChecks !== undefined
+	) {
+		const branchProtectionChecks = new Set(branchProtection.requiredChecks);
+		const missingChecks = ciOwnership.securityChecks.filter(
+			(check) => !branchProtectionChecks.has(check),
+		);
+		if (missingChecks.length > 0) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "ciOwnership.securityChecks",
+				message:
+					"ciOwnership.securityChecks must be covered by branchProtection.requiredChecks",
+				expected: `subset of ${JSON.stringify(branchProtection.requiredChecks)}`,
+				received: JSON.stringify(ciOwnership.securityChecks),
+				fix: `Add required branch protection checks or remove unsupported CI ownership checks: ${missingChecks.join(", ")}`,
+			});
+		}
+	}
 
 	// ── Cross-field consistency checks (JSC-69) ───────────────────────────────
 

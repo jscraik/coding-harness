@@ -153,7 +153,6 @@ const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
 	"review-gate": ["--token", "--owner", "--repo", "--pr", "--sha"],
 	"workflow:generate": ["--source"],
 	"linear-gate": ["--branch", "--pr-title", "--pr-body"],
-	learnings: ["--provider", "--source", "--repo"],
 	"review-context": ["--files"],
 	"validation-plan": ["--files"],
 };
@@ -164,7 +163,6 @@ const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 	"ci-migrate": [".harness/ci-provider-transition-status.json"],
 	"artifact-gate": [".harness/artifact-provenance.json"],
 	"ci-ownership-gate": ["harness.contract.json"],
-	learnings: [".harness/learnings/coderabbit.local.json"],
 	"review-context": ["artifacts/review-context/pr-context.json"],
 };
 

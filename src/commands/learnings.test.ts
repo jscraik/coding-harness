@@ -239,6 +239,8 @@ describe("runLearningsCLI", () => {
 	});
 
 	it("returns a clear GateResult error when the learning artifact is missing", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learnings-gate-missing-"));
+		cleanup.push(dir);
 		const infoSpy = vi
 			.spyOn(console, "info")
 			.mockImplementation(() => undefined);
@@ -246,7 +248,7 @@ describe("runLearningsCLI", () => {
 		const exitCode = runLearningsCLI([
 			"gate",
 			"--source",
-			"/tmp/missing-coderabbit.local.json",
+			join(dir, "missing-coderabbit.local.json"),
 			"--files",
 			"docs/ai-assistant-security-policy.md",
 			"--json",
@@ -350,6 +352,8 @@ describe("runLearningsCLI", () => {
 	});
 
 	it("returns failure for missing source files", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learnings-import-missing-"));
+		cleanup.push(dir);
 		vi.spyOn(console, "error").mockImplementation(() => undefined);
 
 		const exitCode = runLearningsCLI([
@@ -357,7 +361,7 @@ describe("runLearningsCLI", () => {
 			"--provider",
 			"coderabbit-csv",
 			"--source",
-			"/tmp/not-present-coderabbit.csv",
+			join(dir, "not-present-coderabbit.csv"),
 			"--repo",
 			"coding-harness",
 		]);

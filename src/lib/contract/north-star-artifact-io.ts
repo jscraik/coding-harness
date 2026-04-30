@@ -8,7 +8,7 @@ import {
 import { dirname, join, relative } from "node:path";
 
 import {
-	type NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
+	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
 	NORTH_STAR_OVERRIDE_ROOT,
 	createNorthStarGuardrailId,
 	getNorthStarDurableGuardrailPath,
@@ -267,6 +267,15 @@ export function validateOverrideAcknowledgement(
 		return {
 			valid: false,
 			reason: "Override acknowledgement artifact not found",
+		};
+	}
+	if (
+		acknowledgement.schemaVersion !==
+		NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.overrideAcknowledgement
+	) {
+		return {
+			valid: false,
+			reason: "Override acknowledgement schemaVersion is unsupported",
 		};
 	}
 
