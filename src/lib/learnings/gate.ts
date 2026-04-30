@@ -59,9 +59,16 @@ export function loadLearningArtifact(
 	}
 	let artifact: LearningImportArtifact;
 	try {
-		artifact = JSON.parse(
-			readFileSync(resolvedSource, "utf-8"),
-		) as LearningImportArtifact;
+		const parsed = JSON.parse(readFileSync(resolvedSource, "utf-8")) as unknown;
+		if (!isLearningImportArtifact(parsed)) {
+			return {
+				ok: false,
+				code: "learnings.artifact_invalid",
+				message: `Learning artifact at ${sourcePath} must use schemaVersion harness-learnings/v1 with source.uri, repository, and items.`,
+				fix: "Re-run harness learnings import --provider coderabbit-csv --source <learnings.csv> --repo <repo> --json.",
+			};
+		}
+		artifact = parsed;
 	} catch (error) {
 		const detail = error instanceof Error ? error.message : String(error);
 		return {
@@ -76,6 +83,36 @@ export function loadLearningArtifact(
 		artifact,
 		warnings: detectSourceWarnings(artifact, resolvedSource),
 	};
+}
+
+function isLearningImportArtifact(
+	value: unknown,
+): value is LearningImportArtifact {
+	if (!isRecord(value)) return false;
+	if (value.schemaVersion !== "harness-learnings/v1") return false;
+	if (typeof value.provider !== "string") return false;
+	if (typeof value.repository !== "string") return false;
+	if (!isRecord(value.source) || typeof value.source.uri !== "string") {
+		return false;
+	}
+	if (!Array.isArray(value.items)) return false;
+	return value.items.every(isLearningItemLike);
+}
+
+function isLearningItemLike(value: unknown): value is LearningItem {
+	if (!isRecord(value)) return false;
+	if (typeof value.id !== "string") return false;
+	if (typeof value.learning !== "string") return false;
+	if (typeof value.repository !== "string") return false;
+	if (typeof value.usage !== "number") return false;
+	if (!isRecord(value.source) || typeof value.source.uri !== "string") {
+		return false;
+	}
+	return true;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**

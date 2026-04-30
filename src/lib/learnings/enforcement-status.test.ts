@@ -1,7 +1,13 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
 	LEARNING_ENFORCEMENT_STATUS_SCHEMA_VERSION,
 	applyLearningEnforcementStatus,
@@ -29,8 +35,17 @@ const learningItem: LearningItem = {
 };
 
 describe("learning enforcement-status ledger", () => {
+	const cleanup: string[] = [];
+
+	afterEach(() => {
+		for (const path of cleanup.splice(0)) {
+			rmSync(path, { recursive: true, force: true });
+		}
+	});
+
 	it("loads a missing ledger as an empty non-blocking overlay", () => {
 		const dir = mkdtempSync(join(tmpdir(), "learning-status-missing-"));
+		cleanup.push(dir);
 
 		const result = loadLearningEnforcementStatusLedger(
 			".harness/learnings/enforcement-status.json",
@@ -49,6 +64,7 @@ describe("learning enforcement-status ledger", () => {
 
 	it("rejects unknown fields instead of preserving extension data", () => {
 		const dir = mkdtempSync(join(tmpdir(), "learning-status-invalid-"));
+		cleanup.push(dir);
 		const ledgerPath = join(dir, ".harness/learnings/enforcement-status.json");
 		mkdirSync(join(dir, ".harness/learnings"), { recursive: true });
 		writeFileSync(
@@ -100,6 +116,7 @@ describe("learning enforcement-status ledger", () => {
 
 	it("writes atomically and rejects stale writes", () => {
 		const dir = mkdtempSync(join(tmpdir(), "learning-status-write-"));
+		cleanup.push(dir);
 		const firstWrite = writeLearningEnforcementStatusLedger({
 			repoRoot: dir,
 			ledger: {
@@ -143,6 +160,24 @@ describe("learning enforcement-status ledger", () => {
 		expect(staleWrite.ok).toBe(false);
 		if (!staleWrite.ok) {
 			expect(staleWrite.code).toBe("learnings.enforcement_status.stale_write");
+		}
+	});
+
+	it("returns a structured error when the ledger cannot be read", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learning-status-unreadable-"));
+		cleanup.push(dir);
+		mkdirSync(join(dir, ".harness/learnings/enforcement-status.json"), {
+			recursive: true,
+		});
+
+		const result = loadLearningEnforcementStatusLedger(
+			".harness/learnings/enforcement-status.json",
+			dir,
+		);
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.code).toBe("learnings.enforcement_status.read_failed");
 		}
 	});
 });

@@ -58,6 +58,10 @@ interface HarnessContractLike {
 
 const DEFAULT_CONTRACT_PATH = "harness.contract.json";
 const CODERABBIT_REQUIRED_CHECK = "CodeRabbit";
+const CI_FALLBACK_WORKFLOW_ROLES = new Set([
+	"fallback_pr_gate",
+	"release_publishing",
+]);
 const DEFAULT_CI_OWNERSHIP = {
 	schemaVersion: "ci-ownership/v1",
 	primaryPrGate: "circleci",
@@ -205,6 +209,7 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 		role: string;
 		purpose: string;
 		allowAutomaticPrTriggers: boolean;
+		allowAutomaticPrTriggersValid: boolean;
 	}>;
 } {
 	if (!value || typeof value !== "object") return DEFAULT_CI_OWNERSHIP;
@@ -238,6 +243,8 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 						purpose: String(workflow.purpose ?? ""),
 						allowAutomaticPrTriggers:
 							workflow.allowAutomaticPrTriggers === true,
+						allowAutomaticPrTriggersValid:
+							typeof workflow.allowAutomaticPrTriggers === "boolean",
 					}))
 			: [],
 	};
@@ -327,6 +334,45 @@ function validateFallbackWorkflow(input: {
 	repoRoot: string;
 }): void {
 	const workflowPath = resolve(input.repoRoot, input.workflow.path);
+	if (input.workflow.path.trim() === "") {
+		input.findings.push({
+			id: "ci-ownership.fallback-workflow.path.invalid",
+			severity: "error",
+			message: "Configured fallback workflow requires a non-empty path.",
+			fix: "Set ciOwnership.fallbackWorkflows[].path to a workflow file path or remove the entry.",
+		});
+		return;
+	}
+	if (!CI_FALLBACK_WORKFLOW_ROLES.has(input.workflow.role)) {
+		input.findings.push({
+			id: `ci-ownership.fallback-workflow.${input.workflow.path}.role-invalid`,
+			severity: "error",
+			message: `${input.workflow.path} has unsupported fallback workflow role ${input.workflow.role || "missing"}.`,
+			path: input.workflow.path,
+			fix: "Use role fallback_pr_gate or release_publishing.",
+		});
+		return;
+	}
+	if (input.workflow.purpose.trim() === "") {
+		input.findings.push({
+			id: `ci-ownership.fallback-workflow.${input.workflow.path}.purpose-invalid`,
+			severity: "error",
+			message: `${input.workflow.path} requires a non-empty fallback workflow purpose.`,
+			path: input.workflow.path,
+			fix: "Describe why this fallback workflow exists in ciOwnership.fallbackWorkflows[].purpose.",
+		});
+		return;
+	}
+	if (!input.workflow.allowAutomaticPrTriggersValid) {
+		input.findings.push({
+			id: `ci-ownership.fallback-workflow.${input.workflow.path}.allow-automatic-pr-triggers-invalid`,
+			severity: "error",
+			message: `${input.workflow.path} requires boolean allowAutomaticPrTriggers.`,
+			path: input.workflow.path,
+			fix: "Set allowAutomaticPrTriggers to true or false.",
+		});
+		return;
+	}
 	if (!existsSync(workflowPath)) {
 		input.findings.push({
 			id: `ci-ownership.fallback-workflow.${input.workflow.path}.missing`,

@@ -267,7 +267,15 @@ function loadGateMetrics(
 			learningGateWarnings: null,
 		};
 	}
-	const findings = Array.isArray(parsed.findings) ? parsed.findings : [];
+	if (!Array.isArray(parsed.findings)) {
+		return {
+			state: "insufficient_evidence",
+			learningHits: null,
+			learningGateBlocks: null,
+			learningGateWarnings: null,
+		};
+	}
+	const findings = parsed.findings;
 	const learningFindings = findings.filter(isLearningGateFinding);
 	return {
 		state: "present",

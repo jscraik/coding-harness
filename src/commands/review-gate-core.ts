@@ -1143,10 +1143,11 @@ function isReviewContextLearningArtifact(value: unknown): boolean {
 }
 
 /**
- * Determines whether the pull request body acknowledges the review-context artifact or its findings.
+ * Determines whether the pull request body acknowledges every high-severity review-context finding.
  *
- * Searches the PR body (case-insensitive) for the substrings "review-context" or "learned context",
- * or for any learning `id` from the provided `learnings`.
+ * Searches the PR body (case-insensitive) for every learning `id` from the
+ * provided high-severity learning set. Generic acknowledgement text is not
+ * enough because one broad phrase would otherwise clear unrelated blockers.
  *
  * @param prBody - The pull request description text (may be null or undefined)
  * @param learnings - Array of review-context learnings whose `id` values will be searched for in the PR body
@@ -1157,10 +1158,9 @@ function hasReviewContextAcknowledgement(
 	learnings: ReviewContextResult["applicableLearnings"],
 ): boolean {
 	const body = prBody?.toLowerCase() ?? "";
-	if (body.includes("review-context") || body.includes("learned context")) {
-		return true;
-	}
-	return learnings.some((learning) => body.includes(learning.id.toLowerCase()));
+	return learnings.every((learning) =>
+		body.includes(learning.id.toLowerCase()),
+	);
 }
 
 /**

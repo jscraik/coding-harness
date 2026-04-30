@@ -175,7 +175,7 @@ export function applyLearningOverrides(options: {
 		}
 		const audit = buildOverrideAudit(suppression);
 		output.push({
-			id: `learnings-gate.override.suppressed.${learningId}`,
+			id: `learnings-gate.override.suppressed.${learningId}.${sanitizeFindingPath(finding.path)}`,
 			severity: "info",
 			gate: finding.gate,
 			message: `Suppressed learning ${learningId}; replacement action: ${suppression.replacementAction}`,
@@ -193,6 +193,16 @@ export function applyLearningOverrides(options: {
 		});
 	}
 	return output;
+}
+
+function sanitizeFindingPath(path: string): string {
+	return path
+		.trim()
+		.replace(/\\/g, "/")
+		.replace(/^\.\//, "")
+		.replace(/[^a-zA-Z0-9._/-]+/g, "-")
+		.replace(/\//g, "__")
+		.replace(/^-+|-+$/g, "");
 }
 
 /**

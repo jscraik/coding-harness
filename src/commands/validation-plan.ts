@@ -16,7 +16,16 @@ const EXIT_CODES = {
  */
 export function runValidationPlanCLI(args: string[]): number {
 	const json = args.includes("--json");
-	const source = readOptionalFlag(args, "--source").value;
+	const sourceFlag = readOptionalFlag(args, "--source");
+	if (sourceFlag.present && sourceFlag.value === undefined) {
+		return emitError({
+			json,
+			errorCode: "validation-plan.flag_value_required",
+			message: `harness validation-plan requires a value after ${sourceFlag.flag}.`,
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	const source = sourceFlag.value;
 	const files = readRequiredFlag(args, "--files");
 	if (!files.ok) {
 		return emitError({
@@ -81,12 +90,17 @@ function readRequiredFlag(
  * @param flag - Flag to locate (exact match)
  * @returns An object containing `value` when the flag has a following token that is not undefined and does not start with `-`; otherwise an empty object
  */
-function readOptionalFlag(args: string[], flag: string): { value?: string } {
+function readOptionalFlag(
+	args: string[],
+	flag: string,
+): { present: boolean; flag: string; value?: string } {
 	const index = args.indexOf(flag);
-	if (index === -1) return {};
+	if (index === -1) return { present: false, flag };
 	const value = args[index + 1];
-	if (value === undefined || value.startsWith("-")) return {};
-	return { value };
+	if (value === undefined || value.startsWith("-")) {
+		return { present: true, flag };
+	}
+	return { present: true, flag, value };
 }
 
 /**

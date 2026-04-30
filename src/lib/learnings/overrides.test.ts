@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
 	LEARNING_OVERRIDE_SCHEMA_VERSION,
+	applyLearningOverrides,
 	loadLearningOverrides,
 } from "./overrides.js";
 
@@ -116,4 +117,44 @@ describe("learning overrides", () => {
 		if (!result.ok) return;
 		expect(result.warnings[0]?.severity).toBe("warning");
 	});
+
+	it("includes the matched path in suppressed finding ids", () => {
+		const result = applyLearningOverrides({
+			now: new Date("2026-04-30T00:00:00Z"),
+			overrides: {
+				schemaVersion: LEARNING_OVERRIDE_SCHEMA_VERSION,
+				suppressions: [
+					{
+						learningId: "coderabbit.coding-harness.frontmatter",
+						pathPattern: "docs/**",
+						reason: "False positive for migrated docs.",
+						owner: "docs-owner",
+						expiresAt: "2026-12-31",
+						replacementAction: "Track this in the docs migration issue.",
+					},
+				],
+			},
+			findings: [finding("docs/a.md"), finding("docs/b.md")],
+		});
+
+		expect(result.map((entry) => entry.id)).toEqual([
+			"learnings-gate.override.suppressed.coderabbit.coding-harness.frontmatter.docs__a.md",
+			"learnings-gate.override.suppressed.coderabbit.coding-harness.frontmatter.docs__b.md",
+		]);
+	});
 });
+
+function finding(path: string) {
+	return {
+		id: "learnings-gate.learning.coderabbit.coding-harness.frontmatter",
+		severity: "error" as const,
+		gate: "learnings-gate",
+		message: "Frontmatter is metadata.",
+		path,
+		baseline: false,
+		fix: {
+			manual: "Fix it.",
+			suppressible: true,
+		},
+	};
+}

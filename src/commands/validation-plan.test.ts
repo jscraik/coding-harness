@@ -84,4 +84,17 @@ describe("runValidationPlanCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(result.error.code).toBe("validation-plan.files_required");
 	});
+
+	it("returns usage when an optional source flag is missing its value", () => {
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runValidationPlanCLI(["--json", "--source", "--files", "src/cli.ts"]),
+		).toBe(2);
+
+		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(result.error.code).toBe("validation-plan.flag_value_required");
+	});
 });

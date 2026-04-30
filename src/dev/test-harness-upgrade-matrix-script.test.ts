@@ -12,6 +12,28 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 
 const SCRIPT_PATH = resolve("scripts/test-harness-upgrade-matrix.mjs");
+const VALID_DRY_RUN_RESULT = {
+	packageManager: "npm",
+	updated: [
+		"harness.contract.json",
+		".coderabbit.yaml",
+		".circleci/config.yml",
+		".harness/ci-required-checks.json",
+		"scripts/check-semgrep-changed.sh",
+		".harness/knowledge/INDEX.md",
+	],
+	created: [
+		"harness.contract.json",
+		".coderabbit.yaml",
+		".circleci/config.yml",
+		".harness/ci-required-checks.json",
+		"scripts/check-semgrep-changed.sh",
+		".harness/knowledge/INDEX.md",
+	],
+	skipped: [],
+	updateMode: "adoption-preview",
+	trackedManifest: false,
+};
 
 function runGit(repo: string, args: string[]): void {
 	const result = spawnSync("git", args, {
@@ -26,6 +48,13 @@ function runGit(repo: string, args: string[]): void {
 
 function writeFakeCli(path: string, body: string): void {
 	writeFileSync(path, `#!/usr/bin/env node\n${body}\n`);
+}
+
+function writeValidDryRunFakeCli(path: string, prefix = ""): void {
+	writeFakeCli(
+		path,
+		`${prefix}console.log(JSON.stringify(${JSON.stringify(VALID_DRY_RUN_RESULT)}));`,
+	);
 }
 
 describe("test-harness-upgrade-matrix", () => {
@@ -46,31 +75,7 @@ describe("test-harness-upgrade-matrix", () => {
 	});
 
 	it("passes when update dry-run emits valid JSON and leaves git status unchanged", () => {
-		writeFakeCli(
-			fakeCliPath,
-			`console.log(JSON.stringify({
-				packageManager: "npm",
-				updated: [
-					"harness.contract.json",
-					".coderabbit.yaml",
-					".circleci/config.yml",
-					".harness/ci-required-checks.json",
-					"scripts/check-semgrep-changed.sh",
-					".harness/knowledge/INDEX.md"
-				],
-				created: [
-					"harness.contract.json",
-					".coderabbit.yaml",
-					".circleci/config.yml",
-					".harness/ci-required-checks.json",
-					"scripts/check-semgrep-changed.sh",
-					".harness/knowledge/INDEX.md"
-				],
-				skipped: [],
-				updateMode: "adoption-preview",
-				trackedManifest: false
-			}));`,
-		);
+		writeValidDryRunFakeCli(fakeCliPath);
 
 		const result = spawnSync(
 			process.execPath,
@@ -100,34 +105,12 @@ describe("test-harness-upgrade-matrix", () => {
 	});
 
 	it("fails when dry-run mutates the target repository", () => {
-		writeFakeCli(
+		writeValidDryRunFakeCli(
 			fakeCliPath,
 			`const fs = require("node:fs");
 			const path = require("node:path");
 			const repo = process.argv[3];
-			fs.writeFileSync(path.join(repo, "mutated.txt"), "changed");
-			console.log(JSON.stringify({
-				packageManager: "npm",
-				updated: [
-					"harness.contract.json",
-					".coderabbit.yaml",
-					".circleci/config.yml",
-					".harness/ci-required-checks.json",
-					"scripts/check-semgrep-changed.sh",
-					".harness/knowledge/INDEX.md"
-				],
-				created: [
-					"harness.contract.json",
-					".coderabbit.yaml",
-					".circleci/config.yml",
-					".harness/ci-required-checks.json",
-					"scripts/check-semgrep-changed.sh",
-					".harness/knowledge/INDEX.md"
-				],
-				skipped: [],
-				updateMode: "adoption-preview",
-				trackedManifest: false
-			}));`,
+			fs.writeFileSync(path.join(repo, "mutated.txt"), "changed");`,
 		);
 
 		const result = spawnSync(
@@ -156,31 +139,7 @@ describe("test-harness-upgrade-matrix", () => {
 		const fixtureDir = join(tempDir, "fixture");
 		mkdirSync(fixtureDir, { recursive: true });
 		writeFileSync(join(fixtureDir, "package.json"), '{"name":"fixture"}');
-		writeFakeCli(
-			fakeCliPath,
-			`console.log(JSON.stringify({
-				packageManager: "npm",
-				updated: [
-					"harness.contract.json",
-					".coderabbit.yaml",
-					".circleci/config.yml",
-					".harness/ci-required-checks.json",
-					"scripts/check-semgrep-changed.sh",
-					".harness/knowledge/INDEX.md"
-				],
-				created: [
-					"harness.contract.json",
-					".coderabbit.yaml",
-					".circleci/config.yml",
-					".harness/ci-required-checks.json",
-					"scripts/check-semgrep-changed.sh",
-					".harness/knowledge/INDEX.md"
-				],
-				skipped: [],
-				updateMode: "adoption-preview",
-				trackedManifest: false
-			}));`,
-		);
+		writeValidDryRunFakeCli(fakeCliPath);
 
 		const result = spawnSync(
 			process.execPath,

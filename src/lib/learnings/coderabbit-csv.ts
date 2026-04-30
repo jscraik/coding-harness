@@ -181,12 +181,11 @@ export function parseCodeRabbitCsv(
  * Produce normalized repository slug aliases used for matching.
  *
  * @param repository - The repository identifier (e.g., "owner/repo" or any repository string)
- * @returns A set containing the normalized slug for the full repository and the normalized ownerless slug (the substring after the last '/'), excluding any empty values
+ * @returns A set containing only the normalized full repository slug, excluding empty values.
  */
 function repositoryAliases(repository: string): Set<string> {
 	const normalized = normalizeRepositorySlug(repository);
-	const ownerless = normalizeRepositorySlug(repository.split("/").pop() ?? "");
-	return new Set([normalized, ownerless].filter(Boolean));
+	return new Set([normalized].filter(Boolean));
 }
 
 /**

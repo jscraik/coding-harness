@@ -49,7 +49,7 @@ describe("learnings gate overrides", () => {
 		expect(result.status).toBe("pass");
 		expect(result.findings).toHaveLength(1);
 		expect(result.findings[0]).toMatchObject({
-			id: `learnings-gate.override.suppressed.${learningId}`,
+			id: `learnings-gate.override.suppressed.${learningId}.docs__policy.md`,
 			severity: "info",
 			overrideSupport: {
 				suppressed: true,
@@ -106,6 +106,32 @@ describe("learnings gate overrides", () => {
 		expect(result.findings[0]).toMatchObject({
 			id: "learnings-gate.artifact.missing",
 			fix: { suppressible: false },
+		});
+	});
+
+	it("fails closed for malformed learning artifacts before source checks", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learnings-gate-invalid-"));
+		cleanup.push(dir);
+		mkdirSync(join(dir, ".harness/learnings"), { recursive: true });
+		writeFileSync(
+			join(dir, ".harness/learnings/coderabbit.local.json"),
+			JSON.stringify({
+				schemaVersion: "harness-learnings/v1",
+				repository: "coding-harness",
+				items: [],
+			}),
+			"utf-8",
+		);
+
+		const result = runLearningsGate({
+			repoRoot: dir,
+			files: ["docs/policy.md"],
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.findings[0]).toMatchObject({
+			id: "learnings-gate.artifact.invalid",
+			severity: "error",
 		});
 	});
 

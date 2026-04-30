@@ -100,7 +100,12 @@ describe("runReviewContextCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
 		expect(result.schemaVersion).toBe("review-context/v1");
 		expect(result.outputPath).toBe(reviewContextPath);
-		expect(result.applicableLearnings[0]).toMatchObject({
+		const frontmatterLearning = result.applicableLearnings.find(
+			(learning: { id: string }) =>
+				learning.id ===
+				"coderabbit.coding-harness.docs-frontmatter-machine-readable",
+		);
+		expect(frontmatterLearning).toMatchObject({
 			id: "coderabbit.coding-harness.docs-frontmatter-machine-readable",
 			usage: 516,
 			promotionStatus: "enforced",
@@ -142,5 +147,18 @@ describe("runReviewContextCLI", () => {
 
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(result.error.code).toBe("review-context.files_required");
+	});
+
+	it("returns usage when an optional flag is missing its value", () => {
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runReviewContextCLI(["--json", "--source", "--files", "docs/policy.md"]),
+		).toBe(2);
+
+		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(result.error.code).toBe("review-context.flag_value_required");
 	});
 });

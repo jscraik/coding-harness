@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, normalize, relative, resolve } from "node:path";
 
 export const DEFAULT_ARTIFACT_PROVENANCE_REGISTRY =
 	".harness/artifact-provenance.json";
@@ -374,8 +374,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * @returns The normalized repo-relative path with Windows backslashes converted to `/` and any leading `./` removed.
  */
 function normalizeRepoRelativePath(path: string, repoRoot: string): string {
-	const relativePath = isAbsolute(path) ? relative(repoRoot, path) : path;
-	return relativePath.replace(/\\/g, "/").replace(/^\.\//, "");
+	const relativePath = isAbsolute(path)
+		? relative(repoRoot, path)
+		: relative(repoRoot, resolve(repoRoot, path));
+	return normalize(relativePath).replace(/\\/g, "/").replace(/^\.\//, "");
 }
 
 /**

@@ -76,4 +76,16 @@ describe("parseCodeRabbitCsv", () => {
 		expect(result.rows).toHaveLength(0);
 		expect(result.warnings[0]?.code).toBe("learnings.csv.missing_headers");
 	});
+
+	it("does not match ownerless repository aliases across owners", () => {
+		const result = parseCodeRabbitCsv(
+			"Repository,Usage,Learning\nother-owner/coding-harness,1,Wrong repo\ncoding-harness,2,Local repo\n",
+			{
+				repository: "jscraik/coding-harness",
+			},
+		);
+
+		expect(result.rows).toHaveLength(0);
+		expect(result.skipped).toBe(2);
+	});
 });

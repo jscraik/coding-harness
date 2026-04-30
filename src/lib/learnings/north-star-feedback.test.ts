@@ -113,6 +113,31 @@ describe("buildNorthStarFeedback", () => {
 			]),
 		);
 	});
+
+	it("does not treat malformed gate findings as present evidence", () => {
+		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-malformed-"));
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		const gate = join(dir, "gate.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+		writeFileSync(
+			gate,
+			JSON.stringify({
+				gate: "learnings-gate",
+				status: "pass",
+				findings: {},
+			}),
+		);
+
+		const result = buildNorthStarFeedback({
+			source,
+			gateResultPath: gate,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.metrics.learningHits).toBeNull();
+		expect(result.summary.insufficientEvidence).toContain("gateResult");
+	});
 });
 
 function artifact(): LearningImportArtifact {

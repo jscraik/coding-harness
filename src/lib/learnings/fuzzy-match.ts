@@ -62,18 +62,19 @@ export function matchLearningToFile(
  */
 export function patternMatchesFile(pattern: string, file: string): boolean {
 	const normalized = normalizeFile(pattern);
+	const normalizedFile = normalizeFile(file);
 	if (normalized.endsWith("/**")) {
 		const prefix = normalized.slice(0, -3);
-		return file === prefix || file.startsWith(`${prefix}/`);
+		return normalizedFile === prefix || normalizedFile.startsWith(`${prefix}/`);
 	}
 	if (normalized.endsWith("/*")) {
 		const prefix = normalized.slice(0, -2);
-		const rest = file.startsWith(`${prefix}/`)
-			? file.slice(prefix.length + 1)
+		const rest = normalizedFile.startsWith(`${prefix}/`)
+			? normalizedFile.slice(prefix.length + 1)
 			: "";
 		return rest.length > 0 && !rest.includes("/");
 	}
-	return normalized === file;
+	return normalized === normalizedFile;
 }
 
 /**

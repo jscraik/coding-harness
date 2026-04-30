@@ -379,7 +379,7 @@ describe("runReviewGate", () => {
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
 					title: "Traceability hardening",
-					body: "- Plan IDs: `feat-review-gate-traceability`\n- review-context: acknowledged",
+					body: "- Plan IDs: `feat-review-gate-traceability`\n- review-context: coderabbit.coding-harness.review-gate acknowledged",
 					user: { login: "coding-actor" },
 					head: { sha: validSha, ref: "feature/test" },
 				}),

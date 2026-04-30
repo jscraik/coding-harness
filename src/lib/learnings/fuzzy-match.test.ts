@@ -61,6 +61,7 @@ describe("matchLearningToFile", () => {
 		expect(patternMatchesFile("src/*", "src/index.ts")).toBe(true);
 		expect(patternMatchesFile("src/*", "src/lib/index.ts")).toBe(false);
 		expect(patternMatchesFile("./src/index.ts", "src/index.ts")).toBe(true);
+		expect(patternMatchesFile("src/**", "./src\\lib\\index.ts")).toBe(true);
 	});
 });
 

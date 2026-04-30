@@ -83,7 +83,17 @@ export function loadLearningEnforcementStatusLedger(
 			fingerprint: "",
 		};
 	}
-	const raw = readFileSync(resolvedPath, "utf-8");
+	let raw: string;
+	try {
+		raw = readFileSync(resolvedPath, "utf-8");
+	} catch (error) {
+		return {
+			ok: false,
+			code: "learnings.enforcement_status.read_failed",
+			message: `Failed to read learning enforcement-status ledger: ${error instanceof Error ? error.message : String(error)}`,
+			fix: "Fix ledger file permissions or regenerate the ledger with harness learnings promote --write-enforcement-status.",
+		};
+	}
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(raw);
@@ -134,7 +144,17 @@ export function writeLearningEnforcementStatusLedger(options: {
 	const validation = parseLearningEnforcementStatusLedger(options.ledger);
 	if (!validation.ok) return validation;
 	if (options.expectedFingerprint !== undefined && existsSync(ledgerPath)) {
-		const currentRaw = readFileSync(ledgerPath, "utf-8");
+		let currentRaw: string;
+		try {
+			currentRaw = readFileSync(ledgerPath, "utf-8");
+		} catch (error) {
+			return {
+				ok: false,
+				code: "learnings.enforcement_status.read_failed",
+				message: `Failed to read existing learning enforcement-status ledger before write: ${error instanceof Error ? error.message : String(error)}`,
+				fix: "Fix ledger file permissions before retrying the write.",
+			};
+		}
 		const currentFingerprint = fingerprint(currentRaw);
 		if (currentFingerprint !== options.expectedFingerprint) {
 			return {
