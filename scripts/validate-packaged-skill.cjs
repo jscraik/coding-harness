@@ -204,6 +204,16 @@ function validateInstallJson() {
 	}
 }
 
+/**
+ * Validate that evals.yaml declares the expected schema, contains required eval case IDs, and includes a set of expected coverage markers.
+ *
+ * Verifies presence of:
+ * - `schema_version: "2.0"`
+ * - eval case IDs: `happy-bootstrap-command-audit`, `happy-ci-migration-sequence`, `happy-existing-repo-upgrade-dry-run`, and `edge-current-repo-needs-upgrading`
+ * - coverage/output strings related to init and upgrade dry-runs, update/skip outcomes, compatibility aliasing, adoption/preview/tracked-update indicators, prepare/apply/verify/commit/abort snapshot commands, and the `last_updated: "2026-04-29"` entry.
+ *
+ * On any missing requirement, the script will fail and exit with a non-zero status.
+ */
 function validateEvals() {
 	const content = readRepoFile(REQUIRED_FILES.evals);
 

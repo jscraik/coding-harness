@@ -17,6 +17,13 @@ type UpdateOutputMetadata = Pick<
 	"trackedManifest" | "updateMode"
 >;
 
+/**
+ * Normalize the update reason according to the file's update status.
+ *
+ * @param status - The update status for the file; when `"skipped"` the reason is normalized
+ * @param reason - The original reason to use when the status is not `"skipped"`
+ * @returns `"template-current-or-repo-owned"` if `status` is `"skipped"`, otherwise the provided `reason`
+ */
 function updateReason(
 	status: InitUpdateDetail["status"],
 	reason: Exclude<InitUpdateDetail["reason"], "template-current-or-repo-owned">,
@@ -24,6 +31,13 @@ function updateReason(
 	return status === "skipped" ? "template-current-or-repo-owned" : reason;
 }
 
+/**
+ * Map a file path and status to a categorized InitUpdateDetail describing the update outcome.
+ *
+ * @param path - File path being evaluated
+ * @param status - Update status for the file (e.g., `"updated"` or `"skipped"`)
+ * @returns An `InitUpdateDetail` containing `path`, `status`, `category`, and `reason`. The function assigns a category based on path patterns and normalizes the `reason` for skipped items to `"template-current-or-repo-owned"` when applicable.
+ */
 function updateDetailFor(
 	path: string,
 	status: InitUpdateDetail["status"],
@@ -120,6 +134,14 @@ function updateDetailFor(
 	};
 }
 
+/**
+ * Builds the standardized SuccessfulInitOutput for an update operation.
+ *
+ * @param packageManager - The package manager identifier to include in the output
+ * @param updateResult - A successful result from `executeUpdate` containing `updated`, `skipped`, and optional `ownershipDecisions`
+ * @param metadata - Reused output metadata (`trackedManifest` and `updateMode`) to include in the output
+ * @returns A SuccessfulInitOutput containing `packageManager`, the provided `metadata`, `updated` and `skipped` lists, `updateDetails` for each updated and skipped path, legacy `created` populated for compatibility, and `ownershipDecisions` when present
+ */
 function buildUpdateOutput(
 	packageManager: string,
 	updateResult: Extract<ReturnType<typeof executeUpdate>, { ok: true }>,
@@ -219,7 +241,14 @@ export function handleCheckUpdates(
 }
 
 /**
- * Execute update mode: apply template updates from tracked manifest.
+ * Perform the update operation using a tracked restore manifest and return a standardized init result.
+ *
+ * @param dir - Filesystem directory in which to run the update
+ * @param existingManifest - If provided, use this restore manifest instead of attempting to load one from disk
+ * @param ciProvider - Current CI provider to validate against the manifest and to drive the update
+ * @param packageManager - Package manager identifier to include in the resulting output
+ * @param options - Runtime options (e.g., `dryRun`) that influence update behavior
+ * @returns An `InitResult` describing success or failure. On success (`ok: true`) the `output` contains a standardized update summary (including updated/skipped paths, update details, and metadata). On failure (`ok: false`) the `error` describes the failure reason and path when applicable.
  */
 export function handleUpdate(
 	dir: string,

@@ -235,6 +235,13 @@ function maybeAddArtifactRef(
 	});
 }
 
+/**
+ * Builds a canonical context health report summarizing coverage, contradictions, memory metrics, and artifacts.
+ *
+ * @param inventory - The context source inventory (may be `null`); used to compute authoritative source counts and coverage metrics.
+ * @param memorySnapshot - The memory metrics snapshot (may be `null`); used to populate unresolved question counts.
+ * @returns The assembled ContextHealthReport containing schema metadata, command info, repo and trigger metadata, status and warnings, referenced artifacts, and computed metrics (authoritative coverage, open contradictions, stale/unknown authoritative counts, degraded retrieval proxy, memory unresolved question count, and a decision consistency proxy).
+ */
 function buildContextHealthReport(
 	repoRoot: string,
 	triggerType: ContextHealthTriggerType,

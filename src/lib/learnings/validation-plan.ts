@@ -54,7 +54,16 @@ export interface ValidationPlanOptions {
 	repoRoot?: string;
 }
 
-/** Build deterministic validation guidance for changed files. */
+/**
+ * Build a deterministic validation plan (commands and network-required checks) for a set of changed files.
+ *
+ * Normalizes input files, loads a learning artifact (from `options.source` or the default), matches learnings to
+ * changed files, and produces deduplicated, sorted `commands` and `networkRequired` recommendations.
+ *
+ * @param options - Validation plan options. `options.files` are the changed files; `options.source` overrides the artifact path.
+ * @returns A `ValidationPlanResult` describing the schema version, source, normalized changed files, generated commands,
+ *          network-required commands, and a summary. If loading the learning artifact fails, returns a result with
+ *          `status: "error"`, empty command lists, and an `error` object populated from the loader.
 export function buildValidationPlan(
 	options: ValidationPlanOptions,
 ): ValidationPlanResult {
@@ -104,6 +113,13 @@ export function buildValidationPlan(
 	};
 }
 
+/**
+ * Builds a deduplicated, lexicographically sorted list of validation commands based on changed files and matched learnings.
+ *
+ * @param files - Normalized list of changed file paths
+ * @param matchedLearnings - Learning artifact items that match the changed files and may produce learning-based commands
+ * @returns An array of unique ValidationPlanCommand objects sorted by `command`
+ */
 function buildCommands(
 	files: string[],
 	matchedLearnings: LearningItem[],
@@ -116,6 +132,18 @@ function buildCommands(
 	);
 }
 
+/**
+ * Add deterministic validation commands to the provided map based on changed file path classifiers.
+ *
+ * Processes the changed files and mutates `commands` by adding appropriate validation entries for:
+ * - docs/governance/spec/plan surfaces (docs-gate command),
+ * - TypeScript source files under `src/` (codestyle, quality, tests, and typecheck commands),
+ * - runtime/artifact/package/script/template/lib surfaces (aggregate quality and deep tests).
+ * Each added command's `files` field is set to the subset of `files` that match the relevant classifier.
+ *
+ * @param commands - A Map keyed by command string that will be mutated with added/merged ValidationPlanCommand entries.
+ * @param files - Normalized list of changed file paths to evaluate against path classifiers.
+ */
 function addPathBasedCommands(
 	commands: Map<string, ValidationPlanCommand>,
 	files: string[],
@@ -184,6 +212,15 @@ function addPathBasedCommands(
 	}
 }
 
+/**
+ * Adds validation commands derived from matched learning items into the provided map.
+ *
+ * Processes each learning item with classification "validation_contract", derives one or more command strings for that learning, and merges a corresponding ValidationPlanCommand into `commands` for each derived command. Each added command's `reason` is the learning text, its `files` are the subset of `files` that the learning matches, and its `learningIds` contains the learning item's id.
+ *
+ * @param commands - Map keyed by command string that will be mutated to include merged ValidationPlanCommand entries
+ * @param files - Normalized list of changed files to use when selecting files relevant to a learning
+ * @param matchedLearnings - Learning items to evaluate for producing commands
+ */
 function addLearningBasedCommands(
 	commands: Map<string, ValidationPlanCommand>,
 	files: string[],
@@ -202,6 +239,13 @@ function addLearningBasedCommands(
 	}
 }
 
+/**
+ * Builds network-dependent validation commands inferred from changed files and matched learnings.
+ *
+ * @param files - List of changed file paths (normalized).
+ * @param matchedLearnings - Learning artifact items matched against the changed files.
+ * @returns A lexicographically sorted list of network-required commands. Each entry describes the command, why network access is required, and optional supporting `learningIds`.
+ */
 function buildNetworkRequired(
 	files: string[],
 	matchedLearnings: LearningItem[],
@@ -237,6 +281,12 @@ function buildNetworkRequired(
 	);
 }
 
+/**
+ * Selects canonical validation commands suggested by a learning item based on keywords in its `learning` text.
+ *
+ * @param item - The learning item whose `learning` field is inspected for command-triggering keywords
+ * @returns The list of repo-canonical command strings suggested by the learning; empty if none match
+ */
 function commandsForLearning(item: LearningItem): string[] {
 	const lower = item.learning.toLowerCase();
 	const commands: string[] = [];
@@ -250,6 +300,12 @@ function commandsForLearning(item: LearningItem): string[] {
 	return commands;
 }
 
+/**
+ * Adds or merges a ValidationPlanCommand into the map, normalizing and deduplicating its files and learningIds.
+ *
+ * @param commands - Map keyed by command string; the entry will be created or updated in place.
+ * @param command - The command entry to add; when inserted or merged, its `files` are normalized and its `learningIds` are deduplicated.
+ */
 function addCommand(
 	commands: Map<string, ValidationPlanCommand>,
 	command: ValidationPlanCommand,
@@ -272,6 +328,12 @@ function addCommand(
 	]);
 }
 
+/**
+ * Determines whether a file path matches the project's docs-gate files.
+ *
+ * @param file - Repository-relative file path or filename to test
+ * @returns `true` if the path is a docs-gate file (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`, or any file under `docs/`), `false` otherwise.
+ */
 function isDocsGateFile(file: string): boolean {
 	return (
 		file.endsWith(".md") &&
@@ -282,10 +344,23 @@ function isDocsGateFile(file: string): boolean {
 	);
 }
 
+/**
+ * Determines whether a file path refers to a TypeScript source file under the `src/` directory.
+ *
+ * @param file - Normalized repository-relative file path (e.g., `src/foo/bar.ts`)
+ * @returns `true` if `file` starts with `src/` and ends with `.ts` or `.tsx`, `false` otherwise.
+ */
 function isSourceFile(file: string): boolean {
 	return file.startsWith("src/") && /\.(ts|tsx)$/.test(file);
 }
 
+/**
+ * Determines whether a file path corresponds to runtime or artifact-related repository files.
+ *
+ * Matches paths for `package.json`, `pnpm-lock.yaml`, or files under `scripts/`, `src/templates/`, `src/commands/`, or `src/lib/`.
+ *
+ * @returns `true` if the path matches any of the runtime/artifact patterns, `false` otherwise.
+ */
 function isRuntimeOrArtifactFile(file: string): boolean {
 	return (
 		file === "package.json" ||
@@ -297,18 +372,45 @@ function isRuntimeOrArtifactFile(file: string): boolean {
 	);
 }
 
+/**
+ * Determine whether a normalized repo-relative file path is a package surface file.
+ *
+ * @param file - Normalized repo-relative file path to check (e.g., "package.json" or "path/to/file")
+ * @returns `true` if `file` equals `package.json` or `pnpm-lock.yaml`, `false` otherwise.
+ */
 function isPackageSurfaceFile(file: string): boolean {
 	return file === "package.json" || file === "pnpm-lock.yaml";
 }
 
+/**
+ * Normalizes, filters, and deduplicates a list of file paths.
+ *
+ * Applies path normalization to each entry (trim whitespace, normalize separators, remove leading "./"),
+ * removes falsy results, and deduplicates while preserving the first occurrence order.
+ *
+ * @param files - The input list of file path strings to normalize
+ * @returns An array of unique, truthy normalized file paths preserving the order of first occurrence
+ */
 function normalizeFiles(files: string[]): string[] {
 	return [...new Set(files.map((file) => normalizeFile(file)).filter(Boolean))];
 }
 
+/**
+ * Normalize a file path string for repository processing.
+ *
+ * @param file - The input file path, possibly containing backslashes, leading `./`, or surrounding whitespace
+ * @returns The normalized path with trimmed whitespace, Windows backslashes converted to `/`, and a leading `./` removed
+ */
 function normalizeFile(file: string): string {
 	return file.trim().replace(/\\/g, "/").replace(/^\.\//, "");
 }
 
+/**
+ * Produce a sorted, deduplicated list of non-empty strings.
+ *
+ * @param values - Array of strings that may include falsy values or duplicates
+ * @returns The input strings with falsy entries removed, duplicates removed, and remaining values sorted lexicographically
+ */
 function uniqueStrings(values: string[]): string[] {
 	return [...new Set(values.filter(Boolean))].sort();
 }

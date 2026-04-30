@@ -98,7 +98,11 @@ export interface NorthStarFeedbackResult {
 
 const DEFAULT_MIN_USAGE = 25;
 
-/** Build north-star feedback metrics from learning evidence and optional run artifacts. */
+/**
+ * Builds north-star feedback metrics from a learning artifact, enforcement ledger, and optional gate/run artifacts.
+ *
+ * @param options - Controls source paths, minimum usage threshold, observed counts (review threads, validation reruns), optional output persistence path, repository root resolution, and a deterministic generatedAt timestamp.
+ * @returns A NorthStarFeedbackResult containing evidence states, computed metrics, a summary (including insufficient-evidence fields and source fingerprint), and optionally `outputPath` when persisted. If artifact/enforcement loading or result persistence fails, the returned result has `status: "error"` and an `error` object with `code` and `message`.
 export function buildNorthStarFeedback(
 	options: NorthStarFeedbackOptions = {},
 ): NorthStarFeedbackResult {
@@ -198,6 +202,13 @@ export function buildNorthStarFeedback(
 	return result;
 }
 
+/**
+ * Counts learning items eligible for promotion based on usage and enforcement status.
+ *
+ * @param items - The set of learning items to evaluate
+ * @param minUsage - The inclusive usage threshold an item must meet to be considered
+ * @returns The number of items whose `usage` is greater than or equal to `minUsage` and whose `promotionStatus` is not `enforced`
+ */
 function countPromotionCandidates(
 	items: LearningItem[],
 	minUsage: number,
@@ -207,6 +218,17 @@ function countPromotionCandidates(
 	).length;
 }
 
+/**
+ * Reads an optional learnings-gate result file and derives evidence state and simple gate metrics.
+ *
+ * @param gateResultPath - Repository-relative path to a serialized gate result file; omit or `undefined` if not provided.
+ * @param repoRoot - Filesystem path used to resolve `gateResultPath`.
+ * @returns An object containing:
+ *  - `state` — `"present"` when a readable gate result with findings was loaded, `"insufficient_evidence"` otherwise.
+ *  - `learningHits` — the number of findings whose `id` identifies them as learning-gate findings, or `null` if the file is missing or unreadable.
+ *  - `learningGateBlocks` — count of those learning findings with `severity === "error"`, or `null` if unavailable.
+ *  - `learningGateWarnings` — count of those learning findings with `severity === "warning"`, or `null` if unavailable.
+ */
 function loadGateMetrics(
 	gateResultPath: string | undefined,
 	repoRoot: string,
@@ -258,10 +280,24 @@ function loadGateMetrics(
 	};
 }
 
+/**
+ * Identifies whether a gate finding originates from the learnings gate.
+ *
+ * @param finding - The gate finding to evaluate.
+ * @returns `true` if the finding's `id` begins with "learnings-gate.learning.", `false` otherwise.
+ */
 function isLearningGateFinding(finding: GateFinding): boolean {
 	return finding.id.startsWith("learnings-gate.learning.");
 }
 
+/**
+ * Atomically writes the given North Star feedback result as a JSON file at a repository-relative path.
+ *
+ * @param result - The feedback payload to serialize and persist.
+ * @param options.output - Repository-relative path where the JSON file should be written.
+ * @param options.repoRoot - Filesystem path of the repository root used to resolve `options.output`.
+ * @returns An object with `{ ok: true, path }` on success where `path` is the resolved output file path, or `{ ok: false, code, message }` on failure where `code` is `"north_star_feedback.write_failed"` and `message` explains the error.
+ */
 function writeNorthStarFeedbackResult(
 	result: NorthStarFeedbackResult,
 	options: { output: string; repoRoot: string },
@@ -290,6 +326,12 @@ function writeNorthStarFeedbackResult(
 	}
 }
 
+/**
+ * Collects the names of evidence fields that are marked as insufficient.
+ *
+ * @param evidence - Mapping of evidence field names to their `NorthStarEvidenceState`
+ * @returns Field names whose state equals `"insufficient_evidence"`, returned as a sorted array (ascending alphabetical order)
+ */
 function insufficientEvidenceFields(
 	evidence: NorthStarFeedbackResult["evidence"],
 ): string[] {
@@ -299,10 +341,28 @@ function insufficientEvidenceFields(
 		.sort();
 }
 
+/**
+ * Determine the ISO 8601 timestamp to use for the feedback result.
+ *
+ * @param options - Options which may include a precomputed `generatedAt` timestamp
+ * @returns An ISO 8601 timestamp string; uses `options.generatedAt` when provided, otherwise the current time
+ */
 function generatedAt(options: NorthStarFeedbackOptions): string {
 	return options.generatedAt ?? new Date().toISOString();
 }
 
+/**
+ * Constructs a standardized error-shaped NorthStarFeedbackResult used when feedback generation fails.
+ *
+ * @param options - Parameters for the error result
+ * @param options.source - The source artifact identifier that was being processed
+ * @param options.minUsage - The minimum usage threshold applied when building metrics
+ * @param options.generatedAt - ISO timestamp for when the result was generated
+ * @param options.code - Machine-readable error code to include in the result
+ * @param options.message - Human-readable error message to include in the result
+ * @param options.fix - Optional suggested fix description to include in the result
+ * @returns A `NorthStarFeedbackResult` with `status` set to `"error"`, all evidence fields set to `"insufficient_evidence"`, gate metric fields set to `null`, count metrics zeroed as appropriate, `summary.insufficientEvidence` populated, and the `error` object containing the provided `code`, `message`, and optional `fix`
+ */
 function errorResult(options: {
 	source: string;
 	minUsage: number;
@@ -351,7 +411,12 @@ function errorResult(options: {
 	};
 }
 
-/** Build a stable fingerprint for serialized feedback payloads. */
+/**
+ * Compute a SHA-256 hex fingerprint of a serialized feedback payload.
+ *
+ * @param payload - The serialized feedback payload to hash
+ * @returns The SHA-256 digest of `payload` encoded as a lowercase hex string
+ */
 export function fingerprintNorthStarFeedback(payload: string): string {
 	return createHash("sha256").update(payload).digest("hex");
 }

@@ -13,7 +13,7 @@ extract_last_json_line() {
 # extract_local_memory_rest_value extracts the value for a key from the `rest_api:` section of a YAML-like config file and echoes it.
 # It searches only within the indented `rest_api:` block, stops at the next top-level line, and prints the first matching key's value.
 # The printed value has surrounding quotes removed, trailing inline comments stripped, and leading/trailing whitespace trimmed.
-# CONFIG_PATH is the path to the config file. KEY is the name of the key to look up (for example `host` or `port`).
+# extract_local_memory_rest_value extracts the first value for KEY from the top-level `rest_api:` block in CONFIG_PATH; it prints the value with surrounding quotes, inline comments, and leading/trailing whitespace removed, or prints nothing if the key is not found.
 extract_local_memory_rest_value() {
 	local config_path="$1"
 	local key="$2"
@@ -51,7 +51,8 @@ extract_local_memory_qdrant_value() {
 	' "${config_path}"
 }
 
-# is_local_memory_pidfile_sandbox_block returns success if the provided output contains both "failed to write PID file" and "operation not permitted".
+# is_local_memory_pidfile_sandbox_block returns success when the provided output contains both "failed to write PID file" and "operation not permitted".
+# It takes an optional string (output) and exits with status 0 if both substrings are present, non-zero otherwise.
 is_local_memory_pidfile_sandbox_block() {
 	local output="${1:-}"
 	[[ "${output}" == *"failed to write PID file"* && "${output}" == *"operation not permitted"* ]]
@@ -163,6 +164,7 @@ post_json_to_file() {
 		"${url}"
 }
 
+# verify_local_memory_qdrant_backend verifies the Qdrant backend configured in the given local-memory config file (lm_config_path). It returns success (0) if Qdrant is disabled in the config or if a GET to the backend's /collections endpoint returns a healthy payload (status == "ok", result is an object, and result.collections is an array); it returns non-zero if the backend is unreachable or the payload is not healthy.
 verify_local_memory_qdrant_backend() {
 	local lm_config_path="$1"
 	local qdrant_enabled
@@ -194,7 +196,7 @@ verify_local_memory_qdrant_backend() {
 	log_ok "qdrant backend ok: ${collections_url}"
 }
 
-# preflight_local_memory_shell_fallback performs a local-memory preflight: verifies required binaries and config policy, ensures or starts the daemon until REST health is OK, exercises observe/relationship/search endpoints (including malformed and duplicate checks), inspects daemon logs for migration signals, and returns non-zero on any failure.
+# preflight_local_memory_shell_fallback performs an end-to-end preflight for a local-memory deployment: it verifies required binaries and config policy, ensures or starts the daemon until REST health is OK, exercises observe/relationship/search endpoints (including malformed and duplicate checks), inspects daemon logs for migration signals, and returns non-zero on any failure.
 preflight_local_memory_shell_fallback() {
 	log_section "Local Memory Preflight"
 

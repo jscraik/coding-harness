@@ -52,7 +52,15 @@ export type WriteLearningArtifactResult =
 			warnings: LearningImportWarning[];
 	  };
 
-/** Build a deterministic local artifact from a CodeRabbit CSV file. */
+/**
+ * Construct a deterministic local LearningImportArtifact from a CodeRabbit CSV export.
+ *
+ * @param options.sourcePath - Filesystem path to the CodeRabbit CSV to import.
+ * @param options.repository - Repository identifier to filter/associate parsed rows.
+ * @param options.previousArtifactPath - Optional path to a previously written artifact; when present, used to detect and emit a stale-import warning if the imported count drops significantly.
+ * @param options.liveCompanion - Optional live companion metadata to include on the artifact; when provided, `rowLevelEvidence` is forcibly set to `false`.
+ * @returns A BuildLearningArtifactResult: on success `{ ok: true, artifact }`; on failure `{ ok: false, errorCode, message, warnings }`.
+ */
 export function buildCodeRabbitLearningArtifact(options: {
 	sourcePath: string;
 	repository: string;
@@ -125,7 +133,12 @@ export function buildCodeRabbitLearningArtifact(options: {
 	return { ok: true, artifact };
 }
 
-/** Write a learning artifact atomically to the selected output path. */
+/**
+ * Write a learning artifact atomically to the selected output path.
+ *
+ * @param options.outputPath - Optional path to write the artifact, resolved against `repoRoot`. Defaults to the module's default local artifact path.
+ * @param options.repoRoot - Optional repository root used to resolve `outputPath`. Defaults to the current working directory.
+ * @returns An object indicating success (`ok: true`) with `artifactPath` and `warnings`, or failure (`ok: false`) with `errorCode`, `message`, and `warnings`.
 export function writeLearningArtifact(options: {
 	artifact: LearningImportArtifact;
 	outputPath?: string;
@@ -165,7 +178,11 @@ export function writeLearningArtifact(options: {
 	}
 }
 
-/** Return true for the sanitized snapshot output path and equivalent variants. */
+/**
+ * Determine whether a given output path targets the reserved sanitized snapshot location for the repository.
+ *
+ * @returns `true` if the resolved output path equals the repository's reserved snapshot path or ends with the platform-specific snapshot suffix, `false` otherwise.
+ */
 export function isSnapshotOutput(
 	outputPath: string,
 	repoRoot = process.cwd(),
@@ -185,7 +202,12 @@ export function isSnapshotOutput(
 	);
 }
 
-/** Build a privacy-preserving shareable projection of a local learning artifact. */
+/**
+ * Produce a privacy-preserving snapshot projection of a local learning artifact suitable for sharing.
+ *
+ * @param artifact - The local `LearningImportArtifact` to project and redact for sharing.
+ * @returns A sanitized snapshot object containing schemaVersion, provider, repository, a minimal `source` description, `inputFingerprint`, a redacted `items` array, redacted `warnings`, and the original `summary`. Sensitive text fields in items and warnings are redacted, item `learning` content is always redacted, and `liveCompanion.rowLevelEvidence` is set to `false` when a live companion is present.
+ */
 export function buildSanitizedLearningSnapshot(
 	artifact: LearningImportArtifact,
 ): Record<string, unknown> {
@@ -262,10 +284,23 @@ export function buildSanitizedLearningSnapshot(
 	};
 }
 
+/**
+ * Redacts a string value while preserving `null`.
+ *
+ * @param value - The string to redact, or `null` to preserve
+ * @returns The redacted string, or `null` if `value` was `null`
+ */
 function redactNullableText(value: string | null): string | null {
 	return value === null ? null : redactSensitiveText(value);
 }
 
+/**
+ * Detects a substantial drop in imported row count by comparing the current count against a previous artifact's summary.
+ *
+ * @param previousArtifactPath - Filesystem path to a previously written learning artifact; ignored if `undefined` or missing.
+ * @param imported - Current number of imported rows.
+ * @returns A warning object when the previous artifact reports at least 10 imported rows and `imported` is less than half of that; `undefined` otherwise.
+ */
 function buildStaleImportWarning(
 	previousArtifactPath: string | undefined,
 	imported: number,
@@ -298,6 +333,13 @@ function buildStaleImportWarning(
 	return undefined;
 }
 
+/**
+ * Compare two learning import warnings for deterministic ordering.
+ *
+ * @param a - The first warning to compare
+ * @param b - The second warning to compare
+ * @returns A negative number if `a` should come before `b`, a positive number if `a` should come after `b`, `0` if they are equivalent
+ */
 function sortWarnings(
 	a: LearningImportWarning,
 	b: LearningImportWarning,
@@ -309,7 +351,13 @@ function sortWarnings(
 	);
 }
 
-/** Return true when a path is inside the repository root. */
+/**
+ * Determine whether a filesystem path is the same as or contained within a repository root.
+ *
+ * @param path - The path to test (file or directory)
+ * @param repoRoot - Repository root to test against; defaults to the current working directory
+ * @returns `true` if `path` is the same as `repoRoot` or is located inside `repoRoot`, `false` otherwise.
+ */
 export function isInsideRepo(path: string, repoRoot = process.cwd()): boolean {
 	const rel = relative(resolve(repoRoot), resolve(path));
 	return (

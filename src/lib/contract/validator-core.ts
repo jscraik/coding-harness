@@ -674,6 +674,14 @@ function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 	);
 }
 
+/**
+ * Determines whether a value conforms to the expected ReviewPolicy shape.
+ *
+ * Validates required fields, optional fields (types and ranges), and rejects unknown top-level keys.
+ *
+ * @param value - The value to validate as a ReviewPolicy
+ * @returns `true` if `value` matches the ReviewPolicy shape and allowed fields, `false` otherwise.
+ */
 function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
@@ -1001,6 +1009,12 @@ export function isValidControlPlanePolicy(
 	return isValidControlPlaneOverridePolicy(policy.overridePolicy);
 }
 
+/**
+ * Checks whether a value conforms to the CI provider policy contract.
+ *
+ * @param value - The value to validate as a CIProviderPolicy
+ * @returns `true` if `value` is a valid CIProviderPolicy, `false` otherwise.
+ */
 function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
 	if (!isPlainObject(value)) {
 		return false;
@@ -1068,6 +1082,17 @@ function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
 	return true;
 }
 
+/**
+ * Checks whether a value conforms to the CI ownership policy schema used in contracts.
+ *
+ * Validates that the value is an object with only allowed keys, `schemaVersion` equal to
+ * "ci-ownership/v1", `primaryPrGate` equal to "circleci", `reviewProvider` equal to "coderabbit",
+ * `securityChecks` as a non-empty array of strings, and an optional `fallbackWorkflows` array that
+ * satisfies the CI fallback workflow rules.
+ *
+ * @param value - The value to validate as a CI ownership policy
+ * @returns `true` if `value` matches the CI ownership policy shape, `false` otherwise.
+ */
 function isValidCIOwnershipPolicy(value: unknown): value is CIOwnershipPolicy {
 	if (!isPlainObject(value)) {
 		return false;
@@ -1093,6 +1118,13 @@ function isValidCIOwnershipPolicy(value: unknown): value is CIOwnershipPolicy {
 	return true;
 }
 
+/**
+ * Validate CI fallback workflow entries.
+ *
+ * Validates that `value` is an array where each entry is a plain object containing only allowed keys and that each entry has a non-empty string `path`, a `role` equal to `"fallback_pr_gate"` or `"release_publishing"`, a non-empty string `purpose`, and a boolean `allowAutomaticPrTriggers`.
+ *
+ * @returns `true` if `value` is an array of valid CI fallback workflow entries, `false` otherwise.
+ */
 function isValidCIFallbackWorkflows(
 	value: unknown,
 ): value is CIFallbackWorkflowPolicy[] {
@@ -1119,6 +1151,17 @@ function isValidCIFallbackWorkflows(
 	});
 }
 
+/**
+ * Validates whether a value conforms to the IssueTrackingPolicy shape for Linear-based issue tracking.
+ *
+ * The policy must only contain the allowed keys and require `provider` to be `"linear"`. If present,
+ * `projectUrl` must be a valid Linear project URL, `requirePackageBugsUrl`, `disableGitHubIssues`,
+ * `requireBranchIssueKey`, and `requirePrIssueKey` must be booleans, `prReferenceMode` must be one of
+ * the permitted modes, and `branchPrefix` must be a non-empty string that does not contain `/`.
+ *
+ * @param value - The value to validate as an IssueTrackingPolicy
+ * @returns `true` if `value` matches the IssueTrackingPolicy contract, `false` otherwise.
+ */
 function isValidIssueTrackingPolicy(
 	value: unknown,
 ): value is IssueTrackingPolicy {
@@ -1813,7 +1856,12 @@ function isValidTopLevel(
 	}
 }
 
-/** Public API export. */
+/**
+ * Validate a raw harness contract object and collect any validation errors.
+ *
+ * @param data - The untrusted contract value (typically parsed JSON) to validate
+ * @returns A ValidationResult where `success` is `true` and `data` contains the validated HarnessContractWithPreset when the contract is valid; `success` is `false` and `errors` contains one or more ValidationError entries when validation fails
+ */
 export function validateContract(
 	data: unknown,
 ): ValidationResult<HarnessContractWithPreset> {

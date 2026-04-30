@@ -13,7 +13,7 @@ extract_last_json_line() {
 # extract_local_memory_rest_value extracts the value for a key from the `rest_api:` section of a YAML-like config file and echoes it.
 # It searches only within the indented `rest_api:` block, stops at the next top-level line, and prints the first matching key's value.
 # The printed value has surrounding quotes removed, trailing inline comments stripped, and leading/trailing whitespace trimmed.
-# CONFIG_PATH is the path to the config file. KEY is the name of the key to look up (for example `host` or `port`).
+# extract_local_memory_rest_value extracts a key's value from the top-level `rest_api:` section of CONFIG_PATH and echoes the trimmed, unquoted value (strips inline `#` comments); prints nothing if the key is not found.
 extract_local_memory_rest_value() {
 	local config_path="$1"
 	local key="$2"
@@ -163,6 +163,7 @@ post_json_to_file() {
 		"${url}"
 }
 
+# verify_local_memory_qdrant_backend probes the Qdrant backend configured in the given local-memory config path; it skips probing if `qdrant.enabled` is not `true` and returns non-zero if the `/collections` endpoint is unreachable or returns an unhealthy payload.
 verify_local_memory_qdrant_backend() {
 	local lm_config_path="$1"
 	local qdrant_enabled

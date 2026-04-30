@@ -7,7 +7,15 @@ interface ArtifactGateCliOptions {
 	json?: boolean | undefined;
 }
 
-/** Run the artifact provenance gate command and return the process exit code. */
+/**
+ * Execute the artifact provenance gate command using the supplied CLI options.
+ *
+ * When `options.json` is true the full result is printed as pretty JSON; otherwise the command prints a status line
+ * and a line per finding, routing findings with severity `"error"` to stderr and others to stdout.
+ *
+ * @param options - CLI options including `repoRoot`, `files`, `registryPath`, and `json`
+ * @returns `0` when the gate reports no errors, `1` when any finding has severity `"error"`, `2` when no files were provided via `options.files`
+ */
 export function runArtifactGateCLI(options: ArtifactGateCliOptions): number {
 	const files = (options.files ?? [])
 		.map((entry) => entry.trim())

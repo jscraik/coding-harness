@@ -17,7 +17,13 @@ export interface LearningFileMatch {
 	falsePositiveCandidate: boolean;
 }
 
-/** Return match metadata when a learning applies to a file. */
+/**
+ * Determine whether a learning item applies to a given file and produce match metadata.
+ *
+ * @param item - The learning item to evaluate
+ * @param file - The file path to check (will be normalized before matching)
+ * @returns A `LearningFileMatch` describing the detected match when the learning applies, or `undefined` if there is no match
+ */
 export function matchLearningToFile(
 	item: LearningItem,
 	file: string,
@@ -47,7 +53,13 @@ export function matchLearningToFile(
 	return keywordMatch;
 }
 
-/** Return true when a path pattern applies to a changed file. */
+/**
+ * Determines whether a path pattern applies to a normalized file path.
+ *
+ * @param pattern - A normalized path pattern; supports recursive suffix `/**` and single-level suffix `/*`
+ * @param file - A normalized file path to test against `pattern`
+ * @returns `true` if `pattern` matches `file` (recursive match, single-level child match, or exact equality), `false` otherwise
+ */
 export function patternMatchesFile(pattern: string, file: string): boolean {
 	const normalized = normalizeFile(pattern);
 	if (normalized.endsWith("/**")) {
@@ -64,6 +76,15 @@ export function patternMatchesFile(pattern: string, file: string): boolean {
 	return normalized === file;
 }
 
+/**
+ * Produce an advisory keyword match when the file's tokens overlap with tokens from the learning item.
+ *
+ * Token overlap is computed from the normalized file path and the learning item's `file`, `targetPatterns`, `classification`, and `learning` fields. If there is no overlap, no match is produced.
+ *
+ * @param item - The learning item whose `file`, `targetPatterns`, `classification`, and `learning` fields are used for token extraction
+ * @param file - The normalized file path to tokenize and compare against the learning item
+ * @returns A `LearningFileMatch` of kind `"keyword"` with confidence based on token overlap, a `reason` listing up to the first four overlapping tokens, `advisoryOnly: true`, and `falsePositiveCandidate` set to `true` when confidence is less than 0.7; `undefined` if there are no overlapping tokens
+ */
 function buildKeywordMatch(
 	item: LearningItem,
 	file: string,
@@ -86,10 +107,24 @@ function buildKeywordMatch(
 	};
 }
 
+/**
+ * Normalize a file path string for consistent matching.
+ *
+ * Trims surrounding whitespace, converts backslashes to forward slashes, and removes a leading `./` if present.
+ *
+ * @param file - The input path which may contain backslashes, leading `./`, or extra whitespace
+ * @returns The normalized path suitable for pattern matching
+ */
 function normalizeFile(file: string): string {
 	return file.trim().replace(/\\/g, "/").replace(/^\.\//, "");
 }
 
+/**
+ * Extracts a set of meaningful lowercase tokens from a string for keyword matching.
+ *
+ * @param value - The input text or path (e.g., filename, pattern, or descriptive text) to tokenize.
+ * @returns A set of unique lowercase tokens longer than two characters and not present in the stop-word list.
+ */
 function tokenize(value: string): Set<string> {
 	return new Set(
 		value

@@ -32,12 +32,22 @@ export interface ParseCodeRabbitCsvResult {
 	warnings: LearningImportWarning[];
 }
 
-/** Convert a local path into a file URI for Phase 1A source provenance. */
+/**
+ * Convert a filesystem path to a `file://` URI for source provenance.
+ *
+ * @param sourcePath - The local filesystem path to convert
+ * @returns The corresponding `file://` URI string
+ */
 export function toSourceUri(sourcePath: string): string {
 	return pathToFileURL(sourcePath).href;
 }
 
-/** Normalize repository names for matching and deterministic IDs. */
+/**
+ * Produce a deterministic, URL-friendly slug from a repository name.
+ *
+ * @param repository - The repository name or identifier to normalize
+ * @returns A lowercase slug containing only letters, digits, and hyphens with no leading or trailing hyphens
+ */
 export function normalizeRepositorySlug(repository: string): string {
 	return repository
 		.trim()
@@ -46,7 +56,14 @@ export function normalizeRepositorySlug(repository: string): string {
 		.replace(/^-+|-+$/g, "");
 }
 
-/** Parse CodeRabbit CSV content into normalized import rows. */
+/**
+ * Parse a CodeRabbit CSV into normalized learning import rows for a specific repository.
+ *
+ * @param csv - The raw CSV content to parse.
+ * @param options - Parsing options.
+ * @param options.repository - Repository identifier used to match and normalize rows.
+ * @returns A ParseCodeRabbitCsvResult containing parsed rows for the target repository, counts for skipped/invalid/total rows, and sorted parser warnings.
+ */
 export function parseCodeRabbitCsv(
 	csv: string,
 	options: { repository: string },
@@ -160,12 +177,25 @@ export function parseCodeRabbitCsv(
 	};
 }
 
+/**
+ * Produce normalized repository slug aliases used for matching.
+ *
+ * @param repository - The repository identifier (e.g., "owner/repo" or any repository string)
+ * @returns A set containing the normalized slug for the full repository and the normalized ownerless slug (the substring after the last '/'), excluding any empty values
+ */
 function repositoryAliases(repository: string): Set<string> {
 	const normalized = normalizeRepositorySlug(repository);
 	const ownerless = normalizeRepositorySlug(repository.split("/").pop() ?? "");
 	return new Set([normalized, ownerless].filter(Boolean));
 }
 
+/**
+ * Determines whether a CSV row's repository targets the requested repository.
+ *
+ * @param repository - The raw repository string from the CSV row
+ * @param targetRepositoryAliases - Set of normalized repository slugs considered targets
+ * @returns `'matched'` if any alias of `repository` exists in `targetRepositoryAliases`, `'missing'` if `repository` yields no aliases, `'skip'` otherwise
+ */
 function matchRepository(
 	repository: string,
 	targetRepositoryAliases: Set<string>,
@@ -177,6 +207,13 @@ function matchRepository(
 		: "skip";
 }
 
+/**
+ * Builds a parse result indicating missing required headers when any are absent from the header index.
+ *
+ * @param records - Parsed CSV records (array of rows), where the header row is expected at index 0
+ * @param headerIndex - Map of header name to its first column index
+ * @returns A `ParseCodeRabbitCsvResult` with empty `rows`, `invalid` and `totalRows` reflecting the number of data rows, and a `learnings.csv.missing_headers` warning listing the missing headers; returns `undefined` if no required headers are missing
+ */
 function buildMissingHeaderResult(
 	records: string[][],
 	headerIndex: Map<string, number>,
@@ -218,6 +255,16 @@ export function buildLearningSummary(input: {
 	};
 }
 
+/**
+ * Builds a mapping from allowed CSV header names to their first column index.
+ *
+ * Header cells are normalized by removing a leading UTF-8 BOM marker and trimming whitespace.
+ * Only names present in the union of REQUIRED_HEADERS and OPTIONAL_HEADERS are included,
+ * and the first occurrence of each allowed header is recorded.
+ *
+ * @param header - The CSV header row as an array of cell strings
+ * @returns A Map where keys are allowed header names (normalized) and values are their column index
+ */
 function buildHeaderIndex(header: string[]): Map<string, number> {
 	const allowed = new Set<string>([...REQUIRED_HEADERS, ...OPTIONAL_HEADERS]);
 	const headerIndex = new Map<string, number>();
@@ -230,6 +277,14 @@ function buildHeaderIndex(header: string[]): Map<string, number> {
 	return headerIndex;
 }
 
+/**
+ * Retrieve the trimmed cell value for a given header from a CSV record.
+ *
+ * @param record - Array of cell values for the CSV row
+ * @param headerIndex - Mapping of header names to their column indices
+ * @param header - Header name to retrieve from the record
+ * @returns The cell's trimmed string value, or an empty string if the header is missing or the cell is absent
+ */
 function getCell(
 	record: string[],
 	headerIndex: Map<string, number>,
@@ -240,6 +295,12 @@ function getCell(
 	return record[index]?.trim() ?? "";
 }
 
+/**
+ * Parse a usage value from a CSV cell into a validated numeric usage count.
+ *
+ * @param raw - The raw cell text (may be empty or contain digits)
+ * @returns `{ ok: true, usage: number }` when the input is a valid non-negative integer or empty (empty -> 0); `{ ok: false, message: string }` when the input is invalid, with `message` describing the problem (sensitive input is redacted)
+ */
 function parseUsage(
 	raw: string,
 ): { ok: true; usage: number } | { ok: false; message: string } {
@@ -254,6 +315,14 @@ function parseUsage(
 	return { ok: true, usage: Number.parseInt(value, 10) };
 }
 
+/**
+ * Detects sensitive content in selected CSV columns for a parsed CodeRabbit row and produces warning entries.
+ *
+ * @param record - The parsed CSV record (array of cell strings) for the row being inspected
+ * @param headerIndex - Map from allowed header names to their column index used to locate cells in `record`
+ * @param row - The original CSV row number (used on each generated warning)
+ * @returns An array of `LearningImportWarning` objects, one per detected sensitive finding; empty if no sensitive content is found
+ */
 function detectSensitiveRowFields(
 	record: string[],
 	headerIndex: Map<string, number>,
@@ -284,6 +353,12 @@ function detectSensitiveRowFields(
 	return warnings;
 }
 
+/**
+ * Normalize a raw "Last Used" CSV cell into a presence flag and an optional normalized value.
+ *
+ * @param raw - The raw cell value from the "Last Used" column
+ * @returns `{ present: false }` when `raw` is empty after trimming; `{ present: true, value: null }` when the trimmed value equals `"never"` (case-insensitive); otherwise `{ present: true, value: <trimmed string> }`
+ */
 function normalizeLastUsed(
 	raw: string,
 ): { present: true; value: string | null } | { present: false } {
@@ -293,6 +368,14 @@ function normalizeLastUsed(
 	return { present: true, value };
 }
 
+/**
+ * Extracts a leading "Applies to <patterns>:" prefix from a learning string and returns any parsed target patterns along with the remaining learning text.
+ *
+ * @param learning - The raw learning text that may start with an "Applies to ..." prefix
+ * @returns An object containing:
+ *  - `learning`: the input text with the prefix removed and trimmed (or the original text if no prefix was present)
+ *  - `targetPatterns`: an array of trimmed, non-empty target pattern strings parsed from the prefix (empty if no prefix was present)
+ */
 function extractTargetPatterns(learning: string): {
 	learning: string;
 	targetPatterns: string[];
@@ -309,6 +392,13 @@ function extractTargetPatterns(learning: string): {
 	};
 }
 
+/**
+ * Assigns a trimmed string to a given property on an object only if the trimmed value is non-empty.
+ *
+ * @param target - The object to which the property may be assigned
+ * @param key - The property key to assign on `target`
+ * @param value - The raw string value to trim and conditionally assign
+ */
 function assignOptional<T extends object, K extends keyof T>(
 	target: T,
 	key: K,
@@ -320,6 +410,15 @@ function assignOptional<T extends object, K extends keyof T>(
 	}
 }
 
+/**
+ * Parses CSV text into an array of records (rows) with their cell values.
+ *
+ * Supports comma separators outside quoted fields, double-quote escaping by doubling (`""`),
+ * CRLF and LF line endings, and omits rows where every cell is empty or whitespace.
+ *
+ * @param csv - The raw CSV content to parse
+ * @returns An array of records; each record is an array of cell strings. Rows with only whitespace cells are omitted.
+ */
 function parseCsvRecords(csv: string): string[][] {
 	const records: string[][] = [];
 	let record: string[] = [];
@@ -357,6 +456,12 @@ function parseCsvRecords(csv: string): string[][] {
 	return records;
 }
 
+/**
+ * Produce a new array of warnings sorted by row, code, and message.
+ *
+ * @param warnings - The warnings to sort.
+ * @returns A new array with warnings ordered first by numeric `row` (missing `row` is treated as after any numbered row), then by `code` using locale comparison, and finally by `message` using locale comparison.
+ */
 function sortWarnings(
 	warnings: LearningImportWarning[],
 ): LearningImportWarning[] {
@@ -368,6 +473,12 @@ function sortWarnings(
 	);
 }
 
+/**
+ * Returns a new object with the same key/value pairs as `map`, but with entries ordered by key.
+ *
+ * @param map - A partial mapping of string keys to numeric counts
+ * @returns A new object containing the same keys and counts as `map`, sorted by key using localeCompare
+ */
 function sortCountMap<T extends string>(
 	map: Partial<Record<T, number>>,
 ): Partial<Record<T, number>> {

@@ -31,7 +31,12 @@ export function sanitizeLearningLiveCompanionDiagnostic(value: string): string {
 	return redactSensitiveText(value);
 }
 
-/** Parse and validate optional live companion metadata. */
+/**
+ * Parse and validate a JSON string containing optional live companion metadata.
+ *
+ * @param raw - The raw JSON string containing live companion metadata
+ * @returns A success result with the validated `LearningLiveCompanion` on success, or a failure result with an error `code`, human-readable `message`, and optional `fix` on failure
+ */
 export function parseLearningLiveCompanion(
 	raw: string,
 ): LearningLiveCompanionLoadResult {
@@ -49,7 +54,12 @@ export function parseLearningLiveCompanion(
 	return validateLearningLiveCompanion(parsed);
 }
 
-/** Validate parsed live companion metadata. */
+/**
+ * Validate and normalize a parsed live companion payload to the supported schema.
+ *
+ * @param value - The parsed JSON value to validate.
+ * @returns An object with `ok: true` and the validated, sanitized `LearningLiveCompanion` on success; otherwise `ok: false` with `code`, `message`, and an optional `fix` explaining how to correct the input.
+ */
 export function validateLearningLiveCompanion(
 	value: unknown,
 ): LearningLiveCompanionLoadResult {
@@ -113,6 +123,12 @@ export function validateLearningLiveCompanion(
 	};
 }
 
+/**
+ * Create a standardized failure result for invalid LearningLiveCompanion data.
+ *
+ * @param message - Human-readable diagnostic message explaining why the value is invalid
+ * @returns A failure `LearningLiveCompanionLoadResult` with `code` set to `"learnings.live_companion.invalid"`, the provided `message`, and a `fix` describing the required `live-companion/v1` shape
+ */
 function invalid(message: string): LearningLiveCompanionLoadResult {
 	return {
 		ok: false,
@@ -122,10 +138,21 @@ function invalid(message: string): LearningLiveCompanionLoadResult {
 	};
 }
 
+/**
+ * Determines whether a value is a non-null, non-array object.
+ *
+ * @returns `true` if `value` is an object (not `null` and not an array), `false` otherwise.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Determines whether a value is an object whose property values are only string, number, boolean, or null.
+ *
+ * @param value - The value to test
+ * @returns `true` if `value` is a non-null, non-array object and every property value is a `string`, `number`, `boolean`, or `null`, `false` otherwise.
+ */
 function isStatsRecord(
 	value: unknown,
 ): value is Record<string, string | number | boolean | null> {
@@ -141,6 +168,12 @@ function isStatsRecord(
 	);
 }
 
+/**
+ * Sanitize a stats record by redacting sensitive text from its string values.
+ *
+ * @param stats - A record whose values are strings, numbers, booleans, or null; string values will be redacted.
+ * @returns A new record with the same keys where string values have been sanitized and non-string values are unchanged.
+ */
 function sanitizeStats(
 	stats: Record<string, string | number | boolean | null>,
 ): Record<string, string | number | boolean | null> {

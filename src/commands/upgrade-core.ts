@@ -378,10 +378,17 @@ export interface HarnessUpgradeOptions {
 }
 
 /**
- * JSC-66: `harness upgrade` CLI entry point.
+ * Execute the `harness upgrade` CLI flow and return an appropriate exit code.
  *
- * Usage:
- *   harness upgrade [targetDir] [--dry-run] [--force] [--provider circleci]
+ * Orchestrates detection of an existing installation and upgrade context, optional
+ * contract default backfill and schema migration, CI provider resolution, and
+ * template upgrades; prints progress and summaries to stdout/stderr. Supports
+ * the `json` short-circuit mode which delegates to `runInitCLI` for a dry-run
+ * JSON output.
+ *
+ * @param targetDir - Optional target directory; uses the current working directory when omitted
+ * @param options - CLI options controlling behavior (supports `dryRun`, `force`, `json`, `provider`, `skipContractMigration`)
+ * @returns A numeric exit code (one of `EXIT_CODES`) representing success or the type of failure
  */
 export function runUpgradeCLI(
 	targetDir: string | undefined,

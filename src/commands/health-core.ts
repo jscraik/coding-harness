@@ -438,8 +438,12 @@ interface CanonicalGateResult {
 }
 
 /**
- * JSC-71 P5: Run gates with --json, collect fixable findings, execute safe
- * fix commands. Returns AutoFixResult (dry-run or executed).
+ * Collects fixable findings from applicable gates (run with `--json`) and, unless in dry-run mode, attempts to apply their `fix.command` values.
+ *
+ * Runs each selected gate in the target directory, gathers findings that include a `fix.command`, sorts findings by severity (error → warning → info), and either reports them (dry run) or executes them one-by-one. Commands matching internal exclusion prefixes are skipped. If a fix command cannot be tokenized, the finding is marked failed with `exitCode = 1` and an explanatory `stderr` message. Non-zero exit codes from executed fixes are recorded and counted as failures while processing continues for remaining findings.
+ *
+ * @param options - Health options with `dryRun: boolean`. If `options.gates` is provided, only those gates are checked. When `dryRun` is true, no fix commands are executed and all findings retain `outcome: "dry_run"`.
+ * @returns The AutoFixResult containing `dir`, `timestamp`, `dryRun`, the array of `findings` (each with execution metadata when run), and a `summary` object with totals: `total`, `applied`, `failed`, and `skipped`.
  */
 export function runAutoFix(
 	options: HealthOptions & { dryRun: boolean },
@@ -581,6 +585,16 @@ export function runAutoFix(
 	};
 }
 
+/**
+ * Parses a shell-like command string into an executable (`bin`) and its argument list.
+ *
+ * Supports single and double quotes and backslash escaping. Returns `null` for empty input
+ * or when the string contains unterminated quotes or a dangling escape.
+ *
+ * @param command - The command string to tokenize (e.g., "git commit -m 'msg'")
+ * @returns An object `{ bin, args }` where `bin` is the executable and `args` are its arguments,
+ *          or `null` if the input is empty or contains invalid quoting/escaping.
+ */
 function tokenizeCommand(
 	command: string,
 ): { bin: string; args: string[] } | null {

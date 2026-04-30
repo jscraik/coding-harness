@@ -76,7 +76,12 @@ export interface ReviewContextOptions {
 	enforcementStatusPath?: string;
 }
 
-/** Build a deterministic PR review-context pack. */
+/**
+ * Build a deterministic PR review-context pack.
+ *
+ * @param options - Inputs controlling the source learning artifact (optional), the list of changed files, an optional output path to write the generated JSON, an optional repository root for resolving paths, and an optional enforcement status ledger path.
+ * @returns The generated ReviewContextResult containing schema/version metadata, generation timestamp, artifact fingerprint, repository, normalized changed files, applicable learnings, validation plan commands, required network resources, summary counts, and optionally `outputPath` when written to disk. If artifact or ledger loading fails, or if writing to `options.output` fails, the returned result will have `status: "error"` and an `error` object with `code`, `message`, and an optional `fix`.
+ */
 export function buildReviewContext(
 	options: ReviewContextOptions,
 ): ReviewContextResult {
@@ -192,6 +197,13 @@ export function buildReviewContext(
 	return result;
 }
 
+/**
+ * Builds a ReviewContextLearning when a learning item applies to one or more changed files.
+ *
+ * @param item - The learning item to evaluate for applicability
+ * @param changedFiles - Array of normalized changed file paths to match against the learning
+ * @returns `ReviewContextLearning` when the item matches at least one file, `undefined` otherwise
+ */
 function buildReviewContextLearning(
 	item: LearningItem,
 	changedFiles: string[],
@@ -222,6 +234,12 @@ function buildReviewContextLearning(
 	};
 }
 
+/**
+ * Constructs reviewer or agent instruction text based on a learning's classification, enforcement, and promotion status.
+ *
+ * @param item - The learning item whose attributes determine the instruction
+ * @returns An instruction string guiding review or validation actions derived from `item`
+ */
 function buildFix(item: LearningItem): string {
 	if (item.classification === "validation_contract") {
 		return "Use the validation plan command selected from this learning before review handoff.";
@@ -235,6 +253,12 @@ function buildFix(item: LearningItem): string {
 	return "Use this learned context while reviewing the changed files.";
 }
 
+/**
+ * Builds evidence reference strings for a learning item.
+ *
+ * @param item - The learning item whose source and optional GitHub URL are used to construct references
+ * @returns An array of reference strings including the primary source reference (`<kind>:<uri>#row=<row>`) and, if present, a `github_pr:<githubUrl>` entry
+ */
 function buildEvidenceRefs(item: LearningItem): string[] {
 	const refs = [
 		`${item.source.kind}:${item.source.uri}#row=${item.source.row}`,
@@ -243,10 +267,24 @@ function buildEvidenceRefs(item: LearningItem): string[] {
 	return refs;
 }
 
+/**
+ * Normalize, de-duplicate, and sort an array of file path strings.
+ *
+ * @param files - File path strings to normalize
+ * @returns Sorted array of unique, normalized file paths
+ */
 function normalizeFiles(files: string[]): string[] {
 	return [...new Set(files.map((file) => normalizeFile(file)).filter(Boolean))].sort();
 }
 
+/**
+ * Normalize a file path into a canonical, POSIX-style form.
+ *
+ * Trims surrounding whitespace, converts backslashes to forward slashes, and removes a leading `./`.
+ *
+ * @param file - The input file path string to normalize
+ * @returns The normalized file path
+ */
 function normalizeFile(file: string): string {
 	return file.trim().replace(/\\/g, "/").replace(/^\.\//, "");
 }

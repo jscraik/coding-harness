@@ -49,7 +49,17 @@ export function collectFrontmatterMetadataViolations(options: {
 		}
 import { join, resolve, sep } from "node:path";
 
-// ... other code ...
+/**
+ * Collects frontmatter metadata violations from changed policy Markdown files.
+ *
+ * Scans each changed file under `repoRoot` that is a policy-document candidate, parses its YAML frontmatter to find any of the tracked metadata keys, and reports files where those keys also appear in body headings or TOC entries (ignoring fenced code blocks).
+ *
+ * @param options - Function options
+ * @param options.repoRoot - Repository root directory used to resolve candidate file paths
+ * @param options.changedFiles - List of changed file paths (deduplicated and processed in sorted order)
+ * @param options.deletedFiles - Optional set of file paths that should be treated as deleted and skipped
+ * @returns An array of FrontmatterViolation records describing files that duplicate frontmatter metadata in body headings or TOC entries
+ */
 
 export function collectFrontmatterMetadataViolations(options: {
   repoRoot: string;
@@ -97,11 +107,23 @@ export function collectFrontmatterMetadataViolations(options: {
 	return violations;
 }
 
+/**
+ * Load a file's UTF-8 contents when the file exists.
+ *
+ * @param path - Filesystem path to the file
+ * @returns The file contents as a string if the file exists, `null` otherwise
+ */
 function loadFileIfPresent(path: string): string | null {
 	if (!existsSync(path)) return null;
 	return readFileSync(path, "utf-8");
 }
 
+/**
+ * Determine whether a file path refers to a policy-document candidate.
+ *
+ * @param file - The file path (typically relative to the repository root)
+ * @returns `true` if the path matches a configured policy-doc prefix or filename, `false` otherwise.
+ */
 function isPolicyDocCandidate(file: string): boolean {
 	return (
 		POLICY_DOC_PREFIXES.some((prefix) => file.startsWith(prefix)) ||
@@ -109,6 +131,12 @@ function isPolicyDocCandidate(file: string): boolean {
 	);
 }
 
+/**
+ * Extracts top-level keys from a triple-dashed YAML-style frontmatter block and returns the remaining document body.
+ *
+ * @param content - The full Markdown document text
+ * @returns An object with `keys` (a set of frontmatter key names found between the opening and closing `---` delimiters) and `body` (the markdown content after the closing delimiter); `null` if the document does not start with a well-formed `---` frontmatter block
+ */
 function parseMarkdownFrontmatter(
 	content: string,
 ): { keys: Set<string>; body: string } | null {
@@ -131,6 +159,15 @@ function parseMarkdownFrontmatter(
 	};
 }
 
+/**
+ * Detects which frontmatter metadata keys appear as top-level Markdown headings or TOC entries in a document body.
+ *
+ * Scans the provided Markdown `body` for headings (levels 1–6) and TOC list entries (e.g., `- [text](#...)` or `* [text](#...)`) and reports which of the supplied machine-readable `metadataKeys` appear as exact normalized labels. Headings and TOC entries inside fenced code blocks are ignored.
+ *
+ * @param body - The Markdown content after the frontmatter section.
+ * @param metadataKeys - Metadata keys (already normalized) to check for duplication in headings or TOC entries.
+ * @returns A sorted array of unique metadata keys that were found in headings or TOC entries within `body`.
+ */
 function findFrontmatterMetadataBodyViolations(
 	body: string,
 	metadataKeys: readonly string[],
@@ -157,6 +194,12 @@ function findFrontmatterMetadataBodyViolations(
 	return [...violations].sort();
 }
 
+/**
+ * Normalize a metadata label for stable comparison.
+ *
+ * @param value - The label text to normalize
+ * @returns The input with backticks removed, trimmed, lowercased, and runs of whitespace replaced by single underscores
+ */
 function normaliseMetadataLabel(value: string): string {
 	return value.replace(/`/g, "").trim().toLowerCase().replace(/\s+/g, "_");
 }

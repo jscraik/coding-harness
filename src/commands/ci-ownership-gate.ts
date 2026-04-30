@@ -6,7 +6,12 @@ interface CIOwnershipGateCliOptions {
 	json?: boolean | undefined;
 }
 
-/** Run the CI ownership gate command and return the process exit code. */
+/**
+ * Run the CI ownership gate and write the results to the console.
+ *
+ * @param options - Optional CLI settings. `repoRoot` and `contractPath` specify paths to inspect; `json` forces printing the full result as JSON.
+ * @returns Process exit code: `1` if one or more errors were found, `0` otherwise.
+ */
 export function runCIOwnershipGateCLI(
 	options: CIOwnershipGateCliOptions = {},
 ): number {

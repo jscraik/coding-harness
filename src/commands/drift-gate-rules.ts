@@ -686,11 +686,16 @@ export function evaluate(
 }
 
 /**
- * Emit or update durable guardrail artifacts for blocking findings.
+ * Create or update durable guardrail artifacts for findings that include a `failureClass`.
  *
- * For each finding with a `failureClass`, resolves the deterministic guardrailId,
- * checks recurrence state on disk, and creates or updates the guardrail artifact.
- * Returns the set of artifact paths that were written.
+ * For each finding with a `failureClass`, resolves a deterministic guardrail ID, checks
+ * on-disk recurrence state, and writes a durable guardrail artifact reflecting the
+ * recurrence and the finding's implementation target.
+ *
+ * @param repoRoot - Filesystem path to the repository root used for reading and writing artifacts
+ * @param findings - Findings to evaluate; only entries with `failureClass` are processed
+ * @param contract - Harness contract containing `productSurface`; if absent or missing `productSurface`, no artifacts are emitted
+ * @returns The filesystem paths of durable guardrail artifact files that were written
  */
 export function emitGuardrailsForFindings(
 	repoRoot: string,

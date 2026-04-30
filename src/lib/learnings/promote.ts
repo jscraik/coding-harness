@@ -67,7 +67,12 @@ export interface LearningsPromoteResult {
 
 const DEFAULT_MIN_USAGE = 25;
 
-/** Generate high-usage promotion candidates from a local learning artifact. */
+/**
+ * Builds promotion candidates from a local learning artifact using usage thresholds and enforcement state.
+ *
+ * @param options - Controls the input artifact source and repoRoot, minimum usage threshold, enforcement ledger path, and whether already-enforced items are included
+ * @returns A `LearningsPromoteResult` containing `promotionCandidates` and a `summary`. On failure the result will have `status: "error"` and include an `error` object with `code`, `message`, and optional `fix`.
+ */
 export function buildLearningPromotionCandidates(
 	options: LearningsPromoteOptions = {},
 ): LearningsPromoteResult {
@@ -150,6 +155,12 @@ export function buildLearningPromotionCandidates(
 	};
 }
 
+/**
+ * Create a promotion candidate object from a single learning artifact item.
+ *
+ * @param item - The learning artifact item to convert into a promotion candidate
+ * @returns A `LearningPromotionCandidate` containing identification, usage and classification, recommended target/test and severity, human-readable reason, matched target references, current promotion status, and `enforcedBy` when present
+ */
 function buildPromotionCandidate(
 	item: LearningItem,
 ): LearningPromotionCandidate {
@@ -168,6 +179,17 @@ function buildPromotionCandidate(
 	};
 }
 
+/**
+ * Selects the promotion gate (`target`) and corresponding test file (`test`) for a learning item based on its file path, target patterns, and classification.
+ *
+ * @param item - The learning artifact entry whose `file`, `targetPatterns`, and `classification` determine the destination.
+ * @returns An object with `target` set to the chosen promotion gate and `test` set to the corresponding test file path. Selection rules (first match wins):
+ * - If `file` starts with `"docs/"` or any `targetPatterns` entry starts with `"docs/"`: `target` = `"docs-gate"`, `test` = `"src/commands/docs-gate.test.ts"`.
+ * - If `classification` = `"validation_contract"`: `target` = `"validation-plan"`, `test` = `"src/lib/learnings/promote.test.ts"`.
+ * - If `classification` = `"generated_artifact"`: `target` = `"artifact-provenance-gate"`, `test` = `"src/lib/learnings/promote.test.ts"`.
+ * - If `classification` = `"scaffold_default"`: `target` = `"scaffold-contracts"`, `test` = `"src/lib/init/scaffold-contract-template.test.ts"`.
+ * - Fallback: `target` = `"learnings-gate"`, `test` = `"src/lib/learnings/promote.test.ts"`.
+ */
 function destinationFor(item: LearningItem): {
 	target: string;
 	test: string;
@@ -202,6 +224,12 @@ function destinationFor(item: LearningItem): {
 	};
 }
 
+/**
+ * Recommend an enforcement severity for a learning item.
+ *
+ * @param item - The learning item to evaluate
+ * @returns The item's existing enforcement if not `none`; otherwise `error` when `usage` is 100 or greater, `warning` otherwise.
+ */
 function recommendedSeverityFor(
 	item: LearningItem,
 ): LearningItem["enforcement"] {
@@ -209,6 +237,12 @@ function recommendedSeverityFor(
 	return item.usage >= 100 ? "error" : "warning";
 }
 
+/**
+ * Produces a concise human-readable explanation for promoting a learning item.
+ *
+ * @param item - The learning entry to evaluate; its `usage` determines which message is returned
+ * @returns A short explanation string: the high-usage enforcement recommendation if `item.usage >= 100`, otherwise a standard review-for-enforcement message
+ */
 function reasonFor(item: LearningItem): string {
 	if (item.usage >= 100) {
 		return "High-usage repeated learning should become an enforced guardrail, validator, scaffold rule, or explicit exception.";
@@ -216,6 +250,12 @@ function reasonFor(item: LearningItem): string {
 	return "Repeated learning meets the promotion threshold and should be reviewed for permanent enforcement.";
 }
 
+/**
+ * Collects normalized file and target references for a learning item.
+ *
+ * @param item - The learning item to extract file and target references from
+ * @returns A sorted array of unique, non-empty file paths and target patterns associated with `item`
+ */
 function targetRefsFor(item: LearningItem): string[] {
 	const refs = [item.file, ...(item.targetPatterns ?? [])].filter(
 		(ref): ref is string => Boolean(ref),
@@ -223,6 +263,13 @@ function targetRefsFor(item: LearningItem): string[] {
 	return [...new Set(refs)].sort();
 }
 
+/**
+ * Determines whether the learning item has any target pattern that begins with the given prefix.
+ *
+ * @param item - The learning item to inspect; missing or empty `targetPatterns` are treated as none.
+ * @param prefix - The prefix to match at the start of each target pattern.
+ * @returns `true` if any entry in `item.targetPatterns` starts with `prefix`, `false` otherwise.
+ */
 function hasTargetPrefix(item: LearningItem, prefix: string): boolean {
 	return (item.targetPatterns ?? []).some((pattern) =>
 		pattern.startsWith(prefix),

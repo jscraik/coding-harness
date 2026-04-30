@@ -22,7 +22,16 @@ const EXIT_CODES = {
 	USAGE: 2,
 } as const;
 
-/** Run the `harness learnings` command family. */
+/**
+ * Dispatches the `harness learnings` CLI to the appropriate subcommand handler.
+ *
+ * Parses the first element of `args` as the subcommand (`import`, `gate`, or `promote`)
+ * and delegates execution to the corresponding subcommand CLI function. Emits a
+ * usage error when the subcommand is missing or unrecognized.
+ *
+ * @param args - The command-line arguments following `harness learnings`
+ * @returns A numeric process exit code: `0` for success, `1` for failure, or `2` for usage errors
+ */
 export function runLearningsCLI(args: string[]): number {
 	const subcommand = args[0];
 	if (subcommand === undefined) {
@@ -51,7 +60,11 @@ export function runLearningsCLI(args: string[]): number {
 	return runLearningsImportCLI(args.slice(1));
 }
 
-/** Run the Phase 1B exact-file learning gate command. */
+/**
+ * Execute the Phase 1B exact-file learning gate subcommand using provided CLI arguments.
+ *
+ * @returns Exit code: `0` on success, `1` if the gate result is `fail`, `2` for usage errors (e.g., missing or invalid flags)
+ */
 export function runLearningsGateCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const source = readOptionalFlag(args, "--source").value;
@@ -89,7 +102,12 @@ export function runLearningsGateCLI(args: string[]): number {
 	return gateResult.status === "fail" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
 }
 
-/** Run the Phase 1C learning promotion candidate command. */
+/**
+ * Execute the Phase 1C "learnings promote" CLI subcommand.
+ *
+ * @param args - Command-line arguments passed to the subcommand
+ * @returns EXIT_CODES.FAILURE if the promotion result has status "error", otherwise EXIT_CODES.SUCCESS
+ */
 export function runLearningsPromoteCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const source = readOptionalFlag(args, "--source").value;
@@ -130,7 +148,15 @@ export function runLearningsPromoteCLI(args: string[]): number {
 	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
 }
 
-/** Run the Phase 1A CodeRabbit CSV import command. */
+/**
+ * Execute the "harness learnings import" subcommand: validate flags, build a CodeRabbit CSV learning artifact, write it to disk, and print the import result.
+ *
+ * The function accepts CLI-style arguments (including --provider, --source, --repo, optional --output, optional --live-companion, and --json),
+ * validates required inputs, optionally loads a live companion JSON, constructs and writes the artifact, and prints either JSON or a human-readable summary.
+ *
+ * @param args - Array of command-line arguments for the subcommand (e.g., process.argv slice)
+ * @returns The process exit code: `0` for success, `1` for failure, or `2` for usage/validation errors
+ */
 export function runLearningsImportCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const provider = readRequiredFlag(args, "--provider");
@@ -229,6 +255,12 @@ export function runLearningsImportCLI(args: string[]): number {
 	return EXIT_CODES.SUCCESS;
 }
 
+/**
+ * Loads and parses a live-companion JSON file used for learning imports.
+ *
+ * @param path - Filesystem path to the live-companion JSON file
+ * @returns The parsed result from `parseLearningLiveCompanion` on success; otherwise an object with `ok: false`, `code: "learnings.live_companion.read_failed"`, a `message` describing the read/parse problem, and a `fix` suggesting to provide a readable `live-companion/v1` JSON object or omit `--live-companion`
+ */
 function loadLearningLiveCompanion(
 	path: string,
 ): ReturnType<typeof parseLearningLiveCompanion> {
@@ -244,6 +276,11 @@ function loadLearningLiveCompanion(
 	}
 }
 
+/**
+ * Reads the value for a required CLI flag from the provided arguments.
+ *
+ * @returns `{ ok: true; value: string }` if the flag is present with a value, `{ ok: false }` if the flag is absent.
+ */
 function readRequiredFlag(
 	args: string[],
 	flag: string,
@@ -252,6 +289,13 @@ function readRequiredFlag(
 	return value === undefined ? { ok: false } : { ok: true, value };
 }
 
+/**
+ * Reads an optional flag's value from an argv-style string array.
+ *
+ * @param args - The argument list to search (e.g., process.argv.slice(...)).
+ * @param flag - The flag to find (including leading dashes, e.g., `--files`).
+ * @returns An object with `value` set to the argument following `flag` if present and not another flag (does not start with `-`); otherwise an empty object.
+ */
 function readOptionalFlag(args: string[], flag: string): { value?: string } {
 	const index = args.indexOf(flag);
 	if (index === -1) return {};
@@ -260,6 +304,12 @@ function readOptionalFlag(args: string[], flag: string): { value?: string } {
 	return { value };
 }
 
+/**
+ * Parses the `--min-usage` flag from a CLI argument array and validates it as a non-negative integer.
+ *
+ * @param args - The command-line arguments to read the flag from.
+ * @returns `{ ok: true }` if the flag is absent; `{ ok: true, value: number }` if present and valid; `{ ok: false, message: string }` if present but invalid.
+ */
 function readMinUsage(
 	args: string[],
 ): { ok: true; value?: number } | { ok: false; message: string } {
@@ -275,6 +325,11 @@ function readMinUsage(
 	return { ok: true, value };
 }
 
+/**
+ * Parses the `--override-mode` flag and validates it as either `strict` or `advisory`.
+ *
+ * @returns `{ ok: true, value: "strict" | "advisory" }` when the flag is absent or contains a valid mode; `{ ok: false, message: string }` when the flag value is invalid.
+ */
 function readOverrideMode(
 	args: string[],
 ): { ok: true; value: "strict" | "advisory" } | { ok: false; message: string } {
@@ -289,6 +344,17 @@ function readOverrideMode(
 	};
 }
 
+/**
+ * Format and emit an error as either structured JSON or a plain console message, then return the provided exit code.
+ *
+ * @param options - Configuration for the emitted error
+ * @param options.json - If true, output a structured `LearningImportResult` JSON to stdout; otherwise output a plain error message to stderr
+ * @param options.errorCode - Machine-readable error code to include in the JSON output
+ * @param options.message - Human-readable error message to emit
+ * @param options.exitCode - Process exit code to return
+ * @param options.warnings - Optional list of warnings to include in the JSON output
+ * @returns The `exitCode` passed in `options`
+ */
 function emitError(options: {
 	json: boolean;
 	errorCode: string;
