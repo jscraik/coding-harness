@@ -48,6 +48,8 @@ The CodeRabbit review finding `[P1] Artifact gate misses source-only drift` is t
 - [Run Classification](#run-classification)
 - [Bootstrap and Setup Contract](#bootstrap-and-setup-contract)
 - [Problem Frame](#problem-frame)
+- [North-Star Execution Alignment](#north-star-execution-alignment)
+- [Linear Alignment Spine](#linear-alignment-spine)
 - [Planning Decision](#planning-decision)
 - [Requirements Trace](#requirements-trace)
 - [Scope Boundaries](#scope-boundaries)
@@ -196,6 +198,61 @@ promotion candidate
 ```
 
 Without this lifecycle, high-usage learnings can be repeatedly rediscovered, local artifacts cannot be safely shared, and review-context output remains disconnected from merge-readiness gates.
+
+## North-Star Execution Alignment
+
+This plan is complete only if the learning flow strengthens the north-star loop:
+
+```text
+repeated review learning
+  -> imported evidence
+  -> promotion decision
+  -> durable enforcement state
+  -> validator, gate, test, scaffold rule, or explicit non-goal
+  -> review-gate or validation evidence
+  -> north-star feedback metric
+```
+
+The plan must not expand into a general governance backlog. New work is in scope
+only when it does at least one of these:
+
+- reduces repeated PR review or rework comments,
+- removes manual glue work between review, remediation, validation, and merge,
+- makes acceptable agent output easier to produce reliably,
+- preserves evidence, privacy, rollback, or independent-review safety for the
+  learning flow.
+
+Work that cannot show one of those links is deferred until the learning loop has
+measured evidence that it reduces review-loop cost.
+
+## Linear Alignment Spine
+
+The remaining governance around this flow should stay as one parent lane
+with a small set of child lanes, not as a broad backlog. The local
+lane mapping below is canonical for future planning and PR closeout.
+
+Linear sync status:
+
+- `prohibited-by-policy`: external Linear issue creation was not completed
+  because the runtime approval policy forbids sending these non-public repo
+  planning details to Linear, even after user approval.
+- Next safe action: use this local lane table as the alignment source
+  unless a future governance decision explicitly changes the data-sharing
+  boundary.
+
+| Lane | Local owner | Plan scope | North-star outcome | Status |
+| --- | --- | --- | --- | --- |
+| Learning guardrails spine | Product/HE | Make CodeRabbit learnings into durable harness guardrails | Repeated review feedback becomes enforced and measurable instead of advisory | local-source-of-truth |
+| Enforcement ledger | P1 | Durable learning promotion enforcement ledger | Promotion decisions survive runs and are cited by gates/tests | completed-local |
+| Frontmatter validator | P2 | Frontmatter metadata learning validator | Highest-usage learning becomes a permanent regression guardrail | completed-local |
+| Review-gate integration | P10 | Review-gate integration for generated review context | Blocking learning context affects readiness instead of being optional prose | completed-local |
+| North-star metrics | P7 | North-star feedback metrics | The harness can measure learning hits, promotions, and unenforced risk | completed-local |
+| Scaffold fixture proof | P6 | Downstream scaffold fixture proof | Learning-backed defaults work across Jamie project shapes | completed-local |
+| Safe expansion layer | P3-P4, P8-P9 | Safe snapshots, exception rules, live companion metadata, and advisory fuzzy matching | Broader learning use remains privacy-safe, auditable, and non-noisy | completed-local |
+
+Do not create additional Linear children for live CodeRabbit API integration,
+dashboards, broad fuzzy blocking, or extra learning categories until this spine
+has shipped and the north-star feedback output shows a concrete gap.
 
 ## Planning Decision
 
@@ -901,35 +958,31 @@ P10 | completed | codex | Review-context artifact integration added to review-ga
 
 ## Handoff to HE Work
 
-Recommended next stage: `he-work`.
+Recommended next stage: `he-code-review`.
 
-Readiness: ready, with one sequencing constraint.
+Readiness: implementation complete locally; final readiness now depends on PR
+review and required checks. External Linear sync remains out of scope unless a
+future governance decision changes the data-sharing boundary.
 
-Sequencing constraint:
+Closeout constraints:
 
-- Complete and merge the current staged artifact-gate/CI-ownership/scaffold-default branch first, including the source-only artifact-gate P1 fix. Starting this plan before that branch lands risks duplicating or conflicting with staged command registration and docs changes.
+- Do not reopen P0-P10 implementation unless live code or PR review proves drift.
+- Do not create a wider learning-platform backlog until the local spine above is
+  accepted as the control boundary or explicitly replaced by an approved tracker
+  mapping.
+- Do not start live CodeRabbit API work, dashboards, or blocking fuzzy matching
+  until north-star feedback shows a concrete need.
+- Treat the branch as the current implementation boundary; new scope requires a
+  plan update that explains how it reduces repeated review or rework cost.
 
-Recommended first slice:
+Recommended closeout sequence:
 
-1. P0 baseline reconciliation.
-2. P1 enforcement-status ledger.
-3. P2 frontmatter metadata validator.
-
-Reason:
-
-- These steps close the most important remaining loop: high-usage learning becomes enforced by concrete code/tests.
-- They create the ledger that later metrics, snapshots, and review-gate integration can consume.
-
-Parallel later slices:
-
-- P3 sanitized snapshots can proceed independently after P1 defines enforcement-state references.
-- P5 CI fallback workflow semantics can proceed independently after the current CI ownership gate lands.
-- P6 scaffold matrix can proceed independently after current scaffold-default regression tests land.
-
-Do not start:
-
-- P9 fuzzy matching before P7 metrics exists.
-- P10 mandatory review-gate integration before review-context freshness and schema validation are stable.
+1. Run final PR readiness review with `he-code-review`.
+2. Resolve any remaining CodeRabbit/Codex comments against the current code.
+3. Confirm required checks are green.
+4. Keep the local alignment spine updated unless external tracker sync becomes
+   permitted by policy.
+5. Merge only after independent review and required checks remain green.
 
 ## Sources and References
 
