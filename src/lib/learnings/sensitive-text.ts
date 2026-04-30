@@ -48,7 +48,8 @@ const SENSITIVE_PATTERNS: Array<{
 	{
 		code: "sensitive.local_path",
 		label: "absolute local path",
-		pattern: /(?:file:\/\/)?\/Users\/[^"',\s)]+/g,
+		pattern:
+			/(?:file:\/\/)?(?:\/Users\/|\/home\/|[A-Za-z]:\\Users\\)[^"',\s)]+/g,
 	},
 ];
 
