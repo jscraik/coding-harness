@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-04-30T01:55:50Z
+Generated: 2026-04-30T02:35:21Z
 
 ## Table of Contents
 
@@ -397,7 +397,7 @@ graph TD
     node_src_lib_evidence_validator_test_9ad9ac55_81767cd8["validator.test"]
   end
   subgraph sg_src_lib_gap_case_7bad4dc6_86ad9160["src/lib/gap-case"]
-    node_src_lib_gap_case_types_fe7507be_13c9c963["types"]
+    node_src_lib_gap_case_types_d025517b_0fe361b3["types"]
   end
   subgraph sg_src_lib_gardener_b4230e43_044492bd["src/lib/gardener"]
     node_src_lib_gardener_link_checker_d0fa555f_defff88c["link-checker"]
@@ -405,7 +405,7 @@ graph TD
     node_src_lib_gardener_quality_scorer_362f2a90_5438aaca["quality-scorer"]
     node_src_lib_gardener_stale_detector_a563289e_38a37745["stale-detector"]
     node_src_lib_gardener_stale_detector_test_7dc85478_b896df09["stale-detector.test"]
-    node_src_lib_gardener_types_d025517b_81f1be3b["types"]
+    node_src_lib_gardener_types_fe7507be_be3adf04["types"]
   end
   subgraph sg_src_lib_github_bad33b49_fd625c37["src/lib/github"]
     node_src_lib_github_check_run_2fc00bd3_fd2f9926["check-run"]
@@ -603,7 +603,7 @@ graph TD
     node_src_lib_output_normalise_review_preflight_1a0a14_fd1e4bf0["normalise-review-preflight"]
     node_src_lib_output_normalise_review_preflight_core_c_4abfd22c["normalise-review-preflight-core"]
     node_src_lib_output_normalise_test_73e8a615_835598a4["normalise.test"]
-    node_src_lib_output_types_75e5a4a0_0f0744c8["types"]
+    node_src_lib_output_types_1db4641f_5369f6db["types"]
     node_src_lib_output_types_test_5c77418d_677bb693["types.test"]
   end
   subgraph sg_src_lib_pilot_evaluation_f6cc358e_951972f4["src/lib/pilot-evaluation"]
@@ -618,7 +618,7 @@ graph TD
     node_src_lib_pilot_evaluation_metrics_capture_1d1a2c0_c0e5aa29["metrics-capture"]
     node_src_lib_pilot_evaluation_metrics_capture_core_db_1cdea4b6["metrics-capture-core"]
     node_src_lib_pilot_evaluation_registries_06402afa_ead89890["registries"]
-    node_src_lib_pilot_evaluation_types_1db4641f_d07d737d["types"]
+    node_src_lib_pilot_evaluation_types_75e5a4a0_7352679d["types"]
     node_src_lib_pilot_evaluation_types_core_e405ddca_b26c4a94["types-core"]
   end
   subgraph sg_src_lib_plan_gate_b742698a_b36bf526["src/lib/plan-gate"]
@@ -812,10 +812,10 @@ flowchart TD
   Boundary --> validator_core_4358f8ba
   risk_tier_test_1_6f021f87["risk-tier.test"]
   Boundary --> risk_tier_test_1_6f021f87
-  control_plane_core_db3b4cb2["control-plane-core"]
-  Boundary --> control_plane_core_db3b4cb2
   normalise_test_73e8a615["normalise.test"]
   Boundary --> normalise_test_73e8a615
+  control_plane_core_db3b4cb2["control-plane-core"]
+  Boundary --> control_plane_core_db3b4cb2
   types_11_4be3ee64["types"]
   Boundary --> types_11_4be3ee64
   triage_type_labels_8bc8350f["triage-type-labels"]
@@ -862,8 +862,6 @@ flowchart TD
   Boundary --> init_ops_e54123f9
   legacy_dispatch_guard_test_4700087d["legacy-dispatch-guard.test"]
   Boundary --> legacy_dispatch_guard_test_4700087d
-  ownership_gate_2e194d13["ownership-gate"]
-  Boundary --> ownership_gate_2e194d13
   validator_test_5_2bb3219d["validator.test"]
   Boundary --> validator_test_5_2bb3219d
   validator_core_1_1518647e["validator-core"]
@@ -878,6 +876,8 @@ flowchart TD
   Boundary --> json_schema_core_96d7e328
   contract_presets_bbab169b["contract-presets"]
   Boundary --> contract_presets_bbab169b
+  ownership_gate_2e194d13["ownership-gate"]
+  Boundary --> ownership_gate_2e194d13
   resolver_439c3635["resolver"]
   Boundary --> resolver_439c3635
   resolver_test_84b219fe["resolver.test"]
@@ -1101,15 +1101,15 @@ flowchart TD
   local_memory_0db17ecc["local-memory"]
   UserRequest --> local_memory_0db17ecc
   local_memory_0db17ecc --> local_memory_0db17ecc_result["result"]
-  decision_packet_1_dd443771["decision-packet"]
-  UserRequest --> decision_packet_1_dd443771
-  decision_packet_1_dd443771 --> decision_packet_1_dd443771_result["result"]
   normalise_test_73e8a615["normalise.test"]
   UserRequest --> normalise_test_73e8a615
   normalise_test_73e8a615 --> normalise_test_73e8a615_result["result"]
   normalise_core_v2_f6c5ed83["normalise-core-v2"]
   UserRequest --> normalise_core_v2_f6c5ed83
   normalise_core_v2_f6c5ed83 --> normalise_core_v2_f6c5ed83_result["result"]
+  decision_packet_1_dd443771["decision-packet"]
+  UserRequest --> decision_packet_1_dd443771
+  decision_packet_1_dd443771 --> decision_packet_1_dd443771_result["result"]
   validator_1_0c0621d8["validator"]
   UserRequest --> validator_1_0c0621d8
   validator_1_0c0621d8 --> validator_1_0c0621d8_result["result"]
@@ -1122,9 +1122,6 @@ flowchart TD
   client_948fe603["client"]
   UserRequest --> client_948fe603
   client_948fe603 --> client_948fe603_result["result"]
-  sanitize_af6a3bb0["sanitize"]
-  UserRequest --> sanitize_af6a3bb0
-  sanitize_af6a3bb0 --> sanitize_af6a3bb0_result["result"]
   types_12_2b09659a["types"]
   UserRequest --> types_12_2b09659a
   types_12_2b09659a --> types_12_2b09659a_result["result"]
@@ -1161,6 +1158,9 @@ flowchart TD
   artifact_io_ba511748["artifact-io"]
   UserRequest --> artifact_io_ba511748
   artifact_io_ba511748 --> artifact_io_ba511748_result["result"]
+  sanitize_af6a3bb0["sanitize"]
+  UserRequest --> sanitize_af6a3bb0
+  sanitize_af6a3bb0 --> sanitize_af6a3bb0_result["result"]
   url_validator_test_f781df3b["url-validator.test"]
   UserRequest --> url_validator_test_f781df3b
   url_validator_test_f781df3b --> url_validator_test_f781df3b_result["result"]
@@ -1190,12 +1190,6 @@ flowchart TD
   client_1_914e1681["client"]
   UserRequest --> client_1_914e1681
   client_1_914e1681 --> client_1_914e1681_result["result"]
-  ralph_runtime_73d63c0e["ralph-runtime"]
-  UserRequest --> ralph_runtime_73d63c0e
-  ralph_runtime_73d63c0e --> ralph_runtime_73d63c0e_result["result"]
-  ralph_runtime_test_682f806b["ralph-runtime.test"]
-  UserRequest --> ralph_runtime_test_682f806b
-  ralph_runtime_test_682f806b --> ralph_runtime_test_682f806b_result["result"]
   update_core_bced358c["update-core"]
   UserRequest --> update_core_bced358c
   update_core_bced358c --> update_core_bced358c_write["write/update"]
@@ -1266,15 +1260,18 @@ flowchart TD
   ast_grep_rules_test_2b69fd9a["ast-grep-rules.test"]
   UserRequest --> ast_grep_rules_test_2b69fd9a
   ast_grep_rules_test_2b69fd9a --> ast_grep_rules_test_2b69fd9a_result["result"]
+  ralph_runtime_73d63c0e["ralph-runtime"]
+  UserRequest --> ralph_runtime_73d63c0e
+  ralph_runtime_73d63c0e --> ralph_runtime_73d63c0e_result["result"]
+  ralph_runtime_test_682f806b["ralph-runtime.test"]
+  UserRequest --> ralph_runtime_test_682f806b
+  ralph_runtime_test_682f806b --> ralph_runtime_test_682f806b_result["result"]
   command_registry_a88eb2e3["command-registry"]
   UserRequest --> command_registry_a88eb2e3
   command_registry_a88eb2e3 --> command_registry_a88eb2e3_result["result"]
   command_registry_test_0cf92cba["command-registry.test"]
   UserRequest --> command_registry_test_0cf92cba
   command_registry_test_0cf92cba --> command_registry_test_0cf92cba_result["result"]
-  ownership_gate_2e194d13["ownership-gate"]
-  UserRequest --> ownership_gate_2e194d13
-  ownership_gate_2e194d13 --> ownership_gate_2e194d13_result["result"]
   store_824d80d7["store"]
   UserRequest --> store_824d80d7
   store_824d80d7 --> store_824d80d7_result["result"]
@@ -1317,6 +1314,9 @@ flowchart TD
   contract_presets_bbab169b["contract-presets"]
   UserRequest --> contract_presets_bbab169b
   contract_presets_bbab169b --> contract_presets_bbab169b_result["result"]
+  ownership_gate_2e194d13["ownership-gate"]
+  UserRequest --> ownership_gate_2e194d13
+  ownership_gate_2e194d13 --> ownership_gate_2e194d13_result["result"]
   resolver_439c3635["resolver"]
   UserRequest --> resolver_439c3635
   resolver_439c3635 --> resolver_439c3635_result["result"]
@@ -1448,6 +1448,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_review_gate_decision_packet_8ee9d119_a5022670
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_docs_gate_core_eb9b6c18_98cad445
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_learnings_enforcement_status_92d314f5_3115883f
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_learnings_gate_c974e17b_c619882b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_idempotency_f5d39a07_436bfde4
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_indexer_70fa78e5_8f1646af
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_indexer_test_d492f0aa_4bd5aca2
@@ -2603,6 +2604,14 @@ flowchart TD
   Untrusted --> cardinality_ebef8aff
   cardinality_test_c00e7edb["cardinality.test"]
   Untrusted --> cardinality_test_c00e7edb
+  types_9_1db4641f["types"]
+  Untrusted --> types_9_1db4641f
+  normalise_test_73e8a615["normalise.test"]
+  Untrusted --> normalise_test_73e8a615
+  normalise_review_preflight_core_ceb258cb["normalise-review-preflight-core"]
+  Untrusted --> normalise_review_preflight_core_ceb258cb
+  normalise_core_v2_f6c5ed83["normalise-core-v2"]
+  Untrusted --> normalise_core_v2_f6c5ed83
   types_core_e405ddca["types-core"]
   Untrusted --> types_core_e405ddca
   evaluation_engine_test_739ded70["evaluation-engine.test"]
@@ -2613,14 +2622,6 @@ flowchart TD
   Untrusted --> control_plane_test_cd590ea0
   control_plane_core_db3b4cb2["control-plane-core"]
   Untrusted --> control_plane_core_db3b4cb2
-  types_10_75e5a4a0["types"]
-  Untrusted --> types_10_75e5a4a0
-  normalise_test_73e8a615["normalise.test"]
-  Untrusted --> normalise_test_73e8a615
-  normalise_review_preflight_core_ceb258cb["normalise-review-preflight-core"]
-  Untrusted --> normalise_review_preflight_core_ceb258cb
-  normalise_core_v2_f6c5ed83["normalise-core-v2"]
-  Untrusted --> normalise_core_v2_f6c5ed83
   utils_6fd89734["utils"]
   Untrusted --> utils_6fd89734
   triage_type_labels_8bc8350f["triage-type-labels"]
@@ -2633,8 +2634,6 @@ flowchart TD
   Untrusted --> triage_lanes_5c8ea001
   metadata_gate_2dcdb343["metadata-gate"]
   Untrusted --> metadata_gate_2dcdb343
-  sanitize_test_f3d34916["sanitize.test"]
-  Untrusted --> sanitize_test_f3d34916
   validation_plan_1_3267c110["validation-plan"]
   Untrusted --> validation_plan_1_3267c110
   promote_test_5c615269["promote.test"]
@@ -2653,6 +2652,8 @@ flowchart TD
   Untrusted --> coderabbit_csv_test_1f36d0a4
   artifact_io_test_aac02da3["artifact-io.test"]
   Untrusted --> artifact_io_test_aac02da3
+  sanitize_test_f3d34916["sanitize.test"]
+  Untrusted --> sanitize_test_f3d34916
   scan_cache_fc02c79c["scan-cache"]
   Untrusted --> scan_cache_fc02c79c
   repo_scanner_core_8e9f7646["repo-scanner-core"]
@@ -2663,12 +2664,6 @@ flowchart TD
   Untrusted --> policy_test_2c06901d
   index_3_7e40d474["index"]
   Untrusted --> index_3_7e40d474
-  frontmatter_metadata_gate_test_3d0999f8["frontmatter-metadata-gate.test"]
-  Untrusted --> frontmatter_metadata_gate_test_3d0999f8
-  ralph_runtime_73d63c0e["ralph-runtime"]
-  Untrusted --> ralph_runtime_73d63c0e
-  ralph_runtime_test_682f806b["ralph-runtime.test"]
-  Untrusted --> ralph_runtime_test_682f806b
   update_core_bced358c["update-core"]
   Untrusted --> update_core_bced358c
   types_16_0fae1112["types"]
@@ -2733,18 +2728,14 @@ flowchart TD
   Untrusted --> init_ops_e54123f9
   init_modes_c05ceb07["init-modes"]
   Untrusted --> init_modes_c05ceb07
+  frontmatter_metadata_gate_test_3d0999f8["frontmatter-metadata-gate.test"]
+  Untrusted --> frontmatter_metadata_gate_test_3d0999f8
+  ralph_runtime_73d63c0e["ralph-runtime"]
+  Untrusted --> ralph_runtime_73d63c0e
+  ralph_runtime_test_682f806b["ralph-runtime.test"]
+  Untrusted --> ralph_runtime_test_682f806b
   command_registry_test_0cf92cba["command-registry.test"]
   Untrusted --> command_registry_test_0cf92cba
-  required_check_metadata_dc610201["required-check-metadata"]
-  Untrusted --> required_check_metadata_dc610201
-  required_check_metadata_test_ea69c914["required-check-metadata.test"]
-  Untrusted --> required_check_metadata_test_ea69c914
-  ownership_gate_2e194d13["ownership-gate"]
-  Untrusted --> ownership_gate_2e194d13
-  ci_migrate_signing_2d82ac3f["ci-migrate-signing"]
-  Untrusted --> ci_migrate_signing_2d82ac3f
-  ci_migrate_signing_test_fe9943ab["ci-migrate-signing.test"]
-  Untrusted --> ci_migrate_signing_test_fe9943ab
   context_compact_policy_3dcaf95d["context-compact-policy"]
   Untrusted --> context_compact_policy_3dcaf95d
   context_compact_policy_test_da148267["context-compact-policy.test"]
@@ -2779,6 +2770,16 @@ flowchart TD
   Untrusted --> json_schema_core_96d7e328
   index_6_fc9e91e2["index"]
   Untrusted --> index_6_fc9e91e2
+  required_check_metadata_dc610201["required-check-metadata"]
+  Untrusted --> required_check_metadata_dc610201
+  required_check_metadata_test_ea69c914["required-check-metadata.test"]
+  Untrusted --> required_check_metadata_test_ea69c914
+  ownership_gate_2e194d13["ownership-gate"]
+  Untrusted --> ownership_gate_2e194d13
+  ci_migrate_signing_2d82ac3f["ci-migrate-signing"]
+  Untrusted --> ci_migrate_signing_2d82ac3f
+  ci_migrate_signing_test_fe9943ab["ci-migrate-signing.test"]
+  Untrusted --> ci_migrate_signing_test_fe9943ab
   module_boundaries_test_c0caf46b["module-boundaries.test"]
   Untrusted --> module_boundaries_test_c0caf46b
   command_specs_test_7f693e85["command-specs.test"]
@@ -2849,16 +2850,16 @@ flowchart TD
   Untrusted --> governance_report_test_160fb2e0
   automation_test_3da74b47["automation.test"]
   Untrusted --> automation_test_3da74b47
-  validation_test_bc73cdff["validation.test"]
-  Untrusted --> validation_test_bc73cdff
-  sanitize_af6a3bb0["sanitize"]
-  Untrusted --> sanitize_af6a3bb0
   sensitive_text_7c11f760["sensitive-text"]
   Untrusted --> sensitive_text_7c11f760
   sensitive_text_test_2386c0ce["sensitive-text.test"]
   Untrusted --> sensitive_text_test_2386c0ce
   normalise_1_4c940463["normalise"]
   Untrusted --> normalise_1_4c940463
+  validation_test_bc73cdff["validation.test"]
+  Untrusted --> validation_test_bc73cdff
+  sanitize_af6a3bb0["sanitize"]
+  Untrusted --> sanitize_af6a3bb0
   url_validator_3c5a1568["url-validator"]
   Untrusted --> url_validator_3c5a1568
   url_validator_test_f781df3b["url-validator.test"]
@@ -3102,8 +3103,6 @@ flowchart LR
   User --> scaffold_contract_template_3ba5d53a
   init_modes_c05ceb07["init-modes"]
   User --> init_modes_c05ceb07
-  ownership_gate_2e194d13["ownership-gate"]
-  User --> ownership_gate_2e194d13
   sync_contract_c79fa191["sync-contract"]
   User --> sync_contract_c79fa191
   ollama_76e3c7bf["ollama"]
@@ -3120,6 +3119,8 @@ flowchart LR
   User --> index_6_fc9e91e2
   contract_presets_bbab169b["contract-presets"]
   User --> contract_presets_bbab169b
+  ownership_gate_2e194d13["ownership-gate"]
+  User --> ownership_gate_2e194d13
   resolver_439c3635["resolver"]
   User --> resolver_439c3635
   command_specs_core_1c0ffc99["command-specs-core"]
