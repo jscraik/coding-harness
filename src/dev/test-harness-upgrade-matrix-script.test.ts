@@ -104,9 +104,6 @@ describe("test-harness-upgrade-matrix", () => {
 			fakeCliPath,
 			`const fs = require("node:fs");
 			const path = require("node:path");
- 			const repo = process.argv[3];
- 			fs.writeFileSync(path.join(repo, "mutated.txt"), "changed");
- 			console.log(JSON.stringify({
 			const repo = process.argv[3];
 			fs.writeFileSync(path.join(repo, "mutated.txt"), "changed");
 			console.log(JSON.stringify({
