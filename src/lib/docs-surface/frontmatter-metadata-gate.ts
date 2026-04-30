@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 
 /** Stable learning ID promoted into the frontmatter metadata validator. */
 export const FRONTMATTER_METADATA_LEARNING_ID =
@@ -47,7 +47,13 @@ export function collectFrontmatterMetadataViolations(options: {
 		) {
 			continue;
 		}
-		const content = loadFileIfPresent(join(options.repoRoot, file));
+		const repoRootResolved = resolve(options.repoRoot);
+		const candidatePath = resolve(join(options.repoRoot, file));
+		const withinRepo =
+			candidatePath === repoRootResolved ||
+			candidatePath.startsWith(`${repoRootResolved}${sep}`);
+		if (!withinRepo) continue;
+		const content = loadFileIfPresent(candidatePath);
 		if (!content) continue;
 		const parsed = parseMarkdownFrontmatter(content);
 		if (!parsed) continue;

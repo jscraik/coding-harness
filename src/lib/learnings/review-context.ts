@@ -244,7 +244,9 @@ function buildEvidenceRefs(item: LearningItem): string[] {
 }
 
 function normalizeFiles(files: string[]): string[] {
-	return [...new Set(files.map((file) => normalizeFile(file)).filter(Boolean))];
+	return [
+		...new Set(files.map((file) => normalizeFile(file)).filter(Boolean)),
+	].sort();
 }
 
 function normalizeFile(file: string): string {

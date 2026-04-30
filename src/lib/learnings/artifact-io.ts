@@ -7,7 +7,7 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import {
 	buildLearningSummary,
 	parseCodeRabbitCsv,
@@ -312,5 +312,8 @@ function sortWarnings(
 /** Return true when a path is inside the repository root. */
 export function isInsideRepo(path: string, repoRoot = process.cwd()): boolean {
 	const rel = relative(resolve(repoRoot), resolve(path));
-	return rel === "" || (!rel.startsWith("..") && !rel.startsWith(sep));
+	return (
+		rel === "" ||
+		(!isAbsolute(rel) && !rel.startsWith("..") && !rel.startsWith(sep))
+	);
 }
