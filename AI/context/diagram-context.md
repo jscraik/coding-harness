@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-04-29T21:06:16Z
+Generated: 2026-04-30T01:39:10Z
 
 ## Table of Contents
 
@@ -81,6 +81,8 @@ graph TD
   end
   subgraph sg_src_commands_f0f9cc2d_1fa84487["src/commands"]
     node_src_commands_agent_first_throughput_integration__7c59b283["agent-first-throughput.integration.test"]
+    node_src_commands_artifact_gate_c8e0f9e2_f0f6a4d6["artifact-gate"]
+    node_src_commands_artifact_gate_test_25ecc97a_b8e41645["artifact-gate.test"]
     node_src_commands_audit_b81f37a0_4a8057db["audit"]
     node_src_commands_audit_test_54ea1006_a3e1e261["audit.test"]
     node_src_commands_automation_run_22331800_b476f10f["automation-run"]
@@ -106,6 +108,8 @@ graph TD
     node_src_commands_ci_migrate_78bb70b1_a0e2c114["ci-migrate"]
     node_src_commands_ci_migrate_core_7005b5af_2e2f8b3d["ci-migrate-core"]
     node_src_commands_ci_migrate_test_2a015bb9_07515c3d["ci-migrate.test"]
+    node_src_commands_ci_ownership_gate_caa8d052_b24dcb40["ci-ownership-gate"]
+    node_src_commands_ci_ownership_gate_test_7b1c196d_57a8ab81["ci-ownership-gate.test"]
     node_src_commands_context_ea7792a2_52d036cb["context"]
     node_src_commands_context_health_80bb7da9_c636a657["context-health"]
     node_src_commands_context_health_test_3b5b87f3_b2ea595f["context-health.test"]
@@ -169,6 +173,8 @@ graph TD
     node_src_commands_local_memory_preflight_dcc36c42_284fb0f7["local-memory-preflight"]
     node_src_commands_local_memory_preflight_test_5e323bb_7198fc35["local-memory-preflight.test"]
     node_src_commands_memory_gate_a577a506_f15f12cd["memory-gate"]
+    node_src_commands_north_star_feedback_b413e652_7d68801b["north-star-feedback"]
+    node_src_commands_north_star_feedback_test_59dc54f7_32b56761["north-star-feedback.test"]
     node_src_commands_observability_gate_455f1f2f_708a892e["observability-gate"]
     node_src_commands_observability_gate_test_ca2979e0_3c8bb89a["observability-gate.test"]
     node_src_commands_org_audit_d739e44b_fc2ca563["org-audit"]
@@ -245,6 +251,7 @@ graph TD
     node_src_dev_test_harness_upgrade_matrix_script_test__9cebb82c["test-harness-upgrade-matrix-script.test"]
   end
   subgraph sg_src_lib_91be6cfb_6765f881["src/lib"]
+    node_src_lib_artifact_provenance_03b81cbf_ac2e9772["artifact-provenance"]
     node_src_lib_pr_template_validator_f1a53aee_607e2ffe["pr-template-validator"]
     node_src_lib_pr_template_validator_test_569b1cef_06f2e40e["pr-template-validator.test"]
     node_src_lib_preset_detection_b0f00a17_fc900a93["preset-detection"]
@@ -268,7 +275,7 @@ graph TD
   subgraph sg_src_lib_brainstorm_ce7117f7_4eded19c["src/lib/brainstorm"]
     node_src_lib_brainstorm_detector_86ca96aa_726f791b["detector"]
     node_src_lib_brainstorm_detector_test_85cbb456_08c70acb["detector.test"]
-    node_src_lib_brainstorm_types_eb4ad5f0_c362d5d9["types"]
+    node_src_lib_brainstorm_types_37582e2a_a4781b47["types"]
   end
   subgraph sg_src_lib_ci_9c1b4484_836e443e["src/lib/ci"]
     node_src_lib_ci_branch_protect_sync_570adb18_4e76efe4["branch-protect-sync"]
@@ -283,6 +290,7 @@ graph TD
     node_src_lib_ci_ci_migrate_snapshot_paths_test_8bcd0e_7195da91["ci-migrate-snapshot-paths.test"]
     node_src_lib_ci_config_validator_669ebc2e_efe732cc["config-validator"]
     node_src_lib_ci_config_validator_test_f70500fa_5e09d89e["config-validator.test"]
+    node_src_lib_ci_ownership_gate_2e194d13_e67620f9["ownership-gate"]
     node_src_lib_ci_provider_adapter_3bcf82b7_df71fd61["provider-adapter"]
     node_src_lib_ci_required_check_metadata_dc610201_a5552889["required-check-metadata"]
     node_src_lib_ci_required_check_metadata_test_ea69c914_1729b363["required-check-metadata.test"]
@@ -313,7 +321,7 @@ graph TD
     node_src_lib_context_compound_constants_test_5492ae98_aac20c5e["constants.test"]
     node_src_lib_context_compound_context_compact_policy__79724c15["context-compact-policy"]
     node_src_lib_context_compound_context_compact_policy__33ca3593["context-compact-policy.test"]
-    node_src_lib_context_compound_index_fc9e91e2_287433c3["index"]
+    node_src_lib_context_compound_index_522f772a_7a73d807["index"]
     node_src_lib_context_compound_indexer_70fa78e5_8f1646af["indexer"]
     node_src_lib_context_compound_indexer_test_d492f0aa_4bd5aca2["indexer.test"]
     node_src_lib_context_compound_init_error_5c7dd49f_3e7ecedb["init-error"]
@@ -325,7 +333,7 @@ graph TD
     node_src_lib_context_compound_store_824d80d7_303b2fc6["store"]
     node_src_lib_context_compound_sync_contract_c79fa191_859b8e55["sync-contract"]
     node_src_lib_context_compound_sync_contract_test_5dc3_40181dd7["sync-contract.test"]
-    node_src_lib_context_compound_types_37582e2a_fec65dfb["types"]
+    node_src_lib_context_compound_types_ed30531c_6d4298d0["types"]
   end
   subgraph sg_src_lib_contract_49c85030_f92555e8["src/lib/contract"]
     node_src_lib_contract_contract_presets_bbab169b_a7c45600["contract-presets"]
@@ -333,7 +341,7 @@ graph TD
     node_src_lib_contract_extends_validator_0c9b8dcc_81f8e522["extends-validator"]
     node_src_lib_contract_extends_validator_test_cee1fc26_42aefad6["extends-validator.test"]
     node_src_lib_contract_idempotency_f5d39a07_436bfde4["idempotency"]
-    node_src_lib_contract_index_522f772a_69197408["index"]
+    node_src_lib_contract_index_fc9e91e2_c35e4e49["index"]
     node_src_lib_contract_json_schema_74a768d7_36a995cc["json-schema"]
     node_src_lib_contract_json_schema_core_96d7e328_e01eea09["json-schema-core"]
     node_src_lib_contract_loader_16749818_757b1786["loader"]
@@ -361,7 +369,7 @@ graph TD
     node_src_lib_contract_run_records_test_3ee6a0e3_c22e3d30["run-records.test"]
     node_src_lib_contract_standards_map_eda18880_bb11985a["standards-map"]
     node_src_lib_contract_standards_map_test_795df7d4_91710ad0["standards-map.test"]
-    node_src_lib_contract_types_ed30531c_e3c06cc0["types"]
+    node_src_lib_contract_types_eb4ad5f0_aff18189["types"]
     node_src_lib_contract_types_core_8bd0f8fd_bd8421fa["types-core"]
     node_src_lib_contract_ui_loop_command_4db6cd6c_55600dff["ui-loop-command"]
     node_src_lib_contract_ui_loop_command_test_3f014158_e12112c1["ui-loop-command.test"]
@@ -374,18 +382,22 @@ graph TD
     node_src_lib_deps_ralph_runtime_73d63c0e_5f9a6516["ralph-runtime"]
     node_src_lib_deps_ralph_runtime_test_682f806b_edc2f6ed["ralph-runtime.test"]
   end
+  subgraph sg_src_lib_docs_surface_90899340_87149590["src/lib/docs-surface"]
+    node_src_lib_docs_surface_frontmatter_metadata_gate_6_4f92863e["frontmatter-metadata-gate"]
+    node_src_lib_docs_surface_frontmatter_metadata_gate_t_30da2f83["frontmatter-metadata-gate.test"]
+  end
   subgraph sg_src_lib_evidence_90f7ab75_f02d8c52["src/lib/evidence"]
-    node_src_lib_evidence_index_7e40d474_45b1a025["index"]
+    node_src_lib_evidence_index_013aa0e3_3191055a["index"]
     node_src_lib_evidence_loader_d47712cc_8043f340["loader"]
     node_src_lib_evidence_logger_2686af9f_fe11c2af["logger"]
     node_src_lib_evidence_policy_823412d1_53854513["policy"]
     node_src_lib_evidence_policy_test_2c06901d_a15d04cb["policy.test"]
-    node_src_lib_evidence_types_86775c96_1f5cf94d["types"]
+    node_src_lib_evidence_types_0fae1112_62ddea85["types"]
     node_src_lib_evidence_validator_5180cf23_535928fa["validator"]
     node_src_lib_evidence_validator_test_9ad9ac55_81767cd8["validator.test"]
   end
   subgraph sg_src_lib_gap_case_7bad4dc6_86ad9160["src/lib/gap-case"]
-    node_src_lib_gap_case_types_fe7507be_13c9c963["types"]
+    node_src_lib_gap_case_types_86775c96_2813d5eb["types"]
   end
   subgraph sg_src_lib_gardener_b4230e43_044492bd["src/lib/gardener"]
     node_src_lib_gardener_link_checker_d0fa555f_defff88c["link-checker"]
@@ -425,7 +437,7 @@ graph TD
     node_src_lib_init_codex_preflight_symlink_test_037558_5789ffec["codex-preflight-symlink.test"]
     node_src_lib_init_eject_d0ecd4d1_229c1a6a["eject"]
     node_src_lib_init_eject_test_96dad02e_601f605d["eject.test"]
-    node_src_lib_init_index_013aa0e3_291c10e9["index"]
+    node_src_lib_init_index_7e40d474_024c6937["index"]
     node_src_lib_init_init_helpers_f0bb83d2_0668dee7["init-helpers"]
     node_src_lib_init_init_interactive_28845b2f_e63ff5c2["init-interactive"]
     node_src_lib_init_init_modes_c05ceb07_538df5f6["init-modes"]
@@ -457,6 +469,7 @@ graph TD
     node_src_lib_init_scaffold_config_templates_test_b34e_b1c9dc38["scaffold-config-templates.test"]
     node_src_lib_init_scaffold_contract_template_3ba5d53a_7700101a["scaffold-contract-template"]
     node_src_lib_init_scaffold_contract_template_test_6f3_bc00cac5["scaffold-contract-template.test"]
+    node_src_lib_init_scaffold_default_promotions_test_f8_27b83657["scaffold-default-promotions.test"]
     node_src_lib_init_scaffold_diagram_templates_dd88e83c_927bc2cb["scaffold-diagram-templates"]
     node_src_lib_init_scaffold_diagram_templates_test_f37_e1304cc7["scaffold-diagram-templates.test"]
     node_src_lib_init_scaffold_doc_templates_f6152330_d4b5af5b["scaffold-doc-templates"]
@@ -500,7 +513,7 @@ graph TD
     node_src_lib_init_scaffold_worktree_templates_test_c2_c7d54c25["scaffold-worktree-templates.test"]
     node_src_lib_init_scaffold_test_96f4ccea_0a85d882["scaffold.test"]
     node_src_lib_init_schema_migrate_c0646635_817a98ff["schema-migrate"]
-    node_src_lib_init_types_0fae1112_ac56236e["types"]
+    node_src_lib_init_types_fe7507be_c01fc683["types"]
     node_src_lib_init_update_2937013f_43f3ca69["update"]
     node_src_lib_init_update_core_bced358c_87f18a1d["update-core"]
     node_src_lib_init_upgrade_b277486e_b2698ece["upgrade"]
@@ -519,12 +532,26 @@ graph TD
     node_src_lib_learnings_artifact_io_test_aac02da3_3f05e2ba["artifact-io.test"]
     node_src_lib_learnings_coderabbit_csv_3ef61ffc_4676f251["coderabbit-csv"]
     node_src_lib_learnings_coderabbit_csv_test_1f36d0a4_d9514c0f["coderabbit-csv.test"]
+    node_src_lib_learnings_enforcement_status_92d314f5_3115883f["enforcement-status"]
+    node_src_lib_learnings_enforcement_status_test_1fe221_226b2729["enforcement-status.test"]
+    node_src_lib_learnings_fuzzy_match_5c9ea87c_967437e5["fuzzy-match"]
+    node_src_lib_learnings_fuzzy_match_test_6d0a675a_39fe4fd9["fuzzy-match.test"]
     node_src_lib_learnings_gate_c974e17b_c619882b["gate"]
+    node_src_lib_learnings_gate_test_71fa0f92_96a67664["gate.test"]
     node_src_lib_learnings_index_10143590_d07f4a64["index"]
+    node_src_lib_learnings_live_companion_e428b3c6_3b8e9c79["live-companion"]
+    node_src_lib_learnings_live_companion_test_16485143_a74c6fe2["live-companion.test"]
     node_src_lib_learnings_normalise_4c940463_032daeaf["normalise"]
     node_src_lib_learnings_normalise_test_6643dd83_f9dd687d["normalise.test"]
+    node_src_lib_learnings_north_star_feedback_9c32c60d_5314cfd8["north-star-feedback"]
+    node_src_lib_learnings_north_star_feedback_test_70c96_81e63044["north-star-feedback.test"]
+    node_src_lib_learnings_overrides_ab2dd33e_68dc90b3["overrides"]
+    node_src_lib_learnings_overrides_test_b1c05559_d84a3cba["overrides.test"]
     node_src_lib_learnings_promote_363256bd_a3c94499["promote"]
+    node_src_lib_learnings_promote_test_5c615269_85c6e179["promote.test"]
     node_src_lib_learnings_review_context_e3afed15_5f042a20["review-context"]
+    node_src_lib_learnings_sensitive_text_7c11f760_588d30a3["sensitive-text"]
+    node_src_lib_learnings_sensitive_text_test_2386c0ce_dadd546d["sensitive-text.test"]
     node_src_lib_learnings_types_2b09659a_4918dfad["types"]
     node_src_lib_learnings_validation_plan_3267c110_b20cd201["validation-plan"]
   end
@@ -801,16 +828,16 @@ flowchart TD
   Boundary --> triage_lanes_5c8ea001
   metadata_gate_2dcdb343["metadata-gate"]
   Boundary --> metadata_gate_2dcdb343
+  promote_test_5c615269["promote.test"]
+  Boundary --> promote_test_5c615269
   normalise_test_1_6643dd83["normalise.test"]
   Boundary --> normalise_test_1_6643dd83
   coderabbit_csv_test_1f36d0a4["coderabbit-csv.test"]
   Boundary --> coderabbit_csv_test_1f36d0a4
   artifact_io_test_aac02da3["artifact-io.test"]
   Boundary --> artifact_io_test_aac02da3
-  policy_test_2c06901d["policy.test"]
-  Boundary --> policy_test_2c06901d
-  types_16_0fae1112["types"]
-  Boundary --> types_16_0fae1112
+  types_14_fe7507be["types"]
+  Boundary --> types_14_fe7507be
   scaffold_db8a7260["scaffold"]
   Boundary --> scaffold_db8a7260
   scaffold_security_scan_template_55bc7465["scaffold-security-scan-template"]
@@ -831,8 +858,12 @@ flowchart TD
   Boundary --> scaffold_ci_templates_2afd6392
   init_ops_e54123f9["init-ops"]
   Boundary --> init_ops_e54123f9
+  policy_test_2c06901d["policy.test"]
+  Boundary --> policy_test_2c06901d
   legacy_dispatch_guard_test_4700087d["legacy-dispatch-guard.test"]
   Boundary --> legacy_dispatch_guard_test_4700087d
+  ownership_gate_2e194d13["ownership-gate"]
+  Boundary --> ownership_gate_2e194d13
   validator_test_5_2bb3219d["validator.test"]
   Boundary --> validator_test_5_2bb3219d
   validator_core_1_1518647e["validator-core"]
@@ -922,11 +953,11 @@ classDiagram
   class errors_be4bd567 {
     +src/lib/github/errors.ts
   }
-  class validator_4_5180cf23 {
-    +src/lib/evidence/validator.ts
-  }
   class eject_1_d0ecd4d1 {
     +src/lib/init/eject.ts
+  }
+  class validator_4_5180cf23 {
+    +src/lib/evidence/validator.ts
   }
   class run_records_core_89286dfa {
     +src/lib/contract/run-records-core.ts
@@ -1085,18 +1116,45 @@ flowchart TD
   client_948fe603["client"]
   UserRequest --> client_948fe603
   client_948fe603 --> client_948fe603_result["result"]
-  types_12_2b09659a["types"]
-  UserRequest --> types_12_2b09659a
-  types_12_2b09659a --> types_12_2b09659a_result["result"]
-  normalise_1_4c940463["normalise"]
-  UserRequest --> normalise_1_4c940463
-  normalise_1_4c940463 --> normalise_1_4c940463_result["result"]
-  artifact_io_ba511748["artifact-io"]
-  UserRequest --> artifact_io_ba511748
-  artifact_io_ba511748 --> artifact_io_ba511748_result["result"]
   sanitize_af6a3bb0["sanitize"]
   UserRequest --> sanitize_af6a3bb0
   sanitize_af6a3bb0 --> sanitize_af6a3bb0_result["result"]
+  types_12_2b09659a["types"]
+  UserRequest --> types_12_2b09659a
+  types_12_2b09659a --> types_12_2b09659a_result["result"]
+  promote_test_5c615269["promote.test"]
+  UserRequest --> promote_test_5c615269
+  promote_test_5c615269 --> promote_test_5c615269_result["result"]
+  overrides_ab2dd33e["overrides"]
+  UserRequest --> overrides_ab2dd33e
+  overrides_ab2dd33e --> overrides_ab2dd33e_result["result"]
+  overrides_test_b1c05559["overrides.test"]
+  UserRequest --> overrides_test_b1c05559
+  overrides_test_b1c05559 --> overrides_test_b1c05559_result["result"]
+  north_star_feedback_1_9c32c60d["north-star-feedback"]
+  UserRequest --> north_star_feedback_1_9c32c60d
+  north_star_feedback_1_9c32c60d --> north_star_feedback_1_9c32c60d_result["result"]
+  north_star_feedback_test_1_70c96eba["north-star-feedback.test"]
+  UserRequest --> north_star_feedback_test_1_70c96eba
+  north_star_feedback_test_1_70c96eba --> north_star_feedback_test_1_70c96eba_result["result"]
+  normalise_1_4c940463["normalise"]
+  UserRequest --> normalise_1_4c940463
+  normalise_1_4c940463 --> normalise_1_4c940463_result["result"]
+  live_companion_e428b3c6["live-companion"]
+  UserRequest --> live_companion_e428b3c6
+  live_companion_e428b3c6 --> live_companion_e428b3c6_result["result"]
+  gate_test_71fa0f92["gate.test"]
+  UserRequest --> gate_test_71fa0f92
+  gate_test_71fa0f92 --> gate_test_71fa0f92_result["result"]
+  enforcement_status_92d314f5["enforcement-status"]
+  UserRequest --> enforcement_status_92d314f5
+  enforcement_status_92d314f5 --> enforcement_status_92d314f5_result["result"]
+  enforcement_status_test_1fe22141["enforcement-status.test"]
+  UserRequest --> enforcement_status_test_1fe22141
+  enforcement_status_test_1fe22141 --> enforcement_status_test_1fe22141_result["result"]
+  artifact_io_ba511748["artifact-io"]
+  UserRequest --> artifact_io_ba511748
+  artifact_io_ba511748 --> artifact_io_ba511748_result["result"]
   url_validator_test_f781df3b["url-validator.test"]
   UserRequest --> url_validator_test_f781df3b
   url_validator_test_f781df3b --> url_validator_test_f781df3b_result["result"]
@@ -1130,9 +1188,9 @@ flowchart TD
   UserRequest --> update_core_bced358c
   update_core_bced358c --> update_core_bced358c_write["write/update"]
   update_core_bced358c_write --> update_core_bced358c_result["result"]
-  types_16_0fae1112["types"]
-  UserRequest --> types_16_0fae1112
-  types_16_0fae1112 --> types_16_0fae1112_result["result"]
+  types_14_fe7507be["types"]
+  UserRequest --> types_14_fe7507be
+  types_14_fe7507be --> types_14_fe7507be_result["result"]
   schema_migrate_c0646635["schema-migrate"]
   UserRequest --> schema_migrate_c0646635
   schema_migrate_c0646635 --> schema_migrate_c0646635_result["result"]
@@ -1181,9 +1239,9 @@ flowchart TD
   init_modes_c05ceb07["init-modes"]
   UserRequest --> init_modes_c05ceb07
   init_modes_c05ceb07 --> init_modes_c05ceb07_result["result"]
-  index_4_013aa0e3["index"]
-  UserRequest --> index_4_013aa0e3
-  index_4_013aa0e3 --> index_4_013aa0e3_result["result"]
+  index_3_7e40d474["index"]
+  UserRequest --> index_3_7e40d474
+  index_3_7e40d474 --> index_3_7e40d474_result["result"]
   eject_test_96dad02e["eject.test"]
   UserRequest --> eject_test_96dad02e
   eject_test_96dad02e --> eject_test_96dad02e_result["result"]
@@ -1202,12 +1260,21 @@ flowchart TD
   ralph_runtime_test_682f806b["ralph-runtime.test"]
   UserRequest --> ralph_runtime_test_682f806b
   ralph_runtime_test_682f806b --> ralph_runtime_test_682f806b_result["result"]
+  store_824d80d7["store"]
+  UserRequest --> store_824d80d7
+  store_824d80d7 --> store_824d80d7_result["result"]
+  constants_7517017f["constants"]
+  UserRequest --> constants_7517017f
+  constants_7517017f --> constants_7517017f_result["result"]
   command_registry_a88eb2e3["command-registry"]
   UserRequest --> command_registry_a88eb2e3
   command_registry_a88eb2e3 --> command_registry_a88eb2e3_result["result"]
   command_registry_test_0cf92cba["command-registry.test"]
   UserRequest --> command_registry_test_0cf92cba
   command_registry_test_0cf92cba --> command_registry_test_0cf92cba_result["result"]
+  ownership_gate_2e194d13["ownership-gate"]
+  UserRequest --> ownership_gate_2e194d13
+  ownership_gate_2e194d13 --> ownership_gate_2e194d13_result["result"]
   validator_test_5_2bb3219d["validator.test"]
   UserRequest --> validator_test_5_2bb3219d
   validator_test_5_2bb3219d --> validator_test_5_2bb3219d_result["result"]
@@ -1244,12 +1311,6 @@ flowchart TD
   contract_presets_bbab169b["contract-presets"]
   UserRequest --> contract_presets_bbab169b
   contract_presets_bbab169b --> contract_presets_bbab169b_result["result"]
-  store_824d80d7["store"]
-  UserRequest --> store_824d80d7
-  store_824d80d7 --> store_824d80d7_result["result"]
-  constants_7517017f["constants"]
-  UserRequest --> constants_7517017f
-  constants_7517017f --> constants_7517017f_result["result"]
   resolver_439c3635["resolver"]
   UserRequest --> resolver_439c3635
   resolver_439c3635 --> resolver_439c3635_result["result"]
@@ -1380,6 +1441,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_pilot_evaluation_decision_packet_dd44377_511d2198
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_review_gate_decision_packet_8ee9d119_a5022670
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_docs_gate_core_eb9b6c18_98cad445
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_learnings_enforcement_status_92d314f5_3115883f
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_idempotency_f5d39a07_436bfde4
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_indexer_70fa78e5_8f1646af
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_indexer_test_d492f0aa_4bd5aca2
@@ -1388,6 +1450,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_gardener_link_checker_d0fa555f_defff88c
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_init_migration_8a6cead4_4ce3e628
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_learnings_normalise_4c940463_032daeaf
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_learnings_north_star_feedback_9c32c60d_5314cfd8
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_pilot_rollback_00c1f82c_e5dc550a
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_plan_gate_test_0c0192e6_d293ab91
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_preset_resolver_dc3dd716_6ba7f673
@@ -1406,6 +1469,8 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_init_upgrade_b277486e_b2698ece
   ext_node_dns_828a0bbf["node:dns"] --> node_src_lib_governance_url_validator_3c5a1568_98696d21
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_agent_first_throughput_integration__7c59b283
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_artifact_gate_test_25ecc97a_b8e41645
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_artifact_provenance_03b81cbf_ac2e9772
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_ast_grep_rules_test_2b69fd9a_c48c69e0
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_b81f37a0_4a8057db
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_test_54ea1006_a3e1e261
@@ -1424,6 +1489,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_authz_test_327903fb_fd074017
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_environment_core_2c16213f_537eaeb1
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_ci_ownership_gate_test_7b1c196d_57a8ab81
   ext_node_fs_a15b7d96["node:fs"] --> node_src_cli_99bb8840_d48ba2e4
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_cli_084e05fe_7beaed99
   ext_node_fs_a15b7d96["node:fs"] --> node_src_cli_dispatch_test_54c9f17b_179f85f0
@@ -1466,8 +1532,11 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_drift_gate_types_3f045f82_01657f52
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_eject_d0ecd4d1_229c1a6a
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_eject_test_96dad02e_601f605d
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_learnings_enforcement_status_test_1fe221_226b2729
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_evidence_verify_3b73c290_1f8dd9f2
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_evidence_verify_test_7373101d_c288ceac
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_docs_surface_frontmatter_metadata_gate_6_4f92863e
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_docs_surface_frontmatter_metadata_gate_t_30da2f83
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_gap_case_test_e32159fb_a0da53ec
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_gardener_9416a9df_a5388d61
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_learnings_gate_c974e17b_c619882b
@@ -1481,6 +1550,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_agents_instruction_compat_06a469fd_af52553b
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_agents_instruction_compat_test_15974a83_a01a1aae
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_learnings_9feb3e1d_694f3a0a
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_learnings_test_e45e0253_963d4f06
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_cli_legacy_dispatch_guard_test_4700087d_0ef25856
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_lexical_fallback_723e2b_6f1ddfed
@@ -1501,8 +1571,12 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_memory_metrics_tracker_test_3de156fa_d34e311d
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_architecture_module_boundaries_test_c0ca_9d1087a8
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_north_star_artifact_io_test_529_b1241a6f
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_learnings_north_star_feedback_test_70c96_81e63044
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_org_audit_d739e44b_fc2ca563
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_org_audit_test_0fd9cae8_806cc649
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_learnings_overrides_ab2dd33e_68dc90b3
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_learnings_overrides_test_b1c05559_d84a3cba
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_ownership_gate_2e194d13_e67620f9
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_parser_test_3c7414cf_9fd264b6
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_evaluate_core_48a59b4a_31380bea
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_evaluate_test_a2ac06fc_388cb18c
@@ -1512,6 +1586,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pr_template_gate_281778f9_bf031e00
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_preset_detection_b0f00a17_fc900a93
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_preset_resolver_dc3dd716_6ba7f673
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_learnings_promote_test_5c615269_85c6e179
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_prompt_gate_c5e9d207_a1d2e6f6
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_provider_adapter_3bcf82b7_df71fd61
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_gardener_quality_scorer_362f2a90_5438aaca
@@ -1536,6 +1611,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_satisfiability_6c08de4b_7cf44516
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_db8a7260_c79e8b6f
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_ci_template_utils_1035b61c_d56c5df9
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_default_promotions_test_f8_27b83657
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_governance_templates_5c949_45b4fd56
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_hook_templates_8c74ab50_b4a749ea
   ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_root_templates_61731280_b524fb4e
@@ -1588,6 +1664,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_workflow_generate_2fc0af62_3767d3c5
   ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_workflow_generate_parser_ad69fefe_05899def
   ext_node_module_ca1b42af["node:module"] --> node_src_commands_health_core_2b2fdada_97f175ff
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_artifact_gate_test_25ecc97a_b8e41645
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_learnings_artifact_io_test_aac02da3_3f05e2ba
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_automation_run_test_7b21d905_ed093c97
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_blast_radius_test_045450fc_9b55a936
@@ -1598,6 +1675,7 @@ graph LR
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_check_test_7469a186_614dc441
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_ci_ownership_gate_test_7b1c196d_57a8ab81
   ext_node_os_d93fe73a["node:os"] --> node_src_cli_dispatch_test_54c9f17b_179f85f0
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_codex_preflight_symlink_test_037558_5789ffec
   ext_node_os_d93fe73a["node:os"] --> node_e2e_tests_command_pipeline_e2e_test_a0aa069a_a8ee24c9
@@ -1610,7 +1688,10 @@ graph LR
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_silent_error_detector_test_d10b3555_2c298e11
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_doctor_test_e032e8b5_6705010c
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_eject_test_96dad02e_601f605d
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_learnings_enforcement_status_test_1fe221_226b2729
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_evidence_verify_test_7373101d_c288ceac
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_docs_surface_frontmatter_metadata_gate_t_30da2f83
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_learnings_gate_test_71fa0f92_96a67664
   ext_node_os_d93fe73a["node:os"] --> node_e2e_clients_github_e2e_2891a341_aacd937a
   ext_node_os_d93fe73a["node:os"] --> node_e2e_tests_github_integration_e2e_test_0b124522_8577c76d
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_health_test_f79de76d_c624883e
@@ -1624,13 +1705,17 @@ graph LR
   ext_node_os_d93fe73a["node:os"] --> node_e2e_tests_linear_integration_e2e_test_dbc5e6db_9deed64f
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_gardener_link_checker_d0fa555f_defff88c
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_local_memory_preflight_test_5e323bb_7198fc35
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_north_star_feedback_test_59dc54f7_32b56761
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_learnings_north_star_feedback_test_70c96_81e63044
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_org_audit_test_0fd9cae8_806cc649
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_test_overload_guard_2748c559_98821912
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_test_overload_guard_test_6ece9f86_ac5b6294
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_learnings_overrides_test_b1c05559_d84a3cba
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_preflight_performance_overload_c685bfcf_bdb17e6b
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_pr_template_gate_test_35faef1d_8b9385b9
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_promote_mode_test_7ca3f5ec_5ed4f47d
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_learnings_promote_test_5c615269_85c6e179
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_refresh_diagram_context_test_03bf21_16fd4e17
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_replay_test_935f7436_90eb00d2
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_verify_resume_admissibility_test_eba58e3_2e57a5c3
@@ -1638,6 +1723,7 @@ graph LR
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_review_gate_test_000e2ed6_4bdcd834
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_rollback_test_5435eb9c_fc5022cd
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_verify_run_state_test_ee8298e8_22f322e3
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_scaffold_default_promotions_test_f8_27b83657
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_scaffold_test_96f4ccea_0a85d882
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_governance_scan_cache_test_dd1160a2_427b9803
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_simulate_test_24df93e5_c915ccfe
@@ -1662,8 +1748,10 @@ graph LR
   ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_workflow_contract_scripts_test_681e_ab4d6c14
   ext_node_os_d93fe73a["node:os"] --> node_src_commands_workflow_generate_test_b543473a_9e976a7c
   ext_node_path_78811c13["node:path"] --> node_src_commands_agent_first_throughput_integration__7c59b283
+  ext_node_path_78811c13["node:path"] --> node_src_commands_artifact_gate_test_25ecc97a_b8e41645
   ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_artifact_io_ba511748_a069e0b5
   ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_artifact_io_test_aac02da3_3f05e2ba
+  ext_node_path_78811c13["node:path"] --> node_src_lib_artifact_provenance_03b81cbf_ac2e9772
   ext_node_path_78811c13["node:path"] --> node_src_lib_init_ast_grep_rules_test_2b69fd9a_c48c69e0
   ext_node_path_78811c13["node:path"] --> node_src_commands_audit_b81f37a0_4a8057db
   ext_node_path_78811c13["node:path"] --> node_src_commands_audit_test_54ea1006_a3e1e261
@@ -1692,6 +1780,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_src_lib_ci_ci_migrate_snapshot_paths_a10de06b_9ee07ab5
   ext_node_path_78811c13["node:path"] --> node_src_lib_ci_ci_migrate_snapshot_paths_test_8bcd0e_7195da91
   ext_node_path_78811c13["node:path"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
+  ext_node_path_78811c13["node:path"] --> node_src_commands_ci_ownership_gate_test_7b1c196d_57a8ab81
   ext_node_path_78811c13["node:path"] --> node_src_cli_99bb8840_d48ba2e4
   ext_node_path_78811c13["node:path"] --> node_src_lib_init_cli_084e05fe_7beaed99
   ext_node_path_78811c13["node:path"] --> node_src_cli_dispatch_test_54c9f17b_179f85f0
@@ -1739,13 +1828,18 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_src_commands_drift_gate_test_816765e3_c705e6e0
   ext_node_path_78811c13["node:path"] --> node_src_lib_init_eject_d0ecd4d1_229c1a6a
   ext_node_path_78811c13["node:path"] --> node_src_lib_init_eject_test_96dad02e_601f605d
+  ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_enforcement_status_92d314f5_3115883f
+  ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_enforcement_status_test_1fe221_226b2729
   ext_node_path_78811c13["node:path"] --> node_src_commands_evidence_verify_3b73c290_1f8dd9f2
   ext_node_path_78811c13["node:path"] --> node_src_commands_evidence_verify_test_7373101d_c288ceac
+  ext_node_path_78811c13["node:path"] --> node_src_lib_docs_surface_frontmatter_metadata_gate_6_4f92863e
+  ext_node_path_78811c13["node:path"] --> node_src_lib_docs_surface_frontmatter_metadata_gate_t_30da2f83
   ext_node_path_78811c13["node:path"] --> node_src_commands_gap_case_82e69111_dee253c1
   ext_node_path_78811c13["node:path"] --> node_src_commands_gap_case_test_e32159fb_a0da53ec
   ext_node_path_78811c13["node:path"] --> node_src_commands_gardener_9416a9df_a5388d61
   ext_node_path_78811c13["node:path"] --> node_src_commands_gardener_test_98f0b9a5_08a91964
   ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_gate_c974e17b_c619882b
+  ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_gate_test_71fa0f92_96a67664
   ext_node_path_78811c13["node:path"] --> node_e2e_clients_github_e2e_2891a341_aacd937a
   ext_node_path_78811c13["node:path"] --> node_e2e_tests_github_integration_e2e_test_0b124522_8577c76d
   ext_node_path_78811c13["node:path"] --> node_src_commands_health_core_2b2fdada_97f175ff
@@ -1782,8 +1876,14 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_src_lib_architecture_module_boundaries_test_c0ca_9d1087a8
   ext_node_path_78811c13["node:path"] --> node_src_lib_contract_north_star_artifact_io_9f2c34b2_2b44788f
   ext_node_path_78811c13["node:path"] --> node_src_lib_contract_north_star_artifact_io_test_529_b1241a6f
+  ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_north_star_feedback_9c32c60d_5314cfd8
+  ext_node_path_78811c13["node:path"] --> node_src_commands_north_star_feedback_test_59dc54f7_32b56761
+  ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_north_star_feedback_test_70c96_81e63044
   ext_node_path_78811c13["node:path"] --> node_src_commands_org_audit_d739e44b_fc2ca563
   ext_node_path_78811c13["node:path"] --> node_src_commands_org_audit_test_0fd9cae8_806cc649
+  ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_overrides_ab2dd33e_68dc90b3
+  ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_overrides_test_b1c05559_d84a3cba
+  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_ownership_gate_2e194d13_e67620f9
   ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_parser_test_3c7414cf_9fd264b6
   ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_evaluate_core_48a59b4a_31380bea
   ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_evaluate_test_a2ac06fc_388cb18c
@@ -1796,6 +1896,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_src_lib_preset_detection_b0f00a17_fc900a93
   ext_node_path_78811c13["node:path"] --> node_src_lib_contract_preset_resolver_dc3dd716_6ba7f673
   ext_node_path_78811c13["node:path"] --> node_src_commands_promote_mode_test_7ca3f5ec_5ed4f47d
+  ext_node_path_78811c13["node:path"] --> node_src_lib_learnings_promote_test_5c615269_85c6e179
   ext_node_path_78811c13["node:path"] --> node_src_commands_prompt_gate_c5e9d207_a1d2e6f6
   ext_node_path_78811c13["node:path"] --> node_src_lib_ci_provider_adapter_3bcf82b7_df71fd61
   ext_node_path_78811c13["node:path"] --> node_src_lib_gardener_quality_scorer_362f2a90_5438aaca
@@ -1830,6 +1931,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_src_lib_ci_satisfiability_6c08de4b_7cf44516
   ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_db8a7260_c79e8b6f
   ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_ci_template_utils_1035b61c_d56c5df9
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_default_promotions_test_f8_27b83657
   ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_hook_templates_8c74ab50_b4a749ea
   ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_test_96f4ccea_0a85d882
   ext_node_path_78811c13["node:path"] --> node_src_lib_governance_scan_cache_fc02c79c_dbe1a47a
@@ -1900,12 +2002,14 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_learnings_coderabbit_csv_test_1f36d0a4_d9514c0f
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_cli_registry_command_specs_test_7f693e85_0524568c
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_pilot_evaluation_control_plane_core_db3b_9ea2948b
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_review_gate_decision_packet_8ee9d119_a5022670
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_project_type_detector_test_a3d69c08_2911626c
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_learnings_gate_c974e17b_c619882b
   ext_node_url_d0cb3ad7["node:url"] --> node_src_commands_health_core_2b2fdada_97f175ff
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_contract_preset_resolver_dc3dd716_6ba7f673
   ext_node_url_d0cb3ad7["node:url"] --> node_src_dev_run_local_memory_preflight_36e92808_6c3bec68
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_ci_template_utils_1035b61c_d56c5df9
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_default_promotions_test_f8_27b83657
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_governance_templates_5c949_45b4fd56
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_root_templates_61731280_b524fb4e
   ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_shell_templates_0ad0f915_85748e76
@@ -1946,6 +2050,7 @@ graph LR
   ext_the_bbccdf2e["the"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
   ext_typescript_fb9da861["typescript"] --> node_src_lib_source_outline_c86cb1d0_6ecff2b4
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_agent_first_throughput_integration__7c59b283
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_artifact_gate_test_25ecc97a_b8e41645
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_learnings_artifact_io_test_aac02da3_3f05e2ba
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_ast_grep_rules_test_2b69fd9a_c48c69e0
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_audit_test_54ea1006_a3e1e261
@@ -1971,6 +2076,7 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_ci_migrate_command_contract_test_1274_e095d3a5
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_ci_migrate_signing_test_fe9943ab_4606a34b
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_ci_migrate_snapshot_paths_test_8bcd0e_7195da91
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_ci_ownership_gate_test_7b1c196d_57a8ab81
   ext_vitest_4c9cfa13["vitest"] --> node_src_cli_dispatch_test_54c9f17b_179f85f0
   ext_vitest_4c9cfa13["vitest"] --> node_src_cli_test_4851f28b_523d2a86
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_client_test_6fa17bd4_78314172
@@ -2003,14 +2109,18 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_brain_domain_mapper_test_dc5a989_0594a5a2
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_drift_gate_test_816765e3_c705e6e0
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_eject_test_96dad02e_601f605d
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_learnings_enforcement_status_test_1fe221_226b2729
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_errors_test_1a443b6a_dd2ec165
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_pilot_evaluation_evaluation_engine_test__96caf1be
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_evidence_verify_test_7373101d_c288ceac
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_extends_validator_test_cee1fc26_42aefad6
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_remediation_finding_normalizer_test_d463_234993b6
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_docs_surface_frontmatter_metadata_gate_t_30da2f83
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_learnings_fuzzy_match_test_6d0a675a_39fe4fd9
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_gap_case_test_e32159fb_a0da53ec
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_gardener_test_98f0b9a5_08a91964
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_gate_bundle_test_f729a_57823319
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_learnings_gate_test_71fa0f92_96a67664
   ext_vitest_4c9cfa13["vitest"] --> node_e2e_tests_github_integration_e2e_test_0b124522_8577c76d
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_governance_report_test_160fb2e0_4abcaa82
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_health_test_f79de76d_c624883e
@@ -2028,6 +2138,7 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_sync_test_da1e1eab_5c2963f6
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_triage_test_1b75a8b8_19863a59
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_workflow_test_a351dcb0_73fc7cb1
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_learnings_live_companion_test_16485143_a74c6fe2
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_loader_test_03424671_327c1920
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_local_memory_preflight_test_5e323bb_7198fc35
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_merger_test_a3d79da0_0c77c3eb
@@ -2041,6 +2152,8 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_north_star_alignment_test_3ae1d_9d97281f
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_north_star_artifact_io_test_529_b1241a6f
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_north_star_artifacts_test_66d33_17c91b96
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_north_star_feedback_test_59dc54f7_32b56761
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_learnings_north_star_feedback_test_70c96_81e63044
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_review_gate_north_star_questions_test_80_7b45b0a2
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_north_star_validators_test_1f47_4b1cfd19
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_observability_gate_test_ca2979e0_3c8bb89a
@@ -2050,6 +2163,7 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_verify_orchestrator_test_18d2fe26_0cefa964
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_org_audit_test_0fd9cae8_806cc649
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_test_overload_guard_test_6ece9f86_ac5b6294
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_learnings_overrides_test_b1c05559_d84a3cba
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_parser_test_3c7414cf_9fd264b6
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_preflight_performance_overload_test_4d9c_caf4d863
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_pilot_evaluate_test_a2ac06fc_388cb18c
@@ -2067,6 +2181,7 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_preset_test_9e489c16_9798caf0
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_project_brain_templates_test_0b6509_fc96d6cd
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_promote_mode_test_7ca3f5ec_5ed4f47d
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_learnings_promote_test_5c615269_85c6e179
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_prompt_gate_test_1a442b27_a7737ddc
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_deps_ralph_runtime_test_682f806b_edc2f6ed
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_refresh_diagram_context_test_03bf21_16fd4e17
@@ -2097,6 +2212,7 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_codex_environment_template_74d6f8ac
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_config_templates_test_b34e_b1c9dc38
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_contract_template_test_6f3_bc00cac5
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_default_promotions_test_f8_27b83657
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_diagram_templates_test_f37_e1304cc7
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_doc_templates_test_60933e8_c9ad14aa
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_environment_templates_test_e371154b
@@ -2121,6 +2237,7 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_test_96f4ccea_0a85d882
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_governance_scan_cache_test_dd1160a2_427b9803
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_search_test_0c66bc11_d61d2826
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_learnings_sensitive_text_test_2386c0ce_dadd546d
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_sha_test_5a5924fc_84f7b037
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_simulate_test_24df93e5_c915ccfe
   ext_vitest_4c9cfa13["vitest"] --> node_src_commands_solo_mode_test_a7f03f80_a7d627f3
@@ -2510,30 +2627,34 @@ flowchart TD
   Untrusted --> triage_lanes_5c8ea001
   metadata_gate_2dcdb343["metadata-gate"]
   Untrusted --> metadata_gate_2dcdb343
+  sanitize_test_f3d34916["sanitize.test"]
+  Untrusted --> sanitize_test_f3d34916
   validation_plan_1_3267c110["validation-plan"]
   Untrusted --> validation_plan_1_3267c110
+  promote_test_5c615269["promote.test"]
+  Untrusted --> promote_test_5c615269
+  north_star_feedback_test_1_70c96eba["north-star-feedback.test"]
+  Untrusted --> north_star_feedback_test_1_70c96eba
   normalise_test_1_6643dd83["normalise.test"]
   Untrusted --> normalise_test_1_6643dd83
+  gate_test_71fa0f92["gate.test"]
+  Untrusted --> gate_test_71fa0f92
+  fuzzy_match_test_6d0a675a["fuzzy-match.test"]
+  Untrusted --> fuzzy_match_test_6d0a675a
+  enforcement_status_test_1fe22141["enforcement-status.test"]
+  Untrusted --> enforcement_status_test_1fe22141
   coderabbit_csv_test_1f36d0a4["coderabbit-csv.test"]
   Untrusted --> coderabbit_csv_test_1f36d0a4
   artifact_io_test_aac02da3["artifact-io.test"]
   Untrusted --> artifact_io_test_aac02da3
-  sanitize_test_f3d34916["sanitize.test"]
-  Untrusted --> sanitize_test_f3d34916
   scan_cache_fc02c79c["scan-cache"]
   Untrusted --> scan_cache_fc02c79c
   repo_scanner_core_8e9f7646["repo-scanner-core"]
   Untrusted --> repo_scanner_core_8e9f7646
-  policy_823412d1["policy"]
-  Untrusted --> policy_823412d1
-  policy_test_2c06901d["policy.test"]
-  Untrusted --> policy_test_2c06901d
-  index_3_7e40d474["index"]
-  Untrusted --> index_3_7e40d474
   update_core_bced358c["update-core"]
   Untrusted --> update_core_bced358c
-  types_16_0fae1112["types"]
-  Untrusted --> types_16_0fae1112
+  types_14_fe7507be["types"]
+  Untrusted --> types_14_fe7507be
   scaffold_db8a7260["scaffold"]
   Untrusted --> scaffold_db8a7260
   scaffold_worktree_templates_66a38e9a["scaffold-worktree-templates"]
@@ -2594,12 +2715,34 @@ flowchart TD
   Untrusted --> init_ops_e54123f9
   init_modes_c05ceb07["init-modes"]
   Untrusted --> init_modes_c05ceb07
+  frontmatter_metadata_gate_test_3d0999f8["frontmatter-metadata-gate.test"]
+  Untrusted --> frontmatter_metadata_gate_test_3d0999f8
   ralph_runtime_73d63c0e["ralph-runtime"]
   Untrusted --> ralph_runtime_73d63c0e
   ralph_runtime_test_682f806b["ralph-runtime.test"]
   Untrusted --> ralph_runtime_test_682f806b
+  policy_823412d1["policy"]
+  Untrusted --> policy_823412d1
+  policy_test_2c06901d["policy.test"]
+  Untrusted --> policy_test_2c06901d
+  index_4_013aa0e3["index"]
+  Untrusted --> index_4_013aa0e3
+  context_compact_policy_3dcaf95d["context-compact-policy"]
+  Untrusted --> context_compact_policy_3dcaf95d
+  context_compact_policy_test_da148267["context-compact-policy.test"]
+  Untrusted --> context_compact_policy_test_da148267
   command_registry_test_0cf92cba["command-registry.test"]
   Untrusted --> command_registry_test_0cf92cba
+  required_check_metadata_dc610201["required-check-metadata"]
+  Untrusted --> required_check_metadata_dc610201
+  required_check_metadata_test_ea69c914["required-check-metadata.test"]
+  Untrusted --> required_check_metadata_test_ea69c914
+  ownership_gate_2e194d13["ownership-gate"]
+  Untrusted --> ownership_gate_2e194d13
+  ci_migrate_signing_2d82ac3f["ci-migrate-signing"]
+  Untrusted --> ci_migrate_signing_2d82ac3f
+  ci_migrate_signing_test_fe9943ab["ci-migrate-signing.test"]
+  Untrusted --> ci_migrate_signing_test_fe9943ab
   validator_5_b19ac2be["validator"]
   Untrusted --> validator_5_b19ac2be
   validator_test_5_2bb3219d["validator.test"]
@@ -2628,20 +2771,8 @@ flowchart TD
   Untrusted --> loader_test_03424671
   json_schema_core_96d7e328["json-schema-core"]
   Untrusted --> json_schema_core_96d7e328
-  index_5_522f772a["index"]
-  Untrusted --> index_5_522f772a
-  context_compact_policy_3dcaf95d["context-compact-policy"]
-  Untrusted --> context_compact_policy_3dcaf95d
-  context_compact_policy_test_da148267["context-compact-policy.test"]
-  Untrusted --> context_compact_policy_test_da148267
-  required_check_metadata_dc610201["required-check-metadata"]
-  Untrusted --> required_check_metadata_dc610201
-  required_check_metadata_test_ea69c914["required-check-metadata.test"]
-  Untrusted --> required_check_metadata_test_ea69c914
-  ci_migrate_signing_2d82ac3f["ci-migrate-signing"]
-  Untrusted --> ci_migrate_signing_2d82ac3f
-  ci_migrate_signing_test_fe9943ab["ci-migrate-signing.test"]
-  Untrusted --> ci_migrate_signing_test_fe9943ab
+  index_6_fc9e91e2["index"]
+  Untrusted --> index_6_fc9e91e2
   module_boundaries_test_c0caf46b["module-boundaries.test"]
   Untrusted --> module_boundaries_test_c0caf46b
   command_specs_test_7f693e85["command-specs.test"]
@@ -2696,6 +2827,8 @@ flowchart TD
   Untrusted --> ui_loop_11660889
   linear_gate_test_4fcca11a["linear-gate.test"]
   Untrusted --> linear_gate_test_4fcca11a
+  ci_ownership_gate_test_7b1c196d["ci-ownership-gate.test"]
+  Untrusted --> ci_ownership_gate_test_7b1c196d
   branch_protect_test_c8d80aab["branch-protect.test"]
   Untrusted --> branch_protect_test_c8d80aab
   linear_integration_e2e_test_dbc5e6db["linear-integration.e2e.test"]
@@ -2710,12 +2843,16 @@ flowchart TD
   Untrusted --> governance_report_test_160fb2e0
   automation_test_3da74b47["automation.test"]
   Untrusted --> automation_test_3da74b47
-  normalise_1_4c940463["normalise"]
-  Untrusted --> normalise_1_4c940463
   validation_test_bc73cdff["validation.test"]
   Untrusted --> validation_test_bc73cdff
   sanitize_af6a3bb0["sanitize"]
   Untrusted --> sanitize_af6a3bb0
+  sensitive_text_7c11f760["sensitive-text"]
+  Untrusted --> sensitive_text_7c11f760
+  sensitive_text_test_2386c0ce["sensitive-text.test"]
+  Untrusted --> sensitive_text_test_2386c0ce
+  normalise_1_4c940463["normalise"]
+  Untrusted --> normalise_1_4c940463
   url_validator_3c5a1568["url-validator"]
   Untrusted --> url_validator_3c5a1568
   url_validator_test_f781df3b["url-validator.test"]
@@ -2931,8 +3068,6 @@ flowchart LR
   User --> check_run_2fc00bd3
   check_run_test_85d17d04["check-run.test"]
   User --> check_run_test_85d17d04
-  policy_test_2c06901d["policy.test"]
-  User --> policy_test_2c06901d
   scaffold_test_96f4ccea["scaffold.test"]
   User --> scaffold_test_96f4ccea
   scaffold_workflow_template_92310587["scaffold-workflow-template"]
@@ -2959,6 +3094,14 @@ flowchart LR
   User --> scaffold_contract_template_3ba5d53a
   init_modes_c05ceb07["init-modes"]
   User --> init_modes_c05ceb07
+  policy_test_2c06901d["policy.test"]
+  User --> policy_test_2c06901d
+  sync_contract_c79fa191["sync-contract"]
+  User --> sync_contract_c79fa191
+  ollama_76e3c7bf["ollama"]
+  User --> ollama_76e3c7bf
+  ownership_gate_2e194d13["ownership-gate"]
+  User --> ownership_gate_2e194d13
   validator_core_1_1518647e["validator-core"]
   User --> validator_core_1_1518647e
   ui_loop_command_4db6cd6c["ui-loop-command"]
@@ -2967,14 +3110,10 @@ flowchart LR
   User --> ui_loop_command_test_3f014158
   loader_test_03424671["loader.test"]
   User --> loader_test_03424671
-  index_5_522f772a["index"]
-  User --> index_5_522f772a
+  index_6_fc9e91e2["index"]
+  User --> index_6_fc9e91e2
   contract_presets_bbab169b["contract-presets"]
   User --> contract_presets_bbab169b
-  sync_contract_c79fa191["sync-contract"]
-  User --> sync_contract_c79fa191
-  ollama_76e3c7bf["ollama"]
-  User --> ollama_76e3c7bf
   resolver_439c3635["resolver"]
   User --> resolver_439c3635
   command_specs_core_1c0ffc99["command-specs-core"]
