@@ -21,6 +21,8 @@ import type {
 	BranchProtectionCodeScanningPolicy,
 	BranchProtectionMergeMethods,
 	BranchProtectionPolicy,
+	CIFallbackWorkflowPolicy,
+	CIOwnershipPolicy,
 	CIProviderMigrationStage,
 	CIProviderPolicy,
 	CIProviderPolicyMode,
@@ -136,6 +138,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"controlPlanePolicy",
 	"toolingPolicy",
 	"ciProviderPolicy",
+	"ciOwnership",
 	"extends",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
@@ -229,6 +232,19 @@ const VALID_CI_PROVIDER_POLICY_KEYS = [
 	"trustedPolicyRef",
 	"primaryCheckName",
 	"commitMode",
+] as const;
+const VALID_CI_OWNERSHIP_POLICY_KEYS = [
+	"schemaVersion",
+	"primaryPrGate",
+	"reviewProvider",
+	"securityChecks",
+	"fallbackWorkflows",
+] as const;
+const VALID_CI_FALLBACK_WORKFLOW_KEYS = [
+	"path",
+	"role",
+	"purpose",
+	"allowAutomaticPrTriggers",
 ] as const;
 const VALID_GAP_CASE_POLICY_KEYS = [
 	"requiredEvidenceStatuses",
@@ -670,6 +686,9 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 				"timeoutAction",
 				"requiredChecks",
 				"enforceReviewerIndependence",
+				"requireReviewContext",
+				"reviewContextPath",
+				"reviewContextMaxAgeMinutes",
 			].includes(key),
 	);
 	if (unknownKeys.length > 0) {
@@ -701,6 +720,27 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	if (
 		policy.enforceReviewerIndependence !== undefined &&
 		typeof policy.enforceReviewerIndependence !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.requireReviewContext !== undefined &&
+		typeof policy.requireReviewContext !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.reviewContextPath !== undefined &&
+		(typeof policy.reviewContextPath !== "string" ||
+			policy.reviewContextPath.trim().length === 0)
+	) {
+		return false;
+	}
+	if (
+		policy.reviewContextMaxAgeMinutes !== undefined &&
+		(typeof policy.reviewContextMaxAgeMinutes !== "number" ||
+			policy.reviewContextMaxAgeMinutes <= 0 ||
+			!Number.isInteger(policy.reviewContextMaxAgeMinutes))
 	) {
 		return false;
 	}
@@ -1026,6 +1066,57 @@ function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
 		return false;
 	}
 	return true;
+}
+
+function isValidCIOwnershipPolicy(value: unknown): value is CIOwnershipPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+	const policy = value as Record<string, unknown>;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) =>
+			!VALID_CI_OWNERSHIP_POLICY_KEYS.includes(
+				key as (typeof VALID_CI_OWNERSHIP_POLICY_KEYS)[number],
+			),
+	);
+	if (invalidKeys.length > 0) return false;
+	if (policy.schemaVersion !== "ci-ownership/v1") return false;
+	if (policy.primaryPrGate !== "circleci") return false;
+	if (policy.reviewProvider !== "coderabbit") return false;
+	if (!isNonEmptyStringArray(policy.securityChecks)) return false;
+	if (
+		policy.fallbackWorkflows !== undefined &&
+		!isValidCIFallbackWorkflows(policy.fallbackWorkflows)
+	) {
+		return false;
+	}
+	return true;
+}
+
+function isValidCIFallbackWorkflows(
+	value: unknown,
+): value is CIFallbackWorkflowPolicy[] {
+	if (!Array.isArray(value)) return false;
+	return value.every((entry) => {
+		if (!isPlainObject(entry)) return false;
+		const workflow = entry as Record<string, unknown>;
+		const invalidKeys = Object.keys(workflow).filter(
+			(key) =>
+				!VALID_CI_FALLBACK_WORKFLOW_KEYS.includes(
+					key as (typeof VALID_CI_FALLBACK_WORKFLOW_KEYS)[number],
+				),
+		);
+		return (
+			invalidKeys.length === 0 &&
+			typeof workflow.path === "string" &&
+			workflow.path.trim().length > 0 &&
+			(workflow.role === "fallback_pr_gate" ||
+				workflow.role === "release_publishing") &&
+			typeof workflow.purpose === "string" &&
+			workflow.purpose.trim().length > 0 &&
+			typeof workflow.allowAutomaticPrTriggers === "boolean"
+		);
+	});
 }
 
 function isValidIssueTrackingPolicy(
@@ -2432,6 +2523,25 @@ export function validateContract(
 		}
 	}
 
+	// Validate ciOwnership (optional)
+	let ciOwnership: CIOwnershipPolicy | undefined;
+	if ("ciOwnership" in obj && obj.ciOwnership !== undefined) {
+		if (!isValidCIOwnershipPolicy(obj.ciOwnership)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "ciOwnership",
+				message:
+					"ciOwnership must define CircleCI primary PR ownership, CodeRabbit review ownership, independent security checks, and optional fallback workflow roles",
+				expected:
+					"{ schemaVersion: 'ci-ownership/v1', primaryPrGate: 'circleci', reviewProvider: 'coderabbit', securityChecks: string[], fallbackWorkflows?: [{ path: string, role: 'fallback_pr_gate' | 'release_publishing', purpose: string, allowAutomaticPrTriggers: boolean }] }",
+				received: JSON.stringify(obj.ciOwnership),
+				fix: "Ensure ciOwnership uses supported ownership roles and keeps fallback workflows explicit and audited",
+			});
+		} else {
+			ciOwnership = obj.ciOwnership as CIOwnershipPolicy;
+		}
+	}
+
 	// Validate blastRadiusRules (optional)
 	let blastRadiusRules: BlastRadiusRule[] | undefined;
 	if ("blastRadiusRules" in obj && obj.blastRadiusRules !== undefined) {
@@ -2621,6 +2731,7 @@ export function validateContract(
 		controlPlanePolicy,
 		toolingPolicy,
 		ciProviderPolicy,
+		ciOwnership,
 		branchProtection,
 		issueTrackingPolicy,
 		blastRadiusRules,

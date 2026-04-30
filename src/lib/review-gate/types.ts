@@ -14,11 +14,13 @@ export type ReviewDecisionState =
 	| "blocked-with-remediation"
 	| "escalated-for-decision";
 
+/** Merge-readiness state inferred from review-gate blockers and operator decisions. */
 export type ReviewPRClosureStatus =
 	| "ready-to-merge"
 	| "awaiting-remediation"
 	| "awaiting-operator-decision";
 
+/** Stable review-gate error code values for CLI and automation consumers. */
 export type ReviewGateErrorCode =
 	| "VALIDATION_ERROR"
 	| "NOT_FOUND"
@@ -26,6 +28,7 @@ export type ReviewGateErrorCode =
 	| "TIMEOUT"
 	| "SYSTEM_ERROR";
 
+/** Input options required to evaluate review-gate readiness for a pull request. */
 export interface ReviewGateOptions {
 	contractPath: string;
 	token: string;
@@ -38,8 +41,12 @@ export interface ReviewGateOptions {
 	autoResolveBotThreads?: boolean;
 	json?: boolean;
 	runRecordsDir?: string;
+	reviewContextPath?: string;
+	requireReviewContext?: boolean;
+	reviewContextMaxAgeMinutes?: number;
 }
 
+/** Machine-readable review-gate result payload emitted for readiness automation. */
 export interface ReviewGateOutput {
 	verified: boolean;
 	headSha: string;
@@ -50,6 +57,13 @@ export interface ReviewGateOutput {
 	timedOut?: boolean;
 	policy_gate_status: "pass" | "fail" | "pending" | "missing";
 	plan_traceability_status: "pass" | "fail" | "missing";
+	review_context_status?:
+		| "not_configured"
+		| "missing"
+		| "invalid"
+		| "stale"
+		| "pass"
+		| "warn";
 	plan_ids: string[];
 	blockers: string[];
 	actionable_count: number;
@@ -61,6 +75,7 @@ export interface ReviewGateOutput {
 	};
 }
 
+/** Success or structured-error result returned by review-gate execution. */
 export type ReviewGateResult =
 	| { ok: true; output: ReviewGateOutput }
 	| { ok: false; error: { code: string; message: string } };

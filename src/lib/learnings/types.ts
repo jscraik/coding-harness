@@ -37,6 +37,16 @@ export type LearningClassification =
 /** Provisional enforcement level derived from usage signal and classification. */
 export type LearningEnforcement = "error" | "warning" | "info" | "none";
 
+/** Promotion lifecycle state recorded by the enforcement-status ledger. */
+export type LearningPromotionStatus =
+	| "unreviewed"
+	| "candidate"
+	| "accepted"
+	| "enforced"
+	| "rejected"
+	| "deferred"
+	| "non_goal";
+
 /** Normalized learning item consumed by future gates and review-context phases. */
 export interface LearningItem {
 	/** Deterministic provider/repository/topic identifier. */
@@ -72,7 +82,9 @@ export interface LearningItem {
 	/** Non-blocking Phase 1A enforcement hint. */
 	enforcement: LearningEnforcement;
 	/** Promotion lifecycle status for routing repeated learnings into durable rules. */
-	promotionStatus: "candidate" | "enforced" | "memory_only" | "unenforced";
+	promotionStatus: LearningPromotionStatus;
+	/** Concrete implementation or test paths enforcing this learning. */
+	enforcedBy?: string[];
 }
 
 /** Machine-readable warning emitted during import. */
@@ -125,6 +137,8 @@ export interface LearningImportArtifact {
 	warnings: LearningImportWarning[];
 	/** Import summary. */
 	summary: LearningImportSummary;
+	/** Optional coarse provider metadata that is not row-level learning evidence. */
+	liveCompanion?: import("./live-companion.js").LearningLiveCompanion;
 }
 
 /** JSON result emitted by the import command. */

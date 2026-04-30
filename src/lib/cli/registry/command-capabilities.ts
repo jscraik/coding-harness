@@ -92,6 +92,8 @@ const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	"check-authz": "review-policy",
 	"check-environment": "review-policy",
 	"local-memory-preflight": "review-policy",
+	"artifact-gate": "review-policy",
+	"ci-ownership-gate": "review-policy",
 	"blast-radius": "review-policy",
 	"risk-tier": "review-policy",
 	"diff-budget": "review-policy",
@@ -117,6 +119,7 @@ const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	gardener: "drift-search-evidence",
 	"context-health": "drift-search-evidence",
 	learnings: "drift-search-evidence",
+	"north-star-feedback": "drift-search-evidence",
 	"review-context": "drift-search-evidence",
 	"validation-plan": "drift-search-evidence",
 	search: "drift-search-evidence",
@@ -146,6 +149,7 @@ const WRITE_COMMANDS = new Set<string>([
 
 const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
 	"blast-radius": ["--files"],
+	"artifact-gate": ["--files"],
 	"review-gate": ["--token", "--owner", "--repo", "--pr", "--sha"],
 	"workflow:generate": ["--source"],
 	"linear-gate": ["--branch", "--pr-title", "--pr-body"],
@@ -158,6 +162,8 @@ const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 	"check-environment": ["artifacts/policy/environment-attestation.json"],
 	"context-health": ["artifacts/context-integrity/index-source-inventory.json"],
 	"ci-migrate": [".harness/ci-provider-transition-status.json"],
+	"artifact-gate": [".harness/artifact-provenance.json"],
+	"ci-ownership-gate": ["harness.contract.json"],
 	learnings: [".harness/learnings/coderabbit.local.json"],
 	"review-context": ["artifacts/review-context/pr-context.json"],
 };

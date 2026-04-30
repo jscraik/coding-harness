@@ -28,7 +28,7 @@ describe("normalizeLearningRows", () => {
 			"https://github.com/jscraik/coding-harness/pull/148",
 		);
 		expect(result.items[0]?.enforcement).toBe("error");
-		expect(result.items[0]?.promotionStatus).toBe("enforced");
+		expect(result.items[0]?.promotionStatus).toBe("candidate");
 	});
 
 	it("adds stable short hashes when IDs collide", () => {

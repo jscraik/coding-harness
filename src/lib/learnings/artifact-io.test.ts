@@ -21,6 +21,10 @@ const csv = `Repository,File,Pull Request,URL,Usage,Learning,Created By,Last Use
 coding-harness,docs/ai-assistant-security-policy.md,148,,516,"YAML frontmatter fields are machine-readable metadata.",jscraik,Never,created,updated
 `;
 
+const sensitiveCsv = `Repository,File,Pull Request,URL,Usage,Learning,Created By,Last Used,Created At,Updated At
+coding-harness,/Users/jamiecraik/Downloads/private.md,148,https://github.com/jscraik/coding-harness/pull/148,516,"Use token=github_pat_abcdefghijklmnopqrstuvwxyz123456 from /Users/jamiecraik/.config.",jscraik,Never,created,updated
+`;
+
 describe("learning artifact IO", () => {
 	const cleanup: string[] = [];
 	afterEach(() => {
@@ -72,11 +76,11 @@ describe("learning artifact IO", () => {
 		);
 	});
 
-	it("rejects snapshot output variants without creating the snapshot file", () => {
+	it("writes sanitized snapshot output without local paths or sensitive values", () => {
 		const dir = mkdtempSync(join(tmpdir(), "learning-artifact-snapshot-"));
 		cleanup.push(dir);
 		const sourcePath = join(dir, "learnings.csv");
-		writeFileSync(sourcePath, csv, "utf-8");
+		writeFileSync(sourcePath, sensitiveCsv, "utf-8");
 		const result = buildCodeRabbitLearningArtifact({
 			sourcePath,
 			repository: "coding-harness",
@@ -90,13 +94,30 @@ describe("learning artifact IO", () => {
 			outputPath: "./.harness/learnings/coderabbit.snapshot.json",
 		});
 
-		expect(writeResult.ok).toBe(false);
-		expect(writeResult.ok ? undefined : writeResult.errorCode).toBe(
-			"learnings.snapshot_deferred",
+		expect(writeResult.ok).toBe(true);
+		const snapshotPath = join(
+			dir,
+			".harness/learnings/coderabbit.snapshot.json",
 		);
-		expect(
-			existsSync(join(dir, ".harness/learnings/coderabbit.snapshot.json")),
-		).toBe(false);
+		expect(existsSync(snapshotPath)).toBe(true);
+		const snapshotText = readFileSync(snapshotPath, "utf-8");
+		const snapshot = JSON.parse(snapshotText);
+		expect(snapshot.schemaVersion).toBe("harness-learnings-snapshot/v1");
+		expect(snapshot.source).toMatchObject({
+			kind: "coderabbit_csv",
+			sourceLabel: "CodeRabbit CSV export",
+			live: false,
+		});
+		expect(snapshot.source.uri).toBeUndefined();
+		expect(snapshot.items[0].source.uri).toBeUndefined();
+		expect(snapshot.items[0].githubUrl).toBe(
+			"https://github.com/jscraik/coding-harness/pull/148",
+		);
+		expect(snapshotText).not.toContain("/Users/jamiecraik");
+		expect(snapshotText).not.toContain(
+			"github_pat_abcdefghijklmnopqrstuvwxyz123456",
+		);
+		expect(snapshotText).toContain("[REDACTED]");
 	});
 
 	it("warns when a fresh import sharply drops from an existing local artifact", () => {

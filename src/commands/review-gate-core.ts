@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
 import { resolveActiveOverrides } from "../lib/contract/north-star-artifact-io.js";
@@ -20,6 +20,7 @@ import {
 } from "../lib/github/comments.js";
 import { validateSha } from "../lib/github/sha.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import type { ReviewContextResult } from "../lib/learnings/review-context.js";
 import {
 	normaliseReviewGateResult,
 	renderGateDecision,
@@ -101,6 +102,7 @@ interface ReadinessOptions {
 		status: ReviewGateOutput["plan_traceability_status"];
 		planIds: string[];
 	};
+	reviewContext?: ReviewContextReadinessResult;
 }
 
 function getReadinessCheckLabel(checkName?: string): string {
@@ -276,10 +278,14 @@ function withReadinessFields(
 		...(effectiveCheckName ? { effectiveCheckName } : {}),
 		policy_gate_status: policyGateStatus,
 		plan_traceability_status: planTraceabilityStatus,
+		...(options.reviewContext
+			? { review_context_status: options.reviewContext.status }
+			: {}),
 		plan_ids: planIds,
 		blockers,
 		actionable_count: actionableCount,
-		informational_count: informationalCount,
+		informational_count:
+			informationalCount + (options.reviewContext?.warnings.length ?? 0),
 		confidence_rubric: confidenceRubric,
 	};
 }
@@ -299,6 +305,12 @@ interface ReviewerIndependenceResult {
 interface ThreadReadinessResult {
 	passed: boolean;
 	blockers: string[];
+}
+
+interface ReviewContextReadinessResult {
+	status: NonNullable<ReviewGateOutput["review_context_status"]>;
+	blockers: string[];
+	warnings: string[];
 }
 
 interface PlanTraceabilityResult {
@@ -906,6 +918,146 @@ function evaluateUnresolvedReviewThreads(
 	};
 }
 
+function evaluateReviewContextReadiness(options: {
+	path?: string;
+	required: boolean;
+	changedFiles: string[];
+	prBody?: string | null;
+	contractPath: string;
+	maxAgeMinutes?: number;
+}): ReviewContextReadinessResult {
+	if (!options.path) {
+		return {
+			status: options.required ? "missing" : "not_configured",
+			blockers: options.required
+				? [
+						"Review context artifact is required, but no review-context path is configured or supplied",
+					]
+				: [],
+			warnings: [],
+		};
+	}
+	const resolvedPath = resolveReviewContextPath(
+		options.path,
+		options.contractPath,
+	);
+	if (!existsSync(resolvedPath)) {
+		const message = `Review context artifact was not found: ${options.path}`;
+		return {
+			status: "missing",
+			blockers: options.required ? [message] : [],
+			warnings: options.required ? [] : [message],
+		};
+	}
+	const parsed = readReviewContextArtifact(resolvedPath);
+	if (!parsed.ok) {
+		return {
+			status: "invalid",
+			blockers: options.required ? [parsed.message] : [],
+			warnings: options.required ? [] : [parsed.message],
+		};
+	}
+	const coverageGaps = options.changedFiles.filter(
+		(file) => !parsed.artifact.changedFiles.includes(file),
+	);
+	const highSeverityLearnings = parsed.artifact.applicableLearnings.filter(
+		(learning) => learning.enforcement === "error",
+	);
+	const highSeverityAcknowledged =
+		highSeverityLearnings.length === 0 ||
+		hasReviewContextAcknowledgement(options.prBody, highSeverityLearnings);
+	const ageMs = Date.now() - statSync(resolvedPath).mtimeMs;
+	const maxAgeMinutes = options.maxAgeMinutes ?? 1440;
+	const staleReasons = [
+		...(coverageGaps.length > 0
+			? [
+					`Review context artifact does not cover changed files: ${coverageGaps.join(", ")}`,
+				]
+			: []),
+		...(ageMs > maxAgeMinutes * 60 * 1000
+			? [`Review context artifact is older than ${maxAgeMinutes} minutes`]
+			: []),
+		...(highSeverityAcknowledged
+			? []
+			: [
+					"High-severity learning context was generated but not acknowledged in the PR body",
+				]),
+	];
+	if (staleReasons.length > 0) {
+		return {
+			status: "stale",
+			blockers: options.required ? staleReasons : [],
+			warnings: options.required ? [] : staleReasons,
+		};
+	}
+	return {
+		status: highSeverityLearnings.length > 0 ? "warn" : "pass",
+		blockers: [],
+		warnings:
+			highSeverityLearnings.length > 0
+				? [
+						"Review context includes high-severity learning evidence; keep the PR body acknowledgement current",
+					]
+				: [],
+	};
+}
+
+function resolveReviewContextPath(path: string, contractPath: string): string {
+	if (isAbsolute(path)) return path;
+	return resolvePath(dirname(resolvePath(contractPath)), path);
+}
+
+function readReviewContextArtifact(
+	path: string,
+):
+	| { ok: true; artifact: ReviewContextResult }
+	| { ok: false; message: string } {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(readFileSync(path, "utf-8"));
+	} catch (error) {
+		return {
+			ok: false,
+			message: `Review context artifact is not valid JSON: ${sanitizeError(error)}`,
+		};
+	}
+	if (!isReviewContextArtifact(parsed)) {
+		return {
+			ok: false,
+			message:
+				"Review context artifact must use schemaVersion review-context/v1, status success, changedFiles array, applicableLearnings array, and sourceFingerprint.",
+		};
+	}
+	return { ok: true, artifact: parsed };
+}
+
+function isReviewContextArtifact(value: unknown): value is ReviewContextResult {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return false;
+	}
+	const artifact = value as Partial<ReviewContextResult>;
+	return (
+		artifact.schemaVersion === "review-context/v1" &&
+		artifact.status === "success" &&
+		typeof artifact.sourceFingerprint === "string" &&
+		artifact.sourceFingerprint.length > 0 &&
+		Array.isArray(artifact.changedFiles) &&
+		artifact.changedFiles.every((file) => typeof file === "string") &&
+		Array.isArray(artifact.applicableLearnings)
+	);
+}
+
+function hasReviewContextAcknowledgement(
+	prBody: string | null | undefined,
+	learnings: ReviewContextResult["applicableLearnings"],
+): boolean {
+	const body = prBody?.toLowerCase() ?? "";
+	if (body.includes("review-context") || body.includes("learned context")) {
+		return true;
+	}
+	return learnings.some((learning) => body.includes(learning.id.toLowerCase()));
+}
+
 /**
  * Run review gate check with timeout polling.
  * Returns structured result usable as a library function.
@@ -993,6 +1145,24 @@ export async function runReviewGate(
 			...(pullRequest.title ? { prTitle: pullRequest.title } : {}),
 			...(pullRequest.body !== undefined ? { prBody: pullRequest.body } : {}),
 			changedFiles,
+		});
+		const reviewContextPath =
+			options.reviewContextPath ?? reviewPolicy.reviewContextPath;
+		const reviewContextMaxAgeMinutes =
+			options.reviewContextMaxAgeMinutes ??
+			reviewPolicy.reviewContextMaxAgeMinutes;
+		const reviewContext = evaluateReviewContextReadiness({
+			...(reviewContextPath ? { path: reviewContextPath } : {}),
+			required:
+				options.requireReviewContext ??
+				reviewPolicy.requireReviewContext ??
+				false,
+			changedFiles,
+			...(pullRequest.body !== undefined ? { prBody: pullRequest.body } : {}),
+			contractPath: options.contractPath,
+			...(reviewContextMaxAgeMinutes === undefined
+				? {}
+				: { maxAgeMinutes: reviewContextMaxAgeMinutes }),
 		});
 		const decisionQuestionBlockers = evaluateNorthStarDecisionQuestions({
 			prBody: pullRequest.body,
@@ -1151,6 +1321,7 @@ export async function runReviewGate(
 					...threadReadiness.blockers,
 					...requiredCheckBlockers,
 					...planTraceability.blockers,
+					...reviewContext.blockers,
 					...filteredDecisionQuestionBlockers,
 				];
 				return {
@@ -1174,6 +1345,7 @@ export async function runReviewGate(
 								status: planTraceability.status,
 								planIds: planTraceability.planIds,
 							},
+							reviewContext,
 						},
 					),
 				};
@@ -1195,12 +1367,14 @@ export async function runReviewGate(
 							checkName: resolvedCheckName,
 							additionalBlockers: [
 								...planTraceability.blockers,
+								...reviewContext.blockers,
 								...filteredDecisionQuestionBlockers,
 							],
 							planTraceability: {
 								status: planTraceability.status,
 								planIds: planTraceability.planIds,
 							},
+							reviewContext,
 						},
 					),
 				};
@@ -1248,12 +1422,14 @@ export async function runReviewGate(
 								]
 							: []),
 						...planTraceability.blockers,
+						...reviewContext.blockers,
 						...filteredDecisionQuestionBlockers,
 					],
 					planTraceability: {
 						status: planTraceability.status,
 						planIds: planTraceability.planIds,
 					},
+					reviewContext,
 				},
 			),
 		};

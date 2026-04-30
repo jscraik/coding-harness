@@ -36,11 +36,7 @@ export function normalizeLearningRows(
 		idCounts.set(baseId, count + 1);
 		const id =
 			count === 0 ? baseId : `${baseId}-${shortHash(`${baseId}:${row.row}`)}`;
-		const promotionStatus = ENFORCED_LEARNING_IDS.has(id)
-			? "enforced"
-			: row.usage >= 25
-				? "candidate"
-				: "unenforced";
+		const promotionStatus = row.usage >= 25 ? "candidate" : "unreviewed";
 		const item: LearningItem = {
 			id,
 			provider: "coderabbit",
@@ -177,10 +173,6 @@ const STOP_WORDS = new Set([
 	"this",
 	"use",
 	"with",
-]);
-
-const ENFORCED_LEARNING_IDS = new Set([
-	"coderabbit.coding-harness.docs-frontmatter-machine-readable",
 ]);
 
 function slugify(value: string): string {

@@ -44,7 +44,6 @@ if is_harness_source_repo; then
 					: 1,
 			);
 		' "$tsx_stderr_file"; then
-			echo "Warning: tsx IPC startup failed with EPERM; falling back to node dist/cli.js." >&2
 			rm -f "$tsx_stderr_file"
 			exec node "$REPO_ROOT/dist/cli.js" "$@"
 		fi

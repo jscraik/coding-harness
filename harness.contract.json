@@ -153,7 +153,10 @@
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
 		"requiredChecks": ["security-scan", "semgrep-cloud-platform/scan"],
-		"enforceReviewerIndependence": true
+		"enforceReviewerIndependence": true,
+		"requireReviewContext": false,
+		"reviewContextPath": "artifacts/review-context/pr-context.json",
+		"reviewContextMaxAgeMinutes": 1440
 	},
 	"evidencePolicy": {
 		"requiredFor": [],
@@ -1038,6 +1041,20 @@
 		"authorityConfigPath": "harness.contract.json",
 		"requiredCheckManifestPath": ".harness/ci-required-checks.json",
 		"trustedPolicyRef": "refs/heads/main"
+	},
+	"ciOwnership": {
+		"schemaVersion": "ci-ownership/v1",
+		"primaryPrGate": "circleci",
+		"reviewProvider": "coderabbit",
+		"securityChecks": ["semgrep-cloud-platform/scan"],
+		"fallbackWorkflows": [
+			{
+				"path": ".github/workflows/release-private-npm.yml",
+				"role": "release_publishing",
+				"purpose": "Publish tagged package releases through GitHub Actions trusted publishing; never act as the primary PR gate.",
+				"allowAutomaticPrTriggers": false
+			}
+		]
 	},
 	"mergePolicy": {
 		"high": ["review-gate", "evidence-verify"],

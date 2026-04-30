@@ -150,6 +150,57 @@ describe("test-harness-upgrade-matrix", () => {
 		expect(readFileSync(join(repoDir, "mutated.txt"), "utf8")).toBe("changed");
 	});
 
+	it("materializes non-git fixtures before checking dry-run status", () => {
+		const fixtureDir = join(tempDir, "fixture");
+		mkdirSync(fixtureDir, { recursive: true });
+		writeFileSync(join(fixtureDir, "package.json"), '{"name":"fixture"}');
+		writeFakeCli(
+			fakeCliPath,
+			`console.log(JSON.stringify({
+				packageManager: "npm",
+				updated: [
+					"harness.contract.json",
+					".coderabbit.yaml",
+					".circleci/config.yml",
+					".harness/ci-required-checks.json",
+					"scripts/check-semgrep-changed.sh",
+					".harness/knowledge/INDEX.md"
+				],
+				created: [
+					"harness.contract.json",
+					".coderabbit.yaml",
+					".circleci/config.yml",
+					".harness/ci-required-checks.json",
+					"scripts/check-semgrep-changed.sh",
+					".harness/knowledge/INDEX.md"
+				],
+				skipped: [],
+				updateMode: "adoption-preview",
+				trackedManifest: false
+			}));`,
+		);
+
+		const result = spawnSync(
+			process.execPath,
+			[SCRIPT_PATH, "--cli", fakeCliPath, "--json", fixtureDir],
+			{ encoding: "utf8" },
+		);
+
+		expect(result.status).toBe(0);
+		const report = JSON.parse(result.stdout) as {
+			pass: boolean;
+			results: Array<{
+				materializedFixture: boolean;
+				repo: string;
+				executionRepo: string;
+			}>;
+		};
+		expect(report.pass).toBe(true);
+		expect(report.results[0]?.materializedFixture).toBe(true);
+		expect(report.results[0]?.repo).toBe(resolve(fixtureDir));
+		expect(report.results[0]?.executionRepo).not.toBe(resolve(fixtureDir));
+	});
+
 	it("fails when dry-run JSON omits critical governance surface groups", () => {
 		writeFakeCli(
 			fakeCliPath,

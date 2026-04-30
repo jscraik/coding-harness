@@ -118,6 +118,8 @@ describe("COMMAND_SPECS structural integrity", () => {
 			"prompt-gate",
 			"drift-gate",
 			"ui:fast",
+			"artifact-gate",
+			"ci-ownership-gate",
 			"blast-radius",
 			"automation-run",
 			"remediate",
@@ -134,6 +136,7 @@ describe("COMMAND_SPECS structural integrity", () => {
 			"learnings",
 			"review-context",
 			"validation-plan",
+			"north-star-feedback",
 			"upgrade",
 			"ci-migrate",
 			"diff-budget",
@@ -369,6 +372,37 @@ describe("review-gate execute parsing", () => {
 		expect(reviewGateCommand.runReviewGateCLI).toHaveBeenCalledWith(
 			expect.objectContaining({
 				checkName: "ci/circleci: pr-pipeline",
+			}),
+		);
+	});
+
+	it("passes review-context strict-mode options through to review-gate", async () => {
+		const result = await Promise.resolve(
+			spec.execute([
+				"--token",
+				"test-token",
+				"--owner",
+				"acme",
+				"--repo",
+				"harness",
+				"--pr",
+				"42",
+				"--sha",
+				"0123456789abcdef0123456789abcdef01234567",
+				"--review-context",
+				"artifacts/review-context/pr-context.json",
+				"--require-review-context",
+				"--review-context-max-age-minutes",
+				"60",
+				"--json",
+			]),
+		);
+		expect(result).toBe(0);
+		expect(reviewGateCommand.runReviewGateCLI).toHaveBeenCalledWith(
+			expect.objectContaining({
+				reviewContextPath: "artifacts/review-context/pr-context.json",
+				requireReviewContext: true,
+				reviewContextMaxAgeMinutes: 60,
 			}),
 		);
 	});
@@ -693,6 +727,34 @@ describe("review-context execute validation", () => {
 
 		const output = String(infoSpy.mock.calls.at(-1)?.[0] ?? "");
 		expect(output).toContain("review-context.files_required");
+		infoSpy.mockRestore();
+	});
+});
+
+describe("artifact-gate execute validation", () => {
+	const spec = findSpec("artifact-gate");
+
+	it("routes missing files to usage output", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(spec.execute(["--json"])).toBe(2);
+
+		const output = String(infoSpy.mock.calls.at(-1)?.[0] ?? "");
+		expect(output).toContain("artifact-gate.files_required");
+		infoSpy.mockRestore();
+	});
+});
+
+describe("ci-ownership-gate execute validation", () => {
+	const spec = findSpec("ci-ownership-gate");
+
+	it("routes to JSON gate output", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(spec.execute(["--json"])).not.toBe(2);
+
+		const output = String(infoSpy.mock.calls.at(-1)?.[0] ?? "");
+		expect(output).toContain("ci-ownership-gate/v1");
 		infoSpy.mockRestore();
 	});
 });

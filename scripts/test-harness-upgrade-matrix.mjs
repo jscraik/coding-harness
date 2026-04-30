@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_CRITICAL_SURFACES = [
@@ -102,6 +103,29 @@ function gitStatus(repo) {
 	};
 }
 
+function materializeRepo(repo) {
+	const absoluteRepo = resolve(repo);
+	if (existsSync(resolve(absoluteRepo, ".git"))) {
+		return { repo: absoluteRepo, cleanup: null };
+	}
+	const tempRoot = mkdtempSync(join(tmpdir(), "harness-upgrade-fixture-"));
+	const materializedRepo = join(tempRoot, basename(absoluteRepo));
+	cpSync(absoluteRepo, materializedRepo, {
+		recursive: true,
+		filter: (source) => !source.endsWith(`${basename(absoluteRepo)}/.git`),
+	});
+	const init = run("git", ["-C", materializedRepo, "init"]);
+	if (init.status !== 0) {
+		rmSync(tempRoot, { recursive: true, force: true });
+		return {
+			repo: materializedRepo,
+			cleanup: null,
+			error: `git init failed: ${init.stderr.trim() || init.stdout.trim()}`,
+		};
+	}
+	return { repo: materializedRepo, cleanup: tempRoot };
+}
+
 function parseJson(stdout) {
 	try {
 		return { ok: true, value: JSON.parse(stdout) };
@@ -141,9 +165,31 @@ function missingCriticalSurfaceGroups(output) {
 }
 
 function summarizeRepo(repo, cli) {
-	const absoluteRepo = resolve(repo);
-	const before = gitStatus(absoluteRepo);
+	const materialized = materializeRepo(repo);
+	const absoluteRepo = materialized.repo;
+	const cleanup = materialized.cleanup;
 	const errors = [];
+	if (materialized.error) {
+		errors.push(materialized.error);
+	}
+	if (materialized.cleanup !== null && !materialized.error) {
+		const bootstrapResult = run(process.execPath, [
+			cli,
+			"init",
+			absoluteRepo,
+			"--track",
+			"--json",
+		]);
+		if (bootstrapResult.status !== 0) {
+			errors.push(
+				`harness fixture bootstrap exited ${
+					bootstrapResult.status ?? "unknown"
+				}: ${bootstrapResult.stderr.trim() || bootstrapResult.stdout.trim()}`,
+			);
+		}
+	}
+
+	const before = gitStatus(absoluteRepo);
 	if (!before.ok) {
 		errors.push(`git status before failed: ${before.error}`);
 	}
@@ -212,7 +258,10 @@ function summarizeRepo(repo, cli) {
 	}
 
 	return {
-		repo: absoluteRepo,
+		repo: resolve(repo),
+		executionRepo: absoluteRepo,
+		cleanup,
+		materializedFixture: materialized.cleanup !== null,
 		exitCode: commandResult.status,
 		packageManager: output?.packageManager,
 		updatedCount: Array.isArray(output?.updated) ? output.updated.length : null,
@@ -234,9 +283,19 @@ export function runUpgradeMatrix({ cli, repos }) {
 		setupErrors.push(`CLI not found: ${resolvedCli}`);
 	}
 
+	const materializedCleanups = [];
 	const results = setupErrors.length
 		? []
-		: repos.map((repo) => summarizeRepo(repo, resolvedCli));
+		: repos.map((repo) => {
+				const result = summarizeRepo(repo, resolvedCli);
+				if (result.cleanup) {
+					materializedCleanups.push(result.cleanup);
+				}
+				return result;
+			});
+	for (const path of materializedCleanups) {
+		rmSync(path, { recursive: true, force: true });
+	}
 	const failedRepos = results.filter((result) => result.errors.length > 0);
 	return {
 		schemaVersion: "harness-upgrade-matrix/v1",

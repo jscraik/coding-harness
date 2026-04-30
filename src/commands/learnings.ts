@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
 	DEFAULT_CODERABBIT_LOCAL_ARTIFACT,
@@ -5,6 +6,10 @@ import {
 	writeLearningArtifact,
 } from "../lib/learnings/artifact-io.js";
 import { runLearningsGate } from "../lib/learnings/gate.js";
+import {
+	parseLearningLiveCompanion,
+	sanitizeLearningLiveCompanionDiagnostic,
+} from "../lib/learnings/live-companion.js";
 import { buildLearningPromotionCandidates } from "../lib/learnings/promote.js";
 import {
 	LEARNING_IMPORT_RESULT_SCHEMA_VERSION,
@@ -50,6 +55,16 @@ export function runLearningsCLI(args: string[]): number {
 export function runLearningsGateCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const source = readOptionalFlag(args, "--source").value;
+	const overrides = readOptionalFlag(args, "--overrides").value;
+	const overrideMode = readOverrideMode(args);
+	if (!overrideMode.ok) {
+		return emitError({
+			json,
+			errorCode: "learnings.override_mode_invalid",
+			message: overrideMode.message,
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
 	const files = readRequiredFlag(args, "--files");
 	if (!files.ok) {
 		return emitError({
@@ -61,6 +76,8 @@ export function runLearningsGateCLI(args: string[]): number {
 	}
 	const gateResult = runLearningsGate({
 		...(source ? { source } : {}),
+		...(overrides ? { overrides } : {}),
+		overrideMode: overrideMode.value,
 		files: files.value.split(","),
 	});
 	if (json) {
@@ -76,6 +93,10 @@ export function runLearningsGateCLI(args: string[]): number {
 export function runLearningsPromoteCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const source = readOptionalFlag(args, "--source").value;
+	const enforcementStatusPath = readOptionalFlag(
+		args,
+		"--enforcement-status",
+	).value;
 	const minUsageResult = readMinUsage(args);
 	if (!minUsageResult.ok) {
 		return emitError({
@@ -87,9 +108,11 @@ export function runLearningsPromoteCLI(args: string[]): number {
 	}
 	const result = buildLearningPromotionCandidates({
 		...(source ? { source } : {}),
+		...(enforcementStatusPath ? { enforcementStatusPath } : {}),
 		...(minUsageResult.value === undefined
 			? {}
 			: { minUsage: minUsageResult.value }),
+		includeEnforced: args.includes("--include-enforced"),
 	});
 	if (json) {
 		console.info(JSON.stringify(result, null, 2));
@@ -114,6 +137,7 @@ export function runLearningsImportCLI(args: string[]): number {
 	const source = readRequiredFlag(args, "--source");
 	const repo = readRequiredFlag(args, "--repo");
 	const output = readOptionalFlag(args, "--output");
+	const liveCompanionPath = readOptionalFlag(args, "--live-companion").value;
 	const missing = [
 		provider.ok ? undefined : "--provider",
 		source.ok ? undefined : "--source",
@@ -138,11 +162,23 @@ export function runLearningsImportCLI(args: string[]): number {
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
+	const liveCompanion = liveCompanionPath
+		? loadLearningLiveCompanion(liveCompanionPath)
+		: undefined;
+	if (liveCompanion && !liveCompanion.ok) {
+		return emitError({
+			json,
+			errorCode: liveCompanion.code,
+			message: liveCompanion.message,
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
 	const outputPath = output.value ?? DEFAULT_CODERABBIT_LOCAL_ARTIFACT;
 	const artifactResult = buildCodeRabbitLearningArtifact({
 		sourcePath: resolve(source.value),
 		repository: repo.value,
 		previousArtifactPath: resolve(outputPath),
+		...(liveCompanion?.ok ? { liveCompanion: liveCompanion.companion } : {}),
 	});
 	if (!artifactResult.ok) {
 		return emitError({
@@ -193,6 +229,21 @@ export function runLearningsImportCLI(args: string[]): number {
 	return EXIT_CODES.SUCCESS;
 }
 
+function loadLearningLiveCompanion(
+	path: string,
+): ReturnType<typeof parseLearningLiveCompanion> {
+	try {
+		return parseLearningLiveCompanion(readFileSync(resolve(path), "utf-8"));
+	} catch (error) {
+		return {
+			ok: false,
+			code: "learnings.live_companion.read_failed",
+			message: `Failed to read live companion metadata: ${sanitizeLearningLiveCompanionDiagnostic(error instanceof Error ? error.message : String(error))}`,
+			fix: "Provide a readable live-companion/v1 JSON object, or omit --live-companion.",
+		};
+	}
+}
+
 function readRequiredFlag(
 	args: string[],
 	flag: string,
@@ -222,6 +273,20 @@ function readMinUsage(
 		};
 	}
 	return { ok: true, value };
+}
+
+function readOverrideMode(
+	args: string[],
+): { ok: true; value: "strict" | "advisory" } | { ok: false; message: string } {
+	const rawValue = readOptionalFlag(args, "--override-mode").value;
+	if (rawValue === undefined || rawValue === "strict") {
+		return { ok: true, value: "strict" };
+	}
+	if (rawValue === "advisory") return { ok: true, value: "advisory" };
+	return {
+		ok: false,
+		message: "--override-mode must be strict or advisory.",
+	};
 }
 
 function emitError(options: {

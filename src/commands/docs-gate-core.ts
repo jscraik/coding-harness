@@ -11,6 +11,7 @@ import type {
 } from "../lib/contract/types.js";
 import { DEFAULT_DOCS_GATE_POLICY } from "../lib/contract/types.js";
 import { validateContract } from "../lib/contract/validator.js";
+import { collectFrontmatterMetadataViolations } from "../lib/docs-surface/frontmatter-metadata-gate.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
 import {
@@ -158,13 +159,6 @@ const WORKFLOW_POLICY_SOURCE_PATHS: readonly string[] = Array.from(
 		...WORKFLOW_POLICY_ADDITIONAL_SOURCE_PATHS,
 	]),
 );
-const FRONTMATTER_METADATA_KEYS = [
-	"schema_version",
-	"status",
-	"applies_to",
-] as const;
-const POLICY_DOC_PREFIXES = ["docs/"] as const;
-const POLICY_DOC_FILES = new Set(["AGENTS.md", "CONTRIBUTING.md", "README.md"]);
 interface LoadedContract {
 	contract: HarnessContract;
 }
@@ -231,125 +225,6 @@ function loadFileIfPresent(path: string): string | null {
 		return null;
 	}
 	return readFileSync(path, "utf-8");
-}
-
-function collectFrontmatterMetadataFindings(
-	repoRoot: string,
-	changedFiles: string[],
-	deletedFiles: Set<string>,
-	mode: DocsGateMode,
-): DocsFinding[] {
-	const findings: DocsFinding[] = [];
-	for (const file of [...new Set(changedFiles)].sort()) {
-		if (
-			deletedFiles.has(file) ||
-			!file.endsWith(".md") ||
-			!isPolicyDocCandidate(file)
-		) {
-			continue;
-		}
-		const content = loadFileIfPresent(join(repoRoot, file));
-		if (!content) {
-			continue;
-		}
-		const parsed = parseMarkdownFrontmatter(content);
-		if (!parsed) {
-			continue;
-		}
-		const metadataKeys = FRONTMATTER_METADATA_KEYS.filter((key) =>
-			parsed.keys.has(key),
-		);
-		if (metadataKeys.length === 0) {
-			continue;
-		}
-		const violations = findFrontmatterMetadataBodyViolations(
-			parsed.body,
-			metadataKeys,
-		);
-		if (violations.length === 0) {
-			continue;
-		}
-		findings.push({
-			rule_id: "docs.frontmatter.metadata_not_prose",
-			category: "doc_only",
-			surface: file,
-			rule_result: "fail",
-			result: "fail",
-			severity: mode === "required" ? "error" : "warning",
-			message:
-				"YAML frontmatter fields are machine-readable metadata and must not be represented as prose headings or Table of Contents entries.",
-			path: file,
-			details: `Move frontmatter keys out of body headings/TOC entries: ${violations.join(", ")}`,
-			source_of_truth_ref:
-				"coderabbit.coding-harness.docs-frontmatter-machine-readable",
-		});
-	}
-	return findings;
-}
-
-function isPolicyDocCandidate(file: string): boolean {
-	return (
-		POLICY_DOC_PREFIXES.some((prefix) => file.startsWith(prefix)) ||
-		POLICY_DOC_FILES.has(file)
-	);
-}
-
-function parseMarkdownFrontmatter(
-	content: string,
-): { keys: Set<string>; body: string } | null {
-	if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
-		return null;
-	}
-	const lines = content.split(/\r?\n/);
-	const closingIndex = lines.findIndex(
-		(line, index) => index > 0 && line === "---",
-	);
-	if (closingIndex < 0) {
-		return null;
-	}
-	const keys = new Set<string>();
-	for (const line of lines.slice(1, closingIndex)) {
-		const key = line.match(/^([A-Za-z0-9_-]+):/)?.[1];
-		if (key) {
-			keys.add(key);
-		}
-	}
-	return {
-		keys,
-		body: lines.slice(closingIndex + 1).join("\n"),
-	};
-}
-
-function findFrontmatterMetadataBodyViolations(
-	body: string,
-	metadataKeys: readonly string[],
-): string[] {
-	const violations = new Set<string>();
-	let inFence = false;
-	for (const line of body.split(/\r?\n/)) {
-		if (/^\s*```/.test(line)) {
-			inFence = !inFence;
-			continue;
-		}
-		if (inFence) {
-			continue;
-		}
-		const headingText = line.match(/^#{1,6}\s+(.+?)\s*#*\s*$/)?.[1];
-		const tocEntryText = line.match(/^\s*[-*]\s+\[([^\]]+)\]\(#[^)]+\)/)?.[1];
-		for (const key of metadataKeys) {
-			if (headingText && normaliseMetadataLabel(headingText) === key) {
-				violations.add(key);
-			}
-			if (tocEntryText && normaliseMetadataLabel(tocEntryText) === key) {
-				violations.add(key);
-			}
-		}
-	}
-	return [...violations].sort();
-}
-
-function normaliseMetadataLabel(value: string): string {
-	return value.replace(/`/g, "").trim().toLowerCase().replace(/\s+/g, "_");
 }
 
 function inferExpectedPackageManager(
@@ -1568,11 +1443,24 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 		}
 	}
 
-	const frontmatterMetadataFindings = collectFrontmatterMetadataFindings(
+	const frontmatterMetadataFindings = collectFrontmatterMetadataViolations({
 		repoRoot,
 		changedFiles,
 		deletedFiles,
-		mode,
+	}).map(
+		(violation): DocsFinding => ({
+			rule_id: "docs.frontmatter.metadata_not_prose",
+			category: "doc_only",
+			surface: violation.path,
+			rule_result: "fail",
+			result: "fail",
+			severity: mode === "required" ? "error" : "warning",
+			message:
+				"YAML frontmatter fields are machine-readable metadata and must not be represented as prose headings or Table of Contents entries.",
+			path: violation.path,
+			details: violation.fix,
+			source_of_truth_ref: violation.sourceLearningId,
+		}),
 	);
 	findings.push(...frontmatterMetadataFindings);
 	if (frontmatterMetadataFindings.length > 0 && outcome !== "policy_error") {

@@ -902,6 +902,45 @@ describe("validateContract", () => {
 		});
 	});
 
+	describe("ciOwnership", () => {
+		it("accepts CI ownership with release-only GitHub Actions workflow metadata", () => {
+			const result = validateContract({
+				version: "1.0",
+				ciOwnership: {
+					schemaVersion: "ci-ownership/v1",
+					primaryPrGate: "circleci",
+					reviewProvider: "coderabbit",
+					securityChecks: ["semgrep-cloud-platform/scan"],
+					fallbackWorkflows: [
+						{
+							path: ".github/workflows/release-private-npm.yml",
+							role: "release_publishing",
+							purpose: "Release publishing only.",
+							allowAutomaticPrTriggers: false,
+						},
+					],
+				},
+			});
+
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects unsupported CI ownership migrations without schema evolution", () => {
+			const result = validateContract({
+				version: "1.0",
+				ciOwnership: {
+					schemaVersion: "ci-ownership/v1",
+					primaryPrGate: "github-actions",
+					reviewProvider: "coderabbit",
+					securityChecks: ["semgrep-cloud-platform/scan"],
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("ciOwnership");
+		});
+	});
+
 	describe("issueTrackingPolicy", () => {
 		it("accepts a valid Linear enforcement policy", () => {
 			const result = validateContract({

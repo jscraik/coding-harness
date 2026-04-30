@@ -1,0 +1,11 @@
+{
+	"name": "fixture-library",
+	"type": "module",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc --emitDeclarationOnly"
+	},
+	"devDependencies": {
+		"typescript": "^5.9.3"
+	}
+}

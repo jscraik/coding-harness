@@ -14,6 +14,7 @@ import {
 	toSourceUri,
 } from "./coderabbit-csv.js";
 import { countLearningItems, normalizeLearningRows } from "./normalise.js";
+import { redactSensitiveText } from "./sensitive-text.js";
 import {
 	LEARNING_ARTIFACT_SCHEMA_VERSION,
 	type LearningImportArtifact,
@@ -24,9 +25,12 @@ import {
 export const DEFAULT_CODERABBIT_LOCAL_ARTIFACT =
 	".harness/learnings/coderabbit.local.json";
 
-/** Snapshot output reserved for a future sanitized shareable artifact. */
+/** Sanitized shareable snapshot artifact path for CodeRabbit CSV imports. */
 export const RESERVED_CODERABBIT_SNAPSHOT_ARTIFACT =
 	".harness/learnings/coderabbit.snapshot.json";
+
+/** Schema version for sanitized shareable learning snapshots. */
+export const LEARNING_SNAPSHOT_SCHEMA_VERSION = "harness-learnings-snapshot/v1";
 
 /** Result from building an import artifact before writing it. */
 export type BuildLearningArtifactResult =
@@ -53,6 +57,7 @@ export function buildCodeRabbitLearningArtifact(options: {
 	sourcePath: string;
 	repository: string;
 	previousArtifactPath?: string;
+	liveCompanion?: LearningImportArtifact["liveCompanion"];
 }): BuildLearningArtifactResult {
 	if (!existsSync(options.sourcePath)) {
 		return {
@@ -108,6 +113,7 @@ export function buildCodeRabbitLearningArtifact(options: {
 		items: normalized.items,
 		warnings: warnings.sort(sortWarnings),
 		summary: { ...summary, warnings: warnings.length },
+		...(options.liveCompanion ? { liveCompanion: options.liveCompanion } : {}),
 	};
 	return { ok: true, artifact };
 }
@@ -123,16 +129,10 @@ export function writeLearningArtifact(options: {
 		repoRoot,
 		options.outputPath ?? DEFAULT_CODERABBIT_LOCAL_ARTIFACT,
 	);
-	const snapshotCheck = rejectSnapshotOutput(outputPath, repoRoot);
-	if (!snapshotCheck.ok) {
-		return {
-			ok: false,
-			errorCode: snapshotCheck.errorCode,
-			message: snapshotCheck.message,
-			warnings: options.artifact.warnings,
-		};
-	}
-	const content = `${JSON.stringify(options.artifact, null, 2)}\n`;
+	const payload = isSnapshotOutput(outputPath, repoRoot)
+		? buildSanitizedLearningSnapshot(options.artifact)
+		: options.artifact;
+	const content = `${JSON.stringify(payload, null, 2)}\n`;
 	const tempPath = `${outputPath}.${process.pid}.${randomUUID()}.tmp`;
 	try {
 		mkdirSync(dirname(outputPath), { recursive: true });
@@ -158,25 +158,105 @@ export function writeLearningArtifact(options: {
 	}
 }
 
-/** Reject Phase 1A snapshot output, including equivalent relative path variants. */
-export function rejectSnapshotOutput(
+/** Return true for the sanitized snapshot output path and equivalent variants. */
+export function isSnapshotOutput(
 	outputPath: string,
 	repoRoot = process.cwd(),
-): { ok: true } | { ok: false; errorCode: string; message: string } {
+): boolean {
 	const resolvedOutput = resolve(outputPath);
 	const resolvedSnapshot = resolve(
 		repoRoot,
 		RESERVED_CODERABBIT_SNAPSHOT_ARTIFACT,
 	);
-	if (resolvedOutput === resolvedSnapshot) {
-		return {
-			ok: false,
-			errorCode: "learnings.snapshot_deferred",
-			message:
-				"Snapshot output is deferred for Phase 1A. Use .harness/learnings/coderabbit.local.json until sanitized shareable snapshots are planned.",
-		};
-	}
-	return { ok: true };
+	const snapshotSuffix = RESERVED_CODERABBIT_SNAPSHOT_ARTIFACT.replaceAll(
+		"/",
+		sep,
+	);
+	return (
+		resolvedOutput === resolvedSnapshot ||
+		resolvedOutput.endsWith(`${sep}${snapshotSuffix}`)
+	);
+}
+
+/** Build a privacy-preserving shareable projection of a local learning artifact. */
+export function buildSanitizedLearningSnapshot(
+	artifact: LearningImportArtifact,
+): Record<string, unknown> {
+	return {
+		schemaVersion: LEARNING_SNAPSHOT_SCHEMA_VERSION,
+		provider: artifact.provider,
+		repository: artifact.repository,
+		source: {
+			kind: artifact.source.kind,
+			sourceLabel: "CodeRabbit CSV export",
+			live: artifact.source.live,
+		},
+		inputFingerprint: artifact.inputFingerprint,
+		items: artifact.items.map((item) => ({
+			id: item.id,
+			provider: item.provider,
+			source: {
+				kind: item.source.kind,
+				sourceLabel: "CodeRabbit CSV export",
+				row: item.source.row,
+				live: item.source.live,
+			},
+			repository: item.repository,
+			...(item.file ? { file: redactSensitiveText(item.file) } : {}),
+			...(item.pullRequest ? { pullRequest: item.pullRequest } : {}),
+			...(item.githubUrl
+				? { githubUrl: redactSensitiveText(item.githubUrl) }
+				: {}),
+			usage: item.usage,
+			learning: redactSensitiveText(item.learning),
+			...(item.createdBy
+				? { createdBy: redactSensitiveText(item.createdBy) }
+				: {}),
+			...(item.lastUsed === undefined
+				? {}
+				: { lastUsed: redactNullableText(item.lastUsed) }),
+			...(item.createdAt
+				? { createdAt: redactSensitiveText(item.createdAt) }
+				: {}),
+			...(item.updatedAt
+				? { updatedAt: redactSensitiveText(item.updatedAt) }
+				: {}),
+			...(item.targetPatterns
+				? {
+						targetPatterns: item.targetPatterns.map((pattern) =>
+							redactSensitiveText(pattern),
+						),
+					}
+				: {}),
+			classification: item.classification,
+			enforcement: item.enforcement,
+			promotionStatus: item.promotionStatus,
+			...(item.enforcedBy
+				? {
+						enforcedBy: item.enforcedBy.map((path) =>
+							redactSensitiveText(path),
+						),
+					}
+				: {}),
+		})),
+		warnings: artifact.warnings.map((warning) => ({
+			...warning,
+			message: redactSensitiveText(warning.message),
+		})),
+		summary: artifact.summary,
+		...(artifact.liveCompanion
+			? {
+					liveCompanion: {
+						...artifact.liveCompanion,
+						rowLevelEvidence: false,
+					},
+				}
+			: {}),
+	};
+}
+
+function redactNullableText(value: string | null): string | null {
+	return value === null ? null : redactSensitiveText(value);
 }
 
 function buildStaleImportWarning(

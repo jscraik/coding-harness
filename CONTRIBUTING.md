@@ -26,6 +26,10 @@
 - The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
+- CI ownership is contractual: CircleCI owns PR governance, CodeRabbit remains an
+  independent review check, Semgrep Cloud remains an independent security check,
+  and GitHub Actions workflows must not become automatic PR gates without an
+  explicit `ciOwnership` migration.
 
 ## Why this workflow exists
 

@@ -473,6 +473,9 @@ export interface ReviewPolicy {
 	 */
 	requiredChecks?: string[] | undefined;
 	enforceReviewerIndependence?: boolean | undefined;
+	requireReviewContext?: boolean | undefined;
+	reviewContextPath?: string | undefined;
+	reviewContextMaxAgeMinutes?: number | undefined;
 }
 
 /** Code Quality Severity. */
@@ -813,6 +816,38 @@ export interface CIProviderPolicy {
 	commitMode?: CommitMode | undefined;
 }
 
+/** CI ownership contract schema version. */
+export type CIOwnershipSchemaVersion = "ci-ownership/v1";
+
+/** CI fallback workflow role. */
+export type CIFallbackWorkflowRole = "fallback_pr_gate" | "release_publishing";
+
+/** GitHub Actions workflow governed by CI ownership policy. */
+export interface CIFallbackWorkflowPolicy {
+	/** Workflow file path. */
+	path: string;
+	/** Workflow role in this repository's CI ownership model. */
+	role: CIFallbackWorkflowRole;
+	/** Required human-readable purpose for auditability. */
+	purpose: string;
+	/** Whether automatic PR-like triggers are allowed. */
+	allowAutomaticPrTriggers: boolean;
+}
+
+/** CI ownership policy for primary, review, security, and fallback roles. */
+export interface CIOwnershipPolicy {
+	/** CI ownership schema version. */
+	schemaVersion: CIOwnershipSchemaVersion;
+	/** Primary PR gate owner. */
+	primaryPrGate: "circleci";
+	/** Independent automated review owner. */
+	reviewProvider: "coderabbit";
+	/** Independent security checks that must stay required. */
+	securityChecks: string[];
+	/** Optional GitHub Actions workflows with constrained roles. */
+	fallbackWorkflows?: CIFallbackWorkflowPolicy[] | undefined;
+}
+
 /** Context Integrity Mode. */
 export type ContextIntegrityMode = "shadow" | "advisory" | "required";
 
@@ -886,6 +921,7 @@ export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 	timeoutAction: "fail",
 	requiredChecks: [...REVIEW_POLICY_REQUIRED_CHECKS],
 	enforceReviewerIndependence: true,
+	requireReviewContext: false,
 };
 
 export const DEFAULT_BRANCH_PROTECTION_POLICY: BranchProtectionPolicy = {
@@ -956,6 +992,14 @@ export const DEFAULT_CI_PROVIDER_POLICY: CIProviderPolicy = {
 	authorityConfigPath: "harness.contract.json",
 	requiredCheckManifestPath: ".harness/ci-required-checks.json",
 	trustedPolicyRef: "refs/heads/main",
+};
+
+export const DEFAULT_CI_OWNERSHIP_POLICY: CIOwnershipPolicy = {
+	schemaVersion: "ci-ownership/v1",
+	primaryPrGate: "circleci",
+	reviewProvider: "coderabbit",
+	securityChecks: ["semgrep-cloud-platform/scan"],
+	fallbackWorkflows: [],
 };
 
 export const DEFAULT_CONTEXT_INTEGRITY_POLICY: ContextIntegrityPolicy = {
@@ -1487,6 +1531,8 @@ export interface HarnessContract {
 	toolingPolicy?: ToolingPolicy | undefined;
 	/** CI provider transition policy for required checks and trusted policy refs */
 	ciProviderPolicy?: CIProviderPolicy | undefined;
+	/** CI ownership contract for primary, review, security, and fallback workflow roles */
+	ciOwnership?: CIOwnershipPolicy | undefined;
 	/** Auto-detected or operator-specified project type. Absence is treated as "unknown" at all read sites. */
 	projectType?: "cli" | "desktop" | "library" | "web" | "unknown" | undefined;
 }
@@ -1513,6 +1559,7 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	controlPlanePolicy: DEFAULT_CONTROL_PLANE_POLICY,
 	toolingPolicy: DEFAULT_TOOLING_POLICY,
 	ciProviderPolicy: DEFAULT_CI_PROVIDER_POLICY,
+	ciOwnership: DEFAULT_CI_OWNERSHIP_POLICY,
 };
 
 // === Preset Inheritance Types ===

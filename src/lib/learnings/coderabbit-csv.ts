@@ -1,4 +1,5 @@
 import { pathToFileURL } from "node:url";
+import { detectSensitiveText, redactSensitiveText } from "./sensitive-text.js";
 import type {
 	LearningImportSummary,
 	LearningImportWarning,
@@ -107,6 +108,7 @@ export function parseCodeRabbitCsv(
 			skipped += 1;
 			continue;
 		}
+		warnings.push(...detectSensitiveRowFields(record, headerIndex, rowNumber));
 
 		const usageResult = parseUsage(getCell(record, headerIndex, "Usage"));
 		if (!usageResult.ok) {
@@ -218,10 +220,40 @@ function parseUsage(
 	if (!/^\d+$/.test(value)) {
 		return {
 			ok: false,
-			message: `Usage must be a non-negative integer: ${value}`,
+			message: `Usage must be a non-negative integer: ${redactSensitiveText(value)}`,
 		};
 	}
 	return { ok: true, usage: Number.parseInt(value, 10) };
+}
+
+function detectSensitiveRowFields(
+	record: string[],
+	headerIndex: Map<string, number>,
+	row: number,
+): LearningImportWarning[] {
+	const warnings: LearningImportWarning[] = [];
+	for (const header of [
+		"File",
+		"Pull Request",
+		"URL",
+		"Learning",
+		"Created By",
+		"Last Used",
+		"Created At",
+		"Updated At",
+	]) {
+		const value = getCell(record, headerIndex, header);
+		if (value.length === 0) continue;
+		const findings = detectSensitiveText(value);
+		for (const finding of findings) {
+			warnings.push({
+				row,
+				code: `learnings.csv.${finding.code}`,
+				message: `Sensitive ${finding.label} detected in CodeRabbit CSV field ${header}; value is preserved only in the local artifact and redacted from shareable output.`,
+			});
+		}
+	}
+	return warnings;
 }
 
 function normalizeLastUsed(

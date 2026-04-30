@@ -1,4 +1,9 @@
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
+import {
+	DEFAULT_LEARNING_ENFORCEMENT_STATUS_LEDGER,
+	applyLearningEnforcementStatus,
+	loadLearningEnforcementStatusLedger,
+} from "./enforcement-status.js";
 import { loadLearningArtifact } from "./gate.js";
 import type { LearningItem } from "./types.js";
 
@@ -10,6 +15,10 @@ export interface LearningsPromoteOptions {
 	minUsage?: number;
 	/** Repository root used for relative artifact resolution. */
 	repoRoot?: string;
+	/** Local enforcement-status ledger path. */
+	enforcementStatusPath?: string;
+	/** Include learnings that are already enforced. */
+	includeEnforced?: boolean;
 }
 
 /** Promotion candidate emitted for high-signal imported learnings. */
@@ -32,6 +41,8 @@ export interface LearningPromotionCandidate {
 	targets: string[];
 	/** Current promotion lifecycle status for this learning. */
 	promotionStatus: LearningItem["promotionStatus"];
+	/** Concrete files or tests enforcing this learning when status is enforced. */
+	enforcedBy?: string[];
 }
 
 /** Result for `harness learnings promote`. */
@@ -45,6 +56,7 @@ export interface LearningsPromoteResult {
 		total: number;
 		eligible: number;
 		deferred: number;
+		enforced: number;
 	};
 	error?: {
 		code: string;
@@ -74,6 +86,7 @@ export function buildLearningPromotionCandidates(
 				total: 0,
 				eligible: 0,
 				deferred: 0,
+				enforced: 0,
 			},
 			error: {
 				code: loaded.code,
@@ -82,9 +95,43 @@ export function buildLearningPromotionCandidates(
 			},
 		};
 	}
+	const enforcementStatus = loadLearningEnforcementStatusLedger(
+		options.enforcementStatusPath ?? DEFAULT_LEARNING_ENFORCEMENT_STATUS_LEDGER,
+		options.repoRoot,
+	);
+	if (!enforcementStatus.ok) {
+		return {
+			schemaVersion: "learnings-promote-result/v1",
+			status: "error",
+			source,
+			minUsage,
+			promotionCandidates: [],
+			summary: {
+				total: loaded.artifact.items.length,
+				eligible: 0,
+				deferred: loaded.artifact.items.length,
+				enforced: 0,
+			},
+			error: {
+				code: enforcementStatus.code,
+				message: enforcementStatus.message,
+				...(enforcementStatus.fix ? { fix: enforcementStatus.fix } : {}),
+			},
+		};
+	}
 
-	const promotionCandidates = loaded.artifact.items
+	const items = applyLearningEnforcementStatus(
+		loaded.artifact.items,
+		enforcementStatus.ledger,
+	);
+	const enforcedCount = items.filter(
+		(item) => item.promotionStatus === "enforced",
+	).length;
+	const promotionCandidates = items
 		.filter((item) => item.usage >= minUsage)
+		.filter(
+			(item) => options.includeEnforced || item.promotionStatus !== "enforced",
+		)
 		.map(buildPromotionCandidate)
 		.sort((a, b) => b.usage - a.usage || a.id.localeCompare(b.id));
 
@@ -98,6 +145,7 @@ export function buildLearningPromotionCandidates(
 			total: loaded.artifact.items.length,
 			eligible: promotionCandidates.length,
 			deferred: loaded.artifact.items.length - promotionCandidates.length,
+			enforced: enforcedCount,
 		},
 	};
 }
@@ -116,6 +164,7 @@ function buildPromotionCandidate(
 		reason: reasonFor(item),
 		targets: targetRefsFor(item),
 		promotionStatus: item.promotionStatus,
+		...(item.enforcedBy ? { enforcedBy: item.enforcedBy } : {}),
 	};
 }
 

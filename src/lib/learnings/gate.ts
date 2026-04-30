@@ -4,6 +4,13 @@ import { fileURLToPath } from "node:url";
 import { buildGateResult } from "../output/normalise-core.js";
 import type { GateFinding, GateResult } from "../output/types.js";
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
+import { matchLearningToFile } from "./fuzzy-match.js";
+import {
+	type LearningOverrideMode,
+	type OverrideAwareGateFinding,
+	applyLearningOverrides,
+	loadLearningOverrides,
+} from "./overrides.js";
 import type {
 	LearningArtifactLoadResult,
 	LearningImportArtifact,
@@ -21,6 +28,12 @@ export interface LearningsGateOptions {
 	files: string[];
 	/** Repository root used for relative artifact resolution. */
 	repoRoot?: string;
+	/** Optional learning override file. */
+	overrides?: string;
+	/** Expired override handling mode. */
+	overrideMode?: LearningOverrideMode;
+	/** Clock override for deterministic tests. */
+	now?: Date;
 }
 
 /** Load a local learning artifact and emit stale-source warnings when detectable. */
@@ -91,9 +104,34 @@ export function runLearningsGate(options: LearningsGateOptions): GateResult {
 		});
 	}
 
-	const learningFindings = buildLearningFindings(loaded.artifact.items, files);
+	const overrides = loadLearningOverrides({
+		...(options.overrides ? { path: options.overrides } : {}),
+		...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
+		...(options.overrideMode ? { mode: options.overrideMode } : {}),
+		...(options.now ? { now: options.now } : {}),
+	});
+	if (!overrides.ok) {
+		return buildGateResult({
+			gate: GATE_NAME,
+			status: "fail",
+			findings: overrides.findings,
+			decision: {
+				evidenceRef: [`overrides:${options.overrides ?? "not-configured"}`],
+			},
+		});
+	}
+
+	const learningFindings = applyLearningOverrides({
+		findings: buildLearningFindings(loaded.artifact.items, files),
+		overrides: overrides.overrides,
+		...(options.now ? { now: options.now } : {}),
+	});
 	const sourceFindings = loaded.warnings.map(sourceWarningToFinding);
-	const findings = [...learningFindings, ...sourceFindings].sort(sortFindings);
+	const findings = [
+		...learningFindings,
+		...sourceFindings,
+		...overrides.warnings,
+	].sort(sortFindings);
 	const status = findings.some((finding) => finding.severity === "error")
 		? "fail"
 		: findings.some((finding) => finding.severity === "warning")
@@ -111,6 +149,8 @@ export function runLearningsGate(options: LearningsGateOptions): GateResult {
 			source: options.source ?? DEFAULT_CODERABBIT_LOCAL_ARTIFACT,
 			matchedFiles: files,
 			repository: loaded.artifact.repository,
+			overrideSource: options.overrides ?? null,
+			overrideMode: options.overrideMode ?? "strict",
 		},
 	});
 }
@@ -118,23 +158,32 @@ export function runLearningsGate(options: LearningsGateOptions): GateResult {
 function buildLearningFindings(
 	items: LearningItem[],
 	files: string[],
-): GateFinding[] {
-	const findings: GateFinding[] = [];
+): OverrideAwareGateFinding[] {
+	const findings: OverrideAwareGateFinding[] = [];
 	for (const item of items) {
-		const matchedFiles = files.filter((file) =>
-			learningMatchesFile(item, file),
-		);
-		for (const file of matchedFiles) {
+		for (const file of files) {
+			const match = matchLearningToFile(item, file);
+			if (!match) continue;
 			findings.push({
 				id: `learnings-gate.learning.${item.id}`,
-				severity: item.enforcement === "none" ? "info" : item.enforcement,
+				severity: deriveFindingSeverity(item, match.advisoryOnly),
 				gate: GATE_NAME,
 				message: `${item.learning} (usage: ${item.usage})`,
 				path: file,
 				baseline: false,
 				fix: {
 					manual: buildManualFix(item),
-					suppressible: false,
+					suppressible: true,
+				},
+				overrideSupport: {
+					suppressible: true,
+				},
+				match: {
+					kind: match.kind,
+					confidence: match.confidence,
+					reason: match.reason,
+					advisoryOnly: match.advisoryOnly,
+					falsePositiveCandidate: match.falsePositiveCandidate,
 				},
 			});
 		}
@@ -144,26 +193,16 @@ function buildLearningFindings(
 
 /** Return true when a normalized learning applies to a changed file. */
 export function learningMatchesFile(item: LearningItem, file: string): boolean {
-	if (item.file && normalizeFile(item.file) === file) return true;
-	return (item.targetPatterns ?? []).some((pattern) =>
-		patternMatchesFile(pattern, file),
-	);
+	return matchLearningToFile(item, normalizeFile(file)) !== undefined;
 }
 
-function patternMatchesFile(pattern: string, file: string): boolean {
-	const normalized = normalizeFile(pattern);
-	if (normalized.endsWith("/**")) {
-		const prefix = normalized.slice(0, -3);
-		return file === prefix || file.startsWith(`${prefix}/`);
-	}
-	if (normalized.endsWith("/*")) {
-		const prefix = normalized.slice(0, -2);
-		const rest = file.startsWith(`${prefix}/`)
-			? file.slice(prefix.length + 1)
-			: "";
-		return rest.length > 0 && !rest.includes("/");
-	}
-	return normalized === file;
+function deriveFindingSeverity(
+	item: LearningItem,
+	advisoryOnly: boolean,
+): GateFinding["severity"] {
+	const severity = item.enforcement === "none" ? "info" : item.enforcement;
+	if (!advisoryOnly) return severity;
+	return severity === "error" ? "warning" : severity;
 }
 
 function sourceWarningToFinding(warning: LearningImportWarning): GateFinding {

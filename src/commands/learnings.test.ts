@@ -18,6 +18,10 @@ coding-harness,,149,,45,"Applies to scripts/**: generated runtime mirrors should
 coding-harness,docs/low-signal.md,150,,4,"Low signal note.",jscraik,Never,created,updated
 `;
 
+const sensitiveCsv = `Repository,File,Pull Request,URL,Usage,Learning,Created By,Last Used,Created At,Updated At
+coding-harness,/Users/jamiecraik/Downloads/private.md,148,https://github.com/jscraik/coding-harness/pull/148,516,"Use token=github_pat_abcdefghijklmnopqrstuvwxyz123456 from /Users/jamiecraik/.config.",jscraik,Never,created,updated
+`;
+
 describe("runLearningsCLI", () => {
 	const cleanup: string[] = [];
 	afterEach(() => {
@@ -56,6 +60,89 @@ describe("runLearningsCLI", () => {
 		expect(
 			JSON.parse(readFileSync(outputPath, "utf-8")).items[0].lastUsed,
 		).toBeNull();
+	});
+
+	it("writes sanitized snapshot output without leaking diagnostics", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learnings-command-snapshot-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.snapshot.json");
+		writeFileSync(sourcePath, sensitiveCsv, "utf-8");
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		const exitCode = runLearningsCLI([
+			"import",
+			"--provider",
+			"coderabbit-csv",
+			"--source",
+			sourcePath,
+			"--repo",
+			"coding-harness",
+			"--output",
+			outputPath,
+			"--json",
+		]);
+
+		expect(exitCode).toBe(0);
+		const output = String(infoSpy.mock.calls[0]?.[0]);
+		const snapshot = readFileSync(outputPath, "utf-8");
+		expect(output).not.toContain("github_pat_abcdefghijklmnopqrstuvwxyz123456");
+		expect(output).not.toContain("/Users/jamiecraik/Downloads/private.md");
+		expect(snapshot).not.toContain(
+			"github_pat_abcdefghijklmnopqrstuvwxyz123456",
+		);
+		expect(snapshot).not.toContain("/Users/jamiecraik");
+		expect(snapshot).toContain("[REDACTED]");
+	});
+
+	it("attaches live companion metadata without replacing row-level CSV evidence", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learnings-command-live-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const companionPath = join(dir, "companion.json");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		writeFileSync(sourcePath, csv, "utf-8");
+		writeFileSync(
+			companionPath,
+			JSON.stringify({
+				schemaVersion: "live-companion/v1",
+				provider: "coderabbit",
+				evidenceLevel: "coarse_provider_metadata",
+				rowLevelEvidence: false,
+				sourceLabel: "coderabbit stats",
+				stats: { totalLearnings: 1 },
+			}),
+			"utf-8",
+		);
+		vi.spyOn(console, "info").mockImplementation(() => undefined);
+
+		const exitCode = runLearningsCLI([
+			"import",
+			"--provider",
+			"coderabbit-csv",
+			"--source",
+			sourcePath,
+			"--repo",
+			"coding-harness",
+			"--live-companion",
+			companionPath,
+			"--output",
+			outputPath,
+			"--json",
+		]);
+
+		expect(exitCode).toBe(0);
+		const artifact = JSON.parse(readFileSync(outputPath, "utf-8"));
+		expect(artifact.source.kind).toBe("coderabbit_csv");
+		expect(artifact.items[0].source.kind).toBe("coderabbit_csv");
+		expect(artifact.liveCompanion).toMatchObject({
+			schemaVersion: "live-companion/v1",
+			provider: "coderabbit",
+			evidenceLevel: "coarse_provider_metadata",
+			rowLevelEvidence: false,
+		});
 	});
 
 	it("returns usage for missing subcommands", () => {
@@ -200,6 +287,8 @@ describe("runLearningsCLI", () => {
 			"promote",
 			"--source",
 			outputPath,
+			"--enforcement-status",
+			join(dir, ".harness/learnings/enforcement-status.empty.json"),
 			"--min-usage",
 			"25",
 			"--json",
@@ -212,10 +301,11 @@ describe("runLearningsCLI", () => {
 			total: 3,
 			eligible: 2,
 			deferred: 1,
+			enforced: 0,
 		});
 		expect(result.promotionCandidates[0]).toMatchObject({
 			usage: 516,
-			promotionStatus: "enforced",
+			promotionStatus: "candidate",
 			recommendedTarget: "docs-gate",
 			recommendedSeverity: "error",
 		});

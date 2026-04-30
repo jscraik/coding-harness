@@ -472,44 +472,56 @@ Recovery rules:
 ## Execution Ledger
 
 STEP_ID | status (pending|in_progress|completed) | owner | evidence
-P0 | pending | codex | Register `learnings` command and dispatch tests.
-P1 | pending | codex | Learning schema/types added under `src/lib/learnings`.
-P2 | pending | codex | CodeRabbit CSV parser and normalizer tests pass.
-P3 | pending | codex | Deterministic IDs and ordering tests pass.
-P4 | pending | codex | Local artifact writer tests pass.
-P5 | pending | codex | `harness learnings import` command tests pass.
-P6 | pending | codex | Representative CodeRabbit CSV fixtures added.
-P7 | pending | codex | Minimal docs updated for local non-live import behavior.
-P8 | pending | codex | Focused validation and codestyle validation outcomes recorded.
+P0 | completed | codex | `learnings` is registered in `src/lib/cli/registry/command-specs-core.ts`; command registry tests cover the command family.
+P1 | completed | codex | Learning schema/types exist under `src/lib/learnings`; nullable `lastUsed` is represented for `Last Used=Never`.
+P2 | completed | codex | CodeRabbit CSV parser and normalizer tests cover header validation, repository filtering, usage parsing, URL synthesis, and `Never` normalization.
+P3 | completed | codex | Deterministic IDs, ordering, and promotion classification behavior are covered by learning normalizer/promote tests.
+P4 | completed | codex | Local artifact writer tests cover default `.harness/learnings/coderabbit.local.json`, snapshot rejection, warnings, and gate consumption.
+P5 | completed | codex | `src/commands/learnings.test.ts` covers `harness learnings import`, `gate`, and `promote` command behavior.
+P6 | completed | codex | Representative CodeRabbit CSV fixtures live under `src/lib/learnings/__fixtures__/`.
+P7 | completed | codex | `docs/agents/02-tooling-policy.md`, `docs/agents/04-validation.md`, README, and CLI reference describe the implemented learning evidence surfaces.
+P8 | completed | codex | Validated with focused tests, docs-gate, wrapper smokes, and `bash scripts/validate-codestyle.sh --fast` after the artifact-gate reciprocal drift fix.
+
+Closeout evidence:
+
+- `node_modules/.bin/vitest run src/commands/artifact-gate.test.ts` -> pass, 1 file, 5 tests.
+- `node scripts/check-public-api-docs.mjs` -> pass, checked 174 files.
+- `node_modules/.bin/vitest run src/lib/cli/registry/command-specs.test.ts src/commands/ci-ownership-gate.test.ts src/lib/init/scaffold-default-promotions.test.ts` -> pass, 3 files, 75 tests.
+- `bash scripts/run-harness-gate.sh docs-gate --mode required --json` -> pass, 0 errors, 0 warnings, 18 info.
+- `bash scripts/validate-codestyle.sh --fast` -> pass, 124 test files, 2,479 passed, 2 skipped.
+- `pnpm build && bash scripts/harness-cli.sh artifact-gate --files src/templates/codex-preflight.sh --json` -> build passed; wrapper artifact gate returned the expected failure for source-only drift with `artifact-gate.source_without_generated`.
+- `bash scripts/harness-cli.sh artifact-gate --files scripts/codex-preflight.sh,src/templates/codex-preflight.sh --json` -> pass with `artifact-gate.source.synced`.
+
+Post-plan scope note:
+
+- Implementation intentionally continued beyond the original import-only Phase 1A slice after follow-up approval. The current branch includes later operational-evidence surfaces: `harness learnings gate`, `harness learnings promote`, `harness review-context`, `harness validation-plan`, `harness artifact-gate`, `harness ci-ownership-gate`, and scaffold-default promotion regression coverage.
+- The CodeRabbit review finding `[P1] Artifact gate misses source-only drift` is resolved by the reciprocal `sourceChanged && !artifactChanged` path in `src/lib/artifact-provenance.ts` and regression coverage in `src/commands/artifact-gate.test.ts`.
 
 ## Deferred Work
 
-Phase 1B:
+Completed after the original Phase 1A slice:
 
 - `harness learnings gate`.
 - Exact-path matcher against `file` and `targetPatterns`.
 - `GateResult` output.
-- Missing-artifact and stale-source gate behavior.
-- High-usage frontmatter finding for `docs/ai-assistant-security-policy.md`.
-
-Phase 2:
-
 - `harness learnings promote`.
 - Promotion candidates.
-- Durable docs-surface validator for the frontmatter metadata learning.
-- Promotion status updates.
-- `operator_skill` promotion recommendations for repeated workflows that
-  should be captured with `$skillify`.
-
-Later phases:
-
 - Review context pack.
 - Validation plan command.
 - Artifact provenance registry and gate.
 - CI ownership contract and gate.
-- Scaffold fixture matrix.
+- Scaffold-default promotion regression coverage for repeated generated-repo defaults.
+
+Still deferred:
+
+- Durable docs-surface validator for the frontmatter metadata learning.
+- Promotion status updates that mark implemented learnings as enforced by specific files/tests.
+- `operator_skill` promotion recommendations for repeated workflows that should be captured with `$skillify`.
 - North-star feedback metrics.
 - Live CodeRabbit provider or live companion metadata.
+- Sanitized shared snapshot publication for imported learning evidence.
+- Mandatory review-gate enforcement of generated review-context artifacts.
+- Keyword-only fuzzy matching and blocking.
 
 Skillification candidates should remain advisory until Phase 2 promotion
 analysis can distinguish repeatable workflows from atomic rules. Do not

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { runArtifactGateCLI } from "../../../commands/artifact-gate.js";
 import { runAuditCLI } from "../../../commands/audit.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
@@ -16,6 +17,7 @@ import {
 	runPromoteModeCLI,
 	runSyncBranchProtectionCLI,
 } from "../../../commands/ci-migrate.js";
+import { runCIOwnershipGateCLI } from "../../../commands/ci-ownership-gate.js";
 import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
@@ -42,6 +44,7 @@ import {
 	runLocalMemoryPreflightCLI,
 } from "../../../commands/local-memory-preflight.js";
 import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
+import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
 import { runOrgAuditCLI } from "../../../commands/org-audit.js";
 import { runPilotEvaluateCLI } from "../../../commands/pilot-evaluate.js";
@@ -521,6 +524,14 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const checkInspection = inspectFlagValue(args, "--check");
 			const botLoginInspection = inspectFlagValue(args, "--bot-login");
 			const contractInspection = inspectFlagValue(args, "--contract");
+			const reviewContextInspection = inspectFlagValue(
+				args,
+				"--review-context",
+			);
+			const reviewContextMaxAgeInspection = inspectFlagValue(
+				args,
+				"--review-context-max-age-minutes",
+			);
 			if (tokenInspection.present && tokenInspection.missingValue) {
 				console.error("Error: --token requires a value");
 				return 2;
@@ -529,6 +540,11 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				{ flag: "--check", inspected: checkInspection },
 				{ flag: "--bot-login", inspected: botLoginInspection },
 				{ flag: "--contract", inspected: contractInspection },
+				{ flag: "--review-context", inspected: reviewContextInspection },
+				{
+					flag: "--review-context-max-age-minutes",
+					inspected: reviewContextMaxAgeInspection,
+				},
 			]) {
 				if (inspected.present && inspected.missingValue) {
 					console.error(`Error: ${flag} requires a value`);
@@ -592,6 +608,25 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			if (autoResolveBotThreadsFlag) options.autoResolveBotThreads = true;
 			if (contractInspection.value !== undefined) {
 				options.contractPath = contractInspection.value;
+			}
+			if (reviewContextInspection.value !== undefined) {
+				options.reviewContextPath = reviewContextInspection.value;
+			}
+			if (args.includes("--require-review-context")) {
+				options.requireReviewContext = true;
+			}
+			if (reviewContextMaxAgeInspection.value !== undefined) {
+				const parsedMaxAge = parseIntegerArg(
+					reviewContextMaxAgeInspection.value,
+					1,
+				);
+				if (parsedMaxAge === undefined) {
+					console.error(
+						"Error: --review-context-max-age-minutes expects a positive integer",
+					);
+					return 2;
+				}
+				options.reviewContextMaxAgeMinutes = parsedMaxAge;
 			}
 
 			return import("../../../commands/review-gate.js").then(
@@ -1394,6 +1429,36 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		},
 	},
 	{
+		name: "artifact-gate",
+		summary:
+			"Check generated artifact changes against the artifact provenance registry",
+		example: "artifact-gate --files scripts/codex-preflight.sh --json",
+		errorLabel: "Artifact Gate Error",
+		execute: (args) => {
+			const filesArg = getFlagValue(args, args.indexOf("--files"));
+			return runArtifactGateCLI({
+				files: filesArg
+					?.split(",")
+					.map((file) => file.trim())
+					.filter(Boolean),
+				registryPath: getFlagValue(args, args.indexOf("--registry")),
+				json: args.includes("--json"),
+			});
+		},
+	},
+	{
+		name: "ci-ownership-gate",
+		summary:
+			"Validate CircleCI, CodeRabbit, and Semgrep required-check ownership",
+		example: "ci-ownership-gate --json",
+		errorLabel: "CI Ownership Gate Error",
+		execute: (args) =>
+			runCIOwnershipGateCLI({
+				contractPath: getFlagValue(args, args.indexOf("--contract")),
+				json: args.includes("--json"),
+			}),
+	},
+	{
 		name: "blast-radius",
 		summary: "Determine required checks from changed files",
 		example: "blast-radius --files src/auth.ts,src/api.ts --json",
@@ -1953,6 +2018,15 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			"validation-plan --source .harness/learnings/coderabbit.local.json --files src/cli.ts --json",
 		errorLabel: "Validation Plan Error",
 		execute: (args) => runValidationPlanCLI(args),
+	},
+	{
+		name: "north-star-feedback",
+		summary:
+			"Measure operational-learning feedback loops against north-star review outcomes",
+		example:
+			"north-star-feedback --source .harness/learnings/coderabbit.local.json --json",
+		errorLabel: "North Star Feedback Error",
+		execute: (args) => runNorthStarFeedbackCLI(args),
 	},
 	{
 		name: "upgrade",

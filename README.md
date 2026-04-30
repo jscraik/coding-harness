@@ -162,9 +162,9 @@ The code, tests, and recent history point to a few especially strong surfaces.
   tested surfaces in the repo. It supports prepare, verify, commit, abort,
   branch-protection sync, proof packs, and merge-queue cutover evidence.
 - **Review and governance gates.** `review-gate`, `docs-gate`,
-  `verify-coderabbit`, `linear-gate`, `check-authz`, and `doctor` are current,
-  active surfaces. This repo now assumes CodeRabbit, not Greptile, as the
-  primary AI review path.
+  `ci-ownership-gate`, `verify-coderabbit`, `linear-gate`, `check-authz`, and
+  `doctor` are current, active surfaces. This repo now assumes CodeRabbit, not
+  Greptile, as the primary AI review path.
 - **Pilot control-plane evaluation.** `pilot-evaluate`, `pilot-rollback`,
   remediation, gap-case management, and workflow-contract scorecards are real
   product surfaces with substantial test coverage.
@@ -203,6 +203,11 @@ Security scanning now runs in CircleCI as part of `pr-pipeline`. GitHub Actions
 in this repository is reserved for release publishing only
 (`.github/workflows/release-private-npm.yml`).
 Semgrep Cloud is enforced separately as an external GitHub App required check.
+The machine-readable `harness.contract.json` `ciOwnership` block keeps that split
+explicit: CircleCI owns the primary PR gate, CodeRabbit remains the independent
+review check, Semgrep Cloud remains independent external security evidence, and
+any GitHub Actions fallback workflow must stay manual/emergency-only unless the
+contract is intentionally migrated.
 
 ## Installation
 
@@ -512,6 +517,8 @@ harness commands --json | jq '
 | `check-authz`            | Validate authorization policy for mutative operations                               |
 | `check-environment`      | Validate pilot environment governance checks                                        |
 | `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                              |
+| `artifact-gate`          | Check generated artifact changes against the artifact provenance registry           |
+| `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks     |
 | `blast-radius`           | Determine required checks from changed files                                        |
 | `risk-tier`              | Classify changed files by risk tier                                                 |
 | `diff-budget`            | Enforce diff budget constraints                                                     |
@@ -551,6 +558,8 @@ harness commands --json | jq '
 | `learnings`       | Import local operational review evidence, run exact-file learning gates, and generate high-usage promotion candidates via `learnings import`, `learnings gate`, and `learnings promote`                                           |
 | `review-context`  | Generate PR review context from changed files and imported operational learnings, including applicable learned constraints and validation-plan entries                                                                            |
 | `validation-plan` | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated                                                                              |
+| `artifact-gate`   | Check changed generated artifacts against `.harness/artifact-provenance.json` so template/source edits accompany runtime mirrors                                                                                                  |
+| `ci-ownership-gate` | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                                                                        |
 | `search`          | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
 | `context`         | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 
