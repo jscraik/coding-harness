@@ -1,3 +1,4 @@
+import { inspectFlagList, inspectFlagValue } from "../lib/cli/parse-utils.js";
 import { buildReviewContext } from "../lib/learnings/review-context.js";
 
 const EXIT_CODES = {
@@ -18,16 +19,16 @@ const EXIT_CODES = {
  */
 export function runReviewContextCLI(args: string[]): number {
 	const json = args.includes("--json");
-	const sourceFlag = readOptionalFlag(args, "--source");
-	const outputFlag = readOptionalFlag(args, "--output");
-	const repoRootFlag = readOptionalFlag(args, "--repo-root");
-	const enforcementStatusFlag = readOptionalFlag(args, "--enforcement-status");
+	const sourceFlag = inspectFlagValue(args, "--source");
+	const outputFlag = inspectFlagValue(args, "--output");
+	const repoRootFlag = inspectFlagValue(args, "--repo-root");
+	const enforcementStatusFlag = inspectFlagValue(args, "--enforcement-status");
 	const missingValueFlag = [
-		sourceFlag,
-		outputFlag,
-		repoRootFlag,
-		enforcementStatusFlag,
-	].find((flag) => flag.present && flag.value === undefined);
+		{ flag: "--source", inspection: sourceFlag },
+		{ flag: "--output", inspection: outputFlag },
+		{ flag: "--repo-root", inspection: repoRootFlag },
+		{ flag: "--enforcement-status", inspection: enforcementStatusFlag },
+	].find(({ inspection }) => inspection.missingValue);
 	if (missingValueFlag) {
 		return emitError({
 			json,
@@ -40,24 +41,12 @@ export function runReviewContextCLI(args: string[]): number {
 	const output = outputFlag.value;
 	const repoRoot = repoRootFlag.value;
 	const enforcementStatusPath = enforcementStatusFlag.value;
-	const files = readRequiredFlag(args, "--files");
-	if (!files.ok) {
+	const files = inspectFlagList(args, "--files");
+	if (!files.present || files.missingValue) {
 		return emitError({
 			json,
 			errorCode: "review-context.files_required",
 			message: "harness review-context requires --files.",
-			exitCode: EXIT_CODES.USAGE,
-		});
-	}
-	const parsedFiles = files.value
-		.split(",")
-		.map((entry) => entry.trim())
-		.filter((entry) => entry.length > 0);
-	if (parsedFiles.length === 0) {
-		return emitError({
-			json,
-			errorCode: "review-context.files_required",
-			message: "harness review-context requires at least one file in --files.",
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
@@ -66,7 +55,7 @@ export function runReviewContextCLI(args: string[]): number {
 		...(output ? { output } : {}),
 		...(repoRoot ? { repoRoot } : {}),
 		...(enforcementStatusPath ? { enforcementStatusPath } : {}),
-		files: parsedFiles,
+		files: files.values,
 	});
 	if (json) {
 		console.info(JSON.stringify(result, null, 2));
@@ -84,44 +73,6 @@ export function runReviewContextCLI(args: string[]): number {
 		);
 	}
 	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
-}
-
-/**
- * Retrieves the value for a required command-line flag from an argv-style array.
- *
- * @param args - The argument list to search (e.g., process.argv.slice(2))
- * @param flag - The flag token to find (e.g., `--files`)
- * @returns `{ ok: true, value }` when `flag` is present and followed by a non-flag value, `{ ok: false }` when the flag is missing or has no valid value
- */
-function readRequiredFlag(
-	args: string[],
-	flag: string,
-): { ok: true; value: string } | { ok: false } {
-	const value = readOptionalFlag(args, flag).value;
-	return value === undefined ? { ok: false } : { ok: true, value };
-}
-
-/**
- * Read an optional flag value from an argv-style array.
- *
- * Finds `flag` in `args` and, if a following argument exists and does not start with `-`,
- * returns it as `value`.
- *
- * @param args - The command-line arguments array to search.
- * @param flag - The flag name to locate (for example, `--files`).
- * @returns An object with `value` set to the flag's argument when present and not another flag; otherwise an empty object.
- */
-function readOptionalFlag(
-	args: string[],
-	flag: string,
-): { present: boolean; flag: string; value?: string } {
-	const index = args.indexOf(flag);
-	if (index === -1) return { present: false, flag };
-	const value = args[index + 1];
-	if (value === undefined || value.startsWith("-")) {
-		return { present: true, flag };
-	}
-	return { present: true, flag, value };
 }
 
 /**

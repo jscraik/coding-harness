@@ -14,6 +14,7 @@ last_validated: 2026-04-30
 - [Validation by change type](#validation-by-change-type)
 - [Docs-only edits](#docs-only-edits)
 - [Code + command behavior edits](#code--command-behavior-edits)
+- [North-star learning loop closeout](#north-star-learning-loop-closeout)
 - [Process/agent instruction edits](#processagent-instruction-edits)
 - [Verify-work lifecycle](#verify-work-lifecycle)
 - [Execution order and restart policy](#execution-order-and-restart-policy)
@@ -91,8 +92,25 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
 - When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
 - For this repository, keep `## Testing` in the PR body structured with `verification_commands`, `verification_outcomes`, and `blocked_steps_reason` so CodeRabbit can evaluate validation evidence deterministically.
+- For pull-requested work with changed files that can be evaluated against imported CodeRabbit learning evidence, treat the north-star learning loop as a closeout check: run or explicitly mark `n.a.` for `harness learnings gate`, `harness review-context`, and `harness north-star-feedback` in the PR template evidence.
 - When running `harness linear*` commands (locally or in CI), set `LINEAR_API_KEY` in the runtime environment or pass `--token`, and load `~/.codex/.env` into the active shell/session when secrets are stored there.
 - Run `harness symphony-check` as part of validation evidence when Linear secret discovery behavior changed, so `LINEAR_API_KEY` discovery is explicitly verified.
+
+### North-star learning loop closeout
+
+Use this closeout when a PR touches code, docs, governance, CI, generated artifacts, scaffold defaults, or review policy surfaces that can be matched against imported learning evidence.
+
+Required evidence:
+
+1. Run `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, or mark `n.a.` when no local learning artifact exists for the repo.
+2. Run `harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, or mark `n.a.` when no learning artifact exists or the change is outside review-context scope.
+3. Run `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json`, or mark `n.a.` when no learning artifact exists.
+4. Promote any high-usage repeated learning only when the finding has a concrete enforcement destination: validator, gate, scaffold regression, generated-artifact rule, review-context fact, or explicit exception.
+5. Promote the durable distilled rule, decision, or explicit skip reason into Project Brain when the learning affects future planning or agent behavior; keep the imported learning artifact as operational evidence rather than copying every row into Project Brain.
+
+The `--files` value accepts comma-separated paths or multiple following path tokens.
+
+The purpose is to keep repeated review learning load-bearing. A PR should not claim north-star alignment only because it added policy prose; it should show which learning evidence was checked, enforced, measured, or consciously excluded.
 
 ### Process/agent instruction edits
 

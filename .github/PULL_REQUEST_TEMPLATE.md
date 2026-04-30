@@ -16,17 +16,21 @@
 - [ ] CodeRabbit review was performed by an independent reviewer (not the coding agent).
 - [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
+- [ ] North-star learning loop considered for changed files; relevant learning gate, review-context, promotion, or feedback evidence is listed below, or marked `n.a.` with a reason.
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
 
 ## Testing
 
-- verification_commands: list exact commands run here
-- verification_outcomes: record pass/fail/blocked for each command here
-- blocked_steps_reason: none if all planned steps ran
+- `verification_commands`: list exact commands run here
+- `verification_outcomes`: record pass/fail/blocked for each command here
+- `blocked_steps_reason`: none if all planned steps ran
 - Command: `bash scripts/validate-codestyle.sh` -> pass/fail
 - Command: `pnpm check` -> pass/fail
 - Command: `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null` -> pass/fail
+- Command: `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <comma-separated-changed-files> --json` -> pass/fail/n.a.
+- Command: `harness review-context --source .harness/learnings/coderabbit.local.json --files <comma-separated-changed-files> --json` -> pass/fail/n.a.
+- Command: `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json` -> pass/fail/n.a.
 - Any other command(s):
 
 ## Review artifacts

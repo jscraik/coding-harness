@@ -25,6 +25,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { inspectFlagList } from "../lib/cli/parse-utils.js";
 import {
 	type BrainValidationResult,
 	validateProjectBrain,
@@ -711,17 +712,15 @@ function renderBrainPreflightHuman(result: BrainPreflightResult): string {
 }
 
 function cliBrainPreflight(args: string[]): BrainCliResult {
-	const filesIndex = args.indexOf("--files");
-	const filesArg = getFlagValue(args, filesIndex);
+	const files = inspectFlagList(args, "--files");
 
-	if (!filesArg) {
+	if (!files.present || files.missingValue) {
 		process.stderr.write(
-			"Error: --files <path1,path2,...> is required for brain preflight\n",
+			"Error: --files <path...> is required for brain preflight\n",
 		);
 		return { exitCode: EXIT_CODES.INVALID_ARGS };
 	}
 
-	const files = filesArg.split(",").map((f) => f.trim());
 	const harnessDir = findHarnessDir(getFlagValue(args, args.indexOf("--dir")));
 
 	if (!existsSync(harnessDir)) {
@@ -731,7 +730,7 @@ function cliBrainPreflight(args: string[]): BrainCliResult {
 		return { exitCode: EXIT_CODES.NOT_FOUND };
 	}
 
-	const result = runBrainPreflight(harnessDir, files);
+	const result = runBrainPreflight(harnessDir, files.values);
 	const json = getOutputJson(args);
 
 	if (json) {

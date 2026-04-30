@@ -127,6 +127,50 @@ describe("runReviewContextCLI", () => {
 		});
 	});
 
+	it("accepts multiple --files tokens without dropping later paths", () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-context-multi-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		writeFileSync(sourcePath, contextCsv, "utf-8");
+		expect(
+			runLearningsCLI([
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				sourcePath,
+				"--repo",
+				"coding-harness",
+				"--output",
+				outputPath,
+				"--json",
+			]),
+		).toBe(0);
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		const exitCode = runReviewContextCLI([
+			"--source",
+			outputPath,
+			"--files",
+			"README.md",
+			"docs/ai-assistant-security-policy.md",
+			"--json",
+		]);
+
+		expect(exitCode).toBe(0);
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.changedFiles).toEqual([
+			"README.md",
+			"docs/ai-assistant-security-policy.md",
+		]);
+		expect(
+			result.applicableLearnings.map((learning: { id: string }) => learning.id),
+		).toContain("coderabbit.coding-harness.docs-frontmatter-machine-readable");
+	});
+
 	it("returns usage when files are missing", () => {
 		const infoSpy = vi
 			.spyOn(console, "info")

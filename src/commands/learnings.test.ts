@@ -195,6 +195,48 @@ describe("runLearningsCLI", () => {
 		expect(gateResult.evidence_ref[0]).toContain("#row=2");
 	});
 
+	it("accepts multiple --files tokens without dropping later paths", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learnings-gate-multi-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		writeFileSync(sourcePath, csv, "utf-8");
+		expect(
+			runLearningsCLI([
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				sourcePath,
+				"--repo",
+				"coding-harness",
+				"--output",
+				outputPath,
+				"--json",
+			]),
+		).toBe(0);
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		const exitCode = runLearningsCLI([
+			"gate",
+			"--source",
+			outputPath,
+			"--files",
+			"README.md",
+			"docs/ai-assistant-security-policy.md",
+			"--json",
+		]);
+
+		expect(exitCode).toBe(1);
+		const gateResult = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(gateResult.findings[0]).toMatchObject({
+			severity: "error",
+			path: "docs/ai-assistant-security-policy.md",
+		});
+	});
+
 	it("emits warning GateResult JSON for target path-prefix learning matches", () => {
 		const dir = mkdtempSync(join(tmpdir(), "learnings-gate-prefix-"));
 		cleanup.push(dir);

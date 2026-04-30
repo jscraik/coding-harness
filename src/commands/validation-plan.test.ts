@@ -74,6 +74,55 @@ describe("runValidationPlanCLI", () => {
 		]);
 	});
 
+	it("accepts multiple --files tokens without dropping later paths", () => {
+		const dir = mkdtempSync(join(tmpdir(), "validation-plan-multi-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		writeFileSync(sourcePath, validationCsv, "utf-8");
+		expect(
+			runLearningsCLI([
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				sourcePath,
+				"--repo",
+				"coding-harness",
+				"--output",
+				outputPath,
+				"--json",
+			]),
+		).toBe(0);
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		const exitCode = runValidationPlanCLI([
+			"--source",
+			outputPath,
+			"--files",
+			"README.md",
+			"src/cli.ts",
+			"package.json",
+			"--json",
+		]);
+
+		expect(exitCode).toBe(0);
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.changedFiles).toEqual([
+			"README.md",
+			"src/cli.ts",
+			"package.json",
+		]);
+		expect(
+			result.commands.map((entry: { command: string }) => entry.command),
+		).toContain("pnpm test:ci");
+		expect(result.networkRequired).toEqual([
+			expect.objectContaining({ command: "pnpm audit" }),
+		]);
+	});
+
 	it("returns usage when files are missing", () => {
 		const infoSpy = vi
 			.spyOn(console, "info")

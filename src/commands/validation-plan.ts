@@ -1,3 +1,4 @@
+import { inspectFlagList, inspectFlagValue } from "../lib/cli/parse-utils.js";
 import { buildValidationPlan } from "../lib/learnings/validation-plan.js";
 
 const EXIT_CODES = {
@@ -9,25 +10,25 @@ const EXIT_CODES = {
 /**
  * Handle the `harness validation-plan` CLI command.
  *
- * Parses `args` for the flags `--json` (output as JSON), optional `--source <value>`, and required `--files <comma-separated>`.
+ * Parses `args` for the flags `--json` (output as JSON), optional `--source <value>`, and required `--files <value...>`.
  *
- * @param args - Command-line arguments passed to the command; expects `--files` with a comma-separated list of file paths, optionally `--source <value>`, and optionally `--json`.
+ * @param args - Command-line arguments passed to the command; expects `--files` with comma-separated paths or multiple following path tokens, optionally `--source <value>`, and optionally `--json`.
  * @returns CLI exit code: `0` on success, `1` if the validation plan failed, `2` for usage errors (e.g., missing or empty `--files`).
  */
 export function runValidationPlanCLI(args: string[]): number {
 	const json = args.includes("--json");
-	const sourceFlag = readOptionalFlag(args, "--source");
-	if (sourceFlag.present && sourceFlag.value === undefined) {
+	const sourceFlag = inspectFlagValue(args, "--source");
+	if (sourceFlag.missingValue) {
 		return emitError({
 			json,
 			errorCode: "validation-plan.flag_value_required",
-			message: `harness validation-plan requires a value after ${sourceFlag.flag}.`,
+			message: "harness validation-plan requires a value after --source.",
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
 	const source = sourceFlag.value;
-	const files = readRequiredFlag(args, "--files");
-	if (!files.ok) {
+	const files = inspectFlagList(args, "--files");
+	if (!files.present || files.missingValue) {
 		return emitError({
 			json,
 			errorCode: "validation-plan.files_required",
@@ -35,21 +36,9 @@ export function runValidationPlanCLI(args: string[]): number {
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
-	const parsedFiles = files.value
-		.split(",")
-		.map((file) => file.trim())
-		.filter((file) => file.length > 0);
-	if (parsedFiles.length === 0) {
-		return emitError({
-			json,
-			errorCode: "validation-plan.files_required",
-			message: "harness validation-plan requires at least one file in --files.",
-			exitCode: EXIT_CODES.USAGE,
-		});
-	}
 	const result = buildValidationPlan({
 		...(source ? { source } : {}),
-		files: parsedFiles,
+		files: files.values,
 	});
 	if (json) {
 		console.info(JSON.stringify(result, null, 2));
@@ -66,41 +55,6 @@ export function runValidationPlanCLI(args: string[]): number {
 		);
 	}
 	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
-}
-
-/**
- * Retrieves the value for a required CLI flag from an argument list.
- *
- * @param args - Argument vector to search (e.g., process.argv.slice(2))
- * @param flag - Flag name to find (e.g., "--files")
- * @returns `{ ok: true, value }` when the flag is present and followed by a non-flag value, `{ ok: false }` when the flag is absent or not followed by a valid value
- */
-function readRequiredFlag(
-	args: string[],
-	flag: string,
-): { ok: true; value: string } | { ok: false } {
-	const value = readOptionalFlag(args, flag).value;
-	return value === undefined ? { ok: false } : { ok: true, value };
-}
-
-/**
- * Finds `flag` in an argv-style `args` array and, if present, returns the next token as its value.
- *
- * @param args - Argument list to search (e.g., process.argv slice)
- * @param flag - Flag to locate (exact match)
- * @returns An object containing `value` when the flag has a following token that is not undefined and does not start with `-`; otherwise an empty object
- */
-function readOptionalFlag(
-	args: string[],
-	flag: string,
-): { present: boolean; flag: string; value?: string } {
-	const index = args.indexOf(flag);
-	if (index === -1) return { present: false, flag };
-	const value = args[index + 1];
-	if (value === undefined || value.startsWith("-")) {
-		return { present: true, flag };
-	}
-	return { present: true, flag, value };
 }
 
 /**

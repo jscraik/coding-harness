@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { inspectFlagList } from "../lib/cli/parse-utils.js";
 import {
 	DEFAULT_CODERABBIT_LOCAL_ARTIFACT,
 	buildCodeRabbitLearningArtifact,
@@ -78,8 +79,8 @@ export function runLearningsGateCLI(args: string[]): number {
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
-	const files = readRequiredFlag(args, "--files");
-	if (!files.ok) {
+	const files = inspectFlagList(args, "--files");
+	if (!files.present || files.missingValue) {
 		return emitError({
 			json,
 			errorCode: "learnings.files_required",
@@ -91,7 +92,7 @@ export function runLearningsGateCLI(args: string[]): number {
 		...(source ? { source } : {}),
 		...(overrides ? { overrides } : {}),
 		overrideMode: overrideMode.value,
-		files: files.value.split(","),
+		files: files.values,
 	});
 	if (json) {
 		console.info(JSON.stringify(gateResult, null, 2));

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	EXIT_CODES,
 	runBrainAdd,
@@ -244,6 +244,33 @@ describe("brain CLI", () => {
 			]);
 			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
 		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("accepts multiple preflight --files tokens without dropping later paths", () => {
+		const dir = createTempHarness();
+		const info = vi.spyOn(console, "info").mockImplementation(() => {});
+		const write = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runBrainCLI([
+				"preflight",
+				"--dir",
+				dir,
+				"--files",
+				"AGENTS.md",
+				"src/commands/brain.test.ts",
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			const output = write.mock.calls.map((call) => call[0]).join("");
+			const result = JSON.parse(output);
+			expect(result.files).toEqual(["AGENTS.md", "src/commands/brain.test.ts"]);
+		} finally {
+			info.mockRestore();
+			write.mockRestore();
 			rmSync(dir, { recursive: true, force: true });
 		}
 	});

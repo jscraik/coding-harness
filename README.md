@@ -40,6 +40,7 @@ The shortest honest description of the project today is:
   - [Hero Workflow 1: Bootstrap a repository](#hero-workflow-1-bootstrap-a-repository)
   - [Hero Workflow 2: Start work on an issue](#hero-workflow-2-start-work-on-an-issue)
   - [Hero Workflow 3: Submit a change for review](#hero-workflow-3-submit-a-change-for-review)
+  - [Learning-loop closeout](#learning-loop-closeout)
   - [Advanced: Migrate CI with rollback and proof](#advanced-migrate-ci-with-rollback-and-proof)
   - [Advanced: Validate a Symphony workflow contract](#advanced-validate-a-symphony-workflow-contract)
   - [Advanced: Evaluate a pilot before expanding autonomy](#advanced-evaluate-a-pilot-before-expanding-autonomy)
@@ -354,9 +355,9 @@ each file as you work.
 
 ```bash
 harness linear prepare --issue <KEY>         # pre-fill branch, PR title, closing line
-harness preflight-gate --contract harness.contract.json --files <changed-files> --admission-file artifacts/admission/declaration.json
-harness policy-gate --contract harness.contract.json --files <changed-files>
-harness blast-radius --files <changed-files> --json   # see which gates apply
+harness preflight-gate --contract harness.contract.json --files <comma-separated-changed-files> --admission-file artifacts/admission/declaration.json
+harness policy-gate --contract harness.contract.json --files <comma-separated-changed-files>
+harness blast-radius --files <comma-separated-changed-files> --json   # see which gates apply
 ```
 
 The `linear prepare` command outputs a branch name, PR title, and body fragment
@@ -400,6 +401,28 @@ harness verify-coderabbit --json
 
 That gives you a concrete local answer for "is the repo-side review wiring
 correct?" before you debug GitHub-side behavior.
+
+### Learning-loop closeout
+
+When a repository has imported CodeRabbit learning evidence, use the learning
+loop before PR handoff so repeated review feedback becomes guardrail data
+instead of another comment thread.
+
+```bash
+harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json
+```
+
+The `--files` value accepts comma-separated paths or multiple following path
+tokens.
+
+If a repeated high-usage learning appears, promote it into a concrete
+validator, gate, scaffold regression, generated-artifact rule, review-context
+fact, or explicit exception. Use Project Brain for the durable distilled rule or
+decision, and keep the imported learning artifact as the machine-readable
+evidence source. If no local learning artifact exists yet, record that as `n.a.`
+in the PR evidence rather than pretending the loop ran.
 
 ### Advanced: Migrate CI with rollback and proof
 
@@ -548,20 +571,20 @@ harness commands --json | jq '
 
 ### Drift, Search, And Evidence
 
-| Command           | Purpose                                                                                                                                                                                                                           |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `drift-gate`      | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
-| `org-audit`       | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
-| `tooling-audit`   | Audit managed repo tooling baselines                                                                                                                                                                                              |
-| `gardener`        | Detect stale docs and broken links                                                                                                                                                                                                |
-| `context-health`  | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
-| `learnings`       | Import local operational review evidence, run exact-file learning gates, and generate high-usage promotion candidates via `learnings import`, `learnings gate`, and `learnings promote`                                           |
-| `review-context`  | Generate PR review context from changed files and imported operational learnings, including applicable learned constraints and validation-plan entries                                                                            |
-| `validation-plan` | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated                                                                              |
-| `artifact-gate`   | Check changed generated artifacts against `.harness/artifact-provenance.json` so template/source edits accompany runtime mirrors                                                                                                  |
-| `ci-ownership-gate` | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                                                                        |
-| `search`          | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
-| `context`         | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
+| Command             | Purpose                                                                                                                                                                                                                           |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `drift-gate`        | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
+| `org-audit`         | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
+| `tooling-audit`     | Audit managed repo tooling baselines                                                                                                                                                                                              |
+| `gardener`          | Detect stale docs and broken links                                                                                                                                                                                                |
+| `context-health`    | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
+| `learnings`         | Import local operational review evidence, run exact-file learning gates, and generate high-usage promotion candidates via `learnings import`, `learnings gate`, and `learnings promote`                                           |
+| `review-context`    | Generate PR review context from changed files and imported operational learnings, including applicable learned constraints and validation-plan entries                                                                            |
+| `validation-plan`   | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated                                                                              |
+| `artifact-gate`     | Check changed generated artifacts against `.harness/artifact-provenance.json` so template/source edits accompany runtime mirrors                                                                                                  |
+| `ci-ownership-gate` | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                                                                         |
+| `search`            | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
+| `context`           | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 
 | `source-outline` | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol` |
 
