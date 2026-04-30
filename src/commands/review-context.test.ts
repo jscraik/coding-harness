@@ -1,5 +1,6 @@
 import {
 	existsSync,
+	mkdirSync,
 	mkdtempSync,
 	readFileSync,
 	rmSync,
@@ -29,11 +30,39 @@ describe("runReviewContextCLI", () => {
 		cleanup.push(dir);
 		const sourcePath = join(dir, "learnings.csv");
 		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		const enforcementStatusPath = join(
+			dir,
+			".harness/learnings/enforcement-status.json",
+		);
 		const reviewContextPath = join(
 			dir,
 			"artifacts/review-context/pr-context.json",
 		);
 		writeFileSync(sourcePath, contextCsv, "utf-8");
+		mkdirSync(join(dir, ".harness/learnings"), { recursive: true });
+		writeFileSync(
+			enforcementStatusPath,
+			JSON.stringify(
+				{
+					schemaVersion: "learning-enforcement-status/v1",
+					items: [
+						{
+							learningId:
+								"coderabbit.coding-harness.docs-frontmatter-machine-readable",
+							promotionStatus: "enforced",
+							enforcedBy: [
+								"src/lib/docs-surface/frontmatter-metadata-gate.ts",
+								"src/lib/docs-surface/frontmatter-metadata-gate.test.ts",
+							],
+							reason: "Promoted to validator.",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
 		expect(
 			runLearningsCLI([
 				"import",
@@ -55,6 +84,10 @@ describe("runReviewContextCLI", () => {
 		const exitCode = runReviewContextCLI([
 			"--source",
 			outputPath,
+			"--repo-root",
+			dir,
+			"--enforcement-status",
+			".harness/learnings/enforcement-status.json",
 			"--files",
 			"docs/ai-assistant-security-policy.md",
 			"--output",

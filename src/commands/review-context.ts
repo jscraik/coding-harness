@@ -11,6 +11,11 @@ export function runReviewContextCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const source = readOptionalFlag(args, "--source").value;
 	const output = readOptionalFlag(args, "--output").value;
+	const repoRoot = readOptionalFlag(args, "--repo-root").value;
+	const enforcementStatusPath = readOptionalFlag(
+		args,
+		"--enforcement-status",
+	).value;
 	const files = readRequiredFlag(args, "--files");
 	if (!files.ok) {
 		return emitError({
@@ -23,6 +28,8 @@ export function runReviewContextCLI(args: string[]): number {
 	const result = buildReviewContext({
 		...(source ? { source } : {}),
 		...(output ? { output } : {}),
+		...(repoRoot ? { repoRoot } : {}),
+		...(enforcementStatusPath ? { enforcementStatusPath } : {}),
 		files: files.value.split(","),
 	});
 	if (json) {
