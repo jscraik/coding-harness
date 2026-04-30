@@ -9,7 +9,10 @@ interface ArtifactGateCliOptions {
 
 /** Run the artifact provenance gate command and return the process exit code. */
 export function runArtifactGateCLI(options: ArtifactGateCliOptions): number {
-	if (!options.files?.length) {
+	const files = (options.files ?? [])
+		.map((entry) => entry.trim())
+		.filter((entry) => entry.length > 0);
+	if (!files.length) {
 		const result = {
 			schemaVersion: "artifact-gate/v1",
 			status: "error",
@@ -29,7 +32,7 @@ export function runArtifactGateCLI(options: ArtifactGateCliOptions): number {
 
 	const result = runArtifactGate({
 		repoRoot: options.repoRoot,
-		files: options.files,
+		files,
 		registryPath: options.registryPath,
 	});
 

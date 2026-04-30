@@ -9,13 +9,10 @@ const EXIT_CODES = {
 /** Run the `harness north-star-feedback` command. */
 export function runNorthStarFeedbackCLI(args: string[]): number {
 	const json = args.includes("--json");
-	const source = readOptionalFlag(args, "--source").value;
-	const enforcementStatusPath = readOptionalFlag(
-		args,
-		"--enforcement-status",
-	).value;
-	const gateResultPath = readOptionalFlag(args, "--gate-result").value;
-	const output = readOptionalFlag(args, "--output").value;
+	const source = readOptionalValue(args, "--source");
+	const enforcementStatusPath = readOptionalValue(args, "--enforcement-status");
+	const gateResultPath = readOptionalValue(args, "--gate-result");
+	const output = readOptionalValue(args, "--output");
 	const minUsage = readOptionalNumber(args, "--min-usage");
 	const reviewThreadCount = readOptionalNumber(args, "--review-thread-count");
 	const validationReruns = readOptionalNumber(args, "--validation-reruns");
@@ -63,27 +60,42 @@ export function runNorthStarFeedbackCLI(args: string[]): number {
 	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
 }
 
-function readOptionalFlag(args: string[], flag: string): { value?: string } {
+type ParsedFlag =
+	| { present: false }
+	| { present: true; missingValue: true }
+	| { present: true; value: string };
+
+function readOptionalValue(args: string[], flag: string): string | undefined {
+	const parsed = readOptionalFlag(args, flag);
+	return parsed.present && "value" in parsed ? parsed.value : undefined;
+}
+
+function readOptionalFlag(args: string[], flag: string): ParsedFlag {
 	const index = args.indexOf(flag);
-	if (index === -1) return {};
+	if (index === -1) return { present: false };
 	const value = args[index + 1];
-	if (value === undefined || value.startsWith("-")) return {};
-	return { value };
+	if (value === undefined || value.startsWith("-")) {
+		return { present: true, missingValue: true };
+	}
+	return { present: true, value };
 }
 
 function readOptionalNumber(
 	args: string[],
 	flag: string,
 ): { ok: true; value?: number } | { ok: false; message: string } {
-	const raw = readOptionalFlag(args, flag).value;
-	if (raw === undefined) return { ok: true };
-	const value = Number.parseInt(raw, 10);
-	if (!Number.isFinite(value) || value < 0) {
+	const raw = readOptionalFlag(args, flag);
+	if (!raw.present) return { ok: true };
+	if ("missingValue" in raw) {
+		return { ok: false, message: `${flag} requires a value.` };
+	}
+	if (!/^\d+$/.test(raw.value)) {
 		return {
 			ok: false,
 			message: `${flag} must be a non-negative integer.`,
 		};
 	}
+	const value = Number.parseInt(raw.value, 10);
 	return { ok: true, value };
 }
 

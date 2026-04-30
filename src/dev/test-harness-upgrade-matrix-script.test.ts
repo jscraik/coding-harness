@@ -9,6 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 
 const SCRIPT_PATH = resolve("scripts/test-harness-upgrade-matrix.mjs");
 
@@ -16,6 +17,7 @@ function runGit(repo: string, args: string[]): void {
 	const result = spawnSync("git", args, {
 		cwd: repo,
 		encoding: "utf8",
+		env: sanitizeGitEnv(),
 	});
 	if (result.status !== 0) {
 		throw new Error(result.stderr || result.stdout);

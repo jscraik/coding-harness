@@ -111,7 +111,7 @@ function findFrontmatterMetadataBodyViolations(
 	const violations = new Set<string>();
 	let inFence = false;
 	for (const line of body.split(/\r?\n/)) {
-		if (/^\s*```/.test(line)) {
+		if (/^\s*(`{3,}|~{3,})/.test(line)) {
 			inFence = !inFence;
 			continue;
 		}

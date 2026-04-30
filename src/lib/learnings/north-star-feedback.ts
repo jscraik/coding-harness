@@ -233,7 +233,17 @@ function loadGateMetrics(
 			learningGateWarnings: null,
 		};
 	}
-	const parsed = JSON.parse(readFileSync(resolvedPath, "utf-8")) as GateResult;
+	let parsed: GateResult;
+	try {
+		parsed = JSON.parse(readFileSync(resolvedPath, "utf-8")) as GateResult;
+	} catch {
+		return {
+			state: "insufficient_evidence",
+			learningHits: null,
+			learningGateBlocks: null,
+			learningGateWarnings: null,
+		};
+	}
 	const findings = Array.isArray(parsed.findings) ? parsed.findings : [];
 	const learningFindings = findings.filter(isLearningGateFinding);
 	return {

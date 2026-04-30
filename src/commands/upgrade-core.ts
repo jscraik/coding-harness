@@ -404,6 +404,12 @@ export function runUpgradeCLI(
 			);
 			return EXIT_CODES.WRITE_ERROR;
 		}
+		if (options.skipContractMigration) {
+			console.error(
+				"Error: --json cannot be combined with --skip-contract-migration.",
+			);
+			return EXIT_CODES.WRITE_ERROR;
+		}
 		return runInitCLI(dir, {
 			dryRun: true,
 			force,

@@ -42,6 +42,7 @@ export interface ReviewContextResult {
 	schemaVersion: "review-context/v1";
 	status: "success" | "error";
 	source: string;
+	generatedAt?: string;
 	sourceFingerprint?: string;
 	repo: string;
 	changedFiles: string[];
@@ -149,6 +150,7 @@ export function buildReviewContext(
 		schemaVersion: "review-context/v1",
 		status: "success",
 		source,
+		generatedAt: new Date().toISOString(),
 		sourceFingerprint: loaded.artifact.inputFingerprint,
 		repo: loaded.artifact.repository,
 		changedFiles,
@@ -167,8 +169,23 @@ export function buildReviewContext(
 			options.repoRoot ?? process.cwd(),
 			options.output,
 		);
-		mkdirSync(dirname(outputPath), { recursive: true });
-		writeFileSync(outputPath, `${JSON.stringify(result, null, 2)}\n`, "utf-8");
+		try {
+			mkdirSync(dirname(outputPath), { recursive: true });
+			writeFileSync(
+				outputPath,
+				`${JSON.stringify(result, null, 2)}\n`,
+				"utf-8",
+			);
+		} catch (error) {
+			return {
+				...result,
+				status: "error",
+				error: {
+					code: "review-context.write_failed",
+					message: `Failed to write review context: ${error instanceof Error ? error.message : String(error)}`,
+				},
+			};
+		}
 		return { ...result, outputPath };
 	}
 

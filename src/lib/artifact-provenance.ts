@@ -281,7 +281,41 @@ function isArtifactProvenanceEntry(
 	value: unknown,
 ): value is ArtifactProvenanceEntry {
 	if (!isRecord(value)) return false;
-	return typeof value.path === "string" && typeof value.source === "string";
+	if (typeof value.path !== "string" || typeof value.source !== "string") {
+		return false;
+	}
+	if (
+		value.enforcement !== undefined &&
+		value.enforcement !== "advisory" &&
+		value.enforcement !== "required"
+	) {
+		return false;
+	}
+	if (
+		value.checkCommand !== undefined &&
+		typeof value.checkCommand !== "string"
+	) {
+		return false;
+	}
+	if (
+		value.writeCommand !== undefined &&
+		typeof value.writeCommand !== "string"
+	) {
+		return false;
+	}
+	if (
+		value.reviewPolicy !== undefined &&
+		typeof value.reviewPolicy !== "string"
+	) {
+		return false;
+	}
+	if (
+		value.description !== undefined &&
+		typeof value.description !== "string"
+	) {
+		return false;
+	}
+	return true;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -24,7 +24,7 @@ import {
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
 	type BrainValidationResult,
 	validateProjectBrain,
@@ -426,12 +426,10 @@ export function runBrainAdd(
 	}
 
 	const fullPath = join(harnessDir, targetFile);
-	const dirPath = join(harnessDir, type === "decision" ? "decisions" : "");
+	const dirPath = dirname(fullPath);
 
 	// Ensure directory exists
-	if (dirPath) {
-		mkdirSync(dirPath, { recursive: true });
-	}
+	mkdirSync(dirPath, { recursive: true });
 
 	// Append or create
 	if (type === "decision") {
@@ -816,6 +814,7 @@ Subcommands:
   query               Search across knowledge, rules, and quality criteria
   add                 Capture a learning, decision, rule, or hypothesis
   preflight           Load relevant context for a set of changed files
+  stale               Report staleness of Project Brain artifacts
 
 Options:
   --json              Output in JSON format
@@ -857,7 +856,7 @@ Examples:
 		}
 		default:
 			process.stderr.write(
-				`Error: Unknown brain subcommand "${subcommand}"\n  Available: status, query, add\n`,
+				`Error: Unknown brain subcommand "${subcommand}"\n  Available: status, query, add, preflight, stale\n`,
 			);
 			return EXIT_CODES.INVALID_ARGS;
 	}

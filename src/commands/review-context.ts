@@ -25,12 +25,24 @@ export function runReviewContextCLI(args: string[]): number {
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
+	const parsedFiles = files.value
+		.split(",")
+		.map((entry) => entry.trim())
+		.filter((entry) => entry.length > 0);
+	if (parsedFiles.length === 0) {
+		return emitError({
+			json,
+			errorCode: "review-context.files_required",
+			message: "harness review-context requires at least one file in --files.",
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
 	const result = buildReviewContext({
 		...(source ? { source } : {}),
 		...(output ? { output } : {}),
 		...(repoRoot ? { repoRoot } : {}),
 		...(enforcementStatusPath ? { enforcementStatusPath } : {}),
-		files: files.value.split(","),
+		files: parsedFiles,
 	});
 	if (json) {
 		console.info(JSON.stringify(result, null, 2));

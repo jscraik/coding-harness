@@ -19,9 +19,21 @@ export function runValidationPlanCLI(args: string[]): number {
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
+	const parsedFiles = files.value
+		.split(",")
+		.map((file) => file.trim())
+		.filter((file) => file.length > 0);
+	if (parsedFiles.length === 0) {
+		return emitError({
+			json,
+			errorCode: "validation-plan.files_required",
+			message: "harness validation-plan requires at least one file in --files.",
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
 	const result = buildValidationPlan({
 		...(source ? { source } : {}),
-		files: files.value.split(","),
+		files: parsedFiles,
 	});
 	if (json) {
 		console.info(JSON.stringify(result, null, 2));

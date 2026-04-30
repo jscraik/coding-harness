@@ -242,7 +242,7 @@ function buildContextHealthReport(
 	warnings: string[],
 	artifactRefs: readonly ArtifactRef[],
 	inventory: ReturnType<typeof readContextSourceInventory>,
-	memorySnapshot: ReturnType<typeof writeMemoryMetricsSnapshot> | null,
+	memorySnapshot: ReturnType<typeof writeMemoryMetricsSnapshot>,
 ): ContextHealthReport {
 	const reportArtifactRefs = [...artifactRefs];
 	const contradictionEntries = latestContradictions(repoRoot);

@@ -88,14 +88,12 @@ export function loadLearningOverrides(options: {
 	const resolvedPath = resolve(options.repoRoot ?? process.cwd(), overridePath);
 	if (!existsSync(resolvedPath)) {
 		return {
-			ok: false,
-			findings: [
-				overrideFileFinding(
-					"learnings-gate.override.file_missing",
-					"error",
-					`Learning override file not found: ${sanitizeLearningOverrideDiagnostic(overridePath)}`,
-				),
-			],
+			ok: true,
+			overrides: {
+				schemaVersion: LEARNING_OVERRIDE_SCHEMA_VERSION,
+				suppressions: [],
+			},
+			warnings: [],
 		};
 	}
 	let parsed: unknown;

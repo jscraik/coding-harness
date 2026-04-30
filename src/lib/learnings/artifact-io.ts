@@ -113,7 +113,14 @@ export function buildCodeRabbitLearningArtifact(options: {
 		items: normalized.items,
 		warnings: warnings.sort(sortWarnings),
 		summary: { ...summary, warnings: warnings.length },
-		...(options.liveCompanion ? { liveCompanion: options.liveCompanion } : {}),
+		...(options.liveCompanion
+			? {
+					liveCompanion: {
+						...options.liveCompanion,
+						rowLevelEvidence: false,
+					},
+				}
+			: {}),
 	};
 	return { ok: true, artifact };
 }

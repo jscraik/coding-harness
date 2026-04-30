@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchLearningToFile } from "./fuzzy-match.js";
+import { matchLearningToFile, patternMatchesFile } from "./fuzzy-match.js";
 import type { LearningItem } from "./types.js";
 
 describe("matchLearningToFile", () => {
@@ -52,6 +52,15 @@ describe("matchLearningToFile", () => {
 			advisoryOnly: true,
 			falsePositiveCandidate: true,
 		});
+	});
+
+	it("documents path pattern glob semantics", () => {
+		expect(patternMatchesFile("src/**", "src")).toBe(true);
+		expect(patternMatchesFile("src/**", "src/lib/index.ts")).toBe(true);
+		expect(patternMatchesFile("src/*", "src")).toBe(false);
+		expect(patternMatchesFile("src/*", "src/index.ts")).toBe(true);
+		expect(patternMatchesFile("src/*", "src/lib/index.ts")).toBe(false);
+		expect(patternMatchesFile("./src/index.ts", "src/index.ts")).toBe(true);
 	});
 });
 

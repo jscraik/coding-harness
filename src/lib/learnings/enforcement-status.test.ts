@@ -134,6 +134,7 @@ describe("learning enforcement-status ledger", () => {
 					{
 						learningId: learningItem.id,
 						promotionStatus: "enforced",
+						enforcedBy: ["src/lib/learnings/enforcement-status.test.ts"],
 					},
 				],
 			},

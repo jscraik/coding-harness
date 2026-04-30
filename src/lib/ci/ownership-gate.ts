@@ -277,15 +277,6 @@ function validateFallbackWorkflow(input: {
 	>["fallbackWorkflows"][number];
 	repoRoot: string;
 }): void {
-	if (input.workflow.role !== "fallback_pr_gate") {
-		input.findings.push({
-			id: `ci-ownership.fallback-workflow.${input.workflow.path}.ok`,
-			severity: "info",
-			message: `${input.workflow.path} is classified as ${input.workflow.role}.`,
-			path: input.workflow.path,
-		});
-		return;
-	}
 	const workflowPath = resolve(input.repoRoot, input.workflow.path);
 	if (!existsSync(workflowPath)) {
 		input.findings.push({
@@ -294,6 +285,15 @@ function validateFallbackWorkflow(input: {
 			message: `Configured fallback workflow is missing: ${input.workflow.path}.`,
 			path: input.workflow.path,
 			fix: "Restore the workflow or remove it from ciOwnership.fallbackWorkflows.",
+		});
+		return;
+	}
+	if (input.workflow.role !== "fallback_pr_gate") {
+		input.findings.push({
+			id: `ci-ownership.fallback-workflow.${input.workflow.path}.ok`,
+			severity: "info",
+			message: `${input.workflow.path} is classified as ${input.workflow.role}.`,
+			path: input.workflow.path,
 		});
 		return;
 	}

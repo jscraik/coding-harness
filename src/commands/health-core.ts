@@ -38,7 +38,7 @@ export interface GateResult {
 	/** Human-friendly display name */
 	displayName: string;
 	status: GateStatus;
-	/** Short summary line shown in the scorecardoutput */
+	/** Short summary line shown in the scorecard output */
 	summary: string;
 	/** Exit code returned by the gate subprocess */
 	exitCode: number | null;
@@ -537,9 +537,18 @@ export function runAutoFix(
 		process.stderr.write(
 			`[auto-fix] Applying [${finding.id}]: ${finding.command}\n`,
 		);
-		// Parse the command string into argv: split on whitespace
-		const [bin, ...fixArgs] = finding.command.split(/\s+/);
-		const fixResult = spawnSync(bin ?? finding.command, fixArgs, {
+		const parsedCommand = tokenizeCommand(finding.command);
+		if (!parsedCommand) {
+			finding.outcome = "failed";
+			finding.exitCode = 1;
+			finding.stderr = "Invalid fix.command: unable to parse executable/args";
+			failed++;
+			process.stderr.write(
+				`[auto-fix] Invalid command format: ${finding.id}: ${finding.command}\n`,
+			);
+			continue;
+		}
+		const fixResult = spawnSync(parsedCommand.bin, parsedCommand.args, {
 			cwd: dir,
 			encoding: "utf-8",
 			stdio: ["ignore", "pipe", "pipe"],
@@ -570,6 +579,52 @@ export function runAutoFix(
 		findings: allFindings,
 		summary: { total: allFindings.length, applied, failed, skipped },
 	};
+}
+
+function tokenizeCommand(
+	command: string,
+): { bin: string; args: string[] } | null {
+	const input = command.trim();
+	if (!input) return null;
+
+	const tokens: string[] = [];
+	let current = "";
+	let quote: '"' | "'" | null = null;
+	let escaped = false;
+
+	for (const character of input) {
+		if (escaped) {
+			current += character;
+			escaped = false;
+			continue;
+		}
+		if (character === "\\") {
+			escaped = true;
+			continue;
+		}
+		if (quote) {
+			if (character === quote) quote = null;
+			else current += character;
+			continue;
+		}
+		if (character === '"' || character === "'") {
+			quote = character;
+			continue;
+		}
+		if (/\s/.test(character)) {
+			if (current.length > 0) {
+				tokens.push(current);
+				current = "";
+			}
+			continue;
+		}
+		current += character;
+	}
+
+	if (escaped || quote) return null;
+	if (current.length > 0) tokens.push(current);
+	const [bin, ...args] = tokens;
+	return bin ? { bin, args } : null;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────

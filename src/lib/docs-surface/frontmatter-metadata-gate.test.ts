@@ -73,6 +73,32 @@ status: draft
 		expect(violations).toEqual([]);
 	});
 
+	it("allows frontmatter keys in tilde fenced examples", () => {
+		const root = mkdtempSync(join(tmpdir(), "frontmatter-gate-"));
+		write(
+			root,
+			"docs/policy.md",
+			`---
+schema_version: 1
+status: active
+---
+
+# Policy
+
+~~~yaml
+status: draft
+~~~
+`,
+		);
+
+		const violations = collectFrontmatterMetadataViolations({
+			repoRoot: root,
+			changedFiles: ["docs/policy.md"],
+		});
+
+		expect(violations).toEqual([]);
+	});
+
 	it("ignores non-policy markdown files", () => {
 		const root = mkdtempSync(join(tmpdir(), "frontmatter-gate-"));
 		write(

@@ -87,7 +87,7 @@ export function buildValidationPlan(
 		changedFiles.some((file) => learningMatchesFile(item, file)),
 	);
 	const commands = buildCommands(changedFiles, matchedLearnings);
-	const networkRequired = buildNetworkRequired(matchedLearnings);
+	const networkRequired = buildNetworkRequired(changedFiles, matchedLearnings);
 
 	return {
 		schemaVersion: "validation-plan/v1",
@@ -135,12 +135,47 @@ function addPathBasedCommands(
 			files: files.filter(isSourceFile),
 		});
 		addCommand(commands, {
+			command: "bash scripts/validate-codestyle.sh",
+			reason:
+				"Source files changed and must satisfy the full repo codestyle gate before handoff.",
+			files: files.filter(isSourceFile),
+		});
+		addCommand(commands, {
+			command: "pnpm check",
+			reason:
+				"Behavior-changing source files require the aggregate quality gate.",
+			files: files.filter(isSourceFile),
+		});
+		addCommand(commands, {
+			command: "pnpm run quality:docstrings",
+			reason:
+				"Changed production source must satisfy public API docstring ratchets.",
+			files: files.filter(isSourceFile),
+		});
+		addCommand(commands, {
+			command: "pnpm run quality:size",
+			reason: "Changed production source must satisfy size ratchets.",
+			files: files.filter(isSourceFile),
+		});
+		addCommand(commands, {
+			command: "pnpm run test:related",
+			reason:
+				"Changed production source must run related tests without no-test pass-through.",
+			files: files.filter(isSourceFile),
+		});
+		addCommand(commands, {
 			command: "pnpm typecheck",
 			reason: "TypeScript source files changed.",
 			files: files.filter(isSourceFile),
 		});
 	}
 	if (files.some(isRuntimeOrArtifactFile)) {
+		addCommand(commands, {
+			command: "pnpm check",
+			reason:
+				"Runtime, artifact, package, or script behavior changed and requires the aggregate quality gate.",
+			files: files.filter(isRuntimeOrArtifactFile),
+		});
 		addCommand(commands, {
 			command: "pnpm test:deep",
 			reason: "Runtime, artifact, package, or script behavior changed.",
@@ -168,9 +203,17 @@ function addLearningBasedCommands(
 }
 
 function buildNetworkRequired(
+	files: string[],
 	matchedLearnings: LearningItem[],
 ): NetworkRequiredCommand[] {
 	const commands = new Map<string, NetworkRequiredCommand>();
+	if (files.some(isPackageSurfaceFile)) {
+		commands.set("pnpm audit", {
+			command: "pnpm audit",
+			reason:
+				"Dependencies or lockfile changed; run security audit with registry/network access.",
+		});
+	}
 	for (const item of matchedLearnings) {
 		const lower = item.learning.toLowerCase();
 		if (!lower.includes("audit")) continue;
@@ -252,6 +295,10 @@ function isRuntimeOrArtifactFile(file: string): boolean {
 		file.startsWith("src/commands/") ||
 		file.startsWith("src/lib/")
 	);
+}
+
+function isPackageSurfaceFile(file: string): boolean {
+	return file === "package.json" || file === "pnpm-lock.yaml";
 }
 
 function normalizeFiles(files: string[]): string[] {

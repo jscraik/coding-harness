@@ -272,6 +272,27 @@ function parseEntry(
 		learningId: value.learningId,
 		promotionStatus: value.promotionStatus as LearningPromotionStatus,
 	};
+	if (entry.promotionStatus === "enforced") {
+		if (
+			!Array.isArray(value.enforcedBy) ||
+			value.enforcedBy.length === 0 ||
+			value.enforcedBy.some(
+				(path) => typeof path !== "string" || path.trim() === "",
+			)
+		) {
+			return invalidLedger(
+				`Ledger item ${index} with promotionStatus enforced requires enforcedBy as a non-empty array of strings.`,
+			);
+		}
+	}
+	if (
+		["rejected", "deferred", "non_goal"].includes(entry.promotionStatus) &&
+		(typeof value.reason !== "string" || value.reason.trim() === "")
+	) {
+		return invalidLedger(
+			`Ledger item ${index} with promotionStatus ${entry.promotionStatus} requires a non-empty reason.`,
+		);
+	}
 	if (value.enforcedBy !== undefined) {
 		if (
 			!Array.isArray(value.enforcedBy) ||

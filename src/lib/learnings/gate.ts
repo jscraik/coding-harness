@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -244,6 +245,25 @@ function detectSourceWarnings(
 			},
 		];
 	}
+	if (artifact.inputFingerprint) {
+		try {
+			const sourceFingerprint = createHash("sha256")
+				.update(readFileSync(sourcePath))
+				.digest("hex");
+			if (sourceFingerprint !== artifact.inputFingerprint) {
+				return [
+					{
+						code: "learnings.source_stale",
+						message:
+							"Imported CodeRabbit CSV source content differs from the local learning artifact; re-import before relying on gate results.",
+					},
+				];
+			}
+			return [];
+		} catch {
+			// Fall back to mtime when content hashing is unavailable.
+		}
+	}
 	const sourceMtime = statSync(sourcePath).mtimeMs;
 	const artifactMtime = statSync(artifactPath).mtimeMs;
 	if (sourceMtime > artifactMtime) {
@@ -270,9 +290,12 @@ function buildEvidenceRefs(
 	findings: GateFinding[],
 ): string[] {
 	const refs: string[] = [];
+	const learningIdPrefix = "learnings-gate.learning.";
 	for (const finding of findings) {
-		const item = artifact.items.find((candidate) =>
-			finding.id.endsWith(candidate.id),
+		if (!finding.id.startsWith(learningIdPrefix)) continue;
+		const learningId = finding.id.slice(learningIdPrefix.length);
+		const item = artifact.items.find(
+			(candidate) => candidate.id === learningId,
 		);
 		if (!item) continue;
 		refs.push(`${item.source.kind}:${item.source.uri}#row=${item.source.row}`);

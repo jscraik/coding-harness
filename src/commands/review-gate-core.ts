@@ -966,7 +966,12 @@ function evaluateReviewContextReadiness(options: {
 	const highSeverityAcknowledged =
 		highSeverityLearnings.length === 0 ||
 		hasReviewContextAcknowledgement(options.prBody, highSeverityLearnings);
-	const ageMs = Date.now() - statSync(resolvedPath).mtimeMs;
+	const generatedAtMs = parsed.artifact.generatedAt
+		? Date.parse(parsed.artifact.generatedAt)
+		: Number.NaN;
+	const ageMs = Number.isFinite(generatedAtMs)
+		? Date.now() - generatedAtMs
+		: Date.now() - statSync(resolvedPath).mtimeMs;
 	const maxAgeMinutes = options.maxAgeMinutes ?? 1440;
 	const staleReasons = [
 		...(coverageGaps.length > 0
@@ -1039,11 +1044,28 @@ function isReviewContextArtifact(value: unknown): value is ReviewContextResult {
 	return (
 		artifact.schemaVersion === "review-context/v1" &&
 		artifact.status === "success" &&
+		(artifact.generatedAt === undefined ||
+			(typeof artifact.generatedAt === "string" &&
+				Number.isFinite(Date.parse(artifact.generatedAt)))) &&
 		typeof artifact.sourceFingerprint === "string" &&
 		artifact.sourceFingerprint.length > 0 &&
 		Array.isArray(artifact.changedFiles) &&
 		artifact.changedFiles.every((file) => typeof file === "string") &&
-		Array.isArray(artifact.applicableLearnings)
+		Array.isArray(artifact.applicableLearnings) &&
+		artifact.applicableLearnings.every(isReviewContextLearningArtifact)
+	);
+}
+
+function isReviewContextLearningArtifact(value: unknown): boolean {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return false;
+	}
+	const learning = value as { id?: unknown; enforcement?: unknown };
+	return (
+		typeof learning.id === "string" &&
+		learning.id.length > 0 &&
+		typeof learning.enforcement === "string" &&
+		learning.enforcement.length > 0
 	);
 }
 

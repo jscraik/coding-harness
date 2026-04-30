@@ -409,7 +409,7 @@ bash scripts/verify-work.sh --fast
 bash scripts/validate-codestyle.sh
 ```
 
-Optional broader readiness gate if Phase 1A touches shared CLI registry behavior more deeply than expected:
+Required broader readiness gate for behavior-changing Phase 1A work:
 
 ```bash
 pnpm check
@@ -424,12 +424,15 @@ Validation notes:
 Validation order:
 
 1. Run the focused unit/command test set.
-2. Run `pnpm typecheck`.
-3. Run `bash scripts/validate-codestyle.sh --fast`.
-4. Run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` when P7 changes `docs/agents/**` or another docs-gate-covered repo-facing docs surface.
-5. Run `bash scripts/verify-work.sh --fast`.
-6. Run `bash scripts/validate-codestyle.sh`.
-7. Run `pnpm check` only if command-registry changes create broader CLI risk or if focused validation exposes cross-command coupling.
+2. Run `pnpm lint`.
+3. Run `pnpm typecheck`.
+4. Run `pnpm test`.
+5. Run `pnpm audit`.
+6. Run `bash scripts/validate-codestyle.sh --fast`.
+7. Run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` when P7 changes `docs/agents/**` or another docs-gate-covered repo-facing docs surface.
+8. Run `bash scripts/verify-work.sh --fast`.
+9. Run `bash scripts/validate-codestyle.sh`.
+10. Run `pnpm check` for every behavior-changing PR before merge readiness is claimed.
 
 Failure handling:
 
@@ -558,4 +561,4 @@ Implementation constraints:
 - Existing command-family parser examples: `src/commands/contract.ts`, `src/commands/brain-core.ts`
 - Canonical gate result type for Phase 1B planning: `src/lib/output/types.ts`
 - Atomic write pattern reference: `src/lib/init/migration.ts`
-- Local CodeRabbit CSV source: `/Users/jamiecraik/Downloads/learnings.csv`
+- Local CodeRabbit CSV source: `<path-to-csv>`; substitute the local export path or pass it through a `CSV_PATH` environment variable outside committed documentation.

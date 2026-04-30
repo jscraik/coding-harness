@@ -123,4 +123,14 @@ describe("artifact-gate command", () => {
 		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(payload.error.code).toBe("artifact-gate.files_required");
 	});
+
+	it("returns usage error when files are blank", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runArtifactGateCLI({ files: ["", "  "], json: true });
+
+		expect(exitCode).toBe(2);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(payload.error.code).toBe("artifact-gate.files_required");
+	});
 });

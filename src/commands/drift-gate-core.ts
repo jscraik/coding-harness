@@ -361,11 +361,25 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 		));
 	}
 
-	const guardrailPaths = emitGuardrailsForFindings(
-		repoRoot,
-		findings,
-		contract,
-	);
+	let guardrailPaths: string[] = [];
+	try {
+		guardrailPaths = emitGuardrailsForFindings(repoRoot, findings, contract);
+	} catch (error) {
+		outcome = "error";
+		errorClass = "io";
+		push(
+			findings,
+			{
+				rule_id: "status.north_star.guardrail.write_error",
+				surface: "status",
+				rule_result: "error",
+				severity: "error",
+				message: `Failed to emit guardrails: ${sanitizeError(error)}`,
+				path: ".harness/guardrails",
+			},
+			baseline.fingerprints,
+		);
+	}
 
 	let report = buildDriftReport(
 		mode,

@@ -132,4 +132,15 @@ describe("runReviewContextCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(result.error.code).toBe("review-context.files_required");
 	});
+
+	it("returns usage when files are blank", () => {
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(runReviewContextCLI(["--json", "--files", " ,  "])).toBe(2);
+
+		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(result.error.code).toBe("review-context.files_required");
+	});
 });

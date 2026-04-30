@@ -42,7 +42,6 @@ export function normalizeRepositorySlug(repository: string): string {
 	return repository
 		.trim()
 		.toLowerCase()
-		.replace(/^jscraik\//, "")
 		.replace(/[^a-z0-9]+/g, "-")
 		.replace(/^-+|-+$/g, "");
 }
@@ -68,23 +67,11 @@ export function parseCodeRabbitCsv(
 
 	const header = records[0] ?? [];
 	const headerIndex = buildHeaderIndex(header);
-	const missing = REQUIRED_HEADERS.filter((name) => !headerIndex.has(name));
-	if (missing.length > 0) {
-		return {
-			rows: [],
-			skipped: 0,
-			invalid: records.length - 1,
-			totalRows: Math.max(records.length - 1, 0),
-			warnings: [
-				{
-					code: "learnings.csv.missing_headers",
-					message: `Missing required CodeRabbit CSV headers: ${missing.join(", ")}.`,
-				},
-			],
-		};
-	}
+	const missingHeaderResult = buildMissingHeaderResult(records, headerIndex);
+	if (missingHeaderResult) return missingHeaderResult;
 
 	const targetRepository = normalizeRepositorySlug(options.repository);
+	const targetRepositoryAliases = repositoryAliases(options.repository);
 	const rows: ParsedCodeRabbitLearningRow[] = [];
 	let skipped = 0;
 	let invalid = 0;
@@ -93,9 +80,13 @@ export function parseCodeRabbitCsv(
 		const record = records[index] ?? [];
 		const rowNumber = index + 1;
 		const repositoryRaw = getCell(record, headerIndex, "Repository");
-		const repository = normalizeRepositorySlug(repositoryRaw);
+		const repositoryMatch = matchRepository(
+			repositoryRaw,
+			targetRepositoryAliases,
+		);
+		const repository = targetRepository;
 		const learningRaw = getCell(record, headerIndex, "Learning").trim();
-		if (!repository || !learningRaw) {
+		if (repositoryMatch === "missing" || !learningRaw) {
 			invalid += 1;
 			warnings.push({
 				row: rowNumber,
@@ -104,7 +95,7 @@ export function parseCodeRabbitCsv(
 			});
 			continue;
 		}
-		if (repository !== targetRepository) {
+		if (repositoryMatch === "skip") {
 			skipped += 1;
 			continue;
 		}
@@ -166,6 +157,43 @@ export function parseCodeRabbitCsv(
 		invalid,
 		totalRows: records.length - 1,
 		warnings: sortWarnings(warnings),
+	};
+}
+
+function repositoryAliases(repository: string): Set<string> {
+	const normalized = normalizeRepositorySlug(repository);
+	const ownerless = normalizeRepositorySlug(repository.split("/").pop() ?? "");
+	return new Set([normalized, ownerless].filter(Boolean));
+}
+
+function matchRepository(
+	repository: string,
+	targetRepositoryAliases: Set<string>,
+): "matched" | "missing" | "skip" {
+	const sourceAliases = repositoryAliases(repository);
+	if (sourceAliases.size === 0) return "missing";
+	return [...sourceAliases].some((alias) => targetRepositoryAliases.has(alias))
+		? "matched"
+		: "skip";
+}
+
+function buildMissingHeaderResult(
+	records: string[][],
+	headerIndex: Map<string, number>,
+): ParseCodeRabbitCsvResult | undefined {
+	const missing = REQUIRED_HEADERS.filter((name) => !headerIndex.has(name));
+	if (missing.length === 0) return undefined;
+	return {
+		rows: [],
+		skipped: 0,
+		invalid: records.length - 1,
+		totalRows: Math.max(records.length - 1, 0),
+		warnings: [
+			{
+				code: "learnings.csv.missing_headers",
+				message: `Missing required CodeRabbit CSV headers: ${missing.join(", ")}.`,
+			},
+		],
 	};
 }
 
