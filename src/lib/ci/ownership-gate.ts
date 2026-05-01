@@ -70,6 +70,11 @@ const DEFAULT_CI_OWNERSHIP = {
 	fallbackWorkflows: [],
 };
 const PR_TRIGGER_PATTERN = /\b(pull_request|pull_request_target|merge_group)\b/;
+const ON_KEY_PATTERN = /^["']?on["']?\s*:\s*(.*)$/;
+const PR_TRIGGER_KEY_PATTERN =
+	/^["']?(pull_request|pull_request_target|merge_group)["']?\s*:/;
+const PR_TRIGGER_LIST_PATTERN =
+	/^-\s*["']?(pull_request|pull_request_target|merge_group)["']?\s*(?:#.*)?$/;
 
 /**
  * Evaluate a repository's CI ownership contract and produce machine-readable findings about primary provider, review, and security check requirements.
@@ -237,14 +242,14 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 				? value.reviewProvider
 				: DEFAULT_CI_OWNERSHIP.reviewProvider,
 		securityChecks: Array.isArray(value.securityChecks)
-			? value.securityChecks.filter(
-					(check): check is string => typeof check === "string",
-				)
+			? value.securityChecks
+					.filter(isValidSecurityCheckName)
+					.map((check) => check.trim())
 			: DEFAULT_CI_OWNERSHIP.securityChecks,
 		securityChecksValid:
 			value.securityChecks === undefined ||
 			(Array.isArray(value.securityChecks) &&
-				value.securityChecks.every((check) => typeof check === "string")),
+				value.securityChecks.every(isValidSecurityCheckName)),
 		fallbackWorkflows: Array.isArray(value.fallbackWorkflows)
 			? value.fallbackWorkflows
 					.filter(
@@ -322,7 +327,8 @@ function validateCIOwnershipContract(input: {
 		input.findings.push({
 			id: "ci-ownership.security-checks.invalid",
 			severity: "error",
-			message: "ciOwnership.securityChecks must be an array of check names.",
+			message:
+				"ciOwnership.securityChecks must be an array of non-empty check names.",
 			path: input.contractPath,
 			fix: "Set ciOwnership.securityChecks to an array containing semgrep-cloud-platform/scan.",
 		});
@@ -453,12 +459,31 @@ function workflowHasAutomaticPrTrigger(content: string): boolean {
 		if (inOnBlock && indent <= onBlockIndent && !trimmed.startsWith("-")) {
 			inOnBlock = false;
 		}
-		if (inOnBlock && PR_TRIGGER_PATTERN.test(trimmed)) return true;
-		if (!trimmed.startsWith("on:")) return false;
-		inOnBlock = true;
+		if (
+			inOnBlock &&
+			(PR_TRIGGER_KEY_PATTERN.test(trimmed) ||
+				PR_TRIGGER_LIST_PATTERN.test(trimmed))
+		) {
+			return true;
+		}
+		const onMatch = trimmed.match(ON_KEY_PATTERN);
+		if (!onMatch) return false;
+		const inlineValue = onMatch[1]?.trim() ?? "";
+		if (inlineValue !== "") return PR_TRIGGER_PATTERN.test(inlineValue);
 		onBlockIndent = indent;
-		return PR_TRIGGER_PATTERN.test(trimmed);
+		inOnBlock = true;
+		return false;
 	});
+}
+
+/**
+ * Determine whether a raw `ciOwnership.securityChecks` value is a usable check name.
+ *
+ * @param value - The unknown value from the parsed contract array.
+ * @returns True when the value is a non-empty string after trimming whitespace.
+ */
+function isValidSecurityCheckName(value: unknown): value is string {
+	return typeof value === "string" && value.trim().length > 0;
 }
 
 /**

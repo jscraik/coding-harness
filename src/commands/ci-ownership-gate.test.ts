@@ -92,6 +92,35 @@ describe("ci-ownership-gate command", () => {
 		);
 	});
 
+	it("fails when ciOwnership security checks contain empty names", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan", " "],
+				fallbackWorkflows: [],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain("ci-ownership.security-checks.invalid");
+	});
+
 	it("fails when fallback GitHub Actions workflows auto-trigger on PRs", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },
@@ -175,6 +204,100 @@ describe("ci-ownership-gate command", () => {
 			payload.findings.map((finding: { id: string }) => finding.id),
 		).toContain(
 			"ci-ownership.fallback-workflow..github/workflows/pr-fallback-list.yml.automatic-pr-trigger",
+		);
+	});
+
+	it("fails when fallback workflows use quoted on keys with PR triggers", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan"],
+				fallbackWorkflows: [
+					{
+						path: ".github/workflows/quoted-on.yml",
+						role: "fallback_pr_gate",
+						purpose: "Emergency fallback only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".github/workflows/quoted-on.yml"),
+			["name: quoted on", '"on":', "  pull_request_target:", "jobs: {}"].join(
+				"\n",
+			),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain(
+			"ci-ownership.fallback-workflow..github/workflows/quoted-on.yml.automatic-pr-trigger",
+		);
+	});
+
+	it("does not treat arbitrary on-block keys containing PR words as triggers", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan"],
+				fallbackWorkflows: [
+					{
+						path: ".github/workflows/not-pr.yml",
+						role: "release_publishing",
+						purpose: "Release publishing only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".github/workflows/not-pr.yml"),
+			[
+				"name: not pr",
+				"on:",
+				"  not_pull_request:",
+				"  workflow_dispatch:",
+				"jobs: {}",
+			].join("\n"),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(0);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).not.toContain(
+			"ci-ownership.fallback-workflow..github/workflows/not-pr.yml.automatic-pr-trigger",
 		);
 	});
 

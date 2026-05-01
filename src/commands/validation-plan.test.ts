@@ -9,6 +9,7 @@ const validationCsv = `Repository,File,Pull Request,URL,Usage,Learning,Created B
 coding-harness,,201,,47,"Applies to src/**: Use pnpm test:ci for CircleCI parity.",jscraik,Never,created,updated
 coding-harness,,202,,31,"Applies to src/**: Use pnpm test:deep for runtime or artifact behavior changes.",jscraik,Never,created,updated
 coding-harness,,203,,12,"Applies to package.json: Run pnpm audit when dependency surfaces change.",jscraik,Never,created,updated
+coding-harness,,205,,12,"Applies to src/**: Run validate-codestyle before handoff.",jscraik,Never,created,updated
 `;
 const sensitiveValidationCsv = `Repository,File,Pull Request,URL,Usage,Learning,Created By,Last Used,Created At,Updated At
 coding-harness,,204,,12,"Applies to package.json: Run audit with token=supersecret123 before publishing.",jscraik,Never,created,updated
@@ -62,6 +63,7 @@ describe("runValidationPlanCLI", () => {
 		).toEqual(
 			expect.arrayContaining([
 				"bash scripts/validate-codestyle.sh --fast",
+				"bash scripts/validate-codestyle.sh",
 				"pnpm test:ci",
 				"pnpm test:deep",
 				"pnpm typecheck",

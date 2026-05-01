@@ -23,17 +23,13 @@ export function runNorthStarFeedbackCLI(args: string[]): number {
 	const enforcementStatusPath = readOptionalValue(args, "--enforcement-status");
 	const gateResultPath = readOptionalValue(args, "--gate-result");
 	const output = readOptionalValue(args, "--output");
-	const missingValue = [
-		readOptionalFlag(args, "--source"),
-		readOptionalFlag(args, "--enforcement-status"),
-		readOptionalFlag(args, "--gate-result"),
-		readOptionalFlag(args, "--output"),
-	].some((flag) => flag.present && "missingValue" in flag);
-	if (missingValue) {
-		return emitUsageError(
-			json,
-			"--source, --enforcement-status, --gate-result, and --output require values when present.",
-		);
+	if (!source.ok) return emitUsageError(json, source.message);
+	if (!enforcementStatusPath.ok) {
+		return emitUsageError(json, enforcementStatusPath.message);
+	}
+	if (!gateResultPath.ok) return emitUsageError(json, gateResultPath.message);
+	if (!output.ok) {
+		return emitUsageError(json, output.message);
 	}
 	const minUsage = readOptionalNumber(args, "--min-usage");
 	const reviewThreadCount = readOptionalNumber(args, "--review-thread-count");
@@ -50,10 +46,14 @@ export function runNorthStarFeedbackCLI(args: string[]): number {
 	const validationRerunsValue = readNumberValue(validationReruns);
 
 	const result = buildNorthStarFeedback({
-		...(source ? { source } : {}),
-		...(enforcementStatusPath ? { enforcementStatusPath } : {}),
-		...(gateResultPath ? { gateResultPath } : {}),
-		...(output ? { output } : {}),
+		...(source.value !== undefined ? { source: source.value } : {}),
+		...(enforcementStatusPath.value !== undefined
+			? { enforcementStatusPath: enforcementStatusPath.value }
+			: {}),
+		...(gateResultPath.value !== undefined
+			? { gateResultPath: gateResultPath.value }
+			: {}),
+		...(output.value !== undefined ? { output: output.value } : {}),
 		...(minUsageValue !== undefined ? { minUsage: minUsageValue } : {}),
 		...(reviewThreadCountValue !== undefined
 			? { reviewThreadCount: reviewThreadCountValue }
@@ -94,9 +94,16 @@ type ParsedFlag =
  * @param flag - The flag token to look for (e.g., "--source").
  * @returns The flag's value string when present and followed by a non-flag token, otherwise `undefined`.
  */
-function readOptionalValue(args: string[], flag: string): string | undefined {
+function readOptionalValue(
+	args: string[],
+	flag: string,
+): { ok: true; value?: string } | { ok: false; message: string } {
 	const parsed = readOptionalFlag(args, flag);
-	return parsed.present && "value" in parsed ? parsed.value : undefined;
+	if (!parsed.present) return { ok: true };
+	if ("missingValue" in parsed || parsed.value.trim().length === 0) {
+		return { ok: false, message: `${flag} requires a non-empty value.` };
+	}
+	return { ok: true, value: parsed.value };
 }
 
 /**
