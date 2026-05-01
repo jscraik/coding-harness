@@ -49,8 +49,18 @@ function main() {
 	}
 
 	const activeProvider = manifest.activeProvider || "";
+	const requiredEntries = (manifest.requiredChecks || []).filter((entry) => {
+		if (!entry || entry.enabled === false) {
+			return false;
+		}
+		const checkClass = String(entry.class || "").toLowerCase();
+		if (checkClass === "shadow" || checkClass === "informational") {
+			return false;
+		}
+		return true;
+	});
 	const manifestChecks = new Set(
-		(manifest.requiredChecks || [])
+		requiredEntries
 			.filter((entry) => {
 				const provider =
 					entry.sourceAppSlug || entry.sourceAppId || entry.provider || "";
@@ -61,10 +71,17 @@ function main() {
 	);
 
 	// Include non-provider checks (external apps like CodeRabbit, Semgrep)
-	for (const entry of manifest.requiredChecks || []) {
+	for (const entry of requiredEntries) {
 		const provider =
 			entry.sourceAppSlug || entry.sourceAppId || entry.provider || "";
-		if (provider !== activeProvider && entry.githubCheckName) {
+		const checkClass = String(entry.class || "").toLowerCase();
+		const isIndependentRequired =
+			checkClass === "external" || checkClass === "required";
+		if (
+			provider !== activeProvider &&
+			isIndependentRequired &&
+			entry.githubCheckName
+		) {
 			manifestChecks.add(entry.githubCheckName);
 		}
 	}

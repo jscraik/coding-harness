@@ -82,6 +82,32 @@ function safeReadJson<T>(path: string): T | undefined {
 	}
 }
 
+function readJsonWithParseError<T>(
+	path: string,
+): { value: T } | { error: "missing" | "invalid_json" } {
+	if (!existsSync(path)) {
+		return { error: "missing" };
+	}
+	try {
+		return { value: JSON.parse(readFileSync(path, "utf-8")) as T };
+	} catch {
+		return { error: "invalid_json" };
+	}
+}
+
+function readJsonForValidation<T>(
+	path: string,
+): { value: T } | { error: string } {
+	if (!existsSync(path)) {
+		return { error: "missing" };
+	}
+	try {
+		return { value: JSON.parse(readFileSync(path, "utf-8")) as T };
+	} catch {
+		return { error: "invalid_json" };
+	}
+}
+
 /**
  * Determine whether a durable guardrail artifact exists for the given failure class and surface IDs and return its recurrence state.
  *
@@ -101,11 +127,18 @@ export function resolveGuardrailRecurrence(
 		guardrailId,
 	);
 	const resolvedPath = join(repoRoot, artifactPath);
-	const existing = safeReadJson<DurableGuardrail>(resolvedPath);
-	if (existing) {
+	const existingGuardrail =
+		readJsonWithParseError<DurableGuardrail>(resolvedPath);
+	if ("error" in existingGuardrail) {
+		if (existingGuardrail.error === "invalid_json") {
+			throw new Error(
+				`Durable guardrail artifact is invalid JSON: ${artifactPath}`,
+			);
+		}
+	} else {
 		return {
 			exists: true,
-			recurrenceCount: existing.recurrenceCount,
+			recurrenceCount: existingGuardrail.value.recurrenceCount,
 			guardrailId,
 		};
 	}
@@ -261,40 +294,71 @@ export function validateOverrideAcknowledgement(
 		activeFindingIds?: string[];
 	},
 ): OverrideValidationResult {
-	const acknowledgement = readNorthStarOverrideAcknowledgement(
-		repoRoot,
+	const artifactPath = getNorthStarOverrideAcknowledgementPath(
 		date,
 		overrideId,
 	);
-	if (!acknowledgement) {
+	const resolvedPath = join(repoRoot, artifactPath);
+	const parsedAcknowledgement =
+		readJsonForValidation<OverrideAcknowledgement>(resolvedPath);
+	if ("error" in parsedAcknowledgement) {
+		if (parsedAcknowledgement.error === "missing") {
+			return {
+				valid: false,
+				reason: "Override acknowledgement artifact not found",
+			};
+		}
 		return {
 			valid: false,
-			reason: "Override acknowledgement artifact not found",
+			reason: "Override acknowledgement artifact is not valid JSON",
 		};
 	}
+	const acknowledgement = parsedAcknowledgement.value;
 	if (
 		acknowledgement.schemaVersion !==
 		NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.overrideAcknowledgement
 	) {
 		return {
 			valid: false,
-			reason: "Override acknowledgement schemaVersion is unsupported",
+			reason:
+				"Override acknowledgement schemaVersion does not match canonical override schema",
 		};
 	}
-
-	const referenceDate = options.referenceDate ?? new Date();
-	const approvedUntil = Date.parse(acknowledgement.approvedUntilUtc);
-	if (Number.isNaN(approvedUntil) || approvedUntil <= referenceDate.getTime()) {
-		return { valid: false, reason: "Override approval has expired" };
+	if (
+		typeof acknowledgement.actor !== "string" ||
+		acknowledgement.actor.trim().length === 0
+	) {
+		return {
+			valid: false,
+			reason: "Override acknowledgement actor is required",
+		};
 	}
-
-	if (acknowledgement.linkedFindingIds.length === 0) {
+	if (
+		typeof acknowledgement.signatureRef !== "string" ||
+		acknowledgement.signatureRef.trim().length === 0
+	) {
+		return {
+			valid: false,
+			reason: "Override acknowledgement signatureRef is required",
+		};
+	}
+	if (
+		!Array.isArray(acknowledgement.linkedFindingIds) ||
+		acknowledgement.linkedFindingIds.length === 0 ||
+		!acknowledgement.linkedFindingIds.every(
+			(id) => typeof id === "string" && id.trim().length > 0,
+		)
+	) {
 		return {
 			valid: false,
 			reason: "Override acknowledgement has no linked finding IDs",
 		};
 	}
-
+	const referenceDate = options.referenceDate ?? new Date();
+	const approvedUntil = Date.parse(acknowledgement.approvedUntilUtc);
+	if (Number.isNaN(approvedUntil) || approvedUntil <= referenceDate.getTime()) {
+		return { valid: false, reason: "Override approval has expired" };
+	}
 	if (options.activeFindingIds) {
 		const activeFindingIds = options.activeFindingIds;
 		const allLinkedActive = acknowledgement.linkedFindingIds.every((id) =>
@@ -307,7 +371,6 @@ export function validateOverrideAcknowledgement(
 			};
 		}
 	}
-
 	const matchingReviewers = options.registry.trustedReviewers.filter(
 		(r) => r.signatureRef === acknowledgement.signatureRef,
 	);
@@ -331,7 +394,13 @@ export function validateOverrideAcknowledgement(
 				"Override signatureRef does not resolve to an active trusted reviewer",
 		};
 	}
-
+	if (matchingReviewers[0]?.reviewerId !== acknowledgement.actor) {
+		return {
+			valid: false,
+			reason:
+				"Override actor must match the trusted reviewer referenced by signatureRef",
+		};
+	}
 	return { valid: true };
 }
 

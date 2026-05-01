@@ -1805,6 +1805,9 @@ describe("runInit", () => {
 			expect(runHarnessGate).toContain(
 				"/listen EPERM: operation not permitted.*(\\/tmp\\/tsx-|\\.pipe)/.test(stderr)",
 			);
+			expect(runHarnessGate).toContain(
+				'echo "Warning: tsx IPC startup failed (EPERM/IPC); falling back to node dist/cli.js." >&2',
+			);
 			expect(runHarnessGate).not.toContain("tsx IPC startup failed with EPERM");
 			expect(runHarnessGate).toContain(
 				'if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
@@ -4284,6 +4287,7 @@ describe("--update flag", () => {
 				).requiredChecks,
 			).toEqual(
 				expect.arrayContaining([
+					"pr-pipeline",
 					"security-scan",
 					"CodeRabbit",
 					"semgrep-cloud-platform/scan",

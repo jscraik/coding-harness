@@ -370,12 +370,12 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 		push(
 			findings,
 			{
-				rule_id: "status.north_star.guardrail.write_error",
+				rule_id: "status.north_star.drift_artifact.write_error",
 				surface: "status",
 				rule_result: "error",
 				severity: "error",
-				message: `Failed to emit guardrails: ${sanitizeError(error)}`,
-				path: ".harness/guardrails",
+				message: `Failed to write north-star durable guardrail artifact: ${sanitizeError(error)}`,
+				path: ".harness/guardrails/north-star",
 			},
 			baseline.fingerprints,
 		);

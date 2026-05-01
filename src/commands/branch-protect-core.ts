@@ -282,12 +282,11 @@ function resolveManifestBackedRequiredCheckContexts(input: {
 			]),
 	);
 
-	return normalizeChecks(
-		input.requiredChecks.map((check) => {
-			const matchedGate = gateByName.get(check);
-			return matchedGate?.githubCheckName ?? check;
-		}),
-	);
+	const remappedChecks = input.requiredChecks.map((check) => {
+		const matchedGate = gateByName.get(check);
+		return matchedGate?.githubCheckName ?? check;
+	});
+	return normalizeChecks(remappedChecks);
 }
 
 /**
@@ -673,14 +672,7 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const existingChecksParameters = normalizeParameters(
 		existingChecksRule?.parameters,
 	);
-	const existingRequiredChecks = normalizeRequiredStatusCheckEntries(
-		existingChecksParameters.required_status_checks,
-	);
 	const requiredContexts = normalizeChecks(input.requiredChecks);
-	const mergedRequiredChecks = mergeRequiredStatusChecks(
-		existingRequiredChecks,
-		requiredContexts,
-	);
 	const statusChecksRule: RulesetRule = {
 		type: "required_status_checks",
 		parameters: {
@@ -688,7 +680,12 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 			strict_required_status_checks_policy:
 				input.policy.requireBranchesUpToDate,
 			do_not_enforce_on_create: false,
-			required_status_checks: mergedRequiredChecks,
+			required_status_checks: mergeRequiredStatusChecks(
+				normalizeRequiredStatusCheckEntries(
+					existingChecksParameters.required_status_checks,
+				),
+				requiredContexts,
+			),
 		},
 	};
 	upsertRule(baseRules, statusChecksRule);
@@ -918,14 +915,19 @@ async function applyRepositoryMergeSettings(
 		allowRebaseMerge: boolean;
 	},
 ): Promise<void> {
-	try {
-		await client.updateRepositoryMergeSettings(settings);
-	} catch (error) {
-		if (error instanceof TypeError) {
-			return;
+	const mergeSettingsUpdater = (
+		client as GitHubClient & {
+			updateRepositoryMergeSettings?: (settings: {
+				allowMergeCommit: boolean;
+				allowSquashMerge: boolean;
+				allowRebaseMerge: boolean;
+			}) => Promise<void>;
 		}
-		throw error;
+	).updateRepositoryMergeSettings;
+	if (typeof mergeSettingsUpdater !== "function") {
+		return;
 	}
+	await mergeSettingsUpdater.call(client, settings);
 }
 
 /**
@@ -1012,10 +1014,7 @@ function findMatchingRuleset(
  * @returns A deduplicated array of trimmed, non-empty check identifiers (order is not guaranteed).
  */
 function normalizeChecks(checks: string[] | undefined): string[] {
-	const baseChecks =
-		checks === undefined || checks.length === 0
-			? DEFAULT_REQUIRED_CHECKS
-			: checks;
+	const baseChecks = checks === undefined ? DEFAULT_REQUIRED_CHECKS : checks;
 	const deduped = new Set<string>();
 	for (const check of baseChecks) {
 		const trimmed = check.trim();

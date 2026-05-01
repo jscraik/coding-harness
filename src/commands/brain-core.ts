@@ -385,6 +385,10 @@ const VALID_ADD_TYPES = new Set<BrainAddType>([
 
 const VALID_SEVERITIES = new Set(["must", "should", "may"]);
 
+function isSafeDomainSegment(domain: string): boolean {
+	return /^[a-z0-9][a-z0-9_-]*$/i.test(domain);
+}
+
 /**
  * Adds a knowledge item to the harness repository by creating or appending the appropriate file for the given type.
  *
@@ -411,6 +415,12 @@ export function runBrainAdd(
 	let formattedContent: string;
 
 	const date = new Date().toISOString().slice(0, 10);
+	const domainIsRequired = type === "rule" || type === "hypothesis";
+	if (domainIsRequired && !isSafeDomainSegment(domain)) {
+		throw new Error(
+			'Invalid domain: use a single segment with letters, numbers, "_" or "-".',
+		);
+	}
 
 	switch (type) {
 		case "rule": {
@@ -440,10 +450,7 @@ export function runBrainAdd(
 	}
 
 	const fullPath = join(harnessDir, targetFile);
-	const dirPath = dirname(fullPath);
-
-	// Ensure directory exists
-	mkdirSync(dirPath, { recursive: true });
+	mkdirSync(dirname(fullPath), { recursive: true });
 
 	// Append or create
 	if (type === "decision") {
@@ -494,6 +501,15 @@ function cliBrainAdd(args: string[]): BrainCliResult {
 	if (type !== "learning" && !domainVal) {
 		process.stderr.write(
 			"Error: --domain is required for non-learning types\n",
+		);
+		return { exitCode: EXIT_CODES.INVALID_ARGS };
+	}
+	if (
+		(type === "rule" || type === "hypothesis") &&
+		!isSafeDomainSegment(domainVal ?? "")
+	) {
+		process.stderr.write(
+			'Error: --domain must be a single segment using letters, numbers, "_" or "-"\n',
 		);
 		return { exitCode: EXIT_CODES.INVALID_ARGS };
 	}
@@ -564,8 +580,9 @@ function extractRules(content: string): string[] {
  */
 function extractListItems(content: string, sectionHeader: string): string[] {
 	const items: string[] = [];
+	const escapedHeader = sectionHeader.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	const sectionRegex = new RegExp(
-		`## ${sectionHeader}[\\s\\S]*?(?=## |$)`,
+		`## ${escapedHeader}[\\s\\S]*?(?=## |$)`,
 		"i",
 	);
 	const sectionMatch = sectionRegex.exec(content);
