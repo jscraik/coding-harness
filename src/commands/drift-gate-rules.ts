@@ -317,6 +317,22 @@ function evaluateCommandSurface(
 	const commandSpecsSource = usesRegistryDispatch
 		? readTextFile(commandSpecsPath)
 		: undefined;
+	if (usesRegistryDispatch && !commandSpecsSource) {
+		push(
+			findings,
+			{
+				rule_id: "command.surface.sources.missing",
+				surface: "command",
+				rule_result: "error",
+				severity: "error",
+				message:
+					"Registry-backed command surface is missing src/lib/cli/registry/command-specs.ts.",
+				path: "src/lib/cli/registry/command-specs.ts",
+			},
+			baselineFingerprints,
+		);
+		return;
+	}
 	const canonicalCommands =
 		usesRegistryDispatch && commandSpecsSource
 			? extractRegistryCommands(commandSpecsSource)
