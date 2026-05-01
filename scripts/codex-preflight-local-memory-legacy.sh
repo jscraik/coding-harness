@@ -164,13 +164,15 @@ post_json_to_file() {
 		"${url}"
 }
 
-# verify_local_memory_qdrant_backend verifies the Qdrant backend configured in the given local-memory config file (lm_config_path). It returns success (0) if Qdrant is disabled in the config or if a GET to the backend's /collections endpoint returns a healthy payload (status == "ok", result is an object, and result.collections is an array); it returns non-zero if the backend is unreachable or the payload is not healthy.
 verify_local_memory_qdrant_backend() {
 	local lm_config_path="$1"
 	local qdrant_enabled
 	qdrant_enabled="$(extract_local_memory_qdrant_value "${lm_config_path}" enabled)"
+	qdrant_enabled="$(printf '%s' "${qdrant_enabled}" | tr '[:upper:]' '[:lower:]' | tr -d "'")"
 	if [[ "${qdrant_enabled}" != 'true' ]]; then
 		echo 'ℹ️ qdrant disabled in local-memory config; skipping backend probe'
+		return 0
+	fi
 		return 0
 	fi
 
