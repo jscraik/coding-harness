@@ -1,5 +1,6 @@
 import {
 	NORTH_STAR_FEEDBACK_SCHEMA_VERSION,
+	type NorthStarFeedbackResult,
 	buildNorthStarFeedback,
 } from "../lib/learnings/north-star-feedback.js";
 
@@ -200,49 +201,44 @@ function emitUsageError(
 	errorCode: string,
 ): number {
 	if (json) {
-		console.info(
-			JSON.stringify(
-				{
-					schemaVersion: NORTH_STAR_FEEDBACK_SCHEMA_VERSION,
-					status: "error",
-					source: "",
-					minUsage: 25,
-					generatedAt: new Date().toISOString(),
-					evidence: {
-						learningArtifact: "insufficient_evidence",
-						enforcementStatus: "insufficient_evidence",
-						gateResult: "insufficient_evidence",
-						reviewThreadCount: "insufficient_evidence",
-						validationReruns: "insufficient_evidence",
-					},
-					metrics: {
-						learningHits: null,
-						learningGateBlocks: null,
-						learningGateWarnings: null,
-						promotionCandidates: 0,
-						promotedLearnings: 0,
-						highUsageLearningsUnenforced: 0,
-						reviewThreadCount: null,
-						validationReruns: null,
-					},
-					summary: {
-						insufficientEvidence: [
-							"enforcementStatus",
-							"gateResult",
-							"learningArtifact",
-							"reviewThreadCount",
-							"validationReruns",
-						],
-					},
-					error: {
-						code: errorCode,
-						message,
-					},
-				},
-				null,
-				2,
-			),
-		);
+		const payload: NorthStarFeedbackResult = {
+			schemaVersion: NORTH_STAR_FEEDBACK_SCHEMA_VERSION,
+			status: "error",
+			source: "",
+			minUsage: 25,
+			generatedAt: new Date().toISOString(),
+			evidence: {
+				learningArtifact: "insufficient_evidence",
+				enforcementStatus: "insufficient_evidence",
+				gateResult: "insufficient_evidence",
+				reviewThreadCount: "insufficient_evidence",
+				validationReruns: "insufficient_evidence",
+			},
+			metrics: {
+				learningHits: null,
+				learningGateBlocks: null,
+				learningGateWarnings: null,
+				promotionCandidates: 0,
+				promotedLearnings: 0,
+				highUsageLearningsUnenforced: 0,
+				reviewThreadCount: null,
+				validationReruns: null,
+			},
+			summary: {
+				insufficientEvidence: [
+					"enforcementStatus",
+					"gateResult",
+					"learningArtifact",
+					"reviewThreadCount",
+					"validationReruns",
+				],
+			},
+			error: {
+				code: errorCode,
+				message,
+			},
+		};
+		console.info(JSON.stringify(payload, null, 2));
 	} else {
 		console.error(`Error: ${message}`);
 	}

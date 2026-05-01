@@ -90,6 +90,7 @@ export function parseCodeRabbitCsv(
 	const targetRepository = normalizeRepositorySlug(options.repository);
 	const targetRepositoryAliases = repositoryAliases(options.repository);
 	const targetRepositoryHasOwner = options.repository.includes("/");
+	const canonicalRepository = options.repository.trim() || targetRepository;
 	const rows: ParsedCodeRabbitLearningRow[] = [];
 	let skipped = 0;
 	let invalid = 0;
@@ -103,7 +104,6 @@ export function parseCodeRabbitCsv(
 			targetRepositoryAliases,
 			targetRepositoryHasOwner,
 		);
-		const repository = repositoryRaw.trim() || targetRepository;
 		const learningRaw = getCell(record, headerIndex, "Learning").trim();
 		if (repositoryMatch === "missing" || !learningRaw) {
 			invalid += 1;
@@ -118,6 +118,7 @@ export function parseCodeRabbitCsv(
 			skipped += 1;
 			continue;
 		}
+		const repository = canonicalRepository;
 		warnings.push(...detectSensitiveRowFields(record, headerIndex, rowNumber));
 
 		const usageResult = parseUsage(getCell(record, headerIndex, "Usage"));

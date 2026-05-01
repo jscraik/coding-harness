@@ -164,7 +164,7 @@ describe("runBranchProtect", () => {
 			token: "token",
 			owner: "octo",
 			repo: "harness",
-			branch: "main",
+			branch: "feature/slash-name",
 		});
 
 		expect(result.ok).toBe(false);

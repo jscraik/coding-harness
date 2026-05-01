@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import picomatch from "picomatch";
 import { deriveRequiredCheckMetadata } from "../lib/ci/required-check-metadata.js";
 import { loadContract } from "../lib/contract/loader.js";
 import {
@@ -957,7 +956,15 @@ function refSelectorMatches(
 	if (normalized === branchRef) {
 		return true;
 	}
-	return picomatch.isMatch(branchRef, normalized);
+	return refGlobMatches(normalized, branchRef);
+}
+
+function refGlobMatches(selector: string, branchRef: string): boolean {
+	const pattern = selector
+		.split("*")
+		.map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+		.join(".*");
+	return new RegExp(`^${pattern}$`).test(branchRef);
 }
 
 /**

@@ -99,6 +99,7 @@ describe("parseCodeRabbitCsv", () => {
 		);
 
 		expect(result.rows).toHaveLength(1);
+		expect(result.rows[0]?.repository).toBe("jscraik/coding-harness");
 		expect(result.skipped).toBe(0);
 	});
 
@@ -111,6 +112,7 @@ describe("parseCodeRabbitCsv", () => {
 		);
 
 		expect(result.rows).toHaveLength(1);
+		expect(result.rows[0]?.repository).toBe("coding-harness");
 		expect(result.rows[0]?.learning).toBe("Qualified repo");
 		expect(result.skipped).toBe(0);
 	});

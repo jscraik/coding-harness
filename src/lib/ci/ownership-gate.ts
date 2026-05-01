@@ -196,6 +196,7 @@ export function runCIOwnershipGate(
  * @param value - The raw `ciOwnership` value from a parsed harness contract; may be undefined, null, or not an object.
  * @returns An object with the normalized fields:
  * - `schemaVersion`: the schema version string.
+ * - `policyValid`: whether the top-level `ciOwnership` value is a plain object.
  * - `primaryPrGate`: the designated primary PR gate name.
  * - `reviewProvider`: the designated review provider name.
  * - `securityChecks`: an array of security check names (only string entries are kept).
@@ -205,10 +206,11 @@ export function runCIOwnershipGate(
  *   - `purpose`: workflow purpose (string).
  *   - `allowAutomaticPrTriggers`: boolean indicating whether automatic PR triggers are allowed.
  *
- * When `value` is missing or not an object, the function returns the module's default CI ownership structure.
+ * When `value` is missing, the function returns the module's default CI ownership structure. Malformed top-level values are marked invalid.
  */
 function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 	schemaVersion: string;
+	policyValid: boolean;
 	primaryPrGate: string;
 	reviewProvider: string;
 	securityChecks: string[];
@@ -222,9 +224,20 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 		allowAutomaticPrTriggersValid: boolean;
 	}>;
 } {
-	if (!value || typeof value !== "object") {
+	if (value === undefined) {
 		return {
 			...DEFAULT_CI_OWNERSHIP,
+			policyValid: true,
+			securityChecks: [...DEFAULT_CI_OWNERSHIP.securityChecks],
+			securityChecksValid: true,
+			fallbackWorkflowsValid: true,
+			fallbackWorkflows: [],
+		};
+	}
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
+		return {
+			...DEFAULT_CI_OWNERSHIP,
+			policyValid: false,
 			securityChecks: [...DEFAULT_CI_OWNERSHIP.securityChecks],
 			securityChecksValid: true,
 			fallbackWorkflowsValid: true,
@@ -232,6 +245,7 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 		};
 	}
 	return {
+		policyValid: true,
 		schemaVersion:
 			typeof value.schemaVersion === "string"
 				? value.schemaVersion
@@ -290,6 +304,15 @@ function validateCIOwnershipContract(input: {
 	contractPath: string;
 	repoRoot: string;
 }): void {
+	if (!input.ciOwnership.policyValid) {
+		input.findings.push({
+			id: "ci-ownership.policy.invalid",
+			severity: "error",
+			message: "ciOwnership malformed: expected object.",
+			path: input.contractPath,
+			fix: "Set ciOwnership to an object with schemaVersion, primaryPrGate, reviewProvider, securityChecks, and fallbackWorkflows.",
+		});
+	}
 	if (input.ciOwnership.schemaVersion !== "ci-ownership/v1") {
 		input.findings.push({
 			id: "ci-ownership.schema-version.invalid",

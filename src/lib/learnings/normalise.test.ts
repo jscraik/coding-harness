@@ -40,11 +40,27 @@ describe("normalizeLearningRows", () => {
 				{ sourceUri },
 			).items[0]?.id,
 		).toBe(result.items[0]?.id);
-		expect(result.items[0]?.githubUrl).toBe(
-			"https://github.com/jscraik/coding-harness/pull/148",
-		);
+		expect(result.items[0]?.githubUrl).toBeUndefined();
 		expect(result.items[0]?.enforcement).toBe("error");
 		expect(result.items[0]?.promotionStatus).toBe("candidate");
+	});
+
+	it("does not synthesize GitHub URLs from ownerless repositories", () => {
+		const result = normalizeLearningRows(
+			[
+				{
+					row: 2,
+					repository: "coding-harness",
+					file: "docs/example.md",
+					pullRequest: "123",
+					usage: 3,
+					learning: "Ownerless repositories need explicit source links.",
+				},
+			],
+			{ sourceUri },
+		);
+
+		expect(result.items[0]?.githubUrl).toBeUndefined();
 	});
 
 	it("synthesizes GitHub URLs from owner-qualified repositories", () => {
