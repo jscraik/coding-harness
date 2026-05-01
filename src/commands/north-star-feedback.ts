@@ -114,7 +114,7 @@ type ParsedFlag =
  *
  * @param args - The command-line arguments array to search (e.g., process.argv.slice(2)).
  * @param flag - The flag token to look for (e.g., "--source").
- * @returns The flag's value string when present and followed by a non-flag token, otherwise `undefined`.
+ * @returns `{ ok: true, value?: string }` when `flag` is absent or has a valid non-empty value; `{ ok: false, message: string }` when `flag` is present but missing or empty.
  */
 function readOptionalValue(
 	args: string[],

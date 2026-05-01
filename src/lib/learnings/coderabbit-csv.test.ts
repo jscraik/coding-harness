@@ -103,6 +103,15 @@ describe("parseCodeRabbitCsv", () => {
 		expect(result.skipped).toBe(0);
 	});
 
+	it("rejects blank target repositories before parsing rows", () => {
+		expect(() =>
+			parseCodeRabbitCsv(
+				"Repository,Usage,Learning\ncoding-harness,1,Learning",
+				{ repository: " " },
+			),
+		).toThrow("CodeRabbit CSV import requires a target repository.");
+	});
+
 	it("matches owner-qualified CSV rows when the requested repository is ownerless", () => {
 		const result = parseCodeRabbitCsv(
 			"Repository,Usage,Learning\njscraik/coding-harness,1,Qualified repo\n",

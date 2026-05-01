@@ -203,6 +203,50 @@ describe("buildLearningPromotionCandidates", () => {
 		);
 	});
 
+	it("excludes terminal promotion states from promotion candidates", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learnings-promote-"));
+		const source = writeArtifact(dir);
+		const enforcementStatusPath = join(
+			dir,
+			".harness/learnings/enforcement-status.json",
+		);
+		writeFileSync(
+			enforcementStatusPath,
+			JSON.stringify(
+				{
+					schemaVersion: LEARNING_ENFORCEMENT_STATUS_SCHEMA_VERSION,
+					items: [
+						{
+							learningId:
+								"coderabbit.coding-harness.scripts-generated-runtime-mirrors",
+							promotionStatus: "rejected",
+							reason: "Rejected after review.",
+						},
+						{
+							learningId:
+								"coderabbit.coding-harness.docs-frontmatter-machine-readable",
+							promotionStatus: "non_goal",
+							reason: "Intentionally out of scope.",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		const result = buildLearningPromotionCandidates({
+			source,
+			enforcementStatusPath,
+			minUsage: 25,
+			repoRoot: dir,
+		});
+
+		expect(result.status).toBe("success");
+		expect(result.promotionCandidates).toHaveLength(0);
+	});
+
 	it("rejects invalid direct minUsage values before reading artifacts", () => {
 		for (const minUsage of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
 			const result = buildLearningPromotionCandidates({ minUsage });

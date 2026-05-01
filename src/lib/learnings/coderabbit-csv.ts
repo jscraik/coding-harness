@@ -87,10 +87,12 @@ export function parseCodeRabbitCsv(
 	const missingHeaderResult = buildMissingHeaderResult(records, headerIndex);
 	if (missingHeaderResult) return missingHeaderResult;
 
-	const targetRepository = normalizeRepositorySlug(options.repository);
 	const targetRepositoryAliases = repositoryAliases(options.repository);
 	const targetRepositoryHasOwner = options.repository.includes("/");
-	const canonicalRepository = options.repository.trim() || targetRepository;
+	const canonicalRepository = options.repository.trim();
+	if (!canonicalRepository) {
+		throw new TypeError("CodeRabbit CSV import requires a target repository.");
+	}
 	const rows: ParsedCodeRabbitLearningRow[] = [];
 	let skipped = 0;
 	let invalid = 0;
@@ -184,7 +186,7 @@ export function parseCodeRabbitCsv(
  * Produce normalized repository slug aliases used for matching.
  *
  * @param repository - The repository identifier (e.g., "owner/repo" or any repository string)
- * @returns A set containing only the normalized full repository slug, excluding empty values.
+ * @returns A set containing the normalized full repository slug and, when present, the normalized ownerless repository name, excluding empty values.
  */
 function repositoryAliases(repository: string): Set<string> {
 	const normalized = normalizeRepositorySlug(repository);
@@ -198,9 +200,10 @@ function repositoryAliases(repository: string): Set<string> {
 /**
  * Determines whether a CSV row's repository targets the requested repository.
  *
- * @param repository - The raw repository string from the CSV row
- * @param targetRepositoryAliases - Set of normalized repository slugs considered targets
- * @returns `'matched'` if any alias of `repository` exists in `targetRepositoryAliases`, `'missing'` if `repository` yields no aliases, `'skip'` otherwise
+ * @param repository - The raw repository string from the CSV row.
+ * @param targetRepositoryAliases - Set containing normalized full and ownerless target repository aliases.
+ * @param targetRepositoryHasOwner - Whether the requested target repository included an owner; ownerless CSV rows may match owner-qualified targets, and owner-qualified CSV rows may match ownerless targets only when this is false.
+ * @returns `'matched'` when the normalized full source slug is in `targetRepositoryAliases`, or when the ownerless source name is allowed and matched; `'missing'` when `repository` yields no normalized slug; `'skip'` otherwise.
  */
 function matchRepository(
 	repository: string,

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { DEFAULT_CI_OWNERSHIP_POLICY } from "../contract/types-core.js";
 import { SEMGREP_CLOUD_CHECK_NAME } from "../policy/required-checks.js";
 import { CIRCLECI_PRIMARY_CHECK } from "./branch-protect-sync.js";
 
@@ -63,12 +64,10 @@ const CI_FALLBACK_WORKFLOW_ROLES = new Set([
 	"release_publishing",
 ]);
 const DEFAULT_CI_OWNERSHIP = {
-	schemaVersion: "ci-ownership/v1",
-	primaryPrGate: "circleci",
-	reviewProvider: "coderabbit",
-	securityChecks: [SEMGREP_CLOUD_CHECK_NAME],
-	fallbackWorkflows: [],
-};
+	...DEFAULT_CI_OWNERSHIP_POLICY,
+	securityChecks: [...DEFAULT_CI_OWNERSHIP_POLICY.securityChecks],
+	fallbackWorkflows: [...(DEFAULT_CI_OWNERSHIP_POLICY.fallbackWorkflows ?? [])],
+} as const;
 const PR_TRIGGER_PATTERN = /\b(pull_request|pull_request_target|merge_group)\b/;
 const ON_KEY_PATTERN = /^["']?on["']?\s*:\s*(.*)$/;
 const PR_TRIGGER_KEY_PATTERN =
@@ -262,7 +261,7 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 			? value.securityChecks
 					.filter(isValidSecurityCheckName)
 					.map((check) => check.trim())
-			: DEFAULT_CI_OWNERSHIP.securityChecks,
+			: [...DEFAULT_CI_OWNERSHIP.securityChecks],
 		securityChecksValid:
 			value.securityChecks === undefined ||
 			(Array.isArray(value.securityChecks) &&
@@ -313,41 +312,44 @@ function validateCIOwnershipContract(input: {
 			fix: "Set ciOwnership to an object with schemaVersion, primaryPrGate, reviewProvider, securityChecks, and fallbackWorkflows.",
 		});
 	}
-	if (input.ciOwnership.schemaVersion !== "ci-ownership/v1") {
+	if (input.ciOwnership.schemaVersion !== DEFAULT_CI_OWNERSHIP.schemaVersion) {
 		input.findings.push({
 			id: "ci-ownership.schema-version.invalid",
 			severity: "error",
-			message: "ciOwnership.schemaVersion must be ci-ownership/v1.",
+			message: `ciOwnership.schemaVersion must be ${DEFAULT_CI_OWNERSHIP.schemaVersion}.`,
 			path: input.contractPath,
-			fix: "Update ciOwnership.schemaVersion to ci-ownership/v1 and migrate fields intentionally.",
+			fix: `Update ciOwnership.schemaVersion to ${DEFAULT_CI_OWNERSHIP.schemaVersion} and migrate fields intentionally.`,
 		});
 	}
-	if (input.ciOwnership.primaryPrGate !== "circleci") {
+	if (input.ciOwnership.primaryPrGate !== DEFAULT_CI_OWNERSHIP.primaryPrGate) {
 		input.findings.push({
 			id: "ci-ownership.primary-role.mismatch",
 			severity: "error",
-			message: "ciOwnership.primaryPrGate must remain circleci.",
+			message: `ciOwnership.primaryPrGate must remain ${DEFAULT_CI_OWNERSHIP.primaryPrGate}.`,
 			path: input.contractPath,
-			fix: "Set ciOwnership.primaryPrGate to circleci unless an intentional ownership migration is planned.",
+			fix: `Set ciOwnership.primaryPrGate to ${DEFAULT_CI_OWNERSHIP.primaryPrGate} unless an intentional ownership migration is planned.`,
 		});
 	}
-	if (input.ciOwnership.reviewProvider !== "coderabbit") {
+	if (
+		input.ciOwnership.reviewProvider !== DEFAULT_CI_OWNERSHIP.reviewProvider
+	) {
 		input.findings.push({
 			id: "ci-ownership.review-provider.mismatch",
 			severity: "error",
-			message: "ciOwnership.reviewProvider must remain coderabbit.",
+			message: `ciOwnership.reviewProvider must remain ${DEFAULT_CI_OWNERSHIP.reviewProvider}.`,
 			path: input.contractPath,
-			fix: "Set ciOwnership.reviewProvider to coderabbit.",
+			fix: `Set ciOwnership.reviewProvider to ${DEFAULT_CI_OWNERSHIP.reviewProvider}.`,
 		});
 	}
-	if (!input.ciOwnership.securityChecks.includes(SEMGREP_CLOUD_CHECK_NAME)) {
+	const requiredSecurityCheck =
+		DEFAULT_CI_OWNERSHIP.securityChecks[0] ?? SEMGREP_CLOUD_CHECK_NAME;
+	if (!input.ciOwnership.securityChecks.includes(requiredSecurityCheck)) {
 		input.findings.push({
 			id: "ci-ownership.security-check.semgrep-cloud.missing",
 			severity: "error",
-			message:
-				"ciOwnership.securityChecks must include semgrep-cloud-platform/scan.",
+			message: `ciOwnership.securityChecks must include ${requiredSecurityCheck}.`,
 			path: input.contractPath,
-			fix: "Add semgrep-cloud-platform/scan to ciOwnership.securityChecks.",
+			fix: `Add ${requiredSecurityCheck} to ciOwnership.securityChecks.`,
 		});
 	}
 	if (!input.ciOwnership.securityChecksValid) {

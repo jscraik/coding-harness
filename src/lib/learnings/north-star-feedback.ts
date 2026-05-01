@@ -20,6 +20,10 @@ import type { LearningItem } from "./types.js";
 
 /** Schema version for north-star feedback metrics. */
 export const NORTH_STAR_FEEDBACK_SCHEMA_VERSION = "north-star-feedback/v1";
+const TERMINAL_PROMOTION_STATUSES = new Set<LearningItem["promotionStatus"]>([
+	"rejected",
+	"non_goal",
+]);
 
 /** Default output path for persisted north-star feedback metrics. */
 export const DEFAULT_NORTH_STAR_FEEDBACK_OUTPUT =
@@ -174,7 +178,10 @@ export function buildNorthStarFeedback(
 				(item) => item.promotionStatus === "enforced",
 			).length,
 			highUsageLearningsUnenforced: items.filter(
-				(item) => item.usage >= minUsage && item.promotionStatus !== "enforced",
+				(item) =>
+					item.usage >= minUsage &&
+					item.promotionStatus !== "enforced" &&
+					!TERMINAL_PROMOTION_STATUSES.has(item.promotionStatus),
 			).length,
 			reviewThreadCount: options.reviewThreadCount ?? null,
 			validationReruns: options.validationReruns ?? null,
@@ -208,14 +215,17 @@ export function buildNorthStarFeedback(
  *
  * @param items - The set of learning items to evaluate
  * @param minUsage - The inclusive usage threshold an item must meet to be considered
- * @returns The number of items whose `usage` is greater than or equal to `minUsage` and whose `promotionStatus` is not `enforced`
+ * @returns The number of items whose `usage` is greater than or equal to `minUsage` and whose `promotionStatus` is not `enforced`, `rejected`, or `non_goal`
  */
 function countPromotionCandidates(
 	items: LearningItem[],
 	minUsage: number,
 ): number {
 	return items.filter(
-		(item) => item.usage >= minUsage && item.promotionStatus !== "enforced",
+		(item) =>
+			item.usage >= minUsage &&
+			item.promotionStatus !== "enforced" &&
+			!TERMINAL_PROMOTION_STATUSES.has(item.promotionStatus),
 	).length;
 }
 

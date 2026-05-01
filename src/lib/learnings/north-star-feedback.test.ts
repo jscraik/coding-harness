@@ -88,6 +88,37 @@ describe("buildNorthStarFeedback", () => {
 		expect(result.summary.insufficientEvidence).toEqual([]);
 	});
 
+	it("excludes terminal states from promotion metrics", () => {
+		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-terminal-"));
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		const terminalArtifact = artifact();
+		terminalArtifact.items.push(
+			{
+				...terminalArtifact.items[0]!,
+				id: "coderabbit.coding-harness.rejected",
+				usage: 250,
+				promotionStatus: "rejected",
+			},
+			{
+				...terminalArtifact.items[1]!,
+				id: "coderabbit.coding-harness.non-goal",
+				usage: 125,
+				promotionStatus: "non_goal",
+			},
+		);
+		writeFileSync(source, JSON.stringify(terminalArtifact, null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("success");
+		expect(result.metrics.promotionCandidates).toBe(2);
+		expect(result.metrics.highUsageLearningsUnenforced).toBe(2);
+	});
+
 	it("does not treat omitted optional evidence as zero", () => {
 		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-missing-"));
 		cleanup.push(dir);

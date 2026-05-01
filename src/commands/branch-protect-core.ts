@@ -723,10 +723,7 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 				],
 			},
 		});
-	} else if (
-		input.policy.publicCodeScanning?.publicOnly !== true ||
-		input.repositoryVisibility === "private"
-	) {
+	} else if (shouldRequirePublicCodeScanning === false) {
 		removeRule(baseRules, "code_scanning");
 	}
 
@@ -903,7 +900,7 @@ async function resolveRepositoryVisibility(
  * @param settings.allowMergeCommit - Enable or disable merge commits
  * @param settings.allowSquashMerge - Enable or disable squash merges
  * @param settings.allowRebaseMerge - Enable or disable rebase merges
- * @throws Re-throws any non-TypeError error raised by the client's update call
+ * @throws Propagates any error raised by the client's update call; no-op if the method is unavailable.
  */
 async function applyRepositoryMergeSettings(
 	client: GitHubClient,

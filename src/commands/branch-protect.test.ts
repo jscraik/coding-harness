@@ -401,6 +401,91 @@ describe("runBranchProtect", () => {
 		);
 	});
 
+	it("removes managed code scanning rules for internal repositories", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 89,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/main"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 89,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main"],
+							exclude: [],
+						},
+					},
+					rules: [
+						{
+							type: "code_scanning",
+							parameters: {
+								code_scanning_tools: [
+									{
+										tool: "CodeQL",
+										alerts_threshold: "errors",
+										security_alerts_threshold: "high_or_higher",
+									},
+								],
+							},
+						},
+					],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 89,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const getRepositoryVisibility = vi.fn(async () => "internal");
+
+		mockGitHubClient.mockImplementation(() =>
+			mockBranchProtectClient({
+				listRulesets,
+				getRuleset,
+				updateRuleset,
+				getRepositoryVisibility,
+			}),
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			contractPath: ".missing-harness.contract.json",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = updateRuleset.mock.calls[0]?.[1];
+		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
+			false,
+		);
+	});
+
 	it("keeps managed code scanning rules when visibility lookup is unavailable", async () => {
 		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
 		const createRuleset = vi.fn(

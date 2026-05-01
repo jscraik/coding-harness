@@ -69,6 +69,10 @@ export interface LearningsPromoteResult {
 }
 
 const DEFAULT_MIN_USAGE = 25;
+const TERMINAL_PROMOTION_STATUSES = new Set<LearningItem["promotionStatus"]>([
+	"rejected",
+	"non_goal",
+]);
 
 /**
  * Builds promotion candidates from a local learning artifact using usage thresholds and enforcement state.
@@ -160,9 +164,9 @@ export function buildLearningPromotionCandidates(
 		.filter(
 			(item) =>
 				item.promotionStatus !== "deferred" &&
+				!TERMINAL_PROMOTION_STATUSES.has(item.promotionStatus) &&
 				(options.includeEnforced || item.promotionStatus !== "enforced"),
 		)
-		.filter((item) => item.promotionStatus !== "deferred")
 		.map(buildPromotionCandidate)
 		.sort((a, b) => b.usage - a.usage || a.id.localeCompare(b.id));
 
