@@ -22,6 +22,12 @@ const EXIT_CODES = {
 	FAILURE: 1,
 	USAGE: 2,
 } as const;
+const DEFAULT_PROMOTE_MIN_USAGE = 25;
+
+interface PromoteErrorContext {
+	source?: string;
+	minUsage?: number;
+}
 
 /**
  * Dispatches the `harness learnings` CLI to the appropriate subcommand handler.
@@ -129,6 +135,13 @@ export function runLearningsPromoteCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const sourceFlag = readOptionalFlag(args, "--source");
 	const enforcementStatusFlag = readOptionalFlag(args, "--enforcement-status");
+	const source = sourceFlag.value;
+	const enforcementStatusPath = enforcementStatusFlag.value;
+	const minUsageResult = readMinUsage(args);
+	const promoteContext = buildPromoteErrorContext({
+		source,
+		minUsageResult,
+	});
 	if (sourceFlag.missingValue || enforcementStatusFlag.missingValue) {
 		return emitError({
 			json,
@@ -139,11 +152,9 @@ export function runLearningsPromoteCLI(args: string[]): number {
 			}),
 			exitCode: EXIT_CODES.USAGE,
 			outputKind: "promote",
+			promoteContext,
 		});
 	}
-	const source = sourceFlag.value;
-	const enforcementStatusPath = enforcementStatusFlag.value;
-	const minUsageResult = readMinUsage(args);
 	if (!minUsageResult.ok) {
 		return emitError({
 			json,
@@ -151,6 +162,7 @@ export function runLearningsPromoteCLI(args: string[]): number {
 			message: minUsageResult.message,
 			exitCode: EXIT_CODES.USAGE,
 			outputKind: "promote",
+			promoteContext,
 		});
 	}
 	const result = buildLearningPromotionCandidates({
@@ -398,6 +410,18 @@ function readMinUsage(
 	return { ok: true, value };
 }
 
+function buildPromoteErrorContext(input: {
+	source?: string | undefined;
+	minUsageResult: ReturnType<typeof readMinUsage>;
+}): PromoteErrorContext {
+	return {
+		...(input.source ? { source: input.source } : {}),
+		...(input.minUsageResult.ok && input.minUsageResult.value !== undefined
+			? { minUsage: input.minUsageResult.value }
+			: {}),
+	};
+}
+
 /**
  * Parses the `--override-mode` flag and validates it as either `strict` or `advisory`.
  *
@@ -448,6 +472,7 @@ function missingOptionalFlagMessage(
  * @param options.exitCode - Process exit code to return
  * @param options.warnings - Optional list of warnings to include in the JSON output
  * @param options.outputKind - JSON error shape to emit for import, gate, or promotion commands
+ * @param options.promoteContext - Parsed promotion context to preserve in JSON usage errors
  * @returns The `exitCode` passed in `options`
  */
 function emitError(options: {
@@ -457,6 +482,7 @@ function emitError(options: {
 	exitCode: number;
 	warnings?: LearningImportResult["warnings"];
 	outputKind?: "import" | "gate" | "promote";
+	promoteContext?: PromoteErrorContext;
 }): number {
 	if (options.json) {
 		if (options.outputKind === "gate") {
@@ -496,8 +522,11 @@ function emitError(options: {
 					{
 						schemaVersion: "learnings-promote-result/v1",
 						status: "error",
-						source: "",
-						minUsage: 25,
+						source:
+							options.promoteContext?.source ??
+							DEFAULT_CODERABBIT_LOCAL_ARTIFACT,
+						minUsage:
+							options.promoteContext?.minUsage ?? DEFAULT_PROMOTE_MIN_USAGE,
 						promotionCandidates: [],
 						summary: {
 							total: 0,

@@ -119,7 +119,7 @@ describe("runNorthStarFeedbackCLI", () => {
 
 		expect(exitCode).toBe(2);
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
-		expect(result.error.code).toBe("north_star_feedback.invalid_number");
+		expect(result.error.code).toBe("north_star_feedback.missing_value");
 		expect(result.error.message).toContain("--source");
 	});
 
@@ -132,7 +132,7 @@ describe("runNorthStarFeedbackCLI", () => {
 
 		expect(exitCode).toBe(2);
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
-		expect(result.error.code).toBe("north_star_feedback.invalid_number");
+		expect(result.error.code).toBe("north_star_feedback.missing_value");
 		expect(result.error.message).toContain("--source");
 	});
 });

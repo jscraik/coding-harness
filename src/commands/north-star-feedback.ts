@@ -1,10 +1,15 @@
-import { buildNorthStarFeedback } from "../lib/learnings/north-star-feedback.js";
+import {
+	NORTH_STAR_FEEDBACK_SCHEMA_VERSION,
+	buildNorthStarFeedback,
+} from "../lib/learnings/north-star-feedback.js";
 
 const EXIT_CODES = {
 	SUCCESS: 0,
 	FAILURE: 1,
 	USAGE: 2,
 } as const;
+const MISSING_VALUE_ERROR_CODE = "north_star_feedback.missing_value";
+const INVALID_NUMBER_ERROR_CODE = "north_star_feedback.invalid_number";
 
 /**
  * Execute the `harness north-star-feedback` CLI command using the provided argument tokens.
@@ -23,13 +28,25 @@ export function runNorthStarFeedbackCLI(args: string[]): number {
 	const enforcementStatusPath = readOptionalValue(args, "--enforcement-status");
 	const gateResultPath = readOptionalValue(args, "--gate-result");
 	const output = readOptionalValue(args, "--output");
-	if (!source.ok) return emitUsageError(json, source.message);
-	if (!enforcementStatusPath.ok) {
-		return emitUsageError(json, enforcementStatusPath.message);
+	if (!source.ok) {
+		return emitUsageError(json, source.message, MISSING_VALUE_ERROR_CODE);
 	}
-	if (!gateResultPath.ok) return emitUsageError(json, gateResultPath.message);
+	if (!enforcementStatusPath.ok) {
+		return emitUsageError(
+			json,
+			enforcementStatusPath.message,
+			MISSING_VALUE_ERROR_CODE,
+		);
+	}
+	if (!gateResultPath.ok) {
+		return emitUsageError(
+			json,
+			gateResultPath.message,
+			MISSING_VALUE_ERROR_CODE,
+		);
+	}
 	if (!output.ok) {
-		return emitUsageError(json, output.message);
+		return emitUsageError(json, output.message, MISSING_VALUE_ERROR_CODE);
 	}
 	const minUsage = readOptionalNumber(args, "--min-usage");
 	const reviewThreadCount = readOptionalNumber(args, "--review-thread-count");
@@ -39,7 +56,11 @@ export function runNorthStarFeedbackCLI(args: string[]): number {
 		(value) => value?.ok === false,
 	);
 	if (invalidNumber?.ok === false) {
-		return emitUsageError(json, invalidNumber.message);
+		return emitUsageError(
+			json,
+			invalidNumber.message,
+			INVALID_NUMBER_ERROR_CODE,
+		);
 	}
 	const minUsageValue = readNumberValue(minUsage);
 	const reviewThreadCountValue = readNumberValue(reviewThreadCount);
@@ -165,19 +186,24 @@ function readNumberValue(
  * Emit a usage error and return the usage exit code.
  *
  * If `json` is true, writes a standardized JSON error payload to stdout describing the invalid input
- * (including an `error.code` of `north_star_feedback.invalid_number`); otherwise writes a single-line
+ * (including the supplied machine-readable `error.code`); otherwise writes a single-line
  * error message to stderr.
  *
  * @param json - Whether to emit the error as structured JSON
  * @param message - The human-readable error message to include in the output
+ * @param errorCode - Machine-readable usage error code
  * @returns The usage exit code (`EXIT_CODES.USAGE`)
  */
-function emitUsageError(json: boolean, message: string): number {
+function emitUsageError(
+	json: boolean,
+	message: string,
+	errorCode: string,
+): number {
 	if (json) {
 		console.info(
 			JSON.stringify(
 				{
-					schemaVersion: "north-star-feedback/v1",
+					schemaVersion: NORTH_STAR_FEEDBACK_SCHEMA_VERSION,
 					status: "error",
 					source: "",
 					minUsage: 25,
@@ -209,7 +235,7 @@ function emitUsageError(json: boolean, message: string): number {
 						],
 					},
 					error: {
-						code: "north_star_feedback.invalid_number",
+						code: errorCode,
 						message,
 					},
 				},

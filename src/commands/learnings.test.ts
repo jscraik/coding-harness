@@ -428,6 +428,29 @@ describe("runLearningsCLI", () => {
 		expect(result.error.code).toBe("learnings.min_usage_invalid");
 	});
 
+	it("preserves parsed promotion context in JSON usage errors", () => {
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		const exitCode = runLearningsCLI([
+			"promote",
+			"--source",
+			".harness/learnings/coderabbit.local.json",
+			"--enforcement-status",
+			"--min-usage",
+			"50",
+			"--json",
+		]);
+
+		expect(exitCode).toBe(2);
+		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(result.schemaVersion).toBe("learnings-promote-result/v1");
+		expect(result.source).toBe(".harness/learnings/coderabbit.local.json");
+		expect(result.minUsage).toBe(50);
+		expect(result.error.code).toBe("learnings.flag_value_required");
+	});
+
 	it("returns usage for unsupported providers", () => {
 		vi.spyOn(console, "error").mockImplementation(() => undefined);
 

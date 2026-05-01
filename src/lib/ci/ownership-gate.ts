@@ -212,6 +212,7 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 	reviewProvider: string;
 	securityChecks: string[];
 	securityChecksValid: boolean;
+	fallbackWorkflowsValid: boolean;
 	fallbackWorkflows: Array<{
 		path: string;
 		role: string;
@@ -225,6 +226,7 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 			...DEFAULT_CI_OWNERSHIP,
 			securityChecks: [...DEFAULT_CI_OWNERSHIP.securityChecks],
 			securityChecksValid: true,
+			fallbackWorkflowsValid: true,
 			fallbackWorkflows: [],
 		};
 	}
@@ -250,12 +252,13 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 			value.securityChecks === undefined ||
 			(Array.isArray(value.securityChecks) &&
 				value.securityChecks.every(isValidSecurityCheckName)),
+		fallbackWorkflowsValid:
+			value.fallbackWorkflows === undefined ||
+			(Array.isArray(value.fallbackWorkflows) &&
+				value.fallbackWorkflows.every(isFallbackWorkflowInputValid)),
 		fallbackWorkflows: Array.isArray(value.fallbackWorkflows)
 			? value.fallbackWorkflows
-					.filter(
-						(workflow): workflow is Record<string, unknown> =>
-							typeof workflow === "object" && workflow !== null,
-					)
+					.filter(isFallbackWorkflowRecord)
 					.map((workflow) => ({
 						path: String(workflow.path ?? ""),
 						role: String(workflow.role ?? ""),
@@ -331,6 +334,16 @@ function validateCIOwnershipContract(input: {
 				"ciOwnership.securityChecks must be an array of non-empty check names.",
 			path: input.contractPath,
 			fix: "Set ciOwnership.securityChecks to an array containing semgrep-cloud-platform/scan.",
+		});
+	}
+	if (!input.ciOwnership.fallbackWorkflowsValid) {
+		input.findings.push({
+			id: "ci-ownership.fallback-workflows.invalid",
+			severity: "error",
+			message:
+				"ciOwnership.fallbackWorkflows must be an array of workflow objects with typed fields.",
+			path: input.contractPath,
+			fix: "Set ciOwnership.fallbackWorkflows to an array of workflow objects, or remove the malformed value.",
 		});
 	}
 	for (const workflow of input.ciOwnership.fallbackWorkflows) {
@@ -452,28 +465,61 @@ function validateFallbackWorkflow(input: {
 function workflowHasAutomaticPrTrigger(content: string): boolean {
 	let inOnBlock = false;
 	let onBlockIndent = 0;
+	let onEventIndent: number | undefined;
 	return content.split(/\r?\n/).some((line) => {
 		const indent = line.length - line.trimStart().length;
 		const trimmed = line.trim();
 		if (trimmed === "" || trimmed.startsWith("#")) return false;
 		if (inOnBlock && indent <= onBlockIndent && !trimmed.startsWith("-")) {
 			inOnBlock = false;
+			onEventIndent = undefined;
 		}
-		if (
-			inOnBlock &&
-			(PR_TRIGGER_KEY_PATTERN.test(trimmed) ||
-				PR_TRIGGER_LIST_PATTERN.test(trimmed))
-		) {
-			return true;
+		if (inOnBlock && indent > onBlockIndent) {
+			onEventIndent ??= indent;
+			if (indent !== onEventIndent) return false;
+			return (
+				PR_TRIGGER_KEY_PATTERN.test(trimmed) ||
+				PR_TRIGGER_LIST_PATTERN.test(trimmed)
+			);
 		}
 		const onMatch = trimmed.match(ON_KEY_PATTERN);
 		if (!onMatch) return false;
 		const inlineValue = onMatch[1]?.trim() ?? "";
 		if (inlineValue !== "") return PR_TRIGGER_PATTERN.test(inlineValue);
 		onBlockIndent = indent;
+		onEventIndent = undefined;
 		inOnBlock = true;
 		return false;
 	});
+}
+
+/**
+ * Determine whether a fallback workflow value is an object record.
+ *
+ * @param value - Raw value from `ciOwnership.fallbackWorkflows`.
+ * @returns True when the value can be inspected as a workflow object.
+ */
+function isFallbackWorkflowRecord(
+	value: unknown,
+): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Validate the raw shape of a fallback workflow entry before normalization.
+ *
+ * @param value - Raw fallback workflow value from the contract.
+ * @returns True when the entry is an object with string metadata fields and a boolean or omitted `allowAutomaticPrTriggers`.
+ */
+function isFallbackWorkflowInputValid(value: unknown): boolean {
+	if (!isFallbackWorkflowRecord(value)) return false;
+	return (
+		(value.path === undefined || typeof value.path === "string") &&
+		(value.role === undefined || typeof value.role === "string") &&
+		(value.purpose === undefined || typeof value.purpose === "string") &&
+		(value.allowAutomaticPrTriggers === undefined ||
+			typeof value.allowAutomaticPrTriggers === "boolean")
+	);
 }
 
 /**

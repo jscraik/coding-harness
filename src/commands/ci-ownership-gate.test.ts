@@ -301,6 +301,57 @@ describe("ci-ownership-gate command", () => {
 		);
 	});
 
+	it("does not treat nested workflow_dispatch inputs as PR triggers", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan"],
+				fallbackWorkflows: [
+					{
+						path: ".github/workflows/manual.yml",
+						role: "release_publishing",
+						purpose: "Manual release publishing only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".github/workflows/manual.yml"),
+			[
+				"name: manual",
+				"on:",
+				"  workflow_dispatch:",
+				"    inputs:",
+				"      pull_request:",
+				"        description: PR number",
+				"jobs: {}",
+			].join("\n"),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(0);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).not.toContain(
+			"ci-ownership.fallback-workflow..github/workflows/manual.yml.automatic-pr-trigger",
+		);
+	});
+
 	it("does not treat job names outside the on block as PR triggers", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },
@@ -482,6 +533,66 @@ describe("ci-ownership-gate command", () => {
 		).toContain(
 			"ci-ownership.fallback-workflow..github/workflows/pr-fallback.yml.role-invalid",
 		);
+	});
+
+	it("fails when fallbackWorkflows is not an array", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan"],
+				fallbackWorkflows: {
+					path: ".github/workflows/pr-fallback.yml",
+				},
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain("ci-ownership.fallback-workflows.invalid");
+	});
+
+	it("fails when fallbackWorkflows contains non-object entries", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan"],
+				fallbackWorkflows: ["not-a-workflow"],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain("ci-ownership.fallback-workflows.invalid");
 	});
 
 	it("fails when ciOwnership securityChecks contains non-string values", () => {
