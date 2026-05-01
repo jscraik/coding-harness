@@ -96,8 +96,10 @@ describe("scaffold shell templates", () => {
 			"/listen EPERM: operation not permitted.*(\\/tmp\\/tsx-|\\.pipe)/.test(stderr)",
 		);
 		expect(runner).toContain(
-			"Warning: tsx IPC startup failed (EPERM/IPC); falling back to node dist/cli.js.",
+			"Warning: tsx IPC startup failed (EPERM/IPC); refusing dist fallback in source checkout because dist freshness cannot be proven deterministically.",
 		);
+		expect(runner).not.toContain("dist_freshness_marker");
+		expect(runner).not.toContain("newest_dist_file");
 		expect(runner).not.toContain("tsx IPC startup failed with EPERM");
 		expect(runner).toContain('exec node "$REPO_ROOT/dist/cli.js" "$@"');
 		expect(runner).toContain('bash "$REPO_ROOT/scripts/harness-cli.sh"');

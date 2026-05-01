@@ -1806,8 +1806,10 @@ describe("runInit", () => {
 				"/listen EPERM: operation not permitted.*(\\/tmp\\/tsx-|\\.pipe)/.test(stderr)",
 			);
 			expect(runHarnessGate).toContain(
-				'echo "Warning: tsx IPC startup failed (EPERM/IPC); falling back to node dist/cli.js." >&2',
+				'echo "Warning: tsx IPC startup failed (EPERM/IPC); refusing dist fallback in source checkout because dist freshness cannot be proven deterministically." >&2',
 			);
+			expect(runHarnessGate).not.toContain("dist_freshness_marker");
+			expect(runHarnessGate).not.toContain("newest_dist_file");
 			expect(runHarnessGate).not.toContain("tsx IPC startup failed with EPERM");
 			expect(runHarnessGate).toContain(
 				'if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
