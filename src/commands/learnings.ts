@@ -79,6 +79,7 @@ export function runLearningsGateCLI(args: string[]): number {
 				overridesFlag,
 			}),
 			exitCode: EXIT_CODES.USAGE,
+			includeImportSchema: false,
 		});
 	}
 	const source = sourceFlag.value;
@@ -90,6 +91,7 @@ export function runLearningsGateCLI(args: string[]): number {
 			errorCode: "learnings.override_mode_invalid",
 			message: overrideMode.message,
 			exitCode: EXIT_CODES.USAGE,
+			includeImportSchema: false,
 		});
 	}
 	const files = inspectFlagList(args, "--files");
@@ -99,6 +101,7 @@ export function runLearningsGateCLI(args: string[]): number {
 			errorCode: "learnings.files_required",
 			message: "harness learnings gate requires --files.",
 			exitCode: EXIT_CODES.USAGE,
+			includeImportSchema: false,
 		});
 	}
 	const gateResult = runLearningsGate({
@@ -135,6 +138,7 @@ export function runLearningsPromoteCLI(args: string[]): number {
 				enforcementStatusFlag,
 			}),
 			exitCode: EXIT_CODES.USAGE,
+			includeImportSchema: false,
 		});
 	}
 	const source = sourceFlag.value;
@@ -146,6 +150,7 @@ export function runLearningsPromoteCLI(args: string[]): number {
 			errorCode: "learnings.min_usage_invalid",
 			message: minUsageResult.message,
 			exitCode: EXIT_CODES.USAGE,
+			includeImportSchema: false,
 		});
 	}
 	const result = buildLearningPromotionCandidates({
@@ -419,11 +424,12 @@ function missingOptionalFlagMessage(
  * Format and emit an error as either structured JSON or a plain console message, then return the provided exit code.
  *
  * @param options - Configuration for the emitted error
- * @param options.json - If true, output a structured `LearningImportResult` JSON to stdout; otherwise output a plain error message to stderr
+ * @param options.json - If true, output a structured JSON to stdout; otherwise output a plain error message to stderr
  * @param options.errorCode - Machine-readable error code to include in the JSON output
  * @param options.message - Human-readable error message to emit
  * @param options.exitCode - Process exit code to return
  * @param options.warnings - Optional list of warnings to include in the JSON output
+ * @param options.includeImportSchema - If true (default), emit the full `LearningImportResult` schema; if false, emit a minimal JSON object with only errorCode, message, and optional warnings
  * @returns The `exitCode` passed in `options`
  */
 function emitError(options: {
@@ -432,16 +438,33 @@ function emitError(options: {
 	message: string;
 	exitCode: number;
 	warnings?: LearningImportResult["warnings"];
+	includeImportSchema?: boolean;
 }): number {
 	if (options.json) {
-		const result: LearningImportResult = {
-			schemaVersion: LEARNING_IMPORT_RESULT_SCHEMA_VERSION,
-			status: "error",
-			warnings: options.warnings ?? [],
-			errorCode: options.errorCode,
-			message: options.message,
-		};
-		console.info(JSON.stringify(result, null, 2));
+		const includeImportSchema = options.includeImportSchema ?? true;
+		if (includeImportSchema) {
+			const result: LearningImportResult = {
+				schemaVersion: LEARNING_IMPORT_RESULT_SCHEMA_VERSION,
+				status: "error",
+				warnings: options.warnings ?? [],
+				errorCode: options.errorCode,
+				message: options.message,
+			};
+			console.info(JSON.stringify(result, null, 2));
+		} else {
+			const result: {
+				errorCode: string;
+				message: string;
+				warnings?: LearningImportResult["warnings"];
+			} = {
+				errorCode: options.errorCode,
+				message: options.message,
+				...(options.warnings && options.warnings.length > 0
+					? { warnings: options.warnings }
+					: {}),
+			};
+			console.info(JSON.stringify(result, null, 2));
+		}
 	} else {
 		console.error(`Error: ${options.message}`);
 	}

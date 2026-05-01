@@ -138,7 +138,11 @@ function isLearningItemLike(value: unknown): value is LearningItem {
 	) {
 		return false;
 	}
-	return isRecord(value.source) && isNonEmptyString(value.source.uri);
+	if (!isRecord(value.source)) return false;
+	if (!isNonEmptyString(value.source.uri)) return false;
+	if (!isNonEmptyString(value.source.kind)) return false;
+	if (typeof value.source.row !== "number") return false;
+	return true;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

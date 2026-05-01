@@ -412,7 +412,19 @@ function validateFallbackWorkflow(input: {
 		});
 		return;
 	}
-	const content = readFileSync(workflowPath, "utf-8");
+	let content: string;
+	try {
+		content = readFileSync(workflowPath, "utf-8");
+	} catch (error) {
+		input.findings.push({
+			id: `ci-ownership.fallback-workflow.${input.workflow.path}.unreadable`,
+			severity: "error",
+			message: `Configured fallback workflow could not be read: ${error instanceof Error ? error.message : String(error)}`,
+			path: input.workflow.path,
+			fix: "Ensure the workflow file is readable and not a broken symlink, or remove it from ciOwnership.fallbackWorkflows.",
+		});
+		return;
+	}
 	const hasPrTrigger = workflowHasAutomaticPrTrigger(content);
 	if (hasPrTrigger && !input.workflow.allowAutomaticPrTriggers) {
 		input.findings.push({
