@@ -47,6 +47,26 @@ describe("normalizeLearningRows", () => {
 		expect(result.items[0]?.promotionStatus).toBe("candidate");
 	});
 
+	it("synthesizes GitHub URLs from owner-qualified repositories", () => {
+		const result = normalizeLearningRows(
+			[
+				{
+					row: 2,
+					repository: "octo/repo",
+					file: "docs/example.md",
+					pullRequest: "123",
+					usage: 3,
+					learning: "Owner-qualified repositories should keep source links.",
+				},
+			],
+			{ sourceUri },
+		);
+
+		expect(result.items[0]?.githubUrl).toBe(
+			"https://github.com/octo/repo/pull/123",
+		);
+	});
+
 	it("adds stable short hashes when IDs collide", () => {
 		const rows: ParsedCodeRabbitLearningRow[] = [
 			{

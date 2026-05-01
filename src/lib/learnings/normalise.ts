@@ -267,13 +267,17 @@ function shortHash(value: string): string {
  * Build a GitHub pull request URL for the given parsed learning row when a pull request is present.
  *
  * @param row - Parsed learning row whose `repository` and `pullRequest` fields are used to construct the URL
- * @returns The GitHub pull request URL in the form `https://github.com/jscraik/<repository>/pull/<pullRequest>` if `row.pullRequest` is set, `undefined` otherwise
+ * @returns The GitHub pull request URL for owner-qualified repositories, or the legacy `jscraik/<repository>` fallback for ownerless rows, if `row.pullRequest` is set; `undefined` otherwise
  */
 function synthesizeGithubUrl(
 	row: ParsedCodeRabbitLearningRow,
 ): string | undefined {
 	if (!row.pullRequest) return undefined;
-	return `https://github.com/jscraik/${row.repository}/pull/${row.pullRequest}`;
+	const repository = row.repository.trim();
+	const parts = repository.split("/").filter((part) => part.length > 0);
+	const githubRepository =
+		parts.length >= 2 ? `${parts[0]}/${parts[1]}` : `jscraik/${repository}`;
+	return `https://github.com/${githubRepository}/pull/${row.pullRequest}`;
 }
 
 /**
