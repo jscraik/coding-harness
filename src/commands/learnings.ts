@@ -68,8 +68,21 @@ export function runLearningsCLI(args: string[]): number {
  */
 export function runLearningsGateCLI(args: string[]): number {
 	const json = args.includes("--json");
-	const source = readOptionalFlag(args, "--source").value;
-	const overrides = readOptionalFlag(args, "--overrides").value;
+	const sourceFlag = readOptionalFlag(args, "--source");
+	const overridesFlag = readOptionalFlag(args, "--overrides");
+	if (sourceFlag.missingValue || overridesFlag.missingValue) {
+		return emitError({
+			json,
+			errorCode: "learnings.flag_value_required",
+			message: missingOptionalFlagMessage({
+				sourceFlag,
+				overridesFlag,
+			}),
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	const source = sourceFlag.value;
+	const overrides = overridesFlag.value;
 	const overrideMode = readOverrideMode(args);
 	if (!overrideMode.ok) {
 		return emitError({
@@ -111,11 +124,21 @@ export function runLearningsGateCLI(args: string[]): number {
  */
 export function runLearningsPromoteCLI(args: string[]): number {
 	const json = args.includes("--json");
-	const source = readOptionalFlag(args, "--source").value;
-	const enforcementStatusPath = readOptionalFlag(
-		args,
-		"--enforcement-status",
-	).value;
+	const sourceFlag = readOptionalFlag(args, "--source");
+	const enforcementStatusFlag = readOptionalFlag(args, "--enforcement-status");
+	if (sourceFlag.missingValue || enforcementStatusFlag.missingValue) {
+		return emitError({
+			json,
+			errorCode: "learnings.flag_value_required",
+			message: missingOptionalFlagMessage({
+				sourceFlag,
+				enforcementStatusFlag,
+			}),
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	const source = sourceFlag.value;
+	const enforcementStatusPath = enforcementStatusFlag.value;
 	const minUsageResult = readMinUsage(args);
 	if (!minUsageResult.ok) {
 		return emitError({
@@ -141,7 +164,7 @@ export function runLearningsPromoteCLI(args: string[]): number {
 		console.info(
 			[
 				`Promotion candidates: ${result.summary.eligible}`,
-				`Deferred learnings: ${result.summary.deferred}`,
+				`Excluded learnings: ${result.summary.excluded}`,
 				`Minimum usage: ${result.minUsage}`,
 			].join("\n"),
 		);
@@ -164,7 +187,19 @@ export function runLearningsImportCLI(args: string[]): number {
 	const source = readRequiredFlag(args, "--source");
 	const repo = readRequiredFlag(args, "--repo");
 	const output = readOptionalFlag(args, "--output");
-	const liveCompanionPath = readOptionalFlag(args, "--live-companion").value;
+	const liveCompanionFlag = readOptionalFlag(args, "--live-companion");
+	if (output.missingValue || liveCompanionFlag.missingValue) {
+		return emitError({
+			json,
+			errorCode: "learnings.flag_value_required",
+			message: missingOptionalFlagMessage({
+				outputFlag: output,
+				liveCompanionFlag,
+			}),
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	const liveCompanionPath = liveCompanionFlag.value;
 	const missing = [
 		provider.ok ? undefined : "--provider",
 		source.ok ? undefined : "--source",
@@ -286,8 +321,10 @@ function readRequiredFlag(
 	args: string[],
 	flag: string,
 ): { ok: true; value: string } | { ok: false } {
-	const value = readOptionalFlag(args, flag).value;
-	return value === undefined ? { ok: false } : { ok: true, value };
+	const parsed = readOptionalFlag(args, flag);
+	return parsed.value === undefined
+		? { ok: false }
+		: { ok: true, value: parsed.value };
 }
 
 /**
@@ -300,12 +337,12 @@ function readRequiredFlag(
 function readOptionalFlag(
 	args: string[],
 	flag: string,
-): { value: string | undefined } {
+): { value: string | undefined; missingValue?: boolean } {
 	const index = args.indexOf(flag);
 	if (index === -1) return { value: undefined };
 	const value = args[index + 1];
 	if (value === undefined || value.startsWith("-")) {
-		return { value: undefined };
+		return { value: undefined, missingValue: true };
 	}
 	return { value };
 }
@@ -319,7 +356,14 @@ function readOptionalFlag(
 function readMinUsage(
 	args: string[],
 ): { ok: true; value?: number } | { ok: false; message: string } {
-	const rawValue = readOptionalFlag(args, "--min-usage").value;
+	const parsed = readOptionalFlag(args, "--min-usage");
+	if (parsed.missingValue) {
+		return {
+			ok: false,
+			message: "--min-usage requires a value.",
+		};
+	}
+	const rawValue = parsed.value;
 	if (rawValue === undefined) return { ok: true };
 	const value = Number(rawValue);
 	if (!Number.isInteger(value) || value < 0) {
@@ -339,7 +383,14 @@ function readMinUsage(
 function readOverrideMode(
 	args: string[],
 ): { ok: true; value: "strict" | "advisory" } | { ok: false; message: string } {
-	const rawValue = readOptionalFlag(args, "--override-mode").value;
+	const parsed = readOptionalFlag(args, "--override-mode");
+	if (parsed.missingValue) {
+		return {
+			ok: false,
+			message: "--override-mode requires a value.",
+		};
+	}
+	const rawValue = parsed.value;
 	if (rawValue === undefined || rawValue === "strict") {
 		return { ok: true, value: "strict" };
 	}
@@ -348,6 +399,20 @@ function readOverrideMode(
 		ok: false,
 		message: "--override-mode must be strict or advisory.",
 	};
+}
+
+function missingOptionalFlagMessage(
+	flags: Record<string, { missingValue?: boolean }>,
+): string {
+	const missing = Object.entries(flags)
+		.filter(([, value]) => value.missingValue)
+		.map(([key]) =>
+			key
+				.replace(/Flag$/, "")
+				.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
+				.replace(/^/, "--"),
+		);
+	return `Missing value for ${missing.join(", ")}.`;
 }
 
 /**

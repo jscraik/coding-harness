@@ -169,7 +169,7 @@ function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 				continue;
 			}
 
-			const portMatch = line.match(/^[\t ]*port:[\t ]*([0-9]+)/);
+			const portMatch = line.match(/^[\t ]*port:[\t ]*([0-9]+)([\t ]*#.*)?$/);
 			if (portMatch?.[1]) {
 				restPort = Number.parseInt(portMatch[1], 10);
 			}
@@ -177,7 +177,7 @@ function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 		}
 
 		if (inQdrantBlock) {
-			if (/^[\t ]*enabled:[\t ]*true([\t ]*#.*)?$/.test(line)) {
+			if (/^[\t ]*enabled:[\t ]*["']?true["']?([\t ]*#.*)?$/.test(line)) {
 				qdrantEnabled = true;
 				continue;
 			}

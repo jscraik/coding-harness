@@ -112,8 +112,8 @@ describe("runValidationPlanCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
 		expect(result.changedFiles).toEqual([
 			"README.md",
-			"src/cli.ts",
 			"package.json",
+			"src/cli.ts",
 		]);
 		expect(
 			result.commands.map((entry: { command: string }) => entry.command),

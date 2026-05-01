@@ -20,6 +20,26 @@ import type {
 } from "./types.js";
 
 const GATE_NAME = "learnings-gate";
+const LEARNING_CLASSIFICATIONS = new Set([
+	"guardrail",
+	"validation_contract",
+	"source_of_truth",
+	"generated_artifact",
+	"scaffold_default",
+	"ci_ownership",
+	"review_context",
+	"memory_only",
+]);
+const LEARNING_ENFORCEMENTS = new Set(["error", "warning", "info", "none"]);
+const LEARNING_PROMOTION_STATUSES = new Set([
+	"unreviewed",
+	"candidate",
+	"accepted",
+	"enforced",
+	"rejected",
+	"deferred",
+	"non_goal",
+]);
 
 /** Options for the exact-file learning gate. */
 export interface LearningsGateOptions {
@@ -101,18 +121,32 @@ function isLearningImportArtifact(
 
 function isLearningItemLike(value: unknown): value is LearningItem {
 	if (!isRecord(value)) return false;
-	if (typeof value.id !== "string") return false;
-	if (typeof value.learning !== "string") return false;
-	if (typeof value.repository !== "string") return false;
+	if (!isNonEmptyString(value.id)) return false;
+	if (!isNonEmptyString(value.learning)) return false;
+	if (!isNonEmptyString(value.repository)) return false;
 	if (typeof value.usage !== "number") return false;
-	if (!isRecord(value.source) || typeof value.source.uri !== "string") {
+	if (!LEARNING_CLASSIFICATIONS.has(String(value.classification))) return false;
+	if (!LEARNING_ENFORCEMENTS.has(String(value.enforcement))) return false;
+	if (!LEARNING_PROMOTION_STATUSES.has(String(value.promotionStatus))) {
 		return false;
 	}
-	return true;
+	if (value.file !== undefined && typeof value.file !== "string") return false;
+	if (
+		value.targetPatterns !== undefined &&
+		(!Array.isArray(value.targetPatterns) ||
+			!value.targetPatterns.every((item) => typeof item === "string"))
+	) {
+		return false;
+	}
+	return isRecord(value.source) && isNonEmptyString(value.source.uri);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+	return typeof value === "string" && value.trim().length > 0;
 }
 
 /**

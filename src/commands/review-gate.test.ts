@@ -397,17 +397,20 @@ describe("runReviewGate", () => {
 			}),
 		);
 
-		const result = await runReviewGate({
-			...defaultOptions,
-			reviewContextPath,
-		});
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				reviewContextPath,
+			});
 
-		rmSync(dir, { recursive: true, force: true });
-		expect(result.ok).toBe(true);
-		if (result.ok) {
-			expect(result.output.verified).toBe(true);
-			expect(result.output.review_context_status).toBe("warn");
-			expect(result.output.blockers).toEqual([]);
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(true);
+				expect(result.output.review_context_status).toBe("warn");
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
 		}
 	});
 

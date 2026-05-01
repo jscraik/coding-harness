@@ -74,6 +74,8 @@ export interface ReviewContextOptions {
 	repoRoot?: string;
 	/** Optional enforcement-status ledger path. */
 	enforcementStatusPath?: string;
+	/** Optional deterministic generation timestamp for tests and reproducible artifacts. */
+	generatedAt?: string;
 }
 
 /**
@@ -155,7 +157,7 @@ export function buildReviewContext(
 		schemaVersion: "review-context/v1",
 		status: "success",
 		source,
-		generatedAt: new Date().toISOString(),
+		generatedAt: options.generatedAt ?? new Date().toISOString(),
 		sourceFingerprint: loaded.artifact.inputFingerprint,
 		repo: loaded.artifact.repository,
 		changedFiles,

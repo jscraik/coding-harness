@@ -253,6 +253,17 @@ if is_harness_source_repo; then
 					: 1,
 			);
 		' "$tsx_stderr_file"; then
+			dist_has_newer_source=false
+			while IFS= read -r _newer_source; do
+				dist_has_newer_source=true
+				break
+			done < <(find "$REPO_ROOT/src" "$REPO_ROOT/package.json" "$REPO_ROOT/tsconfig.json" -type f -newer "$REPO_ROOT/dist/cli.js" 2>/dev/null)
+			if [[ "$dist_has_newer_source" == true ]]; then
+				echo "Warning: tsx IPC startup failed (EPERM/IPC), but dist/cli.js is older than source; refusing stale fallback." >&2
+				cat "$tsx_stderr_file" >&2
+				rm -f "$tsx_stderr_file"
+				exit "$tsx_exit"
+			fi
 			echo "Warning: tsx IPC startup failed (EPERM/IPC); falling back to node dist/cli.js." >&2
 			rm -f "$tsx_stderr_file"
 			exec node "$REPO_ROOT/dist/cli.js" "$@"

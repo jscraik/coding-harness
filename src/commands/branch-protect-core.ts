@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import picomatch from "picomatch";
 import { deriveRequiredCheckMetadata } from "../lib/ci/required-check-metadata.js";
 import { loadContract } from "../lib/contract/loader.js";
 import {
@@ -226,6 +227,9 @@ function resolveContractBranchProtectionPolicy(
 			...(requiredCheckManifestPath ? { requiredCheckManifestPath } : {}),
 		};
 	} catch (error) {
+		if (existsSync(contractPath)) {
+			throw error;
+		}
 		// Contract not found or invalid - fall back to defaults.
 		// This is intentional to allow running without a contract file.
 		if (process.env.DEBUG) {
@@ -722,7 +726,7 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 		});
 	} else if (
 		input.policy.publicCodeScanning?.publicOnly !== true ||
-		input.repositoryVisibility !== undefined
+		input.repositoryVisibility === "private"
 	) {
 		removeRule(baseRules, "code_scanning");
 	}
@@ -809,6 +813,13 @@ function normalizeRequiredStatusCheckEntries(
 	if (!Array.isArray(value)) return [];
 	const checks: RequiredStatusCheckEntry[] = [];
 	for (const item of value) {
+		if (typeof item === "string") {
+			const context = item.trim();
+			if (context.length > 0) {
+				checks.push({ context });
+			}
+			continue;
+		}
 		if (
 			typeof item === "object" &&
 			item !== null &&
@@ -827,38 +838,26 @@ function normalizeRequiredStatusCheckEntries(
 }
 
 /**
- * Merge existing required status check entries with additional required contexts, preserving existing entries and order.
+ * Merge existing required status check entries with required contexts, preserving metadata for managed contexts.
  *
  * @param existingChecks - Array of existing required status check entries; each entry must include a `context` string and may include other properties.
  * @param requiredContexts - List of context names that must be present in the resulting entries.
- * @returns The merged list of `RequiredStatusCheckEntry` objects where entries are deduplicated by `context`: existing entries are kept (in order) and any missing `requiredContexts` are appended as `{ context }`.
+ * @returns Required status check entries in policy order, preserving metadata for contexts that remain required.
  */
 function mergeRequiredStatusChecks(
 	existingChecks: RequiredStatusCheckEntry[],
 	requiredContexts: string[],
 ): RequiredStatusCheckEntry[] {
 	const merged: RequiredStatusCheckEntry[] = [];
-	const seenContexts = new Set<string>();
-	const requiredContextSet = new Set(requiredContexts);
-
+	const existingByContext = new Map<string, RequiredStatusCheckEntry>();
 	for (const check of existingChecks) {
-		if (!seenContexts.has(check.context)) {
-			merged.push(
-				requiredContextSet.has(check.context)
-					? { context: check.context }
-					: check,
-			);
-			seenContexts.add(check.context);
+		if (!existingByContext.has(check.context)) {
+			existingByContext.set(check.context, check);
 		}
 	}
-
 	for (const context of requiredContexts) {
-		if (!seenContexts.has(context)) {
-			merged.push({ context });
-			seenContexts.add(context);
-		}
+		merged.push(existingByContext.get(context) ?? { context });
 	}
-
 	return merged;
 }
 
@@ -933,7 +932,7 @@ async function applyRepositoryMergeSettings(
 /**
  * Determines whether a branch reference matches a ref selector.
  *
- * The selector may be a special token `~ALL` (matches any branch), `~DEFAULT_BRANCH` (matches when the branch equals the default branch), an exact branch ref, or a wildcard pattern using `*` where `*` matches any sequence of characters.
+ * The selector may be a special token `~ALL` (matches any branch), `~DEFAULT_BRANCH` (matches when the branch equals the default branch), an exact branch ref, or a GitHub-style glob pattern.
  *
  * @param selector - The ref selector to evaluate (may contain `*` or be a special token)
  * @param branchRef - The branch ref to test (e.g., `refs/heads/main`)
@@ -958,15 +957,7 @@ function refSelectorMatches(
 	if (normalized === branchRef) {
 		return true;
 	}
-	if (!normalized.includes("*")) {
-		return false;
-	}
-
-	const escaped = normalized
-		.replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-		.replace(/\*/g, ".*");
-	const pattern = new RegExp(`^${escaped}$`);
-	return pattern.test(branchRef);
+	return picomatch.isMatch(branchRef, normalized);
 }
 
 /**

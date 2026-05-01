@@ -101,7 +101,7 @@ export function parseCodeRabbitCsv(
 			repositoryRaw,
 			targetRepositoryAliases,
 		);
-		const repository = targetRepository;
+		const repository = repositoryRaw.trim() || targetRepository;
 		const learningRaw = getCell(record, headerIndex, "Learning").trim();
 		if (repositoryMatch === "missing" || !learningRaw) {
 			invalid += 1;

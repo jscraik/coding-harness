@@ -42,9 +42,6 @@ function extractRegistryCommands(commandSpecsSource: string): string[] {
 		}
 		match = nameRegex.exec(commandSpecsSource);
 	}
-	// These are registered directly in command-registry.ts outside COMMAND_SPECS.
-	commands.add("commands");
-	commands.add("source-outline");
 	return Array.from(commands).sort();
 }
 
@@ -267,7 +264,16 @@ export function push(
 	},
 	baselineFingerprints: Set<string>,
 ): void {
-	const fingerprint = [raw.rule_id, raw.surface, raw.path ?? ""].join("|");
+	const discriminator =
+		(raw as { fingerprint_key?: unknown }).fingerprint_key ??
+		(raw as { command?: unknown }).command ??
+		(raw as { command_name?: unknown }).command_name ??
+		(raw as { target?: unknown }).target ??
+		"";
+	const fingerprintParts = [raw.rule_id, raw.surface, raw.path ?? ""];
+	if (String(discriminator).length > 0)
+		fingerprintParts.push(String(discriminator));
+	const fingerprint = fingerprintParts.join("|");
 	const baseline_state: DriftBaselineState = baselineFingerprints.has(
 		fingerprint,
 	)
@@ -704,13 +710,9 @@ export function evaluate(
 /**
  * Create or update durable guardrail artifacts for findings that include a `failureClass`.
  *
- * For each finding with a `failureClass`, resolves a deterministic guardrail ID, checks
- * on-disk recurrence state, and writes a durable guardrail artifact reflecting the
- * recurrence and the finding's implementation target.
- *
  * @param repoRoot - Filesystem path to the repository root used for reading and writing artifacts
  * @param findings - Findings to evaluate; only entries with `failureClass` are processed
- * @param contract - Harness contract containing `productSurface`; if absent or missing `productSurface`, no artifacts are emitted
+ * @param contract - Harness contract; if `productSurface` is absent, eligible findings are grouped under a global surface fallback
  * @returns The filesystem paths of durable guardrail artifact files that were written
  */
 export function emitGuardrailsForFindings(
@@ -718,7 +720,7 @@ export function emitGuardrailsForFindings(
 	findings: DriftFinding[],
 	contract: HarnessContract | undefined,
 ): string[] {
-	if (!contract?.productSurface) {
+	if (!contract) {
 		return [];
 	}
 
@@ -742,10 +744,12 @@ export function emitGuardrailsForFindings(
 			continue;
 		}
 		const pathValue = finding.path ?? "";
-		const matchingSurfaces = findMatchingProductSurfaces(
-			contract.productSurface,
-			pathValue ? [pathValue] : [],
-		);
+		const matchingSurfaces = contract.productSurface
+			? findMatchingProductSurfaces(
+					contract.productSurface,
+					pathValue ? [pathValue] : [],
+				)
+			: [];
 		const surfaceIds =
 			matchingSurfaces.length > 0
 				? matchingSurfaces.map((s) => s.surfaceId)

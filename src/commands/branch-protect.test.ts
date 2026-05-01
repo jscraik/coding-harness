@@ -264,12 +264,9 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "required_status_checks",
 		);
 		expect(requiredRule).toBeDefined();
-		expect(requiredRule?.parameters?.required_status_checks).toEqual(
-			expect.arrayContaining([
-				{ context: "existing-check" },
-				{ context: "CodeRabbit" },
-			]),
-		);
+		expect(requiredRule?.parameters?.required_status_checks).toEqual([
+			{ context: "CodeRabbit" },
+		]);
 		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
 	});
 
@@ -301,6 +298,7 @@ describe("runBranchProtect", () => {
 			token: "token",
 			owner: "octo",
 			repo: "harness",
+			contractPath: ".missing-harness.contract.json",
 		});
 
 		expect(result.ok).toBe(true);
@@ -393,6 +391,7 @@ describe("runBranchProtect", () => {
 			token: "token",
 			owner: "octo",
 			repo: "harness",
+			contractPath: ".missing-harness.contract.json",
 		});
 
 		expect(result.ok).toBe(true);
@@ -531,7 +530,7 @@ describe("runBranchProtect", () => {
 		});
 	});
 
-	it("falls back to harness baseline checks when contract loading fails", async () => {
+	it("falls back to harness baseline checks when the contract file is absent", async () => {
 		mockLoadContract.mockImplementation(() => {
 			throw new Error("contract missing");
 		});
@@ -561,6 +560,7 @@ describe("runBranchProtect", () => {
 			token: "token",
 			owner: "octo",
 			repo: "harness",
+			contractPath: ".missing-harness.contract.json",
 		});
 
 		expect(result.ok).toBe(true);
@@ -1201,12 +1201,9 @@ describe("runBranchProtect", () => {
 		const requiredRule = payload?.rules.find(
 			(rule) => rule.type === "required_status_checks",
 		);
-		expect(requiredRule?.parameters?.required_status_checks).toEqual(
-			expect.arrayContaining([
-				{ context: "existing-check", integration_id: 1234 },
-				{ context: "check" },
-			]),
-		);
+		expect(requiredRule?.parameters?.required_status_checks).toEqual([
+			{ context: "check" },
+		]);
 	});
 
 	it("preserves global scope when existing includes are empty", async () => {

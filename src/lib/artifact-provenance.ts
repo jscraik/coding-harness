@@ -322,6 +322,9 @@ function isArtifactProvenanceEntry(
 	if (typeof value.path !== "string" || typeof value.source !== "string") {
 		return false;
 	}
+	if (value.path.trim().length === 0 || value.source.trim().length === 0) {
+		return false;
+	}
 	if (
 		value.enforcement !== undefined &&
 		value.enforcement !== "advisory" &&

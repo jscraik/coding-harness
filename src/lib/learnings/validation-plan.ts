@@ -262,7 +262,7 @@ function buildNetworkRequired(
 	for (const item of matchedLearnings) {
 		const lower = item.learning.toLowerCase();
 		if (!lower.includes("audit")) continue;
-		const command = lower.includes("pnpm audit") ? "pnpm audit" : "pnpm audit";
+		const command = lower.includes("pnpm audit") ? "pnpm audit" : "npm audit";
 		const existing = commands.get(command);
 		if (existing) {
 			existing.learningIds = uniqueStrings([
@@ -387,13 +387,15 @@ function isPackageSurfaceFile(file: string): boolean {
  * Normalizes, filters, and deduplicates a list of file paths.
  *
  * Applies path normalization to each entry (trim whitespace, normalize separators, remove leading "./"),
- * removes falsy results, and deduplicates while preserving the first occurrence order.
+ * removes falsy results, then deduplicates and sorts the output for deterministic artifacts.
  *
  * @param files - The input list of file path strings to normalize
- * @returns An array of unique, truthy normalized file paths preserving the order of first occurrence
+ * @returns A sorted array of unique, truthy normalized file paths
  */
 function normalizeFiles(files: string[]): string[] {
-	return [...new Set(files.map((file) => normalizeFile(file)).filter(Boolean))];
+	return [
+		...new Set(files.map((file) => normalizeFile(file)).filter(Boolean)),
+	].sort();
 }
 
 /**

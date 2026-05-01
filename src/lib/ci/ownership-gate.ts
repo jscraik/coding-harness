@@ -69,6 +69,7 @@ const DEFAULT_CI_OWNERSHIP = {
 	securityChecks: [SEMGREP_CLOUD_CHECK_NAME],
 	fallbackWorkflows: [],
 };
+const PR_TRIGGER_PATTERN = /\b(pull_request|merge_group)\b/;
 
 /**
  * Evaluate a repository's CI ownership contract and produce machine-readable findings about primary provider, review, and security check requirements.
@@ -204,6 +205,7 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 	primaryPrGate: string;
 	reviewProvider: string;
 	securityChecks: string[];
+	securityChecksValid: boolean;
 	fallbackWorkflows: Array<{
 		path: string;
 		role: string;
@@ -212,7 +214,14 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 		allowAutomaticPrTriggersValid: boolean;
 	}>;
 } {
-	if (!value || typeof value !== "object") return DEFAULT_CI_OWNERSHIP;
+	if (!value || typeof value !== "object") {
+		return {
+			...DEFAULT_CI_OWNERSHIP,
+			securityChecks: [...DEFAULT_CI_OWNERSHIP.securityChecks],
+			securityChecksValid: true,
+			fallbackWorkflows: [],
+		};
+	}
 	return {
 		schemaVersion:
 			typeof value.schemaVersion === "string"
@@ -231,6 +240,8 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 					(check): check is string => typeof check === "string",
 				)
 			: DEFAULT_CI_OWNERSHIP.securityChecks,
+		securityChecksValid:
+			value.securityChecks === undefined || Array.isArray(value.securityChecks),
 		fallbackWorkflows: Array.isArray(value.fallbackWorkflows)
 			? value.fallbackWorkflows
 					.filter(
@@ -302,6 +313,15 @@ function validateCIOwnershipContract(input: {
 				"ciOwnership.securityChecks must include semgrep-cloud-platform/scan.",
 			path: input.contractPath,
 			fix: "Add semgrep-cloud-platform/scan to ciOwnership.securityChecks.",
+		});
+	}
+	if (!input.ciOwnership.securityChecksValid) {
+		input.findings.push({
+			id: "ci-ownership.security-checks.invalid",
+			severity: "error",
+			message: "ciOwnership.securityChecks must be an array of check names.",
+			path: input.contractPath,
+			fix: "Set ciOwnership.securityChecks to an array containing semgrep-cloud-platform/scan.",
 		});
 	}
 	for (const workflow of input.ciOwnership.fallbackWorkflows) {
@@ -393,7 +413,7 @@ function validateFallbackWorkflow(input: {
 		return;
 	}
 	const content = readFileSync(workflowPath, "utf-8");
-	const hasPrTrigger = /^\s*(pull_request|merge_group)\s*:/m.test(content);
+	const hasPrTrigger = workflowHasAutomaticPrTrigger(content);
 	if (hasPrTrigger && !input.workflow.allowAutomaticPrTriggers) {
 		input.findings.push({
 			id: `ci-ownership.fallback-workflow.${input.workflow.path}.automatic-pr-trigger`,
@@ -409,6 +429,21 @@ function validateFallbackWorkflow(input: {
 		severity: "info",
 		message: `${input.workflow.path} is constrained for fallback PR gate ownership.`,
 		path: input.workflow.path,
+	});
+}
+
+/**
+ * Detects whether a workflow declares an automatic PR-family trigger.
+ *
+ * @param content - Raw workflow YAML content.
+ * @returns True when `pull_request` or `merge_group` appears as a top-level trigger or inline `on:` trigger.
+ */
+function workflowHasAutomaticPrTrigger(content: string): boolean {
+	return content.split(/\r?\n/).some((line) => {
+		const trimmed = line.trim();
+		if (/^(pull_request|merge_group)\s*:/.test(trimmed)) return true;
+		if (!trimmed.startsWith("on:")) return false;
+		return PR_TRIGGER_PATTERN.test(trimmed);
 	});
 }
 

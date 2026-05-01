@@ -122,7 +122,10 @@ describe("buildLearningPromotionCandidates", () => {
 		expect(result.summary).toMatchObject({
 			total: 2,
 			eligible: 1,
-			deferred: 1,
+			excluded: 1,
+			belowThreshold: 0,
+			enforcedExcluded: 1,
+			explicitlyDeferred: 0,
 			enforced: 1,
 		});
 		expect(result.promotionCandidates).toHaveLength(1);

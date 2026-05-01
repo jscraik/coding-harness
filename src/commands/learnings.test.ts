@@ -344,7 +344,10 @@ describe("runLearningsCLI", () => {
 		expect(result.summary).toMatchObject({
 			total: 3,
 			eligible: 2,
-			deferred: 1,
+			excluded: 1,
+			belowThreshold: 1,
+			enforcedExcluded: 0,
+			explicitlyDeferred: 0,
 			enforced: 0,
 		});
 		expect(result.promotionCandidates[0]).toMatchObject({

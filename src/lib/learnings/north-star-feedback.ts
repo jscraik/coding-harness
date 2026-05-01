@@ -296,7 +296,8 @@ function loadGateMetrics(
  * @returns `true` if the finding's `id` begins with "learnings-gate.learning.", `false` otherwise.
  */
 function isLearningGateFinding(finding: GateFinding): boolean {
-	return finding.id.startsWith("learnings-gate.learning.");
+	const id = (finding as { id?: unknown }).id;
+	return typeof id === "string" && id.startsWith("learnings-gate.learning.");
 }
 
 /**

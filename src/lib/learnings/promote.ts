@@ -55,7 +55,10 @@ export interface LearningsPromoteResult {
 	summary: {
 		total: number;
 		eligible: number;
-		deferred: number;
+		excluded: number;
+		belowThreshold: number;
+		enforcedExcluded: number;
+		explicitlyDeferred: number;
 		enforced: number;
 	};
 	error?: {
@@ -90,7 +93,10 @@ export function buildLearningPromotionCandidates(
 			summary: {
 				total: 0,
 				eligible: 0,
-				deferred: 0,
+				excluded: 0,
+				belowThreshold: 0,
+				enforcedExcluded: 0,
+				explicitlyDeferred: 0,
 				enforced: 0,
 			},
 			error: {
@@ -114,7 +120,10 @@ export function buildLearningPromotionCandidates(
 			summary: {
 				total: loaded.artifact.items.length,
 				eligible: 0,
-				deferred: loaded.artifact.items.length,
+				excluded: loaded.artifact.items.length,
+				belowThreshold: 0,
+				enforcedExcluded: 0,
+				explicitlyDeferred: 0,
 				enforced: 0,
 			},
 			error: {
@@ -131,6 +140,17 @@ export function buildLearningPromotionCandidates(
 	);
 	const enforcedCount = items.filter(
 		(item) => item.promotionStatus === "enforced",
+	).length;
+	const belowThresholdCount = items.filter(
+		(item) => item.usage < minUsage,
+	).length;
+	const enforcedExcludedCount = options.includeEnforced
+		? 0
+		: items.filter(
+				(item) => item.usage >= minUsage && item.promotionStatus === "enforced",
+			).length;
+	const explicitlyDeferredCount = items.filter(
+		(item) => item.promotionStatus === "deferred",
 	).length;
 	const promotionCandidates = items
 		.filter((item) => item.usage >= minUsage)
@@ -149,7 +169,10 @@ export function buildLearningPromotionCandidates(
 		summary: {
 			total: loaded.artifact.items.length,
 			eligible: promotionCandidates.length,
-			deferred: loaded.artifact.items.length - promotionCandidates.length,
+			excluded: loaded.artifact.items.length - promotionCandidates.length,
+			belowThreshold: belowThresholdCount,
+			enforcedExcluded: enforcedExcludedCount,
+			explicitlyDeferred: explicitlyDeferredCount,
 			enforced: enforcedCount,
 		},
 	};
