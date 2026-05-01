@@ -135,6 +135,49 @@ describe("ci-ownership-gate command", () => {
 		);
 	});
 
+	it("fails when fallback GitHub Actions workflows use list-style PR triggers", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan"],
+				fallbackWorkflows: [
+					{
+						path: ".github/workflows/pr-fallback-list.yml",
+						role: "fallback_pr_gate",
+						purpose: "Emergency fallback only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".github/workflows/pr-fallback-list.yml"),
+			["name: PR fallback", "on:", "  - pull_request", "jobs: {}"].join("\n"),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain(
+			"ci-ownership.fallback-workflow..github/workflows/pr-fallback-list.yml.automatic-pr-trigger",
+		);
+	});
+
 	it("uses deterministic legacy defaults when ciOwnership is absent", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },

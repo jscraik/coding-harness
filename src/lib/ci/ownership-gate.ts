@@ -450,13 +450,25 @@ function validateFallbackWorkflow(input: {
  * Detects whether a workflow declares an automatic PR-family trigger.
  *
  * @param content - Raw workflow YAML content.
- * @returns True when `pull_request` or `merge_group` appears as a top-level trigger or inline `on:` trigger.
+ * @returns True when `pull_request` or `merge_group` appears as a top-level trigger, inline `on:` trigger, or block-list `on:` trigger.
  */
 function workflowHasAutomaticPrTrigger(content: string): boolean {
+	let inOnBlock = false;
+	let onBlockIndent = 0;
 	return content.split(/\r?\n/).some((line) => {
+		const indent = line.length - line.trimStart().length;
 		const trimmed = line.trim();
+		if (trimmed === "" || trimmed.startsWith("#")) return false;
+		if (inOnBlock && indent <= onBlockIndent && !trimmed.startsWith("-")) {
+			inOnBlock = false;
+		}
 		if (/^(pull_request|merge_group)\s*:/.test(trimmed)) return true;
+		if (/^-\s*(pull_request|merge_group)\b/.test(trimmed)) {
+			return inOnBlock;
+		}
 		if (!trimmed.startsWith("on:")) return false;
+		inOnBlock = true;
+		onBlockIndent = indent;
 		return PR_TRIGGER_PATTERN.test(trimmed);
 	});
 }
