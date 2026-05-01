@@ -1448,7 +1448,10 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			}
 
 			return runArtifactGateCLI({
-				files: filesFlag.value !== undefined ? parseCsvList(filesFlag.value) : undefined,
+				files:
+					filesFlag.value !== undefined
+						? parseCsvList(filesFlag.value)
+						: undefined,
 				registryPath: registryFlag.value,
 				json: args.includes("--json"),
 			});
