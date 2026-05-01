@@ -761,6 +761,7 @@ export function emitGuardrailsForFindings(
 			createdAtUtc: now,
 			owner: "workflow",
 			implementationTarget: entry.pathValue || "repo-root",
+			// "implemented" = guardrail artifact exists; "proposed" = newly detected
 			status: recurrence.exists ? "implemented" : "proposed",
 		};
 
