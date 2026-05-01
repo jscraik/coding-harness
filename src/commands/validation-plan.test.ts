@@ -10,6 +10,9 @@ coding-harness,,201,,47,"Applies to src/**: Use pnpm test:ci for CircleCI parity
 coding-harness,,202,,31,"Applies to src/**: Use pnpm test:deep for runtime or artifact behavior changes.",jscraik,Never,created,updated
 coding-harness,,203,,12,"Applies to package.json: Run pnpm audit when dependency surfaces change.",jscraik,Never,created,updated
 `;
+const sensitiveValidationCsv = `Repository,File,Pull Request,URL,Usage,Learning,Created By,Last Used,Created At,Updated At
+coding-harness,,204,,12,"Applies to package.json: Run audit with token=supersecret123 before publishing.",jscraik,Never,created,updated
+`;
 
 describe("runValidationPlanCLI", () => {
 	const cleanup: string[] = [];
@@ -145,5 +148,46 @@ describe("runValidationPlanCLI", () => {
 
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(result.error.code).toBe("validation-plan.flag_value_required");
+	});
+
+	it("redacts learning text in validation reasons and keeps pnpm audit canonical", () => {
+		const dir = mkdtempSync(join(tmpdir(), "validation-plan-sensitive-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		writeFileSync(sourcePath, sensitiveValidationCsv, "utf-8");
+		expect(
+			runLearningsCLI([
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				sourcePath,
+				"--repo",
+				"coding-harness",
+				"--output",
+				outputPath,
+				"--json",
+			]),
+		).toBe(0);
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runValidationPlanCLI([
+				"--source",
+				outputPath,
+				"--files",
+				"package.json",
+				"--json",
+			]),
+		).toBe(0);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(JSON.stringify(result)).not.toContain("supersecret123");
+		expect(result.networkRequired).toEqual([
+			expect.objectContaining({ command: "pnpm audit" }),
+		]);
 	});
 });

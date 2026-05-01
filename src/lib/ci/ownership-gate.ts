@@ -241,7 +241,9 @@ function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
 				)
 			: DEFAULT_CI_OWNERSHIP.securityChecks,
 		securityChecksValid:
-			value.securityChecks === undefined || Array.isArray(value.securityChecks),
+			value.securityChecks === undefined ||
+			(Array.isArray(value.securityChecks) &&
+				value.securityChecks.every((check) => typeof check === "string")),
 		fallbackWorkflows: Array.isArray(value.fallbackWorkflows)
 			? value.fallbackWorkflows
 					.filter(
@@ -412,7 +414,19 @@ function validateFallbackWorkflow(input: {
 		});
 		return;
 	}
-	const content = readFileSync(workflowPath, "utf-8");
+	let content: string;
+	try {
+		content = readFileSync(workflowPath, "utf-8");
+	} catch (error) {
+		input.findings.push({
+			id: `ci-ownership.fallback-workflow.${input.workflow.path}.read-failed`,
+			severity: "error",
+			message: `Configured fallback workflow could not be read: ${input.workflow.path}.`,
+			path: input.workflow.path,
+			fix: `Restore readable workflow contents or remove ${input.workflow.path} from ciOwnership.fallbackWorkflows. ${error instanceof Error ? error.message : String(error)}`,
+		});
+		return;
+	}
 	const hasPrTrigger = workflowHasAutomaticPrTrigger(content);
 	if (hasPrTrigger && !input.workflow.allowAutomaticPrTriggers) {
 		input.findings.push({

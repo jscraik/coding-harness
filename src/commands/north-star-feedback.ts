@@ -23,6 +23,18 @@ export function runNorthStarFeedbackCLI(args: string[]): number {
 	const enforcementStatusPath = readOptionalValue(args, "--enforcement-status");
 	const gateResultPath = readOptionalValue(args, "--gate-result");
 	const output = readOptionalValue(args, "--output");
+	const missingValue = [
+		readOptionalFlag(args, "--source"),
+		readOptionalFlag(args, "--enforcement-status"),
+		readOptionalFlag(args, "--gate-result"),
+		readOptionalFlag(args, "--output"),
+	].some((flag) => flag.present && "missingValue" in flag);
+	if (missingValue) {
+		return emitUsageError(
+			json,
+			"--source, --enforcement-status, --gate-result, and --output require values when present.",
+		);
+	}
 	const minUsage = readOptionalNumber(args, "--min-usage");
 	const reviewThreadCount = readOptionalNumber(args, "--review-thread-count");
 	const validationReruns = readOptionalNumber(args, "--validation-reruns");

@@ -194,4 +194,33 @@ describe("ci-ownership-gate command", () => {
 			"ci-ownership.fallback-workflow..github/workflows/pr-fallback.yml.role-invalid",
 		);
 	});
+
+	it("fails when ciOwnership securityChecks contains non-string values", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan", 42],
+				fallbackWorkflows: [],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain("ci-ownership.security-checks.invalid");
+	});
 });

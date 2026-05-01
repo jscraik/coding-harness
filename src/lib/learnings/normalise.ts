@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { redactSensitiveText } from "./sensitive-text.js";
 import type {
 	LearningClassification,
 	LearningEnforcement,
@@ -203,7 +204,7 @@ export function countLearningItems(items: LearningItem[]): {
  */
 function buildTopicSlug(row: ParsedCodeRabbitLearningRow): string {
 	const pathPrefix = row.file?.split(/[\\/]/).find(Boolean) ?? "learning";
-	const text = row.learning.toLowerCase();
+	const text = redactSensitiveText(row.learning).toLowerCase();
 	if (text.includes("frontmatter") && text.includes("machine")) {
 		return `${slugify(pathPrefix)}-frontmatter-machine-readable`;
 	}

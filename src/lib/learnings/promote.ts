@@ -155,7 +155,9 @@ export function buildLearningPromotionCandidates(
 	const promotionCandidates = items
 		.filter((item) => item.usage >= minUsage)
 		.filter(
-			(item) => options.includeEnforced || item.promotionStatus !== "enforced",
+			(item) =>
+				item.promotionStatus !== "deferred" &&
+				(options.includeEnforced || item.promotionStatus !== "enforced"),
 		)
 		.map(buildPromotionCandidate)
 		.sort((a, b) => b.usage - a.usage || a.id.localeCompare(b.id));

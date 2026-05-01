@@ -79,6 +79,7 @@ export function runLearningsGateCLI(args: string[]): number {
 				overridesFlag,
 			}),
 			exitCode: EXIT_CODES.USAGE,
+			outputKind: "gate",
 		});
 	}
 	const source = sourceFlag.value;
@@ -90,6 +91,7 @@ export function runLearningsGateCLI(args: string[]): number {
 			errorCode: "learnings.override_mode_invalid",
 			message: overrideMode.message,
 			exitCode: EXIT_CODES.USAGE,
+			outputKind: "gate",
 		});
 	}
 	const files = inspectFlagList(args, "--files");
@@ -99,6 +101,7 @@ export function runLearningsGateCLI(args: string[]): number {
 			errorCode: "learnings.files_required",
 			message: "harness learnings gate requires --files.",
 			exitCode: EXIT_CODES.USAGE,
+			outputKind: "gate",
 		});
 	}
 	const gateResult = runLearningsGate({
@@ -135,6 +138,7 @@ export function runLearningsPromoteCLI(args: string[]): number {
 				enforcementStatusFlag,
 			}),
 			exitCode: EXIT_CODES.USAGE,
+			outputKind: "promote",
 		});
 	}
 	const source = sourceFlag.value;
@@ -146,6 +150,7 @@ export function runLearningsPromoteCLI(args: string[]): number {
 			errorCode: "learnings.min_usage_invalid",
 			message: minUsageResult.message,
 			exitCode: EXIT_CODES.USAGE,
+			outputKind: "promote",
 		});
 	}
 	const result = buildLearningPromotionCandidates({
@@ -432,8 +437,69 @@ function emitError(options: {
 	message: string;
 	exitCode: number;
 	warnings?: LearningImportResult["warnings"];
+	outputKind?: "import" | "gate" | "promote";
 }): number {
 	if (options.json) {
+		if (options.outputKind === "gate") {
+			console.info(
+				JSON.stringify(
+					{
+						gate: "learnings-gate",
+						version: "1.0.0",
+						timestamp: new Date().toISOString(),
+						status: "fail",
+						findings: [
+							{
+								id: `learnings-gate.usage.${options.errorCode}`,
+								severity: "error",
+								gate: "learnings-gate",
+								message: options.message,
+								baseline: false,
+								fix: { manual: options.message, suppressible: false },
+							},
+						],
+						summary: { errors: 1, warnings: 0, info: 0, total: 1 },
+						reason: options.message,
+						action_now: [options.message],
+						action_later: [],
+						evidence_ref: [],
+						meta: { errorCode: options.errorCode },
+					},
+					null,
+					2,
+				),
+			);
+			return options.exitCode;
+		}
+		if (options.outputKind === "promote") {
+			console.info(
+				JSON.stringify(
+					{
+						schemaVersion: "learnings-promote-result/v1",
+						status: "error",
+						source: "",
+						minUsage: 25,
+						promotionCandidates: [],
+						summary: {
+							total: 0,
+							eligible: 0,
+							excluded: 0,
+							belowThreshold: 0,
+							enforcedExcluded: 0,
+							explicitlyDeferred: 0,
+							enforced: 0,
+						},
+						error: {
+							code: options.errorCode,
+							message: options.message,
+						},
+					},
+					null,
+					2,
+				),
+			);
+			return options.exitCode;
+		}
 		const result: LearningImportResult = {
 			schemaVersion: LEARNING_IMPORT_RESULT_SCHEMA_VERSION,
 			status: "error",

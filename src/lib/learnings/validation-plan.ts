@@ -1,5 +1,6 @@
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
 import { learningMatchesFile, loadLearningArtifact } from "./gate.js";
+import { redactSensitiveText } from "./sensitive-text.js";
 import type { LearningItem } from "./types.js";
 
 /** Command recommendation emitted by `harness validation-plan`. */
@@ -232,7 +233,7 @@ function addLearningBasedCommands(
 		for (const command of commandsForLearning(item)) {
 			addCommand(commands, {
 				command,
-				reason: item.learning,
+				reason: redactSensitiveText(item.learning),
 				files: files.filter((file) => learningMatchesFile(item, file)),
 				learningIds: [item.id],
 			});
@@ -262,7 +263,7 @@ function buildNetworkRequired(
 	for (const item of matchedLearnings) {
 		const lower = item.learning.toLowerCase();
 		if (!lower.includes("audit")) continue;
-		const command = lower.includes("pnpm audit") ? "pnpm audit" : "npm audit";
+		const command = "pnpm audit";
 		const existing = commands.get(command);
 		if (existing) {
 			existing.learningIds = uniqueStrings([

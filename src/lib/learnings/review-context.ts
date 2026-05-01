@@ -148,6 +148,14 @@ export function buildReviewContext(
 		files: changedFiles,
 		...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
 	});
+	if (validationPlan.status === "error") {
+		return buildValidationPlanErrorResult({
+			source,
+			repo: loaded.artifact.repository,
+			changedFiles,
+			validationPlan,
+		});
+	}
 	const applicableLearnings = learningItems
 		.map((item) => buildReviewContextLearning(item, changedFiles))
 		.filter((item): item is ReviewContextLearning => item !== undefined)
@@ -172,31 +180,68 @@ export function buildReviewContext(
 	};
 
 	if (options.output) {
-		const outputPath = resolve(
-			options.repoRoot ?? process.cwd(),
-			options.output,
-		);
-		try {
-			mkdirSync(dirname(outputPath), { recursive: true });
-			writeFileSync(
-				outputPath,
-				`${JSON.stringify(result, null, 2)}\n`,
-				"utf-8",
-			);
-		} catch (error) {
-			return {
-				...result,
-				status: "error",
-				error: {
-					code: "review-context.write_failed",
-					message: `Failed to write review context: ${error instanceof Error ? error.message : String(error)}`,
-				},
-			};
-		}
-		return { ...result, outputPath };
+		return writeReviewContextResult(result, options);
 	}
 
 	return result;
+}
+
+function writeReviewContextResult(
+	result: ReviewContextResult,
+	options: ReviewContextOptions,
+): ReviewContextResult {
+	const outputPath = resolve(
+		options.repoRoot ?? process.cwd(),
+		options.output ?? "",
+	);
+	try {
+		mkdirSync(dirname(outputPath), { recursive: true });
+		writeFileSync(outputPath, `${JSON.stringify(result, null, 2)}\n`, "utf-8");
+		return { ...result, outputPath };
+	} catch (error) {
+		return {
+			...result,
+			status: "error",
+			error: {
+				code: "review-context.write_failed",
+				message: `Failed to write review context: ${error instanceof Error ? error.message : String(error)}`,
+			},
+		};
+	}
+}
+
+function buildValidationPlanErrorResult(input: {
+	source: string;
+	repo: string;
+	changedFiles: string[];
+	validationPlan: ValidationPlanResult;
+}): ReviewContextResult {
+	return {
+		schemaVersion: "review-context/v1",
+		status: "error",
+		source: input.source,
+		repo: input.repo,
+		changedFiles: input.changedFiles,
+		applicableLearnings: [],
+		validationPlan: [],
+		networkRequired: [],
+		summary: {
+			applicableLearnings: 0,
+			validationCommands: 0,
+			networkRequired: 0,
+		},
+		error: {
+			code:
+				input.validationPlan.error?.code ??
+				"review-context.validation_plan_failed",
+			message:
+				input.validationPlan.error?.message ??
+				"Validation plan generation failed.",
+			...(input.validationPlan.error?.fix
+				? { fix: input.validationPlan.error.fix }
+				: {}),
+		},
+	};
 }
 
 /**

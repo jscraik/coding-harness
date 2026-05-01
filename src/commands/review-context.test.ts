@@ -205,4 +205,24 @@ describe("runReviewContextCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(result.error.code).toBe("review-context.flag_value_required");
 	});
+
+	it("propagates validation-plan failures instead of emitting success context", () => {
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runReviewContextCLI([
+				"--source",
+				join(tmpdir(), "missing-coderabbit.local.json"),
+				"--files",
+				"docs/policy.md",
+				"--json",
+			]),
+		).toBe(1);
+
+		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(result.status).toBe("error");
+		expect(result.validationPlan).toEqual([]);
+	});
 });

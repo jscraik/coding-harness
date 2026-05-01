@@ -159,4 +159,47 @@ describe("buildLearningPromotionCandidates", () => {
 			],
 		});
 	});
+
+	it("excludes deferred learnings from promotion even when above threshold", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learnings-promote-"));
+		const source = writeArtifact(dir);
+		const enforcementStatusPath = join(
+			dir,
+			".harness/learnings/enforcement-status.json",
+		);
+		writeFileSync(
+			enforcementStatusPath,
+			JSON.stringify(
+				{
+					schemaVersion: LEARNING_ENFORCEMENT_STATUS_SCHEMA_VERSION,
+					items: [
+						{
+							learningId:
+								"coderabbit.coding-harness.scripts-generated-runtime-mirrors",
+							promotionStatus: "deferred",
+							reason: "Waiting for generator ownership decision.",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		const result = buildLearningPromotionCandidates({
+			source,
+			enforcementStatusPath,
+			minUsage: 25,
+			repoRoot: dir,
+		});
+
+		expect(result.status).toBe("success");
+		expect(result.summary.explicitlyDeferred).toBe(1);
+		expect(
+			result.promotionCandidates.map((candidate) => candidate.id),
+		).not.toContain(
+			"coderabbit.coding-harness.scripts-generated-runtime-mirrors",
+		);
+	});
 });

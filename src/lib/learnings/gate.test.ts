@@ -135,6 +135,63 @@ describe("learnings gate overrides", () => {
 		});
 	});
 
+	it("rejects learning items with malformed source evidence", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learnings-gate-bad-source-"));
+		cleanup.push(dir);
+		mkdirSync(join(dir, ".harness/learnings"), { recursive: true });
+		writeFileSync(
+			join(dir, ".harness/learnings/coderabbit.local.json"),
+			JSON.stringify({
+				schemaVersion: "harness-learnings/v1",
+				provider: "coderabbit-csv",
+				repository: "coding-harness",
+				source: {
+					kind: "coderabbit_csv",
+					uri: "file:///tmp/learnings.csv",
+					live: false,
+				},
+				inputFingerprint: "fingerprint",
+				items: [
+					{
+						id: "coderabbit.coding-harness.bad-source",
+						provider: "coderabbit",
+						source: {
+							kind: "unknown",
+							uri: "file:///tmp/learnings.csv",
+							row: 2,
+							live: false,
+						},
+						repository: "coding-harness",
+						usage: 100,
+						learning: "Bad source should fail.",
+						classification: "guardrail",
+						enforcement: "error",
+						promotionStatus: "candidate",
+					},
+				],
+				warnings: [],
+				summary: {
+					totalRows: 1,
+					imported: 1,
+					skipped: 0,
+					invalid: 0,
+					warnings: 0,
+					byClassification: { guardrail: 1 },
+					byEnforcement: { error: 1 },
+				},
+			}),
+			"utf-8",
+		);
+
+		const result = runLearningsGate({
+			repoRoot: dir,
+			files: ["docs/policy.md"],
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.findings[0]?.id).toBe("learnings-gate.artifact.invalid");
+	});
+
 	function setupArtifact(): string {
 		const dir = mkdtempSync(join(tmpdir(), "learnings-gate-overrides-"));
 		cleanup.push(dir);

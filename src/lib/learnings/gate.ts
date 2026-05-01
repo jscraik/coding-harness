@@ -138,7 +138,13 @@ function isLearningItemLike(value: unknown): value is LearningItem {
 	) {
 		return false;
 	}
-	return isRecord(value.source) && isNonEmptyString(value.source.uri);
+	return (
+		isRecord(value.source) &&
+		value.source.kind === "coderabbit_csv" &&
+		isNonEmptyString(value.source.uri) &&
+		Number.isInteger(value.source.row) &&
+		Number(value.source.row) > 1
+	);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

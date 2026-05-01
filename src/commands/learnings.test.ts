@@ -171,6 +171,18 @@ describe("runLearningsCLI", () => {
 				"--json",
 			]),
 		).toBe(0);
+		writeFileSync(
+			join(dir, ".harness/learnings/enforcement-status.empty.json"),
+			JSON.stringify(
+				{
+					schemaVersion: "learning-enforcement-status/v1",
+					items: [],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
 		const infoSpy = vi
 			.spyOn(console, "info")
 			.mockImplementation(() => undefined);
@@ -377,7 +389,8 @@ describe("runLearningsCLI", () => {
 
 		expect(exitCode).toBe(2);
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
-		expect(result.errorCode).toBe("learnings.min_usage_invalid");
+		expect(result.schemaVersion).toBe("learnings-promote-result/v1");
+		expect(result.error.code).toBe("learnings.min_usage_invalid");
 	});
 
 	it("returns usage for unsupported providers", () => {

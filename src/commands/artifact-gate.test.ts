@@ -136,4 +136,35 @@ describe("artifact-gate command", () => {
 		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(payload.error.code).toBe("artifact-gate.files_required");
 	});
+
+	it("fails invalid registries with duplicate, absolute, or escaping paths", () => {
+		const repoRoot = makeRepo();
+		writeFileSync(
+			join(repoRoot, ".harness/artifact-provenance.json"),
+			JSON.stringify(
+				{
+					schemaVersion: "artifact-provenance/v1",
+					artifacts: [
+						{ path: "dist/cli.js", source: "src/cli.ts" },
+						{ path: "dist/cli.js", source: "src/index.ts" },
+						{ path: "/tmp/escaped.js", source: "src/escaped.ts" },
+						{ path: "scripts/mirror.sh", source: "../template.sh" },
+					],
+				},
+				null,
+				2,
+			),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runArtifactGateCLI({
+			repoRoot,
+			files: ["dist/cli.js"],
+			json: true,
+		});
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(payload.findings[0].id).toBe("artifact-gate.registry.invalid");
+	});
 });

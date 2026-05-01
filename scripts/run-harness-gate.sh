@@ -21,6 +21,23 @@ is_harness_source_repo() {
 	' "$REPO_ROOT/package.json" >/dev/null 2>&1
 }
 
+file_mtime() {
+	if stat -f %m "$1" >/dev/null 2>&1; then
+		stat -f %m "$1"
+	else
+		stat -c %Y "$1"
+	fi
+}
+
+newest_dist_file() {
+	find "$REPO_ROOT/dist" -type f -print 2>/dev/null |
+		while IFS= read -r dist_file; do
+			printf '%s\t%s\n' "$(file_mtime "$dist_file")" "$dist_file"
+		done |
+		sort -nr |
+		awk 'NR == 1 { print $2 }'
+}
+
 if is_harness_source_repo; then
 	if ! command -v pnpm >/dev/null 2>&1; then
 		echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2
@@ -41,16 +58,23 @@ if is_harness_source_repo; then
 			process.exit(
 				/listen EPERM: operation not permitted.*(\/tmp\/tsx-|\.pipe)/.test(stderr)
 					? 0
-					: 1,
+				: 1,
 			);
 		' "$tsx_stderr_file"; then
+			dist_freshness_marker="$(newest_dist_file)"
+			if [[ -z "$dist_freshness_marker" ]]; then
+				echo "Warning: tsx IPC startup failed (EPERM/IPC), but dist has no emitted files; refusing fallback." >&2
+				cat "$tsx_stderr_file" >&2
+				rm -f "$tsx_stderr_file"
+				exit "$tsx_exit"
+			fi
 			dist_has_newer_source=false
 			while IFS= read -r _newer_source; do
 				dist_has_newer_source=true
 				break
-			done < <(find "$REPO_ROOT/src" "$REPO_ROOT/package.json" "$REPO_ROOT/tsconfig.json" -type f -newer "$REPO_ROOT/dist/cli.js" 2>/dev/null)
+			done < <(find "$REPO_ROOT/src" "$REPO_ROOT/package.json" "$REPO_ROOT/tsconfig.json" -type f -newer "$dist_freshness_marker" 2>/dev/null)
 			if [[ "$dist_has_newer_source" == true ]]; then
-				echo "Warning: tsx IPC startup failed (EPERM/IPC), but dist/cli.js is older than source; refusing stale fallback." >&2
+				echo "Warning: tsx IPC startup failed (EPERM/IPC), but dist output is older than source; refusing stale fallback." >&2
 				cat "$tsx_stderr_file" >&2
 				rm -f "$tsx_stderr_file"
 				exit "$tsx_exit"

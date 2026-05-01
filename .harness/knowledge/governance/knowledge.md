@@ -9,7 +9,7 @@
 
 - The north-star runtime gate integration plan requires Project Brain preflight before P2 gate edits and a Project Brain closeout decision for durable rules, decisions, gotchas, or explicit skip reasons.
 - `harness brain preflight --files <changed-files> --json` maps plan and governance-rule edits to the governance domain and returns current quality criteria for structured command output and gate envelopes.
-- `harness brain status --json` validates the active Project Brain scaffold with no missing files, no placeholder domains, and maturity level `mature`.
+- `harness brain status --json` reports the active Project Brain scaffold as present with no missing files, no placeholder domains, and maturity level `mature`; treat this as scaffold-health evidence, not proof that every domain rule is complete.
 - The north-star learning loop should stay machine-readable first (`harness learnings gate --json`, `harness review-context --json`, `harness north-star-feedback --json`) and should promote durable repeated learnings into Project Brain rules, knowledge, decisions, or explicit skip reasons during closeout.
 
 ## Patterns

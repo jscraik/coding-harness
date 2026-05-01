@@ -185,7 +185,11 @@ export function parseCodeRabbitCsv(
  */
 function repositoryAliases(repository: string): Set<string> {
 	const normalized = normalizeRepositorySlug(repository);
-	return new Set([normalized].filter(Boolean));
+	const ownerless = normalizeRepositorySlug(repository.split("/").pop() ?? "");
+	const aliases = new Set<string>();
+	if (normalized) aliases.add(normalized);
+	if (ownerless) aliases.add(ownerless);
+	return aliases;
 }
 
 /**
@@ -199,9 +203,13 @@ function matchRepository(
 	repository: string,
 	targetRepositoryAliases: Set<string>,
 ): "matched" | "missing" | "skip" {
-	const sourceAliases = repositoryAliases(repository);
-	if (sourceAliases.size === 0) return "missing";
-	return [...sourceAliases].some((alias) => targetRepositoryAliases.has(alias))
+	const normalizedSource = normalizeRepositorySlug(repository);
+	const sourceOwnerless = normalizeRepositorySlug(
+		repository.split("/").pop() ?? "",
+	);
+	if (!normalizedSource) return "missing";
+	return targetRepositoryAliases.has(normalizedSource) ||
+		(!repository.includes("/") && targetRepositoryAliases.has(sourceOwnerless))
 		? "matched"
 		: "skip";
 }

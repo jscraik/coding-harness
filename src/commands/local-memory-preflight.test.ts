@@ -229,6 +229,67 @@ describe("runLocalMemoryPreflightCLI", () => {
 		);
 	});
 
+	it("parses single-quoted host and qdrant url values without retaining quotes", async () => {
+		const configPath = join(tempDir, "config.yaml");
+		writeFileSync(
+			configPath,
+			[
+				"rest_api:",
+				"  auto_port: false",
+				"  host: '127.0.0.1' # local only",
+				"  port: 3002",
+				"qdrant:",
+				"  enabled: 'true'",
+				"  url: 'http://localhost:6333' # local vector store",
+			].join("\n"),
+			"utf-8",
+		);
+
+		const { spawnSync } = await import("node:child_process");
+		const { runLocalMemoryPreflight } = await import(
+			"../lib/preflight/local-memory.js"
+		);
+
+		vi.mocked(spawnSync).mockImplementation((command, args) => {
+			if (command === "local-memory" && args?.[0] === "--version") {
+				return {
+					status: 0,
+					stdout: "local-memory version 1.5.0\n",
+					stderr: "",
+				} as never;
+			}
+			if (command === "local-memory" && args?.[0] === "status") {
+				return {
+					status: 0,
+					stdout: '{"data":{"running":true}}\n',
+					stderr: "",
+				} as never;
+			}
+			return { status: 1, stdout: "", stderr: "unexpected command" } as never;
+		});
+
+		vi.mocked(global.fetch).mockImplementation((input) => {
+			const url = String(input);
+			if (url.endsWith("/api/v1/health")) {
+				return mockFetchResponse(200, { success: true });
+			}
+			if (url === "http://localhost:6333/collections") {
+				return mockFetchResponse(200, {
+					result: { collections: [{ name: "local-memory" }] },
+				});
+			}
+			return mockFetchResponse(404, { error: "unexpected url" });
+		});
+
+		const result = await runLocalMemoryPreflight({ configPath });
+		expect(result.messages).toContain(
+			"✅ REST health ok: http://127.0.0.1:3002/api/v1/health",
+		);
+		expect(result.messages).toContain(
+			"✅ qdrant backend ok: http://localhost:6333/collections",
+		);
+	});
+
 	it("fails closed when qdrant is enabled but unreachable", async () => {
 		const configPath = join(tempDir, "config.yaml");
 		writeFileSync(

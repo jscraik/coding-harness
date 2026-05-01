@@ -157,7 +157,7 @@ function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 		}
 
 		if (inRestApiBlock) {
-			const hostMatch = line.match(/^[\t ]*host:[\t ]*"?([^"#]+)"?/);
+			const hostMatch = line.match(/^[\t ]*host:[\t ]*["']?([^"'#]+)["']?/);
 			if (hostMatch) {
 				restHost = hostMatch[1]?.trim() || restHost;
 				hostPolicyOk = restHost === "127.0.0.1";
@@ -182,7 +182,7 @@ function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 				continue;
 			}
 
-			const urlMatch = line.match(/^[\t ]*url:[\t ]*"?([^"#]+)"?/);
+			const urlMatch = line.match(/^[\t ]*url:[\t ]*["']?([^"'#]+)["']?/);
 			if (urlMatch) {
 				qdrantUrl = (urlMatch[1]?.trim() || qdrantUrl).replace(/\/+$/, "");
 			}

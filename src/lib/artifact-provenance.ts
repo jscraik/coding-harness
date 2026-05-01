@@ -301,7 +301,14 @@ function isArtifactProvenanceRegistry(
 	if (!isRecord(value)) return false;
 	if (value.schemaVersion !== "artifact-provenance/v1") return false;
 	if (!Array.isArray(value.artifacts)) return false;
-	return value.artifacts.every(isArtifactProvenanceEntry);
+	const seenArtifactPaths = new Set<string>();
+	for (const artifact of value.artifacts) {
+		if (!isArtifactProvenanceEntry(artifact)) return false;
+		const normalizedPath = normalizeRegistryEntryPath(artifact.path);
+		if (seenArtifactPaths.has(normalizedPath)) return false;
+		seenArtifactPaths.add(normalizedPath);
+	}
+	return true;
 }
 
 /**
@@ -323,6 +330,12 @@ function isArtifactProvenanceEntry(
 		return false;
 	}
 	if (value.path.trim().length === 0 || value.source.trim().length === 0) {
+		return false;
+	}
+	if (
+		!isSafeRegistryEntryPath(value.path) ||
+		!isSafeRegistryEntryPath(value.source)
+	) {
 		return false;
 	}
 	if (
@@ -357,6 +370,22 @@ function isArtifactProvenanceEntry(
 		return false;
 	}
 	return true;
+}
+
+function isSafeRegistryEntryPath(path: string): boolean {
+	if (isAbsolute(path)) return false;
+	if (/^[A-Za-z]:[\\/]/.test(path)) return false;
+	const normalizedPath = normalizeRegistryEntryPath(path);
+	return (
+		normalizedPath.length > 0 &&
+		normalizedPath !== "." &&
+		!normalizedPath.startsWith("../") &&
+		!normalizedPath.includes("/../")
+	);
+}
+
+function normalizeRegistryEntryPath(path: string): string {
+	return normalize(path.trim()).replace(/\\/g, "/").replace(/^\.\//, "");
 }
 
 /**
