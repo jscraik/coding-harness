@@ -154,8 +154,8 @@ describe("buildLearningPromotionCandidates", () => {
 			promotionStatus: "enforced",
 			recommendedTarget: "docs-gate",
 			enforcedBy: [
-				"src/lib/docs-surface/frontmatter-metadata-gate.test.ts",
 				"src/lib/docs-surface/frontmatter-metadata-gate.ts",
+				"src/lib/docs-surface/frontmatter-metadata-gate.test.ts",
 			],
 		});
 	});
