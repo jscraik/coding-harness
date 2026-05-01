@@ -165,23 +165,6 @@ is_harness_source_repo() {
 	' "$REPO_ROOT/package.json" >/dev/null 2>&1
 }
 
-file_mtime() {
-	if stat -f %m "$1" >/dev/null 2>&1; then
-		stat -f %m "$1"
-	else
-		stat -c %Y "$1"
-	fi
-}
-
-newest_dist_file() {
-	find "$REPO_ROOT/dist" -type f -print 2>/dev/null |
-		while IFS= read -r dist_file; do
-			printf '%s\\t%s\\n' "$(file_mtime "$dist_file")" "$dist_file"
-		done |
-		sort -nr |
-		awk 'NR == 1 { print $2 }'
-}
-
 if is_harness_source_repo; then
 	if command -v ${packageManager} >/dev/null 2>&1; then
 		exec ${packageExecCommand} tsx "$REPO_ROOT/src/cli.ts" "$@"
@@ -241,7 +224,8 @@ newest_dist_file() {
 			printf '%s\\t%s\\n' "$(file_mtime "$dist_file")" "$dist_file"
 		done |
 		sort -nr |
-		awk 'NR == 1 { print $2 }'
+		cut -f2- |
+		head -n 1
 }`;
 
 /**

@@ -210,6 +210,15 @@ export function runLearningsImportCLI(args: string[]): number {
 		source.ok ? undefined : "--source",
 		repo.ok ? undefined : "--repo",
 	].filter((value): value is string => value !== undefined);
+	const missingValues = missingRequiredFlagValues({ provider, source, repo });
+	if (missingValues.length > 0) {
+		return emitError({
+			json,
+			errorCode: "learnings.flag_value_required",
+			message: `Missing value for ${missingValues.join(", ")}.`,
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
 	if (missing.length > 0) {
 		return emitError({
 			json,
@@ -325,11 +334,20 @@ function loadLearningLiveCompanion(
 function readRequiredFlag(
 	args: string[],
 	flag: string,
-): { ok: true; value: string } | { ok: false } {
+): { ok: true; value: string } | { ok: false; missingValue?: boolean } {
 	const parsed = readOptionalFlag(args, flag);
+	if (parsed.missingValue) return { ok: false, missingValue: true };
 	return parsed.value === undefined
 		? { ok: false }
 		: { ok: true, value: parsed.value };
+}
+
+function missingRequiredFlagValues(
+	flags: Record<string, ReturnType<typeof readRequiredFlag>>,
+): string[] {
+	return Object.entries(flags)
+		.filter(([, value]) => !value.ok && value.missingValue)
+		.map(([flag]) => `--${flag}`);
 }
 
 /**
@@ -346,7 +364,7 @@ function readOptionalFlag(
 	const index = args.indexOf(flag);
 	if (index === -1) return { value: undefined };
 	const value = args[index + 1];
-	if (value === undefined || value.startsWith("-")) {
+	if (value === undefined || value.trim() === "" || value.startsWith("-")) {
 		return { value: undefined, missingValue: true };
 	}
 	return { value };

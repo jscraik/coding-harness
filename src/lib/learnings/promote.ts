@@ -81,6 +81,9 @@ export function buildLearningPromotionCandidates(
 ): LearningsPromoteResult {
 	const source = options.source ?? DEFAULT_CODERABBIT_LOCAL_ARTIFACT;
 	const minUsage = options.minUsage ?? DEFAULT_MIN_USAGE;
+	if (!Number.isInteger(minUsage) || minUsage < 0) {
+		return invalidMinUsageResult(source, minUsage);
+	}
 	const loaded = loadLearningArtifact(source, options.repoRoot);
 
 	if (!loaded.ok) {
@@ -177,6 +180,37 @@ export function buildLearningPromotionCandidates(
 			enforcedExcluded: enforcedExcludedCount,
 			explicitlyDeferred: explicitlyDeferredCount,
 			enforced: enforcedCount,
+		},
+	};
+}
+
+function emptySummary(total = 0): LearningsPromoteResult["summary"] {
+	return {
+		total,
+		eligible: 0,
+		excluded: total,
+		belowThreshold: 0,
+		enforcedExcluded: 0,
+		explicitlyDeferred: 0,
+		enforced: 0,
+	};
+}
+
+function invalidMinUsageResult(
+	source: string,
+	minUsage: number,
+): LearningsPromoteResult {
+	return {
+		schemaVersion: "learnings-promote-result/v1",
+		status: "error",
+		source,
+		minUsage,
+		promotionCandidates: [],
+		summary: emptySummary(),
+		error: {
+			code: "learnings.min_usage_invalid",
+			message: "minUsage must be a non-negative integer.",
+			fix: "Pass a finite non-negative integer for minUsage.",
 		},
 	};
 }

@@ -202,4 +202,13 @@ describe("buildLearningPromotionCandidates", () => {
 			"coderabbit.coding-harness.scripts-generated-runtime-mirrors",
 		);
 	});
+
+	it("rejects invalid direct minUsage values before reading artifacts", () => {
+		for (const minUsage of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+			const result = buildLearningPromotionCandidates({ minUsage });
+
+			expect(result.status).toBe("error");
+			expect(result.error?.code).toBe("learnings.min_usage_invalid");
+		}
+	});
 });

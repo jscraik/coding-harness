@@ -110,7 +110,7 @@ function readOptionalFlag(args: string[], flag: string): ParsedFlag {
 	const index = args.indexOf(flag);
 	if (index === -1) return { present: false };
 	const value = args[index + 1];
-	if (value === undefined || value.startsWith("-")) {
+	if (value === undefined || value.trim() === "" || value.startsWith("-")) {
 		return { present: true, missingValue: true };
 	}
 	return { present: true, value };

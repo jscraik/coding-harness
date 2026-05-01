@@ -69,7 +69,7 @@ const DEFAULT_CI_OWNERSHIP = {
 	securityChecks: [SEMGREP_CLOUD_CHECK_NAME],
 	fallbackWorkflows: [],
 };
-const PR_TRIGGER_PATTERN = /\b(pull_request|merge_group)\b/;
+const PR_TRIGGER_PATTERN = /\b(pull_request|pull_request_target|merge_group)\b/;
 
 /**
  * Evaluate a repository's CI ownership contract and produce machine-readable findings about primary provider, review, and security check requirements.
@@ -170,15 +170,16 @@ export function runCIOwnershipGate(
 		message: "CodeRabbit must remain an independent required review check.",
 		contractPath,
 	});
-	requireCheck({
-		findings,
-		requiredChecks,
-		check: SEMGREP_CLOUD_CHECK_NAME,
-		id: "ci-ownership.semgrep-cloud-check.missing",
-		message:
-			"Semgrep Cloud must remain an external GitHub App required security check.",
-		contractPath,
-	});
+	for (const securityCheck of ciOwnership.securityChecks) {
+		requireCheck({
+			findings,
+			requiredChecks,
+			check: securityCheck,
+			id: `ci-ownership.security-check.${findingIdToken(securityCheck)}.missing`,
+			message: `${securityCheck} must remain an independent required security check.`,
+			contractPath,
+		});
+	}
 
 	return buildResult(contractPath, findings);
 }
@@ -338,8 +339,7 @@ function validateCIOwnershipContract(input: {
 /**
  * Validate a single configured fallback workflow and append findings describing its status.
  *
- * Checks that the referenced workflow file exists, treats non-`fallback_pr_gate` roles as informational,
- * and for `fallback_pr_gate` workflows ensures they do not contain automatic PR-like triggers unless
+ * Checks that the referenced workflow file exists and ensures fallback workflow roles do not contain automatic PR-like triggers unless
  * `allowAutomaticPrTriggers` is true. Findings describing errors or informational status (and suggested fixes)
  * are pushed into `input.findings`.
  *
@@ -405,15 +405,6 @@ function validateFallbackWorkflow(input: {
 		});
 		return;
 	}
-	if (input.workflow.role !== "fallback_pr_gate") {
-		input.findings.push({
-			id: `ci-ownership.fallback-workflow.${input.workflow.path}.ok`,
-			severity: "info",
-			message: `${input.workflow.path} is classified as ${input.workflow.role}.`,
-			path: input.workflow.path,
-		});
-		return;
-	}
 	let content: string;
 	try {
 		content = readFileSync(workflowPath, "utf-8");
@@ -432,16 +423,16 @@ function validateFallbackWorkflow(input: {
 		input.findings.push({
 			id: `ci-ownership.fallback-workflow.${input.workflow.path}.automatic-pr-trigger`,
 			severity: "error",
-			message: `${input.workflow.path} is a fallback PR gate but has automatic PR-like triggers.`,
+			message: `${input.workflow.path} is classified as ${input.workflow.role} but has automatic PR-like triggers.`,
 			path: input.workflow.path,
-			fix: "Remove pull_request/merge_group triggers or explicitly migrate CI ownership in harness.contract.json.",
+			fix: "Remove pull_request, pull_request_target, or merge_group triggers, or explicitly migrate CI ownership in harness.contract.json.",
 		});
 		return;
 	}
 	input.findings.push({
 		id: `ci-ownership.fallback-workflow.${input.workflow.path}.ok`,
 		severity: "info",
-		message: `${input.workflow.path} is constrained for fallback PR gate ownership.`,
+		message: `${input.workflow.path} is constrained for ${input.workflow.role} ownership.`,
 		path: input.workflow.path,
 	});
 }
@@ -450,7 +441,7 @@ function validateFallbackWorkflow(input: {
  * Detects whether a workflow declares an automatic PR-family trigger.
  *
  * @param content - Raw workflow YAML content.
- * @returns True when `pull_request` or `merge_group` appears as a top-level trigger, inline `on:` trigger, or block-list `on:` trigger.
+ * @returns True when `pull_request`, `pull_request_target`, or `merge_group` appears as an inline `on:` trigger or inside an `on:` trigger block.
  */
 function workflowHasAutomaticPrTrigger(content: string): boolean {
 	let inOnBlock = false;
@@ -462,10 +453,7 @@ function workflowHasAutomaticPrTrigger(content: string): boolean {
 		if (inOnBlock && indent <= onBlockIndent && !trimmed.startsWith("-")) {
 			inOnBlock = false;
 		}
-		if (/^(pull_request|merge_group)\s*:/.test(trimmed)) return true;
-		if (/^-\s*(pull_request|merge_group)\b/.test(trimmed)) {
-			return inOnBlock;
-		}
+		if (inOnBlock && PR_TRIGGER_PATTERN.test(trimmed)) return true;
 		if (!trimmed.startsWith("on:")) return false;
 		inOnBlock = true;
 		onBlockIndent = indent;
@@ -521,6 +509,14 @@ function requireCheck(input: {
 		path: input.contractPath,
 		fix: `Add ${input.check} to branchProtection.requiredChecks.`,
 	});
+}
+
+function findingIdToken(value: string): string {
+	return value
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
 }
 
 /**

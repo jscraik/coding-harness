@@ -268,10 +268,32 @@ describe("runLocalMemoryPreflightCLI", () => {
 			return { status: 1, stdout: "", stderr: "unexpected command" } as never;
 		});
 
-		vi.mocked(global.fetch).mockImplementation((input) => {
+		vi.mocked(global.fetch).mockImplementation((input, init) => {
 			const url = String(input);
 			if (url.endsWith("/api/v1/health")) {
 				return mockFetchResponse(200, { success: true });
+			}
+			if (url.endsWith("/observe")) {
+				const body = init?.body ? JSON.parse(String(init.body)) : {};
+				if (!body.content) {
+					return mockFetchResponse(400, { success: false });
+				}
+				return mockFetchResponse(200, {
+					success: true,
+					data: { id: `memory-${String(body.content).slice(0, 12)}` },
+				});
+			}
+			if (url.endsWith("/relationships")) {
+				return mockFetchResponse(200, {
+					success: true,
+					data: { relationship_id: "relationship-1" },
+				});
+			}
+			if (url.endsWith("/memories/search")) {
+				return mockFetchResponse(200, {
+					success: true,
+					results: [{ id: "memory-search-hit" }],
+				});
 			}
 			if (url === "http://localhost:6333/collections") {
 				return mockFetchResponse(200, {
@@ -288,6 +310,7 @@ describe("runLocalMemoryPreflightCLI", () => {
 		expect(result.messages).toContain(
 			"✅ qdrant backend ok: http://localhost:6333/collections",
 		);
+		expect(result.passed).toBe(true);
 	});
 
 	it("fails closed when qdrant is enabled but unreachable", async () => {

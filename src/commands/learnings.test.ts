@@ -370,9 +370,44 @@ describe("runLearningsCLI", () => {
 		});
 		expect(result.promotionCandidates[1]).toMatchObject({
 			usage: 45,
-			recommendedTarget: "artifact-provenance-gate",
+			recommendedTarget: "artifact-gate",
 			recommendedSeverity: "warning",
 		});
+	});
+
+	it("differentiates missing required import flags from missing required flag values", () => {
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		const missingValueExitCode = runLearningsCLI([
+			"import",
+			"--provider",
+			"--source",
+			"x.csv",
+			"--repo",
+			"coding-harness",
+			"--json",
+		]);
+
+		expect(missingValueExitCode).toBe(2);
+		const missingValueResult = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(missingValueResult.errorCode).toBe("learnings.flag_value_required");
+
+		const missingFlagExitCode = runLearningsCLI([
+			"import",
+			"--source",
+			"x.csv",
+			"--repo",
+			"coding-harness",
+			"--json",
+		]);
+
+		expect(missingFlagExitCode).toBe(2);
+		const missingFlagResult = JSON.parse(String(infoSpy.mock.calls[1]?.[0]));
+		expect(missingFlagResult.errorCode).toBe(
+			"learnings.missing_required_flags",
+		);
 	});
 
 	it("returns usage for invalid promotion thresholds", () => {

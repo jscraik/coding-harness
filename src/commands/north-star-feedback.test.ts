@@ -109,4 +109,17 @@ describe("runNorthStarFeedbackCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(result.error.code).toBe("north_star_feedback.invalid_number");
 	});
+
+	it("returns usage for empty optional string option values", () => {
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		const exitCode = runNorthStarFeedbackCLI(["--source", "", "--json"]);
+
+		expect(exitCode).toBe(2);
+		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(result.error.code).toBe("north_star_feedback.invalid_number");
+		expect(result.error.message).toContain("--source");
+	});
 });

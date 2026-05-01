@@ -87,7 +87,7 @@ describe("ci-ownership-gate command", () => {
 		).toEqual(
 			expect.arrayContaining([
 				"ci-ownership.coderabbit-review-check.missing",
-				"ci-ownership.semgrep-cloud-check.missing",
+				"ci-ownership.security-check.semgrep-cloud-platform-scan.missing",
 			]),
 		);
 	});
@@ -176,6 +176,129 @@ describe("ci-ownership-gate command", () => {
 		).toContain(
 			"ci-ownership.fallback-workflow..github/workflows/pr-fallback-list.yml.automatic-pr-trigger",
 		);
+	});
+
+	it("does not treat job names outside the on block as PR triggers", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan"],
+				fallbackWorkflows: [
+					{
+						path: ".github/workflows/release.yml",
+						role: "release_publishing",
+						purpose: "Release publishing only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".github/workflows/release.yml"),
+			[
+				"name: release",
+				"on:",
+				"  workflow_dispatch:",
+				"jobs:",
+				"  pull_request:",
+				"    runs-on: ubuntu-latest",
+				"    steps: []",
+			].join("\n"),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(0);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).not.toContain(
+			"ci-ownership.fallback-workflow..github/workflows/release.yml.automatic-pr-trigger",
+		);
+	});
+
+	it("fails when release workflows auto-trigger on pull_request_target", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan"],
+				fallbackWorkflows: [
+					{
+						path: ".github/workflows/release.yml",
+						role: "release_publishing",
+						purpose: "Release publishing only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".github/workflows/release.yml"),
+			["name: release", "on:", "  pull_request_target:", "jobs: {}"].join("\n"),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain(
+			"ci-ownership.fallback-workflow..github/workflows/release.yml.automatic-pr-trigger",
+		);
+	});
+
+	it("fails when contract-declared security checks are absent from branch protection", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan", "custom-security"],
+				fallbackWorkflows: [],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain("ci-ownership.security-check.custom-security.missing");
 	});
 
 	it("uses deterministic legacy defaults when ciOwnership is absent", () => {
