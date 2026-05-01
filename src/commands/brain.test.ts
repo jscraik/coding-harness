@@ -295,6 +295,16 @@ describe("brain CLI", () => {
 		}
 	});
 
+	it("rejects preflight when --files is present without values", () => {
+		const dir = createTempHarness();
+		try {
+			const exitCode = runBrainCLI(["preflight", "--dir", dir, "--files", "--json"]);
+			expect(exitCode).toBe(EXIT_CODES.INVALID_ARGS);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("accepts multiple preflight --files tokens without dropping later paths", () => {
 		const dir = createTempHarness();
 		const info = vi.spyOn(console, "info").mockImplementation(() => {});
