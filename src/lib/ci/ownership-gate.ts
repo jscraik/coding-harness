@@ -75,6 +75,7 @@ const PR_TRIGGER_KEY_PATTERN =
 	/^["']?(pull_request|pull_request_target|merge_group)["']?\s*:/;
 const PR_TRIGGER_LIST_PATTERN =
 	/^-\s*["']?(pull_request|pull_request_target|merge_group)["']?\s*(?:#.*)?$/;
+const YAML_COMMENT_PATTERN = /(?:^|\s+)#.*$/;
 
 /**
  * Evaluate a repository's CI ownership contract and produce machine-readable findings about primary provider, review, and security check requirements.
@@ -484,13 +485,17 @@ function workflowHasAutomaticPrTrigger(content: string): boolean {
 		}
 		const onMatch = trimmed.match(ON_KEY_PATTERN);
 		if (!onMatch) return false;
-		const inlineValue = onMatch[1]?.trim() ?? "";
+		const inlineValue = stripYamlComment(onMatch[1] ?? "");
 		if (inlineValue !== "") return PR_TRIGGER_PATTERN.test(inlineValue);
 		onBlockIndent = indent;
 		onEventIndent = undefined;
 		inOnBlock = true;
 		return false;
 	});
+}
+
+function stripYamlComment(value: string): string {
+	return value.replace(YAML_COMMENT_PATTERN, "").trim();
 }
 
 /**
