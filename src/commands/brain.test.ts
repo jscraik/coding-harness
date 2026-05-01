@@ -208,6 +208,7 @@ describe("brain add", () => {
 					"escape attempt",
 				),
 			).toThrow(/Invalid domain/);
+			expect(existsSync(join(dir, ".harness", "outside"))).toBe(false);
 			expect(existsSync(join(dir, "outside"))).toBe(false);
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
