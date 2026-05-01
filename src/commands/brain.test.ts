@@ -191,6 +191,23 @@ describe("brain add", () => {
 		}
 	});
 
+	it("rejects path traversal domains before composing knowledge paths", () => {
+		const dir = createTempHarness();
+		try {
+			expect(() =>
+				runBrainAdd(
+					join(dir, ".harness"),
+					"rule",
+					"../../outside",
+					"escape attempt",
+				),
+			).toThrow(/Invalid domain/);
+			expect(existsSync(join(dir, "outside"))).toBe(false);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("creates a new decision file", () => {
 		const dir = createTempHarness();
 		try {

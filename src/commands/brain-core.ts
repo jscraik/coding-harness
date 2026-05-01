@@ -24,7 +24,7 @@ import {
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { inspectFlagList } from "../lib/cli/parse-utils.js";
 import {
 	type BrainValidationResult,
@@ -389,6 +389,14 @@ function isSafeDomainSegment(domain: string): boolean {
 	return /^[a-z0-9][a-z0-9_-]*$/i.test(domain);
 }
 
+function isInsideDirectory(rootDir: string, targetPath: string): boolean {
+	const relativePath = relative(rootDir, targetPath);
+	return (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !isAbsolute(relativePath))
+	);
+}
+
 /**
  * Adds a knowledge item to the harness repository by creating or appending the appropriate file for the given type.
  *
@@ -449,7 +457,13 @@ export function runBrainAdd(
 		}
 	}
 
-	const fullPath = join(harnessDir, targetFile);
+	const resolvedHarnessDir = resolve(harnessDir);
+	const fullPath = resolve(resolvedHarnessDir, targetFile);
+	if (!isInsideDirectory(resolvedHarnessDir, fullPath)) {
+		throw new Error(
+			"Refusing to write Project Brain content outside .harness.",
+		);
+	}
 	mkdirSync(dirname(fullPath), { recursive: true });
 
 	// Append or create
