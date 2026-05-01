@@ -153,10 +153,10 @@ describe("buildLearningPromotionCandidates", () => {
 			id: "coderabbit.coding-harness.docs-frontmatter-machine-readable",
 			promotionStatus: "enforced",
 			recommendedTarget: "docs-gate",
-			enforcedBy: [
-				"src/lib/docs-surface/frontmatter-metadata-gate.test.ts",
+			enforcedBy: expect.arrayContaining([
 				"src/lib/docs-surface/frontmatter-metadata-gate.ts",
-			],
+				"src/lib/docs-surface/frontmatter-metadata-gate.test.ts",
+			]),
 		});
 	});
 

@@ -462,6 +462,96 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("exercises CLI flag plumbing for --review-context-path and --require-review-context", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-cli-flags-"));
+		const reviewContextPath = join(dir, "review-context.json");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.cli-review-gate",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "CLI flag plumbing must be tested.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge CLI context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=3"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`\n- review-context: coderabbit.coding-harness.cli-review-gate acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const exitCode = await runReviewGateCLI({
+				...defaultOptions,
+				reviewContextPath,
+				requireReviewContext: true,
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(mockEmitReviewGateDecisionArtifacts).toHaveBeenCalled();
+			const callArgs = mockEmitReviewGateDecisionArtifacts.mock.calls[0];
+			expect(callArgs).toBeDefined();
+			const artifactInput = callArgs?.[0];
+			expect(artifactInput?.result.ok).toBe(true);
+			const output = artifactInput?.result.ok
+				? artifactInput.result.output
+				: undefined;
+			expect(output?.review_context_status).toBe("warn");
+			expect(output?.blockers).toEqual([]);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("falls back to legacy risk-policy-gate check when code-review check is absent", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",

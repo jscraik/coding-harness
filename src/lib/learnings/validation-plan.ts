@@ -294,7 +294,9 @@ function commandsForLearning(item: LearningItem): string[] {
 	const commands: string[] = [];
 	if (lower.includes("pnpm test:ci")) commands.push("pnpm test:ci");
 	if (lower.includes("pnpm test:deep")) commands.push("pnpm test:deep");
-	if (lower.includes("validate-codestyle")) {
+	if (lower.includes("bash scripts/validate-codestyle.sh")) {
+		commands.push("bash scripts/validate-codestyle.sh");
+	} else if (lower.includes("validate-codestyle")) {
 		commands.push("bash scripts/validate-codestyle.sh --fast");
 	}
 	if (lower.includes("verify-work"))

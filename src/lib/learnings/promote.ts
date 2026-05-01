@@ -159,6 +159,7 @@ export function buildLearningPromotionCandidates(
 				item.promotionStatus !== "deferred" &&
 				(options.includeEnforced || item.promotionStatus !== "enforced"),
 		)
+		.filter((item) => item.promotionStatus !== "deferred")
 		.map(buildPromotionCandidate)
 		.sort((a, b) => b.usage - a.usage || a.id.localeCompare(b.id));
 

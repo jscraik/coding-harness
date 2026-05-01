@@ -424,11 +424,12 @@ function missingOptionalFlagMessage(
  * Format and emit an error as either structured JSON or a plain console message, then return the provided exit code.
  *
  * @param options - Configuration for the emitted error
- * @param options.json - If true, output a structured `LearningImportResult` JSON to stdout; otherwise output a plain error message to stderr
+ * @param options.json - If true, output a structured JSON to stdout; otherwise output a plain error message to stderr
  * @param options.errorCode - Machine-readable error code to include in the JSON output
  * @param options.message - Human-readable error message to emit
  * @param options.exitCode - Process exit code to return
  * @param options.warnings - Optional list of warnings to include in the JSON output
+ * @param options.outputKind - JSON error shape to emit for import, gate, or promotion commands
  * @returns The `exitCode` passed in `options`
  */
 function emitError(options: {
