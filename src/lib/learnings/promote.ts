@@ -234,7 +234,7 @@ function destinationFor(item: LearningItem): {
 	}
 	if (item.classification === "generated_artifact") {
 		return {
-			target: "artifact-provenance-gate",
+			target: "artifact-gate",
 			test: "src/lib/learnings/promote.test.ts",
 		};
 	}
