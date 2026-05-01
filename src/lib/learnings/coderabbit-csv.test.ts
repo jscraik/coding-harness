@@ -101,4 +101,17 @@ describe("parseCodeRabbitCsv", () => {
 		expect(result.rows).toHaveLength(1);
 		expect(result.skipped).toBe(0);
 	});
+
+	it("matches owner-qualified CSV rows when the requested repository is ownerless", () => {
+		const result = parseCodeRabbitCsv(
+			"Repository,Usage,Learning\njscraik/coding-harness,1,Qualified repo\n",
+			{
+				repository: "coding-harness",
+			},
+		);
+
+		expect(result.rows).toHaveLength(1);
+		expect(result.rows[0]?.learning).toBe("Qualified repo");
+		expect(result.skipped).toBe(0);
+	});
 });

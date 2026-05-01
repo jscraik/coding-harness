@@ -89,6 +89,7 @@ export function parseCodeRabbitCsv(
 
 	const targetRepository = normalizeRepositorySlug(options.repository);
 	const targetRepositoryAliases = repositoryAliases(options.repository);
+	const targetRepositoryHasOwner = options.repository.includes("/");
 	const rows: ParsedCodeRabbitLearningRow[] = [];
 	let skipped = 0;
 	let invalid = 0;
@@ -100,6 +101,7 @@ export function parseCodeRabbitCsv(
 		const repositoryMatch = matchRepository(
 			repositoryRaw,
 			targetRepositoryAliases,
+			targetRepositoryHasOwner,
 		);
 		const repository = repositoryRaw.trim() || targetRepository;
 		const learningRaw = getCell(record, headerIndex, "Learning").trim();
@@ -202,6 +204,7 @@ function repositoryAliases(repository: string): Set<string> {
 function matchRepository(
 	repository: string,
 	targetRepositoryAliases: Set<string>,
+	targetRepositoryHasOwner: boolean,
 ): "matched" | "missing" | "skip" {
 	const normalizedSource = normalizeRepositorySlug(repository);
 	const sourceOwnerless = normalizeRepositorySlug(
@@ -209,7 +212,8 @@ function matchRepository(
 	);
 	if (!normalizedSource) return "missing";
 	return targetRepositoryAliases.has(normalizedSource) ||
-		(!repository.includes("/") && targetRepositoryAliases.has(sourceOwnerless))
+		((!repository.includes("/") || !targetRepositoryHasOwner) &&
+			targetRepositoryAliases.has(sourceOwnerless))
 		? "matched"
 		: "skip";
 }
