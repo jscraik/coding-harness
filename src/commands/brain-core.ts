@@ -512,9 +512,9 @@ function cliBrainAdd(args: string[]): BrainCliResult {
 
 	const type = typeVal as BrainAddType;
 
-	if (type !== "learning" && !domainVal) {
+	if ((type === "rule" || type === "hypothesis") && !domainVal) {
 		process.stderr.write(
-			"Error: --domain is required for non-learning types\n",
+			"Error: --domain is required for rule and hypothesis types\n",
 		);
 		return { exitCode: EXIT_CODES.INVALID_ARGS };
 	}

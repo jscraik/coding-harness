@@ -94,7 +94,10 @@ describe("artifact-gate command", () => {
 			"artifact-gate.source_without_generated",
 		);
 		expect(payload.findings[0].severity).toBe("error");
-		expect(payload.findings[0].path).toBe("src/templates/codex-preflight.sh");
+		expect(payload.findings[0]).toMatchObject({
+			path: "scripts/codex-preflight.sh",
+			source: "src/templates/codex-preflight.sh",
+		});
 	});
 
 	it("warns but does not fail when the registry is missing", () => {

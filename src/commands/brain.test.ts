@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -236,6 +242,30 @@ describe("brain CLI", () => {
 	it("rejects unknown subcommands", () => {
 		const exitCode = runBrainCLI(["unknown"]);
 		expect(exitCode).toBe(EXIT_CODES.INVALID_ARGS);
+	});
+
+	it("allows decision additions without a domain", () => {
+		const dir = createTempHarness();
+		try {
+			const exitCode = runBrainCLI([
+				"add",
+				"--type",
+				"decision",
+				"--content",
+				"Adopt review-context evidence",
+				"--dir",
+				dir,
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(
+				readdirSync(join(dir, ".harness", "decisions")).some((entry) =>
+					entry.endsWith("adopt-review-context-evidence.md"),
+				),
+			).toBe(true);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
 	});
 
 	it("runs status subcommand", () => {

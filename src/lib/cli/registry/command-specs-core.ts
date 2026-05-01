@@ -1435,14 +1435,9 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		example: "artifact-gate --files scripts/codex-preflight.sh --json",
 		errorLabel: "Artifact Gate Error",
 		execute: (args) => {
-		execute: (args) => {
 			const filesArg = getFlagValue(args, args.indexOf("--files"));
 			return runArtifactGateCLI({
 				files: filesArg !== undefined ? parseCsvList(filesArg) : undefined,
-				registryPath: getFlagValue(args, args.indexOf("--registry")),
-				json: args.includes("--json"),
-			});
-		},
 				registryPath: getFlagValue(args, args.indexOf("--registry")),
 				json: args.includes("--json"),
 			});

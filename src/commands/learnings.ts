@@ -178,10 +178,10 @@ export function runLearningsImportCLI(args: string[]): number {
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
-	if (!provider.ok || !source.ok || !repo.ok) {
-		return EXIT_CODES.USAGE;
-	}
-	if (provider.value !== "coderabbit-csv") {
+	const providerValue = provider.ok ? provider.value : "";
+	const sourceValue = source.ok ? source.value : "";
+	const repoValue = repo.ok ? repo.value : "";
+	if (providerValue !== "coderabbit-csv") {
 		return emitError({
 			json,
 			errorCode: "learnings.unsupported_provider",
@@ -202,8 +202,8 @@ export function runLearningsImportCLI(args: string[]): number {
 	}
 	const outputPath = output.value ?? DEFAULT_CODERABBIT_LOCAL_ARTIFACT;
 	const artifactResult = buildCodeRabbitLearningArtifact({
-		sourcePath: resolve(source.value),
-		repository: repo.value,
+		sourcePath: resolve(sourceValue),
+		repository: repoValue,
 		previousArtifactPath: resolve(outputPath),
 		...(liveCompanion?.ok ? { liveCompanion: liveCompanion.companion } : {}),
 	});
