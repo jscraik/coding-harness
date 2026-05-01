@@ -246,7 +246,7 @@ function buildPromotionCandidate(
  * @returns An object with `target` set to the chosen promotion gate and `test` set to the corresponding test file path. Selection rules (first match wins):
  * - If `file` starts with `"docs/"` or any `targetPatterns` entry starts with `"docs/"`: `target` = `"docs-gate"`, `test` = `"src/commands/docs-gate.test.ts"`.
  * - If `classification` = `"validation_contract"`: `target` = `"validation-plan"`, `test` = `"src/lib/learnings/promote.test.ts"`.
- * - If `classification` = `"generated_artifact"`: `target` = `"artifact-provenance-gate"`, `test` = `"src/lib/learnings/promote.test.ts"`.
+ * - If `classification` = `"generated_artifact"`: `target` = `"artifact-gate"`, `test` = `"src/lib/learnings/promote.test.ts"`.
  * - If `classification` = `"scaffold_default"`: `target` = `"scaffold-contracts"`, `test` = `"src/lib/init/scaffold-contract-template.test.ts"`.
  * - Fallback: `target` = `"learnings-gate"`, `test` = `"src/lib/learnings/promote.test.ts"`.
  */
