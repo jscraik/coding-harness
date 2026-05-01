@@ -35,7 +35,7 @@ newest_dist_file() {
 			printf '%s\t%s\n' "$(file_mtime "$dist_file")" "$dist_file"
 		done |
 		sort -nr |
-		awk 'NR == 1 { print $2 }'
+		awk -F'\t' 'NR == 1 { print $2 }'
 }
 
 if is_harness_source_repo; then
