@@ -1435,10 +1435,21 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		example: "artifact-gate --files scripts/codex-preflight.sh --json",
 		errorLabel: "Artifact Gate Error",
 		execute: (args) => {
-			const filesArg = getFlagValue(args, args.indexOf("--files"));
+			const filesFlag = inspectFlagValue(args, "--files");
+			const registryFlag = inspectFlagValue(args, "--registry");
+
+			if (filesFlag.missingValue) {
+				console.error("Artifact Gate Error: --files requires a value");
+				return 2;
+			}
+			if (registryFlag.missingValue) {
+				console.error("Artifact Gate Error: --registry requires a value");
+				return 2;
+			}
+
 			return runArtifactGateCLI({
-				files: filesArg !== undefined ? parseCsvList(filesArg) : undefined,
-				registryPath: getFlagValue(args, args.indexOf("--registry")),
+				files: filesFlag.value !== undefined ? parseCsvList(filesFlag.value) : undefined,
+				registryPath: registryFlag.value,
 				json: args.includes("--json"),
 			});
 		},
@@ -1449,11 +1460,19 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			"Validate CircleCI, CodeRabbit, and Semgrep required-check ownership",
 		example: "ci-ownership-gate --json",
 		errorLabel: "CI Ownership Gate Error",
-		execute: (args) =>
-			runCIOwnershipGateCLI({
-				contractPath: getFlagValue(args, args.indexOf("--contract")),
+		execute: (args) => {
+			const contractFlag = inspectFlagValue(args, "--contract");
+
+			if (contractFlag.missingValue) {
+				console.error("CI Ownership Gate Error: --contract requires a value");
+				return 2;
+			}
+
+			return runCIOwnershipGateCLI({
+				contractPath: contractFlag.value,
 				json: args.includes("--json"),
-			}),
+			});
+		},
 	},
 	{
 		name: "blast-radius",
