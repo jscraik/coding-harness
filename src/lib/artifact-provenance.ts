@@ -216,7 +216,7 @@ function loadArtifactProvenanceRegistry(
 				message:
 					"Artifact provenance registry is missing; generated artifact checks are advisory until a registry is adopted.",
 				path: normalizeRepoRelativePath(registryPath, repoRoot),
-				fix: `Create ${DEFAULT_ARTIFACT_PROVENANCE_REGISTRY} with generated artifact source mappings.`,
+				fix: `Create ${normalizeRepoRelativePath(registryPath, repoRoot)} with generated artifact source mappings.`,
 			},
 		};
 	}
