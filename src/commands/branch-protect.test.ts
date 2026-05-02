@@ -624,7 +624,9 @@ describe("runBranchProtect", () => {
 
 	it("falls back to harness baseline checks when the contract file is absent", async () => {
 		mockLoadContract.mockImplementation(() => {
-			throw new Error("contract missing");
+			const error = new Error("no such file or directory");
+			(error as { code?: string }).code = "ENOENT";
+			throw error;
 		});
 
 		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
