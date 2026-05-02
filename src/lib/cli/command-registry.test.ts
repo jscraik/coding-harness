@@ -117,6 +117,17 @@ describe("command registry", () => {
 		expect(new Set(names).size).toBe(names.length);
 	});
 
+	it("keeps the first cockpit help surface limited to runnable commands", () => {
+		const cockpitRows = getRegistryCommandHelpRows()
+			.filter((row) => row.tier === "cockpit")
+			.map((row) => row.name);
+
+		expect(cockpitRows).toEqual(["check", "next"]);
+		expect(cockpitRows).not.toContain("pr-ready");
+		expect(cockpitRows).not.toContain("fix-review");
+		expect(cockpitRows).not.toContain("learn");
+	});
+
 	it("exposes a stable machine-readable command capability catalog", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 		try {

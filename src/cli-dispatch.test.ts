@@ -166,10 +166,24 @@ describe("cli command dispatch", () => {
 
 		const output = infoSpy.mock.calls.map(([line]) => String(line)).join("\n");
 		const lines = output.split("\n");
+		const hasCommandRow = (name: string) =>
+			lines.some((line) => {
+				const trimmed = line.trimStart();
+				return trimmed.startsWith(`${name} `) || trimmed === name;
+			});
 		expect(output).toContain("Commands (focused):");
+		expect(output).toContain("Agent Cockpit:");
 		expect(output).toContain("Discovery:");
 		expect(output).toContain("Bootstrap & Governance:");
 		expect(output).toContain("Review & Policy:");
+		expect(output.indexOf("Agent Cockpit:")).toBeLessThan(
+			output.indexOf("Discovery:"),
+		);
+		expect(hasCommandRow("check")).toBe(true);
+		expect(hasCommandRow("next")).toBe(true);
+		expect(hasCommandRow("pr-ready")).toBe(false);
+		expect(hasCommandRow("fix-review")).toBe(false);
+		expect(hasCommandRow("learn")).toBe(false);
 		expect(
 			lines.some(
 				(line) =>
