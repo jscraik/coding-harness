@@ -114,7 +114,7 @@ export function parseCodeRabbitCsv(
 
 	const targetRepositoryAliases = repositoryAliases(options.repository);
 	const targetRepositoryHasOwner = options.repository.includes("/");
-	const canonicalRepository = options.repository.trim();
+	const canonicalRepository = normalizeFullSlug(options.repository);
 	if (!canonicalRepository) {
 		throw new TypeError("CodeRabbit CSV import requires a target repository.");
 	}
