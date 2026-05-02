@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
 import {
 	applyLearningEnforcementStatus,
@@ -190,10 +190,24 @@ function writeReviewContextResult(
 	result: ReviewContextResult,
 	options: ReviewContextOptions,
 ): ReviewContextResult {
-	const outputPath = resolve(
-		options.repoRoot ?? process.cwd(),
-		options.output ?? "",
-	);
+	const repoRoot = resolve(options.repoRoot ?? process.cwd());
+	const outputPath = resolve(repoRoot, options.output ?? "");
+	const relativeOutput = relative(repoRoot, outputPath);
+	if (
+		relativeOutput === ".." ||
+		relativeOutput.startsWith(`..${sep}`) ||
+		isAbsolute(relativeOutput)
+	) {
+		return {
+			...result,
+			status: "error",
+			error: {
+				code: "review-context.write_failed",
+				message:
+					"Failed to write review context: output must stay within repoRoot.",
+			},
+		};
+	}
 	try {
 		mkdirSync(dirname(outputPath), { recursive: true });
 		writeFileSync(outputPath, `${JSON.stringify(result, null, 2)}\n`, "utf-8");

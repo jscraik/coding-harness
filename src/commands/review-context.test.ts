@@ -171,6 +171,53 @@ describe("runReviewContextCLI", () => {
 		).toContain("coderabbit.coding-harness.docs-frontmatter-machine-readable");
 	});
 
+	it("rejects output paths that escape repoRoot", () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-context-output-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		writeFileSync(sourcePath, contextCsv, "utf-8");
+		expect(
+			runLearningsCLI([
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				sourcePath,
+				"--repo",
+				"coding-harness",
+				"--output",
+				outputPath,
+				"--json",
+			]),
+		).toBe(0);
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runReviewContextCLI([
+				"--source",
+				outputPath,
+				"--repo-root",
+				dir,
+				"--files",
+				"docs/ai-assistant-security-policy.md",
+				"--output",
+				"../review-context.json",
+				"--json",
+			]),
+		).toBe(1);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.status).toBe("error");
+		expect(result.error).toMatchObject({
+			code: "review-context.write_failed",
+			message:
+				"Failed to write review context: output must stay within repoRoot.",
+		});
+	});
+
 	it("returns usage when files are missing", () => {
 		const infoSpy = vi
 			.spyOn(console, "info")
