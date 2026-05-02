@@ -84,7 +84,7 @@ export function loadLearningArtifact(
 			return {
 				ok: false,
 				code: "learnings.artifact_invalid",
-				message: `Learning artifact at ${sourcePath} must use schemaVersion harness-learnings/v1 with source.uri, repository, and items.`,
+				message: `Learning artifact at ${sourcePath} must use schemaVersion harness-learnings/v1 with inputFingerprint, source.uri, repository, and items.`,
 				fix: "Re-run harness learnings import --provider coderabbit-csv --source <learnings.csv> --repo <repo> --json.",
 			};
 		}
@@ -112,6 +112,7 @@ function isLearningImportArtifact(
 	if (value.schemaVersion !== "harness-learnings/v1") return false;
 	if (typeof value.provider !== "string") return false;
 	if (typeof value.repository !== "string") return false;
+	if (!isNonEmptyString(value.inputFingerprint)) return false;
 	if (!isRecord(value.source) || typeof value.source.uri !== "string") {
 		return false;
 	}

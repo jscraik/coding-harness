@@ -8,7 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runLearningsCLI } from "./learnings.js";
 import { runReviewContextCLI } from "./review-context.js";
@@ -178,7 +178,10 @@ describe("runReviewContextCLI", () => {
 		cleanup.push(dir);
 		const sourcePath = join(dir, "learnings.csv");
 		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
-		const outsideTarget = join(dir, "..", "review-context.json");
+		const outsideFile = `review-context-${basename(dir)}.json`;
+		const outsideTarget = join(dir, "..", outsideFile);
+		cleanup.push(outsideTarget);
+		rmSync(outsideTarget, { force: true });
 		writeFileSync(sourcePath, contextCsv, "utf-8");
 		expect(
 			runLearningsCLI([
@@ -207,7 +210,7 @@ describe("runReviewContextCLI", () => {
 				"--files",
 				"docs/ai-assistant-security-policy.md",
 				"--output",
-				"../review-context.json",
+				`../${outsideFile}`,
 				"--json",
 			]),
 		).toBe(1);

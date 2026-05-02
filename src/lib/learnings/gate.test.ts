@@ -117,7 +117,13 @@ describe("learnings gate overrides", () => {
 			join(dir, ".harness/learnings/coderabbit.local.json"),
 			JSON.stringify({
 				schemaVersion: "harness-learnings/v1",
+				provider: "coderabbit-csv",
 				repository: "coding-harness",
+				source: {
+					kind: "coderabbit_csv",
+					uri: "file:///tmp/learnings.csv",
+					live: false,
+				},
 				items: [],
 			}),
 			"utf-8",
@@ -132,6 +138,8 @@ describe("learnings gate overrides", () => {
 		expect(result.findings[0]).toMatchObject({
 			id: "learnings-gate.artifact.invalid",
 			severity: "error",
+			message:
+				"Learning artifact at .harness/learnings/coderabbit.local.json must use schemaVersion harness-learnings/v1 with inputFingerprint, source.uri, repository, and items.",
 		});
 	});
 
