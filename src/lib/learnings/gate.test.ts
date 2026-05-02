@@ -3,6 +3,7 @@ import {
 	mkdtempSync,
 	readFileSync,
 	rmSync,
+	utimesSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -137,7 +138,7 @@ describe("learnings gate overrides", () => {
 
 		const result = runLearningsGate({
 			repoRoot: dir,
-			files: ["docs/policy.md"],
+			files: ["unmatched.txt"],
 		});
 
 		expect(result.status).toBe("fail");
@@ -199,11 +200,47 @@ describe("learnings gate overrides", () => {
 
 		const result = runLearningsGate({
 			repoRoot: dir,
-			files: ["docs/policy.md"],
+			files: ["unmatched.txt"],
 		});
 
 		expect(result.status).toBe("fail");
 		expect(result.findings[0]?.id).toBe("learnings-gate.artifact.invalid");
+	});
+
+	it("warns when the imported CSV source is unavailable", () => {
+		const dir = setupArtifact();
+		rmSync(join(dir, "learnings.csv"), { force: true });
+
+		const result = runLearningsGate({
+			repoRoot: dir,
+			files: ["unmatched.txt"],
+		});
+
+		expect(result.status).toBe("warn");
+		expect(result.findings.map((finding) => finding.id)).toContain(
+			"learnings-gate.source.unavailable",
+		);
+	});
+
+	it("warns when the imported CSV source is stale", () => {
+		const dir = setupArtifact();
+		const sourcePath = join(dir, "learnings.csv");
+		writeFileSync(
+			sourcePath,
+			`${csv}coding-harness,docs/other.md,149,,100,"A newer learning.",jscraik,Never,created,updated\n`,
+			"utf-8",
+		);
+		utimesSync(sourcePath, new Date("2026-04-30T00:00:00Z"), new Date());
+
+		const result = runLearningsGate({
+			repoRoot: dir,
+			files: ["unmatched.txt"],
+		});
+
+		expect(result.status).toBe("warn");
+		expect(result.findings.map((finding) => finding.id)).toContain(
+			"learnings-gate.source.stale",
+		);
 	});
 
 	function setupArtifact(): string {

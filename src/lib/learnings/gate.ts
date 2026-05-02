@@ -393,8 +393,20 @@ function detectSourceWarnings(
 			// Fall back to mtime when content hashing is unavailable.
 		}
 	}
-	const sourceMtime = statSync(sourcePath).mtimeMs;
-	const artifactMtime = statSync(artifactPath).mtimeMs;
+	let sourceMtime: number;
+	let artifactMtime: number;
+	try {
+		sourceMtime = statSync(sourcePath).mtimeMs;
+		artifactMtime = statSync(artifactPath).mtimeMs;
+	} catch {
+		return [
+			{
+				code: "learnings.source_unavailable",
+				message:
+					"Imported CodeRabbit CSV source or local learning artifact could not be inspected; gate results use the existing local artifact.",
+			},
+		];
+	}
 	if (sourceMtime > artifactMtime) {
 		return [
 			{

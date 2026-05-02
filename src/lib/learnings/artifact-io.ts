@@ -300,7 +300,7 @@ function redactNullableText(value: string | null): string | null {
  *
  * @param previousArtifactPath - Filesystem path to a previously written learning artifact; ignored if `undefined` or missing.
  * @param imported - Current number of imported rows.
- * @returns A warning object when the previous artifact reports at least 10 imported rows and `imported` is less than half of that; `undefined` otherwise.
+ * @returns A warning object when the previous artifact reports at least 10 imported rows and `imported` is less than the true half-count threshold; `undefined` otherwise.
  */
 function buildStaleImportWarning(
 	previousArtifactPath: string | undefined,
@@ -321,7 +321,7 @@ function buildStaleImportWarning(
 		if (
 			typeof previousImported === "number" &&
 			previousImported >= 10 &&
-			imported < Math.floor(previousImported / 2)
+			imported < previousImported / 2
 		) {
 			return {
 				code: "learnings.imported_count_drop",
