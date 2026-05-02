@@ -12,7 +12,7 @@ coding-harness,,203,,12,"Applies to package.json: Run pnpm audit when dependency
 coding-harness,,205,,12,"Applies to src/**: Run validate-codestyle before handoff.",jscraik,Never,created,updated
 `;
 const sensitiveValidationCsv = `Repository,File,Pull Request,URL,Usage,Learning,Created By,Last Used,Created At,Updated At
-coding-harness,,204,,12,"Applies to package.json: Run audit with token=supersecret123 before publishing.",jscraik,Never,created,updated
+coding-harness,,204,,12,"Applies to package.json: Use pnpm test:ci with token=supersecret123 before pnpm audit.",jscraik,Never,created,updated
 `;
 
 describe("runValidationPlanCLI", () => {
@@ -108,7 +108,9 @@ describe("runValidationPlanCLI", () => {
 			outputPath,
 			"--files",
 			"README.md",
+			"--files",
 			"src/cli.ts",
+			"--files",
 			"package.json",
 			"--json",
 		]);
@@ -232,6 +234,7 @@ describe("runValidationPlanCLI", () => {
 
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
 		expect(JSON.stringify(result)).not.toContain("supersecret123");
+		expect(JSON.stringify(result)).toContain("[REDACTED]");
 		expect(result.networkRequired).toEqual([
 			expect.objectContaining({ command: "pnpm audit" }),
 		]);
