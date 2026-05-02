@@ -51,6 +51,22 @@ describe("learning artifact IO", () => {
 		expect(result.artifact.items[0]?.lastUsed).toBeNull();
 	});
 
+	it("returns a structured failure when the source CSV cannot be read", () => {
+		const dir = mkdtempSync(join(tmpdir(), "learning-artifact-unreadable-"));
+		cleanup.push(dir);
+
+		const result = buildCodeRabbitLearningArtifact({
+			sourcePath: dir,
+			repository: "coding-harness",
+		});
+
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.errorCode).toBe("learnings.source_unreadable");
+		expect(result.message).toContain("Unable to read source CSV");
+		expect(result.warnings).toEqual([]);
+	});
+
 	it("writes the default local artifact atomically", () => {
 		const dir = mkdtempSync(join(tmpdir(), "learning-artifact-write-"));
 		cleanup.push(dir);

@@ -135,11 +135,11 @@ export function classifyLearning(
 /**
  * Determine the enforcement hint for a learning item based on its usage and classification.
  *
- * @returns One of `"none"`, `"info"`, `"warning"`, or `"error"`:
+ * @returns One of `"none"`, `"warning"`, or `"error"`:
  * - `"none"` when `classification` is `"memory_only"`.
  * - `"error"` when `usage` is greater than or equal to 100.
  * - `"warning"` when `usage` is greater than or equal to 25.
- * - `"info"` otherwise.
+ * - `"none"` otherwise.
  */
 export function deriveEnforcement(
 	usage: number,
@@ -148,7 +148,7 @@ export function deriveEnforcement(
 	if (classification === "memory_only") return "none";
 	if (usage >= 100) return "error";
 	if (usage >= 25) return "warning";
-	return "info";
+	return "none";
 }
 
 /**

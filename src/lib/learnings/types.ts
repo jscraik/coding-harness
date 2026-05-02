@@ -35,7 +35,7 @@ export type LearningClassification =
 	| "memory_only";
 
 /** Provisional enforcement level derived from usage signal and classification. */
-export type LearningEnforcement = "error" | "warning" | "info" | "none";
+export type LearningEnforcement = "error" | "warning" | "none";
 
 /** Promotion lifecycle state recorded by the enforcement-status ledger. */
 export type LearningPromotionStatus =

@@ -207,6 +207,72 @@ describe("learnings gate overrides", () => {
 		expect(result.findings[0]?.id).toBe("learnings-gate.artifact.invalid");
 	});
 
+	it("rejects learning items with malformed enforcement or usage", () => {
+		for (const [name, patch] of [
+			["info-enforcement", { enforcement: "info" }],
+			["nan-usage", { usage: Number.NaN }],
+			["negative-usage", { usage: -1 }],
+			["fractional-usage", { usage: 1.5 }],
+		] as const) {
+			const dir = mkdtempSync(join(tmpdir(), `learnings-gate-${name}-`));
+			cleanup.push(dir);
+			mkdirSync(join(dir, ".harness/learnings"), { recursive: true });
+			const item = Object.assign(
+				{
+					id: "coderabbit.coding-harness.bad-shape",
+					provider: "coderabbit",
+					source: {
+						kind: "coderabbit_csv",
+						uri: "file:///tmp/learnings.csv",
+						row: 2,
+						live: false,
+					},
+					repository: "coding-harness",
+					usage: 100,
+					learning: "Malformed items should fail closed.",
+					classification: "guardrail",
+					enforcement: "error",
+					promotionStatus: "candidate",
+				},
+				patch,
+			);
+			writeFileSync(
+				join(dir, ".harness/learnings/coderabbit.local.json"),
+				JSON.stringify({
+					schemaVersion: "harness-learnings/v1",
+					provider: "coderabbit-csv",
+					repository: "coding-harness",
+					source: {
+						kind: "coderabbit_csv",
+						uri: "file:///tmp/learnings.csv",
+						live: false,
+					},
+					inputFingerprint: "fingerprint",
+					items: [item],
+					warnings: [],
+					summary: {
+						totalRows: 1,
+						imported: 1,
+						skipped: 0,
+						invalid: 0,
+						warnings: 0,
+						byClassification: { guardrail: 1 },
+						byEnforcement: { error: 1 },
+					},
+				}),
+				"utf-8",
+			);
+
+			const result = runLearningsGate({
+				repoRoot: dir,
+				files: ["unmatched.txt"],
+			});
+
+			expect(result.status).toBe("fail");
+			expect(result.findings[0]?.id).toBe("learnings-gate.artifact.invalid");
+		}
+	});
+
 	it("warns when the imported CSV source is unavailable", () => {
 		const dir = setupArtifact();
 		rmSync(join(dir, "learnings.csv"), { force: true });

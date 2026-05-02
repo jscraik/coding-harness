@@ -30,7 +30,7 @@ const LEARNING_CLASSIFICATIONS = new Set([
 	"review_context",
 	"memory_only",
 ]);
-const LEARNING_ENFORCEMENTS = new Set(["error", "warning", "info", "none"]);
+const LEARNING_ENFORCEMENTS = new Set(["error", "warning", "none"]);
 const LEARNING_PROMOTION_STATUSES = new Set([
 	"unreviewed",
 	"candidate",
@@ -125,7 +125,14 @@ function isLearningItemLike(value: unknown): value is LearningItem {
 	if (!isNonEmptyString(value.id)) return false;
 	if (!isNonEmptyString(value.learning)) return false;
 	if (!isNonEmptyString(value.repository)) return false;
-	if (typeof value.usage !== "number") return false;
+	if (
+		typeof value.usage !== "number" ||
+		!Number.isFinite(value.usage) ||
+		!Number.isInteger(value.usage) ||
+		value.usage < 0
+	) {
+		return false;
+	}
 	if (!LEARNING_CLASSIFICATIONS.has(String(value.classification))) return false;
 	if (!LEARNING_ENFORCEMENTS.has(String(value.enforcement))) return false;
 	if (!LEARNING_PROMOTION_STATUSES.has(String(value.promotionStatus))) {

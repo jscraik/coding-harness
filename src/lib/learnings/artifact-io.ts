@@ -75,7 +75,18 @@ export function buildCodeRabbitLearningArtifact(options: {
 			warnings: [],
 		};
 	}
-	const sourceText = readFileSync(options.sourcePath, "utf-8");
+	let sourceText: string;
+	try {
+		sourceText = readFileSync(options.sourcePath, "utf-8");
+	} catch (error) {
+		const detail = error instanceof Error ? error.message : String(error);
+		return {
+			ok: false,
+			errorCode: "learnings.source_unreadable",
+			message: `Unable to read source CSV ${options.sourcePath}: ${detail}`,
+			warnings: [],
+		};
+	}
 	const sourceUri = toSourceUri(resolve(options.sourcePath));
 	const parsed = parseCodeRabbitCsv(sourceText, {
 		repository: options.repository,
