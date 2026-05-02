@@ -140,7 +140,7 @@ function buildCommands(
  * Processes the changed files and mutates `commands` by adding appropriate validation entries for:
  * - docs/governance/spec/plan surfaces (docs-gate command),
  * - TypeScript source files under `src/` (codestyle, quality, tests, and typecheck commands),
- * - runtime/artifact/package/script/template/lib surfaces (aggregate quality and deep tests).
+ * - runtime/artifact/package/script/template/lib/governance contract surfaces (aggregate quality and deep tests).
  * Each added command's `files` field is set to the subset of `files` that match the relevant classifier.
  *
  * @param commands - A Map keyed by command string that will be mutated with added/merged ValidationPlanCommand entries.
@@ -360,9 +360,10 @@ function isSourceFile(file: string): boolean {
 }
 
 /**
- * Determines whether a file path corresponds to runtime or artifact-related repository files.
+ * Determines whether a file path corresponds to runtime, artifact, or governance contract repository files.
  *
- * Matches paths for `package.json`, `pnpm-lock.yaml`, or files under `scripts/`, `src/templates/`, `src/commands/`, or `src/lib/`.
+ * Matches paths for `package.json`, `pnpm-lock.yaml`, governance contract artifacts,
+ * or files under `scripts/`, `src/templates/`, `src/commands/`, or `src/lib/`.
  *
  * @returns `true` if the path matches any of the runtime/artifact patterns, `false` otherwise.
  */
@@ -370,6 +371,9 @@ function isRuntimeOrArtifactFile(file: string): boolean {
 	return (
 		file === "package.json" ||
 		file === "pnpm-lock.yaml" ||
+		file === "harness.contract.json" ||
+		file === ".harness/ci-required-checks.json" ||
+		file === ".harness/artifact-provenance.json" ||
 		file.startsWith("scripts/") ||
 		file.startsWith("src/templates/") ||
 		file.startsWith("src/commands/") ||
