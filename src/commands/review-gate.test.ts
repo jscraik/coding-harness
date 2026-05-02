@@ -339,6 +339,7 @@ describe("runReviewGate", () => {
 				schemaVersion: "review-context/v1",
 				status: "success",
 				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
 				sourceFingerprint: "abc123",
 				repo: "coding-harness",
 				changedFiles: ["src/commands/review-gate.ts"],
@@ -414,6 +415,94 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("does not acknowledge review-context learnings through ID prefix matches", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-context-prefix-"));
+		const reviewContextPath = join(dir, "review-context.json");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.review-gate",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "Review context should be acknowledged.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge learned context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=2"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- review-context: coderabbit.coding-harness.review-gate-extra acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				reviewContextPath,
+				requireReviewContext: true,
+				reviewContextMaxAgeMinutes: 60,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.review_context_status).toBe("stale");
+				expect(result.output.blockers).toContain(
+					"High-severity learning context was generated but not acknowledged in the PR body",
+				);
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("blocks only when strict review-context mode requires a missing artifact", async () => {
 		const mockCheckRuns: CheckRun[] = [
 			{
@@ -471,6 +560,7 @@ describe("runReviewGate", () => {
 				schemaVersion: "review-context/v1",
 				status: "success",
 				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
 				sourceFingerprint: "abc123",
 				repo: "coding-harness",
 				changedFiles: ["src/commands/review-gate.ts"],

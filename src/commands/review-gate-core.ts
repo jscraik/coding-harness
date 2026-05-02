@@ -1157,9 +1157,13 @@ function hasReviewContextAcknowledgement(
 	prBody: string | null | undefined,
 	learnings: ReviewContextResult["applicableLearnings"],
 ): boolean {
-	const body = prBody?.toLowerCase() ?? "";
+	const acknowledgedIds = new Set(
+		(prBody?.toLowerCase().match(/[a-z0-9][a-z0-9._:/-]*/g) ?? []).map(
+			(value) => value.trim(),
+		),
+	);
 	return learnings.every((learning) =>
-		body.includes(learning.id.toLowerCase()),
+		acknowledgedIds.has(learning.id.toLowerCase()),
 	);
 }
 

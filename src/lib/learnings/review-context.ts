@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
 import {
@@ -196,7 +196,8 @@ function writeReviewContextResult(
 	if (
 		relativeOutput === ".." ||
 		relativeOutput.startsWith(`..${sep}`) ||
-		isAbsolute(relativeOutput)
+		isAbsolute(relativeOutput) ||
+		!isContainedByRealRepoRoot(repoRoot, outputPath)
 	) {
 		return {
 			...result,
@@ -221,6 +222,43 @@ function writeReviewContextResult(
 				message: `Failed to write review context: ${error instanceof Error ? error.message : String(error)}`,
 			},
 		};
+	}
+}
+
+function isContainedByRealRepoRoot(
+	repoRoot: string,
+	outputPath: string,
+): boolean {
+	try {
+		const realRepoRoot = realpathSync(repoRoot);
+		const existingOutputTarget = existsSync(outputPath)
+			? outputPath
+			: findNearestExistingAncestor(dirname(outputPath));
+		if (!existingOutputTarget) {
+			return false;
+		}
+		const realOutputTarget = realpathSync(existingOutputTarget);
+		const relativeTarget = relative(realRepoRoot, realOutputTarget);
+		return (
+			relativeTarget === "" ||
+			(!relativeTarget.startsWith(`..${sep}`) && !isAbsolute(relativeTarget))
+		);
+	} catch {
+		return false;
+	}
+}
+
+function findNearestExistingAncestor(path: string): string | undefined {
+	let current = path;
+	for (;;) {
+		if (existsSync(current)) {
+			return current;
+		}
+		const parent = dirname(current);
+		if (parent === current) {
+			return undefined;
+		}
+		current = parent;
 	}
 }
 

@@ -288,15 +288,16 @@ function buildFeedbackMetrics(
 	gateMetrics: ReturnType<typeof loadGateMetrics>,
 	options: NorthStarFeedbackOptions,
 ): NorthStarFeedbackResult["metrics"] {
+	const highUsageUnenforced = countHighUsageUnenforced(items, minUsage);
 	return {
 		learningHits: gateMetrics.learningHits,
 		learningGateBlocks: gateMetrics.learningGateBlocks,
 		learningGateWarnings: gateMetrics.learningGateWarnings,
-		promotionCandidates: countHighUsageUnenforced(items, minUsage),
+		promotionCandidates: highUsageUnenforced,
 		promotedLearnings: items.filter(
 			(item) => item.promotionStatus === "enforced",
 		).length,
-		highUsageLearningsUnenforced: countHighUsageUnenforced(items, minUsage),
+		highUsageLearningsUnenforced: highUsageUnenforced,
 		reviewThreadCount: options.reviewThreadCount ?? null,
 		validationReruns: options.validationReruns ?? null,
 	};

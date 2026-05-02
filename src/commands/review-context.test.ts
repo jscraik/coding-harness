@@ -4,6 +4,7 @@ import {
 	mkdtempSync,
 	readFileSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -216,6 +217,58 @@ describe("runReviewContextCLI", () => {
 			message:
 				"Failed to write review context: output must stay within repoRoot.",
 		});
+	});
+
+	it("rejects output paths that escape repoRoot through symlinked ancestors", () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-context-symlink-"));
+		const outsideDir = mkdtempSync(join(tmpdir(), "review-context-outside-"));
+		cleanup.push(dir, outsideDir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		writeFileSync(sourcePath, contextCsv, "utf-8");
+		expect(
+			runLearningsCLI([
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				sourcePath,
+				"--repo",
+				"coding-harness",
+				"--output",
+				outputPath,
+				"--json",
+			]),
+		).toBe(0);
+		symlinkSync(outsideDir, join(dir, "artifacts"), "dir");
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runReviewContextCLI([
+				"--source",
+				outputPath,
+				"--repo-root",
+				dir,
+				"--files",
+				"docs/ai-assistant-security-policy.md",
+				"--output",
+				"artifacts/review-context/pr-context.json",
+				"--json",
+			]),
+		).toBe(1);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.status).toBe("error");
+		expect(result.error).toMatchObject({
+			code: "review-context.write_failed",
+			message:
+				"Failed to write review context: output must stay within repoRoot.",
+		});
+		expect(existsSync(join(outsideDir, "review-context/pr-context.json"))).toBe(
+			false,
+		);
 	});
 
 	it("returns usage when files are missing", () => {
