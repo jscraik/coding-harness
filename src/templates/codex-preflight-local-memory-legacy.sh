@@ -23,7 +23,7 @@ extract_local_memory_rest_value() {
 		in_rest && /^[^[:space:]]/ { in_rest = 0 }
 		in_rest && $1 == wanted ":" {
 			sub(/^[^:]+:[[:space:]]*/, "", $0)
-			gsub(/"/, "", $0)
+			gsub(/["\047]/, "", $0)
 			gsub(/[[:space:]]+#.*/, "", $0)
 			gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0)
 			print $0
@@ -42,7 +42,7 @@ extract_local_memory_qdrant_value() {
 		in_qdrant && /^[^[:space:]]/ { in_qdrant = 0 }
 		in_qdrant && $1 == wanted ":" {
 			sub(/^[^:]+:[[:space:]]*/, "", $0)
-			gsub(/"/, "", $0)
+			gsub(/["\047]/, "", $0)
 			gsub(/[[:space:]]+#.*/, "", $0)
 			gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0)
 			print $0
