@@ -44,6 +44,8 @@ describe("buildNorthStarFeedback", () => {
 			gate,
 			JSON.stringify({
 				gate: "learnings-gate",
+				version: "1.0.0",
+				timestamp: "2026-04-30T00:00:00.000Z",
 				status: "fail",
 				findings: [
 					{
@@ -52,6 +54,10 @@ describe("buildNorthStarFeedback", () => {
 						gate: "learnings-gate",
 						message: "frontmatter",
 						baseline: false,
+						fix: {
+							manual: "Keep frontmatter metadata out of prose sections.",
+							suppressible: false,
+						},
 					},
 					{
 						id: "learnings-gate.learning.coderabbit.coding-harness.validation",
@@ -59,7 +65,23 @@ describe("buildNorthStarFeedback", () => {
 						gate: "learnings-gate",
 						message: "validation",
 						baseline: false,
+						fix: {
+							manual: "Run the validation command selected by the learning.",
+							suppressible: true,
+						},
 					},
+				],
+				summary: {
+					errors: 1,
+					warnings: 1,
+					info: 0,
+					total: 2,
+				},
+				reason: "Fixture gate result for north-star feedback tests.",
+				action_now: ["Review learning gate findings."],
+				action_later: [],
+				evidence_ref: [
+					"coderabbit_csv:/Users/jamiecraik/Downloads/learnings.csv#row=2",
 				],
 			}),
 		);

@@ -7,7 +7,7 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import type { GateFinding, GateResult } from "../output/types.js";
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
 import {
@@ -410,7 +410,11 @@ function writeNorthStarFeedbackResult(
 	const repoRoot = resolve(options.repoRoot);
 	const outputPath = resolve(repoRoot, options.output);
 	const relativeOutput = relative(repoRoot, outputPath);
-	if (relativeOutput === ".." || relativeOutput.startsWith(`..${sep}`)) {
+	if (
+		relativeOutput === ".." ||
+		relativeOutput.startsWith(`..${sep}`) ||
+		isAbsolute(relativeOutput)
+	) {
 		return {
 			ok: false,
 			code: "north_star_feedback.write_failed",
