@@ -241,24 +241,12 @@ function validateFeedbackInputs(
 }
 
 /**
- * Counts learning items eligible for promotion based on usage and enforcement status.
+ * Counts learning items that are high-usage, unenforced, and not terminal.
  *
  * @param items - The set of learning items to evaluate
  * @param minUsage - The inclusive usage threshold an item must meet to be considered
  * @returns The number of items whose `usage` is greater than or equal to `minUsage` and whose `promotionStatus` is not `enforced`, `rejected`, or `non_goal`
  */
-function countPromotionCandidates(
-	items: LearningItem[],
-	minUsage: number,
-): number {
-	return items.filter(
-		(item) =>
-			item.usage >= minUsage &&
-			item.promotionStatus !== "enforced" &&
-			!TERMINAL_PROMOTION_STATUSES.has(item.promotionStatus),
-	).length;
-}
-
 function countHighUsageUnenforced(
 	items: LearningItem[],
 	minUsage: number,
@@ -304,7 +292,7 @@ function buildFeedbackMetrics(
 		learningHits: gateMetrics.learningHits,
 		learningGateBlocks: gateMetrics.learningGateBlocks,
 		learningGateWarnings: gateMetrics.learningGateWarnings,
-		promotionCandidates: countPromotionCandidates(items, minUsage),
+		promotionCandidates: countHighUsageUnenforced(items, minUsage),
 		promotedLearnings: items.filter(
 			(item) => item.promotionStatus === "enforced",
 		).length,
