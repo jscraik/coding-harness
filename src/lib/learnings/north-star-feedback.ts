@@ -3,6 +3,7 @@ import {
 	existsSync,
 	mkdirSync,
 	readFileSync,
+	realpathSync,
 	renameSync,
 	rmSync,
 	writeFileSync,
@@ -402,7 +403,8 @@ function writeNorthStarFeedbackResult(
 	if (
 		relativeOutput === ".." ||
 		relativeOutput.startsWith(`..${sep}`) ||
-		isAbsolute(relativeOutput)
+		isAbsolute(relativeOutput) ||
+		!isContainedByRealRepoRoot(repoRoot, outputPath)
 	) {
 		return {
 			ok: false,
@@ -432,6 +434,47 @@ function writeNorthStarFeedbackResult(
 			message: `Failed to write north-star feedback artifact: ${error instanceof Error ? error.message : String(error)}`,
 		};
 	}
+}
+
+/**
+ * Checks whether an output path's existing filesystem ancestry resolves within the repository root.
+ *
+ * @param repoRoot - Repository root path used as the containment boundary
+ * @param outputPath - Candidate output path that may include symlinked ancestors
+ * @returns `true` when the nearest existing output ancestor is contained by the real repository root, otherwise `false`
+ */
+function isContainedByRealRepoRoot(
+	repoRoot: string,
+	outputPath: string,
+): boolean {
+	const realRepoRoot = realpathSync(repoRoot);
+	const existingAncestor = findNearestExistingAncestor(outputPath);
+	const realAncestor = realpathSync(existingAncestor);
+	const relativeAncestor = relative(realRepoRoot, realAncestor);
+	return (
+		relativeAncestor === "" ||
+		(relativeAncestor !== ".." &&
+			!relativeAncestor.startsWith(`..${sep}`) &&
+			!isAbsolute(relativeAncestor))
+	);
+}
+
+/**
+ * Finds the closest existing path at or above a candidate output path.
+ *
+ * @param outputPath - Candidate output path to inspect
+ * @returns The nearest existing filesystem ancestor, or the filesystem root if no closer ancestor exists
+ */
+function findNearestExistingAncestor(outputPath: string): string {
+	let currentPath = outputPath;
+	while (!existsSync(currentPath)) {
+		const parentPath = dirname(currentPath);
+		if (parentPath === currentPath) {
+			return currentPath;
+		}
+		currentPath = parentPath;
+	}
+	return currentPath;
 }
 
 /**

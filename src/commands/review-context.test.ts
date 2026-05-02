@@ -128,7 +128,7 @@ describe("runReviewContextCLI", () => {
 		});
 	});
 
-	it("accepts multiple --files tokens without dropping later paths", () => {
+	it("accepts repeated --files tokens without dropping later paths", () => {
 		const dir = mkdtempSync(join(tmpdir(), "review-context-multi-"));
 		cleanup.push(dir);
 		const sourcePath = join(dir, "learnings.csv");
@@ -157,6 +157,7 @@ describe("runReviewContextCLI", () => {
 			outputPath,
 			"--files",
 			"README.md",
+			"--files",
 			"docs/ai-assistant-security-policy.md",
 			"--json",
 		]);
@@ -177,6 +178,7 @@ describe("runReviewContextCLI", () => {
 		cleanup.push(dir);
 		const sourcePath = join(dir, "learnings.csv");
 		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		const outsideTarget = join(dir, "..", "review-context.json");
 		writeFileSync(sourcePath, contextCsv, "utf-8");
 		expect(
 			runLearningsCLI([
@@ -217,6 +219,7 @@ describe("runReviewContextCLI", () => {
 			message:
 				"Failed to write review context: output must stay within repoRoot.",
 		});
+		expect(existsSync(outsideTarget)).toBe(false);
 	});
 
 	it("rejects output paths that escape repoRoot through symlinked ancestors", () => {

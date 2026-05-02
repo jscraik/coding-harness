@@ -69,8 +69,11 @@ export function inspectFlagList(
 	args: string[],
 	flag: string,
 ): FlagListInspection {
-	const index = args.indexOf(flag);
-	if (index === -1) {
+	const flagIndexes = args
+		.map((token, index) => ({ token, index }))
+		.filter(({ token }) => token === flag)
+		.map(({ index }) => index);
+	if (flagIndexes.length === 0) {
 		return {
 			present: false,
 			values: [],
@@ -79,9 +82,11 @@ export function inspectFlagList(
 	}
 
 	const values: string[] = [];
-	for (const token of args.slice(index + 1)) {
-		if (token.startsWith("-")) break;
-		values.push(...parseCsvList(token));
+	for (const index of flagIndexes) {
+		for (const token of args.slice(index + 1)) {
+			if (token.startsWith("-")) break;
+			values.push(...parseCsvList(token));
+		}
 	}
 
 	return {
