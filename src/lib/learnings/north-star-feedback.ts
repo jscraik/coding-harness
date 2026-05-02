@@ -112,8 +112,10 @@ export function buildNorthStarFeedback(
 	options: NorthStarFeedbackOptions = {},
 ): NorthStarFeedbackResult {
 	const source = options.source ?? DEFAULT_CODERABBIT_LOCAL_ARTIFACT;
-	const minUsage = options.minUsage ?? DEFAULT_MIN_USAGE;
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
+	const validation = validateFeedbackInputs(options, source);
+	if (!validation.ok) return validation.result;
+	const { minUsage } = validation;
 	const loaded = loadLearningArtifact(source, repoRoot);
 	if (!loaded.ok) {
 		return errorResult({
@@ -146,22 +148,11 @@ export function buildNorthStarFeedback(
 		enforcement.ledger,
 	);
 	const gateMetrics = loadGateMetrics(options.gateResultPath, repoRoot);
-	const evidence = {
-		learningArtifact: "present" as const,
-		enforcementStatus:
-			enforcement.fingerprint.length > 0
-				? ("present" as const)
-				: ("insufficient_evidence" as const),
-		gateResult: gateMetrics.state,
-		reviewThreadCount:
-			options.reviewThreadCount === undefined
-				? ("insufficient_evidence" as const)
-				: ("present" as const),
-		validationReruns:
-			options.validationReruns === undefined
-				? ("insufficient_evidence" as const)
-				: ("present" as const),
-	};
+	const evidence = buildFeedbackEvidence({
+		enforcementFingerprint: enforcement.fingerprint,
+		gateState: gateMetrics.state,
+		options,
+	});
 	const result: NorthStarFeedbackResult = {
 		schemaVersion: NORTH_STAR_FEEDBACK_SCHEMA_VERSION,
 		status: "success",
@@ -169,23 +160,7 @@ export function buildNorthStarFeedback(
 		minUsage,
 		generatedAt: generatedAt(options),
 		evidence,
-		metrics: {
-			learningHits: gateMetrics.learningHits,
-			learningGateBlocks: gateMetrics.learningGateBlocks,
-			learningGateWarnings: gateMetrics.learningGateWarnings,
-			promotionCandidates: countPromotionCandidates(items, minUsage),
-			promotedLearnings: items.filter(
-				(item) => item.promotionStatus === "enforced",
-			).length,
-			highUsageLearningsUnenforced: items.filter(
-				(item) =>
-					item.usage >= minUsage &&
-					item.promotionStatus !== "enforced" &&
-					!TERMINAL_PROMOTION_STATUSES.has(item.promotionStatus),
-			).length,
-			reviewThreadCount: options.reviewThreadCount ?? null,
-			validationReruns: options.validationReruns ?? null,
-		},
+		metrics: buildFeedbackMetrics(items, minUsage, gateMetrics, options),
 		summary: {
 			insufficientEvidence: insufficientEvidenceFields(evidence),
 			sourceFingerprint: loaded.artifact.inputFingerprint,
@@ -210,6 +185,61 @@ export function buildNorthStarFeedback(
 	return result;
 }
 
+function validateFeedbackInputs(
+	options: NorthStarFeedbackOptions,
+	source: string,
+):
+	| { ok: true; minUsage: number }
+	| { ok: false; result: NorthStarFeedbackResult } {
+	const minUsageInput = options.minUsage ?? DEFAULT_MIN_USAGE;
+	if (!Number.isFinite(minUsageInput) || minUsageInput < DEFAULT_MIN_USAGE) {
+		return {
+			ok: false,
+			result: errorResult({
+				source,
+				minUsage: DEFAULT_MIN_USAGE,
+				generatedAt: generatedAt(options),
+				code: "north_star_feedback.invalid_min_usage",
+				message: `minUsage must be a finite non-negative number >= ${DEFAULT_MIN_USAGE}, received: ${minUsageInput}`,
+			}),
+		};
+	}
+	const minUsage = minUsageInput;
+	const invalidReviewThreads =
+		options.reviewThreadCount !== undefined &&
+		(!Number.isFinite(options.reviewThreadCount) ||
+			options.reviewThreadCount < 0);
+	if (invalidReviewThreads) {
+		return {
+			ok: false,
+			result: errorResult({
+				source,
+				minUsage,
+				generatedAt: generatedAt(options),
+				code: "north_star_feedback.invalid_review_thread_count",
+				message: `reviewThreadCount must be a finite non-negative number, received: ${options.reviewThreadCount}`,
+			}),
+		};
+	}
+	const invalidValidationReruns =
+		options.validationReruns !== undefined &&
+		(!Number.isFinite(options.validationReruns) ||
+			options.validationReruns < 0);
+	if (invalidValidationReruns) {
+		return {
+			ok: false,
+			result: errorResult({
+				source,
+				minUsage,
+				generatedAt: generatedAt(options),
+				code: "north_star_feedback.invalid_validation_reruns",
+				message: `validationReruns must be a finite non-negative number, received: ${options.validationReruns}`,
+			}),
+		};
+	}
+	return { ok: true, minUsage };
+}
+
 /**
  * Counts learning items eligible for promotion based on usage and enforcement status.
  *
@@ -227,6 +257,61 @@ function countPromotionCandidates(
 			item.promotionStatus !== "enforced" &&
 			!TERMINAL_PROMOTION_STATUSES.has(item.promotionStatus),
 	).length;
+}
+
+function countHighUsageUnenforced(
+	items: LearningItem[],
+	minUsage: number,
+): number {
+	return items.filter(
+		(item) =>
+			item.usage >= minUsage &&
+			item.promotionStatus !== "enforced" &&
+			!TERMINAL_PROMOTION_STATUSES.has(item.promotionStatus),
+	).length;
+}
+
+function buildFeedbackEvidence(options: {
+	enforcementFingerprint: string;
+	gateState: NorthStarEvidenceState;
+	options: NorthStarFeedbackOptions;
+}): NorthStarFeedbackResult["evidence"] {
+	return {
+		learningArtifact: "present",
+		enforcementStatus:
+			options.enforcementFingerprint.length > 0
+				? "present"
+				: "insufficient_evidence",
+		gateResult: options.gateState,
+		reviewThreadCount:
+			options.options.reviewThreadCount === undefined
+				? "insufficient_evidence"
+				: "present",
+		validationReruns:
+			options.options.validationReruns === undefined
+				? "insufficient_evidence"
+				: "present",
+	};
+}
+
+function buildFeedbackMetrics(
+	items: LearningItem[],
+	minUsage: number,
+	gateMetrics: ReturnType<typeof loadGateMetrics>,
+	options: NorthStarFeedbackOptions,
+): NorthStarFeedbackResult["metrics"] {
+	return {
+		learningHits: gateMetrics.learningHits,
+		learningGateBlocks: gateMetrics.learningGateBlocks,
+		learningGateWarnings: gateMetrics.learningGateWarnings,
+		promotionCandidates: countPromotionCandidates(items, minUsage),
+		promotedLearnings: items.filter(
+			(item) => item.promotionStatus === "enforced",
+		).length,
+		highUsageLearningsUnenforced: countHighUsageUnenforced(items, minUsage),
+		reviewThreadCount: options.reviewThreadCount ?? null,
+		validationReruns: options.validationReruns ?? null,
+	};
 }
 
 /**
