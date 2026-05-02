@@ -43,17 +43,42 @@ export function toSourceUri(sourcePath: string): string {
 }
 
 /**
- * Produce a deterministic, URL-friendly slug from a repository name.
+ * Produce a deterministic, URL-friendly slug from a repository name, preserving the `/` boundary.
+ *
+ * @param repository - The repository name or identifier to normalize
+ * @returns A lowercase slug containing only letters, digits, hyphens, and slashes with no leading or trailing hyphens
+ */
+export function normalizeFullSlug(repository: string): string {
+	return repository
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9/]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Produce a deterministic, URL-friendly slug from a repository name, collapsing all separators including `/`.
  *
  * @param repository - The repository name or identifier to normalize
  * @returns A lowercase slug containing only letters, digits, and hyphens with no leading or trailing hyphens
  */
-export function normalizeRepositorySlug(repository: string): string {
+export function normalizeOwnerless(repository: string): string {
 	return repository
 		.trim()
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, "-")
 		.replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Produce a deterministic, URL-friendly slug from a repository name.
+ *
+ * @deprecated Use `normalizeFullSlug` or `normalizeOwnerless` instead.
+ * @param repository - The repository name or identifier to normalize
+ * @returns A lowercase slug containing only letters, digits, and hyphens with no leading or trailing hyphens
+ */
+export function normalizeRepositorySlug(repository: string): string {
+	return normalizeOwnerless(repository);
 }
 
 /**
@@ -189,11 +214,11 @@ export function parseCodeRabbitCsv(
  * @returns A set containing the normalized full repository slug and, when present, the normalized ownerless repository name, excluding empty values.
  */
 function repositoryAliases(repository: string): Set<string> {
-	const normalized = normalizeRepositorySlug(repository);
-	const ownerless = normalizeRepositorySlug(repository.split("/").pop() ?? "");
+	const normalized = normalizeFullSlug(repository);
+	const ownerless = normalizeOwnerless(repository.split("/").pop() ?? "");
 	const aliases = new Set<string>();
 	if (normalized) aliases.add(normalized);
-	if (ownerless) aliases.add(ownerless);
+	if (ownerless && ownerless !== normalized) aliases.add(ownerless);
 	return aliases;
 }
 
@@ -210,16 +235,24 @@ function matchRepository(
 	targetRepositoryAliases: Set<string>,
 	targetRepositoryHasOwner: boolean,
 ): "matched" | "missing" | "skip" {
-	const normalizedSource = normalizeRepositorySlug(repository);
-	const sourceOwnerless = normalizeRepositorySlug(
+	// Try full-slug matching first (namespace A - preserves owner/repo boundary)
+	const normalizedFullSource = normalizeFullSlug(repository);
+	if (!normalizedFullSource) return "missing";
+	if (targetRepositoryAliases.has(normalizedFullSource)) return "matched";
+
+	// Fallback to ownerless matching (namespace B - collapses separators)
+	const sourceOwnerless = normalizeOwnerless(
 		repository.split("/").pop() ?? "",
 	);
-	if (!normalizedSource) return "missing";
-	return targetRepositoryAliases.has(normalizedSource) ||
-		((!repository.includes("/") || !targetRepositoryHasOwner) &&
-			targetRepositoryAliases.has(sourceOwnerless))
-		? "matched"
-		: "skip";
+	if (
+		(!repository.includes("/") || !targetRepositoryHasOwner) &&
+		sourceOwnerless &&
+		targetRepositoryAliases.has(sourceOwnerless)
+	) {
+		return "matched";
+	}
+
+	return "skip";
 }
 
 /**

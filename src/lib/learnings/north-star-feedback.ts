@@ -112,8 +112,51 @@ export function buildNorthStarFeedback(
 	options: NorthStarFeedbackOptions = {},
 ): NorthStarFeedbackResult {
 	const source = options.source ?? DEFAULT_CODERABBIT_LOCAL_ARTIFACT;
-	const minUsage = options.minUsage ?? DEFAULT_MIN_USAGE;
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
+
+	// Validate numeric inputs
+	const minUsageInput = options.minUsage ?? DEFAULT_MIN_USAGE;
+	if (
+		!Number.isFinite(minUsageInput) ||
+		minUsageInput < 0 ||
+		minUsageInput < DEFAULT_MIN_USAGE
+	) {
+		return errorResult({
+			source,
+			minUsage: DEFAULT_MIN_USAGE,
+			generatedAt: generatedAt(options),
+			code: "north_star_feedback.invalid_min_usage",
+			message: `minUsage must be a finite non-negative number >= ${DEFAULT_MIN_USAGE}, received: ${minUsageInput}`,
+		});
+	}
+	const minUsage = minUsageInput;
+
+	if (
+		options.reviewThreadCount !== undefined &&
+		(!Number.isFinite(options.reviewThreadCount) ||
+			options.reviewThreadCount < 0)
+	) {
+		return errorResult({
+			source,
+			minUsage,
+			generatedAt: generatedAt(options),
+			code: "north_star_feedback.invalid_review_thread_count",
+			message: `reviewThreadCount must be a finite non-negative number, received: ${options.reviewThreadCount}`,
+		});
+	}
+
+	if (
+		options.validationReruns !== undefined &&
+		(!Number.isFinite(options.validationReruns) || options.validationReruns < 0)
+	) {
+		return errorResult({
+			source,
+			minUsage,
+			generatedAt: generatedAt(options),
+			code: "north_star_feedback.invalid_validation_reruns",
+			message: `validationReruns must be a finite non-negative number, received: ${options.validationReruns}`,
+		});
+	}
 	const loaded = loadLearningArtifact(source, repoRoot);
 	if (!loaded.ok) {
 		return errorResult({

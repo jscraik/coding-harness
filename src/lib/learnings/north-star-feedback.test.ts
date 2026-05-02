@@ -169,6 +169,141 @@ describe("buildNorthStarFeedback", () => {
 		expect(result.metrics.learningHits).toBeNull();
 		expect(result.summary.insufficientEvidence).toContain("gateResult");
 	});
+
+	it("rejects NaN minUsage", () => {
+		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-nan-"));
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			minUsage: Number.NaN,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("error");
+		expect(result.error?.code).toBe("north_star_feedback.invalid_min_usage");
+		expect(result.error?.message).toContain("minUsage must be a finite");
+	});
+
+	it("rejects Infinity minUsage", () => {
+		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-infinity-"));
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			minUsage: Number.POSITIVE_INFINITY,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("error");
+		expect(result.error?.code).toBe("north_star_feedback.invalid_min_usage");
+	});
+
+	it("rejects negative minUsage", () => {
+		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-negative-"));
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			minUsage: -1,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("error");
+		expect(result.error?.code).toBe("north_star_feedback.invalid_min_usage");
+	});
+
+	it("rejects NaN reviewThreadCount", () => {
+		const dir = mkdtempSync(
+			join(tmpdir(), "north-star-feedback-nan-threads-"),
+		);
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			reviewThreadCount: Number.NaN,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("error");
+		expect(result.error?.code).toBe(
+			"north_star_feedback.invalid_review_thread_count",
+		);
+		expect(result.error?.message).toContain(
+			"reviewThreadCount must be a finite",
+		);
+	});
+
+	it("rejects negative reviewThreadCount", () => {
+		const dir = mkdtempSync(
+			join(tmpdir(), "north-star-feedback-negative-threads-"),
+		);
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			reviewThreadCount: -1,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("error");
+		expect(result.error?.code).toBe(
+			"north_star_feedback.invalid_review_thread_count",
+		);
+	});
+
+	it("rejects NaN validationReruns", () => {
+		const dir = mkdtempSync(
+			join(tmpdir(), "north-star-feedback-nan-reruns-"),
+		);
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			validationReruns: Number.NaN,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("error");
+		expect(result.error?.code).toBe(
+			"north_star_feedback.invalid_validation_reruns",
+		);
+		expect(result.error?.message).toContain(
+			"validationReruns must be a finite",
+		);
+	});
+
+	it("rejects negative validationReruns", () => {
+		const dir = mkdtempSync(
+			join(tmpdir(), "north-star-feedback-negative-reruns-"),
+		);
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			validationReruns: -1,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("error");
+		expect(result.error?.code).toBe(
+			"north_star_feedback.invalid_validation_reruns",
+		);
+	});
 });
 
 function artifact(): LearningImportArtifact {

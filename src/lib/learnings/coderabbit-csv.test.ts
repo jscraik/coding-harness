@@ -125,4 +125,30 @@ describe("parseCodeRabbitCsv", () => {
 		expect(result.rows[0]?.learning).toBe("Qualified repo");
 		expect(result.skipped).toBe(0);
 	});
+
+	it("does not match org/repo-name against org-repo-name in full-slug namespace", () => {
+		const result = parseCodeRabbitCsv(
+			"Repository,Usage,Learning\norg/repo-name,1,Correct match\norg-repo-name,2,Should not match\n",
+			{
+				repository: "org/repo-name",
+			},
+		);
+
+		expect(result.rows).toHaveLength(1);
+		expect(result.rows[0]?.learning).toBe("Correct match");
+		expect(result.skipped).toBe(1);
+	});
+
+	it("does not match org-repo-name against org/repo-name in ownerless namespace", () => {
+		const result = parseCodeRabbitCsv(
+			"Repository,Usage,Learning\norg-repo-name,1,Correct match\norg/repo-name,2,Should not match\n",
+			{
+				repository: "org-repo-name",
+			},
+		);
+
+		expect(result.rows).toHaveLength(1);
+		expect(result.rows[0]?.learning).toBe("Correct match");
+		expect(result.skipped).toBe(1);
+	});
 });

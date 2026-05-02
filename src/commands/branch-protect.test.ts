@@ -30,17 +30,24 @@ describe("runBranchProtect", () => {
 		vi.clearAllMocks();
 		vi.stubEnv("GITHUB_TOKEN", "");
 		vi.stubEnv("GITHUB_PERSONAL_ACCESS_TOKEN", "");
-		mockLoadContract.mockReturnValue({
-			version: "1.0",
-			riskTierRules: {},
-			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"security-scan",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
-			},
+		mockLoadContract.mockImplementation((contractPath: string) => {
+			if (contractPath === ".missing-harness.contract.json") {
+				const error = new Error("no such file or directory");
+				(error as { code?: string }).code = "ENOENT";
+				throw error;
+			}
+			return {
+				version: "1.0",
+				riskTierRules: {},
+				branchProtection: {
+					requiredChecks: [
+						"pr-pipeline",
+						"security-scan",
+						"CodeRabbit",
+						"semgrep-cloud-platform/scan",
+					],
+				},
+			};
 		});
 	});
 
@@ -1244,7 +1251,7 @@ describe("runBranchProtect", () => {
 							parameters: {
 								required_status_checks: [
 									{
-										context: "existing-check",
+										context: "check",
 										integration_id: 1234,
 									},
 								],
