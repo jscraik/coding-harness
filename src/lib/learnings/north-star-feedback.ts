@@ -7,7 +7,7 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import type { GateFinding, GateResult } from "../output/types.js";
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
 import {
@@ -407,7 +407,16 @@ function writeNorthStarFeedbackResult(
 	result: NorthStarFeedbackResult,
 	options: { output: string; repoRoot: string },
 ): { ok: true; path: string } | { ok: false; code: string; message: string } {
-	const outputPath = resolve(options.repoRoot, options.output);
+	const resolvedRepoRoot = resolve(options.repoRoot);
+	const outputPath = resolve(resolvedRepoRoot, options.output);
+	const relativePath = relative(resolvedRepoRoot, outputPath);
+	if (relativePath.startsWith("..") || resolve(relativePath) === relativePath) {
+		return {
+			ok: false,
+			code: "INVALID_OUTPUT_PATH",
+			message: "output must be inside repoRoot",
+		};
+	}
 	const tempPath = `${outputPath}.${process.pid}.${randomUUID()}.tmp`;
 	try {
 		mkdirSync(dirname(outputPath), { recursive: true });
