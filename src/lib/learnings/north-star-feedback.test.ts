@@ -219,6 +219,43 @@ describe("buildNorthStarFeedback", () => {
 		expect(result.error?.code).toBe("north_star_feedback.invalid_min_usage");
 	});
 
+	it("allows explicit zero minUsage without applying the default threshold", () => {
+		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-zero-"));
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			minUsage: 0,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("success");
+		expect(result.minUsage).toBe(0);
+	});
+
+	it("rejects output paths that escape repoRoot with the write failure contract", () => {
+		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-output-"));
+		cleanup.push(dir);
+		const source = join(dir, "coderabbit.local.json");
+		writeFileSync(source, JSON.stringify(artifact(), null, 2));
+
+		const result = buildNorthStarFeedback({
+			source,
+			output: "../north-star-feedback.json",
+			repoRoot: dir,
+			generatedAt: "2026-04-30T00:00:00.000Z",
+		});
+
+		expect(result.status).toBe("error");
+		expect(result.error).toMatchObject({
+			code: "north_star_feedback.write_failed",
+			message:
+				"Failed to write north-star feedback artifact: output must stay within repoRoot.",
+		});
+	});
+
 	it("rejects NaN reviewThreadCount", () => {
 		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-nan-threads-"));
 		cleanup.push(dir);

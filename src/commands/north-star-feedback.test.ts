@@ -69,6 +69,7 @@ describe("runNorthStarFeedbackCLI", () => {
 		const infoSpy = vi
 			.spyOn(console, "info")
 			.mockImplementation(() => undefined);
+		vi.spyOn(process, "cwd").mockReturnValue(dir);
 
 		const exitCode = runNorthStarFeedbackCLI([
 			"--source",

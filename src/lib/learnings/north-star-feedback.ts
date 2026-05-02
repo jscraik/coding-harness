@@ -7,7 +7,7 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve, sep } from "node:path";
 import type { GateFinding, GateResult } from "../output/types.js";
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
 import {
@@ -192,7 +192,7 @@ function validateFeedbackInputs(
 	| { ok: true; minUsage: number }
 	| { ok: false; result: NorthStarFeedbackResult } {
 	const minUsageInput = options.minUsage ?? DEFAULT_MIN_USAGE;
-	if (!Number.isFinite(minUsageInput) || minUsageInput < DEFAULT_MIN_USAGE) {
+	if (!Number.isFinite(minUsageInput) || minUsageInput < 0) {
 		return {
 			ok: false,
 			result: errorResult({
@@ -200,7 +200,7 @@ function validateFeedbackInputs(
 				minUsage: DEFAULT_MIN_USAGE,
 				generatedAt: generatedAt(options),
 				code: "north_star_feedback.invalid_min_usage",
-				message: `minUsage must be a finite non-negative number >= ${DEFAULT_MIN_USAGE}, received: ${minUsageInput}`,
+				message: `minUsage must be a finite non-negative number, received: ${minUsageInput}`,
 			}),
 		};
 	}
@@ -407,7 +407,17 @@ function writeNorthStarFeedbackResult(
 	result: NorthStarFeedbackResult,
 	options: { output: string; repoRoot: string },
 ): { ok: true; path: string } | { ok: false; code: string; message: string } {
-	const outputPath = resolve(options.repoRoot, options.output);
+	const repoRoot = resolve(options.repoRoot);
+	const outputPath = resolve(repoRoot, options.output);
+	const relativeOutput = relative(repoRoot, outputPath);
+	if (relativeOutput === ".." || relativeOutput.startsWith(`..${sep}`)) {
+		return {
+			ok: false,
+			code: "north_star_feedback.write_failed",
+			message:
+				"Failed to write north-star feedback artifact: output must stay within repoRoot.",
+		};
+	}
 	const tempPath = `${outputPath}.${process.pid}.${randomUUID()}.tmp`;
 	try {
 		mkdirSync(dirname(outputPath), { recursive: true });

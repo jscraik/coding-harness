@@ -134,11 +134,7 @@ export function parseCodeRabbitCsv(
 		const learningRaw = getCell(record, headerIndex, "Learning").trim();
 		if (repositoryMatch === "missing" || !learningRaw) {
 			invalid += 1;
-			warnings.push({
-				row: rowNumber,
-				code: "learnings.csv.invalid_row",
-				message: "Row is missing Repository or Learning.",
-			});
+			pushInvalidRowWarning(warnings, rowNumber);
 			continue;
 		}
 		if (repositoryMatch === "skip") {
@@ -160,6 +156,11 @@ export function parseCodeRabbitCsv(
 		}
 
 		const targetResult = extractTargetPatterns(learningRaw);
+		if (!targetResult.learning) {
+			invalid += 1;
+			pushInvalidRowWarning(warnings, rowNumber);
+			continue;
+		}
 		const row: ParsedCodeRabbitLearningRow = {
 			row: rowNumber,
 			repository,
@@ -339,6 +340,17 @@ function getCell(
 	const index = headerIndex.get(header);
 	if (index === undefined) return "";
 	return record[index]?.trim() ?? "";
+}
+
+function pushInvalidRowWarning(
+	warnings: LearningImportWarning[],
+	rowNumber: number,
+): void {
+	warnings.push({
+		row: rowNumber,
+		code: "learnings.csv.invalid_row",
+		message: "Row is missing Repository or Learning.",
+	});
 }
 
 /**

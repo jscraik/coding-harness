@@ -65,6 +65,25 @@ describe("parseCodeRabbitCsv", () => {
 		);
 	});
 
+	it("rejects prefix-only target learnings after extracting target patterns", () => {
+		const result = parseCodeRabbitCsv(
+			"Repository,Usage,Learning\ncoding-harness,1,Applies to src/**:\n",
+			{
+				repository: "coding-harness",
+			},
+		);
+
+		expect(result.rows).toHaveLength(0);
+		expect(result.invalid).toBe(1);
+		expect(result.warnings).toEqual([
+			{
+				row: 2,
+				code: "learnings.csv.invalid_row",
+				message: "Row is missing Repository or Learning.",
+			},
+		]);
+	});
+
 	it("returns a header warning when required CodeRabbit columns are missing", () => {
 		const result = parseCodeRabbitCsv(
 			"Repository,Learning\ncoding-harness,x\n",
