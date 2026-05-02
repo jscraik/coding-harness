@@ -379,11 +379,10 @@ describe("getRegistryCommandCapabilities", () => {
 			.filter((capability) => capability.tier === "cockpit")
 			.map((capability) => capability.name);
 
-		expect(cockpitNames).toEqual(["check"]);
+		expect(cockpitNames).toEqual(["check", "next"]);
 		expect(MIGRATED_COMMAND_NAMES).toEqual(
 			expect.arrayContaining(cockpitNames),
 		);
-		expect(cockpitNames).not.toContain("next");
 		expect(cockpitNames).not.toContain("pr-ready");
 		expect(cockpitNames).not.toContain("fix-review");
 		expect(cockpitNames).not.toContain("learn");
@@ -398,6 +397,7 @@ describe("getRegistryCommandCapabilities", () => {
 		);
 		const expected = [
 			["check", "cockpit", "both", ["next"]],
+			["next", "cockpit", "agent", []],
 			["doctor", "domain", "both", ["next"]],
 			["health", "domain", "both", ["next"]],
 			["review-gate", "domain", "agent", ["next", "pr-ready"]],
@@ -760,6 +760,7 @@ describe("getRegistryCommandCapabilities", () => {
 			["init", "bootstrap-governance"],
 			["eject", "bootstrap-governance"],
 			["check", "bootstrap-governance"],
+			["next", "bootstrap-governance"],
 			["doctor", "bootstrap-governance"],
 			["health", "bootstrap-governance"],
 			["contract", "bootstrap-governance"],

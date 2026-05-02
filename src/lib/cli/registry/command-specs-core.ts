@@ -44,6 +44,7 @@ import {
 	runLocalMemoryPreflightCLI,
 } from "../../../commands/local-memory-preflight.js";
 import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
+import { runNextCLI } from "../../../commands/next.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
 import { runOrgAuditCLI } from "../../../commands/org-audit.js";
@@ -946,6 +947,13 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const targetDir = args.find((a) => !a.startsWith("-"));
 			return runCheckCLI(targetDir, { json: jsonFlag });
 		},
+	},
+	{
+		name: "next",
+		summary: "Recommend the next safe harness command from current repo state",
+		example: "next --json",
+		errorLabel: "Next Error",
+		execute: (args) => runNextCLI(args),
 	},
 	{
 		name: "audit",

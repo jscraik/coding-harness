@@ -79,6 +79,7 @@ const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	init: "bootstrap-governance",
 	eject: "bootstrap-governance",
 	check: "bootstrap-governance",
+	next: "bootstrap-governance",
 	doctor: "bootstrap-governance",
 	audit: "bootstrap-governance",
 	brain: "bootstrap-governance",
@@ -181,6 +182,7 @@ const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 const RETRYABILITY_BY_NAME: Partial<Record<string, CommandRetryability>> = {
 	commands: "safe",
 	check: "safe",
+	next: "safe",
 	doctor: "safe",
 	health: "safe",
 	audit: "safe",
@@ -212,6 +214,7 @@ const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<Record<string, string[]>> = {
 
 const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	check: "cockpit",
+	next: "cockpit",
 
 	init: "domain",
 	contract: "domain",
@@ -252,6 +255,7 @@ const PRIMARY_AUDIENCE_BY_NAME: Partial<
 > = {
 	commands: "agent",
 	check: "both",
+	next: "agent",
 	doctor: "both",
 	health: "both",
 	"review-gate": "agent",
@@ -267,6 +271,7 @@ const PRIMARY_AUDIENCE_BY_NAME: Partial<
 
 const ORCHESTRATED_BY_BY_NAME: Partial<Record<string, CommandOrchestrator[]>> =
 	{
+		next: [],
 		check: ["next"],
 		doctor: ["next"],
 		health: ["next"],
