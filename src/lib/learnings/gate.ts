@@ -211,8 +211,12 @@ export function runLearningsGate(options: LearningsGateOptions): GateResult {
 		});
 	}
 
+	const matchedLearningFindings = buildLearningFindings(
+		loaded.artifact.items,
+		files,
+	);
 	const learningFindings = applyLearningOverrides({
-		findings: buildLearningFindings(loaded.artifact.items, files),
+		findings: matchedLearningFindings,
 		overrides: overrides.overrides,
 		...(options.now ? { now: options.now } : {}),
 	});
@@ -233,7 +237,7 @@ export function runLearningsGate(options: LearningsGateOptions): GateResult {
 		status,
 		findings,
 		decision: {
-			evidenceRef: buildEvidenceRefs(loaded.artifact, findings),
+			evidenceRef: buildEvidenceRefs(loaded.artifact, matchedLearningFindings),
 		},
 		meta: {
 			source: options.source ?? DEFAULT_CODERABBIT_LOCAL_ARTIFACT,

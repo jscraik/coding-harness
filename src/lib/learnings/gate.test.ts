@@ -59,6 +59,12 @@ describe("learnings gate overrides", () => {
 				},
 			},
 		});
+		expect(result.evidence_ref).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("coderabbit_csv:"),
+				expect.stringContaining("#row=2"),
+			]),
+		);
 	});
 
 	it("fails closed for expired strict suppressions", () => {
