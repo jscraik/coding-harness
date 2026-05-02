@@ -42,6 +42,36 @@ cases:
       - type: regex
         value: '(?i)(--check-updates|--dry-run|--update|--migrate|--rollback)'
 
+  - id: happy-existing-repo-upgrade-dry-run
+    name: happy existing repo upgrade dry run
+    category: happy
+    should_trigger: true
+    prepend_skill: false
+    prompt: "In execution mode, evaluate an existing repo upgrade without mutating it. Use a dry-run JSON update, explain how to inspect updated/skipped files, preserve the created-to-updated compatibility alias, distinguish tracked-update from adoption-preview output, and call out safe in-repo symlinked directories as supported."
+    acceptance:
+      - type: regex
+        value: '(?i)(init .*--update --dry-run --json|--update --dry-run --json|updated|skipped|created.*updated|adoption-preview|tracked-update|symlink)'
+    deterministic_checks:
+      forbidden_commands:
+        - "harness init --update --force"
+        - "git push --force"
+        - "rm -rf"
+
+  - id: edge-current-repo-needs-upgrading
+    name: edge current repo needs upgrading
+    category: edge
+    should_trigger: true
+    prepend_skill: false
+    prompt: "I have no fresh repos. What about a current repo that needs upgrading?"
+    acceptance:
+      - type: regex
+        value: '(?i)(harness upgrade --dry-run --json|init .*--update --dry-run --json|adoption-preview|tracked-update|review.*preview|do not mutate|no files were written)'
+    deterministic_checks:
+      forbidden_commands:
+        - "harness init --update --force"
+        - "harness upgrade --force"
+        - "git push --force"
+
   - id: edge-remote-auth-boundary
     name: edge remote auth boundary
     category: edge
@@ -109,6 +139,6 @@ cases:
         value: "(?i)(cloudflare|pages|deploy|cannot|out of scope)"
 
 metadata:
-  last_updated: "2026-03-24"
+  last_updated: "2026-04-29"
   author: "Codex"
   review_status: "reviewed"

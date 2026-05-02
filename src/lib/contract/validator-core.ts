@@ -21,6 +21,8 @@ import type {
 	BranchProtectionCodeScanningPolicy,
 	BranchProtectionMergeMethods,
 	BranchProtectionPolicy,
+	CIFallbackWorkflowPolicy,
+	CIOwnershipPolicy,
 	CIProviderMigrationStage,
 	CIProviderPolicy,
 	CIProviderPolicyMode,
@@ -136,6 +138,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"controlPlanePolicy",
 	"toolingPolicy",
 	"ciProviderPolicy",
+	"ciOwnership",
 	"extends",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
@@ -229,6 +232,19 @@ const VALID_CI_PROVIDER_POLICY_KEYS = [
 	"trustedPolicyRef",
 	"primaryCheckName",
 	"commitMode",
+] as const;
+const VALID_CI_OWNERSHIP_POLICY_KEYS = [
+	"schemaVersion",
+	"primaryPrGate",
+	"reviewProvider",
+	"securityChecks",
+	"fallbackWorkflows",
+] as const;
+const VALID_CI_FALLBACK_WORKFLOW_KEYS = [
+	"path",
+	"role",
+	"purpose",
+	"allowAutomaticPrTriggers",
 ] as const;
 const VALID_GAP_CASE_POLICY_KEYS = [
 	"requiredEvidenceStatuses",
@@ -658,6 +674,14 @@ function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 	);
 }
 
+/**
+ * Determines whether a value conforms to the expected ReviewPolicy shape.
+ *
+ * Validates required fields, optional fields (types and ranges), and rejects unknown top-level keys.
+ *
+ * @param value - The value to validate as a ReviewPolicy
+ * @returns `true` if `value` matches the ReviewPolicy shape and allowed fields, `false` otherwise.
+ */
 function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
@@ -670,6 +694,9 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 				"timeoutAction",
 				"requiredChecks",
 				"enforceReviewerIndependence",
+				"requireReviewContext",
+				"reviewContextPath",
+				"reviewContextMaxAgeMinutes",
 			].includes(key),
 	);
 	if (unknownKeys.length > 0) {
@@ -701,6 +728,27 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	if (
 		policy.enforceReviewerIndependence !== undefined &&
 		typeof policy.enforceReviewerIndependence !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.requireReviewContext !== undefined &&
+		typeof policy.requireReviewContext !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.reviewContextPath !== undefined &&
+		(typeof policy.reviewContextPath !== "string" ||
+			policy.reviewContextPath.trim().length === 0)
+	) {
+		return false;
+	}
+	if (
+		policy.reviewContextMaxAgeMinutes !== undefined &&
+		(typeof policy.reviewContextMaxAgeMinutes !== "number" ||
+			policy.reviewContextMaxAgeMinutes <= 0 ||
+			!Number.isInteger(policy.reviewContextMaxAgeMinutes))
 	) {
 		return false;
 	}
@@ -961,6 +1009,12 @@ export function isValidControlPlanePolicy(
 	return isValidControlPlaneOverridePolicy(policy.overridePolicy);
 }
 
+/**
+ * Checks whether a value conforms to the CI provider policy contract.
+ *
+ * @param value - The value to validate as a CIProviderPolicy
+ * @returns `true` if `value` is a valid CIProviderPolicy, `false` otherwise.
+ */
 function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
 	if (!isPlainObject(value)) {
 		return false;
@@ -1028,6 +1082,86 @@ function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
 	return true;
 }
 
+/**
+ * Checks whether a value conforms to the CI ownership policy schema used in contracts.
+ *
+ * Validates that the value is an object with only allowed keys, `schemaVersion` equal to
+ * "ci-ownership/v1", `primaryPrGate` equal to "circleci", `reviewProvider` equal to "coderabbit",
+ * `securityChecks` as a non-empty array of strings, and an optional `fallbackWorkflows` array that
+ * satisfies the CI fallback workflow rules.
+ *
+ * @param value - The value to validate as a CI ownership policy
+ * @returns `true` if `value` matches the CI ownership policy shape, `false` otherwise.
+ */
+function isValidCIOwnershipPolicy(value: unknown): value is CIOwnershipPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+	const policy = value as Record<string, unknown>;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) =>
+			!VALID_CI_OWNERSHIP_POLICY_KEYS.includes(
+				key as (typeof VALID_CI_OWNERSHIP_POLICY_KEYS)[number],
+			),
+	);
+	if (invalidKeys.length > 0) return false;
+	if (policy.schemaVersion !== "ci-ownership/v1") return false;
+	if (policy.primaryPrGate !== "circleci") return false;
+	if (policy.reviewProvider !== "coderabbit") return false;
+	if (!isNonEmptyStringArray(policy.securityChecks)) return false;
+	if (
+		policy.fallbackWorkflows !== undefined &&
+		!isValidCIFallbackWorkflows(policy.fallbackWorkflows)
+	) {
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Validate CI fallback workflow entries.
+ *
+ * Validates that `value` is an array where each entry is a plain object containing only allowed keys and that each entry has a non-empty string `path`, a `role` equal to `"fallback_pr_gate"` or `"release_publishing"`, a non-empty string `purpose`, and a boolean `allowAutomaticPrTriggers`.
+ *
+ * @returns `true` if `value` is an array of valid CI fallback workflow entries, `false` otherwise.
+ */
+function isValidCIFallbackWorkflows(
+	value: unknown,
+): value is CIFallbackWorkflowPolicy[] {
+	if (!Array.isArray(value)) return false;
+	return value.every((entry) => {
+		if (!isPlainObject(entry)) return false;
+		const workflow = entry as Record<string, unknown>;
+		const invalidKeys = Object.keys(workflow).filter(
+			(key) =>
+				!VALID_CI_FALLBACK_WORKFLOW_KEYS.includes(
+					key as (typeof VALID_CI_FALLBACK_WORKFLOW_KEYS)[number],
+				),
+		);
+		return (
+			invalidKeys.length === 0 &&
+			typeof workflow.path === "string" &&
+			workflow.path.trim().length > 0 &&
+			(workflow.role === "fallback_pr_gate" ||
+				workflow.role === "release_publishing") &&
+			typeof workflow.purpose === "string" &&
+			workflow.purpose.trim().length > 0 &&
+			typeof workflow.allowAutomaticPrTriggers === "boolean"
+		);
+	});
+}
+
+/**
+ * Validates whether a value conforms to the IssueTrackingPolicy shape for Linear-based issue tracking.
+ *
+ * The policy must only contain the allowed keys and require `provider` to be `"linear"`. If present,
+ * `projectUrl` must be a valid Linear project URL, `requirePackageBugsUrl`, `disableGitHubIssues`,
+ * `requireBranchIssueKey`, and `requirePrIssueKey` must be booleans, `prReferenceMode` must be one of
+ * the permitted modes, and `branchPrefix` must be a non-empty string that does not contain `/`.
+ *
+ * @param value - The value to validate as an IssueTrackingPolicy
+ * @returns `true` if `value` matches the IssueTrackingPolicy contract, `false` otherwise.
+ */
 function isValidIssueTrackingPolicy(
 	value: unknown,
 ): value is IssueTrackingPolicy {
@@ -1722,7 +1856,12 @@ function isValidTopLevel(
 	}
 }
 
-/** Public API export. */
+/**
+ * Validate a raw harness contract object and collect any validation errors.
+ *
+ * @param data - The untrusted contract value (typically parsed JSON) to validate
+ * @returns A ValidationResult where `success` is `true` and `data` contains the validated HarnessContractWithPreset when the contract is valid; `success` is `false` and `errors` contains one or more ValidationError entries when validation fails
+ */
 export function validateContract(
 	data: unknown,
 ): ValidationResult<HarnessContractWithPreset> {
@@ -2432,6 +2571,25 @@ export function validateContract(
 		}
 	}
 
+	// Validate ciOwnership (optional)
+	let ciOwnership: CIOwnershipPolicy | undefined;
+	if ("ciOwnership" in obj && obj.ciOwnership !== undefined) {
+		if (!isValidCIOwnershipPolicy(obj.ciOwnership)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "ciOwnership",
+				message:
+					"ciOwnership must define CircleCI primary PR ownership, CodeRabbit review ownership, independent security checks, and optional fallback workflow roles",
+				expected:
+					"{ schemaVersion: 'ci-ownership/v1', primaryPrGate: 'circleci', reviewProvider: 'coderabbit', securityChecks: string[], fallbackWorkflows?: [{ path: string, role: 'fallback_pr_gate' | 'release_publishing', purpose: string, allowAutomaticPrTriggers: boolean }] }",
+				received: JSON.stringify(obj.ciOwnership),
+				fix: "Ensure ciOwnership uses supported ownership roles and keeps fallback workflows explicit and audited",
+			});
+		} else {
+			ciOwnership = obj.ciOwnership as CIOwnershipPolicy;
+		}
+	}
+
 	// Validate blastRadiusRules (optional)
 	let blastRadiusRules: BlastRadiusRule[] | undefined;
 	if ("blastRadiusRules" in obj && obj.blastRadiusRules !== undefined) {
@@ -2503,6 +2661,26 @@ export function validateContract(
 				expected: `subset of ${JSON.stringify(branchProtection.requiredChecks)}`,
 				received: JSON.stringify(reviewPolicy.requiredChecks),
 				fix: `Remove unsupported reviewPolicy checks: ${missingChecks.join(", ")}`,
+			});
+		}
+	}
+	if (
+		ciOwnership?.securityChecks !== undefined &&
+		branchProtection?.requiredChecks !== undefined
+	) {
+		const branchProtectionChecks = new Set(branchProtection.requiredChecks);
+		const missingChecks = ciOwnership.securityChecks.filter(
+			(check) => !branchProtectionChecks.has(check),
+		);
+		if (missingChecks.length > 0) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "ciOwnership.securityChecks",
+				message:
+					"ciOwnership.securityChecks must be covered by branchProtection.requiredChecks",
+				expected: `subset of ${JSON.stringify(branchProtection.requiredChecks)}`,
+				received: JSON.stringify(ciOwnership.securityChecks),
+				fix: `Add required branch protection checks or remove unsupported CI ownership checks: ${missingChecks.join(", ")}`,
 			});
 		}
 	}
@@ -2621,6 +2799,7 @@ export function validateContract(
 		controlPlanePolicy,
 		toolingPolicy,
 		ciProviderPolicy,
+		ciOwnership,
 		branchProtection,
 		issueTrackingPolicy,
 		blastRadiusRules,

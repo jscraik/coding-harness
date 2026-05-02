@@ -12,6 +12,7 @@
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
 - [Repo-local harness wrapper](#repo-local-harness-wrapper)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
+- [North-star learning loop evidence](#north-star-learning-loop-evidence)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
@@ -26,6 +27,10 @@
 - The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
+- CI ownership is contractual: CircleCI owns PR governance, CodeRabbit remains an
+  independent review check, Semgrep Cloud remains an independent security check,
+  and GitHub Actions workflows must not become automatic PR gates without an
+  explicit `ciOwnership` migration.
 
 ## Why this workflow exists
 
@@ -161,6 +166,30 @@ Recommended policy:
 - Keep scanner binaries available in local development environments and CI runners.
 - Run scanner checks in CI on pull requests and pushes to protected branches.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
+
+## North-star learning loop evidence
+
+Before PR handoff, use imported CodeRabbit learning evidence to check whether
+the change repeats known review friction. Run the loop when
+`.harness/learnings/coderabbit.local.json` exists and the changed files are in
+scope:
+
+```bash
+harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json
+```
+
+The `--files` value accepts comma-separated paths or multiple following path
+tokens. Promote durable high-usage findings into Project Brain as rules,
+knowledge, decisions, or explicit skip reasons; do not copy every imported CSV
+row into Project Brain.
+
+If the repo has no imported learning artifact or the change is outside learning
+scope, mark the PR template entries `n.a.` with a short reason. High-usage
+repeat findings should become a validator, gate, scaffold regression,
+generated-artifact rule, review-context fact, or explicit exception instead of
+remaining a review comment.
 
 ## Review artifacts requirement
 

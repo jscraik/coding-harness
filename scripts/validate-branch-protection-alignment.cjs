@@ -6,6 +6,11 @@ const { resolve } = require("node:path");
 const MANIFEST_PATH = resolve(".harness/ci-required-checks.json");
 const CONTRACT_PATH = resolve("harness.contract.json");
 
+/**
+ * Validate that harness.contract.json branchProtection.requiredChecks matches the unique githubCheckName values in .harness/ci-required-checks.json.
+ *
+ * Reads and parses the manifest and contract files, compares the sets of required GitHub check names, logs any mismatches, and terminates the process with a non-zero exit code if alignment fails.
+ */
 function main() {
 	const errors = [];
 

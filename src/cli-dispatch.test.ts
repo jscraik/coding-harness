@@ -52,6 +52,10 @@ vi.mock("./commands/init.js", () => ({
 	runInteractiveInitCLI: vi.fn(async () => 62),
 }));
 
+vi.mock("./commands/learnings.js", () => ({
+	runLearningsCLI: vi.fn(() => 71),
+}));
+
 vi.mock("./commands/ci-migrate.js", () => ({
 	runCIMigrateCLI: vi.fn(() => 69),
 }));
@@ -652,6 +656,43 @@ describe("cli command dispatch", () => {
 			json: false,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(61);
+	});
+
+	it("dispatches learnings import through the command registry", async () => {
+		const { run } = await import("./cli.js");
+		const { runLearningsCLI } = await import("./commands/learnings.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"learnings",
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				"learnings.csv",
+				"--repo",
+				"coding-harness",
+				"--json",
+			]),
+		).toThrowError("EXIT_71");
+
+		expect(vi.mocked(runLearningsCLI)).toHaveBeenCalledWith([
+			"import",
+			"--provider",
+			"coderabbit-csv",
+			"--source",
+			"learnings.csv",
+			"--repo",
+			"coding-harness",
+			"--json",
+		]);
+		expect(exitSpy).toHaveBeenCalledWith(71);
 	});
 
 	it("dispatches ci-migrate with positional action and target directory", async () => {

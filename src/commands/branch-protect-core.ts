@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { deriveRequiredCheckMetadata } from "../lib/ci/required-check-metadata.js";
 import { loadContract } from "../lib/contract/loader.js";
@@ -226,6 +226,9 @@ function resolveContractBranchProtectionPolicy(
 			...(requiredCheckManifestPath ? { requiredCheckManifestPath } : {}),
 		};
 	} catch (error) {
+		if (existsSync(contractPath)) {
+			throw error;
+		}
 		// Contract not found or invalid - fall back to defaults.
 		// This is intentional to allow running without a contract file.
 		if (process.env.DEBUG) {
@@ -239,6 +242,15 @@ function resolveContractBranchProtectionPolicy(
 	}
 }
 
+/**
+ * Maps requested required-check identifiers to GitHub check context names using a manifest file and returns the normalized contexts.
+ *
+ * @param input.requiredChecks - List of required-check identifiers (e.g., gate IDs or display names) to resolve
+ * @param input.contractPath - File path of the contract used to resolve the manifest file's directory
+ * @param input.requiredCheckManifestPath - Path to the required-check manifest file (resolved relative to `contractPath`)
+ * @param input.activeProvider - Optional CI provider to select which manifest gates to remap against; when omitted, the manifest's `activeProvider` is used
+ * @returns An array of normalized GitHub check names corresponding to the requested checks, or `null` if the manifest cannot be read, parsed, or validated
+ */
 function resolveManifestBackedRequiredCheckContexts(input: {
 	requiredChecks: string[];
 	contractPath: string;
@@ -280,6 +292,13 @@ function resolveManifestBackedRequiredCheckContexts(input: {
 	return normalizeChecks(remappedChecks);
 }
 
+/**
+ * Resolve required check identifiers into normalized GitHub check context names, using the active CI provider when available.
+ *
+ * @param requiredChecks - Identifiers for required checks (provider-specific IDs or generic names)
+ * @param activeProvider - Optional CI provider used to map identifiers to provider-specific GitHub check names
+ * @returns A normalized list of GitHub check context names; when `activeProvider` is provided each identifier is mapped to its provider-specific `githubCheckName`, otherwise the input identifiers are normalized unchanged
+ */
 function resolveProviderBackedRequiredCheckContexts(input: {
 	requiredChecks: string[];
 	activeProvider?: CIProvider;
@@ -603,6 +622,17 @@ interface BuildPayloadInput {
 	existingRuleset?: Ruleset | undefined;
 }
 
+type RequiredStatusCheckEntry = {
+	context: string;
+	[key: string]: unknown;
+};
+
+/**
+ * Constructs a branch ruleset payload by merging the existing ruleset with the resolved policy, required checks, and repository context.
+ *
+ * @param input - Inputs required to build the payload: an optional existing ruleset, the resolved branch protection policy, normalized required check identifiers, target branch reference, repository visibility, and desired ruleset name.
+ * @returns The finalized `RulesetPayload` object containing `name`, `target`, `enforcement`, `bypass_actors`, `conditions.ref_name` (include/exclude), and `rules` where rules have been upserted, removed, or merged to reflect the provided policy and required checks.
+ */
 function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const baseRules = Array.isArray(input.existingRuleset?.rules)
 		? [...input.existingRuleset.rules]
@@ -653,7 +683,12 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 			strict_required_status_checks_policy:
 				input.policy.requireBranchesUpToDate,
 			do_not_enforce_on_create: false,
-			required_status_checks: requiredContexts.map((context) => ({ context })),
+			required_status_checks: mergeRequiredStatusChecks(
+				normalizeRequiredStatusCheckEntries(
+					existingChecksParameters.required_status_checks,
+				),
+				requiredContexts,
+			),
 		},
 	};
 	upsertRule(baseRules, statusChecksRule);
@@ -688,10 +723,7 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 				],
 			},
 		});
-	} else if (
-		input.policy.publicCodeScanning?.publicOnly !== true ||
-		input.repositoryVisibility !== undefined
-	) {
+	} else if (shouldRequirePublicCodeScanning === false) {
 		removeRule(baseRules, "code_scanning");
 	}
 
@@ -740,6 +772,13 @@ function normalizeStringList(value: unknown): string[] {
 	return list;
 }
 
+/**
+ * Merge a branch ref into an existing list of ref_name include patterns, normalizing and deduplicating entries.
+ *
+ * @param existingIncludes - The current include list (may be any value); non-array values are treated as absent.
+ * @param branchRef - The branch ref to ensure is included (e.g. `refs/heads/main`).
+ * @returns An array of normalized, deduplicated include strings with `branchRef` present; if `existingIncludes` normalizes to no valid entries, returns an empty array. If `existingIncludes` is not an array, returns `[branchRef]`.
+ */
 function mergeRefNameIncludes(
 	existingIncludes: unknown,
 	branchRef: string,
@@ -756,6 +795,73 @@ function mergeRefNameIncludes(
 	return Array.from(merged);
 }
 
+/**
+ * Extracts structured required-status-check entries from an arbitrary value.
+ *
+ * Accepts an array-like value and returns a list of objects that contain a non-empty, trimmed `context` string; other properties from each source item are preserved.
+ *
+ * @param value - The input to normalize (expected to be an array of objects).
+ * @returns An array of entries where each entry has a trimmed, non-empty `context` string and any other preserved properties from the original item.
+ */
+function normalizeRequiredStatusCheckEntries(
+	value: unknown,
+): RequiredStatusCheckEntry[] {
+	if (!Array.isArray(value)) return [];
+	const checks: RequiredStatusCheckEntry[] = [];
+	for (const item of value) {
+		if (typeof item === "string") {
+			const context = item.trim();
+			if (context.length > 0) {
+				checks.push({ context });
+			}
+			continue;
+		}
+		if (
+			typeof item === "object" &&
+			item !== null &&
+			typeof (item as { context?: unknown }).context === "string"
+		) {
+			const context = (item as { context: string }).context.trim();
+			if (context.length > 0) {
+				checks.push({
+					...(item as Record<string, unknown>),
+					context,
+				});
+			}
+		}
+	}
+	return checks;
+}
+
+/**
+ * Merge existing required status check entries with required contexts, preserving metadata for managed contexts.
+ *
+ * @param existingChecks - Array of existing required status check entries; each entry must include a `context` string and may include other properties.
+ * @param requiredContexts - List of context names that must be present in the resulting entries.
+ * @returns Required status check entries in policy order, preserving metadata for contexts that remain required.
+ */
+function mergeRequiredStatusChecks(
+	existingChecks: RequiredStatusCheckEntry[],
+	requiredContexts: string[],
+): RequiredStatusCheckEntry[] {
+	const merged: RequiredStatusCheckEntry[] = [];
+	const existingByContext = new Map<string, RequiredStatusCheckEntry>();
+	for (const check of existingChecks) {
+		if (!existingByContext.has(check.context)) {
+			existingByContext.set(check.context, check);
+		}
+	}
+	for (const context of requiredContexts) {
+		merged.push(existingByContext.get(context) ?? { context });
+	}
+	return merged;
+}
+
+/**
+ * Resolve the repository's default branch reference, using a conservative fallback when lookup fails or is unavailable.
+ *
+ * @returns The branch ref in the form `refs/heads/<branchName>` where `<branchName>` is the repository's default branch when obtainable, or `DEFAULT_BRANCH` (e.g., `"main"`) when not.
+ */
 async function resolveDefaultBranchRef(client: GitHubClient): Promise<string> {
 	try {
 		const defaultBranchResolver = (
@@ -786,6 +892,16 @@ async function resolveRepositoryVisibility(
 	}
 }
 
+/**
+ * Apply repository-level merge method settings via the provided GitHub client.
+ *
+ * @param client - GitHub API client used to update repository merge settings
+ * @param settings - Flags controlling which merge methods are allowed on the repository
+ * @param settings.allowMergeCommit - Enable or disable merge commits
+ * @param settings.allowSquashMerge - Enable or disable squash merges
+ * @param settings.allowRebaseMerge - Enable or disable rebase merges
+ * @throws Propagates any error raised by the client's update call; no-op if the method is unavailable.
+ */
 async function applyRepositoryMergeSettings(
 	client: GitHubClient,
 	settings: {
@@ -809,6 +925,16 @@ async function applyRepositoryMergeSettings(
 	await mergeSettingsUpdater.call(client, settings);
 }
 
+/**
+ * Determines whether a branch reference matches a ref selector.
+ *
+ * The selector may be a special token `~ALL` (matches any branch), `~DEFAULT_BRANCH` (matches when the branch equals the default branch), an exact branch ref, or a GitHub-style glob pattern.
+ *
+ * @param selector - The ref selector to evaluate (may contain `*` or be a special token)
+ * @param branchRef - The branch ref to test (e.g., `refs/heads/main`)
+ * @param defaultBranchRef - The repository default branch ref for `~DEFAULT_BRANCH` comparisons
+ * @returns `true` if `branchRef` satisfies the `selector`, `false` otherwise.
+ */
 function refSelectorMatches(
 	selector: string,
 	branchRef: string,
@@ -827,17 +953,26 @@ function refSelectorMatches(
 	if (normalized === branchRef) {
 		return true;
 	}
-	if (!normalized.includes("*")) {
-		return false;
-	}
-
-	const escaped = normalized
-		.replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-		.replace(/\*/g, ".*");
-	const pattern = new RegExp(`^${escaped}$`);
-	return pattern.test(branchRef);
+	return refGlobMatches(normalized, branchRef);
 }
 
+function refGlobMatches(selector: string, branchRef: string): boolean {
+	const pattern = selector
+		.split("*")
+		.map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+		.join(".*");
+	return new RegExp(`^${pattern}$`).test(branchRef);
+}
+
+/**
+ * Selects a branch-targeting ruleset with the given name that applies to the specified branch reference.
+ *
+ * @param rulesets - Array of ruleset summaries to search
+ * @param branchRef - Fully qualified branch ref to test (for example, `refs/heads/main`)
+ * @param rulesetName - Name of the ruleset to match
+ * @param defaultBranchRef - Fully qualified default branch ref used when evaluating default-branch selectors
+ * @returns The matching ruleset summary if one is found, `undefined` otherwise
+ */
 function findMatchingRuleset(
 	rulesets: RulesetSummary[],
 	branchRef: string,
@@ -867,6 +1002,12 @@ function findMatchingRuleset(
 	});
 }
 
+/**
+ * Normalize a list of required check identifiers by trimming, removing empties, and deduplicating.
+ *
+ * @param checks - The input check identifiers; if `undefined` or an empty array, `DEFAULT_REQUIRED_CHECKS` will be used instead.
+ * @returns A deduplicated array of trimmed, non-empty check identifiers (order is not guaranteed).
+ */
 function normalizeChecks(checks: string[] | undefined): string[] {
 	const baseChecks = checks === undefined ? DEFAULT_REQUIRED_CHECKS : checks;
 	const deduped = new Set<string>();

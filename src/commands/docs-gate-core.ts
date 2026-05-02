@@ -11,6 +11,7 @@ import type {
 } from "../lib/contract/types.js";
 import { DEFAULT_DOCS_GATE_POLICY } from "../lib/contract/types.js";
 import { validateContract } from "../lib/contract/validator.js";
+import { collectFrontmatterMetadataViolations } from "../lib/docs-surface/frontmatter-metadata-gate.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
 import {
@@ -1232,15 +1233,17 @@ function resolveChangedFiles(
 }
 
 /**
- * Execute the docs-gate evaluation for the repository and produce a JSON report and an exit code.
+ * Evaluate repository documentation policy and produce a report plus an exit code.
  *
- * Performs contract/policy validation, classifies changed files, derives required documentation surfaces,
- * checks presence, collects context-integrity contradictions, writes a report artifact, and appends contradiction history when applicable.
+ * Runs contract and policy validation, resolves changed files, classifies impact,
+ * determines required documentation surfaces and their presence, collects context-integrity
+ * contradictions and frontmatter metadata violations, writes a JSON report artifact, and
+ * appends contradiction history when applicable.
  *
- * @param options - Optional configuration for evaluation (mode, trigger, explicit changedFiles, repo root, trusted refs, output path, and related flags).
- * @returns An object with `report` (the generated DocsGateReport) and `exitCode` (numeric code indicating the outcome).
- *          Relevant exit codes: 0 for success/advisory pass, 10 for detected drift in required mode, 11 for bootstrap gap,
- *          12 for trust mismatch, 13 for policy error, and 14 for runtime/IO errors.
+ * @param options - Optional configuration (mode, trigger, explicit changedFiles/deletedFiles, repo root, trusted refs/SHAs, output path, and related flags).
+ * @returns An object containing `report` (the generated DocsGateReport) and `exitCode`:
+ *          `0` for success/advisory pass, `10` for detected drift in required mode, `11` for bootstrap gap,
+ *          `12` for trust mismatch, `13` for policy error, and `14` for runtime/IO errors.
  */
 export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const mode: DocsGateMode = options.mode ?? "advisory";
@@ -1440,6 +1443,30 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 		if (outcome !== "policy_error") {
 			outcome = "drift_detected";
 		}
+	}
+
+	const frontmatterMetadataFindings = collectFrontmatterMetadataViolations({
+		repoRoot,
+		changedFiles,
+		deletedFiles,
+	}).map(
+		(violation): DocsFinding => ({
+			rule_id: "docs.frontmatter.metadata_not_prose",
+			category: "doc_only",
+			surface: violation.path,
+			rule_result: "fail",
+			result: "fail",
+			severity: mode === "required" ? "error" : "warning",
+			message:
+				"YAML frontmatter fields are machine-readable metadata and must not be represented as prose headings or Table of Contents entries.",
+			path: violation.path,
+			details: violation.fix,
+			source_of_truth_ref: violation.sourceLearningId,
+		}),
+	);
+	findings.push(...frontmatterMetadataFindings);
+	if (frontmatterMetadataFindings.length > 0 && outcome !== "policy_error") {
+		outcome = "drift_detected";
 	}
 
 	const contradictionFindings = collectContradictionFindings(

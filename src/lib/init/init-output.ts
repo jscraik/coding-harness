@@ -41,18 +41,29 @@ export function printCheckUpdatesOutput(updateCheck: UpdateCheckInfo): void {
 }
 
 /**
- * Print template update result output.
+ * Log a summary of template update results to the console.
+ *
+ * @param created - File paths that were created or updated
+ * @param skipped - File paths that were skipped
+ * @param ownershipDecisions - Ownership decisions to display when `options.explainOwnership` is true
+ * @param options - Initialization options; `explainOwnership` controls whether ownership decisions are printed
+ * @param updateMode - Update mode; `"adoption-preview"` causes a preview-style label, other values indicate a refresh
  */
 export function printUpdateOutput(
 	created: string[],
 	skipped: string[],
 	ownershipDecisions: OwnershipDecision[] | undefined,
 	options: InitOptions,
+	updateMode: InitOutput["updateMode"],
 ): void {
 	if (created.length === 0 && skipped.length === 0) {
 		console.info("Already up to date.");
 	} else {
-		console.info(`Refreshing tracked templates (v${getVersion()})\n`);
+		const label =
+			updateMode === "adoption-preview"
+				? "Previewing existing-repo adoption"
+				: "Refreshing tracked templates";
+		console.info(`${label} (v${getVersion()})\n`);
 		for (const path of created) {
 			console.info(`  updated ${path}`);
 		}

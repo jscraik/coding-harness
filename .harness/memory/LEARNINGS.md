@@ -18,3 +18,5 @@ Repo-specific agent knowledge base. Append-only.
 
 > Scope: this repository only.
 > Format: **YYYY-MM-DD [Agent]:** `problem → fix`
+
+**2026-05-01 [manual]:** Path-like user input used to compose repository writes must be validated twice: reject separators in semantic labels early, then resolve the final output path and prove it stays under the intended root before writing.

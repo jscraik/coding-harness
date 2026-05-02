@@ -1,0 +1,6 @@
+Repository,File,Pull Request,URL,Usage,Learning,Created By,Last Used,Created At,Updated At
+coding-harness,docs/ai-assistant-security-policy.md,148,,516,"YAML frontmatter fields are machine-readable metadata and must not be represented as prose sections or TOC entries.",jscraik,"April 28th 2026, 10:00:46 am","April 7th 2026, 4:35:11 pm","April 7th 2026, 4:35:11 pm"
+coding-harness,,,https://github.com/jscraik/coding-harness/pull/151,47,"Use pnpm test:ci for CircleCI parity when CI migration behavior changes.",jscraik,Never,"April 8th 2026, 9:00:00 am","April 8th 2026, 9:30:00 am"
+coding-harness,scripts/codex-preflight.sh,,,31,"Applies to scripts/** : Generated runtime mirrors should be fixed at the generator and then synced.",jscraik,Never,"April 9th 2026, 9:00:00 am","April 9th 2026, 9:30:00 am"
+coding-harness,docs/agents/04-validation.md,,,0,"Validation guidance should come from repository scripts rather than global shortcuts.",jscraik,Never,"April 10th 2026, 9:00:00 am","April 10th 2026, 9:30:00 am"
+other-repo,README.md,1,,20,"Other repository learning should be skipped for coding-harness imports.",jscraik,Never,"April 11th 2026, 9:00:00 am","April 11th 2026, 9:30:00 am"

@@ -1,7 +1,7 @@
 # Governance Rules
 
-**Rule count:** 1
-**Last promoted:** 2026-04-27
+**Rule count:** 2
+**Last promoted:** 2026-04-30
 
 ## Active rules
 
@@ -11,9 +11,15 @@
   - Last promoted: 2026-04-27
   - Promoted from: `harness brain add`
 
+- **R-002**: North-star learning-loop closeout must route durable repeated learnings into Project Brain after machine-readable evidence is checked.
+  - Severity: should
+  - Rationale: `harness learnings gate`, `harness review-context`, and `harness north-star-feedback` keep repeated review evidence enforceable in PRs, while Project Brain keeps the durable why discoverable for future agents and plans.
+  - Last promoted: 2026-04-30
+  - Promoted from: CodeRabbit learnings operational-evidence tightening
+
 ## Deprecated
 
-No deprecated governance rules as of 2026-04-27.
+No deprecated governance rules as of 2026-04-30.
 
 ## Promotion guide
 

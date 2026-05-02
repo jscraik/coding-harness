@@ -330,6 +330,418 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("keeps review-context advisory when a current artifact is supplied", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-context-"));
+		const reviewContextPath = join(dir, "review-context.json");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.review-gate",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "Review context should be acknowledged.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge learned context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=2"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`\n- review-context: coderabbit.coding-harness.review-gate acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				reviewContextPath,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(true);
+				expect(result.output.review_context_status).toBe("warn");
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("resolves contract-relative review-context paths from the contract directory", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-context-relative-"));
+		const contractDir = join(dir, "config");
+		const contractPath = join(contractDir, "harness.contract.json");
+		const reviewContextPath = join(contractDir, ".harness/review-context.json");
+		mkdirSync(join(contractDir, ".harness"), { recursive: true });
+		writeFileSync(contractPath, JSON.stringify({ version: "1.0" }), "utf-8");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.contract-relative-context",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "Contract-relative review context should load.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge learned context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=4"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+				reviewContextPath: ".harness/review-context.json",
+			},
+		});
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`\n- review-context: coderabbit.coding-harness.contract-relative-context acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath,
+				requireReviewContext: true,
+				reviewContextMaxAgeMinutes: 60,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.review_context_status).toBe("warn");
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("does not acknowledge review-context learnings through ID prefix matches", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-context-prefix-"));
+		const reviewContextPath = join(dir, "review-context.json");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.review-gate",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "Review context should be acknowledged.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge learned context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=2"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- review-context: coderabbit.coding-harness.review-gate-extra acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				reviewContextPath,
+				requireReviewContext: true,
+				reviewContextMaxAgeMinutes: 60,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.review_context_status).toBe("stale");
+				expect(result.output.blockers).toContain(
+					"High-severity learning context was generated but not acknowledged in the PR body",
+				);
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks only when strict review-context mode requires a missing artifact", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		const result = await runReviewGate({
+			...defaultOptions,
+			requireReviewContext: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.review_context_status).toBe("missing");
+			expect(result.output.blockers.join(" ")).toContain(
+				"Review context artifact is required",
+			);
+		}
+	});
+
+	it("exercises CLI flag plumbing for --review-context-path and --require-review-context", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-cli-flags-"));
+		const reviewContextPath = join(dir, "review-context.json");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.cli-review-gate",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "CLI flag plumbing must be tested.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge CLI context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=3"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`\n- review-context: coderabbit.coding-harness.cli-review-gate acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const exitCode = await runReviewGateCLI({
+				...defaultOptions,
+				reviewContextPath,
+				requireReviewContext: true,
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(mockEmitReviewGateDecisionArtifacts).toHaveBeenCalled();
+			const callArgs = mockEmitReviewGateDecisionArtifacts.mock.calls[0];
+			expect(callArgs).toBeDefined();
+			const artifactInput = callArgs?.[0];
+			expect(artifactInput?.result.ok).toBe(true);
+			const output = artifactInput?.result.ok
+				? artifactInput.result.output
+				: undefined;
+			expect(output?.review_context_status).toBe("warn");
+			expect(output?.blockers).toEqual([]);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("falls back to legacy risk-policy-gate check when code-review check is absent", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",

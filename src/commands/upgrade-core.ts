@@ -20,6 +20,7 @@ import {
 	DEFAULT_CONTRACT,
 	type HarnessContract,
 } from "../lib/contract/types.js";
+import { runInitCLI } from "../lib/init/cli.js";
 import { atomicWrite } from "../lib/init/migration.js";
 import { loadManifest } from "../lib/init/rollback.js";
 import {
@@ -371,15 +372,23 @@ function printTemplateUpgradeSummary(
 export interface HarnessUpgradeOptions {
 	force?: boolean | undefined;
 	dryRun?: boolean | undefined;
+	json?: boolean | undefined;
 	provider?: string | undefined;
 	skipContractMigration?: boolean | undefined;
 }
 
 /**
- * JSC-66: `harness upgrade` CLI entry point.
+ * Execute the `harness upgrade` CLI flow and return an appropriate exit code.
  *
- * Usage:
- *   harness upgrade [targetDir] [--dry-run] [--force] [--provider circleci]
+ * Orchestrates detection of an existing installation and upgrade context, optional
+ * contract default backfill and schema migration, CI provider resolution, and
+ * template upgrades; prints progress and summaries to stdout/stderr. Supports
+ * the `json` short-circuit mode which delegates to `runInitCLI` for a dry-run
+ * JSON output.
+ *
+ * @param targetDir - Optional target directory; uses the current working directory when omitted
+ * @param options - CLI options controlling behavior (supports `dryRun`, `force`, `json`, `provider`, `skipContractMigration`)
+ * @returns A numeric exit code (one of `EXIT_CODES`) representing success or the type of failure
  */
 export function runUpgradeCLI(
 	targetDir: string | undefined,
@@ -394,6 +403,28 @@ export function runUpgradeCLI(
 		return EXIT_CODES.INVALID_PATH;
 	}
 	const preferredCiProvider = preferredProviderResult.value;
+
+	if (options.json === true) {
+		if (!dryRun) {
+			console.error(
+				"Error: --json is currently supported for upgrade dry-runs only.",
+			);
+			return EXIT_CODES.WRITE_ERROR;
+		}
+		if (options.skipContractMigration) {
+			console.error(
+				"Error: --json cannot be combined with --skip-contract-migration.",
+			);
+			return EXIT_CODES.WRITE_ERROR;
+		}
+		return runInitCLI(dir, {
+			dryRun: true,
+			force,
+			update: true,
+			json: true,
+			...(preferredCiProvider ? { ciProvider: preferredCiProvider } : {}),
+		});
+	}
 
 	// 1. Detect existing install
 	const installCheck = detectExistingInstall(dir);

@@ -4,6 +4,7 @@ import {
 	EXIT_CODES,
 	type InitOptions,
 	type InitResult,
+	MANIFEST_FILE,
 	type RestoreManifest,
 } from "./types.js";
 
@@ -62,7 +63,15 @@ export function validateModeExclusivity(
 }
 
 /**
- * Probe for an existing manifest when reusing tracked provider state.
+ * Determine whether to reuse an existing restore manifest and, when appropriate, probe for and return it along with the chosen CI provider.
+ *
+ * @param dir - Filesystem directory in which to look for a restore manifest
+ * @param options - Initialization options that affect probing (notably `ciProvider`, `rollback`, `checkUpdates`, `update`, and `dryRun`)
+ * @param requestedCiProvider - CI provider to prefer when no tracked provider is present
+ * @returns An object with:
+ *  - `existingManifest`: the discovered `RestoreManifest` or `null` if none is used or found
+ *  - `ciProvider`: the CI provider to use (from the manifest when present, otherwise `requestedCiProvider`)
+ *  - `error` (optional): an `InitResult` describing a manifest-loading failure returned when probing fails during `rollback` or `update`
  */
 export function probeManifest(
 	dir: string,
@@ -89,6 +98,14 @@ export function probeManifest(
 		preferredCiProvider: requestedCiProvider,
 	});
 	if (!manifestProbeResult.ok) {
+		if (
+			options.update &&
+			options.dryRun &&
+			manifestProbeResult.error.path === MANIFEST_FILE &&
+			manifestProbeResult.error.code === "MANIFEST_NOT_FOUND"
+		) {
+			return { existingManifest: null, ciProvider: requestedCiProvider };
+		}
 		if (options.rollback || options.update) {
 			return {
 				existingManifest: null,
@@ -111,7 +128,11 @@ export function getExitCodeFromError(error: { code: string }): number {
 	if (error.code === "PATH_TRAVERSAL") {
 		return EXIT_CODES.PATH_TRAVERSAL;
 	}
-	if (error.code === "WRITE_ERROR" || error.code === "INCOMPLETE_MANIFEST") {
+	if (
+		error.code === "WRITE_ERROR" ||
+		error.code === "INCOMPLETE_MANIFEST" ||
+		error.code === "MANIFEST_NOT_FOUND"
+	) {
 		return EXIT_CODES.WRITE_ERROR;
 	}
 	return EXIT_CODES.INVALID_PATH;

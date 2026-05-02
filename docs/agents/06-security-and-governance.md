@@ -1,6 +1,6 @@
 ---
 
-last_validated: 2026-04-26
+last_validated: 2026-04-30
 
 ---
 
@@ -61,6 +61,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
+- `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
 
 ## Code and data governance
 

@@ -123,6 +123,13 @@ function isEnforcedUpdateTemplatePath(templatePath: string): boolean {
 	return ENFORCED_UPDATE_TEMPLATE_PATHS.has(templatePath);
 }
 
+/**
+ * Validate that a template update target path is safe to write within the workspace.
+ *
+ * @param targetDir - The workspace root directory against which safety is checked
+ * @param templatePath - The template-relative path used for error messages
+ * @param targetPath - The resolved filesystem path for the intended update target
+ * @returns `{ ok: true }` when the target is valid; otherwise `{ ok: false, error }` where `error` has `code: "WRITE_ERROR"`, a `message` describing the failure (symlink detected, path escapes the workspace, or a validation failure), and `path` set to `templatePath`. */
 function validateUpdateTargetPath(
 	targetDir: string,
 	templatePath: string,
@@ -172,6 +179,44 @@ function validateUpdateTargetPath(
 	return { ok: true };
 }
 
+/**
+ * Resolve a safe filesystem target path for a template inside the workspace.
+ *
+ * Attempts to sanitize `templatePath` against `targetDir`; if sanitization fails,
+ * falls back to resolving a safe workspace symlink for the same path.
+ *
+ * @param targetDir - Root directory of the workspace where the template should be placed
+ * @param templatePath - Template-relative path to resolve into `targetDir`
+ * @returns `{ ok: true, value: string }` with the resolved absolute target path when successful, or `{ ok: false, error: InitErrorOutput }` containing the original sanitization error or the symlink-resolution error when both attempts fail
+ */
+function resolveUpdateTemplateTargetPath(
+	targetDir: string,
+	templatePath: string,
+): { ok: true; value: string } | { ok: false; error: InitErrorOutput } {
+	const pathResult = sanitizePath(targetDir, templatePath);
+	if (pathResult.ok) {
+		return pathResult;
+	}
+	const symlinkPathResult = resolveSafeWorkspaceSymlink(
+		targetDir,
+		templatePath,
+	);
+	return symlinkPathResult.ok ? symlinkPathResult : pathResult;
+}
+
+/**
+ * Computes ownership decisions for each key in a merged contract object.
+ *
+ * Walks the merged contract and determines, for each property path, whether the
+ * template or the repository should own the value and whether that value was
+ * added, preserved, or updated relative to the existing and rendered inputs.
+ *
+ * @param existingValue - The contract object currently in the repository
+ * @param renderedValue - The freshly rendered contract object from the template
+ * @param mergedValue - The resulting contract object after merging rendered into existing
+ * @param basePath - Optional dot-prefixed path prefix used when recursing into nested objects
+ * @returns An array of ownership decisions for contract property paths; each entry records the file (`CONTRACT_FILE`), the dot-separated `path`, the `owner` (`"template"` or `"repo"`), and the `action` (`"added"`, `"preserved"`, or `"updated"`)
+ */
 function collectOwnershipDecisions(
 	existingValue: Record<string, unknown>,
 	renderedValue: Record<string, unknown>,
@@ -489,15 +534,13 @@ export function checkForUpdates(
 }
 
 /**
- * Refreshes tracked templates in a workspace, applies contract merging where applicable, and updates the restore manifest version.
- *
- * Reads the manifest and re-renders each tracked template for the specified CI provider, writing updates atomically. When the harness contract file is rendered, merges changes with the existing contract and emits ownership decisions describing which fields were added, preserved, or updated. Adds any untracked provider templates that do not already exist and appends them to the manifest entries. Performs workspace path safety and symlink validations to prevent writes outside the workspace and rejects symlinked update targets. After successful writes, updates the manifest's `harnessVersion`, preserved init options, and file entries.
+ * Apply tracked and untracked templates to a workspace, merge any rendered contract changes, and update the restore manifest.
  *
  * @param targetDir - Filesystem root of the workspace to update.
- * @param manifest - The loaded restore manifest describing tracked files and preserved options.
- * @param ciProvider - The CI provider whose templates should be applied.
- * @param options - Execution controls for update application, including dry-run previews.
- * @returns On success, an object listing updated paths, skipped paths, and accumulated ownership decisions; on failure, an error record describing the write/validation or contract merge error (e.g., `WRITE_ERROR` conditions such as path escapes, missing contract, invalid contract merge, or atomic write failures).
+ * @param manifest - Loaded restore manifest describing tracked files and preserved init options.
+ * @param ciProvider - CI provider whose templates should be rendered and applied.
+ * @param options - Execution controls (e.g., `{ dryRun: true }` to preview changes without writing files).
+ * @returns On success, an object with `updated` (paths written or created), `skipped` (paths left unchanged), and `ownershipDecisions` (details of contract field ownership). On failure, an error record describing the write/validation or contract merge failure (for example, path validation, contract downgrade/protected-key removal, or atomic write errors).
  */
 export function executeUpdate(
 	targetDir: string,
@@ -626,6 +669,11 @@ export function executeUpdate(
 			}
 			const targetPath = symlinkPathResult.value;
 
+			if (!existsSync(targetPath)) {
+				skipped.push(entry.path);
+				continue;
+			}
+
 			// SECURITY: keep rejecting escaping parent-directory hops even when the
 			// tracked path is a safe in-repo symlink such as .mise.toml -> mise/config.toml.
 			try {
@@ -656,11 +704,6 @@ export function executeUpdate(
 						path: entry.path,
 					},
 				};
-			}
-
-			if (!existsSync(targetPath)) {
-				skipped.push(entry.path);
-				continue;
 			}
 
 			let content = template.render(packageManager, renderContext);
@@ -768,11 +811,13 @@ export function executeUpdate(
 			continue;
 		}
 
-		const pathResult = sanitizePath(targetDir, template.path);
+		const pathResult = resolveUpdateTemplateTargetPath(
+			targetDir,
+			template.path,
+		);
 		if (!pathResult.ok) {
 			return pathResult;
 		}
-
 		const targetPath = pathResult.value;
 		if (existsSync(targetPath)) {
 			if (template.path === CONTRACT_FILE) {

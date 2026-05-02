@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -540,6 +540,33 @@ describe("resolveActiveOverrides", () => {
 		expect(result.has("finding-a")).toBe(true);
 		expect(result.has("finding-b")).toBe(true);
 		expect(result.has("finding-c")).toBe(true);
+	});
+
+	it("excludes overrides with unsupported schema versions", () => {
+		const { date, overrideId } = writeValidOverride({
+			linkedFindingIds: ["finding-legacy"],
+		});
+		const path = join(
+			root,
+			".harness/overrides/north-star-alignment",
+			date,
+			overrideId,
+			"override-acknowledgement.json",
+		);
+		const acknowledgement = JSON.parse(readFileSync(path, "utf-8"));
+		writeFileSync(
+			path,
+			`${JSON.stringify(
+				{ ...acknowledgement, schemaVersion: "legacy/v1" },
+				null,
+				2,
+			)}\n`,
+			"utf-8",
+		);
+
+		const result = resolveActiveOverrides(root, registry);
+
+		expect(result.has("finding-legacy")).toBe(false);
 	});
 
 	it("excludes expired overrides", () => {

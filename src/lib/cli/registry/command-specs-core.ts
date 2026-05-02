@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { runArtifactGateCLI } from "../../../commands/artifact-gate.js";
 import { runAuditCLI } from "../../../commands/audit.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
@@ -16,6 +17,7 @@ import {
 	runPromoteModeCLI,
 	runSyncBranchProtectionCLI,
 } from "../../../commands/ci-migrate.js";
+import { runCIOwnershipGateCLI } from "../../../commands/ci-ownership-gate.js";
 import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
@@ -30,6 +32,7 @@ import { runGardenerCLI } from "../../../commands/gardener.js";
 import { runHealthCLI } from "../../../commands/health.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
+import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runLicenseGateCLI } from "../../../commands/license-gate.js";
 import { runLinearGateCLI } from "../../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../../commands/linear-prepare.js";
@@ -41,6 +44,7 @@ import {
 	runLocalMemoryPreflightCLI,
 } from "../../../commands/local-memory-preflight.js";
 import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
+import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
 import { runOrgAuditCLI } from "../../../commands/org-audit.js";
 import { runPilotEvaluateCLI } from "../../../commands/pilot-evaluate.js";
@@ -59,6 +63,7 @@ import {
 	runRemediateCLI,
 } from "../../../commands/remediate.js";
 import { runReplayCLI } from "../../../commands/replay.js";
+import { runReviewContextCLI } from "../../../commands/review-context.js";
 import type { runReviewGateCLI } from "../../../commands/review-gate.js";
 import { runRiskTierCLI } from "../../../commands/risk-tier.js";
 import { runSearchCLI } from "../../../commands/search.js";
@@ -78,6 +83,7 @@ import {
 	type HarnessUpgradeOptions,
 	runUpgradeCLI,
 } from "../../../commands/upgrade.js";
+import { runValidationPlanCLI } from "../../../commands/validation-plan.js";
 import { runVerifyCodeRabbitCLI } from "../../../commands/verify-coderabbit.js";
 import {
 	EXIT_CODES as VERIFY_WORK_EXIT_CODES,
@@ -94,6 +100,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
 import type { CommandSpec } from "./types.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
@@ -518,6 +525,14 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const checkInspection = inspectFlagValue(args, "--check");
 			const botLoginInspection = inspectFlagValue(args, "--bot-login");
 			const contractInspection = inspectFlagValue(args, "--contract");
+			const reviewContextInspection = inspectFlagValue(
+				args,
+				"--review-context",
+			);
+			const reviewContextMaxAgeInspection = inspectFlagValue(
+				args,
+				"--review-context-max-age-minutes",
+			);
 			if (tokenInspection.present && tokenInspection.missingValue) {
 				console.error("Error: --token requires a value");
 				return 2;
@@ -526,6 +541,11 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				{ flag: "--check", inspected: checkInspection },
 				{ flag: "--bot-login", inspected: botLoginInspection },
 				{ flag: "--contract", inspected: contractInspection },
+				{ flag: "--review-context", inspected: reviewContextInspection },
+				{
+					flag: "--review-context-max-age-minutes",
+					inspected: reviewContextMaxAgeInspection,
+				},
 			]) {
 				if (inspected.present && inspected.missingValue) {
 					console.error(`Error: ${flag} requires a value`);
@@ -589,6 +609,25 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			if (autoResolveBotThreadsFlag) options.autoResolveBotThreads = true;
 			if (contractInspection.value !== undefined) {
 				options.contractPath = contractInspection.value;
+			}
+			if (reviewContextInspection.value !== undefined) {
+				options.reviewContextPath = reviewContextInspection.value;
+			}
+			if (args.includes("--require-review-context")) {
+				options.requireReviewContext = true;
+			}
+			if (reviewContextMaxAgeInspection.value !== undefined) {
+				const parsedMaxAge = parseIntegerArg(
+					reviewContextMaxAgeInspection.value,
+					1,
+				);
+				if (parsedMaxAge === undefined) {
+					console.error(
+						"Error: --review-context-max-age-minutes expects a positive integer",
+					);
+					return 2;
+				}
+				options.reviewContextMaxAgeMinutes = parsedMaxAge;
 			}
 
 			return import("../../../commands/review-gate.js").then(
@@ -1391,6 +1430,55 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		},
 	},
 	{
+		name: "artifact-gate",
+		summary:
+			"Check generated artifact changes against the artifact provenance registry",
+		example: "artifact-gate --files scripts/codex-preflight.sh --json",
+		errorLabel: "Artifact Gate Error",
+		execute: (args) => {
+			const filesFlag = inspectFlagValue(args, "--files");
+			const registryFlag = inspectFlagValue(args, "--registry");
+
+			if (filesFlag.missingValue) {
+				console.error("Artifact Gate Error: --files requires a value");
+				return 2;
+			}
+			if (registryFlag.missingValue) {
+				console.error("Artifact Gate Error: --registry requires a value");
+				return 2;
+			}
+
+			return runArtifactGateCLI({
+				files:
+					filesFlag.value !== undefined
+						? parseCsvList(filesFlag.value)
+						: undefined,
+				registryPath: registryFlag.value,
+				json: args.includes("--json"),
+			});
+		},
+	},
+	{
+		name: "ci-ownership-gate",
+		summary:
+			"Validate CircleCI, CodeRabbit, and Semgrep required-check ownership",
+		example: "ci-ownership-gate --json",
+		errorLabel: "CI Ownership Gate Error",
+		execute: (args) => {
+			const contractFlag = inspectFlagValue(args, "--contract");
+
+			if (contractFlag.missingValue) {
+				console.error("CI Ownership Gate Error: --contract requires a value");
+				return 2;
+			}
+
+			return runCIOwnershipGateCLI({
+				contractPath: contractFlag.value,
+				json: args.includes("--json"),
+			});
+		},
+	},
+	{
 		name: "blast-radius",
 		summary: "Determine required checks from changed files",
 		example: "blast-radius --files src/auth.ts,src/api.ts --json",
@@ -1924,6 +2012,12 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runInitCLI(targetDir, options);
 		},
 	},
+	...createLearningEvidenceCommandSpecs({
+		runLearningsCLI,
+		runNorthStarFeedbackCLI,
+		runReviewContextCLI,
+		runValidationPlanCLI,
+	}),
 	{
 		name: "upgrade",
 		summary: "Upgrade harness to the latest version",
@@ -1931,6 +2025,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		execute: (args) => {
 			const dryRunFlag = args.includes("--dry-run");
 			const forceFlag = args.includes("--force");
+			const jsonFlag = args.includes("--json");
 			const skipContractFlag = args.includes("--skip-contract-migration");
 			const providerIndex = args.indexOf("--provider");
 			const provider = getFlagValue(args, providerIndex);
@@ -1944,6 +2039,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const upgradeOptions: HarnessUpgradeOptions = {
 				dryRun: dryRunFlag,
 				force: forceFlag,
+				json: jsonFlag,
 				provider: provider ?? undefined,
 				skipContractMigration: skipContractFlag,
 			};

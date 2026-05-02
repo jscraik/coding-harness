@@ -41,6 +41,10 @@ describe("runLocalMemoryPreflightCLI", () => {
 				"  auto_port: false",
 				"  host: 127.0.0.1",
 				"  port: 3002",
+				"qdrant:",
+				"  enabled: true",
+				"  auto_detect: true",
+				"  url: http://localhost:6333",
 			].join("\n"),
 			"utf-8",
 		);
@@ -77,6 +81,12 @@ describe("runLocalMemoryPreflightCLI", () => {
 			const url = String(input);
 			if (!init?.method && url.endsWith("/api/v1/health")) {
 				return mockFetchResponse(200, { success: true });
+			}
+			if (!init?.method && url === "http://localhost:6333/collections") {
+				return mockFetchResponse(200, {
+					result: { collections: [{ name: "local-memory" }] },
+					status: "ok",
+				});
 			}
 			if (url.endsWith("/api/v1/observe")) {
 				const payload = JSON.parse(String(init?.body ?? "{}")) as {
@@ -115,6 +125,9 @@ describe("runLocalMemoryPreflightCLI", () => {
 		expect(result.passed).toBe(true);
 		expect(result.messages).toContain(
 			"✅ REST health ok: http://127.0.0.1:3002/api/v1/health",
+		);
+		expect(result.messages).toContain(
+			"✅ qdrant backend ok: http://localhost:6333/collections",
 		);
 		expect(result.messages).toContain(
 			"✅ smoke cycle ok: ids memory-a, memory-b; relationship relationship-1",
@@ -213,6 +226,151 @@ describe("runLocalMemoryPreflightCLI", () => {
 		expect(result.passed).toBe(false);
 		expect(result.messages).toContain(
 			"❌ REST health endpoint returned success=false",
+		);
+	});
+
+	it("parses single-quoted host and qdrant url values without retaining quotes", async () => {
+		const configPath = join(tempDir, "config.yaml");
+		writeFileSync(
+			configPath,
+			[
+				"rest_api:",
+				"  auto_port: false",
+				"  host: '127.0.0.1' # local only",
+				"  port: 3002",
+				"qdrant:",
+				"  enabled: 'true'",
+				"  url: 'http://localhost:6333' # local vector store",
+			].join("\n"),
+			"utf-8",
+		);
+
+		const { spawnSync } = await import("node:child_process");
+		const { runLocalMemoryPreflight } = await import(
+			"../lib/preflight/local-memory.js"
+		);
+
+		vi.mocked(spawnSync).mockImplementation((command, args) => {
+			if (command === "local-memory" && args?.[0] === "--version") {
+				return {
+					status: 0,
+					stdout: "local-memory version 1.5.0\n",
+					stderr: "",
+				} as never;
+			}
+			if (command === "local-memory" && args?.[0] === "status") {
+				return {
+					status: 0,
+					stdout: '{"data":{"running":true}}\n',
+					stderr: "",
+				} as never;
+			}
+			return { status: 1, stdout: "", stderr: "unexpected command" } as never;
+		});
+
+		vi.mocked(global.fetch).mockImplementation((input, init) => {
+			const url = String(input);
+			if (url.endsWith("/api/v1/health")) {
+				return mockFetchResponse(200, { success: true });
+			}
+			if (url.endsWith("/observe")) {
+				const body = init?.body ? JSON.parse(String(init.body)) : {};
+				if (!body.content) {
+					return mockFetchResponse(400, { success: false });
+				}
+				return mockFetchResponse(200, {
+					success: true,
+					data: { id: `memory-${String(body.content).slice(0, 12)}` },
+				});
+			}
+			if (url.endsWith("/relationships")) {
+				return mockFetchResponse(200, {
+					success: true,
+					data: { relationship_id: "relationship-1" },
+				});
+			}
+			if (url.endsWith("/memories/search")) {
+				return mockFetchResponse(200, {
+					success: true,
+					results: [{ id: "memory-search-hit" }],
+				});
+			}
+			if (url === "http://localhost:6333/collections") {
+				return mockFetchResponse(200, {
+					result: { collections: [{ name: "local-memory" }] },
+				});
+			}
+			return mockFetchResponse(404, { error: "unexpected url" });
+		});
+
+		const result = await runLocalMemoryPreflight({ configPath });
+		expect(result.messages).toContain(
+			"✅ REST health ok: http://127.0.0.1:3002/api/v1/health",
+		);
+		expect(result.messages).toContain(
+			"✅ qdrant backend ok: http://localhost:6333/collections",
+		);
+		expect(result.passed).toBe(true);
+	});
+
+	it("fails closed when qdrant is enabled but unreachable", async () => {
+		const configPath = join(tempDir, "config.yaml");
+		writeFileSync(
+			configPath,
+			[
+				"rest_api:",
+				"  auto_port: false",
+				"  host: 127.0.0.1",
+				"  port: 3002",
+				"qdrant:",
+				"  enabled: true",
+				"  url: http://localhost:6333",
+			].join("\n"),
+			"utf-8",
+		);
+
+		const { spawnSync } = await import("node:child_process");
+		const { runLocalMemoryPreflight } = await import(
+			"../lib/preflight/local-memory.js"
+		);
+
+		vi.mocked(spawnSync).mockImplementation((command, args) => {
+			if (command === "local-memory" && args?.[0] === "--version") {
+				return {
+					status: 0,
+					stdout: "local-memory version 1.5.0\n",
+					stderr: "",
+				} as never;
+			}
+			if (command === "local-memory" && args?.[0] === "status") {
+				return {
+					status: 0,
+					stdout: '{"data":{"running":true}}\n',
+					stderr: "",
+				} as never;
+			}
+			return {
+				status: 1,
+				stdout: "",
+				stderr: "unexpected command",
+			} as never;
+		});
+
+		vi.mocked(global.fetch).mockImplementation((input) => {
+			const url = String(input);
+			if (url.endsWith("/api/v1/health")) {
+				return mockFetchResponse(200, { success: true });
+			}
+			if (url === "http://localhost:6333/collections") {
+				return Promise.reject(new Error("connection refused"));
+			}
+			return mockFetchResponse(404, { error: "unexpected url" });
+		});
+
+		const result = await runLocalMemoryPreflight({ configPath });
+		expect(result.passed).toBe(false);
+		expect(result.messages).toContain(
+			"❌ qdrant backend unreachable at http://localhost:6333/collections",
 		);
 	});
 });

@@ -67,7 +67,7 @@ Taxonomy note: section headings in this document represent command families. The
 | `brain`             | Project Brain knowledge, rules, and quality management (status, query, add, preflight, stale)                                                                             |
 | `health`            | Unified gate status scorecard across all gates                                                                                                                            |
 | `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                  |
-| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run` supported)                                                                                                        |
+| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                      |
 | `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                  |
 | `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                               |
 | `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                              |
@@ -91,6 +91,8 @@ Taxonomy note: section headings in this document represent command families. The
 | `check-authz`            | Validate authorization policy for mutative operations                               |
 | `check-environment`      | Validate pilot environment governance checks                                        |
 | `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                              |
+| `artifact-gate`          | Check generated artifact changes against the artifact provenance registry           |
+| `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks     |
 | `blast-radius`           | Determine required checks from changed files                                        |
 | `risk-tier`              | Classify changed files by risk tier                                                 |
 | `diff-budget`            | Enforce diff budget constraints                                                     |
@@ -153,6 +155,12 @@ Compatibility:
 | `tooling-audit`   | Audit managed repo tooling baselines                                                                                                                                                                                              |
 | `gardener`        | Detect stale docs and broken links                                                                                                                                                                                                |
 | `context-health`  | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
+| `learnings`       | Import local operational review evidence, run exact-file learning gates, and generate high-usage promotion candidates via `learnings import`, `learnings gate`, and `learnings promote`                                           |
+| `review-context`  | Generate PR review context from changed files and imported operational learnings, including applicable learned constraints and validation-plan entries                                                                            |
+| `validation-plan` | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated                                                                              |
+| `north-star-feedback` | Measure learning hits, gate blocks/warnings, promotion candidates, promoted learnings, high-usage unenforced learnings, review-thread count, and validation reruns from imported learning evidence and optional run artifacts |
+| `artifact-gate`   | Check changed generated artifacts against `.harness/artifact-provenance.json` so template/source edits accompany runtime mirrors                                                                                                  |
+| `ci-ownership-gate` | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                                                                        |
 | `search`          | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
 | `context`         | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 | `source-outline`  | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol`                                                                            |

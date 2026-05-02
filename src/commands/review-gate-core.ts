@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
 import { resolveActiveOverrides } from "../lib/contract/north-star-artifact-io.js";
@@ -20,6 +20,7 @@ import {
 } from "../lib/github/comments.js";
 import { validateSha } from "../lib/github/sha.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import type { ReviewContextResult } from "../lib/learnings/review-context.js";
 import {
 	normaliseReviewGateResult,
 	renderGateDecision,
@@ -101,8 +102,15 @@ interface ReadinessOptions {
 		status: ReviewGateOutput["plan_traceability_status"];
 		planIds: string[];
 	};
+	reviewContext?: ReviewContextReadinessResult;
 }
 
+/**
+ * Resolve the effective readiness check label, defaulting to the repository standard when none is provided.
+ *
+ * @param checkName - Optional candidate check name; empty or whitespace-only values are treated as not provided.
+ * @returns `DEFAULT_REVIEW_CHECK_NAME` if `checkName` is missing or only whitespace, otherwise the trimmed `checkName`.
+ */
 function getReadinessCheckLabel(checkName?: string): string {
 	const normalizedCheckName = checkName?.trim();
 	if (!normalizedCheckName) {
@@ -192,6 +200,21 @@ function resolveReviewCheckResult(
 	};
 }
 
+/**
+ * Augments a basic review-gate readiness payload with computed gate status, blockers, counts, confidence rubric, and optional review-context status.
+ *
+ * @param base - Base readiness payload (check status/conclusion and verification flags) to augment
+ * @param options - Optional inputs that influence augmentation:
+ *   - `checkName`: preferred check name used for messaging and `effectiveCheckName`
+ *   - `planTraceability`: plan traceability result (`status` and `planIds`) used to compute `plan_traceability_status` and `plan_ids`
+ *   - `additionalBlockers`: extra blocker strings to include in the aggregated `blockers` array
+ *   - `reviewContext`: optional review-context readiness object whose `status` is emitted as `review_context_status` and whose `warnings` increment `informational_count`
+ * @returns The full ReviewGateOutput merging `base` with computed fields:
+ *   - `policy_gate_status`, `plan_traceability_status`, `plan_ids`
+ *   - `blockers`, `actionable_count`, `informational_count`
+ *   - `confidence_rubric`
+ *   - optionally `effectiveCheckName` and `review_context_status`
+ */
 function withReadinessFields(
 	base: BaseReviewGateOutput,
 	options: ReadinessOptions = {},
@@ -276,10 +299,14 @@ function withReadinessFields(
 		...(effectiveCheckName ? { effectiveCheckName } : {}),
 		policy_gate_status: policyGateStatus,
 		plan_traceability_status: planTraceabilityStatus,
+		...(options.reviewContext
+			? { review_context_status: options.reviewContext.status }
+			: {}),
 		plan_ids: planIds,
 		blockers,
 		actionable_count: actionableCount,
-		informational_count: informationalCount,
+		informational_count:
+			informationalCount + (options.reviewContext?.warnings.length ?? 0),
 		confidence_rubric: confidenceRubric,
 	};
 }
@@ -299,6 +326,12 @@ interface ReviewerIndependenceResult {
 interface ThreadReadinessResult {
 	passed: boolean;
 	blockers: string[];
+}
+
+interface ReviewContextReadinessResult {
+	status: NonNullable<ReviewGateOutput["review_context_status"]>;
+	blockers: string[];
+	warnings: string[];
 }
 
 interface PlanTraceabilityResult {
@@ -873,6 +906,13 @@ function buildBotLoginSet(botLogin?: string): Set<string> {
 	);
 }
 
+/**
+ * Checks for unresolved pull-request review threads involving human participants.
+ *
+ * @param threads - Review threads as returned by the GitHub client's `listPullRequestReviewThreads`
+ * @param botLogins - Set of normalized bot login strings used to identify automated authors
+ * @returns `passed: true` when no unresolved threads authored by humans remain, otherwise `passed: false` and a `blockers` array describing the number of unresolved human threads
+ */
 function evaluateUnresolvedReviewThreads(
 	threads: Awaited<ReturnType<GitHubClient["listPullRequestReviewThreads"]>>,
 	botLogins: Set<string>,
@@ -907,8 +947,233 @@ function evaluateUnresolvedReviewThreads(
 }
 
 /**
- * Run review gate check with timeout polling.
- * Returns structured result usable as a library function.
+ * Assesses the readiness of a review-context artifact for a pull request and categorizes its status.
+ *
+ * Evaluates whether the artifact exists and is valid, whether it covers the PR's changed files, whether it is recent enough, and whether any high-severity learnings are acknowledged in the PR body; returns a status plus any blockers or warnings that should influence merge readiness.
+ *
+ * @param options.path - Path to the review-context artifact (may be relative to the contract); when omitted the function returns `"missing"` if `required` is true or `"not_configured"` otherwise.
+ * @param options.required - Whether the review-context artifact is required for merge; when true failing conditions are reported as blockers, otherwise they are reported as warnings.
+ * @param options.changedFiles - List of file paths changed by the PR used to detect coverage gaps against the artifact.
+ * @param options.prBody - Pull request body text used to detect acknowledgement of high-severity learnings; may be omitted.
+ * @param options.contractPath - Path to the contract file used to resolve relative artifact paths.
+ * @param options.maxAgeMinutes - Maximum acceptable artifact age in minutes (defaults to 1440).
+ * @returns An object with:
+ *  - `status`: one of `"missing"`, `"not_configured"`, `"invalid"`, `"stale"`, `"warn"`, or `"pass"`,
+ *  - `blockers`: an array of human-readable messages that must be resolved before merge (present when `required` and a failing condition exists),
+ *  - `warnings`: an array of informational messages for non-required or advisory issues.
+ */
+function evaluateReviewContextReadiness(options: {
+	path?: string;
+	required: boolean;
+	changedFiles: string[];
+	prBody?: string | null;
+	contractPath: string;
+	maxAgeMinutes?: number;
+}): ReviewContextReadinessResult {
+	if (!options.path) {
+		return {
+			status: options.required ? "missing" : "not_configured",
+			blockers: options.required
+				? [
+						"Review context artifact is required, but no review-context path is configured or supplied",
+					]
+				: [],
+			warnings: [],
+		};
+	}
+	const resolvedPath = resolveReviewContextPath(
+		options.path,
+		options.contractPath,
+	);
+	if (!existsSync(resolvedPath)) {
+		const message = `Review context artifact was not found: ${options.path}`;
+		return {
+			status: "missing",
+			blockers: options.required ? [message] : [],
+			warnings: options.required ? [] : [message],
+		};
+	}
+	const parsed = readReviewContextArtifact(resolvedPath);
+	if (!parsed.ok) {
+		return {
+			status: "invalid",
+			blockers: options.required ? [parsed.message] : [],
+			warnings: options.required ? [] : [parsed.message],
+		};
+	}
+	const coverageGaps = options.changedFiles.filter(
+		(file) => !parsed.artifact.changedFiles.includes(file),
+	);
+	const highSeverityLearnings = parsed.artifact.applicableLearnings.filter(
+		(learning) => learning.enforcement === "error",
+	);
+	const highSeverityAcknowledged =
+		highSeverityLearnings.length === 0 ||
+		hasReviewContextAcknowledgement(options.prBody, highSeverityLearnings);
+	const generatedAtMs = parsed.artifact.generatedAt
+		? Date.parse(parsed.artifact.generatedAt)
+		: Number.NaN;
+	const ageMs = Number.isFinite(generatedAtMs)
+		? Date.now() - generatedAtMs
+		: Date.now() - statSync(resolvedPath).mtimeMs;
+	const maxAgeMinutes = options.maxAgeMinutes ?? 1440;
+	const staleReasons = [
+		...(coverageGaps.length > 0
+			? [
+					`Review context artifact does not cover changed files: ${coverageGaps.join(", ")}`,
+				]
+			: []),
+		...(ageMs > maxAgeMinutes * 60 * 1000
+			? [`Review context artifact is older than ${maxAgeMinutes} minutes`]
+			: []),
+		...(highSeverityAcknowledged
+			? []
+			: [
+					"High-severity learning context was generated but not acknowledged in the PR body",
+				]),
+	];
+	if (staleReasons.length > 0) {
+		return {
+			status: "stale",
+			blockers: options.required ? staleReasons : [],
+			warnings: options.required ? [] : staleReasons,
+		};
+	}
+	return {
+		status: highSeverityLearnings.length > 0 ? "warn" : "pass",
+		blockers: [],
+		warnings:
+			highSeverityLearnings.length > 0
+				? [
+						"Review context includes high-severity learning evidence; keep the PR body acknowledgement current",
+					]
+				: [],
+	};
+}
+
+/**
+ * Resolve a review-context artifact path using the contract location as the base for relative paths.
+ *
+ * @param path - Configured artifact path (absolute or relative)
+ * @param contractPath - File path to the contract; used as the base directory when resolving relative `path`
+ * @returns The absolute filesystem path to the review-context artifact. If `path` is already absolute it is returned unchanged; otherwise it is resolved relative to the directory containing `contractPath`.
+ */
+function resolveReviewContextPath(path: string, contractPath: string): string {
+	if (isAbsolute(path)) return path;
+	return resolvePath(dirname(resolvePath(contractPath)), path);
+}
+
+/**
+ * Parses and validates a review-context JSON artifact located at the given filesystem path.
+ *
+ * @param path - Filesystem path to the review-context JSON artifact
+ * @returns An object with `ok: true` and the parsed `artifact` when the file is valid and matches the review-context schema; otherwise `ok: false` and a `message` describing the failure (invalid JSON or schema mismatch).
+ */
+function readReviewContextArtifact(
+	path: string,
+):
+	| { ok: true; artifact: ReviewContextResult }
+	| { ok: false; message: string } {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(readFileSync(path, "utf-8"));
+	} catch (error) {
+		return {
+			ok: false,
+			message: `Review context artifact is not valid JSON: ${sanitizeError(error)}`,
+		};
+	}
+	if (!isReviewContextArtifact(parsed)) {
+		return {
+			ok: false,
+			message:
+				"Review context artifact must use schemaVersion review-context/v1, status success, changedFiles array, applicableLearnings array, and sourceFingerprint.",
+		};
+	}
+	return { ok: true, artifact: parsed };
+}
+
+/**
+ * Type guard that checks whether a value matches the review-context artifact schema version "review-context/v1".
+ *
+ * Validates that the object has `schemaVersion: "review-context/v1"`, `status: "success"`, a non-empty
+ * `sourceFingerprint`, a `changedFiles` array of strings, and an `applicableLearnings` array of learning artifacts.
+ * If present, `generatedAt` must be a parseable timestamp string.
+ *
+ * @param value - The value to validate as a review-context artifact
+ * @returns `true` if `value` conforms to the `ReviewContextResult` schema described above, `false` otherwise.
+ */
+function isReviewContextArtifact(value: unknown): value is ReviewContextResult {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return false;
+	}
+	const artifact = value as Partial<ReviewContextResult>;
+	return (
+		artifact.schemaVersion === "review-context/v1" &&
+		artifact.status === "success" &&
+		(artifact.generatedAt === undefined ||
+			(typeof artifact.generatedAt === "string" &&
+				Number.isFinite(Date.parse(artifact.generatedAt)))) &&
+		typeof artifact.sourceFingerprint === "string" &&
+		artifact.sourceFingerprint.length > 0 &&
+		Array.isArray(artifact.changedFiles) &&
+		artifact.changedFiles.every((file) => typeof file === "string") &&
+		Array.isArray(artifact.applicableLearnings) &&
+		artifact.applicableLearnings.every(isReviewContextLearningArtifact)
+	);
+}
+
+/**
+ * Determines whether a value matches the shape of a review-context learning artifact.
+ *
+ * @param value - The value to validate
+ * @returns `true` if `value` is an object with a non-empty string `id` and a non-empty string `enforcement`, `false` otherwise.
+ */
+function isReviewContextLearningArtifact(value: unknown): boolean {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return false;
+	}
+	const learning = value as { id?: unknown; enforcement?: unknown };
+	return (
+		typeof learning.id === "string" &&
+		learning.id.length > 0 &&
+		typeof learning.enforcement === "string" &&
+		learning.enforcement.length > 0
+	);
+}
+
+/**
+ * Determines whether the pull request body acknowledges every high-severity review-context finding.
+ *
+ * Searches the PR body (case-insensitive) for every learning `id` from the
+ * provided high-severity learning set. Generic acknowledgement text is not
+ * enough because one broad phrase would otherwise clear unrelated blockers.
+ *
+ * @param prBody - The pull request description text (may be null or undefined)
+ * @param learnings - Array of review-context learnings whose `id` values will be searched for in the PR body
+ * @returns `true` if an acknowledgement is present, `false` otherwise
+ */
+function hasReviewContextAcknowledgement(
+	prBody: string | null | undefined,
+	learnings: ReviewContextResult["applicableLearnings"],
+): boolean {
+	const acknowledgedIds = new Set(
+		(prBody?.toLowerCase().match(/[a-z0-9][a-z0-9._:/-]*/g) ?? []).map(
+			(value) => value.trim(),
+		),
+	);
+	return learnings.every((learning) =>
+		acknowledgedIds.has(learning.id.toLowerCase()),
+	);
+}
+
+/**
+ * Evaluate the review gate for a pull request head SHA by polling CI check runs until a passing result, a completed failing run (requires rerun), or timeout.
+ *
+ * @param options - Inputs controlling the evaluation (repository, PR number, head SHA, auth token, contract path, optional check name and review-context settings)
+ * @returns An object describing the evaluation outcome:
+ *   - `ok: true` with `output` containing readiness fields and `verified` when the gate was evaluated (including `needsRerun`/`timedOut` flags as applicable), or
+ *   - `ok: false` with `error` containing a `code` and `message`. Possible error codes include `VALIDATION_ERROR`, `NOT_FOUND`, `PERMISSION_DENIED`, `TIMEOUT`, and `SYSTEM_ERROR`.
  */
 export async function runReviewGate(
 	options: ReviewGateOptions,
@@ -993,6 +1258,24 @@ export async function runReviewGate(
 			...(pullRequest.title ? { prTitle: pullRequest.title } : {}),
 			...(pullRequest.body !== undefined ? { prBody: pullRequest.body } : {}),
 			changedFiles,
+		});
+		const reviewContextPath =
+			options.reviewContextPath ?? reviewPolicy.reviewContextPath;
+		const reviewContextMaxAgeMinutes =
+			options.reviewContextMaxAgeMinutes ??
+			reviewPolicy.reviewContextMaxAgeMinutes;
+		const reviewContext = evaluateReviewContextReadiness({
+			...(reviewContextPath ? { path: reviewContextPath } : {}),
+			required:
+				options.requireReviewContext ??
+				reviewPolicy.requireReviewContext ??
+				false,
+			changedFiles,
+			...(pullRequest.body !== undefined ? { prBody: pullRequest.body } : {}),
+			contractPath: options.contractPath,
+			...(reviewContextMaxAgeMinutes === undefined
+				? {}
+				: { maxAgeMinutes: reviewContextMaxAgeMinutes }),
 		});
 		const decisionQuestionBlockers = evaluateNorthStarDecisionQuestions({
 			prBody: pullRequest.body,
@@ -1151,6 +1434,7 @@ export async function runReviewGate(
 					...threadReadiness.blockers,
 					...requiredCheckBlockers,
 					...planTraceability.blockers,
+					...reviewContext.blockers,
 					...filteredDecisionQuestionBlockers,
 				];
 				return {
@@ -1174,6 +1458,7 @@ export async function runReviewGate(
 								status: planTraceability.status,
 								planIds: planTraceability.planIds,
 							},
+							reviewContext,
 						},
 					),
 				};
@@ -1195,12 +1480,14 @@ export async function runReviewGate(
 							checkName: resolvedCheckName,
 							additionalBlockers: [
 								...planTraceability.blockers,
+								...reviewContext.blockers,
 								...filteredDecisionQuestionBlockers,
 							],
 							planTraceability: {
 								status: planTraceability.status,
 								planIds: planTraceability.planIds,
 							},
+							reviewContext,
 						},
 					),
 				};
@@ -1248,12 +1535,14 @@ export async function runReviewGate(
 								]
 							: []),
 						...planTraceability.blockers,
+						...reviewContext.blockers,
 						...filteredDecisionQuestionBlockers,
 					],
 					planTraceability: {
 						status: planTraceability.status,
 						planIds: planTraceability.planIds,
 					},
+					reviewContext,
 				},
 			),
 		};

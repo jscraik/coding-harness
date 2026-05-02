@@ -65,6 +65,12 @@ export interface OverrideValidationResult {
 	reason?: string;
 }
 
+/**
+ * Reads and parses a JSON file at the given filesystem path and returns its parsed contents when available.
+ *
+ * @param path - Path to the JSON file to read
+ * @returns The parsed JSON value from the file, or `undefined` if the file does not exist or cannot be read/parsed
+ */
 function safeReadJson<T>(path: string): T | undefined {
 	if (!existsSync(path)) {
 		return undefined;
@@ -103,15 +109,12 @@ function readJsonForValidation<T>(
 }
 
 /**
- * Resolve the recurrence state for a given failure class and surface set.
- *
- * Computes the deterministic guardrailId, checks whether a guardrail artifact
- * already exists on disk, and returns the current recurrence count.
+ * Determine whether a durable guardrail artifact exists for the given failure class and surface IDs and return its recurrence state.
  *
  * @param repoRoot - Repository root used to resolve artifact paths
  * @param failureClass - Spec-aligned failure class
  * @param surfaceIds - Governed surface IDs that identify the recurrence scope
- * @returns Recurrence resolution result
+ * @returns An object with `exists` (`true` if a durable guardrail artifact was found, `false` otherwise), `recurrenceCount` (the recorded recurrence count or `0` when not found), and `guardrailId` (the deterministic identifier for the guardrail)
  */
 export function resolveGuardrailRecurrence(
 	repoRoot: string,

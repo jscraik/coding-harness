@@ -18,6 +18,7 @@ This repository is a TypeScript control plane for agentic development and review
 - Baseline gates: `pnpm codestyle:parity`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`.
 - Branch-protection defaults include the external Semgrep Cloud GitHub App check `semgrep-cloud-platform/scan`; keep it aligned across generated contracts, `.harness/ci-required-checks.json`, and required-check docs.
 - CircleCI owns repo-run PR governance and security checks; GitHub Actions is reserved for release publishing, and Semgrep Cloud remains an independent external required check.
+- `harness.contract.json` records this split in `ciOwnership`: CircleCI is the primary PR gate, CodeRabbit is the independent review check, Semgrep Cloud is the independent external security check, and GitHub Actions fallback/release workflows must not become automatic PR gates without an intentional contract migration.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
 
@@ -75,6 +76,7 @@ Notes:
 - If runtime or artifact behavior changed, run `pnpm test:deep`.
 - When docs-gate categories are affected, run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and clear warnings before merge.
 - When AGENTS/vocabulary surfaces change, run `pnpm run docs:ubiquitous:guard` to ensure `AGENTS.md` keeps the glossary linkage contract.
+- Before PR handoff, run or explicitly mark `n.a.` for the north-star learning loop when changed files can be matched against imported CodeRabbit evidence: `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, `harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, and `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json`. The `--files` value accepts comma-separated paths or multiple following path tokens.
 - When changing validation, required-check, tooling/runtime, or architecture-context behavior, update the docs-gate required surfaces in the same change (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/06-security-and-governance.md`, `docs/agents/00-architecture-bootstrap.md`).
 - Report exact commands/outcomes in handoff notes and update the matching Linear issue for durable findings.
 
@@ -118,6 +120,7 @@ Core routing (Layer 2):
 ## Project Brain
 - Use Project Brain files in `.harness/` with Local Memory; canonical guidance lives at `/Users/jamiecraik/dev/config/codex/instructions/project-brain.md`.
 - Bootstrap with `bash /Users/jamiecraik/dev/config/codex/scripts/init-project-brain.sh --domains cli,ci,governance,tooling --index`; use `--force` only for re-init after backing up `.harness/memory/LEARNINGS.md`.
+- When the north-star learning loop finds a repeated high-value rule, keep the imported learning artifact as operational evidence and promote the distilled durable rule, decision, or explicit skip reason into Project Brain before closeout.
 
 ## Implementation Conventions
 - Local ESM imports must include `.js` extensions.

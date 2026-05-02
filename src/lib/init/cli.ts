@@ -218,7 +218,11 @@ export async function runInteractiveInitCLI(
 }
 
 /**
- * CLI entry point with output formatting and exit codes.
+ * Run the CLI wrapper for init, print formatted output based on the provided options, and return a process exit code.
+ *
+ * @param targetDir - The target directory to operate on; when undefined, the current working directory is used.
+ * @param options - CLI options that control mode (install/update/migrate/rollback/check-updates/interactive), output formatting (e.g., JSON), and other behaviors.
+ * @returns An integer exit code: 0 indicates success (including user-cancelled interactive flows), non-zero indicates an error.
  */
 export function runInitCLI(
 	targetDir: string | undefined,
@@ -235,6 +239,7 @@ export function runInitCLI(
 			created,
 			skipped,
 			ownershipDecisions,
+			updateMode,
 			updateCheck,
 			projectTypeDetection,
 		} = result.output;
@@ -259,7 +264,13 @@ export function runInitCLI(
 
 		// Handle --update output
 		if (options.update) {
-			printUpdateOutput(created, skipped, ownershipDecisions, options);
+			printUpdateOutput(
+				created,
+				skipped,
+				ownershipDecisions,
+				options,
+				updateMode,
+			);
 			return EXIT_CODES.SUCCESS;
 		}
 

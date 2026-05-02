@@ -34,14 +34,16 @@ if is_harness_source_repo; then
 	else
 		tsx_exit=$?
 	fi
-	if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-		tsx_stderr_text="$(<"$tsx_stderr_file")"
-		if [[ "$tsx_stderr_text" =~ EPERM|operation\ not\ permitted ]] &&
-			[[ "$tsx_stderr_text" =~ IPC|pipe|socket|/tmp/tsx- ]]; then
-			echo "Warning: tsx IPC startup failed (EPERM/IPC); falling back to node dist/cli.js." >&2
-			rm -f "$tsx_stderr_file"
-			exec node "$REPO_ROOT/dist/cli.js" "$@"
-		fi
+	if command -v node >/dev/null 2>&1 && node -e '
+		const { readFileSync } = require("node:fs");
+		const stderr = readFileSync(process.argv[1], "utf8");
+		process.exit(
+			/listen EPERM: operation not permitted.*(\/tmp\/tsx-|\.pipe)/.test(stderr)
+				? 0
+			: 1,
+		);
+	' "$tsx_stderr_file"; then
+		echo "Warning: tsx IPC startup failed (EPERM/IPC); refusing dist fallback in source checkout because dist freshness cannot be proven deterministically." >&2
 	fi
 	cat "$tsx_stderr_file" >&2
 	rm -f "$tsx_stderr_file"

@@ -42,9 +42,6 @@ function extractRegistryCommands(commandSpecsSource: string): string[] {
 		}
 		match = nameRegex.exec(commandSpecsSource);
 	}
-	// These are registered directly in command-registry.ts outside COMMAND_SPECS.
-	commands.add("commands");
-	commands.add("source-outline");
 	return Array.from(commands).sort();
 }
 
@@ -267,7 +264,16 @@ export function push(
 	},
 	baselineFingerprints: Set<string>,
 ): void {
-	const fingerprint = [raw.rule_id, raw.surface, raw.path ?? ""].join("|");
+	const discriminator =
+		(raw as { fingerprint_key?: unknown }).fingerprint_key ??
+		(raw as { command?: unknown }).command ??
+		(raw as { command_name?: unknown }).command_name ??
+		(raw as { target?: unknown }).target ??
+		"";
+	const fingerprintParts = [raw.rule_id, raw.surface, raw.path ?? ""];
+	if (String(discriminator).length > 0)
+		fingerprintParts.push(String(discriminator));
+	const fingerprint = fingerprintParts.join("|");
 	const baseline_state: DriftBaselineState = baselineFingerprints.has(
 		fingerprint,
 	)
@@ -317,6 +323,22 @@ function evaluateCommandSurface(
 	const commandSpecsSource = usesRegistryDispatch
 		? readTextFile(commandSpecsPath)
 		: undefined;
+	if (usesRegistryDispatch && !commandSpecsSource) {
+		push(
+			findings,
+			{
+				rule_id: "command.surface.sources.missing",
+				surface: "command",
+				rule_result: "error",
+				severity: "error",
+				message:
+					"Registry-backed command surface is missing src/lib/cli/registry/command-specs.ts.",
+				path: "src/lib/cli/registry/command-specs.ts",
+			},
+			baselineFingerprints,
+		);
+		return;
+	}
 	const canonicalCommands =
 		usesRegistryDispatch && commandSpecsSource
 			? extractRegistryCommands(commandSpecsSource)
@@ -686,18 +708,19 @@ export function evaluate(
 }
 
 /**
- * Emit or update durable guardrail artifacts for blocking findings.
+ * Create or update durable guardrail artifacts for findings that include a `failureClass`.
  *
- * For each finding with a `failureClass`, resolves the deterministic guardrailId,
- * checks recurrence state on disk, and creates or updates the guardrail artifact.
- * Returns the set of artifact paths that were written.
+ * @param repoRoot - Filesystem path to the repository root used for reading and writing artifacts
+ * @param findings - Findings to evaluate; only entries with `failureClass` are processed
+ * @param contract - Harness contract; if `productSurface` is absent, eligible findings are grouped under a global surface fallback
+ * @returns The filesystem paths of durable guardrail artifact files that were written
  */
 export function emitGuardrailsForFindings(
 	repoRoot: string,
 	findings: DriftFinding[],
 	contract: HarnessContract | undefined,
 ): string[] {
-	if (!contract?.productSurface) {
+	if (!contract) {
 		return [];
 	}
 
@@ -721,10 +744,12 @@ export function emitGuardrailsForFindings(
 			continue;
 		}
 		const pathValue = finding.path ?? "";
-		const matchingSurfaces = findMatchingProductSurfaces(
-			contract.productSurface,
-			pathValue ? [pathValue] : [],
-		);
+		const matchingSurfaces = contract.productSurface
+			? findMatchingProductSurfaces(
+					contract.productSurface,
+					pathValue ? [pathValue] : [],
+				)
+			: [];
 		const surfaceIds =
 			matchingSurfaces.length > 0
 				? matchingSurfaces.map((s) => s.surfaceId)
@@ -761,6 +786,7 @@ export function emitGuardrailsForFindings(
 			createdAtUtc: now,
 			owner: "workflow",
 			implementationTarget: entry.pathValue || "repo-root",
+			// "implemented" = guardrail artifact exists; "proposed" = newly detected
 			status: recurrence.exists ? "implemented" : "proposed",
 		};
 

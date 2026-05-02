@@ -198,6 +198,19 @@ exec node "$CLI_PATH" "$@"
 `;
 }
 
+const harnessGateSourceRepoHelpers = `is_harness_source_repo() {
+	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
+	[[ -f "$REPO_ROOT/package.json" ]] || return 1
+	command -v node >/dev/null 2>&1 || return 1
+
+	node -e '
+		const { readFileSync } = require("node:fs");
+		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
+		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
+	' "$REPO_ROOT/package.json" >/dev/null 2>&1
+}
+`;
+
 /**
  * Generate the bash runner that resolves and runs the repository's harness CLI.
  *
@@ -218,18 +231,7 @@ if [[ $# -eq 0 ]]; then
 	exit 2
 fi
 
-is_harness_source_repo() {
-	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
-	[[ -f "$REPO_ROOT/package.json" ]] || return 1
-	command -v node >/dev/null 2>&1 || return 1
-
-	node -e '
-		const { readFileSync } = require("node:fs");
-		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
-		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
-	' "$REPO_ROOT/package.json" >/dev/null 2>&1
-}
-
+${harnessGateSourceRepoHelpers}
 if is_harness_source_repo; then
 	if ! command -v pnpm >/dev/null 2>&1; then
 		echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2
@@ -243,14 +245,16 @@ if is_harness_source_repo; then
 	else
 		tsx_exit=$?
 	fi
-	if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-		tsx_stderr_text="$(<"$tsx_stderr_file")"
-		if [[ "$tsx_stderr_text" =~ EPERM|operation\\ not\\ permitted ]] &&
-			[[ "$tsx_stderr_text" =~ IPC|pipe|socket|/tmp/tsx- ]]; then
-			echo "Warning: tsx IPC startup failed (EPERM/IPC); falling back to node dist/cli.js." >&2
-			rm -f "$tsx_stderr_file"
-			exec node "$REPO_ROOT/dist/cli.js" "$@"
-		fi
+	if command -v node >/dev/null 2>&1 && node -e '
+		const { readFileSync } = require("node:fs");
+		const stderr = readFileSync(process.argv[1], "utf8");
+		process.exit(
+			/listen EPERM: operation not permitted.*(\\/tmp\\/tsx-|\\.pipe)/.test(stderr)
+				? 0
+			: 1,
+		);
+	' "$tsx_stderr_file"; then
+		echo "Warning: tsx IPC startup failed (EPERM/IPC); refusing dist fallback in source checkout because dist freshness cannot be proven deterministically." >&2
 	fi
 	cat "$tsx_stderr_file" >&2
 	rm -f "$tsx_stderr_file"

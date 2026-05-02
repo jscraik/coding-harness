@@ -1,0 +1,563 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { inspectFlagList } from "../lib/cli/parse-utils.js";
+import {
+	DEFAULT_CODERABBIT_LOCAL_ARTIFACT,
+	buildCodeRabbitLearningArtifact,
+	writeLearningArtifact,
+} from "../lib/learnings/artifact-io.js";
+import { runLearningsGate } from "../lib/learnings/gate.js";
+import {
+	parseLearningLiveCompanion,
+	sanitizeLearningLiveCompanionDiagnostic,
+} from "../lib/learnings/live-companion.js";
+import { buildLearningPromotionCandidates } from "../lib/learnings/promote.js";
+import {
+	LEARNING_IMPORT_RESULT_SCHEMA_VERSION,
+	type LearningImportResult,
+} from "../lib/learnings/types.js";
+
+const EXIT_CODES = {
+	SUCCESS: 0,
+	FAILURE: 1,
+	USAGE: 2,
+} as const;
+const DEFAULT_PROMOTE_MIN_USAGE = 25;
+
+interface PromoteErrorContext {
+	source?: string;
+	minUsage?: number;
+}
+
+/**
+ * Dispatches the `harness learnings` CLI to the appropriate subcommand handler.
+ *
+ * Parses the first element of `args` as the subcommand (`import`, `gate`, or `promote`)
+ * and delegates execution to the corresponding subcommand CLI function. Emits a
+ * usage error when the subcommand is missing or unrecognized.
+ *
+ * @param args - The command-line arguments following `harness learnings`
+ * @returns A numeric process exit code: `0` for success, `1` for failure, or `2` for usage errors
+ */
+export function runLearningsCLI(args: string[]): number {
+	const subcommand = args[0];
+	if (subcommand === undefined) {
+		return emitError({
+			json: args.includes("--json"),
+			errorCode: "learnings.subcommand_required",
+			message:
+				"harness learnings requires subcommand `import`, `gate`, or `promote`.",
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	if (subcommand === "gate") {
+		return runLearningsGateCLI(args.slice(1));
+	}
+	if (subcommand === "promote") {
+		return runLearningsPromoteCLI(args.slice(1));
+	}
+	if (subcommand !== "import") {
+		return emitError({
+			json: args.includes("--json"),
+			errorCode: "learnings.unknown_subcommand",
+			message: `Unknown learnings subcommand: ${subcommand}. Available: import, gate, promote.`,
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	return runLearningsImportCLI(args.slice(1));
+}
+
+/**
+ * Execute the Phase 1B exact-file learning gate subcommand using provided CLI arguments.
+ *
+ * @returns Exit code: `0` on success, `1` if the gate result is `fail`, `2` for usage errors (e.g., missing or invalid flags)
+ */
+export function runLearningsGateCLI(args: string[]): number {
+	const json = args.includes("--json");
+	const sourceFlag = readOptionalFlag(args, "--source");
+	const overridesFlag = readOptionalFlag(args, "--overrides");
+	if (sourceFlag.missingValue || overridesFlag.missingValue) {
+		return emitError({
+			json,
+			errorCode: "learnings.flag_value_required",
+			message: missingOptionalFlagMessage({
+				sourceFlag,
+				overridesFlag,
+			}),
+			exitCode: EXIT_CODES.USAGE,
+			outputKind: "gate",
+		});
+	}
+	const source = sourceFlag.value;
+	const overrides = overridesFlag.value;
+	const overrideMode = readOverrideMode(args);
+	if (!overrideMode.ok) {
+		return emitError({
+			json,
+			errorCode: "learnings.override_mode_invalid",
+			message: overrideMode.message,
+			exitCode: EXIT_CODES.USAGE,
+			outputKind: "gate",
+		});
+	}
+	const files = inspectFlagList(args, "--files");
+	if (!files.present || files.missingValue) {
+		return emitError({
+			json,
+			errorCode: "learnings.files_required",
+			message: "harness learnings gate requires --files.",
+			exitCode: EXIT_CODES.USAGE,
+			outputKind: "gate",
+		});
+	}
+	const gateResult = runLearningsGate({
+		...(source ? { source } : {}),
+		...(overrides ? { overrides } : {}),
+		overrideMode: overrideMode.value,
+		files: files.values,
+	});
+	if (json) {
+		console.info(JSON.stringify(gateResult, null, 2));
+	} else {
+		console.info(`${gateResult.gate} ${gateResult.status}`);
+		console.info(gateResult.reason);
+	}
+	return gateResult.status === "fail" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
+}
+
+/**
+ * Execute the Phase 1C "learnings promote" CLI subcommand.
+ *
+ * @param args - Command-line arguments passed to the subcommand
+ * @returns EXIT_CODES.FAILURE if the promotion result has status "error", otherwise EXIT_CODES.SUCCESS
+ */
+export function runLearningsPromoteCLI(args: string[]): number {
+	const json = args.includes("--json");
+	const sourceFlag = readOptionalFlag(args, "--source");
+	const enforcementStatusFlag = readOptionalFlag(args, "--enforcement-status");
+	const source = sourceFlag.value;
+	const enforcementStatusPath = enforcementStatusFlag.value;
+	const minUsageResult = readMinUsage(args);
+	const promoteContext = buildPromoteErrorContext({
+		source,
+		minUsageResult,
+	});
+	if (sourceFlag.missingValue || enforcementStatusFlag.missingValue) {
+		return emitError({
+			json,
+			errorCode: "learnings.flag_value_required",
+			message: missingOptionalFlagMessage({
+				sourceFlag,
+				enforcementStatusFlag,
+			}),
+			exitCode: EXIT_CODES.USAGE,
+			outputKind: "promote",
+			promoteContext,
+		});
+	}
+	if (!minUsageResult.ok) {
+		return emitError({
+			json,
+			errorCode: "learnings.min_usage_invalid",
+			message: minUsageResult.message,
+			exitCode: EXIT_CODES.USAGE,
+			outputKind: "promote",
+			promoteContext,
+		});
+	}
+	const result = buildLearningPromotionCandidates({
+		...(source ? { source } : {}),
+		...(enforcementStatusPath ? { enforcementStatusPath } : {}),
+		...(minUsageResult.value === undefined
+			? {}
+			: { minUsage: minUsageResult.value }),
+		includeEnforced: args.includes("--include-enforced"),
+	});
+	if (json) {
+		console.info(JSON.stringify(result, null, 2));
+	} else if (result.status === "error") {
+		console.error(`Error: ${result.error?.message ?? "Promotion failed."}`);
+	} else {
+		console.info(
+			[
+				`Promotion candidates: ${result.summary.eligible}`,
+				`Excluded learnings: ${result.summary.excluded}`,
+				`Minimum usage: ${result.minUsage}`,
+			].join("\n"),
+		);
+	}
+	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
+}
+
+/**
+ * Execute the "harness learnings import" subcommand: validate flags, build a CodeRabbit CSV learning artifact, write it to disk, and print the import result.
+ *
+ * The function accepts CLI-style arguments (including --provider, --source, --repo, optional --output, optional --live-companion, and --json),
+ * validates required inputs, optionally loads a live companion JSON, constructs and writes the artifact, and prints either JSON or a human-readable summary.
+ *
+ * @param args - Array of command-line arguments for the subcommand (e.g., process.argv slice)
+ * @returns The process exit code: `0` for success, `1` for failure, or `2` for usage/validation errors
+ */
+export function runLearningsImportCLI(args: string[]): number {
+	const json = args.includes("--json");
+	const provider = readRequiredFlag(args, "--provider");
+	const source = readRequiredFlag(args, "--source");
+	const repo = readRequiredFlag(args, "--repo");
+	const output = readOptionalFlag(args, "--output");
+	const liveCompanionFlag = readOptionalFlag(args, "--live-companion");
+	if (output.missingValue || liveCompanionFlag.missingValue) {
+		return emitError({
+			json,
+			errorCode: "learnings.flag_value_required",
+			message: missingOptionalFlagMessage({
+				outputFlag: output,
+				liveCompanionFlag,
+			}),
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	const liveCompanionPath = liveCompanionFlag.value;
+	const missing = [
+		provider.ok ? undefined : "--provider",
+		source.ok ? undefined : "--source",
+		repo.ok ? undefined : "--repo",
+	].filter((value): value is string => value !== undefined);
+	const missingValues = missingRequiredFlagValues({ provider, source, repo });
+	if (missingValues.length > 0) {
+		return emitError({
+			json,
+			errorCode: "learnings.flag_value_required",
+			message: `Missing value for ${missingValues.join(", ")}.`,
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	if (missing.length > 0) {
+		return emitError({
+			json,
+			errorCode: "learnings.missing_required_flags",
+			message: `Missing required flags for harness learnings import: ${missing.join(", ")}.`,
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	const providerValue = provider.ok ? provider.value : "";
+	const sourceValue = source.ok ? source.value : "";
+	const repoValue = repo.ok ? repo.value : "";
+	if (providerValue !== "coderabbit-csv") {
+		return emitError({
+			json,
+			errorCode: "learnings.unsupported_provider",
+			message: "Phase 1A supports only --provider coderabbit-csv.",
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	const liveCompanion = liveCompanionPath
+		? loadLearningLiveCompanion(liveCompanionPath)
+		: undefined;
+	if (liveCompanion && !liveCompanion.ok) {
+		return emitError({
+			json,
+			errorCode: liveCompanion.code,
+			message: liveCompanion.message,
+			exitCode: EXIT_CODES.USAGE,
+		});
+	}
+	const outputPath = output.value ?? DEFAULT_CODERABBIT_LOCAL_ARTIFACT;
+	const artifactResult = buildCodeRabbitLearningArtifact({
+		sourcePath: resolve(sourceValue),
+		repository: repoValue,
+		previousArtifactPath: resolve(outputPath),
+		...(liveCompanion?.ok ? { liveCompanion: liveCompanion.companion } : {}),
+	});
+	if (!artifactResult.ok) {
+		return emitError({
+			json,
+			errorCode: artifactResult.errorCode,
+			message: artifactResult.message,
+			warnings: artifactResult.warnings,
+			exitCode: EXIT_CODES.FAILURE,
+		});
+	}
+	const writeResult = writeLearningArtifact({
+		artifact: artifactResult.artifact,
+		outputPath,
+	});
+	if (!writeResult.ok) {
+		const exitCode =
+			writeResult.errorCode === "learnings.snapshot_deferred"
+				? EXIT_CODES.USAGE
+				: EXIT_CODES.FAILURE;
+		return emitError({
+			json,
+			errorCode: writeResult.errorCode,
+			message: writeResult.message,
+			warnings: writeResult.warnings,
+			exitCode,
+		});
+	}
+	const result: LearningImportResult = {
+		schemaVersion: LEARNING_IMPORT_RESULT_SCHEMA_VERSION,
+		status: artifactResult.artifact.warnings.length > 0 ? "partial" : "success",
+		artifactPath: writeResult.artifactPath,
+		repository: artifactResult.artifact.repository,
+		summary: artifactResult.artifact.summary,
+		warnings: artifactResult.artifact.warnings,
+	};
+	if (json) {
+		console.info(JSON.stringify(result, null, 2));
+	} else {
+		console.info(
+			[
+				`Imported ${result.summary?.imported ?? 0} CodeRabbit learning${result.summary?.imported === 1 ? "" : "s"} for ${result.repository}.`,
+				`Artifact: ${result.artifactPath}`,
+				`Skipped: ${result.summary?.skipped ?? 0}`,
+				`Warnings: ${result.summary?.warnings ?? 0}`,
+			].join("\n"),
+		);
+	}
+	return EXIT_CODES.SUCCESS;
+}
+
+/**
+ * Loads and parses a live-companion JSON file used for learning imports.
+ *
+ * @param path - Filesystem path to the live-companion JSON file
+ * @returns The parsed result from `parseLearningLiveCompanion` on success; otherwise an object with `ok: false`, `code: "learnings.live_companion.read_failed"`, a `message` describing the read/parse problem, and a `fix` suggesting to provide a readable `live-companion/v1` JSON object or omit `--live-companion`
+ */
+function loadLearningLiveCompanion(
+	path: string,
+): ReturnType<typeof parseLearningLiveCompanion> {
+	try {
+		return parseLearningLiveCompanion(readFileSync(resolve(path), "utf-8"));
+	} catch (error) {
+		return {
+			ok: false,
+			code: "learnings.live_companion.read_failed",
+			message: `Failed to read live companion metadata: ${sanitizeLearningLiveCompanionDiagnostic(error instanceof Error ? error.message : String(error))}`,
+			fix: "Provide a readable live-companion/v1 JSON object, or omit --live-companion.",
+		};
+	}
+}
+
+/**
+ * Reads the value for a required CLI flag from the provided arguments.
+ *
+ * @returns `{ ok: true; value: string }` if the flag is present with a value, `{ ok: false }` if the flag is absent.
+ */
+function readRequiredFlag(
+	args: string[],
+	flag: string,
+): { ok: true; value: string } | { ok: false; missingValue?: boolean } {
+	const parsed = readOptionalFlag(args, flag);
+	if (parsed.missingValue) return { ok: false, missingValue: true };
+	return parsed.value === undefined
+		? { ok: false }
+		: { ok: true, value: parsed.value };
+}
+
+function missingRequiredFlagValues(
+	flags: Record<string, ReturnType<typeof readRequiredFlag>>,
+): string[] {
+	return Object.entries(flags)
+		.filter(([, value]) => !value.ok && value.missingValue)
+		.map(([flag]) => `--${flag}`);
+}
+
+/**
+ * Reads an optional flag's value from an argv-style string array.
+ *
+ * @param args - The argument list to search (e.g., process.argv.slice(...)).
+ * @param flag - The flag to find (including leading dashes, e.g., `--files`).
+ * @returns An object with `value` set to the argument following `flag` if present and not another flag (does not start with `-`); otherwise an empty object.
+ */
+function readOptionalFlag(
+	args: string[],
+	flag: string,
+): { value: string | undefined; missingValue?: boolean } {
+	const index = args.indexOf(flag);
+	if (index === -1) return { value: undefined };
+	const value = args[index + 1];
+	if (value === undefined || value.trim() === "" || value.startsWith("-")) {
+		return { value: undefined, missingValue: true };
+	}
+	return { value };
+}
+
+/**
+ * Parses the `--min-usage` flag from a CLI argument array and validates it as a non-negative integer.
+ *
+ * @param args - The command-line arguments to read the flag from.
+ * @returns `{ ok: true }` if the flag is absent; `{ ok: true, value: number }` if present and valid; `{ ok: false, message: string }` if present but invalid.
+ */
+function readMinUsage(
+	args: string[],
+): { ok: true; value?: number } | { ok: false; message: string } {
+	const parsed = readOptionalFlag(args, "--min-usage");
+	if (parsed.missingValue) {
+		return {
+			ok: false,
+			message: "--min-usage requires a value.",
+		};
+	}
+	const rawValue = parsed.value;
+	if (rawValue === undefined) return { ok: true };
+	const value = Number(rawValue);
+	if (!Number.isInteger(value) || value < 0) {
+		return {
+			ok: false,
+			message: "--min-usage must be a non-negative integer.",
+		};
+	}
+	return { ok: true, value };
+}
+
+function buildPromoteErrorContext(input: {
+	source?: string | undefined;
+	minUsageResult: ReturnType<typeof readMinUsage>;
+}): PromoteErrorContext {
+	return {
+		...(input.source ? { source: input.source } : {}),
+		...(input.minUsageResult.ok && input.minUsageResult.value !== undefined
+			? { minUsage: input.minUsageResult.value }
+			: {}),
+	};
+}
+
+/**
+ * Parses the `--override-mode` flag and validates it as either `strict` or `advisory`.
+ *
+ * @returns `{ ok: true, value: "strict" | "advisory" }` when the flag is absent or contains a valid mode; `{ ok: false, message: string }` when the flag value is invalid.
+ */
+function readOverrideMode(
+	args: string[],
+): { ok: true; value: "strict" | "advisory" } | { ok: false; message: string } {
+	const parsed = readOptionalFlag(args, "--override-mode");
+	if (parsed.missingValue) {
+		return {
+			ok: false,
+			message: "--override-mode requires a value.",
+		};
+	}
+	const rawValue = parsed.value;
+	if (rawValue === undefined || rawValue === "strict") {
+		return { ok: true, value: "strict" };
+	}
+	if (rawValue === "advisory") return { ok: true, value: "advisory" };
+	return {
+		ok: false,
+		message: "--override-mode must be strict or advisory.",
+	};
+}
+
+function missingOptionalFlagMessage(
+	flags: Record<string, { missingValue?: boolean }>,
+): string {
+	const missing = Object.entries(flags)
+		.filter(([, value]) => value.missingValue)
+		.map(([key]) =>
+			key
+				.replace(/Flag$/, "")
+				.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
+				.replace(/^/, "--"),
+		);
+	return `Missing value for ${missing.join(", ")}.`;
+}
+
+/**
+ * Format and emit an error as either structured JSON or a plain console message, then return the provided exit code.
+ *
+ * @param options - Configuration for the emitted error
+ * @param options.json - If true, output a structured JSON to stdout; otherwise output a plain error message to stderr
+ * @param options.errorCode - Machine-readable error code to include in the JSON output
+ * @param options.message - Human-readable error message to emit
+ * @param options.exitCode - Process exit code to return
+ * @param options.warnings - Optional list of warnings to include in the JSON output
+ * @param options.outputKind - JSON error shape to emit for import, gate, or promotion commands
+ * @param options.promoteContext - Parsed promotion context to preserve in JSON usage errors
+ * @returns The `exitCode` passed in `options`
+ */
+function emitError(options: {
+	json: boolean;
+	errorCode: string;
+	message: string;
+	exitCode: number;
+	warnings?: LearningImportResult["warnings"];
+	outputKind?: "import" | "gate" | "promote";
+	promoteContext?: PromoteErrorContext;
+}): number {
+	if (options.json) {
+		if (options.outputKind === "gate") {
+			console.info(
+				JSON.stringify(
+					{
+						gate: "learnings-gate",
+						version: "1.0.0",
+						timestamp: new Date().toISOString(),
+						status: "fail",
+						findings: [
+							{
+								id: `learnings-gate.usage.${options.errorCode}`,
+								severity: "error",
+								gate: "learnings-gate",
+								message: options.message,
+								baseline: false,
+								fix: { manual: options.message, suppressible: false },
+							},
+						],
+						summary: { errors: 1, warnings: 0, info: 0, total: 1 },
+						reason: options.message,
+						action_now: [options.message],
+						action_later: [],
+						evidence_ref: [],
+						meta: { errorCode: options.errorCode },
+					},
+					null,
+					2,
+				),
+			);
+			return options.exitCode;
+		}
+		if (options.outputKind === "promote") {
+			console.info(
+				JSON.stringify(
+					{
+						schemaVersion: "learnings-promote-result/v1",
+						status: "error",
+						source:
+							options.promoteContext?.source ??
+							DEFAULT_CODERABBIT_LOCAL_ARTIFACT,
+						minUsage:
+							options.promoteContext?.minUsage ?? DEFAULT_PROMOTE_MIN_USAGE,
+						promotionCandidates: [],
+						summary: {
+							total: 0,
+							eligible: 0,
+							excluded: 0,
+							belowThreshold: 0,
+							enforcedExcluded: 0,
+							explicitlyDeferred: 0,
+							enforced: 0,
+						},
+						error: {
+							code: options.errorCode,
+							message: options.message,
+						},
+					},
+					null,
+					2,
+				),
+			);
+			return options.exitCode;
+		}
+		const result: LearningImportResult = {
+			schemaVersion: LEARNING_IMPORT_RESULT_SCHEMA_VERSION,
+			status: "error",
+			warnings: options.warnings ?? [],
+			errorCode: options.errorCode,
+			message: options.message,
+		};
+		console.info(JSON.stringify(result, null, 2));
+	} else {
+		console.error(`Error: ${options.message}`);
+	}
+	return options.exitCode;
+}

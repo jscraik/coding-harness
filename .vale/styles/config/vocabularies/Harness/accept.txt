@@ -17,6 +17,7 @@ boolean
 booleans
 canonicalized
 citty
+CLI's
 CLIs
 CodeRabbit
 Codex
@@ -24,6 +25,7 @@ config
 configs
 CONTRIBUTING
 cutover
+cwd
 deps
 dev
 Dockerfile
@@ -42,6 +44,7 @@ hardcode
 hardcoded
 Harness
 hoc
+idempotence
 idempotency
 Idempotency
 idempotently
@@ -87,6 +90,7 @@ rulesets
 runbook
 runbooks
 sandboxed
+sanitization
 scaffolded
 Semgrep
 SHAs
@@ -95,6 +99,8 @@ sourceable
 stderr
 stdout
 subcommand
+subcommands
+subactions
 subtree
 Tauri
 toolchain
@@ -120,6 +126,7 @@ worktrees
 Xcode
 xcodebuild
 yargs
+ADRs
 A_buildOutput
 A_evalApprovals
 A_handleTimeout
@@ -128,10 +135,14 @@ A_markVerified
 A_startTimer
 approvers
 backoff
+Canonicalize
+codestyle
 Craik
 critical_path
 dedupe
 deduplication
+Deliverables
+enum
 G_checkCompleted
 G_checkPassing
 G_contractLoaded
@@ -150,5 +161,15 @@ headSha
 Installability
 Jamie
 max_duration
+nullable
 Octokit
+overfits
+overfitting
+parseability
+parseable
+Skillification
+skillification
+Skillify
+skillify
 sla
+URIs

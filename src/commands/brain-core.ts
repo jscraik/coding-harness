@@ -24,7 +24,8 @@ import {
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { inspectFlagList } from "../lib/cli/parse-utils.js";
 import {
 	type BrainValidationResult,
 	validateProjectBrain,
@@ -388,7 +389,28 @@ function isSafeDomainSegment(domain: string): boolean {
 	return /^[a-z0-9][a-z0-9_-]*$/i.test(domain);
 }
 
-/** Public API export. */
+function isInsideDirectory(rootDir: string, targetPath: string): boolean {
+	const relativePath = relative(rootDir, targetPath);
+	return (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !isAbsolute(relativePath))
+	);
+}
+
+/**
+ * Adds a knowledge item to the harness repository by creating or appending the appropriate file for the given type.
+ *
+ * The function writes or appends a formatted entry for `type` into the harness directory structure (e.g., knowledge/<domain>/rules.md,
+ * knowledge/<domain>/hypotheses.md, decisions/<date>-<slug>.md, or memory/LEARNINGS.md) and returns metadata about the created/updated file.
+ *
+ * @param harnessDir - Path to the root harness directory (the function writes under this directory)
+ * @param type - One of `"learning" | "rule" | "hypothesis" | "decision"` selecting the target file and formatting
+ * @param domain - Domain name used for domain-scoped files (e.g., `knowledge/<domain>/...`); ignored for decisions and global learnings
+ * @param content - The textual content to be inserted into the selected file
+ * @param options - Optional settings
+ * @param options.severity - Severity label used when `type` is `"rule"` (default: `"should"`)
+ * @returns An object describing the addition: `type`, `domain`, `path` (relative to the harness dir), the `content` written, and `appended: true`
+ */
 export function runBrainAdd(
 	harnessDir: string,
 	type: BrainAddType,
@@ -435,7 +457,13 @@ export function runBrainAdd(
 		}
 	}
 
-	const fullPath = join(harnessDir, targetFile);
+	const resolvedHarnessDir = resolve(harnessDir);
+	const fullPath = resolve(resolvedHarnessDir, targetFile);
+	if (!isInsideDirectory(resolvedHarnessDir, fullPath)) {
+		throw new Error(
+			"Refusing to write Project Brain content outside .harness.",
+		);
+	}
 	mkdirSync(dirname(fullPath), { recursive: true });
 
 	// Append or create
@@ -454,6 +482,17 @@ export function runBrainAdd(
 	};
 }
 
+/**
+ * Handle the `brain add` CLI subcommand: validate flags, perform the add action, and emit output.
+ *
+ * Processes expected flags from `args` (e.g., `--type`, `--domain`, `--content`, `--severity`, `--dir`, and `--json`),
+ * writes human or JSON output to stdout (and error messages to stderr), and invokes the add operation.
+ *
+ * @param args - The CLI token array passed to the `add` subcommand
+ * @returns A `BrainCliResult` containing an `exitCode` and, on success, the `result` produced by `runBrainAdd`.
+ *          Returns `EXIT_CODES.INVALID_ARGS` when required flags are missing or invalid, and
+ *          `EXIT_CODES.NOT_FOUND` when a `.harness` directory cannot be located.
+ */
 function cliBrainAdd(args: string[]): BrainCliResult {
 	const typeIndex = args.indexOf("--type");
 	const typeVal = getFlagValue(args, typeIndex);
@@ -473,9 +512,9 @@ function cliBrainAdd(args: string[]): BrainCliResult {
 
 	const type = typeVal as BrainAddType;
 
-	if (type !== "learning" && !domainVal) {
+	if ((type === "rule" || type === "hypothesis") && !domainVal) {
 		process.stderr.write(
-			"Error: --domain is required for non-learning types\n",
+			"Error: --domain is required for rule and hypothesis types\n",
 		);
 		return { exitCode: EXIT_CODES.INVALID_ARGS };
 	}
@@ -547,7 +586,11 @@ function extractRules(content: string): string[] {
 }
 
 /**
- * Extract list items from a section of a markdown file.
+ * Extracts list items from a second-level (##) markdown section with the given header.
+ *
+ * @param content - The full markdown document to search.
+ * @param sectionHeader - The literal section header text (omit the leading `##`); matching is case-insensitive and captures until the next `##` header or end of file.
+ * @returns An array of trimmed list item strings (lines starting with `-`) found in the section; an empty array if the section is not present or contains no list items.
  */
 function extractListItems(content: string, sectionHeader: string): string[] {
 	const items: string[] = [];
@@ -700,17 +743,15 @@ function renderBrainPreflightHuman(result: BrainPreflightResult): string {
 }
 
 function cliBrainPreflight(args: string[]): BrainCliResult {
-	const filesIndex = args.indexOf("--files");
-	const filesArg = getFlagValue(args, filesIndex);
+	const files = inspectFlagList(args, "--files");
 
-	if (!filesArg) {
+	if (!files.present || files.missingValue) {
 		process.stderr.write(
-			"Error: --files <path1,path2,...> is required for brain preflight\n",
+			"Error: --files <path...> is required for brain preflight\n",
 		);
 		return { exitCode: EXIT_CODES.INVALID_ARGS };
 	}
 
-	const files = filesArg.split(",").map((f) => f.trim());
 	const harnessDir = findHarnessDir(getFlagValue(args, args.indexOf("--dir")));
 
 	if (!existsSync(harnessDir)) {
@@ -720,7 +761,7 @@ function cliBrainPreflight(args: string[]): BrainCliResult {
 		return { exitCode: EXIT_CODES.NOT_FOUND };
 	}
 
-	const result = runBrainPreflight(harnessDir, files);
+	const result = runBrainPreflight(harnessDir, files.values);
 	const json = getOutputJson(args);
 
 	if (json) {
@@ -820,7 +861,10 @@ function cliBrainStale(args: string[]): BrainCliResult {
 // ─── CLI entry point ─────────────────────────────────────────────────────────
 
 /**
- * Main CLI entry point for `harness brain`.
+ * Entrypoint that parses arguments and dispatches the `harness brain` subcommands.
+ *
+ * @param args - Command-line arguments passed to the CLI (subcommand followed by its options)
+ * @returns An integer exit code: 0 for success, 1 for warnings, 2 for errors, 3 for not found, 4 for invalid arguments
  */
 export function runBrainCLI(args: string[]): number {
 	if (args.includes("--help") || args.includes("-h") || args.length === 0) {
@@ -831,6 +875,7 @@ Subcommands:
   query               Search across knowledge, rules, and quality criteria
   add                 Capture a learning, decision, rule, or hypothesis
   preflight           Load relevant context for a set of changed files
+  stale               Report staleness of Project Brain artifacts
 
 Options:
   --json              Output in JSON format

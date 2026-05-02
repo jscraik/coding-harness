@@ -212,22 +212,18 @@ function addCheck(
 }
 
 /**
- * Validate repository and PR metadata against the contract's issueTrackingPolicy and produce a structured verification report.
+ * Validate repository and PR metadata against the contract's issueTrackingPolicy and return a structured verification report.
  *
- * Reads the contract (defaults to harness.contract.json in the repo root), resolves the effective issue tracking policy,
- * gathers metadata (branch name, PR title/body, package.json bugs URL, and .github/ISSUE_TEMPLATE/config.yml), runs the
- * policy checks (package bugs URL, retiring GitHub issues, branch linkage, PR linkage, PR reference mode, and branch/PR consistency),
- * and returns a summarized result with individual check outcomes and extracted issue keys.
- *
- * Side effects: temporarily changes the process working directory to the resolved repoRoot to load the contract (restored on return),
- * reads files under repoRoot, inspects environment variables, and may invoke git to detect the current branch.
+ * Temporarily changes the process working directory to the resolved repoRoot while loading the contract; reads files under
+ * repoRoot, inspects environment variables, and may invoke git to detect the current branch.
  *
  * @param options - Overrides and flags controlling repo root and contract location, optional branch/PR metadata overrides,
  *                  tolerance for missing metadata (`allowMissingBranch`, `allowMissingPrMetadata`), and JSON output mode.
- * @returns On success (`ok: true`): `output` contains whether the policy passed, the applied policy, `repoRoot`, optional
- *          `branch`/`prTitle`/`bugsUrl`, the full `checks` array, and extracted `issueKeys` grouped by `branch`, `pr`, `refs`, and `fixes`.
- *          On failure (`ok: false`): `error` contains a machine-friendly `code` (`CONTRACT_ERROR` or `VALIDATION_ERROR`)
- *          and a human-readable message describing the load or validation failure.
+ * @returns On success (`ok: true`): `output` includes whether the policy passed, the applied policy, `repoRoot`,
+ *          optional `branch`/`prTitle`/`bugsUrl`, the `checks` array with individual `LinearGateCheck` records, and
+ *          extracted `issueKeys` grouped by `branch`, `pr`, `refs`, and `fixes`.
+ *          On failure (`ok: false`): `error` contains a `code` (`CONTRACT_ERROR` or `VALIDATION_ERROR`) and a human-readable
+ *          `message` describing the load or validation failure.
  */
 export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());

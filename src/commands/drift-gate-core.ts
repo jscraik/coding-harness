@@ -286,10 +286,10 @@ function writeDriftGateOutput(
 }
 
 /**
- * Execute the drift-gate evaluation and produce a DriftReport plus a process-style exit code.
+ * Run repository drift checks, handle baseline and contract interactions, emit artifacts, and produce a final report.
  *
- * Runs repository consistency checks, compares findings against an optional baseline and contract,
- * optionally seeds or writes baseline/output artifacts, and persists a north-star drift artifact.
+ * @param options - Configuration for the run (mode, repoRoot, baselinePath, suppressions, outPath, json, etc.)
+ * @returns An object with `report` containing the generated DriftReport and `exitCode` containing the process-style exit code
  */
 export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	const mode = options.mode ?? "advisory";
