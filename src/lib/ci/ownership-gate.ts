@@ -68,7 +68,6 @@ const DEFAULT_CI_OWNERSHIP = {
 	securityChecks: [...DEFAULT_CI_OWNERSHIP_POLICY.securityChecks],
 	fallbackWorkflows: [...(DEFAULT_CI_OWNERSHIP_POLICY.fallbackWorkflows ?? [])],
 } as const;
-const PR_TRIGGER_PATTERN = /\b(pull_request|pull_request_target|merge_group)\b/;
 const ON_KEY_PATTERN = /^["']?on["']?\s*:\s*(.*)$/;
 const PR_TRIGGER_KEY_PATTERN =
 	/^["']?(pull_request|pull_request_target|merge_group)["']?\s*:/;
@@ -511,12 +510,91 @@ function workflowHasAutomaticPrTrigger(content: string): boolean {
 		const onMatch = trimmed.match(ON_KEY_PATTERN);
 		if (!onMatch) return false;
 		const inlineValue = stripYamlComment(onMatch[1] ?? "");
-		if (inlineValue !== "") return PR_TRIGGER_PATTERN.test(inlineValue);
+		if (inlineValue !== "") return inlineOnHasAutomaticPrTrigger(inlineValue);
 		onBlockIndent = indent;
 		onEventIndent = undefined;
 		inOnBlock = true;
 		return false;
 	});
+}
+
+/**
+ * Detects PR-family triggers in inline `on:` YAML values without matching nested workflow inputs.
+ *
+ * @param inlineValue - Comment-stripped inline value after the `on:` key.
+ * @returns True when the inline value names a PR-family event at the top level.
+ */
+function inlineOnHasAutomaticPrTrigger(inlineValue: string): boolean {
+	const value = inlineValue.trim();
+	if (value === "") return false;
+	if (value.startsWith("{") && value.endsWith("}")) {
+		return splitTopLevelYamlFlow(value.slice(1, -1)).some((entry) => {
+			const separator = entry.indexOf(":");
+			if (separator === -1) return false;
+			return isPrTriggerName(entry.slice(0, separator));
+		});
+	}
+	if (value.startsWith("[") && value.endsWith("]")) {
+		return splitTopLevelYamlFlow(value.slice(1, -1)).some(isPrTriggerName);
+	}
+	return isPrTriggerName(value);
+}
+
+function splitTopLevelYamlFlow(value: string): string[] {
+	const entries: string[] = [];
+	let current = "";
+	let depth = 0;
+	let quote: '"' | "'" | null = null;
+	let escaped = false;
+	for (const char of value) {
+		if (escaped) {
+			current += char;
+			escaped = false;
+			continue;
+		}
+		if (char === "\\") {
+			current += char;
+			escaped = true;
+			continue;
+		}
+		if (quote) {
+			current += char;
+			if (char === quote) quote = null;
+			continue;
+		}
+		if (char === '"' || char === "'") {
+			current += char;
+			quote = char;
+			continue;
+		}
+		if (char === "{" || char === "[") {
+			current += char;
+			depth += 1;
+			continue;
+		}
+		if (char === "}" || char === "]") {
+			current += char;
+			depth = Math.max(0, depth - 1);
+			continue;
+		}
+		if (char === "," && depth === 0) {
+			entries.push(current.trim());
+			current = "";
+			continue;
+		}
+		current += char;
+	}
+	if (current.trim() !== "") entries.push(current.trim());
+	return entries;
+}
+
+function isPrTriggerName(value: string): boolean {
+	const name = value.trim().replace(/^["']|["']$/g, "");
+	return (
+		name === "pull_request" ||
+		name === "pull_request_target" ||
+		name === "merge_group"
+	);
 }
 
 function stripYamlComment(value: string): string {

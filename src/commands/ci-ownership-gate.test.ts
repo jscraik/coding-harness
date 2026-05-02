@@ -423,6 +423,53 @@ describe("ci-ownership-gate command", () => {
 		);
 	});
 
+	it("does not treat inline workflow_dispatch inputs as PR triggers", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["semgrep-cloud-platform/scan"],
+				fallbackWorkflows: [
+					{
+						path: ".github/workflows/manual-inline.yml",
+						role: "release_publishing",
+						purpose: "Manual release publishing only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: [
+					"pr-pipeline",
+					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
+				],
+			},
+		});
+		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".github/workflows/manual-inline.yml"),
+			[
+				"name: manual inline",
+				"on: { workflow_dispatch: { inputs: { pull_request: { description: PR number } } } }",
+				"jobs: {}",
+			].join("\n"),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(0);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).not.toContain(
+			"ci-ownership.fallback-workflow..github/workflows/manual-inline.yml.automatic-pr-trigger",
+		);
+	});
+
 	it("does not treat job names outside the on block as PR triggers", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },
