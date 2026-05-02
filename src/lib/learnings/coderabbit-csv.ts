@@ -50,10 +50,16 @@ export function toSourceUri(sourcePath: string): string {
  */
 export function normalizeFullSlug(repository: string): string {
 	return repository
-		.trim()
-		.toLowerCase()
-		.replace(/[^a-z0-9/]+/g, "-")
-		.replace(/^-+|-+$/g, "");
+		.split("/")
+		.map((segment) =>
+			segment
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, "-")
+				.replace(/^-+|-+$/g, ""),
+		)
+		.filter((segment) => segment.length > 0)
+		.join("/");
 }
 
 /**
@@ -368,6 +374,17 @@ function parseUsage(
 		return {
 			ok: false,
 			message: `Usage must be a non-negative integer: ${redactSensitiveText(value)}`,
+		};
+	}
+	// Check if the value exceeds Number.MAX_SAFE_INTEGER before using Number.parseInt
+	const maxSafeStr = String(Number.MAX_SAFE_INTEGER);
+	if (
+		value.length > maxSafeStr.length ||
+		(value.length === maxSafeStr.length && value > maxSafeStr)
+	) {
+		return {
+			ok: false,
+			message: `Usage must not exceed Number.MAX_SAFE_INTEGER (${Number.MAX_SAFE_INTEGER}): ${redactSensitiveText(value)}`,
 		};
 	}
 	return { ok: true, usage: Number.parseInt(value, 10) };
