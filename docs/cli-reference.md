@@ -7,6 +7,7 @@ last_validated: 2026-04-18
 ## Table of Contents
 
 - [Purpose](#purpose)
+- [Agent cockpit entrypoint](#agent-cockpit-entrypoint)
 - [Machine-readable command catalog](#machine-readable-command-catalog)
 - [Gate JSON Envelope](#gate-json-envelope)
 - [Unknown command guardrails](#unknown-command-guardrails)
@@ -22,6 +23,32 @@ last_validated: 2026-04-18
 This file contains the extended command catalog for Coding Harness.
 
 For repo-facing onboarding and common workflows, start at [`README.md`](../README.md).
+
+## Agent cockpit entrypoint
+
+Use `harness next --json` as the read-only agent cockpit entrypoint. It
+inspects changed files from git by default, emits a `HarnessDecision`, and
+points `nextCommand` at an existing command instead of inventing a new workflow.
+
+```bash
+harness next --json
+```
+
+Optional overrides:
+
+```bash
+harness next --json --files src/cli.ts docs/cli-reference.md
+harness next --json --mode pr
+```
+
+First-slice routing is intentionally small:
+
+| State | Recommended command |
+| --- | --- |
+| No changed files | `harness check --json` |
+| Git state unavailable | `harness doctor --json` |
+| Changed files, `local` or `ci` mode | `harness validation-plan --files <files> --json` |
+| Changed files, `pr` mode | `harness review-context --files <files> --json` |
 
 ## Machine-readable command catalog
 
