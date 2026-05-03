@@ -202,10 +202,14 @@ artifacts that are versioned alongside code.
   `.circleci/config.yml` (`security-scan` in `pr-pipeline`)
 - External Semgrep Cloud gate:
   GitHub required check `semgrep-cloud-platform/scan`
+- Release workflow validation tool:
+  `ripgrep` (`rg`) for `docs:ubiquitous:guard` during tag-triggered publish
 
 Security scanning now runs in CircleCI as part of `pr-pipeline`. GitHub Actions
 in this repository is reserved for release publishing only
 (`.github/workflows/release-private-npm.yml`).
+That release workflow installs `ripgrep` before `pnpm check` because the
+`docs:ubiquitous:guard` step shells out to `rg` on GitHub-hosted runners.
 Semgrep Cloud is enforced separately as an external GitHub App required check.
 The machine-readable `harness.contract.json` `ciOwnership` block keeps that split
 explicit: CircleCI owns the primary PR gate, CodeRabbit remains the independent
