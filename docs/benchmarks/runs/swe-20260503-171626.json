@@ -1,0 +1,19 @@
+{
+	"run_id": "swe-20260503-171626",
+	"track": "swe",
+	"command": "pnpm check",
+	"status": "pass",
+	"started_at": "2026-05-03T17:16:26Z",
+	"finished_at": "2026-05-03T17:17:43Z",
+	"duration_seconds": 77,
+	"notes": "",
+	"artifacts": [],
+	"git": {
+		"commit": "468a24feb122607ab012b04cb95bd833c5c023a1",
+		"branch": "codex/prepare-0-15-0",
+		"repository": "https://github.com/jscraik/coding-harness.git"
+	},
+	"metrics": {
+		"exit_code": 0
+	}
+}

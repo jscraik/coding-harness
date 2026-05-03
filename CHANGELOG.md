@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [0.15.0](https://github.com/jscraik/coding-harness/compare/v0.14.0...v0.15.0) (2026-05-03)
+
+
+### Bug Fixes
+
+* **review:** harden learning evidence surfaces ([8ebda15](https://github.com/jscraik/coding-harness/commit/8ebda15179e6f0b6eb77abaaf15469a9efdd3442)), closes [#219](https://github.com/jscraik/coding-harness/issues/219)
+
+
+### Features
+
+* add cockpit eval and readiness surfaces ([#220](https://github.com/jscraik/coding-harness/issues/220)) ([468a24f](https://github.com/jscraik/coding-harness/commit/468a24feb122607ab012b04cb95bd833c5c023a1))
+
+
+
 ## [0.14.0](https://github.com/jscraik/coding-harness/compare/v0.13.1...v0.14.0) (2026-04-24)
 
 ### Features
