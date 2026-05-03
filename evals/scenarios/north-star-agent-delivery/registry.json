@@ -302,12 +302,10 @@
 			"type": "registered",
 			"prompt": "Run the harness init update path and tell me what changed.",
 			"expected": {
-				"commands": ["harness init", "harness init --check-updates"],
-				"artifacts": [
-					"harness contract or init summary",
-					"changed file inventory"
-				],
+				"commands": ["harness upgrade --dry-run --json"],
+				"artifacts": ["upgrade dry-run JSON", "tracked manifest preview"],
 				"assertions": [
+					"preview includes updateMode, trackedManifest, and updateDetails",
 					"installed skill path is .agents/skills/coding-harness/",
 					"canonical generated surfaces are updated together",
 					"manual edits to generated mirrors are avoided"

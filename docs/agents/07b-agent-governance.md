@@ -29,6 +29,7 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
+- `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)
 - Code-review pass-through via PR workflow (no direct `main` commits).
 

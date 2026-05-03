@@ -152,6 +152,65 @@ describe("validateHarnessDecision", () => {
 			]),
 		);
 	});
+
+	it("rejects invalid operational metadata on the decision envelope", () => {
+		const result = validateHarnessDecision(
+			validDecision({
+				meta: {
+					frictionClass: "mystery",
+					delayClass: "normal",
+					execution: {
+						profile: "read_only",
+						startupCost: "low",
+						permissionPlan: {
+							requiresHuman: false,
+							requiresNetwork: false,
+							writesFiles: false,
+							requiresGitWrite: false,
+							filesystemWrite: [],
+							commands: ["harness next --json"],
+							secrets: [],
+						},
+					},
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"meta.frictionClass must be one of none, tool_friction, permission_sandbox, repo_state, unclear_instruction, validation_failure, implementation_complexity, external_service",
+		);
+	});
+
+	it("rejects operational metadata that disagrees with envelope flags", () => {
+		const result = validateHarnessDecision(
+			validDecision({
+				requiresNetwork: true,
+				meta: {
+					frictionClass: "none",
+					delayClass: "normal",
+					execution: {
+						profile: "read_only",
+						startupCost: "low",
+						permissionPlan: {
+							requiresHuman: false,
+							requiresNetwork: false,
+							writesFiles: false,
+							requiresGitWrite: false,
+							filesystemWrite: [],
+							commands: ["harness next --json"],
+							secrets: [],
+						},
+					},
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"requiresNetwork must match meta.execution.permissionPlan.requiresNetwork",
+		);
+	});
 });
 
 describe("validateHarnessDecisionOperationalMeta", () => {

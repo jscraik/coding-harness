@@ -76,17 +76,38 @@ const fs = require("node:fs");
 const filePath = process.argv[2];
 const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
 
+const normalizeMermaidId = (id) =>
+	id.replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,}))$/i, "");
+
 const normalizeMermaidLine = (line) => {
 	let value = line.trim();
 	if (!value) return "";
 	if (/^[+-][A-Za-z0-9_./-]+\.(?:[cm]?[jt]sx?|json|md|ya?ml)$/.test(value)) return "";
 
-	value = value.replace(/^subgraph\s+[A-Za-z0-9_:-]+\s*(\[[^\]]+\])/, "subgraph NODE$1");
-	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
-	value = value.replace(/^class\s+[A-Za-z0-9_:-]+\s*\{$/, "class NODE {");
-	value = value.replace(/\b(style|class|click)\s+[A-Za-z0-9_:-]+\b/g, "$1 NODE");
-	value = value.replace(/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/, "NODE$2");
-	value = value.replace(/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");
+	value = value.replace(
+		/^subgraph\s+([A-Za-z0-9_:-]+)(\s*(?:\[[^\]]+\])?)/,
+		(_, id, rest) => `subgraph ${normalizeMermaidId(id)}${rest}`,
+	);
+	value = value.replace(
+		/^([A-Za-z0-9_:-]+)(\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\}))/,
+		(_, id, rest) => `${normalizeMermaidId(id)}${rest}`,
+	);
+	value = value.replace(
+		/^class\s+([A-Za-z0-9_:-]+)\s*\{$/,
+		(_, id) => `class ${normalizeMermaidId(id)} {`,
+	);
+	value = value.replace(
+		/\b(style|class|click)\s+([A-Za-z0-9_:-]+)\b/g,
+		(_, command, id) => `${command} ${normalizeMermaidId(id)}`,
+	);
+	value = value.replace(
+		/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/,
+		(_, id, rest) => `${normalizeMermaidId(id)}${rest}`,
+	);
+	value = value.replace(
+		/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g,
+		(_, arrow, id) => `${arrow} ${normalizeMermaidId(id)}`,
+	);
 	return value.replace(/\s+/g, " ").trim();
 };
 
@@ -107,17 +128,38 @@ const normalized = [];
 let inMermaid = false;
 let mermaidLines = [];
 
+const normalizeMermaidId = (id) =>
+	id.replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,}))$/i, "");
+
 const normalizeMermaidLine = (line) => {
 	let value = line.trim();
 	if (!value) return "";
 	if (/^[+-][A-Za-z0-9_./-]+\.(?:[cm]?[jt]sx?|json|md|ya?ml)$/.test(value)) return "";
 
-	value = value.replace(/^subgraph\s+[A-Za-z0-9_:-]+\s*(\[[^\]]+\])/, "subgraph NODE$1");
-	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
-	value = value.replace(/^class\s+[A-Za-z0-9_:-]+\s*\{$/, "class NODE {");
-	value = value.replace(/\b(style|class|click)\s+[A-Za-z0-9_:-]+\b/g, "$1 NODE");
-	value = value.replace(/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/, "NODE$2");
-	value = value.replace(/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");
+	value = value.replace(
+		/^subgraph\s+([A-Za-z0-9_:-]+)(\s*(?:\[[^\]]+\])?)/,
+		(_, id, rest) => `subgraph ${normalizeMermaidId(id)}${rest}`,
+	);
+	value = value.replace(
+		/^([A-Za-z0-9_:-]+)(\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\}))/,
+		(_, id, rest) => `${normalizeMermaidId(id)}${rest}`,
+	);
+	value = value.replace(
+		/^class\s+([A-Za-z0-9_:-]+)\s*\{$/,
+		(_, id) => `class ${normalizeMermaidId(id)} {`,
+	);
+	value = value.replace(
+		/\b(style|class|click)\s+([A-Za-z0-9_:-]+)\b/g,
+		(_, command, id) => `${command} ${normalizeMermaidId(id)}`,
+	);
+	value = value.replace(
+		/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/,
+		(_, id, rest) => `${normalizeMermaidId(id)}${rest}`,
+	);
+	value = value.replace(
+		/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g,
+		(_, arrow, id) => `${arrow} ${normalizeMermaidId(id)}`,
+	);
 	return value.replace(/\s+/g, " ").trim();
 };
 

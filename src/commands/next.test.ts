@@ -251,6 +251,28 @@ describe("runNextCLI", () => {
 		expect(decision.nextAction).toContain("omit --files");
 	});
 
+	it("preserves comma-containing file paths passed as one --files value", () => {
+		const { exitCode, output } = captureNextCLI(
+			["--json", "--files", "src/a,b.ts"],
+			{},
+		);
+
+		expect(exitCode).toBe(0);
+		const decision = parseDecision(output);
+		expect(decision.nextCommand).toBe(
+			"harness validation-plan --files src/a,b.ts --json",
+		);
+		expect(decision.meta).toMatchObject({
+			nextCommandArgv: [
+				"harness",
+				"validation-plan",
+				"--files",
+				"src/a,b.ts",
+				"--json",
+			],
+		});
+	});
+
 	it("rejects unknown flags before producing a recommendation", () => {
 		const { exitCode, output } = captureNextCLI(["--json", "--mod", "pr"], {});
 

@@ -86,7 +86,9 @@ const result = {
 	status,
 	registry: path.relative(REPO_ROOT, registryPath),
 	summary: {
-		registeredScenarios: scenarios.length,
+		registeredScenarios: scenarios.filter(
+			(scenario) => scenario?.type !== "live_fixture",
+		).length,
 		liveFixtures: liveFixtureResults.length,
 		liveFixtureFailures: liveFixtureFailures.length,
 		findings: findings.length,
@@ -103,9 +105,9 @@ const observabilityEntries = scenarios.map((scenario) => {
 	const scores = Object.fromEntries(
 		SCORECARD_IDS.map((id) => [
 			id,
-			scenarioResult?.status === "fail"
-				? 0
-				: Number(scenario.scoreWeights?.[id] ?? 0),
+			scenarioResult?.status === "pass"
+				? Number(scenario.scoreWeights?.[id] ?? 0)
+				: 0,
 		]),
 	);
 	return {
@@ -205,11 +207,11 @@ function validateRegistry(value, registryFindings) {
 		}
 	}
 	const scenarios = normalizeArray(value.scenarios);
-	if (scenarios.length < 10 || scenarios.length > 14) {
+	if (scenarios.length < 10) {
 		registryFindings.push(
 			errorFinding(
 				"registry.scenarios",
-				`Expected 10 to 14 scenarios, found ${scenarios.length}.`,
+				`Expected at least 10 scenarios, found ${scenarios.length}.`,
 			),
 		);
 	}
@@ -868,7 +870,7 @@ function routeHarnessEngineeringLifecycle(prompt) {
 		});
 	}
 	if (
-		!/\bharness engineering\b|\bhe-\b|\bbranch\b|\bpr\b|\btest\b|\broute\b/.test(
+		!/\bharness engineering\b|\bhe-[a-z][a-z-]*\b|\bbranch\b|\bpr\b|\btest\b|\broute\b/.test(
 			normalized,
 		)
 	) {

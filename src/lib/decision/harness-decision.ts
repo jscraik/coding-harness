@@ -283,6 +283,57 @@ function validatePermissionPlan(
 	validateStringArray(value.secrets, `${field}.secrets`, errors);
 }
 
+function hasOperationalMetaShape(value: Record<string, unknown>): boolean {
+	return (
+		"frictionClass" in value || "delayClass" in value || "execution" in value
+	);
+}
+
+function getOperationalPermissionPlan(
+	value: Record<string, unknown>,
+): Record<string, unknown> | null {
+	const execution = value.execution;
+	if (!isRecord(execution)) return null;
+	const permissionPlan = execution.permissionPlan;
+	return isRecord(permissionPlan) ? permissionPlan : null;
+}
+
+function validateOperationalMetaConsistency(
+	decision: Record<string, unknown>,
+	meta: Record<string, unknown>,
+	errors: string[],
+): void {
+	const permissionPlan = getOperationalPermissionPlan(meta);
+	if (!permissionPlan) return;
+	if (
+		typeof decision.requiresHuman === "boolean" &&
+		typeof permissionPlan.requiresHuman === "boolean" &&
+		decision.requiresHuman !== permissionPlan.requiresHuman
+	) {
+		errors.push(
+			"requiresHuman must match meta.execution.permissionPlan.requiresHuman",
+		);
+	}
+	if (
+		typeof decision.requiresNetwork === "boolean" &&
+		typeof permissionPlan.requiresNetwork === "boolean" &&
+		decision.requiresNetwork !== permissionPlan.requiresNetwork
+	) {
+		errors.push(
+			"requiresNetwork must match meta.execution.permissionPlan.requiresNetwork",
+		);
+	}
+	if (
+		typeof decision.writesFiles === "boolean" &&
+		typeof permissionPlan.writesFiles === "boolean" &&
+		decision.writesFiles !== permissionPlan.writesFiles
+	) {
+		errors.push(
+			"writesFiles must match meta.execution.permissionPlan.writesFiles",
+		);
+	}
+}
+
 /**
  * Validate an optional operational metadata payload carried in
  * `HarnessDecision.meta`.
@@ -370,6 +421,14 @@ export function validateHarnessDecision(
 	}
 	if (value.meta !== undefined && !isRecord(value.meta)) {
 		errors.push("meta must be an object when present");
+	}
+	if (isRecord(value.meta) && hasOperationalMetaShape(value.meta)) {
+		const metaValidation = validateHarnessDecisionOperationalMeta(value.meta);
+		if (!metaValidation.valid) {
+			errors.push(...metaValidation.errors.map((error) => `meta.${error}`));
+		} else {
+			validateOperationalMetaConsistency(value, value.meta, errors);
+		}
 	}
 
 	return { valid: errors.length === 0, errors };

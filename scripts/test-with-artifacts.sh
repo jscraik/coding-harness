@@ -163,7 +163,18 @@ run_e2e() {
 
 run_evals() {
   if [[ "$has_pkg" == true ]] && has_pkg_script test:evals; then
-    run_pkg_script test:evals "evals"
+    local eval_artifact_dir="$ARTIFACT_DIR/evals"
+    case "$RUNNER" in
+      pnpm)
+        run_logged "evals" "ARTIFACT_DIR='$eval_artifact_dir' pnpm run test:evals"
+        ;;
+      bun)
+        run_logged "evals" "ARTIFACT_DIR='$eval_artifact_dir' bun run test:evals"
+        ;;
+      npm|*)
+        run_logged "evals" "ARTIFACT_DIR='$eval_artifact_dir' npm run test:evals --silent"
+        ;;
+    esac
   else
     echo "[test-with-artifacts] No eval test command found, skipping"
   fi

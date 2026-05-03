@@ -29,7 +29,7 @@ small; this runbook is the durable workflow contract.
 
 ## Source Of Truth
 
-- Repository: `/Users/jamiecraik/dev/coding-harness`
+- Repository: current checkout root
 - Plan:
   `docs/plans/2026-05-02-feat-session-friction-evidence-contracts-plan.md`
 - Linear issue: `JSC-249`
@@ -61,7 +61,8 @@ Known safe cursor as of 2026-05-03:
    relevant codestyle modules, package scripts, and current validation evidence.
 2. Classify dirty files before editing. Preserve unrelated user or eval-suite
    changes.
-3. Use `$he-work` in plan-led mode for the first incomplete phase.
+3. Use the Harness Engineering work cycle in plan-led mode for the first
+   incomplete phase.
 4. Make the smallest implementation slice that satisfies the active phase.
 5. Run focused validation from the plan before broad gates.
 6. Stop at deterministic blockers and report exact evidence.
@@ -89,9 +90,9 @@ Before leaving a phase, complete all of these:
 
 At the end of each phase, run these in order over the phase diff:
 
-1. `$simplify`
-2. `$he-code-review`
-3. `@codex-security`
+1. Simplify pass over the phase diff.
+2. Harness Engineering code review over the phase diff.
+3. Codex Security scan over the phase diff.
 
 Apply only behavior-preserving simplifications and verified fixes. Re-run the
 smallest validation that proves the final phase diff.
@@ -106,7 +107,7 @@ Once the phase is green:
 - End the commit message with exactly one final trailer:
   `Co-authored-by: Codex <noreply@openai.com>`.
 - Push the branch.
-- Create or update the GitHub PR with `@github`.
+- Create or update the GitHub PR with the repository GitHub workflow.
 - Follow the repository PR template exactly.
 - Do not auto-merge.
 

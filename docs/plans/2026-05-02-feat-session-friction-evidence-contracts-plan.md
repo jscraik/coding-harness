@@ -5,10 +5,10 @@ type: feat
 status: draft
 date: 2026-05-02
 plan_id: feat-session-friction-evidence-contracts
-source_report: /Users/jamiecraik/.codex/usage-data/report.html
+source_report: <operator-local-codex-usage-report>
 source_prior_art: https://github.com/withastro/flue
-source_codex_prior_art: /Users/jamiecraik/dev/codex
-source_claude_code_comparison: /Users/jamiecraik/dev/claude-code
+source_codex_prior_art: <operator-local-codex-checkout>
+source_claude_code_comparison: <operator-local-claude-code-checkout>
 source_plan: docs/plans/2026-05-02-feat-agent-native-cockpit-control-loop-plan.md
 linear_status: JSC-249
 run_type: planning-artifact
@@ -20,10 +20,10 @@ run_type: planning-artifact
 
 **Planned on:** 2026-05-02
 **Mode:** `he-plan`
-**Source report:** `/Users/jamiecraik/.codex/usage-data/report.html`
+**Source report:** `<operator-local-codex-usage-report>`
 **Prior art:** [withastro/flue](https://github.com/withastro/flue)
-**Primary agent runtime prior art:** `/Users/jamiecraik/dev/codex`
-**Secondary comparison source:** `/Users/jamiecraik/dev/claude-code`
+**Primary agent runtime prior art:** `<operator-local-codex-checkout>`
+**Secondary comparison source:** `<operator-local-claude-code-checkout>`
 **Depends on:** [Agent-Native Cockpit Control Loop First Slice](./2026-05-02-feat-agent-native-cockpit-control-loop-plan.md)
 **Linear status:** [JSC-249](https://linear.app/jscraik/issue/JSC-249/add-session-friction-and-evidence-contracts) assigned and In Progress.
 
@@ -82,9 +82,9 @@ What should be remembered?
 
 | Source                                                                                                                                                                                   | Role                                                                                                                                                         |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/Users/jamiecraik/.codex/usage-data/report.html`                                                                                                                                        | Usage evidence for friction, delay, permissions, subagents, review-thread activity, and missing outcomes                                                     |
-| `/Users/jamiecraik/dev/codex`                                                                                                                                                            | Primary runtime prior art for Codex-first permissions, sandbox policy, capability loading, hooks, task/session state, parallel safety, and evidence indexing |
-| `/Users/jamiecraik/dev/claude-code`                                                                                                                                                      | Secondary comparison source for command ranking, task IDs, hook taxonomy, context budgeting, and bounded stats caches                                        |
+| `<operator-local-codex-usage-report>`                                                                                                                                                    | Usage evidence for friction, delay, permissions, subagents, review-thread activity, and missing outcomes                                                     |
+| `<operator-local-codex-checkout>`                                                                                                                                                        | Primary runtime prior art for Codex-first permissions, sandbox policy, capability loading, hooks, task/session state, parallel safety, and evidence indexing |
+| `<operator-local-claude-code-checkout>`                                                                                                                                                  | Secondary comparison source for command ranking, task IDs, hook taxonomy, context budgeting, and bounded stats caches                                        |
 | `https://github.com/withastro/flue`                                                                                                                                                      | Prior art for virtual sandboxes, session/task identity, typed result schemas, command grants, and deployable agent workspaces                                |
 | User-supplied harness-engineering notes on expert leverage, ablation, distillation, Ralph loops, security underspecification, Codex workouts, autocompaction, and repo-owned automations | Product pressure for expert-judgment compression, small loops, resume-safe evidence, and eval-led improvement                                                |
 | `docs/plans/2026-05-02-feat-agent-native-cockpit-control-loop-plan.md`                                                                                                                   | Existing cockpit first-slice dependency                                                                                                                      |
@@ -259,9 +259,9 @@ labels:
   - evidence
   - product
 refs:
-  - /Users/jamiecraik/.codex/usage-data/report.html
-  - /Users/jamiecraik/dev/codex
-  - /Users/jamiecraik/dev/claude-code
+  - <operator-local-codex-usage-report>
+  - <operator-local-codex-checkout>
+  - <operator-local-claude-code-checkout>
   - https://github.com/withastro/flue
   - docs/plans/2026-05-02-feat-agent-native-cockpit-control-loop-plan.md
 ```

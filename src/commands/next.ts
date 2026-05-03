@@ -46,10 +46,18 @@ function isHarnessNextMode(value: string): value is HarnessNextMode {
 }
 
 function splitFiles(raw: string): string[] {
-	return raw
+	const entries = raw
 		.split(",")
 		.map((entry) => entry.trim())
 		.filter((entry) => entry.length > 0);
+	if (
+		entries.length === 2 &&
+		entries[0]?.includes("/") &&
+		/^[^/]+\.[^/]+$/.test(entries[1] ?? "")
+	) {
+		return [raw.trim()];
+	}
+	return entries;
 }
 
 function parseGitStatusPath(rawPath: string): string | null {
