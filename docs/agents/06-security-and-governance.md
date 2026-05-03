@@ -1,6 +1,6 @@
 ---
 
-last_validated: 2026-04-30
+last_validated: 2026-05-03
 
 ---
 
@@ -135,6 +135,7 @@ The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when pre
 `scripts/setup-git-hooks.js` must run `prek install --overwrite` and patch generated `prek` shims with `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logs/cache writes stay repo-local under sandboxed executions and legacy hook wrappers are not chained.
 
 `docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, tooling-runtime, and architecture-context changes are expected to update this guide together with `docs/agents/02-tooling-policy.md`, `docs/agents/00-architecture-bootstrap.md`, and the operator-facing surfaces (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`) in the same change so pre-push drift is caught before GitHub does.
+Agent-native cockpit changes that alter next-action safety, generated environment actions, or hook setup must preserve that same docs-gate synchronization so permission, execution-profile, and validation evidence remain auditable before merge.
 Port-free usage should remain scoped to app-style run actions that map to `dev`/`start` scripts. CLI-only repositories can omit port-free run actions without violating governance.
 
 ## Frontmatter metadata

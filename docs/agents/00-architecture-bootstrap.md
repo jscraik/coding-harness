@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-01
+last_validated: 2026-05-03
 ---
 
 # Architecture bootstrap
@@ -47,8 +47,9 @@ harness docs-gate --mode advisory --json
 If either command fails, refresh artifacts before proceeding.
 When `docs-gate` reports required documentation surfaces for the same change category, update the listed operator guides in that PR before merge.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
+For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, and diagram-context changes as architecture-adjacent surfaces: rerun diagram freshness checks and keep this guide synchronized when `docs-gate` asks for architecture-context evidence.
 
-<!-- last_validated: 2026-05-01 -->
+<!-- last_validated: 2026-05-03 -->
 For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
 For CI ownership architecture changes, keep `harness.contract.json` `ciOwnership` aligned with those required-check identities: CircleCI remains the primary PR gate, CodeRabbit remains independent review evidence, Semgrep Cloud remains independent external security evidence, and GitHub Actions workflows must not become automatic PR gates without a deliberate contract migration.
 
