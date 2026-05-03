@@ -82,6 +82,18 @@ function createRepo(refreshScript: string): string {
 			2,
 		),
 	);
+	write(
+		root,
+		".diagram/architecture.mmd",
+		[
+			"graph TD",
+			'  subgraph sg_one_a1b2c3d4["src/lib/one"]',
+			'    node_alpha_11111111["alpha"]',
+			"  end",
+			'  ext_node_fs_deadbeef["node:fs"] --> node_alpha_11111111',
+			"",
+		].join("\n"),
+	);
 
 	git(root, "init");
 	git(root, "config", "user.email", "codex@example.com");
@@ -168,6 +180,26 @@ jq -n --tab \
 		roots.push(root);
 
 		write(root, "src/example.ts", "export const example = 4;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+	});
+
+	it("passes when refresh only changes volatile Mermaid artifact identifiers", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  subgraph sg_one_fedcba98["src/lib/one"]
+    node_alpha_99999999["alpha"]
+  end
+  ext_node_fs_12345678["node:fs"] --> node_alpha_99999999
+MMD
+`);
+		roots.push(root);
+
+		write(root, "src/example.ts", "export const example = 6;\n");
 
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
 		expect(result.status).toBe(0);

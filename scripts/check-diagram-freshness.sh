@@ -72,6 +72,34 @@ normalized_checksum() {
 	local rel_path="$2"
 
 	case "$rel_path" in
+		*.mmd)
+			# Mermaid generators can emit volatile node identifiers and ordering.
+			# Compare generated diagram artifacts by normalized graph content so
+			# the freshness gate fails on semantic diagram drift, not ID churn.
+			node - "$file" <<'NODE' | shasum -a 256 | awk '{print $1}'
+const fs = require("node:fs");
+
+const filePath = process.argv[2];
+const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+
+const normalizeMermaidLine = (line) => {
+	let value = line.trim();
+	if (!value) return "";
+
+	value = value.replace(/^subgraph\s+[A-Za-z0-9_:-]+\s*(\[[^\]]+\])/, "subgraph NODE$1");
+	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
+	value = value.replace(/^class\s+[A-Za-z0-9_:-]+\s*\{$/, "class NODE {");
+	value = value.replace(/\b(style|class|click)\s+[A-Za-z0-9_:-]+\b/g, "$1 NODE");
+	value = value.replace(/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/, "NODE$2");
+	value = value.replace(/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");
+	return value.replace(/\s+/g, " ").trim();
+};
+
+process.stdout.write(
+	`${lines.map(normalizeMermaidLine).filter(Boolean).sort().join("\n")}\n`,
+);
+NODE
+			;;
 		*/diagram-context.md)
 			# Normalize volatile Mermaid node identifiers and line order while
 			# preserving edge/label text so unquoted edge changes are still detected.
@@ -88,6 +116,7 @@ const normalizeMermaidLine = (line) => {
 	let value = line.trim();
 	if (!value) return "";
 
+	value = value.replace(/^subgraph\s+[A-Za-z0-9_:-]+\s*(\[[^\]]+\])/, "subgraph NODE$1");
 	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
 	value = value.replace(/^class\s+[A-Za-z0-9_:-]+\s*\{$/, "class NODE {");
 	value = value.replace(/\b(style|class|click)\s+[A-Za-z0-9_:-]+\b/g, "$1 NODE");
