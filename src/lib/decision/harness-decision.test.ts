@@ -4,6 +4,7 @@ import {
 	type HarnessDecision,
 	isHarnessDecision,
 	validateHarnessDecision,
+	validateHarnessDecisionOperationalMeta,
 } from "./harness-decision.js";
 
 function validDecision(
@@ -148,6 +149,62 @@ describe("validateHarnessDecision", () => {
 			expect.arrayContaining([
 				"nextCommand must be a non-empty string or null",
 				"failureClass must be a non-empty string or null",
+			]),
+		);
+	});
+});
+
+describe("validateHarnessDecisionOperationalMeta", () => {
+	it("accepts friction, delay, execution, and permission metadata", () => {
+		const result = validateHarnessDecisionOperationalMeta({
+			frictionClass: "repo_state",
+			delayClass: "human_needed",
+			execution: {
+				profile: "read_only",
+				startupCost: "low",
+				permissionPlan: {
+					requiresHuman: true,
+					requiresNetwork: false,
+					writesFiles: false,
+					requiresGitWrite: false,
+					filesystemWrite: [],
+					commands: ["harness doctor --json"],
+					secrets: [],
+				},
+			},
+		});
+
+		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
+	it("rejects unsupported operational metadata values", () => {
+		const result = validateHarnessDecisionOperationalMeta({
+			frictionClass: "mystery",
+			delayClass: "later",
+			execution: {
+				profile: "mainframe",
+				startupCost: "glacial",
+				permissionPlan: {
+					requiresHuman: "yes",
+					requiresNetwork: false,
+					writesFiles: false,
+					requiresGitWrite: false,
+					filesystemWrite: [""],
+					commands: ["harness next --json"],
+					secrets: [],
+				},
+			},
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				"frictionClass must be one of none, tool_friction, permission_sandbox, repo_state, unclear_instruction, validation_failure, implementation_complexity, external_service",
+				"delayClass must be one of normal, waiting_on_command, waiting_on_agent, repeated_failure, human_needed",
+				"execution.profile must be one of read_only, local, virtual, container, remote",
+				"execution.startupCost must be one of none, low, medium, high",
+				"execution.permissionPlan.requiresHuman must be a boolean",
+				"execution.permissionPlan.filesystemWrite entries must be non-empty strings",
 			]),
 		);
 	});

@@ -2,7 +2,10 @@ import { mkdirSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
+import {
+	validateHarnessDecision,
+	validateHarnessDecisionOperationalMeta,
+} from "../lib/decision/harness-decision.js";
 import { parseGitStatusShort, runHarnessNext, runNextCLI } from "./next.js";
 
 function captureNextCLI(
@@ -62,6 +65,29 @@ describe("runHarnessNext", () => {
 		expect(decision.writesFiles).toBe(false);
 		expect(decision.retry).toBe("safe");
 		expect(decision.evidenceRef).toContain("input:files");
+		expect(validateHarnessDecisionOperationalMeta(decision.meta)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(decision.meta).toMatchObject({
+			frictionClass: "none",
+			delayClass: "normal",
+			execution: {
+				profile: "read_only",
+				startupCost: "low",
+				permissionPlan: {
+					requiresHuman: false,
+					requiresNetwork: false,
+					writesFiles: false,
+					requiresGitWrite: false,
+					filesystemWrite: [],
+					commands: [
+						"harness validation-plan --files src/commands/next.ts --json",
+					],
+					secrets: [],
+				},
+			},
+		});
 	});
 
 	it("returns a pass decision when no changed files are detected", () => {
@@ -78,6 +104,19 @@ describe("runHarnessNext", () => {
 		expect(decision.nextCommand).toBe("harness check --json");
 		expect(decision.retry).toBe("safe");
 		expect(decision.evidenceRef).toEqual(["git:status"]);
+		expect(decision.meta).toMatchObject({
+			frictionClass: "none",
+			delayClass: "normal",
+			execution: {
+				profile: "read_only",
+				startupCost: "low",
+				permissionPlan: {
+					commands: ["harness check --json"],
+					requiresNetwork: false,
+					writesFiles: false,
+				},
+			},
+		});
 	});
 
 	it("blocks empty --files overrides instead of inspecting git", () => {
@@ -89,6 +128,17 @@ describe("runHarnessNext", () => {
 		expect(decision.nextCommand).toBeNull();
 		expect(decision.retry).toBe("manual");
 		expect(decision.evidenceRef).toEqual(["input:files"]);
+		expect(decision.meta).toMatchObject({
+			frictionClass: "unclear_instruction",
+			delayClass: "human_needed",
+			execution: {
+				startupCost: "none",
+				permissionPlan: {
+					requiresHuman: true,
+					commands: [],
+				},
+			},
+		});
 	});
 
 	it("blocks when git state cannot be inspected", () => {
@@ -106,6 +156,20 @@ describe("runHarnessNext", () => {
 		expect(decision.safeToRun).toBe(true);
 		expect(decision.retry).toBe("manual");
 		expect(decision.evidenceRef).toEqual(["git:status"]);
+		expect(decision.meta).toMatchObject({
+			frictionClass: "repo_state",
+			delayClass: "human_needed",
+			execution: {
+				profile: "read_only",
+				startupCost: "low",
+				permissionPlan: {
+					requiresHuman: false,
+					requiresNetwork: false,
+					writesFiles: false,
+					commands: ["harness doctor --json"],
+				},
+			},
+		});
 	});
 
 	it("changes recommendation posture for pr mode", () => {

@@ -3,6 +3,11 @@ import { cwd } from "node:process";
 import {
 	HARNESS_DECISION_SCHEMA_VERSION,
 	type HarnessDecision,
+	type HarnessDecisionDelayClass,
+	type HarnessDecisionExecutionProfile,
+	type HarnessDecisionFrictionClass,
+	type HarnessDecisionOperationalMeta,
+	type HarnessDecisionStartupCost,
 	validateHarnessDecision,
 } from "../lib/decision/harness-decision.js";
 
@@ -149,17 +154,133 @@ function chooseNextCommandParts(
 }
 
 function decisionMeta(args: {
-	mode: HarnessNextMode;
-	filesSource: "override" | "git";
-	changedFileCount: number;
+	mode: string;
+	filesSource?: "override" | "git";
+	changedFileCount?: number;
 	nextCommandArgv?: string[];
-}): Record<string, unknown> {
+	frictionClass?: HarnessDecisionFrictionClass;
+	delayClass?: HarnessDecisionDelayClass;
+	executionProfile?: HarnessDecisionExecutionProfile;
+	startupCost?: HarnessDecisionStartupCost;
+	commands?: string[];
+	requiresHuman?: boolean;
+	requiresNetwork?: boolean;
+	writesFiles?: boolean;
+	requiresGitWrite?: boolean;
+	filesystemWrite?: string[];
+	secrets?: string[];
+	extra?: Record<string, unknown>;
+}): HarnessDecisionOperationalMeta & Record<string, unknown> {
 	return {
 		mode: args.mode,
-		filesSource: args.filesSource,
-		changedFileCount: args.changedFileCount,
+		...(args.filesSource ? { filesSource: args.filesSource } : {}),
+		...(args.changedFileCount !== undefined
+			? { changedFileCount: args.changedFileCount }
+			: {}),
 		...(args.nextCommandArgv ? { nextCommandArgv: args.nextCommandArgv } : {}),
+		...args.extra,
+		frictionClass: args.frictionClass ?? "none",
+		delayClass: args.delayClass ?? "normal",
+		execution: {
+			profile: args.executionProfile ?? "read_only",
+			startupCost: args.startupCost ?? "low",
+			permissionPlan: {
+				requiresHuman: args.requiresHuman ?? false,
+				requiresNetwork: args.requiresNetwork ?? false,
+				writesFiles: args.writesFiles ?? false,
+				requiresGitWrite: args.requiresGitWrite ?? false,
+				filesystemWrite: args.filesystemWrite ?? [],
+				commands: args.commands ?? [],
+				secrets: args.secrets ?? [],
+			},
+		},
 	};
+}
+
+function gitInspectionBlockedDecision(mode: HarnessNextMode): HarnessDecision {
+	return createDecision({
+		status: "blocked",
+		summary: "Git state could not be inspected.",
+		nextAction:
+			"Run harness doctor --json, fix the reported setup issue, then retry harness next --json.",
+		nextCommand: "harness doctor --json",
+		safeToRun: true,
+		requiresHuman: false,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: ["git:status"],
+		failureClass: "git_state_unavailable",
+		retry: "manual",
+		riskTier: "unknown",
+		meta: decisionMeta({
+			mode,
+			filesSource: "git",
+			frictionClass: "repo_state",
+			delayClass: "human_needed",
+			commands: ["harness doctor --json"],
+		}),
+	});
+}
+
+function noChangedFilesDecision(args: {
+	mode: HarnessNextMode;
+	filesSource: "override" | "git";
+}): HarnessDecision {
+	return createDecision({
+		status: "pass",
+		summary: "No changed files detected.",
+		nextAction: "Run harness check --json to confirm repo readiness.",
+		nextCommand: "harness check --json",
+		safeToRun: true,
+		requiresHuman: false,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: [args.filesSource === "git" ? "git:status" : "input:files"],
+		failureClass: null,
+		retry: "safe",
+		riskTier: "low",
+		meta: decisionMeta({
+			mode: args.mode,
+			filesSource: args.filesSource,
+			changedFileCount: 0,
+			commands: ["harness check --json"],
+		}),
+	});
+}
+
+function changedFilesDecision(args: {
+	mode: HarnessNextMode;
+	files: string[];
+	filesSource: "override" | "git";
+}): HarnessDecision {
+	const nextCommand = chooseNextCommandParts(args.mode, args.files);
+	return createDecision({
+		status: "action_required",
+		summary: `Detected ${args.files.length} changed file${args.files.length === 1 ? "" : "s"}.`,
+		nextAction:
+			args.mode === "pr"
+				? "Generate reviewer context for the changed files."
+				: "Generate a repo-canonical validation plan for the changed files.",
+		nextCommand: nextCommand.command,
+		safeToRun: true,
+		requiresHuman: false,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: [
+			args.filesSource === "git" ? "git:status" : "input:files",
+			"command-catalog:harness-command-catalog/v2",
+		],
+		failureClass: null,
+		retry: "safe",
+		riskTier: inferRiskTier(args.files),
+		meta: decisionMeta({
+			mode: args.mode,
+			filesSource: args.filesSource,
+			changedFileCount: args.files.length,
+			nextCommandArgv: nextCommand.argv,
+			commands: [nextCommand.command],
+		}),
+	});
 }
 
 /** Produce the next safe harness command decision without mutating files. */
@@ -175,7 +296,13 @@ export function runHarnessNext(
 			summary: `Unsupported next mode: ${String(mode)}.`,
 			nextAction: "Use --mode local, --mode pr, or --mode ci.",
 			failureClass: "invalid_mode",
-			meta: { mode: String(mode) },
+			meta: decisionMeta({
+				mode: String(mode),
+				frictionClass: "unclear_instruction",
+				delayClass: "human_needed",
+				startupCost: "none",
+				requiresHuman: true,
+			}),
 		});
 	}
 
@@ -186,7 +313,14 @@ export function runHarnessNext(
 				"Pass one or more changed files, or omit --files so harness next can inspect git state.",
 			failureClass: "files_override_empty",
 			evidenceRef: ["input:files"],
-			meta: { mode, filesSource: "override" },
+			meta: decisionMeta({
+				mode,
+				filesSource: "override",
+				frictionClass: "unclear_instruction",
+				delayClass: "human_needed",
+				startupCost: "none",
+				requiresHuman: true,
+			}),
 		});
 	}
 
@@ -201,69 +335,14 @@ export function runHarnessNext(
 			filesSource = "git";
 		}
 	} catch {
-		return createDecision({
-			status: "blocked",
-			summary: "Git state could not be inspected.",
-			nextAction:
-				"Run harness doctor --json, fix the reported setup issue, then retry harness next --json.",
-			nextCommand: "harness doctor --json",
-			safeToRun: true,
-			requiresHuman: false,
-			requiresNetwork: false,
-			writesFiles: false,
-			evidenceRef: ["git:status"],
-			failureClass: "git_state_unavailable",
-			retry: "manual",
-			riskTier: "unknown",
-			meta: { mode, filesSource: "git" },
-		});
+		return gitInspectionBlockedDecision(mode);
 	}
 
 	if (files.length === 0) {
-		return createDecision({
-			status: "pass",
-			summary: "No changed files detected.",
-			nextAction: "Run harness check --json to confirm repo readiness.",
-			nextCommand: "harness check --json",
-			safeToRun: true,
-			requiresHuman: false,
-			requiresNetwork: false,
-			writesFiles: false,
-			evidenceRef: [filesSource === "git" ? "git:status" : "input:files"],
-			failureClass: null,
-			retry: "safe",
-			riskTier: "low",
-			meta: { mode, filesSource, changedFileCount: 0 },
-		});
+		return noChangedFilesDecision({ mode, filesSource });
 	}
 
-	const nextCommand = chooseNextCommandParts(mode, files);
-	return createDecision({
-		status: "action_required",
-		summary: `Detected ${files.length} changed file${files.length === 1 ? "" : "s"}.`,
-		nextAction:
-			mode === "pr"
-				? "Generate reviewer context for the changed files."
-				: "Generate a repo-canonical validation plan for the changed files.",
-		nextCommand: nextCommand.command,
-		safeToRun: true,
-		requiresHuman: false,
-		requiresNetwork: false,
-		writesFiles: false,
-		evidenceRef: [
-			filesSource === "git" ? "git:status" : "input:files",
-			"command-catalog:harness-command-catalog/v2",
-		],
-		failureClass: null,
-		retry: "safe",
-		riskTier: inferRiskTier(files),
-		meta: decisionMeta({
-			mode,
-			filesSource,
-			changedFileCount: files.length,
-			nextCommandArgv: nextCommand.argv,
-		}),
-	});
+	return changedFilesDecision({ mode, files, filesSource });
 }
 
 function parseNextArgs(args: string[]): ParsedNextArgs {
@@ -367,7 +446,13 @@ export function runNextCLI(
 			summary: `Unsupported next mode: ${parsed.errorValue}.`,
 			nextAction: "Use --mode local, --mode pr, or --mode ci.",
 			failureClass: "invalid_mode",
-			meta: { mode: parsed.errorValue },
+			meta: decisionMeta({
+				mode: parsed.errorValue ?? "unknown",
+				frictionClass: "unclear_instruction",
+				delayClass: "human_needed",
+				startupCost: "none",
+				requiresHuman: true,
+			}),
 		});
 	} else if (parsed.error === "mode_missing") {
 		usageError = true;
@@ -375,6 +460,13 @@ export function runNextCLI(
 			summary: "--mode requires a value.",
 			nextAction: "Use --mode local, --mode pr, or --mode ci.",
 			failureClass: "mode_missing",
+			meta: decisionMeta({
+				mode: parsed.mode,
+				frictionClass: "unclear_instruction",
+				delayClass: "human_needed",
+				startupCost: "none",
+				requiresHuman: true,
+			}),
 		});
 	} else if (parsed.error === "files_missing") {
 		usageError = true;
@@ -383,6 +475,14 @@ export function runNextCLI(
 			nextAction: "Pass one or more changed files, or omit --files.",
 			failureClass: "files_missing",
 			evidenceRef: ["input:files"],
+			meta: decisionMeta({
+				mode: parsed.mode,
+				filesSource: "override",
+				frictionClass: "unclear_instruction",
+				delayClass: "human_needed",
+				startupCost: "none",
+				requiresHuman: true,
+			}),
 		});
 	} else if (parsed.error === "files_empty") {
 		usageError = true;
@@ -398,7 +498,14 @@ export function runNextCLI(
 			nextAction:
 				"Use harness next --json with optional --files and --mode flags.",
 			failureClass: "unknown_argument",
-			meta: { argument: parsed.errorValue },
+			meta: decisionMeta({
+				mode: parsed.mode,
+				frictionClass: "unclear_instruction",
+				delayClass: "human_needed",
+				startupCost: "none",
+				requiresHuman: true,
+				extra: { argument: parsed.errorValue },
+			}),
 		});
 	} else {
 		decision = runHarnessNext({
