@@ -79,6 +79,7 @@ const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
 const normalizeMermaidLine = (line) => {
 	let value = line.trim();
 	if (!value) return "";
+	if (/^[+-][A-Za-z0-9_./-]+\.(?:[cm]?[jt]sx?|json|md|ya?ml)$/.test(value)) return "";
 
 	value = value.replace(/^subgraph\s+[A-Za-z0-9_:-]+\s*(\[[^\]]+\])/, "subgraph NODE$1");
 	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
@@ -109,6 +110,7 @@ let mermaidLines = [];
 const normalizeMermaidLine = (line) => {
 	let value = line.trim();
 	if (!value) return "";
+	if (/^[+-][A-Za-z0-9_./-]+\.(?:[cm]?[jt]sx?|json|md|ya?ml)$/.test(value)) return "";
 
 	value = value.replace(/^subgraph\s+[A-Za-z0-9_:-]+\s*(\[[^\]]+\])/, "subgraph NODE$1");
 	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
