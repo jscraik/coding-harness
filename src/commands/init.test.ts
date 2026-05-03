@@ -2122,7 +2122,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("Codex environment action");
 			expect(environmentCheck).toContain("run_check_environment_with_runner()");
 			expect(environmentCheck).toContain(
-				"repo source CLI (pnpm exec tsx src/cli.ts)",
+				"repo source CLI (node --import tsx src/cli.ts)",
 			);
 			expect(environmentCheck).toContain("repo dist CLI (node dist/cli.js)");
 			expect(environmentCheck).toContain(
