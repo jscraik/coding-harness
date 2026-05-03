@@ -1796,18 +1796,12 @@ describe("runInit", () => {
 			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(runHarnessGate).toContain("if is_harness_source_repo; then");
 			expect(runHarnessGate).toContain(
-				'echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2',
+				'echo "Error: source checkout detected but node is unavailable; refusing fallback to avoid stale harness binaries." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then',
+				'exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
-			expect(runHarnessGate).toContain("const stderr = readFileSync");
-			expect(runHarnessGate).toContain(
-				"/listen EPERM: operation not permitted.*(\\/tmp\\/tsx-|\\.pipe)/.test(stderr)",
-			);
-			expect(runHarnessGate).toContain(
-				'echo "Warning: tsx IPC startup failed (EPERM/IPC); refusing dist fallback in source checkout because dist freshness cannot be proven deterministically." >&2',
-			);
+			expect(runHarnessGate).not.toContain("harness-gate-tsx-stderr");
 			expect(runHarnessGate).not.toContain("dist_freshness_marker");
 			expect(runHarnessGate).not.toContain("newest_dist_file");
 			expect(runHarnessGate).not.toContain("tsx IPC startup failed with EPERM");
