@@ -23,8 +23,13 @@ describe("git-hook scaffold templates", () => {
 
 		expect(script).toContain("Installing prek git hooks");
 		expect(script).toContain(
-			'const PREK_HOME = process.env.PREK_HOME ?? resolve(process.cwd(), ".git/.cache/prek")',
+			'const GIT_DIR = resolve(process.cwd(), execFileSync("git", ["rev-parse", "--git-dir"]',
 		);
+		expect(script).toContain(
+			'const PREK_HOME = process.env.PREK_HOME ?? resolve(GIT_DIR, ".cache/prek")',
+		);
+		expect(script).toContain('execFileSync("git", ["rev-parse", "--git-dir"]');
+		expect(script).toContain('const hooksDir = resolve(GIT_DIR, "hooks")');
 		expect(script).toContain("mkdirSync(PREK_HOME, { recursive: true })");
 		expect(script).toContain('execFileSync("prek", ["install", "--overwrite"]');
 		expect(script).toContain("env: { ...process.env, PREK_HOME }");
