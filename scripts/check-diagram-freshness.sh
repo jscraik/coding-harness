@@ -67,9 +67,9 @@ normalized_checksum() {
 
 	case "$rel_path" in
 		*.mmd)
-			# Mermaid generators can emit volatile node identifiers and ordering.
-			# Compare generated diagram artifacts by normalized graph content so
-			# the freshness gate fails on semantic diagram drift, not ID churn.
+			# Mermaid generators can emit volatile node identifiers. Compare
+			# generated diagram artifacts by normalized graph content while
+			# preserving block membership so topology changes still fail freshness.
 			node - "$file" "$REPO_ROOT" <<'NODE' | shasum -a 256 | awk '{print $1}'
 const fs = require("node:fs");
 const path = require("node:path");
@@ -84,8 +84,8 @@ process.stdout.write(normalizeMermaidLines(lines));
 NODE
 			;;
 		*/diagram-context.md)
-			# Normalize volatile Mermaid node identifiers and line order while
-			# preserving edge/label text so unquoted edge changes are still detected.
+			# Normalize volatile Mermaid node identifiers while preserving block
+			# membership and edge/label text so topology changes are still detected.
 			node - "$file" "$REPO_ROOT" <<'NODE' | shasum -a 256 | awk '{print $1}'
 const fs = require("node:fs");
 const path = require("node:path");

@@ -44,8 +44,52 @@ const normalizeMermaidLine = (line) => {
 	return value.replace(/\s+/g, " ").trim();
 };
 
-const normalizeMermaidLines = (lines) =>
-	`${lines.map(normalizeMermaidLine).filter(Boolean).sort().join("\n")}\n`;
+const canonicalizeMermaidLines = (lines) => {
+	const topLevel = [];
+	const blocks = [];
+	let currentBlock = null;
+
+	const flushBlock = () => {
+		if (!currentBlock) return;
+		blocks.push(
+			[currentBlock.start, ...currentBlock.body.sort(), currentBlock.end].join(
+				"\n",
+			),
+		);
+		currentBlock = null;
+	};
+
+	for (const line of lines) {
+		const normalizedLine = normalizeMermaidLine(line);
+		if (!normalizedLine) continue;
+
+		if (currentBlock) {
+			if (normalizedLine === "end" || normalizedLine === "}") {
+				currentBlock.end = normalizedLine;
+				flushBlock();
+			} else {
+				currentBlock.body.push(normalizedLine);
+			}
+			continue;
+		}
+
+		if (
+			/^subgraph\s+/.test(normalizedLine) ||
+			/^class\s+.+\s\{$/.test(normalizedLine)
+		) {
+			currentBlock = { start: normalizedLine, body: [], end: "end" };
+			continue;
+		}
+
+		topLevel.push(normalizedLine);
+	}
+
+	flushBlock();
+
+	return `${[...topLevel.sort(), ...blocks.sort()].join("\n")}\n`;
+};
+
+const normalizeMermaidLines = (lines) => canonicalizeMermaidLines(lines);
 
 const normalizeDiagramContextLines = (lines) => {
 	const normalized = [];
@@ -55,7 +99,7 @@ const normalizeDiagramContextLines = (lines) => {
 	const flushMermaid = () => {
 		normalized.push("```mermaid");
 		normalized.push(
-			...mermaidLines.map(normalizeMermaidLine).filter(Boolean).sort(),
+			...canonicalizeMermaidLines(mermaidLines).trimEnd().split("\n"),
 		);
 		normalized.push("```");
 		mermaidLines = [];

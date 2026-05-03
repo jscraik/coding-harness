@@ -88,6 +88,10 @@ describe("scaffold shell templates", () => {
 		const runner = renderHarnessGateRunner("pnpm");
 
 		expect(runner).toContain("Usage: bash scripts/run-harness-gate.sh");
+		expect(runner).toContain('node --import tsx --eval ""');
+		expect(runner).toContain(
+			"tsx cannot be resolved from $REPO_ROOT; run the repository install first.",
+		);
 		expect(runner).toContain(
 			'exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
 		);

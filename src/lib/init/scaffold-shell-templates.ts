@@ -238,6 +238,10 @@ if is_harness_source_repo; then
 		exit 1
 	fi
 	cd "$REPO_ROOT"
+	if ! node --import tsx --eval "" >/dev/null 2>&1; then
+		echo "Error: source checkout detected but tsx cannot be resolved from $REPO_ROOT; run the repository install first." >&2
+		exit 1
+	fi
 	exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 

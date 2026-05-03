@@ -74,8 +74,8 @@ harness health --json
 
 That is the minimum viable path. The common routes beyond this are:
 
-- **Agent cockpit loop** — run `harness next --json`, then execute the
-  recommended existing command; see
+- **Agent cockpit loop** — run `harness next --json`, inspect `safeToRun`, then
+  execute `nextCommand` only when it is safe; see
   [CLI reference](./docs/cli-reference.md#agent-cockpit-entrypoint).
 - **[Bootstrap a repository](#hero-workflow-1-bootstrap-a-repository)** — dry-run, init, contract validate, health, upgrade
 - **[Start work on an issue](#hero-workflow-2-start-work-on-an-issue)** — linear prepare, preflight, policy gates

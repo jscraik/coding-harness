@@ -60,12 +60,48 @@ function splitFiles(raw: string): string[] {
 	return entries;
 }
 
+function decodeGitQuotedPath(path: string): string {
+	if (!path.startsWith('"') || !path.endsWith('"')) return path;
+	const bytes: number[] = [];
+	for (let index = 1; index < path.length - 1; index += 1) {
+		const char = path[index];
+		if (char === undefined) break;
+		if (char !== "\\") {
+			bytes.push(char.codePointAt(0) ?? 0);
+			continue;
+		}
+		const next = path[index + 1];
+		if (next === undefined) {
+			bytes.push("\\".codePointAt(0) ?? 0);
+			continue;
+		}
+		if (/^[0-7]$/.test(next)) {
+			const octal = path.slice(index + 1, index + 4).match(/^[0-7]{1,3}/)?.[0];
+			if (octal) {
+				bytes.push(Number.parseInt(octal, 8));
+				index += octal.length;
+				continue;
+			}
+		}
+		const escaped: Record<string, string> = {
+			"\\": "\\",
+			'"': '"',
+			n: "\n",
+			r: "\r",
+			t: "\t",
+		};
+		bytes.push((escaped[next] ?? next).codePointAt(0) ?? 0);
+		index += 1;
+	}
+	return Buffer.from(bytes).toString("utf8");
+}
+
 function parseGitStatusPath(rawPath: string): string | null {
 	const renameMarker = " -> ";
 	const path = rawPath.includes(renameMarker)
-		? rawPath.slice(rawPath.indexOf(renameMarker) + renameMarker.length)
+		? rawPath.slice(rawPath.lastIndexOf(renameMarker) + renameMarker.length)
 		: rawPath;
-	const trimmed = path.trim().replace(/^"|"$/g, "");
+	const trimmed = decodeGitQuotedPath(path.trim()).trim();
 	return trimmed.length > 0 ? trimmed : null;
 }
 
@@ -88,6 +124,7 @@ function inspectGitChangedFiles(repoRoot: string): string[] {
 			cwd: repoRoot,
 			encoding: "utf-8",
 			stdio: ["ignore", "pipe", "pipe"],
+			timeout: 10_000,
 		},
 	);
 	return parseGitStatusShort(output);

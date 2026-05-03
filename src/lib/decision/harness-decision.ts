@@ -334,6 +334,29 @@ function validateOperationalMetaConsistency(
 	}
 }
 
+function validateDecisionRoutingConsistency(
+	value: Record<string, unknown>,
+	errors: string[],
+): void {
+	const status = value.status;
+	const nextCommand = value.nextCommand;
+	const safeToRun = value.safeToRun;
+	const failureClass = value.failureClass;
+
+	if (
+		(status === "blocked" || status === "fail") &&
+		typeof failureClass !== "string"
+	) {
+		errors.push("failureClass must be set when status is blocked or fail");
+	}
+	if (nextCommand === null && safeToRun === true) {
+		errors.push("safeToRun must be false when nextCommand is null");
+	}
+	if (typeof nextCommand === "string" && safeToRun !== true) {
+		errors.push("safeToRun must be true when nextCommand is set");
+	}
+}
+
 /**
  * Validate an optional operational metadata payload carried in
  * `HarnessDecision.meta`.
@@ -419,6 +442,7 @@ export function validateHarnessDecision(
 	if (!VALID_RISK_TIERS.includes(value.riskTier as HarnessDecisionRiskTier)) {
 		errors.push("riskTier must be low, medium, high, critical, or unknown");
 	}
+	validateDecisionRoutingConsistency(value, errors);
 	if (value.meta !== undefined && !isRecord(value.meta)) {
 		errors.push("meta must be an object when present");
 	}

@@ -1,4 +1,8 @@
 ---
+schema_version: 1
+status: active
+applies_to:
+  - docs/plans/2026-05-02-feat-session-friction-evidence-contracts-plan.md
 last_validated: 2026-05-03
 automation_id: jsc-249-phased-friction-evidence-work
 linear_issue: JSC-249
@@ -56,16 +60,18 @@ Known safe cursor as of 2026-05-03:
 
 ## Wake-Up Procedure
 
-1. Read live state first:
+1. Run `harness next --json` and inspect `safeToRun`, `nextCommand`,
+   `requiresHuman`, and `failureClass` before choosing an action.
+2. Read live state:
    `git status --short --branch`, the target plan, `AGENTS.md`, `CODESTYLE.md`,
    relevant codestyle modules, package scripts, and current validation evidence.
-2. Classify dirty files before editing. Preserve unrelated user or eval-suite
+3. Classify dirty files before editing. Preserve unrelated user or eval-suite
    changes.
-3. Use the Harness Engineering work cycle in plan-led mode for the first
+4. Use the Harness Engineering work cycle in plan-led mode for the first
    incomplete phase.
-4. Make the smallest implementation slice that satisfies the active phase.
-5. Run focused validation from the plan before broad gates.
-6. Stop at deterministic blockers and report exact evidence.
+5. Make the smallest implementation slice that satisfies the active phase.
+6. Run focused validation from the plan before broad gates.
+7. Stop at deterministic blockers and report exact evidence.
 
 ## Phase Order
 

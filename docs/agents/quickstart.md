@@ -47,10 +47,14 @@ For the full command contract, see
 
 ```bash
 pnpm install
-pnpm check
 bash scripts/validate-codestyle.sh --fast
+pnpm check
 bash scripts/verify-work.sh --fast
 ```
+
+Run the codestyle wrapper before aggregate checks when hook-exported `GIT_*`
+values may be present; it sanitizes those values before nested `pnpm run`
+commands.
 
 ## Create a PR
 

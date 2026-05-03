@@ -276,6 +276,31 @@ MMD
 		expect(result.stdout).toContain("Diagram freshness check passed.");
 	});
 
+	it("fails when refresh moves a normalized node between Mermaid subgraphs", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  subgraph sg_one_fedcba98["src/lib/one"]
+  end
+  subgraph sg_two_fedcba98["src/lib/two"]
+    node_alpha_99999999["alpha"]
+  end
+  ext_node_fs_12345678["node:fs"] --> node_alpha_99999999
+MMD
+`);
+		roots.push(root);
+
+		write(root, "src/example.ts", "export const example = 8;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain(
+			"Error: architecture diagram artifacts are stale after refresh.",
+		);
+		expect(result.stdout).toContain(".diagram/architecture.mmd");
+	});
+
 	it("fails when refresh changes tracked artifacts after a sensitive code change", () => {
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail

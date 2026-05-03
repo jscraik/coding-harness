@@ -136,6 +136,44 @@ describe("validateHarnessDecision", () => {
 		expect(result).toEqual({ valid: true, errors: [] });
 	});
 
+	it("rejects blocked decisions without a failure class", () => {
+		const result = validateHarnessDecision(
+			validDecision({
+				status: "blocked",
+				nextCommand: null,
+				safeToRun: false,
+				failureClass: null,
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"failureClass must be set when status is blocked or fail",
+		);
+	});
+
+	it("rejects contradictory command and safety routing", () => {
+		const missingCommand = validateHarnessDecision(
+			validDecision({
+				nextCommand: null,
+				safeToRun: true,
+			}),
+		);
+		const unsafeCommand = validateHarnessDecision(
+			validDecision({
+				nextCommand: "harness check --json",
+				safeToRun: false,
+			}),
+		);
+
+		expect(missingCommand.errors).toContain(
+			"safeToRun must be false when nextCommand is null",
+		);
+		expect(unsafeCommand.errors).toContain(
+			"safeToRun must be true when nextCommand is set",
+		);
+	});
+
 	it("rejects blank optional routing strings", () => {
 		const result = validateHarnessDecision(
 			validDecision({

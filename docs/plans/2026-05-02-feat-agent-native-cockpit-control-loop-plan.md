@@ -144,7 +144,7 @@ Initial `he-work` state before runtime implementation:
 - **Phase:** `P0 - Baseline and Tracker Lock`
 - **Checked at:** 2026-05-02
 - **Branch:** `codex/north-star-artifact-surfaces`
-- **Tracker:** `JSC-248`, status `Triage`, assignee `jscraik@brainwav.io`,
+- **Tracker:** `JSC-248`, status `Triage`, live assignee tracked in Linear,
   project `coding-harness`
 - **Dirty worktree at start:** unrelated existing edits in `package.json`,
   `scripts/test-with-artifacts.sh`, one new evaluation scenario directory,
@@ -304,6 +304,8 @@ Completion criteria:
 - Quickstart gives one complete agent loop without adding separate hero-story
   workflow sections.
 - README and quickstart route to the existing CLI reference entry for `next`.
+- AGENTS shared-vocabulary guidance and the relevant governance guides stay in
+  sync with the cockpit command-evidence contract.
 - Responsibility text is limited to the follow-up commands that first-slice
   `next` can actually recommend.
 
@@ -346,6 +348,8 @@ Broader validation before PR handoff:
 - `pnpm check`
 - `bash scripts/validate-codestyle.sh --fast`
 - `bash scripts/verify-work.sh --fast`
+- `bash scripts/validate-codestyle.sh`
+- `bash scripts/verify-work.sh`
 
 Docs-gate validation when high-traffic docs change:
 

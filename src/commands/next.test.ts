@@ -39,6 +39,18 @@ describe("parseGitStatusShort", () => {
 			),
 		).toEqual(["docs/plan.md", "new.ts", "src/commands/next.ts"]);
 	});
+
+	it("uses the final rename marker when old filenames contain arrows", () => {
+		expect(parseGitStatusShort('R  "old -> name.ts" -> new.ts\n')).toEqual([
+			"new.ts",
+		]);
+	});
+
+	it("decodes git C-quoted paths before producing file arguments", () => {
+		expect(parseGitStatusShort(' M "caf\\303\\251.txt"\n')).toEqual([
+			"café.txt",
+		]);
+	});
 });
 
 describe("runHarnessNext", () => {

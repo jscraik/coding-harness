@@ -23,7 +23,6 @@ buildable
 Buildable
 canonicalized
 citty
-CLI's
 CLIs
 CodeRabbit
 Codex
