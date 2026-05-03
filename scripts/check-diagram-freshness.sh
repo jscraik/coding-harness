@@ -77,7 +77,14 @@ const filePath = process.argv[2];
 const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
 
 const normalizeMermaidId = (id) =>
-	id.replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,}))$/i, "");
+	(() => {
+		const roleMatch = id.match(/(_(?:create|lookup|result|update|write))$/i);
+		const roleSuffix = roleMatch?.[1] ?? "";
+		const baseId = roleSuffix ? id.slice(0, -roleSuffix.length) : id;
+		return `${baseId
+			.replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,}))+$/i, "")
+			.replace(/(?:[_-][0-9]+)+$/i, "")}${roleSuffix}`;
+	})();
 
 const normalizeMermaidLine = (line) => {
 	let value = line.trim();
@@ -129,7 +136,14 @@ let inMermaid = false;
 let mermaidLines = [];
 
 const normalizeMermaidId = (id) =>
-	id.replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,}))$/i, "");
+	(() => {
+		const roleMatch = id.match(/(_(?:create|lookup|result|update|write))$/i);
+		const roleSuffix = roleMatch?.[1] ?? "";
+		const baseId = roleSuffix ? id.slice(0, -roleSuffix.length) : id;
+		return `${baseId
+			.replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,}))+$/i, "")
+			.replace(/(?:[_-][0-9]+)+$/i, "")}${roleSuffix}`;
+	})();
 
 const normalizeMermaidLine = (line) => {
 	let value = line.trim();
@@ -266,11 +280,11 @@ while IFS= read -r tracked_file; do
 	[[ -n "$tracked_file" ]] || continue
 	tracked_files+=("$tracked_file")
 done < <(tracked_artifact_files)
-preexisting_artifact_edits=()
+preexisting_worktree_artifact_edits=()
 if (( ${#tracked_files[@]} > 0 )); then
 	for tracked_file in "${tracked_files[@]}"; do
-		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file" || ! git -C "$REPO_ROOT" diff --cached --quiet -- "$tracked_file"; then
-			preexisting_artifact_edits+=("$tracked_file")
+		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file"; then
+			preexisting_worktree_artifact_edits+=("$tracked_file")
 		fi
 	done
 fi
@@ -293,14 +307,14 @@ fi
 files_to_restore=()
 if (( ${#tracked_files[@]} > 0 )); then
 	for tracked_file in "${tracked_files[@]}"; do
-		was_preexisting_edit=0
-		for preexisting_file in "${preexisting_artifact_edits[@]-}"; do
+		had_preexisting_worktree_edit=0
+		for preexisting_file in "${preexisting_worktree_artifact_edits[@]-}"; do
 			if [[ "$preexisting_file" == "$tracked_file" ]]; then
-				was_preexisting_edit=1
+				had_preexisting_worktree_edit=1
 				break
 			fi
 		done
-		if (( was_preexisting_edit == 1 )); then
+		if (( had_preexisting_worktree_edit == 1 )); then
 			continue
 		fi
 		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file"; then

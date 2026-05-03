@@ -16,7 +16,7 @@ describe("scaffold diagram templates", () => {
 		expect(script).toContain("const sourceManifest = (() => {");
 		expect(script).toContain("...sourceManifest,");
 
-		expect(script).toContain("normalizedRawNodeKey(node.rawId)");
+		expect(script).toContain("stableRawIdentity(node.rawId)");
 
 		expect(script).toContain("artifacts/tmp-*/**");
 		expect(script).toContain('cp "$TMP_DIR/diagrams/manifest.json"');

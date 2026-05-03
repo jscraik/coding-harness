@@ -227,6 +227,44 @@ MMD
 		expect(result.stdout).toContain("Diagram freshness check passed.");
 	});
 
+	it("passes when refresh changes volatile suffixes for duplicate labels", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  subgraph sg_gap_case_aaaa1111["src/lib/gap-case"]
+    node_src_lib_gap_case_types_86775c96_2813d5eb["types"]
+  end
+  subgraph sg_init_bbbb2222["src/lib/init"]
+    node_src_lib_init_types_fe7507be_c01fc683["types"]
+  end
+MMD
+`);
+		roots.push(root);
+
+		write(
+			root,
+			".diagram/architecture.mmd",
+			[
+				"graph TD",
+				'  subgraph sg_gap_case_1111aaaa["src/lib/gap-case"]',
+				'    node_src_lib_gap_case_types_fe7507be_13c9c963["types"]',
+				"  end",
+				'  subgraph sg_init_2222bbbb["src/lib/init"]',
+				'    node_src_lib_init_types_86775c96_5dac8755["types"]',
+				"  end",
+				"",
+			].join("\n"),
+		);
+		git(root, "add", ".");
+		git(root, "commit", "-m", "baseline duplicate labels");
+		write(root, "src/example.ts", "export const example = 7;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+	});
+
 	it("fails when refresh changes tracked artifacts after a sensitive code change", () => {
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
