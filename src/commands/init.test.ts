@@ -2212,7 +2212,8 @@ describe("runInit", () => {
 			expect(refreshDiagrams).toContain("...sourceManifest,");
 			expect(diagramFreshness).toContain("is_ignored_change()");
 			expect(diagramFreshness).toContain("is_architecture_sensitive_change()");
-			expect(diagramFreshness).toContain(".diagram/*)");
+			expect(diagramFreshness).not.toContain(".diagram/*)");
+			expect(diagramFreshness).not.toContain("AI/context/*)");
 			expect(diagramFreshness).toContain("src/*.test.ts|src/*.spec.ts");
 			expect(diagramFreshness).toContain("jq -c 'del(.generatedAt)'");
 			expect(diagramFreshness).toContain(

@@ -131,6 +131,27 @@ printf '%s\n' "$*" > .refresh-invoked
 		expect(existsSync(join(root, ".refresh-invoked"))).toBe(false);
 	});
 
+	it("skips refresh when only tracked generated artifacts changed", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" > .refresh-invoked
+`);
+		roots.push(root);
+
+		write(
+			root,
+			"AI/context/diagram-context.md",
+			"# Diagram Context Pack\n\nGenerated: 2026-03-12T00:00:00Z\n\n## system\n\n```mermaid\ngraph TD\n  A[Start] --> B[Finish]\n```\n",
+		);
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(
+			"Diagram freshness check skipped: no architecture-sensitive implementation paths changed.",
+		);
+		expect(existsSync(join(root, ".refresh-invoked"))).toBe(false);
+	});
+
 	it("refreshes and passes when implementation changes do not alter tracked artifacts", () => {
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail

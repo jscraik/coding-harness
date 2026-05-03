@@ -30,12 +30,6 @@ is_architecture_sensitive_change() {
 		package.json|tsconfig.json|.diagramrc|scripts/refresh-diagram-context.sh|scripts/check-diagram-freshness.sh)
 			return 0
 			;;
-		.diagram/*)
-			return 0
-			;;
-		AI/context/*)
-			return 0
-			;;
 		src/*)
 			if is_ignored_change "$changed_path"; then
 				return 1
