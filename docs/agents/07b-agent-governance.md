@@ -40,7 +40,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - workflow-authority routing and validation behavior changes should update `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, and `docs/agents/14-docs-gate-rollout.md`
 - agent-governance/category updates should keep `AGENTS.md` and this guide synchronized in the same PR
 - release workflow validation-tool changes should keep `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, and this guide synchronized in the same PR
-- release packaging changes that alter runtime dependency metadata must keep packed CLI smoke evidence, `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate or pre-push refreshes architecture context
+- release packaging changes that alter runtime dependency metadata must keep packed CLI smoke evidence, `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized before commit if docs-gate or pre-push triggers an architecture context refresh
 - north-star contract/scaffold updates that affect architecture context should update `docs/agents/00-architecture-bootstrap.md` and this guide in the same PR
 - north-star artifact contract changes should keep the README command evidence
   surface, AGENTS shared-vocabulary guidance, and this guide synchronized in
