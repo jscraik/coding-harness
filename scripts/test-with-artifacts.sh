@@ -161,6 +161,14 @@ run_e2e() {
   fi
 }
 
+run_evals() {
+  if [[ "$has_pkg" == true ]] && has_pkg_script test:evals; then
+    run_pkg_script test:evals "evals"
+  else
+    echo "[test-with-artifacts] No eval test command found, skipping"
+  fi
+}
+
 copy_discovered_artifacts() {
   local discovered="$ARTIFACT_DIR/discovered"
   mkdir -p "$discovered"
@@ -194,6 +202,7 @@ case "$MODE" in
     run_unit
     run_integration
     run_e2e
+    run_evals
     ;;
   unit)
     run_unit
@@ -204,8 +213,11 @@ case "$MODE" in
   e2e)
     run_e2e
     ;;
+  evals)
+    run_evals
+    ;;
   *)
-    echo "Usage: bash scripts/test-with-artifacts.sh [all|unit|integration|e2e]" >&2
+    echo "Usage: bash scripts/test-with-artifacts.sh [all|unit|integration|e2e|evals]" >&2
     exit 2
     ;;
 esac
