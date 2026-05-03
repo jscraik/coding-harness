@@ -4,7 +4,10 @@ import {
 	type CommandCapabilityCatalogDocument,
 	type CommandCategory,
 	type CommandMutability,
+	type CommandOrchestrator,
+	type CommandPrimaryAudience,
 	type CommandRetryability,
+	type CommandTier,
 	getCommandCapabilities,
 	getCommandCapabilityCatalogDocument,
 } from "./registry/command-capabilities.js";
@@ -25,7 +28,10 @@ export type {
 	CommandCapabilityCatalogDocument,
 	CommandCategory,
 	CommandMutability,
+	CommandOrchestrator,
+	CommandPrimaryAudience,
 	CommandRetryability,
+	CommandTier,
 	CommandSpec,
 	FuzzyCommandMatch,
 	FuzzyMatchConfidence,
@@ -97,12 +103,14 @@ export function getRegistryCommandHelpRows(options?: {
 	name: string;
 	summary: string;
 	category?: CommandCategory;
+	tier?: CommandTier;
 }> {
 	const capabilities = getRegistryCommandCapabilities();
 	const canonicalRows = capabilities.map((capability) => ({
 		name: capability.name,
 		summary: capability.summary,
 		category: capability.category,
+		tier: capability.tier,
 	}));
 	if (!options?.includeLegacy) {
 		return canonicalRows;
@@ -113,6 +121,7 @@ export function getRegistryCommandHelpRows(options?: {
 			name: alias,
 			summary: capability.summary,
 			category: capability.category,
+			tier: capability.tier,
 		})),
 	);
 

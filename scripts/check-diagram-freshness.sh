@@ -27,13 +27,7 @@ is_architecture_sensitive_change() {
 	local changed_path="$1"
 
 	case "$changed_path" in
-		package.json|tsconfig.json|.diagramrc|scripts/refresh-diagram-context.sh|scripts/check-diagram-freshness.sh)
-			return 0
-			;;
-		.diagram/*)
-			return 0
-			;;
-		AI/context/*)
+		package.json|tsconfig.json|.diagramrc|scripts/refresh-diagram-context.sh|scripts/check-diagram-freshness.sh|scripts/lib/normalize-mermaid-artifact.cjs)
 			return 0
 			;;
 		src/*)
@@ -72,65 +66,37 @@ normalized_checksum() {
 	local rel_path="$2"
 
 	case "$rel_path" in
-		*/diagram-context.md)
-			# Normalize volatile Mermaid node identifiers and line order while
-			# preserving edge/label text so unquoted edge changes are still detected.
-			node - "$file" <<'NODE' | shasum -a 256 | awk '{print $1}'
+		*.mmd)
+			# Mermaid generators can emit volatile node identifiers. Compare
+			# generated diagram artifacts by normalized graph content while
+			# preserving block membership so topology changes still fail freshness.
+			node - "$file" "$REPO_ROOT" <<'NODE' | shasum -a 256 | awk '{print $1}'
 const fs = require("node:fs");
+const path = require("node:path");
+const { normalizeMermaidLines } = require(path.join(
+	process.argv[3],
+	"scripts/lib/normalize-mermaid-artifact.cjs",
+));
 
 const filePath = process.argv[2];
 const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
-const normalized = [];
-let inMermaid = false;
-let mermaidLines = [];
+process.stdout.write(normalizeMermaidLines(lines));
+NODE
+			;;
+		*/diagram-context.md)
+			# Normalize volatile Mermaid node identifiers while preserving block
+			# membership and edge/label text so topology changes are still detected.
+			node - "$file" "$REPO_ROOT" <<'NODE' | shasum -a 256 | awk '{print $1}'
+const fs = require("node:fs");
+const path = require("node:path");
+const { normalizeDiagramContextLines } = require(path.join(
+	process.argv[3],
+	"scripts/lib/normalize-mermaid-artifact.cjs",
+));
 
-const normalizeMermaidLine = (line) => {
-	let value = line.trim();
-	if (!value) return "";
-
-	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
-	value = value.replace(/^class\s+[A-Za-z0-9_:-]+\s*\{$/, "class NODE {");
-	value = value.replace(/\b(style|class|click)\s+[A-Za-z0-9_:-]+\b/g, "$1 NODE");
-	value = value.replace(/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/, "NODE$2");
-	value = value.replace(/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");
-	return value.replace(/\s+/g, " ").trim();
-};
-
-const flushMermaid = () => {
-	const normalizedBlock = mermaidLines
-		.map(normalizeMermaidLine)
-		.filter(Boolean)
-		.sort();
-	normalized.push("```mermaid");
-	normalized.push(...normalizedBlock);
-	normalized.push("```");
-	mermaidLines = [];
-};
-
-for (const line of lines) {
-	if (/^Generated: /.test(line)) continue;
-	if (line.trim() === "```mermaid") {
-		inMermaid = true;
-		mermaidLines = [];
-		continue;
-	}
-	if (inMermaid && line.trim() === "```") {
-		flushMermaid();
-		inMermaid = false;
-		continue;
-	}
-	if (inMermaid) {
-		mermaidLines.push(line);
-		continue;
-	}
-	normalized.push(line.trimEnd());
-}
-
-if (inMermaid) {
-	flushMermaid();
-}
-
-process.stdout.write(`${normalized.join("\n")}\n`);
+const filePath = process.argv[2];
+const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+process.stdout.write(normalizeDiagramContextLines(lines));
 NODE
 			;;
 		*/diagram-context.meta.json)
@@ -199,11 +165,11 @@ while IFS= read -r tracked_file; do
 	[[ -n "$tracked_file" ]] || continue
 	tracked_files+=("$tracked_file")
 done < <(tracked_artifact_files)
-preexisting_artifact_edits=()
+preexisting_worktree_artifact_edits=()
 if (( ${#tracked_files[@]} > 0 )); then
 	for tracked_file in "${tracked_files[@]}"; do
-		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file" || ! git -C "$REPO_ROOT" diff --cached --quiet -- "$tracked_file"; then
-			preexisting_artifact_edits+=("$tracked_file")
+		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file"; then
+			preexisting_worktree_artifact_edits+=("$tracked_file")
 		fi
 	done
 fi
@@ -226,14 +192,14 @@ fi
 files_to_restore=()
 if (( ${#tracked_files[@]} > 0 )); then
 	for tracked_file in "${tracked_files[@]}"; do
-		was_preexisting_edit=0
-		for preexisting_file in "${preexisting_artifact_edits[@]-}"; do
+		had_preexisting_worktree_edit=0
+		for preexisting_file in "${preexisting_worktree_artifact_edits[@]-}"; do
 			if [[ "$preexisting_file" == "$tracked_file" ]]; then
-				was_preexisting_edit=1
+				had_preexisting_worktree_edit=1
 				break
 			fi
 		done
-		if (( was_preexisting_edit == 1 )); then
+		if (( had_preexisting_worktree_edit == 1 )); then
 			continue
 		fi
 		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file"; then

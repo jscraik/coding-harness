@@ -22,32 +22,16 @@ is_harness_source_repo() {
 }
 
 if is_harness_source_repo; then
-	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2
+	if ! command -v node >/dev/null 2>&1; then
+		echo "Error: source checkout detected but node is unavailable; refusing fallback to avoid stale harness binaries." >&2
 		exit 1
 	fi
-	tsx_stderr_file="$(mktemp "${TMPDIR:-/tmp}/harness-gate-tsx-stderr.XXXXXX")"
-	tsx_exit=0
-	if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then
-		rm -f "$tsx_stderr_file"
-		exit 0
-	else
-		tsx_exit=$?
+	cd "$REPO_ROOT"
+	if ! node --import tsx --eval "" >/dev/null 2>&1; then
+		echo "Error: source checkout detected but tsx cannot be resolved from $REPO_ROOT; run the repository install first." >&2
+		exit 1
 	fi
-	if command -v node >/dev/null 2>&1 && node -e '
-		const { readFileSync } = require("node:fs");
-		const stderr = readFileSync(process.argv[1], "utf8");
-		process.exit(
-			/listen EPERM: operation not permitted.*(\/tmp\/tsx-|\.pipe)/.test(stderr)
-				? 0
-			: 1,
-		);
-	' "$tsx_stderr_file"; then
-		echo "Warning: tsx IPC startup failed (EPERM/IPC); refusing dist fallback in source checkout because dist freshness cannot be proven deterministically." >&2
-	fi
-	cat "$tsx_stderr_file" >&2
-	rm -f "$tsx_stderr_file"
-	exit "$tsx_exit"
+	exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
 if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then

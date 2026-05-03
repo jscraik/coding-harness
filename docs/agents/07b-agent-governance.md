@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-01
+last_validated: 2026-05-03
 ---
 
 # Agent governance
@@ -29,6 +29,7 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
+- `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)
 - Code-review pass-through via PR workflow (no direct `main` commits).
 
@@ -42,6 +43,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - north-star artifact contract changes should keep the README command evidence
   surface, AGENTS shared-vocabulary guidance, and this guide synchronized in
   the same PR
+- agent-native cockpit changes should keep next-action safety evidence, generated environment action contracts, and docs-gate-required operator surfaces synchronized before the PR can be considered merge-ready
 
 ## Evidence and communication
 

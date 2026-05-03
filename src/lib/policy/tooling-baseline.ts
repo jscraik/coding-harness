@@ -341,6 +341,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/check-codestyle-parity.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
+	"scripts/setup-git-hooks.js",
 	"scripts/validate-commit-msg.js",
 	"scripts/check-hook-critical-config-sync.sh",
 	"scripts/check-staged-secrets.sh",
@@ -348,6 +349,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/check-related-tests.sh",
 	"scripts/check-semgrep-changed.sh",
 	"scripts/check-semgrep-full.sh",
+	"scripts/semgrep-bootstrap.sh",
 	"scripts/semgrep-pre-push.yml",
 ] as const;
 

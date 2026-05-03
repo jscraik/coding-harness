@@ -72,8 +72,11 @@ harness contract validate
 harness health --json
 ```
 
-That is the minimum viable path. The three most common workflows beyond this are:
+That is the minimum viable path. The common routes beyond this are:
 
+- **Agent cockpit loop** — run `harness next --json`, inspect `safeToRun`, then
+  execute `nextCommand` only when it is safe; see
+  [CLI reference](./docs/cli-reference.md#agent-cockpit-entrypoint).
 - **[Bootstrap a repository](#hero-workflow-1-bootstrap-a-repository)** — dry-run, init, contract validate, health, upgrade
 - **[Start work on an issue](#hero-workflow-2-start-work-on-an-issue)** — linear prepare, preflight, policy gates
 - **[Submit a change for review](#hero-workflow-3-submit-a-change-for-review)** — docs-gate, review-gate, linear sync
@@ -511,6 +514,7 @@ harness commands --json | jq '
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)        |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                |
+| `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--mode local\|pr\|ci`)                            |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                        |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                   |
 | `health`            | Unified gate status scorecard across all gates                                                                                                                            |

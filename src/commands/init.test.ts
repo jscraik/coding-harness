@@ -1645,6 +1645,12 @@ describe("runInit", () => {
 			);
 			expect(setupHooks).toContain("Installing prek git hooks");
 			expect(setupHooks).toContain(
+				'const GIT_DIR = resolve(process.cwd(), execFileSync("git", ["rev-parse", "--git-dir"]',
+			);
+			expect(setupHooks).toContain(
+				'const PREK_HOME = process.env.PREK_HOME ?? resolve(GIT_DIR, ".cache/prek")',
+			);
+			expect(setupHooks).toContain(
 				'execFileSync("prek", ["install", "--overwrite"]',
 			);
 			expect(setupHooks).toContain("patchInstalledPrekHooks");
@@ -1796,18 +1802,12 @@ describe("runInit", () => {
 			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(runHarnessGate).toContain("if is_harness_source_repo; then");
 			expect(runHarnessGate).toContain(
-				'echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2',
+				'echo "Error: source checkout detected but node is unavailable; refusing fallback to avoid stale harness binaries." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'if pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@" 2>"$tsx_stderr_file"; then',
+				'exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
-			expect(runHarnessGate).toContain("const stderr = readFileSync");
-			expect(runHarnessGate).toContain(
-				"/listen EPERM: operation not permitted.*(\\/tmp\\/tsx-|\\.pipe)/.test(stderr)",
-			);
-			expect(runHarnessGate).toContain(
-				'echo "Warning: tsx IPC startup failed (EPERM/IPC); refusing dist fallback in source checkout because dist freshness cannot be proven deterministically." >&2',
-			);
+			expect(runHarnessGate).not.toContain("harness-gate-tsx-stderr");
 			expect(runHarnessGate).not.toContain("dist_freshness_marker");
 			expect(runHarnessGate).not.toContain("newest_dist_file");
 			expect(runHarnessGate).not.toContain("tsx IPC startup failed with EPERM");
@@ -2122,7 +2122,10 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("Codex environment action");
 			expect(environmentCheck).toContain("run_check_environment_with_runner()");
 			expect(environmentCheck).toContain(
-				"repo source CLI (pnpm exec tsx src/cli.ts)",
+				"repo source CLI (cd repo && node --import tsx src/cli.ts)",
+			);
+			expect(environmentCheck).toContain(
+				'bash -lc \'cd "$1" && shift && exec "$@"\' _ "$REPO_ROOT" node --import tsx src/cli.ts',
 			);
 			expect(environmentCheck).toContain("repo dist CLI (node dist/cli.js)");
 			expect(environmentCheck).toContain(
@@ -2212,7 +2215,8 @@ describe("runInit", () => {
 			expect(refreshDiagrams).toContain("...sourceManifest,");
 			expect(diagramFreshness).toContain("is_ignored_change()");
 			expect(diagramFreshness).toContain("is_architecture_sensitive_change()");
-			expect(diagramFreshness).toContain(".diagram/*)");
+			expect(diagramFreshness).not.toContain(".diagram/*)");
+			expect(diagramFreshness).not.toContain("AI/context/*)");
 			expect(diagramFreshness).toContain("src/*.test.ts|src/*.spec.ts");
 			expect(diagramFreshness).toContain("jq -c 'del(.generatedAt)'");
 			expect(diagramFreshness).toContain(

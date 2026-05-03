@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-30
+last_validated: 2026-05-03
 ---
 
 # Tooling policy
@@ -90,6 +90,7 @@ Project Brain memory-extension enforcement is also part of this tooling contract
 For repositories with UI or ChatGPT Apps SDK dependency signals, `toolingPolicy.packagePolicy` also requires `@brainwav/design-system-guidance` in `package.json`.
 `docs-gate` now also treats tooling/runtime contract changes as documentation-authoritative work, so changes to hook wiring, readiness scripts, `.mise.toml`, or generated Codex environment actions should be landed with updates to this guide and `docs/agents/06-security-and-governance.md`.
 When those changes also touch validation/required-check or architecture-context categories, land the same PR with synchronized updates to `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, and `docs/agents/00-architecture-bootstrap.md`.
+For agent-native cockpit changes, keep `harness next --json` command recommendations aligned with this command contract, generated environment actions, and the hook/readiness scripts that prove the recommended next action is safe to run.
 
 The local hook contract is intentionally split by drag profile:
 
@@ -159,6 +160,8 @@ Port-free wrapping is expected only for app run actions backed by `dev`/`start` 
 
 **Implementation notes:** Treat imported CodeRabbit CSV rows as local, non-live operational evidence (`source.live=false`) unless a sanitized snapshot is explicitly requested. Strict review-context mode (`requireReviewContext: true`) is supported through review-gate configuration. Keyword-only fuzzy blocking and fuzzy/keyword-only gating remain reserved for later phases and must stay rejected until those command contracts land.
 Rollback for learning-loop regressions: disable the affected gate at the invoking workflow or restore the prior `.harness/learnings/coderabbit.local.json` and `.harness/learnings/coderabbit.snapshot.json` snapshots, revert the command-specific change for `harness learnings import`, `harness learnings gate`, `harness learnings promote`, `harness review-context`, `harness validation-plan`, `harness artifact-gate`, `harness ci-ownership-gate`, or `harness north-star-feedback`, then run `harness upgrade --dry-run --json` to verify restoration before re-enabling enforcement.
+
+Before restoring `last_validated` or re-enabling enforcement, prove the affected command family itself with the smallest real command path: `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <files> --json`, `harness review-context --source .harness/learnings/coderabbit.local.json --files <files> --json`, `harness validation-plan --source .harness/learnings/coderabbit.local.json --files <files> --json`, `harness artifact-gate --files <files> --json`, `harness ci-ownership-gate --json`, or `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json`. The proof must exit `0` and emit valid JSON with either `status` or the command-specific result fields plus evidence references when that command produces them.
 
 ## Code-style parity gate
 

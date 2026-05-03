@@ -17,6 +17,12 @@ const CHECK_SCRIPT_SOURCE = join(
 	"scripts",
 	"check-diagram-freshness.sh",
 );
+const NORMALIZE_HELPER_SOURCE = join(
+	process.cwd(),
+	"scripts",
+	"lib",
+	"normalize-mermaid-artifact.cjs",
+);
 const STABLE_PATH = [
 	dirname(process.execPath),
 	...(process.platform === "darwin" ? ["/opt/homebrew/bin"] : []),
@@ -57,6 +63,11 @@ function createRepo(refreshScript: string): string {
 		CHECK_SCRIPT_SOURCE,
 		join(root, "scripts", "check-diagram-freshness.sh"),
 	);
+	mkdirSync(join(root, "scripts", "lib"), { recursive: true });
+	copyFileSync(
+		NORMALIZE_HELPER_SOURCE,
+		join(root, "scripts", "lib", "normalize-mermaid-artifact.cjs"),
+	);
 	write(root, "scripts/refresh-diagram-context.sh", refreshScript);
 	write(root, "src/example.ts", "export const example = 1;\n");
 	write(root, "src/example.test.ts", "export const exampleTest = 1;\n");
@@ -81,6 +92,18 @@ function createRepo(refreshScript: string): string {
 			null,
 			2,
 		),
+	);
+	write(
+		root,
+		".diagram/architecture.mmd",
+		[
+			"graph TD",
+			'  subgraph sg_one_a1b2c3d4["src/lib/one"]',
+			'    node_alpha_11111111["alpha"]',
+			"  end",
+			'  ext_node_fs_deadbeef["node:fs"] --> node_alpha_11111111',
+			"",
+		].join("\n"),
 	);
 
 	git(root, "init");
@@ -110,6 +133,27 @@ printf '%s\n' "$*" > .refresh-invoked
 		roots.push(root);
 
 		write(root, "src/example.test.ts", "export const exampleTest = 2;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(
+			"Diagram freshness check skipped: no architecture-sensitive implementation paths changed.",
+		);
+		expect(existsSync(join(root, ".refresh-invoked"))).toBe(false);
+	});
+
+	it("skips refresh when only tracked generated artifacts changed", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" > .refresh-invoked
+`);
+		roots.push(root);
+
+		write(
+			root,
+			"AI/context/diagram-context.md",
+			"# Diagram Context Pack\n\nGenerated: 2026-03-12T00:00:00Z\n\n## system\n\n```mermaid\ngraph TD\n  A[Start] --> B[Finish]\n```\n",
+		);
 
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
 		expect(result.status).toBe(0);
@@ -172,6 +216,89 @@ jq -n --tab \
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain("Diagram freshness check passed.");
+	});
+
+	it("passes when refresh only changes volatile Mermaid artifact identifiers", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  subgraph sg_one_fedcba98["src/lib/one"]
+    node_alpha_99999999["alpha"]
+  end
+  ext_node_fs_12345678["node:fs"] --> node_alpha_99999999
+MMD
+`);
+		roots.push(root);
+
+		write(root, "src/example.ts", "export const example = 6;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+	});
+
+	it("passes when refresh changes volatile suffixes for duplicate labels", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  subgraph sg_gap_case_aaaa1111["src/lib/gap-case"]
+    node_src_lib_gap_case_types_86775c96_2813d5eb["types"]
+  end
+  subgraph sg_init_bbbb2222["src/lib/init"]
+    node_src_lib_init_types_fe7507be_c01fc683["types"]
+  end
+MMD
+`);
+		roots.push(root);
+
+		write(
+			root,
+			".diagram/architecture.mmd",
+			[
+				"graph TD",
+				'  subgraph sg_gap_case_1111aaaa["src/lib/gap-case"]',
+				'    node_src_lib_gap_case_types_fe7507be_13c9c963["types"]',
+				"  end",
+				'  subgraph sg_init_2222bbbb["src/lib/init"]',
+				'    node_src_lib_init_types_86775c96_5dac8755["types"]',
+				"  end",
+				"",
+			].join("\n"),
+		);
+		git(root, "add", ".");
+		git(root, "commit", "-m", "baseline duplicate labels");
+		write(root, "src/example.ts", "export const example = 7;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+	});
+
+	it("fails when refresh moves a normalized node between Mermaid subgraphs", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  subgraph sg_one_fedcba98["src/lib/one"]
+  end
+  subgraph sg_two_fedcba98["src/lib/two"]
+    node_alpha_99999999["alpha"]
+  end
+  ext_node_fs_12345678["node:fs"] --> node_alpha_99999999
+MMD
+`);
+		roots.push(root);
+
+		write(root, "src/example.ts", "export const example = 8;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain(
+			"Error: architecture diagram artifacts are stale after refresh.",
+		);
+		expect(result.stdout).toContain(".diagram/architecture.mmd");
 	});
 
 	it("fails when refresh changes tracked artifacts after a sensitive code change", () => {

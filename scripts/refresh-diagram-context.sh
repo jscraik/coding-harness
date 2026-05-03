@@ -158,29 +158,30 @@ const parseArchitecture = (content) => {
 const buildArchitecture = (subgraphs) => {
   const nodeMap = new Map();
   const lines = ["graph TD"];
-  const rawNodeFingerprint = (rawId) =>
-    rawId.match(/_([0-9a-f]{8})$/i)?.[1]?.toLowerCase() ?? null;
-  const normalizedRawNodeKey = (rawId) =>
-    rawNodeFingerprint(rawId) ?? rawId.toLowerCase();
+  const stableRawIdentity = (rawId) =>
+    rawId
+      .replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,})){1,2}$/i, "")
+      .replace(/(?:[_-][0-9]+)+$/i, "")
+      .toLowerCase();
   const sortedSubgraphs = [...subgraphs].sort((left, right) =>
     left.label.localeCompare(right.label) ||
-    normalizedRawNodeKey(left.rawId).localeCompare(normalizedRawNodeKey(right.rawId)),
+    stableRawIdentity(left.rawId).localeCompare(stableRawIdentity(right.rawId)),
   );
 
   for (const subgraph of sortedSubgraphs) {
     const subgraphId = stableId(
       "sg",
-      `${subgraph.label}/${normalizedRawNodeKey(subgraph.rawId)}`,
+      `${subgraph.label}/${stableRawIdentity(subgraph.rawId)}`,
     );
     lines.push(`  subgraph ${subgraphId}["${subgraph.label}"]`);
     const sortedNodes = [...subgraph.nodes].sort((left, right) =>
       left.label.localeCompare(right.label) ||
-      normalizedRawNodeKey(left.rawId).localeCompare(normalizedRawNodeKey(right.rawId)),
+      stableRawIdentity(left.rawId).localeCompare(stableRawIdentity(right.rawId)),
     );
     for (const node of sortedNodes) {
       const nodeId = stableId(
         "node",
-        `${subgraph.label}/${node.label}/${normalizedRawNodeKey(node.rawId)}`,
+        `${subgraph.label}/${node.label}/${stableRawIdentity(node.rawId)}`,
       );
       nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
       lines.push(`    ${nodeId}["${node.label}"]`);
@@ -369,6 +370,23 @@ TMP_CONTEXT="$TMP_DIR/diagram-context.md"
 		echo
 	done
 } > "$TMP_CONTEXT"
+
+if [[ -f "$CONTEXT_FILE" ]] && \
+	cmp -s \
+		<(awk '!/^Generated: /' "$TMP_CONTEXT") \
+		<(awk '!/^Generated: /' "$CONTEXT_FILE"); then
+	existing_generated_line="$(awk '/^Generated: / { print; exit }' "$CONTEXT_FILE")"
+	if [[ -n "$existing_generated_line" ]]; then
+		awk -v generated_line="$existing_generated_line" '
+			/^Generated: / {
+				print generated_line
+				next
+			}
+			{ print }
+		' "$TMP_CONTEXT" > "$TMP_CONTEXT.preserve-generated"
+		mv "$TMP_CONTEXT.preserve-generated" "$TMP_CONTEXT"
+	fi
+fi
 
 CONTEXT_SHA="$(shasum -a 256 "$TMP_CONTEXT" | awk '{print $1}')"
 GIT_HEAD="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
