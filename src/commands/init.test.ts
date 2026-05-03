@@ -1645,6 +1645,12 @@ describe("runInit", () => {
 			);
 			expect(setupHooks).toContain("Installing prek git hooks");
 			expect(setupHooks).toContain(
+				'const GIT_DIR = resolve(process.cwd(), execFileSync("git", ["rev-parse", "--git-dir"]',
+			);
+			expect(setupHooks).toContain(
+				'const PREK_HOME = process.env.PREK_HOME ?? resolve(GIT_DIR, ".cache/prek")',
+			);
+			expect(setupHooks).toContain(
 				'execFileSync("prek", ["install", "--overwrite"]',
 			);
 			expect(setupHooks).toContain("patchInstalledPrekHooks");
@@ -2116,7 +2122,10 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("Codex environment action");
 			expect(environmentCheck).toContain("run_check_environment_with_runner()");
 			expect(environmentCheck).toContain(
-				"repo source CLI (node --import tsx src/cli.ts)",
+				"repo source CLI (cd repo && node --import tsx src/cli.ts)",
+			);
+			expect(environmentCheck).toContain(
+				'bash -lc \'cd "$1" && shift && exec "$@"\' _ "$REPO_ROOT" node --import tsx src/cli.ts',
 			);
 			expect(environmentCheck).toContain("repo dist CLI (node dist/cli.js)");
 			expect(environmentCheck).toContain(

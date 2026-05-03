@@ -22,13 +22,23 @@ describe("scaffold environment templates", () => {
 		expect(script).toContain('if [[ -f "$PACKAGE_JSON_PATH" ]]; then');
 		expect(script).toContain("Fix: run harness init --update");
 		expect(script).toContain("Fix: pnpm add -D $pkg");
-		expect(script).toContain('node --import tsx "$REPO_ROOT/src/cli.ts"');
+		expect(script).toContain(
+			"repo source CLI (cd repo && node --import tsx src/cli.ts)",
+		);
+		expect(script).toContain(
+			'bash -lc \'cd "$1" && shift && exec "$@"\' _ "$REPO_ROOT" node --import tsx src/cli.ts',
+		);
+		expect(script).toContain(
+			'installed_hooks_dir="$(git -C "$REPO_ROOT" rev-parse --git-path hooks 2>/dev/null || true)"',
+		);
 	});
 
 	it("preserves runner fallback order from source checkout to global harness", () => {
 		const script = renderCheckEnvironmentScript();
 
-		const sourceIndex = script.indexOf("repo source CLI");
+		const sourceIndex = script.indexOf(
+			"repo source CLI (cd repo && node --import tsx src/cli.ts)",
+		);
 		const distIndex = script.indexOf("repo dist CLI");
 		const wrapperIndex = script.indexOf("repo wrapper");
 		const miseIndex = script.indexOf("mise harness");
