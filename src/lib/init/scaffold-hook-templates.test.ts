@@ -22,7 +22,12 @@ describe("git-hook scaffold templates", () => {
 		const script = renderSetupGitHooksScript();
 
 		expect(script).toContain("Installing prek git hooks");
+		expect(script).toContain(
+			'const PREK_HOME = process.env.PREK_HOME ?? resolve(process.cwd(), ".git/.cache/prek")',
+		);
+		expect(script).toContain("mkdirSync(PREK_HOME, { recursive: true })");
 		expect(script).toContain('execFileSync("prek", ["install", "--overwrite"]');
+		expect(script).toContain("env: { ...process.env, PREK_HOME }");
 		expect(script).toContain("patchInstalledPrekHooks");
 		expect(script).toContain('PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"');
 		expect(script).toContain("make hooks-pre-commit");
