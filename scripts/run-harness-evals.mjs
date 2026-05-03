@@ -43,9 +43,37 @@ const fixtureRoot = path.resolve(
 
 const findings = [];
 const liveFixtureResults = [];
-const registry = readJson(registryPath);
+let registry = {
+	schemaVersion: "harness-north-star-agent-delivery-evals/v1",
+	northStarGoal: "",
+	scorecard: [],
+	observabilityContract: {
+		schemaVersion: "braintrust-log-data/v1",
+		fields: ["input", "expected", "output", "metadata", "scores"],
+	},
+	scenarios: [],
+};
 
-validateRegistry(registry, findings);
+try {
+	registry = readJson(registryPath);
+	try {
+		validateRegistry(registry, findings);
+	} catch (error) {
+		findings.push(
+			errorFinding(
+				"registry.validate",
+				`Failed to validate ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
+			),
+		);
+	}
+} catch (error) {
+	findings.push(
+		errorFinding(
+			"registry.load",
+			`Failed to load ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
+		),
+	);
+}
 
 const scenarios = Array.isArray(registry.scenarios) ? registry.scenarios : [];
 for (const scenario of scenarios.filter(

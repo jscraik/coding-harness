@@ -90,9 +90,19 @@ Before leaving a phase, complete all of these:
 
 At the end of each phase, run these in order over the phase diff:
 
-1. Simplify pass over the phase diff.
-2. Harness Engineering code review over the phase diff.
-3. Codex Security scan over the phase diff.
+1. Simplify pass: run the smallest repo simplification and formatting checks
+   that cover the changed files. Use `pnpm lint`, `pnpm typecheck`, and the
+   plan's focused test command for implementation files; use
+   `pnpm exec markdownlint-cli2 <changed-docs>` for docs-only phases.
+2. Harness Engineering code review: run the agent-native evidence commands that
+   apply to the phase diff, starting with
+   `harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`
+   and `harness ci-ownership-gate --json` when CI, required-check, or ownership
+   surfaces changed.
+3. Codex Security scan: run the repo security surface through the Codex Security
+   review workflow and capture its finding summary. For local CLI evidence, run
+   `pnpm audit` and, after push, confirm external security checks with
+   `gh pr checks --json name,state,link --jq '.[] | select(.name=="security-scan" or .name=="semgrep-cloud-platform/scan")'`.
 
 Apply only behavior-preserving simplifications and verified fixes. Re-run the
 smallest validation that proves the final phase diff.

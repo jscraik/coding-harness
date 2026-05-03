@@ -220,7 +220,7 @@
 			"expected": {
 				"commands": [
 					"gh pr checks",
-					"CircleCI failing job log fetch",
+					"curl -fsSL -H \"Circle-Token: $CIRCLECI_CLI_TOKEN\" https://circleci.com/api/v1.1/project/gh/<org>/<repo>/<build-number>/output | jq -r '.[] | .message'",
 					"harness validation-plan --json"
 				],
 				"artifacts": ["failing job evidence", "validation closeout"],
@@ -247,7 +247,7 @@
 			"expected": {
 				"commands": [
 					"harness policy-gate --contract harness.contract.json --json",
-					"required-check parity validator"
+					"harness ci-ownership-gate --json"
 				],
 				"artifacts": ["policy gate result", "required-check drift report"],
 				"assertions": [
@@ -330,12 +330,14 @@
 				"commands": [
 					"harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json",
 					"harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json",
-					"harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json"
+					"harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json",
+					"harness learnings promote --source .harness/learnings/coderabbit.local.json --min-usage 25 --json"
 				],
 				"artifacts": [
 					"learnings gate result",
 					"review context result",
-					"north-star feedback result"
+					"north-star feedback result",
+					"promotion result"
 				],
 				"assertions": [
 					"changed files are passed exactly",

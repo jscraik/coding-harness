@@ -17,6 +17,12 @@ const CHECK_SCRIPT_SOURCE = join(
 	"scripts",
 	"check-diagram-freshness.sh",
 );
+const NORMALIZE_HELPER_SOURCE = join(
+	process.cwd(),
+	"scripts",
+	"lib",
+	"normalize-mermaid-artifact.cjs",
+);
 const STABLE_PATH = [
 	dirname(process.execPath),
 	...(process.platform === "darwin" ? ["/opt/homebrew/bin"] : []),
@@ -56,6 +62,11 @@ function createRepo(refreshScript: string): string {
 	copyFileSync(
 		CHECK_SCRIPT_SOURCE,
 		join(root, "scripts", "check-diagram-freshness.sh"),
+	);
+	mkdirSync(join(root, "scripts", "lib"), { recursive: true });
+	copyFileSync(
+		NORMALIZE_HELPER_SOURCE,
+		join(root, "scripts", "lib", "normalize-mermaid-artifact.cjs"),
 	);
 	write(root, "scripts/refresh-diagram-context.sh", refreshScript);
 	write(root, "src/example.ts", "export const example = 1;\n");
