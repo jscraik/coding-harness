@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-30
+last_validated: 2026-05-03
 ---
 
 # Tooling policy
@@ -90,6 +90,7 @@ Project Brain memory-extension enforcement is also part of this tooling contract
 For repositories with UI or ChatGPT Apps SDK dependency signals, `toolingPolicy.packagePolicy` also requires `@brainwav/design-system-guidance` in `package.json`.
 `docs-gate` now also treats tooling/runtime contract changes as documentation-authoritative work, so changes to hook wiring, readiness scripts, `.mise.toml`, or generated Codex environment actions should be landed with updates to this guide and `docs/agents/06-security-and-governance.md`.
 When those changes also touch validation/required-check or architecture-context categories, land the same PR with synchronized updates to `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, and `docs/agents/00-architecture-bootstrap.md`.
+For agent-native cockpit changes, keep `harness next --json` command recommendations aligned with this command contract, generated environment actions, and the hook/readiness scripts that prove the recommended next action is safe to run.
 
 The local hook contract is intentionally split by drag profile:
 
