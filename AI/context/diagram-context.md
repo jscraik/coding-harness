@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-03T14:51:04Z
+Generated: 2026-05-03T19:56:44Z
 
 ## Table of Contents
 
@@ -28,17 +28,6 @@ Generated: 2026-05-03T14:51:04Z
 graph TD
   subgraph sg_sg_a92fa1f9["."]
     node_vitest_config_vitest_config_d4be514f["vitest.config"]
-  end
-  subgraph sg_artifacts_debug_drift_north_star_src_artifacts_d_dc2902fd["artifacts/debug-drift-north-star/src"]
-    node_artifacts_debug_drift_north_star_src_cli_cli_cb61b00a["cli"]
-  end
-  subgraph sg_artifacts_docs_gate_repro_src_artifacts_docs_gat_618cd773["artifacts/docs-gate-repro/src"]
-    node_artifacts_docs_gate_repro_src_cli_cli_d4d3d7f9["cli"]
-  end
-  subgraph sg_coverage_coverage_92e81cc7["coverage"]
-    node_coverage_block_navigation_block_navigation_dca36a44["block-navigation"]
-    node_coverage_prettify_prettify_b892161d["prettify"]
-    node_coverage_sorter_sorter_c978756d["sorter"]
   end
   subgraph sg_e2e_e2e_01e720f6["e2e"]
     node_e2e_run_e2e_run_e2e_26179552["run-e2e"]
@@ -829,10 +818,10 @@ flowchart TD
   Boundary --> validator_core_4358f8ba
   risk_tier_test_1_6f021f87["risk-tier.test"]
   Boundary --> risk_tier_test_1_6f021f87
-  control_plane_core_db3b4cb2["control-plane-core"]
-  Boundary --> control_plane_core_db3b4cb2
   normalise_test_73e8a615["normalise.test"]
   Boundary --> normalise_test_73e8a615
+  control_plane_core_db3b4cb2["control-plane-core"]
+  Boundary --> control_plane_core_db3b4cb2
   types_11_4be3ee64["types"]
   Boundary --> types_11_4be3ee64
   triage_type_labels_8bc8350f["triage-type-labels"]
@@ -853,8 +842,8 @@ flowchart TD
   Boundary --> coderabbit_csv_test_1f36d0a4
   artifact_io_test_aac02da3["artifact-io.test"]
   Boundary --> artifact_io_test_aac02da3
-  types_15_86775c96["types"]
-  Boundary --> types_15_86775c96
+  types_14_fe7507be["types"]
+  Boundary --> types_14_fe7507be
   scaffold_db8a7260["scaffold"]
   Boundary --> scaffold_db8a7260
   scaffold_security_scan_template_55bc7465["scaffold-security-scan-template"]
@@ -877,6 +866,8 @@ flowchart TD
   Boundary --> init_ops_e54123f9
   policy_test_2c06901d["policy.test"]
   Boundary --> policy_test_2c06901d
+  legacy_dispatch_guard_test_4700087d["legacy-dispatch-guard.test"]
+  Boundary --> legacy_dispatch_guard_test_4700087d
   validator_test_5_2bb3219d["validator.test"]
   Boundary --> validator_test_5_2bb3219d
   validator_core_1_1518647e["validator-core"]
@@ -897,8 +888,6 @@ flowchart TD
   Boundary --> resolver_439c3635
   resolver_test_84b219fe["resolver.test"]
   Boundary --> resolver_test_84b219fe
-  legacy_dispatch_guard_test_4700087d["legacy-dispatch-guard.test"]
-  Boundary --> legacy_dispatch_guard_test_4700087d
   command_specs_test_7f693e85["command-specs.test"]
   Boundary --> command_specs_test_7f693e85
   command_specs_core_1c0ffc99["command-specs-core"]
@@ -958,26 +947,26 @@ classDiagram
   class required_checks_46396214 {
     +src/lib/policy/required-checks.ts
   }
-  class client_948fe603 {
-    +src/lib/linear/client.ts
-  }
   class validator_3_28b6e9f3 {
     +src/lib/input/validator.ts
   }
   class validation_98c41dcd {
     +src/lib/input/validation.ts
   }
-  class sha_d600474b {
-    +src/lib/github/sha.ts
-  }
-  class errors_be4bd567 {
-    +src/lib/github/errors.ts
+  class client_948fe603 {
+    +src/lib/linear/client.ts
   }
   class eject_1_d0ecd4d1 {
     +src/lib/init/eject.ts
   }
   class validator_4_5180cf23 {
     +src/lib/evidence/validator.ts
+  }
+  class sha_d600474b {
+    +src/lib/github/sha.ts
+  }
+  class errors_be4bd567 {
+    +src/lib/github/errors.ts
   }
   class harness_decision_881bdc15 {
     +src/lib/decision/harness-decision.ts
@@ -1130,21 +1119,24 @@ flowchart TD
   local_memory_0db17ecc["local-memory"]
   UserRequest --> local_memory_0db17ecc
   local_memory_0db17ecc --> local_memory_0db17ecc_result["result"]
-  decision_packet_1_dd443771["decision-packet"]
-  UserRequest --> decision_packet_1_dd443771
-  decision_packet_1_dd443771 --> decision_packet_1_dd443771_result["result"]
   normalise_test_73e8a615["normalise.test"]
   UserRequest --> normalise_test_73e8a615
   normalise_test_73e8a615 --> normalise_test_73e8a615_result["result"]
   normalise_core_v2_f6c5ed83["normalise-core-v2"]
   UserRequest --> normalise_core_v2_f6c5ed83
   normalise_core_v2_f6c5ed83 --> normalise_core_v2_f6c5ed83_result["result"]
+  decision_packet_1_dd443771["decision-packet"]
+  UserRequest --> decision_packet_1_dd443771
+  decision_packet_1_dd443771 --> decision_packet_1_dd443771_result["result"]
   validator_1_0c0621d8["validator"]
   UserRequest --> validator_1_0c0621d8
   validator_1_0c0621d8 --> validator_1_0c0621d8_result["result"]
   types_11_4be3ee64["types"]
   UserRequest --> types_11_4be3ee64
   types_11_4be3ee64 --> types_11_4be3ee64_result["result"]
+  sanitize_af6a3bb0["sanitize"]
+  UserRequest --> sanitize_af6a3bb0
+  sanitize_af6a3bb0 --> sanitize_af6a3bb0_result["result"]
   governance_report_test_160fb2e0["governance-report.test"]
   UserRequest --> governance_report_test_160fb2e0
   governance_report_test_160fb2e0 --> governance_report_test_160fb2e0_result["result"]
@@ -1199,9 +1191,6 @@ flowchart TD
   artifact_io_ba511748["artifact-io"]
   UserRequest --> artifact_io_ba511748
   artifact_io_ba511748 --> artifact_io_ba511748_result["result"]
-  sanitize_af6a3bb0["sanitize"]
-  UserRequest --> sanitize_af6a3bb0
-  sanitize_af6a3bb0 --> sanitize_af6a3bb0_result["result"]
   url_validator_test_f781df3b["url-validator.test"]
   UserRequest --> url_validator_test_f781df3b
   url_validator_test_f781df3b --> url_validator_test_f781df3b_result["result"]
@@ -1225,19 +1214,13 @@ flowchart TD
   repo_scanner_core_8e9f7646["repo-scanner-core"]
   UserRequest --> repo_scanner_core_8e9f7646
   repo_scanner_core_8e9f7646 --> repo_scanner_core_8e9f7646_result["result"]
-  comments_test_f8c9ae41["comments.test"]
-  UserRequest --> comments_test_f8c9ae41
-  comments_test_f8c9ae41 --> comments_test_f8c9ae41_result["result"]
-  client_1_914e1681["client"]
-  UserRequest --> client_1_914e1681
-  client_1_914e1681 --> client_1_914e1681_result["result"]
   update_core_bced358c["update-core"]
   UserRequest --> update_core_bced358c
   update_core_bced358c --> update_core_bced358c_write["write/update"]
   update_core_bced358c_write --> update_core_bced358c_result["result"]
-  types_15_86775c96["types"]
-  UserRequest --> types_15_86775c96
-  types_15_86775c96 --> types_15_86775c96_result["result"]
+  types_14_fe7507be["types"]
+  UserRequest --> types_14_fe7507be
+  types_14_fe7507be --> types_14_fe7507be_result["result"]
   schema_migrate_c0646635["schema-migrate"]
   UserRequest --> schema_migrate_c0646635
   schema_migrate_c0646635 --> schema_migrate_c0646635_result["result"]
@@ -1301,6 +1284,12 @@ flowchart TD
   ast_grep_rules_test_2b69fd9a["ast-grep-rules.test"]
   UserRequest --> ast_grep_rules_test_2b69fd9a
   ast_grep_rules_test_2b69fd9a --> ast_grep_rules_test_2b69fd9a_result["result"]
+  comments_test_f8c9ae41["comments.test"]
+  UserRequest --> comments_test_f8c9ae41
+  comments_test_f8c9ae41 --> comments_test_f8c9ae41_result["result"]
+  client_1_914e1681["client"]
+  UserRequest --> client_1_914e1681
+  client_1_914e1681 --> client_1_914e1681_result["result"]
   ralph_runtime_73d63c0e["ralph-runtime"]
   UserRequest --> ralph_runtime_73d63c0e
   ralph_runtime_73d63c0e --> ralph_runtime_73d63c0e_result["result"]
@@ -1313,6 +1302,12 @@ flowchart TD
   harness_decision_test_7e5a4fe5["harness-decision.test"]
   UserRequest --> harness_decision_test_7e5a4fe5
   harness_decision_test_7e5a4fe5 --> harness_decision_test_7e5a4fe5_result["result"]
+  command_registry_a88eb2e3["command-registry"]
+  UserRequest --> command_registry_a88eb2e3
+  command_registry_a88eb2e3 --> command_registry_a88eb2e3_result["result"]
+  command_registry_test_0cf92cba["command-registry.test"]
+  UserRequest --> command_registry_test_0cf92cba
+  command_registry_test_0cf92cba --> command_registry_test_0cf92cba_result["result"]
   validator_test_5_2bb3219d["validator.test"]
   UserRequest --> validator_test_5_2bb3219d
   validator_test_5_2bb3219d --> validator_test_5_2bb3219d_result["result"]
@@ -1361,12 +1356,6 @@ flowchart TD
   resolver_439c3635["resolver"]
   UserRequest --> resolver_439c3635
   resolver_439c3635 --> resolver_439c3635_result["result"]
-  command_registry_a88eb2e3["command-registry"]
-  UserRequest --> command_registry_a88eb2e3
-  command_registry_a88eb2e3 --> command_registry_a88eb2e3_result["result"]
-  command_registry_test_0cf92cba["command-registry.test"]
-  UserRequest --> command_registry_test_0cf92cba
-  command_registry_test_0cf92cba --> command_registry_test_0cf92cba_result["result"]
   command_specs_core_1c0ffc99["command-specs-core"]
   UserRequest --> command_specs_core_1c0ffc99
   command_specs_core_1c0ffc99 --> command_specs_core_1c0ffc99_result["result"]
@@ -2411,11 +2400,11 @@ flowchart TD
     types_core_e405ddca{{"types-core"}}
     metrics_capture_core_db4bf7cf{{"metrics-capture-core"}}
     control_plane_core_db3b4cb2{{"control-plane-core"}}
+    scaffold_github_actions_pr_pipeline_renderer_1ee18de5{{"scaffold-github-actions-pr-pipeline-renderer"}}
+    scaffold_ci_template_utils_test_b94825d9{{"scaffold-ci-template-utils.test"}}
     mutation_queue_ce5a530e{{"mutation-queue"}}
     mutation_queue_test_10b599e8{{"mutation-queue.test"}}
     client_1_914e1681{{"client"}}
-    scaffold_github_actions_pr_pipeline_renderer_1ee18de5{{"scaffold-github-actions-pr-pipeline-renderer"}}
-    scaffold_ci_template_utils_test_b94825d9{{"scaffold-ci-template-utils.test"}}
     run_records_test_3ee6a0e3{{"run-records.test"}}
     run_records_core_89286dfa{{"run-records-core"}}
     run_record_emitter_test_5475c0da{{"run-record-emitter.test"}}
@@ -2587,6 +2576,8 @@ flowchart TD
   Untrusted --> agent_first_throughput_integration_test_dc677cc4
   command_pipeline_e2e_test_a0aa069a["command-pipeline.e2e.test"]
   Untrusted --> command_pipeline_e2e_test_a0aa069a
+  gate_bundle_core_2b3631f3["gate-bundle-core"]
+  Untrusted --> gate_bundle_core_2b3631f3
   run_state_94d814a7["run-state"]
   Untrusted --> run_state_94d814a7
   run_state_test_ee8298e8["run-state.test"]
@@ -2609,8 +2600,6 @@ flowchart TD
   Untrusted --> orchestrator_test_18d2fe26
   orchestrator_core_d0678b53["orchestrator-core"]
   Untrusted --> orchestrator_core_d0678b53
-  gate_bundle_core_2b3631f3["gate-bundle-core"]
-  Untrusted --> gate_bundle_core_2b3631f3
   types_1_4ecdf56e["types"]
   Untrusted --> types_1_4ecdf56e
   decision_packet_8ee9d119["decision-packet"]
@@ -2659,6 +2648,14 @@ flowchart TD
   Untrusted --> cardinality_ebef8aff
   cardinality_test_c00e7edb["cardinality.test"]
   Untrusted --> cardinality_test_c00e7edb
+  types_9_1db4641f["types"]
+  Untrusted --> types_9_1db4641f
+  normalise_test_73e8a615["normalise.test"]
+  Untrusted --> normalise_test_73e8a615
+  normalise_review_preflight_core_ceb258cb["normalise-review-preflight-core"]
+  Untrusted --> normalise_review_preflight_core_ceb258cb
+  normalise_core_v2_f6c5ed83["normalise-core-v2"]
+  Untrusted --> normalise_core_v2_f6c5ed83
   types_core_e405ddca["types-core"]
   Untrusted --> types_core_e405ddca
   evaluation_engine_test_739ded70["evaluation-engine.test"]
@@ -2669,14 +2666,8 @@ flowchart TD
   Untrusted --> control_plane_test_cd590ea0
   control_plane_core_db3b4cb2["control-plane-core"]
   Untrusted --> control_plane_core_db3b4cb2
-  types_10_75e5a4a0["types"]
-  Untrusted --> types_10_75e5a4a0
-  normalise_test_73e8a615["normalise.test"]
-  Untrusted --> normalise_test_73e8a615
-  normalise_review_preflight_core_ceb258cb["normalise-review-preflight-core"]
-  Untrusted --> normalise_review_preflight_core_ceb258cb
-  normalise_core_v2_f6c5ed83["normalise-core-v2"]
-  Untrusted --> normalise_core_v2_f6c5ed83
+  sanitize_test_f3d34916["sanitize.test"]
+  Untrusted --> sanitize_test_f3d34916
   utils_6fd89734["utils"]
   Untrusted --> utils_6fd89734
   triage_type_labels_8bc8350f["triage-type-labels"]
@@ -2707,16 +2698,14 @@ flowchart TD
   Untrusted --> coderabbit_csv_test_1f36d0a4
   artifact_io_test_aac02da3["artifact-io.test"]
   Untrusted --> artifact_io_test_aac02da3
-  sanitize_test_f3d34916["sanitize.test"]
-  Untrusted --> sanitize_test_f3d34916
   scan_cache_fc02c79c["scan-cache"]
   Untrusted --> scan_cache_fc02c79c
   repo_scanner_core_8e9f7646["repo-scanner-core"]
   Untrusted --> repo_scanner_core_8e9f7646
   update_core_bced358c["update-core"]
   Untrusted --> update_core_bced358c
-  types_15_86775c96["types"]
-  Untrusted --> types_15_86775c96
+  types_14_fe7507be["types"]
+  Untrusted --> types_14_fe7507be
   scaffold_db8a7260["scaffold"]
   Untrusted --> scaffold_db8a7260
   scaffold_worktree_templates_66a38e9a["scaffold-worktree-templates"]
@@ -2783,12 +2772,14 @@ flowchart TD
   Untrusted --> policy_test_2c06901d
   index_4_013aa0e3["index"]
   Untrusted --> index_4_013aa0e3
+  frontmatter_metadata_gate_test_3d0999f8["frontmatter-metadata-gate.test"]
+  Untrusted --> frontmatter_metadata_gate_test_3d0999f8
   ralph_runtime_73d63c0e["ralph-runtime"]
   Untrusted --> ralph_runtime_73d63c0e
   ralph_runtime_test_682f806b["ralph-runtime.test"]
   Untrusted --> ralph_runtime_test_682f806b
-  frontmatter_metadata_gate_test_3d0999f8["frontmatter-metadata-gate.test"]
-  Untrusted --> frontmatter_metadata_gate_test_3d0999f8
+  command_registry_test_0cf92cba["command-registry.test"]
+  Untrusted --> command_registry_test_0cf92cba
   validator_5_b19ac2be["validator"]
   Untrusted --> validator_5_b19ac2be
   validator_test_5_2bb3219d["validator.test"]
@@ -2835,8 +2826,6 @@ flowchart TD
   Untrusted --> ci_migrate_signing_test_fe9943ab
   module_boundaries_test_c0caf46b["module-boundaries.test"]
   Untrusted --> module_boundaries_test_c0caf46b
-  command_registry_test_0cf92cba["command-registry.test"]
-  Untrusted --> command_registry_test_0cf92cba
   command_specs_test_7f693e85["command-specs.test"]
   Untrusted --> command_specs_test_7f693e85
   command_specs_core_1c0ffc99["command-specs-core"]
@@ -2873,6 +2862,8 @@ flowchart TD
   Untrusted --> types_11_4be3ee64
   scaffold_contract_template_test_6f3672e3["scaffold-contract-template.test"]
   Untrusted --> scaffold_contract_template_test_6f3672e3
+  legacy_dispatch_guard_test_4700087d["legacy-dispatch-guard.test"]
+  Untrusted --> legacy_dispatch_guard_test_4700087d
   north_star_alignment_test_3ae1d69b["north-star-alignment.test"]
   Untrusted --> north_star_alignment_test_3ae1d69b
   contract_presets_bbab169b["contract-presets"]
@@ -2881,8 +2872,6 @@ flowchart TD
   Untrusted --> resolver_439c3635
   resolver_test_84b219fe["resolver.test"]
   Untrusted --> resolver_test_84b219fe
-  legacy_dispatch_guard_test_4700087d["legacy-dispatch-guard.test"]
-  Untrusted --> legacy_dispatch_guard_test_4700087d
   circleci_stale_management_664de1d9["circleci-stale-management"]
   Untrusted --> circleci_stale_management_664de1d9
   circleci_linear_sync_19c0d6da["circleci-linear-sync"]
@@ -2903,6 +2892,10 @@ flowchart TD
   Untrusted --> github_e2e_2891a341
   finding_normalizer_13f1559c["finding-normalizer"]
   Untrusted --> finding_normalizer_13f1559c
+  validation_test_bc73cdff["validation.test"]
+  Untrusted --> validation_test_bc73cdff
+  sanitize_af6a3bb0["sanitize"]
+  Untrusted --> sanitize_af6a3bb0
   governance_report_test_160fb2e0["governance-report.test"]
   Untrusted --> governance_report_test_160fb2e0
   automation_test_3da74b47["automation.test"]
@@ -2913,10 +2906,6 @@ flowchart TD
   Untrusted --> sensitive_text_test_2386c0ce
   normalise_1_4c940463["normalise"]
   Untrusted --> normalise_1_4c940463
-  validation_test_bc73cdff["validation.test"]
-  Untrusted --> validation_test_bc73cdff
-  sanitize_af6a3bb0["sanitize"]
-  Untrusted --> sanitize_af6a3bb0
   url_validator_3c5a1568["url-validator"]
   Untrusted --> url_validator_3c5a1568
   url_validator_test_f781df3b["url-validator.test"]
@@ -2925,30 +2914,6 @@ flowchart TD
   Untrusted --> url_validator_secure_fetch_test_0f94d613
   pr_creator_dc6b1ea4["pr-creator"]
   Untrusted --> pr_creator_dc6b1ea4
-  sha_d600474b["sha"]
-  Untrusted --> sha_d600474b
-  sha_test_5a5924fc["sha.test"]
-  Untrusted --> sha_test_5a5924fc
-  mutation_queue_ce5a530e["mutation-queue"]
-  Untrusted --> mutation_queue_ce5a530e
-  mutation_queue_test_10b599e8["mutation-queue.test"]
-  Untrusted --> mutation_queue_test_10b599e8
-  errors_be4bd567["errors"]
-  Untrusted --> errors_be4bd567
-  errors_test_1a443b6a["errors.test"]
-  Untrusted --> errors_test_1a443b6a
-  comments_2b4244fb["comments"]
-  Untrusted --> comments_2b4244fb
-  comments_test_f8c9ae41["comments.test"]
-  Untrusted --> comments_test_f8c9ae41
-  client_1_914e1681["client"]
-  Untrusted --> client_1_914e1681
-  client_test_1_6fa17bd4["client.test"]
-  Untrusted --> client_test_1_6fa17bd4
-  check_run_2fc00bd3["check-run"]
-  Untrusted --> check_run_2fc00bd3
-  check_run_test_85d17d04["check-run.test"]
-  Untrusted --> check_run_test_85d17d04
   scaffold_test_96f4ccea["scaffold.test"]
   Untrusted --> scaffold_test_96f4ccea
   scaffold_workflow_template_test_81353f63["scaffold-workflow-template.test"]
@@ -2983,6 +2948,30 @@ flowchart TD
   Untrusted --> eject_1_d0ecd4d1
   eject_test_96dad02e["eject.test"]
   Untrusted --> eject_test_96dad02e
+  sha_d600474b["sha"]
+  Untrusted --> sha_d600474b
+  sha_test_5a5924fc["sha.test"]
+  Untrusted --> sha_test_5a5924fc
+  mutation_queue_ce5a530e["mutation-queue"]
+  Untrusted --> mutation_queue_ce5a530e
+  mutation_queue_test_10b599e8["mutation-queue.test"]
+  Untrusted --> mutation_queue_test_10b599e8
+  errors_be4bd567["errors"]
+  Untrusted --> errors_be4bd567
+  errors_test_1a443b6a["errors.test"]
+  Untrusted --> errors_test_1a443b6a
+  comments_2b4244fb["comments"]
+  Untrusted --> comments_2b4244fb
+  comments_test_f8c9ae41["comments.test"]
+  Untrusted --> comments_test_f8c9ae41
+  client_1_914e1681["client"]
+  Untrusted --> client_1_914e1681
+  client_test_1_6fa17bd4["client.test"]
+  Untrusted --> client_test_1_6fa17bd4
+  check_run_2fc00bd3["check-run"]
+  Untrusted --> check_run_2fc00bd3
+  check_run_test_85d17d04["check-run.test"]
+  Untrusted --> check_run_test_85d17d04
   provider_adapter_3bcf82b7["provider-adapter"]
   Untrusted --> provider_adapter_3bcf82b7
   config_validator_669ebc2e["config-validator"]
@@ -3106,6 +3095,8 @@ flowchart LR
   User --> control_plane_test_cd590ea0
   control_plane_core_db3b4cb2["control-plane-core"]
   User --> control_plane_core_db3b4cb2
+  validation_test_bc73cdff["validation.test"]
+  User --> validation_test_bc73cdff
   utils_6fd89734["utils"]
   User --> utils_6fd89734
   utils_test_e2ccb8ba["utils.test"]
@@ -3116,24 +3107,6 @@ flowchart LR
   User --> client_948fe603
   client_test_4b44c0f5["client.test"]
   User --> client_test_4b44c0f5
-  validation_test_bc73cdff["validation.test"]
-  User --> validation_test_bc73cdff
-  errors_be4bd567["errors"]
-  User --> errors_be4bd567
-  errors_test_1a443b6a["errors.test"]
-  User --> errors_test_1a443b6a
-  comments_2b4244fb["comments"]
-  User --> comments_2b4244fb
-  comments_test_f8c9ae41["comments.test"]
-  User --> comments_test_f8c9ae41
-  client_1_914e1681["client"]
-  User --> client_1_914e1681
-  client_test_1_6fa17bd4["client.test"]
-  User --> client_test_1_6fa17bd4
-  check_run_2fc00bd3["check-run"]
-  User --> check_run_2fc00bd3
-  check_run_test_85d17d04["check-run.test"]
-  User --> check_run_test_85d17d04
   scaffold_test_96f4ccea["scaffold.test"]
   User --> scaffold_test_96f4ccea
   scaffold_workflow_template_92310587["scaffold-workflow-template"]
@@ -3162,6 +3135,22 @@ flowchart LR
   User --> init_modes_c05ceb07
   policy_test_2c06901d["policy.test"]
   User --> policy_test_2c06901d
+  errors_be4bd567["errors"]
+  User --> errors_be4bd567
+  errors_test_1a443b6a["errors.test"]
+  User --> errors_test_1a443b6a
+  comments_2b4244fb["comments"]
+  User --> comments_2b4244fb
+  comments_test_f8c9ae41["comments.test"]
+  User --> comments_test_f8c9ae41
+  client_1_914e1681["client"]
+  User --> client_1_914e1681
+  client_test_1_6fa17bd4["client.test"]
+  User --> client_test_1_6fa17bd4
+  check_run_2fc00bd3["check-run"]
+  User --> check_run_2fc00bd3
+  check_run_test_85d17d04["check-run.test"]
+  User --> check_run_test_85d17d04
   validator_core_1_1518647e["validator-core"]
   User --> validator_core_1_1518647e
   ui_loop_command_4db6cd6c["ui-loop-command"]
