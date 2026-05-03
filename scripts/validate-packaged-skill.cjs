@@ -204,6 +204,16 @@ function validateInstallJson() {
 	}
 }
 
+/**
+ * Validate that evals.yaml declares the expected schema, contains required eval case IDs, and includes a set of expected coverage markers.
+ *
+ * Verifies presence of:
+ * - `schema_version: "2.0"`
+ * - eval case IDs: `happy-bootstrap-command-audit`, `happy-ci-migration-sequence`, `happy-existing-repo-upgrade-dry-run`, and `edge-current-repo-needs-upgrading`
+ * - coverage/output strings related to init and upgrade dry-runs, update/skip outcomes, compatibility aliasing, adoption/preview/tracked-update indicators, prepare/apply/verify/commit/abort snapshot commands, and the `last_updated: "2026-04-29"` entry.
+ *
+ * On any missing requirement, the script will fail and exit with a non-zero status.
+ */
 function validateEvals() {
 	const content = readRepoFile(REQUIRED_FILES.evals);
 
@@ -219,15 +229,32 @@ function validateEvals() {
 		content.includes("- id: happy-ci-migration-sequence"),
 		"evals.yaml must include the CI migration sequence case",
 	);
+	assert(
+		content.includes("- id: happy-existing-repo-upgrade-dry-run"),
+		"evals.yaml must include the existing repo upgrade dry-run case",
+	);
+	assert(
+		content.includes("- id: edge-current-repo-needs-upgrading"),
+		"evals.yaml must include the current repo upgrade edge case",
+	);
 
 	for (const expectedText of [
 		"harness init --dry-run",
+		"--update --dry-run --json",
+		"updated",
+		"skipped",
+		"created-to-updated compatibility alias",
+		"adoption-preview",
+		"tracked-update",
+		"safe in-repo symlinked directories",
+		"harness upgrade --dry-run --json",
+		"current repo that needs upgrading",
 		"prepare --provider circleci --dry-run",
 		"prepare --provider circleci --apply",
 		"verify --snapshot",
 		"commit --snapshot",
 		"abort --snapshot",
-		'last_updated: "2026-03-24"',
+		'last_updated: "2026-04-29"',
 	]) {
 		assert(
 			content.includes(expectedText),

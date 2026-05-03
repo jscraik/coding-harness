@@ -28,8 +28,14 @@ export const EXIT_CODES = {
 	INVALID_ARGUMENT: 4,
 } as const;
 
+/**
+ * Supported output formats for org-audit reports.
+ */
 export type OutputFormat = "json" | "markdown" | "table";
 
+/**
+ * Options accepted by `harness org-audit`.
+ */
 export interface OrgAuditOptions {
 	/** Path to scan (directory containing repos) */
 	path: string;
@@ -45,6 +51,9 @@ export interface OrgAuditOptions {
 	useCache?: boolean | undefined;
 }
 
+/**
+ * Aggregated multi-repo org-audit results.
+ */
 export interface OrgAuditResult {
 	/** Total repositories scanned */
 	totalRepos: number;
@@ -310,13 +319,24 @@ function formatTable(result: OrgAuditResult): string {
 }
 
 /**
- * Run the org-audit CLI command.
+ * Parse org-audit CLI arguments into structured options.
  */
-export async function runOrgAuditCLI(args: string[]): Promise<{
-	exitCode: number;
-	output?: string;
-}> {
-	// Parse arguments
+function parseOrgAuditArgs(args: string[]):
+	| {
+			ok: true;
+			path?: string;
+			base?: string;
+			format?: string;
+			driftOnly: boolean;
+			includeMissing: boolean;
+			noCache: boolean;
+			json: boolean;
+	  }
+	| {
+			ok: false;
+			exitCode: number;
+			message: string;
+	  } {
 	const flagsWithValues = new Set(["--path", "--base", "--format"]);
 	const booleanFlags = new Set([
 		"--drift-only",
@@ -331,14 +351,20 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 			continue;
 		}
 		if (!arg.startsWith("-")) {
-			console.error(`Error: Unexpected positional argument '${arg}'`);
-			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+			return {
+				ok: false,
+				exitCode: EXIT_CODES.INVALID_ARGUMENT,
+				message: `Unexpected positional argument '${arg}'`,
+			};
 		}
 		if (flagsWithValues.has(arg)) {
 			const next = args[i + 1];
 			if (!next || next.startsWith("-")) {
-				console.error(`Error: ${arg} requires a value`);
-				return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+				return {
+					ok: false,
+					exitCode: EXIT_CODES.INVALID_ARGUMENT,
+					message: `${arg} requires a value`,
+				};
 			}
 			i += 1;
 			continue;
@@ -346,101 +372,156 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 		if (booleanFlags.has(arg)) {
 			continue;
 		}
-		console.error(`Error: Unknown flag '${arg}'`);
-		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+		return {
+			ok: false,
+			exitCode: EXIT_CODES.INVALID_ARGUMENT,
+			message: `Unknown flag '${arg}'`,
+		};
 	}
 
 	const pathIndex = args.indexOf("--path");
 	const baseIndex = args.indexOf("--base");
 	const formatIndex = args.indexOf("--format");
-	const driftOnlyFlag =
-		args.includes("--drift-only") || args.includes("--drift");
-	const includeMissingFlag = args.includes("--include-missing");
-	const noCacheFlag = args.includes("--no-cache");
-	const jsonFlag = args.includes("--json");
 
-	// Get path (required)
-	let scanPath: string | undefined;
-	if (pathIndex !== -1) {
-		scanPath = args[pathIndex + 1];
+	const parsed: {
+		ok: true;
+		path?: string;
+		base?: string;
+		format?: string;
+		driftOnly: boolean;
+		includeMissing: boolean;
+		noCache: boolean;
+		json: boolean;
+	} = {
+		ok: true,
+		driftOnly: args.includes("--drift-only") || args.includes("--drift"),
+		includeMissing: args.includes("--include-missing"),
+		noCache: args.includes("--no-cache"),
+		json: args.includes("--json"),
+	};
+	const pathArg = pathIndex !== -1 ? args[pathIndex + 1] : undefined;
+	const baseArg = baseIndex !== -1 ? args[baseIndex + 1] : undefined;
+	const formatArg = formatIndex !== -1 ? args[formatIndex + 1] : undefined;
+	if (pathArg !== undefined) parsed.path = pathArg;
+	if (baseArg !== undefined) parsed.base = baseArg;
+	if (formatArg !== undefined) parsed.format = formatArg;
+	return parsed;
+}
+
+/**
+ * Resolve and validate the scan path for org-audit.
+ */
+function resolveScanPath(scanPath: string | undefined): CliResult<string> {
+	const resolvedScanPath = scanPath ?? process.cwd();
+	const validation = validatePathInput(resolvedScanPath, "--path");
+	if (!validation.ok) {
+		return validation;
 	}
+	const absolutePath = validation.value.absolutePath;
 
-	// Default to current directory if not specified
-	if (!scanPath) {
-		scanPath = process.cwd();
+	if (!existsSync(absolutePath)) {
+		return err({
+			code: "VALIDATION_ERROR",
+			message: `Path does not exist: ${absolutePath}`,
+		});
 	}
-
-	// Resolve to absolute path
-	const scanPathValidation = validatePathInput(scanPath, "--path");
-	if (!scanPathValidation.ok) {
-		console.error(`Error: ${scanPathValidation.error.message}`);
-		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
-	}
-	scanPath = scanPathValidation.value.absolutePath;
-
-	// Load base contract if specified
-	let baseContract: HarnessContract | undefined;
-	if (baseIndex !== -1) {
-		const rawBasePath = args[baseIndex + 1];
-		if (!rawBasePath) {
-			console.error("Error: --base requires a path argument");
-			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
-		}
-		const baseValidation = validatePathInput(rawBasePath, "--base");
-		if (!baseValidation.ok) {
-			console.error(`Error: ${baseValidation.error.message}`);
-			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
-		}
-		const resolvedBasePath = baseValidation.value.safePath;
-		try {
-			baseContract = loadContract(resolvedBasePath, dirname(resolvedBasePath));
-		} catch (error) {
-			const message = error instanceof Error ? error.message : "Unknown error";
-			console.error(`Error loading base contract: ${message}`);
-			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
-		}
-	}
-
-	// Determine output format
-	let format: OutputFormat = "table";
-	if (jsonFlag || formatIndex !== -1) {
-		const formatArg = jsonFlag ? "json" : args[formatIndex + 1];
-		if (
-			formatArg === "json" ||
-			formatArg === "markdown" ||
-			formatArg === "table"
-		) {
-			format = formatArg;
-		}
-	}
-
-	// Check if path exists
-	if (!existsSync(scanPath)) {
-		console.error(`Error: Path does not exist: ${scanPath}`);
-		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
-	}
-
-	// Check if path is a directory
-	const stats = statSync(scanPath);
+	const stats = statSync(absolutePath);
 	if (!stats.isDirectory()) {
-		console.error(`Error: Path is not a directory: ${scanPath}`);
-		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+		return err({
+			code: "VALIDATION_ERROR",
+			message: `Path is not a directory: ${absolutePath}`,
+		});
+	}
+	return ok(absolutePath);
+}
+
+/**
+ * Load base contract from CLI argument.
+ */
+function loadBaseContractArg(
+	basePath: string | undefined,
+): CliResult<HarnessContract | undefined> {
+	if (!basePath) {
+		return ok(undefined);
+	}
+	const validation = validatePathInput(basePath, "--base");
+	if (!validation.ok) {
+		return err(validation.error);
+	}
+	const resolvedBasePath = validation.value.safePath;
+	try {
+		const contract = loadContract(resolvedBasePath, dirname(resolvedBasePath));
+		return ok(contract);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Unknown error";
+		return err({
+			code: "VALIDATION_ERROR",
+			message: `Error loading base contract: ${message}`,
+		});
+	}
+}
+
+/**
+ * Determine output format from CLI flags.
+ */
+function resolveOutputFormat(
+	jsonFlag: boolean,
+	formatArg: string | undefined,
+): OutputFormat {
+	if (jsonFlag || formatArg) {
+		const resolved = jsonFlag ? "json" : formatArg;
+		if (
+			resolved === "json" ||
+			resolved === "markdown" ||
+			resolved === "table"
+		) {
+			return resolved;
+		}
+	}
+	return "table";
+}
+
+/**
+ * Run the org-audit CLI command.
+ */
+export async function runOrgAuditCLI(args: string[]): Promise<{
+	exitCode: number;
+	output?: string;
+}> {
+	const parsed = parseOrgAuditArgs(args);
+	if (!parsed.ok) {
+		console.error(`Error: ${parsed.message}`);
+		return { exitCode: parsed.exitCode };
 	}
 
-	// Show progress
+	const scanPathResult = resolveScanPath(parsed.path);
+	if (!scanPathResult.ok) {
+		console.error(`Error: ${scanPathResult.error.message}`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+	const scanPath = scanPathResult.value;
+
+	const baseContractResult = loadBaseContractArg(parsed.base);
+	if (!baseContractResult.ok) {
+		console.error(`Error: ${baseContractResult.error.message}`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+	const baseContract = baseContractResult.value;
+
+	const format = resolveOutputFormat(parsed.json, parsed.format);
+
 	if (format === "table") {
 		console.info(`Scanning for repositories in: ${scanPath}`);
 		console.info("");
 	}
 
-	// Run audit
 	const auditResult = await runOrgAudit({
 		path: scanPath,
 		baseContract,
 		format,
-		includeMissing: includeMissingFlag,
-		driftOnly: driftOnlyFlag,
-		useCache: !noCacheFlag,
+		includeMissing: parsed.includeMissing,
+		driftOnly: parsed.driftOnly,
+		useCache: !parsed.noCache,
 	});
 
 	if (!auditResult.ok) {
@@ -450,7 +531,6 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 
 	const { result, exitCode } = auditResult.value;
 
-	// Format output
 	let output: string;
 	switch (format) {
 		case "json":
@@ -464,10 +544,8 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 			break;
 	}
 
-	// Print output
 	console.info(output);
 
-	// Print summary for table format
 	if (format === "table") {
 		console.info("");
 		if (exitCode === EXIT_CODES.SUCCESS) {

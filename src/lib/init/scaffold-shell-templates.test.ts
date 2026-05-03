@@ -88,7 +88,17 @@ describe("scaffold shell templates", () => {
 		const runner = renderHarnessGateRunner("pnpm");
 
 		expect(runner).toContain("Usage: bash scripts/run-harness-gate.sh");
-		expect(runner).toContain('exec pnpm --dir "$REPO_ROOT" exec tsx');
+		expect(runner).toContain('node --import tsx --eval ""');
+		expect(runner).toContain(
+			"tsx cannot be resolved from $REPO_ROOT; run the repository install first.",
+		);
+		expect(runner).toContain(
+			'exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
+		);
+		expect(runner).not.toContain("harness-gate-tsx-stderr");
+		expect(runner).not.toContain("dist_freshness_marker");
+		expect(runner).not.toContain("newest_dist_file");
+		expect(runner).not.toContain("tsx IPC startup failed with EPERM");
 		expect(runner).toContain('exec node "$REPO_ROOT/dist/cli.js" "$@"');
 		expect(runner).toContain('bash "$REPO_ROOT/scripts/harness-cli.sh"');
 		expect(runner).toContain("mise which harness");

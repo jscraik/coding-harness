@@ -12,6 +12,7 @@ vi.mock("../contract/run-record-emitter.js", () => ({
 		JSON.stringify(value, Object.keys(value as Record<string, unknown>).sort()),
 }));
 
+import { NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS } from "../contract/north-star-artifacts.js";
 import { emitReviewGateDecisionArtifacts } from "./decision-packet.js";
 
 describe("emitReviewGateDecisionArtifacts", () => {
@@ -76,6 +77,12 @@ describe("emitReviewGateDecisionArtifacts", () => {
 		const alignmentPacket = JSON.parse(
 			readFileSync(result.alignmentDecisionPath, "utf-8"),
 		) as Record<string, unknown>;
+		expect(alignmentPacket.schemaVersion).toBe(
+			NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.alignmentDecision,
+		);
+		expect(alignmentPacket.sourceSchemaVersion).toBe(
+			"review-decision-packet/v1",
+		);
 		expect(packet.decision).toEqual({
 			state: "green-and-ready",
 			prClosureStatus: "ready-to-merge",

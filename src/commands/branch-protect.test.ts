@@ -30,28 +30,24 @@ describe("runBranchProtect", () => {
 		vi.clearAllMocks();
 		vi.stubEnv("GITHUB_TOKEN", "");
 		vi.stubEnv("GITHUB_PERSONAL_ACCESS_TOKEN", "");
-		mockLoadContract.mockReturnValue({
-			version: "1.0",
-			riskTierRules: {},
-			branchProtection: {
-				requiredChecks: [
-					"pr-template",
-					"linear-gate",
-					"risk-policy-gate",
-					"dependency-scan",
-					"orb-pinning",
-					"consistency-drift-health",
-					"lint",
-					"typecheck",
-					"test",
-					"audit",
-					"check",
-					"memory",
-					"security-scan",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
-			},
+		mockLoadContract.mockImplementation((contractPath: string) => {
+			if (contractPath === ".missing-harness.contract.json") {
+				const error = new Error("no such file or directory");
+				(error as { code?: string }).code = "ENOENT";
+				throw error;
+			}
+			return {
+				version: "1.0",
+				riskTierRules: {},
+				branchProtection: {
+					requiredChecks: [
+						"pr-pipeline",
+						"security-scan",
+						"CodeRabbit",
+						"semgrep-cloud-platform/scan",
+					],
+				},
+			};
 		});
 	});
 
@@ -175,7 +171,7 @@ describe("runBranchProtect", () => {
 			token: "token",
 			owner: "octo",
 			repo: "harness",
-			branch: "main",
+			branch: "feature/slash-name",
 		});
 
 		expect(result.ok).toBe(false);
@@ -275,12 +271,9 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "required_status_checks",
 		);
 		expect(requiredRule).toBeDefined();
-		expect(requiredRule?.parameters).toMatchObject({
-			required_status_checks: [
-				{ context: "existing-check" },
-				{ context: "CodeRabbit" },
-			],
-		});
+		expect(requiredRule?.parameters?.required_status_checks).toEqual([
+			{ context: "CodeRabbit" },
+		]);
 		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
 	});
 
@@ -312,6 +305,7 @@ describe("runBranchProtect", () => {
 			token: "token",
 			owner: "octo",
 			repo: "harness",
+			contractPath: ".missing-harness.contract.json",
 		});
 
 		expect(result.ok).toBe(true);
@@ -404,12 +398,135 @@ describe("runBranchProtect", () => {
 			token: "token",
 			owner: "octo",
 			repo: "harness",
+			contractPath: ".missing-harness.contract.json",
 		});
 
 		expect(result.ok).toBe(true);
 		const payload = updateRuleset.mock.calls[0]?.[1];
 		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
 			false,
+		);
+	});
+
+	it("removes managed code scanning rules for internal repositories", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 89,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/main"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 89,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main"],
+							exclude: [],
+						},
+					},
+					rules: [
+						{
+							type: "code_scanning",
+							parameters: {
+								code_scanning_tools: [
+									{
+										tool: "CodeQL",
+										alerts_threshold: "errors",
+										security_alerts_threshold: "high_or_higher",
+									},
+								],
+							},
+						},
+					],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 89,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const getRepositoryVisibility = vi.fn(async () => "internal");
+
+		mockGitHubClient.mockImplementation(() =>
+			mockBranchProtectClient({
+				listRulesets,
+				getRuleset,
+				updateRuleset,
+				getRepositoryVisibility,
+			}),
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			contractPath: ".missing-harness.contract.json",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = updateRuleset.mock.calls[0]?.[1];
+		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
+			false,
+		);
+	});
+
+	it("keeps managed code scanning rules when visibility lookup is unavailable", async () => {
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 90,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const getRepositoryVisibility = vi.fn(async () => undefined);
+
+		mockGitHubClient.mockImplementation(() =>
+			mockBranchProtectClient({
+				listRulesets,
+				createRuleset,
+				getRepositoryVisibility,
+			}),
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = createRuleset.mock.calls[0]?.[0];
+		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
+			true,
 		);
 	});
 
@@ -449,18 +566,7 @@ describe("runBranchProtect", () => {
 		);
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
-				{ context: "pr-template" },
-				{ context: "linear-gate" },
-				{ context: "risk-policy-gate" },
-				{ context: "dependency-scan" },
-				{ context: "orb-pinning" },
-				{ context: "consistency-drift-health" },
-				{ context: "lint" },
-				{ context: "typecheck" },
-				{ context: "test" },
-				{ context: "audit" },
-				{ context: "check" },
-				{ context: "memory" },
+				{ context: "pr-pipeline" },
 				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
 				{ context: "semgrep-cloud-platform/scan" },
@@ -516,9 +622,11 @@ describe("runBranchProtect", () => {
 		});
 	});
 
-	it("falls back to harness baseline checks when contract loading fails", async () => {
+	it("falls back to harness baseline checks when the contract file is absent", async () => {
 		mockLoadContract.mockImplementation(() => {
-			throw new Error("contract missing");
+			const error = new Error("no such file or directory");
+			(error as { code?: string }).code = "ENOENT";
+			throw error;
 		});
 
 		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
@@ -546,6 +654,7 @@ describe("runBranchProtect", () => {
 			token: "token",
 			owner: "octo",
 			repo: "harness",
+			contractPath: ".missing-harness.contract.json",
 		});
 
 		expect(result.ok).toBe(true);
@@ -555,19 +664,7 @@ describe("runBranchProtect", () => {
 		);
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
-				{ context: "pr-template" },
-				{ context: "linear-gate" },
-				{ context: "risk-policy-gate" },
-				{ context: "dependency-scan" },
-				{ context: "orb-pinning" },
-				{ context: "consistency-drift-health" },
-				{ context: "docs-gate" },
-				{ context: "lint" },
-				{ context: "typecheck" },
-				{ context: "test" },
-				{ context: "audit" },
-				{ context: "check" },
-				{ context: "memory" },
+				{ context: "pr-pipeline" },
 				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
 				{ context: "semgrep-cloud-platform/scan" },
@@ -1156,7 +1253,7 @@ describe("runBranchProtect", () => {
 							parameters: {
 								required_status_checks: [
 									{
-										context: "existing-check",
+										context: "check",
 										integration_id: 1234,
 									},
 								],
@@ -1198,12 +1295,9 @@ describe("runBranchProtect", () => {
 		const requiredRule = payload?.rules.find(
 			(rule) => rule.type === "required_status_checks",
 		);
-		expect(requiredRule?.parameters).toMatchObject({
-			required_status_checks: [
-				{ context: "existing-check", integration_id: 1234 },
-				{ context: "check" },
-			],
-		});
+		expect(requiredRule?.parameters?.required_status_checks).toEqual([
+			{ context: "check", integration_id: 1234 },
+		]);
 	});
 
 	it("preserves global scope when existing includes are empty", async () => {

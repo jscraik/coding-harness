@@ -117,6 +117,17 @@ describe("command registry", () => {
 		expect(new Set(names).size).toBe(names.length);
 	});
 
+	it("keeps the first cockpit help surface limited to runnable commands", () => {
+		const cockpitRows = getRegistryCommandHelpRows()
+			.filter((row) => row.tier === "cockpit")
+			.map((row) => row.name);
+
+		expect(cockpitRows).toEqual(["check", "next"]);
+		expect(cockpitRows).not.toContain("pr-ready");
+		expect(cockpitRows).not.toContain("fix-review");
+		expect(cockpitRows).not.toContain("learn");
+	});
+
 	it("exposes a stable machine-readable command capability catalog", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 		try {
@@ -145,6 +156,11 @@ describe("command registry", () => {
 			expect(Array.isArray(policyGate.expectedArtifacts)).toBe(true);
 			expect(typeof policyGate.retryability).toBe("string");
 			expect(Array.isArray(policyGate.safeFirstAlternatives)).toBe(true);
+			expect(policyGate).toMatchObject({
+				tier: "plumbing",
+				primaryAudience: "both",
+				orchestratedBy: [],
+			});
 		} finally {
 			infoSpy.mockRestore();
 		}
@@ -273,8 +289,8 @@ describe("suggestCommandCapabilities", () => {
 });
 
 describe("COMMAND_CATALOG_SCHEMA_VERSION", () => {
-	it("equals the stable literal 'harness-command-catalog/v1'", () => {
-		expect(COMMAND_CATALOG_SCHEMA_VERSION).toBe("harness-command-catalog/v1");
+	it("equals the stable literal 'harness-command-catalog/v2'", () => {
+		expect(COMMAND_CATALOG_SCHEMA_VERSION).toBe("harness-command-catalog/v2");
 	});
 });
 
@@ -301,6 +317,9 @@ describe("getRegistryCommandCapabilities", () => {
 			expect(Array.isArray(capability.expectedArtifacts)).toBe(true);
 			expect(typeof capability.retryability).toBe("string");
 			expect(Array.isArray(capability.safeFirstAlternatives)).toBe(true);
+			expect(typeof capability.tier).toBe("string");
+			expect(typeof capability.primaryAudience).toBe("string");
+			expect(Array.isArray(capability.orchestratedBy)).toBe(true);
 		}
 	});
 
@@ -332,6 +351,78 @@ describe("getRegistryCommandCapabilities", () => {
 		const capabilities = getRegistryCommandCapabilities();
 		for (const capability of capabilities) {
 			expect(validCategories.has(capability.category)).toBe(true);
+		}
+	});
+
+	it("capability tier is one of the known union values", () => {
+		const validTiers = new Set(["cockpit", "domain", "plumbing", "legacy"]);
+		const capabilities = getRegistryCommandCapabilities();
+		for (const capability of capabilities) {
+			expect(validTiers.has(capability.tier)).toBe(true);
+		}
+	});
+
+	it("capability primary audience is one of the known union values", () => {
+		const validAudiences = new Set(["agent", "human", "both"]);
+		const capabilities = getRegistryCommandCapabilities();
+		for (const capability of capabilities) {
+			expect(validAudiences.has(capability.primaryAudience)).toBe(true);
+		}
+	});
+
+	it("orchestratedBy entries use known cockpit orchestrators", () => {
+		const validOrchestrators = new Set([
+			"next",
+			"pr-ready",
+			"fix-review",
+			"learn",
+		]);
+		const capabilities = getRegistryCommandCapabilities();
+		for (const capability of capabilities) {
+			for (const orchestrator of capability.orchestratedBy) {
+				expect(validOrchestrators.has(orchestrator)).toBe(true);
+			}
+		}
+	});
+
+	it("registered cockpit-tier commands are runnable specs only", () => {
+		const cockpitNames = getRegistryCommandCapabilities()
+			.filter((capability) => capability.tier === "cockpit")
+			.map((capability) => capability.name);
+
+		expect(cockpitNames).toEqual(["check", "next"]);
+		expect(MIGRATED_COMMAND_NAMES).toEqual(
+			expect.arrayContaining(cockpitNames),
+		);
+		expect(cockpitNames).not.toContain("pr-ready");
+		expect(cockpitNames).not.toContain("fix-review");
+		expect(cockpitNames).not.toContain("learn");
+	});
+
+	it("first-slice directly orchestrated commands expose routing metadata", () => {
+		const capabilitiesByName = new Map(
+			getRegistryCommandCapabilities().map((capability) => [
+				capability.name,
+				capability,
+			]),
+		);
+		const expected = [
+			["check", "cockpit", "both", ["next"]],
+			["next", "cockpit", "agent", []],
+			["doctor", "domain", "both", ["next"]],
+			["health", "domain", "both", ["next"]],
+			["review-gate", "domain", "agent", ["next", "pr-ready"]],
+			["docs-gate", "domain", "agent", ["next", "pr-ready"]],
+			["validation-plan", "domain", "agent", ["next", "pr-ready"]],
+			["review-context", "domain", "agent", ["next", "pr-ready"]],
+		] as const;
+
+		for (const [name, tier, primaryAudience, orchestratedBy] of expected) {
+			expect(capabilitiesByName.get(name)).toMatchObject({
+				tier,
+				primaryAudience,
+				orchestratedBy,
+			});
 		}
 	});
 
@@ -680,6 +771,7 @@ describe("getRegistryCommandCapabilities", () => {
 			["init", "bootstrap-governance"],
 			["eject", "bootstrap-governance"],
 			["check", "bootstrap-governance"],
+			["next", "bootstrap-governance"],
 			["doctor", "bootstrap-governance"],
 			["health", "bootstrap-governance"],
 			["contract", "bootstrap-governance"],

@@ -19,6 +19,7 @@ import { join } from "node:path";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+/** Supported agent ecosystems for instruction surfaces. */
 export type AgentEcosystem =
 	| "codex"
 	| "claude"
@@ -27,6 +28,7 @@ export type AgentEcosystem =
 	| "windsurf"
 	| "copilot";
 
+/** Definition of an agent instruction surface file. */
 export interface AgentInstructionSurface {
 	/** Agent ecosystem */
 	agent: AgentEcosystem;
@@ -42,6 +44,7 @@ export interface AgentInstructionSurface {
 	required?: boolean;
 }
 
+/** A single finding from instruction consistency validation. */
 export interface InstructionConsistencyFinding {
 	/** Finding severity */
 	severity: "error" | "warning" | "info";
@@ -53,6 +56,7 @@ export interface InstructionConsistencyFinding {
 	fix?: string;
 }
 
+/** Result of validating instruction surface consistency. */
 export interface InstructionConsistencyReport {
 	/** Whether all instruction surfaces are consistent */
 	consistent: boolean;
@@ -73,21 +77,6 @@ export const AGENT_SURFACES: AgentInstructionSurface[] = [
 		filePath: "AGENTS.md",
 		discovery: "auto",
 		role: "canonical",
-		headerMarker: "#",
-	},
-	{
-		agent: "claude",
-		filePath: "CLAUDE.md",
-		discovery: "auto",
-		role: "derived",
-		headerMarker: "#",
-		required: true,
-	},
-	{
-		agent: "gemini",
-		filePath: "GEMINI.md",
-		discovery: "auto",
-		role: "derived",
 		headerMarker: "#",
 	},
 	{

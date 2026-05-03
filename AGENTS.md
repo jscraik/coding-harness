@@ -18,6 +18,7 @@ This repository is a TypeScript control plane for agentic development and review
 - Baseline gates: `pnpm codestyle:parity`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`.
 - Branch-protection defaults include the external Semgrep Cloud GitHub App check `semgrep-cloud-platform/scan`; keep it aligned across generated contracts, `.harness/ci-required-checks.json`, and required-check docs.
 - CircleCI owns repo-run PR governance and security checks; GitHub Actions is reserved for release publishing, and Semgrep Cloud remains an independent external required check.
+- `harness.contract.json` records this split in `ciOwnership`: CircleCI is the primary PR gate, CodeRabbit is the independent review check, Semgrep Cloud is the independent external security check, and GitHub Actions fallback/release workflows must not become automatic PR gates without an intentional contract migration.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
 
@@ -46,11 +47,11 @@ harness risk-tier --files src/payments.ts --json
 Notes:
 - `README.md` is the repo-facing product surface (overview, install, workflows), not an operator-policy file.
 - `docs/agents/*.md` are progressive-disclosure governance references, not auto-discovered instruction files.
-- `CLAUDE.md` and `GEMINI.md` are mirrored tool-specific surfaces in this repo, not part of Codex's default project-doc discovery unless fallback filenames are explicitly configured.
+- This repo is OpenAI Codex only; no mirrored tool-specific instruction surfaces are maintained.
 - If instruction precedence is unclear, stop and resolve it before editing behavior.
 
 ## Startup Workflow
-1. Read this file first, then [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md) to route into extension docs, and open only task-relevant linked SOPs.
+1. After global discovery surfaces (`~/.codex/AGENTS.md`), read this file first in-repo, then [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md) to route into extension docs, and open only task-relevant linked SOPs.
 2. Run `bash scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive work.
 3. Summarize repo structure, active constraints, and blockers before edits.
 4. Make the smallest change that satisfies the task, then run the narrowest validation that proves it works; widen only as risk increases.
@@ -74,6 +75,9 @@ Notes:
 - Before handoff when behavior changed, run `bash scripts/validate-codestyle.sh`; use `bash scripts/verify-work.sh` as the broader readiness gate.
 - If runtime or artifact behavior changed, run `pnpm test:deep`.
 - When docs-gate categories are affected, run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and clear warnings before merge.
+- Agent-native cockpit, generated environment action, hook setup, and architecture-artifact changes must keep the docs-gate required surfaces synchronized in the same PR so `harness next --json` recommendations, local runtime setup, and reviewer-facing evidence describe the current contract.
+- When AGENTS/vocabulary surfaces change, run `pnpm run docs:ubiquitous:guard` to ensure `AGENTS.md` keeps the glossary linkage contract.
+- Before PR handoff, run or explicitly mark `n.a.` for the north-star learning loop when changed files can be matched against imported CodeRabbit evidence: `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, `harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, and `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json`. The `--files` value accepts comma-separated paths or multiple following path tokens.
 - When changing validation, required-check, tooling/runtime, or architecture-context behavior, update the docs-gate required surfaces in the same change (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/06-security-and-governance.md`, `docs/agents/00-architecture-bootstrap.md`).
 - Report exact commands/outcomes in handoff notes and update the matching Linear issue for durable findings.
 
@@ -109,9 +113,15 @@ Core routing (Layer 2):
 - At session start, read `~/.codex/instructions/Learnings.md` and `.harness/memory/LEARNINGS.md` (bootstrap via [docs/agents/03-local-memory.md](./docs/agents/03-local-memory.md) if missing).
 - Repo-local telemetry/overrides live under `.harness/memory/codex-learned/` and `.harness/memory/codex-preflight-overrides.env`; store repo-specific fixes in `.harness/memory/LEARNINGS.md` and universal fixes in `~/.codex/instructions/Learnings.md`.
 
+## Shared Vocabulary
+- Use [UBIQUITOUS_LANGUAGE.md](./UBIQUITOUS_LANGUAGE.md) as the canonical glossary for project-specific operator terms, aliases, and disambiguation.
+- When user wording is terse, overloaded, or informal, map requests through the glossary `Prompt translations` table before executing.
+- Keep command-language and closeout wording consistent with glossary canonical terms when reporting validation, drift, swarms, blockers, and lifecycle state.
+
 ## Project Brain
 - Use Project Brain files in `.harness/` with Local Memory; canonical guidance lives at `/Users/jamiecraik/dev/config/codex/instructions/project-brain.md`.
 - Bootstrap with `bash /Users/jamiecraik/dev/config/codex/scripts/init-project-brain.sh --domains cli,ci,governance,tooling --index`; use `--force` only for re-init after backing up `.harness/memory/LEARNINGS.md`.
+- When the north-star learning loop finds a repeated high-value rule, keep the imported learning artifact as operational evidence and promote the distilled durable rule, decision, or explicit skip reason into Project Brain before closeout.
 
 ## Implementation Conventions
 - Local ESM imports must include `.js` extensions.
@@ -121,5 +131,5 @@ Core routing (Layer 2):
 
 ## References
 - [Docs index](./docs/README.md) · [Instruction map](./docs/agents/01-instruction-map.md) · [Quickstart](./docs/agents/quickstart.md)
-- [CONTRIBUTING.md](./CONTRIBUTING.md) · [CLAUDE.md](./CLAUDE.md) · [GEMINI.md](./GEMINI.md)
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
 - Global: `~/.codex/AGENTS.md`, `~/.codex/instructions/standards.md`, `~/.codex/instructions/rvcp-common.md`

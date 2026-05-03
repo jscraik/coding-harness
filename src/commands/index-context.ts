@@ -11,6 +11,7 @@ import {
 	DEFAULT_HARNESS_DIR,
 } from "../lib/context-compound/constants.js";
 import {
+	type IndexOptions,
 	type IndexResult,
 	indexBatch,
 } from "../lib/context-compound/indexer.js";
@@ -36,7 +37,13 @@ import {
 	probeOllama,
 } from "../lib/context-compound/sync-contract.js";
 import { validatePath } from "../lib/input/validator.js";
-import { type CliResult, createError, err, ok } from "../lib/result/types.js";
+import {
+	type CliError,
+	type CliResult,
+	createError,
+	err,
+	ok,
+} from "../lib/result/types.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -48,6 +55,9 @@ export const EXIT_CODES = {
 	PARTIAL_SUCCESS: 4,
 } as const;
 
+/**
+ * CLI options for `harness index-context`.
+ */
 export interface IndexContextOptions {
 	/** Output as JSON */
 	json?: boolean | undefined;
@@ -61,6 +71,9 @@ export interface IndexContextOptions {
 	lexicalFallback?: boolean | undefined;
 }
 
+/**
+ * Structured output for context indexing runs.
+ */
 export interface IndexContextOutput {
 	/** Whether the indexing succeeded */
 	success: boolean;
@@ -154,6 +167,113 @@ function getValidatedHarnessDir(
 }
 
 /**
+ * Attempt CP4b lexical fallback when semantic backend is unavailable.
+ * Returns the fallback output, or undefined if Ollama is available.
+ */
+async function attemptLexicalFallback(
+	lexicalFallbackEnabled: boolean,
+	baseDir: string,
+	harnessDir: string,
+	sourceDocuments: ReturnType<typeof discoverContextSourceDocuments>,
+): Promise<IndexContextOutput | undefined> {
+	if (!lexicalFallbackEnabled) {
+		return undefined;
+	}
+
+	const ollama = new OllamaClient();
+	const isAvailable = await ollama.isAvailable();
+	if (isAvailable) {
+		return undefined;
+	}
+
+	const ollamaProbe = await probeOllama();
+	const lexicalIndex = writeLexicalIndex(baseDir, harnessDir);
+	const inventory = writeContextSourceInventory(
+		baseDir,
+		sourceDocuments.map((document) => document.relativePath),
+	);
+
+	return {
+		success: true,
+		indexed: lexicalIndex.indexed,
+		skipped: 0,
+		errors: 0,
+		results: discoverContextSources(baseDir).map(({ filepath }) => ({
+			indexed: true,
+			path: filepath,
+		})),
+		mode: "lexical_degraded",
+		lexicalIndexPath: lexicalIndex.path,
+		inventoryPath: inventory.path,
+		syncReport: buildSyncReport(
+			"incremental",
+			[ollamaProbe],
+			{
+				total: lexicalIndex.indexed,
+				indexed: lexicalIndex.indexed,
+				skipped: 0,
+				errors: 0,
+			},
+			[],
+		),
+	};
+}
+
+/**
+ * Index all files with progress reporting and accumulate results.
+ */
+async function indexFilesWithProgress(
+	allFiles: IndexOptions[],
+	baseDir: string,
+	json: boolean | undefined,
+	ollama: OllamaClient,
+	store: VectorStore,
+): Promise<{
+	results: IndexResult[];
+	indexed: number;
+	skipped: number;
+	errors: number;
+}> {
+	if (!json) {
+		console.info(`Indexing ${allFiles.length} files...`);
+	}
+
+	const results: IndexResult[] = [];
+	let indexed = 0;
+	let skipped = 0;
+	let errors = 0;
+
+	for (const [i, file] of allFiles.entries()) {
+		if (!json) {
+			process.stdout.write(
+				`\r  ${i + 1}/${allFiles.length}: ${relative(baseDir, file.filepath)}`,
+			);
+		}
+
+		const batchResults = await indexBatch([file], ollama, store, {
+			concurrency: 1,
+		});
+
+		for (const result of batchResults) {
+			results.push(result);
+			if (result.indexed) {
+				indexed++;
+			} else if (result.error) {
+				errors++;
+			} else {
+				skipped++;
+			}
+		}
+	}
+
+	if (!json) {
+		process.stdout.write(`\r${" ".repeat(80)}\r`); // Clear line
+	}
+
+	return { results, indexed, skipped, errors };
+}
+
+/**
  * Run bulk indexing and return structured result.
  */
 export async function runIndexContext(
@@ -194,45 +314,16 @@ export async function runIndexContext(
 		);
 	}
 
-	if (lexicalFallbackEnabled) {
-		const ollama = new OllamaClient();
-		const isAvailable = await ollama.isAvailable();
-		if (!isAvailable) {
-			// Probe Ollama for diagnostic before falling back to lexical
-			const ollamaProbe = await probeOllama();
-			const lexicalIndex = writeLexicalIndex(baseDir, harnessDir);
-			const inventory = writeContextSourceInventory(
-				baseDir,
-				sourceDocuments.map((document) => document.relativePath),
-			);
-			return ok({
-				success: true,
-				indexed: lexicalIndex.indexed,
-				skipped: 0,
-				errors: 0,
-				results: discoverContextSources(baseDir).map(({ filepath }) => ({
-					indexed: true,
-					path: filepath,
-				})),
-				mode: "lexical_degraded",
-				lexicalIndexPath: lexicalIndex.path,
-				inventoryPath: inventory.path,
-				syncReport: buildSyncReport(
-					"incremental",
-					[ollamaProbe],
-					{
-						total: lexicalIndex.indexed,
-						indexed: lexicalIndex.indexed,
-						skipped: 0,
-						errors: 0,
-					},
-					[],
-				),
-			});
-		}
+	const fallbackResult = await attemptLexicalFallback(
+		lexicalFallbackEnabled,
+		baseDir,
+		harnessDir,
+		sourceDocuments,
+	);
+	if (fallbackResult) {
+		return ok(fallbackResult);
 	}
 
-	// Initialize store
 	const store = new VectorStore(dbPath);
 	const initResult = store.init();
 
@@ -246,7 +337,6 @@ export async function runIndexContext(
 		);
 	}
 
-	// Check Ollama availability
 	const ollama = new OllamaClient();
 	const isAvailable = await ollama.isAvailable();
 
@@ -267,48 +357,18 @@ export async function runIndexContext(
 		);
 	}
 
-	// Warmup Ollama for faster indexing
 	if (!options.json) {
 		console.info("Warming up embedding model...");
 	}
 	await ollama.warmup();
 
-	// Index files
-	if (!options.json) {
-		console.info(`Indexing ${allFiles.length} files...`);
-	}
-
-	const results: IndexResult[] = [];
-	let indexed = 0;
-	let skipped = 0;
-	let errors = 0;
-
-	for (const [i, file] of allFiles.entries()) {
-		if (!options.json) {
-			process.stdout.write(
-				`\r  ${i + 1}/${allFiles.length}: ${relative(baseDir, file.filepath)}`,
-			);
-		}
-
-		const batchResults = await indexBatch([file], ollama, store, {
-			concurrency: 1,
-		});
-
-		for (const result of batchResults) {
-			results.push(result);
-			if (result.indexed) {
-				indexed++;
-			} else if (result.error) {
-				errors++;
-			} else {
-				skipped++;
-			}
-		}
-	}
-
-	if (!options.json) {
-		process.stdout.write(`\r${" ".repeat(80)}\r`); // Clear line
-	}
+	const { results, indexed, skipped, errors } = await indexFilesWithProgress(
+		allFiles,
+		baseDir,
+		options.json,
+		ollama,
+		store,
+	);
 
 	store.close();
 
@@ -338,11 +398,22 @@ export async function runIndexContext(
 }
 
 /**
- * CLI entry point for index-context command.
+ * Parsed CLI arguments for index-context, or an early exit code.
  */
+type ParseResult =
+	| {
+			ok: true;
+			json: boolean;
+			harnessDir: string | undefined;
+			force: boolean;
+			lexicalFallback: boolean;
+	  }
+	| { ok: false; exitCode: number };
 
-export async function runIndexContextCLI(args: string[]): Promise<number> {
-	// Parse arguments
+/**
+ * Parse CLI arguments for index-context.
+ */
+function parseIndexContextArgs(args: string[]): ParseResult {
 	let json = false;
 	let harnessDir: string | undefined;
 	let force = false;
@@ -359,7 +430,7 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 			const harnessDirArg = args[i + 1];
 			if (!harnessDirArg || harnessDirArg.startsWith("-")) {
 				console.error("Error: --harness-dir requires a value");
-				return EXIT_CODES.USAGE_ERROR;
+				return { ok: false, exitCode: EXIT_CODES.USAGE_ERROR };
 			}
 			harnessDir = harnessDirArg;
 			i++;
@@ -382,62 +453,64 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 			console.info("Examples:");
 			console.info("  harness index-context");
 			console.info("  harness index-context --json");
-			return EXIT_CODES.SUCCESS;
+			return { ok: false, exitCode: EXIT_CODES.SUCCESS };
 		} else {
 			console.error(`Error: unknown argument '${arg}'`);
-			return EXIT_CODES.USAGE_ERROR;
+			return { ok: false, exitCode: EXIT_CODES.USAGE_ERROR };
 		}
 	}
 
-	const result = await runIndexContext({
-		json,
-		harnessDir,
-		force,
-		lexicalFallback,
-	});
+	return { ok: true, json, harnessDir, force, lexicalFallback };
+}
 
-	if (!result.ok) {
-		const { error } = result;
-		if (json) {
-			console.info(
-				JSON.stringify({
-					success: false,
-					indexed: 0,
-					skipped: 0,
-					errors: 0,
-					results: [],
-					error: error.message,
-				}),
-			);
-		} else {
-			console.error(`✗ ${error.message}`);
-			if (error.code === "NOT_FOUND") {
-				console.error("   Expected files in:");
-				for (const definition of CONTEXT_SOURCE_DEFINITIONS) {
-					console.error(`   - ${definition.path}`);
-				}
-			} else if (error.code === "API_ERROR") {
-				console.error("   Install: https://ollama.com");
-				console.error("   Start: ollama serve");
+/**
+ * Report an indexing error and return the appropriate exit code.
+ */
+function reportIndexContextError(error: CliError, json: boolean): number {
+	if (json) {
+		console.info(
+			JSON.stringify({
+				success: false,
+				indexed: 0,
+				skipped: 0,
+				errors: 0,
+				results: [],
+				error: error.message,
+			}),
+		);
+	} else {
+		console.error(`✗ ${error.message}`);
+		if (error.code === "NOT_FOUND") {
+			console.error("   Expected files in:");
+			for (const definition of CONTEXT_SOURCE_DEFINITIONS) {
+				console.error(`   - ${definition.path}`);
 			}
-		}
-
-		// Map error codes to exit codes
-		switch (error.code) {
-			case "PATH_TRAVERSAL":
-			case "VALIDATION_ERROR":
-				return EXIT_CODES.ERROR;
-			case "NOT_FOUND":
-				return EXIT_CODES.NO_FILES;
-			case "API_ERROR":
-				return EXIT_CODES.OLLAMA_UNAVAILABLE;
-			default:
-				return EXIT_CODES.ERROR;
+		} else if (error.code === "API_ERROR") {
+			console.error("   Install: https://ollama.com");
+			console.error("   Start: ollama serve");
 		}
 	}
 
-	const { value: output } = result;
+	switch (error.code) {
+		case "PATH_TRAVERSAL":
+		case "VALIDATION_ERROR":
+			return EXIT_CODES.ERROR;
+		case "NOT_FOUND":
+			return EXIT_CODES.NO_FILES;
+		case "API_ERROR":
+			return EXIT_CODES.OLLAMA_UNAVAILABLE;
+		default:
+			return EXIT_CODES.ERROR;
+	}
+}
 
+/**
+ * Report successful indexing output.
+ */
+function reportIndexContextOutput(
+	output: IndexContextOutput,
+	json: boolean,
+): void {
 	if (json) {
 		console.info(JSON.stringify(output, null, 2));
 	} else {
@@ -459,8 +532,33 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 			}
 		}
 	}
+}
+
+/**
+ * CLI entry point for index-context command.
+ */
+export async function runIndexContextCLI(args: string[]): Promise<number> {
+	const parseResult = parseIndexContextArgs(args);
+	if (!parseResult.ok) {
+		return parseResult.exitCode;
+	}
+
+	const { json, harnessDir, force, lexicalFallback } = parseResult;
+	const result = await runIndexContext({
+		json,
+		harnessDir,
+		force,
+		lexicalFallback,
+	});
+
+	if (!result.ok) {
+		return reportIndexContextError(result.error, json);
+	}
+
+	const { value: output } = result;
+	reportIndexContextOutput(output, json);
 
 	if (output.errors > 0) return EXIT_CODES.PARTIAL_SUCCESS;
-	if (output.indexed === 0 && output.skipped > 0) return EXIT_CODES.SUCCESS; // All up to date
+	if (output.indexed === 0 && output.skipped > 0) return EXIT_CODES.SUCCESS;
 	return EXIT_CODES.SUCCESS;
 }

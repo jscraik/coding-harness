@@ -80,6 +80,7 @@ export const DEFAULT_TRACE_CONFIG: TraceConfig = {
 
 const TRACE_ID_PATTERN = /^trace-[a-f0-9]{16}$/;
 
+/** Return whether a value matches the generated trace identifier format. */
 export function isValidTraceId(traceId: string): boolean {
 	return TRACE_ID_PATTERN.test(traceId);
 }
@@ -265,7 +266,7 @@ export async function listTraces(
 
 /** Replay a trace (execute same command with same args) */
 export async function replayTrace(
-	traceId: string,
+	traceOrId: string | ExecutionTrace,
 	options?: {
 		config?: Partial<TraceConfig>;
 		dryRun?: boolean;
@@ -278,14 +279,17 @@ export async function replayTrace(
 	message: string;
 }> {
 	const config = { ...DEFAULT_TRACE_CONFIG, ...options?.config };
-	const trace = await loadTrace(traceId, config);
+	const trace =
+		typeof traceOrId === "string"
+			? await loadTrace(traceOrId, config)
+			: traceOrId;
 
 	if (!trace) {
 		return {
 			success: false,
 			trace: null,
 			replayedEvents: 0,
-			message: `Trace not found: ${traceId}`,
+			message: `Trace not found: ${traceOrId}`,
 		};
 	}
 

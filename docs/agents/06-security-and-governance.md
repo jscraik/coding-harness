@@ -1,6 +1,6 @@
 ---
 
-last_validated: 2026-04-26
+last_validated: 2026-05-03
 
 ---
 
@@ -61,6 +61,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
+- `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
 
 ## Code and data governance
 
@@ -79,6 +80,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Do not replace `bash scripts/validate-codestyle.sh` with an informal list of roughly equivalent commands when documenting or attesting verification; the wrapper is the governed proof surface.
 - Treat hook-exported repository git environment (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*` variables) as untrusted input for nested validation scripts; `scripts/validate-codestyle.sh` should sanitize those values before invoking `pnpm run` so fixture-local git checks are isolated from hook context.
 - CircleCI test reliability guardrail: use `pnpm test:ci` so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation (`--dangerouslyIgnoreUnhandledErrors`) while all functional assertions remain enforced.
+- Source-checkout harness-gate fallback is narrow by design: `scripts/run-harness-gate.sh` may fall back from the source CLI command to `node dist/cli.js` only when the actual command emits the known runner IPC `EPERM` temp-pipe signature. Missing `pnpm`, missing source files, or non-matching runner failures must remain fail-closed.
 
 ## Governance escalation
 
@@ -133,6 +135,7 @@ The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when pre
 `scripts/setup-git-hooks.js` must run `prek install --overwrite` and patch generated `prek` shims with `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logs/cache writes stay repo-local under sandboxed executions and legacy hook wrappers are not chained.
 
 `docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, tooling-runtime, and architecture-context changes are expected to update this guide together with `docs/agents/02-tooling-policy.md`, `docs/agents/00-architecture-bootstrap.md`, and the operator-facing surfaces (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`) in the same change so pre-push drift is caught before GitHub does.
+Agent-native cockpit changes that alter next-action safety, generated environment actions, or hook setup must preserve that same docs-gate synchronization so permission, execution-profile, and validation evidence remain auditable before merge.
 Port-free usage should remain scoped to app-style run actions that map to `dev`/`start` scripts. CLI-only repositories can omit port-free run actions without violating governance.
 
 ## Frontmatter metadata

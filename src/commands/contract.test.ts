@@ -1151,10 +1151,11 @@ describe("buildContractPreset", () => {
 
 	it("standard preset adds diff budget, docs-drift, and evidence policy", () => {
 		const contract = buildContractPreset("standard");
-		expect(Object.keys(contract)).toHaveLength(10);
+		expect(Object.keys(contract)).toHaveLength(11);
 		expect(contract).toHaveProperty("diffBudget");
 		expect(contract).toHaveProperty("docsDriftRules");
 		expect(contract).toHaveProperty("evidencePolicy");
+		expect(contract).toHaveProperty("docsGatePolicy");
 		expect(contract).toHaveProperty("northStar");
 		expect(contract).toHaveProperty("productSurface");
 		expect(contract).toHaveProperty("overrideReviewerRegistry");

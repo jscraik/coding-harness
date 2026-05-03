@@ -6,7 +6,7 @@
  * - `minimal`  — 7 sections (~2.5 KB). Solo-dev or first-time setup.
  *                Includes canonical north-star governance surfaces.
  *
- * - `standard` — 10 sections (~4 KB). Small team or CI-integrated project.
+ * - `standard` — 11 sections (~4 KB). Small team or CI-integrated project.
  *                Adds diff budget, docs-drift rules, and evidence policy.
  *                This is the recommended default.
  *
@@ -27,7 +27,14 @@ import {
 
 // ─── Preset type ─────────────────────────────────────────────────────────────
 
+/**
+ * Supported contract preset identifiers for generated governance contracts.
+ */
 export type ContractPreset = "minimal" | "standard" | "full";
+
+/**
+ * Accepted user-facing preset inputs, including compatibility aliases.
+ */
 export type ContractPresetInput = ContractPreset | "lite";
 
 export const CONTRACT_PRESETS: ContractPreset[] = [
@@ -172,6 +179,7 @@ function buildStandardPreset(): Record<string, unknown> {
 			allowedTypes: ["png", "jpeg"],
 			maxFileSizeBytes: 1048576,
 		},
+		docsGatePolicy: DEFAULT_CONTRACT.docsGatePolicy,
 	};
 }
 
@@ -245,6 +253,6 @@ export const PRESET_DESCRIPTIONS: Record<ContractPreset, string> = {
 	minimal:
 		"7 sections (~2.5 KB). Solo-dev / first-time setup with canonical north-star surfaces.",
 	standard:
-		"10 sections (~4 KB). Recommended default. Adds diff budget, docs-drift, and evidence policy.",
+		"11 sections (~4 KB). Recommended default. Adds diff budget, docs-drift, evidence, and docs-gate policy.",
 	full: "All governance sections (~10 KB). Enterprise / advanced. Equivalent to `harness init` output.",
 };

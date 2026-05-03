@@ -33,9 +33,16 @@ describe("help renderer", () => {
 	it("renders category-grouped command rows", () => {
 		const lines = renderGroupedCommandHelpRows([
 			{
+				name: "next",
+				summary: "Recommend next safe command",
+				category: "bootstrap-governance",
+				tier: "cockpit",
+			},
+			{
 				name: "check",
 				summary: "Zero-config repo health snapshot",
 				category: "bootstrap-governance",
+				tier: "cockpit",
 			},
 			{
 				name: "policy-gate",
@@ -45,7 +52,8 @@ describe("help renderer", () => {
 		]);
 
 		expect(lines).toEqual([
-			"  Bootstrap & Governance:",
+			"  Agent Cockpit:",
+			"    next                     Recommend next safe command",
 			"    check                    Zero-config repo health snapshot",
 			"",
 			"  Review & Policy:",

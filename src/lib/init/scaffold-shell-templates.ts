@@ -198,6 +198,19 @@ exec node "$CLI_PATH" "$@"
 `;
 }
 
+const harnessGateSourceRepoHelpers = `is_harness_source_repo() {
+	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
+	[[ -f "$REPO_ROOT/package.json" ]] || return 1
+	command -v node >/dev/null 2>&1 || return 1
+
+	node -e '
+		const { readFileSync } = require("node:fs");
+		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
+		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
+	' "$REPO_ROOT/package.json" >/dev/null 2>&1
+}
+`;
+
 /**
  * Generate the bash runner that resolves and runs the repository's harness CLI.
  *
@@ -218,28 +231,18 @@ if [[ $# -eq 0 ]]; then
 	exit 2
 fi
 
-is_harness_source_repo() {
-	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
-	[[ -f "$REPO_ROOT/package.json" ]] || return 1
-	command -v node >/dev/null 2>&1 || return 1
-
-	node -e '
-		const { readFileSync } = require("node:fs");
-		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
-		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
-	' "$REPO_ROOT/package.json" >/dev/null 2>&1
-}
-
+${harnessGateSourceRepoHelpers}
 if is_harness_source_repo; then
-	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2
+	if ! command -v node >/dev/null 2>&1; then
+		echo "Error: source checkout detected but node is unavailable; refusing fallback to avoid stale harness binaries." >&2
 		exit 1
 	fi
-	if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then
-		echo "Error: source checkout detected but tsx is unavailable via pnpm exec; refusing fallback to avoid stale harness binaries." >&2
+	cd "$REPO_ROOT"
+	if ! node --import tsx --eval "" >/dev/null 2>&1; then
+		echo "Error: source checkout detected but tsx cannot be resolved from $REPO_ROOT; run the repository install first." >&2
 		exit 1
 	fi
-	exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+	exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
 if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then

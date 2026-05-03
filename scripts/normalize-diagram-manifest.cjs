@@ -27,6 +27,12 @@ const stableId = (prefix, value) => {
 	return `${prefix}_${slug}_${digest}`;
 };
 
+const stableRawIdentity = (rawId) =>
+	rawId
+		.replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,})){1,2}$/i, "")
+		.replace(/(?:[_-][0-9]+)+$/i, "")
+		.toLowerCase();
+
 const parseArchitecture = (content) => {
 	const lines = content.trimEnd().split(/\r?\n/);
 	const subgraphs = [];
@@ -64,18 +70,32 @@ const parseArchitecture = (content) => {
 const buildArchitecture = (subgraphs) => {
 	const nodeMap = new Map();
 	const lines = ["graph TD"];
-	const sortedSubgraphs = [...subgraphs].sort((left, right) =>
-		left.label.localeCompare(right.label),
+	const sortedSubgraphs = [...subgraphs].sort(
+		(left, right) =>
+			left.label.localeCompare(right.label) ||
+			stableRawIdentity(left.rawId).localeCompare(
+				stableRawIdentity(right.rawId),
+			),
 	);
 
 	for (const subgraph of sortedSubgraphs) {
-		const subgraphId = stableId("sg", subgraph.label);
+		const subgraphId = stableId(
+			"sg",
+			`${subgraph.label}/${stableRawIdentity(subgraph.rawId)}`,
+		);
 		lines.push(`  subgraph ${subgraphId}["${subgraph.label}"]`);
-		const sortedNodes = [...subgraph.nodes].sort((left, right) =>
-			left.label.localeCompare(right.label),
+		const sortedNodes = [...subgraph.nodes].sort(
+			(left, right) =>
+				left.label.localeCompare(right.label) ||
+				stableRawIdentity(left.rawId).localeCompare(
+					stableRawIdentity(right.rawId),
+				),
 		);
 		for (const node of sortedNodes) {
-			const nodeId = stableId("node", `${subgraph.label}/${node.label}`);
+			const nodeId = stableId(
+				"node",
+				`${subgraph.label}/${node.label}/${stableRawIdentity(node.rawId)}`,
+			);
 			nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
 			lines.push(`    ${nodeId}["${node.label}"]`);
 		}

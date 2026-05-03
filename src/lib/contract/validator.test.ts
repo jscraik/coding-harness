@@ -253,6 +253,38 @@ describe("validateContract", () => {
 			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
 		});
 
+		it("rejects invalid reviewCadence values", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					productSurface: {
+						surfaces: [
+							{
+								surfaceId: "drift-gate",
+								surfaceType: "command",
+								class: "adjacent",
+								owner: "workflow",
+								northStarContribution:
+									"Monitors contract and quality drift automatically",
+								manualGlueReductionClaim:
+									"Replaces manual status checks with deterministic drift reporting",
+								reliabilityContribution:
+									"Flags stale policy surfaces before they block throughput",
+								evidenceReference: "artifacts/north-star/drift-gate.json",
+								reviewCadence: "daily",
+								ownedPaths: ["src/commands/drift-gate.ts"],
+								lastReviewedAt: "2026-04-21",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("productSurface");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
 		it("accepts productSurface entries with required cadence on non-core classes", () => {
 			const result = validateContract(
 				withCanonicalNorthStarSurfaces({
@@ -867,6 +899,69 @@ describe("validateContract", () => {
 				},
 			});
 			expect(result.success).toBe(true);
+		});
+	});
+
+	describe("ciOwnership", () => {
+		it("accepts CI ownership with release-only GitHub Actions workflow metadata", () => {
+			const result = validateContract({
+				version: "1.0",
+				ciOwnership: {
+					schemaVersion: "ci-ownership/v1",
+					primaryPrGate: "circleci",
+					reviewProvider: "coderabbit",
+					securityChecks: ["semgrep-cloud-platform/scan"],
+					fallbackWorkflows: [
+						{
+							path: ".github/workflows/release-private-npm.yml",
+							role: "release_publishing",
+							purpose: "Release publishing only.",
+							allowAutomaticPrTriggers: false,
+						},
+					],
+				},
+			});
+
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects unsupported CI ownership migrations without schema evolution", () => {
+			const result = validateContract({
+				version: "1.0",
+				ciOwnership: {
+					schemaVersion: "ci-ownership/v1",
+					primaryPrGate: "github-actions",
+					reviewProvider: "coderabbit",
+					securityChecks: ["semgrep-cloud-platform/scan"],
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors.some((error) => error.path === "ciOwnership")).toBe(
+				true,
+			);
+		});
+
+		it("rejects CI ownership security checks missing from branch protection", () => {
+			const result = validateContract({
+				version: "1.0",
+				branchProtection: {
+					requiredChecks: ["CodeRabbit"],
+				},
+				ciOwnership: {
+					schemaVersion: "ci-ownership/v1",
+					primaryPrGate: "circleci",
+					reviewProvider: "coderabbit",
+					securityChecks: ["semgrep-cloud-platform/scan"],
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(
+				result.errors.some(
+					(error) => error.path === "ciOwnership.securityChecks",
+				),
+			).toBe(true);
 		});
 	});
 

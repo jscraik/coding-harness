@@ -1,0 +1,442 @@
+{
+	"schemaVersion": "harness-north-star-agent-delivery-evals/v1",
+	"northStarGoal": "Shorten the PR delivery loop without weakening evidence, review independence, validation discipline, or rollback safety.",
+	"observabilityContract": {
+		"schemaVersion": "braintrust-log-data/v1",
+		"localExport": "artifacts/evals/braintrust-log-data.json",
+		"fields": ["input", "expected", "output", "metadata", "scores"],
+		"credentialMode": "optional",
+		"degradedSinkBehavior": "External sink failures must not fail deterministic local evals when the local artifact is written."
+	},
+	"scorecard": [
+		{
+			"id": "command_routing",
+			"description": "Selects the repo-canonical harness command, script, or source path for the task."
+		},
+		{
+			"id": "artifact_evidence",
+			"description": "Produces or verifies machine-readable artifact evidence instead of relying on prose."
+		},
+		{
+			"id": "validation_sufficiency",
+			"description": "Chooses validation that is narrow enough to be useful and broad enough for the risk."
+		},
+		{
+			"id": "blocker_honesty",
+			"description": "Classifies missing credentials, network, or ownership boundaries without pretending success."
+		},
+		{
+			"id": "manual_step_reduction",
+			"description": "Reduces glue work across review, CI, learnings, validation, and handoff surfaces."
+		}
+	],
+	"scenarios": [
+		{
+			"id": "live-fixture-path-safety",
+			"type": "live_fixture",
+			"prompt": "Create a live fixture workspace for agent delivery path safety and reject unsafe fixture paths.",
+			"expected": {
+				"commands": ["pnpm test:evals"],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json"
+				],
+				"assertions": [
+					"safe fixture path resolves inside fixture root",
+					"path traversal inputs are rejected",
+					"absolute escape inputs are rejected"
+				],
+				"stopConditions": [
+					"Do not create or delete files outside the eval fixture root."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 1,
+				"artifact_evidence": 1,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 1
+			}
+		},
+		{
+			"id": "generated-artifact-drift-repair",
+			"type": "live_fixture",
+			"prompt": "A generated artifact is stale compared with its canonical source; repair it and prove drift is gone.",
+			"expected": {
+				"commands": ["pnpm test:evals"],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json"
+				],
+				"assertions": [
+					"stale generated artifact is detected",
+					"generated artifact is repaired from canonical source",
+					"post-repair drift check passes"
+				],
+				"stopConditions": [
+					"Do not edit generated output without deriving it from the canonical source."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 1,
+				"artifact_evidence": 1,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 1
+			}
+		},
+		{
+			"id": "validation-plan-closeout-match",
+			"type": "live_fixture",
+			"prompt": "Build validation closeout evidence for changed package, script, and source surfaces using the production validation-plan path.",
+			"expected": {
+				"commands": [
+					"pnpm test:evals",
+					"node --import tsx --eval <validation-plan fixture>"
+				],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json"
+				],
+				"assertions": [
+					"production validation-plan builder returns success",
+					"local commands include pnpm check",
+					"local commands include pnpm test:deep",
+					"local commands include bash scripts/validate-codestyle.sh --fast",
+					"pnpm audit is classified as networkRequired"
+				],
+				"stopConditions": [
+					"Do not claim network-only audit execution from a restricted sandbox."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 1,
+				"artifact_evidence": 1,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 1
+			}
+		},
+		{
+			"id": "spec-reimplementation-loop",
+			"type": "live_fixture",
+			"prompt": "Run a source behavior -> extracted executable spec -> fresh implementation attempt -> evaluator comparison -> improved spec loop.",
+			"expected": {
+				"commands": ["pnpm test:evals"],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json",
+					"artifacts/evals/live-fixtures/spec-reimplementation-loop/source-behavior.json",
+					"artifacts/evals/live-fixtures/spec-reimplementation-loop/spec-initial.json",
+					"artifacts/evals/live-fixtures/spec-reimplementation-loop/implementation-attempt-1.json",
+					"artifacts/evals/live-fixtures/spec-reimplementation-loop/evaluator-report-1.json",
+					"artifacts/evals/live-fixtures/spec-reimplementation-loop/spec-improved.json",
+					"artifacts/evals/live-fixtures/spec-reimplementation-loop/implementation-attempt-2.json",
+					"artifacts/evals/live-fixtures/spec-reimplementation-loop/evaluator-report-2.json"
+				],
+				"assertions": [
+					"source behavior is converted into an executable spec artifact",
+					"first fresh implementation attempt exposes a missing assumption",
+					"evaluator writes a concrete spec change",
+					"improved spec captures the missing operational intent",
+					"fresh implementation from improved spec matches source behavior",
+					"improved spec reduces missing assumptions"
+				],
+				"stopConditions": [
+					"Do not mark a spec as reproducible until a fresh implementation attempt is evaluated against source behavior."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 1,
+				"artifact_evidence": 3,
+				"validation_sufficiency": 2,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 3
+			}
+		},
+		{
+			"id": "harness-engineering-lifecycle-routing",
+			"type": "live_fixture",
+			"prompt": "Evaluate Harness Engineering lifecycle routing decisions before turning them into Coding Harness guardrails.",
+			"expected": {
+				"commands": ["pnpm test:evals"],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json",
+					"artifacts/evals/live-fixtures/harness-engineering-lifecycle-routing/routing-cases.json",
+					"artifacts/evals/live-fixtures/harness-engineering-lifecycle-routing/routing-results.json"
+				],
+				"assertions": [
+					"review state routes to review before implementation",
+					"regression-first failure diagnosis routes to TDD",
+					"recurring monitor language routes to heartbeat",
+					"named stage ambiguity stays in router",
+					"unrelated work does not trigger harness-engineering",
+					"unsafe-looking routing input is treated as data with redacted telemetry"
+				],
+				"stopConditions": [
+					"Do not turn plugin workflow doctrine into a Coding Harness command until deterministic routing evals prove the behavior."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 3,
+				"artifact_evidence": 2,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 2,
+				"manual_step_reduction": 2
+			}
+		},
+		{
+			"id": "terse-review-request-routing",
+			"type": "registered",
+			"prompt": "Review my uncommitted changes and only fix verified findings.",
+			"expected": {
+				"commands": [
+					"git status --short",
+					"git diff",
+					"harness review-context --json"
+				],
+				"artifacts": ["review-context JSON or explicit unavailable reason"],
+				"assertions": [
+					"findings are verified against live code before edits",
+					"no broad refactor is introduced"
+				],
+				"stopConditions": [
+					"Stop before editing if the requested review baseline is ambiguous."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 1,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 1
+			}
+		},
+		{
+			"id": "circleci-red-job-triage",
+			"type": "registered",
+			"prompt": "CircleCI is red; use the CLI and fix the failing job.",
+			"expected": {
+				"commands": [
+					"gh pr checks",
+					"curl -fsSL -H \"Circle-Token: $CIRCLECI_CLI_TOKEN\" https://circleci.com/api/v1.1/project/gh/<org>/<repo>/<build-number>/output | jq -r '.[] | .message'",
+					"harness validation-plan --json"
+				],
+				"artifacts": ["failing job evidence", "validation closeout"],
+				"assertions": [
+					"fix is based on exact failing job output",
+					"GitHub Actions is not treated as the primary PR gate"
+				],
+				"stopConditions": [
+					"Classify credential or network failures as blockers."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 2,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 2,
+				"manual_step_reduction": 1
+			}
+		},
+		{
+			"id": "required-check-name-parity",
+			"type": "registered",
+			"prompt": "Make sure required checks still match CircleCI, CodeRabbit, and Semgrep ownership.",
+			"expected": {
+				"commands": [
+					"harness policy-gate --contract harness.contract.json --json",
+					"harness ci-ownership-gate --json"
+				],
+				"artifacts": ["policy gate result", "required-check drift report"],
+				"assertions": [
+					"CircleCI remains primary PR gate",
+					"CodeRabbit remains independent review check",
+					"Semgrep Cloud remains independent external security check"
+				],
+				"stopConditions": [
+					"Do not promote GitHub Actions fallback workflows into automatic PR gates without an intentional contract migration."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 2,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 1
+			}
+		},
+		{
+			"id": "review-finding-narrow-fix",
+			"type": "registered",
+			"prompt": "Fix this CodeRabbit finding if it is still valid.",
+			"expected": {
+				"commands": [
+					"harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json",
+					"harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json"
+				],
+				"artifacts": [
+					"review finding verification evidence",
+					"focused validation evidence"
+				],
+				"assertions": [
+					"finding is rechecked against current code",
+					"invalid stale finding is not edited around",
+					"valid finding gets the smallest meaningful fix"
+				],
+				"stopConditions": [
+					"Stop if the comment cannot be mapped to current code."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 1,
+				"artifact_evidence": 2,
+				"validation_sufficiency": 2,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 1
+			}
+		},
+		{
+			"id": "harness-init-update-path",
+			"type": "registered",
+			"prompt": "Run the harness init update path and tell me what changed.",
+			"expected": {
+				"commands": ["harness upgrade --dry-run --json"],
+				"artifacts": ["upgrade dry-run JSON", "tracked manifest preview"],
+				"assertions": [
+					"preview includes updateMode, trackedManifest, and updateDetails",
+					"installed skill path is .agents/skills/coding-harness/",
+					"canonical generated surfaces are updated together",
+					"manual edits to generated mirrors are avoided"
+				],
+				"stopConditions": [
+					"Stop before overwriting user-owned local config without explicit approval."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 1,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 2
+			}
+		},
+		{
+			"id": "north-star-feedback-closeout",
+			"type": "registered",
+			"prompt": "Before handoff, prove the north-star learning loop is satisfied for these changes.",
+			"expected": {
+				"commands": [
+					"harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json",
+					"harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json",
+					"harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json",
+					"harness learnings promote --source .harness/learnings/coderabbit.local.json --min-usage 25 --json"
+				],
+				"artifacts": [
+					"learnings gate result",
+					"review context result",
+					"north-star feedback result",
+					"promotion result"
+				],
+				"assertions": [
+					"changed files are passed exactly",
+					"missing learning artifact is classified honestly",
+					"repeated high-value feedback is promoted or explicitly skipped"
+				],
+				"stopConditions": [
+					"Do not treat absent CodeRabbit evidence as a passing learning loop."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 2,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 2,
+				"manual_step_reduction": 2
+			}
+		},
+		{
+			"id": "autonomy-stop-human-mediation",
+			"type": "registered",
+			"prompt": "A security ownership check conflicts with a requested shortcut; decide whether to continue.",
+			"expected": {
+				"commands": [
+					"harness policy-gate --contract harness.contract.json --json"
+				],
+				"artifacts": ["policy gate result", "explicit blocker classification"],
+				"assertions": [
+					"review/security ownership is not bypassed",
+					"human mediation is requested when policy conflicts with the requested shortcut"
+				],
+				"stopConditions": [
+					"Stop when the requested action would weaken independent review or security ownership."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 1,
+				"artifact_evidence": 1,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 3,
+				"manual_step_reduction": 1
+			}
+		},
+		{
+			"id": "known-failure-regression-replay",
+			"type": "registered",
+			"prompt": "Replay a prior harness failure and show that the current guardrail prevents it.",
+			"expected": {
+				"commands": ["pnpm test:evals", "targeted regression test"],
+				"artifacts": ["regression evidence", "promotion or skip note"],
+				"assertions": [
+					"old failure class is reproduced or represented by a fixture",
+					"current harness behavior prevents recurrence"
+				],
+				"stopConditions": [
+					"Do not mark replay covered by a test that does not exercise the failure class."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 1,
+				"artifact_evidence": 2,
+				"validation_sufficiency": 2,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 1
+			}
+		},
+		{
+			"id": "live-pr-loop-canary",
+			"type": "registered",
+			"prompt": "Run a canary PR readiness loop and compare closeout evidence with harness recommendations.",
+			"expected": {
+				"commands": [
+					"harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json",
+					"harness validation-plan --source .harness/learnings/coderabbit.local.json --files <changed-files> --json",
+					"harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json",
+					"harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json"
+				],
+				"artifacts": [
+					"review context result",
+					"validation plan result",
+					"learnings gate result",
+					"north-star feedback result"
+				],
+				"assertions": [
+					"agent closeout evidence matches recommended validation",
+					"network-only checks are named as blocked when unavailable",
+					"manual steps reduced from the baseline transcript"
+				],
+				"stopConditions": [
+					"Do not claim readiness when required independent review evidence is absent."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 2,
+				"validation_sufficiency": 2,
+				"blocker_honesty": 2,
+				"manual_step_reduction": 3
+			}
+		}
+	]
+}

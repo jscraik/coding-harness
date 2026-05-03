@@ -1,7 +1,13 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	EXIT_CODES,
 	runBrainAdd,
@@ -61,6 +67,8 @@ describe("brain status", () => {
 			const result = runBrainStatus(join(dir, ".harness"));
 			expect(result.valid).toBe(true);
 			expect(result.validation.summary.errors).toBe(0);
+			expect(result.maturity.level).toBe("mature");
+			expect(result.maturity.placeholderDomains).toEqual([]);
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -82,6 +90,11 @@ describe("brain status", () => {
 			);
 			const result = runBrainStatus(join(dir, ".harness"));
 			expect(result.validation.summary.warnings).toBeGreaterThan(0);
+			expect(result.validation.summary.placeholderDomains.api).toBeGreaterThan(
+				0,
+			);
+			expect(result.maturity.level).toBe("partial");
+			expect(result.maturity.placeholderDomains).toContain("api");
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -184,6 +197,24 @@ describe("brain add", () => {
 		}
 	});
 
+	it("rejects path traversal domains before composing knowledge paths", () => {
+		const dir = createTempHarness();
+		try {
+			expect(() =>
+				runBrainAdd(
+					join(dir, ".harness"),
+					"rule",
+					"../../outside",
+					"escape attempt",
+				),
+			).toThrow(/Invalid domain/);
+			expect(existsSync(join(dir, ".harness", "outside"))).toBe(false);
+			expect(existsSync(join(dir, "outside"))).toBe(false);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("creates a new decision file", () => {
 		const dir = createTempHarness();
 		try {
@@ -214,6 +245,30 @@ describe("brain CLI", () => {
 		expect(exitCode).toBe(EXIT_CODES.INVALID_ARGS);
 	});
 
+	it("allows decision additions without a domain", () => {
+		const dir = createTempHarness();
+		try {
+			const exitCode = runBrainCLI([
+				"add",
+				"--type",
+				"decision",
+				"--content",
+				"Adopt review-context evidence",
+				"--dir",
+				dir,
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(
+				readdirSync(join(dir, ".harness", "decisions")).some((entry) =>
+					entry.endsWith("adopt-review-context-evidence.md"),
+				),
+			).toBe(true);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("runs status subcommand", () => {
 		const dir = createTempHarness();
 		try {
@@ -237,6 +292,49 @@ describe("brain CLI", () => {
 			]);
 			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
 		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects preflight when --files is present without values", () => {
+		const dir = createTempHarness();
+		try {
+			const exitCode = runBrainCLI([
+				"preflight",
+				"--dir",
+				dir,
+				"--files",
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.INVALID_ARGS);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("accepts multiple preflight --files tokens without dropping later paths", () => {
+		const dir = createTempHarness();
+		const info = vi.spyOn(console, "info").mockImplementation(() => {});
+		const write = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runBrainCLI([
+				"preflight",
+				"--dir",
+				dir,
+				"--files",
+				"AGENTS.md",
+				"src/commands/brain.test.ts",
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			const output = write.mock.calls.map((call) => call[0]).join("");
+			const result = JSON.parse(output);
+			expect(result.files).toEqual(["AGENTS.md", "src/commands/brain.test.ts"]);
+		} finally {
+			info.mockRestore();
+			write.mockRestore();
 			rmSync(dir, { recursive: true, force: true });
 		}
 	});

@@ -3,6 +3,7 @@ import {
 	NORTH_STAR_PRIMARY_BOTTLENECK,
 	NORTH_STAR_PRIMARY_METRIC,
 } from "./types.js";
+import type { ReviewCadence } from "./types.js";
 import type {
 	NorthStarContract,
 	NorthStarDecisionQuestionId,
@@ -44,6 +45,12 @@ const VALID_SURFACE_REGISTRATION_KEYS = [
 	"ownedPaths",
 	"lastReviewedAt",
 ] as const;
+const VALID_REVIEW_CADENCE_VALUES = ["weekly", "per_release"] as const;
+const isReviewCadence = (value: unknown): value is ReviewCadence =>
+	typeof value === "string" &&
+	VALID_REVIEW_CADENCE_VALUES.includes(
+		value as (typeof VALID_REVIEW_CADENCE_VALUES)[number],
+	);
 const VALID_SURFACE_TYPES: ProductSurfaceType[] = [
 	"command",
 	"document",
@@ -121,6 +128,7 @@ function isValidNorthStarDecisionQuestion(
 	);
 }
 
+/** Validate that a value conforms to the NorthStarContract shape. */
 export function isValidNorthStarContract(
 	value: unknown,
 ): value is NorthStarContract {
@@ -271,12 +279,11 @@ function isValidSurfaceRegistration(
 		return false;
 	}
 	return (
-		record.reviewCadence === undefined ||
-		(typeof record.reviewCadence === "string" &&
-			record.reviewCadence.trim().length > 0)
+		record.reviewCadence === undefined || isReviewCadence(record.reviewCadence)
 	);
 }
 
+/** Validate that a value conforms to the ProductSurfaceRegistry shape. */
 export function isValidProductSurfaceRegistry(
 	value: unknown,
 ): value is ProductSurfaceRegistry {
@@ -307,6 +314,7 @@ export function isValidProductSurfaceRegistry(
 	);
 }
 
+/** Validate that a value conforms to the OverrideReviewerRegistry shape. */
 export function isValidOverrideReviewerRegistry(
 	value: unknown,
 ): value is OverrideReviewerRegistry {
@@ -379,4 +387,34 @@ export function isValidOverrideReviewerRegistry(
 			(field) => typeof field === "string" && field.trim().length > 0,
 		);
 	});
+}
+
+/** Resume state used when a workflow is blocked by a north-star finding. */
+export type BlockedResumeState = "A1" | "A2" | "A3" | "A4";
+
+const FAILURE_CLASS_TO_RESUME_STATE: Record<string, BlockedResumeState> = {
+	admission_incomplete: "A2",
+	admission_unjustified: "A2",
+	surface_registration_gap: "A2",
+	cadence_breach: "A2",
+	review_evidence_contradiction: "A3",
+	drift_blocking: "A4",
+};
+
+/** Map a failure class to its canonical blocked resume state. */
+export function mapFailureClassToResumeState(
+	failureClass: string,
+): BlockedResumeState | undefined {
+	return FAILURE_CLASS_TO_RESUME_STATE[failureClass];
+}
+
+/** Validate that a blocked-state/failure-class pair is consistent. */
+export function isValidBlockedStateRecord(
+	state: unknown,
+	failureClass: unknown,
+): boolean {
+	if (typeof state !== "string" || typeof failureClass !== "string") {
+		return false;
+	}
+	return mapFailureClassToResumeState(failureClass) === state;
 }

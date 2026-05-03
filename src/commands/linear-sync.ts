@@ -27,6 +27,7 @@ import { normalizeToken } from "../lib/linear/utils.js";
 // Public types
 // ---------------------------------------------------------------------------
 
+/** Normalized finding shape consumed by `harness linear sync`. */
 export interface HarnessFinding {
 	/** Stable check identifier, e.g. "drift-gate:command.surface.sources.missing" */
 	id: string;
@@ -44,6 +45,7 @@ export interface HarnessFinding {
 	gate?: string;
 }
 
+/** CLI and programmatic options for syncing findings to Linear. */
 export interface LinearSyncOptions {
 	/** Path to findings JSON (or "-" for stdin) */
 	findings?: string;
@@ -59,8 +61,10 @@ export interface LinearSyncOptions {
 	json?: boolean;
 }
 
+/** Outcome action applied to a finding during sync. */
 export type SyncAction = "created" | "updated" | "skipped";
 
+/** Per-finding synchronization result payload. */
 export interface SyncResult {
 	finding: HarnessFinding;
 	action: SyncAction;
@@ -72,6 +76,7 @@ export interface SyncResult {
 	skippedReason?: string;
 }
 
+/** Success or structured failure payload for `runLinearSync`. */
 export type LinearSyncResult =
 	| { ok: true; results: SyncResult[]; dryRun: boolean }
 	| { ok: false; error: { code: string; message: string } };
@@ -209,6 +214,143 @@ async function ensureLabel(
 	return undefined;
 }
 
+/**
+ * Resolve the target Linear team from the client.
+ * If no team option is provided, returns the first available team.
+ */
+async function resolveTeam(
+	client: LinearClient,
+	teamOption: string | undefined,
+): Promise<{ id: string; key: string; name: string } | undefined> {
+	const teams = await client.listTeams();
+	const teamKey = teamOption?.trim().toLowerCase();
+	return teamKey
+		? teams.find(
+				(t) =>
+					t.key.toLowerCase() === teamKey || t.name.toLowerCase() === teamKey,
+			)
+		: teams[0];
+}
+
+/**
+ * Update an existing Linear issue with the latest finding context.
+ */
+async function updateExistingFinding(
+	client: LinearClient,
+	finding: HarnessFinding,
+	existing: LinearIssueSummary,
+	dryRun: boolean,
+): Promise<SyncResult> {
+	if (!dryRun) {
+		const commentBody = [
+			`**Harness sync update** — finding \`${finding.id}\` still active.`,
+			"",
+			finding.description?.trim() ?? "",
+			"",
+			finding.fixCommands?.length ? `Fix: \`${finding.fixCommands[0]}\`` : "",
+		]
+			.filter((l) => l !== undefined)
+			.join("\n")
+			.trim();
+
+		await client.createComment(existing.identifier, commentBody);
+		await client.updateIssue(existing.identifier, {
+			// Re-raise priority if it's been lowered
+			priority: severityToPriority(finding.severity),
+		});
+	}
+
+	return {
+		finding,
+		action: "updated",
+		issue: {
+			identifier: existing.identifier,
+			title: existing.title,
+			url: existing.url,
+		},
+	};
+}
+
+/**
+ * Create a new Linear issue for a finding, or preview it in dry-run mode.
+ */
+async function createFindingIssue(
+	client: LinearClient,
+	finding: HarnessFinding,
+	teamId: string,
+	labelName: string,
+	dryRun: boolean,
+): Promise<SyncResult> {
+	let created: LinearCreatedIssueSummary | undefined;
+
+	if (!dryRun) {
+		await ensureLabel(client, teamId, labelName, dryRun);
+		created = await client.createIssue({
+			teamId,
+			title: `[harness] ${finding.title}`,
+			description: buildIssueDescription(finding),
+			priority: severityToPriority(finding.severity),
+		});
+		// Add a comment with the sync fingerprint label so we can find
+		// this issue on future syncs
+		await client.createComment(
+			created.identifier,
+			`_harness-sync fingerprint: \`${labelName}\`_\n\nThis issue is managed by \`harness linear sync\`. Do not remove the fingerprint line.`,
+		);
+	}
+
+	const entry: SyncResult = {
+		finding,
+		action: dryRun ? "skipped" : "created",
+	};
+	if (dryRun) {
+		entry.skippedReason = "dry-run";
+	}
+	if (created) {
+		entry.issue = {
+			identifier: created.identifier,
+			title: created.title,
+			url: created.url,
+		};
+	}
+	return entry;
+}
+
+/**
+ * Map an unexpected error to a structured LinearSyncResult failure.
+ */
+function mapSyncError(error: unknown): LinearSyncResult {
+	const safeError = sanitizeError(error);
+	if (error instanceof LinearAPIError) {
+		if (
+			error.code === "AUTHENTICATION_REQUIRED" ||
+			error.code === "FORBIDDEN" ||
+			error.code === "PERMISSION_DENIED"
+		) {
+			return {
+				ok: false,
+				error: {
+					code: "PERMISSION_DENIED",
+					message: `Linear API permission denied: ${safeError}`,
+				},
+			};
+		}
+	}
+	return {
+		ok: false,
+		error: {
+			code: "SYSTEM_ERROR",
+			message: `Linear sync failed: ${safeError}`,
+		},
+	};
+}
+
+/**
+ * Synchronizes findings into Linear issues with idempotent fingerprint matching.
+ *
+ * @param options - Sync options including token, team, and findings source
+ * @returns Sync summary with created/updated/skipped results or structured error
+ */
 export async function runLinearSync(
 	options: LinearSyncOptions,
 ): Promise<LinearSyncResult> {
@@ -245,15 +387,7 @@ export async function runLinearSync(
 	const client = new LinearClient({ token });
 
 	try {
-		// Resolve team
-		const teams = await client.listTeams();
-		const teamKey = options.team?.trim().toLowerCase();
-		const team = teamKey
-			? teams.find(
-					(t) =>
-						t.key.toLowerCase() === teamKey || t.name.toLowerCase() === teamKey,
-				)
-			: teams[0];
+		const team = await resolveTeam(client, options.team);
 
 		if (!team) {
 			return {
@@ -271,105 +405,22 @@ export async function runLinearSync(
 		for (const finding of findings) {
 			const fingerprint = fingerprintFinding(team.key, finding);
 			const labelName = syncLabelName(fingerprint);
-
-			// Check for existing issue
 			const existing = await findExistingIssue(client, labelName);
 
 			if (existing) {
-				// Issue already exists — add an update comment with latest context
-				if (!dryRun) {
-					const commentBody = [
-						`**Harness sync update** — finding \`${finding.id}\` still active.`,
-						"",
-						finding.description?.trim() ?? "",
-						"",
-						finding.fixCommands?.length
-							? `Fix: \`${finding.fixCommands[0]}\``
-							: "",
-					]
-						.filter((l) => l !== undefined)
-						.join("\n")
-						.trim();
-
-					await client.createComment(existing.identifier, commentBody);
-					await client.updateIssue(existing.identifier, {
-						// Re-raise priority if it's been lowered
-						priority: severityToPriority(finding.severity),
-					});
-				}
-
-				results.push({
-					finding,
-					action: "updated",
-					issue: {
-						identifier: existing.identifier,
-						title: existing.title,
-						url: existing.url,
-					},
-				});
+				results.push(
+					await updateExistingFinding(client, finding, existing, dryRun),
+				);
 			} else {
-				// Create new issue
-				let created: LinearCreatedIssueSummary | undefined;
-
-				if (!dryRun) {
-					await ensureLabel(client, team.id, labelName, dryRun);
-					created = await client.createIssue({
-						teamId: team.id,
-						title: `[harness] ${finding.title}`,
-						description: buildIssueDescription(finding),
-						priority: severityToPriority(finding.severity),
-					});
-					// Add a comment with the sync fingerprint label so we can find
-					// this issue on future syncs
-					await client.createComment(
-						created.identifier,
-						`_harness-sync fingerprint: \`${labelName}\`_\n\nThis issue is managed by \`harness linear sync\`. Do not remove the fingerprint line.`,
-					);
-				}
-
-				const entry: SyncResult = {
-					finding,
-					action: dryRun ? "skipped" : "created",
-				};
-				if (dryRun) {
-					entry.skippedReason = "dry-run";
-				}
-				if (created) {
-					entry.issue = {
-						identifier: created.identifier,
-						title: created.title,
-						url: created.url,
-					};
-				}
-				results.push(entry);
+				results.push(
+					await createFindingIssue(client, finding, team.id, labelName, dryRun),
+				);
 			}
 		}
 
 		return { ok: true, results, dryRun };
 	} catch (error) {
-		const safeError = sanitizeError(error);
-		if (error instanceof LinearAPIError) {
-			if (
-				error.code === "AUTHENTICATION_REQUIRED" ||
-				error.code === "FORBIDDEN" ||
-				error.code === "PERMISSION_DENIED"
-			) {
-				return {
-					ok: false,
-					error: {
-						code: "PERMISSION_DENIED",
-						message: `Linear API permission denied: ${safeError}`,
-					},
-				};
-			}
-		}
-		return {
-			ok: false,
-			error: {
-				code: "SYSTEM_ERROR",
-				message: `Linear sync failed: ${safeError}`,
-			},
-		};
+		return mapSyncError(error);
 	}
 }
 
@@ -377,6 +428,12 @@ export async function runLinearSync(
 // CLI entry point
 // ---------------------------------------------------------------------------
 
+/**
+ * CLI wrapper for linear-sync.
+ *
+ * @param options - CLI-level options
+ * @returns Process exit code
+ */
 export async function runLinearSyncCLI(
 	options: LinearSyncOptions,
 ): Promise<number> {

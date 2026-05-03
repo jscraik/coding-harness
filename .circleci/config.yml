@@ -217,6 +217,21 @@ workflows:
           name: orb-pinning
           check_name: orb-pinning
           command: |
+            retry_cmd() {
+              local max_attempts="${1:-3}"
+              shift
+              local attempt=1
+              until "$@"; do
+                if (( attempt >= max_attempts )); then
+                  return 1
+                fi
+                local sleep_seconds=$(( attempt * 5 ))
+                echo "Command failed (attempt ${attempt}/${max_attempts}): $*"
+                echo "Retrying in ${sleep_seconds}s..."
+                sleep "${sleep_seconds}"
+                attempt=$(( attempt + 1 ))
+              done
+            }
             packages=()
             if ! dpkg -s python3-venv >/dev/null 2>&1; then
               packages+=("python3-venv")
@@ -225,13 +240,13 @@ workflows:
               packages+=("python3-pip")
             fi
             if (( ${#packages[@]} > 0 )); then
-              sudo apt-get update
-              sudo apt-get install -y "${packages[@]}"
+              retry_cmd 3 sudo apt-get update
+              retry_cmd 3 sudo apt-get install -y "${packages[@]}"
             fi
             mkdir -p "$HOME/.local/bin" "$HOME/.local/share"
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            mise install rust@stable
+            retry_cmd 3 mise install rust@stable
             if [[ -f "$HOME/.cargo/env" ]]; then
               # rustup does not update the current shell PATH for non-interactive jobs.
               . "$HOME/.cargo/env"
@@ -240,12 +255,12 @@ workflows:
             SEMGREP_VENV="$HOME/.local/share/semgrep-venv-${SEMGREP_VERSION}"
             if [[ ! -x "$SEMGREP_VENV/bin/semgrep" ]]; then
               python3 -m venv "$SEMGREP_VENV"
-              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
+              retry_cmd 3 "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
             fi
             ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
             export MISE_CARGO_BINSTALL=false
             export MISE_NODE_VERIFY=false
-            mise install \
+            retry_cmd 3 mise install \
               node pnpm python uv cargo:prek \
               npm:@brainwav/diagram npm:@argos-ci/cli cosign cloudflared npm:vitest \
               ruff npm:eslint npm:agent-browser npm:agentation npm:agentation-mcp \
@@ -264,9 +279,9 @@ workflows:
               RALPH_VENV="$HOME/.local/share/ralph-venv-${RALPH_VERSION}"
               if [[ ! -x "$RALPH_VENV/bin/ralph" ]]; then
                 python3 -m venv "$RALPH_VENV"
-                "$RALPH_VENV/bin/python" -m pip install --quiet --upgrade pip
-                if ! "$RALPH_VENV/bin/python" -m pip install --quiet "$RALPH_PACKAGE_SPEC"; then
-                  "$RALPH_VENV/bin/python" -m pip install --quiet "$RALPH_GIT_FALLBACK_SPEC"
+                retry_cmd 3 "$RALPH_VENV/bin/python" -m pip install --quiet --upgrade pip
+                if ! retry_cmd 3 "$RALPH_VENV/bin/python" -m pip install --quiet "$RALPH_PACKAGE_SPEC"; then
+                  retry_cmd 3 "$RALPH_VENV/bin/python" -m pip install --quiet "$RALPH_GIT_FALLBACK_SPEC"
                 fi
               fi
               ln -sf "$RALPH_VENV/bin/ralph" "$HOME/.local/bin/ralph"

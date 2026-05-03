@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-26
+last_validated: 2026-05-03
 ---
 
 # Agent governance
@@ -29,15 +29,21 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
+- `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)
 - Code-review pass-through via PR workflow (no direct `main` commits).
 
 When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
+
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`
 - workflow-authority routing and validation behavior changes should update `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, and `docs/agents/14-docs-gate-rollout.md`
 - agent-governance/category updates should keep `AGENTS.md` and this guide synchronized in the same PR
 - north-star contract/scaffold updates that affect architecture context should update `docs/agents/00-architecture-bootstrap.md` and this guide in the same PR
+- north-star artifact contract changes should keep the README command evidence
+  surface, AGENTS shared-vocabulary guidance, and this guide synchronized in
+  the same PR
+- agent-native cockpit changes should keep next-action safety evidence, generated environment action contracts, and docs-gate-required operator surfaces synchronized before the PR can be considered merge-ready
 
 ## Evidence and communication
 
@@ -49,6 +55,12 @@ Every agent handoff should include:
 - clear next step.
 - CodeRabbit Semgrep disposition when findings were raised: fixed, explicitly waived with rationale, or not applicable.
 - Exact behavior evidence whenever executable behavior changed, or a clear blocker note when the touched production path could not run safely.
+- Canonical north-star artifact references when commands emit them; for
+  example `drift-gate` writes
+  `.harness/guardrails/north-star/drift-findings.json`, `doctor` writes
+  `.harness/guardrails/north-star/surface-classification-snapshot.json`, and
+  review-gate alignment decisions live at
+  `.harness/review-gate/north-star-alignment.json`.
 
 When executable behavior changes, broad gates are necessary but not sufficient
 on their own. Run the smallest real executable path that exercises the exact
@@ -71,6 +83,8 @@ implementation into the harness.
 - Agent-created branches must use `codex/<linear-key>-<short-description>` naming when the work is tracked in Linear.
 - CodeRabbit review must be independent from code authorship (coding agent cannot act as approving review agent).
 - Legacy review bridge workflows may exist in downstream repositories, but they are not the primary review authority for this repository.
+- CI ownership is enforced by `harness.contract.json` `ciOwnership`: CircleCI owns the primary PR gate, CodeRabbit remains the independent review check, Semgrep Cloud remains the independent external security check, and GitHub Actions workflows are release/fallback surfaces only unless an intentional contract migration says otherwise.
+- Rollback expectation for CI-ownership changes: restore the previous `harness.contract.json` `ciOwnership` mapping and matching check-identity docs in the same PR, then re-run required governance/docs gates before merge.
 - If a reproducible coding-harness bug, policy gap, workflow regression, automation task, or release follow-up is found: create or update a Linear issue with repro + evidence before handoff.
 - If PR review artifacts are missing (CodeRabbit/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
 - If the `CodeRabbit` check is absent, pending, or failing for the current head SHA: do not merge.

@@ -7,6 +7,7 @@ last_validated: 2026-04-18
 ## Table of Contents
 
 - [Purpose](#purpose)
+- [Agent cockpit entrypoint](#agent-cockpit-entrypoint)
 - [Machine-readable command catalog](#machine-readable-command-catalog)
 - [Gate JSON Envelope](#gate-json-envelope)
 - [Unknown command guardrails](#unknown-command-guardrails)
@@ -22,6 +23,32 @@ last_validated: 2026-04-18
 This file contains the extended command catalog for Coding Harness.
 
 For repo-facing onboarding and common workflows, start at [`README.md`](../README.md).
+
+## Agent cockpit entrypoint
+
+Use `harness next --json` as the read-only agent cockpit entrypoint. It
+inspects changed files from git by default, emits a `HarnessDecision`, and
+points `nextCommand` at an existing command instead of inventing a new workflow.
+
+```bash
+harness next --json
+```
+
+Optional overrides:
+
+```bash
+harness next --json --files src/cli.ts docs/cli-reference.md
+harness next --json --mode pr
+```
+
+First-slice routing is intentionally small:
+
+| State | Recommended command |
+| --- | --- |
+| No changed files | `harness check --json` |
+| Git state unavailable | `harness doctor --json` |
+| Changed files, `local` or `ci` mode | `harness validation-plan --files <files> --json` |
+| Changed files, `pr` mode | `harness review-context --files <files> --json` |
 
 ## Machine-readable command catalog
 
@@ -62,12 +89,13 @@ Taxonomy note: section headings in this document represent command families. The
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)        |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                |
+| `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--mode local\|pr\|ci`)                         |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                   |
 | `audit`             | Comprehensive governance state check with actionable recommendations                                                                                                      |
 | `brain`             | Project Brain knowledge, rules, and quality management (status, query, add, preflight, stale)                                                                             |
 | `health`            | Unified gate status scorecard across all gates                                                                                                                            |
 | `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                  |
-| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run` supported)                                                                                                        |
+| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                      |
 | `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                  |
 | `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                               |
 | `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                              |
@@ -91,6 +119,8 @@ Taxonomy note: section headings in this document represent command families. The
 | `check-authz`            | Validate authorization policy for mutative operations                               |
 | `check-environment`      | Validate pilot environment governance checks                                        |
 | `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                              |
+| `artifact-gate`          | Check generated artifact changes against the artifact provenance registry           |
+| `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks     |
 | `blast-radius`           | Determine required checks from changed files                                        |
 | `risk-tier`              | Classify changed files by risk tier                                                 |
 | `diff-budget`            | Enforce diff budget constraints                                                     |
@@ -146,21 +176,27 @@ Compatibility:
 
 ## Drift, search, and evidence
 
-| Command           | Purpose                                                                                                                                                                                                                           |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `drift-gate`      | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
-| `org-audit`       | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
-| `tooling-audit`   | Audit managed repo tooling baselines                                                                                                                                                                                              |
-| `gardener`        | Detect stale docs and broken links                                                                                                                                                                                                |
-| `context-health`  | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
-| `search`          | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
-| `context`         | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
-| `source-outline`  | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol`                                                                            |
-| `index-context`   | Build the local semantic-search index                                                                                                                                                                                             |
-| `evidence-verify` | Validate screenshot and evidence artifacts                                                                                                                                                                                        |
-| `ui:fast`         | Run a Storybook-first local UI loop                                                                                                                                                                                               |
-| `ui:verify`       | Run Playwright smoke verification with evidence capture                                                                                                                                                                           |
-| `ui:explore`      | Run agent-browser exploratory testing                                                                                                                                                                                             |
+| Command               | Purpose                                                                                                                                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `drift-gate`          | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
+| `org-audit`           | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
+| `tooling-audit`       | Audit managed repo tooling baselines                                                                                                                                                                                              |
+| `gardener`            | Detect stale docs and broken links                                                                                                                                                                                                |
+| `context-health`      | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
+| `learnings`           | Import local operational review evidence, run exact-file learning gates, and generate high-usage promotion candidates via `learnings import`, `learnings gate`, and `learnings promote`                                           |
+| `review-context`      | Generate PR review context from changed files and imported operational learnings, including applicable learned constraints and validation-plan entries                                                                            |
+| `validation-plan`     | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated                                                                              |
+| `north-star-feedback` | Measure learning hits, gate blocks/warnings, promotion candidates, promoted learnings, high-usage unenforced learnings, review-thread count, and validation reruns from imported learning evidence and optional run artifacts     |
+| `artifact-gate`       | Check changed generated artifacts against `.harness/artifact-provenance.json` so template/source edits accompany runtime mirrors                                                                                                  |
+| `ci-ownership-gate`   | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                                                                         |
+| `search`              | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
+| `context`             | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
+| `source-outline`      | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol`                                                                            |
+| `index-context`       | Build the local semantic-search index                                                                                                                                                                                             |
+| `evidence-verify`     | Validate screenshot and evidence artifacts                                                                                                                                                                                        |
+| `ui:fast`             | Run a Storybook-first local UI loop                                                                                                                                                                                               |
+| `ui:verify`           | Run Playwright smoke verification with evidence capture                                                                                                                                                                           |
+| `ui:explore`          | Run agent-browser exploratory testing                                                                                                                                                                                             |
 
 Use `source-outline` as the first read for TypeScript-family source files:
 

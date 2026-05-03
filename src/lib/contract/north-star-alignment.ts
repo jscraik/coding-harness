@@ -38,24 +38,29 @@ const SAFETY_FLOOR_CLAUSES = [
 	"independent review",
 ];
 
+/** Canonical north-star surface keys used for parity checking. */
 export type NorthStarSurfaceKey =
 	| "readme"
 	| "north_star_doc"
 	| "agent_first_status";
 
+/** Input describing a single north-star surface to evaluate. */
 export interface NorthStarSurfaceInput {
 	key: NorthStarSurfaceKey;
 	path: string;
 	content: string | undefined;
 }
 
+/** A parity issue detected between a surface and the contract. */
 export interface NorthStarParityIssue {
 	ruleId: string;
 	path: string;
 	message: string;
 	severity: "error" | "warning";
+	failureClass?: string;
 }
 
+/** Result of evaluating north-star review evidence in a PR body. */
 export interface NorthStarReviewEvidenceResult {
 	blockers: string[];
 	failureClasses: string[];
@@ -99,6 +104,7 @@ function includesSurfacePath(changedPath: string, ownedPath: string): boolean {
 	return normalizedChangedPath.startsWith(`${normalizedOwnedPath}/`);
 }
 
+/** Find product surfaces that match the given changed file paths. */
 export function findMatchingProductSurfaces(
 	registry: ProductSurfaceRegistry | undefined,
 	changedFiles: string[],
@@ -116,6 +122,7 @@ export function findMatchingProductSurfaces(
 	);
 }
 
+/** Evaluate whether governed surfaces preserve the canonical north-star clauses. */
 export function evaluateNorthStarSurfaceParity(
 	contract: HarnessContract | undefined,
 	surfaces: NorthStarSurfaceInput[],
@@ -150,6 +157,7 @@ export function evaluateNorthStarSurfaceParity(
 					message:
 						"North-star roadmap doc does not preserve the canonical mission, metric, bottleneck, autonomy boundary, and safety-floor clauses from harness.contract.json.",
 					severity: "error",
+					failureClass: "drift_blocking",
 				});
 			}
 			continue;
@@ -167,6 +175,7 @@ export function evaluateNorthStarSurfaceParity(
 				message:
 					"README no longer reflects the canonical north-star mission, metric, and bottleneck from harness.contract.json.",
 				severity: "warning",
+				failureClass: "drift_blocking",
 			});
 		}
 
@@ -180,6 +189,7 @@ export function evaluateNorthStarSurfaceParity(
 				message:
 					"Agent-first status matrix is missing the canonical PR lead-time metric or review/rework bottleneck framing.",
 				severity: "warning",
+				failureClass: "drift_blocking",
 			});
 		}
 	}
@@ -205,6 +215,7 @@ function parseDecisionQuestionLine(
 	};
 }
 
+/** Evaluate north-star decision-question evidence in a PR body. */
 export function evaluateNorthStarReviewEvidence(
 	contract: HarnessContract | undefined,
 	prBody: string | null | undefined,
@@ -279,4 +290,57 @@ export function evaluateNorthStarReviewEvidence(
 		failureClasses: [...failureClasses],
 		answeredQuestionIds,
 	};
+}
+
+const CADENCE_MS: Record<string, number> = {
+	weekly: 7 * 24 * 60 * 60 * 1000,
+	per_release: 30 * 24 * 60 * 60 * 1000,
+};
+
+/** Evaluate whether non-core product surfaces are within their review cadence. */
+export function evaluateProductSurfaceCadence(
+	registry: ProductSurfaceRegistry | undefined,
+	referenceDate: Date = new Date(),
+): NorthStarParityIssue[] {
+	if (!registry || registry.surfaces.length === 0) {
+		return [];
+	}
+
+	const issues: NorthStarParityIssue[] = [];
+	for (const surface of registry.surfaces) {
+		if (surface.class === "core" || !surface.reviewCadence) {
+			continue;
+		}
+
+		const threshold = CADENCE_MS[surface.reviewCadence];
+		if (!threshold) {
+			continue;
+		}
+
+		const reviewed = Date.parse(surface.lastReviewedAt ?? "");
+		if (Number.isNaN(reviewed)) {
+			issues.push({
+				ruleId: "status.north_star.cadence.invalid_date",
+				path: surface.ownedPaths[0] ?? surface.surfaceId,
+				message: `Surface ${surface.surfaceId} has an invalid or missing lastReviewedAt date.`,
+				severity: "error",
+				failureClass: "cadence_breach",
+			});
+			continue;
+		}
+
+		const elapsed = referenceDate.getTime() - reviewed;
+		if (elapsed > threshold) {
+			const days = Math.round(elapsed / (24 * 60 * 60 * 1000));
+			issues.push({
+				ruleId: "status.north_star.cadence.breach",
+				path: surface.ownedPaths[0] ?? surface.surfaceId,
+				message: `Surface ${surface.surfaceId} has not been reviewed in ${days} days (exceeds ${surface.reviewCadence} cadence).`,
+				severity: "error",
+				failureClass: "cadence_breach",
+			});
+		}
+	}
+
+	return issues;
 }

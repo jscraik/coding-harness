@@ -7,6 +7,7 @@
  * @module lib/init/scaffold-template-registry
  */
 
+import { deriveRequiredCheckMetadata } from "../ci/required-check-metadata.js";
 import { formatRequiredChecksBulleted } from "../policy/required-checks.js";
 import { PROJECT_BRAIN_TEMPLATES } from "./project-brain-templates.js";
 import {
@@ -87,16 +88,27 @@ export { isTemplateEnabledForProvider };
 export const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
-		render: (pm, context) =>
-			renderHarnessContractTemplate({
+		render: (pm, context) => {
+			const internalChecks = getNormalizedRequiredChecks(
+				context.ciProvider ?? DEFAULT_CI_PROVIDER,
+				context,
+			);
+			const provider = context.ciProvider ?? DEFAULT_CI_PROVIDER;
+			const githubFacingChecks = [
+				...new Set(
+					internalChecks.map(
+						(check) =>
+							deriveRequiredCheckMetadata(provider, check).githubCheckName,
+					),
+				),
+			];
+			return renderHarnessContractTemplate({
 				agentBranchPrefix: AGENT_BRANCH_PREFIX,
 				context,
 				packageManager: pm,
-				requiredChecks: getNormalizedRequiredChecks(
-					context.ciProvider ?? DEFAULT_CI_PROVIDER,
-					context,
-				),
-			}),
+				requiredChecks: githubFacingChecks,
+			});
+		},
 	},
 	{
 		path: "memory.json",

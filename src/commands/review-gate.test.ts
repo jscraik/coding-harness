@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { writeNorthStarOverrideAcknowledgement } from "../lib/contract/north-star-artifact-io.js";
 import {
 	NORTH_STAR_DECISION_QUESTION_SPECS,
 	NORTH_STAR_PRIMARY_BOTTLENECK,
@@ -326,6 +327,418 @@ describe("runReviewGate", () => {
 			expect(result.output.actionable_count).toBe(0);
 			expect(result.output.informational_count).toBe(3);
 			expect(result.output.confidence_rubric.score).toBe(5);
+		}
+	});
+
+	it("keeps review-context advisory when a current artifact is supplied", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-context-"));
+		const reviewContextPath = join(dir, "review-context.json");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.review-gate",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "Review context should be acknowledged.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge learned context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=2"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`\n- review-context: coderabbit.coding-harness.review-gate acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				reviewContextPath,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(true);
+				expect(result.output.review_context_status).toBe("warn");
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("resolves contract-relative review-context paths from the contract directory", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-context-relative-"));
+		const contractDir = join(dir, "config");
+		const contractPath = join(contractDir, "harness.contract.json");
+		const reviewContextPath = join(contractDir, ".harness/review-context.json");
+		mkdirSync(join(contractDir, ".harness"), { recursive: true });
+		writeFileSync(contractPath, JSON.stringify({ version: "1.0" }), "utf-8");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.contract-relative-context",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "Contract-relative review context should load.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge learned context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=4"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+				reviewContextPath: ".harness/review-context.json",
+			},
+		});
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`\n- review-context: coderabbit.coding-harness.contract-relative-context acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath,
+				requireReviewContext: true,
+				reviewContextMaxAgeMinutes: 60,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.review_context_status).toBe("warn");
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("does not acknowledge review-context learnings through ID prefix matches", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-context-prefix-"));
+		const reviewContextPath = join(dir, "review-context.json");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.review-gate",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "Review context should be acknowledged.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge learned context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=2"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- review-context: coderabbit.coding-harness.review-gate-extra acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				reviewContextPath,
+				requireReviewContext: true,
+				reviewContextMaxAgeMinutes: 60,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.review_context_status).toBe("stale");
+				expect(result.output.blockers).toContain(
+					"High-severity learning context was generated but not acknowledged in the PR body",
+				);
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks only when strict review-context mode requires a missing artifact", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		const result = await runReviewGate({
+			...defaultOptions,
+			requireReviewContext: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.review_context_status).toBe("missing");
+			expect(result.output.blockers.join(" ")).toContain(
+				"Review context artifact is required",
+			);
+		}
+	});
+
+	it("exercises CLI flag plumbing for --review-context-path and --require-review-context", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-gate-cli-flags-"));
+		const reviewContextPath = join(dir, "review-context.json");
+		writeFileSync(
+			reviewContextPath,
+			JSON.stringify({
+				schemaVersion: "review-context/v1",
+				status: "success",
+				source: ".harness/learnings/coderabbit.local.json",
+				generatedAt: new Date().toISOString(),
+				sourceFingerprint: "abc123",
+				repo: "coding-harness",
+				changedFiles: ["src/commands/review-gate.ts"],
+				applicableLearnings: [
+					{
+						id: "coderabbit.coding-harness.cli-review-gate",
+						usage: 100,
+						classification: "review_context",
+						enforcement: "error",
+						promotionStatus: "candidate",
+						summary: "CLI flag plumbing must be tested.",
+						matchedFiles: ["src/commands/review-gate.ts"],
+						fix: "Acknowledge CLI context.",
+						evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=3"],
+					},
+				],
+				validationPlan: [],
+				networkRequired: [],
+				summary: {
+					applicableLearnings: 1,
+					validationCommands: 0,
+					networkRequired: 0,
+				},
+			}),
+			"utf-8",
+		);
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`\n- review-context: coderabbit.coding-harness.cli-review-gate acknowledged",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		try {
+			const exitCode = await runReviewGateCLI({
+				...defaultOptions,
+				reviewContextPath,
+				requireReviewContext: true,
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(mockEmitReviewGateDecisionArtifacts).toHaveBeenCalled();
+			const callArgs = mockEmitReviewGateDecisionArtifacts.mock.calls[0];
+			expect(callArgs).toBeDefined();
+			const artifactInput = callArgs?.[0];
+			expect(artifactInput?.result.ok).toBe(true);
+			const output = artifactInput?.result.ok
+				? artifactInput.result.output
+				: undefined;
+			expect(output?.review_context_status).toBe("warn");
+			expect(output?.blockers).toEqual([]);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
 		}
 	});
 
@@ -808,8 +1221,135 @@ describe("runReviewGate", () => {
 		if (result.ok) {
 			expect(result.output.verified).toBe(false);
 			expect(result.output.blockers).toContain(
-				"contract_invalid: Canonical north-star contracts must declare at least one decision question.",
+				"contract_invalid:contract-missing-questions: Canonical north-star contracts must declare at least one decision question.",
 			);
+		}
+	});
+
+	it("suppresses decision question blockers overridden by a valid acknowledgement (SA15 runtime)", async () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "review-gate-override-"));
+		const contractPath = join(repoRoot, "harness.contract.json");
+		writeFileSync(contractPath, JSON.stringify({ version: "1.6.0" }), "utf-8");
+
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission: "Test mission",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary: "Test boundary",
+				safetyFloor: ["evidence"],
+				nonGoals: [],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((q) => ({
+					id: q.id,
+					prompt: q.prompt,
+				})),
+			},
+			overrideReviewerRegistry: {
+				trustedReviewers: [
+					{
+						reviewerId: "jamie-craik",
+						reviewerType: "user",
+						signatureRef: "refs/reviewers/jamie-craik",
+						displayName: "Jamie Craik",
+						status: "active",
+					},
+				],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
+		);
+
+		const resultWithoutOverride = await runReviewGate({
+			...defaultOptions,
+			contractPath,
+		});
+		expect(resultWithoutOverride.ok).toBe(true);
+		if (resultWithoutOverride.ok) {
+			expect(resultWithoutOverride.output.blockers.length).toBeGreaterThan(0);
+			expect(
+				resultWithoutOverride.output.blockers.some((b) =>
+					b.includes("lead_time_path"),
+				),
+			).toBe(true);
+		}
+
+		const ack = {
+			schemaVersion: "north-star-override-acknowledgement/v1" as const,
+			overrideId: "ovr-missing-lead-time",
+			timestampUtc: new Date().toISOString(),
+			actor: "jamie-craik",
+			reason: "Lead time path is implicit in this refactor",
+			linkedFindingIds: ["missing-lead_time_path,manual_glue"],
+			approvedUntilUtc: new Date(Date.now() + 86400000).toISOString(),
+			compensatingControls: ["post-merge-metrics"],
+			signatureRef: "refs/reviewers/jamie-craik",
+		};
+		writeNorthStarOverrideAcknowledgement(
+			repoRoot,
+			"2026-04-27",
+			"ovr-missing-lead-time",
+			ack,
+		);
+
+		try {
+			const resultWithOverride = await runReviewGate({
+				...defaultOptions,
+				contractPath,
+			});
+			expect(resultWithOverride.ok).toBe(true);
+			if (resultWithOverride.ok) {
+				expect(
+					resultWithOverride.output.blockers.some((b) =>
+						b.includes("lead_time_path"),
+					),
+				).toBe(false);
+			}
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
 		}
 	});
 

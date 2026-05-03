@@ -534,4 +534,51 @@ describe("runUpgradeCLI", () => {
 			infoSpy.mockRestore();
 		}
 	});
+
+	it("delegates upgrade dry-run JSON to current-repo adoption preview", () => {
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({
+				version: "1.6.0",
+				riskTierRules: {},
+				mergePolicy: { high: [], medium: [], low: [] },
+			}),
+		);
+		writeFileSync(join(dir, ".coderabbit.yaml"), "language: en-US\n");
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const exitCode = runUpgradeCLI(dir, { dryRun: true, json: true });
+			expect(exitCode).toBe(0);
+			expect(infoSpy).toHaveBeenCalledOnce();
+			const emitted = JSON.parse(String(infoSpy.mock.calls[0]?.[0] ?? "")) as {
+				created?: string[];
+				updated?: string[];
+				updateMode?: string;
+				trackedManifest?: boolean;
+				updateDetails?: Array<Record<string, unknown>>;
+			};
+			expect(emitted.updateMode).toBe("adoption-preview");
+			expect(emitted.trackedManifest).toBe(false);
+			expect(emitted.created).toEqual(emitted.updated);
+			expect(emitted.updated).toEqual(
+				expect.arrayContaining(["harness.contract.json", ".coderabbit.yaml"]),
+			);
+			expect(emitted.updateDetails).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						path: ".coderabbit.yaml",
+						category: "code-review",
+					}),
+				]),
+			);
+			expect(existsSync(join(dir, ".harness/restore-manifest.json"))).toBe(
+				false,
+			);
+			expect(readFileSync(join(dir, ".coderabbit.yaml"), "utf-8")).toBe(
+				"language: en-US\n",
+			);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
 });

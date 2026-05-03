@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-30
 ---
 
 # Validation and checks
@@ -14,6 +14,7 @@ last_validated: 2026-04-18
 - [Validation by change type](#validation-by-change-type)
 - [Docs-only edits](#docs-only-edits)
 - [Code + command behavior edits](#code--command-behavior-edits)
+- [North-star learning loop closeout](#north-star-learning-loop-closeout)
 - [Process/agent instruction edits](#processagent-instruction-edits)
 - [Verify-work lifecycle](#verify-work-lifecycle)
 - [Execution order and restart policy](#execution-order-and-restart-policy)
@@ -41,13 +42,13 @@ Every change must be checked by the smallest gate needed for risk, then by the f
 Enforces documentation parity for governance-sensitive changes.
 
 - **Trigger**: Pull requests and merge queue events.
-- **Behavior**: Classifies changed files into impact categories; verifies required docs exist, including tracked workflow-authority docs such as `docs/agents/01-instruction-map.md`, `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, `docs/agents/13-linear-production-workflow.md`, `docs/agents/14-docs-gate-rollout.md`, `docs/agents/15-context-integrity-compact.md`, and `docs/agents/16-linear-production-compact.md`, plus tracked compound-workflow artifacts under `docs/adr/`, `docs/specs/`, `docs/plans/`, and `docs/brainstorms/`.
+- **Behavior**: Classifies changed files into impact categories; verifies required docs exist, including tracked workflow-authority docs such as `docs/agents/01-instruction-map.md`, `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, `docs/agents/13-linear-production-workflow.md`, `docs/agents/14-docs-gate-rollout.md`, `docs/agents/15-context-integrity-compact.md`, and `docs/agents/16-linear-production-compact.md`, plus tracked compound-workflow artifacts under `docs/adr/`, `docs/specs/`, `docs/plans/`, and `docs/brainstorms/`. It also enforces the promoted CodeRabbit frontmatter learning: policy docs with YAML frontmatter fields such as `schema_version`, `status`, or `applies_to` must keep those fields as metadata, not body headings or Table of Contents entries.
 - **Mode**: `advisory` (logs warnings) or `required` (fails CI).
 - **Exit codes**:
   - `0`: No drift or advisory mode
   - `10`: Drift detected (required mode)
   - `11-14`: Bootstrap gap, trust mismatch, policy error, runtime error
-- **Remediation**: Add missing docs or update `harness.contract.json` `docsGatePolicy.surfaces` to reflect new doc locations.
+- **Remediation**: Add missing docs, update `harness.contract.json` `docsGatePolicy.surfaces` to reflect new doc locations, or remove duplicated frontmatter metadata from policy-doc body headings and Table of Contents entries.
 
 ### plan-gate
 
@@ -85,12 +86,31 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - Run `bash scripts/validate-codestyle.sh`.
 - Add any targeted tests if behavior changed.
 - Run `pnpm test:deep` when runtime/artifact behavior changed or when deeper promotion evidence is required.
+- For CodeRabbit learning evidence imports, prove the exact command surface with a fixture-backed `harness learnings import --provider coderabbit-csv --source <csv> --repo <repo> --json` path, prove exact-file or explicit path-prefix enforcement with `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <files> --json`, prove high-usage promotion reporting with `harness learnings promote --source .harness/learnings/coderabbit.local.json --min-usage 25 --json`, prove review context with `harness review-context --source .harness/learnings/coderabbit.local.json --files <files> --json`, prove review-gate consumption with `harness review-gate --review-context artifacts/review-context/pr-context.json --require-review-context --json`, prove validation guidance with `harness validation-plan --source .harness/learnings/coderabbit.local.json --files <files> --json`, prove generated-artifact provenance with `harness artifact-gate --files <files> --json`, and prove CI ownership with `harness ci-ownership-gate --json` before treating matched learnings as review-blocking context.
+- For existing-repo harness upgrades, use `pnpm test:harness-upgrade-matrix -- <repo>...` after `pnpm build` to prove `init --update --dry-run --json` emits valid update evidence (`updateMode`, `trackedManifest`, `updated`, `skipped`, `updateDetails`) without mutating target git status. For operator-facing current-repo previews, prefer `harness upgrade --dry-run --json`; it delegates to the same safe update/adoption preview contract.
 - Keep validation evidence explicit that `scripts/validate-codestyle.sh` sanitizes hook-exported `GIT_*` values before nested `pnpm run` calls, rather than assuming inherited hook env is safe.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
 - When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
 - For this repository, keep `## Testing` in the PR body structured with `verification_commands`, `verification_outcomes`, and `blocked_steps_reason` so CodeRabbit can evaluate validation evidence deterministically.
+- For pull-requested work with changed files that can be evaluated against imported CodeRabbit learning evidence, treat the north-star learning loop as a closeout check: run or explicitly mark `n.a.` for `harness learnings gate`, `harness review-context`, and `harness north-star-feedback` in the PR template evidence.
 - When running `harness linear*` commands (locally or in CI), set `LINEAR_API_KEY` in the runtime environment or pass `--token`, and load `~/.codex/.env` into the active shell/session when secrets are stored there.
 - Run `harness symphony-check` as part of validation evidence when Linear secret discovery behavior changed, so `LINEAR_API_KEY` discovery is explicitly verified.
+
+### North-star learning loop closeout
+
+Use this closeout when a PR touches code, docs, governance, CI, generated artifacts, scaffold defaults, or review policy surfaces that can be matched against imported learning evidence.
+
+Required evidence:
+
+1. Run `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, or mark `n.a.` when no local learning artifact exists for the repo.
+2. Run `harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, or mark `n.a.` when no learning artifact exists or the change is outside review-context scope.
+3. Run `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json`, or mark `n.a.` when no learning artifact exists.
+4. Promote any high-usage repeated learning only when the finding has a concrete enforcement destination: validator, gate, scaffold regression, generated-artifact rule, review-context fact, or explicit exception.
+5. Promote the durable distilled rule, decision, or explicit skip reason into Project Brain when the learning affects future planning or agent behavior; keep the imported learning artifact as operational evidence rather than copying every row into Project Brain.
+
+The `--files` value accepts comma-separated paths or multiple following path tokens.
+
+The purpose is to keep repeated review learning load-bearing. A PR should not claim north-star alignment only because it added policy prose; it should show which learning evidence was checked, enforced, measured, or consciously excluded.
 
 ### Process/agent instruction edits
 
@@ -159,6 +179,8 @@ For each gate run, include:
 ## Non-code verification options
 
 When dependency tooling is unavailable, run the strongest alternative checks possible and mark explicitly that the full gate is environment-blocked.
+
+For local CodeRabbit CSV imports, distinguish evidence preparation from enforcement. The Phase 1A import path can produce `.harness/learnings/coderabbit.local.json`, the Phase 1B gate can enforce exact-file and explicit path-prefix matches, the Phase 1C promotion report can identify high-usage learnings that deserve permanent rules or exceptions, Phase 3 can generate advisory review-context and validation-plan output from changed files, and Phase 4 can check generated artifact provenance with `.harness/artifact-provenance.json` plus CI ownership with `harness.contract.json`. Phase 4c scaffold-default promotion is enforced through generated-template regression coverage for auth-free `.npmrc`, repo-local harness wrappers, real codestyle templates, wrapper-first readiness checks, first-class `toolingPolicy`, and Codex environment action sync. Review-gate can consume `review-context/v1` artifacts in advisory mode and can require current review context only when `reviewPolicy.requireReviewContext` or `--require-review-context` is explicitly enabled. Keyword-only fuzzy matches remain advisory measurement data and must not block until false-positive behavior justifies a future policy change.
 
 ## Failure handling
 

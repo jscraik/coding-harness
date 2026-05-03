@@ -1,6 +1,6 @@
 import type { CommandSpec } from "./types.js";
 
-export const COMMAND_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v1";
+export const COMMAND_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v2";
 
 /** High-level grouping used by command help and machine-readable catalogs. */
 export type CommandCategory =
@@ -40,6 +40,15 @@ export type CommandMutability = "read" | "write";
 /** How safely an agent can retry a command after failure or interruption. */
 export type CommandRetryability = "safe" | "conditional" | "manual";
 
+/** Default discovery tier for human help and agent routing. */
+export type CommandTier = "cockpit" | "domain" | "plumbing" | "legacy";
+
+/** Primary consumer for a command capability. */
+export type CommandPrimaryAudience = "agent" | "human" | "both";
+
+/** Cockpit commands that may orchestrate or recommend expert commands. */
+export type CommandOrchestrator = "next" | "pr-ready" | "fix-review" | "learn";
+
 /** Machine-readable capability metadata for one registry command. */
 export interface CommandCapability {
 	name: string;
@@ -52,6 +61,9 @@ export interface CommandCapability {
 	expectedArtifacts: string[];
 	retryability: CommandRetryability;
 	safeFirstAlternatives: string[];
+	tier: CommandTier;
+	primaryAudience: CommandPrimaryAudience;
+	orchestratedBy: CommandOrchestrator[];
 }
 
 /** Versioned command capability catalog emitted by `harness commands --json`. */
@@ -67,6 +79,7 @@ const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	init: "bootstrap-governance",
 	eject: "bootstrap-governance",
 	check: "bootstrap-governance",
+	next: "bootstrap-governance",
 	doctor: "bootstrap-governance",
 	audit: "bootstrap-governance",
 	brain: "bootstrap-governance",
@@ -92,6 +105,8 @@ const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	"check-authz": "review-policy",
 	"check-environment": "review-policy",
 	"local-memory-preflight": "review-policy",
+	"artifact-gate": "review-policy",
+	"ci-ownership-gate": "review-policy",
 	"blast-radius": "review-policy",
 	"risk-tier": "review-policy",
 	"diff-budget": "review-policy",
@@ -116,6 +131,10 @@ const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	"tooling-audit": "drift-search-evidence",
 	gardener: "drift-search-evidence",
 	"context-health": "drift-search-evidence",
+	learnings: "drift-search-evidence",
+	"north-star-feedback": "drift-search-evidence",
+	"review-context": "drift-search-evidence",
+	"validation-plan": "drift-search-evidence",
 	search: "drift-search-evidence",
 	context: "drift-search-evidence",
 	"source-outline": "drift-search-evidence",
@@ -138,24 +157,32 @@ const WRITE_COMMANDS = new Set<string>([
 	"gap-case",
 	"remediate",
 	"pilot-rollback",
+	"learnings",
 ]);
 
 const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
 	"blast-radius": ["--files"],
+	"artifact-gate": ["--files"],
 	"review-gate": ["--token", "--owner", "--repo", "--pr", "--sha"],
 	"workflow:generate": ["--source"],
 	"linear-gate": ["--branch", "--pr-title", "--pr-body"],
+	"review-context": ["--files"],
+	"validation-plan": ["--files"],
 };
 
 const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 	"check-environment": ["artifacts/policy/environment-attestation.json"],
 	"context-health": ["artifacts/context-integrity/index-source-inventory.json"],
 	"ci-migrate": [".harness/ci-provider-transition-status.json"],
+	"artifact-gate": [".harness/artifact-provenance.json"],
+	"ci-ownership-gate": ["harness.contract.json"],
+	"review-context": ["artifacts/review-context/pr-context.json"],
 };
 
 const RETRYABILITY_BY_NAME: Partial<Record<string, CommandRetryability>> = {
 	commands: "safe",
 	check: "safe",
+	next: "safe",
 	doctor: "safe",
 	health: "safe",
 	audit: "safe",
@@ -185,6 +212,78 @@ const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<Record<string, string[]>> = {
 	"automation-run": ["check --json"],
 };
 
+const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
+	check: "cockpit",
+	next: "cockpit",
+
+	init: "domain",
+	contract: "domain",
+	"review-gate": "domain",
+	"docs-gate": "domain",
+	"ci-migrate": "domain",
+	linear: "domain",
+	"validation-plan": "domain",
+	"review-context": "domain",
+
+	"drift-gate": "plumbing",
+	"artifact-gate": "plumbing",
+	"source-outline": "plumbing",
+	"index-context": "plumbing",
+	replay: "plumbing",
+	simulate: "plumbing",
+	"policy-gate": "plumbing",
+	"preflight-gate": "plumbing",
+	"plan-gate": "plumbing",
+	"brainstorm-gate": "plumbing",
+	"prompt-gate": "plumbing",
+	"pr-template-gate": "plumbing",
+	"license-gate": "plumbing",
+	"check-authz": "plumbing",
+	"check-environment": "plumbing",
+	"local-memory-preflight": "plumbing",
+	"ci-ownership-gate": "plumbing",
+	"blast-radius": "plumbing",
+	"risk-tier": "plumbing",
+	"diff-budget": "plumbing",
+	"observability-gate": "plumbing",
+	"silent-error": "plumbing",
+	"memory-gate": "plumbing",
+};
+
+const PRIMARY_AUDIENCE_BY_NAME: Partial<
+	Record<string, CommandPrimaryAudience>
+> = {
+	commands: "agent",
+	check: "both",
+	next: "agent",
+	doctor: "both",
+	health: "both",
+	"review-gate": "agent",
+	"docs-gate": "agent",
+	"validation-plan": "agent",
+	"review-context": "agent",
+	"source-outline": "agent",
+	"index-context": "agent",
+	search: "both",
+	context: "both",
+	linear: "human",
+};
+
+const ORCHESTRATED_BY_BY_NAME: Partial<Record<string, CommandOrchestrator[]>> =
+	{
+		next: [],
+		check: ["next"],
+		doctor: ["next"],
+		health: ["next"],
+		"review-gate": ["next", "pr-ready"],
+		"docs-gate": ["next", "pr-ready"],
+		"validation-plan": ["next", "pr-ready"],
+		"review-context": ["next", "pr-ready"],
+		"linear-gate": ["pr-ready"],
+		"north-star-feedback": ["learn"],
+		learnings: ["learn"],
+	};
+
 function getCommandCategory(name: string): CommandCategory {
 	const category = COMMAND_CATEGORY_BY_NAME[name];
 	if (!category) {
@@ -211,15 +310,29 @@ function getCommandRetryability(
 	return mutability === "read" ? "safe" : "conditional";
 }
 
+function getCommandTier(name: string, category: CommandCategory): CommandTier {
+	const explicit = COMMAND_TIER_BY_NAME[name];
+	if (explicit) return explicit;
+	if (category === "bootstrap-governance" || category === "workflow-linear") {
+		return "domain";
+	}
+	return "plumbing";
+}
+
+function getCommandPrimaryAudience(name: string): CommandPrimaryAudience {
+	return PRIMARY_AUDIENCE_BY_NAME[name] ?? "both";
+}
+
 /** Convert a command registry spec into agent-consumable capability metadata. */
 export function toCommandCapability(spec: CommandSpec): CommandCapability {
 	const mutability = getCommandMutability(spec.name);
+	const category = getCommandCategory(spec.name);
 	return {
 		name: spec.name,
 		aliases: [...(spec.aliases ?? [])],
 		summary: spec.summary,
 		...(spec.example ? { example: spec.example } : {}),
-		category: getCommandCategory(spec.name),
+		category,
 		mutability,
 		requiredFlags: [...(REQUIRED_FLAGS_BY_NAME[spec.name] ?? [])],
 		expectedArtifacts: [...(EXPECTED_ARTIFACTS_BY_NAME[spec.name] ?? [])],
@@ -227,6 +340,9 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
 		safeFirstAlternatives: [
 			...(SAFE_FIRST_ALTERNATIVES_BY_NAME[spec.name] ?? []),
 		],
+		tier: getCommandTier(spec.name, category),
+		primaryAudience: getCommandPrimaryAudience(spec.name),
+		orchestratedBy: [...(ORCHESTRATED_BY_BY_NAME[spec.name] ?? [])],
 	};
 }
 

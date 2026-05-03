@@ -73,9 +73,9 @@ function writeDownstreamRepoFixture(
 	contract.branchProtection = {
 		requiredChecks,
 	};
+	contract.ciOwnership = undefined;
 	writeFileSync(contractPath, JSON.stringify(contract, null, 2), "utf-8");
 	writeFileSync(join(repoDir, "AGENTS.md"), "# AGENTS\n", "utf-8");
-	writeFileSync(join(repoDir, "CLAUDE.md"), "# CLAUDE\n", "utf-8");
 	const contributingContent =
 		options?.contributingMode === "inline"
 			? [
@@ -433,7 +433,7 @@ describe("control-plane artifacts", () => {
 			JSON.stringify({
 				status: "blocked",
 				contradictions: [],
-				missingRequiredSurfaces: ["CLAUDE.md"],
+				missingRequiredSurfaces: ["AGENTS.md"],
 				staleSurfaceRefs: [],
 				normalizationWarnings: [],
 			}),

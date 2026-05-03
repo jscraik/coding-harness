@@ -1,11 +1,18 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { runSmokeCycle } from "./local-memory-smoke.js";
 
+/**
+ * Optional overrides for local-memory preflight execution paths.
+ */
 export interface LocalMemoryPreflightOptions {
 	configPath?: string;
 	daemonLogPath?: string;
 }
 
+/**
+ * Result payload for local-memory preflight checks.
+ */
 export interface LocalMemoryPreflightOutput {
 	passed: boolean;
 	messages: string[];
@@ -18,6 +25,8 @@ interface ParsedLocalMemoryConfig {
 	autoPortPolicyOk: boolean;
 	restHost: string;
 	restPort: number;
+	qdrantEnabled: boolean;
+	qdrantUrl: string;
 }
 
 const DEFAULT_CONFIG_PATH = `${process.env.HOME}/.local-memory/config.yaml`;
@@ -122,34 +131,61 @@ function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 	let autoPortPolicyOk = false;
 	let restHost = "127.0.0.1";
 	let restPort = 3002;
+	let inQdrantBlock = false;
+	let qdrantEnabled = false;
+	let qdrantUrl = "http://localhost:6333";
 
 	for (const line of lines) {
 		if (/^[\t ]*rest_api:[\t ]*$/.test(line)) {
 			inRestApiBlock = true;
+			inQdrantBlock = false;
+			continue;
+		}
+		if (/^[\t ]*qdrant:[\t ]*$/.test(line)) {
+			inQdrantBlock = true;
+			inRestApiBlock = false;
 			continue;
 		}
 		if (inRestApiBlock && /^[^ \t]/.test(line) && line.trim().length > 0) {
 			inRestApiBlock = false;
 		}
-		if (!inRestApiBlock) {
+		if (inQdrantBlock && /^[^ \t]/.test(line) && line.trim().length > 0) {
+			inQdrantBlock = false;
+		}
+		if (!inRestApiBlock && !inQdrantBlock) {
 			continue;
 		}
 
-		const hostMatch = line.match(/^[\t ]*host:[\t ]*"?([^"#]+)"?/);
-		if (hostMatch) {
-			restHost = hostMatch[1]?.trim() || restHost;
-			hostPolicyOk = restHost === "127.0.0.1";
+		if (inRestApiBlock) {
+			const hostMatch = line.match(/^[\t ]*host:[\t ]*["']?([^"'#]+)["']?/);
+			if (hostMatch) {
+				restHost = hostMatch[1]?.trim() || restHost;
+				hostPolicyOk = restHost === "127.0.0.1";
+				continue;
+			}
+
+			if (/^[\t ]*auto_port:[\t ]*false([\t ]*#.*)?$/.test(line)) {
+				autoPortPolicyOk = true;
+				continue;
+			}
+
+			const portMatch = line.match(/^[\t ]*port:[\t ]*([0-9]+)([\t ]*#.*)?$/);
+			if (portMatch?.[1]) {
+				restPort = Number.parseInt(portMatch[1], 10);
+			}
 			continue;
 		}
 
-		if (/^[\t ]*auto_port:[\t ]*false([\t ]*#.*)?$/.test(line)) {
-			autoPortPolicyOk = true;
-			continue;
-		}
+		if (inQdrantBlock) {
+			if (/^[\t ]*enabled:[\t ]*["']?true["']?([\t ]*#.*)?$/.test(line)) {
+				qdrantEnabled = true;
+				continue;
+			}
 
-		const portMatch = line.match(/^[\t ]*port:[\t ]*([0-9]+)/);
-		if (portMatch?.[1]) {
-			restPort = Number.parseInt(portMatch[1], 10);
+			const urlMatch = line.match(/^[\t ]*url:[\t ]*["']?([^"'#]+)["']?/);
+			if (urlMatch) {
+				qdrantUrl = (urlMatch[1]?.trim() || qdrantUrl).replace(/\/+$/, "");
+			}
 		}
 	}
 
@@ -158,6 +194,8 @@ function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 		autoPortPolicyOk,
 		restHost,
 		restPort,
+		qdrantEnabled,
+		qdrantUrl,
 	};
 }
 
@@ -321,13 +359,10 @@ function isHealthSuccessPayload(payload: unknown): boolean {
 }
 
 /**
- * Determines whether a parsed API/service payload should be considered successful.
+ * Determine whether a parsed API/service payload should be considered successful.
  *
- * If the payload is an object and contains a boolean `success` property, that value is used;
- * otherwise any object payload is treated as successful. Non-object or falsy payloads are treated as failures.
- *
- * @param payload - The value to inspect for an explicit `success` boolean or implicit success.
- * @returns `true` if the payload represents success, `false` otherwise.
+ * @param payload - The payload to evaluate; may be any value parsed from a service response.
+ * @returns `true` if `payload` is an object and either has a boolean `success` property equal to `true` or has no `success` property; `false` otherwise.
  */
 function isSuccessPayload(payload: unknown): boolean {
 	if (!payload || typeof payload !== "object") {
@@ -338,6 +373,26 @@ function isSuccessPayload(payload: unknown): boolean {
 		return record.success;
 	}
 	return true;
+}
+
+/**
+ * Checks whether an object matches the expected Qdrant collections response shape.
+ *
+ * @returns `true` if `payload` is an object, `status` is not a string other than `"ok"`, `result` is an object, and `result.collections` is an array; `false` otherwise.
+ */
+function isQdrantCollectionsPayload(payload: unknown): boolean {
+	if (!payload || typeof payload !== "object") {
+		return false;
+	}
+	const record = payload as Record<string, unknown>;
+	if (typeof record.status === "string" && record.status !== "ok") {
+		return false;
+	}
+	if (!record.result || typeof record.result !== "object") {
+		return false;
+	}
+	const result = record.result as Record<string, unknown>;
+	return Array.isArray(result.collections);
 }
 
 /**
@@ -367,39 +422,36 @@ async function waitForLocalMemoryHealth(
 	return undefined;
 }
 
-/**
- * Verifies a local "local-memory" installation and runs a full smoke test.
- *
- * Performs these high-level checks and actions: confirms the `local-memory` binary and reports its version; validates REST-related config policy (`rest_api.host` must be `127.0.0.1` and `auto_port: false`); probes daemon status (may attempt to start the daemon and wait for health); ensures the REST `/api/v1/health` endpoint reports success; exercises a smoke cycle (POST two observations, create a relationship, and verify search returns the probe); validates rejection of a malformed observe payload and records duplicate-observe behavior; and optionally scans the daemon log tail for migration/version markers. On any fatal check the function returns early with a failing result and an ordered list of human-readable messages.
- *
- * @param options - Optional overrides: `configPath` to use a non-default local-memory YAML config, and `daemonLogPath` to inspect a non-default daemon log file.
- * @returns A result object containing `passed` (true only if all checks and the smoke cycle succeeded), an ordered `messages` array describing each step and any errors, and optionally `healthUrl` and `version` when available.
- */
-export async function runLocalMemoryPreflight(
-	options: LocalMemoryPreflightOptions = {},
-): Promise<LocalMemoryPreflightOutput> {
-	const messages: string[] = [];
-	const configPath = options.configPath ?? DEFAULT_CONFIG_PATH;
-	const daemonLogPath = options.daemonLogPath ?? DEFAULT_DAEMON_LOG_PATH;
-
-	const fail = (
-		message: string,
-		extra?: { healthUrl?: string; version?: string },
-	): LocalMemoryPreflightOutput => {
-		messages.push(`❌ ${message}`);
-		return {
+/** Builds a preflight failure result. */
+function failOutput(
+	messages: string[],
+	message: string,
+	extra: { healthUrl?: string; version?: string } = {},
+): { ok: false; output: LocalMemoryPreflightOutput } {
+	messages.push(`❌ ${message}`);
+	return {
+		ok: false,
+		output: {
 			passed: false,
 			messages,
-			...(extra?.healthUrl ? { healthUrl: extra.healthUrl } : {}),
-			...(extra?.version ? { version: extra.version } : {}),
-		};
+			...(extra.healthUrl ? { healthUrl: extra.healthUrl } : {}),
+			...(extra.version ? { version: extra.version } : {}),
+		},
 	};
+}
 
-	messages.push("== Local Memory Preflight ==");
-
+/** Probes the local-memory binary and config. */
+async function probeBinaryAndConfig(
+	options: LocalMemoryPreflightOptions,
+	messages: string[],
+): Promise<
+	| { ok: false; output: LocalMemoryPreflightOutput }
+	| { ok: true; version: string; parsedConfig: ParsedLocalMemoryConfig }
+> {
+	const configPath = options.configPath ?? DEFAULT_CONFIG_PATH;
 	const versionProbe = commandOutput("local-memory", ["--version"]);
 	if (!versionProbe.ok) {
-		return fail("missing binary: local-memory");
+		return failOutput(messages, "missing binary: local-memory");
 	}
 	const version = versionProbe.output.replace(/\r/g, "");
 	messages.push(`local-memory version: ${version}`);
@@ -409,53 +461,84 @@ export async function runLocalMemoryPreflight(
 		messages.push(
 			"   Set LOCAL_MEMORY_CONFIG_PATH if your config lives elsewhere.",
 		);
-		return { passed: false, messages, version };
+		return { ok: false, output: { passed: false, messages, version } };
 	}
 
 	const parsedConfig = parseConfig(configPath);
 	if (!parsedConfig.hostPolicyOk) {
-		messages.push(
-			"❌ local-memory config host policy failed: expected host: 127.0.0.1",
-		);
 		messages.push(`   file: ${configPath}`);
-		return { passed: false, messages, version };
+		return failOutput(
+			messages,
+			"local-memory config host policy failed: expected host: 127.0.0.1",
+			{ version },
+		);
 	}
 	if (!parsedConfig.autoPortPolicyOk) {
-		messages.push(
-			"❌ local-memory config auto_port policy failed: expected auto_port: false",
-		);
 		messages.push(`   file: ${configPath}`);
-		return { passed: false, messages, version };
+		return failOutput(
+			messages,
+			"local-memory config auto_port policy failed: expected auto_port: false",
+			{ version },
+		);
 	}
 	messages.push(`✅ config host/auto_port policy ok: ${configPath}`);
 
 	if (!Number.isInteger(parsedConfig.restPort)) {
-		return fail(`invalid rest_api_port from config: ${parsedConfig.restPort}`, {
-			version,
-		});
+		return failOutput(
+			messages,
+			`invalid rest_api_port from config: ${parsedConfig.restPort}`,
+			{ version },
+		);
 	}
 
+	return { ok: true, version, parsedConfig };
+}
+
+/**
+ * Ensure the local-memory daemon is running and its REST health endpoint reports success.
+ *
+ * This function may append informational, warning, or error lines to the provided `messages` array
+ * while probing and attempting to start the daemon.
+ *
+ * @param parsedConfig - Parsed local-memory configuration containing REST host and port (and related flags).
+ * @param messages - Mutable array used to accumulate human-readable probe messages; this function appends to it.
+ * @param version - The detected local-memory binary version used for context in failure messages.
+ * @returns On success: an object with `healthUrl` and the parsed `healthJson`. On failure: an object containing a `LocalMemoryPreflightOutput` describing the failure and accumulated messages.
+ */
+async function ensureDaemonHealth(
+	parsedConfig: ParsedLocalMemoryConfig,
+	messages: string[],
+	version: string,
+): Promise<
+	| { ok: false; output: LocalMemoryPreflightOutput }
+	| { ok: true; healthUrl: string; healthJson: unknown }
+> {
 	const healthUrl = `http://${parsedConfig.restHost}:${parsedConfig.restPort}/api/v1/health`;
 	const statusProbe = commandOutput("local-memory", ["status", "--json"]);
 	if (!statusProbe.ok) {
-		return fail("local-memory status failed", { healthUrl, version });
+		return failOutput(messages, "local-memory status failed", {
+			healthUrl,
+			version,
+		});
 	}
 
 	const statusJsonLine = extractLastJsonLine(statusProbe.output);
 	if (!statusJsonLine) {
-		return fail("local-memory status returned no JSON payload", {
-			healthUrl,
-			version,
-		});
+		return failOutput(
+			messages,
+			"local-memory status returned no JSON payload",
+			{ healthUrl, version },
+		);
 	}
 	const statusJson = parseJson<Record<string, unknown>>(statusJsonLine);
 	if (!statusJson) {
-		return fail("local-memory status returned invalid JSON payload", {
-			healthUrl,
-			version,
-		});
+		return failOutput(
+			messages,
+			"local-memory status returned invalid JSON payload",
+			{ healthUrl, version },
+		);
 	}
-	let running =
+	const running =
 		statusJson.data &&
 		typeof statusJson.data === "object" &&
 		"running" in statusJson.data
@@ -470,7 +553,6 @@ export async function runLocalMemoryPreflight(
 				messages.push(
 					`ℹ️ local-memory status drift detected; using REST health at ${healthUrl} as source of truth`,
 				);
-				running = true;
 				healthJson = healthResponse.json;
 			}
 		} catch {
@@ -478,7 +560,7 @@ export async function runLocalMemoryPreflight(
 		}
 	}
 
-	if (!running) {
+	if (!running && !healthJson) {
 		messages.push(
 			"⚠️ local-memory status reported stopped; attempting daemon start",
 		);
@@ -489,11 +571,13 @@ export async function runLocalMemoryPreflight(
 					"⚠️ local-memory start reported sandbox pidfile limits; continuing with REST health probe",
 				);
 			} else {
-				messages.push("❌ local-memory start failed");
 				if (startProbe.output) {
 					messages.push(startProbe.output);
 				}
-				return { passed: false, messages, healthUrl, version };
+				return failOutput(messages, "local-memory start failed", {
+					healthUrl,
+					version,
+				});
 			}
 		} else {
 			messages.push("✅ local-memory start command succeeded");
@@ -501,7 +585,8 @@ export async function runLocalMemoryPreflight(
 
 		healthJson = await waitForLocalMemoryHealth(healthUrl, 12);
 		if (!healthJson) {
-			return fail(
+			return failOutput(
+				messages,
 				`local-memory daemon failed to become healthy at ${healthUrl} after start attempt`,
 				{ healthUrl, version },
 			);
@@ -513,199 +598,185 @@ export async function runLocalMemoryPreflight(
 			const healthResponse = await fetchJson(healthUrl);
 			healthJson = healthResponse.json;
 			if (!healthResponse.ok) {
-				return fail(`REST health endpoint unreachable at ${healthUrl}`, {
-					healthUrl,
-					version,
-				});
+				return failOutput(
+					messages,
+					`REST health endpoint unreachable at ${healthUrl}`,
+					{ healthUrl, version },
+				);
 			}
 		} catch {
-			return fail(`REST health endpoint unreachable at ${healthUrl}`, {
-				healthUrl,
-				version,
-			});
+			return failOutput(
+				messages,
+				`REST health endpoint unreachable at ${healthUrl}`,
+				{ healthUrl, version },
+			);
 		}
 	}
 
 	if (!isHealthSuccessPayload(healthJson)) {
-		return fail("REST health endpoint returned success=false", {
+		return failOutput(messages, "REST health endpoint returned success=false", {
 			healthUrl,
 			version,
 		});
 	}
 	messages.push(`✅ REST health ok: ${healthUrl}`);
 
-	const probe = `LM-PREFLIGHT-${new Date()
-		.toISOString()
-		.replace(/[-:]/g, "")
-		.replace(/\..+/, "")
-		.replace("T", "-")}-${process.pid}`;
-	const contentA = `Preflight anchor ${probe}`;
-	const contentB = `Preflight evidence ${probe}`;
+	return { ok: true, healthUrl, healthJson };
+}
+
+/**
+ * Probes the configured Qdrant HTTP endpoint when Qdrant is enabled in the parsed config and records the result.
+ *
+ * Appends informational or failure lines to `messages`. If Qdrant is enabled, attempts to fetch `<qdrantUrl>/collections`
+ * and validates the response shape; on failure returns a failing preflight output that includes accumulated messages
+ * and the provided `version`.
+ *
+ * @param parsedConfig - Parsed local-memory config containing `qdrantEnabled` and `qdrantUrl`
+ * @param messages - Mutable array used to collect human-readable preflight messages
+ * @param version - Local-memory binary version string to include in failure output
+ * @returns `{ ok: true }` on success, or `{ ok: false; output: LocalMemoryPreflightOutput }` when the backend is unreachable or returns an unexpected payload
+ */
+async function verifyQdrantBackend(
+	parsedConfig: ParsedLocalMemoryConfig,
+	messages: string[],
+	version: string,
+): Promise<{ ok: false; output: LocalMemoryPreflightOutput } | { ok: true }> {
+	if (!parsedConfig.qdrantEnabled) {
+		messages.push(
+			"ℹ️ qdrant disabled in local-memory config; skipping backend probe",
+		);
+		return { ok: true };
+	}
+
+	const collectionsUrl = `${parsedConfig.qdrantUrl}/collections`;
+	let response: { ok: boolean; status: number; json?: unknown };
+	try {
+		response = await fetchJson(collectionsUrl);
+	} catch {
+		return failOutput(
+			messages,
+			`qdrant backend unreachable at ${collectionsUrl}`,
+			{ version },
+		);
+	}
+
+	if (!response.ok || !isQdrantCollectionsPayload(response.json)) {
+		return failOutput(
+			messages,
+			`qdrant backend did not return a healthy collections payload at ${collectionsUrl}`,
+			{ version },
+		);
+	}
+
+	messages.push(`✅ qdrant backend ok: ${collectionsUrl}`);
+	return { ok: true };
+}
+
+/**
+ * Executes the smoke test cycle against the local-memory REST API and health endpoint.
+ *
+ * @param baseUrl - Base REST API URL (e.g., `http://127.0.0.1:3002/api/v1`)
+ * @param healthUrl - Full health endpoint URL used for health checks
+ * @param version - Reported local-memory version string
+ * @param messages - Mutable array that will be appended with diagnostic lines
+ * @returns An object with `ok: true` and a `probe` name on success, or `ok: false` and an `output` containing a `LocalMemoryPreflightOutput` on failure
+ */
+async function runSmokeCycleWithHelpers(
+	baseUrl: string,
+	healthUrl: string,
+	version: string,
+	messages: string[],
+): Promise<
+	| { ok: false; output: LocalMemoryPreflightOutput }
+	| { ok: true; probe: string }
+> {
+	return runSmokeCycle(baseUrl, healthUrl, version, messages, {
+		sleep,
+		fetchJson,
+		extractMemoryId,
+		extractRelationshipId,
+		getSearchHitCount,
+		isSuccessPayload,
+		failOutput,
+	});
+}
+
+/** Scans the daemon log tail for migration markers. */
+function scanDaemonLog(daemonLogPath: string, messages: string[]): void {
+	if (!existsSync(daemonLogPath)) {
+		messages.push(`ℹ️ daemon log not found at ${daemonLogPath}`);
+		return;
+	}
+
+	const daemonLogTail = readFileSync(daemonLogPath, "utf-8")
+		.split(/\r?\n/)
+		.slice(-300)
+		.join("\n");
+	if (
+		/"pending_migrations"|"target_version"|"current_version"/.test(
+			daemonLogTail,
+		)
+	) {
+		messages.push("ℹ️ migration status signal found in daemon log");
+	} else {
+		messages.push(
+			"ℹ️ no migration status signal found in recent daemon log tail",
+		);
+	}
+}
+
+/**
+ * Performs a comprehensive preflight of a local-memory installation, validating binary, config and daemon health, exercising a smoke test cycle, and optionally verifying a Qdrant backend and scanning daemon logs.
+ *
+ * @param options - Optional overrides: `configPath` to use a non-default local-memory YAML config, and `daemonLogPath` to inspect a non-default daemon log file.
+ * @returns An object with `passed` set to `true` only if all checks and the smoke cycle succeeded, an ordered `messages` array of human-readable steps and errors, and optionally `healthUrl` and `version` when available.
+ */
+export async function runLocalMemoryPreflight(
+	options: LocalMemoryPreflightOptions = {},
+): Promise<LocalMemoryPreflightOutput> {
+	const messages: string[] = [];
+	const daemonLogPath = options.daemonLogPath ?? DEFAULT_DAEMON_LOG_PATH;
+
+	messages.push("== Local Memory Preflight ==");
+
+	const probeResult = await probeBinaryAndConfig(options, messages);
+	if (!probeResult.ok) {
+		return probeResult.output;
+	}
+	const { version, parsedConfig } = probeResult;
+
+	const healthResult = await ensureDaemonHealth(
+		parsedConfig,
+		messages,
+		version,
+	);
+	if (!healthResult.ok) {
+		return healthResult.output;
+	}
+	const { healthUrl } = healthResult;
+
 	const baseUrl = `http://${parsedConfig.restHost}:${parsedConfig.restPort}/api/v1`;
 
-	const observePayloadA = {
-		content: contentA,
-		domain: "coding-harness",
-		source: "codex_preflight",
-		tags: ["preflight", "local-memory"],
-	};
-	const observePayloadB = {
-		content: contentB,
-		domain: "coding-harness",
-		source: "codex_preflight",
-		tags: ["preflight", "local-memory"],
-	};
-
-	const observeA = await fetchJson(`${baseUrl}/observe`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(observePayloadA),
-	});
-	if (!observeA.ok) {
-		return fail(`observe A returned HTTP ${observeA.status}`, {
-			healthUrl,
-			version,
-		});
-	}
-	const observeB = await fetchJson(`${baseUrl}/observe`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(observePayloadB),
-	});
-	if (!observeB.ok) {
-		return fail(`observe B returned HTTP ${observeB.status}`, {
-			healthUrl,
-			version,
-		});
-	}
-
-	const idA = extractMemoryId(observeA.json);
-	const idB = extractMemoryId(observeB.json);
-	if (!idA || !idB) {
-		return fail("observe returned no memory IDs", { healthUrl, version });
-	}
-
-	const relatePayload = {
-		source_memory_id: idA,
-		target_memory_id: idB,
-		relationship_type: "references",
-		strength: 0.8,
-		context: "codex preflight smoke cycle",
-	};
-
-	let relationshipResponse = await fetchJson(`${baseUrl}/relationships`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(relatePayload),
-	});
-	if (!relationshipResponse.ok) {
-		relationshipResponse = await fetchJson(`${baseUrl}/relate`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(relatePayload),
-		});
-	}
-	if (!relationshipResponse.ok) {
-		return fail(
-			`relationship create returned HTTP ${relationshipResponse.status}`,
-			{ healthUrl, version },
-		);
-	}
-	if (!isSuccessPayload(relationshipResponse.json)) {
-		return fail("relate reported failure", { healthUrl, version });
-	}
-
-	const relationshipId = extractRelationshipId(relationshipResponse.json);
-	const searchPayload = {
-		query: probe,
-		limit: 10,
-		response_format: "ids_only",
-	};
-
-	let searchHits = 0;
-	for (let attempt = 1; attempt <= 5; attempt += 1) {
-		const searchResponse = await fetchJson(`${baseUrl}/memories/search`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(searchPayload),
-		});
-		if (!searchResponse.ok) {
-			return fail(`search returned HTTP ${searchResponse.status}`, {
-				healthUrl,
-				version,
-			});
-		}
-		searchHits = getSearchHitCount(searchResponse.json);
-		if (searchHits >= 1) {
-			break;
-		}
-		await sleep(200);
-	}
-	if (searchHits < 1) {
-		return fail(`search returned no results for probe ${probe}`, {
-			healthUrl,
-			version,
-		});
-	}
-
-	messages.push(
-		`✅ smoke cycle ok: ids ${idA}, ${idB}; relationship ${relationshipId ?? "unknown"}`,
+	const qdrantResult = await verifyQdrantBackend(
+		parsedConfig,
+		messages,
+		version,
 	);
-
-	const malformedResponse = await fetchJson(`${baseUrl}/observe`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ level: "observation" }),
-	});
-	if (malformedResponse.status < 400) {
-		return fail(
-			`malformed payload did not return an error (HTTP ${malformedResponse.status})`,
-			{ healthUrl, version },
-		);
+	if (!qdrantResult.ok) {
+		return qdrantResult.output;
 	}
-	messages.push(
-		`✅ malformed payload rejected: HTTP ${malformedResponse.status}`,
-	);
 
-	const duplicatePayload = {
-		content: contentA,
-		domain: "coding-harness",
-		source: "codex_preflight",
-		tags: ["preflight", "duplicate-check"],
-	};
-	const duplicateOne = await fetchJson(`${baseUrl}/observe`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(duplicatePayload),
-	});
-	const duplicateTwo = await fetchJson(`${baseUrl}/observe`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(duplicatePayload),
-	});
-	messages.push(
-		`ℹ️ duplicate behavior snapshot: first=${duplicateOne.status}, second=${duplicateTwo.status}`,
+	const smokeResult = await runSmokeCycleWithHelpers(
+		baseUrl,
+		healthUrl,
+		version,
+		messages,
 	);
-
-	if (existsSync(daemonLogPath)) {
-		const daemonLogTail = readFileSync(daemonLogPath, "utf-8")
-			.split(/\r?\n/)
-			.slice(-300)
-			.join("\n");
-		if (
-			/"pending_migrations"|"target_version"|"current_version"/.test(
-				daemonLogTail,
-			)
-		) {
-			messages.push("ℹ️ migration status signal found in daemon log");
-		} else {
-			messages.push(
-				"ℹ️ no migration status signal found in recent daemon log tail",
-			);
-		}
-	} else {
-		messages.push(`ℹ️ daemon log not found at ${daemonLogPath}`);
+	if (!smokeResult.ok) {
+		return smokeResult.output;
 	}
+
+	scanDaemonLog(daemonLogPath, messages);
 
 	messages.push("✅ local-memory preflight passed");
 	return {

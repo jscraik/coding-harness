@@ -127,6 +127,59 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 export { parseIntegerArg, parseCsvList };
 
 /**
+ * Attempt fuzzy command resolution and dispatch if a match is found.
+ *
+ * @returns `true` if fuzzy dispatch occurred and process termination has been scheduled
+ */
+function tryFuzzyDispatch(
+	command: string | undefined,
+	dispatchArgs: string[],
+	allowFuzzy: boolean,
+	jsonFlag: boolean,
+): boolean {
+	if (!command || !allowFuzzy) {
+		return false;
+	}
+	const fuzzy = fuzzyFindCommand(command);
+	if (!fuzzy) {
+		return false;
+	}
+	// Emit a correction note on stderr (keeps stdout JSON pristine for agents)
+	const note = `harness: "${command}" interpreted as "${fuzzy.spec.name}" — use the canonical name in future calls.`;
+	if (jsonFlag) {
+		process.stderr.write(
+			`${JSON.stringify({
+				_agent_correction: true,
+				received: command,
+				interpreted_as: fuzzy.spec.name,
+				note: `Use "${fuzzy.spec.name}" in future calls.`,
+			})}\n`,
+		);
+	} else {
+		process.stderr.write(`${note}\n`);
+	}
+	// Re-dispatch with the canonical name
+	const correctedArgs = [fuzzy.spec.name, ...dispatchArgs.slice(1)];
+	const correctedDispatch = dispatchRegistryCommand(
+		fuzzy.spec.name,
+		correctedArgs,
+	);
+	if (correctedDispatch) {
+		if (correctedDispatch.result instanceof Promise) {
+			correctedDispatch.result
+				.then((exitCode) => process.exit(exitCode))
+				.catch((error) =>
+					handleFatalError(correctedDispatch.spec.errorLabel, error),
+				);
+			return true;
+		}
+		process.exit(correctedDispatch.result);
+		return true;
+	}
+	return false;
+}
+
+/**
  * Dispatches a CLI command from the provided argv slice and exits with the command's exit code.
  *
  * Handles top-level flags (`--version`, `--help`), performs exact and fuzzy registry dispatch, prints usage
@@ -200,43 +253,14 @@ export function run(args: string[]): void {
 		return;
 	}
 
-	// No exact match — try fuzzy resolution
-	if (command && allowFuzzy) {
-		const fuzzy = fuzzyFindCommand(command);
-		if (fuzzy) {
-			// Emit a correction note on stderr (keeps stdout JSON pristine for agents)
-			const note = `harness: "${command}" interpreted as "${fuzzy.spec.name}" — use the canonical name in future calls.`;
-			if (jsonFlag) {
-				process.stderr.write(
-					`${JSON.stringify({
-						_agent_correction: true,
-						received: command,
-						interpreted_as: fuzzy.spec.name,
-						note: `Use "${fuzzy.spec.name}" in future calls.`,
-					})}\n`,
-				);
-			} else {
-				process.stderr.write(`${note}\n`);
-			}
-			// Re-dispatch with the canonical name
-			const correctedArgs = [fuzzy.spec.name, ...dispatchArgs.slice(1)];
-			const correctedDispatch = dispatchRegistryCommand(
-				fuzzy.spec.name,
-				correctedArgs,
-			);
-			if (correctedDispatch) {
-				if (correctedDispatch.result instanceof Promise) {
-					correctedDispatch.result
-						.then((exitCode) => process.exit(exitCode))
-						.catch((error) =>
-							handleFatalError(correctedDispatch.spec.errorLabel, error),
-						);
-					return;
-				}
-				process.exit(correctedDispatch.result);
-				return;
-			}
-		}
+	const fuzzyDispatch = tryFuzzyDispatch(
+		command,
+		dispatchArgs,
+		allowFuzzy,
+		jsonFlag,
+	);
+	if (fuzzyDispatch) {
+		return;
 	}
 	if (command) {
 		// No match at all — rich error message with suggestions
@@ -293,6 +317,13 @@ function canonicalizeExecutablePath(filePath: string): string {
 	}
 }
 
+/**
+ * Detects whether this module is being executed directly as the CLI entrypoint.
+ *
+ * @param entrypoint - Process entrypoint path
+ * @param moduleUrl - Current module URL
+ * @returns True when running as the direct executable module
+ */
 export function isDirectExecution(
 	entrypoint = process.argv[1],
 	moduleUrl = import.meta.url,

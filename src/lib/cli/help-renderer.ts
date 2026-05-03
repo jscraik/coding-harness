@@ -3,14 +3,17 @@ import {
 	COMMAND_CATEGORY_ORDER,
 } from "./registry/command-capabilities.js";
 
+/** Minimal command metadata needed to render human-facing CLI help. */
 export interface CommandHelpRow {
 	name: string;
 	summary: string;
 	category?: string;
+	tier?: string;
 }
 
 const COMMAND_COLUMN_WIDTH = 24;
 
+/** Return help rows with duplicate command names removed while preserving order. */
 export function dedupeCommandHelpRows(
 	rows: CommandHelpRow[],
 ): CommandHelpRow[] {
@@ -26,6 +29,7 @@ export function dedupeCommandHelpRows(
 	return deduped;
 }
 
+/** Render a flat command list for full help output. */
 export function renderCommandHelpRows(rows: CommandHelpRow[]): string[] {
 	const deduped = dedupeCommandHelpRows(rows);
 	return deduped.map((row) => {
@@ -34,11 +38,16 @@ export function renderCommandHelpRows(rows: CommandHelpRow[]): string[] {
 	});
 }
 
+/** Render focused help with cockpit commands first, followed by category groups. */
 export function renderGroupedCommandHelpRows(rows: CommandHelpRow[]): string[] {
 	const deduped = dedupeCommandHelpRows(rows);
 	const grouped = new Map<string, CommandHelpRow[]>();
+	const cockpitRows = deduped.filter((row) => row.tier === "cockpit");
 
 	for (const row of deduped) {
+		if (row.tier === "cockpit") {
+			continue;
+		}
 		const category = row.category ?? "uncategorized";
 		const existing = grouped.get(category);
 		if (existing) {
@@ -59,12 +68,19 @@ export function renderGroupedCommandHelpRows(rows: CommandHelpRow[]): string[] {
 	);
 
 	const lines: string[] = [];
+	if (cockpitRows.length > 0) {
+		lines.push("  Agent Cockpit:");
+		for (const row of cockpitRows) {
+			const paddedName = row.name.padEnd(COMMAND_COLUMN_WIDTH, " ");
+			lines.push(`    ${paddedName} ${row.summary}`);
+		}
+	}
 	for (const [index, category] of orderedCategories.entries()) {
 		const categoryLabel =
 			COMMAND_CATEGORY_LABELS[
 				category as keyof typeof COMMAND_CATEGORY_LABELS
 			] ?? category;
-		if (index > 0) {
+		if (index > 0 || lines.length > 0) {
 			lines.push("");
 		}
 		lines.push(`  ${categoryLabel}:`);

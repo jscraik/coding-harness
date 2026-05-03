@@ -36,6 +36,10 @@ const ALLOWED_ABS_2 = join(homedir(), ".codex", "instructions", "CODESTYLE.md");
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PREFLIGHT_PATH = join(process.cwd(), "scripts/codex-preflight.sh");
+const LOCAL_MEMORY_FALLBACK_PATH = join(
+	process.cwd(),
+	"scripts/codex-preflight-local-memory-legacy.sh",
+);
 const SYNC_SCRIPT_PATH = join(
 	process.cwd(),
 	"scripts/sync-codex-preflight.cjs",
@@ -73,6 +77,26 @@ function runIsAllowedRepoExternalPath(
 	});
 
 	return result.status ?? 127;
+}
+
+function runExtractLocalMemoryQdrantValue(
+	configPath: string,
+	key: string,
+): ReturnType<typeof spawnSync> {
+	return spawnSync(
+		"bash",
+		[
+			"-c",
+			'source "$1"; extract_local_memory_qdrant_value "$2" "$3"',
+			"bash",
+			LOCAL_MEMORY_FALLBACK_PATH,
+			configPath,
+			key,
+		],
+		{
+			encoding: "utf8",
+		},
+	);
 }
 
 type SpawnEnv = Record<string, string | undefined>;
@@ -448,6 +472,33 @@ describe("codex-preflight.sh contract coverage", () => {
 
 		expectFallbackContracts(runtimeFallback);
 		expectFallbackContracts(templateFallback);
+	});
+
+	it("normalizes single-quoted qdrant values in the legacy Local Memory fallback", () => {
+		const root = mkdtempSync(join(tmpdir(), "codex-preflight-qdrant-"));
+		const configPath = join(root, "local-memory.yaml");
+		writeFileSync(
+			configPath,
+			[
+				"qdrant:",
+				"  enabled: 'true'",
+				"  url: 'http://127.0.0.1:6333'",
+				"",
+			].join("\n"),
+			"utf-8",
+		);
+
+		try {
+			const enabled = runExtractLocalMemoryQdrantValue(configPath, "enabled");
+			expect(enabled.status).toBe(0);
+			expect(String(enabled.stdout).trim()).toBe("true");
+
+			const url = runExtractLocalMemoryQdrantValue(configPath, "url");
+			expect(url.status).toBe(0);
+			expect(String(url.stdout).trim()).toBe("http://127.0.0.1:6333");
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
 	});
 
 	it("continues to the next harness runner when a Local Memory helper returns sentinel 3", () => {
