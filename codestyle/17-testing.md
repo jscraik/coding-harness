@@ -17,6 +17,7 @@
   - Unit tests for core logic.
   - Integration tests for boundary interactions.
   - End-to-end tests for critical user workflows when applicable.
+- This repository's TypeScript test runner is Vitest; keep unit, related, CI, coverage, e2e, and artifact checks routed through the package scripts unless a narrower documented invocation is needed for iteration.
 
 ## TDD default workflow
 1. Write a failing test (RED).
@@ -39,6 +40,7 @@
 
 ## Coverage and gates
 - Default target is >= 80% coverage unless a repository contract defines a different threshold.
+- Generated artifacts, init scaffolds, and runtime/output contracts require artifact or deep validation when their emitted behavior changes.
 - Repository-defined baseline gates are mandatory:
   - `pnpm lint`
   - `pnpm typecheck`

@@ -116,11 +116,15 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 
 ## 23. Config References (Authoritative)
 
-* ESLint: `eslint.config.mjs` (flat config)
-* Biome: `biome.json` (or repo equivalent)
+* Biome: `biome.json`
 * Vale: `.vale.ini`
+* Markdownlint: `.markdownlint-cli2.yaml`
 * Mise: `.mise.toml`
-* Rustfmt: `rustfmt.toml`
-* CI: `.github/workflows/*.yml`
+* TypeScript: `tsconfig.json`
+* Vitest: `vitest.config.ts` and `e2e/vitest.e2e.config.ts`
+* CircleCI: `.circleci/config.yml`
+* GitHub Actions release workflows: `.github/workflows/*.yml`
+* Semgrep/security policy: `semgrep*.yml` and repository security scripts where present
+* ESLint/Rustfmt: downstream-only unless the repository includes `eslint.config.*` or `rustfmt.toml`
 
 ---

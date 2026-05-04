@@ -47,6 +47,7 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 * Use `rg` not `grep` for project-wide search.
 * Prefer `fd` for file finding.
 * Use `jq` for JSON parsing/transformations.
+
 * For TypeScript-family source, agents MUST run
   `bash scripts/harness-cli.sh source-outline <path> --json` before reading full
   file bodies; agents SHOULD unwrap implementation only for the needed symbol
@@ -59,24 +60,25 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 
 ## 17. Security, Supply Chain & Compliance
 
-* Secrets MUST NOT be hard-coded; use environment injection or a secret manager.
-* All external inputs MUST be validated and sanitized.
+* No hard-coded secrets; use env injection/secret manager.
+* Validate/sanitize all external inputs.
 * Scanning per PR SHOULD include:
 
   * OSV / audits per ecosystem
   * Semgrep policy + OWASP
   * SBOM generation at release (CycloneDX)
   * provenance/signing (SLSA/in-toto + Sigstore) where applicable
-* Containers (if used) SHOULD use minimal base images, MUST run non-root, SHOULD use read-only filesystems, and SHOULD drop unnecessary capabilities.
+* Containers (if used): minimal base, non-root, read-only FS, drop caps.
 
 ---
 
 ## 18. Accessibility
 
-* Baseline MUST be WCAG 2.2 AA.
-* Full keyboard operation MUST be supported.
-* Screen reader compatibility MUST be supported.
-* CLI/TUI implementations MUST provide `--plain` and `--no-color` modes.
+* Baseline: WCAG 2.2 AA.
+* Full keyboard operation required.
+* Screen reader compatibility required.
+* CLI/TUI: `--plain` / `--no-color` modes required.
+
 ---
 
 ## 19. Observability, Logging & Streaming
@@ -114,12 +116,15 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 
 ## 23. Config References (Authoritative)
 
-* ESLint: `eslint.config.mjs` (flat config)
-* Biome: `biome.json` (or repo equivalent)
+* Biome: `biome.json`
 * Vale: `.vale.ini`
+* Markdownlint: `.markdownlint-cli2.yaml`
 * Mise: `.mise.toml`
-* Rustfmt: `rustfmt.toml`
-* CI: `.github/workflows/*.yml`
-* Rules of AI: `brainwav/governance/00-core/RULES_OF_AI.md`
+* TypeScript: `tsconfig.json`
+* Vitest: `vitest.config.ts` and `e2e/vitest.e2e.config.ts`
+* CircleCI: `.circleci/config.yml`
+* GitHub Actions release workflows: `.github/workflows/*.yml`
+* Semgrep/security policy: `semgrep*.yml` and repository security scripts where present
+* ESLint/Rustfmt: downstream-only unless the repository includes `eslint.config.*` or `rustfmt.toml`
 
 ---

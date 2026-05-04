@@ -6,11 +6,12 @@
 - [Vite](#vite)
 - [Tailwind](#tailwind)
 - [Storybook](#storybook)
+- [Apps SDK UI and chat widgets](#apps-sdk-ui-and-chat-widgets)
 - [Accessibility](#accessibility)
 - [Enforcement](#enforcement)
 
 ## Scope
-- This module covers web application standards for React, Vite, Tailwind, and Storybook surfaces.
+- This module covers web application standards for React, Vite, Tailwind, Storybook, Apps SDK UI, and chat widget surfaces.
 
 ## React
 - Web surfaces MUST use semantic HTML first; ARIA SHOULD be added only where semantics are insufficient.
@@ -33,6 +34,12 @@
 - Stories MUST use deterministic fixtures and MUST avoid hidden network calls.
 - Interaction and accessibility checks SHOULD stay enabled where applicable.
 - Storybook SHOULD be treated as behavior and visual contract documentation for reusable UI components.
+
+## Apps SDK UI and chat widgets
+- Apps SDK UI and chat widget work MUST use retrieval-led reasoning from current official/library docs before implementation.
+- Bridge contracts, message schemas, and component metadata MUST be explicit and tested at the boundary where host and widget exchange data.
+- Widget UI MUST degrade cleanly when host capabilities, auth state, network access, or embedded resources are unavailable.
+- Browser-targeted secrets MUST remain server-side; client bundles MUST receive only scoped, non-sensitive configuration.
 
 ## Accessibility
 - Interactive web surfaces MUST target WCAG 2.2 AA.

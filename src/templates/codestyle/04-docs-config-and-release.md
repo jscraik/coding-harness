@@ -9,21 +9,19 @@
 
 ## 10. Documentation & Prose (Vale)
 
-All docs and long-form prose MUST be linted with **Vale**.
+Authoritative repository docs MUST pass the configured documentation gates.
 
 ### Scope
 
-* `README.md`
-* `CONTRIBUTING.md`
-* `AGENTS.md`
-* `docs/**/*.md`
-
-Note: The scaffolded `scripts/check-doc-style.sh` hook enforces Vale checking on the above patterns only. For broader prose linting (e.g., `**/*.mdx`, `**/*.adoc`, `**/*.rst`), configure Vale directly via `.vale.ini` and run `vale` manually or extend the hook script.
+* `pnpm docs:lint` runs markdownlint over Markdown files selected by `.markdownlint-cli2.yaml`.
+* `scripts/check-doc-style.sh` runs Vale on staged authoritative docs: `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, and `docs/**/*.md`.
+* Other prose formats (MDX, AsciiDoc, reStructuredText) MUST declare their formatter/linter contract before becoming review-critical surfaces.
 
 ### Configuration
 
-* Repo root MUST include `.vale.ini`.
-* CI SHOULD run `vale sync` before Vale linting when Vale packages are configured.
+* Repo root MUST include `.vale.ini` when Vale is enabled.
+* CI or local validation SHOULD run `vale sync` before Vale linting when Vale packages are configured.
+* Markdown style MUST stay compatible with the repo markdownlint configuration.
 
 ### Severity
 
@@ -70,7 +68,7 @@ MDX:
 ### TOML
 
 * TOML files MUST be syntactically valid and formatted consistently.
-* Tool pinning files (e.g., `mise/config.toml`) are authoritative and MUST be reviewed like code.
+* Tool pinning files (for example `.mise.toml`) are authoritative and MUST be reviewed like code.
 * Validation MUST occur via the consuming tool in CI (mise/ruff/etc.), plus a syntax check if available.
 
 ---
