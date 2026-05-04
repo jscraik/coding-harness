@@ -187,6 +187,39 @@
 			}
 		},
 		{
+			"id": "review-feedback-eval-seed",
+			"type": "live_fixture",
+			"prompt": "Turn repeated late-stage review remediation noise into a deterministic future eval seed.",
+			"expected": {
+				"commands": [
+					"pnpm test:evals",
+					"node --import tsx --eval <eval-seed fixture>"
+				],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json",
+					"artifacts/evals/live-fixtures/review-feedback-eval-seed/eval-seed-pack.json"
+				],
+				"assertions": [
+					"repeated review learning becomes an eval seed candidate",
+					"seed stays attached to matched changed files and evidence refs",
+					"seed points to concrete target and regression surface",
+					"seed classifies repeated remediation signal",
+					"seed artifact writes inside the live fixture root"
+				],
+				"stopConditions": [
+					"Do not promote one-off review noise into eval coverage without repeated signal and a concrete file match."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 3,
+				"validation_sufficiency": 2,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 3
+			}
+		},
+		{
 			"id": "terse-review-request-routing",
 			"type": "registered",
 			"prompt": "Review my uncommitted changes and only fix verified findings.",

@@ -1,6 +1,6 @@
 {
 	"name": "@brainwav/coding-harness",
-	"version": "0.14.0",
+	"version": "0.15.0",
 	"files": [
 		"dist",
 		"scripts/codex-preflight.sh",
@@ -38,7 +38,6 @@
 	},
 	"scripts": {
 		"check": "pnpm lint && pnpm docs:lint && pnpm docs:ubiquitous:guard && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm test:related && pnpm test:ci && pnpm audit",
-
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && biome check .",
 		"lint:fix": "biome check . --write",
@@ -48,7 +47,7 @@
 		"test:ci": "bash scripts/test-ci.sh",
 		"test:watch": "vitest",
 		"test:deep": "pnpm check && pnpm test:artifacts",
-		"test:evals": "node scripts/run-harness-evals.mjs",
+		"test:evals": "node --import tsx scripts/run-harness-evals.mjs",
 		"test:harness-upgrade-matrix": "node scripts/test-harness-upgrade-matrix.mjs",
 		"test:integration": "pnpm vitest run src/commands/agent-first-throughput.integration.test.ts",
 		"test:e2e": "pnpm e2e",

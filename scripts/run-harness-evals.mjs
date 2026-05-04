@@ -8,7 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPO_ROOT = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -20,6 +20,13 @@ const DEFAULT_REGISTRY =
 const DEFAULT_OUTPUT = "artifacts/evals/result.json";
 const DEFAULT_OBSERVABILITY_OUTPUT = "artifacts/evals/braintrust-log-data.json";
 const DEFAULT_FIXTURE_ROOT = "artifacts/evals/live-fixtures";
+const VALIDATION_PLAN_MODULE_URL = pathToFileURL(
+	path.join(REPO_ROOT, "src/lib/learnings/validation-plan.ts"),
+).href;
+const EVAL_SEED_MODULE_URL = pathToFileURL(
+	path.join(REPO_ROOT, "src/lib/learnings/eval-seed.ts"),
+).href;
+const fixtureModuleCache = new Map();
 
 const SCORECARD_IDS = [
 	"command_routing",
@@ -79,7 +86,7 @@ const scenarios = Array.isArray(registry.scenarios) ? registry.scenarios : [];
 for (const scenario of scenarios.filter(
 	(item) => item && item.type === "live_fixture",
 )) {
-	liveFixtureResults.push(runLiveFixture(scenario));
+	liveFixtureResults.push(await runLiveFixture(scenario));
 }
 
 const scenarioResults = scenarios.map((scenario) => {
@@ -91,6 +98,7 @@ const scenarioResults = scenarios.map((scenario) => {
 		id: scenario.id,
 		type: scenario.type,
 		status,
+		durationMs: liveResult?.durationMs,
 		assertions:
 			liveResult?.assertions ??
 			normalizeArray(scenario.expected?.assertions).map((assertion) => ({
@@ -103,6 +111,16 @@ const scenarioResults = scenarios.map((scenario) => {
 const liveFixtureFailures = liveFixtureResults.filter(
 	(result) => result.status !== "pass",
 );
+const liveFixtureDurationMs = liveFixtureResults.reduce(
+	(total, item) => total + item.durationMs,
+	0,
+);
+const slowestLiveFixture = liveFixtureResults.reduce((slowest, item) => {
+	if (!slowest || item.durationMs > slowest.durationMs) {
+		return { id: item.id, durationMs: item.durationMs };
+	}
+	return slowest;
+}, null);
 const status =
 	findings.some((finding) => finding.severity === "error") ||
 	liveFixtureFailures.length > 0
@@ -119,6 +137,8 @@ const result = {
 		).length,
 		liveFixtures: liveFixtureResults.length,
 		liveFixtureFailures: liveFixtureFailures.length,
+		liveFixtureDurationMs: Number(liveFixtureDurationMs.toFixed(2)),
+		slowestLiveFixture,
 		findings: findings.length,
 		observabilityEntries: scenarios.length,
 	},
@@ -150,6 +170,7 @@ const observabilityEntries = scenarios.map((scenario) => {
 			registrySchemaVersion: registry.schemaVersion,
 			northStarGoal: registry.northStarGoal,
 			localOnly: true,
+			durationMs: scenarioResult?.durationMs ?? 0,
 		},
 		scores,
 	};
@@ -302,53 +323,58 @@ function validateScenario(scenario, ids, registryFindings) {
 	}
 }
 
-function runLiveFixture(scenario) {
+async function runLiveFixture(scenario) {
 	const fixturePath = safeFixturePath(scenario.id);
 	rmSync(fixturePath, { force: true, recursive: true });
 	mkdirSync(fixturePath, { recursive: true });
+	const startedAt = process.hrtime.bigint();
 
 	try {
+		let result;
 		if (scenario.id === "live-fixture-path-safety") {
-			return runPathSafetyFixture(scenario, fixturePath);
-		}
-		if (scenario.id === "generated-artifact-drift-repair") {
-			return runGeneratedArtifactDriftFixture(scenario, fixturePath);
-		}
-		if (scenario.id === "validation-plan-closeout-match") {
-			return runValidationPlanFixture(scenario, fixturePath);
-		}
-		if (scenario.id === "spec-reimplementation-loop") {
-			return runSpecReimplementationLoopFixture(scenario, fixturePath);
-		}
-		if (scenario.id === "harness-engineering-lifecycle-routing") {
-			return runHarnessEngineeringLifecycleRoutingFixture(
+			result = runPathSafetyFixture(scenario, fixturePath);
+		} else if (scenario.id === "generated-artifact-drift-repair") {
+			result = runGeneratedArtifactDriftFixture(scenario, fixturePath);
+		} else if (scenario.id === "validation-plan-closeout-match") {
+			result = await runValidationPlanFixture(scenario, fixturePath);
+		} else if (scenario.id === "spec-reimplementation-loop") {
+			result = runSpecReimplementationLoopFixture(scenario, fixturePath);
+		} else if (scenario.id === "harness-engineering-lifecycle-routing") {
+			result = runHarnessEngineeringLifecycleRoutingFixture(
 				scenario,
 				fixturePath,
 			);
+		} else if (scenario.id === "review-feedback-eval-seed") {
+			result = await runReviewFeedbackEvalSeedFixture(scenario, fixturePath);
+		} else {
+			result = {
+				id: scenario.id,
+				status: "fail",
+				assertions: [
+					{
+						name: "fixture runner exists",
+						status: "fail",
+						message: `No live fixture runner for ${scenario.id}.`,
+					},
+				],
+			};
 		}
-		return {
-			id: scenario.id,
-			status: "fail",
-			assertions: [
-				{
-					name: "fixture runner exists",
-					status: "fail",
-					message: `No live fixture runner for ${scenario.id}.`,
-				},
-			],
-		};
+		return withFixtureDuration(result, startedAt);
 	} catch (error) {
-		return {
-			id: scenario.id,
-			status: "fail",
-			assertions: [
-				{
-					name: "fixture execution",
-					status: "fail",
-					message: error instanceof Error ? error.message : String(error),
-				},
-			],
-		};
+		return withFixtureDuration(
+			{
+				id: scenario.id,
+				status: "fail",
+				assertions: [
+					{
+						name: "fixture execution",
+						status: "fail",
+						message: error instanceof Error ? error.message : String(error),
+					},
+				],
+			},
+			startedAt,
+		);
 	}
 }
 
@@ -408,7 +434,7 @@ function runGeneratedArtifactDriftFixture(scenario, fixturePath) {
 	]);
 }
 
-function runValidationPlanFixture(scenario, fixturePath) {
+async function runValidationPlanFixture(scenario, fixturePath) {
 	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
 	const changedFiles = [
 		"package.json",
@@ -416,24 +442,17 @@ function runValidationPlanFixture(scenario, fixturePath) {
 		"src/lib/learnings/validation-plan.ts",
 	];
 	writeJson(learningArtifactPath, buildFixtureLearningArtifact());
-	const code = `
-		import { buildValidationPlan } from "./src/lib/learnings/validation-plan.ts";
-		const result = buildValidationPlan({
-			source: ${JSON.stringify(path.relative(REPO_ROOT, learningArtifactPath))},
-			files: ${JSON.stringify(changedFiles)},
-			repoRoot: ${JSON.stringify(REPO_ROOT)}
-		});
-		console.log(JSON.stringify(result));
-	`;
-	const stdout = execFileSync(
-		process.execPath,
-		["--import", "tsx", "--eval", code],
-		{
-			cwd: REPO_ROOT,
-			encoding: "utf-8",
-		},
+	const buildValidationPlan = await loadFixtureExport(
+		VALIDATION_PLAN_MODULE_URL,
+		"buildValidationPlan",
 	);
-	const plan = JSON.parse(stdout);
+	const plan = buildValidationPlan
+		? buildValidationPlan({
+				source: path.relative(REPO_ROOT, learningArtifactPath),
+				files: changedFiles,
+				repoRoot: REPO_ROOT,
+			})
+		: runValidationPlanFixtureInSubprocess(learningArtifactPath, changedFiles);
 	const commands = new Set(plan.commands.map((item) => item.command));
 	const networkRequired = new Set(
 		plan.networkRequired.map((item) => item.command),
@@ -536,6 +555,70 @@ function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 	]);
 }
 
+async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
+	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
+	const enforcementStatusPath = path.join(
+		fixturePath,
+		"enforcement-status.json",
+	);
+	const outputPath = path.join(fixturePath, "eval-seed-pack.json");
+	const changedFiles = ["scripts/run-harness-evals.mjs"];
+	writeJson(learningArtifactPath, buildEvalSeedFixtureLearningArtifact());
+	writeJson(enforcementStatusPath, {
+		schemaVersion: "learning-enforcement-status/v1",
+		items: [],
+	});
+	const buildEvalSeedPack = await loadFixtureExport(
+		EVAL_SEED_MODULE_URL,
+		"buildEvalSeedPack",
+	);
+	const seedPack = buildEvalSeedPack
+		? buildEvalSeedPack({
+				source: path.relative(REPO_ROOT, learningArtifactPath),
+				enforcementStatusPath: path.relative(REPO_ROOT, enforcementStatusPath),
+				files: changedFiles,
+				minUsage: 25,
+				output: path.relative(REPO_ROOT, outputPath),
+				repoRoot: REPO_ROOT,
+			})
+		: runEvalSeedFixtureInSubprocess({
+				learningArtifactPath,
+				enforcementStatusPath,
+				changedFiles,
+				outputPath,
+			});
+	const candidate = seedPack.candidates[0];
+	return fixtureResult(scenario.id, [
+		assertion(
+			"repeated review learning becomes an eval seed candidate",
+			seedPack.status === "success" && seedPack.candidates.length === 1,
+		),
+		assertion(
+			"seed stays attached to matched changed files and evidence refs",
+			JSON.stringify(candidate?.matchedFiles) ===
+				JSON.stringify(changedFiles) &&
+				candidate?.evidenceRef?.includes(
+					"coderabbit_csv:file://fixture/coderabbit.csv#row=2",
+				),
+		),
+		assertion(
+			"seed points to concrete target and regression surface",
+			candidate?.recommendedTarget === "artifact-gate" &&
+				candidate?.recommendedTest === "src/lib/learnings/promote.test.ts",
+		),
+		assertion(
+			"seed classifies repeated remediation signal",
+			candidate?.remediationSource === "generated_artifact" &&
+				candidate?.failureClass === "generated_artifact_drift" &&
+				seedPack.summary.byFailureClass?.generated_artifact_drift === 1,
+		),
+		assertion(
+			"seed artifact writes inside the live fixture root",
+			seedPack.outputPath === outputPath,
+		),
+	]);
+}
+
 function runHarnessEngineeringLifecycleRoutingFixture(scenario, fixturePath) {
 	const cases = buildHarnessEngineeringRoutingCases();
 	const results = cases.map((item) => ({
@@ -595,6 +678,73 @@ function runHarnessEngineeringLifecycleRoutingFixture(scenario, fixturePath) {
 				!JSON.stringify(unsafe?.telemetry ?? {}).includes("curl"),
 		),
 	]);
+}
+
+async function loadFixtureExport(moduleUrl, exportName) {
+	const cached = fixtureModuleCache.get(moduleUrl);
+	if (cached === null) return null;
+	if (cached) return cached[exportName];
+	try {
+		const loaded = await import(moduleUrl);
+		fixtureModuleCache.set(moduleUrl, loaded);
+		return loaded[exportName];
+	} catch {
+		fixtureModuleCache.set(moduleUrl, null);
+		return null;
+	}
+}
+
+function runValidationPlanFixtureInSubprocess(
+	learningArtifactPath,
+	changedFiles,
+) {
+	const code = `
+		import { buildValidationPlan } from "./src/lib/learnings/validation-plan.ts";
+		const result = buildValidationPlan({
+			source: ${JSON.stringify(path.relative(REPO_ROOT, learningArtifactPath))},
+			files: ${JSON.stringify(changedFiles)},
+			repoRoot: ${JSON.stringify(REPO_ROOT)}
+		});
+		console.log(JSON.stringify(result));
+	`;
+	const stdout = execFileSync(
+		process.execPath,
+		["--import", "tsx", "--eval", code],
+		{
+			cwd: REPO_ROOT,
+			encoding: "utf-8",
+		},
+	);
+	return JSON.parse(stdout);
+}
+
+function runEvalSeedFixtureInSubprocess({
+	learningArtifactPath,
+	enforcementStatusPath,
+	changedFiles,
+	outputPath,
+}) {
+	const code = `
+		import { buildEvalSeedPack } from "./src/lib/learnings/eval-seed.ts";
+		const result = buildEvalSeedPack({
+			source: ${JSON.stringify(path.relative(REPO_ROOT, learningArtifactPath))},
+			enforcementStatusPath: ${JSON.stringify(path.relative(REPO_ROOT, enforcementStatusPath))},
+			files: ${JSON.stringify(changedFiles)},
+			minUsage: 25,
+			output: ${JSON.stringify(path.relative(REPO_ROOT, outputPath))},
+			repoRoot: ${JSON.stringify(REPO_ROOT)}
+		});
+		console.log(JSON.stringify(result));
+	`;
+	const stdout = execFileSync(
+		process.execPath,
+		["--import", "tsx", "--eval", code],
+		{
+			cwd: REPO_ROOT,
+			encoding: "utf-8",
+		},
+	);
+	return JSON.parse(stdout);
 }
 
 function safeFixturePath(relativePath) {
@@ -679,6 +829,93 @@ function buildFixtureLearningArtifact() {
 			},
 			byEnforcement: {
 				warning: 1,
+			},
+		},
+	};
+}
+
+function buildEvalSeedFixtureLearningArtifact() {
+	return {
+		schemaVersion: "harness-learnings/v1",
+		provider: "coderabbit-csv",
+		repository: "coding-harness",
+		source: {
+			kind: "coderabbit_csv",
+			uri: "file://fixture/coderabbit.csv",
+			live: false,
+		},
+		inputFingerprint: "fixture-eval-seed",
+		items: [
+			{
+				id: "coderabbit.coding-harness.eval-seed-generated-artifact",
+				provider: "coderabbit",
+				source: {
+					kind: "coderabbit_csv",
+					uri: "file://fixture/coderabbit.csv",
+					row: 2,
+					live: false,
+				},
+				repository: "coding-harness",
+				file: "scripts/run-harness-evals.mjs",
+				usage: 41,
+				learning:
+					"Generated runtime mirrors should be fixed at the generator rather than patched by hand.",
+				targetPatterns: ["scripts/**"],
+				classification: "generated_artifact",
+				enforcement: "warning",
+				promotionStatus: "candidate",
+			},
+			{
+				id: "coderabbit.coding-harness.unmatched-docs-noise",
+				provider: "coderabbit",
+				source: {
+					kind: "coderabbit_csv",
+					uri: "file://fixture/coderabbit.csv",
+					row: 3,
+					live: false,
+				},
+				repository: "coding-harness",
+				file: "docs/unused.md",
+				usage: 77,
+				learning:
+					"Unmatched docs noise should not become a seed for this file set.",
+				classification: "guardrail",
+				enforcement: "warning",
+				promotionStatus: "candidate",
+			},
+			{
+				id: "coderabbit.coding-harness.low-signal-validation",
+				provider: "coderabbit",
+				source: {
+					kind: "coderabbit_csv",
+					uri: "file://fixture/coderabbit.csv",
+					row: 4,
+					live: false,
+				},
+				repository: "coding-harness",
+				file: "scripts/run-harness-evals.mjs",
+				usage: 2,
+				learning:
+					"Low-signal repetition should stay below the eval-seed threshold.",
+				classification: "validation_contract",
+				enforcement: "warning",
+				promotionStatus: "candidate",
+			},
+		],
+		warnings: [],
+		summary: {
+			totalRows: 3,
+			imported: 3,
+			skipped: 0,
+			invalid: 0,
+			warnings: 0,
+			byClassification: {
+				generated_artifact: 1,
+				guardrail: 1,
+				validation_contract: 1,
+			},
+			byEnforcement: {
+				warning: 3,
 			},
 		},
 	};
@@ -1055,6 +1292,14 @@ function fixtureResult(id, assertions) {
 			? "pass"
 			: "fail",
 		assertions,
+	};
+}
+
+function withFixtureDuration(result, startedAt) {
+	const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+	return {
+		...result,
+		durationMs: Number(durationMs.toFixed(2)),
 	};
 }
 

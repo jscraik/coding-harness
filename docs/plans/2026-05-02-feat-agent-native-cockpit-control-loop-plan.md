@@ -10,6 +10,8 @@ linear_issue: JSC-248
 route: fresh
 plan_depth: deepened
 run_type: planning-artifact
+last_validated: 2026-05-04
+plan_revision: he-plan-refresh
 ---
 
 # Agent-Native Cockpit Control Loop First Slice Plan
@@ -32,6 +34,7 @@ and produce machine-readable evidence without executing mutative work.
 - [Overview](#overview)
 - [Source Traceability](#source-traceability)
 - [Current Repo Evidence](#current-repo-evidence)
+- [HE Plan Refresh](#he-plan-refresh)
 - [Scope Boundaries](#scope-boundaries)
 - [Execution Rules](#execution-rules)
 - [Execution State](#execution-state)
@@ -91,6 +94,56 @@ Live inspection before this plan found these relevant constraints:
 - Existing `GateResult` and gate payloads must remain authoritative for gate
   output. `HarnessDecision` is an orchestration envelope, not a replacement.
 
+## HE Plan Refresh
+
+**Refreshed on:** 2026-05-03
+**Reason:** `$he-plan` found that this plan still described several
+already-landed surfaces as future work.
+
+Live repo evidence now shows:
+
+- `src/lib/decision/harness-decision.ts` exists and defines the
+  `harness-decision/v1` envelope, `critical` risk tier, friction and delay
+  classes, and execution metadata validation.
+- `src/commands/next.ts` exists and implements a read-only `harness next`
+  producer with `--json`, `--mode`, `--files`, git status parsing, and safe
+  recommendations.
+- `src/lib/session/session-closeout.ts` exists as the session-closeout contract
+  dependency that JSC-249 uses for P3.
+- Linear `JSC-248` is `In Progress` and has PR attachments, so this plan should
+  no longer instruct agents to start from a blank P1 implementation.
+
+Current outstanding work is technical hardening against the deepened spec, not a
+restart of P1-P5:
+
+1. Re-run focused tests to confirm which `SA1`-`SA17` criteria are already
+   satisfied on the active branch.
+2. Add deterministic `DecisionSource` and `RecommendationCandidate` handling
+   only where missing.
+3. Add `meta.sourceErrors` behavior for missing, empty, invalid, stale, blocked,
+   and network-unavailable sources.
+4. Add bounded current-head run selection for `.harness/runs/**` if `next`
+   consumes recent run evidence.
+5. Keep follow-on flags such as `--explain`, `--include-alternatives`, and
+   `--no-network` out of CLI help until parser support and tests exist.
+
+Do not implement Codex `developer_instructions`, `compact_prompt`, or
+`experimental_compact_prompt_file` from this issue. The source spec tracks those
+as follow-on config steering evidence under `SA36`-`SA38`.
+
+Do not implement Codex Auto-review activation from this issue. The source spec
+tracks approval reviewer behavior under `SA39`-`SA45`; the only JSC-248 overlap
+is ensuring future `harness next --json` has a clear place to carry
+`approvalPlan` metadata without confusing it with branch protection or
+independent PR review.
+
+Do not implement Codex `/goal` or app-server goal integration from this issue.
+The source spec tracks goal continuation behavior under `SA46`-`SA52`, owned by
+deferred child issue `JSC-279`; the only JSC-248 overlap is ensuring future
+`harness next --json` has a clean place to carry `goalContext` metadata without
+treating runtime goals as more durable than Linear, the source spec, the plan,
+or closeout artifacts.
+
 ## Scope Boundaries
 
 ### In Scope
@@ -139,19 +192,25 @@ Live inspection before this plan found these relevant constraints:
 
 ## Execution State
 
-Initial `he-work` state before runtime implementation:
+Current `he-work` state before the next runtime implementation pass:
 
-- **Phase:** `P0 - Baseline and Tracker Lock`
-- **Checked at:** 2026-05-02
-- **Branch:** `codex/north-star-artifact-surfaces`
-- **Tracker:** `JSC-248`, status `Triage`, live assignee tracked in Linear,
-  project `coding-harness`
-- **Dirty worktree at start:** unrelated existing edits in `package.json`,
-  `scripts/test-with-artifacts.sh`, one new evaluation scenario directory,
-  and one new harness evaluation runner script; preserve these unless
-  explicitly brought into the cockpit slice
-- **P0 slice files:** this plan and the source spec only
-- **Next implementation phase after P0 commit:** `P1 - HarnessDecision Contract`
+- **Phase:** `P6 - Technical Hardening Refresh`
+- **Checked at:** 2026-05-04 snapshot; refresh before executing
+- **Branch snapshot:** `main...origin/main [ahead 4, behind 2]`; refresh before
+  executing
+- **Tracker:** `JSC-248`, status `In Progress`, assignee
+  `jscraik@brainwav.io`, project `coding-harness`; refresh before executing
+- **Existing implementation:** `HarnessDecision`, `harness next`, and
+  session-closeout contract modules are present in the live tree
+- **Dirty worktree at refresh:** unrelated existing edits in
+  `.vale/styles/config/vocabularies/Harness/accept.txt`, `CHANGELOG.md`,
+  `docs/agents/02-tooling-policy.md`, `package.json`, and
+  `docs/benchmarks/runs/swe-20260503-171626.json`; preserve these unless
+  explicitly adopted
+- **Plan/spec files updated by this refresh:** this plan, the source spec, and
+  the JSC-249 session-friction plan
+- **Next implementation phase:** audit the existing implementation against
+  `SA1`-`SA17`, then implement only missing `SA28`-`SA35` technical hardening
 
 ## Implementation Units
 
@@ -314,6 +373,122 @@ Validation:
 - `pnpm exec markdownlint-cli2 README.md docs/agents/quickstart.md docs/cli-reference.md`
 - `bash scripts/run-harness-gate.sh docs-gate --mode required --json`
 
+### P6 - Technical Hardening Refresh
+
+Goal: align the existing cockpit implementation with the deepened 2026-05-03
+spec review without restarting already-landed P1-P5 work.
+
+Primary files:
+
+- `src/lib/decision/harness-decision.ts`
+- `src/commands/next.ts`
+- `src/commands/next.test.ts`
+- any focused helper module under `src/lib/decision/**` if the hardening would
+  otherwise bloat `next.ts`
+
+Completion criteria:
+
+- Existing `SA1`-`SA17` behavior is verified first; only failing or missing
+  acceptance criteria are changed.
+- `DecisionSource` and `RecommendationCandidate` are represented in code or
+  deliberately deferred with a test-backed reason.
+- `meta.sourceErrors` captures missing, empty, invalid, stale, blocked, and
+  network-unavailable sources without corrupting stdout JSON.
+- Incomplete or unknown `approvalPlan` or `goalContext` metadata cannot reduce
+  top-level safety posture; affected decisions must set `requiresHuman: true`
+  or fail closed to blocked/action-required with an explicit `failureClass`.
+- Identical repo state, inputs, environment flags, and artifacts produce
+  identical `nextCommand`, evidence refs, and alternative ordering.
+- Parser-exposed flags match implemented parser support; follow-on flags are
+  not advertised as runnable.
+- If recent run evidence is consumed, current-head run selection is deterministic
+  and stale or invalid artifacts are reported as source errors.
+
+Validation:
+
+- `pnpm exec vitest run src/lib/decision/harness-decision.test.ts src/commands/next.test.ts`
+- fixture assertion for deterministic replay with identical inputs
+- fixture assertion for missing, empty, invalid, stale, blocked, and
+  network-unavailable `meta.sourceErrors`
+- fixture assertion for fail-closed incomplete or unknown `approvalPlan` and
+  `goalContext` metadata
+- `pnpm typecheck`
+- `bash scripts/validate-codestyle.sh --fast`
+
+### P7 - Approval Reviewer Contract Follow-On
+
+Goal: turn the Auto-review research and fork evidence into a future cockpit
+permission contract without widening the current JSC-248 implementation slice.
+
+Primary files when promoted:
+
+- `src/lib/decision/harness-decision.ts`
+- `src/commands/next.ts`
+- `src/commands/next.test.ts`
+- focused config or artifact helpers only if `approvalPlan` needs them
+
+Completion criteria before promotion:
+
+- Real permission prompts or closeout artifacts show approval friction that P6
+  source-error and permission metadata cannot explain.
+- The implementation can distinguish `user`, `auto_review`, legacy
+  `guardian_subagent`, `none`, and `unknown` reviewer states without enabling
+  Auto-review globally.
+- `ApprovalPlan` output fails closed when policy, reviewer, authorization, or
+  sandbox state is unknown.
+- Documentation and fixtures state that Auto-review is not branch protection,
+  independent PR review, Semgrep, CodeRabbit, or a deterministic security
+  guarantee.
+
+Validation when promoted:
+
+- focused `next` fixture tests for `approvalPlan`
+- docs assertion that generated examples prefer `auto_review`
+- failure fixture for timeout, malformed output, reviewer failure, and unknown
+  policy state
+- small eval comparing sampled permission prompts against human decisions
+
+### P8 - Goal Continuation Contract Follow-On
+
+Goal: turn Codex `/goal` and app-server goal evidence into a future `JSC-279`
+cockpit resume contract without widening the current JSC-248 implementation
+slice.
+
+Primary files when promoted:
+
+- `src/lib/decision/harness-decision.ts`
+- `src/commands/next.ts`
+- `src/commands/next.test.ts`
+- `src/lib/session/session-closeout.ts`
+- focused goal-context helpers only if `goalContext` needs them
+
+Completion criteria before promotion:
+
+- Real resumes, compacted sessions, or stale-plan handoffs show that P6 source
+  errors and JSC-249 closeout evidence do not preserve the active objective
+  clearly enough.
+- The implementation can distinguish `codex_goal`, `linear`, `plan`,
+  `user_prompt`, and `unknown` objective sources.
+- Runtime goal context is linked to plan and Linear evidence when possible and
+  marked stale or unknown when it conflicts with durable project truth.
+- Completion recommendations require prompt-to-artifact evidence and never rely
+  on elapsed effort, token budget exhaustion, plausible intent, or passing tests
+  that do not cover the objective.
+- Official docs and generated examples state that app-server goal APIs are
+  experimental and that the live TUI `/goal` command may not be present in
+  stable slash-command docs.
+
+Validation when promoted:
+
+- focused `next` fixture tests for `goalContext`
+- stale-plan and mismatched-goal fixtures
+- completion-audit fixture covering named files, commands, tests, gates, and
+  deliverables
+- closeout fixture proving token budget and elapsed time become friction
+  evidence, not completion proof
+- small resume eval comparing next-action fidelity with and without goal
+  context
+
 ## Dependency Graph
 
 ```text
@@ -323,6 +498,9 @@ P0 tracker/spec lock
       -> P3 harness next
         -> P4 cockpit-first help
           -> P5 docs compression
+            -> P6 technical hardening refresh
+              -> P7 approval reviewer contract follow-on
+              -> P8 goal continuation contract follow-on
 ```
 
 P3 must include the minimal `docs/cli-reference.md` entry for `next` because
@@ -391,41 +569,47 @@ Recovery rules:
 | `GateResult` gets displaced | Keep `HarnessDecision` separate and only reference gate output under `meta` |
 | Docs sprawl returns | Limit docs changes to README, quickstart, and CLI reference |
 | Single-token dispatch mismatch | Use canonical `next` and `pr-ready`; defer nested aliases |
+| Already-landed work is implemented again from stale plan text | Start P6 with a focused verification audit and change only failing or missing acceptance criteria |
+| Auto-review becomes implied self-approval | Keep P7 deferred until evidence and fixtures prove fail-closed reviewer semantics |
 
 ## Acceptance Traceability
 
 | Acceptance ID | Plan unit | Status |
 | --- | --- | --- |
-| `SA1` | P1 | Planned |
-| `SA2` | P1 | Planned |
-| `SA3` | P1 | Planned |
-| `SA4` | P3 | Planned |
-| `SA5` | P3 | Planned |
-| `SA6` | P3 | Planned |
-| `SA7` | P3 | Planned |
-| `SA8` | P3 | Planned |
-| `SA9` | P2, P4 | Planned |
-| `SA10` | P2 | Planned for first-slice cockpit/directly orchestrated commands |
-| `SA11` | P1, P2 | Planned |
-| `SA12` | P5 | Planned for first-slice routing responsibilities |
-| `SA13` | P3, P4 | Planned |
+| `SA1` | P1 | Implemented in live tree; verify before further edits |
+| `SA2` | P1 | Implemented in live tree; verify before further edits |
+| `SA3` | P1 | Implemented in live tree; verify before further edits |
+| `SA4` | P3 | Implemented in live tree; verify before further edits |
+| `SA5` | P3 | Implemented in live tree; verify before further edits |
+| `SA6` | P3 | Implemented in live tree; verify before further edits |
+| `SA7` | P3 | Implemented in live tree; verify before further edits |
+| `SA8` | P3 | Implemented in live tree; verify before further edits |
+| `SA9` | P2, P4 | Implemented or partially implemented; verify help snapshot |
+| `SA10` | P2 | Implemented or partially implemented; verify command catalog JSON |
+| `SA11` | P1, P2 | Implemented in live tree; verify regression coverage |
+| `SA12` | P5 | Implemented or partially implemented; verify docs routing |
+| `SA13` | P3, P4 | Implemented or partially implemented; verify snapshots |
 | `SA14` | Deferred | Out of first slice |
 | `SA15` | Deferred | Out of first slice |
-| `SA16` | P2 | Planned |
-| `SA17` | P5 | Planned |
+| `SA16` | P2 | Implemented or partially implemented; verify catalog validation |
+| `SA17` | P5 | Implemented or partially implemented; verify README/quickstart |
 | `SA18` | Deferred | Out of first slice |
 | `SA19` | Deferred | Out of first slice |
 | `SA20` | Deferred | Out of first slice |
+| `SA28`-`SA35` | P6 | Outstanding technical hardening |
+| `SA36`-`SA38` | Deferred | Codex config steering evidence; out of JSC-248 implementation |
+| `SA39`-`SA45` | P7 deferred | Approval reviewer contract; out of JSC-248 unless promoted by measured approval friction |
+| `SA46`-`SA52` | P8 / `JSC-279` deferred | Goal continuation contract; out of JSC-248 unless promoted by measured resume or stale-plan friction |
 
 ## Handoff to he-work
 
-Implement `JSC-248` in the P0 to P5 order above. Start with the
-`HarnessDecision` contract and first-slice metadata, then add read-only
-`harness next --json` plus its minimal CLI reference entry, then wire help and
-README/quickstart docs. Do not implement `pr-ready`, `fix-review`, `learn`,
-telemetry persistence, command deletion, nested parser aliases, unknown-command
-suggestion enrichment, full responsibility taxonomy cleanup, or hero-story
-evaluations in this slice.
+Do not restart `JSC-248` from P1. The next worker should first verify the
+already-landed P1-P5 surfaces, then implement P6 technical hardening only where
+the deepened spec is still unmet. Do not implement `pr-ready`, `fix-review`,
+`learn`, telemetry persistence, command deletion, nested parser aliases,
+unknown-command suggestion enrichment, full responsibility taxonomy cleanup,
+hero-story evaluations, Codex config generation, or Auto-review activation in
+this slice.
 
 Re-check live Linear status and use `Refs JSC-248` in PR metadata until the
 issue is fully complete.
