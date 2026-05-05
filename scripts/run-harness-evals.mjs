@@ -641,14 +641,18 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 	);
 	const seedPack = buildEvalSeedPack
 		? buildEvalSeedPack({
-				source: path.relative(REPO_ROOT, learningArtifactPath),
-				enforcementStatusPath: path.relative(REPO_ROOT, enforcementStatusPath),
+				source: path.relative(fixturePath, learningArtifactPath),
+				enforcementStatusPath: path.relative(
+					fixturePath,
+					enforcementStatusPath,
+				),
 				files: changedFiles,
 				minUsage: 25,
-				output: path.relative(REPO_ROOT, outputPath),
-				repoRoot: REPO_ROOT,
+				output: path.relative(fixturePath, outputPath),
+				repoRoot: fixturePath,
 			})
 		: runEvalSeedFixtureInSubprocess({
+				fixturePath,
 				learningArtifactPath,
 				enforcementStatusPath,
 				changedFiles,
@@ -815,6 +819,7 @@ function runValidationPlanFixtureInSubprocess(
  * Builds an eval seed pack by invoking `buildEvalSeedPack` in a subprocess and returning its parsed result.
  *
  * @param {object} params - Function parameters.
+ * @param {string} params.fixturePath - Filesystem path used as the eval-seed fixture repo root.
  * @param {string} params.learningArtifactPath - Filesystem path to the learning artifact JSON used as `source`.
  * @param {string} params.enforcementStatusPath - Filesystem path to the enforcement status JSON.
  * @param {string[]} params.changedFiles - Array of changed file paths to pass as `files`.
@@ -822,6 +827,7 @@ function runValidationPlanFixtureInSubprocess(
  * @returns {object} The parsed object printed by `buildEvalSeedPack` (the eval seed pack result).
  */
 function runEvalSeedFixtureInSubprocess({
+	fixturePath,
 	learningArtifactPath,
 	enforcementStatusPath,
 	changedFiles,
@@ -830,12 +836,12 @@ function runEvalSeedFixtureInSubprocess({
 	const code = `
 		import { buildEvalSeedPack } from "./src/lib/learnings/eval-seed.ts";
 		const result = buildEvalSeedPack({
-			source: ${JSON.stringify(path.relative(REPO_ROOT, learningArtifactPath))},
-			enforcementStatusPath: ${JSON.stringify(path.relative(REPO_ROOT, enforcementStatusPath))},
+			source: ${JSON.stringify(path.relative(fixturePath, learningArtifactPath))},
+			enforcementStatusPath: ${JSON.stringify(path.relative(fixturePath, enforcementStatusPath))},
 			files: ${JSON.stringify(changedFiles)},
 			minUsage: 25,
-			output: ${JSON.stringify(path.relative(REPO_ROOT, outputPath))},
-			repoRoot: ${JSON.stringify(REPO_ROOT)}
+			output: ${JSON.stringify(path.relative(fixturePath, outputPath))},
+			repoRoot: ${JSON.stringify(fixturePath)}
 		});
 		console.log(JSON.stringify(result));
 	`;
