@@ -475,7 +475,7 @@ function runGeneratedArtifactDriftFixture(scenario, fixturePath) {
  *
  * @param {Object} scenario - The scenario object (uses `scenario.id` for the returned fixture result).
  * @param {string} fixturePath - Filesystem path to the per-fixture directory where artifacts are written.
- * @returns {Object} A fixture result object with `id`, `status`, and `assertions`; `status` is `"pass"` if all assertions pass, otherwise `"fail"`. 
+ * @returns {Object} A fixture result object with `id`, `status`, and `assertions`; `status` is `"pass"` if all assertions pass, otherwise `"fail"`.
  */
 async function runValidationPlanFixture(scenario, fixturePath) {
 	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
@@ -694,6 +694,7 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
  * @param {Object} scenario - Scenario metadata; the scenario's `id` is used to label the returned fixture result.
  * @param {string} fixturePath - Filesystem path to the per-fixture directory where outputs are written.
  * @returns {Object} Fixture result object with `id`, `status`, and an `assertions` array that verifies expected routing behaviors.
+ */
 function runHarnessEngineeringLifecycleRoutingFixture(scenario, fixturePath) {
 	const cases = buildHarnessEngineeringRoutingCases();
 	const results = cases.map((item) => ({
@@ -961,6 +962,7 @@ function buildFixtureLearningArtifact() {
  * imported rows and counts by classification/enforcement.
  *
  * @returns {Object} A learning artifact object suitable for use by eval-seed fixtures.
+ */
 function buildEvalSeedFixtureLearningArtifact() {
 	return {
 		schemaVersion: "harness-learnings/v1",

@@ -77,6 +77,7 @@ Harness-managed repositories should keep this baseline available locally before 
 - `cloudflared`
 - `vitest`
 - `ruff`
+- `ripgrep` (`rg`)
 - `eslint`
 - `agent-browser`
 - `agentation` (backed by the `agentation-mcp` CLI)

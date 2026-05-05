@@ -86,6 +86,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
+      - name: Install release validation tools
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
       - name: Materialize CODESTYLE.md for CI
         run: |
           if [[ -L CODESTYLE.md && ! -e CODESTYLE.md ]]; then

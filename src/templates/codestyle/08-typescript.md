@@ -21,7 +21,7 @@
 ## Banned patterns
 - Unjustified `: any`, `as any`, `Promise<any>`, and `Record<string, any>` in production code MUST NOT be used.
 - `value as unknown as T` double assertions MUST NOT be used without runtime validation.
-- `// `@ts-ignore`` and `// `@ts-nocheck`` MUST NOT be used; use `@ts-expect-error` with rationale only when unavoidable.
+- `// @ts-ignore` and `// @ts-nocheck` MUST NOT be used; use `@ts-expect-error` with rationale only when unavoidable.
 - Unsafe type assertions MUST NOT be used without guard functions or schema validation.
 
 ## Linting and module rules
