@@ -33,7 +33,7 @@
 - NodeNext TypeScript projects MUST keep `module` and `moduleResolution` aligned to `NodeNext` unless a documented runtime migration changes both together.
 - With `verbatimModuleSyntax` enabled, imports MUST reflect runtime semantics; use `import type` for type-only imports.
 - JSON imports in NodeNext-style modules MUST use import attributes when the runtime/compiler requires them, for example `with { type: "json" }`.
-- Keep imports acyclic; avoid barrels that create circular dependency chains.
+- Imports MUST be acyclic; barrels that create circular dependency chains MUST NOT be used.
 
 ## Async and cancellation
 - Prefer `async/await` over nested Promise chains.
