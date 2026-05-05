@@ -28,7 +28,7 @@
 - Biome handles formatting and style-level lint in this repository and MUST pass where enabled.
 - TypeScript type safety MUST be enforced with `tsc --noEmit`.
 - Downstream projects MAY use ESLint for additional policy checks when an `eslint.config.*` file exists; do not claim ESLint coverage where it is not configured.
-- Prefer ESM and explicit module syntax for Node/TS packages.
+- Node/TS packages SHOULD use ESM and explicit module syntax.
 - Local ESM imports MUST include `.js` extensions for emitted JavaScript compatibility.
 - NodeNext TypeScript projects MUST keep `module` and `moduleResolution` aligned to `NodeNext` unless a documented runtime migration changes both together.
 - With `verbatimModuleSyntax` enabled, imports MUST reflect runtime semantics; use `import type` for type-only imports.
