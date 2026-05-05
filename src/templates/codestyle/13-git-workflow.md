@@ -37,6 +37,9 @@
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
+  - `pnpm audit`
+  - `pnpm check`
+  - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
 - Validation evidence MUST use:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`

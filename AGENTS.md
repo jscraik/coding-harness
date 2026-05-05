@@ -19,6 +19,9 @@ This repository is a TypeScript control plane for agentic development and review
 - Branch-protection defaults include the external Semgrep Cloud GitHub App check `semgrep-cloud-platform/scan`; keep it aligned across generated contracts, `.harness/ci-required-checks.json`, and required-check docs.
 - CircleCI owns repo-run PR governance and security checks; GitHub Actions is reserved for release publishing, and Semgrep Cloud remains an independent external required check.
 - `harness.contract.json` records this split in `ciOwnership`: CircleCI is the primary PR gate, CodeRabbit is the independent review check, Semgrep Cloud is the independent external security check, and GitHub Actions fallback/release workflows must not become automatic PR gates without an intentional contract migration.
+- Tag-triggered release publishing must install `ripgrep` (`rg`) before `pnpm check` because `docs:ubiquitous:guard` depends on it in GitHub-hosted runners.
+- Release packaging changes that alter runtime dependency metadata must pass the packed CLI smoke path before publish, and any pre-push diagram-context refresh must be committed with its required docs-gate surfaces.
+- Release readiness updates to governed north-star status surfaces must keep `docs/roadmap/agent-first-status.md` and the matching `harness.contract.json` `lastReviewedAt` entry synchronized.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
 
@@ -76,6 +79,7 @@ Notes:
 - If runtime or artifact behavior changed, run `pnpm test:deep`.
 - When docs-gate categories are affected, run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and clear warnings before merge.
 - Agent-native cockpit, generated environment action, hook setup, and architecture-artifact changes must keep the docs-gate required surfaces synchronized in the same PR so `harness next --json` recommendations, local runtime setup, and reviewer-facing evidence describe the current contract.
+- Goal-continuation or approval-plan contract changes must keep `harness next --json` safety metadata, snapshot-only state evidence, and agent-governance docs synchronized in the same PR.
 - When AGENTS/vocabulary surfaces change, run `pnpm run docs:ubiquitous:guard` to ensure `AGENTS.md` keeps the glossary linkage contract.
 - Before PR handoff, run or explicitly mark `n.a.` for the north-star learning loop when changed files can be matched against imported CodeRabbit evidence: `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, `harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, and `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json`. The `--files` value accepts comma-separated paths or multiple following path tokens.
 - When changing validation, required-check, tooling/runtime, or architecture-context behavior, update the docs-gate required surfaces in the same change (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/06-security-and-governance.md`, `docs/agents/00-architecture-bootstrap.md`).

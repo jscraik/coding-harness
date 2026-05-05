@@ -60,24 +60,24 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 
 ## 17. Security, Supply Chain & Compliance
 
-* No hard-coded secrets; use env injection/secret manager.
-* Validate/sanitize all external inputs.
+* Secrets MUST NOT be hard-coded; use env injection/secret manager.
+* All external inputs MUST be validated/sanitized.
 * Scanning per PR SHOULD include:
 
   * OSV / audits per ecosystem
   * Semgrep policy + OWASP
   * SBOM generation at release (CycloneDX)
   * provenance/signing (SLSA/in-toto + Sigstore) where applicable
-* Containers (if used): minimal base, non-root, read-only FS, drop caps.
+* Containers, when used, MUST use minimal bases, non-root users, read-only filesystems where feasible, and dropped capabilities.
 
 ---
 
 ## 18. Accessibility
 
-* Baseline: WCAG 2.2 AA.
-* Full keyboard operation required.
-* Screen reader compatibility required.
-* CLI/TUI: `--plain` / `--no-color` modes required.
+* Accessibility baselines MUST target WCAG 2.2 AA.
+* Full keyboard operation MUST be supported.
+* Screen reader compatibility MUST be preserved.
+* CLI/TUI surfaces MUST provide `--plain` / `--no-color` modes.
 
 ---
 
@@ -116,11 +116,15 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 
 ## 23. Config References (Authoritative)
 
-* ESLint: `eslint.config.mjs` (flat config)
-* Biome: `biome.json` (or repo equivalent)
+* Biome: `biome.json`
 * Vale: `.vale.ini`
+* Markdownlint: `.markdownlint-cli2.yaml`
 * Mise: `.mise.toml`
-* Rustfmt: `rustfmt.toml`
-* CI: `.github/workflows/*.yml`
+* TypeScript: `tsconfig.json`
+* Vitest: `vitest.config.ts` and `e2e/vitest.e2e.config.ts`
+* CircleCI: `.circleci/config.yml`
+* GitHub Actions release workflows: `.github/workflows/*.yml`
+* Semgrep/security policy: `semgrep*.yml` and repository security scripts where present
+* ESLint/Rustfmt: downstream-only unless the repository includes `eslint.config.*` or `rustfmt.toml`
 
 ---

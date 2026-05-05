@@ -8,10 +8,13 @@ plan_id: feat-session-friction-evidence-contracts
 source_report: <operator-local-codex-usage-report>
 source_prior_art: https://github.com/withastro/flue
 source_codex_prior_art: <operator-local-codex-checkout>
+source_codex_goal_docs: https://developers.openai.com/codex/app-server#api-overview
 source_claude_code_comparison: <operator-local-claude-code-checkout>
 source_plan: docs/plans/2026-05-02-feat-agent-native-cockpit-control-loop-plan.md
 linear_status: JSC-249
 run_type: planning-artifact
+last_validated: 2026-05-04
+plan_revision: he-plan-refresh
 ---
 
 # Session Friction Evidence Contracts Plan
@@ -72,6 +75,7 @@ What should be remembered?
 - [Implementation Units](#implementation-units)
 - [Deferred Goals](#deferred-goals)
 - [Dependency Graph](#dependency-graph)
+- [HE Plan Refresh](#he-plan-refresh)
 - [Validation Plan](#validation-plan)
 - [Risk Controls](#risk-controls)
 - [Acceptance Traceability](#acceptance-traceability)
@@ -84,6 +88,8 @@ What should be remembered?
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `<operator-local-codex-usage-report>`                                                                                                                                                    | Usage evidence for friction, delay, permissions, subagents, review-thread activity, and missing outcomes                                                     |
 | `<operator-local-codex-checkout>`                                                                                                                                                        | Primary runtime prior art for Codex-first permissions, sandbox policy, capability loading, hooks, task/session state, parallel safety, and evidence indexing |
+| `~/dev/codex` live fork plus `codex-repo` MCP                                                                                                                                             | Current evidence for `developer_instructions`, `compact_prompt`, `experimental_compact_prompt_file`, and experimental `/goal` behavior                       |
+| OpenAI Codex app-server docs                                                                                                                                                              | Official evidence for experimental `thread/goal/set`, `thread/goal/get`, and `thread/goal/clear` RPC status                                                  |
 | `<operator-local-claude-code-checkout>`                                                                                                                                                  | Secondary comparison source for command ranking, task IDs, hook taxonomy, context budgeting, and bounded stats caches                                        |
 | `https://github.com/withastro/flue`                                                                                                                                                      | Prior art for virtual sandboxes, session/task identity, typed result schemas, command grants, and deployable agent workspaces                                |
 | User-supplied harness-engineering notes on expert leverage, ablation, distillation, Ralph loops, security underspecification, Codex workouts, autocompaction, and repo-owned automations | Product pressure for expert-judgment compression, small loops, resume-safe evidence, and eval-led improvement                                                |
@@ -116,10 +122,14 @@ contracts, not hosted-agent features:
 | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `PluginLoadOutcome` summarizes effective skills, MCP servers, apps, hooks, and warnings | `CapabilityDigest` in `harness check`, `harness next`, or a routed context helper         | Agents see the actual operating surface instead of re-reading every instruction file |
 | Turn-level approval, reviewer, sandbox, model, effort, and output-schema overrides      | `ExecutionProfile` and `PermissionPlan` metadata on command capabilities and decisions    | Codex can request the narrowest needed permission before work starts                 |
+| Auto-review routes boundary-crossing actions through a separate approval reviewer      | Deferred `ApprovalPlan` evidence for reviewer, policy, risk, authorization, and outcome   | Agents can reduce approval friction without collapsing into full-access execution    |
+| Experimental `/goal` and app-server goal APIs persist a thread objective, status, and budget | Deferred `GoalContext` evidence for active objective, linked plan, Linear issue, completion audit, and resume state | Long-running Codex work can resume against a concrete objective without making runtime state the project source of truth |
 | MCP `supports_parallel_tool_calls` is explicit and conservative                         | `parallelSafe`, `reads`, `writes`, and `conflictsWith` command metadata                   | Work loops can safely fan out read-only checks without racing mutative state         |
 | Hook lifecycle events can block, augment, or classify execution                         | Harness event taxonomy for run artifacts, blockers, evidence writes, and closeouts        | Reports can explain what happened without replaying raw transcripts                  |
 | SQLite-backed rollout state avoids repeated heavy filesystem reads                      | Lightweight `.harness/runs/index.jsonl` first, with SQLite deferred until needed          | `harness next` can become faster and more resume-aware                               |
 | Thin-core architecture keeps runtime features isolated                                  | Small Harness modules for decisions, capabilities, permissions, runs, and context routing | The cockpit stays understandable instead of becoming one large orchestrator          |
+| `developer_instructions` is a config-loaded developer message surface                   | Keep global Codex steering tiny and separate from repo-local AGENTS/skills/Project Brain  | Agents get stable global defaults without duplicating repo policy                    |
+| `compact_prompt` and `experimental_compact_prompt_file` steer compaction                | Treat compact-prompt guidance as a versioned resume hook in D7, not a P1-P3 requirement   | Compacted Codex sessions can retain the few instructions that matter for continuation |
 
 ### Claude Code Comparison Lessons
 
@@ -646,11 +656,95 @@ Required semantics before implementation:
 
 - `compaction-resume-loop`: fresh Codex resumes from a plan, closeout, run
   artifact, or progress cursor and identifies the next safe command.
+- `compact-prompt-config-loop`: a Codex config using `compact_prompt` or
+  `experimental_compact_prompt_file` preserves the Harness resume cursor,
+  blocker class, validation evidence, and next safe command after compaction.
 - `automation-runbook-loop`: Codex executes the next automation wake-up from a
   repo-owned runbook and reports validation, blocker, commit, and next phase.
 - `ablation-surface-check`: a claimed load-bearing surface must prove that
   removing it degrades completion rate, safety, blocker classification, or
   evidence quality.
+
+Codex config steering boundaries:
+
+- `developer_instructions` is appropriate for stable global defaults and
+  negative prompts, but not for copying this repo's AGENTS, skill, or Project
+  Brain content.
+- `compact_prompt` is useful only if it improves resume fidelity in evals; it
+  should be concise enough to survive repeated compactions.
+- `experimental_compact_prompt_file` is useful when the prompt needs reviewable
+  file ownership, but adoption must stay version-gated against the active Codex
+  config schema.
+
+### D8 - Approval Reviewer Evidence
+
+Candidate goal: make permission friction measurable and expose whether an
+action can be reviewed by Codex Auto-review, must stop for a human, or should be
+rewritten as a safer local diagnostic.
+
+Promotion entry criteria:
+
+- P1-P3 closeouts show repeated permission-request friction, unclear approval
+  posture, or unsafe fallbacks toward broad full-access execution.
+- At least one real workflow has permission prompts that can be compared against
+  human decisions.
+- The cockpit spec's `ApprovalPlan` contract is stable enough to test with
+  fixtures.
+
+Required semantics before implementation:
+
+- `auto_review` is the preferred product-facing reviewer value.
+- `guardian_subagent` is accepted only as a Codex compatibility alias.
+- Unknown policy, reviewer, sandbox, authorization, timeout, malformed reviewer
+  output, or reviewer execution failure must fail closed to human-required or a
+  safer local diagnostic action.
+- Strict Auto-review is turn-scoped extra scrutiny after a permission grant, not
+  session-wide permission expansion.
+- Auto-review is not branch protection, independent PR review, CodeRabbit,
+  Semgrep, or a deterministic security guarantee.
+- Captured evidence should include review id, target item, action type, risk
+  level, user authorization, outcome, terminal status, decision source,
+  rationale, and source refs when available.
+
+### D9 - Goal Continuation Evidence
+
+Candidate goal: make long-running Codex work resume against an explicit active
+objective while keeping Linear, specs, plans, PRs, and closeout artifacts as the
+durable project truth.
+
+Owner lane: `JSC-279`, a deferred child issue under `JSC-249`. Do not implement
+D9 directly in `JSC-249` unless the child issue is promoted after the entry
+criteria below are met.
+
+Promotion entry criteria:
+
+- P1-P3 closeouts show repeated stale-plan, unclear-objective, or resume
+  friction that cannot be explained by the smaller friction taxonomy.
+- At least one live Codex workflow has an explicit `/goal` objective, app-server
+  goal state, or equivalent active objective that can be compared against the
+  active Harness plan and Linear issue.
+- The cockpit spec's `GoalContext` contract is stable enough to test with
+  fixtures.
+
+Required semantics before implementation:
+
+- A Codex goal is a runtime continuation cursor, not a replacement for Linear,
+  the source spec, the current plan, PR state, or closeout evidence.
+- Harness must not create, replace, pause, resume, clear, or complete a Codex
+  goal unless the user, system, or developer instruction explicitly authorizes
+  that goal action.
+- Runtime goal context must link to the plan and Linear issue when possible.
+  Mismatches must be recorded as stale, conflicting, or unknown context rather
+  than silently overwriting durable planning evidence.
+- Completion requires prompt-to-artifact evidence: every explicit requirement,
+  named file, command, test, gate, issue, and deliverable maps to real evidence
+  before completion is recommended.
+- Token budget, tokens used, and elapsed time are friction evidence only. They
+  must not prove completion by themselves.
+- Official docs currently document app-server `thread/goal/set`,
+  `thread/goal/get`, and `thread/goal/clear` as experimental API calls requiring
+  `capabilities.experimentalApi`; generated Harness docs should not present
+  `/goal` as a stable public slash-command contract until Codex docs do.
 
 ## Dependency Graph
 
@@ -668,14 +762,50 @@ Deferred candidates after measured P1-P3 value:
   -> D5 prompt translations
   -> D6 repo-owned automation runbooks
   -> D7 resume and workout evals
+  -> D8 approval reviewer evidence
+  -> D9 goal continuation evidence
 ```
 
 P1 is the core dependency because the later contracts should share the same
 friction vocabulary. P2 is the highest-value performance slice because it gives
 `harness next` a way to prefer cheap safe work before expensive or permissioned
-work. P3 fills the report's missing outcome data. D1-D7 stay deferred until
+work. P3 fills the report's missing outcome data. D1-D9 stay deferred until
 P1-P3 produce real workflow evidence or a repeated blocker that cannot be
 handled by the smaller contract.
+
+## HE Plan Refresh
+
+**Refreshed on:** 2026-05-03
+**Reason:** Linear and the live tree show that the first implementation slice is
+partly landed, so this plan must route the next agent to verification and P3
+rather than restarting P1.
+
+Current state:
+
+- Linear `JSC-249` was `In Progress` at the 2026-05-04 snapshot; refresh live
+  Linear state before using this field for execution.
+- The existing Linear progress comment records P1 and P2-lite as implemented
+  and validated on 2026-05-03.
+- `src/lib/decision/harness-decision.ts` contains friction, delay, execution
+  profile, permission-plan, and validation helpers relevant to `SFE1`-`SFE5`.
+- `src/commands/next.ts` emits execution-profile and permission-plan metadata
+  for existing recommendations.
+- `src/lib/session/session-closeout.ts` exists as the P3 contract home, so the
+  next work should verify and wire P3 under `src/lib/session/**`.
+
+Outstanding work:
+
+1. Verify P1 and P2-lite against `SFE1`-`SFE5` before editing those surfaces.
+2. Verify `src/lib/session/session-closeout.ts` against `SFE6`-`SFE8`.
+3. If P3 is not wired to real session artifacts, add the smallest writer,
+   reader, or integration path under `src/lib/session/**`.
+4. Record the first KPI measurement or an explicit blocker once P1-P3 evidence
+   exists.
+5. Keep `D1`-`D9` deferred, including the Codex compact-prompt config loop,
+   approval reviewer evidence, and goal continuation evidence.
+
+Do not restart P1 or P2-lite unless focused tests prove the current
+implementation does not satisfy the acceptance criteria.
 
 ## Validation Plan
 
@@ -729,7 +859,7 @@ blocker and preserve focused validation evidence for this slice.
 ## Outcome KPIs
 
 The first release is successful only if it improves Codex session flow, not just
-schema coverage. Measure these before promoting D1-D7:
+schema coverage. Measure these before promoting D1-D9:
 
 | KPI                           | Target for first slice                                                                                                            | Evidence source                             |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
@@ -745,9 +875,9 @@ KPI collection rule:
   path used by the focused validation for that PR.
 - Sampling: use the P1-P3 fixtures plus one live Codex workflow when available.
   If no live workflow is available, record `blocked` with the exact reason and
-  do not promote D1-D7.
+  do not promote D1-D9.
 
-D1-D7 promotion requires one of these KPIs to expose the next bottleneck or a
+D1-D9 promotion requires one of these KPIs to expose the next bottleneck or a
 recorded Codex workflow to show that the deferred track is now the limiting
 factor.
 
@@ -764,26 +894,41 @@ factor.
 | `SFE7`        | Done closeouts require validation evidence or explicit no-validation reason                      | P3        |
 | `SFE8`        | Closeout artifacts include session and task identity                                             | P3        |
 | `SFE9`        | First release defines and records outcome KPIs                                                   | P0-P3     |
-| `SFE10`       | Deferred tracks include promotion entry criteria before implementation                           | D1-D7     |
+| `SFE10`       | Deferred tracks include promotion entry criteria before implementation                           | D1-D9     |
 | `SFE11`       | Deferred review and PR tracks define nil, empty, and error semantics before implementation       | D1-D2     |
 | `SFE12`       | Deferred capability digest defines source order and partial-data states before implementation    | D3        |
 | `SFE13`       | Deferred run index stays optional and non-blocking until measured need exists                    | D4        |
 | `SFE14`       | Deferred automation runbooks keep app prompts tiny and repo-owned behavior reviewed              | D6        |
 | `SFE15`       | Deferred resume/workout evals test loop completion, not command output alone                     | D7        |
+| `SFE16`       | Codex compact-prompt config adoption stays version-gated until a resume eval proves value        | D7        |
+| `SFE17`       | Deferred approval reviewer evidence keeps Auto-review opt-in, fail-closed, and measured against human decisions before default recommendation | D8        |
+| `SFE18`       | Deferred goal continuation evidence treats Codex goals as runtime cursors, requires explicit goal actions, and audits completion against real evidence | D9        |
 
 ## Resume Cursor
 
 Current safe state for the next Codex instance:
 
-- The first implementation issue is
-  [JSC-249](https://linear.app/jscraik/issue/JSC-249/add-session-friction-and-evidence-contracts)
-  and remains P1-P3 only.
+- [JSC-249](https://linear.app/jscraik/issue/JSC-249/add-session-friction-and-evidence-contracts)
+  is `In Progress`. P1 and P2-lite are recorded in Linear as implemented and
+  validated; verify them before editing instead of restarting them.
 - P2 is limited to the smallest metadata subset needed by existing
   `harness next` recommendations.
 - P3 lives under `src/lib/session/**`; do not create a competing
   `src/lib/evidence/**` closeout abstraction in the first issue.
-- D1-D7 are deferred tracks. Promote one only after P1-P3 KPI evidence or a
+- The next implementation target is P3 verification and wiring under
+  `src/lib/session/**`, followed by the first KPI measurement or explicit
+  blocker note.
+- D1-D9 are deferred tracks. Promote one only after P1-P3 KPI evidence or a
   recorded Codex workflow proves it is the next bottleneck.
+- Codex `developer_instructions`, `compact_prompt`, and
+  `experimental_compact_prompt_file` are useful D7 inputs, not implementation
+  scope for JSC-249.
+- Codex Auto-review is a useful D8 input, not implementation scope for JSC-249
+  until permission-friction evidence proves it is the next bottleneck.
+- Codex `/goal` and app-server goal APIs are useful D9 inputs, not
+  implementation scope for JSC-249. `JSC-279` owns the deferred implementation
+  lane once resume or stale-plan evidence proves active-objective context is
+  the next bottleneck.
 - `docs/roadmap/north-star.md`, `harness.contract.json`,
   `src/lib/contract/types-core.ts`, and
   `src/lib/init/scaffold-contract-template.ts` now carry the Codex-native
@@ -797,19 +942,16 @@ Current safe state for the next Codex instance:
 
 ## Handoff to he-work
 
-Do not start implementation until a Linear issue is assigned or an explicit
-waiver records why this follow-on remains untracked. Once tracked, implement in
-the P0 to P3 order above. Keep the first merged slice small: P1 plus the
-execution-profile and permission-plan subset of P2 is the best initial PR
-because it improves `harness next` performance and permission clarity without
-requiring PR, subagent, instruction-routing, capability-digest, or run-index
-work. P2 must only annotate existing `harness next` recommendations; any new
-recommendation logic or provider-backed inspection belongs in a deferred track.
-Follow with P3 under `src/lib/session/**` so future reports can distinguish
-done, blocked, partial, abandoned, and advisory-only sessions without splitting
-session closeout logic across competing module homes.
+JSC-249 is assigned and in progress, so do not restart P0, P1, or P2-lite from
+the stale plan text. Start by verifying the existing decision and `harness next`
+surfaces against `SFE1`-`SFE5`, then move to P3 under `src/lib/session/**` so
+future reports can distinguish done, blocked, partial, abandoned, and
+advisory-only sessions without splitting session closeout logic across
+competing module homes. Any new recommendation logic or provider-backed
+inspection belongs in a deferred track unless focused verification proves it is
+required for P3.
 
-Do not promote D1-D7 until the outcome KPIs or a recorded Codex workflow show a
+Do not promote D1-D9 until the outcome KPIs or a recorded Codex workflow show a
 real bottleneck that P1-P3 cannot handle.
 
 Use the existing cockpit implementation as a dependency, not a target for broad

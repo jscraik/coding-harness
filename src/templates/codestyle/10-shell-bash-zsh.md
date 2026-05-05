@@ -33,10 +33,12 @@
 
 ## Enforcement
 - Shell workflow changes MUST pass:
-  - `bash scripts/codex-preflight.sh --stack auto --mode required`
+  - `pnpm lint`
+  - `pnpm typecheck`
+  - `pnpm test`
+  - `pnpm audit`
+  - `pnpm check`
   - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
-  - `pnpm lint`
-  - `pnpm test`
 - Shell snippets in docs MUST use executable contract forms (`zsh -lc ...`, `bash script.sh`) and avoid sourced-CLI patterns.
 - Any exception to strict-mode, quoting, or destructive-command policy requires waiver metadata with rule ID or section, reason, tracking ticket, and expiry or ADR reference.

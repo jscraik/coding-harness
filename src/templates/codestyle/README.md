@@ -33,6 +33,7 @@ Use this directory for detailed coding standards. Keep [../CODESTYLE.md](../CODE
 - [17-testing.md](./17-testing.md)
 - [18-code-review.md](./18-code-review.md)
 - [19-development-workflow.md](./19-development-workflow.md)
+- [20-go.md](./20-go.md)
 
 ## Enforcement defaults
 - Treat this directory as policy, not guidance: `MUST` and `MUST NOT` are enforced defaults.

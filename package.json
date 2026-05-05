@@ -1,6 +1,6 @@
 {
 	"name": "@brainwav/coding-harness",
-	"version": "0.14.0",
+	"version": "0.15.0",
 	"files": [
 		"dist",
 		"scripts/codex-preflight.sh",
@@ -38,7 +38,6 @@
 	},
 	"scripts": {
 		"check": "pnpm lint && pnpm docs:lint && pnpm docs:ubiquitous:guard && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm test:related && pnpm test:ci && pnpm audit",
-
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && biome check .",
 		"lint:fix": "biome check . --write",
@@ -48,7 +47,7 @@
 		"test:ci": "bash scripts/test-ci.sh",
 		"test:watch": "vitest",
 		"test:deep": "pnpm check && pnpm test:artifacts",
-		"test:evals": "node scripts/run-harness-evals.mjs",
+		"test:evals": "node --import tsx scripts/run-harness-evals.mjs",
 		"test:harness-upgrade-matrix": "node scripts/test-harness-upgrade-matrix.mjs",
 		"test:integration": "pnpm vitest run src/commands/agent-first-throughput.integration.test.ts",
 		"test:e2e": "pnpm e2e",
@@ -101,7 +100,6 @@
 		"markdownlint-cli2": "^0.21.0",
 		"standard-version": "^9.5.0",
 		"tsx": "^4.21.0",
-		"typescript": "^5.9.3",
 		"vitest": "^3.2.4"
 	},
 	"packageManager": "pnpm@10.33.0",
@@ -120,12 +118,13 @@
 		"lodash": "^4.18.1",
 		"picomatch": "^4.0.4",
 		"semver": "^7.7.4",
-		"sqlite-vec": "0.1.7-alpha.2"
+		"sqlite-vec": "0.1.7-alpha.2",
+		"typescript": "^5.9.3"
 	},
 	"pnpm": {
 		"overrides": {
-			"axios": "^1.15.0",
-			"@vvago/vale>axios": "^1.15.0",
+			"axios": "^1.15.2",
+			"@vvago/vale>axios": "^1.15.2",
 			"brace-expansion": "^5.0.5",
 			"follow-redirects": "^1.16.0",
 			"handlebars": "^4.7.9",
@@ -138,12 +137,12 @@
 			"yaml": "^2.8.3",
 			"vite": ">=7.3.2 <8",
 			"handlebars@>=4.0.0 <=4.7.8": ">=4.7.9",
-			"axios@<1.15.0": ">=1.15.0",
 			"brace-expansion@>=4.0.0 <5.0.5": ">=5.0.5",
 			"handlebars@>=4.0.0 <4.7.9": ">=4.7.9",
 			"picomatch@<2.3.2": ">=2.3.2",
 			"picomatch@>=4.0.0 <4.0.4": ">=4.0.4",
-			"yaml@>=2.0.0 <2.8.3": ">=2.8.3"
+			"yaml@>=2.0.0 <2.8.3": ">=2.8.3",
+			"axios@<1.15.2": ">=1.15.2"
 		}
 	},
 	"license": "Apache-2.0",

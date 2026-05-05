@@ -12,7 +12,7 @@
 - This module defines security expectations for code, configuration, and release surfaces.
 
 ## Mandatory checks
-- Before commit/PR handoff:
+- Before commit/PR handoff, verify:
   - Secrets and credentials MUST NOT be hardcoded.
   - Input validation MUST exist at trust boundaries.
   - Auth/authz logic changes MUST be explicitly reviewed.
@@ -24,16 +24,16 @@
 - Raw secret values MUST NOT be printed in logs, test fixtures, or screenshots.
 
 ## Secure coding defaults
-- Data access MUST use parameterized queries.
+- Data access MUST use parameterized queries where query parameters exist.
 - Untrusted content MUST be sanitized before rendering/execution.
-- Runtime permissions and network access MUST default to least privilege.
+- Runtime permissions and network access MUST apply least-privilege defaults.
 
 ## Incident response workflow
-1. Work on unrelated changes MUST stop.
-2. Severity and blast radius MUST be classified.
-3. CRITICAL vulnerabilities MUST be fixed before proceeding with normal work.
+1. Stop work on unrelated changes.
+2. Classify severity and blast radius.
+3. Fix CRITICAL vulnerabilities before proceeding with normal work.
 4. Regression checks MUST be added to prevent reintroduction.
 
 ## Enforcement
-- Security findings at CRITICAL severity are merge blockers.
+- Security findings at CRITICAL severity MUST be merge blockers.
 - Exceptions MUST include waiver metadata with rule ID, reason, tracking issue, and expiry or ADR.

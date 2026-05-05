@@ -26,7 +26,7 @@ The registry intentionally favors realistic agent-delivery prompts over generic 
 
 ## Scenario Classes
 
-The registry contains 14 high-signal scenarios:
+The registry contains 15 high-signal scenarios:
 
 - `live_fixture`: deterministic local fixture executed by `pnpm test:evals`
 - `registered`: scenario contract captured for future replay or external judge execution
@@ -42,6 +42,7 @@ The first executable slice runs these local fixtures:
 - `validation-plan-closeout-match`: runs the production validation-plan builder against fixture learnings and asserts the recommended closeout commands match the changed files.
 - `spec-reimplementation-loop`: converts source behavior into an executable spec, simulates a fresh implementation attempt, evaluates source/spec/implementation drift, improves the spec, and verifies the next implementation attempt has fewer missing assumptions.
 - `harness-engineering-lifecycle-routing`: evaluates deterministic Harness Engineering routing doctrine before promoting any workflow route into Coding Harness command behavior.
+- `review-feedback-eval-seed`: converts repeated late-stage remediation noise into a deterministic eval-seed artifact with matched files, evidence refs, remediation source, failure class, and a concrete target surface.
 
 These fixtures require no GitHub, CircleCI, CodeRabbit, Semgrep, or npm registry credentials.
 
