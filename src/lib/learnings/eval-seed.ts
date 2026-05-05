@@ -389,6 +389,15 @@ function buildEvalSeedCandidate(
 function inferRemediationSource(
 	learning: ReviewContextLearning,
 ): EvalSeedRemediationSource {
+	if (learning.classification === "generated_artifact") {
+		return "generated_artifact";
+	}
+	if (learning.classification === "source_of_truth") {
+		return "source_of_truth";
+	}
+	if (learning.classification === "validation_contract") {
+		return "validation";
+	}
 	const haystack = evalSeedHaystack(learning);
 	if (
 		/\b(circleci|ci job|pipeline|workflow failed|red job)\b/i.test(haystack)
@@ -404,12 +413,6 @@ function inferRemediationSource(
 	}
 	if (/\b(validation|verify|test|typecheck|lint|gate)\b/i.test(haystack)) {
 		return "validation";
-	}
-	if (learning.classification === "generated_artifact") {
-		return "generated_artifact";
-	}
-	if (learning.classification === "source_of_truth") {
-		return "source_of_truth";
 	}
 	if (
 		/\b(coderabbit|review|comment|finding)\b/i.test(haystack) ||
@@ -429,6 +432,18 @@ function inferRemediationSource(
 function inferFailureClass(
 	learning: ReviewContextLearning,
 ): EvalSeedFailureClass {
+	if (learning.classification === "generated_artifact") {
+		return "generated_artifact_drift";
+	}
+	if (learning.classification === "source_of_truth") {
+		return "source_of_truth_drift";
+	}
+	if (learning.classification === "validation_contract") {
+		return "validation_gap";
+	}
+	if (learning.classification === "guardrail") {
+		return "guardrail_gap";
+	}
 	const haystack = evalSeedHaystack(learning);
 	if (
 		/\b(circleci|ci job|pipeline|workflow failed|red job)\b/i.test(haystack)
@@ -441,18 +456,6 @@ function inferFailureClass(
 		)
 	) {
 		return "github_pr_remediation";
-	}
-	if (learning.classification === "generated_artifact") {
-		return "generated_artifact_drift";
-	}
-	if (learning.classification === "source_of_truth") {
-		return "source_of_truth_drift";
-	}
-	if (learning.classification === "validation_contract") {
-		return "validation_gap";
-	}
-	if (learning.classification === "guardrail") {
-		return "guardrail_gap";
 	}
 	if (
 		/\b(coderabbit|review|comment|finding)\b/i.test(haystack) ||

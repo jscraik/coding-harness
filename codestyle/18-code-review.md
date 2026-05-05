@@ -45,5 +45,6 @@
 ## Enforcement
 - Review artifacts MUST reference concrete file paths and impacted behavior.
 - Validation and review outcomes MUST be explicit and evidence-backed.
+- Validation evidence MUST include exact commands and outcomes in this form: `Command: <exact command> -> pass|fail|blocked (<reason>)`.
 - Repo review wrappers MUST stay aligned with the independent-review contract. When review or comment-resolution behavior changes, validate the wrapper surface and preserve external reviewer independence.
 - Review evidence MUST distinguish human, Codex, CodeRabbit, CI, and security-check status instead of collapsing them into a single generic approval.

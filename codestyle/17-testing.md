@@ -17,7 +17,7 @@
   - Unit tests for core logic.
   - Integration tests for boundary interactions.
   - End-to-end tests for critical user workflows when applicable.
-- This repository's TypeScript test runner is Vitest; keep unit, related, CI, coverage, e2e, and artifact checks routed through the package scripts unless a narrower documented invocation is needed for iteration.
+- This repository's TypeScript test runner is Vitest; unit, related, CI, coverage, e2e, and artifact checks MUST stay routed through the package scripts unless a narrower documented invocation is needed for iteration.
 
 ## TDD default workflow
 1. Write a failing test (RED).
@@ -32,15 +32,15 @@
 - Changed production `src/**` files MUST have a related Vitest path via `pnpm run test:related`; the gate must not pass silently when no test covers the changed source.
 
 ## Exact behavior checks
-- When executable behavior changes, the smallest real code path that exercises the exact production code touched SHOULD run before the change is described as verified.
-- Prefer invoking the production function, class, CLI command, shell script, validator, or route directly.
+- When executable behavior changes, the smallest real code path that exercises the exact production code touched MUST run before the change is described as verified.
+- Agents SHOULD prefer invoking the production function, class, CLI command, shell script, validator, or route directly.
 - If no existing test covers the path, agents MAY create a temporary local reproduction harness under `codex-scripts/`, but it MUST remain gitignored and MUST import or invoke production code directly instead of copying implementation into the harness.
 - If the exact path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, the blocker MUST be stated explicitly and the nearest meaningful validation SHOULD run instead.
 - Production behavior MUST NOT be described as verified unless the touched path actually ran.
 
 ## Coverage and gates
 - Default target is >= 80% coverage unless a repository contract defines a different threshold.
-- Generated artifacts, init scaffolds, and runtime/output contracts require artifact or deep validation when their emitted behavior changes.
+- Generated artifacts, init scaffolds, and runtime/output contracts MUST receive artifact or deep validation when their emitted behavior changes.
 - Repository-defined baseline gates are mandatory:
   - `pnpm lint`
   - `pnpm typecheck`

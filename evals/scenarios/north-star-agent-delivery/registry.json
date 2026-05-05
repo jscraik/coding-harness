@@ -191,10 +191,7 @@
 			"type": "live_fixture",
 			"prompt": "Turn repeated late-stage review remediation noise into a deterministic future eval seed.",
 			"expected": {
-				"commands": [
-					"pnpm test:evals",
-					"node --import tsx --eval <eval-seed fixture>"
-				],
+				"commands": ["pnpm test:evals"],
 				"artifacts": [
 					"artifacts/evals/result.json",
 					"artifacts/evals/braintrust-log-data.json",

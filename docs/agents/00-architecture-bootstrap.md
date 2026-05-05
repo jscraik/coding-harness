@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-03
+last_validated: 2026-05-05
 ---
 
 # Architecture bootstrap
@@ -51,7 +51,7 @@ For agent-native cockpit work, treat decision-envelope, generated environment ac
 Goal-continuation, approval-plan, and eval-seed changes that add or reroute source modules must refresh `AI/context/diagram-context.md` in the same PR so agent reviewers can discover the new evidence path from the architecture context pack.
 For release packaging changes that alter runtime dependency metadata, pass the packed CLI smoke path before publish, and commit any required `AI/context/diagram-context.md` refresh and its required docs-gate surfaces (including this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`) that pre-push or docs-gate reports.
 
-<!-- last_validated: 2026-05-03 -->
+<!-- last_validated: 2026-05-05 -->
 For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
 For CI ownership architecture changes, keep `harness.contract.json` `ciOwnership` aligned with those required-check identities: CircleCI remains the primary PR gate, CodeRabbit remains independent review evidence, Semgrep Cloud remains independent external security evidence, and GitHub Actions workflows must not become automatic PR gates without a deliberate contract migration.
 
