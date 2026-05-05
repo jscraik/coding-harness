@@ -118,7 +118,10 @@ export function runLicenseGate(options: LicenseGateOptions): LicenseGateResult {
 }
 
 /**
- * Run the license gate CLI and exit with appropriate code
+ * Run the license gate, print either JSON or human-readable validation output, and return the corresponding exit code.
+ *
+ * @param options - License gate options controlling repository root, allowed licenses, policy flags, and output format
+ * @returns The exit code that corresponds to the validation outcome (one of the defined EXIT_CODES)
  */
 export function runLicenseGateCLI(options: LicenseGateOptions): number {
 	const gateResult = runLicenseGate(options);

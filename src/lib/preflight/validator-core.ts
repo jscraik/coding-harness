@@ -383,6 +383,16 @@ export async function runPreflightGate(
 	);
 }
 
+/**
+ * Loads and validates a preflight harness contract file and reports basic metadata about the load.
+ *
+ * @param contractPath - Filesystem path to the contract JSON file to load.
+ * @returns An object with:
+ *   - `contract`: the parsed HarnessContract when successfully loaded, or `undefined` if missing or invalid;
+ *   - `errorMessage`: a human-readable error message when the contract is invalid, or `undefined` when valid or missing;
+ *   - `durationMs`: milliseconds taken to attempt loading and basic validation;
+ *   - `northStarDeclared`: `true` if the raw contract JSON declared a top-level `northStar` property, otherwise `false`.
+ */
 function loadPreflightContract(contractPath: string): {
 	contract: HarnessContract | undefined;
 	errorMessage: string | undefined;

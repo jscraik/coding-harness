@@ -14,7 +14,17 @@ export { runSilentErrorDetector, EXIT_CODES };
 export type { SilentErrorDetectorOptions };
 
 /**
- * CLI entry point for silent error detection
+ * Run the silent error detector and print the results to stdout.
+ *
+ * Runs the detector with the provided options and formats output either as
+ * pretty JSON (when `options.json` is true) or as a human-readable report that
+ * includes a pass/fail header, per-file grouped detections, per-detection
+ * location, description, a 60-character snippet, optional suggestions, and a
+ * summary with counts by severity and type.
+ *
+ * @param options - Configuration for the detection run and output (for example
+ *   controls whether JSON output is produced and whether suggestions are shown).
+ * @returns `EXIT_CODES.SUCCESS` when no silent errors were found, `EXIT_CODES.SILENT_ERRORS_FOUND` otherwise.
  */
 export function runSilentErrorDetectorCLI(
 	options: SilentErrorDetectorOptions,

@@ -12,6 +12,12 @@ function normalizeQuestionText(value: string): string {
 		.trim();
 }
 
+/**
+ * Detects whether the given text contains any evidence-style references (links, URLs, file/line refs, or artifact paths).
+ *
+ * @param text - The text to inspect for evidence references.
+ * @returns `true` if the text contains at least one evidence-like reference, `false` otherwise.
+ */
 function hasEvidenceReference(text: string): boolean {
 	const evidencePatterns = [
 		/\[[^\]]+\]\([^)]+\)/i,

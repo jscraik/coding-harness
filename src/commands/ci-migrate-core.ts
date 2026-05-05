@@ -1094,6 +1094,18 @@ function resolveBreakGlassRosterPath(
 	return resolve(targetDir, configuredPath);
 }
 
+/**
+ * Parses and validates a break-glass roster JSON document.
+ *
+ * The function verifies the document conforms to the `ci-migrate-break-glass-roster/v1`
+ * schema and enforces field-level constraints (approved approvers list, ISO timestamps,
+ * integer ranges for TTL and rotation cadence, and optional rotation metadata).
+ *
+ * @param content - The raw JSON text of the break-glass roster
+ * @returns `{ ok: true, value: BreakGlassRoster }` when the input is a valid roster;
+ *          `{ ok: false, error: string }` when parsing or validation fails, with `error`
+ *          describing the validation problem.
+ */
 function parseBreakGlassRoster(
 	content: string,
 ): { ok: true; value: BreakGlassRoster } | { ok: false; error: string } {

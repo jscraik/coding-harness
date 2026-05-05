@@ -64,6 +64,17 @@ export function renderCheckEnvironmentScript(): string {
 	].join("\n");
 }
 
+/**
+ * Produce the Bash script body that performs repository file and directory validations for the local environment preflight.
+ *
+ * Checks presence of the contract, mise config, Codex environment, Makefile, prek config, codestyle artifacts, required hook support files,
+ * and—when enabled—required Project Brain memory-extension paths under the repository root.
+ *
+ * @param packageJsonPath - Path to package.json relative to the repository root
+ * @param projectBrainMemoryExtensionEnabled - When `true`, validate that each path in `requiredProjectBrainPaths` exists under the repository
+ * @param requiredProjectBrainPaths - Paths (relative to the repository root) required by the Project Brain memory-extension when that feature is enabled
+ * @returns A string containing a Bash script that exits with an error if any required files or directories are missing and prints guidance for missing Project Brain paths
+ */
 function renderEnvironmentFileChecks(
 	packageJsonPath: string,
 	projectBrainMemoryExtensionEnabled: boolean,
@@ -150,6 +161,13 @@ fi
 	fi`;
 }
 
+/**
+ * Produces a Bash script fragment that enforces the repository's toolchain policy.
+ *
+ * The returned script verifies the presence of the `mise` binary, validates and normalizes mise trust for the repository, activates the mise runtime, ensures required mise tools are pinned in the mise config, checks required terms in the tooling documentation (when present), and verifies the presence of required tooling binaries.
+ *
+ * @returns A string containing the Bash code implementing the above toolchain policy checks.
+ */
 function renderToolchainPolicyChecks(): string {
 	return `ensure_mise_available() {
 	command -v mise >/dev/null 2>&1
@@ -221,6 +239,16 @@ fi
 	done`;
 }
 
+/**
+ * Produce a Bash script fragment that validates repository-level policy artifacts, hooks, Makefile targets, and package scripts.
+ *
+ * The generated script verifies Codex environment action mappings, required Makefile targets, and configured prek hooks
+ * (including name, entry, language, pass_filenames, and optional stages). It also checks installed git hooks for the
+ * repo-local PREK_HOME patch (pre-commit, pre-push, and commit-msg), validates required package.json scripts, and
+ * errors if legacy simple-git-hooks configuration is present.
+ *
+ * @returns A string containing the Bash code that performs the repository policy checks described above.
+ */
 function renderRepositoryPolicyChecks(): string {
 	return `	required_codex_actions=(${renderCodexActionSpecs()})
 	for action in "\${required_codex_actions[@]}"; do
@@ -460,6 +488,13 @@ function renderEnvironmentRunnerFunction(): string {
 }`;
 }
 
+/**
+ * Produces a Bash script that selects and invokes an appropriate harness runner to execute the repository's check-environment, validates the resulting attestation, and reports success or failure.
+ *
+ * The generated script prefers, in order: the repo source CLI (src/cli.ts) when Node is available, a repo wrapper (scripts/harness-cli.sh), the repo dist CLI (dist/cli.js) when Node is available, a mise-resolved harness, and finally a globally installed npm harness (@brainwav/coding-harness). It emits actionable error messages and exits on runner failures or missing tooling, and verifies the attestation at ATTESTATION_PATH before printing a success line.
+ *
+ * @returns The complete Bash script text that performs runner selection, executes check-environment via the chosen runner, enforces failures with informative messages, and validates the attestation.
+ */
 function renderEnvironmentRunnerSelection(): string {
 	return `if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
 	if ! run_check_environment_with_runner "repo source CLI (cd repo && node --import tsx src/cli.ts)" bash -lc 'cd "$1" && shift && exec "$@"' _ "$REPO_ROOT" node --import tsx src/cli.ts; then

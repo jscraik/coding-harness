@@ -365,6 +365,17 @@ function backfillGeneratedRequiredChecks(
 	mergeStringArrayDefaults(merged, rendered, "reviewPolicy", "requiredChecks");
 }
 
+/**
+ * Prepares an updated contract by validating, merging, and computing ownership decisions for a rendered contract file.
+ *
+ * Parses the existing contract at `targetPath` and the provided `renderedContent`, rejects updates that would
+ * downgrade the contract version or remove protected contract keys, merges rendered and existing contract data,
+ * backfills generated required checks, and computes ownership decisions for contract properties.
+ *
+ * @param targetPath - Filesystem path to the existing contract file to refresh
+ * @param renderedContent - JSON string of the newly rendered contract content
+ * @returns On success, `{ ok: true, value: { content, ownershipDecisions } }` where `content` is the merged contract JSON (pretty-printed) and `ownershipDecisions` is an array of computed ownership decision objects. On failure, `{ ok: false, error }` with an `InitErrorOutput` describing the validation or write-related error (e.g., downgrade or removal of protected keys).
+ */
 function prepareContractRefresh(
 	targetPath: string,
 	renderedContent: string,

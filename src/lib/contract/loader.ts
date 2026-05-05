@@ -122,10 +122,10 @@ function safeParseJson(content: string): unknown {
 }
 
 /**
- * Merge validated contract data with defaults, preserving user values.
+ * Produce a HarnessContract by merging provided validated data with defaults and normalizing version-dependent fields.
  *
- * @param data - Validated contract data from schema validation
- * @returns Fully merged and normalized HarnessContract
+ * @param data - Validated contract data (may be `undefined`)
+ * @returns The merged HarnessContract with undefined input fields removed, defaults applied, and version-dependent canonical NorthStar/productSurface/overrideReviewerRegistry fields set to `undefined` when the resolved version does not require canonical NorthStar surfaces and the user did not explicitly provide those fields.
  */
 function mergeContractDefaults(
 	data: HarnessContract | undefined,

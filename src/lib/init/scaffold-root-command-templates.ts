@@ -158,6 +158,17 @@ hooks: ## Setup git hooks
 `;
 }
 
+/**
+ * Render the "Hooks" section of the repository Makefile containing pre-commit, pre-push,
+ * commit-message, and related governance targets.
+ *
+ * Interpolates the provided Makefile command strings into the appropriate targets so the
+ * generated section invokes linting, typechecking, docs checks, security scans, and other
+ * pre-commit/pre-push workflows.
+ *
+ * @param commands - An object with command strings for Makefile targets (see MakefileCommands)
+ * @returns The text content for the Makefile "Hooks" section
+ */
 function renderMakefileHookSection(commands: MakefileCommands): string {
 	return `
 

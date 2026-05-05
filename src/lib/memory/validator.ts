@@ -392,7 +392,14 @@ export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
 }
 
 /**
- * Run memory gate CLI with console output
+ * Run the memory gate in CLI mode and emit formatted output for humans or JSON.
+ *
+ * Loads historical metrics, executes validation, updates and (attempts to) persist metrics/history,
+ * computes trends, detects codex branch status, and prints either a structured JSON object or
+ * human-readable output including success/failure, violations, and reliability metrics.
+ *
+ * @param options - Configuration for the run (paths like memoryPath/forjamiePath/metricsPath and output flags such as `json`)
+ * @returns The process exit code indicating the validation result (one of the tool's defined exit codes)
  */
 export function runMemoryGateCLI(options: MemoryGateOptions): number {
 	// Load historical metrics

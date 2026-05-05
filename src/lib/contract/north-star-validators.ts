@@ -203,6 +203,12 @@ export function isValidNorthStarContract(
 	return true;
 }
 
+/**
+ * Validates whether a value is a SurfaceRegistration record.
+ *
+ * @param value - The value to validate
+ * @returns `true` if `value` conforms to the SurfaceRegistration shape (contains only allowed keys, includes all required fields, and each field has an expected non-empty or enumerated value); `false` otherwise.
+ */
 function isValidSurfaceRegistration(
 	value: unknown,
 ): value is SurfaceRegistration {

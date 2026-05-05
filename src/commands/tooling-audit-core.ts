@@ -185,6 +185,14 @@ function detectCapabilities(
 	return capabilities;
 }
 
+/**
+ * Checks whether a package name appears in the package manifest according to the specified dependency scope.
+ *
+ * @param manifest - The parsed package.json manifest to inspect
+ * @param packageName - The package name to look for
+ * @param dependencyType - Which dependency section to check: `"dependencies"` for runtime deps, `"devDependencies"` for dev-only deps, or `"either"` to check both
+ * @returns `true` if the package is present in the selected dependency section(s), `false` otherwise
+ */
 function hasRequiredPackage(
 	manifest: PackageManifest,
 	packageName: string,
@@ -863,6 +871,19 @@ function summarizeFindings(
 	};
 }
 
+/**
+ * Audits a repository directory for tooling policy compliance and returns its audit result.
+ *
+ * Performs a series of checks defined by the repository's harness contract (if present) and collects findings produced by readiness script, Mise, Codex environment, Makefile, Project Brain memory-extension, package policy, local hooks audits, and optional base-contract drift checks.
+ *
+ * @param repoPath - Filesystem path to the repository to audit
+ * @param baseContract - Optional base contract to compare against for drift detection
+ * @param includeMissing - If true, treat repositories without a harness.contract.json as `no-contract` results instead of an `error`
+ * @returns A ToolingAuditRepoResult describing the repository path, status, collected findings, and an optional error message. Status values:
+ *  - `"success"`: contract present and audits ran (findings may be empty or contain issues)
+ *  - `"no-contract"`: no contract found and `includeMissing` was true
+ *  - `"error"`: an error occurred reading or loading the contract (the `error` field contains a brief message)
+ */
 async function auditRepository(
 	repoPath: string,
 	baseContract?: HarnessContract,

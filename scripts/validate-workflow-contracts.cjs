@@ -41,6 +41,11 @@ function normalizeHeading(line) {
 		.toLowerCase();
 }
 
+/**
+ * Extracts and normalizes Markdown headings from the given content.
+ * @param {string} content - The Markdown document text to scan.
+ * @returns {string[]} Normalized heading texts with Markdown heading markers removed, trimmed, and lowercased.
+ */
 function collectHeadings(content) {
 	return content
 		.split(/\r?\n/)
@@ -48,10 +53,21 @@ function collectHeadings(content) {
 		.map(normalizeHeading);
 }
 
+/**
+ * Finds the index of an expected heading within a list of normalized headings.
+ * @param {string[]} headings - Array of normalized heading strings (e.g., lowercased, trimmed).
+ * @param {string} expectedHeading - The normalized heading to locate.
+ * @returns {number} The zero-based index of `expectedHeading` in `headings`, or `-1` if not found.
+ */
 function findHeadingIndex(headings, expectedHeading) {
 	return headings.indexOf(expectedHeading);
 }
 
+/**
+ * Checks whether the given markdown text contains the canonical transition table header `S | E | G | A | N`.
+ * @param {string} content - The file or document content to search.
+ * @returns {boolean} `true` if the canonical header exists in the content, `false` otherwise.
+ */
 function findCanonicalTransitionHeader(content) {
 	return /`S\s*\|\s*E\s*\|\s*G\s*\|\s*A\s*\|\s*N`/.test(content);
 }
