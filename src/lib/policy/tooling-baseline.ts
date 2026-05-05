@@ -110,7 +110,7 @@ export const PROJECT_MISE_REQUIRED_TOOLS = [
 	["npm:@argos-ci/cli", "4.1.1"],
 	["cosign", "3.0.5"],
 	["cloudflared", "2026.3.0"],
-	["npm:vitest", "4.0.18"],
+	["npm:vitest", "4.1.5"],
 	["ruff", "0.15.5"],
 	["npm:eslint", "10.0.3"],
 	["npm:agent-browser", "0.17.1"],

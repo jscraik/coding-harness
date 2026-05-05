@@ -8,7 +8,7 @@
 
 import { PROJECT_MISE_REQUIRED_TOOLS } from "../policy/tooling-baseline.js";
 
-export const BIOME_SCHEMA_VERSION = "1.9.4";
+export const BIOME_SCHEMA_VERSION = "2.4.14";
 const BIOME_SCHEMA_URL = `https://biomejs.dev/schemas/${BIOME_SCHEMA_VERSION}/schema.json`;
 
 /**
@@ -27,16 +27,17 @@ export function renderBiomeConfigTemplate(): string {
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": [
-			"node_modules",
-			"dist",
-			"coverage",
-			"artifacts"
+		"includes": [
+			"**",
+			"!**/node_modules",
+			"!**/dist",
+			"!**/coverage",
+			"!**/artifacts"
 		]
 	},
 	"overrides": [
 		{
-			"include": ["*.config.ts", "vite.config.ts", "vitest.config.ts"],
+			"includes": ["**/*.config.ts", "**/vite.config.ts", "**/vitest.config.ts"],
 			"linter": {
 				"rules": {
 					"style": {
@@ -57,7 +58,7 @@ export function renderBiomeConfigTemplate(): string {
 			"suspicious": {
 				"noEmptyBlockStatements": "error",
 				"noExplicitAny": "warn",
-				"noConsoleLog": "warn",
+				"noConsole": "off",
 				"noDebugger": "error"
 			},
 			"style": {
@@ -67,9 +68,7 @@ export function renderBiomeConfigTemplate(): string {
 			}
 		}
 	},
-	"organizeImports": {
-		"enabled": true
-	}
+	"assist": { "actions": { "source": { "organizeImports": "off" } } }
 }
 `;
 }

@@ -33,7 +33,7 @@ const PATTERNS: PatternDefinition[] = [
 			// Empty catch: catch { } or catch (e) { }
 			/catch\s*(?:\([^)]*\))?\s*\{\s*\}/g,
 			// catch with only whitespace/comments
-			/catch\s*(?:\([^)]*\))?\s*\{[\s\/]*\}/g,
+			/catch\s*(?:\([^)]*\))?\s*\{[\s/]*\}/g,
 		],
 		suggestion: "Add error logging or re-throw the error",
 	},

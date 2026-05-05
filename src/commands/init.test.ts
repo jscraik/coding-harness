@@ -1774,7 +1774,7 @@ describe("runInit", () => {
 			expect(miseToml).toContain('"npm:@argos-ci/cli" = "4.1.1"');
 			expect(miseToml).toContain('"cosign" = "3.0.5"');
 			expect(miseToml).toContain('"cloudflared" = "2026.3.0"');
-			expect(miseToml).toContain('"npm:vitest" = "4.0.18"');
+			expect(miseToml).toContain('"npm:vitest" = "4.1.5"');
 			expect(miseToml).toContain('"ruff" = "0.15.5"');
 			expect(miseToml).toContain('"npm:eslint" = "10.0.3"');
 			expect(miseToml).toContain('"npm:agent-browser" = "0.17.1"');
@@ -2476,13 +2476,13 @@ args=("$@")
 if [[ "\${args[0]:-}" == "--cd" ]]; then
 	args=("\${args[@]:2}")
 fi
-if [[ "\${args[0]:-}" == "trust" ]]; then
-	if [[ "\${args[1]:-}" == "--show" ]]; then
-		target="\${args[2]:-.}"
-		echo "$target: trusted"
+	if [[ "\${args[0]:-}" == "trust" ]]; then
+		if [[ "\${args[1]:-}" == "--show" ]]; then
+			target="\${args[2]:-.}"
+			echo "\${target%/.mise.toml}: trusted"
+		fi
+		exit 0
 	fi
-	exit 0
-fi
 if [[ "\${args[0]:-}" == "activate" ]]; then
 	echo 'true'
 	exit 0
@@ -5204,11 +5204,11 @@ describe("tooling version detection (JSC-57)", () => {
 	});
 
 	it("skips biome.json if existing version is newer than template", () => {
-		// Write a biome.json with a newer schema version than the template (1.9.4)
+		// Write a biome.json with a newer schema version than the template (2.4.14)
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				$schema: "https://biomejs.dev/schemas/2.5.0/schema.json",
 				organizeImports: { enabled: true },
 			}),
 		);
@@ -5225,11 +5225,11 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("2.3.13");
+		expect(biomecontent.$schema).toContain("2.5.0");
 	});
 
 	it("overwrites biome.json if existing version is older than template", () => {
-		// Write a biome.json with an older schema version (0.5.0 is older than 1.9.4)
+		// Write a biome.json with an older schema version (0.5.0 is older than 2.4.14)
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
@@ -5248,14 +5248,14 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("1.9.4");
+		expect(biomecontent.$schema).toContain("2.4.14");
 	});
 
 	it("skips biome.json if existing version equals template version", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/1.9.4/schema.json",
+				$schema: "https://biomejs.dev/schemas/2.4.14/schema.json",
 			}),
 		);
 
@@ -5271,7 +5271,7 @@ describe("tooling version detection (JSC-57)", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				$schema: "https://biomejs.dev/schemas/2.5.0/schema.json",
 			}),
 		);
 
@@ -5286,14 +5286,14 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("1.9.4");
+		expect(biomecontent.$schema).toContain("2.4.14");
 	});
 
 	it("interactive mode shows biome.json with newer version as 'skip'", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				$schema: "https://biomejs.dev/schemas/2.5.0/schema.json",
 			}),
 		);
 

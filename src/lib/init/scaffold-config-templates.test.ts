@@ -10,14 +10,25 @@ describe("config scaffold templates", () => {
 		const config = renderBiomeConfigTemplate();
 		const parsed = JSON.parse(config) as {
 			$schema: string;
-			linter: { rules: { style: { noDefaultExport: string } } };
+			files: { includes: string[] };
+			linter: {
+				rules: {
+					style: { noDefaultExport: string };
+					suspicious: {
+						noConsole: string;
+					};
+				};
+			};
 		};
 
 		expect(parsed.$schema).toBe(
-			"https://biomejs.dev/schemas/1.9.4/schema.json",
+			"https://biomejs.dev/schemas/2.4.14/schema.json",
 		);
+		expect(parsed.files.includes).toContain("!**/node_modules");
 		expect(parsed.linter.rules.style.noDefaultExport).toBe("error");
+		expect(parsed.linter.rules.suspicious.noConsole).toBe("off");
 		expect(config).toContain('"useImportType": "error"');
+		expect(config).not.toContain("noConsoleLog");
 	});
 
 	it("renders Gitleaks allowlist defaults for docs and tests", () => {

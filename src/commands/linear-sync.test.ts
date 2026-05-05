@@ -25,49 +25,51 @@ vi.mock("../lib/linear/client.js", () => {
 				this.code = code;
 			}
 		},
-		LinearClient: vi.fn().mockImplementation(() => ({
-			listTeams: vi.fn().mockResolvedValue(mockTeams),
-			listLabels: vi.fn().mockResolvedValue(mockLabels),
-			searchIssues: vi.fn().mockImplementation((term: string) => {
-				// Return issues whose title includes the search term
-				return Promise.resolve(
-					mockIssues.filter(
-						(i) =>
-							i.title.includes(term) ||
-							// Simulate fingerprint search by checking if any mock issue
-							// has a comment with the label name — simplified: just title match
-							(term.startsWith("harness-sync:") &&
-								i.title.includes("harness-sync")),
-					),
-				);
-			}),
-			createComment: vi
-				.fn()
-				.mockImplementation((issueId: string, body: string) => {
-					mockComments.push({ issueId, body });
-					return Promise.resolve();
+		LinearClient: vi.fn(function LinearClient() {
+			return {
+				listTeams: vi.fn().mockResolvedValue(mockTeams),
+				listLabels: vi.fn().mockResolvedValue(mockLabels),
+				searchIssues: vi.fn().mockImplementation((term: string) => {
+					// Return issues whose title includes the search term
+					return Promise.resolve(
+						mockIssues.filter(
+							(i) =>
+								i.title.includes(term) ||
+								// Simulate fingerprint search by checking if any mock issue
+								// has a comment with the label name — simplified: just title match
+								(term.startsWith("harness-sync:") &&
+									i.title.includes("harness-sync")),
+						),
+					);
 				}),
-			updateIssue: vi
-				.fn()
-				.mockImplementation(
-					(issueId: string, input: Record<string, unknown>) => {
-						mockUpdates.push({ issueId, input });
+				createComment: vi
+					.fn()
+					.mockImplementation((issueId: string, body: string) => {
+						mockComments.push({ issueId, body });
 						return Promise.resolve();
-					},
-				),
-			createIssue: vi
-				.fn()
-				.mockImplementation((input: Record<string, unknown>) => {
-					mockCreated.push({ input });
-					const id = `JSC-${100 + mockCreated.length}`;
-					return Promise.resolve({
-						id,
-						identifier: id,
-						title: input.title as string,
-						url: `https://linear.app/jscraik/issue/${id}`,
-					});
-				}),
-		})),
+					}),
+				updateIssue: vi
+					.fn()
+					.mockImplementation(
+						(issueId: string, input: Record<string, unknown>) => {
+							mockUpdates.push({ issueId, input });
+							return Promise.resolve();
+						},
+					),
+				createIssue: vi
+					.fn()
+					.mockImplementation((input: Record<string, unknown>) => {
+						mockCreated.push({ input });
+						const id = `JSC-${100 + mockCreated.length}`;
+						return Promise.resolve({
+							id,
+							identifier: id,
+							title: input.title as string,
+							url: `https://linear.app/jscraik/issue/${id}`,
+						});
+					}),
+			};
+		}),
 	};
 });
 

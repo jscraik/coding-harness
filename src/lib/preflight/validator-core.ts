@@ -406,10 +406,7 @@ function loadPreflightContract(contractPath: string): {
 		const parsedSource = JSON.parse(contractSource) as unknown;
 		if (typeof parsedSource === "object" && parsedSource !== null) {
 			const parsedRecord = parsedSource as Record<string, unknown>;
-			northStarDeclared = Object.prototype.hasOwnProperty.call(
-				parsedRecord,
-				"northStar",
-			);
+			northStarDeclared = Object.hasOwn(parsedRecord, "northStar");
 			const productSurface = parsedRecord.productSurface;
 			if (typeof productSurface === "object" && productSurface !== null) {
 				const surfaces = (productSurface as Record<string, unknown>).surfaces;

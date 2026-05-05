@@ -154,20 +154,13 @@ function mergeContractDefaults(
 	const canonicalNorthStarRequired =
 		requiresCanonicalNorthStarSurfaces(resolvedVersion);
 	if (!canonicalNorthStarRequired) {
-		if (!Object.prototype.hasOwnProperty.call(normalizedData, "northStar")) {
+		if (!Object.hasOwn(normalizedData, "northStar")) {
 			contract.northStar = undefined;
 		}
-		if (
-			!Object.prototype.hasOwnProperty.call(normalizedData, "productSurface")
-		) {
+		if (!Object.hasOwn(normalizedData, "productSurface")) {
 			contract.productSurface = undefined;
 		}
-		if (
-			!Object.prototype.hasOwnProperty.call(
-				normalizedData,
-				"overrideReviewerRegistry",
-			)
-		) {
+		if (!Object.hasOwn(normalizedData, "overrideReviewerRegistry")) {
 			contract.overrideReviewerRegistry = undefined;
 		}
 	}
@@ -236,7 +229,7 @@ export function loadContract(
 		options?.allowExtends === false &&
 		typeof data === "object" &&
 		data !== null &&
-		Object.prototype.hasOwnProperty.call(data, "extends")
+		Object.hasOwn(data, "extends")
 	) {
 		throw new ContractLoadError(
 			"Contract inheritance via 'extends' is not supported in this command path. Resolve presets before running policy commands.",

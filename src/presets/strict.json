@@ -168,7 +168,7 @@
 			},
 			{
 				"tool": "npm:vitest",
-				"version": "4.0.18"
+				"version": "4.1.5"
 			},
 			{
 				"tool": "ruff",

@@ -49,7 +49,7 @@ function collectHeadings(content) {
 }
 
 function findHeadingIndex(headings, expectedHeading) {
-	return headings.findIndex((heading) => heading === expectedHeading);
+	return headings.indexOf(expectedHeading);
 }
 
 function findCanonicalTransitionHeader(content) {

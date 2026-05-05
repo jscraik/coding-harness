@@ -31,7 +31,14 @@ describe("scaffold environment templates", () => {
 		expect(script).toContain(
 			'installed_hooks_dir="$(git -C "$REPO_ROOT" rev-parse --git-path hooks 2>/dev/null || true)"',
 		);
-		expect(script).toContain("for hook_name in pre-commit pre-push commit-msg; do");
+		expect(script).toContain('MISE_TRUST_REPO_PATH="$REPO_ROOT"');
+		expect(script).toContain(
+			'rg --fixed-strings --line-regexp --quiet "$MISE_TRUST_REPO_PATH: trusted"',
+		);
+		expect(script).not.toContain("MISE_TRUST_LINE_COUNT");
+		expect(script).toContain(
+			"for hook_name in pre-commit pre-push commit-msg; do",
+		);
 		expect(script).toContain("missing repo-local PREK_HOME patch");
 		expect(script).toContain('PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"');
 	});

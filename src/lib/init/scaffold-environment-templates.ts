@@ -142,7 +142,7 @@ fi
 	if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
 		for required_path in "\${required_project_brain_paths[@]}"; do
 			if [[ ! -e "$REPO_ROOT/\${required_path}" ]]; then
-				echo "Error: required Project Brain memory-extension path '\$required_path' is missing under $REPO_ROOT"
+				echo "Error: required Project Brain memory-extension path '$required_path' is missing under $REPO_ROOT"
 				echo "Fix: run harness init --update to restore Project Brain scaffolding."
 				exit 1
 			fi
@@ -169,8 +169,11 @@ fi
 	# pinned runtime versions and required approval posture, not only the caller
 	# shell's PATH.
 	MISE_TRUST_STATUS="$(mise --cd "$REPO_ROOT" trust --show "$MISE_PATH" 2>/dev/null || true)"
-	MISE_TRUST_LINE_COUNT="$(printf '%s\n' "$MISE_TRUST_STATUS" | awk 'NF{count++} END{print count+0}')"
-	if [[ "$MISE_TRUST_LINE_COUNT" -ne 1 ]] || [[ "$MISE_TRUST_STATUS" != *": trusted" ]]; then
+	MISE_TRUST_REPO_PATH="$REPO_ROOT"
+	if [[ "$MISE_TRUST_REPO_PATH" == "$HOME"/* ]]; then
+		MISE_TRUST_REPO_PATH="~/\${MISE_TRUST_REPO_PATH#"$HOME"/}"
+	fi
+	if ! rg --fixed-strings --line-regexp --quiet "$MISE_TRUST_REPO_PATH: trusted" <<<"$MISE_TRUST_STATUS"; then
 		echo "Error: mise config at $MISE_PATH is not trusted"
 		echo "Fix: run 'mise trust --yes $MISE_PATH' and retry."
 		exit 1
@@ -187,10 +190,10 @@ required_mise_tools=(${renderShellArray(
 		PROJECT_MISE_REQUIRED_TOOLS.map(([tool]) => tool),
 	)})
 for tool in "\${required_mise_tools[@]}"; do
-	tool_pattern="$(printf '%s' "\$tool" | sed 's/[][(){}.^$*+?|\\\\]/\\\\&/g')"
-	if ! rg -q "^[[:space:]]*(\\\"\${tool_pattern}\\\"|\${tool_pattern})[[:space:]]*=" "$MISE_PATH"; then
-		echo "Error: required tool '\$tool' is not pinned in $MISE_PATH [tools]"
-		echo "Fix: add '\$tool = \\\"<version>\\\"' to $MISE_PATH."
+	tool_pattern="$(printf '%s' "$tool" | sed 's/[][(){}.^$*+?|\\\\]/\\\\&/g')"
+	if ! rg -q "^[[:space:]]*(\\"\${tool_pattern}\\"|\${tool_pattern})[[:space:]]*=" "$MISE_PATH"; then
+		echo "Error: required tool '$tool' is not pinned in $MISE_PATH [tools]"
+		echo "Fix: add '$tool = \\"<version>\\"' to $MISE_PATH."
 		exit 1
 	fi
 done
@@ -199,7 +202,7 @@ if [[ -f "$TOOLING_DOC_PATH" ]]; then
 	required_tooling_doc_terms=(${renderShellArray(REQUIRED_TOOLING_DOC_TERMS)})
 	for term in "\${required_tooling_doc_terms[@]}"; do
 		if ! rg -qi "(^|[^A-Za-z0-9_-])\${term}([^A-Za-z0-9_-]|$)" "$TOOLING_DOC_PATH"; then
-			echo "Error: tooling doc missing expected term '\$term': $TOOLING_DOC_PATH"
+			echo "Error: tooling doc missing expected term '$term': $TOOLING_DOC_PATH"
 			echo "Fix: update tooling inventory and keep it aligned with $MISE_PATH."
 			echo "Interactive flow: run a Codex AskQuestion/request_user_input prompt before applying installs."
 			exit 1
@@ -228,7 +231,7 @@ function renderRepositoryPolicyChecks(): string {
 			{ prev = $0 }
 			END { exit found ? 0 : 1 }
 		' "$CODEX_ENVIRONMENT_PATH"; then
-			echo "Error: Codex environment action '\$name' is missing or mapped to the wrong icon in $CODEX_ENVIRONMENT_PATH"
+			echo "Error: Codex environment action '$name' is missing or mapped to the wrong icon in $CODEX_ENVIRONMENT_PATH"
 			exit 1
 		fi
 	done
@@ -236,7 +239,7 @@ function renderRepositoryPolicyChecks(): string {
 	required_make_targets=(${renderShellArray(REQUIRED_MAKEFILE_TARGETS)})
 	for target in "\${required_make_targets[@]}"; do
 		if ! rg -q "^\${target}:" "$MAKEFILE_PATH"; then
-			echo "Error: required Makefile target '\$target' is missing from $MAKEFILE_PATH"
+			echo "Error: required Makefile target '$target' is missing from $MAKEFILE_PATH"
 			exit 1
 		fi
 	done
@@ -258,7 +261,7 @@ function renderRepositoryPolicyChecks(): string {
 			}
 			{
 				block = block $0 ORS
-				if ($0 ~ "^[[:space:]]*id[[:space:]]*=[[:space:]]*\\\"" wanted "\\\"[[:space:]]*$") {
+				if ($0 ~ "^[[:space:]]*id[[:space:]]*=[[:space:]]*\\"" wanted "\\"[[:space:]]*$") {
 					matched = 1
 				}
 			}
@@ -267,27 +270,27 @@ function renderRepositoryPolicyChecks(): string {
 			}
 		' "$PREK_CONFIG_PATH")"
 		if [[ -z "$hook_block" ]]; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*name[[:space:]]*=[[:space:]]*\\\"\${hook_display_name}\\\"[[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+		if ! rg -q "^[[:space:]]*name[[:space:]]*=[[:space:]]*\\"\${hook_display_name}\\"[[:space:]]*$" <<< "$hook_block"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\\\"\${hook_command}\\\"[[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\\"\${hook_command}\\"[[:space:]]*$" <<< "$hook_block"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*language[[:space:]]*=[[:space:]]*\\\"\${hook_language}\\\"[[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+		if ! rg -q "^[[:space:]]*language[[:space:]]*=[[:space:]]*\\"\${hook_language}\\"[[:space:]]*$" <<< "$hook_block"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
 		if ! rg -q "^[[:space:]]*pass_filenames[[:space:]]*=[[:space:]]*\${hook_pass_filenames}[[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\\\[\\\"$hook_stages\\\"\\\\][[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\\\[\\"$hook_stages\\"\\\\][[:space:]]*$" <<< "$hook_block"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
 	done
@@ -297,7 +300,7 @@ function renderRepositoryPolicyChecks(): string {
 		for hook_name in pre-commit pre-push commit-msg; do
 			installed_hook="$installed_hooks_dir/$hook_name"
 			if [[ -f "$installed_hook" ]] && rg -q "# File generated by prek: https://github.com/j178/prek" "$installed_hook" && ! rg -F -q 'PREK_HOME="\${PREK_HOME:-$HERE/../.cache/prek}"' "$installed_hook"; then
-				echo "Error: installed prek hook '\$hook_name' is missing repo-local PREK_HOME patch"
+				echo "Error: installed prek hook '$hook_name' is missing repo-local PREK_HOME patch"
 				echo "Fix: run node scripts/setup-git-hooks.js"
 				exit 1
 			fi
@@ -312,7 +315,7 @@ function renderRepositoryPolicyChecks(): string {
 			if ! jq -e --arg script_name "$script_name" --arg script_command "$script_command" '
 				(.scripts // {})[$script_name] == $script_command
 				' "$PACKAGE_JSON_PATH" >/dev/null; then
-					echo "Error: package script '\$script_name' is missing or out of date in $PACKAGE_JSON_PATH"
+					echo "Error: package script '$script_name' is missing or out of date in $PACKAGE_JSON_PATH"
 					echo "Fix: run harness init --update"
 					exit 1
 				fi
@@ -480,7 +483,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
-			echo 'Fix: ensure the session activates mise first (eval "$(mise --cd \"$REPO_ROOT\" activate bash)") or invoke the mise binary directly.'
+			echo 'Fix: ensure the session activates mise first (eval "$(mise --cd "$REPO_ROOT" activate bash)") or invoke the mise binary directly.'
 			exit 1
 		fi
 	else

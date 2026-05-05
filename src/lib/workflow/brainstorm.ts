@@ -8,6 +8,7 @@ import {
 import { join } from "node:path";
 import { validatePath } from "../input/validator.js";
 
+/** Frontmatter metadata stored at the top of a brainstorm document. */
 export interface BrainstormFrontmatter {
 	topic: string;
 	date: string; // ISO date YYYY-MM-DD
@@ -16,6 +17,7 @@ export interface BrainstormFrontmatter {
 	supersededBy?: string; // Path to newer brainstorm
 }
 
+/** Parsed brainstorm document metadata and body content. */
 export interface BrainstormMetadata {
 	path: string;
 	frontmatter: BrainstormFrontmatter;
@@ -23,7 +25,7 @@ export interface BrainstormMetadata {
 }
 
 const BRAINSTORMS_DIR = "docs/brainstorms";
-const FORBIDDEN_CHARS = /[<>:"/\\|?*\!.,]/g;
+const FORBIDDEN_CHARS = /[<>:"/\\|?*!.,]/g;
 
 function parseBrainstormStatus(
 	status: unknown,

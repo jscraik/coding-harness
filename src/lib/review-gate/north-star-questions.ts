@@ -16,8 +16,8 @@ function hasEvidenceReference(text: string): boolean {
 	const evidencePatterns = [
 		/\[[^\]]+\]\([^)]+\)/i,
 		/https?:\/\/\S+/i,
-		/(?:^|[\s(\[])(?:\/|\.\.?\/)?(?:[A-Za-z0-9._-]+\/)+[A-Za-z0-9._-]+:[0-9]+(?:$|[\s),.;\]])/i,
-		/(?:^|[\s(\[])(?:\/|\.\.?\/)?[A-Za-z._-][A-Za-z0-9._-]*:[0-9]+(?:$|[\s),.;\]])/i,
+		/(?:^|[\s([])(?:\/|\.\.?\/)?(?:[A-Za-z0-9._-]+\/)+[A-Za-z0-9._-]+:[0-9]+(?:$|[\s),.;\]])/i,
+		/(?:^|[\s([])(?:\/|\.\.?\/)?[A-Za-z._-][A-Za-z0-9._-]*:[0-9]+(?:$|[\s),.;\]])/i,
 		/artifacts\/[A-Za-z0-9._/-]+/i,
 	];
 	return evidencePatterns.some((pattern) => pattern.test(text));

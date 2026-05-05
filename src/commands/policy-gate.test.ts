@@ -256,7 +256,9 @@ describe("runPolicyGateCLI (non-JSON output format from PR)", () => {
 			json: false,
 		});
 
-		const allCalls = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+		const allCalls: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+			String(c[0]),
+		);
 		expect(allCalls.some((line) => line.includes("✓"))).toBe(true);
 		expect(allCalls.some((line) => line.includes("pass"))).toBe(true);
 	});
@@ -269,7 +271,9 @@ describe("runPolicyGateCLI (non-JSON output format from PR)", () => {
 			json: false,
 		});
 
-		const allCalls = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+		const allCalls: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+			String(c[0]),
+		);
 		expect(allCalls.some((line) => line.startsWith("Reason:"))).toBe(true);
 	});
 
@@ -281,7 +285,9 @@ describe("runPolicyGateCLI (non-JSON output format from PR)", () => {
 			json: false,
 		});
 
-		const allCalls = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+		const allCalls: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+			String(c[0]),
+		);
 		expect(allCalls.some((line) => line.includes("✗"))).toBe(true);
 		expect(allCalls.some((line) => line.includes("fail"))).toBe(true);
 	});
@@ -294,7 +300,9 @@ describe("runPolicyGateCLI (non-JSON output format from PR)", () => {
 			json: false,
 		});
 
-		const allCalls = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+		const allCalls: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+			String(c[0]),
+		);
 		// Action now section appears because there are blocking findings
 		expect(allCalls.some((line) => line.includes("Action"))).toBe(true);
 	});
@@ -342,7 +350,9 @@ describe("runPolicyGateCLI (non-JSON output format from PR)", () => {
 			json: false,
 		});
 
-		const errorCalls = consoleErrorSpy.mock.calls.map((c) => String(c[0]));
+		const errorCalls: string[] = consoleErrorSpy.mock.calls.map(
+			(c: unknown[]) => String(c[0]),
+		);
 		// Error message goes to stderr, then Reason line also goes to stderr
 		expect(errorCalls.some((line) => line.startsWith("Reason:"))).toBe(true);
 	});

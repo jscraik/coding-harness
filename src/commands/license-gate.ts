@@ -27,6 +27,7 @@ export const EXIT_CODES = {
 	DISALLOWED_LICENSE: 4,
 } as const;
 
+/** Options accepted by the license-gate command and programmatic runner. */
 export interface LicenseGateOptions {
 	/** Repository root directory */
 	repoRoot?: string;
@@ -40,6 +41,7 @@ export interface LicenseGateOptions {
 	json?: boolean;
 }
 
+/** Result returned by the license-gate runner, including validation details. */
 export interface LicenseGateResult {
 	/** Whether the gate passed */
 	ok: boolean;
@@ -122,7 +124,6 @@ export function runLicenseGateCLI(options: LicenseGateOptions): number {
 	const gateResult = runLicenseGate(options);
 
 	if (options.json) {
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
 		console.log(
 			JSON.stringify(
 				{
@@ -142,19 +143,15 @@ export function runLicenseGateCLI(options: LicenseGateOptions): number {
 		);
 	} else {
 		if (gateResult.ok) {
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log(
 				`✓ License validated: ${gateResult.result.licenseName} (${gateResult.result.spdxId})`,
 			);
 			if (gateResult.result.licenseFile) {
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`  Detected in: ${gateResult.result.licenseFile}`);
 			}
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log(
 				`  OSI-approved: ${gateResult.result.osiApproved ? "Yes" : "No"}`,
 			);
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log(`  Copyleft: ${gateResult.result.copyleft ? "Yes" : "No"}`);
 		} else {
 			console.error("✗ License validation failed");

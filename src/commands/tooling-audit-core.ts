@@ -194,15 +194,15 @@ function hasRequiredPackage(
 	const devDependencies = manifest.devDependencies ?? {};
 
 	if (dependencyType === "dependencies") {
-		return Object.prototype.hasOwnProperty.call(dependencies, packageName);
+		return Object.hasOwn(dependencies, packageName);
 	}
 	if (dependencyType === "devDependencies") {
-		return Object.prototype.hasOwnProperty.call(devDependencies, packageName);
+		return Object.hasOwn(devDependencies, packageName);
 	}
 
 	return (
-		Object.prototype.hasOwnProperty.call(dependencies, packageName) ||
-		Object.prototype.hasOwnProperty.call(devDependencies, packageName)
+		Object.hasOwn(dependencies, packageName) ||
+		Object.hasOwn(devDependencies, packageName)
 	);
 }
 
@@ -636,7 +636,7 @@ function auditLocalHooks(
 			const hookPattern = new RegExp(
 				String.raw`\[\[repos\.hooks\]\][\s\S]*?id = "${hookName}"[\s\S]*?name = "${hookConfig.name}"[\s\S]*?entry = "${hookConfig.entry}"[\s\S]*?language = "${hookConfig.language}"[\s\S]*?pass_filenames = ${String(hookConfig.pass_filenames)}${
 					hookStages.length
-						? String.raw`[\s\S]*?stages = \["${hookStages.join(String.raw`", "`)}"\]`
+						? String.raw`[\s\S]*?stages = \["${hookStages.join('", "')}"\]`
 						: ""
 				}`,
 			);
@@ -695,7 +695,7 @@ function auditLocalHooks(
 		}
 	}
 
-	if (Object.prototype.hasOwnProperty.call(packageJson, "simple-git-hooks")) {
+	if (Object.hasOwn(packageJson, "simple-git-hooks")) {
 		findings.push({
 			path: TOOLING_PACKAGE_JSON_PATH,
 			severity: "critical",
@@ -906,7 +906,7 @@ async function auditRepository(
 	}
 
 	const findings: ToolingAuditFinding[] = [];
-	if (!Object.prototype.hasOwnProperty.call(rawContract, "toolingPolicy")) {
+	if (!Object.hasOwn(rawContract, "toolingPolicy")) {
 		findings.push({
 			path: "toolingPolicy",
 			severity: "warning",

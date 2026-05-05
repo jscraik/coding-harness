@@ -298,7 +298,7 @@ export function shouldAutoUpdateTemplate(
 
 /**
  * Extract the version from a biome $schema URL.
- * e.g. "https://biomejs.dev/schemas/1.9.4/schema.json" → "1.9.4"
+ * e.g. "https://biomejs.dev/schemas/2.4.14/schema.json" → "2.4.14"
  */
 function extractBiomeSchemaVersion(schemaUrl: string): string | undefined {
 	const match = schemaUrl.match(/\/schemas\/([0-9]+\.[0-9]+\.[0-9]+)\//);

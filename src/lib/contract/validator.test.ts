@@ -160,35 +160,36 @@ describe("validateContract", () => {
 			{ version: "1.6", expectsRequired: true },
 			{ version: "1.6.0", expectsRequired: true },
 			{ version: "2.0.0", expectsRequired: true },
-		])(
-			"enforces canonical north-star surfaces only from version boundary ($version)",
-			({ version, expectsRequired }) => {
-				const result = validateContract({ version });
-				const hasNorthStarRequiredError = result.errors.some(
-					(error) => error.path === "northStar",
-				);
-				if (expectsRequired) {
-					expect(hasNorthStarRequiredError).toBe(true);
-					return;
-				}
-				expect(hasNorthStarRequiredError).toBe(false);
-			},
-		);
+		])("enforces canonical north-star surfaces only from version boundary ($version)", ({
+			version,
+			expectsRequired,
+		}) => {
+			const result = validateContract({ version });
+			const hasNorthStarRequiredError = result.errors.some(
+				(error) => error.path === "northStar",
+			);
+			if (expectsRequired) {
+				expect(hasNorthStarRequiredError).toBe(true);
+				return;
+			}
+			expect(hasNorthStarRequiredError).toBe(false);
+		});
 
-		it.each(["v1.5.0", "1.5.x", "01.5.0"])(
-			"rejects malformed contract version format (%s)",
-			(version) => {
-				const result = validateContract({ version });
-				expect(result.success).toBe(false);
-				expect(
-					result.errors.some(
-						(error) =>
-							error.path === "version" &&
-							error.code === ValidationErrorCode.INVALID_VALUE,
-					),
-				).toBe(true);
-			},
-		);
+		it.each([
+			"v1.5.0",
+			"1.5.x",
+			"01.5.0",
+		])("rejects malformed contract version format (%s)", (version) => {
+			const result = validateContract({ version });
+			expect(result.success).toBe(false);
+			expect(
+				result.errors.some(
+					(error) =>
+						error.path === "version" &&
+						error.code === ValidationErrorCode.INVALID_VALUE,
+				),
+			).toBe(true);
+		});
 
 		it("accepts a canonical northStar block", () => {
 			const result = validateContract(

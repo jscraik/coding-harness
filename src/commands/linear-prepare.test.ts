@@ -20,6 +20,11 @@ import { runLinearPrepare } from "./linear-prepare.js";
 const mockLinearClient = vi.mocked(LinearClient);
 const mockLinearPrepareClient = (client: PartialDeep<LinearClient>) =>
 	fromPartial<LinearClient>(client);
+const mockLinearClientImplementation = (createClient: () => LinearClient) => {
+	mockLinearClient.mockImplementation(function LinearClient() {
+		return createClient();
+	});
+};
 
 const baseIssue = {
 	id: "issue-id",
@@ -50,7 +55,7 @@ describe("runLinearPrepare", () => {
 		vi.clearAllMocks();
 		vi.stubEnv("LINEAR_API_KEY", "");
 		client.searchIssues.mockResolvedValue([baseIssue]);
-		mockLinearClient.mockImplementation(() => mockLinearPrepareClient(client));
+		mockLinearClientImplementation(() => mockLinearPrepareClient(client));
 	});
 
 	afterEach(() => {

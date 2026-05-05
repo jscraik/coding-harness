@@ -232,14 +232,8 @@ function collectOwnershipDecisions(
 
 	for (const key of keys) {
 		const path = basePath ? `${basePath}.${key}` : key;
-		const hasExisting = Object.prototype.hasOwnProperty.call(
-			existingValue,
-			key,
-		);
-		const hasRendered = Object.prototype.hasOwnProperty.call(
-			renderedValue,
-			key,
-		);
+		const hasExisting = Object.hasOwn(existingValue, key);
+		const hasRendered = Object.hasOwn(renderedValue, key);
 		const existingEntry = existingValue[key];
 		const renderedEntry = renderedValue[key];
 		const mergedEntry = mergedValue[key];
@@ -439,8 +433,8 @@ function prepareContractRefresh(
 
 	const removedProtectedKeys = PROTECTED_CONTRACT_KEYS.filter((key) => {
 		return (
-			Object.prototype.hasOwnProperty.call(existingContract.value, key) &&
-			!Object.prototype.hasOwnProperty.call(mergedContract, key)
+			Object.hasOwn(existingContract.value, key) &&
+			!Object.hasOwn(mergedContract, key)
 		);
 	});
 	if (removedProtectedKeys.length > 0) {

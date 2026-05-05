@@ -187,7 +187,9 @@ describe("runPreflightGateCLI", () => {
 				json: false,
 			});
 
-			const lines = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+			const lines: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+				String(c[0]),
+			);
 			expect(lines.some((l) => l.includes("✓"))).toBe(true);
 			expect(lines.some((l) => l.includes("pass"))).toBe(true);
 		});
@@ -199,7 +201,9 @@ describe("runPreflightGateCLI", () => {
 				json: false,
 			});
 
-			const lines = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+			const lines: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+				String(c[0]),
+			);
 			expect(lines.some((l) => l.includes("✗"))).toBe(true);
 			expect(lines.some((l) => l.includes("fail"))).toBe(true);
 		});
@@ -211,7 +215,9 @@ describe("runPreflightGateCLI", () => {
 				json: false,
 			});
 
-			const lines = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+			const lines: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+				String(c[0]),
+			);
 			expect(lines.some((l) => l.startsWith("Reason:"))).toBe(true);
 		});
 
@@ -222,7 +228,9 @@ describe("runPreflightGateCLI", () => {
 				json: false,
 			});
 
-			const lines = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+			const lines: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+				String(c[0]),
+			);
 			expect(lines.some((l) => l.includes("Action now:"))).toBe(true);
 		});
 
@@ -233,7 +241,9 @@ describe("runPreflightGateCLI", () => {
 				json: false,
 			});
 
-			const lines = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+			const lines: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+				String(c[0]),
+			);
 			expect(lines.some((l) => l.startsWith("Summary:"))).toBe(true);
 		});
 
@@ -246,7 +256,9 @@ describe("runPreflightGateCLI", () => {
 				json: false,
 			});
 
-			const lines = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+			const lines: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+				String(c[0]),
+			);
 			expect(
 				lines.some((l) => l.includes("Risk tier") && l.includes("high")),
 			).toBe(true);
@@ -259,7 +271,9 @@ describe("runPreflightGateCLI", () => {
 				json: false,
 			});
 
-			const lines = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+			const lines: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+				String(c[0]),
+			);
 			expect(lines.some((l) => l.includes("Risk tier"))).toBe(false);
 		});
 
@@ -290,7 +304,9 @@ describe("runPreflightGateCLI", () => {
 				json: false,
 			});
 
-			const lines = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+			const lines: string[] = consoleInfoSpy.mock.calls.map((c: unknown[]) =>
+				String(c[0]),
+			);
 			expect(lines.some((l) => l.includes("⚠"))).toBe(true);
 		});
 

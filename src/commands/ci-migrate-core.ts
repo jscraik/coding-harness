@@ -1161,7 +1161,7 @@ function parseBreakGlassRoster(
 					"Break-glass roster requireDualApprovalForRollbackWeakening must be a boolean when provided.",
 			};
 		}
-		let rotation: BreakGlassRoster["rotation"] | undefined = undefined;
+		let rotation: BreakGlassRoster["rotation"] | undefined;
 		if (record.rotation !== undefined) {
 			if (!record.rotation || typeof record.rotation !== "object") {
 				return {

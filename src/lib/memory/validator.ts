@@ -447,33 +447,24 @@ export function runMemoryGateCLI(options: MemoryGateOptions): number {
 				? { branch: codexResult.branch, taskId: codexResult.taskId }
 				: undefined,
 		};
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
 		console.log(JSON.stringify(jsonOutput, null, 2));
 	} else {
 		// Show branch info for codex branches
 		if (codexResult.isCodexBranch) {
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log(`🔷 Codex branch detected: ${codexResult.branch}`);
 			if (codexResult.taskId) {
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`   Task: ${codexResult.taskId}`);
 			}
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log();
 		}
 
 		if (result.ok) {
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log("✓ Memory artifacts valid and compliant");
 			if (updatedMetrics) {
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log("\n📊 Metrics:");
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`  Pass^k: ${updatedMetrics.pass_k}`);
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`  Total entries: ${updatedMetrics.total_ops}`);
 				if (updatedMetrics.duplicate_memory_count > 0) {
-					// biome-ignore lint/suspicious/noConsoleLog: CLI output
 					console.log(
 						`  ⚠ Duplicates: ${updatedMetrics.duplicate_memory_count}`,
 					);
@@ -487,11 +478,9 @@ export function runMemoryGateCLI(options: MemoryGateOptions): number {
 					console.error(`  [${v.type}] ${v.message}`);
 				}
 			}
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log(`  Reliability: ${trends.reliability_score.toFixed(1)}%`);
 			if (trends.pass_k_trend !== "stable") {
 				const trendIcon = trends.pass_k_trend === "improving" ? "📈" : "📉";
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`  ${trendIcon} Pass^k trend: ${trends.pass_k_trend}`);
 			}
 		}
