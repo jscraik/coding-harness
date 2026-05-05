@@ -270,6 +270,22 @@ function validateRegistry(value, registryFindings) {
 	}
 }
 
+/**
+ * Validate a single scenario and append structured error findings for any violations.
+ *
+ * Performs the following validations: required and unique `id`, `type` must be
+ * "live_fixture" or "registered", presence of `prompt`, non-empty entries for
+ * `expected.commands`, `expected.artifacts`, `expected.assertions`, and
+ * `expected.stopConditions`, and numeric score weights for each ID in
+ * `SCORECARD_IDS`.
+ *
+ * Mutates `ids` by adding the scenario id and appends `errorFinding` objects to
+ * `registryFindings` for each validation failure.
+ *
+ * @param {object} scenario - The scenario object to validate.
+ * @param {Set<string>} ids - Set of seen scenario ids used to enforce uniqueness; the function adds the scenario's id when present.
+ * @param {Array<object>} registryFindings - Collector array to which validation error findings are pushed.
+ */
 function validateScenario(scenario, ids, registryFindings) {
 	if (!scenario.id) {
 		registryFindings.push(
@@ -323,6 +339,11 @@ function validateScenario(scenario, ids, registryFindings) {
 	}
 }
 
+/**
+ * Run the live fixture associated with the given registry scenario, executing the scenario-specific runner and measuring its duration.
+ * @param {Object} scenario - Registry scenario object; must include an `id` that selects the fixture runner and any scenario-specific configuration used by that runner.
+ * @returns {Object} An object describing the fixture outcome containing `id`, `status` (`"pass"` or `"fail"`), an `assertions` array, and `durationMs` (elapsed time in milliseconds, rounded to two decimals).
+ */
 async function runLiveFixture(scenario) {
 	const fixturePath = safeFixturePath(scenario.id);
 	rmSync(fixturePath, { force: true, recursive: true });
@@ -406,6 +427,17 @@ function runPathSafetyFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Validates generated-artifact drift against a canonical source inside the fixture directory and attempts to repair it.
+ *
+ * Writes a canonical source and a stale generated artifact into the fixturePath, checks whether the generated artifact
+ * initially diverges from the canonical source, runs the repair routine, verifies the repaired artifact, and returns a
+ * fixture result summarizing assertions for detection, repair correctness, and post-repair drift status.
+ *
+ * @param {Object} scenario - The scenario object; its `id` is used to form the fixture result.
+ * @param {string} fixturePath - Path to the per-fixture directory where artifacts are written and inspected.
+ * @returns {Object} A fixture result object containing assertions about drift detection, repair success, and post-repair status.
+ */
 function runGeneratedArtifactDriftFixture(scenario, fixturePath) {
 	const sourcePath = path.join(fixturePath, "canonical-source.json");
 	const generatedPath = path.join(fixturePath, "generated-artifact.json");
@@ -434,6 +466,17 @@ function runGeneratedArtifactDriftFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Execute the "validation-plan" live fixture for a scenario and return its fixture result.
+ *
+ * Writes a fixture learning artifact, builds or loads a validation plan for the fixture's changed files,
+ * and validates that the plan reports success, contains expected local commands and network-required commands,
+ * and reports the expected changedFiles list.
+ *
+ * @param {Object} scenario - The scenario object (uses `scenario.id` for the returned fixture result).
+ * @param {string} fixturePath - Filesystem path to the per-fixture directory where artifacts are written.
+ * @returns {Object} A fixture result object with `id`, `status`, and `assertions`; `status` is `"pass"` if all assertions pass, otherwise `"fail"`. 
+ */
 async function runValidationPlanFixture(scenario, fixturePath) {
 	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
 	const changedFiles = [
@@ -483,6 +526,15 @@ async function runValidationPlanFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Runs the spec reimplementation loop fixture: build a source behavior, derive an initial executable spec,
+ * perform an implementation and evaluation pass, apply evaluator-suggested spec improvements, re-implement and re-evaluate,
+ * write all intermediate artifacts to the fixture directory, and return a fixture result summarizing assertions.
+ *
+ * @param {object} scenario - The scenario object driving this fixture (used for `scenario.id`).
+ * @param {string} fixturePath - Path to the per-fixture directory where JSON artifacts will be written.
+ * @returns {{id: string, status: "pass" | "fail", assertions: Array<{name: string, status: "pass" | "fail"}>}} The fixture result with `id`, overall `status`, and an array of assertion records.
+ */
 function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 	const sourceBehavior = buildSpecLoopSourceBehavior();
 	const initialSpec = extractExecutableSpec(sourceBehavior, {
@@ -555,6 +607,21 @@ function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Validates building of an eval-seed pack from a review-feedback learning artifact inside a fixture directory.
+ *
+ * Writes a learning artifact and an enforcement-status file into the fixturePath, invokes the eval-seed builder
+ * (preferring a dynamic module export with a subprocess fallback), and asserts that the produced seed pack:
+ * - succeeded and contains exactly one candidate,
+ * - is attached to the expected changed files and evidence reference,
+ * - recommends the expected target and test,
+ * - classifies the failure as `generated_artifact_drift` with summary counts,
+ * - and was written to the fixture output path.
+ *
+ * @param {Object} scenario - The scenario descriptor (used for the returned fixture id).
+ * @param {string} fixturePath - Path to the directory used for this fixture's files and outputs.
+ * @returns {Object} A fixture result object with `id`, `status`, and an array of assertion objects describing the checks above.
+ */
 async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
 	const enforcementStatusPath = path.join(
@@ -619,6 +686,14 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Executes deterministic routing test cases for harness engineering, records inputs and computed routes to the fixture directory, and returns a fixture result summarizing assertions.
+ *
+ * Writes two files into `fixturePath`: `routing-cases.json` (test cases) and `routing-results.json` (computed results).
+ *
+ * @param {Object} scenario - Scenario metadata; the scenario's `id` is used to label the returned fixture result.
+ * @param {string} fixturePath - Filesystem path to the per-fixture directory where outputs are written.
+ * @returns {Object} Fixture result object with `id`, `status`, and an `assertions` array that verifies expected routing behaviors.
 function runHarnessEngineeringLifecycleRoutingFixture(scenario, fixturePath) {
 	const cases = buildHarnessEngineeringRoutingCases();
 	const results = cases.map((item) => ({
@@ -680,6 +755,17 @@ function runHarnessEngineeringLifecycleRoutingFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Load and cache a named export from an ES module URL used by fixture builders.
+ *
+ * Attempts to import the module at `moduleUrl` and returns its `exportName` binding.
+ * Successful imports are cached (the module object), and failed imports are cached as `null`
+ * so subsequent calls avoid repeated import attempts.
+ *
+ * @param {string} moduleUrl - `file://`-style URL of the module to import.
+ * @param {string} exportName - The named export to return from the imported module.
+ * @returns {any|null} The requested exported value when available, or `null` if the module failed to load or the export is not present.
+ */
 async function loadFixtureExport(moduleUrl, exportName) {
 	const cached = fixtureModuleCache.get(moduleUrl);
 	if (cached === null) return null;
@@ -694,6 +780,12 @@ async function loadFixtureExport(moduleUrl, exportName) {
 	}
 }
 
+/**
+ * Builds a validation plan for a learning artifact by invoking the project's `buildValidationPlan` implementation in a subprocess and returns the resulting plan object.
+ * @param {string} learningArtifactPath - Filesystem path to the learning artifact JSON used as the `source` for the plan.
+ * @param {string[]} changedFiles - Array of changed file paths to include in the plan's `files` input.
+ * @returns {Object} The validation plan object produced by `buildValidationPlan`.
+ */
 function runValidationPlanFixtureInSubprocess(
 	learningArtifactPath,
 	changedFiles,
@@ -718,6 +810,16 @@ function runValidationPlanFixtureInSubprocess(
 	return JSON.parse(stdout);
 }
 
+/**
+ * Builds an eval seed pack by invoking `buildEvalSeedPack` in a subprocess and returning its parsed result.
+ *
+ * @param {object} params - Function parameters.
+ * @param {string} params.learningArtifactPath - Filesystem path to the learning artifact JSON used as `source`.
+ * @param {string} params.enforcementStatusPath - Filesystem path to the enforcement status JSON.
+ * @param {string[]} params.changedFiles - Array of changed file paths to pass as `files`.
+ * @param {string} params.outputPath - Filesystem path where the subprocess should write its output.
+ * @returns {object} The parsed object printed by `buildEvalSeedPack` (the eval seed pack result).
+ */
 function runEvalSeedFixtureInSubprocess({
 	learningArtifactPath,
 	enforcementStatusPath,
@@ -747,6 +849,13 @@ function runEvalSeedFixtureInSubprocess({
 	return JSON.parse(stdout);
 }
 
+/**
+ * Resolve a single-segment fixture path inside the configured fixture root.
+ *
+ * @param {string} relativePath - A non-empty single path segment (not absolute, must not contain `/` or `\`) identifying a child directory of the fixture root.
+ * @returns {string} The absolute path resolved beneath `fixtureRoot`.
+ * @throws {Error} If `relativePath` is not a non-empty string, is absolute, contains path separators, or resolves outside `fixtureRoot`.
+ */
 function safeFixturePath(relativePath) {
 	if (typeof relativePath !== "string" || relativePath.trim() === "") {
 		throw new Error("Fixture path must be a non-empty string.");
@@ -785,6 +894,15 @@ function repairGeneratedArtifact(sourcePath, generatedPath) {
 	});
 }
 
+/**
+ * Build a deterministic learning-artifact object used by fixture tests.
+ *
+ * The artifact models a single coderabbit CSV-derived learning item pointing at
+ * src/lib/learnings/validation-plan.ts and is suitable for deterministic fixture
+ * scenarios that exercise validation-plan behavior.
+ *
+ * @returns {Object} An object conforming to the `harness-learnings/v1` shape containing one `validation_contract` item and summary metadata.
+ */
 function buildFixtureLearningArtifact() {
 	return {
 		schemaVersion: "harness-learnings/v1",
@@ -834,6 +952,15 @@ function buildFixtureLearningArtifact() {
 	};
 }
 
+/**
+ * Constructs a deterministic learning-artifact used to seed the eval-seed fixture.
+ *
+ * The artifact uses schemaVersion "harness-learnings/v1" and includes three candidate
+ * items (a generated_artifact, a guardrail noise item, and a low-signal validation_contract),
+ * source metadata pointing at file://fixture/coderabbit.csv, and a summary object describing
+ * imported rows and counts by classification/enforcement.
+ *
+ * @returns {Object} A learning artifact object suitable for use by eval-seed fixtures.
 function buildEvalSeedFixtureLearningArtifact() {
 	return {
 		schemaVersion: "harness-learnings/v1",
@@ -921,6 +1048,16 @@ function buildEvalSeedFixtureLearningArtifact() {
 	};
 }
 
+/**
+ * Build a deterministic source behavior describing review-gate readiness, including rules and example cases.
+ *
+ * @returns {Object} A source behavior object containing:
+ *  - `schemaVersion`: behavior schema identifier,
+ *  - `behaviorId`: canonical behavior name,
+ *  - `intent`: human-readable intent statement,
+ *  - `rules`: an array of rule objects each with `id` and `description` (includes `checks_green`, `required_review_threads_resolved`, `review_independence_required`),
+ *  - `examples`: an array of example cases with `id`, `input` (fields: `requiredChecks`, `requiredThreads`, `independentReview`), and `expectedDecision` (`"pass"` or `"block"`).
+ */
 function buildSpecLoopSourceBehavior() {
 	return {
 		schemaVersion: "harness-source-behavior/v1",
@@ -1285,6 +1422,12 @@ function improveSpecFromEvaluation(spec, evaluation) {
 	};
 }
 
+/**
+ * Build a fixture result object summarizing assertion outcomes for a scenario.
+ * @param {string} id - The fixture or scenario identifier.
+ * @param {Array<{name: string, status: "pass"|"fail"}>} assertions - The list of assertion results for the fixture.
+ * @returns {{id: string, status: "pass"|"fail", assertions: Array<{name: string, status: "pass"|"fail"}>}} The result object where `status` is `"pass"` if every assertion has status `"pass"`, `"fail"` otherwise, and `assertions` is the original array.
+ */
 function fixtureResult(id, assertions) {
 	return {
 		id,
@@ -1295,6 +1438,13 @@ function fixtureResult(id, assertions) {
 	};
 }
 
+/**
+ * Attach elapsed duration (in milliseconds) to a fixture result object.
+ *
+ * @param {Object} result - The fixture result object to augment.
+ * @param {bigint} startedAt - The start timestamp as returned by `process.hrtime.bigint()`.
+ * @returns {Object} The original `result` merged with `durationMs`, the elapsed time in milliseconds rounded to two decimals.
+ */
 function withFixtureDuration(result, startedAt) {
 	const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
 	return {
@@ -1303,6 +1453,12 @@ function withFixtureDuration(result, startedAt) {
 	};
 }
 
+/**
+ * Create an assertion result object with a pass/fail status.
+ * @param {string} name - The assertion's name or identifier.
+ * @param {boolean} passed - Whether the assertion passed.
+ * @returns {{name: string, status: "pass" | "fail"}} An object with `name` and `status` set to `"pass"` if `passed` is true, `"fail"` otherwise.
+ */
 function assertion(name, passed) {
 	return {
 		name,
