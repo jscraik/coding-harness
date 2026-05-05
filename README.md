@@ -130,8 +130,11 @@ The canonical statement of that contract lives in
 [docs/roadmap/north-star.md](./docs/roadmap/north-star.md).
 
 North-star command outputs also use canonical artifact contracts so agents can
-carry evidence between tools without guessing path or schema names. Current
-stable artifact paths include
+carry evidence between tools without guessing path or schema names. The
+`harness.contract.json` product-surface registry records review cadence for
+these governed surfaces, so release readiness checks update the status matrix
+and its `lastReviewedAt` contract entry together. Current stable artifact paths
+include
 `.harness/guardrails/north-star/drift-findings.json` for `drift-gate`,
 `.harness/guardrails/north-star/surface-classification-snapshot.json` for
 `doctor`, and `.harness/guardrails/north-star/alignment-decision.json` for

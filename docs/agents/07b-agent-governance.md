@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-03
+last_validated: 2026-05-05
 ---
 
 # Agent governance
@@ -45,6 +45,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - north-star artifact contract changes should keep the README command evidence
   surface, AGENTS shared-vocabulary guidance, and this guide synchronized in
   the same PR
+- north-star status cadence refreshes should keep `docs/roadmap/agent-first-status.md`, its `harness.contract.json` `lastReviewedAt` registry entry, `README.md`, `AGENTS.md`, and this guide synchronized in the same PR
 - agent-native cockpit changes should keep next-action safety evidence, generated environment action contracts, and docs-gate-required operator surfaces synchronized before the PR can be considered merge-ready
 - goal-continuation and approval-plan contract changes should keep explicit
   authorization, fail-closed reviewer resolution, and snapshot-only state
@@ -66,7 +67,7 @@ Every agent handoff should include:
   `.harness/guardrails/north-star/drift-findings.json`, `doctor` writes
   `.harness/guardrails/north-star/surface-classification-snapshot.json`, and
   review-gate alignment decisions live at
-  `.harness/review-gate/north-star-alignment.json`.
+  `.harness/guardrails/north-star/alignment-decision.json`.
 
 When executable behavior changes, broad gates are necessary but not sufficient
 on their own. Run the smallest real executable path that exercises the exact
