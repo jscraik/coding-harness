@@ -123,8 +123,8 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"axios": "^1.15.0",
-			"@vvago/vale>axios": "^1.15.0",
+			"axios": "^1.15.2",
+			"@vvago/vale>axios": "^1.15.2",
 			"brace-expansion": "^5.0.5",
 			"follow-redirects": "^1.16.0",
 			"handlebars": "^4.7.9",
@@ -137,12 +137,12 @@
 			"yaml": "^2.8.3",
 			"vite": ">=7.3.2 <8",
 			"handlebars@>=4.0.0 <=4.7.8": ">=4.7.9",
-			"axios@<1.15.0": ">=1.15.0",
 			"brace-expansion@>=4.0.0 <5.0.5": ">=5.0.5",
 			"handlebars@>=4.0.0 <4.7.9": ">=4.7.9",
 			"picomatch@<2.3.2": ">=2.3.2",
 			"picomatch@>=4.0.0 <4.0.4": ">=4.0.4",
-			"yaml@>=2.0.0 <2.8.3": ">=2.8.3"
+			"yaml@>=2.0.0 <2.8.3": ">=2.8.3",
+			"axios@<1.15.2": ">=1.15.2"
 		}
 	},
 	"license": "Apache-2.0",
