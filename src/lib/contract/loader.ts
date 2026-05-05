@@ -110,7 +110,10 @@ function getDepth(value: unknown): number {
 }
 
 /**
- * Parse JSON with depth limit to prevent stack overflow attacks.
+ * Parse JSON content and enforce a maximum nesting depth.
+ *
+ * @returns The parsed value from the provided JSON string.
+ * @throws Error if the parsed JSON's nesting depth is greater than MAX_JSON_DEPTH.
  */
 function safeParseJson(content: string): unknown {
 	const data = JSON.parse(content);
@@ -122,10 +125,15 @@ function safeParseJson(content: string): unknown {
 }
 
 /**
- * Produce a HarnessContract by merging provided validated data with defaults and normalizing version-dependent fields.
+ * Merge validated contract data with defaults and normalize version-dependent fields.
  *
- * @param data - Validated contract data (may be `undefined`)
- * @returns The merged HarnessContract with undefined input fields removed, defaults applied, and version-dependent canonical NorthStar/productSurface/overrideReviewerRegistry fields set to `undefined` when the resolved version does not require canonical NorthStar surfaces and the user did not explicitly provide those fields.
+ * Preserves only explicitly provided fields from `data`, fills missing values from defaults,
+ * resolves the effective `version`, and when the resolved version does not require canonical
+ * NorthStar surfaces, ensures `northStar`, `productSurface`, and `overrideReviewerRegistry`
+ * are `undefined` unless they were explicitly present in the input.
+ *
+ * @param data - Validated contract data, or `undefined` to use defaults
+ * @returns The merged HarnessContract with defaults applied and version-dependent fields normalized
  */
 function mergeContractDefaults(
 	data: HarnessContract | undefined,
@@ -172,8 +180,10 @@ function mergeContractDefaults(
  *
  * @param path - Contract path (absolute or repository-relative)
  * @param baseDir - Repository root used for safe-path validation
- * @param options - Loader options
- * @returns Parsed and normalized harness contract
+ * @param options - Loader options; if `allowExtends` is `false`, contracts containing an `extends` field are rejected
+ * @returns The parsed, merged, and normalized harness contract
+ * @throws ContractLoadError - when path traversal is detected, JSON parsing fails, contract validation fails, or `extends` is disallowed by `options`
+ * @throws Error - when the contract file exceeds the maximum allowed size (1MB) or other filesystem errors occur
  */
 export function loadContract(
 	path: string,

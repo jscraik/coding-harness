@@ -322,7 +322,18 @@ function determineMemoryExitCode(
 }
 
 /**
- * Run memory gate validation
+ * Validate a repository memory file and produce a pass/fail result with metrics and violations.
+ *
+ * Performs path resolution for the memory and FORJAMIE files, reads and validates the memory
+ * data against schema and workflow rules, and computes reliability metrics.
+ *
+ * @param options - Validation options. `memoryPath` defaults to `"memory.json"` and `forjamiePath` defaults to `"FORJAMIE.md"`.
+ * @returns The validation result containing:
+ *  - `ok`: whether no violations were found,
+ *  - `code`: an exit code categorizing the outcome,
+ *  - `message`: a short human-readable summary,
+ *  - `violations`: an array of detected validation issues,
+ *  - `metrics` (when available): aggregated reliability metrics computed from the memory summary.
  */
 export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
 	const baseDir = process.cwd();

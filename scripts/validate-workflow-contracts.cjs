@@ -34,6 +34,11 @@ const REQUIRED_ERRORS = [
 	"SYSTEM_ERROR",
 ];
 
+/**
+ * Normalize a Markdown heading line by removing leading '#' markers, trimming whitespace, and converting to lowercase.
+ * @param {string} line - A single line of Markdown that may start with 1–6 '#' heading markers.
+ * @returns {string} The heading text with leading '#' characters removed, trimmed, and lowercased.
+ */
 function normalizeHeading(line) {
 	return line
 		.replace(/^#{1,6}\s+/, "")
@@ -64,9 +69,9 @@ function findHeadingIndex(headings, expectedHeading) {
 }
 
 /**
- * Checks whether the given markdown text contains the canonical transition table header `S | E | G | A | N`.
- * @param {string} content - The file or document content to search.
- * @returns {boolean} `true` if the canonical header exists in the content, `false` otherwise.
+ * Determine if content contains the canonical transition header sequence written inline as `S | E | G | A | N`.
+ * @param {string} content - Text to search for the inline canonical transition header.
+ * @returns {boolean} `true` if the inline header `S | E | G | A | N` (allowing arbitrary spaces around pipes) is present, `false` otherwise.
  */
 function findCanonicalTransitionHeader(content) {
 	return /`S\s*\|\s*E\s*\|\s*G\s*\|\s*A\s*\|\s*N`/.test(content);

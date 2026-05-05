@@ -129,6 +129,12 @@ help: ## Show this help message
 `;
 }
 
+/**
+ * Render the "Setup" section of a Makefile, filling in provided command strings.
+ *
+ * @param commands - Object containing Makefile command strings; `commands.install` is inserted for the `install` target.
+ * @returns The Makefile "Setup" section as a string with populated targets (install, setup, preflight, worktree-ready, verify-work, codestyle-parity, codestyle, hooks).
+ */
 function renderMakefileSetupSection(commands: MakefileCommands): string {
 	return `
 # === Setup ===

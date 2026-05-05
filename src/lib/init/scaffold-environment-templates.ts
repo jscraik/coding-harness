@@ -65,15 +65,12 @@ export function renderCheckEnvironmentScript(): string {
 }
 
 /**
- * Produce the Bash script body that performs repository file and directory validations for the local environment preflight.
- *
- * Checks presence of the contract, mise config, Codex environment, Makefile, prek config, codestyle artifacts, required hook support files,
- * and—when enabled—required Project Brain memory-extension paths under the repository root.
+ * Builds the Bash script body that validates required repository files and directories for the local environment preflight.
  *
  * @param packageJsonPath - Path to package.json relative to the repository root
- * @param projectBrainMemoryExtensionEnabled - When `true`, validate that each path in `requiredProjectBrainPaths` exists under the repository
- * @param requiredProjectBrainPaths - Paths (relative to the repository root) required by the Project Brain memory-extension when that feature is enabled
- * @returns A string containing a Bash script that exits with an error if any required files or directories are missing and prints guidance for missing Project Brain paths
+ * @param projectBrainMemoryExtensionEnabled - If `true`, the script will also validate paths listed in `requiredProjectBrainPaths`
+ * @param requiredProjectBrainPaths - Paths (relative to the repository root) that must exist when the Project Brain memory-extension check is enabled
+ * @returns A string containing the Bash script which checks for required artifacts and exits with status 1 while printing an error if any required file or directory is missing
  */
 function renderEnvironmentFileChecks(
 	packageJsonPath: string,
@@ -443,6 +440,13 @@ ${renderCapabilityDetectorBlocks(capabilityDetectors)}
 echo "Running harness environment preflight..."`;
 }
 
+/**
+ * Produces a Bash function that runs a candidate harness runner to execute the environment preflight and capture its attestation.
+ *
+ * The generated function is named `run_check_environment_with_runner` and, when invoked with a label and a runner command, executes the runner's `check-environment` action, prints its output, verifies the runner exit status, ensures an attestation file is created (recovering a JSON line from stdout if needed), and returns nonzero on failure.
+ *
+ * @returns A string containing the Bash function definition for `run_check_environment_with_runner`.
+ */
 function renderEnvironmentRunnerFunction(): string {
 	return `run_check_environment_with_runner() {
 	local label="$1"

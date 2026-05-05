@@ -155,6 +155,15 @@ function collectPackageDependencies(manifest: PackageManifest): Set<string> {
 	]);
 }
 
+/**
+ * Determine tooling capabilities applicable to a repository from a harness contract and optional package manifest.
+ *
+ * If the contract includes a packagePolicy, the returned set contains any explicitly declared capabilities and any capabilities inferred from the manifest's dependencies when a manifest is provided.
+ *
+ * @param contract - The harness contract that may include a `toolingPolicy.packagePolicy`
+ * @param manifest - The parsed package manifest (`package.json`) or `null` when no manifest is available
+ * @returns A set of capability identifiers present either explicitly in the contract or inferred from the manifest's dependency markers
+ */
 function detectCapabilities(
 	contract: HarnessContract,
 	manifest: PackageManifest | null,
@@ -616,11 +625,11 @@ function auditPackagePolicy(
 }
 
 /**
- * Audit a repository for required hook support files, prek hook configurations, and hook-related package.json scripts, appending findings for any detected problems.
+ * Validate repository hook support files, Prek hook configurations, and hook-related package.json scripts, appending findings for detected issues.
  *
- * Checks for the presence of required support files and the Prek configuration, validates each required Prek hook configuration, validates required entries in `package.json` scripts, and flags legacy `simple-git-hooks` configuration. If `package.json` fails to parse, records a critical finding and stops further package.json checks.
+ * Appends ToolingAuditFinding entries for missing or out-of-date hook support files, Prek config parse errors or missing/incorrect hook definitions, missing or incorrect `package.json` scripts, and presence of legacy `simple-git-hooks` configuration.
  *
- * @param findings - Mutable array to which this function will append ToolingAuditFinding entries describing detected issues.
+ * @param findings - Mutable array that will receive ToolingAuditFinding entries describing any detected problems.
  * @param repoPath - Filesystem path to the repository root to inspect.
  */
 function auditLocalHooks(
@@ -850,6 +859,12 @@ function auditBaseDrift(
 	}
 }
 
+/**
+ * Aggregate finding counts by severity from an array of repository results.
+ *
+ * @param results - Per-repository audit results whose findings will be counted
+ * @returns An object with counts: `total` (sum of all findings), `critical` (number of critical findings), `warning` (number of warning findings), and `info` (number of informational findings)
+ */
 function summarizeFindings(
 	results: ToolingAuditRepoResult[],
 ): ToolingAuditResult["findings"] {
@@ -872,17 +887,17 @@ function summarizeFindings(
 }
 
 /**
- * Audits a repository directory for tooling policy compliance and returns its audit result.
+ * Audit a repository for tooling policy compliance.
  *
- * Performs a series of checks defined by the repository's harness contract (if present) and collects findings produced by readiness script, Mise, Codex environment, Makefile, Project Brain memory-extension, package policy, local hooks audits, and optional base-contract drift checks.
+ * Performs the repository-level checks specified by the repository's harness contract (if present) and collects findings from readiness script, Mise, Codex environment, Makefile, Project Brain memory-extension, package policy, local hooks audits, and optional base-contract drift detection.
  *
  * @param repoPath - Filesystem path to the repository to audit
  * @param baseContract - Optional base contract to compare against for drift detection
  * @param includeMissing - If true, treat repositories without a harness.contract.json as `no-contract` results instead of an `error`
- * @returns A ToolingAuditRepoResult describing the repository path, status, collected findings, and an optional error message. Status values:
- *  - `"success"`: contract present and audits ran (findings may be empty or contain issues)
- *  - `"no-contract"`: no contract found and `includeMissing` was true
- *  - `"error"`: an error occurred reading or loading the contract (the `error` field contains a brief message)
+ * @returns A ToolingAuditRepoResult containing the repository `path`, `status`, collected `findings`, and an optional `error` message. `status` will be:
+ *  - `"success"`: contract found and audits executed (findings may be empty),
+ *  - `"no-contract"`: no contract found and `includeMissing` was true,
+ *  - `"error"`: an error occurred reading or loading the contract (see `error` for details)
  */
 async function auditRepository(
 	repoPath: string,

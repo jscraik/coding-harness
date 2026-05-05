@@ -128,7 +128,12 @@ function isValidNorthStarDecisionQuestion(
 	);
 }
 
-/** Validate that a value conforms to the NorthStarContract shape. */
+/**
+ * Validate that a value conforms to the North Star contract structure.
+ *
+ * @param value - The value to validate as a North Star contract
+ * @returns `true` if the value matches the expected NorthStarContract shape, `false` otherwise
+ */
 export function isValidNorthStarContract(
 	value: unknown,
 ): value is NorthStarContract {
@@ -204,10 +209,10 @@ export function isValidNorthStarContract(
 }
 
 /**
- * Validates whether a value is a SurfaceRegistration record.
+ * Determine whether a value conforms to the SurfaceRegistration shape.
  *
  * @param value - The value to validate
- * @returns `true` if `value` conforms to the SurfaceRegistration shape (contains only allowed keys, includes all required fields, and each field has an expected non-empty or enumerated value); `false` otherwise.
+ * @returns `true` if `value` is a valid SurfaceRegistration, `false` otherwise.
  */
 function isValidSurfaceRegistration(
 	value: unknown,

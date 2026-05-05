@@ -205,17 +205,17 @@ function resolveUpdateTemplateTargetPath(
 }
 
 /**
- * Computes ownership decisions for each key in a merged contract object.
+ * Computes ownership decisions for every property path in a merged contract object.
  *
- * Walks the merged contract and determines, for each property path, whether the
- * template or the repository should own the value and whether that value was
- * added, preserved, or updated relative to the existing and rendered inputs.
+ * For each key present in the existing, rendered, or merged objects, determines whether
+ * the repository or the template should own the resulting value and whether that value
+ * was added, preserved, or updated relative to the existing and rendered inputs.
  *
  * @param existingValue - The contract object currently in the repository
  * @param renderedValue - The freshly rendered contract object from the template
  * @param mergedValue - The resulting contract object after merging rendered into existing
  * @param basePath - Optional dot-prefixed path prefix used when recursing into nested objects
- * @returns An array of ownership decisions for contract property paths; each entry records the file (`CONTRACT_FILE`), the dot-separated `path`, the `owner` (`"template"` or `"repo"`), and the `action` (`"added"`, `"preserved"`, or `"updated"`)
+ * @returns An array of ownership decisions where each entry records the file (`CONTRACT_FILE`), the dot-separated `path`, the `owner` (`"template"` or `"repo"`), and the `action` (`"added"`, `"preserved"`, or `"updated"`)
  */
 function collectOwnershipDecisions(
 	existingValue: Record<string, unknown>,
@@ -352,6 +352,15 @@ function mergeStringArrayDefaults(
 	mergedSection[arrayKey] = nextValues;
 }
 
+/**
+ * Ensures `merged` includes any string-based required checks present in `rendered` for generated sections.
+ *
+ * Copies missing string entries from `rendered` into `merged` for the `branchProtection.requiredChecks`
+ * and `reviewPolicy.requiredChecks` arrays so generated checks are preserved when merging.
+ *
+ * @param merged - The contract object being updated in-place.
+ * @param rendered - The rendered contract/template used as the source of default required checks.
+ */
 function backfillGeneratedRequiredChecks(
 	merged: Record<string, unknown>,
 	rendered: Record<string, unknown>,

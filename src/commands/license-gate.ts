@@ -60,7 +60,12 @@ const DEFAULT_ALLOWED_LICENSES = [
 ];
 
 /**
- * Run the license gate validation
+ * Validate a repository's license against configured policy and produce a gate result.
+ *
+ * @param options - Configuration for the license check (repo root, allowed SPDX IDs, copyleft/OSI requirements, and output formatting flags)
+ * @returns An object containing `ok` (true when a license was found, is allowed, and produced no validation errors), an `exitCode` indicating the final status, and the raw `result` from the license validator.
+ *
+ * If an unexpected error occurs during validation, the function returns `ok: false`, `exitCode: EXIT_CODES.VALIDATION_ERROR`, and a `result` with `licenseFound: false`, `confidence: "low"`, and `errors` containing a sanitized error message.
  */
 export function runLicenseGate(options: LicenseGateOptions): LicenseGateResult {
 	const repoRoot = options.repoRoot ?? process.cwd();
