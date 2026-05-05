@@ -19,7 +19,7 @@
 - `any` SHOULD be avoided in production paths; use concrete types or `unknown` plus narrowing. If a temporary `any` is unavoidable, keep it local, justified, and covered by tests or a follow-up waiver.
 
 ## Banned patterns
-- Unjustified `: any`, `as any`, `Promise<any>`, and `Record<string, any>` in production code MUST NOT be used.
+- `: any`, `as any`, `Promise<any>`, and `Record<string, any>` MUST NOT be used in production code.
 - `value as unknown as T` double assertions MUST NOT be used without runtime validation.
 - `// @ts-ignore` and `// @ts-nocheck` MUST NOT be used; use `@ts-expect-error` with rationale only when unavoidable.
 - Unsafe type assertions MUST NOT be used without guard functions or schema validation.
