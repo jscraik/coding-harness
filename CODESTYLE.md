@@ -2,9 +2,10 @@
 
 ## Purpose
 
-This file is the codestyle front door for the `codex/` subtree.
+This file is the codestyle front door for the coding-harness repository and for
+the codestyle pack emitted into harness-managed downstream repositories.
 Use it to locate the right standards module quickly.
-For technical work under `codex/`, read this file before deeper instruction modules.
+For technical work in this repository, read this file before deeper instruction modules.
 
 Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 
@@ -15,13 +16,14 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - [How to use this pack](#how-to-use-this-pack)
 
 ## Baselines
-- JS/TS toolchain: Biome, ESLint v9 (flat config), TypeScript typecheck, Vitest/Node test.
-- Docs: Vale.
+- JS/TS toolchain: Biome, TypeScript `tsc --noEmit`, Vitest/Node test, and ESLint only where a downstream project configures it.
+- Docs: markdownlint plus Vale for the staged authoritative docs set.
 - Python: Ruff, Pyright, pytest.
 - Rust: rustfmt, Clippy, cargo test.
+- Go: gofmt, go vet where configured, go test.
 - Security/policy: Semgrep, policy guards, supply-chain tooling.
-- Node baseline: repository engine floor `>=24.0.0` from `package.json`; runtime selection follows `mise/config.toml`.
-- TypeScript baseline: >= 5.9 (when TS is used).
+- Node baseline: repository engine floor `>=24.0.0` from `package.json`; runtime selection follows `.mise.toml`.
+- TypeScript baseline: 5.9.x with NodeNext module semantics when TS is used.
 - Rust baseline: 2024 edition (rustc >= 1.85).
 - Security advisories override baselines: patch immediately when a baseline dependency has a published fix.
 
@@ -45,18 +47,22 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - [codestyle/17-testing.md](./codestyle/17-testing.md)
 - [codestyle/18-code-review.md](./codestyle/18-code-review.md)
 - [codestyle/19-development-workflow.md](./codestyle/19-development-workflow.md)
+- [codestyle/20-go.md](./codestyle/20-go.md)
 
 ## Enforcement model
 - Rules in this pack use RFC2119 language (`MUST`, `MUST NOT`, `SHOULD`) and are normative unless an explicit waiver exists.
 - Waivers MUST include: rule ID or section, reason, tracking ticket, and expiry or ADR reference.
 - Validation evidence MUST use exact command text and explicit outcomes:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`
-- Commands are expected from the active instruction scope.
-- For this codex subtree pack, run from `~/dev/configs/codex` and use `bash scripts/...` paths.
+- Commands are expected from the active instruction scope and the repository root.
 - Contract checks for this repository:
+  - `pnpm codestyle:parity`
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
+  - `pnpm audit`
+  - `pnpm check`
+  - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
 
 ## How to use this pack

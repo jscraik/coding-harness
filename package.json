@@ -47,7 +47,7 @@
 		"test:ci": "bash scripts/test-ci.sh",
 		"test:watch": "vitest",
 		"test:deep": "pnpm check && pnpm test:artifacts",
-		"test:evals": "node scripts/run-harness-evals.mjs",
+		"test:evals": "node --import tsx scripts/run-harness-evals.mjs",
 		"test:harness-upgrade-matrix": "node scripts/test-harness-upgrade-matrix.mjs",
 		"test:integration": "pnpm vitest run src/commands/agent-first-throughput.integration.test.ts",
 		"test:e2e": "pnpm e2e",

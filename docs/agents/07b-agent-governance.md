@@ -47,6 +47,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   the same PR
 - north-star status cadence refreshes should keep `docs/roadmap/agent-first-status.md`, its `harness.contract.json` `lastReviewedAt` registry entry, `README.md`, `AGENTS.md`, and this guide synchronized in the same PR
 - agent-native cockpit changes should keep next-action safety evidence, generated environment action contracts, and docs-gate-required operator surfaces synchronized before the PR can be considered merge-ready
+- goal-continuation and approval-plan contract changes should keep explicit
+  authorization, fail-closed reviewer resolution, and snapshot-only state
+  evidence visible through the same agent-native cockpit surfaces before PR
+  handoff
 
 ## Evidence and communication
 

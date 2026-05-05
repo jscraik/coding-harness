@@ -25,6 +25,7 @@ export const CODESTYLE_PACK_TEMPLATE_FILES = [
 	"codestyle/17-testing.md",
 	"codestyle/18-code-review.md",
 	"codestyle/19-development-workflow.md",
+	"codestyle/20-go.md",
 	"codestyle/CHECKSUMS.sha256",
 ] as const;
 

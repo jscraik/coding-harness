@@ -16,18 +16,23 @@
 - Explicit types at public API boundaries (functions, modules, component props) are REQUIRED.
 - Exported public API declarations in changed production `src/**` files MUST have JSDoc; `pnpm run quality:docstrings` enforces this changed-file ratchet.
 - Use strict TypeScript configuration and keep boundary validation explicit.
-- `any` is forbidden in production paths; use concrete types or `unknown` plus narrowing.
+- `any` SHOULD be avoided in production paths; use concrete types or `unknown` plus narrowing. If a temporary `any` is unavoidable, keep it local, justified, and covered by tests or a follow-up waiver.
 
 ## Banned patterns
-- `: any`, `as any`, `Promise<any>`, and `Record<string, any>` in production code.
+- Unjustified `: any`, `as any`, `Promise<any>`, and `Record<string, any>` in production code.
 - `value as unknown as T` double assertions without runtime validation.
 - `// @ts-ignore` and `// @ts-nocheck`; use `@ts-expect-error` with rationale only when unavoidable.
 - Unsafe type assertions without guard functions or schema validation.
 
 ## Linting and module rules
-- ESLint MUST be type-aware for TS policy checks.
-- Biome handles formatting and style-level lint where configured and MUST pass where enabled.
+- Biome handles formatting and style-level lint in this repository and MUST pass where enabled.
+- TypeScript type safety MUST be enforced with `tsc --noEmit`.
+- Downstream projects MAY use ESLint for additional policy checks when an `eslint.config.*` file exists; do not claim ESLint coverage where it is not configured.
 - Prefer ESM and explicit module syntax for Node/TS packages.
+- Local ESM imports MUST include `.js` extensions for emitted JavaScript compatibility.
+- NodeNext TypeScript projects MUST keep `module` and `moduleResolution` aligned to `NodeNext` unless a documented runtime migration changes both together.
+- With `verbatimModuleSyntax` enabled, imports MUST reflect runtime semantics; use `import type` for type-only imports.
+- JSON imports in NodeNext-style modules MUST use import attributes when the runtime/compiler requires them, for example `with { type: "json" }`.
 - Keep imports acyclic; avoid barrels that create circular dependency chains.
 
 ## Async and cancellation

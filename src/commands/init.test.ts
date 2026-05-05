@@ -91,6 +91,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"codestyle/17-testing.md",
 	"codestyle/18-code-review.md",
 	"codestyle/19-development-workflow.md",
+	"codestyle/20-go.md",
 	"codestyle/CHECKSUMS.sha256",
 	"scripts/codex-preflight.sh",
 	"scripts/codex-preflight-local-memory-legacy.sh",
