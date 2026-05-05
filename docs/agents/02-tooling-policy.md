@@ -95,7 +95,8 @@ For agent-native cockpit changes, keep `harness next --json` command recommendat
 The local hook contract is intentionally split by drag profile:
 
 - `prek install --overwrite` (via `scripts/setup-git-hooks.js`) is the only supported hook installer path. Repositories should not keep legacy `simple-git-hooks` package metadata or post-install bootstraps once they migrate.
-- `scripts/setup-git-hooks.js` is the required wrapper around `prek install --overwrite`; it must patch generated `.git/hooks/*` shims to set `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logging works in sandboxed/home-read-only environments and legacy `.legacy` wrappers do not linger.
+- `scripts/setup-git-hooks.js` is the required wrapper around `prek install --overwrite`; it must resolve the installed hook directory with `git rev-parse --git-path hooks` and patch generated `.git/hooks/*` shims to set `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logging works in sandboxed/home-read-only environments and legacy `.legacy` wrappers do not linger.
+- `scripts/check-environment.sh` must fail generated `prek` hook drift when installed `pre-commit`, `pre-push`, or `commit-msg` shims lack the repo-local `PREK_HOME` patch. Repair drift with `node scripts/setup-git-hooks.js` or `make hooks`, not raw `prek install`.
 - `pre-commit` stays fast and now adds staged `gitleaks`, staged-doc `vale`, and `vitest related` alongside `lint`, `docs:lint`, and `typecheck`.
 - The staged secret scan should use the repo-root `.gitleaks.toml` when present so fixture/example allow lists live in version control instead of hidden local defaults.
 - `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
