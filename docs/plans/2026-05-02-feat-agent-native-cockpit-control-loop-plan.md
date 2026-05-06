@@ -600,6 +600,7 @@ Recovery rules:
 | `SA36`-`SA38` | Deferred | Codex config steering evidence; out of JSC-248 implementation |
 | `SA39`-`SA45` | P7 deferred | Approval reviewer contract; out of JSC-248 unless promoted by measured approval friction |
 | `SA46`-`SA52` | P8 / `JSC-279` deferred | Goal continuation contract; out of JSC-248 unless promoted by measured resume or stale-plan friction |
+| `SA53`-`SA61` | Deferred command-surface compression | Agent-mode visibility, work-packet deepening, PR-ready, validation-plan, review-context, and session-friction contracts; out of JSC-248 first slice unless explicitly promoted |
 
 ## Handoff to he-work
 
@@ -608,8 +609,9 @@ already-landed P1-P5 surfaces, then implement P6 technical hardening only where
 the deepened spec is still unmet. Do not implement `pr-ready`, `fix-review`,
 `learn`, telemetry persistence, command deletion, nested parser aliases,
 unknown-command suggestion enrichment, full responsibility taxonomy cleanup,
-hero-story evaluations, Codex config generation, or Auto-review activation in
-this slice.
+hero-story evaluations, Codex config generation, `commands --json --for-agent`,
+validation-plan laddering, review-context handoff fields, session-friction
+fixtures, or Auto-review activation in this slice.
 
 Re-check live Linear status and use `Refs JSC-248` in PR metadata until the
 issue is fully complete.

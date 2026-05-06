@@ -1,4 +1,10 @@
-import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -197,42 +203,172 @@ describe("runHarnessNext", () => {
 		expect(decision.nextCommand).toBe(
 			"harness review-context --files docs/spec.md --json",
 		);
-		expect(decision.meta).toMatchObject({ mode: "pr" });
+		expect(decision.meta).toMatchObject({
+			mode: "pr",
+			sourceErrors: [
+				{
+					kind: "linear",
+					ref: "network:linear",
+					freshness: "unknown",
+					sha: null,
+					status: "blocked",
+					failureClass: "network_unavailable",
+				},
+				{
+					kind: "pr",
+					ref: "network:github",
+					freshness: "unknown",
+					sha: null,
+					status: "blocked",
+					failureClass: "network_unavailable",
+				},
+			],
+		});
 	});
 
-	it("recommends fleet-plan for ci mode when a matrix artifact exists", () => {
-		const repoRoot = join(tmpdir(), `harness-next-fleet-${Date.now()}`);
-		mkdirSync(join(repoRoot, "artifacts"), { recursive: true });
-		writeFileSync(
-			join(repoRoot, "artifacts/harness-upgrade-matrix-dev.json"),
-			"{}",
-		);
-
+	it("carries source errors without corrupting JSON recommendations", () => {
 		const decision = runHarnessNext({
-			mode: "ci",
-			repoRoot,
-			inspectChangedFiles: () => {
-				throw new Error("git should not be inspected");
-			},
+			files: ["src/commands/next.ts"],
+			decisionSources: [
+				{
+					kind: "learning",
+					ref: ".harness/learnings/coderabbit.local.json",
+					freshness: "missing",
+					sha: null,
+					status: "invalid",
+					failureClass: "learning_missing",
+				},
+				{
+					kind: "run",
+					ref: ".harness/runs/stale.json",
+					freshness: "stale",
+					sha: "b".repeat(40),
+					status: "usable",
+					failureClass: "run_head_mismatch",
+				},
+			],
 		});
 
 		expect(decision.status).toBe("action_required");
 		expect(decision.nextCommand).toBe(
-			"harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json",
+			"harness validation-plan --files src/commands/next.ts --json",
 		);
-		expect(decision.evidenceRef).toEqual([
-			"artifact:artifacts/harness-upgrade-matrix-dev.json",
-		]);
 		expect(decision.meta).toMatchObject({
-			mode: "ci",
-			nextCommandArgv: [
-				"harness",
-				"fleet-plan",
-				"--from",
-				"artifacts/harness-upgrade-matrix-dev.json",
-				"--json",
+			sourceErrors: [
+				{
+					kind: "learning",
+					status: "invalid",
+					failureClass: "learning_missing",
+				},
+				{
+					kind: "run",
+					freshness: "stale",
+					failureClass: "run_head_mismatch",
+				},
 			],
 		});
+	});
+
+	it("fails closed when a required local decision source is blocked", () => {
+		const decision = runHarnessNext({
+			files: ["src/commands/next.ts"],
+			decisionSources: [
+				{
+					kind: "contract",
+					ref: "harness.contract.json",
+					freshness: "unknown",
+					sha: null,
+					status: "blocked",
+					failureClass: "contract_blocked",
+				},
+			],
+		});
+
+		expect(decision.status).toBe("blocked");
+		expect(decision.failureClass).toBe("contract_blocked");
+		expect(decision.nextCommand).toBe("harness doctor --json");
+		expect(decision.meta).toMatchObject({
+			sourceErrors: [
+				{
+					kind: "contract",
+					ref: "harness.contract.json",
+					status: "blocked",
+					failureClass: "contract_blocked",
+				},
+			],
+		});
+	});
+
+	it("replays identical recommendations and source error ordering", () => {
+		const options = {
+			files: ["src/b.ts", "src/a.ts"],
+			decisionSources: [
+				{
+					kind: "run" as const,
+					ref: ".harness/runs/z.json",
+					freshness: "stale" as const,
+					sha: "b".repeat(40),
+					status: "usable" as const,
+					failureClass: "run_head_mismatch",
+				},
+				{
+					kind: "learning" as const,
+					ref: ".harness/learnings/local.json",
+					freshness: "missing" as const,
+					sha: null,
+					status: "invalid" as const,
+					failureClass: "learning_missing",
+				},
+			],
+		};
+
+		const first = runHarnessNext(options);
+		const second = runHarnessNext(options);
+
+		expect(second.nextCommand).toBe(first.nextCommand);
+		expect(second.evidenceRef).toEqual(first.evidenceRef);
+		expect(second.meta).toMatchObject({
+			sourceErrors: (first.meta as { sourceErrors: unknown[] }).sourceErrors,
+		});
+	});
+
+	it("recommends fleet-plan for ci mode when a matrix artifact exists", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fleet-"));
+		try {
+			mkdirSync(join(repoRoot, "artifacts"), { recursive: true });
+			writeFileSync(
+				join(repoRoot, "artifacts/harness-upgrade-matrix-dev.json"),
+				"{}",
+			);
+
+			const decision = runHarnessNext({
+				mode: "ci",
+				repoRoot,
+				inspectChangedFiles: () => {
+					throw new Error("git should not be inspected");
+				},
+			});
+
+			expect(decision.status).toBe("action_required");
+			expect(decision.nextCommand).toBe(
+				"harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json",
+			);
+			expect(decision.evidenceRef).toEqual([
+				"artifact:artifacts/harness-upgrade-matrix-dev.json",
+			]);
+			expect(decision.meta).toMatchObject({
+				mode: "ci",
+				nextCommandArgv: [
+					"harness",
+					"fleet-plan",
+					"--from",
+					"artifacts/harness-upgrade-matrix-dev.json",
+					"--json",
+				],
+			});
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
 	});
 
 	it("includes machine-safe argv and shell-safe display commands", () => {
@@ -280,12 +416,14 @@ describe("runNextCLI", () => {
 
 		expect(exitCode).toBe(2);
 		const decision = parseDecision(output);
+		const directDecision = runHarnessNext({ mode: "remote" as never });
 		expect(decision.status).toBe("blocked");
 		expect(decision.failureClass).toBe("invalid_mode");
 		expect(decision.nextAction).toBe(
 			"Use --mode local, --mode pr, or --mode ci.",
 		);
 		expect(decision.retry).toBe("manual");
+		expect(decision).toEqual(directDecision);
 	});
 
 	it("emits a usage decision for empty --files values", () => {
@@ -331,8 +469,7 @@ describe("runNextCLI", () => {
 	});
 
 	it("does not mutate files while producing a recommendation", () => {
-		const repoRoot = join(tmpdir(), `harness-next-${Date.now()}`);
-		mkdirSync(repoRoot);
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-"));
 		const before = readdirSync(repoRoot);
 
 		const { exitCode, output } = captureNextCLI(["--json"], {
@@ -343,5 +480,6 @@ describe("runNextCLI", () => {
 		expect(exitCode).toBe(0);
 		expect(parseDecision(output).writesFiles).toBe(false);
 		expect(readdirSync(repoRoot)).toEqual(before);
+		rmSync(repoRoot, { recursive: true, force: true });
 	});
 });

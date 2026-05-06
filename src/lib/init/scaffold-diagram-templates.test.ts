@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated scripts.
 import { describe, expect, it } from "vitest";
 import {
 	renderCheckDiagramFreshnessScript,
@@ -11,7 +12,7 @@ describe("scaffold diagram templates", () => {
 		const script = renderRefreshDiagramContextScript();
 
 		expect(script).toContain("#!/usr/bin/env bash");
-		expect(script).toContain("pnpm exec diagram all .");
+		expect(script).toContain("pnpm exec diagram generate-all .");
 		expect(script).toContain('MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"');
 		expect(script).toContain("const sourceManifest = (() => {");
 		expect(script).toContain("...sourceManifest,");
@@ -51,7 +52,9 @@ describe("scaffold diagram templates", () => {
 		expect(context).toContain(
 			"bash scripts/refresh-diagram-context.sh --dry-run",
 		);
-		expect(context).toContain("pnpm exec diagram all . --output-dir .diagram");
+		expect(context).toContain(
+			"pnpm exec diagram generate-all . --output-dir .diagram",
+		);
 		expect(context).toContain(
 			"bash scripts/refresh-diagram-context.sh --force",
 		);

@@ -117,6 +117,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - If `toolingPolicy.projectBrainMemoryExtension.enabled=true`, capture verification evidence that the required `.harness/**` paths exist and that `scripts/check-environment.sh` still declares `required_project_brain_paths`.
 - When bumping tooling dependencies that have mirrored configuration schemas, update the package version, the repo config, and the scaffold template in the same change. The init suite enforces this for the Biome schema URL.
 - Diagram freshness enforcement should compare only git-tracked artifacts before and after refresh. Gitignored `.diagram/` refresh output may exist for local analysis, but it must not block `pre-push` unless tracked architecture artifacts actually drift.
+- Agent-native cockpit and fleet remediation changes must keep command evidence machine-readable and permission-aware: `harness next --json` should carry required local source blockers before recommending work, optional network source errors should remain metadata rather than silent assumptions, and `harness fleet-plan --from <upgrade-matrix> --json` should separate dry-run recommendations from approval-required mutation steps.
 
 ## Pre-commit hooks
 

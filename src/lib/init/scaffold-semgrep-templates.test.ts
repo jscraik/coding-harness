@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated scripts.
 import { describe, expect, it } from "vitest";
 import {
 	SEMGREP_TEMPLATE_FILES,

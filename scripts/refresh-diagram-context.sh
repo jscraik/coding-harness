@@ -76,9 +76,9 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 pushd "$ROOT_DIR" >/dev/null
 if [[ "$QUIET" -eq 1 ]]; then
-	pnpm exec diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>&1
+	pnpm exec diagram generate-all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>&1
 else
-	pnpm exec diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
+	pnpm exec diagram generate-all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
 fi
 popd >/dev/null
 

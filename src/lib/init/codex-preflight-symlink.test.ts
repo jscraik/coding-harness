@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated scripts.
 /**
  * Tests for codex preflight path-guard contracts across runtime and scaffold templates.
  *

@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: generated environment actions must preserve shell placeholders.
 export const TOOLING_READINESS_SCRIPT_PATH =
 	"scripts/check-environment.sh" as const;
 export const TOOLING_CODEX_ENVIRONMENT_PATH =
@@ -106,7 +107,7 @@ export const PROJECT_MISE_REQUIRED_TOOLS = [
 	["python", "3.12"],
 	["uv", "0.11.3"],
 	["cargo:prek", "0.3.4"],
-	["npm:@brainwav/diagram", "1.0.8"],
+	["npm:@brainwav/diagram", "1.1.0"],
 	["npm:@argos-ci/cli", "4.1.1"],
 	["cosign", "3.0.5"],
 	["cloudflared", "2026.3.0"],

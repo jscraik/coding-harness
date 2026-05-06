@@ -81,7 +81,7 @@ bash scripts/refresh-diagram-context.sh --dry-run
 
 
 # Generate diagrams
-pnpm exec diagram all . --output-dir .diagram
+pnpm exec diagram generate-all . --output-dir .diagram
 
 # Update context
 

@@ -12,6 +12,12 @@ import {
 	type HarnessDecisionStartupCost,
 	validateHarnessDecision,
 } from "../lib/decision/harness-decision.js";
+import {
+	type DecisionSource,
+	type RecommendationCandidate,
+	collectSourceErrors,
+	findBlockingSource,
+} from "../lib/decision/sources.js";
 
 /** Context posture used by `harness next` when selecting a recommendation. */
 export type HarnessNextMode = "local" | "pr" | "ci";
@@ -26,6 +32,8 @@ export interface HarnessNextOptions {
 	repoRoot?: string;
 	/** Test hook or alternate changed-file provider. */
 	inspectChangedFiles?: (repoRoot: string) => string[];
+	/** Test hook or future normalized source provider. */
+	decisionSources?: DecisionSource[];
 }
 
 interface ParsedNextArgs {
@@ -192,6 +200,21 @@ function blockedDecision(args: {
 	});
 }
 
+function invalidModeDecision(mode: string): HarnessDecision {
+	return blockedDecision({
+		summary: `Unsupported next mode: ${mode}.`,
+		nextAction: "Use --mode local, --mode pr, or --mode ci.",
+		failureClass: "invalid_mode",
+		meta: decisionMeta({
+			mode,
+			frictionClass: "unclear_instruction",
+			delayClass: "human_needed",
+			startupCost: "none",
+			requiresHuman: true,
+		}),
+	});
+}
+
 function chooseNextCommandParts(
 	mode: HarnessNextMode,
 	files: string[],
@@ -200,6 +223,34 @@ function chooseNextCommandParts(
 	const argv = ["harness", commandName, "--files", ...files, "--json"];
 	const command = `harness ${commandName} --files ${fileArgsForCommand(files)} --json`;
 	return { command, argv };
+}
+
+function optionalNetworkSources(mode: HarnessNextMode): DecisionSource[] {
+	if (mode !== "pr") return [];
+	return [
+		{
+			kind: "pr",
+			ref: "network:github",
+			freshness: "unknown",
+			sha: null,
+			status: "blocked",
+			failureClass: "network_unavailable",
+		},
+		{
+			kind: "linear",
+			ref: "network:linear",
+			freshness: "unknown",
+			sha: null,
+			status: "blocked",
+			failureClass: "network_unavailable",
+		},
+	];
+}
+
+function sourceMetaExtra(sourceErrors: readonly DecisionSource[]): {
+	sourceErrors?: DecisionSource[];
+} {
+	return sourceErrors.length > 0 ? { sourceErrors: [...sourceErrors] } : {};
 }
 
 function decisionMeta(args: {
@@ -246,7 +297,44 @@ function decisionMeta(args: {
 	};
 }
 
+function sourceBlockedDecision(args: {
+	mode: HarnessNextMode;
+	source: DecisionSource;
+	sourceErrors: DecisionSource[];
+}): HarnessDecision {
+	return createDecision({
+		status: "blocked",
+		summary: `Required decision source is blocked: ${args.source.ref}.`,
+		nextAction:
+			"Run harness doctor --json, fix the reported source issue, then retry harness next --json.",
+		nextCommand: "harness doctor --json",
+		safeToRun: true,
+		requiresHuman: false,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: [args.source.ref],
+		failureClass: args.source.failureClass ?? "source_blocked",
+		retry: "manual",
+		riskTier: "unknown",
+		meta: decisionMeta({
+			mode: args.mode,
+			frictionClass: "repo_state",
+			delayClass: "human_needed",
+			commands: ["harness doctor --json"],
+			extra: sourceMetaExtra(args.sourceErrors),
+		}),
+	});
+}
+
 function gitInspectionBlockedDecision(mode: HarnessNextMode): HarnessDecision {
+	const gitSourceError: DecisionSource = {
+		kind: "git",
+		ref: "git:status",
+		freshness: "unknown",
+		sha: null,
+		status: "blocked",
+		failureClass: "git_state_unavailable",
+	};
 	return createDecision({
 		status: "blocked",
 		summary: "Git state could not be inspected.",
@@ -267,6 +355,7 @@ function gitInspectionBlockedDecision(mode: HarnessNextMode): HarnessDecision {
 			frictionClass: "repo_state",
 			delayClass: "human_needed",
 			commands: ["harness doctor --json"],
+			extra: sourceMetaExtra([gitSourceError]),
 		}),
 	});
 }
@@ -307,6 +396,7 @@ function fleetMatrixArtifactDecision(args: {
 function noChangedFilesDecision(args: {
 	mode: HarnessNextMode;
 	filesSource: "override" | "git";
+	sourceErrors: DecisionSource[];
 }): HarnessDecision {
 	return createDecision({
 		status: "pass",
@@ -326,41 +416,68 @@ function noChangedFilesDecision(args: {
 			filesSource: args.filesSource,
 			changedFileCount: 0,
 			commands: ["harness check --json"],
+			extra: sourceMetaExtra(args.sourceErrors),
 		}),
 	});
+}
+
+interface NextRecommendationCandidate extends RecommendationCandidate {
+	argv: string[];
+}
+
+function createRecommendationCandidate(args: {
+	mode: HarnessNextMode;
+	files: string[];
+	filesSource: "override" | "git";
+}): NextRecommendationCandidate {
+	const nextCommand = chooseNextCommandParts(args.mode, args.files);
+	return {
+		command: nextCommand.command,
+		argv: nextCommand.argv,
+		reason:
+			args.mode === "pr"
+				? "Generate reviewer context for the changed files."
+				: "Generate a repo-canonical validation plan for the changed files.",
+		sourceRefs: [
+			args.filesSource === "git" ? "git:status" : "input:files",
+			"command-catalog:harness-command-catalog/v2",
+		],
+		score: args.mode === "pr" ? 80 : 90,
+		riskTier: inferRiskTier(args.files),
+		safeToRun: true,
+		requiresHuman: false,
+		requiresNetwork: false,
+		writesFiles: false,
+	};
 }
 
 function changedFilesDecision(args: {
 	mode: HarnessNextMode;
 	files: string[];
 	filesSource: "override" | "git";
+	sourceErrors: DecisionSource[];
 }): HarnessDecision {
-	const nextCommand = chooseNextCommandParts(args.mode, args.files);
+	const candidate = createRecommendationCandidate(args);
 	return createDecision({
 		status: "action_required",
 		summary: `Detected ${args.files.length} changed file${args.files.length === 1 ? "" : "s"}.`,
-		nextAction:
-			args.mode === "pr"
-				? "Generate reviewer context for the changed files."
-				: "Generate a repo-canonical validation plan for the changed files.",
-		nextCommand: nextCommand.command,
-		safeToRun: true,
-		requiresHuman: false,
-		requiresNetwork: false,
-		writesFiles: false,
-		evidenceRef: [
-			args.filesSource === "git" ? "git:status" : "input:files",
-			"command-catalog:harness-command-catalog/v2",
-		],
+		nextAction: candidate.reason,
+		nextCommand: candidate.command,
+		safeToRun: candidate.safeToRun,
+		requiresHuman: candidate.requiresHuman,
+		requiresNetwork: candidate.requiresNetwork,
+		writesFiles: candidate.writesFiles,
+		evidenceRef: candidate.sourceRefs,
 		failureClass: null,
 		retry: "safe",
-		riskTier: inferRiskTier(args.files),
+		riskTier: candidate.riskTier,
 		meta: decisionMeta({
 			mode: args.mode,
 			filesSource: args.filesSource,
 			changedFileCount: args.files.length,
-			nextCommandArgv: nextCommand.argv,
-			commands: [nextCommand.command],
+			nextCommandArgv: candidate.argv,
+			commands: candidate.command ? [candidate.command] : [],
+			extra: sourceMetaExtra(args.sourceErrors),
 		}),
 	});
 }
@@ -374,17 +491,20 @@ export function runHarnessNext(
 	const filesFromOverride = options.files !== undefined;
 
 	if (!isHarnessNextMode(mode)) {
-		return blockedDecision({
-			summary: `Unsupported next mode: ${String(mode)}.`,
-			nextAction: "Use --mode local, --mode pr, or --mode ci.",
-			failureClass: "invalid_mode",
-			meta: decisionMeta({
-				mode: String(mode),
-				frictionClass: "unclear_instruction",
-				delayClass: "human_needed",
-				startupCost: "none",
-				requiresHuman: true,
-			}),
+		return invalidModeDecision(String(mode));
+	}
+
+	const allSources = [
+		...(options.decisionSources ?? []),
+		...optionalNetworkSources(mode),
+	];
+	const sourceErrors = collectSourceErrors(allSources);
+	const blockingSource = findBlockingSource(sourceErrors);
+	if (blockingSource) {
+		return sourceBlockedDecision({
+			mode,
+			source: blockingSource,
+			sourceErrors,
 		});
 	}
 
@@ -402,6 +522,7 @@ export function runHarnessNext(
 				delayClass: "human_needed",
 				startupCost: "none",
 				requiresHuman: true,
+				extra: sourceMetaExtra(sourceErrors),
 			}),
 		});
 	}
@@ -432,10 +553,10 @@ export function runHarnessNext(
 	}
 
 	if (files.length === 0) {
-		return noChangedFilesDecision({ mode, filesSource });
+		return noChangedFilesDecision({ mode, filesSource, sourceErrors });
 	}
 
-	return changedFilesDecision({ mode, files, filesSource });
+	return changedFilesDecision({ mode, files, filesSource, sourceErrors });
 }
 
 function parseNextArgs(args: string[]): ParsedNextArgs {
@@ -535,18 +656,7 @@ export function runNextCLI(
 
 	if (parsed.error === "invalid_mode") {
 		usageError = true;
-		decision = blockedDecision({
-			summary: `Unsupported next mode: ${parsed.errorValue}.`,
-			nextAction: "Use --mode local, --mode pr, or --mode ci.",
-			failureClass: "invalid_mode",
-			meta: decisionMeta({
-				mode: parsed.errorValue ?? "unknown",
-				frictionClass: "unclear_instruction",
-				delayClass: "human_needed",
-				startupCost: "none",
-				requiresHuman: true,
-			}),
-		});
+		decision = invalidModeDecision(parsed.errorValue ?? "unknown");
 	} else if (parsed.error === "mode_missing") {
 		usageError = true;
 		decision = blockedDecision({

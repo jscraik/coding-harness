@@ -4,7 +4,7 @@ title: Agent-Native Cockpit Control Loop
 type: standard-spec
 status: draft
 date: 2026-05-02
-origin: user critique and he-spec prompt on agent-native-first harness reduction + 2026-05-03 blunt product critique
+origin: user critique and he-spec prompt on agent-native-first harness reduction + 2026-05-03 blunt product critique + 2026-05-06 command-surface refinement
 risk: high
 spec_depth: full
 ui_required: false
@@ -41,6 +41,7 @@ small cockpit that decides what to do next and explains why.
 - [Technical Contract Details](#technical-contract-details)
 - [Command Tiers](#command-tiers)
 - [Readiness Responsibility Split](#readiness-responsibility-split)
+- [Agent Interface Compression Addendum](#agent-interface-compression-addendum)
 - [Human Rendering Contract](#human-rendering-contract)
 - [Invariants and Safety Requirements](#invariants-and-safety-requirements)
 - [Failure Model and Recovery](#failure-model-and-recovery)
@@ -203,6 +204,7 @@ Implementation planning must keep this Linear contract current:
 | Technical hardening follow-on | `SA28`-`SA35` | Follow-on unless needed to make `next` deterministic |
 | Deferred Codex config and approval follow-on | `SA36`-`SA45` | Out of first slice; may be split across `JSC-248` and `JSC-249` |
 | `JSC-279` | `SA46`-`SA52` | Deferred goal-continuation child issue under `JSC-249` |
+| Deferred agent interface compression follow-on | `SA53`-`SA61` | Out of first slice; informed by May 6 session-collector evidence |
 
 ## System Boundary
 
@@ -1045,6 +1047,297 @@ Readiness commands must have distinct jobs:
 No command should duplicate another surface's primary responsibility in human
 output. It may call or recommend the other command.
 
+## Agent Interface Compression Addendum
+
+The May 6 command-surface refinement changes the diagnosis from "too many
+commands" to "too many useful engines are visible at the wrong layer." The
+project should not delete command families as the first move. It should make the
+agent-facing layer smaller, deeper, and more complete.
+
+### Product Rule
+
+Agents should only need to remember:
+
+```bash
+harness next --json
+```
+
+Every other command should be either:
+
+- selected by `harness next --json`
+- embedded in a work packet emitted by `harness next` or `harness pr-ready`
+- discoverable through an agent-filtered catalog
+- explicitly marked as advanced plumbing
+
+This rule is a product constraint, not a command-deletion plan.
+
+### Collector Evidence Refinement
+
+A May 6, 2026 session-collector run produced a bounded 300-session artifact
+from normalized collector output and Codex rollout records. It kept 518 recent OTEL log
+lines and 395348 Codex rollout lines, with 70 `coding-harness` project hints,
+12848 `exec_command` calls, 828 `apply_patch` calls, 1570 `write_stdin` calls,
+51 permission requests, 43 subagent spawns, and 111 subagent waits.
+
+The Harness Engineering evidence bundle surfaced repeated blocker boundaries:
+
+| Boundary | Count |
+| --- | ---: |
+| `lint_failure` | 146 |
+| `missing_file` | 129 |
+| `git_state` | 68 |
+| `network` | 51 |
+| `test_failure` | 47 |
+| `timeout` | 5 |
+| `approval_required` | 4 |
+| `permission` | 2 |
+
+For `coding-harness` workflow candidates specifically, the strongest repeated
+boundaries were `approval_required`, `missing_file`, and `network`, each at 42,
+followed by `lint_failure` at 21, `timeout` at 17, `git_state` and
+`permission` at 10, and `test_failure` at 4.
+
+Spec implication: the cockpit cannot be only a smaller command menu. It must
+classify recurring blocker boundaries, choose the next recovery action, and say
+which evidence is still missing. These boundary names should remain stable in
+machine output so repeated friction can become guardrails instead of another
+manual archaeology pass.
+
+### Blocker Boundary Interface
+
+The session evidence should not introduce a second command-specific failure
+taxonomy. Existing command and gate surfaces already own detailed
+`failureClass`, `blockerCodes`, and recovery guidance concepts. The cockpit
+needs a cross-surface grouping layer for agent friction.
+
+Interface alternatives:
+
+| Shape | Example | Tradeoff |
+| --- | --- | --- |
+| Reuse `failureClass` everywhere | `failureClass: "git_state_unavailable"` | Lowest new surface, but conflates command-specific failure semantics with aggregate session friction |
+| Add stable `blockerBoundary` grouping | `failureClass: "git_state_unavailable"`, `blockerBoundary: "git_state"` | Slightly more schema, but preserves gate detail while giving `next`, `review-context`, and `pr-ready` a common recovery vocabulary |
+
+Selected shape: add stable blocker boundaries as aggregate categories, and map
+existing command-specific failure classes into them where possible.
+
+```ts
+type BlockerBoundary =
+  | "lint_failure"
+  | "missing_file"
+  | "git_state"
+  | "network"
+  | "test_failure"
+  | "timeout"
+  | "approval_required"
+  | "permission";
+
+interface SessionFrictionEvidence {
+  source: "session-collector" | "fixture" | "manual";
+  generatedAt: string;
+  windowDays: number;
+  redactionStatus: "applied" | "not_needed";
+  totalSessions: number;
+  boundaryCounts: Partial<Record<BlockerBoundary, number>>;
+  workflowBoundaryCounts?: Record<
+    string,
+    Partial<Record<BlockerBoundary, number>>
+  >;
+  evidenceRefs: string[];
+}
+
+interface RecoveryRoute {
+  boundary: BlockerBoundary;
+  action: string;
+  command?: string;
+  guardrailDestination?:
+    | "validation-plan"
+    | "review-context"
+    | "doctor"
+    | "learnings"
+    | "project-brain"
+    | "human-escalation";
+  requiresHuman?: boolean;
+  requiresNetwork?: boolean;
+  evidenceRefs: string[];
+}
+```
+
+Normal CLI output may expose aggregate counts, selected `boundary` values,
+redaction status, and evidence references. It must not expose raw session text,
+raw private paths, raw prompt fragments, or high-cardinality session/user
+identifiers from collector inputs.
+
+### Command Metadata Refinement
+
+Command metadata should extend the tier model with agent-native classification:
+
+| Field | Values | Purpose |
+| --- | --- | --- |
+| `agentMode` | `orient`, `plan`, `verify`, `review`, `repair`, `handoff`, `learn`, `admin` | What kind of agent moment this command serves |
+| `visibility` | `default`, `agent`, `advanced`, `plumbing`, `hidden`, `legacy` | Where the command appears in help and catalog output |
+
+`tier` remains the architectural category. `agentMode` describes the agent's
+job. `visibility` controls first-contact discovery.
+
+`harness commands --json --for-agent` should show the public agent rail set,
+not the full catalog. Inclusion is deterministic: include commands whose
+`visibility` is `default` or `agent`, and exclude `advanced`, `plumbing`,
+`hidden`, and `legacy` unless an explicit discovery flag requests them. The
+output should sort by cockpit usefulness first (`default` before `agent`), then
+by `agentMode`, then by command name. The full catalog remains available through
+`--all` or `--plumbing`. Commands may remain directly callable even when their
+visibility is advanced or plumbing.
+
+### Default Help Refinement
+
+Target default CLI help should be brutally small once the named commands are
+registered:
+
+```text
+Start here:
+  harness next --json
+
+Common outcomes:
+  harness check --json
+  harness pr-ready --json
+  harness init --dry-run
+  harness doctor --json
+
+Discovery:
+  harness commands --json --for-agent
+  harness commands --json --all
+```
+
+Default help must not advertise unregistered conceptual commands as runnable.
+If `pr-ready` is not yet registered, default help may describe PR readiness as a
+future outcome only in docs, not as an executable command.
+
+### Agent Work Packet
+
+`HarnessDecision` should deepen from a next-command recommendation into an
+agent work packet:
+
+| Field | Purpose |
+| --- | --- |
+| `phase` | `orient`, `verify`, `review`, `repair`, or `handoff` |
+| `objective` | Plain-language outcome the agent is trying to complete |
+| `nextCommand` | Exact runnable command when one is safe and known |
+| `requiredEvidence` | Evidence artifacts, checks, or refs needed before closeout |
+| `stopConditions` | Conditions that require stopping instead of improvising |
+| `humanEscalation` | Approval, credential, network, or policy blocker when present |
+| `followUpCommands` | Ordered later commands when the next step succeeds |
+| `hiddenPlumbing` | Command engines used or considered but not exposed as choices |
+
+The existing `status`, `nextAction`, `safeToRun`, permission, evidence, retry,
+risk, and metadata fields remain the base contract. The work-packet fields make
+the hidden workflow explicit enough that an agent does not have to remember the
+taxonomy.
+
+`nextAction` remains the short human-readable recommendation. `nextCommand` is
+the machine-runnable command string when the recommendation can be executed
+locally and safely. If no safe command exists, `nextCommand` is `null` and the
+stop condition or human escalation must explain why.
+
+The work packet may include collector-derived friction only through the
+privacy-safe interface:
+
+| Field | Purpose |
+| --- | --- |
+| `blockerBoundaries` | Stable boundary names seen in current or recurring evidence |
+| `sessionFriction` | Optional aggregate `SessionFrictionEvidence` payload |
+| `recoveryRoutes` | Ordered `RecoveryRoute` guidance for repeated blockers |
+
+### PR-Ready Orchestrator Contract
+
+`harness pr-ready --json` is the first follow-on command that earns a new
+top-level name because it describes a user outcome: prove that the current work
+is ready for PR handoff.
+
+It should orchestrate existing engines rather than replace them:
+
+- changed-file discovery
+- `validation-plan`
+- `review-context`
+- docs-gate requirements
+- review-gate prerequisites
+- Linear metadata requirements
+- network-required checks
+- PR body obligations
+- evidence freshness
+- stop and escalation conditions
+
+It should not necessarily run every gate. Its primary contract is to emit a
+packet:
+
+| Field | Purpose |
+| --- | --- |
+| `status` | `blocked`, `ready`, or `action_required` |
+| `handoffStatus` | `not_ready`, `ready_for_pr`, or `needs_human` |
+| `requiredNow` | Commands or actions needed before any readiness claim |
+| `requiredBeforeHandoff` | Commands or evidence needed before PR closeout |
+| `networkRequired` | Checks that require GitHub, Linear, CI, or external APIs |
+| `prBodyLines` | Concrete PR-description evidence lines the agent should include |
+| `evidenceRefs` | Existing artifacts, commands, URLs, or files used |
+| `safeCommands` | Safe local commands the agent may run next |
+| `manualCommands` | Commands requiring approval, credentials, or human judgement |
+| `blockers` | Stop conditions with recovery guidance |
+| `blockerBoundaries` | Stable friction categories represented by current blockers |
+| `recoveryRoutes` | Ordered next recovery or guardrail destinations |
+
+`pr-ready` should consume `validation-plan` and `review-context` as engines.
+Agents should not have to remember to call all three surfaces manually.
+
+### Validation-Plan Ladder
+
+`validation-plan` should degrade gracefully when optional learning artifacts are
+missing. Missing learning evidence should produce a warning and path-based plan
+rather than a hard error when the changed files can still be classified.
+
+Output should be ranked by when an agent should run each command:
+
+| Bucket | Purpose |
+| --- | --- |
+| `fast` | Lowest-cost checks useful during iteration |
+| `required` | Checks required before claiming the touched path is verified |
+| `beforePr` | Broader gates needed before handoff |
+| `deep` | Expensive or high-blast-radius validation |
+| `networkRequired` | Checks that need remote services or credentials |
+
+Each bucket entry should include the exact command, reason, source refs, stop
+conditions, and whether failure blocks closeout.
+
+### Review-Context Handoff Brain
+
+`review-context` should answer "what will a reviewer complain about if the
+agent misses it?" It remains a context engine, but its JSON should support PR
+handoff directly:
+
+| Field | Purpose |
+| --- | --- |
+| `reviewerLikelyConcerns` | Concrete risks reviewers are likely to inspect |
+| `mustMentionInPr` | Evidence or caveats that belong in the PR body |
+| `evidenceRequired` | Artifacts needed to make the handoff credible |
+| `knownRepeatedFailures` | Applicable learnings or recurring review failures |
+| `recommendedReviewers` | Human, bot, or specialty reviewer routes when known |
+| `doNotClaim` | Claims the agent must avoid because evidence is missing |
+
+`pr-ready` should embed or link to this output so review context becomes part of
+the readiness packet instead of a separate ritual.
+
+### New Command Admission Rule
+
+Before adding a new top-level command, the spec or plan must answer:
+
+- Is this a new user outcome?
+- Or is it plumbing for `next`, `pr-ready`, `validation-plan`,
+  `review-context`, `fix-review`, `learn`, or `linear`?
+- Can it be a mode, field, or catalog entry instead of a top-level command?
+- Does it reduce PR lead time, review rework, merge block time, or manual
+  interventions?
+
+If the answer is not a new user outcome or measurable workflow compression, the
+behavior should be implemented as plumbing behind an existing surface.
+
 ## Human Rendering Contract
 
 Human output should render operational language first and canonical IDs second.
@@ -1202,6 +1495,15 @@ as product proof:
 | `SA50` | Follow-on | Goal token budget, tokens used, and elapsed time feed session-friction evidence without being treated as completion proof. | Closeout fixture test |
 | `SA51` | Follow-on | Harness docs distinguish documented experimental app-server goal APIs from the live fork's experimental `/goal` TUI command. | Docs assertion |
 | `SA52` | Follow-on | A resume evaluation compares next-action fidelity with and without `goalContext` before goal guidance becomes default bootstrap output. | Resume eval report |
+| `SA53` | Follow-on | Command metadata exposes `agentMode` and `visibility` without removing existing `tier`, `primaryAudience`, or `orchestratedBy` fields. | Catalog schema test |
+| `SA54` | Follow-on | `harness commands --json --for-agent` returns the public agent rail set and excludes commands marked `plumbing`, `hidden`, or `legacy` unless explicitly requested. | CLI fixture test |
+| `SA55` | Follow-on | `HarnessDecision` can emit a work packet with `phase`, `objective`, `nextCommand`, `requiredEvidence`, `stopConditions`, `humanEscalation`, `followUpCommands`, `hiddenPlumbing`, and a compatibility rule that keeps `nextAction` as the human recommendation. | Decision fixture test |
+| `SA56` | Follow-on | `validation-plan` returns ranked `fast`, `required`, `beforePr`, `deep`, and `networkRequired` buckets and degrades to path-based planning when optional learning artifacts are absent. | Validation-plan fixture test |
+| `SA57` | Follow-on | `review-context` emits reviewer handoff fields: `reviewerLikelyConcerns`, `mustMentionInPr`, `evidenceRequired`, `knownRepeatedFailures`, `recommendedReviewers`, and `doNotClaim`. | Review-context fixture test |
+| `SA58` | Follow-on | `harness pr-ready --json` emits readiness packet fields covering current blockers, required evidence, network-required checks, PR-body evidence lines, safe local commands, manual commands, and `handoffStatus`. | CLI fixture test |
+| `SA59` | Follow-on | `harness next`, `validation-plan`, `review-context`, and `pr-ready` preserve stable blocker boundary names for `lint_failure`, `missing_file`, `git_state`, `network`, `test_failure`, `timeout`, `approval_required`, and `permission`. | Collector-backed fixture test |
+| `SA60` | Follow-on | A session-collector fixture can feed privacy-safe `SessionFrictionEvidence` aggregate counts into `review-context` or `pr-ready` without reading raw private session logs in normal CLI output. | Privacy-safe evidence fixture |
+| `SA61` | Follow-on | When repeated blocker evidence exists, the cockpit recommends an ordered `RecoveryRoute` with a command, guardrail destination, or human escalation instead of only listing the failed command. | Session-friction fixture test |
 
 ## Source Parity Notes
 
@@ -1216,6 +1518,10 @@ as product proof:
 - The 2026-05-03 blunt product critique is the source for product compression,
   built CLI preference, executable metrics, and the repeated-failure guardrail
   story added in this revision.
+- The May 6 session-collector evidence confirms that recurring agent friction
+  clusters around blocker classification and recovery routing, especially
+  lint, missing-file, git-state, network, test, timeout, approval, and
+  permission boundaries.
 - Live `~/dev/codex` plus `codex-repo` MCP evidence confirms Codex-native
   developer, compaction, and approval-review steering knobs. This spec records
   them as useful follow-on integration points, not as first-slice generated
@@ -1245,6 +1551,12 @@ Out of first slice:
 - command deletion/deprecation
 - telemetry persistence
 - live metrics implementation
+- `agentMode` / `visibility` filtering beyond the first-slice tier model
+- `commands --json --for-agent`
+- `validation-plan` ladder output
+- `review-context` handoff fields
+- `pr-ready` orchestration and `handoffStatus`
+- session-collector fixtures and blocker-boundary recovery routing
 - standalone `agent-snapshot` command unless `harness next --json` cannot carry
   the required snapshot metadata cleanly
 
@@ -1276,7 +1588,7 @@ Out of first slice:
 
 - A planner can sequence implementation from this spec without inventing
   product decisions.
-- Acceptance IDs `SA1` through `SA52` are stable.
+- Acceptance IDs `SA1` through `SA61` are stable.
 - The first slice is small enough to implement without rewriting existing gates.
 - Existing `GateResult`, verify-run, north-star, and learnings contracts remain
   authoritative in their domains.
@@ -1300,6 +1612,8 @@ Recommended planning stance:
 - Treat `pr-ready`, `fix-review`, `learn`, metrics, and standalone
   `agent-snapshot` as follow-on product-compression work unless a registered
   implementation already exists.
+- Treat `SA53` through `SA61` as the deferred command-surface compression
+  contract unless the issue scope is explicitly expanded.
 - Add technical gates for replay determinism, parser/help parity, run selection,
   and source-error classification before claiming `harness next` is
   agent-native.

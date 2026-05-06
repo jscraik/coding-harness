@@ -1,6 +1,6 @@
 import {
 	existsSync,
-	mkdirSync,
+	mkdtempSync,
 	readFileSync,
 	rmSync,
 	writeFileSync,
@@ -17,9 +17,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { promoteCIMode } from "./ci-migrate.js";
 
 function makeTmpDir(): string {
-	const d = join(tmpdir(), `promote-mode-test-${Date.now()}`);
-	mkdirSync(d, { recursive: true });
-	return d;
+	return mkdtempSync(join(tmpdir(), "promote-mode-test-"));
 }
 
 function writeContract(dir: string, content: object): void {

@@ -4,7 +4,7 @@
 "python" = "3.12"
 "uv" = "0.11.3"
 "cargo:prek" = "0.3.4"
-"npm:@brainwav/diagram" = "1.0.8"
+"npm:@brainwav/diagram" = "1.1.0"
 "npm:@argos-ci/cli" = "4.1.1"
 "cosign" = "3.0.5"
 "cloudflared" = "2026.3.0"
