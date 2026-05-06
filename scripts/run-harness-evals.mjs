@@ -270,22 +270,6 @@ function validateRegistry(value, registryFindings) {
 	}
 }
 
-/**
- * Validate a single scenario and append structured error findings for any violations.
- *
- * Performs the following validations: required and unique `id`, `type` must be
- * "live_fixture" or "registered", presence of `prompt`, non-empty entries for
- * `expected.commands`, `expected.artifacts`, `expected.assertions`, and
- * `expected.stopConditions`, and numeric score weights for each ID in
- * `SCORECARD_IDS`.
- *
- * Mutates `ids` by adding the scenario id and appends `errorFinding` objects to
- * `registryFindings` for each validation failure.
- *
- * @param {object} scenario - The scenario object to validate.
- * @param {Set<string>} ids - Set of seen scenario ids used to enforce uniqueness; the function adds the scenario's id when present.
- * @param {Array<object>} registryFindings - Collector array to which validation error findings are pushed.
- */
 function validateScenario(scenario, ids, registryFindings) {
 	if (!scenario.id) {
 		registryFindings.push(
@@ -339,11 +323,6 @@ function validateScenario(scenario, ids, registryFindings) {
 	}
 }
 
-/**
- * Run the live fixture associated with the given registry scenario, executing the scenario-specific runner and measuring its duration.
- * @param {Object} scenario - Registry scenario object; must include an `id` that selects the fixture runner and any scenario-specific configuration used by that runner.
- * @returns {Object} An object describing the fixture outcome containing `id`, `status` (`"pass"` or `"fail"`), an `assertions` array, and `durationMs` (elapsed time in milliseconds, rounded to two decimals).
- */
 async function runLiveFixture(scenario) {
 	const fixturePath = safeFixturePath(scenario.id);
 	rmSync(fixturePath, { force: true, recursive: true });
@@ -367,6 +346,14 @@ async function runLiveFixture(scenario) {
 			);
 		} else if (scenario.id === "review-feedback-eval-seed") {
 			result = await runReviewFeedbackEvalSeedFixture(scenario, fixturePath);
+		} else if (scenario.id === "github-app-auth-preflight") {
+			result = runGitHubAppAuthPreflightFixture(scenario, fixturePath);
+		} else if (scenario.id === "review-gate-check-name-alignment") {
+			result = runReviewGateCheckNameAlignmentFixture(scenario, fixturePath);
+		} else if (scenario.id === "repo-local-e2e-scratch") {
+			result = runRepoLocalE2EScratchFixture(scenario, fixturePath);
+		} else if (scenario.id === "github-check-run-transient-retry") {
+			result = runGitHubCheckRunTransientRetryFixture(scenario, fixturePath);
 		} else {
 			result = {
 				id: scenario.id,
@@ -427,17 +414,6 @@ function runPathSafetyFixture(scenario, fixturePath) {
 	]);
 }
 
-/**
- * Validates generated-artifact drift against a canonical source inside the fixture directory and attempts to repair it.
- *
- * Writes a canonical source and a stale generated artifact into the fixturePath, checks whether the generated artifact
- * initially diverges from the canonical source, runs the repair routine, verifies the repaired artifact, and returns a
- * fixture result summarizing assertions for detection, repair correctness, and post-repair drift status.
- *
- * @param {Object} scenario - The scenario object; its `id` is used to form the fixture result.
- * @param {string} fixturePath - Path to the per-fixture directory where artifacts are written and inspected.
- * @returns {Object} A fixture result object containing assertions about drift detection, repair success, and post-repair status.
- */
 function runGeneratedArtifactDriftFixture(scenario, fixturePath) {
 	const sourcePath = path.join(fixturePath, "canonical-source.json");
 	const generatedPath = path.join(fixturePath, "generated-artifact.json");
@@ -466,17 +442,6 @@ function runGeneratedArtifactDriftFixture(scenario, fixturePath) {
 	]);
 }
 
-/**
- * Execute the "validation-plan" live fixture for a scenario and return its fixture result.
- *
- * Writes a fixture learning artifact, builds or loads a validation plan for the fixture's changed files,
- * and validates that the plan reports success, contains expected local commands and network-required commands,
- * and reports the expected changedFiles list.
- *
- * @param {Object} scenario - The scenario object (uses `scenario.id` for the returned fixture result).
- * @param {string} fixturePath - Filesystem path to the per-fixture directory where artifacts are written.
- * @returns {Object} A fixture result object with `id`, `status`, and `assertions`; `status` is `"pass"` if all assertions pass, otherwise `"fail"`.
- */
 async function runValidationPlanFixture(scenario, fixturePath) {
 	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
 	const changedFiles = [
@@ -526,15 +491,6 @@ async function runValidationPlanFixture(scenario, fixturePath) {
 	]);
 }
 
-/**
- * Runs the spec reimplementation loop fixture: build a source behavior, derive an initial executable spec,
- * perform an implementation and evaluation pass, apply evaluator-suggested spec improvements, re-implement and re-evaluate,
- * write all intermediate artifacts to the fixture directory, and return a fixture result summarizing assertions.
- *
- * @param {object} scenario - The scenario object driving this fixture (used for `scenario.id`).
- * @param {string} fixturePath - Path to the per-fixture directory where JSON artifacts will be written.
- * @returns {{id: string, status: "pass" | "fail", assertions: Array<{name: string, status: "pass" | "fail"}>}} The fixture result with `id`, overall `status`, and an array of assertion records.
- */
 function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 	const sourceBehavior = buildSpecLoopSourceBehavior();
 	const initialSpec = extractExecutableSpec(sourceBehavior, {
@@ -607,21 +563,6 @@ function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 	]);
 }
 
-/**
- * Validates building of an eval-seed pack from a review-feedback learning artifact inside a fixture directory.
- *
- * Writes a learning artifact and an enforcement-status file into the fixturePath, invokes the eval-seed builder
- * (preferring a dynamic module export with a subprocess fallback), and asserts that the produced seed pack:
- * - succeeded and contains exactly one candidate,
- * - is attached to the expected changed files and evidence reference,
- * - recommends the expected target and test,
- * - classifies the failure as `generated_artifact_drift` with summary counts,
- * - and was written to the fixture output path.
- *
- * @param {Object} scenario - The scenario descriptor (used for the returned fixture id).
- * @param {string} fixturePath - Path to the directory used for this fixture's files and outputs.
- * @returns {Object} A fixture result object with `id`, `status`, and an array of assertion objects describing the checks above.
- */
 async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
 	const enforcementStatusPath = path.join(
@@ -629,7 +570,11 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 		"enforcement-status.json",
 	);
 	const outputPath = path.join(fixturePath, "eval-seed-pack.json");
-	const changedFiles = ["scripts/run-harness-evals.mjs"];
+	const changedFiles = [
+		"scripts/run-harness-evals.mjs",
+		"e2e/run-e2e.ts",
+		"e2e/utils/env.ts",
+	];
 	writeJson(learningArtifactPath, buildEvalSeedFixtureLearningArtifact());
 	writeJson(enforcementStatusPath, {
 		schemaVersion: "learning-enforcement-status/v1",
@@ -641,47 +586,50 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 	);
 	const seedPack = buildEvalSeedPack
 		? buildEvalSeedPack({
-				source: path.relative(fixturePath, learningArtifactPath),
-				enforcementStatusPath: path.relative(
-					fixturePath,
-					enforcementStatusPath,
-				),
+				source: path.relative(REPO_ROOT, learningArtifactPath),
+				enforcementStatusPath: path.relative(REPO_ROOT, enforcementStatusPath),
 				files: changedFiles,
 				minUsage: 25,
-				output: path.relative(fixturePath, outputPath),
-				repoRoot: fixturePath,
+				output: path.relative(REPO_ROOT, outputPath),
+				repoRoot: REPO_ROOT,
 			})
 		: runEvalSeedFixtureInSubprocess({
-				fixturePath,
 				learningArtifactPath,
 				enforcementStatusPath,
 				changedFiles,
 				outputPath,
 			});
-	const candidate = seedPack.candidates[0];
+	const generatedArtifactCandidate = seedPack.candidates.find(
+		(candidate) =>
+			candidate.id === "coderabbit.coding-harness.eval-seed-generated-artifact",
+	);
 	return fixtureResult(scenario.id, [
 		assertion(
 			"repeated review learning becomes an eval seed candidate",
-			seedPack.status === "success" && seedPack.candidates.length === 1,
+			seedPack.status === "success" && seedPack.candidates.length >= 3,
 		),
 		assertion(
 			"seed stays attached to matched changed files and evidence refs",
-			JSON.stringify(candidate?.matchedFiles) ===
-				JSON.stringify(changedFiles) &&
-				candidate?.evidenceRef?.includes(
+			generatedArtifactCandidate?.matchedFiles?.includes(
+				"scripts/run-harness-evals.mjs",
+			) &&
+				generatedArtifactCandidate?.evidenceRef?.includes(
 					"coderabbit_csv:file://fixture/coderabbit.csv#row=2",
 				),
 		),
 		assertion(
 			"seed points to concrete target and regression surface",
-			candidate?.recommendedTarget === "artifact-gate" &&
-				candidate?.recommendedTest === "src/lib/learnings/promote.test.ts",
+			generatedArtifactCandidate?.recommendedTarget === "artifact-gate" &&
+				generatedArtifactCandidate?.recommendedTest ===
+					"src/lib/learnings/promote.test.ts",
 		),
 		assertion(
 			"seed classifies repeated remediation signal",
-			candidate?.remediationSource === "generated_artifact" &&
-				candidate?.failureClass === "generated_artifact_drift" &&
-				seedPack.summary.byFailureClass?.generated_artifact_drift === 1,
+			generatedArtifactCandidate?.remediationSource === "generated_artifact" &&
+				generatedArtifactCandidate?.failureClass ===
+					"generated_artifact_drift" &&
+				seedPack.summary.byFailureClass?.generated_artifact_drift === 1 &&
+				seedPack.summary.byFailureClass?.github_pr_remediation === 2,
 		),
 		assertion(
 			"seed artifact writes inside the live fixture root",
@@ -690,15 +638,186 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 	]);
 }
 
-/**
- * Executes deterministic routing test cases for harness engineering, records inputs and computed routes to the fixture directory, and returns a fixture result summarizing assertions.
- *
- * Writes two files into `fixturePath`: `routing-cases.json` (test cases) and `routing-results.json` (computed results).
- *
- * @param {Object} scenario - Scenario metadata; the scenario's `id` is used to label the returned fixture result.
- * @param {string} fixturePath - Filesystem path to the per-fixture directory where outputs are written.
- * @returns {Object} Fixture result object with `id`, `status`, and an `assertions` array that verifies expected routing behaviors.
- */
+function runGitHubAppAuthPreflightFixture(scenario, fixturePath) {
+	const authMatrix = [
+		classifyGitHubE2EAuthFixture({
+			id: "complete-app-inline-key",
+			hasPat: true,
+			appId: "123",
+			installationId: "456",
+			privateKey: "fixture-private-key",
+		}),
+		classifyGitHubE2EAuthFixture({
+			id: "complete-app-key-path",
+			hasPat: false,
+			appId: "123",
+			installationId: "456",
+			privateKeyPath: "fixture.pem",
+		}),
+		classifyGitHubE2EAuthFixture({
+			id: "partial-app-with-pat",
+			hasPat: true,
+			appId: "123",
+		}),
+	];
+	writeJson(path.join(fixturePath, "auth-matrix.json"), {
+		schemaVersion: "e2e-auth-preflight-fixture/v1",
+		authMatrix,
+	});
+	const artifactText = JSON.stringify(
+		readJson(path.join(fixturePath, "auth-matrix.json")),
+	);
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"complete GitHub App config is preferred for check-run scenarios",
+			authMatrix.find((item) => item.id === "complete-app-inline-key")
+				?.authSource === "github_app",
+		),
+		assertion(
+			"private key path config is accepted",
+			authMatrix.find((item) => item.id === "complete-app-key-path")
+				?.usesPrivateKeyPath === true,
+		),
+		assertion(
+			"partial GitHub App config is an environment tooling blocker",
+			authMatrix.find((item) => item.id === "partial-app-with-pat")
+				?.blockerClassification === "environment/tooling issue",
+		),
+		assertion(
+			"secret material is not written to fixture artifacts",
+			!artifactText.includes("fixture-private-key"),
+		),
+	]);
+}
+
+function runReviewGateCheckNameAlignmentFixture(scenario, fixturePath) {
+	const aligned = evaluateReviewGateCheckNameFixture({
+		requiredChecks: ["e2e-test-check"],
+		createdCheckRuns: ["e2e-test-check"],
+		invocationCheckName: "e2e-test-check",
+		hasIndependentApproval: false,
+		checkConclusion: "success",
+	});
+	const mismatched = evaluateReviewGateCheckNameFixture({
+		requiredChecks: ["e2e-test-check"],
+		createdCheckRuns: ["review-check"],
+		invocationCheckName: "review-check",
+		hasIndependentApproval: true,
+		checkConclusion: "success",
+	});
+	writeJson(path.join(fixturePath, "review-gate-alignment.json"), {
+		schemaVersion: "review-gate-check-name-alignment-fixture/v1",
+		aligned,
+		mismatched,
+	});
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"created check run name matches required check name",
+			aligned.createdCheckMatchesRequired === true,
+		),
+		assertion(
+			"review-gate invocation uses the same checkName",
+			aligned.invocationMatchesRequired === true,
+		),
+		assertion(
+			"approval-required outcome remains verified false",
+			aligned.verified === false &&
+				aligned.blockers.includes("required approval missing"),
+		),
+		assertion(
+			"mismatched check names are classified before live polling",
+			mismatched.blockerClassification === "scenario regression" &&
+				mismatched.shouldPollLiveGitHub === false,
+		),
+	]);
+}
+
+function runRepoLocalE2EScratchFixture(scenario, fixturePath) {
+	const repoScratchRoot = path.join(
+		REPO_ROOT,
+		"artifacts",
+		"e2e",
+		"pipeline-1",
+	);
+	const repoContractPath = path.join(repoScratchRoot, "harness.contract.json");
+	const tempContractPath = path.join(
+		path.parse(REPO_ROOT).root,
+		"tmp",
+		"e2e-linear-1",
+		"harness.contract.json",
+	);
+	const repoScratch = classifyE2EScratchPath(repoScratchRoot, repoContractPath);
+	const tempScratch = classifyE2EScratchPath(
+		path.dirname(tempContractPath),
+		tempContractPath,
+	);
+	writeJson(path.join(fixturePath, "scratch-paths.json"), {
+		schemaVersion: "repo-local-e2e-scratch-fixture/v1",
+		repoScratch,
+		tempScratch,
+	});
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"E2E scratch root resolves inside repo artifacts/e2e",
+			repoScratch.rootInsideRepoArtifacts === true,
+		),
+		assertion(
+			"contract path stays inside repo-local scratch root",
+			repoScratch.contractInsideScratchRoot === true,
+		),
+		assertion(
+			"OS temp contract path is classified as fixture runtime failure",
+			tempScratch.blockerClassification === "fixture/runtime failure",
+		),
+		assertion(
+			"cleanup target is scoped to the repo-local scratch root",
+			repoScratch.cleanupTarget === repoScratch.scratchRoot,
+		),
+	]);
+}
+
+function runGitHubCheckRunTransientRetryFixture(scenario, fixturePath) {
+	const retryPolicy = {
+		schemaVersion: "github-check-run-retry-policy-fixture/v1",
+		maxAttempts: 3,
+		retryableStatuses: [500, 502, 503, 504],
+		delaysMs: [250, 1000],
+		cases: [
+			evaluateCheckRunRetryCase([504, 200]),
+			evaluateCheckRunRetryCase([503, 502, 200]),
+			evaluateCheckRunRetryCase([403]),
+		],
+	};
+	writeJson(path.join(fixturePath, "retry-policy.json"), retryPolicy);
+	const byName = new Map(retryPolicy.cases.map((item) => [item.id, item]));
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"transient 5xx check-run list failure is retried",
+			byName.get("504-200")?.attempts === 2 &&
+				byName.get("504-200")?.outcome === "success",
+		),
+		assertion(
+			"retry policy caps attempts before live E2E stalls",
+			byName.get("503-502-200")?.attempts === 3,
+		),
+		assertion(
+			"403 permission errors are not retried as flakes",
+			byName.get("403")?.attempts === 1 &&
+				byName.get("403")?.blockerClassification ===
+					"environment/tooling issue",
+		),
+		assertion(
+			"first failure is classified for automation closeout",
+			byName.get("504-200")?.firstFailureClassification ===
+				"fixture/runtime failure",
+		),
+	]);
+}
+
 function runHarnessEngineeringLifecycleRoutingFixture(scenario, fixturePath) {
 	const cases = buildHarnessEngineeringRoutingCases();
 	const results = cases.map((item) => ({
@@ -760,17 +879,6 @@ function runHarnessEngineeringLifecycleRoutingFixture(scenario, fixturePath) {
 	]);
 }
 
-/**
- * Load and cache a named export from an ES module URL used by fixture builders.
- *
- * Attempts to import the module at `moduleUrl` and returns its `exportName` binding.
- * Successful imports are cached (the module object), and failed imports are cached as `null`
- * so subsequent calls avoid repeated import attempts.
- *
- * @param {string} moduleUrl - `file://`-style URL of the module to import.
- * @param {string} exportName - The named export to return from the imported module.
- * @returns {any|null} The requested exported value when available, or `null` if the module failed to load or the export is not present.
- */
 async function loadFixtureExport(moduleUrl, exportName) {
 	const cached = fixtureModuleCache.get(moduleUrl);
 	if (cached === null) return null;
@@ -785,12 +893,6 @@ async function loadFixtureExport(moduleUrl, exportName) {
 	}
 }
 
-/**
- * Builds a validation plan for a learning artifact by invoking the project's `buildValidationPlan` implementation in a subprocess and returns the resulting plan object.
- * @param {string} learningArtifactPath - Filesystem path to the learning artifact JSON used as the `source` for the plan.
- * @param {string[]} changedFiles - Array of changed file paths to include in the plan's `files` input.
- * @returns {Object} The validation plan object produced by `buildValidationPlan`.
- */
 function runValidationPlanFixtureInSubprocess(
 	learningArtifactPath,
 	changedFiles,
@@ -815,19 +917,7 @@ function runValidationPlanFixtureInSubprocess(
 	return JSON.parse(stdout);
 }
 
-/**
- * Builds an eval seed pack by invoking `buildEvalSeedPack` in a subprocess and returning its parsed result.
- *
- * @param {object} params - Function parameters.
- * @param {string} params.fixturePath - Filesystem path used as the eval-seed fixture repo root.
- * @param {string} params.learningArtifactPath - Filesystem path to the learning artifact JSON used as `source`.
- * @param {string} params.enforcementStatusPath - Filesystem path to the enforcement status JSON.
- * @param {string[]} params.changedFiles - Array of changed file paths to pass as `files`.
- * @param {string} params.outputPath - Filesystem path where the subprocess should write its output.
- * @returns {object} The parsed object printed by `buildEvalSeedPack` (the eval seed pack result).
- */
 function runEvalSeedFixtureInSubprocess({
-	fixturePath,
 	learningArtifactPath,
 	enforcementStatusPath,
 	changedFiles,
@@ -836,12 +926,12 @@ function runEvalSeedFixtureInSubprocess({
 	const code = `
 		import { buildEvalSeedPack } from "./src/lib/learnings/eval-seed.ts";
 		const result = buildEvalSeedPack({
-			source: ${JSON.stringify(path.relative(fixturePath, learningArtifactPath))},
-			enforcementStatusPath: ${JSON.stringify(path.relative(fixturePath, enforcementStatusPath))},
+			source: ${JSON.stringify(path.relative(REPO_ROOT, learningArtifactPath))},
+			enforcementStatusPath: ${JSON.stringify(path.relative(REPO_ROOT, enforcementStatusPath))},
 			files: ${JSON.stringify(changedFiles)},
 			minUsage: 25,
-			output: ${JSON.stringify(path.relative(fixturePath, outputPath))},
-			repoRoot: ${JSON.stringify(fixturePath)}
+			output: ${JSON.stringify(path.relative(REPO_ROOT, outputPath))},
+			repoRoot: ${JSON.stringify(REPO_ROOT)}
 		});
 		console.log(JSON.stringify(result));
 	`;
@@ -856,13 +946,6 @@ function runEvalSeedFixtureInSubprocess({
 	return JSON.parse(stdout);
 }
 
-/**
- * Resolve a single-segment fixture path inside the configured fixture root.
- *
- * @param {string} relativePath - A non-empty single path segment (not absolute, must not contain `/` or `\`) identifying a child directory of the fixture root.
- * @returns {string} The absolute path resolved beneath `fixtureRoot`.
- * @throws {Error} If `relativePath` is not a non-empty string, is absolute, contains path separators, or resolves outside `fixtureRoot`.
- */
 function safeFixturePath(relativePath) {
 	if (typeof relativePath !== "string" || relativePath.trim() === "") {
 		throw new Error("Fixture path must be a non-empty string.");
@@ -901,15 +984,145 @@ function repairGeneratedArtifact(sourcePath, generatedPath) {
 	});
 }
 
-/**
- * Build a deterministic learning-artifact object used by fixture tests.
- *
- * The artifact models a single coderabbit CSV-derived learning item pointing at
- * src/lib/learnings/validation-plan.ts and is suitable for deterministic fixture
- * scenarios that exercise validation-plan behavior.
- *
- * @returns {Object} An object conforming to the `harness-learnings/v1` shape containing one `validation_contract` item and summary metadata.
- */
+function classifyGitHubE2EAuthFixture(input) {
+	const missing = [
+		...(input.appId ? [] : ["app_id"]),
+		...(input.installationId ? [] : ["installation_id"]),
+		...(input.privateKey || input.privateKeyPath ? [] : ["private_key"]),
+	];
+	const hasAnyAppConfig = Boolean(
+		input.appId ||
+			input.installationId ||
+			input.privateKey ||
+			input.privateKeyPath,
+	);
+	const appConfigured = missing.length === 0;
+	if (appConfigured) {
+		return {
+			id: input.id,
+			authSource: "github_app",
+			blockerClassification: "none",
+			missing,
+			usesPrivateKeyPath: Boolean(input.privateKeyPath),
+		};
+	}
+	if (hasAnyAppConfig) {
+		return {
+			id: input.id,
+			authSource: "blocked",
+			blockerClassification: "environment/tooling issue",
+			missing,
+			usesPrivateKeyPath: Boolean(input.privateKeyPath),
+		};
+	}
+	return {
+		id: input.id,
+		authSource: input.hasPat ? "pat" : "blocked",
+		blockerClassification: input.hasPat ? "none" : "environment/tooling issue",
+		missing,
+		usesPrivateKeyPath: false,
+	};
+}
+
+function evaluateReviewGateCheckNameFixture({
+	requiredChecks,
+	createdCheckRuns,
+	invocationCheckName,
+	hasIndependentApproval,
+	checkConclusion,
+}) {
+	const createdCheckMatchesRequired = requiredChecks.every((check) =>
+		createdCheckRuns.includes(check),
+	);
+	const invocationMatchesRequired =
+		requiredChecks.includes(invocationCheckName);
+	const checkPassed = checkConclusion === "success";
+	const blockers = [
+		...(createdCheckMatchesRequired && invocationMatchesRequired
+			? []
+			: ["required check name mismatch"]),
+		...(checkPassed ? [] : ["required check failed"]),
+		...(hasIndependentApproval ? [] : ["required approval missing"]),
+	];
+	return {
+		requiredChecks,
+		createdCheckRuns,
+		invocationCheckName,
+		createdCheckMatchesRequired,
+		invocationMatchesRequired,
+		checkPassed,
+		hasIndependentApproval,
+		verified: blockers.length === 0,
+		blockers,
+		shouldPollLiveGitHub:
+			createdCheckMatchesRequired && invocationMatchesRequired,
+		blockerClassification:
+			createdCheckMatchesRequired && invocationMatchesRequired
+				? blockers.length === 0
+					? "none"
+					: "scenario regression"
+				: "scenario regression",
+	};
+}
+
+function classifyE2EScratchPath(scratchRoot, contractPath) {
+	const repoArtifactsRoot = path.join(REPO_ROOT, "artifacts", "e2e");
+	const rootInsideRepoArtifacts = isPathInside(scratchRoot, repoArtifactsRoot);
+	const contractInsideScratchRoot = isPathInside(contractPath, scratchRoot);
+	return {
+		scratchRoot,
+		contractPath,
+		rootInsideRepoArtifacts,
+		contractInsideScratchRoot,
+		cleanupTarget: scratchRoot,
+		blockerClassification:
+			rootInsideRepoArtifacts && contractInsideScratchRoot
+				? "none"
+				: "fixture/runtime failure",
+	};
+}
+
+function evaluateCheckRunRetryCase(statuses) {
+	const retryableStatuses = new Set([500, 502, 503, 504]);
+	let attempts = 0;
+	let outcome = "failure";
+	for (const status of statuses) {
+		attempts += 1;
+		if (status >= 200 && status < 300) {
+			outcome = "success";
+			break;
+		}
+		if (!retryableStatuses.has(status) || attempts >= 3) {
+			break;
+		}
+	}
+	const firstStatus = statuses[0];
+	const firstFailureClassification =
+		firstStatus === 403
+			? "environment/tooling issue"
+			: "fixture/runtime failure";
+	return {
+		id: statuses.join("-"),
+		statuses,
+		attempts,
+		outcome,
+		firstFailureClassification,
+		blockerClassification:
+			outcome === "success" ? "none" : firstFailureClassification,
+	};
+}
+
+function isPathInside(candidate, root) {
+	const relativePath = path.relative(
+		path.resolve(root),
+		path.resolve(candidate),
+	);
+	return (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+	);
+}
+
 function buildFixtureLearningArtifact() {
 	return {
 		schemaVersion: "harness-learnings/v1",
@@ -959,16 +1172,6 @@ function buildFixtureLearningArtifact() {
 	};
 }
 
-/**
- * Constructs a deterministic learning-artifact used to seed the eval-seed fixture.
- *
- * The artifact uses schemaVersion "harness-learnings/v1" and includes three candidate
- * items (a generated_artifact, a guardrail noise item, and a low-signal validation_contract),
- * source metadata pointing at file://fixture/coderabbit.csv, and a summary object describing
- * imported rows and counts by classification/enforcement.
- *
- * @returns {Object} A learning artifact object suitable for use by eval-seed fixtures.
- */
 function buildEvalSeedFixtureLearningArtifact() {
 	return {
 		schemaVersion: "harness-learnings/v1",
@@ -1036,36 +1239,64 @@ function buildEvalSeedFixtureLearningArtifact() {
 				enforcement: "warning",
 				promotionStatus: "candidate",
 			},
+			{
+				id: "coderabbit.coding-harness.github-app-checks-auth",
+				provider: "coderabbit",
+				source: {
+					kind: "coderabbit_csv",
+					uri: "file://fixture/coderabbit.csv",
+					row: 6,
+					live: false,
+				},
+				repository: "coding-harness",
+				file: "e2e/utils/env.ts",
+				usage: 66,
+				learning:
+					"GitHub pull request remediation found PAT auth could not create Checks API runs; E2E should require complete GitHub App credentials for check-run scenarios.",
+				targetPatterns: ["e2e/utils/env.ts", "e2e/run-e2e.ts"],
+				classification: "validation_contract",
+				enforcement: "warning",
+				promotionStatus: "candidate",
+			},
+			{
+				id: "coderabbit.coding-harness.review-gate-check-name-timeout",
+				provider: "coderabbit",
+				source: {
+					kind: "coderabbit_csv",
+					uri: "file://fixture/coderabbit.csv",
+					row: 7,
+					live: false,
+				},
+				repository: "coding-harness",
+				file: "e2e/run-e2e.ts",
+				usage: 57,
+				learning:
+					"GitHub PR remediation showed review-gate E2E timed out when the created check run name did not match the required checkName.",
+				targetPatterns: ["e2e/run-e2e.ts", "e2e/tests/**"],
+				classification: "validation_contract",
+				enforcement: "warning",
+				promotionStatus: "candidate",
+			},
 		],
 		warnings: [],
 		summary: {
-			totalRows: 3,
-			imported: 3,
+			totalRows: 5,
+			imported: 5,
 			skipped: 0,
 			invalid: 0,
 			warnings: 0,
 			byClassification: {
 				generated_artifact: 1,
 				guardrail: 1,
-				validation_contract: 1,
+				validation_contract: 3,
 			},
 			byEnforcement: {
-				warning: 3,
+				warning: 5,
 			},
 		},
 	};
 }
 
-/**
- * Build a deterministic source behavior describing review-gate readiness, including rules and example cases.
- *
- * @returns {Object} A source behavior object containing:
- *  - `schemaVersion`: behavior schema identifier,
- *  - `behaviorId`: canonical behavior name,
- *  - `intent`: human-readable intent statement,
- *  - `rules`: an array of rule objects each with `id` and `description` (includes `checks_green`, `required_review_threads_resolved`, `review_independence_required`),
- *  - `examples`: an array of example cases with `id`, `input` (fields: `requiredChecks`, `requiredThreads`, `independentReview`), and `expectedDecision` (`"pass"` or `"block"`).
- */
 function buildSpecLoopSourceBehavior() {
 	return {
 		schemaVersion: "harness-source-behavior/v1",
@@ -1430,12 +1661,6 @@ function improveSpecFromEvaluation(spec, evaluation) {
 	};
 }
 
-/**
- * Build a fixture result object summarizing assertion outcomes for a scenario.
- * @param {string} id - The fixture or scenario identifier.
- * @param {Array<{name: string, status: "pass"|"fail"}>} assertions - The list of assertion results for the fixture.
- * @returns {{id: string, status: "pass"|"fail", assertions: Array<{name: string, status: "pass"|"fail"}>}} The result object where `status` is `"pass"` if every assertion has status `"pass"`, `"fail"` otherwise, and `assertions` is the original array.
- */
 function fixtureResult(id, assertions) {
 	return {
 		id,
@@ -1446,13 +1671,6 @@ function fixtureResult(id, assertions) {
 	};
 }
 
-/**
- * Attach elapsed duration (in milliseconds) to a fixture result object.
- *
- * @param {Object} result - The fixture result object to augment.
- * @param {bigint} startedAt - The start timestamp as returned by `process.hrtime.bigint()`.
- * @returns {Object} The original `result` merged with `durationMs`, the elapsed time in milliseconds rounded to two decimals.
- */
 function withFixtureDuration(result, startedAt) {
 	const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
 	return {
@@ -1461,12 +1679,6 @@ function withFixtureDuration(result, startedAt) {
 	};
 }
 
-/**
- * Create an assertion result object with a pass/fail status.
- * @param {string} name - The assertion's name or identifier.
- * @param {boolean} passed - Whether the assertion passed.
- * @returns {{name: string, status: "pass" | "fail"}} An object with `name` and `status` set to `"pass"` if `passed` is true, `"fail"` otherwise.
- */
 function assertion(name, passed) {
 	return {
 		name,

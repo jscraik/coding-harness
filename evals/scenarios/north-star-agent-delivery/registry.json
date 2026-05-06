@@ -191,7 +191,10 @@
 			"type": "live_fixture",
 			"prompt": "Turn repeated late-stage review remediation noise into a deterministic future eval seed.",
 			"expected": {
-				"commands": ["pnpm test:evals"],
+				"commands": [
+					"pnpm test:evals",
+					"node --import tsx --eval <eval-seed fixture>"
+				],
 				"artifacts": [
 					"artifacts/evals/result.json",
 					"artifacts/evals/braintrust-log-data.json",
@@ -214,6 +217,128 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 3
+			}
+		},
+		{
+			"id": "github-app-auth-preflight",
+			"type": "live_fixture",
+			"prompt": "Classify E2E GitHub App authentication before live Checks API scenarios run.",
+			"expected": {
+				"commands": [
+					"pnpm test:evals",
+					"pnpm vitest run e2e/utils/env.test.ts"
+				],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json",
+					"artifacts/evals/live-fixtures/github-app-auth-preflight/auth-matrix.json"
+				],
+				"assertions": [
+					"complete GitHub App config is preferred for check-run scenarios",
+					"private key path config is accepted",
+					"partial GitHub App config is an environment tooling blocker",
+					"secret material is not written to fixture artifacts"
+				],
+				"stopConditions": [
+					"Do not fall back to PAT when partial GitHub App credentials are present."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 3,
+				"validation_sufficiency": 2,
+				"blocker_honesty": 3,
+				"manual_step_reduction": 2
+			}
+		},
+		{
+			"id": "review-gate-check-name-alignment",
+			"type": "live_fixture",
+			"prompt": "Prevent live E2E review-gate polling timeouts by proving check-run names and review-gate inputs stay aligned.",
+			"expected": {
+				"commands": ["pnpm test:evals", "pnpm vitest run e2e/run-e2e.test.ts"],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json",
+					"artifacts/evals/live-fixtures/review-gate-check-name-alignment/review-gate-alignment.json"
+				],
+				"assertions": [
+					"created check run name matches required check name",
+					"review-gate invocation uses the same checkName",
+					"approval-required outcome remains verified false",
+					"mismatched check names are classified before live polling"
+				],
+				"stopConditions": [
+					"Do not wait for live GitHub polling when the required check name does not match the created check run."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 3,
+				"validation_sufficiency": 3,
+				"blocker_honesty": 2,
+				"manual_step_reduction": 3
+			}
+		},
+		{
+			"id": "repo-local-e2e-scratch",
+			"type": "live_fixture",
+			"prompt": "Keep E2E contract and scratch artifacts under repo-local artifacts/e2e so contract path safety does not fail at runtime.",
+			"expected": {
+				"commands": ["pnpm test:evals"],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json",
+					"artifacts/evals/live-fixtures/repo-local-e2e-scratch/scratch-paths.json"
+				],
+				"assertions": [
+					"E2E scratch root resolves inside repo artifacts/e2e",
+					"contract path stays inside repo-local scratch root",
+					"OS temp contract path is classified as fixture runtime failure",
+					"cleanup target is scoped to the repo-local scratch root"
+				],
+				"stopConditions": [
+					"Do not create harness.contract.json for E2E under the OS temp directory."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 1,
+				"artifact_evidence": 3,
+				"validation_sufficiency": 3,
+				"blocker_honesty": 2,
+				"manual_step_reduction": 2
+			}
+		},
+		{
+			"id": "github-check-run-transient-retry",
+			"type": "live_fixture",
+			"prompt": "Treat transient GitHub check-run listing failures as retryable flakes while preserving fast failure for permission errors.",
+			"expected": {
+				"commands": [
+					"pnpm test:evals",
+					"pnpm vitest run src/lib/github/client.test.ts"
+				],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json",
+					"artifacts/evals/live-fixtures/github-check-run-transient-retry/retry-policy.json"
+				],
+				"assertions": [
+					"transient 5xx check-run list failure is retried",
+					"retry policy caps attempts before live E2E stalls",
+					"403 permission errors are not retried as flakes",
+					"first failure is classified for automation closeout"
+				],
+				"stopConditions": [
+					"Do not hide GitHub permission errors behind retry loops."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 1,
+				"artifact_evidence": 3,
+				"validation_sufficiency": 3,
+				"blocker_honesty": 3,
+				"manual_step_reduction": 2
 			}
 		},
 		{

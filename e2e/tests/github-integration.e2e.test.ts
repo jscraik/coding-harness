@@ -5,10 +5,9 @@
  * Uses real API calls - no mocks.
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { runReviewGate } from "../../src/commands/review-gate.js";
 import { GitHubE2EClient } from "../clients/github-e2e.js";
 import { loadE2EEnv, validateE2EEnv } from "../utils/env.js";
@@ -31,12 +30,17 @@ describe("GitHub Integration E2E", () => {
 	beforeEach(() => {
 		ctx = createTestContext("github-integration", env.recordingsDir);
 		github = new GitHubE2EClient({ env, tracker: ctx.tracker });
-		tempDir = join(tmpdir(), `e2e-github-${Date.now()}`);
+		tempDir = join(process.cwd(), "artifacts", "e2e", `github-${Date.now()}`);
 		mkdirSync(tempDir, { recursive: true });
 	});
 
-	afterAll(async () => {
+	afterEach(async () => {
 		await ctx.tracker.cleanup();
+		try {
+			rmSync(tempDir, { recursive: true, force: true });
+		} catch {
+			// Ignore cleanup errors
+		}
 	});
 
 	describe("Repository Operations", () => {
@@ -265,6 +269,13 @@ describe("GitHub Integration E2E", () => {
 				"utf-8",
 			);
 
+			await github.createCheckRun(
+				"review-check",
+				branch.sha,
+				"completed",
+				"success",
+			);
+
 			// Run the review-gate command
 			const result = await runReviewGate({
 				contractPath,
@@ -276,11 +287,14 @@ describe("GitHub Integration E2E", () => {
 				checkName: "review-check",
 			});
 
-			expect(result.ok).toBe(true);
+			expect(result.ok, JSON.stringify(result, null, 2)).toBe(true);
 			if (result.ok) {
 				expect(result.output.headSha).toBe(branch.sha);
-				expect(result.output.verified).toBe(true); // No failing checks
+				expect(result.output.verified).toBe(false); // No approval exists
 				expect(Array.isArray(result.output.blockers)).toBe(true);
+				expect(result.output.blockers).toContain(
+					"No APPROVED reviews found for the current HEAD SHA",
+				);
 			}
 
 			// Cleanup
