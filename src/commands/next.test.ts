@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync } from "node:fs";
+import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -198,6 +198,41 @@ describe("runHarnessNext", () => {
 			"harness review-context --files docs/spec.md --json",
 		);
 		expect(decision.meta).toMatchObject({ mode: "pr" });
+	});
+
+	it("recommends fleet-plan for ci mode when a matrix artifact exists", () => {
+		const repoRoot = join(tmpdir(), `harness-next-fleet-${Date.now()}`);
+		mkdirSync(join(repoRoot, "artifacts"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, "artifacts/harness-upgrade-matrix-dev.json"),
+			"{}",
+		);
+
+		const decision = runHarnessNext({
+			mode: "ci",
+			repoRoot,
+			inspectChangedFiles: () => {
+				throw new Error("git should not be inspected");
+			},
+		});
+
+		expect(decision.status).toBe("action_required");
+		expect(decision.nextCommand).toBe(
+			"harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json",
+		);
+		expect(decision.evidenceRef).toEqual([
+			"artifact:artifacts/harness-upgrade-matrix-dev.json",
+		]);
+		expect(decision.meta).toMatchObject({
+			mode: "ci",
+			nextCommandArgv: [
+				"harness",
+				"fleet-plan",
+				"--from",
+				"artifacts/harness-upgrade-matrix-dev.json",
+				"--json",
+			],
+		});
 	});
 
 	it("includes machine-safe argv and shell-safe display commands", () => {

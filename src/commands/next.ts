@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { cwd } from "node:process";
 import {
 	HARNESS_DECISION_SCHEMA_VERSION,
@@ -40,6 +42,8 @@ interface ParsedNextArgs {
 }
 
 const VALID_MODES: readonly HarnessNextMode[] = ["local", "pr", "ci"];
+const DEFAULT_FLEET_MATRIX_ARTIFACT =
+	"artifacts/harness-upgrade-matrix-dev.json";
 
 function isHarnessNextMode(value: string): value is HarnessNextMode {
 	return VALID_MODES.includes(value as HarnessNextMode);
@@ -267,6 +271,39 @@ function gitInspectionBlockedDecision(mode: HarnessNextMode): HarnessDecision {
 	});
 }
 
+function fleetMatrixArtifactDecision(args: {
+	mode: HarnessNextMode;
+	matrixArtifact: string;
+}): HarnessDecision {
+	const command = `harness fleet-plan --from ${shellQuote(args.matrixArtifact)} --json`;
+	return createDecision({
+		status: "action_required",
+		summary: "Harness upgrade matrix artifact detected.",
+		nextAction:
+			"Convert the upgrade matrix into an agent-native fleet remediation plan.",
+		nextCommand: command,
+		safeToRun: true,
+		requiresHuman: false,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: [`artifact:${args.matrixArtifact}`],
+		failureClass: null,
+		retry: "safe",
+		riskTier: "low",
+		meta: decisionMeta({
+			mode: args.mode,
+			nextCommandArgv: [
+				"harness",
+				"fleet-plan",
+				"--from",
+				args.matrixArtifact,
+				"--json",
+			],
+			commands: [command],
+		}),
+	});
+}
+
 function noChangedFilesDecision(args: {
 	mode: HarnessNextMode;
 	filesSource: "override" | "git";
@@ -366,6 +403,17 @@ export function runHarnessNext(
 				startupCost: "none",
 				requiresHuman: true,
 			}),
+		});
+	}
+
+	if (
+		!filesFromOverride &&
+		mode === "ci" &&
+		existsSync(join(repoRoot, DEFAULT_FLEET_MATRIX_ARTIFACT))
+	) {
+		return fleetMatrixArtifactDecision({
+			mode,
+			matrixArtifact: DEFAULT_FLEET_MATRIX_ARTIFACT,
 		});
 	}
 

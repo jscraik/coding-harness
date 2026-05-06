@@ -56,12 +56,15 @@ export interface UpgradeManifestEntry {
 	customized: boolean;
 }
 
+/** Manifest that records template baselines for future harness upgrades. */
 export interface UpgradeManifest {
+	/** Upgrade manifest schema identifier. */
 	schemaVersion: "upgrade-manifest/v1";
 	/** Harness version that last updated this manifest */
 	harnessVersion: string;
 	/** ISO timestamp */
 	updatedAt: string;
+	/** Files tracked for stock/customized upgrade classification. */
 	files: UpgradeManifestEntry[];
 }
 
@@ -69,12 +72,18 @@ export const UPGRADE_MANIFEST_FILE = "upgrade-manifest.json";
 
 // ─── File classification ──────────────────────────────────────────────────────
 
+/** Stock/customized state for a file tracked by the upgrade manifest. */
 export type FileStatus = "stock" | "customized" | "absent" | "untracked";
 
+/** Per-file classification used to decide whether an upgrade can overwrite safely. */
 export interface FileClassification {
+	/** Repo-relative file path. */
 	path: string;
+	/** Classification derived from on-disk and template fingerprints. */
 	status: FileStatus;
+	/** SHA-256 of the on-disk file, or null when absent/unreadable. */
 	onDiskHash: string | null;
+	/** SHA-256 of the installed template baseline, or null when unavailable. */
 	templateHash: string | null;
 }
 
@@ -110,6 +119,7 @@ export function classifyFiles(
 
 // ─── Upgrade context detection ────────────────────────────────────────────────
 
+/** Repository upgrade state detected before applying harness template changes. */
 export interface UpgradeContext {
 	/** Harness version from the existing restore-manifest or upgrade-manifest */
 	fromVersion: string;
@@ -138,6 +148,7 @@ export interface UpgradeContext {
 export function detectUpgradeContext(
 	targetDir: string,
 	preferredCiProvider?: CIProvider,
+	options: { dryRun?: boolean } = {},
 ):
 	| {
 			ok: true;
@@ -161,6 +172,7 @@ export function detectUpgradeContext(
 			requireMetadata: true,
 			operation: "upgrade",
 			...(preferredCiProvider !== undefined ? { preferredCiProvider } : {}),
+			...(options.dryRun !== undefined ? { dryRun: options.dryRun } : {}),
 		});
 		if (!manifestResult.ok) {
 			return { ok: false, error: manifestResult.error.message };

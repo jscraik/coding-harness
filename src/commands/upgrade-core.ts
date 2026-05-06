@@ -434,7 +434,9 @@ export function runUpgradeCLI(
 	}
 
 	// 2. Detect upgrade context
-	const upgradeResult = detectUpgradeContext(dir, preferredCiProvider);
+	const upgradeResult = detectUpgradeContext(dir, preferredCiProvider, {
+		dryRun,
+	});
 	if (!upgradeResult.ok) {
 		console.error(`Error: ${upgradeResult.error}`);
 		return EXIT_CODES.INVALID_PATH;

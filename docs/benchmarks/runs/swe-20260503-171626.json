@@ -7,7 +7,6 @@
 	"finished_at": "2026-05-03T17:17:43Z",
 	"duration_seconds": 77,
 	"notes": "",
-	"provenance_note": "Historical release benchmark retained as comparative evidence; git.branch and git.commit identify the original run source, not this PR branch.",
 	"artifacts": [],
 	"git": {
 		"commit": "468a24feb122607ab012b04cb95bd833c5c023a1",

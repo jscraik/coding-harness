@@ -84,34 +84,20 @@ function writeArtifact(dir: string): string {
 						enforcement: "warning",
 						promotionStatus: "candidate",
 					},
-					{
-						id: "coderabbit.coding-harness.validation-contract-neutral",
-						provider: "coderabbit",
-						source: { ...sourceRef, row: 6 },
-						repository: "coding-harness",
-						file: "scripts/run-harness-evals.mjs",
-						usage: 38,
-						learning:
-							"Capture the command contract in one durable validation surface before handoff.",
-						targetPatterns: ["scripts/**"],
-						classification: "validation_contract",
-						enforcement: "warning",
-						promotionStatus: "candidate",
-					},
 				],
 				warnings: [],
 				summary: {
-					totalRows: 5,
-					imported: 5,
+					totalRows: 4,
+					imported: 4,
 					skipped: 0,
 					invalid: 0,
 					warnings: 0,
 					byClassification: {
 						generated_artifact: 1,
 						guardrail: 1,
-						validation_contract: 3,
+						validation_contract: 2,
 					},
-					byEnforcement: { warning: 5 },
+					byEnforcement: { warning: 4 },
 				},
 			},
 			null,
@@ -160,23 +146,23 @@ describe("buildEvalSeedPack", () => {
 		expect(result.status).toBe("success");
 		expect(result.outputPath).toBe(join(dir, output));
 		expect(result.summary).toMatchObject({
-			applicableLearnings: 4,
-			promotionCandidates: 4,
-			seedCandidates: 3,
+			applicableLearnings: 3,
+			promotionCandidates: 3,
+			seedCandidates: 2,
 			byRemediationSource: {
+				ci: 1,
 				generated_artifact: 1,
-				validation: 2,
 			},
 			byFailureClass: {
+				ci_failure: 1,
 				generated_artifact_drift: 1,
-				validation_gap: 2,
 			},
 		});
-		expect(result.candidates).toHaveLength(3);
+		expect(result.candidates).toHaveLength(2);
 		expect(result.candidates[0]).toMatchObject({
 			id: "coderabbit.coding-harness.circleci-red-job-remediation",
-			remediationSource: "validation",
-			failureClass: "validation_gap",
+			remediationSource: "ci",
+			failureClass: "ci_failure",
 			matchedFiles: ["scripts/run-harness-evals.mjs"],
 			evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=5"],
 		});
@@ -192,13 +178,6 @@ describe("buildEvalSeedPack", () => {
 				"pnpm check",
 				"pnpm test:deep",
 			]),
-		});
-		expect(result.candidates[2]).toMatchObject({
-			id: "coderabbit.coding-harness.validation-contract-neutral",
-			remediationSource: "validation",
-			failureClass: "validation_gap",
-			matchedFiles: ["scripts/run-harness-evals.mjs"],
-			evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=6"],
 		});
 	});
 

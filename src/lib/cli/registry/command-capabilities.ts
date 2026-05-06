@@ -77,6 +77,7 @@ export interface CommandCapabilityCatalogDocument {
 const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	commands: "discovery",
 	init: "bootstrap-governance",
+	"fleet-plan": "bootstrap-governance",
 	eject: "bootstrap-governance",
 	check: "bootstrap-governance",
 	next: "bootstrap-governance",
@@ -174,6 +175,7 @@ const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 	"check-environment": ["artifacts/policy/environment-attestation.json"],
 	"context-health": ["artifacts/context-integrity/index-source-inventory.json"],
 	"ci-migrate": [".harness/ci-provider-transition-status.json"],
+	"fleet-plan": ["artifacts/harness-upgrade-matrix-dev.json"],
 	"artifact-gate": [".harness/artifact-provenance.json"],
 	"ci-ownership-gate": ["harness.contract.json"],
 	"review-context": ["artifacts/review-context/pr-context.json"],
@@ -183,6 +185,7 @@ const RETRYABILITY_BY_NAME: Partial<Record<string, CommandRetryability>> = {
 	commands: "safe",
 	check: "safe",
 	next: "safe",
+	"fleet-plan": "safe",
 	doctor: "safe",
 	health: "safe",
 	audit: "safe",
@@ -215,6 +218,7 @@ const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<Record<string, string[]>> = {
 const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	check: "cockpit",
 	next: "cockpit",
+	"fleet-plan": "domain",
 
 	init: "domain",
 	contract: "domain",
@@ -256,6 +260,7 @@ const PRIMARY_AUDIENCE_BY_NAME: Partial<
 	commands: "agent",
 	check: "both",
 	next: "agent",
+	"fleet-plan": "agent",
 	doctor: "both",
 	health: "both",
 	"review-gate": "agent",
@@ -272,6 +277,7 @@ const PRIMARY_AUDIENCE_BY_NAME: Partial<
 const ORCHESTRATED_BY_BY_NAME: Partial<Record<string, CommandOrchestrator[]>> =
 	{
 		next: [],
+		"fleet-plan": ["next"],
 		check: ["next"],
 		doctor: ["next"],
 		health: ["next"],

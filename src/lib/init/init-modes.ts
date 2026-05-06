@@ -264,6 +264,7 @@ export function handleUpdate(
 					requireMetadata: true,
 					operation: "update",
 					preferredCiProvider: ciProvider,
+					...(options.dryRun !== undefined ? { dryRun: options.dryRun } : {}),
 				});
 	if (!manifestResult.ok) {
 		if (

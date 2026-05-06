@@ -409,6 +409,7 @@ describe("getRegistryCommandCapabilities", () => {
 		const expected = [
 			["check", "cockpit", "both", ["next"]],
 			["next", "cockpit", "agent", []],
+			["fleet-plan", "domain", "agent", ["next"]],
 			["doctor", "domain", "both", ["next"]],
 			["health", "domain", "both", ["next"]],
 			["review-gate", "domain", "agent", ["next", "pr-ready"]],
@@ -487,6 +488,7 @@ describe("getRegistryCommandCapabilities", () => {
 	describe("read command mutability", () => {
 		const EXPECTED_READ_COMMANDS = [
 			"commands",
+			"fleet-plan",
 			"check",
 			"doctor",
 			"health",

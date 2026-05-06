@@ -143,6 +143,7 @@ prepare_normalized_required_checks_manifest() {
 	local pnpm_bin=""
 	local mise_harness_bin=""
 	local harness_bin=""
+	local external_normalization_timeout="${HARNESS_VERIFY_WORK_EXTERNAL_NORMALIZE_TIMEOUT_SECONDS:-5}"
 	local normalized_tmp
 	normalized_tmp="$(mktemp)"
 
@@ -164,22 +165,30 @@ prepare_normalized_required_checks_manifest() {
 		echo "[verify-work] required checks normalization via repo runner failed, trying fallback runners" >&2
 	fi
 
-	mise_harness_bin="$(mise which harness 2>/dev/null || true)"
-	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-		if "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
-			normalized_manifest_path="$normalized_tmp"
-			normalized_manifest_source="normalized"
-			return 0
+	if [[ "${HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION:-0}" != "1" ]]; then
+		if command -v mise >/dev/null 2>&1; then
+			if command -v timeout >/dev/null 2>&1; then
+				mise_harness_bin="$(timeout "$external_normalization_timeout" mise which harness 2>/dev/null || true)"
+			else
+				mise_harness_bin="$(mise which harness 2>/dev/null || true)"
+			fi
 		fi
-		echo "[verify-work] required checks normalization via mise harness failed, trying PATH harness" >&2
-	fi
+		if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
+			if "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+				normalized_manifest_path="$normalized_tmp"
+				normalized_manifest_source="normalized"
+				return 0
+			fi
+			echo "[verify-work] required checks normalization via mise harness failed, trying PATH harness" >&2
+		fi
 
-	harness_bin="$(command -v harness 2>/dev/null || true)"
-	if [[ -n "$harness_bin" ]]; then
-		if "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
-			normalized_manifest_path="$normalized_tmp"
-			normalized_manifest_source="normalized"
-			return 0
+		harness_bin="$(command -v harness 2>/dev/null || true)"
+		if [[ -n "$harness_bin" ]]; then
+			if "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+				normalized_manifest_path="$normalized_tmp"
+				normalized_manifest_source="normalized"
+				return 0
+			fi
 		fi
 	fi
 

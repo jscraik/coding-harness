@@ -4720,6 +4720,77 @@ describe("runCIMigrateCLI", () => {
 		expect(report.parity.status).toBe("parity");
 	});
 
+	it("emits JSON dry-run report without writing migration artifacts", () => {
+		delete process.env[SNAPSHOT_SIGNING_KEY_ENV];
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"name: test",
+		);
+		writeFileSync(
+			join(tempDir, ".harness/ci-required-checks.json"),
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "github-actions",
+					requiredChecks: [
+						{
+							policyId: "required-check-1",
+							displayName: "pr-pipeline",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			dryRun: true,
+			json: true,
+			snapshot: "dryrun-json-1",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(runInitCLIMock).not.toHaveBeenCalled();
+		expect(
+			existsSync(
+				join(
+					tempDir,
+					".harness/ci-migrate-snapshots/dryrun-json-1.report.json",
+				),
+			),
+		).toBe(false);
+		expect(
+			existsSync(
+				join(tempDir, ".harness/ci-migrate-snapshots/dryrun-json-1.state.json"),
+			),
+		).toBe(false);
+		const payload = JSON.parse(
+			String(consoleInfoSpy?.mock.calls.at(-1)?.[0] ?? ""),
+		) as {
+			status: string;
+			plan: Array<{ action: string; target: string; reason: string }>;
+			report: { schemaVersion: string; parity: { status: string } };
+		};
+		expect(payload.status).toBe("dry-run");
+		expect(payload.plan).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					target: ".harness/ci-migrate-snapshots/dryrun-json-1.report.json",
+				}),
+			]),
+		);
+		expect(payload.report.schemaVersion).toBe("ci-migrate-report/v1");
+		expect(payload.report.parity.status).toBe("parity");
+	});
+
 	it("fails closed on apply when source provider config is missing", () => {
 		mkdirSync(join(tempDir, ".harness"), { recursive: true });
 		writeFileSync(

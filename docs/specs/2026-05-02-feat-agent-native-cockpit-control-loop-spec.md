@@ -953,12 +953,9 @@ evidence rather than promoting a guardrail.
 
 ### Codex-Native Config Evidence
 
-Non-normative local inspection notes from the authoring lane indicated that
+Live `~/dev/codex` inspection and `codex-repo` MCP evidence confirm that
 Codex already has first-class config surfaces for global developer steering,
-compaction steering, and approval-review routing. This section records the
-candidate adaptation implications for Harness; it is not a reproducible product
-API contract and must be refreshed against tracked Codex release notes or source
-references before becoming required behavior:
+compaction steering, and approval-review routing:
 
 - `developer_instructions` is loaded from config/overrides, stored on session
   configuration, and injected into developer message sections. Harness should

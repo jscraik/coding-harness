@@ -320,6 +320,22 @@ describe("detectUpgradeContext", () => {
 		expect(repairedManifest.ciProvider).toBe("circleci");
 	});
 
+	it("infers legacy restore-manifest provider without writing during dry-run", () => {
+		ensureHarnessDir(dir);
+		const manifestPath = join(dir, ".harness", "restore-manifest.json");
+		const legacyManifest = JSON.stringify({
+			harnessVersion: "0.8.0",
+			files: [],
+		});
+		writeFileSync(manifestPath, legacyManifest);
+		mkdirSync(join(dir, ".github", "workflows"), { recursive: true });
+
+		const result = detectUpgradeContext(dir, undefined, { dryRun: true });
+
+		expect(result.ok).toBe(true);
+		expect(readFileSync(manifestPath, "utf-8")).toBe(legacyManifest);
+	});
+
 	it("prefers the requested/default provider when ci layout is ambiguous", () => {
 		ensureHarnessDir(dir);
 		writeFileSync(

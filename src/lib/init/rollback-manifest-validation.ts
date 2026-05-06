@@ -16,6 +16,7 @@ export interface LoadManifestOptions {
 	requireMetadata?: boolean;
 	operation?: string;
 	preferredCiProvider?: CIProvider;
+	dryRun?: boolean;
 }
 
 interface PathValidationResult {
@@ -112,10 +113,16 @@ function maybeRepairLegacyManifestProvider(
 	manifestPath: string,
 	manifest: Record<string, unknown>,
 	preferredCiProvider: CIProvider | undefined,
+	dryRun: boolean | undefined,
 	deps: ManifestValidationDependencies,
 ): ManifestResult | null {
 	const inferred = inferLegacyManifestProvider(targetDir, preferredCiProvider);
 	if (!inferred) {
+		return null;
+	}
+
+	if (dryRun) {
+		manifest.ciProvider = inferred.provider;
 		return null;
 	}
 
@@ -321,6 +328,7 @@ export function loadManifestData(
 				manifestPath,
 				manifest,
 				options.preferredCiProvider,
+				options.dryRun,
 				deps,
 			);
 			if (repairResult) {
