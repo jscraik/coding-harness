@@ -208,7 +208,7 @@ hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_
 	elif [ -n "$${"${"}MSG_FILE:-}" ]; then \
 		cat "$${"${"}MSG_FILE}" > "$tmp_file"; \
 	else \
-		echo "Usage: HOOK_COMMIT_MSG="feat: test" make hooks-commit-msg or make hooks-commit-msg MSG_FILE=/path/to/commit-msg" >&2; \
+		echo 'Usage: HOOK_COMMIT_MSG="feat: test" make hooks-commit-msg or make hooks-commit-msg MSG_FILE=/path/to/commit-msg' >&2; \
 		exit 2; \
 	fi; \
 	node scripts/validate-commit-msg.js "$tmp_file"
