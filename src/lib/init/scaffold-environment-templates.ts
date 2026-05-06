@@ -64,6 +64,14 @@ export function renderCheckEnvironmentScript(): string {
 	].join("\n");
 }
 
+/**
+ * Builds the Bash script body that validates required repository files and directories for the local environment preflight.
+ *
+ * @param packageJsonPath - Path to package.json relative to the repository root
+ * @param projectBrainMemoryExtensionEnabled - If `true`, the script will also validate paths listed in `requiredProjectBrainPaths`
+ * @param requiredProjectBrainPaths - Paths (relative to the repository root) that must exist when the Project Brain memory-extension check is enabled
+ * @returns A string containing the Bash script which checks for required artifacts and exits with status 1 while printing an error if any required file or directory is missing
+ */
 function renderEnvironmentFileChecks(
 	packageJsonPath: string,
 	projectBrainMemoryExtensionEnabled: boolean,
@@ -150,6 +158,13 @@ fi
 	fi`;
 }
 
+/**
+ * Produces a Bash script fragment that enforces the repository's toolchain policy.
+ *
+ * The returned script verifies the presence of the `mise` binary, validates and normalizes mise trust for the repository, activates the mise runtime, ensures required mise tools are pinned in the mise config, checks required terms in the tooling documentation (when present), and verifies the presence of required tooling binaries.
+ *
+ * @returns A string containing the Bash code implementing the above toolchain policy checks.
+ */
 function renderToolchainPolicyChecks(): string {
 	return `ensure_mise_available() {
 	command -v mise >/dev/null 2>&1
@@ -221,6 +236,16 @@ fi
 	done`;
 }
 
+/**
+ * Produce a Bash script fragment that validates repository-level policy artifacts, hooks, Makefile targets, and package scripts.
+ *
+ * The generated script verifies Codex environment action mappings, required Makefile targets, and configured prek hooks
+ * (including name, entry, language, pass_filenames, and optional stages). It also checks installed git hooks for the
+ * repo-local PREK_HOME patch (pre-commit, pre-push, and commit-msg), validates required package.json scripts, and
+ * errors if legacy simple-git-hooks configuration is present.
+ *
+ * @returns A string containing the Bash code that performs the repository policy checks described above.
+ */
 function renderRepositoryPolicyChecks(): string {
 	return `	required_codex_actions=(${renderCodexActionSpecs()})
 	for action in "\${required_codex_actions[@]}"; do
@@ -415,6 +440,13 @@ ${renderCapabilityDetectorBlocks(capabilityDetectors)}
 echo "Running harness environment preflight..."`;
 }
 
+/**
+ * Produces a Bash function that runs a candidate harness runner to execute the environment preflight and capture its attestation.
+ *
+ * The generated function is named `run_check_environment_with_runner` and, when invoked with a label and a runner command, executes the runner's `check-environment` action, prints its output, verifies the runner exit status, ensures an attestation file is created (recovering a JSON line from stdout if needed), and returns nonzero on failure.
+ *
+ * @returns A string containing the Bash function definition for `run_check_environment_with_runner`.
+ */
 function renderEnvironmentRunnerFunction(): string {
 	return `run_check_environment_with_runner() {
 	local label="$1"
@@ -460,6 +492,13 @@ function renderEnvironmentRunnerFunction(): string {
 }`;
 }
 
+/**
+ * Produces a Bash script that selects and invokes an appropriate harness runner to execute the repository's check-environment, validates the resulting attestation, and reports success or failure.
+ *
+ * The generated script prefers, in order: the repo source CLI (src/cli.ts) when Node is available, a repo wrapper (scripts/harness-cli.sh), the repo dist CLI (dist/cli.js) when Node is available, a mise-resolved harness, and finally a globally installed npm harness (@brainwav/coding-harness). It emits actionable error messages and exits on runner failures or missing tooling, and verifies the attestation at ATTESTATION_PATH before printing a success line.
+ *
+ * @returns The complete Bash script text that performs runner selection, executes check-environment via the chosen runner, enforces failures with informative messages, and validates the attestation.
+ */
 function renderEnvironmentRunnerSelection(): string {
 	return `if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
 	if ! run_check_environment_with_runner "repo source CLI (cd repo && node --import tsx src/cli.ts)" bash -lc 'cd "$1" && shift && exec "$@"' _ "$REPO_ROOT" node --import tsx src/cli.ts; then

@@ -1083,6 +1083,15 @@ function normalizeUniqueApprovers(
 	return { ok: true, value: normalized };
 }
 
+/**
+ * Resolve the file path to the break-glass roster within a repository.
+ *
+ * If `overridePath` is a non-empty string it is used (trimmed); otherwise the default roster path is used. The returned path is the result of resolving that relative path against `targetDir`.
+ *
+ * @param targetDir - Repository root directory to resolve the roster path against
+ * @param overridePath - Optional repository-relative override path for the roster
+ * @returns The absolute path to the break-glass roster file
+ */
 function resolveBreakGlassRosterPath(
 	targetDir: string,
 	overridePath: string | undefined,
@@ -1094,6 +1103,18 @@ function resolveBreakGlassRosterPath(
 	return resolve(targetDir, configuredPath);
 }
 
+/**
+ * Parses and validates a break-glass roster JSON document.
+ *
+ * The function verifies the document conforms to the `ci-migrate-break-glass-roster/v1`
+ * schema and enforces field-level constraints (approved approvers list, ISO timestamps,
+ * integer ranges for TTL and rotation cadence, and optional rotation metadata).
+ *
+ * @param content - The raw JSON text of the break-glass roster
+ * @returns `{ ok: true, value: BreakGlassRoster }` when the input is a valid roster;
+ *          `{ ok: false, error: string }` when parsing or validation fails, with `error`
+ *          describing the validation problem.
+ */
 function parseBreakGlassRoster(
 	content: string,
 ): { ok: true; value: BreakGlassRoster } | { ok: false; error: string } {

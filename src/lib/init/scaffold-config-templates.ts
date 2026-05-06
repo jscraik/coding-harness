@@ -12,9 +12,9 @@ export const BIOME_SCHEMA_VERSION = "2.4.14";
 const BIOME_SCHEMA_URL = `https://biomejs.dev/schemas/${BIOME_SCHEMA_VERSION}/schema.json`;
 
 /**
- * Render the downstream Biome configuration scaffold.
+ * Renders the scaffolded Biome configuration used as `biome.json` for downstream projects.
  *
- * @returns JSON contents for `biome.json`.
+ * @returns A JSON-formatted string containing the Biome configuration with `$schema`, `vcs`, `files`, `overrides`, `linter`, and `assist` sections.
  */
 export function renderBiomeConfigTemplate(): string {
 	return `{

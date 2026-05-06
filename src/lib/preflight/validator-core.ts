@@ -293,7 +293,12 @@ export const PREFLIGHT_CHECKS: PreflightCheckRegistry = {
 };
 
 /**
- * Run preflight gate with selected checks
+ * Execute the preflight gate: run extension hooks, selected built-in checks, and assemble the final result.
+ *
+ * Runs pre-hook extensions which may short-circuit the gate, validates the admission declaration, executes all enabled preflight checks in parallel, runs post-hook extensions, evaluates pass/fail (respecting strict mode), and builds the final PreflightGateResult.
+ *
+ * @param options - Configuration and runtime inputs for the preflight gate (contract path, files, skip list, strict mode, admission declaration, etc.)
+ * @returns The assembled PreflightGateResult including per-check findings, overall pass/fail, computed risk tier, hook decisions, and any admission declaration processed.
  */
 export async function runPreflightGate(
 	options: PreflightGateOptions,
@@ -383,6 +388,16 @@ export async function runPreflightGate(
 	);
 }
 
+/**
+ * Loads and validates a preflight harness contract file and reports basic metadata about the load.
+ *
+ * @param contractPath - Filesystem path to the contract JSON file to load.
+ * @returns An object with:
+ *   - `contract`: the parsed HarnessContract when successfully loaded, or `undefined` if missing or invalid;
+ *   - `errorMessage`: a human-readable error message when the contract is invalid, or `undefined` when valid or missing;
+ *   - `durationMs`: milliseconds taken to attempt loading and basic validation;
+ *   - `northStarDeclared`: `true` if the raw contract JSON declared a top-level `northStar` property, otherwise `false`.
+ */
 function loadPreflightContract(contractPath: string): {
 	contract: HarnessContract | undefined;
 	errorMessage: string | undefined;

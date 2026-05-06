@@ -4,6 +4,16 @@ function escapeRegExp(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Normalize a question string for consistent, comparison-friendly matching.
+ *
+ * Converts the input to lowercase, replaces characters other than letters, digits,
+ * underscores, spaces, slashes, or hyphens with a single space, collapses consecutive
+ * whitespace into one space, and trims leading/trailing whitespace.
+ *
+ * @param value - The raw question text to normalize
+ * @returns The normalized question text
+ */
 function normalizeQuestionText(value: string): string {
 	return value
 		.toLowerCase()
@@ -12,6 +22,12 @@ function normalizeQuestionText(value: string): string {
 		.trim();
 }
 
+/**
+ * Detects whether the given text contains any evidence-style references (links, URLs, file/line refs, or artifact paths).
+ *
+ * @param text - The text to inspect for evidence references.
+ * @returns `true` if the text contains at least one evidence-like reference, `false` otherwise.
+ */
 function hasEvidenceReference(text: string): boolean {
 	const evidencePatterns = [
 		/\[[^\]]+\]\([^)]+\)/i,
