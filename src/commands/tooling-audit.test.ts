@@ -453,6 +453,9 @@ describe("tooling-audit command", () => {
 					name: "fixture-repo",
 					version: "1.0.0",
 					scripts: REQUIRED_PACKAGE_SCRIPTS,
+					devDependencies: {
+						"simple-git-hooks": "2.13.1",
+					},
 					"simple-git-hooks": {
 						"pre-commit": "make hooks-pre-commit",
 					},
@@ -471,13 +474,15 @@ describe("tooling-audit command", () => {
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
-				expect(
-					result.value.result.results[0]?.findings.some((finding) =>
-						finding.description.includes(
-							"Legacy simple-git-hooks config should be removed",
-						),
+				const finding = result.value.result.results[0]?.findings.find((item) =>
+					item.description.includes(
+						"Legacy simple-git-hooks config should be removed",
 					),
-				).toBe(true);
+				);
+				expect(finding?.actual).toEqual([
+					"simple-git-hooks",
+					"devDependencies.simple-git-hooks",
+				]);
 			}
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });

@@ -50,34 +50,35 @@ describe("standards-map", () => {
 	});
 
 	describe("getControlsByDomain", () => {
-		it.each(["source_integrity", "access_control"] as const)(
-			"returns only controls matching %s",
-			(domain) => {
-				const controls = getControlsByDomain(domain);
-				expect(Array.isArray(controls)).toBe(true);
-				expect(controls.length).toBeGreaterThan(0);
-				for (const control of controls) {
-					expect(control.domain).toBe(domain);
-				}
-			},
-		);
+		it.each([
+			"source_integrity",
+			"access_control",
+		] as const)("returns only controls matching %s", (domain) => {
+			const controls = getControlsByDomain(domain);
+			expect(Array.isArray(controls)).toBe(true);
+			expect(controls.length).toBeGreaterThan(0);
+			for (const control of controls) {
+				expect(control.domain).toBe(domain);
+			}
+		});
 	});
 
 	describe("getControlsByFramework", () => {
-		it.each(["NIST_SP_800_218A", "NIST_AI_RMF_1_0", "NIST_AI_600_1"] as const)(
-			"returns controls for framework %s",
-			(framework) => {
-				const controls = getControlsByFramework(framework);
-				expect(controls.length).toBeGreaterThan(0);
-				for (const control of controls) {
-					expect(
-						control.references.some(
-							(reference) => reference.framework === framework,
-						),
-					).toBe(true);
-				}
-			},
-		);
+		it.each([
+			"NIST_SP_800_218A",
+			"NIST_AI_RMF_1_0",
+			"NIST_AI_600_1",
+		] as const)("returns controls for framework %s", (framework) => {
+			const controls = getControlsByFramework(framework);
+			expect(controls.length).toBeGreaterThan(0);
+			for (const control of controls) {
+				expect(
+					control.references.some(
+						(reference) => reference.framework === framework,
+					),
+				).toBe(true);
+			}
+		});
 	});
 
 	describe("getNonOverridableControls", () => {

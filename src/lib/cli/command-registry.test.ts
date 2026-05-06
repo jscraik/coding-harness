@@ -474,15 +474,14 @@ describe("getRegistryCommandCapabilities", () => {
 			"pilot-rollback",
 		] as const;
 
-		it.each(EXPECTED_WRITE_COMMANDS)(
-			"'%s' has mutability 'write'",
-			(commandName) => {
-				const capability = getRegistryCommandCapabilities().find(
-					(c) => c.name === commandName,
-				);
-				expect(capability?.mutability).toBe("write");
-			},
-		);
+		it.each(
+			EXPECTED_WRITE_COMMANDS,
+		)("'%s' has mutability 'write'", (commandName) => {
+			const capability = getRegistryCommandCapabilities().find(
+				(c) => c.name === commandName,
+			);
+			expect(capability?.mutability).toBe("write");
+		});
 	});
 
 	describe("read command mutability", () => {
@@ -503,15 +502,14 @@ describe("getRegistryCommandCapabilities", () => {
 			"source-outline",
 		] as const;
 
-		it.each(EXPECTED_READ_COMMANDS)(
-			"'%s' has mutability 'read'",
-			(commandName) => {
-				const capability = getRegistryCommandCapabilities().find(
-					(c) => c.name === commandName,
-				);
-				expect(capability?.mutability).toBe("read");
-			},
-		);
+		it.each(
+			EXPECTED_READ_COMMANDS,
+		)("'%s' has mutability 'read'", (commandName) => {
+			const capability = getRegistryCommandCapabilities().find(
+				(c) => c.name === commandName,
+			);
+			expect(capability?.mutability).toBe("read");
+		});
 	});
 
 	describe("required flags", () => {
@@ -825,15 +823,14 @@ describe("getRegistryCommandCapabilities", () => {
 			["ui:explore", "drift-search-evidence"],
 		];
 
-		it.each(CATEGORY_CASES)(
-			"'%s' has category '%s'",
-			(commandName, expectedCategory) => {
-				const cap = getRegistryCommandCapabilities().find(
-					(c) => c.name === commandName,
-				);
-				expect(cap?.category).toBe(expectedCategory);
-			},
-		);
+		it.each(
+			CATEGORY_CASES,
+		)("'%s' has category '%s'", (commandName, expectedCategory) => {
+			const cap = getRegistryCommandCapabilities().find(
+				(c) => c.name === commandName,
+			);
+			expect(cap?.category).toBe(expectedCategory);
+		});
 	});
 
 	describe("capability example field", () => {

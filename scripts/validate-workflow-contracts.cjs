@@ -34,6 +34,11 @@ const REQUIRED_ERRORS = [
 	"SYSTEM_ERROR",
 ];
 
+/**
+ * Normalize a Markdown heading line by removing leading '#' markers, trimming whitespace, and converting to lowercase.
+ * @param {string} line - A single line of Markdown that may start with 1–6 '#' heading markers.
+ * @returns {string} The heading text with leading '#' characters removed, trimmed, and lowercased.
+ */
 function normalizeHeading(line) {
 	return line
 		.replace(/^#{1,6}\s+/, "")
@@ -41,6 +46,11 @@ function normalizeHeading(line) {
 		.toLowerCase();
 }
 
+/**
+ * Extracts and normalizes Markdown headings from the given content.
+ * @param {string} content - The Markdown document text to scan.
+ * @returns {string[]} Normalized heading texts with Markdown heading markers removed, trimmed, and lowercased.
+ */
 function collectHeadings(content) {
 	return content
 		.split(/\r?\n/)
@@ -48,10 +58,21 @@ function collectHeadings(content) {
 		.map(normalizeHeading);
 }
 
+/**
+ * Finds the index of an expected heading within a list of normalized headings.
+ * @param {string[]} headings - Array of normalized heading strings (e.g., lowercased, trimmed).
+ * @param {string} expectedHeading - The normalized heading to locate.
+ * @returns {number} The zero-based index of `expectedHeading` in `headings`, or `-1` if not found.
+ */
 function findHeadingIndex(headings, expectedHeading) {
-	return headings.findIndex((heading) => heading === expectedHeading);
+	return headings.indexOf(expectedHeading);
 }
 
+/**
+ * Determine if content contains the canonical transition header sequence written inline as `S | E | G | A | N`.
+ * @param {string} content - Text to search for the inline canonical transition header.
+ * @returns {boolean} `true` if the inline header `S | E | G | A | N` (allowing arbitrary spaces around pipes) is present, `false` otherwise.
+ */
 function findCanonicalTransitionHeader(content) {
 	return /`S\s*\|\s*E\s*\|\s*G\s*\|\s*A\s*\|\s*N`/.test(content);
 }

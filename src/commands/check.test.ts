@@ -408,7 +408,9 @@ describe("runCheckCLI", () => {
 		writeContract(dir);
 		const code = runCheckCLI(dir, {});
 		expect(code).toBeTypeOf("number");
-		const allOutput = infoSpy.mock.calls.map((c) => c[0] as string).join("\n");
+		const allOutput = infoSpy.mock.calls
+			.map((c: unknown[]) => c[0] as string)
+			.join("\n");
 		expect(allOutput).toContain("harness check");
 		expect(allOutput).toContain("Next:");
 	});
@@ -421,7 +423,9 @@ describe("runCheckCLI", () => {
 	it("accepts an explicit path argument", () => {
 		const code = runCheckCLI(dir, {});
 		expect([0, 1]).toContain(code);
-		const allOutput = infoSpy.mock.calls.map((c) => c[0] as string).join("\n");
+		const allOutput = infoSpy.mock.calls
+			.map((c: unknown[]) => c[0] as string)
+			.join("\n");
 		expect(allOutput).toContain(dir);
 	});
 

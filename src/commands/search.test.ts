@@ -11,10 +11,12 @@ vi.mock("../lib/context-compound/ollama.js", () => {
 	const embed = vi.fn();
 
 	return {
-		OllamaClient: vi.fn().mockImplementation(() => ({
-			isAvailable,
-			embed,
-		})),
+		OllamaClient: vi.fn(function OllamaClient() {
+			return {
+				isAvailable,
+				embed,
+			};
+		}),
 		__mockOllama: {
 			isAvailable,
 			embed,
@@ -28,11 +30,13 @@ vi.mock("../lib/context-compound/store.js", () => {
 	const close = vi.fn();
 
 	return {
-		VectorStore: vi.fn().mockImplementation(() => ({
-			init,
-			search,
-			close,
-		})),
+		VectorStore: vi.fn(function VectorStore() {
+			return {
+				init,
+				search,
+				close,
+			};
+		}),
 		__mockStore: {
 			init,
 			search,

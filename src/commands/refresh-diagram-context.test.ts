@@ -119,64 +119,60 @@ describe("refresh-diagram-context.sh", () => {
 		roots.length = 0;
 	});
 
-	it(
-		"preserves diagram manifest metadata while adding ERD diagrams to context",
-		{
-			timeout: 30000,
-		},
-		() => {
-			const { root, binDir } = createRepo();
-			roots.push(root);
+	it("preserves diagram manifest metadata while adding ERD diagrams to context", {
+		timeout: 30000,
+	}, () => {
+		const { root, binDir } = createRepo();
+		roots.push(root);
 
-			const result = spawnSync(
-				"bash",
-				["scripts/refresh-diagram-context.sh", "--force", "--quiet"],
-				{
-					cwd: root,
-					encoding: "utf-8",
-					env: {
-						...sanitizeGitEnv(),
-						PATH: [binDir, STABLE_PATH].join(delimiter),
-					},
+		const result = spawnSync(
+			"bash",
+			["scripts/refresh-diagram-context.sh", "--force", "--quiet"],
+			{
+				cwd: root,
+				encoding: "utf-8",
+				env: {
+					...sanitizeGitEnv(),
+					PATH: [binDir, STABLE_PATH].join(delimiter),
 				},
-			);
+			},
+		);
 
-			expect(result.status).toBe(0);
-			const manifest = JSON.parse(
-				readFileSync(join(root, ".diagram", "manifest.json"), "utf-8"),
-			) as {
-				schemaVersion?: string;
-				compaction?: { profile?: string; maxDiagrams?: number };
-				diagrams?: Array<{ type: string; file: string }>;
-			};
-			expect(manifest.schemaVersion).toBe("1.0");
-			expect(manifest.compaction?.profile).toBe("agent");
-			expect(manifest.compaction?.maxDiagrams).toBe(2);
-			expect(manifest.diagrams).toEqual(
-				expect.arrayContaining([
-					expect.objectContaining({ type: "erd", file: "erd.mmd" }),
-				]),
-			);
+		expect(result.status).toBe(0);
+		const manifest = JSON.parse(
+			readFileSync(join(root, ".diagram", "manifest.json"), "utf-8"),
+		) as {
+			schemaVersion?: string;
+			compaction?: { profile?: string; maxDiagrams?: number };
+			diagrams?: Array<{ type: string; file: string }>;
+		};
+		expect(manifest.schemaVersion).toBe("1.0");
+		expect(manifest.compaction?.profile).toBe("agent");
+		expect(manifest.compaction?.maxDiagrams).toBe(2);
+		expect(manifest.diagrams).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "erd", file: "erd.mmd" }),
+			]),
+		);
 
-			const context = readFileSync(
-				join(root, "AI", "context", "diagram-context.md"),
-				"utf-8",
-			);
+		const context = readFileSync(
+			join(root, "AI", "context", "diagram-context.md"),
+			"utf-8",
+		);
 
-			expect(context).toContain("## How to use this pack");
-			expect(context).toContain("## Table of Contents");
-			expect(context).toContain(
-				"- [How to use this pack](#how-to-use-this-pack)",
-			);
-			expect(context).toContain("- [erd](#erd)");
-			expect(context).toContain("database, and ERD context");
-			expect(context).toContain("harness source-outline <path>");
-			expect(context).toContain(
-				"bash scripts/harness-cli.sh source-outline <path> --json",
-			);
-			expect(context).toContain("## erd");
-			expect(context).toContain("erDiagram");
-			expect(context.match(/\["api"\]/g)).toHaveLength(2);
-		},
-	);
+		expect(context).toContain("## How to use this pack");
+		expect(context).toContain("## Table of Contents");
+		expect(context).toContain(
+			"- [How to use this pack](#how-to-use-this-pack)",
+		);
+		expect(context).toContain("- [erd](#erd)");
+		expect(context).toContain("database, and ERD context");
+		expect(context).toContain("harness source-outline <path>");
+		expect(context).toContain(
+			"bash scripts/harness-cli.sh source-outline <path> --json",
+		);
+		expect(context).toContain("## erd");
+		expect(context).toContain("erDiagram");
+		expect(context.match(/\["api"\]/g)).toHaveLength(2);
+	});
 });

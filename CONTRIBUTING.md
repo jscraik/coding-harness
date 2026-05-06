@@ -111,6 +111,7 @@ Recommended policy:
 - Treat `scripts/prepare-worktree.sh` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
+- When a pinned tooling dependency has a matching generated configuration schema, update the package version, the repo config, and the scaffold template together. Biome is governed this way: the root `biome.json` schema version and generated init template must match the installed `@biomejs/biome` major line.
 - For repositories with explicit `ui` / `chatgpt_apps_sdk` capabilities or matching dependency signals, install `@brainwav/design-system-guidance` and treat its absence as a readiness failure.
 
 ## Project Brain workflow
