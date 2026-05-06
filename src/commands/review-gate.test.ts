@@ -114,6 +114,7 @@ describe("runReviewGate", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockGitHubClient.mockReset();
 		mockEmitReviewGateDecisionArtifacts.mockReturnValue({
 			runId: "review-gate-run-1",
 			decisionPacketPath:

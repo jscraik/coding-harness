@@ -32,7 +32,9 @@ export function renderBiomeConfigTemplate(): string {
 			"!**/node_modules",
 			"!**/dist",
 			"!**/coverage",
-			"!**/artifacts"
+			"!**/artifacts",
+			"!**/CODESTYLE.md",
+			"!**/.tmp-diagram-refresh-*"
 		]
 	},
 	"overrides": [

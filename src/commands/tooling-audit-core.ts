@@ -695,14 +695,40 @@ function auditLocalHooks(
 		}
 	}
 
+	const legacySimpleGitHooksLocations: string[] = [];
 	if (Object.hasOwn(packageJson, "simple-git-hooks")) {
+		legacySimpleGitHooksLocations.push("simple-git-hooks");
+	}
+	for (const dependencyField of ["dependencies", "devDependencies"] as const) {
+		const dependencies = packageJson[dependencyField];
+		if (
+			dependencies &&
+			typeof dependencies === "object" &&
+			!Array.isArray(dependencies) &&
+			Object.hasOwn(dependencies, "simple-git-hooks")
+		) {
+			legacySimpleGitHooksLocations.push(`${dependencyField}.simple-git-hooks`);
+		}
+	}
+	if (scriptObject) {
+		for (const [scriptName, scriptValue] of Object.entries(scriptObject)) {
+			if (
+				typeof scriptValue === "string" &&
+				scriptValue.includes("simple-git-hooks")
+			) {
+				legacySimpleGitHooksLocations.push(`scripts.${scriptName}`);
+			}
+		}
+	}
+
+	if (legacySimpleGitHooksLocations.length > 0) {
 		findings.push({
 			path: TOOLING_PACKAGE_JSON_PATH,
 			severity: "critical",
 			description:
 				"Legacy simple-git-hooks config should be removed after migrating to prek",
-			expected: "No simple-git-hooks key",
-			actual: packageJson["simple-git-hooks"],
+			expected: "No simple-git-hooks config, dependency, or script usage",
+			actual: legacySimpleGitHooksLocations,
 		});
 	}
 }

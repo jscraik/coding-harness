@@ -103,4 +103,31 @@ describe("runSilentErrorDetector", () => {
 
 		expect(consoleOnlyDetections).toHaveLength(1);
 	});
+
+	it("detects catch blocks that contain only comments", () => {
+		const root = mkdtempSync(join(tmpdir(), "harness-silent-error-"));
+		tempDirs.push(root);
+
+		const srcDir = join(root, "src");
+		mkdirSync(srcDir, { recursive: true });
+
+		const filePath = join(srcDir, "comment-only.ts");
+		writeFileSync(
+			filePath,
+			[
+				"try { work(); } catch (err) { /* intentionally ignored */ }",
+				"try { other(); } catch (err) {",
+				"  // intentionally ignored",
+				"}",
+			].join("\n"),
+			"utf-8",
+		);
+
+		const result = runSilentErrorDetector({ files: [filePath] });
+		const emptyCatchDetections = result.detections.filter(
+			(d) => d.type === "empty-catch",
+		);
+
+		expect(emptyCatchDetections).toHaveLength(2);
+	});
 });

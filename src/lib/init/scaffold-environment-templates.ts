@@ -253,7 +253,7 @@ function renderRepositoryPolicyChecks(): string {
 					printf "%s", block
 				}
 			}
-			/^\\[\\[hooks\\]\\]/ {
+			/^\\[\\[repos\\.hooks\\]\\]/ {
 				flush()
 				block = $0 ORS
 				matched = 0
@@ -483,7 +483,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
-			echo 'Fix: ensure the session activates mise first (eval "$(mise --cd "$REPO_ROOT" activate bash)") or invoke the mise binary directly.'
+			printf 'Fix: ensure the session activates mise first (eval "$(mise --cd "%s" activate bash)") or invoke the mise binary directly.\\n' "$REPO_ROOT"
 			exit 1
 		fi
 	else

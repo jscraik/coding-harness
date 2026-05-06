@@ -25,6 +25,8 @@ describe("config scaffold templates", () => {
 			"https://biomejs.dev/schemas/2.4.14/schema.json",
 		);
 		expect(parsed.files.includes).toContain("!**/node_modules");
+		expect(parsed.files.includes).toContain("!**/CODESTYLE.md");
+		expect(parsed.files.includes).toContain("!**/.tmp-diagram-refresh-*");
 		expect(parsed.linter.rules.style.noDefaultExport).toBe("error");
 		expect(parsed.linter.rules.suspicious.noConsole).toBe("off");
 		expect(config).toContain('"useImportType": "error"');

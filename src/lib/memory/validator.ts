@@ -392,7 +392,10 @@ export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
 }
 
 /**
- * Run memory gate CLI with console output
+ * Run memory gate CLI with console output.
+ *
+ * Success output prints entry totals and duplicate counts; reliability score and
+ * trend details are printed when validation fails.
  */
 export function runMemoryGateCLI(options: MemoryGateOptions): number {
 	// Load historical metrics
