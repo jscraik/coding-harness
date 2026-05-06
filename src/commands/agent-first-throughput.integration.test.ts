@@ -26,6 +26,11 @@ import { GitHubClient } from "../lib/github/client.js";
 const mockGitHubClient = vi.mocked(GitHubClient);
 const mockAgentFirstGitHubClient = (client: PartialDeep<GitHubClient>) =>
 	fromPartial<GitHubClient>(client);
+const mockGitHubClientImplementation = (createClient: () => GitHubClient) => {
+	mockGitHubClient.mockImplementation(function GitHubClient() {
+		return createClient();
+	});
+};
 
 function makeSha(value: string): string {
 	return value.repeat(40);
@@ -138,7 +143,7 @@ describe("agent-first throughput integration", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockAgentFirstGitHubClient({
 				listCheckRunsForRef: mockListCheckRuns,
 				getPullRequest: mockGetPullRequest,
@@ -204,7 +209,7 @@ describe("agent-first throughput integration", () => {
 			user: { login: "coding-actor" },
 			head: { sha: headSha, ref: "feature/throughput" },
 		});
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockAgentFirstGitHubClient({
 				getPullRequest: mockGetPullRequest,
 				listCheckRunsForRef: mockListCheckRuns,
@@ -296,7 +301,7 @@ describe("agent-first throughput integration", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockAgentFirstGitHubClient({
 				listCheckRunsForRef: mockListCheckRuns,
 				getPullRequest: mockGetPullRequest,
@@ -379,7 +384,7 @@ describe("agent-first throughput integration", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockAgentFirstGitHubClient({
 				listCheckRunsForRef: mockListCheckRuns,
 				getPullRequest: mockGetPullRequest,

@@ -20,6 +20,11 @@ import { runLinearWorkflow } from "./linear-workflow.js";
 const mockLinearClient = vi.mocked(LinearClient);
 const mockLinearWorkflowClient = (client: PartialDeep<LinearClient>) =>
 	fromPartial<LinearClient>(client);
+const mockLinearClientImplementation = (createClient: () => LinearClient) => {
+	mockLinearClient.mockImplementation(function LinearClient() {
+		return createClient();
+	});
+};
 
 const baseIssue = {
 	id: "issue-id",
@@ -83,7 +88,7 @@ describe("runLinearWorkflow", () => {
 			name: "Jamie",
 			email: "jamie@example.com",
 		});
-		mockLinearClient.mockImplementation(() => mockLinearWorkflowClient(client));
+		mockLinearClientImplementation(() => mockLinearWorkflowClient(client));
 	});
 
 	afterEach(() => {

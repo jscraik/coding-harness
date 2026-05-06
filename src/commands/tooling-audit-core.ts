@@ -155,6 +155,15 @@ function collectPackageDependencies(manifest: PackageManifest): Set<string> {
 	]);
 }
 
+/**
+ * Determine tooling capabilities applicable to a repository from a harness contract and optional package manifest.
+ *
+ * If the contract includes a packagePolicy, the returned set contains any explicitly declared capabilities and any capabilities inferred from the manifest's dependencies when a manifest is provided.
+ *
+ * @param contract - The harness contract that may include a `toolingPolicy.packagePolicy`
+ * @param manifest - The parsed package manifest (`package.json`) or `null` when no manifest is available
+ * @returns A set of capability identifiers present either explicitly in the contract or inferred from the manifest's dependency markers
+ */
 function detectCapabilities(
 	contract: HarnessContract,
 	manifest: PackageManifest | null,
@@ -185,6 +194,14 @@ function detectCapabilities(
 	return capabilities;
 }
 
+/**
+ * Checks whether a package name appears in the package manifest according to the specified dependency scope.
+ *
+ * @param manifest - The parsed package.json manifest to inspect
+ * @param packageName - The package name to look for
+ * @param dependencyType - Which dependency section to check: `"dependencies"` for runtime deps, `"devDependencies"` for dev-only deps, or `"either"` to check both
+ * @returns `true` if the package is present in the selected dependency section(s), `false` otherwise
+ */
 function hasRequiredPackage(
 	manifest: PackageManifest,
 	packageName: string,
@@ -194,15 +211,15 @@ function hasRequiredPackage(
 	const devDependencies = manifest.devDependencies ?? {};
 
 	if (dependencyType === "dependencies") {
-		return Object.prototype.hasOwnProperty.call(dependencies, packageName);
+		return Object.hasOwn(dependencies, packageName);
 	}
 	if (dependencyType === "devDependencies") {
-		return Object.prototype.hasOwnProperty.call(devDependencies, packageName);
+		return Object.hasOwn(devDependencies, packageName);
 	}
 
 	return (
-		Object.prototype.hasOwnProperty.call(dependencies, packageName) ||
-		Object.prototype.hasOwnProperty.call(devDependencies, packageName)
+		Object.hasOwn(dependencies, packageName) ||
+		Object.hasOwn(devDependencies, packageName)
 	);
 }
 
@@ -608,11 +625,11 @@ function auditPackagePolicy(
 }
 
 /**
- * Audit a repository for required hook support files, prek hook configurations, and hook-related package.json scripts, appending findings for any detected problems.
+ * Validate repository hook support files, Prek hook configurations, and hook-related package.json scripts, appending findings for detected issues.
  *
- * Checks for the presence of required support files and the Prek configuration, validates each required Prek hook configuration, validates required entries in `package.json` scripts, and flags legacy `simple-git-hooks` configuration. If `package.json` fails to parse, records a critical finding and stops further package.json checks.
+ * Appends ToolingAuditFinding entries for missing or out-of-date hook support files, Prek config parse errors or missing/incorrect hook definitions, missing or incorrect `package.json` scripts, and presence of legacy `simple-git-hooks` configuration.
  *
- * @param findings - Mutable array to which this function will append ToolingAuditFinding entries describing detected issues.
+ * @param findings - Mutable array that will receive ToolingAuditFinding entries describing any detected problems.
  * @param repoPath - Filesystem path to the repository root to inspect.
  */
 function auditLocalHooks(
@@ -636,7 +653,7 @@ function auditLocalHooks(
 			const hookPattern = new RegExp(
 				String.raw`\[\[repos\.hooks\]\][\s\S]*?id = "${hookName}"[\s\S]*?name = "${hookConfig.name}"[\s\S]*?entry = "${hookConfig.entry}"[\s\S]*?language = "${hookConfig.language}"[\s\S]*?pass_filenames = ${String(hookConfig.pass_filenames)}${
 					hookStages.length
-						? String.raw`[\s\S]*?stages = \["${hookStages.join(String.raw`", "`)}"\]`
+						? String.raw`[\s\S]*?stages = \["${hookStages.join('", "')}"\]`
 						: ""
 				}`,
 			);
@@ -695,14 +712,40 @@ function auditLocalHooks(
 		}
 	}
 
-	if (Object.prototype.hasOwnProperty.call(packageJson, "simple-git-hooks")) {
+	const legacySimpleGitHooksLocations: string[] = [];
+	if (Object.hasOwn(packageJson, "simple-git-hooks")) {
+		legacySimpleGitHooksLocations.push("simple-git-hooks");
+	}
+	for (const dependencyField of ["dependencies", "devDependencies"] as const) {
+		const dependencies = packageJson[dependencyField];
+		if (
+			dependencies &&
+			typeof dependencies === "object" &&
+			!Array.isArray(dependencies) &&
+			Object.hasOwn(dependencies, "simple-git-hooks")
+		) {
+			legacySimpleGitHooksLocations.push(`${dependencyField}.simple-git-hooks`);
+		}
+	}
+	if (scriptObject) {
+		for (const [scriptName, scriptValue] of Object.entries(scriptObject)) {
+			if (
+				typeof scriptValue === "string" &&
+				scriptValue.includes("simple-git-hooks")
+			) {
+				legacySimpleGitHooksLocations.push(`scripts.${scriptName}`);
+			}
+		}
+	}
+
+	if (legacySimpleGitHooksLocations.length > 0) {
 		findings.push({
 			path: TOOLING_PACKAGE_JSON_PATH,
 			severity: "critical",
 			description:
 				"Legacy simple-git-hooks config should be removed after migrating to prek",
-			expected: "No simple-git-hooks key",
-			actual: packageJson["simple-git-hooks"],
+			expected: "No simple-git-hooks config, dependency, or script usage",
+			actual: legacySimpleGitHooksLocations,
 		});
 	}
 }
@@ -842,6 +885,12 @@ function auditBaseDrift(
 	}
 }
 
+/**
+ * Aggregate finding counts by severity from an array of repository results.
+ *
+ * @param results - Per-repository audit results whose findings will be counted
+ * @returns An object with counts: `total` (sum of all findings), `critical` (number of critical findings), `warning` (number of warning findings), and `info` (number of informational findings)
+ */
 function summarizeFindings(
 	results: ToolingAuditRepoResult[],
 ): ToolingAuditResult["findings"] {
@@ -863,6 +912,19 @@ function summarizeFindings(
 	};
 }
 
+/**
+ * Audit a repository for tooling policy compliance.
+ *
+ * Performs the repository-level checks specified by the repository's harness contract (if present) and collects findings from readiness script, Mise, Codex environment, Makefile, Project Brain memory-extension, package policy, local hooks audits, and optional base-contract drift detection.
+ *
+ * @param repoPath - Filesystem path to the repository to audit
+ * @param baseContract - Optional base contract to compare against for drift detection
+ * @param includeMissing - If true, treat repositories without a harness.contract.json as `no-contract` results instead of an `error`
+ * @returns A ToolingAuditRepoResult containing the repository `path`, `status`, collected `findings`, and an optional `error` message. `status` will be:
+ *  - `"success"`: contract found and audits executed (findings may be empty),
+ *  - `"no-contract"`: no contract found and `includeMissing` was true,
+ *  - `"error"`: an error occurred reading or loading the contract (see `error` for details)
+ */
 async function auditRepository(
 	repoPath: string,
 	baseContract?: HarnessContract,
@@ -906,7 +968,7 @@ async function auditRepository(
 	}
 
 	const findings: ToolingAuditFinding[] = [];
-	if (!Object.prototype.hasOwnProperty.call(rawContract, "toolingPolicy")) {
+	if (!Object.hasOwn(rawContract, "toolingPolicy")) {
 		findings.push({
 			path: "toolingPolicy",
 			severity: "warning",

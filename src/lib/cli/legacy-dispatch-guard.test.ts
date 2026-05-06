@@ -9,7 +9,7 @@ describe("legacy dispatch guard", () => {
 		const content = readFileSync(cliPath, "utf-8");
 
 		const offenders = MIGRATED_COMMAND_AND_ALIAS_NAMES.filter((name) =>
-			new RegExp(`^\\s*if \\(command === \"${name}\"`, "m").test(content),
+			new RegExp(`^\\s*if \\(command === "${name}"`, "m").test(content),
 		);
 
 		expect(offenders).toEqual([]);

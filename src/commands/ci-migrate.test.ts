@@ -5260,65 +5260,60 @@ describe("runCIMigrateCLI", () => {
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
-	it(
-		"auto-generates signed parity proof pack evidence when requested",
-		{ timeout: 120000 },
-		() => {
-			seedMigratableFixture(tempDir);
-			writeCIProviderPolicyContract(tempDir, "required");
-			writeParityProofPackInput(tempDir);
-			writeParityProvenanceBundleInput(tempDir);
-			scanOpenPullRequestSatisfiabilityMock
-				.mockReturnValueOnce({
-					status: "satisfied",
-					scannedOpenPrs: 2,
-					failingPrs: [],
-				})
-				.mockReturnValueOnce({
-					status: "satisfied",
-					scannedOpenPrs: 2,
-					failingPrs: [],
-				});
-			writeSignedMergeQueueEvidence(
-				tempDir,
-				"cutover-auto-generated-proof-pack",
-			);
-
-			const exitCode = runCIMigrateCLI(tempDir, {
-				provider: "circleci",
-				apply: true,
-				autoGenerateProofPack: true,
-				snapshot: "cutover-auto-generated-proof-pack",
+	it("auto-generates signed parity proof pack evidence when requested", {
+		timeout: 120000,
+	}, () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPackInput(tempDir);
+		writeParityProvenanceBundleInput(tempDir);
+		scanOpenPullRequestSatisfiabilityMock
+			.mockReturnValueOnce({
+				status: "satisfied",
+				scannedOpenPrs: 2,
+				failingPrs: [],
+			})
+			.mockReturnValueOnce({
+				status: "satisfied",
+				scannedOpenPrs: 2,
+				failingPrs: [],
 			});
+		writeSignedMergeQueueEvidence(tempDir, "cutover-auto-generated-proof-pack");
 
-			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-			expect(
-				existsSync(join(tempDir, ".harness/ci-parity-proof-pack.json")),
-			).toBe(true);
-			expect(
-				existsSync(join(tempDir, ".harness/ci-parity-proof-pack.sig")),
-			).toBe(true);
-			const report = JSON.parse(
-				readFileSync(
-					join(
-						tempDir,
-						".harness/ci-migrate-snapshots/cutover-auto-generated-proof-pack.report.json",
-					),
-					"utf-8",
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			autoGenerateProofPack: true,
+			snapshot: "cutover-auto-generated-proof-pack",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(
+			existsSync(join(tempDir, ".harness/ci-parity-proof-pack.json")),
+		).toBe(true);
+		expect(existsSync(join(tempDir, ".harness/ci-parity-proof-pack.sig"))).toBe(
+			true,
+		);
+		const report = JSON.parse(
+			readFileSync(
+				join(
+					tempDir,
+					".harness/ci-migrate-snapshots/cutover-auto-generated-proof-pack.report.json",
 				),
-			) as {
-				promotionEvidence: { status: string };
-			};
-			expect(report.promotionEvidence.status).toBe("verified");
-			const mergeQueueWindow = readMergeQueueCutoverWindow(tempDir);
-			expect(mergeQueueWindow.stage).toBe("revalidated");
-			expect(mergeQueueWindow.preCutover.status).toBe("satisfied");
-			expect(mergeQueueWindow.postCutover?.status).toBe("satisfied");
-			expect(typeof mergeQueueWindow.pausedAt).toBe("string");
-			expect(typeof mergeQueueWindow.drainedAt).toBe("string");
-			expect(typeof mergeQueueWindow.revalidatedAt).toBe("string");
-		},
-	);
+				"utf-8",
+			),
+		) as {
+			promotionEvidence: { status: string };
+		};
+		expect(report.promotionEvidence.status).toBe("verified");
+		const mergeQueueWindow = readMergeQueueCutoverWindow(tempDir);
+		expect(mergeQueueWindow.stage).toBe("revalidated");
+		expect(mergeQueueWindow.preCutover.status).toBe("satisfied");
+		expect(mergeQueueWindow.postCutover?.status).toBe("satisfied");
+		expect(typeof mergeQueueWindow.pausedAt).toBe("string");
+		expect(typeof mergeQueueWindow.drainedAt).toBe("string");
+		expect(typeof mergeQueueWindow.revalidatedAt).toBe("string");
+	});
 
 	it("fails auto-generation when proof-pack input is missing", () => {
 		seedMigratableFixture(tempDir);

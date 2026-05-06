@@ -1207,12 +1207,13 @@ describe("buildContractPreset", () => {
 		expect(normalizeContractPreset("unknown")).toBeUndefined();
 	});
 
-	it.each(["toString", "constructor", "__proto__"] as const)(
-		"rejects inherited object keys as preset aliases: %s",
-		(alias) => {
-			expect(normalizeContractPreset(alias)).toBeUndefined();
-		},
-	);
+	it.each([
+		"toString",
+		"constructor",
+		"__proto__",
+	] as const)("rejects inherited object keys as preset aliases: %s", (alias) => {
+		expect(normalizeContractPreset(alias)).toBeUndefined();
+	});
 
 	it("CONTRACT_PRESET_INPUTS includes lite alias", () => {
 		expect(CONTRACT_PRESET_INPUTS).toContain("lite");
@@ -1299,17 +1300,18 @@ describe("runContractInitCLI", () => {
 		expect(code).toBe(2);
 	});
 
-	it.each(["toString", "constructor", "__proto__"] as const)(
-		"returns 2 for inherited-key preset alias: %s",
-		(alias) => {
-			const output = join(dir, "harness.contract.json");
-			let code = -1;
-			expect(() => {
-				code = runContractInitCLI({ preset: alias as never, output });
-			}).not.toThrow();
-			expect(code).toBe(2);
-		},
-	);
+	it.each([
+		"toString",
+		"constructor",
+		"__proto__",
+	] as const)("returns 2 for inherited-key preset alias: %s", (alias) => {
+		const output = join(dir, "harness.contract.json");
+		let code = -1;
+		expect(() => {
+			code = runContractInitCLI({ preset: alias as never, output });
+		}).not.toThrow();
+		expect(code).toBe(2);
+	});
 
 	it("emits JSON output when --json flag is set", () => {
 		const output = join(dir, "harness.contract.json");
@@ -1353,17 +1355,16 @@ describe("runContractInitCLI", () => {
 		expect(existsSync(output)).toBe(true);
 	});
 
-	it.each(CONTRACT_PRESET_INPUTS)(
-		"generated %s preset validates against the current contract schema",
-		(preset) => {
-			const output = join(dir, `harness.contract.${preset}.json`);
-			const initCode = runContractInitCLI({ preset, output });
-			expect(initCode).toBe(0);
+	it.each(
+		CONTRACT_PRESET_INPUTS,
+	)("generated %s preset validates against the current contract schema", (preset) => {
+		const output = join(dir, `harness.contract.${preset}.json`);
+		const initCode = runContractInitCLI({ preset, output });
+		expect(initCode).toBe(0);
 
-			const validateCode = runContractValidateCLI(undefined, {
-				contractPath: output,
-			});
-			expect(validateCode).toBe(0);
-		},
-	);
+		const validateCode = runContractValidateCLI(undefined, {
+			contractPath: output,
+		});
+		expect(validateCode).toBe(0);
+	});
 });

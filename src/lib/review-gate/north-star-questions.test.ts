@@ -57,4 +57,14 @@ describe("evaluateNorthStarDecisionQuestions", () => {
 
 		expect(blockers).toEqual([]);
 	});
+
+	it("accepts backtick-wrapped file line evidence", () => {
+		const blockers = evaluateNorthStarDecisionQuestions({
+			prBody: "- safety_floor: yes; evidence: `src/review.ts:42`",
+			decisionQuestions: [...decisionQuestions],
+			requireQuestions: true,
+		});
+
+		expect(blockers).toEqual([]);
+	});
 });

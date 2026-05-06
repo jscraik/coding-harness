@@ -42,6 +42,19 @@ function writeHarnessContract(tempDir: string): void {
 	);
 }
 
+function runFixtureGit(args: string[], cwd: string): void {
+	const env = { ...process.env };
+	delete env.GIT_DIR;
+	delete env.GIT_WORK_TREE;
+	delete env.GIT_INDEX_FILE;
+
+	execFileSync("git", args, {
+		cwd,
+		env,
+		stdio: "ignore",
+	});
+}
+
 describe("runLinearGate", () => {
 	let tempDir: string;
 
@@ -281,16 +294,10 @@ contact_links:
 `,
 			"utf-8",
 		);
-		execFileSync("git", ["init", "--quiet", "--initial-branch=main"], {
-			cwd: tempDir,
-		});
-		execFileSync(
-			"git",
+		runFixtureGit(["init", "--quiet", "--initial-branch=main"], tempDir);
+		runFixtureGit(
 			["checkout", "-b", "codex/pr2-validation-preflight-gates"],
-			{
-				cwd: tempDir,
-				stdio: "ignore",
-			},
+			tempDir,
 		);
 
 		const previousGithubHeadRef = process.env.GITHUB_HEAD_REF;

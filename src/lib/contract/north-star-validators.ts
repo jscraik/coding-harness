@@ -128,7 +128,12 @@ function isValidNorthStarDecisionQuestion(
 	);
 }
 
-/** Validate that a value conforms to the NorthStarContract shape. */
+/**
+ * Validate that a value conforms to the North Star contract structure.
+ *
+ * @param value - The value to validate as a North Star contract
+ * @returns `true` if the value matches the expected NorthStarContract shape, `false` otherwise
+ */
 export function isValidNorthStarContract(
 	value: unknown,
 ): value is NorthStarContract {
@@ -203,6 +208,12 @@ export function isValidNorthStarContract(
 	return true;
 }
 
+/**
+ * Determine whether a value conforms to the SurfaceRegistration shape.
+ *
+ * @param value - The value to validate
+ * @returns `true` if `value` is a valid SurfaceRegistration, `false` otherwise.
+ */
 function isValidSurfaceRegistration(
 	value: unknown,
 ): value is SurfaceRegistration {
@@ -235,11 +246,7 @@ function isValidSurfaceRegistration(
 		"ownedPaths",
 		"lastReviewedAt",
 	];
-	if (
-		!requiredKeys.every((key) =>
-			Object.prototype.hasOwnProperty.call(record, key),
-		)
-	) {
+	if (!requiredKeys.every((key) => Object.hasOwn(record, key))) {
 		return false;
 	}
 	if (

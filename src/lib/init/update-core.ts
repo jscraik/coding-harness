@@ -205,17 +205,17 @@ function resolveUpdateTemplateTargetPath(
 }
 
 /**
- * Computes ownership decisions for each key in a merged contract object.
+ * Computes ownership decisions for every property path in a merged contract object.
  *
- * Walks the merged contract and determines, for each property path, whether the
- * template or the repository should own the value and whether that value was
- * added, preserved, or updated relative to the existing and rendered inputs.
+ * For each key present in the existing, rendered, or merged objects, determines whether
+ * the repository or the template should own the resulting value and whether that value
+ * was added, preserved, or updated relative to the existing and rendered inputs.
  *
  * @param existingValue - The contract object currently in the repository
  * @param renderedValue - The freshly rendered contract object from the template
  * @param mergedValue - The resulting contract object after merging rendered into existing
  * @param basePath - Optional dot-prefixed path prefix used when recursing into nested objects
- * @returns An array of ownership decisions for contract property paths; each entry records the file (`CONTRACT_FILE`), the dot-separated `path`, the `owner` (`"template"` or `"repo"`), and the `action` (`"added"`, `"preserved"`, or `"updated"`)
+ * @returns An array of ownership decisions where each entry records the file (`CONTRACT_FILE`), the dot-separated `path`, the `owner` (`"template"` or `"repo"`), and the `action` (`"added"`, `"preserved"`, or `"updated"`)
  */
 function collectOwnershipDecisions(
 	existingValue: Record<string, unknown>,
@@ -232,14 +232,8 @@ function collectOwnershipDecisions(
 
 	for (const key of keys) {
 		const path = basePath ? `${basePath}.${key}` : key;
-		const hasExisting = Object.prototype.hasOwnProperty.call(
-			existingValue,
-			key,
-		);
-		const hasRendered = Object.prototype.hasOwnProperty.call(
-			renderedValue,
-			key,
-		);
+		const hasExisting = Object.hasOwn(existingValue, key);
+		const hasRendered = Object.hasOwn(renderedValue, key);
 		const existingEntry = existingValue[key];
 		const renderedEntry = renderedValue[key];
 		const mergedEntry = mergedValue[key];
@@ -358,6 +352,15 @@ function mergeStringArrayDefaults(
 	mergedSection[arrayKey] = nextValues;
 }
 
+/**
+ * Ensures `merged` includes any string-based required checks present in `rendered` for generated sections.
+ *
+ * Copies missing string entries from `rendered` into `merged` for the `branchProtection.requiredChecks`
+ * and `reviewPolicy.requiredChecks` arrays so generated checks are preserved when merging.
+ *
+ * @param merged - The contract object being updated in-place.
+ * @param rendered - The rendered contract/template used as the source of default required checks.
+ */
 function backfillGeneratedRequiredChecks(
 	merged: Record<string, unknown>,
 	rendered: Record<string, unknown>,
@@ -371,6 +374,17 @@ function backfillGeneratedRequiredChecks(
 	mergeStringArrayDefaults(merged, rendered, "reviewPolicy", "requiredChecks");
 }
 
+/**
+ * Prepares an updated contract by validating, merging, and computing ownership decisions for a rendered contract file.
+ *
+ * Parses the existing contract at `targetPath` and the provided `renderedContent`, rejects updates that would
+ * downgrade the contract version or remove protected contract keys, merges rendered and existing contract data,
+ * backfills generated required checks, and computes ownership decisions for contract properties.
+ *
+ * @param targetPath - Filesystem path to the existing contract file to refresh
+ * @param renderedContent - JSON string of the newly rendered contract content
+ * @returns On success, `{ ok: true, value: { content, ownershipDecisions } }` where `content` is the merged contract JSON (pretty-printed) and `ownershipDecisions` is an array of computed ownership decision objects. On failure, `{ ok: false, error }` with an `InitErrorOutput` describing the validation or write-related error (e.g., downgrade or removal of protected keys).
+ */
 function prepareContractRefresh(
 	targetPath: string,
 	renderedContent: string,
@@ -439,8 +453,8 @@ function prepareContractRefresh(
 
 	const removedProtectedKeys = PROTECTED_CONTRACT_KEYS.filter((key) => {
 		return (
-			Object.prototype.hasOwnProperty.call(existingContract.value, key) &&
-			!Object.prototype.hasOwnProperty.call(mergedContract, key)
+			Object.hasOwn(existingContract.value, key) &&
+			!Object.hasOwn(mergedContract, key)
 		);
 	});
 	if (removedProtectedKeys.length > 0) {

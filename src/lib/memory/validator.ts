@@ -322,7 +322,18 @@ function determineMemoryExitCode(
 }
 
 /**
- * Run memory gate validation
+ * Validate a repository memory file and produce a pass/fail result with metrics and violations.
+ *
+ * Performs path resolution for the memory and FORJAMIE files, reads and validates the memory
+ * data against schema and workflow rules, and computes reliability metrics.
+ *
+ * @param options - Validation options. `memoryPath` defaults to `"memory.json"` and `forjamiePath` defaults to `"FORJAMIE.md"`.
+ * @returns The validation result containing:
+ *  - `ok`: whether no violations were found,
+ *  - `code`: an exit code categorizing the outcome,
+ *  - `message`: a short human-readable summary,
+ *  - `violations`: an array of detected validation issues,
+ *  - `metrics` (when available): aggregated reliability metrics computed from the memory summary.
  */
 export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
 	const baseDir = process.cwd();
@@ -392,7 +403,17 @@ export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
 }
 
 /**
- * Run memory gate CLI with console output
+ * Run the memory gate in CLI mode and emit formatted output for humans or JSON.
+ *
+ * Loads historical metrics, executes validation, updates and persists
+ * metrics/history when possible, computes trends, detects Codex branch status,
+ * and prints either a structured JSON object or human-readable output.
+ *
+ * Human success output prints entry totals and duplicate counts; reliability
+ * score and trend details are printed when validation fails.
+ *
+ * @param options - Configuration for paths and output flags.
+ * @returns The process exit code for the validation result.
  */
 export function runMemoryGateCLI(options: MemoryGateOptions): number {
 	// Load historical metrics
@@ -447,33 +468,24 @@ export function runMemoryGateCLI(options: MemoryGateOptions): number {
 				? { branch: codexResult.branch, taskId: codexResult.taskId }
 				: undefined,
 		};
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
 		console.log(JSON.stringify(jsonOutput, null, 2));
 	} else {
 		// Show branch info for codex branches
 		if (codexResult.isCodexBranch) {
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log(`🔷 Codex branch detected: ${codexResult.branch}`);
 			if (codexResult.taskId) {
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`   Task: ${codexResult.taskId}`);
 			}
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log();
 		}
 
 		if (result.ok) {
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log("✓ Memory artifacts valid and compliant");
 			if (updatedMetrics) {
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log("\n📊 Metrics:");
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`  Pass^k: ${updatedMetrics.pass_k}`);
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`  Total entries: ${updatedMetrics.total_ops}`);
 				if (updatedMetrics.duplicate_memory_count > 0) {
-					// biome-ignore lint/suspicious/noConsoleLog: CLI output
 					console.log(
 						`  ⚠ Duplicates: ${updatedMetrics.duplicate_memory_count}`,
 					);
@@ -487,11 +499,9 @@ export function runMemoryGateCLI(options: MemoryGateOptions): number {
 					console.error(`  [${v.type}] ${v.message}`);
 				}
 			}
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log(`  Reliability: ${trends.reliability_score.toFixed(1)}%`);
 			if (trends.pass_k_trend !== "stable") {
 				const trendIcon = trends.pass_k_trend === "improving" ? "📈" : "📉";
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`  ${trendIcon} Pass^k trend: ${trends.pass_k_trend}`);
 			}
 		}

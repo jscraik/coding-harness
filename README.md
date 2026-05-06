@@ -648,6 +648,12 @@ pnpm exec tsx src/cli.ts --help
 pnpm check
 ```
 
+Hook setup must go through `make hooks`, `make setup`, or
+`node scripts/setup-git-hooks.js`. The wrapper patches generated `prek` shims
+for `pre-commit`, `pre-push`, and `commit-msg` so `PREK_HOME` points at the
+repo-local `.git/.cache/prek` cache, and `scripts/check-environment.sh`
+validates that drift before push.
+
 When you change executable behavior in this repository, run the smallest real
 path that exercises the touched production code before claiming it works. If
 you need a throwaway reproduction harness, keep it under `codex-scripts/` so

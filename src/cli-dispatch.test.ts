@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./commands/policy-gate.js", () => ({
 	runPolicyGateCLI: vi.fn(() => 42),
@@ -128,6 +128,10 @@ vi.mock("./commands/tooling-audit.js", () => ({
 
 describe("cli command dispatch", () => {
 	const cleanupDirs: string[] = [];
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
 	afterEach(() => {
 		for (const dir of cleanupDirs.splice(0)) {
