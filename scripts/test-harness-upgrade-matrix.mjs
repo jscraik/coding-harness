@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+const CURRENT_FILE = fileURLToPath(import.meta.url);
+const HARNESS_ROOT = resolve(dirname(CURRENT_FILE), "..");
+const CANONICAL_CODESTYLE_MANIFEST = resolve(
+	HARNESS_ROOT,
+	"src/templates/codestyle/CHECKSUMS.sha256",
+);
 
 const DEFAULT_CRITICAL_SURFACES = [
 	"harness.contract.json",
@@ -19,10 +27,22 @@ const DEFAULT_CRITICAL_SURFACES = [
 	".harness/knowledge/INDEX.md",
 ];
 
+const REQUIRED_FLEET_CONTRACT_SURFACES = {
+	circleci: [".circleci/config.yml"],
+	coderabbit: [".coderabbit.yaml"],
+	codestyle: ["CODESTYLE.md", "codestyle/CHECKSUMS.sha256"],
+};
+
+const LEGACY_GREPTILE_PATHS = [
+	".greptile",
+	".github/workflows/greptile-review.yml",
+];
+
 const CRITICAL_SURFACE_GROUPS = {
 	contract: ["harness.contract.json"],
 	"code-review": [".coderabbit.yaml"],
 	ci: [".circleci/config.yml", ".github/workflows/pr-pipeline.yml"],
+	codestyle: ["CODESTYLE.md", "codestyle/CHECKSUMS.sha256"],
 	"required-checks": [".harness/ci-required-checks.json"],
 	semgrep: [
 		"scripts/check-semgrep-changed.sh",
@@ -51,7 +71,10 @@ Runs the current harness CLI against existing repositories with:
 
 The matrix fails if any target repo exits non-zero, emits invalid JSON, changes
 git status, omits update-mode metadata, or breaks the update-mode
-created-to-updated compatibility alias.`;
+created-to-updated compatibility alias.
+
+Fleet readiness also requires CircleCI, CodeRabbit, and CODESTYLE surfaces to be
+reported by the dry-run, and rejects legacy Greptile artifacts.`;
 }
 
 /**
@@ -234,6 +257,144 @@ function missingCriticalSurfaceGroups(output) {
 }
 
 /**
+ * Determine whether the parsed harness output reported a path as updated or skipped.
+ * @param {object} output - Parsed CLI JSON output with optional `updated` and `skipped` arrays.
+ * @param {string} path - Repository-relative path to inspect.
+ * @returns {boolean} `true` when the path appears in `updated` or `skipped`.
+ */
+function reportedSurface(output, path) {
+	const updated = new Set(Array.isArray(output?.updated) ? output.updated : []);
+	const skipped = new Set(Array.isArray(output?.skipped) ? output.skipped : []);
+	return updated.has(path) || skipped.has(path);
+}
+
+/**
+ * Identify required fleet-contract surfaces that were absent from dry-run output.
+ *
+ * @param {object} output - Parsed CLI JSON output with optional `updated` and `skipped` arrays.
+ * @returns {Array<{group: string, path: string, fix: string}>} Missing surface records with remediation commands.
+ */
+function missingFleetContractSurfaces(output) {
+	const missing = [];
+	const adoptionFix =
+		"run `harness init <repo> --dry-run --json`, then `harness init <repo> --track` for first adoption or `harness init <repo> --update` for tracked refresh";
+	for (const [group, paths] of Object.entries(
+		REQUIRED_FLEET_CONTRACT_SURFACES,
+	)) {
+		for (const path of paths) {
+			if (!reportedSurface(output, path)) {
+				missing.push({
+					group,
+					path,
+					fix:
+						group === "circleci" && output?.trackedManifest === true
+							? "run `harness ci-migrate prepare <repo> --provider circleci --dry-run --json`, then apply/verify/commit the snapshot before live update"
+							: adoptionFix,
+				});
+			}
+		}
+	}
+	return missing;
+}
+
+/**
+ * Locate legacy Greptile artifacts that should not survive a fleet upgrade.
+ * @param {string} repo - Filesystem path to the repository to inspect.
+ * @returns {string[]} Repository-relative legacy Greptile paths present on disk.
+ */
+function existingLegacyGreptilePaths(repo) {
+	return LEGACY_GREPTILE_PATHS.filter((path) => existsSync(join(repo, path)));
+}
+
+/**
+ * Parse a sha256 manifest into expected path/hash pairs.
+ * @param {string} raw - Manifest text with `<sha256>  <path>` rows.
+ * @returns {Array<{path: string, expectedSha256: string}>} Parsed manifest rows.
+ */
+function parseChecksumManifest(raw) {
+	return raw
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter((line) => line.length > 0 && !line.startsWith("#"))
+		.map((line) => {
+			const match = line.match(/^([a-f0-9]{64})\s+(.+)$/i);
+			return match
+				? { expectedSha256: match[1].toLowerCase(), path: match[2] }
+				: null;
+		})
+		.filter((entry) => entry !== null);
+}
+
+/**
+ * Compute the sha256 for a repository-relative file path.
+ * @param {string} repo - Repository root.
+ * @param {string} path - Repository-relative file path.
+ * @returns {string} Lower-case sha256 hex digest.
+ */
+function sha256File(repo, path) {
+	return createHash("sha256")
+		.update(readFileSync(join(repo, path)))
+		.digest("hex");
+}
+
+/**
+ * Compare a target repository's CODESTYLE pack against the canonical manifest.
+ * @param {string} repo - Repository root to inspect.
+ * @returns {Array<{path: string, expectedSha256: string, actualSha256: string|null, reason: string}>} Parity failures.
+ */
+function codestyleParityFailures(repo) {
+	const manifest = parseChecksumManifest(
+		readFileSync(CANONICAL_CODESTYLE_MANIFEST, "utf8"),
+	);
+	const failures = [];
+	for (const entry of manifest) {
+		const absolutePath = join(repo, entry.path);
+		if (!existsSync(absolutePath)) {
+			failures.push({
+				path: entry.path,
+				expectedSha256: entry.expectedSha256,
+				actualSha256: null,
+				reason: "missing",
+			});
+			continue;
+		}
+		const actualSha256 = sha256File(repo, entry.path);
+		if (actualSha256 !== entry.expectedSha256) {
+			failures.push({
+				path: entry.path,
+				expectedSha256: entry.expectedSha256,
+				actualSha256,
+				reason: "hash-mismatch",
+			});
+		}
+	}
+	return failures;
+}
+
+/**
+ * Build one concise error string for CODESTYLE parity failures.
+ * @param {Array<{path: string, reason: string}>} failures - Parity failures.
+ * @returns {string|null} Summary error, or null when the CODESTYLE pack matches.
+ */
+function codestyleParityError(failures) {
+	if (failures.length === 0) {
+		return null;
+	}
+	const missingCount = failures.filter(
+		(failure) => failure.reason === "missing",
+	).length;
+	const hashMismatchCount = failures.filter(
+		(failure) => failure.reason === "hash-mismatch",
+	).length;
+	const samplePaths = failures
+		.slice(0, 3)
+		.map((failure) => failure.path)
+		.join(", ");
+	const suffix = failures.length > 3 ? ", ..." : "";
+	return `codestyle parity mismatch: ${failures.length} file(s) (${missingCount} missing, ${hashMismatchCount} hash-mismatch); sample: ${samplePaths}${suffix}; see codestyleParityFailures and run harness init <repo> --update --dry-run --json before live upgrade`;
+}
+
+/**
  * Run the harness CLI dry-run upgrade against a repository and produce a structured summary of results and validation errors.
  *
  * @param {string} repo - Path to the repository to test (can be relative or absolute).
@@ -252,6 +413,9 @@ function missingCriticalSurfaceGroups(output) {
  * @property {boolean|null} createdAliasMatchesUpdated - `true` if `created` and `updated` arrays are present and identical, `false` if present and different, or `null` if comparison could not be performed.
  * @property {boolean|null} statusChangedByDryRun - `true` if `git status --short` differed before vs after the dry-run, `false` if unchanged, or `null` if git status could not be determined.
  * @property {string[]} missingCriticalGroups - Names of critical governance groups that were not reported in either `updated` or `skipped`.
+ * @property {Array<{group: string, path: string, fix: string}>} missingFleetContractSurfaces - Required fleet surfaces absent from output.
+ * @property {string[]} legacyGreptilePaths - Existing legacy Greptile artifacts found on disk.
+ * @property {Array<{path: string, expectedSha256: string, actualSha256: string|null, reason: string}>} codestyleParityFailures - CODESTYLE pack parity failures against the canonical checksum manifest.
  * @property {Object} criticalSurfaces - Mapping of each critical surface path to its observed state (`"updated"`, `"skipped"`, or `"not-reported"`); empty if JSON could not be parsed.
  * @property {string[]} errors - Accumulated human-readable error messages describing setup, execution, validation, and invariant failures.
  */
@@ -339,6 +503,25 @@ function summarizeRepo(repo, cli) {
 			`JSON output missing critical governance surface group: ${group}`,
 		);
 	}
+	const missingFleetSurfaces = parsed.ok
+		? missingFleetContractSurfaces(output)
+		: [];
+	for (const surface of missingFleetSurfaces) {
+		errors.push(
+			`fleet contract missing ${surface.group} surface ${surface.path}; ${surface.fix}`,
+		);
+	}
+	const legacyGreptilePaths = existingLegacyGreptilePaths(absoluteRepo);
+	for (const path of legacyGreptilePaths) {
+		errors.push(
+			`legacy Greptile artifact still present: ${path}; remove via harness-managed migration/eject cleanup before live upgrade`,
+		);
+	}
+	const codestyleFailures = codestyleParityFailures(absoluteRepo);
+	const codestyleError = codestyleParityError(codestyleFailures);
+	if (codestyleError !== null) {
+		errors.push(codestyleError);
+	}
 	const createdAliasMatchesUpdated =
 		parsed.ok &&
 		Array.isArray(output.created) &&
@@ -362,6 +545,9 @@ function summarizeRepo(repo, cli) {
 		createdAliasMatchesUpdated,
 		statusChangedByDryRun,
 		missingCriticalGroups,
+		missingFleetContractSurfaces: missingFleetSurfaces,
+		legacyGreptilePaths,
+		codestyleParityFailures: codestyleFailures,
 		criticalSurfaces: parsed.ok ? criticalSurfaceStates(output) : {},
 		errors,
 	};
@@ -464,7 +650,6 @@ export function runCli(argv) {
 	return report.pass ? 0 : 1;
 }
 
-const currentFile = fileURLToPath(import.meta.url);
-if (process.argv[1] === currentFile) {
+if (process.argv[1] === CURRENT_FILE) {
 	process.exitCode = runCli(process.argv.slice(2));
 }

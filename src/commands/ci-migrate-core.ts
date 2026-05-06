@@ -195,6 +195,7 @@ type RequiredParityScenario = (typeof REQUIRED_PARITY_SCENARIOS)[number];
 export interface CIMigrateOptions {
 	provider?: string | undefined;
 	dryRun?: boolean | undefined;
+	json?: boolean | undefined;
 	apply?: boolean | undefined;
 	rollback?: boolean | undefined;
 	snapshot?: string | undefined;
@@ -9093,6 +9094,30 @@ function hashRequiredCheckNames(requiredCheckNames: string[]): string {
 	return hashContent(JSON.stringify([...requiredCheckNames].sort()));
 }
 
+function buildMigrationDryRunPlan(
+	snapshotId: string,
+	report: MigrationReport,
+): Array<{ action: string; target: string; reason: string }> {
+	return [
+		{
+			action: "preview",
+			target: report.sourceConfigPaths.join(", ") || report.sourceProvider,
+			reason: `Inspect ${report.sourceProvider} CI configuration before CircleCI migration.`,
+		},
+		{
+			action: "preview",
+			target: report.targetConfigPaths.join(", ") || report.targetProvider,
+			reason: `Evaluate ${report.targetProvider} governance target without writing migration artifacts.`,
+		},
+		{
+			action: "preview",
+			target: `.harness/ci-migrate-snapshots/${snapshotId}.report.json`,
+			reason:
+				"Report is emitted to stdout in JSON dry-run mode instead of writing into the target repository.",
+		},
+	];
+}
+
 /**
  * CLI entry point that executes the full `harness ci-migrate` workflow, orchestrating actions
  * such as prepare, commit, abort, verify, bootstrap, apply/rollback modes, merge-queue orchestration,
@@ -9138,7 +9163,12 @@ export function runCIMigrateCLI(
 	const snapshotId = snapshotIdResult.value;
 
 	// JSC-58: Resolve solo mode once, passed downstream to all gating logic.
-	const soloMode = isSoloCommitMode(dir, { commitMode: options.commitMode });
+	const explicitJsonDryRun = options.dryRun === true && options.json === true;
+	const soloMode = isSoloCommitMode(
+		dir,
+		{ commitMode: options.commitMode },
+		!options.json,
+	);
 
 	let migrationReport: MigrationReport | null = null;
 	let sourceProviderForRollback: CIProvider = "github-actions";
@@ -9539,7 +9569,7 @@ export function runCIMigrateCLI(
 		const activeImportedChecks = requiredChecksImportResult.value.filter(
 			(check) => check.class === "required" && check.enabled !== false,
 		);
-		if (requiredChecksImportResult.imported) {
+		if (requiredChecksImportResult.imported && !options.json) {
 			if (requiredChecksImportResult.persisted) {
 				console.info(
 					"Required checks manifest bootstrapped from legacy contract/workflow evidence: .harness/ci-required-checks.json",
@@ -9560,7 +9590,7 @@ export function runCIMigrateCLI(
 			console.error(`Error: ${autoGenerateProofPackResult.error}`);
 			return EXIT_CODES.INVALID_PATH;
 		}
-		if (autoGenerateProofPackResult.generated) {
+		if (autoGenerateProofPackResult.generated && !options.json) {
 			console.info(
 				`Parity proof pack generated: ${resolve(dir, PARITY_PROOF_PACK_PATH)}`,
 			);
@@ -9595,13 +9625,31 @@ export function runCIMigrateCLI(
 			return EXIT_CODES.INVALID_PATH;
 		}
 
-		const reportExitCode = writeMigrationReport(
-			dir,
-			snapshotId,
-			migrationReport,
-		);
-		if (reportExitCode !== EXIT_CODES.SUCCESS) {
-			return reportExitCode;
+		if (explicitJsonDryRun) {
+			console.info(
+				JSON.stringify(
+					{
+						status: "dry-run",
+						snapshotId,
+						targetDir: dir,
+						sourceProvider,
+						targetProvider: provider,
+						plan: buildMigrationDryRunPlan(snapshotId, migrationReport),
+						report: migrationReport,
+					},
+					null,
+					2,
+				),
+			);
+		} else {
+			const reportExitCode = writeMigrationReport(
+				dir,
+				snapshotId,
+				migrationReport,
+			);
+			if (reportExitCode !== EXIT_CODES.SUCCESS) {
+				return reportExitCode;
+			}
 		}
 
 		if (action === "verify") {
@@ -9899,7 +9947,9 @@ export function runCIMigrateCLI(
 		}
 	}
 
-	const exitCode = runInitCLIImpl(dir, initOptions);
+	const exitCode = explicitJsonDryRun
+		? EXIT_CODES.SUCCESS
+		: runInitCLIImpl(dir, initOptions);
 	if (exitCode !== EXIT_CODES.SUCCESS) {
 		if (
 			!writeMergeQueueWindowStage("aborted", {
@@ -9911,7 +9961,7 @@ export function runCIMigrateCLI(
 		return exitCode;
 	}
 
-	if (action === "prepare" && migrationReport) {
+	if (action === "prepare" && migrationReport && !explicitJsonDryRun) {
 		const now = new Date().toISOString();
 		const preparedStateWriteExitCode = writeMigrationState(dir, {
 			schemaVersion: "ci-migrate-state/v1",

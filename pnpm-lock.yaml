@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  axios: ^1.15.2
-  '@vvago/vale>axios': ^1.15.2
+  axios: ^1.16.0
+  '@vvago/vale>axios': ^1.16.0
   brace-expansion: ^5.0.5
   follow-redirects: ^1.16.0
   handlebars: ^4.7.9
@@ -19,12 +19,12 @@ overrides:
   yaml: ^2.8.3
   vite: '>=7.3.2 <8'
   handlebars@>=4.0.0 <=4.7.8: '>=4.7.9'
+  axios@<1.15.2: '>=1.16.0'
   brace-expansion@>=4.0.0 <5.0.5: '>=5.0.5'
   handlebars@>=4.0.0 <4.7.9: '>=4.7.9'
   picomatch@<2.3.2: '>=2.3.2'
   picomatch@>=4.0.0 <4.0.4: '>=4.0.4'
   yaml@>=2.0.0 <2.8.3: '>=2.8.3'
-  axios@<1.15.2: '>=1.15.2'
 
 importers:
 
@@ -66,9 +66,6 @@ importers:
       sqlite-vec:
         specifier: 0.1.7-alpha.2
         version: 0.1.7-alpha.2
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.4.14
@@ -109,6 +106,9 @@ importers:
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
       vitest:
         specifier: ^4.1.5
         version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(tsx@4.21.0)(yaml@2.8.3)
@@ -1269,7 +1269,7 @@ packages:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
-      picomatch: '>=4.0.4'
+      picomatch: ^4.0.4
     peerDependenciesMeta:
       picomatch:
         optional: true

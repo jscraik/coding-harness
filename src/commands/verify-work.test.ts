@@ -439,6 +439,7 @@ function runVerifyWorkScript(
 		env?: NodeJS.ProcessEnv;
 		json?: boolean;
 		inheritEnv?: boolean;
+		allowExternalNormalization?: boolean;
 	} = {},
 ) {
 	const includeJson = options.json ?? true;
@@ -460,6 +461,9 @@ function runVerifyWorkScript(
 		env: {
 			...parentEnv,
 			HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
+			HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION:
+				options.allowExternalNormalization === true ? "0" : "1",
+			HARNESS_VERIFY_WORK_EXTERNAL_NORMALIZE_TIMEOUT_SECONDS: "1",
 			...options.env,
 		},
 	});
@@ -835,6 +839,7 @@ exit 1
 
 		const result = runVerifyWorkScript(repoRoot, [], {
 			inheritEnv: false,
+			allowExternalNormalization: true,
 			env: sandboxedEnv,
 		});
 		const combinedOutput = `${result.stdout}${result.stderr}`;
@@ -899,6 +904,7 @@ echo '${payload}'
 		);
 
 		const result = runVerifyWorkScript(repoRoot, [], {
+			allowExternalNormalization: true,
 			env: { PATH: `${binDir}:${process.env.PATH ?? ""}` },
 		});
 		const combinedOutput = `${result.stdout}${result.stderr}`;

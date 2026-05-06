@@ -174,16 +174,6 @@ export function buildEvalSeedPack(
 	return result;
 }
 
-/**
- * Create a standardized error EvalSeedPackResult when the provided `minUsage` is invalid.
- *
- * Produces a result with `status: "error"`, an empty candidate list and validation plan, `changedFiles`
- * normalized from `options.files`, `minUsage` set to `DEFAULT_MIN_USAGE`, and an `error` object
- * containing `code: "eval_seed.invalid_min_usage"` along with a human-facing message and fix hint.
- *
- * @param options - The original EvalSeedPackOptions used to populate `source` and `changedFiles`
- * @returns An `EvalSeedPackResult` representing the invalid `minUsage` error payload
- */
 function invalidMinUsageResult(
 	options: EvalSeedPackOptions,
 ): EvalSeedPackResult {
@@ -206,18 +196,6 @@ function invalidMinUsageResult(
 	};
 }
 
-/**
- * Constructs an error EvalSeedPackResult that reflects a failed review-context build.
- *
- * The result copies metadata (source, repo, changedFiles, validationPlan, networkRequired),
- * sets `status` to `"error"`, includes an empty `candidates` list, records `minUsage`,
- * and populates the summary counters (including `validationCommands` and `networkRequired`)
- * from the provided review context. If `reviewContext.error` exists, it is attached to the result.
- *
- * @param reviewContext - The failed review context result used to seed the error output
- * @param minUsage - The minimum usage threshold to include in the returned result
- * @returns An `EvalSeedPackResult` with `status: "error"`, metadata copied from `reviewContext`, empty candidates, and an optional `error` payload
- */
 function reviewContextErrorResult(
 	reviewContext: ReviewContextResult,
 	minUsage: number,
@@ -243,14 +221,6 @@ function reviewContextErrorResult(
 		: errorResult;
 }
 
-/**
- * Constructs an error EvalSeedPackResult representing a failure to build promotion candidates.
- *
- * @param promotionCandidates - The result from promotion candidate generation used to populate `source` and, if present, its `error`.
- * @param reviewContext - The review context whose `repo`, `changedFiles`, `validationPlan`, and `networkRequired` are copied into the result.
- * @param minUsage - The resolved minimum usage value to include in the result.
- * @returns An EvalSeedPackResult with `status: "error"`, an empty `candidates` array, `promotionCandidates` and `seedCandidates` set to 0, summary counts copied from `reviewContext`, and the `promotionCandidates.error` attached when available.
- */
 function promotionCandidatesErrorResult(
 	promotionCandidates: ReturnType<typeof buildLearningPromotionCandidates>,
 	reviewContext: ReviewContextResult,
@@ -281,11 +251,6 @@ function promotionCandidatesErrorResult(
 		: errorResult;
 }
 
-/**
- * Create an empty eval-seed summary with all numeric counters set to zero and empty breakdown maps.
- *
- * @returns A summary object where `applicableLearnings`, `promotionCandidates`, `seedCandidates`, `validationCommands`, and `networkRequired` are `0`, and `byRemediationSource` and `byFailureClass` are empty objects.
- */
 function emptyEvalSeedSummary(): EvalSeedPackResult["summary"] {
 	return {
 		applicableLearnings: 0,
@@ -298,13 +263,6 @@ function emptyEvalSeedSummary(): EvalSeedPackResult["summary"] {
 	};
 }
 
-/**
- * Build the options object for promotion candidate generation by including `minUsage` and any relevant repo/context fields from `options`.
- *
- * @param options - Incoming EvalSeedPackOptions potentially containing `source`, `repoRoot`, and `enforcementStatusPath`
- * @param minUsage - Minimum usage threshold to include on the returned options
- * @returns An object containing `minUsage` and, when present on `options`, `source`, `repoRoot`, and `enforcementStatusPath`
- */
 function buildPromotionOptions(options: EvalSeedPackOptions, minUsage: number) {
 	return {
 		minUsage,
@@ -316,15 +274,6 @@ function buildPromotionOptions(options: EvalSeedPackOptions, minUsage: number) {
 	};
 }
 
-/**
- * Build a deterministic list of eval seed candidates by matching applicable learnings to promotion candidates.
- *
- * Skips learnings that have no matching promotion candidate and returns candidates sorted by descending `usage` then ascending `id`.
- *
- * @param reviewContext - The review context containing `applicableLearnings` and the `validationPlan` used when constructing candidates.
- * @param promotionCandidates - Promotion candidates keyed by `id` to match against `applicableLearnings`.
- * @returns A sorted array of `EvalSeedCandidate` objects for learnings that had matching promotion candidates.
- */
 function buildEvalSeedCandidates(
 	reviewContext: ReviewContextResult,
 	promotionCandidates: LearningPromotionCandidate[],
@@ -346,11 +295,6 @@ function buildEvalSeedCandidates(
 		);
 }
 
-/**
- * Builds an EvalSeedCandidate from a learning and its promotion metadata within a review context.
- *
- * @returns An `EvalSeedCandidate` that combines fields from `learning` and `promotion`, includes inferred `remediationSource` and `failureClass`, and contains `validationCommands` filtered to those whose files intersect the learning's `matchedFiles`.
- */
 function buildEvalSeedCandidate(
 	learning: ReviewContextLearning,
 	promotion: LearningPromotionCandidate,
@@ -380,24 +324,9 @@ function buildEvalSeedCandidate(
 	};
 }
 
-/**
- * Infers the most likely remediation source for a single learning.
- *
- * @param learning - A learning entry from the review context
- * @returns The inferred remediation source: `ci` for CI-related indications, `github_history` for GitHub/PR/merge/branch-protection signals, `validation` for test/validation/lint/typecheck signals, `generated_artifact` when classification equals `"generated_artifact"`, `source_of_truth` when classification equals `"source_of_truth"`, `code_review` for code-review related text or evidence refs prefixed with `"coderabbit_csv:"`, or `unknown` if none match.
- */
 function inferRemediationSource(
 	learning: ReviewContextLearning,
 ): EvalSeedRemediationSource {
-	if (learning.classification === "generated_artifact") {
-		return "generated_artifact";
-	}
-	if (learning.classification === "source_of_truth") {
-		return "source_of_truth";
-	}
-	if (learning.classification === "validation_contract") {
-		return "validation";
-	}
 	const haystack = evalSeedHaystack(learning);
 	if (
 		/\b(circleci|ci job|pipeline|workflow failed|red job)\b/i.test(haystack)
@@ -414,6 +343,12 @@ function inferRemediationSource(
 	if (/\b(validation|verify|test|typecheck|lint|gate)\b/i.test(haystack)) {
 		return "validation";
 	}
+	if (learning.classification === "generated_artifact") {
+		return "generated_artifact";
+	}
+	if (learning.classification === "source_of_truth") {
+		return "source_of_truth";
+	}
 	if (
 		/\b(coderabbit|review|comment|finding)\b/i.test(haystack) ||
 		learning.evidenceRef.some((ref) => ref.startsWith("coderabbit_csv:"))
@@ -423,27 +358,9 @@ function inferRemediationSource(
 	return "unknown";
 }
 
-/**
- * Infers the most likely recurring failure class for a learning using its text and metadata.
- *
- * @param learning - The review-context learning to classify
- * @returns `ci_failure` when CI-related keywords are present; `github_pr_remediation` when GitHub/PR/merge/branch-protection keywords are present; `generated_artifact_drift` when `learning.classification` is `"generated_artifact"`; `source_of_truth_drift` when `learning.classification` is `"source_of_truth"`; `validation_gap` when `learning.classification` is `"validation_contract"`; `guardrail_gap` when `learning.classification` is `"guardrail"`; `review_feedback` when review-related keywords or evidence refs starting with `coderabbit_csv:` are present; otherwise `unknown`.
- */
 function inferFailureClass(
 	learning: ReviewContextLearning,
 ): EvalSeedFailureClass {
-	if (learning.classification === "generated_artifact") {
-		return "generated_artifact_drift";
-	}
-	if (learning.classification === "source_of_truth") {
-		return "source_of_truth_drift";
-	}
-	if (learning.classification === "validation_contract") {
-		return "validation_gap";
-	}
-	if (learning.classification === "guardrail") {
-		return "guardrail_gap";
-	}
 	const haystack = evalSeedHaystack(learning);
 	if (
 		/\b(circleci|ci job|pipeline|workflow failed|red job)\b/i.test(haystack)
@@ -457,6 +374,18 @@ function inferFailureClass(
 	) {
 		return "github_pr_remediation";
 	}
+	if (learning.classification === "generated_artifact") {
+		return "generated_artifact_drift";
+	}
+	if (learning.classification === "source_of_truth") {
+		return "source_of_truth_drift";
+	}
+	if (learning.classification === "validation_contract") {
+		return "validation_gap";
+	}
+	if (learning.classification === "guardrail") {
+		return "guardrail_gap";
+	}
 	if (
 		/\b(coderabbit|review|comment|finding)\b/i.test(haystack) ||
 		learning.evidenceRef.some((ref) => ref.startsWith("coderabbit_csv:"))
@@ -466,12 +395,6 @@ function inferFailureClass(
 	return "unknown";
 }
 
-/**
- * Builds a single searchable string containing the learning's identifying and descriptive fields.
- *
- * @param learning - The learning whose id, summary, fix, classification, and evidence references will be concatenated.
- * @returns A space-separated string formed from the learning's id, summary, fix, classification, and evidenceRef entries.
- */
 function evalSeedHaystack(learning: ReviewContextLearning): string {
 	return [
 		learning.id,
@@ -482,13 +405,6 @@ function evalSeedHaystack(learning: ReviewContextLearning): string {
 	].join(" ");
 }
 
-/**
- * Produce a mapping of how many candidates share each string value for a given candidate property.
- *
- * @param candidates - The list of eval seed candidates to aggregate
- * @param key - The candidate property whose string values will be counted
- * @returns A partial record mapping each distinct string value of `key` to the number of occurrences
- */
 function countBy<T extends keyof EvalSeedCandidate>(
 	candidates: EvalSeedCandidate[],
 	key: T,
@@ -504,13 +420,6 @@ function countBy<T extends keyof EvalSeedCandidate>(
 	return counts;
 }
 
-/**
- * Write the eval seed pack to disk when `options.output` is a path contained within `options.repoRoot`; otherwise return an error result.
- *
- * @param result - The eval seed pack object to persist.
- * @param options - Options that may include `repoRoot` and an `output` path where the pack should be written.
- * @returns The original `result` with `outputPath` added on successful write; on failure returns a result with `status: "error"` and an `error` object with `code` set to `"eval_seed.write_failed"`.
- */
 function writeEvalSeedPack(
 	result: EvalSeedPackResult,
 	options: EvalSeedPackOptions,
@@ -550,13 +459,6 @@ function writeEvalSeedPack(
 	}
 }
 
-/**
- * Determines whether an output path is contained within a repository root when both are resolved to real filesystem paths.
- *
- * @param repoRoot - The repository root path used as the containment boundary.
- * @param outputPath - The target output path to test; may refer to a file or directory that does not exist.
- * @returns `true` if `outputPath` (or its nearest existing ancestor) resolves to a location inside `repoRoot`, `false` otherwise. Returns `false` on any path resolution error.
- */
 function isContainedByRealRepoRoot(
 	repoRoot: string,
 	outputPath: string,
@@ -578,12 +480,6 @@ function isContainedByRealRepoRoot(
 	}
 }
 
-/**
- * Finds the nearest existing filesystem ancestor of the given path.
- *
- * @param filePath - Path to start the upward search from
- * @returns The first ancestor path that exists, or `undefined` if no existing ancestor is found
- */
 function findNearestExistingAncestor(filePath: string): string | undefined {
 	let current = filePath;
 	for (;;) {
@@ -594,14 +490,6 @@ function findNearestExistingAncestor(filePath: string): string | undefined {
 	}
 }
 
-/**
- * Normalize and deduplicate a list of file path strings.
- *
- * Trims whitespace from each entry, removes empty strings, deduplicates entries, and returns the resulting list sorted lexicographically.
- *
- * @param files - Array of file path strings to normalize
- * @returns The normalized array of unique, sorted file paths
- */
 function normalizeFiles(files: string[]): string[] {
 	return [...new Set(files.map((file) => file.trim()).filter(Boolean))].sort();
 }

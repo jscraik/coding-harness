@@ -98,22 +98,22 @@ When resuming with `bash scripts/verify-work.sh --resume-from <gate-id>`, prior 
 
 ## Release integrity and verification
 
-Releases published via OIDC trusted publishing from `.github/workflows/release-private-npm.yml` carry three trust layers that consumers can verify independently.
+Releases published via OIDC trusted publishing from `.github/workflows/release-private-npm.yml` carry two trust layers that consumers can verify independently while the package remains private.
 
-### 1. npm provenance
+### npm provenance
 
-Releases published via OIDC trusted publishing include a signed provenance statement on the npm registry, linking the package to the exact source commit and build environment.
+`@brainwav/coding-harness` is a private/restricted npm package, so npm registry provenance is intentionally disabled for release publishes. Trusted publishing still supplies OIDC authentication for the publish operation, but npm only generates registry provenance when trusted publishing is used from a public repository to publish a public package.
 
-Verify OIDC-published packages from any machine:
+The release workflow therefore sets `NPM_CONFIG_PROVENANCE=false` and publishes with OIDC trusted publishing without passing `--provenance`. If the package is intentionally made public later, revisit this section and the workflow publish command before claiming npm registry provenance.
+
+When npm provenance is enabled for a future public package, verify OIDC-published packages from any machine:
 
 ```bash
 npm view @brainwav/coding-harness --json | jq '.attestations'
 npm audit signatures
 ```
 
-The `--provenance` flag on publish ensures the npm registry stores a verifiable link between the published artifact and the GitHub Actions run that produced it.
-
-### 2. GitHub artifact attestations
+### 1. GitHub artifact attestations
 
 Each release generates a SLSA-format build provenance attestation signed by GitHub's Sigstore instance.
 
@@ -125,7 +125,7 @@ gh attestation verify brainwav-coding-harness-*.tgz \
   --predicate-type https://slsa.dev/provenance/v1
 ```
 
-### 3. SBOM
+### 2. SBOM
 
 A CycloneDX SBOM is generated during release and uploaded as a GitHub Actions artifact (90-day retention).
 
@@ -146,7 +146,7 @@ The release workflow uses these top-level permissions (least-privilege):
 | `attestations: write` | `actions/attest-build-provenance` for build provenance |
 | `contents: write` | GitHub Release creation |
 
-No additional secrets are required for OIDC-mode publishes. Token-mode (`publish_auth=token`) is retained for bootstrap recovery only and may not produce full provenance attestations or SBOM artifacts.
+No additional secrets are required for OIDC-mode publishes. Token-mode (`publish_auth=token`) is retained for bootstrap recovery only and does not produce OIDC-mode attestations.
 
 ## Release blockers
 

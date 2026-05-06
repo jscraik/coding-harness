@@ -13,10 +13,10 @@
 
 ## Mandatory checks
 - Before commit/PR handoff, verify:
-  - Secrets and credentials MUST NOT be hardcoded.
-  - Input validation MUST exist at trust boundaries.
-  - Auth/authz logic changes MUST be explicitly reviewed.
-  - Error outputs MUST NOT leak sensitive data.
+  - No hardcoded secrets or credentials.
+  - Input validation exists at trust boundaries.
+  - Auth/authz logic changes are explicitly reviewed.
+  - Error outputs do not leak sensitive data.
 
 ## Secret handling
 - Secrets MUST come from environment injection or a secret manager.
@@ -24,16 +24,16 @@
 - Raw secret values MUST NOT be printed in logs, test fixtures, or screenshots.
 
 ## Secure coding defaults
-- Data access MUST use parameterized queries where query parameters exist.
-- Untrusted content MUST be sanitized before rendering/execution.
-- Runtime permissions and network access MUST apply least-privilege defaults.
+- Use parameterized queries for data access.
+- Sanitize untrusted content before rendering/execution.
+- Apply least-privilege defaults for runtime permissions and network access.
 
 ## Incident response workflow
 1. Stop work on unrelated changes.
 2. Classify severity and blast radius.
 3. Fix CRITICAL vulnerabilities before proceeding with normal work.
-4. Regression checks MUST be added to prevent reintroduction.
+4. Add regression checks that prevent reintroduction.
 
 ## Enforcement
-- Security findings at CRITICAL severity MUST be merge blockers.
-- Exceptions MUST include waiver metadata with rule ID, reason, tracking issue, and expiry or ADR.
+- Security findings at CRITICAL severity are merge blockers.
+- Exceptions require waiver metadata with rule ID, reason, tracking issue, and expiry or ADR.

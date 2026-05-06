@@ -86,9 +86,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Install release validation tools
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
-
       - name: Materialize CODESTYLE.md for CI
         run: |
           if [[ -L CODESTYLE.md && ! -e CODESTYLE.md ]]; then
@@ -180,7 +177,11 @@ jobs:
 
       - name: Publish private package (OIDC trusted publisher)
         if: steps.publish-auth.outputs.mode == 'oidc'
-        run: pnpm publish --no-git-checks --access restricted --provenance
+        env:
+          # npm provenance requires a public package. Keep OIDC auth for the
+          # private package, but do not request registry provenance.
+          NPM_CONFIG_PROVENANCE: "false"
+        run: pnpm publish --no-git-checks --access restricted
 
       - name: Generate build provenance attestation
         id: attest
