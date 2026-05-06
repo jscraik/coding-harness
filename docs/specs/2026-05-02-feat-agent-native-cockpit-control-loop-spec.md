@@ -204,7 +204,8 @@ Implementation planning must keep this Linear contract current:
 | Technical hardening follow-on | `SA28`-`SA35` | Follow-on unless needed to make `next` deterministic |
 | Deferred Codex config and approval follow-on | `SA36`-`SA45` | Out of first slice; may be split across `JSC-248` and `JSC-249` |
 | `JSC-279` | `SA46`-`SA52` | Deferred goal-continuation child issue under `JSC-249` |
-| Deferred agent interface compression follow-on | `SA53`-`SA61` | Out of first slice; informed by May 6 session-collector evidence |
+| Promoted command-surface compression slice | `SA53`, `SA54` | Implemented after explicit user promotion; narrows public agent discovery |
+| Deferred agent interface compression follow-on | `SA55`-`SA61` | Out of this slice; informed by May 6 session-collector evidence |
 
 ## System Boundary
 
@@ -1495,8 +1496,8 @@ as product proof:
 | `SA50` | Follow-on | Goal token budget, tokens used, and elapsed time feed session-friction evidence without being treated as completion proof. | Closeout fixture test |
 | `SA51` | Follow-on | Harness docs distinguish documented experimental app-server goal APIs from the live fork's experimental `/goal` TUI command. | Docs assertion |
 | `SA52` | Follow-on | A resume evaluation compares next-action fidelity with and without `goalContext` before goal guidance becomes default bootstrap output. | Resume eval report |
-| `SA53` | Follow-on | Command metadata exposes `agentMode` and `visibility` without removing existing `tier`, `primaryAudience`, or `orchestratedBy` fields. | Catalog schema test |
-| `SA54` | Follow-on | `harness commands --json --for-agent` returns the public agent rail set and excludes commands marked `plumbing`, `hidden`, or `legacy` unless explicitly requested. | CLI fixture test |
+| `SA53` | Promoted | Command metadata exposes `agentMode` and `visibility` without removing existing `tier`, `primaryAudience`, or `orchestratedBy` fields. | Catalog schema test |
+| `SA54` | Promoted | `harness commands --json --for-agent` returns the public agent rail set and excludes commands marked `plumbing`, `hidden`, or `legacy` unless explicitly requested. | CLI fixture test |
 | `SA55` | Follow-on | `HarnessDecision` can emit a work packet with `phase`, `objective`, `nextCommand`, `requiredEvidence`, `stopConditions`, `humanEscalation`, `followUpCommands`, `hiddenPlumbing`, and a compatibility rule that keeps `nextAction` as the human recommendation. | Decision fixture test |
 | `SA56` | Follow-on | `validation-plan` returns ranked `fast`, `required`, `beforePr`, `deep`, and `networkRequired` buckets and degrades to path-based planning when optional learning artifacts are absent. | Validation-plan fixture test |
 | `SA57` | Follow-on | `review-context` emits reviewer handoff fields: `reviewerLikelyConcerns`, `mustMentionInPr`, `evidenceRequired`, `knownRepeatedFailures`, `recommendedReviewers`, and `doNotClaim`. | Review-context fixture test |
@@ -1612,8 +1613,8 @@ Recommended planning stance:
 - Treat `pr-ready`, `fix-review`, `learn`, metrics, and standalone
   `agent-snapshot` as follow-on product-compression work unless a registered
   implementation already exists.
-- Treat `SA53` through `SA61` as the deferred command-surface compression
-  contract unless the issue scope is explicitly expanded.
+- Treat `SA55` through `SA61` as the remaining deferred command-surface
+  compression contract unless the issue scope is explicitly expanded again.
 - Add technical gates for replay determinism, parser/help parity, run selection,
   and source-error classification before claiming `harness next` is
   agent-native.
