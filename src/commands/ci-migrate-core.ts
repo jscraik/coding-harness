@@ -9645,32 +9645,9 @@ export function runCIMigrateCLI(
 			return EXIT_CODES.INVALID_PATH;
 		}
 
-		if (explicitJsonDryRun) {
-			console.info(
-				JSON.stringify(
-					{
-						status: "dry-run",
-						snapshotId,
-						targetDir: dir,
-						sourceProvider,
-						targetProvider: provider,
-						plan: buildMigrationDryRunPlan(snapshotId, migrationReport),
-						report: migrationReport,
-					},
-					null,
-					2,
-				),
-			);
-		} else {
-			const reportExitCode = writeMigrationReport(
-				dir,
-				snapshotId,
-				migrationReport,
-			);
-			if (reportExitCode !== EXIT_CODES.SUCCESS) {
-				return reportExitCode;
-			}
-		}
+		// For explicitJsonDryRun, collect verify violations before emitting JSON
+		let verifyViolations: string[] = [];
+		let verifyExitCode: 0 | 3 = EXIT_CODES.SUCCESS;
 
 		if (action === "verify") {
 			// JSC-58: solo mode skips strict verify (no trustedPolicyRef / authorityConfigPath)
@@ -9679,40 +9656,84 @@ export function runCIMigrateCLI(
 				soloMode ? { strict: false } : { strict: true },
 			);
 			if (!policyResult.ok) {
-				console.error(`Error: ${policyResult.error}`);
-				return EXIT_CODES.INVALID_PATH;
-			}
-			// JSC-59: Validate CI config syntax before declaring verify success
-			const configSyntaxViolations = validateCIConfigSyntax(
-				dir,
-				provider === "circleci" ? "circleci" : "github-actions",
-			).map((v) => v.message);
-			const verificationViolations = [
-				...configSyntaxViolations,
-				...validateRequiredChecksForVerify(activeImportedChecks),
-				...validateTransitionStatusArtifact(
+				if (!explicitJsonDryRun) {
+					console.error(`Error: ${policyResult.error}`);
+				}
+				verifyViolations.push(policyResult.error);
+				verifyExitCode = EXIT_CODES.INVALID_PATH;
+			} else {
+				// JSC-59: Validate CI config syntax before declaring verify success
+				const configSyntaxViolations = validateCIConfigSyntax(
 					dir,
-					policyResult.value.transitionStatusArtifactPath,
-					!soloMode &&
-						policyResult.value.mode === "required" &&
-						policyResult.value.migrationStage !== "circleci-only",
-				),
-			];
+					provider === "circleci" ? "circleci" : "github-actions",
+				).map((v) => v.message);
+				const verificationViolations = [
+					...configSyntaxViolations,
+					...validateRequiredChecksForVerify(activeImportedChecks),
+					...validateTransitionStatusArtifact(
+						dir,
+						policyResult.value.transitionStatusArtifactPath,
+						!soloMode &&
+							policyResult.value.mode === "required" &&
+							policyResult.value.migrationStage !== "circleci-only",
+					),
+				];
 
-			if (verificationViolations.length > 0) {
-				if (soloMode) {
-					console.info(
-						`ℹ️  Solo mode: ${verificationViolations.length} verify check(s) skipped (not enforced in solo/lightweight mode).`,
-					);
-				} else {
-					console.error("Error: strict verify failed:");
-					for (const violation of verificationViolations) {
-						console.error(`- ${violation}`);
+				if (verificationViolations.length > 0) {
+					if (soloMode) {
+						if (!explicitJsonDryRun) {
+							console.info(
+								`ℹ️  Solo mode: ${verificationViolations.length} verify check(s) skipped (not enforced in solo/lightweight mode).`,
+							);
+						}
+					} else {
+						verifyViolations = verificationViolations;
+						verifyExitCode = EXIT_CODES.INVALID_PATH;
+						if (!explicitJsonDryRun) {
+							console.error("Error: strict verify failed:");
+							for (const violation of verificationViolations) {
+								console.error(`- ${violation}`);
+							}
+						}
 					}
-					return EXIT_CODES.INVALID_PATH;
 				}
 			}
+		}
+
+		if (explicitJsonDryRun) {
+			console.info(
+				JSON.stringify(
+					{
+						status: verifyExitCode === EXIT_CODES.SUCCESS ? "dry-run" : "verify-failed",
+						snapshotId,
+						targetDir: dir,
+						sourceProvider,
+						targetProvider: provider,
+						plan: buildMigrationDryRunPlan(snapshotId, migrationReport),
+						report: migrationReport,
+						violations: verifyViolations,
+					},
+					null,
+					2,
+				),
+			);
+			return verifyExitCode;
+		}
+
+		if (action === "verify") {
+			if (verifyExitCode !== EXIT_CODES.SUCCESS) {
+				return verifyExitCode;
+			}
 			return EXIT_CODES.SUCCESS;
+		}
+
+		const reportExitCode = writeMigrationReport(
+			dir,
+			snapshotId,
+			migrationReport,
+		);
+		if (reportExitCode !== EXIT_CODES.SUCCESS) {
+			return reportExitCode;
 		}
 
 		const blockingCount =
@@ -9967,9 +9988,7 @@ export function runCIMigrateCLI(
 		}
 	}
 
-	const exitCode = explicitJsonDryRun
-		? EXIT_CODES.SUCCESS
-		: runInitCLIImpl(dir, initOptions);
+	const exitCode = runInitCLIImpl(dir, initOptions);
 	if (exitCode !== EXIT_CODES.SUCCESS) {
 		if (
 			!writeMergeQueueWindowStage("aborted", {
@@ -9977,6 +9996,19 @@ export function runCIMigrateCLI(
 			})
 		) {
 			return EXIT_CODES.WRITE_ERROR;
+		}
+		if (explicitJsonDryRun) {
+			// For JSON dry-run, still run validation but format output as JSON
+			console.info(
+				JSON.stringify(
+					{
+						status: "init-validation-failed",
+						exitCode,
+					},
+					null,
+					2,
+				),
+			);
 		}
 		return exitCode;
 	}

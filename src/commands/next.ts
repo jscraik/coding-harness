@@ -470,6 +470,7 @@ function fleetMatrixArtifactDecision(args: {
  * @param args.filesSource - Source of the file list; `"git"` when discovered from git, `"override"` when supplied via CLI/options.
  * @param args.sourceErrors - Collected source errors to include in decision meta when present.
  * @returns A `HarnessDecision` with `status: "pass"` that recommends running `harness check --json`, includes evidence referencing the files source, marks the change count as 0, and contains execution/meta details.
+ */
 function noChangedFilesDecision(args: {
 	mode: HarnessNextMode;
 	filesSource: "override" | "git";

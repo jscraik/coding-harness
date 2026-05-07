@@ -253,6 +253,7 @@ function reviewContextErrorResult(
  * @param reviewContext - The review context used to populate repository, changed files, validation plan, and network requirements in the result.
  * @param minUsage - The minimum usage value to include in the result.
  * @returns An `EvalSeedPackResult` with `status: "error"`. Includes `promotionCandidates.error` when present.
+ */
 function promotionCandidatesErrorResult(
 	promotionCandidates: ReturnType<typeof buildLearningPromotionCandidates>,
 	reviewContext: ReviewContextResult,

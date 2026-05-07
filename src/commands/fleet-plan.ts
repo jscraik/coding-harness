@@ -127,6 +127,8 @@ export interface FleetPlanCommand {
 	nextCommand: string;
 	/** Machine-safe argv for agents. */
 	nextCommandArgv: string[];
+	/** Human-readable description of the recommended next action. */
+	nextAction: string;
 }
 
 /** Per-repository remediation recommendation derived from one matrix result. */
@@ -790,6 +792,7 @@ function buildFirstSafeWave(repos: FleetPlanRepo[]): FleetPlanCommand[] {
 				risk: repo.risk,
 				nextCommand: repo.nextCommand,
 				nextCommandArgv: repo.nextCommandArgv,
+				nextAction: repo.nextAction,
 			});
 			addedForStatus += 1;
 		}
@@ -823,14 +826,10 @@ export function buildFleetRemediationPlan(args: {
 	const findingCounts = buildFindingCounts(repos);
 	const liveUpgradeBlockedBecause = buildLiveUpgradeBlockers(findingCounts);
 	const firstSafeWave = buildFirstSafeWave(repos);
-	const firstRunnable = repos.find(
-		(repo) => repo.status !== "ready" && repo.nextCommandArgv && repo.safeToRun,
-	);
-	const firstReadyRunnable = repos.find(
-		(repo) => repo.nextCommandArgv && repo.safeToRun,
-	);
-	const nextRunnable = firstRunnable ?? firstReadyRunnable;
-	const liveUpgradeReady = repos.every((repo) => repo.status === "ready");
+	// Derive nextRunnable from firstSafeWave to reflect wave priority
+	const nextRunnable = firstSafeWave.length > 0 ? firstSafeWave[0] : undefined;
+	// Avoid empty-artifact true positives: require repos.length > 0
+	const liveUpgradeReady = repos.length > 0 && repos.every((repo) => repo.status === "ready");
 	return {
 		schemaVersion: FLEET_PLAN_SCHEMA_VERSION,
 		generatedAt: args.generatedAt ?? new Date().toISOString(),
