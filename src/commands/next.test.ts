@@ -78,6 +78,26 @@ describe("runHarnessNext", () => {
 		expect(decision.nextCommand).toBe(
 			"harness validation-plan --files src/commands/next.ts --json",
 		);
+		expect(decision.phase).toBe("verify");
+		expect(decision.objective).toBe(
+			"Produce the repo-canonical validation plan for the changed files.",
+		);
+		expect(decision.requiredEvidence).toEqual([
+			"input:files",
+			"command-catalog:harness-command-catalog/v3",
+			"harness validation-plan --files src/commands/next.ts --json output",
+		]);
+		expect(decision.stopConditions).toEqual([
+			"Stop if validation-plan cannot produce JSON for the changed files.",
+		]);
+		expect(decision.followUpCommands).toEqual([
+			"harness review-context --files src/commands/next.ts --json",
+		]);
+		expect(decision.hiddenPlumbing).toEqual([
+			"git:status",
+			"command-catalog",
+			"risk-tier",
+		]);
 		expect(decision.safeToRun).toBe(true);
 		expect(decision.requiresNetwork).toBe(false);
 		expect(decision.writesFiles).toBe(false);
@@ -120,6 +140,17 @@ describe("runHarnessNext", () => {
 			"Run harness check --json to confirm repo readiness.",
 		);
 		expect(decision.nextCommand).toBe("harness check --json");
+		expect(decision.phase).toBe("verify");
+		expect(decision.objective).toBe(
+			"Confirm the repository is ready when no changed files are detected.",
+		);
+		expect(decision.requiredEvidence).toEqual([
+			"git:status",
+			"harness check --json output",
+		]);
+		expect(decision.stopConditions).toEqual([
+			"Stop if harness check reports a blocked or failed gate.",
+		]);
 		expect(decision.retry).toBe("safe");
 		expect(decision.evidenceRef).toEqual(["git:status"]);
 		expect(decision.meta).toMatchObject({
@@ -144,6 +175,14 @@ describe("runHarnessNext", () => {
 		expect(decision.failureClass).toBe("files_override_empty");
 		expect(decision.nextAction).toContain("omit --files");
 		expect(decision.nextCommand).toBeNull();
+		expect(decision.phase).toBe("repair");
+		expect(decision.requiredEvidence).toEqual(["input:files"]);
+		expect(decision.stopConditions).toEqual([
+			"Stop until files_override_empty is resolved.",
+		]);
+		expect(decision.humanEscalation).toBe(
+			"Pass one or more changed files, or omit --files so harness next can inspect git state.",
+		);
 		expect(decision.retry).toBe("manual");
 		expect(decision.evidenceRef).toEqual(["input:files"]);
 		expect(decision.meta).toMatchObject({
@@ -171,6 +210,15 @@ describe("runHarnessNext", () => {
 		expect(decision.failureClass).toBe("git_state_unavailable");
 		expect(decision.nextAction).toContain("Run harness doctor --json");
 		expect(decision.nextCommand).toBe("harness doctor --json");
+		expect(decision.phase).toBe("repair");
+		expect(decision.objective).toBe(
+			"Restore git-state visibility before choosing workflow work.",
+		);
+		expect(decision.requiredEvidence).toEqual([
+			"git:status",
+			"harness doctor --json output",
+		]);
+		expect(decision.followUpCommands).toEqual(["harness next --json"]);
 		expect(decision.safeToRun).toBe(true);
 		expect(decision.retry).toBe("manual");
 		expect(decision.evidenceRef).toEqual(["git:status"]);
@@ -203,6 +251,18 @@ describe("runHarnessNext", () => {
 		expect(decision.nextCommand).toBe(
 			"harness review-context --files docs/spec.md --json",
 		);
+		expect(decision.phase).toBe("review");
+		expect(decision.objective).toBe(
+			"Prepare reviewer-facing context for the changed files.",
+		);
+		expect(decision.requiredEvidence).toEqual([
+			"input:files",
+			"command-catalog:harness-command-catalog/v3",
+			"harness review-context --files docs/spec.md --json output",
+		]);
+		expect(decision.followUpCommands).toEqual([
+			"bash scripts/validate-codestyle.sh --fast",
+		]);
 		expect(decision.meta).toMatchObject({
 			mode: "pr",
 			sourceErrors: [
@@ -353,6 +413,21 @@ describe("runHarnessNext", () => {
 			expect(decision.nextCommand).toBe(
 				"harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json",
 			);
+			expect(decision.phase).toBe("orient");
+			expect(decision.objective).toBe(
+				"Convert the detected upgrade matrix into a safe remediation plan.",
+			);
+			expect(decision.requiredEvidence).toEqual([
+				"artifact:artifacts/harness-upgrade-matrix-dev.json",
+			]);
+			expect(decision.stopConditions).toEqual([
+				"Stop if fleet-plan cannot parse the upgrade matrix artifact.",
+			]);
+			expect(decision.followUpCommands).toEqual([]);
+			expect(decision.hiddenPlumbing).toEqual([
+				"artifact-discovery",
+				"fleet-plan",
+			]);
 			expect(decision.evidenceRef).toEqual([
 				"artifact:artifacts/harness-upgrade-matrix-dev.json",
 			]);

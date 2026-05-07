@@ -65,17 +65,17 @@ system through plainer output and cockpit-first help.
 
 ## Source Traceability
 
-| Source | Role |
-| --- | --- |
-| `JSC-248` | Linear tracker and PR linkage authority |
-| `docs/specs/2026-05-02-feat-agent-native-cockpit-control-loop-spec.md` | Behavioral source of truth |
-| `src/cli.ts` | Current single-token dispatcher boundary |
-| `src/lib/cli/registry/command-specs-core.ts` | Canonical registry source for command specs |
-| `src/lib/cli/command-registry.ts` | Registry aggregation, dispatch, and command catalog source |
-| `src/lib/cli/registry/command-capabilities.ts` | Existing command metadata surface |
-| `src/lib/cli/registry/types.ts` | Existing `CommandSpec` type |
-| `src/commands/review-context.ts` | Existing review-context command behavior |
-| `src/commands/validation-plan.ts` | Existing validation-plan command behavior |
+| Source                                                                 | Role                                                       |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `JSC-248`                                                              | Linear tracker and PR linkage authority                    |
+| `docs/specs/2026-05-02-feat-agent-native-cockpit-control-loop-spec.md` | Behavioral source of truth                                 |
+| `src/cli.ts`                                                           | Current single-token dispatcher boundary                   |
+| `src/lib/cli/registry/command-specs-core.ts`                           | Canonical registry source for command specs                |
+| `src/lib/cli/command-registry.ts`                                      | Registry aggregation, dispatch, and command catalog source |
+| `src/lib/cli/registry/command-capabilities.ts`                         | Existing command metadata surface                          |
+| `src/lib/cli/registry/types.ts`                                        | Existing `CommandSpec` type                                |
+| `src/commands/review-context.ts`                                       | Existing review-context command behavior                   |
+| `src/commands/validation-plan.ts`                                      | Existing validation-plan command behavior                  |
 
 ## Current Repo Evidence
 
@@ -561,47 +561,49 @@ Recovery rules:
 
 ## Risk Controls
 
-| Risk | Control |
-| --- | --- |
-| `next` becomes a hidden executor | Unit tests assert recommendations only and no mutation |
-| Help advertises unimplemented commands | Help derives from registered command specs only |
-| Metadata breaks existing agents | Add fields additively; hard-fail only first-slice cockpit and directly orchestrated commands |
-| `GateResult` gets displaced | Keep `HarnessDecision` separate and only reference gate output under `meta` |
-| Docs sprawl returns | Limit docs changes to README, quickstart, and CLI reference |
-| Single-token dispatch mismatch | Use canonical `next` and `pr-ready`; defer nested aliases |
+| Risk                                                          | Control                                                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `next` becomes a hidden executor                              | Unit tests assert recommendations only and no mutation                                            |
+| Help advertises unimplemented commands                        | Help derives from registered command specs only                                                   |
+| Metadata breaks existing agents                               | Add fields additively; hard-fail only first-slice cockpit and directly orchestrated commands      |
+| `GateResult` gets displaced                                   | Keep `HarnessDecision` separate and only reference gate output under `meta`                       |
+| Docs sprawl returns                                           | Limit docs changes to README, quickstart, and CLI reference                                       |
+| Single-token dispatch mismatch                                | Use canonical `next` and `pr-ready`; defer nested aliases                                         |
 | Already-landed work is implemented again from stale plan text | Start P6 with a focused verification audit and change only failing or missing acceptance criteria |
-| Auto-review becomes implied self-approval | Keep P7 deferred until evidence and fixtures prove fail-closed reviewer semantics |
+| Auto-review becomes implied self-approval                     | Keep P7 deferred until evidence and fixtures prove fail-closed reviewer semantics                 |
 
 ## Acceptance Traceability
 
-| Acceptance ID | Plan unit | Status |
-| --- | --- | --- |
-| `SA1` | P1 | Implemented in live tree; verify before further edits |
-| `SA2` | P1 | Implemented in live tree; verify before further edits |
-| `SA3` | P1 | Implemented in live tree; verify before further edits |
-| `SA4` | P3 | Implemented in live tree; verify before further edits |
-| `SA5` | P3 | Implemented in live tree; verify before further edits |
-| `SA6` | P3 | Implemented in live tree; verify before further edits |
-| `SA7` | P3 | Implemented in live tree; verify before further edits |
-| `SA8` | P3 | Implemented in live tree; verify before further edits |
-| `SA9` | P2, P4 | Implemented or partially implemented; verify help snapshot |
-| `SA10` | P2 | Implemented or partially implemented; verify command catalog JSON |
-| `SA11` | P1, P2 | Implemented in live tree; verify regression coverage |
-| `SA12` | P5 | Implemented or partially implemented; verify docs routing |
-| `SA13` | P3, P4 | Implemented or partially implemented; verify snapshots |
-| `SA14` | Deferred | Out of first slice |
-| `SA15` | Deferred | Out of first slice |
-| `SA16` | P2 | Implemented or partially implemented; verify catalog validation |
-| `SA17` | P5 | Implemented or partially implemented; verify README/quickstart |
-| `SA18` | Deferred | Out of first slice |
-| `SA19` | Deferred | Out of first slice |
-| `SA20` | Deferred | Out of first slice |
-| `SA28`-`SA35` | P6 | Outstanding technical hardening |
-| `SA36`-`SA38` | Deferred | Codex config steering evidence; out of JSC-248 implementation |
-| `SA39`-`SA45` | P7 deferred | Approval reviewer contract; out of JSC-248 unless promoted by measured approval friction |
-| `SA46`-`SA52` | P8 / `JSC-279` deferred | Goal continuation contract; out of JSC-248 unless promoted by measured resume or stale-plan friction |
-| `SA53`-`SA54` | Promoted command-surface compression | Agent-mode visibility and public agent command discovery after explicit user promotion |
-| `SA55`-`SA61` | Deferred command-surface compression | Work-packet deepening, PR-ready, validation-plan, review-context, and session-friction contracts; out of JSC-248 unless explicitly promoted |
+| Acceptance ID | Plan unit                            | Status                                                                                                                                                   |
+| ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SA1`         | P1                                   | Implemented in live tree; verify before further edits                                                                                                    |
+| `SA2`         | P1                                   | Implemented in live tree; verify before further edits                                                                                                    |
+| `SA3`         | P1                                   | Implemented in live tree; verify before further edits                                                                                                    |
+| `SA4`         | P3                                   | Implemented in live tree; verify before further edits                                                                                                    |
+| `SA5`         | P3                                   | Implemented in live tree; verify before further edits                                                                                                    |
+| `SA6`         | P3                                   | Implemented in live tree; verify before further edits                                                                                                    |
+| `SA7`         | P3                                   | Implemented in live tree; verify before further edits                                                                                                    |
+| `SA8`         | P3                                   | Implemented in live tree; verify before further edits                                                                                                    |
+| `SA9`         | P2, P4                               | Implemented or partially implemented; verify help snapshot                                                                                               |
+| `SA10`        | P2                                   | Implemented or partially implemented; verify command catalog JSON                                                                                        |
+| `SA11`        | P1, P2                               | Implemented in live tree; verify regression coverage                                                                                                     |
+| `SA12`        | P5                                   | Implemented or partially implemented; verify docs routing                                                                                                |
+| `SA13`        | P3, P4                               | Implemented or partially implemented; verify snapshots                                                                                                   |
+| `SA14`        | Deferred                             | Out of first slice                                                                                                                                       |
+| `SA15`        | Deferred                             | Out of first slice                                                                                                                                       |
+| `SA16`        | P2                                   | Implemented or partially implemented; verify catalog validation                                                                                          |
+| `SA17`        | P5                                   | Implemented or partially implemented; verify README/quickstart                                                                                           |
+| `SA18`        | Deferred                             | Out of first slice                                                                                                                                       |
+| `SA19`        | Deferred                             | Out of first slice                                                                                                                                       |
+| `SA20`        | Deferred                             | Out of first slice                                                                                                                                       |
+| `SA28`-`SA35` | P6                                   | Outstanding technical hardening                                                                                                                          |
+| `SA36`-`SA38` | Deferred                             | Codex config steering evidence; out of JSC-248 implementation                                                                                            |
+| `SA39`-`SA45` | P7 deferred                          | Approval reviewer contract; out of JSC-248 unless promoted by measured approval friction                                                                 |
+| `SA46`-`SA52` | P8 / `JSC-279` deferred              | Goal continuation contract; out of JSC-248 unless promoted by measured resume or stale-plan friction                                                     |
+| `SA53`-`SA54` | Promoted command-surface compression | Agent-mode visibility and public agent command discovery after explicit user promotion                                                                   |
+| `SA55`        | Promoted work-packet deepening       | `HarnessDecision` carries phase, objective, evidence, stop conditions, escalation, follow-up commands, and hidden plumbing after explicit user promotion |
+| `SA56`        | Promoted validation-plan ladder      | `validation-plan` returns ranked command buckets and falls back to path-based planning when optional learning artifacts are absent                       |
+| `SA57`-`SA61` | Deferred command-surface compression | PR-ready, review-context, and session-friction contracts; out of JSC-248 unless explicitly promoted                                                      |
 
 ## Handoff to he-work
 

@@ -3,6 +3,18 @@ import { learningMatchesFile, loadLearningArtifact } from "./gate.js";
 import { redactSensitiveText } from "./sensitive-text.js";
 import type { LearningItem } from "./types.js";
 
+type ValidationBucket = "fast" | "required" | "beforePr" | "deep";
+
+const COMMAND_BUCKETS: Readonly<Record<string, ValidationBucket>> = {
+	"bash scripts/validate-codestyle.sh --fast": "fast",
+	"bash scripts/validate-codestyle.sh": "beforePr",
+	"bash scripts/verify-work.sh": "beforePr",
+	"pnpm check": "beforePr",
+	"pnpm test:ci": "beforePr",
+	"pnpm test:deep": "deep",
+	"pnpm typecheck": "fast",
+};
+
 /** Command recommendation emitted by `harness validation-plan`. */
 export interface ValidationPlanCommand {
 	/** Repo-canonical command to run. */
@@ -28,13 +40,22 @@ export interface NetworkRequiredCommand {
 /** Result emitted by `harness validation-plan --json`. */
 export interface ValidationPlanResult {
 	schemaVersion: "validation-plan/v1";
-	status: "success" | "error";
+	status: "success" | "success_with_warnings" | "error";
 	source: string;
 	changedFiles: string[];
+	warnings: string[];
 	commands: ValidationPlanCommand[];
+	fast: ValidationPlanCommand[];
+	required: ValidationPlanCommand[];
+	beforePr: ValidationPlanCommand[];
+	deep: ValidationPlanCommand[];
 	networkRequired: NetworkRequiredCommand[];
 	summary: {
 		commands: number;
+		fast: number;
+		required: number;
+		beforePr: number;
+		deep: number;
 		networkRequired: number;
 		matchedLearnings: number;
 	};
@@ -64,7 +85,7 @@ export interface ValidationPlanOptions {
  * @param options - Validation plan options. `options.files` are the changed files; `options.source` overrides the artifact path.
  * @returns A `ValidationPlanResult` describing the schema version, source, normalized changed files, generated commands,
  *          network-required commands, and a summary. If loading the learning artifact fails, returns a result with
- *          `status: "error"`, empty command lists, and an `error` object populated from the loader.
+ *          `status: "success_with_warnings"` and path-based commands so agents still receive local validation guidance.
  */
 export function buildValidationPlan(
 	options: ValidationPlanOptions,
@@ -74,24 +95,24 @@ export function buildValidationPlan(
 	const loaded = loadLearningArtifact(source, options.repoRoot);
 
 	if (!loaded.ok) {
-		return {
-			schemaVersion: "validation-plan/v1",
-			status: "error",
+		const commands = buildCommands(changedFiles, []);
+		const networkRequired = buildNetworkRequired(changedFiles, []);
+		return validationPlanResult({
+			status: "success_with_warnings",
 			source,
 			changedFiles,
-			commands: [],
-			networkRequired: [],
-			summary: {
-				commands: 0,
-				networkRequired: 0,
-				matchedLearnings: 0,
-			},
+			commands,
+			networkRequired,
+			matchedLearnings: 0,
+			warnings: [
+				`Learning artifact unavailable (${loaded.code}); used path-based validation plan only.`,
+			],
 			error: {
 				code: loaded.code,
 				message: loaded.message,
 				...(loaded.fix ? { fix: loaded.fix } : {}),
 			},
-		};
+		});
 	}
 
 	const matchedLearnings = loaded.artifact.items.filter((item) =>
@@ -100,19 +121,73 @@ export function buildValidationPlan(
 	const commands = buildCommands(changedFiles, matchedLearnings);
 	const networkRequired = buildNetworkRequired(changedFiles, matchedLearnings);
 
-	return {
-		schemaVersion: "validation-plan/v1",
+	return validationPlanResult({
 		status: "success",
 		source,
 		changedFiles,
 		commands,
 		networkRequired,
+		matchedLearnings: matchedLearnings.length,
+		warnings: [],
+	});
+}
+
+function validationPlanResult(options: {
+	status: ValidationPlanResult["status"];
+	source: string;
+	changedFiles: string[];
+	commands: ValidationPlanCommand[];
+	networkRequired: NetworkRequiredCommand[];
+	matchedLearnings: number;
+	warnings: string[];
+	error?: ValidationPlanResult["error"];
+}): ValidationPlanResult {
+	const buckets = buildValidationBuckets(options.commands);
+	return {
+		schemaVersion: "validation-plan/v1",
+		status: options.status,
+		source: options.source,
+		changedFiles: options.changedFiles,
+		warnings: options.warnings,
+		commands: options.commands,
+		fast: buckets.fast,
+		required: buckets.required,
+		beforePr: buckets.beforePr,
+		deep: buckets.deep,
+		networkRequired: options.networkRequired,
 		summary: {
-			commands: commands.length,
-			networkRequired: networkRequired.length,
-			matchedLearnings: matchedLearnings.length,
+			commands: options.commands.length,
+			fast: buckets.fast.length,
+			required: buckets.required.length,
+			beforePr: buckets.beforePr.length,
+			deep: buckets.deep.length,
+			networkRequired: options.networkRequired.length,
+			matchedLearnings: options.matchedLearnings,
 		},
+		...(options.error ? { error: options.error } : {}),
 	};
+}
+
+function buildValidationBuckets(commands: ValidationPlanCommand[]): {
+	fast: ValidationPlanCommand[];
+	required: ValidationPlanCommand[];
+	beforePr: ValidationPlanCommand[];
+	deep: ValidationPlanCommand[];
+} {
+	const buckets = {
+		fast: [] as ValidationPlanCommand[],
+		required: [] as ValidationPlanCommand[],
+		beforePr: [] as ValidationPlanCommand[],
+		deep: [] as ValidationPlanCommand[],
+	};
+	for (const command of commands) {
+		buckets[bucketForCommand(command.command)].push(command);
+	}
+	return buckets;
+}
+
+function bucketForCommand(command: string): ValidationBucket {
+	return COMMAND_BUCKETS[command] ?? "required";
 }
 
 /**
@@ -129,9 +204,13 @@ function buildCommands(
 	const commands = new Map<string, ValidationPlanCommand>();
 	addPathBasedCommands(commands, files);
 	addLearningBasedCommands(commands, files, matchedLearnings);
-	return [...commands.values()].sort((a, b) =>
-		a.command.localeCompare(b.command),
-	);
+	return sortCommands([...commands.values()]);
+}
+
+function sortCommands(
+	commands: ValidationPlanCommand[],
+): ValidationPlanCommand[] {
+	return [...commands].sort((a, b) => a.command.localeCompare(b.command));
 }
 
 /**

@@ -196,16 +196,18 @@ Implementation planning must keep this Linear contract current:
 
 ### Linear Acceptance Traceability
 
-| Linear item | Acceptance IDs | Status |
-| --- | --- | --- |
-| `JSC-248` | `SA1`-`SA13`, `SA16`, `SA17` | First implementation slice |
-| Deferred follow-on | `SA14`, `SA15`, `SA18`-`SA20` | Out of first slice |
-| Deferred product-compression follow-on | `SA21`-`SA27` | Out of first slice |
-| Technical hardening follow-on | `SA28`-`SA35` | Follow-on unless needed to make `next` deterministic |
-| Deferred Codex config and approval follow-on | `SA36`-`SA45` | Out of first slice; may be split across `JSC-248` and `JSC-249` |
-| `JSC-279` | `SA46`-`SA52` | Deferred goal-continuation child issue under `JSC-249` |
-| Promoted command-surface compression slice | `SA53`, `SA54` | Implemented after explicit user promotion; narrows public agent discovery |
-| Deferred agent interface compression follow-on | `SA55`-`SA61` | Out of this slice; informed by May 6 session-collector evidence |
+| Linear item                                    | Acceptance IDs                | Status                                                                                          |
+| ---------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| `JSC-248`                                      | `SA1`-`SA13`, `SA16`, `SA17`  | First implementation slice                                                                      |
+| Deferred follow-on                             | `SA14`, `SA15`, `SA18`-`SA20` | Out of first slice                                                                              |
+| Deferred product-compression follow-on         | `SA21`-`SA27`                 | Out of first slice                                                                              |
+| Technical hardening follow-on                  | `SA28`-`SA35`                 | Follow-on unless needed to make `next` deterministic                                            |
+| Deferred Codex config and approval follow-on   | `SA36`-`SA45`                 | Out of first slice; may be split across `JSC-248` and `JSC-249`                                 |
+| `JSC-279`                                      | `SA46`-`SA52`                 | Deferred goal-continuation child issue under `JSC-249`                                          |
+| Promoted command-surface compression slice     | `SA53`, `SA54`                | Implemented after explicit user promotion; narrows public agent discovery                       |
+| Promoted work-packet deepening slice           | `SA55`                        | Implemented after explicit user promotion; makes `HarnessDecision` a complete agent work packet |
+| Promoted validation-plan ladder slice          | `SA56`                        | Implemented after explicit user promotion; ranks validation commands and degrades gracefully    |
+| Deferred agent interface compression follow-on | `SA57`-`SA61`                 | Out of this slice; informed by May 6 session-collector evidence                                 |
 
 ## System Boundary
 
@@ -277,23 +279,23 @@ Canonical decision envelope for agent-native command output.
 
 Required fields:
 
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `schemaVersion` | string | Stable envelope version, e.g. `harness-decision/v1` |
-| `producer` | string | Command or gate producing the decision |
-| `status` | enum | `pass`, `fail`, `blocked`, or `action_required` |
-| `summary` | string | Short human-readable result |
-| `nextAction` | string | Immediate next action in plain language |
-| `nextCommand` | string or null | Exact recommended command when available |
-| `safeToRun` | boolean | Whether an agent may run the command without new approval |
-| `requiresHuman` | boolean | Whether human input or approval is required |
-| `requiresNetwork` | boolean | Whether network/API access is expected |
-| `writesFiles` | boolean | Whether the recommended command mutates local files |
-| `evidenceRef` | string array | Artifact, file, run, or URL references |
-| `failureClass` | string or null | Stable failure/recovery class when applicable |
-| `retry` | enum | `safe`, `conditional`, or `manual` |
-| `riskTier` | enum | `low`, `medium`, `high`, `critical`, or `unknown` |
-| `meta` | object | Additive command-specific metadata |
+| Field             | Type           | Purpose                                                   |
+| ----------------- | -------------- | --------------------------------------------------------- |
+| `schemaVersion`   | string         | Stable envelope version, e.g. `harness-decision/v1`       |
+| `producer`        | string         | Command or gate producing the decision                    |
+| `status`          | enum           | `pass`, `fail`, `blocked`, or `action_required`           |
+| `summary`         | string         | Short human-readable result                               |
+| `nextAction`      | string         | Immediate next action in plain language                   |
+| `nextCommand`     | string or null | Exact recommended command when available                  |
+| `safeToRun`       | boolean        | Whether an agent may run the command without new approval |
+| `requiresHuman`   | boolean        | Whether human input or approval is required               |
+| `requiresNetwork` | boolean        | Whether network/API access is expected                    |
+| `writesFiles`     | boolean        | Whether the recommended command mutates local files       |
+| `evidenceRef`     | string array   | Artifact, file, run, or URL references                    |
+| `failureClass`    | string or null | Stable failure/recovery class when applicable             |
+| `retry`           | enum           | `safe`, `conditional`, or `manual`                        |
+| `riskTier`        | enum           | `low`, `medium`, `high`, `critical`, or `unknown`         |
+| `meta`            | object         | Additive command-specific metadata                        |
 
 The envelope may wrap or point to existing `GateResult` payloads. It must not
 break existing `GateResult` consumers.
@@ -313,14 +315,14 @@ selected.
 
 Required fields:
 
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `kind` | enum | `git`, `contract`, `catalog`, `run`, `learning`, `linear`, `pr`, or `config` |
-| `ref` | string | Stable file, command, URL, or artifact reference |
-| `freshness` | enum | `current`, `stale`, `missing`, or `unknown` |
-| `sha` | string or null | Git SHA the source applies to when known |
-| `status` | enum | `usable`, `empty`, `invalid`, or `blocked` |
-| `failureClass` | string or null | Stable reason when the source cannot be used |
+| Field          | Type           | Purpose                                                                      |
+| -------------- | -------------- | ---------------------------------------------------------------------------- |
+| `kind`         | enum           | `git`, `contract`, `catalog`, `run`, `learning`, `linear`, `pr`, or `config` |
+| `ref`          | string         | Stable file, command, URL, or artifact reference                             |
+| `freshness`    | enum           | `current`, `stale`, `missing`, or `unknown`                                  |
+| `sha`          | string or null | Git SHA the source applies to when known                                     |
+| `status`       | enum           | `usable`, `empty`, `invalid`, or `blocked`                                   |
+| `failureClass` | string or null | Stable reason when the source cannot be used                                 |
 
 The decision engine must carry unusable sources into `meta.sourceErrors` rather
 than silently ignoring them.
@@ -331,17 +333,17 @@ Internal candidate produced before final ranking.
 
 Required fields:
 
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `command` | string or null | Exact command if runnable |
-| `reason` | string | Plain operational reason for the candidate |
-| `sourceRefs` | string array | Decision sources that produced the candidate |
-| `score` | number | Deterministic ranking score |
-| `riskTier` | enum | `low`, `medium`, `high`, `critical`, or `unknown` |
-| `safeToRun` | boolean | Candidate safety posture |
-| `requiresHuman` | boolean | Candidate approval posture |
-| `requiresNetwork` | boolean | Candidate network posture |
-| `writesFiles` | boolean | Candidate mutation posture |
+| Field             | Type           | Purpose                                           |
+| ----------------- | -------------- | ------------------------------------------------- |
+| `command`         | string or null | Exact command if runnable                         |
+| `reason`          | string         | Plain operational reason for the candidate        |
+| `sourceRefs`      | string array   | Decision sources that produced the candidate      |
+| `score`           | number         | Deterministic ranking score                       |
+| `riskTier`        | enum           | `low`, `medium`, `high`, `critical`, or `unknown` |
+| `safeToRun`       | boolean        | Candidate safety posture                          |
+| `requiresHuman`   | boolean        | Candidate approval posture                        |
+| `requiresNetwork` | boolean        | Candidate network posture                         |
+| `writesFiles`     | boolean        | Candidate mutation posture                        |
 
 Scores are implementation detail. The externally observable contract is stable
 ordering for identical inputs and source refs.
@@ -352,15 +354,15 @@ Executable metric record used when the harness claims product impact.
 
 Required fields:
 
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `metric` | enum | `pr_lead_time`, `review_retry_rate`, `manual_interventions`, or `merge_block_time` |
-| `window` | string | Time window, e.g. `30d` |
-| `source` | string | GitHub, Linear, CI, or local artifact source |
-| `sampleSize` | number | Number of PRs, reviews, or runs included |
-| `status` | enum | `complete`, `partial`, `unavailable`, or `manual_only` |
-| `value` | number or null | Computed value when available |
-| `evidenceRef` | string array | Commands, artifacts, or URLs used |
+| Field         | Type           | Purpose                                                                            |
+| ------------- | -------------- | ---------------------------------------------------------------------------------- |
+| `metric`      | enum           | `pr_lead_time`, `review_retry_rate`, `manual_interventions`, or `merge_block_time` |
+| `window`      | string         | Time window, e.g. `30d`                                                            |
+| `source`      | string         | GitHub, Linear, CI, or local artifact source                                       |
+| `sampleSize`  | number         | Number of PRs, reviews, or runs included                                           |
+| `status`      | enum           | `complete`, `partial`, `unavailable`, or `manual_only`                             |
+| `value`       | number or null | Computed value when available                                                      |
+| `evidenceRef` | string array   | Commands, artifacts, or URLs used                                                  |
 
 Manual status prose may explain direction, but only `complete` or explicitly
 qualified `partial` metric evidence can be used as proof of impact.
@@ -371,13 +373,13 @@ Small command surface intended for first-contact human and agent use.
 
 Target cockpit set:
 
-| Command | Role |
-| --- | --- |
-| `harness check` | Fast current repo readiness |
-| `harness next` | Decide the next safest command |
-| `harness pr-ready` | Prove merge readiness |
-| `harness fix-review` | Drive bounded review-fix loops |
-| `harness learn` | Turn repeated review feedback into guardrails |
+| Command              | Role                                          |
+| -------------------- | --------------------------------------------- |
+| `harness check`      | Fast current repo readiness                   |
+| `harness next`       | Decide the next safest command                |
+| `harness pr-ready`   | Prove merge readiness                         |
+| `harness fix-review` | Drive bounded review-fix loops                |
+| `harness learn`      | Turn repeated review feedback into guardrails |
 
 First-slice runnable cockpit commands are limited to registered command specs.
 For `JSC-248`, default help and command metadata must not advertise
@@ -434,15 +436,15 @@ Durable outcome recommendation when repeated failures are detected.
 
 Valid destinations:
 
-| Destination | Use when |
-| --- | --- |
-| `test` | A deterministic regression can catch the repeated failure |
-| `lint` | The failure is structural, syntactic, or policy-checkable |
-| `docs_gate` | Reviewer confusion is caused by missing or stale required docs |
-| `review_context` | Reviewers need repeated context before merge |
-| `scaffold` | New repos should inherit a file, script, or config |
-| `project_brain` | The finding is durable operating knowledge |
-| `skip_reason` | The repeated pattern is intentionally not enforced |
+| Destination      | Use when                                                       |
+| ---------------- | -------------------------------------------------------------- |
+| `test`           | A deterministic regression can catch the repeated failure      |
+| `lint`           | The failure is structural, syntactic, or policy-checkable      |
+| `docs_gate`      | Reviewer confusion is caused by missing or stale required docs |
+| `review_context` | Reviewers need repeated context before merge                   |
+| `scaffold`       | New repos should inherit a file, script, or config             |
+| `project_brain`  | The finding is durable operating knowledge                     |
+| `skip_reason`    | The repeated pattern is intentionally not enforced             |
 
 `skip_reason` is valid only when evidence explains why enforcement would create
 more noise than safety.
@@ -454,18 +456,18 @@ the current sandbox, needs a reviewer, or must stop for a human.
 
 Required keys:
 
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `approvalPolicy` | string or null | Effective Codex or Harness approval policy when known |
-| `approvalsReviewer` | enum | `user`, `auto_review`, `guardian_subagent`, `none`, or `unknown` |
-| `permissionProfile` | string or null | Effective sandbox or permission profile when known |
-| `autoReviewEligible` | boolean | Whether the action is eligible for Auto-review instead of synchronous human review |
-| `strictAutoReviewSuggested` | boolean | Whether extra turn-level review is recommended after a permission grant |
-| `requiresHuman` | boolean | Whether the recommendation still needs human input or approval |
-| `riskTier` | enum | `low`, `medium`, `high`, `critical`, or `unknown` |
-| `userAuthorization` | enum | `unknown`, `low`, `medium`, or `high` |
-| `decisionSource` | enum | `sandbox`, `codex_auto_review`, `harness_policy`, `human_required`, or `unknown` |
-| `reason` | string | Plain operational reason for the approval posture |
+| Field                       | Type           | Purpose                                                                            |
+| --------------------------- | -------------- | ---------------------------------------------------------------------------------- |
+| `approvalPolicy`            | string or null | Effective Codex or Harness approval policy when known                              |
+| `approvalsReviewer`         | enum           | `user`, `auto_review`, `guardian_subagent`, `none`, or `unknown`                   |
+| `permissionProfile`         | string or null | Effective sandbox or permission profile when known                                 |
+| `autoReviewEligible`        | boolean        | Whether the action is eligible for Auto-review instead of synchronous human review |
+| `strictAutoReviewSuggested` | boolean        | Whether extra turn-level review is recommended after a permission grant            |
+| `requiresHuman`             | boolean        | Whether the recommendation still needs human input or approval                     |
+| `riskTier`                  | enum           | `low`, `medium`, `high`, `critical`, or `unknown`                                  |
+| `userAuthorization`         | enum           | `unknown`, `low`, `medium`, or `high`                                              |
+| `decisionSource`            | enum           | `sandbox`, `codex_auto_review`, `harness_policy`, `human_required`, or `unknown`   |
+| `reason`                    | string         | Plain operational reason for the approval posture                                  |
 
 `guardian_subagent` is accepted only as Codex compatibility vocabulary.
 Harness-authored docs, generated config examples, and recommendations should
@@ -487,24 +489,24 @@ plan objective as the active runtime cursor for long-running work.
 
 Required core fields when the `goalContext` object is present:
 
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `objective` | string or null | Explicit objective text supplied by the user, runtime, Linear, or plan |
-| `status` | enum | `absent`, `active`, `paused`, `budget_limited`, `complete`, or `unknown` |
-| `source` | enum | `codex_goal`, `linear`, `plan`, `user_prompt`, or `unknown` |
+| Field       | Type           | Purpose                                                                  |
+| ----------- | -------------- | ------------------------------------------------------------------------ |
+| `objective` | string or null | Explicit objective text supplied by the user, runtime, Linear, or plan   |
+| `status`    | enum           | `absent`, `active`, `paused`, `budget_limited`, `complete`, or `unknown` |
+| `source`    | enum           | `codex_goal`, `linear`, `plan`, `user_prompt`, or `unknown`              |
 
 Conditional fields:
 
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `goalRef` | string or null | Runtime goal id, thread id, or artifact ref when available |
-| `linkedPlan` | string or null | Harness plan id or path when matched |
-| `linkedLinearIssue` | string or null | Linear issue key when matched |
-| `tokenBudget` | number or null | Token budget when the runtime exposes one |
-| `tokensUsed` | number or null | Tokens consumed against the active goal when known |
-| `timeUsedSeconds` | number or null | Elapsed time against the active goal when known |
-| `completionEvidence` | string[] | Evidence refs required before treating the goal as complete |
-| `nextContinuationAction` | string or null | Next safe action toward the active objective |
+| Field                    | Type           | Purpose                                                     |
+| ------------------------ | -------------- | ----------------------------------------------------------- |
+| `goalRef`                | string or null | Runtime goal id, thread id, or artifact ref when available  |
+| `linkedPlan`             | string or null | Harness plan id or path when matched                        |
+| `linkedLinearIssue`      | string or null | Linear issue key when matched                               |
+| `tokenBudget`            | number or null | Token budget when the runtime exposes one                   |
+| `tokensUsed`             | number or null | Tokens consumed against the active goal when known          |
+| `timeUsedSeconds`        | number or null | Elapsed time against the active goal when known             |
+| `completionEvidence`     | string[]       | Evidence refs required before treating the goal as complete |
+| `nextContinuationAction` | string or null | Next safe action toward the active objective                |
 
 Rules:
 
@@ -544,16 +546,16 @@ inspect state
 
 ### State Model
 
-| State | Description |
-| --- | --- |
-| `S0_INPUT` | User, agent, or CI invokes a cockpit command |
-| `S1_CONTEXT` | Harness reads repo root, git state, contract, and command catalog |
-| `S2_CLASSIFY` | Harness classifies changed files, risk, and available evidence |
-| `S3_DECIDE` | Harness selects the next safest command or human action |
-| `S4_RENDER` | Harness emits `HarnessDecision` JSON and human text |
-| `S5_EXECUTE_EXTERNAL` | Caller executes the recommended command when safe |
-| `S6_RECORD` | Existing command writes evidence or run artifacts |
-| `S7_LEARN` | Repeated findings become review context, validation plans, or guardrails |
+| State                 | Description                                                              |
+| --------------------- | ------------------------------------------------------------------------ |
+| `S0_INPUT`            | User, agent, or CI invokes a cockpit command                             |
+| `S1_CONTEXT`          | Harness reads repo root, git state, contract, and command catalog        |
+| `S2_CLASSIFY`         | Harness classifies changed files, risk, and available evidence           |
+| `S3_DECIDE`           | Harness selects the next safest command or human action                  |
+| `S4_RENDER`           | Harness emits `HarnessDecision` JSON and human text                      |
+| `S5_EXECUTE_EXTERNAL` | Caller executes the recommended command when safe                        |
+| `S6_RECORD`           | Existing command writes evidence or run artifacts                        |
+| `S7_LEARN`            | Repeated findings become review context, validation plans, or guardrails |
 
 `harness next` owns `S1` through `S4` only. It does not own `S5` execution.
 
@@ -620,14 +622,14 @@ more complete candidate lists after parser support exists.
 
 ### Source Error Handling
 
-| Source condition | Required handling |
-| --- | --- |
-| Missing optional source | Continue; add `freshness: missing` only when it affects the recommendation |
-| Empty source | Continue if emptiness is valid; otherwise add `status: empty` source error |
-| Invalid JSON or schema | Ignore as input, add `status: invalid`, and prefer safer action |
-| Current-head mismatch | Mark source `stale`; use only as contextual evidence |
-| Required local source blocked | Return `blocked` unless a safer diagnostic command exists |
-| Network source unavailable | Do not fail offline mode; return local recommendation and mark network source unavailable |
+| Source condition              | Required handling                                                                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| Missing optional source       | Continue; add `freshness: missing` only when it affects the recommendation                |
+| Empty source                  | Continue if emptiness is valid; otherwise add `status: empty` source error                |
+| Invalid JSON or schema        | Ignore as input, add `status: invalid`, and prefer safer action                           |
+| Current-head mismatch         | Mark source `stale`; use only as contextual evidence                                      |
+| Required local source blocked | Return `blocked` unless a safer diagnostic command exists                                 |
+| Network source unavailable    | Do not fail offline mode; return local recommendation and mark network source unavailable |
 
 Source errors must not corrupt stdout JSON. They belong in `meta.sourceErrors`.
 
@@ -840,24 +842,24 @@ default.
 
 ```json
 {
-  "schemaVersion": "harness-decision/v1",
-  "producer": "next",
-  "status": "action_required",
-  "summary": "Review-gate behavior changed and needs focused tests.",
-  "nextAction": "Run the focused review-gate tests before broader validation.",
-  "nextCommand": "pnpm vitest run src/commands/review-gate.test.ts",
-  "safeToRun": true,
-  "requiresHuman": false,
-  "requiresNetwork": false,
-  "writesFiles": false,
-  "evidenceRef": ["git:changed-files", "harness.contract.json"],
-  "failureClass": null,
-  "retry": "safe",
-  "riskTier": "medium",
-  "meta": {
-    "changedFiles": ["src/commands/review-gate.ts"],
-    "alternatives": ["bash scripts/validate-codestyle.sh --fast"]
-  }
+	"schemaVersion": "harness-decision/v1",
+	"producer": "next",
+	"status": "action_required",
+	"summary": "Review-gate behavior changed and needs focused tests.",
+	"nextAction": "Run the focused review-gate tests before broader validation.",
+	"nextCommand": "pnpm vitest run src/commands/review-gate.test.ts",
+	"safeToRun": true,
+	"requiresHuman": false,
+	"requiresNetwork": false,
+	"writesFiles": false,
+	"evidenceRef": ["git:changed-files", "harness.contract.json"],
+	"failureClass": null,
+	"retry": "safe",
+	"riskTier": "medium",
+	"meta": {
+		"changedFiles": ["src/commands/review-gate.ts"],
+		"alternatives": ["bash scripts/validate-codestyle.sh --fast"]
+	}
 }
 ```
 
@@ -1000,20 +1002,20 @@ Harness adaptation:
 
 Command metadata should gain:
 
-| Field | Values | Purpose |
-| --- | --- | --- |
-| `tier` | `cockpit`, `domain`, `plumbing`, `legacy` | Default help and agent routing |
-| `primaryAudience` | `agent`, `human`, `both` | Rendering and docs priority |
-| `orchestratedBy` | string array | Cockpit commands that call or recommend it |
+| Field             | Values                                    | Purpose                                    |
+| ----------------- | ----------------------------------------- | ------------------------------------------ |
+| `tier`            | `cockpit`, `domain`, `plumbing`, `legacy` | Default help and agent routing             |
+| `primaryAudience` | `agent`, `human`, `both`                  | Rendering and docs priority                |
+| `orchestratedBy`  | string array                              | Cockpit commands that call or recommend it |
 
 Initial tiers:
 
-| Tier | Commands |
-| --- | --- |
-| `cockpit` | `check`, `next` when registered; `pr-ready`, `fix-review`, and `learn` only after their registered command specs exist |
-| `domain` | `init`, `contract`, `review-gate`, `docs-gate`, `ci-migrate`, `linear`, `validation-plan`, `review-context` |
-| `plumbing` | `drift-gate`, `artifact-gate`, `source-outline`, `index-context`, `replay`, `simulate`, individual policy checks |
-| `legacy` | deprecated aliases and compatibility-only command names |
+| Tier       | Commands                                                                                                               |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `cockpit`  | `check`, `next` when registered; `pr-ready`, `fix-review`, and `learn` only after their registered command specs exist |
+| `domain`   | `init`, `contract`, `review-gate`, `docs-gate`, `ci-migrate`, `linear`, `validation-plan`, `review-context`            |
+| `plumbing` | `drift-gate`, `artifact-gate`, `source-outline`, `index-context`, `replay`, `simulate`, individual policy checks       |
+| `legacy`   | deprecated aliases and compatibility-only command names                                                                |
 
 Default help should show cockpit commands first. Full command help remains
 available through `--all` or equivalent. First-slice help must derive runnable
@@ -1034,16 +1036,16 @@ action. The intent is product compression, not command deletion.
 
 Readiness commands must have distinct jobs:
 
-| Surface | Responsibility |
-| --- | --- |
-| `harness check` | Fast repo readiness and obvious setup gaps |
-| `harness next` | Next safe action selection |
-| `harness verify-work` | Canonical repo verification gate |
-| `harness pr-ready` | Merge readiness proof |
-| `harness doctor` | Installation, config, tooling, and diagnostic recovery |
-| `harness validation-plan` | Commands that prove the current change |
-| `harness review-context` | Reviewer briefing from changed files and learnings |
-| `harness health` | Aggregate gate scorecard and auto-fix surface |
+| Surface                   | Responsibility                                         |
+| ------------------------- | ------------------------------------------------------ |
+| `harness check`           | Fast repo readiness and obvious setup gaps             |
+| `harness next`            | Next safe action selection                             |
+| `harness verify-work`     | Canonical repo verification gate                       |
+| `harness pr-ready`        | Merge readiness proof                                  |
+| `harness doctor`          | Installation, config, tooling, and diagnostic recovery |
+| `harness validation-plan` | Commands that prove the current change                 |
+| `harness review-context`  | Reviewer briefing from changed files and learnings     |
+| `harness health`          | Aggregate gate scorecard and auto-fix surface          |
 
 No command should duplicate another surface's primary responsibility in human
 output. It may call or recommend the other command.
@@ -1082,16 +1084,16 @@ lines and 395348 Codex rollout lines, with 70 `coding-harness` project hints,
 
 The Harness Engineering evidence bundle surfaced repeated blocker boundaries:
 
-| Boundary | Count |
-| --- | ---: |
-| `lint_failure` | 146 |
-| `missing_file` | 129 |
-| `git_state` | 68 |
-| `network` | 51 |
-| `test_failure` | 47 |
-| `timeout` | 5 |
-| `approval_required` | 4 |
-| `permission` | 2 |
+| Boundary            | Count |
+| ------------------- | ----: |
+| `lint_failure`      |   146 |
+| `missing_file`      |   129 |
+| `git_state`         |    68 |
+| `network`           |    51 |
+| `test_failure`      |    47 |
+| `timeout`           |     5 |
+| `approval_required` |     4 |
+| `permission`        |     2 |
 
 For `coding-harness` workflow candidates specifically, the strongest repeated
 boundaries were `approval_required`, `missing_file`, and `network`, each at 42,
@@ -1113,9 +1115,9 @@ needs a cross-surface grouping layer for agent friction.
 
 Interface alternatives:
 
-| Shape | Example | Tradeoff |
-| --- | --- | --- |
-| Reuse `failureClass` everywhere | `failureClass: "git_state_unavailable"` | Lowest new surface, but conflates command-specific failure semantics with aggregate session friction |
+| Shape                                 | Example                                                                 | Tradeoff                                                                                                                           |
+| ------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Reuse `failureClass` everywhere       | `failureClass: "git_state_unavailable"`                                 | Lowest new surface, but conflates command-specific failure semantics with aggregate session friction                               |
 | Add stable `blockerBoundary` grouping | `failureClass: "git_state_unavailable"`, `blockerBoundary: "git_state"` | Slightly more schema, but preserves gate detail while giving `next`, `review-context`, and `pr-ready` a common recovery vocabulary |
 
 Selected shape: add stable blocker boundaries as aggregate categories, and map
@@ -1123,43 +1125,43 @@ existing command-specific failure classes into them where possible.
 
 ```ts
 type BlockerBoundary =
-  | "lint_failure"
-  | "missing_file"
-  | "git_state"
-  | "network"
-  | "test_failure"
-  | "timeout"
-  | "approval_required"
-  | "permission";
+	| "lint_failure"
+	| "missing_file"
+	| "git_state"
+	| "network"
+	| "test_failure"
+	| "timeout"
+	| "approval_required"
+	| "permission";
 
 interface SessionFrictionEvidence {
-  source: "session-collector" | "fixture" | "manual";
-  generatedAt: string;
-  windowDays: number;
-  redactionStatus: "applied" | "not_needed";
-  totalSessions: number;
-  boundaryCounts: Partial<Record<BlockerBoundary, number>>;
-  workflowBoundaryCounts?: Record<
-    string,
-    Partial<Record<BlockerBoundary, number>>
-  >;
-  evidenceRefs: string[];
+	source: "session-collector" | "fixture" | "manual";
+	generatedAt: string;
+	windowDays: number;
+	redactionStatus: "applied" | "not_needed";
+	totalSessions: number;
+	boundaryCounts: Partial<Record<BlockerBoundary, number>>;
+	workflowBoundaryCounts?: Record<
+		string,
+		Partial<Record<BlockerBoundary, number>>
+	>;
+	evidenceRefs: string[];
 }
 
 interface RecoveryRoute {
-  boundary: BlockerBoundary;
-  action: string;
-  command?: string;
-  guardrailDestination?:
-    | "validation-plan"
-    | "review-context"
-    | "doctor"
-    | "learnings"
-    | "project-brain"
-    | "human-escalation";
-  requiresHuman?: boolean;
-  requiresNetwork?: boolean;
-  evidenceRefs: string[];
+	boundary: BlockerBoundary;
+	action: string;
+	command?: string;
+	guardrailDestination?:
+		| "validation-plan"
+		| "review-context"
+		| "doctor"
+		| "learnings"
+		| "project-brain"
+		| "human-escalation";
+	requiresHuman?: boolean;
+	requiresNetwork?: boolean;
+	evidenceRefs: string[];
 }
 ```
 
@@ -1172,10 +1174,10 @@ identifiers from collector inputs.
 
 Command metadata should extend the tier model with agent-native classification:
 
-| Field | Values | Purpose |
-| --- | --- | --- |
-| `agentMode` | `orient`, `plan`, `verify`, `review`, `repair`, `handoff`, `learn`, `admin` | What kind of agent moment this command serves |
-| `visibility` | `default`, `agent`, `advanced`, `plumbing`, `hidden`, `legacy` | Where the command appears in help and catalog output |
+| Field        | Values                                                                      | Purpose                                              |
+| ------------ | --------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `agentMode`  | `orient`, `plan`, `verify`, `review`, `repair`, `handoff`, `learn`, `admin` | What kind of agent moment this command serves        |
+| `visibility` | `default`, `agent`, `advanced`, `plumbing`, `hidden`, `legacy`              | Where the command appears in help and catalog output |
 
 `tier` remains the architectural category. `agentMode` describes the agent's
 job. `visibility` controls first-contact discovery.
@@ -1218,16 +1220,16 @@ future outcome only in docs, not as an executable command.
 `HarnessDecision` should deepen from a next-command recommendation into an
 agent work packet:
 
-| Field | Purpose |
-| --- | --- |
-| `phase` | `orient`, `verify`, `review`, `repair`, or `handoff` |
-| `objective` | Plain-language outcome the agent is trying to complete |
-| `nextCommand` | Exact runnable command when one is safe and known |
-| `requiredEvidence` | Evidence artifacts, checks, or refs needed before closeout |
-| `stopConditions` | Conditions that require stopping instead of improvising |
-| `humanEscalation` | Approval, credential, network, or policy blocker when present |
-| `followUpCommands` | Ordered later commands when the next step succeeds |
-| `hiddenPlumbing` | Command engines used or considered but not exposed as choices |
+| Field              | Purpose                                                       |
+| ------------------ | ------------------------------------------------------------- |
+| `phase`            | `orient`, `verify`, `review`, `repair`, or `handoff`          |
+| `objective`        | Plain-language outcome the agent is trying to complete        |
+| `nextCommand`      | Exact runnable command when one is safe and known             |
+| `requiredEvidence` | Evidence artifacts, checks, or refs needed before closeout    |
+| `stopConditions`   | Conditions that require stopping instead of improvising       |
+| `humanEscalation`  | Approval, credential, network, or policy blocker when present |
+| `followUpCommands` | Ordered later commands when the next step succeeds            |
+| `hiddenPlumbing`   | Command engines used or considered but not exposed as choices |
 
 The existing `status`, `nextAction`, `safeToRun`, permission, evidence, retry,
 risk, and metadata fields remain the base contract. The work-packet fields make
@@ -1242,11 +1244,11 @@ stop condition or human escalation must explain why.
 The work packet may include collector-derived friction only through the
 privacy-safe interface:
 
-| Field | Purpose |
-| --- | --- |
+| Field               | Purpose                                                     |
+| ------------------- | ----------------------------------------------------------- |
 | `blockerBoundaries` | Stable boundary names seen in current or recurring evidence |
-| `sessionFriction` | Optional aggregate `SessionFrictionEvidence` payload |
-| `recoveryRoutes` | Ordered `RecoveryRoute` guidance for repeated blockers |
+| `sessionFriction`   | Optional aggregate `SessionFrictionEvidence` payload        |
+| `recoveryRoutes`    | Ordered `RecoveryRoute` guidance for repeated blockers      |
 
 ### PR-Ready Orchestrator Contract
 
@@ -1270,20 +1272,20 @@ It should orchestrate existing engines rather than replace them:
 It should not necessarily run every gate. Its primary contract is to emit a
 packet:
 
-| Field | Purpose |
-| --- | --- |
-| `status` | `blocked`, `ready`, or `action_required` |
-| `handoffStatus` | `not_ready`, `ready_for_pr`, or `needs_human` |
-| `requiredNow` | Commands or actions needed before any readiness claim |
-| `requiredBeforeHandoff` | Commands or evidence needed before PR closeout |
-| `networkRequired` | Checks that require GitHub, Linear, CI, or external APIs |
-| `prBodyLines` | Concrete PR-description evidence lines the agent should include |
-| `evidenceRefs` | Existing artifacts, commands, URLs, or files used |
-| `safeCommands` | Safe local commands the agent may run next |
-| `manualCommands` | Commands requiring approval, credentials, or human judgement |
-| `blockers` | Stop conditions with recovery guidance |
-| `blockerBoundaries` | Stable friction categories represented by current blockers |
-| `recoveryRoutes` | Ordered next recovery or guardrail destinations |
+| Field                   | Purpose                                                         |
+| ----------------------- | --------------------------------------------------------------- |
+| `status`                | `blocked`, `ready`, or `action_required`                        |
+| `handoffStatus`         | `not_ready`, `ready_for_pr`, or `needs_human`                   |
+| `requiredNow`           | Commands or actions needed before any readiness claim           |
+| `requiredBeforeHandoff` | Commands or evidence needed before PR closeout                  |
+| `networkRequired`       | Checks that require GitHub, Linear, CI, or external APIs        |
+| `prBodyLines`           | Concrete PR-description evidence lines the agent should include |
+| `evidenceRefs`          | Existing artifacts, commands, URLs, or files used               |
+| `safeCommands`          | Safe local commands the agent may run next                      |
+| `manualCommands`        | Commands requiring approval, credentials, or human judgement    |
+| `blockers`              | Stop conditions with recovery guidance                          |
+| `blockerBoundaries`     | Stable friction categories represented by current blockers      |
+| `recoveryRoutes`        | Ordered next recovery or guardrail destinations                 |
 
 `pr-ready` should consume `validation-plan` and `review-context` as engines.
 Agents should not have to remember to call all three surfaces manually.
@@ -1296,13 +1298,13 @@ rather than a hard error when the changed files can still be classified.
 
 Output should be ranked by when an agent should run each command:
 
-| Bucket | Purpose |
-| --- | --- |
-| `fast` | Lowest-cost checks useful during iteration |
-| `required` | Checks required before claiming the touched path is verified |
-| `beforePr` | Broader gates needed before handoff |
-| `deep` | Expensive or high-blast-radius validation |
-| `networkRequired` | Checks that need remote services or credentials |
+| Bucket            | Purpose                                                      |
+| ----------------- | ------------------------------------------------------------ |
+| `fast`            | Lowest-cost checks useful during iteration                   |
+| `required`        | Checks required before claiming the touched path is verified |
+| `beforePr`        | Broader gates needed before handoff                          |
+| `deep`            | Expensive or high-blast-radius validation                    |
+| `networkRequired` | Checks that need remote services or credentials              |
 
 Each bucket entry should include the exact command, reason, source refs, stop
 conditions, and whether failure blocks closeout.
@@ -1313,14 +1315,14 @@ conditions, and whether failure blocks closeout.
 agent misses it?" It remains a context engine, but its JSON should support PR
 handoff directly:
 
-| Field | Purpose |
-| --- | --- |
-| `reviewerLikelyConcerns` | Concrete risks reviewers are likely to inspect |
-| `mustMentionInPr` | Evidence or caveats that belong in the PR body |
-| `evidenceRequired` | Artifacts needed to make the handoff credible |
-| `knownRepeatedFailures` | Applicable learnings or recurring review failures |
-| `recommendedReviewers` | Human, bot, or specialty reviewer routes when known |
-| `doNotClaim` | Claims the agent must avoid because evidence is missing |
+| Field                    | Purpose                                                 |
+| ------------------------ | ------------------------------------------------------- |
+| `reviewerLikelyConcerns` | Concrete risks reviewers are likely to inspect          |
+| `mustMentionInPr`        | Evidence or caveats that belong in the PR body          |
+| `evidenceRequired`       | Artifacts needed to make the handoff credible           |
+| `knownRepeatedFailures`  | Applicable learnings or recurring review failures       |
+| `recommendedReviewers`   | Human, bot, or specialty reviewer routes when known     |
+| `doNotClaim`             | Claims the agent must avoid because evidence is missing |
 
 `pr-ready` should embed or link to this output so review context becomes part of
 the readiness packet instead of a separate ritual.
@@ -1345,15 +1347,15 @@ Human output should render operational language first and canonical IDs second.
 
 Preferred translations:
 
-| Internal term | Human rendering |
-| --- | --- |
-| `north-star evidence` | why this helps review or merge speed |
-| `governed surface` | important repo surface |
-| `artifact provenance` | generated file proof |
-| `review context` | reviewer briefing |
-| `validation plan` | commands to prove this change |
-| `admission declaration` | why this change belongs |
-| `product surface` | harness-owned capability |
+| Internal term           | Human rendering                      |
+| ----------------------- | ------------------------------------ |
+| `north-star evidence`   | why this helps review or merge speed |
+| `governed surface`      | important repo surface               |
+| `artifact provenance`   | generated file proof                 |
+| `review context`        | reviewer briefing                    |
+| `validation plan`       | commands to prove this change        |
+| `admission declaration` | why this change belongs              |
+| `product surface`       | harness-owned capability             |
 
 Machine output must keep stable canonical IDs.
 
@@ -1386,20 +1388,20 @@ Machine output must keep stable canonical IDs.
 
 ## Failure Model and Recovery
 
-| Failure | Required behavior |
-| --- | --- |
-| Git state unavailable | Return `blocked`, no next command, evidence ref to diagnostic |
-| Contract missing | Recommend `harness init --dry-run` or `harness contract init` depending on repo state |
-| Contract invalid | Recommend `harness contract validate --json` or `harness doctor --json` |
-| Command catalog unavailable | Return `blocked`; do not invent commands |
-| Changed files unavailable | Fall back to repo readiness; mark risk `unknown` |
-| Recent run failed | Recommend resume or focused failed gate command when safe |
-| Network required but disabled | Return human/network blocker and offline alternative when available |
-| Multiple equal next actions | Return ranked alternatives with reasons |
-| Unsafe mutative action | Recommend dry-run or human approval path first |
-| Parser incompatibility | Fail closed with `failureClass: decision_output_invalid` |
-| Direct `tsx` IPC failure | Recommend built CLI or repo wrapper path before retrying development path |
-| Metric source unavailable | Emit `MetricEvidence.status: unavailable` or `manual_only`; do not claim measured impact |
+| Failure                                | Required behavior                                                                               |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Git state unavailable                  | Return `blocked`, no next command, evidence ref to diagnostic                                   |
+| Contract missing                       | Recommend `harness init --dry-run` or `harness contract init` depending on repo state           |
+| Contract invalid                       | Recommend `harness contract validate --json` or `harness doctor --json`                         |
+| Command catalog unavailable            | Return `blocked`; do not invent commands                                                        |
+| Changed files unavailable              | Fall back to repo readiness; mark risk `unknown`                                                |
+| Recent run failed                      | Recommend resume or focused failed gate command when safe                                       |
+| Network required but disabled          | Return human/network blocker and offline alternative when available                             |
+| Multiple equal next actions            | Return ranked alternatives with reasons                                                         |
+| Unsafe mutative action                 | Recommend dry-run or human approval path first                                                  |
+| Parser incompatibility                 | Fail closed with `failureClass: decision_output_invalid`                                        |
+| Direct `tsx` IPC failure               | Recommend built CLI or repo wrapper path before retrying development path                       |
+| Metric source unavailable              | Emit `MetricEvidence.status: unavailable` or `manual_only`; do not claim measured impact        |
 | Repeated failure lacks guardrail route | Recommend evidence collection or explicit `skip_reason`; do not silently drop the learning loop |
 
 Recovery output must include `nextAction`, `retry`, and `evidenceRef`.
@@ -1442,69 +1444,69 @@ as product proof:
 
 ## Acceptance Matrix
 
-| ID | Slice | Acceptance criterion | Verification |
-| --- | --- | --- | --- |
-| `SA1` | `JSC-248` | A shared `HarnessDecision` type exists in a stable library path. | Typecheck and unit test |
-| `SA2` | `JSC-248` | `HarnessDecision.status` supports `pass`, `fail`, `blocked`, and `action_required`. | Unit test |
-| `SA3` | `JSC-248` | `HarnessDecision` includes next-action, safety, network, mutation, retry, evidence, and risk fields. | Typecheck and fixture test |
-| `SA4` | `JSC-248` | `harness next --json` emits valid `HarnessDecision` JSON to stdout. | CLI test |
-| `SA5` | `JSC-248` | `harness next` does not mutate files by default. | Git-status fixture test |
-| `SA6` | `JSC-248` | `harness next` recommends a focused validation command for changed source files when command metadata supports it. | Fixture test |
-| `SA7` | `JSC-248` | `harness next` recommends diagnostic recovery when contract or tooling state is blocked. | Fixture test |
-| `SA8` | `JSC-248` | `harness next` marks network-required recommendations explicitly. | Fixture test |
-| `SA9` | `JSC-248` | Default help shows registered runnable cockpit commands before domain and plumbing commands. | CLI snapshot test |
-| `SA10` | `JSC-248` | `harness commands --json` includes tier, primary audience, and orchestrated-by metadata for first-slice cockpit and directly orchestrated commands. | Catalog schema test |
-| `SA11` | `JSC-248` | Existing `GateResult` outputs remain parseable after cockpit metadata changes. | Regression tests |
-| `SA12` | `JSC-248` | Docs distinguish only the responsibilities needed for `next` to route to first-slice follow-up commands. | Docs lint plus targeted assertion |
-| `SA13` | `JSC-248` | Human output renders plain operational wording while JSON keeps canonical IDs. | Snapshot test |
-| `SA16` | `JSC-248` | New standalone gates require metadata proving cockpit consumption or are categorized as plumbing/legacy. | Catalog validation test |
-| `SA17` | `JSC-248` | README and quickstart present the cockpit loop without adding parallel hero-story workflows. | Docs review and markdown lint |
-| `SA14` | Follow-on | PR readiness cockpit command or alias produces a `HarnessDecision` that links to review, docs, required checks, Linear, and validation evidence. | CLI fixture test |
-| `SA15` | Follow-on | Learning cockpit command or alias maps repeated review evidence to an enforcement destination recommendation. | Fixture test |
-| `SA18` | Follow-on | A fresh-agent evaluation can complete "make repo safe for Codex" using `harness next --json` recommendations. | Evaluation scenario |
-| `SA19` | Follow-on | A fresh-agent evaluation can identify why a PR is not ready using cockpit recommendations. | Evaluation scenario |
-| `SA20` | Follow-on | A fresh-agent evaluation can route repeated review pain into learnings/review-context/validation-plan evidence. | Evaluation scenario |
-| `SA21` | Follow-on | Agent-facing docs prefer built CLI or repo wrapper execution paths over direct `tsx` operational commands. | Docs assertion |
-| `SA22` | Follow-on | PR lead-time metric output distinguishes executable evidence from manual status prose. | Metrics fixture test |
-| `SA23` | Follow-on | Review/rework metric output exposes sample size, time window, and source completeness. | Metrics fixture test |
-| `SA24` | Follow-on | Repeated review or validation failures map to one durable guardrail destination or an explicit skip reason. | Learning fixture test |
-| `SA25` | Follow-on | `harness next --json` can return an agent snapshot with branch, SHA, changed files, known blockers, selected command, and evidence refs. | CLI fixture test |
-| `SA26` | Follow-on | Advanced commands remain callable while default first-contact help emphasizes runnable cockpit commands. | CLI snapshot test |
-| `SA27` | Follow-on | Static product claims about PR lead-time improvement are backed by a command, artifact, or explicit manual-only label. | Docs and metrics assertion |
-| `SA28` | Technical hardening | `riskTier` accepts existing `critical` values and preserves compatibility with the decision library. | Typecheck and unit test |
-| `SA29` | Technical hardening | Parser-exposed flags for `harness next` are limited to implemented options; follow-on flags are not documented as runnable until supported. | CLI usage test |
-| `SA30` | Technical hardening | Missing, empty, invalid, stale, and blocked sources are classified under `meta.sourceErrors` without corrupting JSON stdout. | Fixture test |
-| `SA31` | Technical hardening | Identical inputs and artifacts produce identical `nextCommand`, evidence refs, and alternative ordering. | Replay determinism test |
-| `SA32` | Technical hardening | Recent run selection prefers parseable current-head artifacts, newest timestamp, then lexicographic artifact path. | Run-selection unit test |
-| `SA33` | Technical hardening | First-slice help derives runnable cockpit entries from registered command specs only. | Catalog/help consistency test |
-| `SA34` | Technical hardening | First-slice alternatives are omitted by default unless required to explain a tie or blocked state. | CLI fixture test |
-| `SA35` | Technical hardening | Network-disabled mode avoids live PR/Linear/API calls and reports unavailable network sources explicitly. | Offline fixture test |
-| `SA36` | Technical hardening | Codex-native `developer_instructions`, `compact_prompt`, and `experimental_compact_prompt_file` are documented as confirmed evidence but not required first-slice cockpit output. | Docs assertion |
-| `SA37` | Follow-on | Any Harness guidance that recommends Codex config steering distinguishes global developer instructions from repo-local AGENTS, skills, and Project Brain policy. | Docs and fixture review |
-| `SA38` | Follow-on | Compact-prompt adoption is version-gated and tied to a resume/compaction eval before becoming generated bootstrap config. | Resume eval scenario |
-| `SA39` | Follow-on | `harness next --json` can expose an `ApprovalPlan` with policy, reviewer, permission profile, Auto-review eligibility, strict-review suggestion, human requirement, risk, authorization, and reason. | CLI fixture test |
-| `SA40` | Follow-on | Harness docs and generated examples prefer `auto_review` while accepting `guardian_subagent` only as a Codex compatibility alias. | Docs and config assertion |
-| `SA41` | Follow-on | Auto-review is never presented as a deterministic security guarantee or as a replacement for branch protection, independent review, Semgrep, CodeRabbit, or human-required actions. | Docs assertion |
-| `SA42` | Follow-on | Approval-review outcomes, when available, are captured as evidence with review id, target item, action, risk, authorization, outcome, terminal status, decision source, rationale, and refs. | Artifact fixture test |
-| `SA43` | Follow-on | Timeout, malformed reviewer output, reviewer execution failure, `none` reviewer state, unknown authorization, or unknown policy state fails closed to human-required or safer local diagnostic action. | Failure fixture test |
-| `SA44` | Follow-on | Strict Auto-review is recommended only as turn-scoped extra scrutiny after a permission grant, not as a session-wide permission expansion. | Permission-plan fixture test |
-| `SA45` | Follow-on | A small evaluation compares real permission prompts against human decisions before Auto-review guidance becomes a default Harness recommendation. | Eval report |
-| `SA46` | Follow-on | `harness next --json` can expose optional `goalContext` metadata without requiring experimental Codex app-server access. | CLI fixture test |
-| `SA47` | Follow-on | Imported Codex goal context is linked to the active plan and Linear issue when possible, and marked stale or unknown when it conflicts with durable planning evidence. | Fixture test |
-| `SA48` | Follow-on | Harness never creates, replaces, pauses, resumes, clears, or completes Codex goals unless an explicit user, system, or developer instruction authorizes that action. | Policy fixture test |
-| `SA49` | Follow-on | Goal completion requires prompt-to-artifact evidence covering every explicit requirement before any completion recommendation is emitted. | Completion-audit fixture |
-| `SA50` | Follow-on | Goal token budget, tokens used, and elapsed time feed session-friction evidence without being treated as completion proof. | Closeout fixture test |
-| `SA51` | Follow-on | Harness docs distinguish documented experimental app-server goal APIs from the live fork's experimental `/goal` TUI command. | Docs assertion |
-| `SA52` | Follow-on | A resume evaluation compares next-action fidelity with and without `goalContext` before goal guidance becomes default bootstrap output. | Resume eval report |
-| `SA53` | Promoted | Command metadata exposes `agentMode` and `visibility` without removing existing `tier`, `primaryAudience`, or `orchestratedBy` fields. | Catalog schema test |
-| `SA54` | Promoted | `harness commands --json --for-agent` returns the public agent rail set and excludes commands marked `plumbing`, `hidden`, or `legacy` unless explicitly requested. | CLI fixture test |
-| `SA55` | Follow-on | `HarnessDecision` can emit a work packet with `phase`, `objective`, `nextCommand`, `requiredEvidence`, `stopConditions`, `humanEscalation`, `followUpCommands`, `hiddenPlumbing`, and a compatibility rule that keeps `nextAction` as the human recommendation. | Decision fixture test |
-| `SA56` | Follow-on | `validation-plan` returns ranked `fast`, `required`, `beforePr`, `deep`, and `networkRequired` buckets and degrades to path-based planning when optional learning artifacts are absent. | Validation-plan fixture test |
-| `SA57` | Follow-on | `review-context` emits reviewer handoff fields: `reviewerLikelyConcerns`, `mustMentionInPr`, `evidenceRequired`, `knownRepeatedFailures`, `recommendedReviewers`, and `doNotClaim`. | Review-context fixture test |
-| `SA58` | Follow-on | `harness pr-ready --json` emits readiness packet fields covering current blockers, required evidence, network-required checks, PR-body evidence lines, safe local commands, manual commands, and `handoffStatus`. | CLI fixture test |
-| `SA59` | Follow-on | `harness next`, `validation-plan`, `review-context`, and `pr-ready` preserve stable blocker boundary names for `lint_failure`, `missing_file`, `git_state`, `network`, `test_failure`, `timeout`, `approval_required`, and `permission`. | Collector-backed fixture test |
-| `SA60` | Follow-on | A session-collector fixture can feed privacy-safe `SessionFrictionEvidence` aggregate counts into `review-context` or `pr-ready` without reading raw private session logs in normal CLI output. | Privacy-safe evidence fixture |
-| `SA61` | Follow-on | When repeated blocker evidence exists, the cockpit recommends an ordered `RecoveryRoute` with a command, guardrail destination, or human escalation instead of only listing the failed command. | Session-friction fixture test |
+| ID     | Slice               | Acceptance criterion                                                                                                                                                                                                                                            | Verification                      |
+| ------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `SA1`  | `JSC-248`           | A shared `HarnessDecision` type exists in a stable library path.                                                                                                                                                                                                | Typecheck and unit test           |
+| `SA2`  | `JSC-248`           | `HarnessDecision.status` supports `pass`, `fail`, `blocked`, and `action_required`.                                                                                                                                                                             | Unit test                         |
+| `SA3`  | `JSC-248`           | `HarnessDecision` includes next-action, safety, network, mutation, retry, evidence, and risk fields.                                                                                                                                                            | Typecheck and fixture test        |
+| `SA4`  | `JSC-248`           | `harness next --json` emits valid `HarnessDecision` JSON to stdout.                                                                                                                                                                                             | CLI test                          |
+| `SA5`  | `JSC-248`           | `harness next` does not mutate files by default.                                                                                                                                                                                                                | Git-status fixture test           |
+| `SA6`  | `JSC-248`           | `harness next` recommends a focused validation command for changed source files when command metadata supports it.                                                                                                                                              | Fixture test                      |
+| `SA7`  | `JSC-248`           | `harness next` recommends diagnostic recovery when contract or tooling state is blocked.                                                                                                                                                                        | Fixture test                      |
+| `SA8`  | `JSC-248`           | `harness next` marks network-required recommendations explicitly.                                                                                                                                                                                               | Fixture test                      |
+| `SA9`  | `JSC-248`           | Default help shows registered runnable cockpit commands before domain and plumbing commands.                                                                                                                                                                    | CLI snapshot test                 |
+| `SA10` | `JSC-248`           | `harness commands --json` includes tier, primary audience, and orchestrated-by metadata for first-slice cockpit and directly orchestrated commands.                                                                                                             | Catalog schema test               |
+| `SA11` | `JSC-248`           | Existing `GateResult` outputs remain parseable after cockpit metadata changes.                                                                                                                                                                                  | Regression tests                  |
+| `SA12` | `JSC-248`           | Docs distinguish only the responsibilities needed for `next` to route to first-slice follow-up commands.                                                                                                                                                        | Docs lint plus targeted assertion |
+| `SA13` | `JSC-248`           | Human output renders plain operational wording while JSON keeps canonical IDs.                                                                                                                                                                                  | Snapshot test                     |
+| `SA16` | `JSC-248`           | New standalone gates require metadata proving cockpit consumption or are categorized as plumbing/legacy.                                                                                                                                                        | Catalog validation test           |
+| `SA17` | `JSC-248`           | README and quickstart present the cockpit loop without adding parallel hero-story workflows.                                                                                                                                                                    | Docs review and markdown lint     |
+| `SA14` | Follow-on           | PR readiness cockpit command or alias produces a `HarnessDecision` that links to review, docs, required checks, Linear, and validation evidence.                                                                                                                | CLI fixture test                  |
+| `SA15` | Follow-on           | Learning cockpit command or alias maps repeated review evidence to an enforcement destination recommendation.                                                                                                                                                   | Fixture test                      |
+| `SA18` | Follow-on           | A fresh-agent evaluation can complete "make repo safe for Codex" using `harness next --json` recommendations.                                                                                                                                                   | Evaluation scenario               |
+| `SA19` | Follow-on           | A fresh-agent evaluation can identify why a PR is not ready using cockpit recommendations.                                                                                                                                                                      | Evaluation scenario               |
+| `SA20` | Follow-on           | A fresh-agent evaluation can route repeated review pain into learnings/review-context/validation-plan evidence.                                                                                                                                                 | Evaluation scenario               |
+| `SA21` | Follow-on           | Agent-facing docs prefer built CLI or repo wrapper execution paths over direct `tsx` operational commands.                                                                                                                                                      | Docs assertion                    |
+| `SA22` | Follow-on           | PR lead-time metric output distinguishes executable evidence from manual status prose.                                                                                                                                                                          | Metrics fixture test              |
+| `SA23` | Follow-on           | Review/rework metric output exposes sample size, time window, and source completeness.                                                                                                                                                                          | Metrics fixture test              |
+| `SA24` | Follow-on           | Repeated review or validation failures map to one durable guardrail destination or an explicit skip reason.                                                                                                                                                     | Learning fixture test             |
+| `SA25` | Follow-on           | `harness next --json` can return an agent snapshot with branch, SHA, changed files, known blockers, selected command, and evidence refs.                                                                                                                        | CLI fixture test                  |
+| `SA26` | Follow-on           | Advanced commands remain callable while default first-contact help emphasizes runnable cockpit commands.                                                                                                                                                        | CLI snapshot test                 |
+| `SA27` | Follow-on           | Static product claims about PR lead-time improvement are backed by a command, artifact, or explicit manual-only label.                                                                                                                                          | Docs and metrics assertion        |
+| `SA28` | Technical hardening | `riskTier` accepts existing `critical` values and preserves compatibility with the decision library.                                                                                                                                                            | Typecheck and unit test           |
+| `SA29` | Technical hardening | Parser-exposed flags for `harness next` are limited to implemented options; follow-on flags are not documented as runnable until supported.                                                                                                                     | CLI usage test                    |
+| `SA30` | Technical hardening | Missing, empty, invalid, stale, and blocked sources are classified under `meta.sourceErrors` without corrupting JSON stdout.                                                                                                                                    | Fixture test                      |
+| `SA31` | Technical hardening | Identical inputs and artifacts produce identical `nextCommand`, evidence refs, and alternative ordering.                                                                                                                                                        | Replay determinism test           |
+| `SA32` | Technical hardening | Recent run selection prefers parseable current-head artifacts, newest timestamp, then lexicographic artifact path.                                                                                                                                              | Run-selection unit test           |
+| `SA33` | Technical hardening | First-slice help derives runnable cockpit entries from registered command specs only.                                                                                                                                                                           | Catalog/help consistency test     |
+| `SA34` | Technical hardening | First-slice alternatives are omitted by default unless required to explain a tie or blocked state.                                                                                                                                                              | CLI fixture test                  |
+| `SA35` | Technical hardening | Network-disabled mode avoids live PR/Linear/API calls and reports unavailable network sources explicitly.                                                                                                                                                       | Offline fixture test              |
+| `SA36` | Technical hardening | Codex-native `developer_instructions`, `compact_prompt`, and `experimental_compact_prompt_file` are documented as confirmed evidence but not required first-slice cockpit output.                                                                               | Docs assertion                    |
+| `SA37` | Follow-on           | Any Harness guidance that recommends Codex config steering distinguishes global developer instructions from repo-local AGENTS, skills, and Project Brain policy.                                                                                                | Docs and fixture review           |
+| `SA38` | Follow-on           | Compact-prompt adoption is version-gated and tied to a resume/compaction eval before becoming generated bootstrap config.                                                                                                                                       | Resume eval scenario              |
+| `SA39` | Follow-on           | `harness next --json` can expose an `ApprovalPlan` with policy, reviewer, permission profile, Auto-review eligibility, strict-review suggestion, human requirement, risk, authorization, and reason.                                                            | CLI fixture test                  |
+| `SA40` | Follow-on           | Harness docs and generated examples prefer `auto_review` while accepting `guardian_subagent` only as a Codex compatibility alias.                                                                                                                               | Docs and config assertion         |
+| `SA41` | Follow-on           | Auto-review is never presented as a deterministic security guarantee or as a replacement for branch protection, independent review, Semgrep, CodeRabbit, or human-required actions.                                                                             | Docs assertion                    |
+| `SA42` | Follow-on           | Approval-review outcomes, when available, are captured as evidence with review id, target item, action, risk, authorization, outcome, terminal status, decision source, rationale, and refs.                                                                    | Artifact fixture test             |
+| `SA43` | Follow-on           | Timeout, malformed reviewer output, reviewer execution failure, `none` reviewer state, unknown authorization, or unknown policy state fails closed to human-required or safer local diagnostic action.                                                          | Failure fixture test              |
+| `SA44` | Follow-on           | Strict Auto-review is recommended only as turn-scoped extra scrutiny after a permission grant, not as a session-wide permission expansion.                                                                                                                      | Permission-plan fixture test      |
+| `SA45` | Follow-on           | A small evaluation compares real permission prompts against human decisions before Auto-review guidance becomes a default Harness recommendation.                                                                                                               | Eval report                       |
+| `SA46` | Follow-on           | `harness next --json` can expose optional `goalContext` metadata without requiring experimental Codex app-server access.                                                                                                                                        | CLI fixture test                  |
+| `SA47` | Follow-on           | Imported Codex goal context is linked to the active plan and Linear issue when possible, and marked stale or unknown when it conflicts with durable planning evidence.                                                                                          | Fixture test                      |
+| `SA48` | Follow-on           | Harness never creates, replaces, pauses, resumes, clears, or completes Codex goals unless an explicit user, system, or developer instruction authorizes that action.                                                                                            | Policy fixture test               |
+| `SA49` | Follow-on           | Goal completion requires prompt-to-artifact evidence covering every explicit requirement before any completion recommendation is emitted.                                                                                                                       | Completion-audit fixture          |
+| `SA50` | Follow-on           | Goal token budget, tokens used, and elapsed time feed session-friction evidence without being treated as completion proof.                                                                                                                                      | Closeout fixture test             |
+| `SA51` | Follow-on           | Harness docs distinguish documented experimental app-server goal APIs from the live fork's experimental `/goal` TUI command.                                                                                                                                    | Docs assertion                    |
+| `SA52` | Follow-on           | A resume evaluation compares next-action fidelity with and without `goalContext` before goal guidance becomes default bootstrap output.                                                                                                                         | Resume eval report                |
+| `SA53` | Promoted            | Command metadata exposes `agentMode` and `visibility` without removing existing `tier`, `primaryAudience`, or `orchestratedBy` fields.                                                                                                                          | Catalog schema test               |
+| `SA54` | Promoted            | `harness commands --json --for-agent` returns the public agent rail set and excludes commands marked `plumbing`, `hidden`, or `legacy` unless explicitly requested.                                                                                             | CLI fixture test                  |
+| `SA55` | Promoted            | `HarnessDecision` can emit a work packet with `phase`, `objective`, `nextCommand`, `requiredEvidence`, `stopConditions`, `humanEscalation`, `followUpCommands`, `hiddenPlumbing`, and a compatibility rule that keeps `nextAction` as the human recommendation. | Decision fixture test             |
+| `SA56` | Promoted            | `validation-plan` returns ranked `fast`, `required`, `beforePr`, `deep`, and `networkRequired` buckets and degrades to path-based planning when optional learning artifacts are absent.                                                                         | Validation-plan fixture test      |
+| `SA57` | Follow-on           | `review-context` emits reviewer handoff fields: `reviewerLikelyConcerns`, `mustMentionInPr`, `evidenceRequired`, `knownRepeatedFailures`, `recommendedReviewers`, and `doNotClaim`.                                                                             | Review-context fixture test       |
+| `SA58` | Follow-on           | `harness pr-ready --json` emits readiness packet fields covering current blockers, required evidence, network-required checks, PR-body evidence lines, safe local commands, manual commands, and `handoffStatus`.                                               | CLI fixture test                  |
+| `SA59` | Follow-on           | `harness next`, `validation-plan`, `review-context`, and `pr-ready` preserve stable blocker boundary names for `lint_failure`, `missing_file`, `git_state`, `network`, `test_failure`, `timeout`, `approval_required`, and `permission`.                        | Collector-backed fixture test     |
+| `SA60` | Follow-on           | A session-collector fixture can feed privacy-safe `SessionFrictionEvidence` aggregate counts into `review-context` or `pr-ready` without reading raw private session logs in normal CLI output.                                                                 | Privacy-safe evidence fixture     |
+| `SA61` | Follow-on           | When repeated blocker evidence exists, the cockpit recommends an ordered `RecoveryRoute` with a command, guardrail destination, or human escalation instead of only listing the failed command.                                                                 | Session-friction fixture test     |
 
 ## Source Parity Notes
 
@@ -1613,7 +1615,7 @@ Recommended planning stance:
 - Treat `pr-ready`, `fix-review`, `learn`, metrics, and standalone
   `agent-snapshot` as follow-on product-compression work unless a registered
   implementation already exists.
-- Treat `SA55` through `SA61` as the remaining deferred command-surface
+- Treat `SA57` through `SA61` as the remaining deferred command-surface
   compression contract unless the issue scope is explicitly expanded again.
 - Add technical gates for replay determinism, parser/help parity, run selection,
   and source-error classification before claiming `harness next` is
