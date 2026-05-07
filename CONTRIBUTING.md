@@ -116,8 +116,11 @@ Recommended policy:
 ## Project Brain workflow
 
 - `harness init` scaffolds a Project Brain baseline under `.harness/`:
+  - `.harness/README.md` as the tracked control-plane map and selective tracking policy.
   - `knowledge/INDEX.md`, domain folders (`cli`, `ci`, `governance`, `tooling`), `decisions/`, `quality/criteria.md`, and `review-log.md`.
   - `.harness/memory/LEARNINGS.md` as the repo-scoped learned-fixes ledger.
+- Track curated `.harness` Markdown and JSON contract files with the repo; keep runtime databases, backups, caches, run output, and bulk snapshots local unless a fixture or validator explicitly consumes them.
+- Treat `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` as secondary context until an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slice references them.
 - Repo-local preflight treats the Project Brain scaffold as required baseline paths.
 - Run `./scripts/codex-learn analyze` to generate suggestions and refresh `.harness/knowledge/tooling/codex-learn-summary.md`.
 - Promote repeated patterns into `rules.md` after 3+ confirmations; keep uncertain patterns in `hypotheses.md`.
