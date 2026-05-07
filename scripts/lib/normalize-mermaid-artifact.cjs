@@ -123,6 +123,7 @@ const normalizeDiagramContextLines = (lines) => {
 	let skipSection = false;
 
 	const volatileContextSections = new Set([
+		"agent",
 		"c4context",
 		"class",
 		"flow",
