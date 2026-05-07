@@ -269,10 +269,14 @@ function reportedSurface(output, path) {
 }
 
 /**
- * Identify required fleet-contract surfaces that were absent from dry-run output.
+ * Determine which required fleet-contract surfaces are missing from the dry-run JSON output.
  *
- * @param {object} output - Parsed CLI JSON output with optional `updated` and `skipped` arrays.
- * @returns {Array<{group: string, path: string, fix: string}>} Missing surface records with remediation commands.
+ * Examines `output.updated` and `output.skipped` (treated as empty if absent) to decide whether each
+ * path defined in REQUIRED_FLEET_CONTRACT_SURFACES was reported; uses `output.trackedManifest` to
+ * select an appropriate remediation suggestion for CircleCI projects.
+ *
+ * @param {object} output - Parsed dry-run JSON; typically contains `updated` and `skipped` arrays and an optional `trackedManifest` boolean.
+ * @returns {Array<{group: string, path: string, fix: string}>} Array of missing-surface records where `fix` contains a remediation command or guidance.
  */
 function missingFleetContractSurfaces(output) {
 	const missing = [];
@@ -298,18 +302,24 @@ function missingFleetContractSurfaces(output) {
 }
 
 /**
- * Locate legacy Greptile artifacts that should not survive a fleet upgrade.
- * @param {string} repo - Filesystem path to the repository to inspect.
- * @returns {string[]} Repository-relative legacy Greptile paths present on disk.
+ * Find legacy Greptile artifact paths that currently exist under a repository.
+ * @param {string} repo - Filesystem path to the repository root to inspect.
+ * @returns {string[]} Repository-relative paths of legacy Greptile artifacts that are present on disk.
  */
 function existingLegacyGreptilePaths(repo) {
 	return LEGACY_GREPTILE_PATHS.filter((path) => existsSync(join(repo, path)));
 }
 
 /**
- * Parse a sha256 manifest into expected path/hash pairs.
+ * Parse a SHA-256 checksum manifest into an array of expected path/hash entries.
+ *
+ * Lines that are empty or start with `#` are ignored. Valid manifest lines must
+ * match `<sha256>  <path>` where `<sha256>` is a 64-character hex string
+ * (case-insensitive). Returned entries contain the file `path` and the
+ * `expectedSha256` value normalized to lowercase.
+ *
  * @param {string} raw - Manifest text with `<sha256>  <path>` rows.
- * @returns {Array<{path: string, expectedSha256: string}>} Parsed manifest rows.
+ * @returns {Array<{path: string, expectedSha256: string}>} Array of parsed manifest rows.
  */
 function parseChecksumManifest(raw) {
 	return raw
@@ -338,9 +348,9 @@ function sha256File(repo, path) {
 }
 
 /**
- * Compare a target repository's CODESTYLE pack against the canonical manifest.
- * @param {string} repo - Repository root to inspect.
- * @returns {Array<{path: string, expectedSha256: string, actualSha256: string|null, reason: string}>} Parity failures.
+ * Identify CODESTYLE files that are missing or whose SHA-256 digest differs from the canonical manifest.
+ * @param {string} repo - Filesystem path to the repository root to inspect.
+ * @returns {Array<{path: string, expectedSha256: string, actualSha256: string|null, reason: string}>} An array of failure records for files that are missing or have a hash mismatch. Each record contains `path`, `expectedSha256`, `actualSha256` (null when the file is missing), and `reason` which is either `"missing"` or `"hash-mismatch"`.
  */
 function codestyleParityFailures(repo) {
 	const manifest = parseChecksumManifest(
@@ -372,9 +382,10 @@ function codestyleParityFailures(repo) {
 }
 
 /**
- * Build one concise error string for CODESTYLE parity failures.
- * @param {Array<{path: string, reason: string}>} failures - Parity failures.
- * @returns {string|null} Summary error, or null when the CODESTYLE pack matches.
+ * Summarizes CODESTYLE checksum mismatches into a single-line error message.
+ *
+ * @param {Array<{path: string, reason: string}>} failures - List of parity failures; each entry must include `path` and `reason`, where `reason` is typically `"missing"` or `"hash-mismatch"`.
+ * @returns {string|null} `null` if there are no failures, otherwise a concise summary string that includes total failure count, counts by reason, and up to three sample paths.
  */
 function codestyleParityError(failures) {
 	if (failures.length === 0) {

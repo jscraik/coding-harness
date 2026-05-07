@@ -262,7 +262,20 @@ function checkGithubLibNoFs() {
 	}
 }
 
-// ── Rule: diagram-freshness ──────────────────────────────────────────────────
+/**
+ * Validates the AI/diagrams manifest and its diagram files for presence and freshness.
+ *
+ * Checks that AI/diagrams/manifest.json exists and is valid JSON (supports either
+ * a `diagrams` array or an object shape), ensures all REQUIRED_DIAGRAM_TYPES are
+ * present in the manifest, verifies each referenced diagram file exists under
+ * AI/diagrams, and flags diagrams that appear to be placeholders (contains the
+ * substring "PLACEHOLDER", is empty/whitespace, or matches a placeholder node pattern).
+ *
+ * When a problem is detected this function records a violation via `fail(...)`
+ * (for example: missing manifest, invalid JSON, missing diagram type/file, or
+ * placeholder content). The suggested regeneration command in violation messages
+ * is: `diagram generate-all . --output-dir AI/diagrams`.
+ */
 
 function checkDiagramFreshness() {
 	if (!fs.existsSync(MANIFEST_PATH)) {

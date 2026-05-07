@@ -43,6 +43,13 @@ export interface GitHubAppE2EEnvStatus {
 	usesPrivateKeyPath: boolean;
 }
 
+/**
+ * Retrieve an environment variable by name, optionally enforcing that it exists.
+ *
+ * @param name - The environment variable name to read.
+ * @param required - If `true`, throws an `Error` when the variable is missing; if `false`, returns `undefined` when absent.
+ * @returns The environment variable value, or `undefined` if it is not set and `required` is `false`.
+ */
 function getEnvVar(name: string, required = true): string | undefined {
 	const value = process.env[name];
 	if (required && !value) {
@@ -51,6 +58,14 @@ function getEnvVar(name: string, required = true): string | undefined {
 	return value;
 }
 
+/**
+ * Selects the first configured environment variable from an ordered list of candidates.
+ *
+ * Trims each found value and returns the first non-empty result.
+ *
+ * @param names - Candidate environment variable names to check, in priority order.
+ * @returns The first trimmed, non-empty environment variable value, or `undefined` if none are present.
+ */
 function getFirstEnvVar(names: readonly string[]): string | undefined {
 	for (const name of names) {
 		const value = process.env[name]?.trim();
@@ -61,14 +76,35 @@ function getFirstEnvVar(names: readonly string[]): string | undefined {
 	return undefined;
 }
 
+/**
+ * Encodes the given string using URL-safe Base64 encoding.
+ *
+ * @param value - The input string to encode
+ * @returns The Base64 URL-safe representation of `value`
+ */
 function base64UrlEncode(value: string): string {
 	return Buffer.from(value).toString("base64url");
 }
 
+/**
+ * Convert escaped newline sequences (`\\n`) in a private key string into actual newline characters.
+ *
+ * @param value - The private key string that may contain escaped newline sequences.
+ * @returns The private key string with all `\\n` sequences replaced by real newline characters.
+ */
 function normalizePrivateKey(value: string): string {
 	return value.replace(/\\n/g, "\n");
 }
 
+/**
+ * Loads the GitHub App private key from environment variables or a file path, preferring an inline key if present.
+ *
+ * The function checks common environment variables for an inline private key first; if none is found it checks
+ * alternate environment variables for a file path and reads the file as UTF-8. Returns `undefined` when no key
+ * or path is available.
+ *
+ * @returns The private key string if available, otherwise `undefined`.
+ */
 function loadGitHubAppPrivateKey(): string | undefined {
 	const inlinePrivateKey = getFirstEnvVar([
 		"E2E_GITHUB_APP_PRIVATE_KEY",
@@ -89,6 +125,19 @@ function loadGitHubAppPrivateKey(): string | undefined {
 	return readFileSync(privateKeyPath, "utf-8");
 }
 
+/**
+ * Evaluates presence and completeness of GitHub App E2E credentials in environment variables.
+ *
+ * Checks for app id, installation id, and a private key (inline or via path) using both
+ * E2E-prefixed and standard env var names. Reports whether all required pieces are present,
+ * whether a partial set exists, which specific groups are missing, and if a private-key path is used.
+ *
+ * @returns An object describing the GitHub App E2E credential status:
+ * - `configured`: `true` when all required credential groups are present.
+ * - `partial`: `true` when at least one credential group exists but not all are present.
+ * - `missing`: an array of human-readable env-var group identifiers that are absent.
+ * - `usesPrivateKeyPath`: `true` when a private-key file path env var is present.
+ */
 export function getGitHubAppE2EEnvStatus(): GitHubAppE2EEnvStatus {
 	const appId = getFirstEnvVar(["E2E_GITHUB_APP_ID", "GITHUB_APP_ID"]);
 	const installationId = getFirstEnvVar([
@@ -124,6 +173,13 @@ export function getGitHubAppE2EEnvStatus(): GitHubAppE2EEnvStatus {
 	};
 }
 
+/**
+ * Load GitHub App E2E credentials from environment variables.
+ *
+ * Attempts to read the app id, installation id, and private key (inline or from a file path).
+ *
+ * @returns `GitHubAppE2EEnv` containing `appId`, `installationId`, and `privateKey` when all values are present; `null` otherwise.
+ */
 export function loadGitHubAppE2EEnv(): GitHubAppE2EEnv | null {
 	const appId = getFirstEnvVar(["E2E_GITHUB_APP_ID", "GITHUB_APP_ID"]);
 	const installationId = getFirstEnvVar([
@@ -143,6 +199,13 @@ export function loadGitHubAppE2EEnv(): GitHubAppE2EEnv | null {
 	};
 }
 
+/**
+ * Determines whether valid GitHub authentication is available for end-to-end tests.
+ *
+ * Considers a personal access token or a complete GitHub App configuration as valid authentication. If a partial GitHub App configuration is present this function reports that authentication is unavailable.
+ *
+ * @returns `true` if a usable personal access token is present or a full GitHub App configuration can be loaded, `false` otherwise.
+ */
 export function hasGitHubAuthForE2E(): boolean {
 	const appStatus = getGitHubAppE2EEnvStatus();
 	if (appStatus.partial) {
@@ -153,6 +216,12 @@ export function hasGitHubAuthForE2E(): boolean {
 	);
 }
 
+/**
+ * Create a signed JWT for GitHub App authentication.
+ *
+ * @param config - GitHub App credentials containing `appId` (the app's identifier) and `privateKey` (PEM-format RSA private key) used to sign the token.
+ * @returns A RS256-signed JSON Web Token string issued for the provided app ID suitable for use as a GitHub App bearer token.
+ */
 function createGitHubAppJwt(config: GitHubAppE2EEnv): string {
 	const now = Math.floor(Date.now() / 1000);
 	const header = base64UrlEncode(
@@ -176,6 +245,15 @@ function createGitHubAppJwt(config: GitHubAppE2EEnv): string {
 	return `${signingInput}.${signature}`;
 }
 
+/**
+ * Extracts the named property from an arbitrary value when that property is a string.
+ *
+ * Attempts to read `field` from `value` if `value` is a non-null object and the property is a string.
+ *
+ * @param value - The value to inspect for the property.
+ * @param field - The property name to extract.
+ * @returns The string value of the property if present and a string, otherwise `undefined`.
+ */
 function getStringField(value: unknown, field: string): string | undefined {
 	if (!value || typeof value !== "object") {
 		return undefined;
@@ -184,6 +262,13 @@ function getStringField(value: unknown, field: string): string | undefined {
 	return typeof fieldValue === "string" ? fieldValue : undefined;
 }
 
+/**
+ * Mint an installation access token for a GitHub App installation.
+ *
+ * @param config - GitHub App credentials and installation identifier used to authenticate the request
+ * @returns The minted installation token and optional expiration timestamp (`expiresAt`) when provided by GitHub
+ * @throws Error if the HTTP request fails or the response does not include a token
+ */
 export async function mintGitHubAppInstallationToken(
 	config: GitHubAppE2EEnv,
 ): Promise<GitHubAppTokenResult> {
@@ -219,6 +304,15 @@ export async function mintGitHubAppInstallationToken(
 	return expiresAt ? { token, expiresAt } : { token };
 }
 
+/**
+ * Ensure a usable GitHub token is available for E2E tests.
+ *
+ * If complete GitHub App credentials are configured, mints an installation token and writes it into the environment; otherwise uses an existing `GITHUB_PERSONAL_ACCESS_TOKEN` if present.
+ *
+ * @returns A label identifying the token source: `"GitHub App installation token"` when a token was minted from a GitHub App, or `"GITHUB_PERSONAL_ACCESS_TOKEN"` when an existing personal access token is used.
+ * @throws Error if only partial GitHub App credentials are configured.
+ * @throws Error if neither a personal access token nor complete GitHub App credentials are available.
+ */
 export async function ensureGitHubTokenForE2E(): Promise<string> {
 	const appStatus = getGitHubAppE2EEnvStatus();
 	if (appStatus.partial) {
@@ -246,6 +340,34 @@ export async function ensureGitHubTokenForE2E(): Promise<string> {
 	);
 }
 
+/**
+ * Load E2E runtime configuration from environment variables.
+ *
+ * Reads required and optional E2E settings and returns a populated E2EEnv.
+ * Required environment variables:
+ * - `GITHUB_PERSONAL_ACCESS_TOKEN`
+ * - `LINEAR_API_KEY`
+ *
+ * Optional variables and defaults:
+ * - `GITHUB_TEST_OWNER` (default: `"jscraik"`)
+ * - `GITHUB_TEST_REPO` (default: `"coding-harness-e2e-test"`)
+ * - `LINEAR_TEST_TEAM` (default: `"JSC"`)
+ * - `E2E_MODE` (`"true"` enables E2E mode)
+ * - `E2E_RECORDING_DIR` (default: `"./e2e/recordings"`)
+ * - `E2E_CLEANUP` (`"false"` disables cleanup; default is enabled)
+ * - `E2E_PRESERVE_DATA` (`"true"` preserves test data; default is false)
+ *
+ * @returns The assembled `E2EEnv` object with the following properties:
+ * - `githubToken`: GitHub personal access token (from `GITHUB_PERSONAL_ACCESS_TOKEN`)
+ * - `githubOwner`: repository owner used for tests
+ * - `githubTestRepo`: repository name used for tests
+ * - `linearToken`: Linear API key (from `LINEAR_API_KEY`)
+ * - `linearTestTeam`: Linear team identifier used for tests
+ * - `e2eMode`: whether E2E mode is enabled
+ * - `recordingsDir`: filesystem path where recordings are stored
+ * - `cleanupAfterTest`: whether test artifacts should be removed after runs
+ * - `preserveTestData`: whether to preserve test data between runs
+ */
 export function loadE2EEnv(): E2EEnv {
 	return {
 		// GitHub
@@ -265,6 +387,15 @@ export function loadE2EEnv(): E2EEnv {
 	};
 }
 
+/**
+ * Validates that all required environment variables for E2E tests are present.
+ *
+ * Checks for either a usable GitHub authentication method (a personal access token or complete GitHub App credentials)
+ * and a Linear API key. If any required values are missing, throws an Error that lists the missing entries and
+ * provides example export commands.
+ *
+ * @throws Error if one or more required environment variables are missing; the thrown error's message contains the missing items and example exports.
+ */
 export function validateE2EEnv(): void {
 	const missing: string[] = [];
 

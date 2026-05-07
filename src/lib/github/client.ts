@@ -161,14 +161,32 @@ export interface RepositoryMergeSettings {
 	allowRebaseMerge: boolean;
 }
 
+/**
+ * Pause execution for the specified number of milliseconds.
+ *
+ * @param ms - Number of milliseconds to wait.
+ * @returns A promise that resolves when the delay has completed.
+ */
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Determines whether an error represents a transient GitHub server error (HTTP status 500 or greater).
+ *
+ * @param error - The error to classify
+ * @returns `true` if `error` is a `GitHubApiError` with `status` >= 500, `false` otherwise
+ */
 function isTransientGitHubError(error: Error): boolean {
 	return error instanceof GitHubApiError && error.status >= 500;
 }
 
+/**
+ * Create an Octokit client configured for the repository with throttling and retry behavior.
+ *
+ * @param token - The authentication token used by Octokit for API requests
+ * @returns An Octokit instance configured to use the provided token and built-in throttling/retry handlers
+ */
 function createOctokit(token: string): InstanceType<typeof MyOctokit> {
 	return new MyOctokit({
 		auth: token,

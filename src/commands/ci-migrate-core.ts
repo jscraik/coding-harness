@@ -9090,10 +9090,30 @@ function hashMigrationReport(report: MigrationReport): string {
 	return hashContent(JSON.stringify(canonicalReport));
 }
 
+/**
+ * Produces a deterministic digest for a set of required check display names.
+ *
+ * @param requiredCheckNames - Array of required check display names; ordering of the input does not affect the result.
+ * @returns A digest computed from the sorted list of names (stable across input reorderings).
+ */
 function hashRequiredCheckNames(requiredCheckNames: string[]): string {
 	return hashContent(JSON.stringify([...requiredCheckNames].sort()));
 }
 
+/**
+ * Builds a JSON-serializable dry-run plan of preview actions for a migration snapshot.
+ *
+ * The plan lists preview steps that a real prepare/apply run would perform, suitable for
+ * emitting as JSON instead of mutating repository state.
+ *
+ * @param snapshotId - Snapshot identifier used to derive the report file path included in the plan
+ * @param report - Migration report whose fields `sourceConfigPaths`, `sourceProvider`, `targetConfigPaths`,
+ * and `targetProvider` are used to populate preview targets
+ * @returns An array of preview actions; each entry contains:
+ * - `action`: action name (always `"preview"` for dry-run)
+ * - `target`: human-identifiable target being inspected (config paths, provider, or report path)
+ * - `reason`: brief explanation of the preview step
+ */
 function buildMigrationDryRunPlan(
 	snapshotId: string,
 	report: MigrationReport,

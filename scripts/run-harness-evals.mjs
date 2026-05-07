@@ -217,6 +217,16 @@ function writeJson(filePath, value) {
 	renameSync(`${filePath}.tmp`, filePath);
 }
 
+/**
+ * Validate a registry object and append error findings for each detected violation.
+ *
+ * Performs checks on registry-level constraints (schema version, presence of a north star goal,
+ * required scorecard IDs, observability contract schema and required fields, and minimum scenario count)
+ * and validates each scenario while enforcing unique scenario IDs.
+ *
+ * @param {object} value - The registry object to validate.
+ * @param {Array<object>} registryFindings - Mutable array that receives error finding objects for each validation failure.
+ */
 function validateRegistry(value, registryFindings) {
 	if (value.schemaVersion !== "harness-north-star-agent-delivery-evals/v1") {
 		registryFindings.push(
@@ -270,6 +280,18 @@ function validateRegistry(value, registryFindings) {
 	}
 }
 
+/**
+ * Validate a single scenario object and append any validation findings to the provided findings array.
+ *
+ * Performs checks for required `id`, duplicate ids (using the `ids` set), allowed `type` values,
+ * presence of `prompt`, non-empty `expected` subfields (`commands`, `artifacts`, `assertions`, `stopConditions`),
+ * and numeric score weights for all required scorecard IDs. Successful validation will add the scenario's
+ * id to the `ids` set; violations are pushed into `registryFindings`.
+ *
+ * @param {object} scenario - The scenario to validate.
+ * @param {Set<string>} ids - Set of already-seen scenario ids; used to detect duplicates (will be mutated to include the validated id).
+ * @param {Array<object>} registryFindings - Array to which error finding objects will be appended for each validation failure.
+ */
 function validateScenario(scenario, ids, registryFindings) {
 	if (!scenario.id) {
 		registryFindings.push(
@@ -323,6 +345,11 @@ function validateScenario(scenario, ids, registryFindings) {
 	}
 }
 
+/**
+ * Executes a single "live_fixture" scenario by preparing an isolated fixture directory, invoking the appropriate fixture runner for the scenario, and returning the fixture result augmented with execution duration.
+ *
+ * @param {Object} scenario - Registry scenario object; must include a unique `id` that selects which fixture runner to execute and any scenario-specific data the runner requires.
+ * @returns {Object} A fixture result object containing `id`, `status`, `assertions`, and `durationMs`. On runtime errors the result will have `status: "fail"` and an assertion describing the error.
 async function runLiveFixture(scenario) {
 	const fixturePath = safeFixturePath(scenario.id);
 	rmSync(fixturePath, { force: true, recursive: true });
@@ -386,6 +413,18 @@ async function runLiveFixture(scenario) {
 	}
 }
 
+/**
+ * Run the path-safety live fixture: write a computed safe fixture path and verify that unsafe inputs are rejected.
+ *
+ * Writes `safe-path.txt` into the provided fixture directory and returns a fixture result with assertions that:
+ * - the computed safe path resolves inside the configured fixture root,
+ * - path traversal inputs are rejected,
+ * - absolute-escape inputs are rejected.
+ *
+ * @param {Object} scenario - The scenario object (its `id` is used for the returned fixture result).
+ * @param {string} fixturePath - Absolute path to the fixture directory where artifacts will be written.
+ * @returns {Object} A fixture result containing assertions for path safety; `status` reflects whether all assertions passed.
+ */
 function runPathSafetyFixture(scenario, fixturePath) {
 	const safePath = safeFixturePath("agent-delivery-path-safety");
 	writeFileSync(path.join(fixturePath, "safe-path.txt"), `${safePath}\n`);
@@ -414,6 +453,16 @@ function runPathSafetyFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Executes the generated-artifact drift fixture: creates a canonical source and a stale generated artifact, checks for drift, repairs the generated artifact from the canonical source, and returns assertions about detection and repair.
+ *
+ * @param {{id: string}} scenario - Scenario object; its `id` is used to build the fixture result.
+ * @param {string} fixturePath - Filesystem path to the fixture directory where artifacts are written.
+ * @returns {Object} Fixture result object containing assertions:
+ *  - `"stale generated artifact is detected"`: `true` if initial drift was found.
+ *  - `"generated artifact is repaired from canonical source"`: `true` if the repaired artifact references the canonical source and includes expected `requiredChecks`.
+ *  - `"post-repair drift check passes"`: `true` if no drift is detected after repair.
+ */
 function runGeneratedArtifactDriftFixture(scenario, fixturePath) {
 	const sourcePath = path.join(fixturePath, "canonical-source.json");
 	const generatedPath = path.join(fixturePath, "generated-artifact.json");
@@ -442,6 +491,12 @@ function runGeneratedArtifactDriftFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Runs the "validation-plan" live_fixture for a scenario and produces assertions about the generated validation plan.
+ * @param {Object} scenario - The scenario descriptor from the registry (must include `id`).
+ * @param {string} fixturePath - Absolute path to the fixture directory where artifacts will be written.
+ * @returns {Object} A fixture result object containing `id`, `status`, and an array of `assertions` describing plan validity and expected commands.
+ */
 async function runValidationPlanFixture(scenario, fixturePath) {
 	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
 	const changedFiles = [
@@ -491,6 +546,14 @@ async function runValidationPlanFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Executes a spec reimplementation loop fixture: generates a source behavior, derives an initial spec, implements and evaluates it, improves the spec, re-implements and re-evaluates, and writes fixture artifacts.
+ *
+ * Produces assertion outcomes that verify the spec extraction, detection of a missing assumption, application of a concrete spec change, inclusion of the missing rule in the improved spec, successful reimplementation, and reduction of missing assumptions.
+ *
+ * @param {object} scenario - Scenario descriptor; its `id` is used to build the fixture result.
+ * @param {string} fixturePath - Absolute path to the fixture directory where artifacts will be written.
+ * @returns {object} A fixture result object containing `id`, `status`, `assertions`, and `durationMs`.
 function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 	const sourceBehavior = buildSpecLoopSourceBehavior();
 	const initialSpec = extractExecutableSpec(sourceBehavior, {
@@ -563,6 +626,14 @@ function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Generates an eval-seed pack from a learning artifact in the fixture and validates that a correct eval-seed candidate was produced.
+ *
+ * Writes a learning artifact and an enforcement-status file into the fixture, invokes the eval-seed builder (in-process if exported, otherwise via a subprocess), and asserts that the produced seed pack contains a generated-artifact candidate with expected matched files, evidence references, recommended target/test, classification, and output path.
+ *
+ * @param {object} scenario - The registry scenario object for which the fixture is run.
+ * @param {string} fixturePath - Absolute path to the fixture directory where artifacts are written.
+ * @returns {object} A fixture result object for the given scenario id, containing assertions and a computed `status` indicating overall pass or fail.
 async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
 	const enforcementStatusPath = path.join(
@@ -638,6 +709,17 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Run the GitHub App authentication preflight fixture, emit an auth-matrix artifact, and validate expected classifications.
+ *
+ * Writes an `auth-matrix.json` file under the provided fixturePath containing three classified authentication configurations, then verifies
+ * (via assertions) that a complete GitHub App configuration is preferred, a private-key-path variant is accepted, a partial app config
+ * is classified as an environment/tooling blocker, and that private key material is not present in the written artifact.
+ *
+ * @param {object} scenario - The registry scenario being executed; its `id` is used as the fixture result id.
+ * @param {string} fixturePath - Absolute path to the directory where fixture artifacts should be written.
+ * @returns {object} A fixture result object with `id`, overall `status`, and an array of `assertions` describing the checks above.
+ */
 function runGitHubAppAuthPreflightFixture(scenario, fixturePath) {
 	const authMatrix = [
 		classifyGitHubE2EAuthFixture({
@@ -691,6 +773,15 @@ function runGitHubAppAuthPreflightFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Verify review-gate check name alignment, write a fixture artifact, and produce assertions for the scenario.
+ *
+ * Writes a `review-gate-alignment.json` artifact containing both an aligned and a mismatched evaluation produced
+ * by `evaluateReviewGateCheckNameFixture`, and returns a fixture result that asserts expected alignment behavior.
+ *
+ * @param {Object} scenario - The registry scenario object; must include `id`.
+ * @param {string} fixturePath - Absolute path to the fixture directory where artifacts will be written.
+ * @returns {Object} A fixture result object with `id`, `status`, and an `assertions` array describing pass/fail checks.
 function runReviewGateCheckNameAlignmentFixture(scenario, fixturePath) {
 	const aligned = evaluateReviewGateCheckNameFixture({
 		requiredChecks: ["e2e-test-check"],
@@ -734,6 +825,16 @@ function runReviewGateCheckNameAlignmentFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Run the repo-local end-to-end scratch path fixture and record classification assertions.
+ *
+ * Writes a `scratch-paths.json` artifact describing repo-local and OS-temp scratch classifications,
+ * then returns a fixture result that asserts expected classifications and cleanup scoping.
+ *
+ * @param {object} scenario - The registry scenario object for this fixture.
+ * @param {string} fixturePath - Absolute path to the fixture directory where artifacts are written.
+ * @returns {object} A fixture result object containing `id`, `status`, and `assertions`.
+ */
 function runRepoLocalE2EScratchFixture(scenario, fixturePath) {
 	const repoScratchRoot = path.join(
 		REPO_ROOT,
@@ -779,6 +880,15 @@ function runRepoLocalE2EScratchFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Execute the GitHub check-run transient retry fixture and record assertions about retry behavior.
+ *
+ * Writes a `retry-policy.json` artifact under the provided fixture path and evaluates
+ * retry-case outcomes for transient 5xx sequences, attempt caps, and non-retryable 403 errors.
+ *
+ * @param {object} scenario - The scenario descriptor; its `id` is used for the fixture result.
+ * @param {string} fixturePath - Directory path where fixture artifacts (e.g., `retry-policy.json`) are written.
+ * @returns {object} A fixture result object containing assertions about attempts, outcomes, and failure classification.
 function runGitHubCheckRunTransientRetryFixture(scenario, fixturePath) {
 	const retryPolicy = {
 		schemaVersion: "github-check-run-retry-policy-fixture/v1",
@@ -818,6 +928,17 @@ function runGitHubCheckRunTransientRetryFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Runs deterministic harness-engineering lifecycle routing test cases for a fixture, records inputs and routing outputs, and returns assertions about expected routing behavior.
+ *
+ * Writes two fixture artifacts into the given fixturePath:
+ * - "routing-cases.json" containing the source cases and metadata
+ * - "routing-results.json" containing computed routing results for each case
+ *
+ * @param {Object} scenario - Registry scenario object for this fixture (used for the returned fixture id).
+ * @param {string} fixturePath - Absolute path to the fixture directory where artifacts will be written.
+ * @returns {Object} A fixture result object for the scenario that contains assertions verifying routing outcomes (e.g., code-review, tdd, heartbeat, non-trigger, router-blocking, and redaction of unsafe telemetry).
+ */
 function runHarnessEngineeringLifecycleRoutingFixture(scenario, fixturePath) {
 	const cases = buildHarnessEngineeringRoutingCases();
 	const results = cases.map((item) => ({
@@ -879,6 +1000,13 @@ function runHarnessEngineeringLifecycleRoutingFixture(scenario, fixturePath) {
 	]);
 }
 
+/**
+ * Dynamically import a module at the given URL and return the requested export, caching results to avoid repeated imports or repeated failed attempts.
+ *
+ * @param {string} moduleUrl - The module specifier/URL to import (e.g., a file URL or relative path resolvable by dynamic import).
+ * @param {string} exportName - The named export to return from the imported module.
+ * @returns {*} The requested export value, or `null` if the module failed to load or the export is unavailable. Failed import attempts are cached as `null` to prevent repeated import errors.
+ */
 async function loadFixtureExport(moduleUrl, exportName) {
 	const cached = fixtureModuleCache.get(moduleUrl);
 	if (cached === null) return null;
@@ -893,6 +1021,13 @@ async function loadFixtureExport(moduleUrl, exportName) {
 	}
 }
 
+/**
+ * Generate a validation plan for a learning artifact and changed files by executing the plan builder in a subprocess.
+ *
+ * @param {string} learningArtifactPath - Absolute path to the learning artifact file to be evaluated.
+ * @param {string[]} changedFiles - List of file paths that have changed and should be considered by the plan builder.
+ * @returns {Object} The parsed validation plan object produced by the subprocess, typically containing fields such as `status`, `commands`, `networkRequired`, and `changedFiles`.
+ */
 function runValidationPlanFixtureInSubprocess(
 	learningArtifactPath,
 	changedFiles,
@@ -917,6 +1052,16 @@ function runValidationPlanFixtureInSubprocess(
 	return JSON.parse(stdout);
 }
 
+/**
+ * Executes the project's `buildEvalSeedPack` in a subprocess and returns the generated eval-seed pack.
+ *
+ * @param {Object} params - Function parameters.
+ * @param {string} params.learningArtifactPath - Absolute path to the learning artifact file to use as the source.
+ * @param {string} params.enforcementStatusPath - Absolute path to the enforcement status file consumed by the pack builder.
+ * @param {string[]} params.changedFiles - List of changed file paths to pass to the pack builder.
+ * @param {string} params.outputPath - Absolute path where the pack builder should write its output.
+ * @returns {Object} The parsed eval-seed pack object produced by `buildEvalSeedPack`.
+ */
 function runEvalSeedFixtureInSubprocess({
 	learningArtifactPath,
 	enforcementStatusPath,
@@ -946,6 +1091,16 @@ function runEvalSeedFixtureInSubprocess({
 	return JSON.parse(stdout);
 }
 
+/**
+ * Resolve a single-segment fixture identifier to an absolute path inside the configured fixture root.
+ *
+ * @param {string} relativePath - A single path segment (no path separators or leading slash) identifying the fixture directory.
+ * @returns {string} The resolved absolute path located under the configured `fixtureRoot`.
+ * @throws {Error} If `relativePath` is not a non-empty string.
+ * @throws {Error} If `relativePath` is an absolute path.
+ * @throws {Error} If `relativePath` contains path separators (contains `/` or `\`).
+ * @throws {Error} If the resolved path would escape the `fixtureRoot`.
+ */
 function safeFixturePath(relativePath) {
 	if (typeof relativePath !== "string" || relativePath.trim() === "") {
 		throw new Error("Fixture path must be a non-empty string.");
@@ -975,6 +1130,16 @@ function hasGeneratedDrift(sourcePath, generatedPath) {
 	);
 }
 
+/**
+ * Overwrite the generated artifact file using canonical data from the source JSON.
+ *
+ * Reads the JSON at `sourcePath` and writes a new JSON object to `generatedPath`
+ * with `schemaVersion` set to `"fixture-generated/v1"`, `generatedFrom` set to
+ * the source filename, and `requiredChecks` copied from the source.
+ *
+ * @param {string} sourcePath - Filesystem path to the canonical source JSON.
+ * @param {string} generatedPath - Filesystem path where the generated artifact will be written (overwritten).
+ */
 function repairGeneratedArtifact(sourcePath, generatedPath) {
 	const source = readJson(sourcePath);
 	writeJson(generatedPath, {
@@ -984,6 +1149,23 @@ function repairGeneratedArtifact(sourcePath, generatedPath) {
 	});
 }
 
+/**
+ * Classifies a GitHub end-to-end authentication fixture input into an authentication source and blocker classification.
+ *
+ * @param {Object} input - Fixture input to classify.
+ * @param {string} input.id - Scenario identifier to propagate to the result.
+ * @param {string} [input.appId] - GitHub App ID string, when provided.
+ * @param {string} [input.installationId] - GitHub App installation ID, when provided.
+ * @param {string} [input.privateKey] - Inline private key material, when provided.
+ * @param {string} [input.privateKeyPath] - Path to private key file, when provided.
+ * @param {boolean} [input.hasPat] - True when a personal access token (PAT) is available.
+ * @returns {Object} Classification result containing:
+ *   - id: the input.id value.
+ *   - authSource: `"github_app"`, `"pat"`, or `"blocked"` indicating the chosen authentication source.
+ *   - blockerClassification: `"none"` when usable, otherwise `"environment/tooling issue"`.
+ *   - missing: array of required GitHub App fields that are absent (e.g., `["app_id","installation_id","private_key"]`).
+ *   - usesPrivateKeyPath: boolean indicating whether a private key path was used.
+ */
 function classifyGitHubE2EAuthFixture(input) {
 	const missing = [
 		...(input.appId ? [] : ["app_id"]),
@@ -1024,6 +1206,27 @@ function classifyGitHubE2EAuthFixture(input) {
 	};
 }
 
+/**
+ * Evaluate alignment and verification of required review-gate check names and related conditions.
+ * @param {Object} params - Evaluation inputs.
+ * @param {string[]} params.requiredChecks - List of required check names for the review gate.
+ * @param {string[]} params.createdCheckRuns - Names of check runs actually created by the workflow.
+ * @param {string} params.invocationCheckName - The check name used when invoking the gate.
+ * @param {boolean} params.hasIndependentApproval - Whether an independent approval signal is present.
+ * @param {string} params.checkConclusion - Conclusion of the required check (e.g., `"success"`).
+ * @returns {Object} Result object describing match status, blockers, and classifications.
+ * @returns {string[]} returns.requiredChecks - Echo of the input `requiredChecks`.
+ * @returns {string[]} returns.createdCheckRuns - Echo of the input `createdCheckRuns`.
+ * @returns {string} returns.invocationCheckName - Echo of the input `invocationCheckName`.
+ * @returns {boolean} returns.createdCheckMatchesRequired - `true` when every `requiredChecks` entry appears in `createdCheckRuns`.
+ * @returns {boolean} returns.invocationMatchesRequired - `true` when `invocationCheckName` is included in `requiredChecks`.
+ * @returns {boolean} returns.checkPassed - `true` when `checkConclusion` equals `"success"`.
+ * @returns {boolean} returns.hasIndependentApproval - Echo of the input `hasIndependentApproval`.
+ * @returns {boolean} returns.verified - `true` when there are no blockers.
+ * @returns {string[]} returns.blockers - List of blocker reasons: can include `"required check name mismatch"`, `"required check failed"`, and/or `"required approval missing"`.
+ * @returns {boolean} returns.shouldPollLiveGitHub - `true` when created checks and invocation name both match the required checks.
+ * @returns {string} returns.blockerClassification - Classification: `"none"` when verified, otherwise `"scenario regression"`.
+ */
 function evaluateReviewGateCheckNameFixture({
 	requiredChecks,
 	createdCheckRuns,
@@ -1065,6 +1268,20 @@ function evaluateReviewGateCheckNameFixture({
 	};
 }
 
+/**
+ * Classifies a repository-local E2E scratch root and whether a contract path is correctly placed within it.
+ *
+ * @param {string} scratchRoot - Absolute path to the scratch root being evaluated.
+ * @param {string} contractPath - Absolute path to the contract file to validate against the scratch root.
+ * @returns {{scratchRoot: string, contractPath: string, rootInsideRepoArtifacts: boolean, contractInsideScratchRoot: boolean, cleanupTarget: string, blockerClassification: string}}
+ * An object containing:
+ * - `scratchRoot`: the provided scratch root path.
+ * - `contractPath`: the provided contract path.
+ * - `rootInsideRepoArtifacts`: `true` if `scratchRoot` is located under REPO_ROOT/artifacts/e2e, `false` otherwise.
+ * - `contractInsideScratchRoot`: `true` if `contractPath` is located inside `scratchRoot`, `false` otherwise.
+ * - `cleanupTarget`: the path to use for cleanup (same as `scratchRoot`).
+ * - `blockerClassification`: `"none"` when both containment checks are `true`, otherwise `"fixture/runtime failure"`.
+ */
 function classifyE2EScratchPath(scratchRoot, contractPath) {
 	const repoArtifactsRoot = path.join(REPO_ROOT, "artifacts", "e2e");
 	const rootInsideRepoArtifacts = isPathInside(scratchRoot, repoArtifactsRoot);
@@ -1082,6 +1299,19 @@ function classifyE2EScratchPath(scratchRoot, contractPath) {
 	};
 }
 
+/**
+ * Classifies a sequence of HTTP response statuses to determine retry attempts, outcome, and failure classification.
+ *
+ * @param {number[]} statuses - Ordered HTTP status codes observed for repeated attempts.
+ * @returns {{id: string, statuses: number[], attempts: number, outcome: "success"|"failure", firstFailureClassification: string, blockerClassification: string}}
+ *   An object containing:
+ *   - `id`: concatenation of the input statuses joined by `-`.
+ *   - `statuses`: the original array of HTTP status codes.
+ *   - `attempts`: the number of attempts that were made before stopping (stops on success, on a non-retryable status, or when the attempt cap is reached).
+ *   - `outcome`: `"success"` if a 2xx status was observed before stopping, otherwise `"failure"`.
+ *   - `firstFailureClassification`: classification for the first status (`"environment/tooling issue"` when the first status is `403`, otherwise `"fixture/runtime failure"`).
+ *   - `blockerClassification`: `"none"` when `outcome` is `"success"`, otherwise the value of `firstFailureClassification`.
+ */
 function evaluateCheckRunRetryCase(statuses) {
 	const retryableStatuses = new Set([500, 502, 503, 504]);
 	let attempts = 0;
@@ -1112,6 +1342,12 @@ function evaluateCheckRunRetryCase(statuses) {
 	};
 }
 
+/**
+ * Determines whether a candidate path resides at or inside a given root directory.
+ * @param {string} candidate - The path to test (file or directory path).
+ * @param {string} root - The directory root to test against.
+ * @returns {boolean} `true` if `candidate` resolves to the same path as `root` or is contained within `root`, `false` otherwise.
+ */
 function isPathInside(candidate, root) {
 	const relativePath = path.relative(
 		path.resolve(root),
@@ -1123,6 +1359,21 @@ function isPathInside(candidate, root) {
 	);
 }
 
+/**
+ * Produce a fixed learning-artifact object used by fixture scenarios.
+ *
+ * The object adheres to the harness-learnings schema and contains a single
+ * candidate learning item that represents a validation-contract entry for
+ * src/lib/learnings/validation-plan.ts.
+ *
+ * @returns {Object} A learning-artifact JSON object with keys:
+ *  - `schemaVersion`, `provider`, `repository`, `source`, `inputFingerprint`
+ *  - `items`: array containing one validation contract item with fields
+ *    (`id`, `provider`, `source`, `repository`, `file`, `usage`, `learning`,
+ *    `targetPatterns`, `classification`, `enforcement`, `promotionStatus`)
+ *  - `warnings`: empty array
+ *  - `summary`: import statistics and breakdowns by classification/enforcement.
+ */
 function buildFixtureLearningArtifact() {
 	return {
 		schemaVersion: "harness-learnings/v1",
@@ -1172,6 +1423,15 @@ function buildFixtureLearningArtifact() {
 	};
 }
 
+/**
+ * Constructs a fixed learning-artifact object used by the eval-seed fixture.
+ *
+ * The returned object includes top-level metadata (schemaVersion, provider, repository, source, inputFingerprint),
+ * an `items` array of candidate learning entries (id, provider, source row, repository file, usage, learning text,
+ * targetPatterns, classification, enforcement, promotionStatus), an empty `warnings` array, and an import `summary`.
+ *
+ * @returns {object} A learning-artifact document conforming to `harness-learnings/v1` containing candidate items and import summary statistics.
+ */
 function buildEvalSeedFixtureLearningArtifact() {
 	return {
 		schemaVersion: "harness-learnings/v1",
@@ -1297,6 +1557,14 @@ function buildEvalSeedFixtureLearningArtifact() {
 	};
 }
 
+/**
+ * Constructs a canonical source behavior describing review-gate readiness for use in spec-reimplementation fixtures.
+ *
+ * The returned object encodes a schema version, behavior identifier, natural-language intent, an array of rules
+ * (each with `id` and `description`), and example cases that map concrete inputs to an `expectedDecision`.
+ *
+ * @returns {Object} A source behavior object with `schemaVersion`, `behaviorId`, `intent`, `rules`, and `examples` suitable for driving spec extraction and evaluation.
+ */
 function buildSpecLoopSourceBehavior() {
 	return {
 		schemaVersion: "harness-source-behavior/v1",
@@ -1638,6 +1906,17 @@ function evaluateImplementationAgainstSource(
 	};
 }
 
+/**
+ * Incorporates specified spec changes into a spec by adding any missing rule(s) from the evaluation.
+ *
+ * Examines `evaluation.specChanges` and, for each `addRule` entry not already present in `spec.rules`,
+ * appends a corresponding rule object. The returned spec preserves existing fields, updates `rules`,
+ * and includes a `revisionReason` describing the change.
+ *
+ * @param {object} spec - The executable spec object containing at least a `rules` array of `{id, ...}` objects.
+ * @param {object} evaluation - The evaluation result containing a `specChanges` array of change descriptors.
+ * @returns {object} The updated spec object with added rules and a `revisionReason` field.
+ */
 function improveSpecFromEvaluation(spec, evaluation) {
 	const ruleIds = new Set(spec.rules.map((rule) => rule.id));
 	const rules = [...spec.rules];
@@ -1661,6 +1940,12 @@ function improveSpecFromEvaluation(spec, evaluation) {
 	};
 }
 
+/**
+ * Create a fixture run result object summarizing the provided assertions.
+ * @param {string} id - Fixture identifier.
+ * @param {Array<Object>} assertions - Array of assertion objects; each should include a `status` field.
+ * @returns {{id: string, status: "pass" | "fail", assertions: Array<Object>}} The fixture result where `status` is `"pass"` only if every assertion's `status` equals `"pass"`, otherwise `"fail"`.
+ */
 function fixtureResult(id, assertions) {
 	return {
 		id,
@@ -1671,6 +1956,13 @@ function fixtureResult(id, assertions) {
 	};
 }
 
+/**
+ * Attach a `durationMs` field to a fixture result representing the elapsed milliseconds since `startedAt`.
+ *
+ * @param {object} result - The fixture result object to augment; its other properties are preserved.
+ * @param {bigint} startedAt - High-resolution start timestamp obtained from `process.hrtime.bigint()`.
+ * @returns {object} The original `result` merged with `durationMs`, the elapsed time in milliseconds rounded to two decimals.
+ */
 function withFixtureDuration(result, startedAt) {
 	const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
 	return {
@@ -1679,6 +1971,12 @@ function withFixtureDuration(result, startedAt) {
 	};
 }
 
+/**
+ * Create an assertion result object with a name and a pass/fail status.
+ * @param {string} name - Human-readable label for the assertion.
+ * @param {boolean} passed - `true` if the assertion passed, `false` otherwise.
+ * @returns {{name: string, status: "pass" | "fail"}} An object containing the assertion `name` and a `status` set to `"pass"` when `passed` is true, otherwise `"fail"`.
+ */
 function assertion(name, passed) {
 	return {
 		name,
