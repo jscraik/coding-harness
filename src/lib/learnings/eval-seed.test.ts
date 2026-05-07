@@ -84,20 +84,34 @@ function writeArtifact(dir: string): string {
 						enforcement: "warning",
 						promotionStatus: "candidate",
 					},
+					{
+						id: "coderabbit.coding-harness.neutral-contract-item",
+						provider: "coderabbit",
+						source: { ...sourceRef, row: 6 },
+						repository: "coding-harness",
+						file: "scripts/run-harness-evals.mjs",
+						usage: 44,
+						learning:
+							"Preserve the deterministic command contract for this surface.",
+						targetPatterns: ["scripts/**"],
+						classification: "validation_contract",
+						enforcement: "warning",
+						promotionStatus: "candidate",
+					},
 				],
 				warnings: [],
 				summary: {
-					totalRows: 4,
-					imported: 4,
+					totalRows: 5,
+					imported: 5,
 					skipped: 0,
 					invalid: 0,
 					warnings: 0,
 					byClassification: {
 						generated_artifact: 1,
 						guardrail: 1,
-						validation_contract: 2,
+						validation_contract: 3,
 					},
-					byEnforcement: { warning: 4 },
+					byEnforcement: { warning: 5 },
 				},
 			},
 			null,
@@ -146,19 +160,21 @@ describe("buildEvalSeedPack", () => {
 		expect(result.status).toBe("success");
 		expect(result.outputPath).toBe(join(dir, output));
 		expect(result.summary).toMatchObject({
-			applicableLearnings: 3,
-			promotionCandidates: 3,
-			seedCandidates: 2,
+			applicableLearnings: 4,
+			promotionCandidates: 4,
+			seedCandidates: 3,
 			byRemediationSource: {
 				ci: 1,
 				generated_artifact: 1,
+				validation: 1,
 			},
 			byFailureClass: {
 				ci_failure: 1,
 				generated_artifact_drift: 1,
+				validation_gap: 1,
 			},
 		});
-		expect(result.candidates).toHaveLength(2);
+		expect(result.candidates).toHaveLength(3);
 		expect(result.candidates[0]).toMatchObject({
 			id: "coderabbit.coding-harness.circleci-red-job-remediation",
 			remediationSource: "ci",
@@ -167,6 +183,13 @@ describe("buildEvalSeedPack", () => {
 			evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=5"],
 		});
 		expect(result.candidates[1]).toMatchObject({
+			id: "coderabbit.coding-harness.neutral-contract-item",
+			remediationSource: "validation",
+			failureClass: "validation_gap",
+			matchedFiles: ["scripts/run-harness-evals.mjs"],
+			evidenceRef: ["coderabbit_csv:file:///tmp/learnings.csv#row=6"],
+		});
+		expect(result.candidates[2]).toMatchObject({
 			id: "coderabbit.coding-harness.eval-seed-generated-artifact",
 			recommendedTarget: "artifact-gate",
 			recommendedTest: "src/lib/learnings/promote.test.ts",

@@ -398,7 +398,7 @@ function buildEvalSeedCandidate(
  * @returns One of:
  * - `"ci"` when CI-related signals are present
  * - `"github_history"` when GitHub/PR-related signals are present
- * - `"validation"` when validation/test/lint-related signals are present
+ * - `"validation"` when validation/test/lint-related signals are present or classification is `validation_contract`
  * - `"generated_artifact"` when the learning's classification is `generated_artifact`
  * - `"source_of_truth"` when the learning's classification is `source_of_truth`
  * - `"code_review"` when code-review signals or coderabbit CSV evidence are present
@@ -421,6 +421,9 @@ function inferRemediationSource(
 		return "github_history";
 	}
 	if (/\b(validation|verify|test|typecheck|lint|gate)\b/i.test(haystack)) {
+		return "validation";
+	}
+	if (learning.classification === "validation_contract") {
 		return "validation";
 	}
 	if (learning.classification === "generated_artifact") {
