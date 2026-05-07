@@ -8,7 +8,7 @@ plan_id: feat-agent-native-cockpit-control-loop-first-slice
 source_spec: docs/specs/2026-05-02-feat-agent-native-cockpit-control-loop-spec.md
 source_spec_refresh: docs/specs/2026-05-07-feat-ruthless-agent-native-compression-recovery-spec.md
 linear_issue: JSC-248
-linear_status: in_progress
+linear_status: Not started
 route: fresh
 plan_depth: deepened
 run_type: planning-artifact
@@ -101,7 +101,7 @@ system through plainer output and cockpit-first help.
   <https://linear.app/jscraik/issue/JSC-248/implement-agent-native-cockpit-control-loop-first-slice>
 - Linear team: `Jscraik`
 - Linear project: `coding-harness`
-- Linear issue status snapshot: In Progress as of 2026-05-07
+- Linear issue status snapshot: Todo/unstarted as of 2026-05-07
 - Plan linkage status: resolved
 - PR linkage rule: use `Refs JSC-248` until the issue is fully completed.
 
@@ -138,8 +138,9 @@ Live repo evidence now shows:
   recommendations.
 - `src/lib/session/session-closeout.ts` exists as the session-closeout contract
   dependency that JSC-249 uses for P3.
-- Linear `JSC-248` is `In Progress` and has PR attachments, so this plan should
-  no longer instruct agents to start from a blank P1 implementation.
+- Linear `JSC-248` is currently Todo/unstarted in tracker metadata but has PR
+  attachments and issue-description evidence of partial cockpit work, so this
+  plan should no longer instruct agents to start from a blank P1 implementation.
 
 Current outstanding work is technical hardening against the deepened spec, not a
 restart of P1-P5:
@@ -268,11 +269,11 @@ Current `he-work` state before the next runtime implementation pass:
 
 - **Phase:** `P9 - Ruthless Compression Recovery`
 - **Checked at:** 2026-05-07 snapshot; refresh before executing
-- **Branch snapshot:** `jscraik/feature/branch-salvage-cleanup`; refresh before
+- **Branch snapshot:** `codex/jsc-248-agent-native-compression`; refresh before
   executing or PR prep
-- **Tracker:** `JSC-248`, status `In Progress`, assignee
-  `jscraik@brainwav.io`, project `coding-harness`, as returned by Linear on
-  2026-05-07; refresh before executing
+- **Tracker:** `JSC-248`, status `Todo`/`unstarted`, assignee
+  `jscraik@brainwav.io`, project `coding-harness`, as returned by Linear
+  metadata on 2026-05-07; refresh before executing
 - **Existing implementation:** `HarnessDecision`, `harness next`, and
   session-closeout contract modules are present in the live tree
 - **Dirty worktree at refresh:** unrelated existing edits in
@@ -818,7 +819,9 @@ Docs-gate validation when high-traffic docs change:
 
 Traceability validation for the deepened plan:
 
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py docs/plans/2026-05-02-feat-agent-native-cockpit-control-loop-plan.md`
+- `harness plan-gate --plans docs/plans --plan-ids feat-agent-native-cockpit-control-loop-first-slice --max-age 90 --require-plan-id --require-traceability --json`
+- Optional HE workspace lint, when the local HE skills checkout is available:
+  `python3 <agent-skills>/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py docs/plans/2026-05-02-feat-agent-native-cockpit-control-loop-plan.md`
 
 If broader gates fail because of unrelated dirty worktree changes, record the
 exact blocker and preserve focused validation evidence for the cockpit slice.

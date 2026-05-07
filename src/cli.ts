@@ -250,6 +250,8 @@ export function run(args: string[]): void {
 	}
 	if (command) {
 		// No match at all — rich error message with suggestions
+		const expertHelpHint =
+			'Run "harness --help --all-commands" for the full expert command list.';
 		const suggestions = suggestCommands(command);
 		if (jsonFlag) {
 			const capabilitySuggestions = suggestCommandCapabilities(command);
@@ -269,7 +271,7 @@ export function run(args: string[]): void {
 							? { example: `harness ${capability.example}` }
 							: {}),
 					})),
-					hint: 'Run "harness --help" for the full command list.',
+					hint: expertHelpHint,
 				}),
 			);
 		} else {
@@ -283,7 +285,7 @@ export function run(args: string[]): void {
 				}
 			}
 			console.info("");
-			console.info('Run "harness --help" for the full command list.');
+			console.info(expertHelpHint);
 		}
 		process.exit(1);
 		return;

@@ -9,7 +9,7 @@ risk: high
 spec_depth: full
 ui_required: false
 linear_issue: JSC-248
-linear_status: in_progress
+linear_status: Not started
 linear_url: https://linear.app/jscraik/issue/JSC-248/implement-agent-native-cockpit-control-loop-first-slice
 traceability_required: true
 supersedes_scope: command-surface and acceptance portions of the 2026-05-02 cockpit spec for remaining JSC-248 work
@@ -74,8 +74,9 @@ missing rule explicit:
 > No command, doc, gate, artifact, or policy surface may remain first-contact
 > visible unless it is directly required by `next`, `pr-ready`, or `learn`.
 
-The active tracker is `JSC-248`, which is `In Progress` in Linear as of
-2026-05-07. Existing related work remains supporting context:
+The active tracker is `JSC-248`, whose Linear metadata is `Todo`/`unstarted` as
+of 2026-05-07 even though the issue body and PR attachments show partial
+cockpit work already exists. Existing related work remains supporting context:
 
 - `docs/roadmap/north-star.md` defines why the harness exists.
 - `docs/specs/2026-05-02-feat-agent-native-cockpit-control-loop-spec.md`
@@ -155,7 +156,7 @@ The product contract must flip:
 - Linear team: `Jscraik`
 - Linear project: `coding-harness`
 - Priority: High
-- Status snapshot: In Progress as of 2026-05-07
+- Status snapshot: Todo/unstarted as of 2026-05-07
 - PR linkage rule: use `Refs JSC-248` until the issue is fully completed.
 - Spec linkage rule: after this file lands, Linear should list this spec as
   the refreshed source for the ruthless compression recovery slice.

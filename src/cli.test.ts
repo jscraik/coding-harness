@@ -140,6 +140,9 @@ describe("run", () => {
 		expect(payload.suggestions[0]).toHaveProperty("retryability");
 		expect(payload.suggestions[0]).toHaveProperty("requiredFlags");
 		expect(payload.suggestions[0]).toHaveProperty("safeFirstAlternatives");
+		expect(payload.hint).toBe(
+			'Run "harness --help --all-commands" for the full expert command list.',
+		);
 		expect(exitSpy).toHaveBeenCalledWith(1);
 	});
 
@@ -157,6 +160,25 @@ describe("run", () => {
 		const payload = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0] ?? "{}"));
 		expect(payload.error).toBe("unknown_command");
 		expect(payload.received).toBe("drfit-gate");
+		expect(exitSpy).toHaveBeenCalledWith(1);
+	});
+
+	it("points unknown text commands to expert help discovery", () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// silence output in test
+		});
+
+		expect(() => run(["totally-unknown-command"])).toThrowError("EXIT_1");
+
+		const lines = infoSpy.mock.calls.map((call) => String(call[0] ?? ""));
+		expect(lines).toContain(
+			'Run "harness --help --all-commands" for the full expert command list.',
+		);
 		expect(exitSpy).toHaveBeenCalledWith(1);
 	});
 
