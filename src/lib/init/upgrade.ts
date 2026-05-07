@@ -56,12 +56,15 @@ export interface UpgradeManifestEntry {
 	customized: boolean;
 }
 
+/** Manifest that records template baselines for future harness upgrades. */
 export interface UpgradeManifest {
+	/** Upgrade manifest schema identifier. */
 	schemaVersion: "upgrade-manifest/v1";
 	/** Harness version that last updated this manifest */
 	harnessVersion: string;
 	/** ISO timestamp */
 	updatedAt: string;
+	/** Files tracked for stock/customized upgrade classification. */
 	files: UpgradeManifestEntry[];
 }
 
@@ -69,12 +72,18 @@ export const UPGRADE_MANIFEST_FILE = "upgrade-manifest.json";
 
 // ─── File classification ──────────────────────────────────────────────────────
 
+/** Stock/customized state for a file tracked by the upgrade manifest. */
 export type FileStatus = "stock" | "customized" | "absent" | "untracked";
 
+/** Per-file classification used to decide whether an upgrade can overwrite safely. */
 export interface FileClassification {
+	/** Repo-relative file path. */
 	path: string;
+	/** Classification derived from on-disk and template fingerprints. */
 	status: FileStatus;
+	/** SHA-256 of the on-disk file, or null when absent/unreadable. */
 	onDiskHash: string | null;
+	/** SHA-256 of the installed template baseline, or null when unavailable. */
 	templateHash: string | null;
 }
 
@@ -110,6 +119,7 @@ export function classifyFiles(
 
 // ─── Upgrade context detection ────────────────────────────────────────────────
 
+/** Repository upgrade state detected before applying harness template changes. */
 export interface UpgradeContext {
 	/** Harness version from the existing restore-manifest or upgrade-manifest */
 	fromVersion: string;
@@ -130,14 +140,19 @@ export interface UpgradeContext {
 }
 
 /**
- * JSC-66: Detect the upgrade context from an existing harness installation.
+ * Determine upgrade state between the installed harness and the current harness and identify file-level implications.
  *
- * Reads the restore-manifest for the installed version, then cross-checks
- * the upgrade-manifest (if it exists) to classify stock vs customized files.
+ * Attempts to read the installed restore manifest under the target directory to determine the installed (from) version, compares it to the current harness version (to), and — if an upgrade manifest exists — classifies tracked files as customized or absent.
+ *
+ * @param targetDir - Filesystem root of the repository to inspect
+ * @param preferredCiProvider - Optional CI provider hint forwarded to the manifest loader when resolving the installed manifest
+ * @param options.dryRun - If true, forwards dry-run to the manifest loader so manifest loading behaves as it would in a dry run
+ * @returns `{ ok: true, value: UpgradeContext }` when detection succeeds; `{ ok: false, error: string }` when a recoverable validation or manifest-loading error prevents detection. The `error` string describes the failure (e.g., malformed or incomplete restore manifest, or invalid semver values).
  */
 export function detectUpgradeContext(
 	targetDir: string,
 	preferredCiProvider?: CIProvider,
+	options: { dryRun?: boolean } = {},
 ):
 	| {
 			ok: true;
@@ -161,6 +176,7 @@ export function detectUpgradeContext(
 			requireMetadata: true,
 			operation: "upgrade",
 			...(preferredCiProvider !== undefined ? { preferredCiProvider } : {}),
+			...(options.dryRun !== undefined ? { dryRun: options.dryRun } : {}),
 		});
 		if (!manifestResult.ok) {
 			return { ok: false, error: manifestResult.error.message };

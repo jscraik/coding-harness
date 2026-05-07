@@ -34,7 +34,7 @@ CONTEXT_FILE="$CONTEXT_DIR/diagram-context.md"
 META_FILE="$DIAGRAM_CONTEXT_DIR/diagram-context.meta.json"
 LOG_FILE="$DIAGRAM_CONTEXT_DIR/refresh.log"
 MIN_SECONDS="${DIAGRAM_REFRESH_MIN_SECONDS:-1800}"
-MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"
+MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"
 NOW_EPOCH="$(date +%s)"
 
 mkdir -p "$DIAGRAM_DIR" "$DIAGRAM_CONTEXT_DIR" "$CONTEXT_DIR"
@@ -76,9 +76,18 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 pushd "$ROOT_DIR" >/dev/null
 if [[ "$QUIET" -eq 1 ]]; then
-	pnpm exec diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>&1
+	diagram_stderr="$TMP_DIR/diagram-generate.stderr"
+	set +e
+	pnpm exec diagram generate-all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>"$diagram_stderr"
+	status=$?
+	set -e
+	if [[ "$status" -ne 0 ]]; then
+		popd >/dev/null
+		cat "$diagram_stderr" >&2
+		exit "$status"
+	fi
 else
-	pnpm exec diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
+	pnpm exec diagram generate-all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
 fi
 popd >/dev/null
 

@@ -6,15 +6,14 @@
  */
 
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { runBranchProtect } from "../../src/commands/branch-protect.js";
-import { runCheckAuthz } from "../../src/commands/check-authz.js";
 import { runInit } from "../../src/commands/init.js";
 import { runLinearGate } from "../../src/commands/linear-gate.js";
 import { runPlanGate } from "../../src/commands/plan-gate.js";
 import { runReviewGate } from "../../src/commands/review-gate.js";
+import { runCheckAuthz } from "../../src/lib/review-gate/authz.js";
 import { GitHubE2EClient } from "../clients/github-e2e.js";
 import { LinearE2EClient } from "../clients/linear-e2e.js";
 import { loadE2EEnv, validateE2EEnv } from "../utils/env.js";
@@ -40,7 +39,7 @@ describe("Command Pipeline E2E", () => {
 		ctx = createTestContext("command-pipeline", env.recordingsDir);
 		github = new GitHubE2EClient({ env, tracker: ctx.tracker });
 		linear = new LinearE2EClient({ env, tracker: ctx.tracker });
-		tempDir = join(tmpdir(), `e2e-pipeline-${Date.now()}`);
+		tempDir = join(process.cwd(), "artifacts", "e2e", `pipeline-${Date.now()}`);
 		mkdirSync(tempDir, { recursive: true });
 
 		// Get team ID for Linear tests
@@ -53,7 +52,7 @@ describe("Command Pipeline E2E", () => {
 		}
 	});
 
-	afterAll(async () => {
+	afterEach(async () => {
 		await ctx.tracker.cleanup();
 		// Cleanup temp directory
 		try {
@@ -64,7 +63,7 @@ describe("Command Pipeline E2E", () => {
 	});
 
 	describe("Review Gate Pipeline", () => {
-		it("should pass review-gate on clean PR with no failing checks", async () => {
+		it("should fail review-gate on clean PR without required approval", async () => {
 			// Setup: Create branch and PR
 			const branchName = `e2e-review-clean-${Date.now()}`;
 			const branch = await github.createBranch(branchName);
@@ -108,14 +107,17 @@ describe("Command Pipeline E2E", () => {
 				repo: env.githubTestRepo,
 				prNumber: pr.number,
 				headSha: branch.sha,
-				checkName: "review-check",
+				checkName: "e2e-test-check",
 			});
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.verified).toBe(true);
+				expect(result.output.verified).toBe(false);
 				expect(result.output.policy_gate_status).toBe("pass");
 				expect(result.output.headSha).toBe(branch.sha);
+				expect(result.output.blockers).toContain(
+					"No APPROVED reviews found for the current HEAD SHA",
+				);
 			}
 
 			// Cleanup
@@ -166,7 +168,7 @@ describe("Command Pipeline E2E", () => {
 				repo: env.githubTestRepo,
 				prNumber: pr.number,
 				headSha: branch.sha,
-				checkName: "review-check",
+				checkName: "e2e-failing-check",
 			});
 
 			expect(result.ok).toBe(true); // Command succeeded
@@ -191,6 +193,14 @@ describe("Command Pipeline E2E", () => {
 				"main",
 			);
 
+			// Create a passing review check so this test reaches approval evaluation.
+			await github.createCheckRun(
+				"e2e-reviewer-independence-check",
+				branch.sha,
+				"completed",
+				"success",
+			);
+
 			// Create contract with reviewer independence enforced
 			const contractPath = join(tempDir, "harness.contract.json");
 			writeFileSync(
@@ -200,7 +210,7 @@ describe("Command Pipeline E2E", () => {
 					reviewPolicy: {
 						timeoutSeconds: 300,
 						timeoutAction: "fail",
-						requiredChecks: [],
+						requiredChecks: ["e2e-reviewer-independence-check"],
 						enforceReviewerIndependence: true,
 					},
 				}),
@@ -215,15 +225,16 @@ describe("Command Pipeline E2E", () => {
 				repo: env.githubTestRepo,
 				prNumber: pr.number,
 				headSha: branch.sha,
-				checkName: "review-check",
+				checkName: "e2e-reviewer-independence-check",
 			});
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				// Should pass even without reviews for this test
-				// (we're just verifying the API integration works)
-				expect(result.output).toHaveProperty("verified");
-				expect(result.output).toHaveProperty("policy_gate_status");
+				expect(result.output.verified).toBe(false);
+				expect(result.output.policy_gate_status).toBe("pass");
+				expect(result.output.blockers).toContain(
+					"Unable to determine coding actor from PR commit metadata; cannot verify reviewer independence",
+				);
 			}
 
 			// Cleanup
@@ -267,6 +278,7 @@ describe("Command Pipeline E2E", () => {
 							requirePackageBugsUrl: true,
 							requireBranchIssueKey: true,
 							requirePrIssueKey: true,
+							disableGitHubIssues: false,
 						},
 					}),
 					"utf-8",
@@ -275,15 +287,15 @@ describe("Command Pipeline E2E", () => {
 				// Run linear-gate with valid branch/PR referencing the issue
 				const result = await runLinearGate({
 					contractPath,
-					branchName: `codex/${issue.identifier}-test`,
+					repoRoot: tempDir,
+					branch: `codex/${issue.identifier}-test`,
 					prTitle: `[${issue.identifier}] Test PR`,
 					prBody: `This PR implements ${issue.identifier}`,
-					packageJsonPath,
 				});
 
 				expect(result.ok).toBe(true);
 				if (result.ok) {
-					expect(result.output.compliant).toBe(true);
+					expect(result.output.passed).toBe(true);
 				}
 			},
 		);
@@ -313,6 +325,7 @@ describe("Command Pipeline E2E", () => {
 							requirePackageBugsUrl: true,
 							requireBranchIssueKey: true,
 							requirePrIssueKey: true,
+							disableGitHubIssues: false,
 						},
 					}),
 					"utf-8",
@@ -321,16 +334,18 @@ describe("Command Pipeline E2E", () => {
 				// Run linear-gate with branch/PR that don't reference issues
 				const result = await runLinearGate({
 					contractPath,
-					branchName: "feature/test-no-issue",
+					repoRoot: tempDir,
+					branch: "feature/test-no-issue",
 					prTitle: "Test PR without issue",
 					prBody: "This PR has no issue reference",
-					packageJsonPath,
 				});
 
 				expect(result.ok).toBe(true); // Command succeeded
 				if (result.ok) {
-					expect(result.output.compliant).toBe(false); // But not compliant
-					expect(result.output.violations.length).toBeGreaterThan(0);
+					expect(result.output.passed).toBe(false); // But not compliant
+					expect(result.output.checks.some((check) => !check.passed)).toBe(
+						true,
+					);
 				}
 			},
 		);
@@ -377,9 +392,13 @@ describe("Command Pipeline E2E", () => {
 
 			// If there are rulesets, verify we can get details
 			if (rulesets.length > 0) {
+				const firstSummary = rulesets[0];
+				if (!firstSummary) {
+					throw new Error("Expected at least one ruleset summary");
+				}
 				const firstRuleset = await github
 					.getClient()
-					.getRuleset(rulesets[0].id);
+					.getRuleset(firstSummary.id);
 				expect(firstRuleset).toHaveProperty("id");
 				expect(firstRuleset).toHaveProperty("name");
 				expect(firstRuleset).toHaveProperty("rules");
@@ -425,9 +444,8 @@ This is a test plan for E2E testing.
 
 			// Run plan-gate
 			const result = await runPlanGate({
-				contractPath,
-				planId,
-				plansDir: "docs/plans",
+				planIds: [planId],
+				plansPath: plansDir,
 			});
 
 			expect(result).toBeDefined();
@@ -457,11 +475,8 @@ This is a test plan for E2E testing.
 			// Run check-authz
 			const result = await runCheckAuthz({
 				contractPath,
-				token: env.githubToken,
-				owner: env.githubOwner,
-				repo: env.githubTestRepo,
+				repo: `${env.githubOwner}/${env.githubTestRepo}`,
 				branch: "feature/test",
-				dryRun: true,
 			});
 
 			expect(result).toBeDefined();
@@ -488,13 +503,12 @@ This is a test plan for E2E testing.
 			const result = runInit(testDir, {
 				force: true,
 				dryRun: false,
-				skipGitHub: true,
-				skipReadiness: true,
+				issueTracker: "none",
 			});
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.filesCreated.length).toBeGreaterThan(0);
+				expect(result.output.created.length).toBeGreaterThan(0);
 			}
 		});
 	});

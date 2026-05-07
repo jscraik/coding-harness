@@ -90,6 +90,7 @@ Taxonomy note: section headings in this document represent command families. The
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)        |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                |
 | `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--mode local\|pr\|ci`)                         |
+| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                        |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                   |
 | `audit`             | Comprehensive governance state check with actionable recommendations                                                                                                      |
 | `brain`             | Project Brain knowledge, rules, and quality management (status, query, add, preflight, stale)                                                                             |
@@ -102,6 +103,8 @@ Taxonomy note: section headings in this document represent command families. The
 | `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                         |
 | `preset`            | List and inspect bundled presets                                                                                                                                          |
 | `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                     |
+
+In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json` when the upgrade-matrix artifact exists.
 
 ## Review and policy gates
 

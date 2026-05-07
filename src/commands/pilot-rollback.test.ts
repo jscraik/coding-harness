@@ -1,6 +1,7 @@
 import {
 	existsSync,
 	mkdirSync,
+	mkdtempSync,
 	readdirSync,
 	rmSync,
 	symlinkSync,
@@ -17,14 +18,16 @@ import {
 } from "./pilot-rollback.js";
 
 describe("pilot-rollback", () => {
-	const testDir = join(process.cwd(), "artifacts/test/pilot-rollback");
-	const contractPath = join(testDir, "harness.contract.json");
+	let testDir = "";
+	let contractPath = "";
 
 	beforeEach(() => {
 		// Clear contract cache to prevent stale contract data between tests
 		clearContractCache();
-		// Create test directory and contract
-		rmSync(testDir, { recursive: true, force: true });
+		const root = join(process.cwd(), "artifacts/test");
+		mkdirSync(root, { recursive: true });
+		testDir = mkdtempSync(join(root, "pilot-rollback-"));
+		contractPath = join(testDir, "harness.contract.json");
 	});
 
 	afterEach(() => {

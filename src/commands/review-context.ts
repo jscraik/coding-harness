@@ -103,6 +103,12 @@ function emitError(options: {
 					applicableLearnings: [],
 					validationPlan: [],
 					networkRequired: [],
+					reviewerLikelyConcerns: [],
+					mustMentionInPr: [],
+					evidenceRequired: [],
+					knownRepeatedFailures: [],
+					recommendedReviewers: [],
+					doNotClaim: [],
 					summary: {
 						applicableLearnings: 0,
 						validationCommands: 0,

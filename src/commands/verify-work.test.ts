@@ -439,6 +439,7 @@ function runVerifyWorkScript(
 		env?: NodeJS.ProcessEnv;
 		json?: boolean;
 		inheritEnv?: boolean;
+		allowExternalNormalization?: boolean;
 	} = {},
 ) {
 	const includeJson = options.json ?? true;
@@ -460,6 +461,9 @@ function runVerifyWorkScript(
 		env: {
 			...parentEnv,
 			HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
+			HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION:
+				options.allowExternalNormalization === true ? "0" : "1",
+			HARNESS_VERIFY_WORK_EXTERNAL_NORMALIZE_TIMEOUT_SECONDS: "1",
 			...options.env,
 		},
 	});
@@ -835,6 +839,7 @@ exit 1
 
 		const result = runVerifyWorkScript(repoRoot, [], {
 			inheritEnv: false,
+			allowExternalNormalization: true,
 			env: sandboxedEnv,
 		});
 		const combinedOutput = `${result.stdout}${result.stderr}`;
@@ -845,6 +850,66 @@ exit 1
 		);
 		expect(combinedOutput).toContain(
 			"required checks normalization via repo runner failed, trying fallback runners",
+		);
+		rmSync(binDir, { recursive: true, force: true });
+	});
+
+	it("skips external normalization when the skip flag is set to a truthy value", () => {
+		scaffoldVerifyWorkScriptRepo({
+			repoRoot,
+			manifest: {
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{
+						sourceAppSlug: "github-actions",
+						githubCheckName: "ci / raw-fallback",
+					},
+				],
+			},
+		});
+		writeExecutable(
+			join(repoRoot, "dist/cli.js"),
+			`#!/usr/bin/env node
+process.exit(1);
+`,
+		);
+		mkdirSync(join(repoRoot, "src"), { recursive: true });
+		writeFileSync(join(repoRoot, "src/cli.ts"), "process.exit(1);\n", "utf-8");
+
+		const binDir = mkdtempSync(join(tmpdir(), "verify-work-bin-"));
+		const miseHarnessPath = writeBinExecutable(
+			binDir,
+			"harness-from-mise",
+			`#!/usr/bin/env bash
+set -euo pipefail
+echo '{"schemaVersion":1,"contractVersion":"1","activeProvider":"github-actions","gates":[]}'
+`,
+		);
+		writeBinExecutable(
+			binDir,
+			"mise",
+			`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$#" -ge 2 && "$1" == "which" && "$2" == "harness" ]]; then
+	echo "${miseHarnessPath}"
+	exit 0
+fi
+exit 1
+`,
+		);
+
+		const result = runVerifyWorkScript(repoRoot, [], {
+			inheritEnv: false,
+			env: {
+				...makeDeterministicScriptEnv(`${binDir}:${process.env.PATH ?? ""}`),
+				HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION: "true",
+			},
+		});
+		const combinedOutput = `${result.stdout}${result.stderr}`;
+
+		expect(result.status).toBe(0);
+		expect(combinedOutput).toContain(
+			"required checks normalization unavailable; using raw manifest fallback",
 		);
 		rmSync(binDir, { recursive: true, force: true });
 	});
@@ -899,6 +964,7 @@ echo '${payload}'
 		);
 
 		const result = runVerifyWorkScript(repoRoot, [], {
+			allowExternalNormalization: true,
 			env: { PATH: `${binDir}:${process.env.PATH ?? ""}` },
 		});
 		const combinedOutput = `${result.stdout}${result.stderr}`;

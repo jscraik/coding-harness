@@ -378,17 +378,13 @@ export interface HarnessUpgradeOptions {
 }
 
 /**
- * Execute the `harness upgrade` CLI flow and return an appropriate exit code.
+ * Run the harness upgrade CLI flow, performing installation detection, optional contract backfill and migration, CI provider resolution, and template upgrades while printing progress and summaries.
  *
- * Orchestrates detection of an existing installation and upgrade context, optional
- * contract default backfill and schema migration, CI provider resolution, and
- * template upgrades; prints progress and summaries to stdout/stderr. Supports
- * the `json` short-circuit mode which delegates to `runInitCLI` for a dry-run
- * JSON output.
+ * Performs a complete upgrade workflow including: detecting an existing installation and upgrade context, optionally backfilling contract defaults and applying schema migrations, resolving the CI provider, upgrading templates (respecting `--force` and `--dry-run`), and printing summaries and final messages. Supports a `--json` short-circuit that delegates to the init flow for a dry-run JSON output.
  *
- * @param targetDir - Optional target directory; uses the current working directory when omitted
- * @param options - CLI options controlling behavior (supports `dryRun`, `force`, `json`, `provider`, `skipContractMigration`)
- * @returns A numeric exit code (one of `EXIT_CODES`) representing success or the type of failure
+ * @param targetDir - Optional target directory; when omitted the current working directory is used
+ * @param options - CLI options (supports `dryRun`, `force`, `json`, `provider`, `skipContractMigration`)
+ * @returns A numeric exit code from `EXIT_CODES` indicating success or the type of failure encountered
  */
 export function runUpgradeCLI(
 	targetDir: string | undefined,
@@ -434,7 +430,9 @@ export function runUpgradeCLI(
 	}
 
 	// 2. Detect upgrade context
-	const upgradeResult = detectUpgradeContext(dir, preferredCiProvider);
+	const upgradeResult = detectUpgradeContext(dir, preferredCiProvider, {
+		dryRun,
+	});
 	if (!upgradeResult.ok) {
 		console.error(`Error: ${upgradeResult.error}`);
 		return EXIT_CODES.INVALID_PATH;

@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated hooks.
 import { describe, expect, it } from "vitest";
 import {
 	renderCheckHookCriticalConfigSyncScript,

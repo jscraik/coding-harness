@@ -57,6 +57,7 @@ function hashContent(content: string): string {
 
 const TEST_SNAPSHOT_SIGNING_KEY =
 	"test-signing-key-for-ci-migrate-snapshots-0123456789";
+const CI_MIGRATE_VERIFY_FAILED_EXIT_CODE = 1;
 const SNAPSHOT_SIGNING_KEY_ENV = "HARNESS_CI_MIGRATE_SIGNING_KEY";
 const EXTERNAL_CONTROL_PLANE_PATHS = [
 	".harness/control-plane/github-rulesets.json",
@@ -4720,6 +4721,89 @@ describe("runCIMigrateCLI", () => {
 		expect(report.parity.status).toBe("parity");
 	});
 
+	it("emits JSON dry-run report without writing migration artifacts", () => {
+		delete process.env[SNAPSHOT_SIGNING_KEY_ENV];
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"name: test",
+		);
+		writeFileSync(
+			join(tempDir, ".harness/ci-required-checks.json"),
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "github-actions",
+					requiredChecks: [
+						{
+							policyId: "required-check-1",
+							displayName: "pr-pipeline",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			dryRun: true,
+			json: true,
+			snapshot: "dryrun-json-1",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(runInitCLIMock).not.toHaveBeenCalled();
+		expect(
+			existsSync(
+				join(
+					tempDir,
+					".harness/ci-migrate-snapshots/dryrun-json-1.report.json",
+				),
+			),
+		).toBe(false);
+		expect(
+			existsSync(
+				join(tempDir, ".harness/ci-migrate-snapshots/dryrun-json-1.state.json"),
+			),
+		).toBe(false);
+		const consoleInfoCalls = consoleInfoSpy.mock.calls as unknown[][];
+		const jsonPayloadCalls = consoleInfoCalls.filter((call) => {
+			const value = call[0] as unknown;
+			if (typeof value !== "string") {
+				return false;
+			}
+			try {
+				JSON.parse(value);
+				return true;
+			} catch {
+				return false;
+			}
+		});
+		expect(jsonPayloadCalls).toHaveLength(1);
+		const payload = JSON.parse(jsonPayloadCalls[0]?.[0] as string) as {
+			status: string;
+			plan: Array<{ action: string; target: string; reason: string }>;
+			report: { schemaVersion: string; parity: { status: string } };
+		};
+		expect(payload.status).toBe("dry-run");
+		expect(payload.plan).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					target: ".harness/ci-migrate-snapshots/dryrun-json-1.report.json",
+				}),
+			]),
+		);
+		expect(payload.report.schemaVersion).toBe("ci-migrate-report/v1");
+		expect(payload.report.parity.status).toBe("parity");
+	});
+
 	it("fails closed on apply when source provider config is missing", () => {
 		mkdirSync(join(tempDir, ".harness"), { recursive: true });
 		writeFileSync(
@@ -6023,7 +6107,7 @@ describe("runCIMigrateCLI", () => {
 			provider: "circleci",
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(exitCode).toBe(CI_MIGRATE_VERIFY_FAILED_EXIT_CODE);
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
@@ -6039,7 +6123,7 @@ describe("runCIMigrateCLI", () => {
 			provider: "circleci",
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(exitCode).toBe(CI_MIGRATE_VERIFY_FAILED_EXIT_CODE);
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
@@ -6087,7 +6171,7 @@ describe("runCIMigrateCLI", () => {
 			provider: "circleci",
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(exitCode).toBe(CI_MIGRATE_VERIFY_FAILED_EXIT_CODE);
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 

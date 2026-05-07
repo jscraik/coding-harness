@@ -4,17 +4,12 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: "node",
-		include: ["e2e/tests/**/*.e2e.test.ts"],
+		include: ["e2e/tests/**/*.e2e.test.ts", "e2e/**/*.test.ts"],
 		exclude: ["**/node_modules/**", "**/dist/**"],
 		testTimeout: 300000, // 5 minutes for E2E tests (real API calls)
 		hookTimeout: 60000, // 1 minute for hooks
 		// Memory-efficient configuration for E2E tests
 		pool: "forks", // Use process isolation instead of worker threads (better memory)
-		poolOptions: {
-			forks: {
-				singleFork: true, // Run tests sequentially to limit memory
-			},
-		},
 		maxConcurrency: 1, // Sequential execution to prevent memory overload
 		fileParallelism: false, // Run test files sequentially
 		sequence: {

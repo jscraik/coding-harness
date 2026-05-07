@@ -1,4 +1,11 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -16,6 +23,10 @@ import {
 function write(path: string, content: string): void {
 	mkdirSync(dirname(path), { recursive: true });
 	writeFileSync(path, content, "utf-8");
+}
+
+function createTestRoot(label: string): string {
+	return mkdtempSync(join(tmpdir(), `${label}-`));
 }
 
 function minimalValidContract(overrides: Record<string, unknown> = {}) {
@@ -83,7 +94,7 @@ describe("context-health command", () => {
 	});
 
 	it("writes a current-checkout report with non-null coverage metrics", () => {
-		const root = join(process.cwd(), "artifacts", "context-health-test-1");
+		const root = createTestRoot("context-health-test-1");
 		roots.push(root);
 
 		write(
@@ -136,7 +147,7 @@ describe("context-health command", () => {
 	});
 
 	it("reads persisted artifacts in recent-artifacts mode", () => {
-		const root = join(process.cwd(), "artifacts", "context-health-test-2");
+		const root = createTestRoot("context-health-test-2");
 		roots.push(root);
 
 		write(
@@ -237,7 +248,7 @@ describe("context-health command", () => {
 	});
 
 	it("returns bootstrap-gap exit code when contextIntegrityPolicy is missing", () => {
-		const root = join(process.cwd(), "artifacts", "context-health-test-3");
+		const root = createTestRoot("context-health-test-3");
 		roots.push(root);
 
 		write(
@@ -256,7 +267,7 @@ describe("context-health command", () => {
 	});
 
 	it("supports CLI JSON output", () => {
-		const root = join(process.cwd(), "artifacts", "context-health-test-4");
+		const root = createTestRoot("context-health-test-4");
 		roots.push(root);
 
 		write(

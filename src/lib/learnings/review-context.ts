@@ -49,6 +49,12 @@ export interface ReviewContextResult {
 	applicableLearnings: ReviewContextLearning[];
 	validationPlan: ValidationPlanResult["commands"];
 	networkRequired: ValidationPlanResult["networkRequired"];
+	reviewerLikelyConcerns: string[];
+	mustMentionInPr: string[];
+	evidenceRequired: string[];
+	knownRepeatedFailures: string[];
+	recommendedReviewers: string[];
+	doNotClaim: string[];
 	outputPath?: string;
 	summary: {
 		applicableLearnings: number;
@@ -100,6 +106,7 @@ export function buildReviewContext(
 			applicableLearnings: [],
 			validationPlan: [],
 			networkRequired: [],
+			...emptyReviewHandoff(),
 			summary: {
 				applicableLearnings: 0,
 				validationCommands: 0,
@@ -126,6 +133,7 @@ export function buildReviewContext(
 			applicableLearnings: [],
 			validationPlan: [],
 			networkRequired: [],
+			...emptyReviewHandoff(),
 			summary: {
 				applicableLearnings: 0,
 				validationCommands: 0,
@@ -160,6 +168,7 @@ export function buildReviewContext(
 		.map((item) => buildReviewContextLearning(item, changedFiles))
 		.filter((item): item is ReviewContextLearning => item !== undefined)
 		.sort((a, b) => b.usage - a.usage || a.id.localeCompare(b.id));
+	const reviewHandoff = buildReviewHandoff(applicableLearnings, validationPlan);
 
 	const result: ReviewContextResult = {
 		schemaVersion: "review-context/v1",
@@ -172,6 +181,7 @@ export function buildReviewContext(
 		applicableLearnings,
 		validationPlan: validationPlan.commands,
 		networkRequired: validationPlan.networkRequired,
+		...reviewHandoff,
 		summary: {
 			applicableLearnings: applicableLearnings.length,
 			validationCommands: validationPlan.commands.length,
@@ -277,6 +287,7 @@ function buildValidationPlanErrorResult(input: {
 		applicableLearnings: [],
 		validationPlan: [],
 		networkRequired: [],
+		...emptyReviewHandoff(),
 		summary: {
 			applicableLearnings: 0,
 			validationCommands: 0,
@@ -331,6 +342,104 @@ function buildReviewContextLearning(
 		evidenceRef: buildEvidenceRefs(item),
 		match: strongestMatch,
 	};
+}
+
+function emptyReviewHandoff(): Pick<
+	ReviewContextResult,
+	| "reviewerLikelyConcerns"
+	| "mustMentionInPr"
+	| "evidenceRequired"
+	| "knownRepeatedFailures"
+	| "recommendedReviewers"
+	| "doNotClaim"
+> {
+	return {
+		reviewerLikelyConcerns: [],
+		mustMentionInPr: [],
+		evidenceRequired: [],
+		knownRepeatedFailures: [],
+		recommendedReviewers: [],
+		doNotClaim: [],
+	};
+}
+
+function buildReviewHandoff(
+	applicableLearnings: ReviewContextLearning[],
+	validationPlan: ValidationPlanResult,
+): Pick<
+	ReviewContextResult,
+	| "reviewerLikelyConcerns"
+	| "mustMentionInPr"
+	| "evidenceRequired"
+	| "knownRepeatedFailures"
+	| "recommendedReviewers"
+	| "doNotClaim"
+> {
+	const highSeverityLearnings = applicableLearnings.filter(
+		(learning) =>
+			learning.enforcement === "error" ||
+			learning.promotionStatus === "enforced",
+	);
+	return {
+		reviewerLikelyConcerns: applicableLearnings.map((learning) =>
+			buildReviewerConcern(learning),
+		),
+		mustMentionInPr: [
+			...highSeverityLearnings.map(
+				(learning) =>
+					`Acknowledge review-context learning ${learning.id}: ${learning.summary}`,
+			),
+			...(validationPlan.commands.length > 0
+				? ["List the validation evidence used for the changed files."]
+				: []),
+			...(validationPlan.networkRequired.length > 0
+				? [
+						"Call out network-required checks that were blocked or run separately.",
+					]
+				: []),
+		],
+		evidenceRequired: [
+			...validationPlan.commands.map(
+				(command) => `${command.command}: ${command.reason}`,
+			),
+			...validationPlan.networkRequired.map(
+				(command) => `${command.command}: ${command.reason}`,
+			),
+			...highSeverityLearnings.map(
+				(learning) =>
+					`PR body acknowledgement for high-severity learning ${learning.id}.`,
+			),
+		],
+		knownRepeatedFailures: applicableLearnings.map(
+			(learning) =>
+				`${learning.id} (${learning.usage} uses): ${learning.summary}`,
+		),
+		recommendedReviewers:
+			applicableLearnings.length > 0
+				? ["CodeRabbit: imported learnings matched the changed files."]
+				: [],
+		doNotClaim: [
+			...(validationPlan.commands.length > 0
+				? [
+						"Do not claim required validation has passed until the listed validation commands have run.",
+					]
+				: []),
+			...(validationPlan.networkRequired.length > 0
+				? [
+						"Do not claim network-required checks are clear without separate evidence or an explicit blocker.",
+					]
+				: []),
+			...(highSeverityLearnings.length > 0
+				? [
+						"Do not claim review-context learnings are acknowledged until high-severity learning IDs appear in the PR body.",
+					]
+				: []),
+		],
+	};
+}
+
+function buildReviewerConcern(learning: ReviewContextLearning): string {
+	return `Reviewer should check review-context learning ${learning.id}: ${learning.summary}`;
 }
 
 /**

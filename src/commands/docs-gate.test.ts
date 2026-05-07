@@ -1,5 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -11,6 +18,10 @@ import { runDocsGate, runDocsGateCLI } from "./docs-gate.js";
 function write(path: string, content: string): void {
 	mkdirSync(dirname(path), { recursive: true });
 	writeFileSync(path, content, "utf-8");
+}
+
+function createTestRoot(label: string): string {
+	return mkdtempSync(join(tmpdir(), `${label}-`));
 }
 
 function seedRequiredTruthSources(root: string): void {
@@ -96,7 +107,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("returns bootstrap_gap when docsGatePolicy is missing", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-1");
+		const root = createTestRoot("docs-gate-test-1");
 		roots.push(root);
 		createContractWithoutDocsGate(root);
 
@@ -121,7 +132,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("blocks on bootstrap_gap in required mode", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-2");
+		const root = createTestRoot("docs-gate-test-2");
 		roots.push(root);
 		createContractWithoutDocsGate(root);
 
@@ -137,7 +148,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("returns ok when no governance-relevant files changed", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-3");
+		const root = createTestRoot("docs-gate-test-3");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -164,7 +175,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("detects missing documentation for CLI changes", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-4");
+		const root = createTestRoot("docs-gate-test-4");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -241,7 +252,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("passes when required documentation was updated", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-5");
+		const root = createTestRoot("docs-gate-test-5");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -271,7 +282,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("treats deleted required documentation surfaces as missing", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-5b");
+		const root = createTestRoot("docs-gate-test-5b");
 		roots.push(root);
 		const gitEnv = createIsolatedGitEnv();
 		createContractWithDocsGate(root, {
@@ -340,7 +351,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("reports advisory (warning) in advisory mode for missing docs", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-6");
+		const root = createTestRoot("docs-gate-test-6");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -372,7 +383,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("skips evaluation when docs-gate is disabled", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-7");
+		const root = createTestRoot("docs-gate-test-7");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: false,
@@ -394,7 +405,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("detects unknown governance changes", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-8");
+		const root = createTestRoot("docs-gate-test-8");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -425,7 +436,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("classifies CI workflow changes correctly", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-9");
+		const root = createTestRoot("docs-gate-test-9");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -451,7 +462,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("writes output report to --out path", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-10");
+		const root = createTestRoot("docs-gate-test-10");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -477,7 +488,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("captures execution context correctly", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-11");
+		const root = createTestRoot("docs-gate-test-11");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -502,7 +513,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("classifies multiple change categories", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-12");
+		const root = createTestRoot("docs-gate-test-12");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -535,7 +546,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("requires tooling docs for local runtime policy changes", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-13");
+		const root = createTestRoot("docs-gate-test-13");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -565,7 +576,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("passes architecture context changes when bootstrap docs were updated", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-14");
+		const root = createTestRoot("docs-gate-test-14");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -595,7 +606,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("tracks plan artifacts via directory-backed documentation surfaces", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-15");
+		const root = createTestRoot("docs-gate-test-15");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -628,7 +639,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("tracks brainstorm and spec artifacts as governed workflow docs", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-16");
+		const root = createTestRoot("docs-gate-test-16");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -665,7 +676,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("classifies authoritative workflow docs separately from agent governance", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-17");
+		const root = createTestRoot("docs-gate-test-17");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -685,7 +696,7 @@ describe("docs-gate command", () => {
 	});
 
 	it("treats compound-routing workflow docs as workflow authority", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-18");
+		const root = createTestRoot("docs-gate-test-18");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -962,7 +973,7 @@ applies_to:
 	});
 
 	it("ignores shared non-workflow required checks when evaluating workflow drift", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-19");
+		const root = createTestRoot("docs-gate-test-19");
 		roots.push(root);
 		createContractWithDocsGate(
 			root,
@@ -1027,7 +1038,7 @@ applies_to:
 	});
 
 	it("skips workflow drift checks when CircleCI is the active provider", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-20");
+		const root = createTestRoot("docs-gate-test-20");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -1071,7 +1082,7 @@ applies_to:
 	});
 
 	it("uses trusted base refs to detect committed branch changes", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-21");
+		const root = createTestRoot("docs-gate-test-21");
 		roots.push(root);
 		const gitEnv = createIsolatedGitEnv();
 		createContractWithDocsGate(root, {
@@ -1123,7 +1134,7 @@ applies_to:
 	});
 
 	it("includes tracked worktree edits when auto-discovering changed files", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-21b");
+		const root = createTestRoot("docs-gate-test-21b");
 		roots.push(root);
 		const gitEnv = createIsolatedGitEnv();
 		createContractWithDocsGate(root, {
@@ -1168,7 +1179,7 @@ applies_to:
 	});
 
 	it("parses quoted activeProvider declarations when checking workflow policy conflicts", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-22");
+		const root = createTestRoot("docs-gate-test-22");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
@@ -1219,7 +1230,7 @@ applies_to:
 	});
 
 	it("treats validation docs as workflow policy conflict sources", () => {
-		const root = join(process.cwd(), "artifacts", "docs-gate-test-23");
+		const root = createTestRoot("docs-gate-test-23");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,
