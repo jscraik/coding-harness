@@ -159,6 +159,7 @@ const MERGE_QUEUE_WINDOW_PATH =
 	".harness/control-plane/merge-queue-cutover-window.json";
 const DEFAULT_MERGE_QUEUE_EVIDENCE_PATH =
 	".harness/control-plane/merge-queue-cutover-evidence.json";
+const CI_MIGRATE_VERIFY_FAILED_EXIT_CODE = 1;
 
 const BREAK_GLASS_POLICY_PATH =
 	".harness/control-plane/ci-migrate-break-glass-policy.json";
@@ -9090,10 +9091,30 @@ function hashMigrationReport(report: MigrationReport): string {
 	return hashContent(JSON.stringify(canonicalReport));
 }
 
+/**
+ * Produces a deterministic digest for a set of required check display names.
+ *
+ * @param requiredCheckNames - Array of required check display names; ordering of the input does not affect the result.
+ * @returns A digest computed from the sorted list of names (stable across input reorderings).
+ */
 function hashRequiredCheckNames(requiredCheckNames: string[]): string {
 	return hashContent(JSON.stringify([...requiredCheckNames].sort()));
 }
 
+/**
+ * Builds a JSON-serializable dry-run plan of preview actions for a migration snapshot.
+ *
+ * The plan lists preview steps that a real prepare/apply run would perform, suitable for
+ * emitting as JSON instead of mutating repository state.
+ *
+ * @param snapshotId - Snapshot identifier used to derive the report file path included in the plan
+ * @param report - Migration report whose fields `sourceConfigPaths`, `sourceProvider`, `targetConfigPaths`,
+ * and `targetProvider` are used to populate preview targets
+ * @returns An array of preview actions; each entry contains:
+ * - `action`: action name (always `"preview"` for dry-run)
+ * - `target`: human-identifiable target being inspected (config paths, provider, or report path)
+ * - `reason`: brief explanation of the preview step
+ */
 function buildMigrationDryRunPlan(
 	snapshotId: string,
 	report: MigrationReport,
@@ -9625,32 +9646,9 @@ export function runCIMigrateCLI(
 			return EXIT_CODES.INVALID_PATH;
 		}
 
-		if (explicitJsonDryRun) {
-			console.info(
-				JSON.stringify(
-					{
-						status: "dry-run",
-						snapshotId,
-						targetDir: dir,
-						sourceProvider,
-						targetProvider: provider,
-						plan: buildMigrationDryRunPlan(snapshotId, migrationReport),
-						report: migrationReport,
-					},
-					null,
-					2,
-				),
-			);
-		} else {
-			const reportExitCode = writeMigrationReport(
-				dir,
-				snapshotId,
-				migrationReport,
-			);
-			if (reportExitCode !== EXIT_CODES.SUCCESS) {
-				return reportExitCode;
-			}
-		}
+		// For explicitJsonDryRun, collect verify violations before emitting JSON
+		let verifyViolations: string[] = [];
+		let verifyExitCode: 0 | 1 = EXIT_CODES.SUCCESS;
 
 		if (action === "verify") {
 			// JSC-58: solo mode skips strict verify (no trustedPolicyRef / authorityConfigPath)
@@ -9659,40 +9657,87 @@ export function runCIMigrateCLI(
 				soloMode ? { strict: false } : { strict: true },
 			);
 			if (!policyResult.ok) {
-				console.error(`Error: ${policyResult.error}`);
-				return EXIT_CODES.INVALID_PATH;
-			}
-			// JSC-59: Validate CI config syntax before declaring verify success
-			const configSyntaxViolations = validateCIConfigSyntax(
-				dir,
-				provider === "circleci" ? "circleci" : "github-actions",
-			).map((v) => v.message);
-			const verificationViolations = [
-				...configSyntaxViolations,
-				...validateRequiredChecksForVerify(activeImportedChecks),
-				...validateTransitionStatusArtifact(
+				if (!explicitJsonDryRun) {
+					console.error(`Error: ${policyResult.error}`);
+				}
+				verifyViolations.push(policyResult.error);
+				verifyExitCode = CI_MIGRATE_VERIFY_FAILED_EXIT_CODE;
+			} else {
+				// JSC-59: Validate CI config syntax before declaring verify success
+				const configSyntaxViolations = validateCIConfigSyntax(
 					dir,
-					policyResult.value.transitionStatusArtifactPath,
-					!soloMode &&
-						policyResult.value.mode === "required" &&
-						policyResult.value.migrationStage !== "circleci-only",
-				),
-			];
+					provider === "circleci" ? "circleci" : "github-actions",
+				).map((v) => v.message);
+				const verificationViolations = [
+					...configSyntaxViolations,
+					...validateRequiredChecksForVerify(activeImportedChecks),
+					...validateTransitionStatusArtifact(
+						dir,
+						policyResult.value.transitionStatusArtifactPath,
+						!soloMode &&
+							policyResult.value.mode === "required" &&
+							policyResult.value.migrationStage !== "circleci-only",
+					),
+				];
 
-			if (verificationViolations.length > 0) {
-				if (soloMode) {
-					console.info(
-						`ℹ️  Solo mode: ${verificationViolations.length} verify check(s) skipped (not enforced in solo/lightweight mode).`,
-					);
-				} else {
-					console.error("Error: strict verify failed:");
-					for (const violation of verificationViolations) {
-						console.error(`- ${violation}`);
+				if (verificationViolations.length > 0) {
+					if (soloMode) {
+						if (!explicitJsonDryRun) {
+							console.info(
+								`ℹ️  Solo mode: ${verificationViolations.length} verify check(s) skipped (not enforced in solo/lightweight mode).`,
+							);
+						}
+					} else {
+						verifyViolations = verificationViolations;
+						verifyExitCode = CI_MIGRATE_VERIFY_FAILED_EXIT_CODE;
+						if (!explicitJsonDryRun) {
+							console.error("Error: strict verify failed:");
+							for (const violation of verificationViolations) {
+								console.error(`- ${violation}`);
+							}
+						}
 					}
-					return EXIT_CODES.INVALID_PATH;
 				}
 			}
+		}
+
+		if (explicitJsonDryRun) {
+			console.info(
+				JSON.stringify(
+					{
+						status:
+							verifyExitCode === EXIT_CODES.SUCCESS
+								? "dry-run"
+								: "verify-failed",
+						snapshotId,
+						targetDir: dir,
+						sourceProvider,
+						targetProvider: provider,
+						plan: buildMigrationDryRunPlan(snapshotId, migrationReport),
+						report: migrationReport,
+						violations: verifyViolations,
+					},
+					null,
+					2,
+				),
+			);
+			return verifyExitCode;
+		}
+
+		if (action === "verify") {
+			if (verifyExitCode !== EXIT_CODES.SUCCESS) {
+				return verifyExitCode;
+			}
 			return EXIT_CODES.SUCCESS;
+		}
+
+		const reportExitCode = writeMigrationReport(
+			dir,
+			snapshotId,
+			migrationReport,
+		);
+		if (reportExitCode !== EXIT_CODES.SUCCESS) {
+			return reportExitCode;
 		}
 
 		const blockingCount =
@@ -9947,9 +9992,7 @@ export function runCIMigrateCLI(
 		}
 	}
 
-	const exitCode = explicitJsonDryRun
-		? EXIT_CODES.SUCCESS
-		: runInitCLIImpl(dir, initOptions);
+	const exitCode = runInitCLIImpl(dir, initOptions);
 	if (exitCode !== EXIT_CODES.SUCCESS) {
 		if (
 			!writeMergeQueueWindowStage("aborted", {
@@ -9957,6 +10000,19 @@ export function runCIMigrateCLI(
 			})
 		) {
 			return EXIT_CODES.WRITE_ERROR;
+		}
+		if (explicitJsonDryRun) {
+			// For JSON dry-run, still run validation but format output as JSON
+			console.info(
+				JSON.stringify(
+					{
+						status: "init-validation-failed",
+						exitCode,
+					},
+					null,
+					2,
+				),
+			);
 		}
 		return exitCode;
 	}

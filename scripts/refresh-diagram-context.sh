@@ -76,7 +76,16 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 pushd "$ROOT_DIR" >/dev/null
 if [[ "$QUIET" -eq 1 ]]; then
-	pnpm exec diagram generate-all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>&1
+	diagram_stderr="$TMP_DIR/diagram-generate.stderr"
+	set +e
+	pnpm exec diagram generate-all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>"$diagram_stderr"
+	status=$?
+	set -e
+	if [[ "$status" -ne 0 ]]; then
+		popd >/dev/null
+		cat "$diagram_stderr" >&2
+		exit "$status"
+	fi
 else
 	pnpm exec diagram generate-all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
 fi

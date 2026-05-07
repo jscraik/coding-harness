@@ -108,6 +108,21 @@ function inferLegacyManifestProvider(
 	return null;
 }
 
+/**
+ * Attempts to infer a CI provider for a legacy manifest and apply the inferred value.
+ *
+ * If an inference is possible and `dryRun` is false, writes a repaired manifest with
+ * the inferred `ciProvider` to `manifestPath` and updates the in-memory `manifest`.
+ * If `dryRun` is true, only updates the in-memory `manifest` without writing.
+ *
+ * @param targetDir - Repository root used to infer the CI provider from layout or contract file
+ * @param manifestPath - Filesystem path where the manifest should be written when repairing
+ * @param manifest - In-memory manifest object which will be mutated to set `ciProvider` when inferred
+ * @param preferredCiProvider - Optional fallback provider to use when automatic inference cannot determine one
+ * @param dryRun - When true, perform a non-destructive dry run: mutate `manifest` but do not write to disk
+ * @param deps - Injected dependencies used to perform atomic writes and other validation helpers
+ * @returns A manifest error result when writing the repaired manifest fails, or `null` when no repair was needed or repair succeeded
+ */
 function maybeRepairLegacyManifestProvider(
 	targetDir: string,
 	manifestPath: string,
@@ -299,13 +314,16 @@ function resolveManifestMetadata(
 }
 
 /**
- * Load, repair (legacy provider only), and validate rollback manifest content.
+ * Load and validate a rollback manifest, repairing legacy CI provider values when necessary.
  *
- * @param targetDir - Repository root directory
- * @param manifestPath - Absolute manifest file path
- * @param options - Validation and metadata requirements
- * @param deps - Injected helpers from rollback orchestrator
- * @returns Validated restore manifest or structured error
+ * Repairs the manifest's CI provider when it cannot be recognized; the repair may update the manifest on
+ * disk unless `options.dryRun` is true, in which case the in-memory manifest is adjusted without writing.
+ *
+ * @param targetDir - Repository root directory used for path validation and provider inference
+ * @param manifestPath - Absolute path to the manifest file
+ * @param options - Validation and metadata requirements (e.g., `requireMetadata`, `operation`, `preferredCiProvider`, `dryRun`)
+ * @param deps - Injected helpers used for parsing, validation, writes, and path/symlink checks
+ * @returns `{ ok: true }` with normalized metadata and validated `files` when successful, or `{ ok: false }` with a structured error otherwise
  */
 export function loadManifestData(
 	targetDir: string,

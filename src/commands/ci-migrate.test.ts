@@ -57,6 +57,7 @@ function hashContent(content: string): string {
 
 const TEST_SNAPSHOT_SIGNING_KEY =
 	"test-signing-key-for-ci-migrate-snapshots-0123456789";
+const CI_MIGRATE_VERIFY_FAILED_EXIT_CODE = 1;
 const SNAPSHOT_SIGNING_KEY_ENV = "HARNESS_CI_MIGRATE_SIGNING_KEY";
 const EXTERNAL_CONTROL_PLANE_PATHS = [
 	".harness/control-plane/github-rulesets.json",
@@ -6094,7 +6095,7 @@ describe("runCIMigrateCLI", () => {
 			provider: "circleci",
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(exitCode).toBe(CI_MIGRATE_VERIFY_FAILED_EXIT_CODE);
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
@@ -6110,7 +6111,7 @@ describe("runCIMigrateCLI", () => {
 			provider: "circleci",
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(exitCode).toBe(CI_MIGRATE_VERIFY_FAILED_EXIT_CODE);
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
@@ -6158,7 +6159,7 @@ describe("runCIMigrateCLI", () => {
 			provider: "circleci",
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(exitCode).toBe(CI_MIGRATE_VERIFY_FAILED_EXIT_CODE);
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 

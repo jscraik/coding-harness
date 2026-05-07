@@ -11,7 +11,7 @@
  * - Recording generation
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,6 +36,19 @@ export interface RunOptions {
 interface ValidationResult {
 	authSource: string;
 	checksPreflight: "passed" | "skipped";
+}
+
+interface ParsedVitestOutput {
+	testsPassed: number;
+	testsFailed: number;
+	testsSkipped: number;
+	firstFailingScenario?: string;
+	firstFailingAssertion?: string;
+}
+
+interface ProcessRunResult {
+	exitCode: number;
+	output: string;
 }
 
 export type E2EBlockerClassification =
@@ -66,6 +79,15 @@ export interface RunResult {
 	recordingsDir?: string;
 }
 
+const CHECKS_API_PREFLIGHT_TIMEOUT_MS = 15_000;
+const VITEST_OUTPUT_CAPTURE_LIMIT_BYTES = 1_000_000;
+
+/**
+ * Prints the command-line usage, options, and examples for the E2E test runner.
+ *
+ * This writes a multi-line help message to standard output describing available flags,
+ * defaults, and example invocations.
+ */
 function printUsage(): void {
 	console.info(`
 E2E Test Runner for coding-harness
@@ -92,6 +114,12 @@ Examples:
 `);
 }
 
+/**
+ * Parse command-line arguments into a RunOptions object and an optional test pattern.
+ *
+ * @param args - The CLI arguments to parse (typically `process.argv.slice(2)`).
+ * @returns An object with `options` containing the parsed `RunOptions` (flags such as `bail`, `reporters`, `record`, `parallel`, `timeout`, `checksPermissionPreflight`, and `preflightOnly`) and `pattern` when a non-flag argument was provided.
+ */
 export function parseArgs(args: string[]): {
 	options: RunOptions;
 	pattern?: string;
@@ -151,6 +179,12 @@ export function parseArgs(args: string[]): {
 	return pattern === undefined ? { options } : { options, pattern };
 }
 
+/**
+ * Determines whether the GitHub Checks API write-permission preflight is required for a given test pattern.
+ *
+ * @param pattern - Optional test path or pattern (file name or path segment). If omitted, the preflight is required.
+ * @returns `true` if the preflight should run (when `pattern` is missing or targets `github-integration` or `command-pipeline`, optionally suffixed with `.e2e.test.ts`), `false` otherwise.
+ */
 export function patternNeedsCheckRunWrite(pattern?: string): boolean {
 	if (!pattern) {
 		return true;
@@ -160,6 +194,13 @@ export function patternNeedsCheckRunWrite(pattern?: string): boolean {
 	);
 }
 
+/**
+ * Constructs the command-line arguments for invoking `vitest run` using the E2E config.
+ *
+ * @param options - RunOptions controlling flags included (e.g., `bail`, `reporters`, `timeout`).
+ * @param pattern - Optional test pattern or path; if it contains a `/` it is used as-is, otherwise it is prefixed with `e2e/tests/`.
+ * @returns An array of command-line arguments suitable for running Vitest with the repository's E2E configuration and the provided options.
+ */
 export function buildVitestArgs(
 	options: RunOptions,
 	pattern?: string,
@@ -185,6 +226,13 @@ export function buildVitestArgs(
 	return args;
 }
 
+/**
+ * Retrieve a string property from an object if present.
+ *
+ * @param value - The value to read the property from; expected to be an object.
+ * @param field - The property name to read.
+ * @returns `string` if the property exists on `value` and is a string, `undefined` otherwise.
+ */
 function getStringField(value: unknown, field: string): string | undefined {
 	if (!value || typeof value !== "object") {
 		return undefined;
@@ -193,6 +241,17 @@ function getStringField(value: unknown, field: string): string | undefined {
 	return typeof fieldValue === "string" ? fieldValue : undefined;
 }
 
+/**
+ * Verifies that the provided GitHub credentials can create check runs for the test repository.
+ *
+ * Sends a probe POST to the repository's Check Runs endpoint using an intentionally invalid `head_sha`.
+ * Resolves successfully when the probe is accepted (`response.ok`) or when GitHub responds `422` for the invalid SHA.
+ * Throws an Error when the probe is rejected for other reasons; the error includes the HTTP status, server message,
+ * and the `x-accepted-github-permissions` response header for debugging.
+ *
+ * @param env - E2E environment object containing at least `githubOwner`, `githubTestRepo`, and `githubToken`
+ * @returns `void` on success; throws an Error on failure to confirm write permission
+ */
 async function verifyChecksApiWritePermission(
 	env: ReturnType<typeof loadE2EEnv>,
 ): Promise<void> {
@@ -200,6 +259,7 @@ async function verifyChecksApiWritePermission(
 		`https://api.github.com/repos/${env.githubOwner}/${env.githubTestRepo}/check-runs`,
 		{
 			method: "POST",
+			signal: AbortSignal.timeout(CHECKS_API_PREFLIGHT_TIMEOUT_MS),
 			headers: {
 				Accept: "application/vnd.github+json",
 				Authorization: `Bearer ${env.githubToken}`,
@@ -238,6 +298,61 @@ async function verifyChecksApiWritePermission(
 	);
 }
 
+function appendCapturedOutput(current: string, chunk: Buffer): string {
+	const combined = `${current}${chunk.toString("utf-8")}`;
+	if (
+		Buffer.byteLength(combined, "utf-8") <= VITEST_OUTPUT_CAPTURE_LIMIT_BYTES
+	) {
+		return combined;
+	}
+	return combined.slice(-VITEST_OUTPUT_CAPTURE_LIMIT_BYTES);
+}
+
+function runVitestProcess(
+	args: string[],
+	recordingsDir: string,
+	options: RunOptions,
+): Promise<ProcessRunResult> {
+	return new Promise((resolveRun, rejectRun) => {
+		const child = spawn("pnpm", args, {
+			env: {
+				...process.env,
+				E2E_MODE: "true",
+				E2E_RECORDING_DIR: recordingsDir,
+				E2E_CLEANUP: options.record ? "true" : "false",
+			},
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+		let output = "";
+		child.stdout.on("data", (chunk: Buffer) => {
+			process.stdout.write(chunk);
+			output = appendCapturedOutput(output, chunk);
+		});
+		child.stderr.on("data", (chunk: Buffer) => {
+			process.stderr.write(chunk);
+			output = appendCapturedOutput(output, chunk);
+		});
+		child.on("error", rejectRun);
+		child.on("close", (code) => {
+			resolveRun({
+				exitCode: code ?? 1,
+				output,
+			});
+		});
+	});
+}
+
+/**
+ * Validate the runtime environment required for E2E tests and optionally verify GitHub Checks API write permission.
+ *
+ * Performs environment variable checks and obtains the GitHub auth source; loads the full E2E environment and, when
+ * enabled and applicable for the provided `pattern`, probes the GitHub Checks API to confirm the token can create check runs.
+ * On any validation or preflight failure this function logs the error and terminates the process with exit code `1`.
+ *
+ * @param options - Run options; `checksPermissionPreflight` controls whether the Checks API write probe is attempted.
+ * @param pattern - Optional test pattern used to decide if the Checks API write preflight should run.
+ * @returns The detected `authSource` and the `checksPreflight` outcome (`"passed"` or `"skipped"`).
+ */
 async function validateEnvironment(
 	options: RunOptions,
 	pattern?: string,
@@ -281,6 +396,11 @@ async function validateEnvironment(
 	return { authSource, checksPreflight };
 }
 
+/**
+ * Ensures the project's e2e/recordings directory exists and returns its path.
+ *
+ * @returns The absolute path to the recordings directory under the current working directory.
+ */
 function setupRecordingsDir(): string {
 	const recordingsDir = join(process.cwd(), "e2e", "recordings");
 	if (!existsSync(recordingsDir)) {
@@ -300,6 +420,13 @@ function generateRunConfig(options: RunOptions, recordingsDir: string): void {
 	writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
+/**
+ * Execute E2E tests with Vitest using the given run options and optional test pattern.
+ *
+ * @param options - Configuration for the test run (parallelism, timeout, reporters, recording, etc.)
+ * @param pattern - Optional test file path or pattern to restrict which tests to run
+ * @returns A RunResult summarizing success, `exitCode`, `durationMs`, test counts (`testsPassed`, `testsFailed`, `testsSkipped`), optional `firstFailingScenario` and `firstFailingAssertion`, `blockerClassification`, `skipReasons`, and `recordingsDir`
+ */
 async function runTests(
 	options: RunOptions,
 	pattern?: string,
@@ -319,31 +446,13 @@ async function runTests(
 
 	console.info(`  Command: pnpm ${args.join(" ")}\n`);
 
-	const result = spawnSync("pnpm", args, {
-		encoding: "utf-8",
-		stdio: "pipe",
-		env: {
-			...process.env,
-			E2E_MODE: "true",
-			E2E_RECORDING_DIR: recordingsDir,
-			E2E_CLEANUP: options.record ? "true" : "false",
-		},
-	});
-	if (result.stdout) {
-		process.stdout.write(result.stdout);
-	}
-	if (result.stderr) {
-		process.stderr.write(result.stderr);
-	}
-
+	const result = await runVitestProcess(args, recordingsDir, options);
 	const durationMs = Date.now() - startTime;
-	const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
-	const parsed = parseVitestOutput(output);
-	const exitCode = result.status ?? 1;
+	const parsed = parseVitestOutput(result.output);
 
 	return {
-		success: exitCode === 0,
-		exitCode,
+		success: result.exitCode === 0,
+		exitCode: result.exitCode,
 		durationMs,
 		testsPassed: parsed.testsPassed,
 		testsFailed: parsed.testsFailed,
@@ -354,12 +463,26 @@ async function runTests(
 		...(parsed.firstFailingAssertion
 			? { firstFailingAssertion: parsed.firstFailingAssertion }
 			: {}),
-		blockerClassification: classifyE2EBlocker(exitCode, output),
-		skipReasons: classifySkipReasons(parsed.testsSkipped, output, pattern),
+		blockerClassification: classifyE2EBlocker(result.exitCode, result.output),
+		skipReasons: classifySkipReasons(
+			parsed.testsSkipped,
+			result.output,
+			pattern,
+		),
 		recordingsDir,
 	};
 }
 
+/**
+ * Extracts test counts and first failure details from Vitest run output.
+ *
+ * Parses the provided Vitest stdout/stderr for the tests summary line to obtain
+ * the numbers of passed, failed, and skipped tests, and captures the first
+ * failing scenario and first failing assertion when present.
+ *
+ * @param output - Raw combined Vitest stdout/stderr text to parse.
+ * @returns An object with `testsPassed`, `testsFailed`, and `testsSkipped`, and optionally `firstFailingScenario` and `firstFailingAssertion`.
+ */
 export function parseVitestOutput(output: string): ParsedVitestOutput {
 	const summaryLine = output
 		.split(/\r?\n/)
@@ -392,6 +515,13 @@ export function parseVitestOutput(output: string): ParsedVitestOutput {
 	};
 }
 
+/**
+ * Classifies the primary cause of a failed E2E run using the process exit code and Vitest output.
+ *
+ * @param exitCode - The process exit code returned by the test runner
+ * @param output - Combined stdout/stderr from the test run used to match error patterns
+ * @returns The blocker classification: `"none"` when `exitCode === 0`, `"environment/tooling issue"` for credential, network, or preflight failures, `"missing artifact"` when artifacts are absent, `"fixture/runtime failure"` for fixture or timeout-related failures, `"repo state issue"` for git-related problems, or `"scenario regression"` for test regressions
+ */
 export function classifyE2EBlocker(
 	exitCode: number,
 	output: string,
@@ -418,6 +548,19 @@ export function classifyE2EBlocker(
 	return "scenario regression";
 }
 
+/**
+ * Produce one or more structured skip reasons derived from Vitest output and the provided test pattern.
+ *
+ * When no tests were skipped, returns an empty array. If the pattern is absent or targets the
+ * linear-integration/command-pipeline lanes, returns a single reason indicating skips caused by
+ * missing Linear team state. Otherwise returns a single unclassified Vitest skip reason whose
+ * evidence is drawn from a matching snippet in the test output (or a generic Vitest message).
+ *
+ * @param testsSkipped - The number of skipped tests observed
+ * @param output - The combined Vitest stdout/stderr used to extract evidence for skips
+ * @param pattern - Optional test pattern used to determine lane-specific skip rationale
+ * @returns An array of `E2ESkipReason` objects describing why tests were skipped; each object's `count` equals `testsSkipped`
+ */
 export function classifySkipReasons(
 	testsSkipped: number,
 	output: string,
@@ -447,6 +590,19 @@ export function classifySkipReasons(
 	];
 }
 
+/**
+ * Write the E2E run result and related metadata to ./artifacts/e2e/result.json.
+ *
+ * The written JSON includes a schema version, overall status (`pass` or `fail`), the
+ * test pattern (or `"all"` when omitted), authentication source, checks preflight outcome,
+ * a summary with test metrics and optional first failing scenario/assertion, the provided
+ * `options` with sensitive fields masked, and an optional recordings directory.
+ *
+ * @param result - The run result containing metrics, classifications, and optional failure details
+ * @param options - The run options to record (sensitive values will be masked)
+ * @param pattern - The test pattern that was executed, or `undefined` to indicate "all"
+ * @param validation - Validation metadata including `authSource` and `checksPreflight`
+ */
 function writeE2EResultArtifact(
 	result: RunResult,
 	options: RunOptions,
@@ -489,6 +645,17 @@ function writeE2EResultArtifact(
 	);
 }
 
+/**
+ * Write a preflight-only E2E result artifact to artifacts/e2e/result.json.
+ *
+ * The artifact records a passing preflight status with zeroed test metrics and includes
+ * the provided `pattern`, authentication source, preflight outcome, and a masked copy
+ * of the given `options`.
+ *
+ * @param options - Run options to include in the artifact; sensitive values are masked.
+ * @param pattern - Test pattern that was validated, or `undefined` to indicate "all".
+ * @param validation - Validation result containing `authSource` and `checksPreflight`.
+ */
 function writePreflightResultArtifact(
 	options: RunOptions,
 	pattern: string | undefined,
@@ -523,6 +690,11 @@ function writePreflightResultArtifact(
 	);
 }
 
+/**
+ * CLI entrypoint that validates the environment, optionally performs a checks preflight, runs the E2E tests, writes result artifacts, and terminates the process with the tests' exit code.
+ *
+ * The function parses CLI arguments, performs environment validation (including an optional GitHub Checks API permission preflight), and when not in preflight-only mode executes the test run. It writes either a preflight-only artifact or a full E2E result artifact, logs a concise run summary (status, duration, exit code, recordings directory), and exits the process with the test run's exit code.
+ */
 async function main(): Promise<void> {
 	const { options, pattern } = parseArgs(process.argv.slice(2));
 

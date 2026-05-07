@@ -131,6 +131,15 @@ has_package_script() {
 	jq -e --arg script_name "$script_name" '(.scripts // {}) | has($script_name)' "$repo_root/package.json" >/dev/null 2>&1
 }
 
+is_truthy() {
+	case "${1:-}" in
+		1|true|TRUE|yes|YES|on|ON) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+# prepare_normalized_required_checks_manifest locates .harness/ci-required-checks.json and produces a normalized manifest in a temporary file, setting the globals `normalized_manifest_path` and `normalized_manifest_source`.
+# It tries, in order, the repo dist CLI, a pnpm/tsx repo runner, a mise-provided harness (with configurable timeout), a harness on PATH, and finally falls back to copying the raw manifest if it is a JSON object; exits success when a normalized or raw-fallback manifest is available, and non-zero if normalization fails.
 prepare_normalized_required_checks_manifest() {
 	local manifest_path="$repo_root/.harness/ci-required-checks.json"
 	normalized_manifest_path=""
@@ -165,7 +174,7 @@ prepare_normalized_required_checks_manifest() {
 		echo "[verify-work] required checks normalization via repo runner failed, trying fallback runners" >&2
 	fi
 
-	if [[ "${HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION:-0}" != "1" ]]; then
+	if ! is_truthy "${HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION:-0}"; then
 		if command -v mise >/dev/null 2>&1; then
 			if command -v timeout >/dev/null 2>&1; then
 				mise_harness_bin="$(timeout "$external_normalization_timeout" mise which harness 2>/dev/null || true)"
@@ -174,20 +183,36 @@ prepare_normalized_required_checks_manifest() {
 			fi
 		fi
 		if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-			if "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
-				normalized_manifest_path="$normalized_tmp"
-				normalized_manifest_source="normalized"
-				return 0
+			if command -v timeout >/dev/null 2>&1; then
+				if timeout "$external_normalization_timeout" "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+					normalized_manifest_path="$normalized_tmp"
+					normalized_manifest_source="normalized"
+					return 0
+				fi
+			else
+				if "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+					normalized_manifest_path="$normalized_tmp"
+					normalized_manifest_source="normalized"
+					return 0
+				fi
 			fi
 			echo "[verify-work] required checks normalization via mise harness failed, trying PATH harness" >&2
 		fi
 
 		harness_bin="$(command -v harness 2>/dev/null || true)"
 		if [[ -n "$harness_bin" ]]; then
-			if "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
-				normalized_manifest_path="$normalized_tmp"
-				normalized_manifest_source="normalized"
-				return 0
+			if command -v timeout >/dev/null 2>&1; then
+				if timeout "$external_normalization_timeout" "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+					normalized_manifest_path="$normalized_tmp"
+					normalized_manifest_source="normalized"
+					return 0
+				fi
+			else
+				if "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+					normalized_manifest_path="$normalized_tmp"
+					normalized_manifest_source="normalized"
+					return 0
+				fi
 			fi
 		fi
 	fi

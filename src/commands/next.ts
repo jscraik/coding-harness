@@ -55,6 +55,12 @@ const VALID_MODES: readonly HarnessNextMode[] = ["local", "pr", "ci"];
 const DEFAULT_FLEET_MATRIX_ARTIFACT =
 	"artifacts/harness-upgrade-matrix-dev.json";
 
+/**
+ * Determine whether a string is a valid HarnessNextMode.
+ *
+ * @param value - The string to test
+ * @returns `true` if `value` is one of `"local"`, `"pr"`, or `"ci"`, `false` otherwise.
+ */
 function isHarnessNextMode(value: string): value is HarnessNextMode {
 	return VALID_MODES.includes(value as HarnessNextMode);
 }
@@ -171,6 +177,17 @@ function createDecision(decision: HarnessDecisionInput): HarnessDecision {
 	return buildHarnessDecision("harness next", decision);
 }
 
+/**
+ * Build a `HarnessDecision` representing a blocked, read-only state that requires human intervention.
+ *
+ * @param summary - Short human-readable summary of why the decision is blocked
+ * @param nextAction - Instruction describing the next steps an operator should take
+ * @param failureClass - Classification of the failure (e.g., `"source_blocked"`, `"git_state_unavailable"`)
+ * @param retry - Suggested retry strategy; defaults to `"manual"`
+ * @param evidenceRef - References identifying the evidence for this decision; defaults to `["input:argv"]`
+ * @param meta - Optional additional metadata to attach to the decision
+ * @returns A `HarnessDecision` with `status: "blocked"`, `safeToRun: false`, `requiresHuman: true`, and other standardized read-only fields populated
+ */
 function blockedDecision(args: {
 	summary: string;
 	nextAction: string;
@@ -196,6 +213,12 @@ function blockedDecision(args: {
 	});
 }
 
+/**
+ * Produce a blocked decision signaling that the provided mode is unsupported.
+ *
+ * @param mode - The invalid mode value passed by the caller.
+ * @returns A HarnessDecision with status `"blocked"` that instructs using `--mode local`, `--mode pr`, or `--mode ci` and classifies the failure as `invalid_mode`.
+ */
 function invalidModeDecision(mode: string): HarnessDecision {
 	return blockedDecision({
 		summary: `Unsupported next mode: ${mode}.`,
@@ -211,6 +234,13 @@ function invalidModeDecision(mode: string): HarnessDecision {
 	});
 }
 
+/**
+ * Create the CLI argument vector and a human-readable shell command for the next harness command based on mode and changed files.
+ *
+ * @param mode - Harness next mode; selects `review-context` when `"pr"`, otherwise `validation-plan`
+ * @param files - Ordered list of file paths to pass to `--files`; used verbatim for `argv` and shell-quoted for `command`
+ * @returns An object with `argv` (array of command arguments suitable for programmatic execution) and `command` (single shell-ready string for display)
+ */
 function chooseNextCommandParts(
 	mode: HarnessNextMode,
 	files: string[],
@@ -221,6 +251,12 @@ function chooseNextCommandParts(
 	return { command, argv };
 }
 
+/**
+ * Provide additional network decision sources when running in pull-request (`"pr"`) mode.
+ *
+ * @param mode - The current HarnessNextMode
+ * @returns An array containing two blocked network `DecisionSource` entries (`network:github` and `network:linear`) when `mode` is `"pr"`, or an empty array otherwise.
+ */
 function optionalNetworkSources(mode: HarnessNextMode): DecisionSource[] {
 	if (mode !== "pr") return [];
 	return [
@@ -243,12 +279,23 @@ function optionalNetworkSources(mode: HarnessNextMode): DecisionSource[] {
 	];
 }
 
+/**
+ * Return an object containing a `sourceErrors` property when the input array is non-empty.
+ *
+ * @param sourceErrors - Decision source errors to include in the returned meta object
+ * @returns An object with `sourceErrors` set to a shallow copy of `sourceErrors` when it has entries, otherwise an empty object
+ */
 function sourceMetaExtra(sourceErrors: readonly DecisionSource[]): {
 	sourceErrors?: DecisionSource[];
 } {
 	return sourceErrors.length > 0 ? { sourceErrors: [...sourceErrors] } : {};
 }
 
+/**
+ * Build a standardized operational `meta` object for a HarnessDecision from contextual inputs.
+ *
+ * @returns An object containing `mode`, optional `filesSource`, optional `changedFileCount` and `nextCommandArgv`, defaulted `frictionClass`/`delayClass`, and an `execution` block with `profile`, `startupCost` and a `permissionPlan` describing human/network/filesystem/command/secrets requirements
+ */
 function decisionMeta(args: {
 	mode: string;
 	filesSource?: "override" | "git";
@@ -293,6 +340,15 @@ function decisionMeta(args: {
 	};
 }
 
+/**
+ * Produce a blocked HarnessDecision when a required decision source is unavailable.
+ *
+ * @param args - Arguments for constructing the blocked decision
+ * @param args.mode - The current harness next mode (`"local" | "pr" | "ci"`)
+ * @param args.source - The decision source that is blocked; its `ref` is used as evidence and its `failureClass` (if present) is used for the decision's failure classification
+ * @param args.sourceErrors - Additional decision source error records to include in the decision meta
+ * @returns A `HarnessDecision` with `status: "blocked"` that describes the blocked source, recommends running `harness doctor --json`, and includes metadata about remediation commands and source errors
+ */
 function sourceBlockedDecision(args: {
 	mode: HarnessNextMode;
 	source: DecisionSource;
@@ -331,6 +387,12 @@ function sourceBlockedDecision(args: {
 	});
 }
 
+/**
+ * Create a blocked decision indicating the repository git state could not be inspected.
+ *
+ * @param mode - The current Harness next mode used to populate decision metadata
+ * @returns A `HarnessDecision` with `status: "blocked"` that points to `harness doctor --json` as the next command, includes `evidenceRef: ["git:status"]`, `failureClass: "git_state_unavailable"`, `retry: "manual"`, and meta describing the git files source and diagnostic command
+ */
 function gitInspectionBlockedDecision(mode: HarnessNextMode): HarnessDecision {
 	const gitSourceError: DecisionSource = {
 		kind: "git",
@@ -374,6 +436,13 @@ function gitInspectionBlockedDecision(mode: HarnessNextMode): HarnessDecision {
 	});
 }
 
+/**
+ * Produce a decision recommending conversion of a Harness upgrade matrix artifact into a fleet remediation plan.
+ *
+ * @param args.mode - The current harness next mode (`"local" | "pr" | "ci"`) used to populate decision metadata.
+ * @param args.matrixArtifact - Filesystem path to the detected upgrade matrix artifact.
+ * @returns A `HarnessDecision` with `status: "action_required"` that includes a `nextCommand` invoking `harness fleet-plan --from <artifact> --json`, execution metadata, evidence referencing the artifact, and a low risk tier.
+ */
 function fleetMatrixArtifactDecision(args: {
 	mode: HarnessNextMode;
 	matrixArtifact: string;
@@ -417,6 +486,15 @@ function fleetMatrixArtifactDecision(args: {
 	});
 }
 
+/**
+ * Builds a passing HarnessDecision for the case where no changed files were found.
+ *
+ * @param args - Parameters for constructing the decision.
+ * @param args.mode - The operating mode (`"local" | "pr" | "ci"`) used to populate meta.
+ * @param args.filesSource - Source of the file list; `"git"` when discovered from git, `"override"` when supplied via CLI/options.
+ * @param args.sourceErrors - Collected source errors to include in decision meta when present.
+ * @returns A `HarnessDecision` with `status: "pass"` that recommends running `harness check --json`, includes evidence referencing the files source, marks the change count as 0, and contains execution/meta details.
+ */
 function noChangedFilesDecision(args: {
 	mode: HarnessNextMode;
 	filesSource: "override" | "git";
@@ -460,6 +538,17 @@ interface NextRecommendationCandidate extends RecommendationCandidate {
 	argv: string[];
 }
 
+/**
+ * Builds a recommendation candidate describing the next harness command for the provided changed files.
+ *
+ * The candidate includes the command string and argv, a human-readable reason (varies by `mode`), evidence source references,
+ * a heuristic score, inferred risk tier, and execution permission flags.
+ *
+ * @param args.mode - Execution posture (`"local"`, `"pr"`, or `"ci"`) that influences the recommended command and reason
+ * @param args.files - Sorted list of changed file paths to base the recommendation on
+ * @param args.filesSource - Origin of the `files` value: `"git"` when discovered from git status, `"override"` when provided via CLI/override
+ * @returns A NextRecommendationCandidate containing `command`, `argv`, `reason`, `sourceRefs`, `score`, `riskTier`, and execution flags (`safeToRun`, `requiresHuman`, `requiresNetwork`, `writesFiles`)
+ */
 function createRecommendationCandidate(args: {
 	mode: HarnessNextMode;
 	files: string[];
@@ -486,6 +575,16 @@ function createRecommendationCandidate(args: {
 	};
 }
 
+/**
+ * Produce an action-required HarnessDecision recommending the next harness command for the given changed files.
+ *
+ * @param args - Input arguments
+ * @param args.mode - Execution mode (`"local"`, `"pr"`, or `"ci"`)
+ * @param args.files - Sorted list of changed file paths to base the recommendation on
+ * @param args.filesSource - Origin of `files`: `"override"` when provided by CLI, `"git"` when discovered from git status
+ * @param args.sourceErrors - Collected DecisionSource entries describing any source errors encountered while gathering inputs
+ * @returns A `HarnessDecision` with `status: "action_required"`, a recommended `nextCommand` and `nextAction`, evidence references, risk tier, and `meta` containing `changedFileCount`, `nextCommandArgv`, and related command metadata
+ */
 function changedFilesDecision(args: {
 	mode: HarnessNextMode;
 	files: string[];
@@ -536,7 +635,23 @@ function changedFilesDecision(args: {
 	});
 }
 
-/** Produce the next safe harness command decision without mutating files. */
+/**
+ * Determine the next recommended Harness command or produce a blocked/action-required/pass decision
+ * based on the provided options, available decision sources, and changed-files state.
+ *
+ * The function validates `mode`, consults `decisionSources` (including optional network sources),
+ * respects a `files` override when provided, handles a CI-specific upgrade-matrix artifact shortcut,
+ * and falls back to inspecting git for changed files when no override is present.
+ *
+ * @param options - Configuration for decision production:
+ *   - `mode`: execution posture (`"local" | "pr" | "ci"`); defaults to `"local"`.
+ *   - `files`: optional override list of changed file paths; when provided, git is not inspected.
+ *   - `repoRoot`: optional repository root for git inspection and artifact checks; defaults to cwd.
+ *   - `inspectChangedFiles`: optional hook to obtain changed files (used instead of git inspection).
+ *   - `decisionSources`: optional additional DecisionSource entries to consider for blocking conditions.
+ * @returns A `HarnessDecision` describing the next action: a recommended command (`nextCommand`) when
+ *   a safe recommendation can be made, or a blocked/action_required decision explaining required remediation.
+ */
 export function runHarnessNext(
 	options: HarnessNextOptions = {},
 ): HarnessDecision {
@@ -613,6 +728,16 @@ export function runHarnessNext(
 	return changedFilesDecision({ mode, files, filesSource, sourceErrors });
 }
 
+/**
+ * Parse CLI-style arguments for the `harness next` command.
+ *
+ * @param args - Array of command-line tokens (e.g., process.argv.slice(2))
+ * @returns An object with:
+ *  - `json`: whether `--json` was present,
+ *  - `mode`: the selected `HarnessNextMode` (defaults to `"local"`),
+ *  - `files` (optional): parsed file paths from `--files` when provided,
+ *  - or an `error` discriminator when parsing fails (`"mode_missing"`, `"invalid_mode"`, `"files_missing"`, `"files_empty"`, or `"unknown_argument"`). When `error` is `"invalid_mode"` or `"unknown_argument"`, `errorValue` contains the offending token.
+ */
 function parseNextArgs(args: string[]): ParsedNextArgs {
 	let json = args.includes("--json");
 	let mode: HarnessNextMode = "local";

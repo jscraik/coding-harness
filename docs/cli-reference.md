@@ -104,6 +104,8 @@ Taxonomy note: section headings in this document represent command families. The
 | `preset`            | List and inspect bundled presets                                                                                                                                          |
 | `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                     |
 
+In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json` when the upgrade-matrix artifact exists.
+
 ## Review and policy gates
 
 | Command                  | Purpose                                                                             |

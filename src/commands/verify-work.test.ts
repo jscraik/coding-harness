@@ -854,6 +854,66 @@ exit 1
 		rmSync(binDir, { recursive: true, force: true });
 	});
 
+	it("skips external normalization when the skip flag is set to a truthy value", () => {
+		scaffoldVerifyWorkScriptRepo({
+			repoRoot,
+			manifest: {
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{
+						sourceAppSlug: "github-actions",
+						githubCheckName: "ci / raw-fallback",
+					},
+				],
+			},
+		});
+		writeExecutable(
+			join(repoRoot, "dist/cli.js"),
+			`#!/usr/bin/env node
+process.exit(1);
+`,
+		);
+		mkdirSync(join(repoRoot, "src"), { recursive: true });
+		writeFileSync(join(repoRoot, "src/cli.ts"), "process.exit(1);\n", "utf-8");
+
+		const binDir = mkdtempSync(join(tmpdir(), "verify-work-bin-"));
+		const miseHarnessPath = writeBinExecutable(
+			binDir,
+			"harness-from-mise",
+			`#!/usr/bin/env bash
+set -euo pipefail
+echo '{"schemaVersion":1,"contractVersion":"1","activeProvider":"github-actions","gates":[]}'
+`,
+		);
+		writeBinExecutable(
+			binDir,
+			"mise",
+			`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$#" -ge 2 && "$1" == "which" && "$2" == "harness" ]]; then
+	echo "${miseHarnessPath}"
+	exit 0
+fi
+exit 1
+`,
+		);
+
+		const result = runVerifyWorkScript(repoRoot, [], {
+			inheritEnv: false,
+			env: {
+				...makeDeterministicScriptEnv(`${binDir}:${process.env.PATH ?? ""}`),
+				HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION: "true",
+			},
+		});
+		const combinedOutput = `${result.stdout}${result.stderr}`;
+
+		expect(result.status).toBe(0);
+		expect(combinedOutput).toContain(
+			"required checks normalization unavailable; using raw manifest fallback",
+		);
+		rmSync(binDir, { recursive: true, force: true });
+	});
+
 	it("uses PATH harness when dist, repo runner, and mise resolution fail", () => {
 		scaffoldVerifyWorkScriptRepo({
 			repoRoot,

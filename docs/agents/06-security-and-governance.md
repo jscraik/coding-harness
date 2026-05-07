@@ -1,6 +1,6 @@
 ---
 
-last_validated: 2026-05-06
+last_validated: 2026-05-07
 
 ---
 
@@ -109,6 +109,9 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep `scripts/codex-preflight.sh` executable as a CLI script and invoke it with `bash scripts/codex-preflight.sh --stack auto --mode required` (or `--mode optional` for softer checks); do not source it.
 - Treat `scripts/verify-work.sh` as the canonical repo-local verification entrypoint; it should keep `required` Local Memory enforcement and repo-scoped preflight expectations without depending on codex-maintenance-only paths.
 - Hook-governance scope in `scripts/verify-work.sh` should default to `project-local`; workspace-level mutation and reporting must stay opt-in behind `--workspace-governance`, and direct governance scripts must require explicit input file flags (`--manifest`, `--inventory`, `--classification`, `--metrics`) instead of implicit workspace fallbacks.
+- Environment variables controlling external normalization behavior in `scripts/verify-work.sh`:
+  - `HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION` — When set to an enabled value (`1`, `true`, `yes`, or `on`, case-insensitive where applicable), opts out of external manifest normalization (the flow that may call mise-provided harness or harness on PATH). Defaults to unset (external normalization is attempted). Security implication: bypasses external harness binary fallback; may cause verify-work to use raw-fallback manifest mode when repo-local normalization also fails. See `prepare_normalized_required_checks_manifest` in the script for details.
+  - `HARNESS_VERIFY_WORK_EXTERNAL_NORMALIZE_TIMEOUT_SECONDS` — Configurable timeout in integer seconds for external normalization operations (for example mise which harness). Defaults to `5`. Operational implication: longer timeouts permit slower external tool resolution but delay verify-work startup when external binaries are slow. See `external_normalization_timeout` in `scripts/verify-work.sh` for the timeout application point.
 - When scorecard policy surfaces change, confirm `security/openssf-scorecard-policy.json`, `scripts/check-scorecard-regressions.mjs`, and `docs/security/2026-04-09-openssf-osps-baseline-status.md` remain aligned, then capture that command path in change evidence.
 - Treat scaffolded `scripts/harness-cli.sh` resolution failures as local install/bootstrap drift rather than harness command failures, and remediate with repo-local dependency repair (`pnpm install`, `pnpm add -D @brainwav/coding-harness`, then `pnpm exec harness <command>`).
 - For Local Memory enforcement, pin `~/.local-memory/config.yaml` to `host: 127.0.0.1` and `auto_port: false`, and prefer the pinned REST health endpoint as the source of truth when CLI status output is stale under sandboxed execution.

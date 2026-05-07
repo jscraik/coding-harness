@@ -62,6 +62,11 @@ interface RepoRecommendation {
 	requiresApprovalBeforeMutation: boolean;
 }
 
+/**
+ * Builds a RepoRecommendation from the provided fields and marks it as requiring approval before any mutation.
+ *
+ * @returns A `RepoRecommendation` containing the supplied `status`, `risk`, `nextAction`, `nextCommandArgv`, and `safeToRun` fields, with `requiresApprovalBeforeMutation` set to `true`.
+ */
 function recommendation(args: {
 	status: FleetRepoStatus;
 	risk: FleetRisk;
@@ -75,6 +80,19 @@ function recommendation(args: {
 	};
 }
 
+/**
+ * Create a read-only "init" dry-run recommendation for a single repository.
+ *
+ * The recommendation is marked `safeToRun` with `risk` set to `low` and includes a
+ * `nextCommandArgv` that runs `harness init <repo> --dry-run --json`. When
+ * `update` is true, the `--update` flag is included in the command.
+ *
+ * @param repo - Repository identifier (passed as the positional argument to `harness init`)
+ * @param status - Classification status to assign to the recommendation
+ * @param nextAction - Short human-readable description of the recommended next action
+ * @param update - If true, include `--update` in the generated init command
+ * @returns A `RepoRecommendation` representing a read-only init dry-run for the repo
+ */
 function initDryRunRecommendation(args: {
 	repo: string;
 	status: FleetRepoStatus;
@@ -109,6 +127,8 @@ export interface FleetPlanCommand {
 	nextCommand: string;
 	/** Machine-safe argv for agents. */
 	nextCommandArgv: string[];
+	/** Human-readable description of the recommended next action. */
+	nextAction: string;
 }
 
 /** Per-repository remediation recommendation derived from one matrix result. */
@@ -202,20 +222,43 @@ interface ParsedFleetPlanArgs {
 	error?: string;
 }
 
+/**
+ * Normalize a value to a non-empty string or indicate missing content.
+ *
+ * @returns The original string if it is non-empty, `null` otherwise.
+ */
 function asString(value: unknown): string | null {
 	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+/**
+ * Coerces an unknown input to a boolean, returning `null` when the input is not a boolean.
+ *
+ * @param value - The value to inspect; boolean values are returned unchanged.
+ * @returns The input boolean if `value` is a boolean, `null` otherwise.
+ */
 function asBoolean(value: unknown): boolean | null {
 	return typeof value === "boolean" ? value : null;
 }
 
+/**
+ * Extracts string elements from an array, returning them in their original order.
+ *
+ * @param value - The value to inspect; if it's an array, string entries will be kept.
+ * @returns The array of string elements, or an empty array if `value` is not an array or contains no strings.
+ */
 function asStringArray(value: unknown): string[] {
 	return Array.isArray(value)
 		? value.filter((entry): entry is string => typeof entry === "string")
 		: [];
 }
 
+/**
+ * Normalize a value to an array of matrix missing-surface objects.
+ *
+ * @param value - The input to coerce; expected to be an array of entries that may represent missing-surface objects.
+ * @returns An array of entries from `value` that are plain objects, typed as `MatrixMissingSurface`; returns an empty array if `value` is not an array.
+ */
 function asMissingSurfaces(value: unknown): MatrixMissingSurface[] {
 	return Array.isArray(value)
 		? value.filter(
@@ -225,6 +268,13 @@ function asMissingSurfaces(value: unknown): MatrixMissingSurface[] {
 		: [];
 }
 
+/**
+ * Checks whether any missing-surface entry belongs to the specified group.
+ *
+ * @param surfaces - Array of missing-surface entries to search
+ * @param group - The group name to match against each surface's `group` field
+ * @returns `true` if at least one entry has `group` equal to `group`, `false` otherwise
+ */
 function hasMissingSurface(
 	surfaces: MatrixMissingSurface[],
 	group: string,
@@ -232,12 +282,25 @@ function hasMissingSurface(
 	return surfaces.some((surface) => surface.group === group);
 }
 
+/**
+ * Extracts `path` string values from an array of missing-surface entries.
+ *
+ * @param surfaces - Array of objects that may contain a `path` property
+ * @returns The list of `path` values present on the input entries; entries without a string `path` are omitted
+ */
 function surfacePaths(surfaces: MatrixMissingSurface[]): string[] {
 	return surfaces
 		.map((surface) => asString(surface.path))
 		.filter((path): path is string => path !== null);
 }
 
+/**
+ * Determines whether any missing-surface entry in `surfaces` has the given `reason`.
+ *
+ * @param surfaces - Array of missing-surface entries to inspect
+ * @param reason - Reason string to match against each surface's `reason` field
+ * @returns `true` if any entry's `reason` equals `reason`, `false` otherwise
+ */
 function hasCodestyleFailureReason(
 	surfaces: MatrixMissingSurface[],
 	reason: string,
@@ -245,15 +308,37 @@ function hasCodestyleFailureReason(
 	return surfaces.some((surface) => surface.reason === reason);
 }
 
+/**
+ * Create a shell-escaped command line from an argv array.
+ *
+ * @param argv - Array of command arguments in order
+ * @returns The command string with each argument shell-escaped and joined by spaces
+ */
 function commandText(argv: string[]): string {
 	return argv.map((part) => shellQuote(part)).join(" ");
 }
 
+/**
+ * Produce a shell-escaped token for safe use as a single POSIX shell argv element.
+ *
+ * @param value - The input string to quote when necessary
+ * @returns The input as a shell-safe token: returned unchanged if already safe, otherwise wrapped in single quotes with embedded single quotes escaped
+ */
 function shellQuote(value: string): string {
 	if (/^[A-Za-z0-9_./:=@%+,-]+$/.test(value)) return value;
 	return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
+/**
+ * Assembles an ordered list of stable blocking reason codes for a repository based on dry-run results, exit status, detected gaps, and reported errors.
+ *
+ * @param args.statusChangedByDryRun - Whether a dry-run reported repository mutations.
+ * @param args.trackedManifest - `true` if the repo is tracked by Harness, `false` if explicitly untracked, `null` if unknown.
+ * @returns An array of reason codes describing why the repo is not live-upgrade ready, for example:
+ * `dry-run-mutated-repository`, `matrix-command-failed`, `invalid-matrix-json-output`,
+ * `repo-not-harness-tracked`, `tracked-repo-missing-circleci`, `missing-coderabbit`,
+ * `missing-codestyle`, `stale-codestyle`, `legacy-greptile-present`. The reasons are returned in evaluation order.
+ */
 function buildBlockingReasons(args: {
 	statusChangedByDryRun: boolean;
 	exitCode?: number;
@@ -262,6 +347,7 @@ function buildBlockingReasons(args: {
 	hasCircleCiGap: boolean;
 	hasCodeRabbitGap: boolean;
 	hasCodestyleGap: boolean;
+	hasCodestyleMissingFailure: boolean;
 	codestyleParityFailurePaths: string[];
 	hasGreptileGap: boolean;
 }): string[] {
@@ -284,7 +370,7 @@ function buildBlockingReasons(args: {
 	if (args.hasCodeRabbitGap) {
 		blockingReasons.push("missing-coderabbit");
 	}
-	if (args.hasCodestyleGap) {
+	if (args.hasCodestyleGap || args.hasCodestyleMissingFailure) {
 		blockingReasons.push("missing-codestyle");
 	}
 	if (args.codestyleParityFailurePaths.length > 0) {
@@ -296,6 +382,20 @@ function buildBlockingReasons(args: {
 	return blockingReasons;
 }
 
+/**
+ * Choose a remediation recommendation for a repository based on normalized matrix signals.
+ *
+ * Selects a definitive per-repo remediation status and constructs a `RepoRecommendation`
+ * containing the risk level, a human-facing `nextAction`, an optional `nextCommandArgv`
+ * (command argv for a dry-run preview or null when not safe), and whether the next step
+ * is considered safe to run.
+ *
+ * @param repo - Repository identifier or path used to build command arguments and messages
+ * @param signals - Normalized `RepoSignals` extracted from the matrix row
+ * @returns A `RepoRecommendation` describing the chosen status, `risk`, `nextAction`,
+ *          `nextCommandArgv` (or `null`), and `safeToRun`; the recommendation will also
+ *          indicate whether approval is required before mutation.
+ */
 function recommendRepoAction(
 	repo: string,
 	signals: RepoSignals,
@@ -395,6 +495,13 @@ function recommendRepoAction(
 	});
 }
 
+/**
+ * Convert a single matrix row into a normalized FleetPlanRepo containing the chosen recommendation, blocking reasons, and retained evidence.
+ *
+ * @param result - A single repository result object from a parsed matrix artifact.
+ * @param matrixArtifact - The source matrix artifact path or identifier included in the repo's evidence.
+ * @returns A FleetPlanRepo describing the repo's status, risk, whether it is safe to run, the recommended next action/command, any blocking reason codes, and the evidence extracted from the matrix row.
+ */
 function classifyRepo(
 	result: MatrixRepoResult,
 	matrixArtifact: string,
@@ -444,6 +551,7 @@ function classifyRepo(
 		hasCircleCiGap,
 		hasCodeRabbitGap,
 		hasCodestyleGap,
+		hasCodestyleMissingFailure,
 		codestyleParityFailurePaths,
 		hasGreptileGap,
 	});
@@ -474,6 +582,20 @@ function classifyRepo(
 	};
 }
 
+/**
+ * Compute aggregated counts of repository statuses for inclusion in a fleet remediation summary.
+ *
+ * @returns An object containing counts keyed by status:
+ * - `repoCount`: total number of repos
+ * - `ready`: repos classified as `ready`
+ * - `needsAdoption`: repos classified as `needs-adoption`
+ * - `needsCircleCiMigration`: repos classified as `needs-circleci-migration`
+ * - `needsCodeRabbitSetup`: repos classified as `needs-coderabbit-setup`
+ * - `needsCodestyleInstall`: repos classified as `needs-codestyle-install`
+ * - `needsCodestyleRefresh`: repos classified as `needs-codestyle-refresh`
+ * - `needsGreptileCleanup`: repos classified as `needs-greptile-cleanup`
+ * - `blocked`: repos classified as `blocked`
+ */
 function buildSummary(repos: FleetPlanRepo[]): FleetRemediationPlan["summary"] {
 	return {
 		repoCount: repos.length,
@@ -499,10 +621,32 @@ function buildSummary(repos: FleetPlanRepo[]): FleetRemediationPlan["summary"] {
 	};
 }
 
+/**
+ * Count repositories that include a specific blocking reason code.
+ *
+ * @param repos - The list of per-repo plan entries to inspect
+ * @param reason - The blocking reason code to count (e.g., `needs-codestyle-install`)
+ * @returns The number of repositories whose `blockingReasons` include `reason`
+ */
 function countReposWithReason(repos: FleetPlanRepo[], reason: string): number {
 	return repos.filter((repo) => repo.blockingReasons.includes(reason)).length;
 }
 
+/**
+ * Compute aggregated counts of predefined finding categories from a list of per-repo recommendations.
+ *
+ * @param repos - Array of per-repo remediation recommendations to aggregate
+ * @returns An object with numeric counts for each finding category:
+ *  - `notHarnessTracked`: repos not tracked by Harness
+ *  - `missingCircleCi`: repos missing CircleCI surfaces
+ *  - `missingCodeRabbit`: repos missing CodeRabbit surfaces
+ *  - `missingCodestyle`: repos missing codestyle installation
+ *  - `staleCodestyle`: repos with codestyle parity failures
+ *  - `legacyGreptile`: repos containing legacy Greptile artifacts
+ *  - `dryRunMutatedRepository`: repos whose dry-run mutated repository state
+ *  - `matrixCommandFailed`: repos where the matrix command returned a non-zero exit code
+ *  - `invalidMatrixJsonOutput`: repos with invalid JSON reported by the matrix
+ */
 function buildFindingCounts(
 	repos: FleetPlanRepo[],
 ): FleetRemediationPlan["findingCounts"] {
@@ -528,14 +672,36 @@ function buildFindingCounts(
 	};
 }
 
+/**
+ * Format a numeric count with the appropriate singular or plural noun.
+ *
+ * @param count - The numeric quantity to format
+ * @param singular - Noun to use when `count` is 1
+ * @param plural - Noun to use when `count` is any value other than 1
+ * @returns A string in the form `"<count> <noun>"`, using `singular` when `count` is 1 and `plural` otherwise
+ */
 function pluralize(count: number, singular: string, plural: string): string {
 	return `${count} ${count === 1 ? singular : plural}`;
 }
 
+/**
+ * Selects the appropriate singular or plural word form based on a numeric count.
+ *
+ * @param count - The quantity used to choose between forms
+ * @param singular - The singular form to use when `count` is 1
+ * @param plural - The plural form to use when `count` is not 1
+ * @returns The `singular` form if `count` is 1, otherwise the `plural` form
+ */
 function repoVerb(count: number, singular: string, plural: string): string {
 	return count === 1 ? singular : plural;
 }
 
+/**
+ * Build human-readable top-level live-upgrade blocker messages from finding counts.
+ *
+ * @param findingCounts - Counts of categorized findings used to generate blocker messages
+ * @returns An array of human-readable blocker strings; empty when no blockers are present
+ */
 function buildLiveUpgradeBlockers(
 	findingCounts: FleetRemediationPlan["findingCounts"],
 ): string[] {
@@ -588,6 +754,16 @@ function buildLiveUpgradeBlockers(
 	return blockers;
 }
 
+/**
+ * Builds a bounded list of agent-ready, read-only commands representing the first safe wave of remediation.
+ *
+ * Filters the provided per-repo recommendations by status priority and safety, selecting up to five commands total and enforcing per-status limits:
+ * adoption (max 3), circleci migration (2), coderabbit setup (2), codestyle install (2), codestyle refresh (2), greptile cleanup (2).
+ * Only repos with `safeToRun`, a non-null `nextCommand`, and a `nextCommandArgv` are included.
+ *
+ * @param repos - Array of per-repo recommendations from which to select the first safe wave
+ * @returns An ordered array of `FleetPlanCommand` objects suitable for agents to run as the first safe wave
+ */
 function buildFirstSafeWave(repos: FleetPlanRepo[]): FleetPlanCommand[] {
 	const wave: FleetPlanCommand[] = [];
 	const statusOrder: Array<{ status: FleetRepoStatus; limit: number }> = [
@@ -618,6 +794,7 @@ function buildFirstSafeWave(repos: FleetPlanRepo[]): FleetPlanCommand[] {
 				risk: repo.risk,
 				nextCommand: repo.nextCommand,
 				nextCommandArgv: repo.nextCommandArgv,
+				nextAction: repo.nextAction,
 			});
 			addedForStatus += 1;
 		}
@@ -626,11 +803,12 @@ function buildFirstSafeWave(repos: FleetPlanRepo[]): FleetPlanCommand[] {
 }
 
 /**
- * Build a read-only remediation plan from a harness upgrade matrix report.
+ * Build a read-only remediation plan from a Harness upgrade matrix report.
  *
- * The returned plan prioritizes the first safe non-ready remediation command so
- * agents move the fleet toward live-upgrade readiness instead of rechecking an
- * already-ready repository first.
+ * @param args.matrix - The parsed matrix report produced by the upgrade dry-run.
+ * @param args.matrixArtifact - Path or identifier of the source matrix artifact (recorded in plan evidence).
+ * @param args.generatedAt - Optional ISO timestamp to embed as the plan generation time; defaults to now.
+ * @returns A complete FleetRemediationPlan describing per-repo recommendations, summary counts, live-upgrade blockers, the first safe command wave, and the selected next runnable action and command.
  */
 export function buildFleetRemediationPlan(args: {
 	matrix: MatrixReport;
@@ -648,16 +826,16 @@ export function buildFleetRemediationPlan(args: {
 	);
 	const summary = buildSummary(repos);
 	const findingCounts = buildFindingCounts(repos);
-	const liveUpgradeBlockedBecause = buildLiveUpgradeBlockers(findingCounts);
+	const liveUpgradeBlockedBecause =
+		rawResults.length === 0
+			? ["matrix artifact contained no repository results"]
+			: buildLiveUpgradeBlockers(findingCounts);
 	const firstSafeWave = buildFirstSafeWave(repos);
-	const firstRunnable = repos.find(
-		(repo) => repo.status !== "ready" && repo.nextCommandArgv && repo.safeToRun,
-	);
-	const firstReadyRunnable = repos.find(
-		(repo) => repo.nextCommandArgv && repo.safeToRun,
-	);
-	const nextRunnable = firstRunnable ?? firstReadyRunnable;
-	const liveUpgradeReady = repos.every((repo) => repo.status === "ready");
+	// Derive nextRunnable from firstSafeWave to reflect wave priority
+	const nextRunnable = firstSafeWave.length > 0 ? firstSafeWave[0] : undefined;
+	// Avoid empty-artifact true positives: require repos.length > 0
+	const liveUpgradeReady =
+		repos.length > 0 && repos.every((repo) => repo.status === "ready");
 	return {
 		schemaVersion: FLEET_PLAN_SCHEMA_VERSION,
 		generatedAt: args.generatedAt ?? new Date().toISOString(),
@@ -678,6 +856,18 @@ export function buildFleetRemediationPlan(args: {
 	};
 }
 
+/**
+ * Parse CLI arguments for the fleet-plan command.
+ *
+ * Recognizes `--help`/`-h`, `--json`, and `--from <path>`. Validates that `--from` is followed by a non-flag value and returns a descriptive `error` when an unknown flag is encountered or `--from` is missing its path.
+ *
+ * @param argv - Array of command-line arguments (typically process.argv.slice(n))
+ * @returns An object with:
+ *  - `from` — the matrix artifact path when provided,
+ *  - `json` — `true` when `--json` was present,
+ *  - `help` — `true` when `--help` or `-h` was present,
+ *  - `error` — an error message when arguments are invalid
+ */
 function parseArgs(argv: string[]): ParsedFleetPlanArgs {
 	let from: string | undefined;
 	let json = false;
@@ -710,6 +900,12 @@ function parseArgs(argv: string[]): ParsedFleetPlanArgs {
 	};
 }
 
+/**
+ * Print usage instructions and a brief description for the `harness fleet-plan` CLI.
+ *
+ * Outputs the expected flags (`--from <matrix.json>`, optional `--json`) and a one-line summary
+ * of what the command does.
+ */
 function printUsage(): void {
 	console.info("Usage: harness fleet-plan --from <matrix.json> [--json]");
 	console.info("");
@@ -718,6 +914,15 @@ function printUsage(): void {
 	);
 }
 
+/**
+ * Prints a human-readable summary of a fleet remediation plan to stdout.
+ *
+ * Renders overall plan metadata (source and live-upgrade readiness), aggregated status counts,
+ * any live-upgrade blocker messages, the first safe wave of agent commands, and a per-repo
+ * listing that includes the repo status, next action/command, and blocking reasons.
+ *
+ * @param plan - The remediation plan to render
+ */
 function printHuman(plan: FleetRemediationPlan): void {
 	console.info(`Fleet remediation plan: ${plan.generatedFrom}`);
 	console.info(`Live upgrade ready: ${plan.liveUpgradeReady ? "yes" : "no"}`);
@@ -749,10 +954,14 @@ function printHuman(plan: FleetRemediationPlan): void {
 }
 
 /**
- * CLI entrypoint for `harness fleet-plan`.
+ * Entrypoint for the `harness fleet-plan` CLI.
  *
- * Reads a matrix JSON artifact and prints either a human summary or the
- * structured `harness-fleet-remediation-plan/v1` JSON document.
+ * Parses CLI arguments, requires `--from <path>` to a matrix JSON artifact, builds a fleet remediation
+ * plan from that artifact, and writes either the plan as JSON (when `--json` is provided) or a
+ * human-readable summary to stdout.
+ *
+ * @param argv - The CLI arguments (typically `process.argv.slice(2)`)
+ * @returns `0` on success, `1` if the matrix artifact could not be read or parsed, `2` for invalid or missing CLI arguments
  */
 export function runFleetPlanCLI(argv: string[]): number {
 	const parsed = parseArgs(argv);

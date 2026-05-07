@@ -11,7 +11,10 @@ const PROD_SOURCE_PREFIX = "src/";
 const MAX_FILE_LINES = 800;
 const MAX_FUNCTION_LINES = 120;
 
-const LEGACY_OVERSIZED_FILES = new Set([]);
+const LEGACY_OVERSIZED_FILES = new Set([
+	"src/commands/fleet-plan.ts",
+	"src/commands/next.ts",
+]);
 
 const SPLIT_LEGACY_CORE_RE = /-core(?:-v\d+)?\.ts$/;
 

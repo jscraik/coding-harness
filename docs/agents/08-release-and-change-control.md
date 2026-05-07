@@ -98,7 +98,7 @@ When resuming with `bash scripts/verify-work.sh --resume-from <gate-id>`, prior 
 
 ## Release integrity and verification
 
-Releases published via OIDC trusted publishing from `.github/workflows/release-private-npm.yml` carry two trust layers that consumers can verify independently while the package remains private.
+Releases published via OIDC trusted publishing from `.github/workflows/release-private-npm.yml` use GitHub OIDC for publish authentication, then carry two private-package verification layers that consumers can verify independently while the package remains private: GitHub artifact attestations and the release SBOM. npm registry provenance is not one of those private-package layers.
 
 ### npm provenance
 
