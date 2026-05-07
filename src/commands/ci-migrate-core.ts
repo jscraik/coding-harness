@@ -159,6 +159,7 @@ const MERGE_QUEUE_WINDOW_PATH =
 	".harness/control-plane/merge-queue-cutover-window.json";
 const DEFAULT_MERGE_QUEUE_EVIDENCE_PATH =
 	".harness/control-plane/merge-queue-cutover-evidence.json";
+const CI_MIGRATE_VERIFY_FAILED_EXIT_CODE = 1;
 
 const BREAK_GLASS_POLICY_PATH =
 	".harness/control-plane/ci-migrate-break-glass-policy.json";
@@ -9647,7 +9648,7 @@ export function runCIMigrateCLI(
 
 		// For explicitJsonDryRun, collect verify violations before emitting JSON
 		let verifyViolations: string[] = [];
-		let verifyExitCode: 0 | 3 = EXIT_CODES.SUCCESS;
+		let verifyExitCode: 0 | 1 = EXIT_CODES.SUCCESS;
 
 		if (action === "verify") {
 			// JSC-58: solo mode skips strict verify (no trustedPolicyRef / authorityConfigPath)
@@ -9660,7 +9661,7 @@ export function runCIMigrateCLI(
 					console.error(`Error: ${policyResult.error}`);
 				}
 				verifyViolations.push(policyResult.error);
-				verifyExitCode = EXIT_CODES.INVALID_PATH;
+				verifyExitCode = CI_MIGRATE_VERIFY_FAILED_EXIT_CODE;
 			} else {
 				// JSC-59: Validate CI config syntax before declaring verify success
 				const configSyntaxViolations = validateCIConfigSyntax(
@@ -9688,7 +9689,7 @@ export function runCIMigrateCLI(
 						}
 					} else {
 						verifyViolations = verificationViolations;
-						verifyExitCode = EXIT_CODES.INVALID_PATH;
+						verifyExitCode = CI_MIGRATE_VERIFY_FAILED_EXIT_CODE;
 						if (!explicitJsonDryRun) {
 							console.error("Error: strict verify failed:");
 							for (const violation of verificationViolations) {

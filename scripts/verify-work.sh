@@ -131,6 +131,13 @@ has_package_script() {
 	jq -e --arg script_name "$script_name" '(.scripts // {}) | has($script_name)' "$repo_root/package.json" >/dev/null 2>&1
 }
 
+is_truthy() {
+	case "${1:-}" in
+		1|true|TRUE|yes|YES|on|ON) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
 # prepare_normalized_required_checks_manifest locates .harness/ci-required-checks.json and produces a normalized manifest in a temporary file, setting the globals `normalized_manifest_path` and `normalized_manifest_source`.
 # It tries, in order, the repo dist CLI, a pnpm/tsx repo runner, a mise-provided harness (with configurable timeout), a harness on PATH, and finally falls back to copying the raw manifest if it is a JSON object; exits success when a normalized or raw-fallback manifest is available, and non-zero if normalization fails.
 prepare_normalized_required_checks_manifest() {
@@ -167,7 +174,7 @@ prepare_normalized_required_checks_manifest() {
 		echo "[verify-work] required checks normalization via repo runner failed, trying fallback runners" >&2
 	fi
 
-	if [[ "${HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION:-0}" != "1" ]]; then
+	if ! is_truthy "${HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION:-0}"; then
 		if command -v mise >/dev/null 2>&1; then
 			if command -v timeout >/dev/null 2>&1; then
 				mise_harness_bin="$(timeout "$external_normalization_timeout" mise which harness 2>/dev/null || true)"
