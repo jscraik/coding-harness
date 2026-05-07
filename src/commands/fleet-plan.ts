@@ -62,6 +62,14 @@ interface RepoRecommendation {
 	requiresApprovalBeforeMutation: boolean;
 }
 
+function isMatrixOutputValidationError(error: string): boolean {
+	return (
+		error.includes("invalid JSON output") ||
+		error.startsWith("JSON output missing ") ||
+		error === "created array no longer matches updated array"
+	);
+}
+
 /**
  * Builds a RepoRecommendation from the provided fields and marks it as requiring approval before any mutation.
  *
@@ -358,7 +366,7 @@ function buildBlockingReasons(args: {
 	if (args.exitCode !== undefined && args.exitCode !== 0) {
 		blockingReasons.push("matrix-command-failed");
 	}
-	if (args.errors.some((error) => error.includes("invalid JSON output"))) {
+	if (args.errors.some(isMatrixOutputValidationError)) {
 		blockingReasons.push("invalid-matrix-json-output");
 	}
 	if (args.trackedManifest === false) {
@@ -400,9 +408,7 @@ function recommendRepoAction(
 	repo: string,
 	signals: RepoSignals,
 ): RepoRecommendation {
-	const invalidJson = signals.errors.some((error) =>
-		error.includes("invalid JSON output"),
-	);
+	const invalidJson = signals.errors.some(isMatrixOutputValidationError);
 	if (
 		signals.statusChangedByDryRun ||
 		(signals.exitCode !== undefined && signals.exitCode !== 0) ||

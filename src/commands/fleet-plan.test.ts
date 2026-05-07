@@ -305,6 +305,48 @@ describe("fleet-plan", () => {
 		});
 	});
 
+	it("blocks matrix validation errors before recommending gap remediation", () => {
+		const plan = buildFleetRemediationPlan({
+			matrixArtifact: "matrix.json",
+			generatedAt: "2026-05-06T12:00:00.000Z",
+			matrix: {
+				results: [
+					{
+						repo: "/repo/invalid-output",
+						trackedManifest: true,
+						missingFleetContractSurfaces: [
+							{ group: "circleci", path: ".circleci/config.yml" },
+						],
+						legacyGreptilePaths: [],
+						errors: [
+							"JSON output missing updated array",
+							"fleet contract missing circleci surface .circleci/config.yml",
+						],
+						exitCode: 0,
+					},
+				],
+			},
+		});
+
+		expect(plan.safeToRun).toBe(false);
+		expect(plan.nextCommandArgv).toBeNull();
+		expect(plan.liveUpgradeBlockedBecause).toEqual(
+			expect.arrayContaining([
+				"1 repo emitted invalid matrix JSON",
+				"1 repo is missing CircleCI governance surfaces",
+			]),
+		);
+		expect(plan.repos[0]).toMatchObject({
+			status: "blocked",
+			safeToRun: false,
+			nextCommandArgv: null,
+			blockingReasons: [
+				"invalid-matrix-json-output",
+				"tracked-repo-missing-circleci",
+			],
+		});
+	});
+
 	it("counts missing CODESTYLE parity entries as install blockers", () => {
 		const plan = buildFleetRemediationPlan({
 			matrixArtifact: "matrix.json",
