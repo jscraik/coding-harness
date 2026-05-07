@@ -47,6 +47,21 @@ ${content}
 	return filepath;
 }
 
+function createHarnessPlan(
+	filename: string,
+	content: string,
+	basePath: string,
+): string {
+	const plansDir = join(basePath, ".harness/plan");
+	if (!existsSync(plansDir)) {
+		mkdirSync(plansDir, { recursive: true });
+	}
+
+	const filepath = join(plansDir, filename);
+	writeFileSync(filepath, content, "utf-8");
+	return filepath;
+}
+
 describe("plan-gate command", () => {
 	beforeEach(() => {
 		const baseDir = resolve("artifacts");
@@ -92,6 +107,50 @@ describe("plan-gate command", () => {
 			expect(result.passed).toBe(true);
 			expect(result.artifacts).toHaveLength(1);
 			expect(result.artifacts[0]?.title).toBe("Test Feature");
+		});
+
+		it("discovers Harness Engineering plans from .harness/plan by default", () => {
+			createHarnessPlan(
+				"JSC-246-account-settings.md",
+				[
+					"---",
+					"title: Account Settings",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-246-account-settings",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Preserve HE plan units.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] HE plan can be validated without a date-prefixed filename.",
+				].join("\n"),
+				testDir,
+			);
+
+			const previousCwd = process.cwd();
+			process.chdir(testDir);
+			const result = (() => {
+				try {
+					return runPlanGate({
+						type: "standard-plan",
+						requirePlanId: true,
+						planIds: ["jsc-246-account-settings"],
+					});
+				} finally {
+					process.chdir(previousCwd);
+				}
+			})();
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.path).toContain(".harness/plan");
+			expect(result.artifacts[0]?.type).toBe("standard-plan");
+			expect(result.artifacts[0]?.planId).toBe("jsc-246-account-settings");
 		});
 
 		it("filters by type", () => {

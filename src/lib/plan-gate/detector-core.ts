@@ -5,7 +5,7 @@
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import {
 	type AcceptanceItem,
 	DEFAULTS,
@@ -56,19 +56,8 @@ function parseFrontmatter(content: string): {
 		const typeMatch = yamlContent.match(/^type:\s*(.+)$/m);
 		if (typeMatch?.[1]) {
 			const typeVal = typeMatch[1].trim().replace(/['"]/g, "");
-			if (
-				[
-					"feat",
-					"feature",
-					"fix",
-					"bugfix",
-					"refactor",
-					"docs",
-					"architecture",
-					"chore",
-				].includes(typeVal)
-			) {
-				frontmatter.type = typeVal as PlanFrontmatter["type"];
+			if (typeVal) {
+				frontmatter.type = typeVal;
 			}
 		}
 
@@ -241,8 +230,14 @@ function findPlanDocs(plansPath: string): string[] {
 	try {
 		const entries = readdirSync(plansPath);
 		for (const entry of entries) {
-			if (entry.match(/^\d{4}-\d{2}-\d{2}-.*-plan\.md$/)) {
-				docs.push(join(plansPath, entry));
+			const entryPath = join(plansPath, entry);
+			const stats = statSync(entryPath);
+			if (stats.isDirectory()) {
+				docs.push(...findPlanDocs(entryPath));
+				continue;
+			}
+			if (stats.isFile() && entry.endsWith(".md")) {
+				docs.push(entryPath);
 			}
 		}
 	} catch {
@@ -253,6 +248,16 @@ function findPlanDocs(plansPath: string): string[] {
 	return docs.sort().reverse();
 }
 
+function resolvePlanSearchPaths(plansPath?: string): string[] {
+	if (plansPath) {
+		return [resolve(plansPath)];
+	}
+
+	return [DEFAULTS.PLANS_PATH, DEFAULTS.HARNESS_PLANS_PATH].map((path) =>
+		resolve(path),
+	);
+}
+
 /**
  * Load and validate a plan document
  */
@@ -260,7 +265,8 @@ function loadPlanDoc(
 	filePath: string,
 	maxAgeDays: number,
 	requireOrigin: boolean,
-): { artifact?: PlanArtifact; error?: PlanError } {
+): { artifact?: PlanArtifact; errors: PlanError[] } {
+	const errors: PlanError[] = [];
 	try {
 		const stats = statSync(filePath);
 		const content = readFileSync(filePath, "utf-8");
@@ -276,29 +282,24 @@ function loadPlanDoc(
 			const daysOld = daysBetween(fileDate, new Date());
 
 			if (daysOld > maxAgeDays) {
-				return {
-					error: {
-						code: "STALE",
-						message: `Plan is ${daysOld} days old (max: ${maxAgeDays})`,
-						path: filePath,
-					},
-				};
+				errors.push({
+					code: "STALE",
+					message: `Plan is ${daysOld} days old (max: ${maxAgeDays})`,
+					path: filePath,
+				});
 			}
 		}
 
 		// Check origin reference
 		if (requireOrigin && !frontmatter.origin) {
-			return {
-				error: {
-					code: "ORIGIN_MISSING",
-					message: "Plan missing origin reference to brainstorm",
-					path: filePath,
-				},
-			};
+			errors.push({
+				code: "ORIGIN_MISSING",
+				message: "Plan missing origin reference to brainstorm",
+				path: filePath,
+			});
 		}
 
-		const filenameParts = filePath.split("/");
-		const filename = filenameParts[filenameParts.length - 1] ?? filePath;
+		const filename = basename(filePath);
 
 		return {
 			artifact: {
@@ -314,14 +315,17 @@ function loadPlanDoc(
 				acceptanceItems,
 				frontmatter,
 			},
+			errors,
 		};
 	} catch (error) {
 		return {
-			error: {
-				code: "SYSTEM_ERROR",
-				message: `Failed to read ${filePath}: ${(error as Error).message}`,
-				path: filePath,
-			},
+			errors: [
+				{
+					code: "SYSTEM_ERROR",
+					message: `Failed to read ${filePath}: ${(error as Error).message}`,
+					path: filePath,
+				},
+			],
 		};
 	}
 }
@@ -330,7 +334,8 @@ function loadPlanDoc(
  * Run plan gate validation
  */
 export function runPlanGate(options: PlanGateOptions): PlanGateResult {
-	const plansPath = resolve(options.plansPath || DEFAULTS.PLANS_PATH);
+	const planSearchPaths = resolvePlanSearchPaths(options.plansPath);
+	const plansPathLabel = planSearchPaths.join(", ");
 	const maxAgeDays =
 		typeof options.maxAge === "number" && Number.isFinite(options.maxAge)
 			? options.maxAge
@@ -343,10 +348,11 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 		: extractPlanIdsFromText(options.prTitle, options.prBody);
 
 	const artifacts: PlanArtifact[] = [];
+	const artifactErrors = new Map<string, PlanError[]>();
 	const errors: PlanError[] = [];
 
 	// Find all plan documents
-	const docs = findPlanDocs(plansPath);
+	const docs = planSearchPaths.flatMap(findPlanDocs).sort().reverse();
 
 	if (docs.length === 0) {
 		return {
@@ -355,7 +361,7 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 			errors: [
 				{
 					code: "MISSING",
-					message: `No plan documents found in ${plansPath}`,
+					message: `No plan documents found in ${plansPathLabel}`,
 				},
 			],
 		};
@@ -365,12 +371,11 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 	for (const docPath of docs) {
 		const result = loadPlanDoc(docPath, maxAgeDays, requireOrigin);
 
-		if (result.error) {
-			errors.push(result.error);
-		}
-
 		if (result.artifact) {
 			artifacts.push(result.artifact);
+			artifactErrors.set(result.artifact.path, result.errors);
+		} else {
+			errors.push(...result.errors);
 		}
 	}
 
@@ -411,10 +416,14 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 			if (!artifactsByPlanId.has(planId)) {
 				errors.push({
 					code: "PLAN_ID_NOT_FOUND",
-					message: `Referenced plan ID '${planId}' does not exist in ${plansPath}`,
+					message: `Referenced plan ID '${planId}' does not exist in ${plansPathLabel}`,
 				});
 			}
 		}
+	}
+
+	for (const artifact of filteredArtifacts) {
+		errors.push(...(artifactErrors.get(artifact.path) ?? []));
 	}
 
 	if (requirePlanId) {
