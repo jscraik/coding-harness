@@ -277,6 +277,7 @@ export async function mintGitHubAppInstallationToken(
 		`https://api.github.com/app/installations/${config.installationId}/access_tokens`,
 		{
 			method: "POST",
+			signal: AbortSignal.timeout(15_000),
 			headers: {
 				Accept: "application/vnd.github+json",
 				Authorization: `Bearer ${jwt}`,
