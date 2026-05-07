@@ -13,6 +13,7 @@ import {
 	getCommandCapabilities,
 	getAgentCommandCapabilityCatalogDocument,
 	getCommandCapabilityCatalogDocument,
+	isFirstContactCommandName,
 } from "./registry/command-capabilities.js";
 import { suggestCommandCapabilities as suggestCatalogCapabilities } from "./registry/command-fuzzy.js";
 import { COMMAND_SPECS as EXTRACTED_COMMAND_SPECS } from "./registry/command-specs.js";
@@ -124,7 +125,12 @@ export function getRegistryCommandHelpRows(options?: {
 	tier?: CommandTier;
 }> {
 	const capabilities = getRegistryCommandCapabilities();
-	const canonicalRows = capabilities.map((capability) => ({
+	const displayCapabilities = options?.includeLegacy
+		? capabilities
+		: capabilities.filter((capability) =>
+				isFirstContactCommandName(capability.name),
+			);
+	const canonicalRows = displayCapabilities.map((capability) => ({
 		name: capability.name,
 		summary: capability.summary,
 		category: capability.category,
@@ -134,7 +140,7 @@ export function getRegistryCommandHelpRows(options?: {
 		return canonicalRows;
 	}
 
-	const aliasRows = capabilities.flatMap((capability) =>
+	const aliasRows = displayCapabilities.flatMap((capability) =>
 		(capability.aliases ?? []).map((alias) => ({
 			name: alias,
 			summary: capability.summary,

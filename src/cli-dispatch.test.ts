@@ -177,13 +177,8 @@ describe("cli command dispatch", () => {
 			});
 		expect(output).toContain("Commands (focused):");
 		expect(output).toContain("Agent Cockpit:");
-		expect(output).toContain("Discovery:");
-		expect(output).toContain("Bootstrap & Governance:");
-		expect(output).toContain("Review & Policy:");
-		expect(output.indexOf("Agent Cockpit:")).toBeLessThan(
-			output.indexOf("Discovery:"),
-		);
-		expect(hasCommandRow("check")).toBe(true);
+		expect(output).toContain('Run "harness --help --all-commands"');
+		expect(hasCommandRow("check")).toBe(false);
 		expect(hasCommandRow("next")).toBe(true);
 		expect(hasCommandRow("pr-ready")).toBe(false);
 		expect(hasCommandRow("fix-review")).toBe(false);

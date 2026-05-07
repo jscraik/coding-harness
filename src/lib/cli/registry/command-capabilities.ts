@@ -335,20 +335,27 @@ const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 };
 
 const COMMAND_VISIBILITY_BY_NAME: Partial<Record<string, CommandVisibility>> = {
-	commands: "default",
 	next: "default",
-	check: "default",
-	init: "default",
-	doctor: "default",
-	health: "agent",
-	"fleet-plan": "agent",
-	"validation-plan": "agent",
-	"review-context": "agent",
+	commands: "advanced",
+	check: "advanced",
+	init: "advanced",
+	doctor: "advanced",
+	health: "advanced",
+	"fleet-plan": "advanced",
+	"validation-plan": "advanced",
+	"review-context": "advanced",
 	contract: "advanced",
 	linear: "advanced",
 	"review-gate": "plumbing",
 	"docs-gate": "plumbing",
 };
+
+const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(["next"]);
+
+/** Return whether a command belongs on first-contact agent surfaces. */
+export function isFirstContactCommandName(name: string): boolean {
+	return FIRST_CONTACT_COMMAND_NAMES.has(name);
+}
 
 const AGENT_MODE_ORDER: Readonly<Record<CommandAgentMode, number>> = {
 	orient: 0,
@@ -485,7 +492,7 @@ export function filterAgentCommandCapabilities(
 	commands: readonly CommandCapability[],
 ): CommandCapability[] {
 	return commands
-		.filter((command) => ["default", "agent"].includes(command.visibility))
+		.filter((command) => isFirstContactCommandName(command.name))
 		.toSorted((left, right) => {
 			const visibilityDelta =
 				AGENT_CATALOG_VISIBILITY_ORDER[left.visibility] -

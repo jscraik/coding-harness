@@ -37,43 +37,26 @@ process.on("uncaughtException", (error) => {
 /**
  * Print the CLI usage, examples, and command list to stdout.
  *
- * When `options.includeLegacyCommands` is true the full command list (including legacy
+ * When `options.includeLegacyCommands` is true the full command list (including expert
  * commands) is shown; otherwise a focused command list is displayed and a hint is printed
- * instructing how to view legacy commands.
+ * instructing how to view expert commands.
  *
  * This function writes help text and options to stdout/stderr and does not return a value.
  *
  * @param options - Optional settings for rendering the help output.
- * @param options.includeLegacyCommands - If true, include legacy commands in the displayed command list.
+ * @param options.includeLegacyCommands - If true, include expert commands in the displayed command list.
  */
 function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	const includeLegacyCommands = options.includeLegacyCommands ?? false;
 
 	console.info("Usage: harness <command> [options]");
 	console.info("");
-	console.info("Start here (standard path):");
-	console.info("  1. pnpm add -g @brainwav/coding-harness");
-	console.info("  2. harness init --dry-run");
-	console.info("  3. harness init --track");
-	console.info("  4. harness contract validate");
-	console.info("  5. harness health --json");
+	console.info("Start here: harness next --json");
 	console.info("");
-	console.info("Lite mode (solo-dev / small team, under 10 minutes):");
-	console.info("  1. harness init --minimal --track");
-	console.info("  2. harness contract init --preset lite --force");
-	console.info("  3. harness contract validate");
-	console.info("  4. harness check --json");
+	console.info("Agent memory rule:");
+	console.info("  Run harness next --json first.");
 	console.info(
-		"  5. Upgrade later: harness contract init --preset standard --force",
-	);
-	console.info("");
-	console.info("Hero workflows:");
-	console.info(
-		"  Bootstrap repo:    harness init --dry-run && harness init --track",
-	);
-	console.info("  Start on issue:    harness linear prepare --issue <KEY>");
-	console.info(
-		"  Submit for review: harness docs-gate --json && harness review-gate ...",
+		"  Let that decision packet choose setup, checks, review, or repair.",
 	);
 	console.info("");
 	const helpRows = getRegistryCommandHelpRows({
@@ -92,7 +75,10 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	if (!includeLegacyCommands) {
 		console.info("");
 		console.info(
-			'  Run "harness --help --all-commands" to view the full legacy command list.',
+			'  Run "harness --help --all-commands" to view the full expert command list.',
+		);
+		console.info(
+			'  Run "harness commands --json" for explicit machine/expert discovery.',
 		);
 	}
 	console.info("");
@@ -100,7 +86,7 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	console.info("  --version, -v          Print version");
 	console.info("  --help, -h             Print this help");
 	console.info(
-		"  --all, --all-commands  Include legacy command list in help output",
+		"  --all, --all-commands  Include expert command list in help output",
 	);
 	console.info(
 		"  --allow-fuzzy          Opt in to typo/case auto-correction for command names",

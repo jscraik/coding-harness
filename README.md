@@ -53,6 +53,16 @@ The shortest honest description of the project today is:
 
 ## Start Here
 
+For agents, start with the cockpit decision packet:
+
+```bash
+harness next --json
+```
+
+`harness --help` now keeps first contact intentionally narrow and points agents
+at `harness next --json`. Use `harness --help --all-commands` or
+`harness commands --json` only when you need the full expert command surface.
+
 Get from zero to a governed, agent-ready repository in five steps (standard path):
 
 ```bash
@@ -479,7 +489,8 @@ just dashboard reporting.
 ## Command Index
 
 The tables below keep README parity with the CLI while staying short. For full
-flags, use `harness --help`.
+expert command discovery, use `harness --help --all-commands`. Default
+`harness --help` is intentionally focused on the agent cockpit entrypoint.
 
 For agent planning and command safety routing, prefer the machine-readable
 capability catalog:

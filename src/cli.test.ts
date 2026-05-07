@@ -350,6 +350,35 @@ describe("run", () => {
 		expect(exitSpy).not.toHaveBeenCalled();
 	});
 
+	it("prints the cockpit memory rule before any command group in default help", () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		run(["--help"]);
+
+		const lines = infoSpy.mock.calls.map((call) => String(call[0] ?? ""));
+		expect(lines).toContain("Start here: harness next --json");
+		expect(lines.indexOf("Start here: harness next --json")).toBeLessThan(
+			lines.indexOf("Commands (focused):"),
+		);
+		expect(lines).toContain("  Agent Cockpit:");
+		expect(
+			lines.some((line) =>
+				/^\s+next\s+Recommend the next safe harness command/.test(line),
+			),
+		).toBe(true);
+		expect(
+			lines.some((line) =>
+				/^\s+(commands|check|init|doctor|health)\s+/.test(line),
+			),
+		).toBe(false);
+		expect(exitSpy).not.toHaveBeenCalled();
+	});
+
 	it("short-circuits mutating commands when --help follows command name", async () => {
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
 			code?: number,
@@ -377,6 +406,29 @@ describe("run", () => {
 		expect(infoSpy).toHaveBeenCalledWith(
 			expect.stringContaining("Usage: harness"),
 		);
+		expect(exitSpy).not.toHaveBeenCalled();
+	});
+
+	it("keeps full expert command help available behind --all-commands", () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(() => run(["--help", "--all-commands"])).not.toThrow();
+
+		const lines = infoSpy.mock.calls.map((call) => String(call[0] ?? ""));
+		expect(lines).toContain("Commands (full, with aliases):");
+		expect(
+			lines.some((line) => /^\s+commands\s+List machine-readable/.test(line)),
+		).toBe(true);
+		expect(
+			lines.some((line) =>
+				line.includes('Run "harness --help --all-commands"'),
+			),
+		).toBe(false);
 		expect(exitSpy).not.toHaveBeenCalled();
 	});
 });

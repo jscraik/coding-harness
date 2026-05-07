@@ -22,17 +22,7 @@ import {
 	extractReadmeCommandNames,
 } from "./doc-parity.js";
 
-const AGENT_COMMAND_RAIL_NAMES = [
-	"commands",
-	"doctor",
-	"init",
-	"next",
-	"check",
-	"health",
-	"fleet-plan",
-	"validation-plan",
-	"review-context",
-] as const;
+const AGENT_COMMAND_RAIL_NAMES = ["next"] as const;
 
 describe("command registry", () => {
 	it("exposes migrated command names", () => {
@@ -130,12 +120,13 @@ describe("command registry", () => {
 		expect(new Set(names).size).toBe(names.length);
 	});
 
-	it("keeps the first cockpit help surface limited to runnable commands", () => {
+	it("keeps the first cockpit help surface limited to the runnable memory rule", () => {
 		const cockpitRows = getRegistryCommandHelpRows()
 			.filter((row) => row.tier === "cockpit")
 			.map((row) => row.name);
 
-		expect(cockpitRows).toEqual(["check", "next"]);
+		expect(cockpitRows).toEqual(["next"]);
+		expect(cockpitRows).not.toContain("check");
 		expect(cockpitRows).not.toContain("pr-ready");
 		expect(cockpitRows).not.toContain("fix-review");
 		expect(cockpitRows).not.toContain("learn");
@@ -181,9 +172,11 @@ describe("command registry", () => {
 		}
 	});
 
-	it("derives help rows from the capability catalog", () => {
+	it("derives default help rows from default-visible capabilities", () => {
 		const helpRows = getRegistryCommandHelpRows();
-		const capabilities = getRegistryCommandCapabilities();
+		const capabilities = getRegistryCommandCapabilities().filter(
+			(capability) => capability.visibility === "default",
+		);
 		expect(helpRows.map((row) => row.name)).toEqual(
 			capabilities.map((capability) => capability.name),
 		);
@@ -490,15 +483,15 @@ describe("getRegistryCommandCapabilities", () => {
 		});
 		expect(capabilitiesByName.get("check")).toMatchObject({
 			agentMode: "verify",
-			visibility: "default",
+			visibility: "advanced",
 		});
 		expect(capabilitiesByName.get("validation-plan")).toMatchObject({
 			agentMode: "verify",
-			visibility: "agent",
+			visibility: "advanced",
 		});
 		expect(capabilitiesByName.get("review-context")).toMatchObject({
 			agentMode: "review",
-			visibility: "agent",
+			visibility: "advanced",
 		});
 		expect(capabilitiesByName.get("review-gate")).toMatchObject({
 			agentMode: "review",
@@ -1131,18 +1124,32 @@ describe("getRegistryAgentCommandCatalogDocument", () => {
 });
 
 describe("getRegistryCommandHelpRows (updated)", () => {
-	it("returns same names as getRegistryCommandCapabilities", () => {
+	it("returns only default first-contact rows by default", () => {
 		const helpRows = getRegistryCommandHelpRows();
-		const capabilities = getRegistryCommandCapabilities();
-		expect(helpRows.map((r) => r.name)).toEqual(
-			capabilities.map((c) => c.name),
-		);
+
+		expect(helpRows.map((r) => r.name)).toEqual(["next"]);
 	});
 
-	it("returns same summaries as getRegistryCommandCapabilities", () => {
-		const helpRows = getRegistryCommandHelpRows();
+	it("returns full capability names when full help is requested", () => {
+		const helpRows = getRegistryCommandHelpRows({ includeLegacy: true });
 		const capabilities = getRegistryCommandCapabilities();
-		expect(helpRows.map((r) => r.summary)).toEqual(
+		const canonicalNames = helpRows
+			.filter((row) =>
+				capabilities.some((capability) => capability.name === row.name),
+			)
+			.map((row) => row.name);
+
+		expect(canonicalNames).toEqual(capabilities.map((c) => c.name));
+	});
+
+	it("returns full capability summaries when full help is requested", () => {
+		const helpRows = getRegistryCommandHelpRows({ includeLegacy: true });
+		const capabilities = getRegistryCommandCapabilities();
+		const canonicalRows = helpRows.filter((row) =>
+			capabilities.some((capability) => capability.name === row.name),
+		);
+
+		expect(canonicalRows.map((r) => r.summary)).toEqual(
 			capabilities.map((c) => c.summary),
 		);
 	});
@@ -1167,9 +1174,14 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 		expect(names.has("pilot")).toBe(false);
 	});
 
-	it("includes 'commands' in help rows", () => {
+	it("keeps commands available only in full help rows", () => {
 		const names = getRegistryCommandHelpRows().map((r) => r.name);
-		expect(names).toContain("commands");
+		const fullNames = getRegistryCommandHelpRows({ includeLegacy: true }).map(
+			(r) => r.name,
+		);
+
+		expect(names).not.toContain("commands");
+		expect(fullNames).toContain("commands");
 	});
 });
 
