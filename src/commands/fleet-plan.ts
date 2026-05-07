@@ -802,6 +802,27 @@ function buildFirstSafeWave(repos: FleetPlanRepo[]): FleetPlanCommand[] {
 	return wave;
 }
 
+/** Build the first live-upgrade dry-run wave when every matrix repo is ready. */
+function buildReadyUpgradeWave(repos: FleetPlanRepo[]): FleetPlanCommand[] {
+	return repos
+		.filter(
+			(repo) =>
+				repo.status === "ready" &&
+				repo.safeToRun &&
+				repo.nextCommandArgv &&
+				repo.nextCommand !== null,
+		)
+		.slice(0, 5)
+		.map((repo) => ({
+			repo: repo.repo,
+			status: repo.status,
+			risk: repo.risk,
+			nextCommand: repo.nextCommand as string,
+			nextCommandArgv: repo.nextCommandArgv as string[],
+			nextAction: repo.nextAction,
+		}));
+}
+
 /**
  * Build a read-only remediation plan from a Harness upgrade matrix report.
  *
@@ -830,18 +851,20 @@ export function buildFleetRemediationPlan(args: {
 		rawResults.length === 0
 			? ["matrix artifact contained no repository results"]
 			: buildLiveUpgradeBlockers(findingCounts);
-	const firstSafeWave = buildFirstSafeWave(repos);
-	// Derive nextRunnable from firstSafeWave to reflect wave priority
-	const nextRunnable = firstSafeWave.length > 0 ? firstSafeWave[0] : undefined;
 	// Avoid empty-artifact true positives: require repos.length > 0
 	const liveUpgradeReady =
 		repos.length > 0 && repos.every((repo) => repo.status === "ready");
+	const firstSafeWave = liveUpgradeReady
+		? buildReadyUpgradeWave(repos)
+		: buildFirstSafeWave(repos);
+	// Derive nextRunnable from firstSafeWave to reflect wave priority
+	const nextRunnable = firstSafeWave.length > 0 ? firstSafeWave[0] : undefined;
 	return {
 		schemaVersion: FLEET_PLAN_SCHEMA_VERSION,
 		generatedAt: args.generatedAt ?? new Date().toISOString(),
 		generatedFrom: args.matrixArtifact,
 		liveUpgradeReady,
-		safeToRun: nextRunnable !== undefined,
+		safeToRun: liveUpgradeReady || nextRunnable !== undefined,
 		nextAction: liveUpgradeReady
 			? "Run upgrade dry-runs for ready repos before live update."
 			: (nextRunnable?.nextAction ??

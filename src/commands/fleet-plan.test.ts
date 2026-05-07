@@ -354,6 +354,50 @@ describe("fleet-plan", () => {
 		]);
 	});
 
+	it("marks all-ready fleets safe and exposes live-upgrade dry-run commands", () => {
+		const plan = buildFleetRemediationPlan({
+			matrixArtifact: "ready-matrix.json",
+			generatedAt: "2026-05-06T12:00:00.000Z",
+			matrix: {
+				results: [
+					{
+						repo: "/repo/ready-a",
+						trackedManifest: true,
+						missingFleetContractSurfaces: [],
+						legacyGreptilePaths: [],
+						errors: [],
+						exitCode: 0,
+					},
+					{
+						repo: "/repo/ready-b",
+						trackedManifest: true,
+						missingFleetContractSurfaces: [],
+						legacyGreptilePaths: [],
+						errors: [],
+						exitCode: 0,
+					},
+				],
+			},
+		});
+
+		expect(plan.liveUpgradeReady).toBe(true);
+		expect(plan.safeToRun).toBe(true);
+		expect(plan.liveUpgradeBlockedBecause).toEqual([]);
+		expect(plan.nextCommandArgv).toEqual([
+			"harness",
+			"upgrade",
+			"/repo/ready-a",
+			"--dry-run",
+			"--json",
+		]);
+		expect(
+			plan.firstSafeWave.map((command) => command.nextCommandArgv),
+		).toEqual([
+			["harness", "upgrade", "/repo/ready-a", "--dry-run", "--json"],
+			["harness", "upgrade", "/repo/ready-b", "--dry-run", "--json"],
+		]);
+	});
+
 	it("shell-quotes display commands while keeping argv machine-safe", () => {
 		const plan = buildFleetRemediationPlan({
 			matrixArtifact: "matrix.json",
