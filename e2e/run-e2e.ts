@@ -11,7 +11,7 @@
  * - Recording generation
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,6 +36,19 @@ export interface RunOptions {
 interface ValidationResult {
 	authSource: string;
 	checksPreflight: "passed" | "skipped";
+}
+
+interface ParsedVitestOutput {
+	testsPassed: number;
+	testsFailed: number;
+	testsSkipped: number;
+	firstFailingScenario?: string;
+	firstFailingAssertion?: string;
+}
+
+interface ProcessRunResult {
+	exitCode: number;
+	output: string;
 }
 
 export type E2EBlockerClassification =
@@ -65,6 +78,9 @@ export interface RunResult {
 	skipReasons: E2ESkipReason[];
 	recordingsDir?: string;
 }
+
+const CHECKS_API_PREFLIGHT_TIMEOUT_MS = 15_000;
+const VITEST_OUTPUT_CAPTURE_LIMIT_BYTES = 1_000_000;
 
 /**
  * Prints the command-line usage, options, and examples for the E2E test runner.
@@ -243,6 +259,7 @@ async function verifyChecksApiWritePermission(
 		`https://api.github.com/repos/${env.githubOwner}/${env.githubTestRepo}/check-runs`,
 		{
 			method: "POST",
+			signal: AbortSignal.timeout(CHECKS_API_PREFLIGHT_TIMEOUT_MS),
 			headers: {
 				Accept: "application/vnd.github+json",
 				Authorization: `Bearer ${env.githubToken}`,
@@ -279,6 +296,50 @@ async function verifyChecksApiWritePermission(
 			`Accepted GitHub permissions: ${acceptedPermissions}. ` +
 			"Use a GitHub App installation token or token that can create check runs for the E2E test repository.",
 	);
+}
+
+function appendCapturedOutput(current: string, chunk: Buffer): string {
+	const combined = `${current}${chunk.toString("utf-8")}`;
+	if (
+		Buffer.byteLength(combined, "utf-8") <= VITEST_OUTPUT_CAPTURE_LIMIT_BYTES
+	) {
+		return combined;
+	}
+	return combined.slice(-VITEST_OUTPUT_CAPTURE_LIMIT_BYTES);
+}
+
+function runVitestProcess(
+	args: string[],
+	recordingsDir: string,
+	options: RunOptions,
+): Promise<ProcessRunResult> {
+	return new Promise((resolveRun, rejectRun) => {
+		const child = spawn("pnpm", args, {
+			env: {
+				...process.env,
+				E2E_MODE: "true",
+				E2E_RECORDING_DIR: recordingsDir,
+				E2E_CLEANUP: options.record ? "true" : "false",
+			},
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+		let output = "";
+		child.stdout.on("data", (chunk: Buffer) => {
+			process.stdout.write(chunk);
+			output = appendCapturedOutput(output, chunk);
+		});
+		child.stderr.on("data", (chunk: Buffer) => {
+			process.stderr.write(chunk);
+			output = appendCapturedOutput(output, chunk);
+		});
+		child.on("error", rejectRun);
+		child.on("close", (code) => {
+			resolveRun({
+				exitCode: code ?? 1,
+				output,
+			});
+		});
+	});
 }
 
 /**
@@ -385,31 +446,13 @@ async function runTests(
 
 	console.info(`  Command: pnpm ${args.join(" ")}\n`);
 
-	const result = spawnSync("pnpm", args, {
-		encoding: "utf-8",
-		stdio: "pipe",
-		env: {
-			...process.env,
-			E2E_MODE: "true",
-			E2E_RECORDING_DIR: recordingsDir,
-			E2E_CLEANUP: options.record ? "true" : "false",
-		},
-	});
-	if (result.stdout) {
-		process.stdout.write(result.stdout);
-	}
-	if (result.stderr) {
-		process.stderr.write(result.stderr);
-	}
-
+	const result = await runVitestProcess(args, recordingsDir, options);
 	const durationMs = Date.now() - startTime;
-	const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
-	const parsed = parseVitestOutput(output);
-	const exitCode = result.status ?? 1;
+	const parsed = parseVitestOutput(result.output);
 
 	return {
-		success: exitCode === 0,
-		exitCode,
+		success: result.exitCode === 0,
+		exitCode: result.exitCode,
 		durationMs,
 		testsPassed: parsed.testsPassed,
 		testsFailed: parsed.testsFailed,
@@ -420,8 +463,12 @@ async function runTests(
 		...(parsed.firstFailingAssertion
 			? { firstFailingAssertion: parsed.firstFailingAssertion }
 			: {}),
-		blockerClassification: classifyE2EBlocker(exitCode, output),
-		skipReasons: classifySkipReasons(parsed.testsSkipped, output, pattern),
+		blockerClassification: classifyE2EBlocker(result.exitCode, result.output),
+		skipReasons: classifySkipReasons(
+			parsed.testsSkipped,
+			result.output,
+			pattern,
+		),
 		recordingsDir,
 	};
 }

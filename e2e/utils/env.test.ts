@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
 	ensureGitHubTokenForE2E,
 	getGitHubAppE2EEnvStatus,
+	hasGitHubAuthForE2E,
 	loadGitHubAppE2EEnv,
 } from "./env.js";
 
@@ -84,10 +85,31 @@ describe("E2E GitHub App env loading", () => {
 		);
 	});
 
+	it("treats unreadable private key paths as incomplete GitHub App config", () => {
+		clearManagedEnv();
+		process.env.GITHUB_APP_ID = "123";
+		process.env.GITHUB_APP_INSTALLATION_ID = "456";
+		process.env.GITHUB_APP_PRIVATE_KEY_PATH = join(
+			tmpdir(),
+			"missing-e2e-github-app-key.pem",
+		);
+
+		expect(getGitHubAppE2EEnvStatus()).toMatchObject({
+			configured: false,
+			partial: true,
+			missing: [
+				"E2E_GITHUB_APP_PRIVATE_KEY/GITHUB_APP_PRIVATE_KEY or E2E_GITHUB_APP_PRIVATE_KEY_PATH/GITHUB_APP_PRIVATE_KEY_PATH",
+			],
+			usesPrivateKeyPath: true,
+		});
+		expect(loadGitHubAppE2EEnv()).toBeNull();
+	});
+
 	it("uses PAT only when no GitHub App credential set is present", async () => {
 		clearManagedEnv();
-		process.env.GITHUB_PERSONAL_ACCESS_TOKEN = "ghp_fixturetoken";
+		process.env.GITHUB_PERSONAL_ACCESS_TOKEN = "  ghp_fixturetoken  ";
 
+		expect(hasGitHubAuthForE2E()).toBe(true);
 		await expect(ensureGitHubTokenForE2E()).resolves.toBe(
 			"GITHUB_PERSONAL_ACCESS_TOKEN",
 		);

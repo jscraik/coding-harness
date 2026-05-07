@@ -320,19 +320,37 @@ function existingLegacyGreptilePaths(repo) {
  *
  * @param {string} raw - Manifest text with `<sha256>  <path>` rows.
  * @returns {Array<{path: string, expectedSha256: string}>} Array of parsed manifest rows.
+ * @throws {Error} When any non-comment line is malformed, points outside the CODESTYLE pack, or omits the root/front-door CODESTYLE surfaces.
  */
 function parseChecksumManifest(raw) {
-	return raw
-		.split(/\r?\n/)
-		.map((line) => line.trim())
-		.filter((line) => line.length > 0 && !line.startsWith("#"))
-		.map((line) => {
-			const match = line.match(/^([a-f0-9]{64})\s+(.+)$/i);
-			return match
-				? { expectedSha256: match[1].toLowerCase(), path: match[2] }
-				: null;
-		})
-		.filter((entry) => entry !== null);
+	const entries = [];
+	for (const [index, rawLine] of raw.split(/\r?\n/).entries()) {
+		const line = rawLine.trim();
+		if (line.length === 0 || line.startsWith("#")) {
+			continue;
+		}
+		const match = line.match(/^([a-f0-9]{64})\s+(.+)$/i);
+		if (!match) {
+			throw new Error(`malformed checksum manifest line ${index + 1}`);
+		}
+		const path = match[2];
+		if (
+			path.startsWith("/") ||
+			path.includes("\\") ||
+			path.split("/").includes("..") ||
+			(path !== "CODESTYLE.md" && !path.startsWith("codestyle/"))
+		) {
+			throw new Error(`unsafe checksum manifest path ${path}`);
+		}
+		entries.push({ expectedSha256: match[1].toLowerCase(), path });
+	}
+	if (!entries.some((entry) => entry.path === "CODESTYLE.md")) {
+		throw new Error("checksum manifest missing CODESTYLE.md");
+	}
+	if (!entries.some((entry) => entry.path.startsWith("codestyle/"))) {
+		throw new Error("checksum manifest missing codestyle/ entries");
+	}
+	return entries;
 }
 
 /**
@@ -350,12 +368,24 @@ function sha256File(repo, path) {
 /**
  * Identify CODESTYLE files that are missing or whose SHA-256 digest differs from the canonical manifest.
  * @param {string} repo - Filesystem path to the repository root to inspect.
- * @returns {Array<{path: string, expectedSha256: string, actualSha256: string|null, reason: string}>} An array of failure records for files that are missing or have a hash mismatch. Each record contains `path`, `expectedSha256`, `actualSha256` (null when the file is missing), and `reason` which is either `"missing"` or `"hash-mismatch"`.
+ * @returns {Array<{path: string, expectedSha256: string, actualSha256: string|null, reason: string}>} An array of failure records for files that are missing, have a hash mismatch, or when the canonical checksum manifest is malformed.
  */
 function codestyleParityFailures(repo) {
-	const manifest = parseChecksumManifest(
-		readFileSync(CANONICAL_CODESTYLE_MANIFEST, "utf8"),
-	);
+	let manifest;
+	try {
+		manifest = parseChecksumManifest(
+			readFileSync(CANONICAL_CODESTYLE_MANIFEST, "utf8"),
+		);
+	} catch (error) {
+		return [
+			{
+				path: "src/templates/codestyle/CHECKSUMS.sha256",
+				expectedSha256: "",
+				actualSha256: null,
+				reason: `manifest-error: ${error.message}`,
+			},
+		];
+	}
 	const failures = [];
 	for (const entry of manifest) {
 		const absolutePath = join(repo, entry.path);

@@ -9704,7 +9704,10 @@ export function runCIMigrateCLI(
 			console.info(
 				JSON.stringify(
 					{
-						status: verifyExitCode === EXIT_CODES.SUCCESS ? "dry-run" : "verify-failed",
+						status:
+							verifyExitCode === EXIT_CODES.SUCCESS
+								? "dry-run"
+								: "verify-failed",
 						snapshotId,
 						targetDir: dir,
 						sourceProvider,

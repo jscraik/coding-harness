@@ -166,11 +166,13 @@ export function findBlockingSource(
 	sources: readonly DecisionSource[],
 ): DecisionSource | null {
 	return (
-		sources.find(
-			(source) =>
-				source.status === "blocked" &&
-				REQUIRED_LOCAL_SOURCE_KINDS.has(source.kind),
-		) ?? null
+		sources
+			.filter(
+				(source) =>
+					source.status === "blocked" &&
+					REQUIRED_LOCAL_SOURCE_KINDS.has(source.kind),
+			)
+			.sort(compareDecisionSources)[0] ?? null
 	);
 }
 

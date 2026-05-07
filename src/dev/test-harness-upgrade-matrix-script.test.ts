@@ -14,7 +14,7 @@ import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 
 const SCRIPT_PATH = resolve("scripts/test-harness-upgrade-matrix.mjs");
 const CODESTYLE_SOURCE_DIR = resolve("codestyle");
-const CODESTYLE_SOURCE_FILE = resolve("CODESTYLE.md");
+const CODESTYLE_SOURCE_FILE = resolve("src/templates/CODESTYLE.md");
 const VALID_DRY_RUN_RESULT = {
 	packageManager: "npm",
 	updated: [

@@ -347,6 +347,7 @@ function buildBlockingReasons(args: {
 	hasCircleCiGap: boolean;
 	hasCodeRabbitGap: boolean;
 	hasCodestyleGap: boolean;
+	hasCodestyleMissingFailure: boolean;
 	codestyleParityFailurePaths: string[];
 	hasGreptileGap: boolean;
 }): string[] {
@@ -369,7 +370,7 @@ function buildBlockingReasons(args: {
 	if (args.hasCodeRabbitGap) {
 		blockingReasons.push("missing-coderabbit");
 	}
-	if (args.hasCodestyleGap) {
+	if (args.hasCodestyleGap || args.hasCodestyleMissingFailure) {
 		blockingReasons.push("missing-codestyle");
 	}
 	if (args.codestyleParityFailurePaths.length > 0) {
@@ -393,7 +394,7 @@ function buildBlockingReasons(args: {
  * @param signals - Normalized `RepoSignals` extracted from the matrix row
  * @returns A `RepoRecommendation` describing the chosen status, `risk`, `nextAction`,
  *          `nextCommandArgv` (or `null`), and `safeToRun`; the recommendation will also
- *          indicate whether approval is required before mutation. 
+ *          indicate whether approval is required before mutation.
  */
 function recommendRepoAction(
 	repo: string,
@@ -550,6 +551,7 @@ function classifyRepo(
 		hasCircleCiGap,
 		hasCodeRabbitGap,
 		hasCodestyleGap,
+		hasCodestyleMissingFailure,
 		codestyleParityFailurePaths,
 		hasGreptileGap,
 	});
@@ -824,12 +826,16 @@ export function buildFleetRemediationPlan(args: {
 	);
 	const summary = buildSummary(repos);
 	const findingCounts = buildFindingCounts(repos);
-	const liveUpgradeBlockedBecause = buildLiveUpgradeBlockers(findingCounts);
+	const liveUpgradeBlockedBecause =
+		rawResults.length === 0
+			? ["matrix artifact contained no repository results"]
+			: buildLiveUpgradeBlockers(findingCounts);
 	const firstSafeWave = buildFirstSafeWave(repos);
 	// Derive nextRunnable from firstSafeWave to reflect wave priority
 	const nextRunnable = firstSafeWave.length > 0 ? firstSafeWave[0] : undefined;
 	// Avoid empty-artifact true positives: require repos.length > 0
-	const liveUpgradeReady = repos.length > 0 && repos.every((repo) => repo.status === "ready");
+	const liveUpgradeReady =
+		repos.length > 0 && repos.every((repo) => repo.status === "ready");
 	return {
 		schemaVersion: FLEET_PLAN_SCHEMA_VERSION,
 		generatedAt: args.generatedAt ?? new Date().toISOString(),

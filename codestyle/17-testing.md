@@ -32,7 +32,7 @@
 - Changed production `src/**` files MUST have a related Vitest path via `pnpm run test:related`; the gate must not pass silently when no test covers the changed source.
 
 ## Exact behavior checks
-- When executable behavior changes, the smallest real code path that exercises the exact production code touched SHOULD run before the change is described as verified.
+- When executable behavior changes, the smallest real code path that exercises the exact production code touched MUST run before the change is described as verified.
 - Prefer invoking the production function, class, CLI command, shell script, validator, or route directly.
 - If no existing test covers the path, agents MAY create a temporary local reproduction harness under `codex-scripts/`, but it MUST remain gitignored and MUST import or invoke production code directly instead of copying implementation into the harness.
 - If the exact path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, the blocker MUST be stated explicitly and the nearest meaningful validation SHOULD run instead.

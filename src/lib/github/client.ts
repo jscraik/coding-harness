@@ -183,7 +183,7 @@ function isTransientGitHubError(error: Error): boolean {
 
 /**
  * Create an Octokit client configured for the repository with throttling behavior.
- * The retry plugin is disabled to avoid double-retry with manual retry logic in listCheckRunsForRef.
+ * Octokit's retry plugin remains active for general API calls; listCheckRunsForRef adds a small explicit retry loop for its check-run polling path.
  *
  * @param token - The authentication token used by Octokit for API requests
  * @returns An Octokit instance configured to use the provided token and built-in throttling handlers
@@ -220,9 +220,6 @@ function createOctokit(token: string): InstanceType<typeof MyOctokit> {
 				);
 				return false;
 			},
-		},
-		retry: {
-			enabled: false,
 		},
 	});
 }

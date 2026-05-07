@@ -1150,17 +1150,20 @@ interface RecoveryRoute {
   action: string;
   command?: string;
   guardrailDestination?:
-    | "validation-plan"
-    | "review-context"
-    | "doctor"
-    | "learnings"
-    | "project-brain"
-    | "human-escalation";
+    | "test"
+    | "lint"
+    | "docs_gate"
+    | "review_context"
+    | "scaffold"
+    | "project_brain"
+    | "skip_reason";
   requiresHuman?: boolean;
   requiresNetwork?: boolean;
   evidenceRefs: string[];
 }
 ```
+
+Recovery routes reuse `GuardrailRoute` destination vocabulary directly. Command-specific route labels such as `validation-plan`, `review-context`, `doctor`, `learnings`, and `human-escalation` are translated into one of these durable guardrail destinations before persistence.
 
 Normal CLI output may expose aggregate counts, selected `boundary` values,
 redaction status, and evidence references. It must not expose raw session text,

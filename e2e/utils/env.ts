@@ -51,7 +51,7 @@ export interface GitHubAppE2EEnvStatus {
  * @returns The environment variable value, or `undefined` if it is not set and `required` is `false`.
  */
 function getEnvVar(name: string, required = true): string | undefined {
-	const value = process.env[name];
+	const value = process.env[name]?.trim();
 	if (required && !value) {
 		throw new Error(`Required environment variable ${name} is not set`);
 	}
@@ -122,7 +122,18 @@ function loadGitHubAppPrivateKey(): string | undefined {
 		return undefined;
 	}
 
-	return readFileSync(privateKeyPath, "utf-8");
+	return readGitHubAppPrivateKeyPath(privateKeyPath);
+}
+
+function readGitHubAppPrivateKeyPath(
+	privateKeyPath: string,
+): string | undefined {
+	try {
+		const privateKey = readFileSync(privateKeyPath, "utf-8").trim();
+		return privateKey ? privateKey : undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 /**
@@ -152,7 +163,10 @@ export function getGitHubAppE2EEnvStatus(): GitHubAppE2EEnvStatus {
 		"E2E_GITHUB_APP_PRIVATE_KEY_PATH",
 		"GITHUB_APP_PRIVATE_KEY_PATH",
 	]);
-	const hasPrivateKey = Boolean(inlinePrivateKey || privateKeyPath);
+	const filePrivateKey = privateKeyPath
+		? readGitHubAppPrivateKeyPath(privateKeyPath)
+		: undefined;
+	const hasPrivateKey = Boolean(inlinePrivateKey || filePrivateKey);
 	const missing = [
 		...(appId ? [] : ["E2E_GITHUB_APP_ID/GITHUB_APP_ID"]),
 		...(installationId
@@ -212,7 +226,7 @@ export function hasGitHubAuthForE2E(): boolean {
 		return false;
 	}
 	return Boolean(
-		process.env.GITHUB_PERSONAL_ACCESS_TOKEN || loadGitHubAppE2EEnv(),
+		getFirstEnvVar(["GITHUB_PERSONAL_ACCESS_TOKEN"]) || loadGitHubAppE2EEnv(),
 	);
 }
 

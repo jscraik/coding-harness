@@ -305,6 +305,55 @@ describe("fleet-plan", () => {
 		});
 	});
 
+	it("counts missing CODESTYLE parity entries as install blockers", () => {
+		const plan = buildFleetRemediationPlan({
+			matrixArtifact: "matrix.json",
+			generatedAt: "2026-05-06T12:00:00.000Z",
+			matrix: {
+				results: [
+					{
+						repo: "/repo/missing-codestyle-parity",
+						trackedManifest: true,
+						missingFleetContractSurfaces: [],
+						legacyGreptilePaths: [],
+						codestyleParityFailures: [
+							{
+								path: "CODESTYLE.md",
+								reason: "missing",
+							},
+						],
+						errors: ["codestyle parity mismatch: CODESTYLE.md (missing)"],
+						exitCode: 0,
+					},
+				],
+			},
+		});
+
+		expect(plan.repos[0]).toMatchObject({
+			status: "needs-codestyle-install",
+			blockingReasons: ["missing-codestyle", "stale-codestyle"],
+		});
+		expect(plan.findingCounts).toMatchObject({
+			missingCodestyle: 1,
+			staleCodestyle: 1,
+		});
+	});
+
+	it("blocks empty matrix artifacts instead of reporting live-upgrade readiness", () => {
+		const plan = buildFleetRemediationPlan({
+			matrixArtifact: "empty-matrix.json",
+			generatedAt: "2026-05-06T12:00:00.000Z",
+			matrix: { results: [] },
+		});
+
+		expect(plan.liveUpgradeReady).toBe(false);
+		expect(plan.safeToRun).toBe(false);
+		expect(plan.nextCommandArgv).toBeNull();
+		expect(plan.liveUpgradeBlockedBecause).toEqual([
+			"matrix artifact contained no repository results",
+		]);
+	});
+
 	it("shell-quotes display commands while keeping argv machine-safe", () => {
 		const plan = buildFleetRemediationPlan({
 			matrixArtifact: "matrix.json",

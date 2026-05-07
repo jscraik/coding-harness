@@ -350,6 +350,7 @@ function validateScenario(scenario, ids, registryFindings) {
  *
  * @param {Object} scenario - Registry scenario object; must include a unique `id` that selects which fixture runner to execute and any scenario-specific data the runner requires.
  * @returns {Object} A fixture result object containing `id`, `status`, `assertions`, and `durationMs`. On runtime errors the result will have `status: "fail"` and an assertion describing the error.
+ */
 async function runLiveFixture(scenario) {
 	const fixturePath = safeFixturePath(scenario.id);
 	rmSync(fixturePath, { force: true, recursive: true });
@@ -554,6 +555,7 @@ async function runValidationPlanFixture(scenario, fixturePath) {
  * @param {object} scenario - Scenario descriptor; its `id` is used to build the fixture result.
  * @param {string} fixturePath - Absolute path to the fixture directory where artifacts will be written.
  * @returns {object} A fixture result object containing `id`, `status`, `assertions`, and `durationMs`.
+ */
 function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 	const sourceBehavior = buildSpecLoopSourceBehavior();
 	const initialSpec = extractExecutableSpec(sourceBehavior, {
@@ -634,6 +636,7 @@ function runSpecReimplementationLoopFixture(scenario, fixturePath) {
  * @param {object} scenario - The registry scenario object for which the fixture is run.
  * @param {string} fixturePath - Absolute path to the fixture directory where artifacts are written.
  * @returns {object} A fixture result object for the given scenario id, containing assertions and a computed `status` indicating overall pass or fail.
+ */
 async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 	const learningArtifactPath = path.join(fixturePath, "coderabbit.local.json");
 	const enforcementStatusPath = path.join(
@@ -741,6 +744,10 @@ function runGitHubAppAuthPreflightFixture(scenario, fixturePath) {
 			hasPat: true,
 			appId: "123",
 		}),
+		classifyGitHubE2EAuthFixture({
+			id: "pat-only-check-run",
+			hasPat: true,
+		}),
 	];
 	writeJson(path.join(fixturePath, "auth-matrix.json"), {
 		schemaVersion: "e2e-auth-preflight-fixture/v1",
@@ -767,6 +774,11 @@ function runGitHubAppAuthPreflightFixture(scenario, fixturePath) {
 				?.blockerClassification === "environment/tooling issue",
 		),
 		assertion(
+			"PAT-only auth is blocked for check-run fixture scenarios",
+			authMatrix.find((item) => item.id === "pat-only-check-run")
+				?.authSource === "blocked",
+		),
+		assertion(
 			"secret material is not written to fixture artifacts",
 			!artifactText.includes("fixture-private-key"),
 		),
@@ -782,6 +794,7 @@ function runGitHubAppAuthPreflightFixture(scenario, fixturePath) {
  * @param {Object} scenario - The registry scenario object; must include `id`.
  * @param {string} fixturePath - Absolute path to the fixture directory where artifacts will be written.
  * @returns {Object} A fixture result object with `id`, `status`, and an `assertions` array describing pass/fail checks.
+ */
 function runReviewGateCheckNameAlignmentFixture(scenario, fixturePath) {
 	const aligned = evaluateReviewGateCheckNameFixture({
 		requiredChecks: ["e2e-test-check"],
@@ -889,6 +902,7 @@ function runRepoLocalE2EScratchFixture(scenario, fixturePath) {
  * @param {object} scenario - The scenario descriptor; its `id` is used for the fixture result.
  * @param {string} fixturePath - Directory path where fixture artifacts (e.g., `retry-policy.json`) are written.
  * @returns {object} A fixture result object containing assertions about attempts, outcomes, and failure classification.
+ */
 function runGitHubCheckRunTransientRetryFixture(scenario, fixturePath) {
 	const retryPolicy = {
 		schemaVersion: "github-check-run-retry-policy-fixture/v1",
@@ -1161,7 +1175,7 @@ function repairGeneratedArtifact(sourcePath, generatedPath) {
  * @param {boolean} [input.hasPat] - True when a personal access token (PAT) is available.
  * @returns {Object} Classification result containing:
  *   - id: the input.id value.
- *   - authSource: `"github_app"`, `"pat"`, or `"blocked"` indicating the chosen authentication source.
+ *   - authSource: `"github_app"` or `"blocked"` indicating the chosen authentication source for check-run fixture scenarios.
  *   - blockerClassification: `"none"` when usable, otherwise `"environment/tooling issue"`.
  *   - missing: array of required GitHub App fields that are absent (e.g., `["app_id","installation_id","private_key"]`).
  *   - usesPrivateKeyPath: boolean indicating whether a private key path was used.
@@ -1199,8 +1213,8 @@ function classifyGitHubE2EAuthFixture(input) {
 	}
 	return {
 		id: input.id,
-		authSource: input.hasPat ? "pat" : "blocked",
-		blockerClassification: input.hasPat ? "none" : "environment/tooling issue",
+		authSource: "blocked",
+		blockerClassification: "environment/tooling issue",
 		missing,
 		usesPrivateKeyPath: false,
 	};
