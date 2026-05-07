@@ -12,6 +12,9 @@ const normalizeMermaidId = (id) => {
 
 const normalizeQuotedPackageLists = (line) =>
 	line.replace(/"([^"]*,[^"]*)"/g, (match, value) => {
+		if (!/\b(packages?|dependencies|deps|requires|depends on)\b/i.test(line)) {
+			return match;
+		}
 		const items = value.split(",").map((item) => item.trim());
 		if (
 			items.length < 2 ||
@@ -142,6 +145,15 @@ const normalizeDiagramContextLines = (lines) => {
 
 	for (const line of lines) {
 		if (/^Generated: /.test(line)) continue;
+		if (inMermaid && line.trim() === "```") {
+			flushMermaid();
+			inMermaid = false;
+			continue;
+		}
+		if (inMermaid) {
+			mermaidLines.push(line);
+			continue;
+		}
 		const sectionMatch = line.match(/^##\s+(.+?)\s*$/);
 		if (sectionMatch) {
 			const sectionName = sectionMatch[1].trim().toLowerCase();
@@ -152,15 +164,6 @@ const normalizeDiagramContextLines = (lines) => {
 		if (line.trim() === "```mermaid") {
 			inMermaid = true;
 			mermaidLines = [];
-			continue;
-		}
-		if (inMermaid && line.trim() === "```") {
-			flushMermaid();
-			inMermaid = false;
-			continue;
-		}
-		if (inMermaid) {
-			mermaidLines.push(line);
 			continue;
 		}
 		normalized.push(line.trimEnd());

@@ -322,7 +322,7 @@ describe("buildHarnessDecision", () => {
 		expect(decision).toMatchObject({
 			schemaVersion: HARNESS_DECISION_SCHEMA_VERSION,
 			producer: "next",
-			phase: "verify",
+			phase: "review",
 			objective: "Run focused validation.",
 			requiredEvidence: ["input:files"],
 			stopConditions: [],
@@ -330,6 +330,52 @@ describe("buildHarnessDecision", () => {
 			followUpCommands: [],
 			hiddenPlumbing: [],
 		});
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("infers handoff for passing decisions without an explicit phase", () => {
+		const decision = buildHarnessDecision("next", {
+			status: "pass",
+			summary: "No changed files were detected.",
+			nextAction: "Run harness check --json to confirm repo readiness.",
+			nextCommand: "harness check --json",
+			safeToRun: true,
+			requiresHuman: false,
+			requiresNetwork: false,
+			writesFiles: false,
+			evidenceRef: ["git:status"],
+			failureClass: null,
+			retry: "safe",
+			riskTier: "low",
+		});
+
+		expect(decision.phase).toBe("handoff");
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("infers orient for discovery commands without an explicit phase", () => {
+		const decision = buildHarnessDecision("next", {
+			status: "action_required",
+			summary: "Catalog the available harness commands.",
+			nextAction: "Inspect command availability.",
+			nextCommand: "harness doctor --json",
+			safeToRun: true,
+			requiresHuman: false,
+			requiresNetwork: false,
+			writesFiles: false,
+			evidenceRef: ["command-catalog"],
+			failureClass: null,
+			retry: "safe",
+			riskTier: "low",
+		});
+
+		expect(decision.phase).toBe("orient");
 		expect(validateHarnessDecision(decision)).toEqual({
 			valid: true,
 			errors: [],

@@ -119,6 +119,9 @@ function compareStringArrays(left: string[], right: string[]): number {
 function sourceNeedsError(source: DecisionSource): boolean {
 	if (source.status !== "usable") return true;
 	if (source.freshness === "stale") return true;
+	if (source.freshness === "unknown" && source.failureClass !== null) {
+		return true;
+	}
 	return source.freshness === "missing" && source.failureClass !== null;
 }
 
@@ -140,6 +143,17 @@ function staleRunSourceError(
 		...source,
 		freshness: "stale",
 		failureClass: source.failureClass ?? "run_head_mismatch",
+	};
+}
+
+function unknownFreshnessRunSourceError(
+	source: RunDecisionSource,
+): DecisionSource | null {
+	if (source.status !== "usable") return null;
+	if (source.freshness !== "unknown") return null;
+	return {
+		...source,
+		failureClass: source.failureClass ?? "run_freshness_unknown",
 	};
 }
 
@@ -227,11 +241,15 @@ export function selectRecentRunSource(
 		...sources,
 		...sources.flatMap((source) => {
 			const staleError = staleRunSourceError(source, currentHeadSha);
-			return staleError ? [staleError] : [];
+			const unknownFreshnessError = unknownFreshnessRunSourceError(source);
+			return [
+				...(staleError ? [staleError] : []),
+				...(unknownFreshnessError ? [unknownFreshnessError] : []),
+			];
 		}),
 	]);
 	const usable = sources.filter(
-		(source) => source.status === "usable" && source.freshness !== "stale",
+		(source) => source.status === "usable" && source.freshness === "current",
 	);
 	const current = usable.filter((source) => source.sha === currentHeadSha);
 	const selected =

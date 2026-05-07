@@ -475,7 +475,7 @@ describe("test-harness-upgrade-matrix", () => {
 		expect(report.results[0]?.errors).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining(
-					"codestyle parity mismatch: 1 file(s) (0 missing, 1 hash-mismatch)",
+					"codestyle parity mismatch: 1 file(s) (1 hash-mismatch)",
 				),
 			]),
 		);

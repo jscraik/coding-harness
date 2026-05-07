@@ -600,10 +600,10 @@ Recovery rules:
 | `SA36`-`SA38` | Deferred                             | Codex config steering evidence; out of JSC-248 implementation                                                                                            |
 | `SA39`-`SA45` | P7 deferred                          | Approval reviewer contract; out of JSC-248 unless promoted by measured approval friction                                                                 |
 | `SA46`-`SA52` | P8 / `JSC-279` deferred              | Goal continuation contract; out of JSC-248 unless promoted by measured resume or stale-plan friction                                                     |
-| `SA53`-`SA54` | Promoted command-surface compression | Agent-mode visibility and public agent command discovery after explicit user promotion                                                                   |
-| `SA55`        | Promoted work-packet deepening       | `HarnessDecision` carries phase, objective, evidence, stop conditions, escalation, follow-up commands, and hidden plumbing after explicit user promotion |
-| `SA56`        | Promoted validation-plan ladder      | `validation-plan` returns ranked command buckets and falls back to path-based planning when optional learning artifacts are absent                       |
-| `SA57`        | Promoted review-context handoff      | `review-context` emits reviewer handoff fields after explicit user promotion                                                                             |
+| `SA53`-`SA54` | Promoted command-surface compression | Agent-mode visibility and public agent command discovery after explicit user promotion. Evidence refs: `src/lib/cli/registry/command-capabilities.ts`, `src/lib/cli/command-registry.test.ts`, `docs/cli-reference.md` |
+| `SA55`        | Promoted work-packet deepening       | `HarnessDecision` carries phase, objective, evidence, stop conditions, escalation, follow-up commands, and hidden plumbing after explicit user promotion. Evidence refs: `src/lib/decision/harness-decision.ts`, `src/lib/decision/harness-decision.test.ts`, `src/commands/next.ts` |
+| `SA56`        | Promoted validation-plan ladder      | `validation-plan` returns ranked command buckets and falls back to path-based planning when optional learning artifacts are absent. Evidence refs: `src/lib/learnings/validation-plan.ts`, `src/commands/validation-plan.test.ts` |
+| `SA57`        | Promoted review-context handoff      | `review-context` emits reviewer handoff fields after explicit user promotion. Evidence refs: `src/lib/learnings/review-context.ts`, `src/commands/review-context.test.ts` |
 | `SA58`-`SA61` | Deferred command-surface compression | PR-ready and session-friction contracts; out of JSC-248 unless explicitly promoted                                                                       |
 
 ## Handoff to he-work

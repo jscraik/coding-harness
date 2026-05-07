@@ -399,7 +399,18 @@ function codestyleParityFailures(repo) {
 			});
 			continue;
 		}
-		const actualSha256 = sha256File(repo, entry.path);
+		let actualSha256;
+		try {
+			actualSha256 = sha256File(repo, entry.path);
+		} catch (error) {
+			failures.push({
+				path: entry.path,
+				expectedSha256: entry.expectedSha256,
+				actualSha256: null,
+				reason: `read-error: ${error instanceof Error ? error.message : String(error)}`,
+			});
+			continue;
+		}
 		if (actualSha256 !== entry.expectedSha256) {
 			failures.push({
 				path: entry.path,
@@ -422,18 +433,22 @@ function codestyleParityError(failures) {
 	if (failures.length === 0) {
 		return null;
 	}
-	const missingCount = failures.filter(
-		(failure) => failure.reason === "missing",
-	).length;
-	const hashMismatchCount = failures.filter(
-		(failure) => failure.reason === "hash-mismatch",
-	).length;
+	const reasonCounts = new Map();
+	for (const failure of failures) {
+		reasonCounts.set(
+			failure.reason,
+			(reasonCounts.get(failure.reason) ?? 0) + 1,
+		);
+	}
+	const breakdown = [...reasonCounts.entries()]
+		.map(([reason, count]) => `${count} ${reason}`)
+		.join(", ");
 	const samplePaths = failures
 		.slice(0, 3)
 		.map((failure) => failure.path)
 		.join(", ");
 	const suffix = failures.length > 3 ? ", ..." : "";
-	return `codestyle parity mismatch: ${failures.length} file(s) (${missingCount} missing, ${hashMismatchCount} hash-mismatch); sample: ${samplePaths}${suffix}; see codestyleParityFailures and run harness init <repo> --update --dry-run --json before live upgrade`;
+	return `codestyle parity mismatch: ${failures.length} file(s) (${breakdown}); sample: ${samplePaths}${suffix}; see codestyleParityFailures and run harness init <repo> --update --dry-run --json before live upgrade`;
 }
 
 /**

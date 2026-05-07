@@ -266,14 +266,17 @@ describe("runValidationPlanCLI", () => {
 		expect(
 			result.required.map((entry: { command: string }) => entry.command),
 		).toEqual([
-			"bash scripts/run-harness-gate.sh docs-gate --mode required --json",
 			"pnpm run quality:docstrings",
 			"pnpm run quality:size",
 			"pnpm run test:related",
 		]);
 		expect(
 			result.beforePr.map((entry: { command: string }) => entry.command),
-		).toEqual(["bash scripts/validate-codestyle.sh", "pnpm check"]);
+		).toEqual([
+			"bash scripts/run-harness-gate.sh docs-gate --mode required --json",
+			"bash scripts/validate-codestyle.sh",
+			"pnpm check",
+		]);
 		expect(
 			result.deep.map((entry: { command: string }) => entry.command),
 		).toEqual(["pnpm test:deep"]);

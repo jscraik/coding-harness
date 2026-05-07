@@ -233,4 +233,29 @@ describe("selectRecentRunSource", () => {
 			}),
 		]);
 	});
+
+	it("does not select unknown-freshness runs even when they match the current head", () => {
+		const currentHeadSha = "c".repeat(40);
+		const { selected, sourceErrors } = selectRecentRunSource(
+			[
+				runSource({
+					ref: ".harness/runs/unknown-current-head.json",
+					freshness: "unknown",
+					sha: currentHeadSha,
+					timestamp: "2026-05-06T02:00:00.000Z",
+				}),
+			],
+			currentHeadSha,
+		);
+
+		expect(selected).toBeNull();
+		expect(sourceErrors).toEqual([
+			expect.objectContaining({
+				ref: ".harness/runs/unknown-current-head.json",
+				freshness: "unknown",
+				status: "usable",
+				failureClass: "run_freshness_unknown",
+			}),
+		]);
+	});
 });

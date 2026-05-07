@@ -140,7 +140,7 @@ describe("runHarnessNext", () => {
 			"Run harness check --json to confirm repo readiness.",
 		);
 		expect(decision.nextCommand).toBe("harness check --json");
-		expect(decision.phase).toBe("verify");
+		expect(decision.phase).toBe("handoff");
 		expect(decision.objective).toBe(
 			"Confirm the repository is ready when no changed files are detected.",
 		);

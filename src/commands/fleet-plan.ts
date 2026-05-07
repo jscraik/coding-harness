@@ -859,12 +859,25 @@ export function buildFleetRemediationPlan(args: {
 	matrixArtifact: string;
 	generatedAt?: string;
 }): FleetRemediationPlan {
+	const matrixResults = Array.isArray(args.matrix.results)
+		? args.matrix.results
+		: [];
 	const rawResults = Array.isArray(args.matrix.results)
 		? args.matrix.results.filter(
 				(result): result is MatrixRepoResult =>
 					typeof result === "object" && result !== null,
 			)
 		: [];
+	const droppedResultCount = matrixResults.length - rawResults.length;
+	const matrixArtifactBlockers = [
+		...(args.matrix.pass === true
+			? []
+			: ["matrix artifact did not report pass: true"]),
+		...(droppedResultCount > 0
+			? [`${droppedResultCount} matrix rows were malformed`]
+			: []),
+	];
+	const matrixArtifactValid = matrixArtifactBlockers.length === 0;
 	const repos = rawResults.map((result) =>
 		classifyRepo(result, args.matrixArtifact),
 	);
@@ -872,14 +885,21 @@ export function buildFleetRemediationPlan(args: {
 	const findingCounts = buildFindingCounts(repos);
 	const liveUpgradeBlockedBecause =
 		rawResults.length === 0
-			? ["matrix artifact contained no repository results"]
-			: buildLiveUpgradeBlockers(findingCounts);
+			? [
+					...matrixArtifactBlockers,
+					"matrix artifact contained no repository results",
+				]
+			: [...matrixArtifactBlockers, ...buildLiveUpgradeBlockers(findingCounts)];
 	// Avoid empty-artifact true positives: require repos.length > 0
 	const liveUpgradeReady =
-		repos.length > 0 && repos.every((repo) => repo.status === "ready");
-	const firstSafeWave = liveUpgradeReady
-		? buildReadyUpgradeWave(repos)
-		: buildFirstSafeWave(repos);
+		matrixArtifactValid &&
+		repos.length > 0 &&
+		repos.every((repo) => repo.status === "ready");
+	const firstSafeWave = matrixArtifactValid
+		? liveUpgradeReady
+			? buildReadyUpgradeWave(repos)
+			: buildFirstSafeWave(repos)
+		: [];
 	// Derive nextRunnable from firstSafeWave to reflect wave priority
 	const nextRunnable = firstSafeWave.length > 0 ? firstSafeWave[0] : undefined;
 	return {

@@ -8,6 +8,8 @@ type ValidationBucket = "fast" | "required" | "beforePr" | "deep";
 const COMMAND_BUCKETS: Readonly<Record<string, ValidationBucket>> = {
 	"bash scripts/validate-codestyle.sh --fast": "fast",
 	"bash scripts/validate-codestyle.sh": "beforePr",
+	"bash scripts/run-harness-gate.sh docs-gate --mode required --json":
+		"beforePr",
 	"bash scripts/verify-work.sh": "beforePr",
 	"pnpm check": "beforePr",
 	"pnpm test:ci": "beforePr",

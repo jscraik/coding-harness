@@ -911,7 +911,7 @@ function runGitHubCheckRunTransientRetryFixture(scenario, fixturePath) {
 		delaysMs: [250, 1000],
 		cases: [
 			evaluateCheckRunRetryCase([504, 200]),
-			evaluateCheckRunRetryCase([503, 502, 200]),
+			evaluateCheckRunRetryCase([503, 502, 504, 200]),
 			evaluateCheckRunRetryCase([501, 200]),
 			evaluateCheckRunRetryCase([403]),
 		],
@@ -927,7 +927,8 @@ function runGitHubCheckRunTransientRetryFixture(scenario, fixturePath) {
 		),
 		assertion(
 			"retry policy caps attempts before live E2E stalls",
-			byName.get("503-502-200")?.attempts === 3,
+			byName.get("503-502-504-200")?.attempts === 3 &&
+				byName.get("503-502-504-200")?.outcome === "failure",
 		),
 		assertion(
 			"all transient 5xx statuses follow the same retry contract",
@@ -1267,6 +1268,8 @@ function evaluateReviewGateCheckNameFixture({
 		...(checkPassed ? [] : ["required check failed"]),
 		...(hasIndependentApproval ? [] : ["required approval missing"]),
 	];
+	const hasNameRegression =
+		!createdCheckMatchesRequired || !invocationMatchesRequired;
 	return {
 		requiredChecks,
 		createdCheckRuns,
@@ -1277,14 +1280,12 @@ function evaluateReviewGateCheckNameFixture({
 		hasIndependentApproval,
 		verified: blockers.length === 0,
 		blockers,
-		shouldPollLiveGitHub:
-			createdCheckMatchesRequired && invocationMatchesRequired,
-		blockerClassification:
-			createdCheckMatchesRequired && invocationMatchesRequired
-				? blockers.length === 0
-					? "none"
-					: "scenario regression"
-				: "scenario regression",
+		shouldPollLiveGitHub: !hasNameRegression,
+		blockerClassification: hasNameRegression
+			? "scenario regression"
+			: blockers.length === 0
+				? "none"
+				: "verification blocked",
 	};
 }
 

@@ -14,6 +14,7 @@ describe("fleet-plan", () => {
 			matrixArtifact: "artifacts/harness-upgrade-matrix-dev.json",
 			generatedAt: "2026-05-06T12:00:00.000Z",
 			matrix: {
+				pass: true,
 				results: [
 					{
 						repo: "/repo/ready",
@@ -241,6 +242,7 @@ describe("fleet-plan", () => {
 			matrixArtifact: "matrix.json",
 			generatedAt: "2026-05-06T12:00:00.000Z",
 			matrix: {
+				pass: true,
 				results: [
 					{
 						repo: "/repo/mutated",
@@ -270,6 +272,7 @@ describe("fleet-plan", () => {
 			matrixArtifact: "matrix.json",
 			generatedAt: "2026-05-06T12:00:00.000Z",
 			matrix: {
+				pass: true,
 				results: [
 					{
 						repo: "/repo/missing-codestyle",
@@ -310,6 +313,7 @@ describe("fleet-plan", () => {
 			matrixArtifact: "matrix.json",
 			generatedAt: "2026-05-06T12:00:00.000Z",
 			matrix: {
+				pass: true,
 				results: [
 					{
 						repo: "/repo/invalid-output",
@@ -352,6 +356,7 @@ describe("fleet-plan", () => {
 			matrixArtifact: "matrix.json",
 			generatedAt: "2026-05-06T12:00:00.000Z",
 			matrix: {
+				pass: true,
 				results: [
 					{
 						repo: "/repo/missing-codestyle-parity",
@@ -385,7 +390,7 @@ describe("fleet-plan", () => {
 		const plan = buildFleetRemediationPlan({
 			matrixArtifact: "empty-matrix.json",
 			generatedAt: "2026-05-06T12:00:00.000Z",
-			matrix: { results: [] },
+			matrix: { pass: true, results: [] },
 		});
 
 		expect(plan.liveUpgradeReady).toBe(false);
@@ -396,11 +401,44 @@ describe("fleet-plan", () => {
 		]);
 	});
 
+	it("fails closed when matrix artifacts are failed or partial", () => {
+		const plan = buildFleetRemediationPlan({
+			matrixArtifact: "partial-matrix.json",
+			generatedAt: "2026-05-06T12:00:00.000Z",
+			matrix: {
+				pass: false,
+				results: [
+					{
+						repo: "/repo/ready",
+						trackedManifest: true,
+						missingFleetContractSurfaces: [],
+						legacyGreptilePaths: [],
+						errors: [],
+						exitCode: 0,
+					},
+					null,
+				],
+			},
+		});
+
+		expect(plan.liveUpgradeReady).toBe(false);
+		expect(plan.safeToRun).toBe(false);
+		expect(plan.nextCommandArgv).toBeNull();
+		expect(plan.firstSafeWave).toEqual([]);
+		expect(plan.liveUpgradeBlockedBecause).toEqual(
+			expect.arrayContaining([
+				"matrix artifact did not report pass: true",
+				"1 matrix rows were malformed",
+			]),
+		);
+	});
+
 	it("marks all-ready fleets safe and exposes live-upgrade dry-run commands", () => {
 		const plan = buildFleetRemediationPlan({
 			matrixArtifact: "ready-matrix.json",
 			generatedAt: "2026-05-06T12:00:00.000Z",
 			matrix: {
+				pass: true,
 				results: [
 					{
 						repo: "/repo/ready-a",
@@ -445,6 +483,7 @@ describe("fleet-plan", () => {
 			matrixArtifact: "matrix.json",
 			generatedAt: "2026-05-06T12:00:00.000Z",
 			matrix: {
+				pass: true,
 				results: [
 					{
 						repo: "/repo/$(bad)",

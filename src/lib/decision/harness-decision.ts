@@ -281,6 +281,19 @@ function isStringArray(value: unknown): value is string[] {
 function inferDecisionPhase(input: HarnessDecisionInput): HarnessDecisionPhase {
 	if (input.phase !== undefined) return input.phase;
 	if (input.status === "blocked" || input.status === "fail") return "repair";
+	if (input.status === "pass") return "handoff";
+	const routingText = [
+		input.summary,
+		input.nextAction,
+		input.nextCommand ?? "",
+		input.failureClass ?? "",
+	].join(" ");
+	if (/\b(review|pr-ready|approval)\b/i.test(routingText)) return "review";
+	if (
+		/\b(orient|doctor|status|inspect|discover|catalog)\b/i.test(routingText)
+	) {
+		return "orient";
+	}
 	return "verify";
 }
 

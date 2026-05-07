@@ -339,7 +339,7 @@ function noChangedFilesDecision(args: {
 		summary: "No changed files detected.",
 		nextAction: "Run harness check --json to confirm repo readiness.",
 		nextCommand: "harness check --json",
-		phase: "verify",
+		phase: "handoff",
 		objective:
 			"Confirm the repository is ready when no changed files are detected.",
 		requiredEvidence: [
