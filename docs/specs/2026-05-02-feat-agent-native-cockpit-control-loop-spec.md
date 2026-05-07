@@ -207,7 +207,8 @@ Implementation planning must keep this Linear contract current:
 | Promoted command-surface compression slice     | `SA53`, `SA54`                | Implemented after explicit user promotion; narrows public agent discovery                       |
 | Promoted work-packet deepening slice           | `SA55`                        | Implemented after explicit user promotion; makes `HarnessDecision` a complete agent work packet |
 | Promoted validation-plan ladder slice          | `SA56`                        | Implemented after explicit user promotion; ranks validation commands and degrades gracefully    |
-| Deferred agent interface compression follow-on | `SA57`-`SA61`                 | Out of this slice; informed by May 6 session-collector evidence                                 |
+| Promoted review-context handoff slice          | `SA57`                        | Implemented after explicit user promotion; makes review context answer likely reviewer concerns |
+| Deferred agent interface compression follow-on | `SA58`-`SA61`                 | Out of this slice; informed by May 6 session-collector evidence                                 |
 
 ## System Boundary
 
@@ -1502,7 +1503,7 @@ as product proof:
 | `SA54` | Promoted            | `harness commands --json --for-agent` returns the public agent rail set and excludes commands marked `plumbing`, `hidden`, or `legacy` unless explicitly requested.                                                                                             | CLI fixture test                  |
 | `SA55` | Promoted            | `HarnessDecision` can emit a work packet with `phase`, `objective`, `nextCommand`, `requiredEvidence`, `stopConditions`, `humanEscalation`, `followUpCommands`, `hiddenPlumbing`, and a compatibility rule that keeps `nextAction` as the human recommendation. | Decision fixture test             |
 | `SA56` | Promoted            | `validation-plan` returns ranked `fast`, `required`, `beforePr`, `deep`, and `networkRequired` buckets and degrades to path-based planning when optional learning artifacts are absent.                                                                         | Validation-plan fixture test      |
-| `SA57` | Follow-on           | `review-context` emits reviewer handoff fields: `reviewerLikelyConcerns`, `mustMentionInPr`, `evidenceRequired`, `knownRepeatedFailures`, `recommendedReviewers`, and `doNotClaim`.                                                                             | Review-context fixture test       |
+| `SA57` | Promoted            | `review-context` emits reviewer handoff fields: `reviewerLikelyConcerns`, `mustMentionInPr`, `evidenceRequired`, `knownRepeatedFailures`, `recommendedReviewers`, and `doNotClaim`.                                                                             | Review-context fixture test       |
 | `SA58` | Follow-on           | `harness pr-ready --json` emits readiness packet fields covering current blockers, required evidence, network-required checks, PR-body evidence lines, safe local commands, manual commands, and `handoffStatus`.                                               | CLI fixture test                  |
 | `SA59` | Follow-on           | `harness next`, `validation-plan`, `review-context`, and `pr-ready` preserve stable blocker boundary names for `lint_failure`, `missing_file`, `git_state`, `network`, `test_failure`, `timeout`, `approval_required`, and `permission`.                        | Collector-backed fixture test     |
 | `SA60` | Follow-on           | A session-collector fixture can feed privacy-safe `SessionFrictionEvidence` aggregate counts into `review-context` or `pr-ready` without reading raw private session logs in normal CLI output.                                                                 | Privacy-safe evidence fixture     |
@@ -1557,7 +1558,6 @@ Out of first slice:
 - `agentMode` / `visibility` filtering beyond the first-slice tier model
 - `commands --json --for-agent`
 - `validation-plan` ladder output
-- `review-context` handoff fields
 - `pr-ready` orchestration and `handoffStatus`
 - session-collector fixtures and blocker-boundary recovery routing
 - standalone `agent-snapshot` command unless `harness next --json` cannot carry
@@ -1615,7 +1615,7 @@ Recommended planning stance:
 - Treat `pr-ready`, `fix-review`, `learn`, metrics, and standalone
   `agent-snapshot` as follow-on product-compression work unless a registered
   implementation already exists.
-- Treat `SA57` through `SA61` as the remaining deferred command-surface
+- Treat `SA58` through `SA61` as the remaining deferred command-surface
   compression contract unless the issue scope is explicitly expanded again.
 - Add technical gates for replay determinism, parser/help parity, run selection,
   and source-error classification before claiming `harness next` is

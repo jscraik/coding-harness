@@ -120,6 +120,38 @@ describe("runReviewContextCLI", () => {
 				"pnpm test:ci",
 			]),
 		);
+		expect(result.reviewerLikelyConcerns).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"coderabbit.coding-harness.docs-frontmatter-machine-readable",
+				),
+			]),
+		);
+		expect(result.mustMentionInPr).toEqual(
+			expect.arrayContaining([
+				"List the validation evidence used for the changed files.",
+			]),
+		);
+		expect(result.evidenceRequired).toEqual(
+			expect.arrayContaining([expect.stringContaining("pnpm test:ci")]),
+		);
+		expect(result.knownRepeatedFailures).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"coderabbit.coding-harness.docs-frontmatter-machine-readable",
+				),
+			]),
+		);
+		expect(result.recommendedReviewers).toEqual(
+			expect.arrayContaining([
+				"CodeRabbit: imported learnings matched the changed files.",
+			]),
+		);
+		expect(result.doNotClaim).toEqual(
+			expect.arrayContaining([
+				"Do not claim required validation has passed until the listed validation commands have run.",
+			]),
+		);
 		expect(JSON.parse(readFileSync(reviewContextPath, "utf-8"))).toMatchObject({
 			schemaVersion: "review-context/v1",
 			summary: {
@@ -171,6 +203,60 @@ describe("runReviewContextCLI", () => {
 		expect(
 			result.applicableLearnings.map((learning: { id: string }) => learning.id),
 		).toContain("coderabbit.coding-harness.docs-frontmatter-machine-readable");
+	});
+
+	it("emits network-required handoff guardrails", () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-context-network-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		writeFileSync(sourcePath, contextCsv, "utf-8");
+		expect(
+			runLearningsCLI([
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				sourcePath,
+				"--repo",
+				"coding-harness",
+				"--output",
+				outputPath,
+				"--json",
+			]),
+		).toBe(0);
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runReviewContextCLI([
+				"--source",
+				outputPath,
+				"--files",
+				"package.json",
+				"--json",
+			]),
+		).toBe(0);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.applicableLearnings).toEqual([]);
+		expect(result.networkRequired).toEqual([
+			expect.objectContaining({ command: "pnpm audit" }),
+		]);
+		expect(result.mustMentionInPr).toEqual(
+			expect.arrayContaining([
+				"Call out network-required checks that were blocked or run separately.",
+			]),
+		);
+		expect(result.evidenceRequired).toEqual(
+			expect.arrayContaining([expect.stringContaining("pnpm audit")]),
+		);
+		expect(result.doNotClaim).toEqual(
+			expect.arrayContaining([
+				"Do not claim network-required checks are clear without separate evidence or an explicit blocker.",
+			]),
+		);
 	});
 
 	it("rejects output paths that escape repoRoot", () => {
@@ -286,6 +372,8 @@ describe("runReviewContextCLI", () => {
 
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(result.error.code).toBe("review-context.files_required");
+		expect(result.reviewerLikelyConcerns).toEqual([]);
+		expect(result.doNotClaim).toEqual([]);
 	});
 
 	it("returns usage when files are blank", () => {

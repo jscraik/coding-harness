@@ -603,7 +603,8 @@ Recovery rules:
 | `SA53`-`SA54` | Promoted command-surface compression | Agent-mode visibility and public agent command discovery after explicit user promotion                                                                   |
 | `SA55`        | Promoted work-packet deepening       | `HarnessDecision` carries phase, objective, evidence, stop conditions, escalation, follow-up commands, and hidden plumbing after explicit user promotion |
 | `SA56`        | Promoted validation-plan ladder      | `validation-plan` returns ranked command buckets and falls back to path-based planning when optional learning artifacts are absent                       |
-| `SA57`-`SA61` | Deferred command-surface compression | PR-ready, review-context, and session-friction contracts; out of JSC-248 unless explicitly promoted                                                      |
+| `SA57`        | Promoted review-context handoff      | `review-context` emits reviewer handoff fields after explicit user promotion                                                                             |
+| `SA58`-`SA61` | Deferred command-surface compression | PR-ready and session-friction contracts; out of JSC-248 unless explicitly promoted                                                                       |
 
 ## Handoff to he-work
 
@@ -612,9 +613,8 @@ already-landed P1-P5 surfaces, then implement P6 technical hardening only where
 the deepened spec is still unmet. Do not implement `pr-ready`, `fix-review`,
 `learn`, telemetry persistence, command deletion, nested parser aliases,
 unknown-command suggestion enrichment, full responsibility taxonomy cleanup,
-hero-story evaluations, Codex config generation, validation-plan laddering,
-review-context handoff fields, session-friction fixtures, or Auto-review
-activation in this slice.
+hero-story evaluations, Codex config generation, session-friction fixtures, or
+Auto-review activation in this slice.
 
 Re-check live Linear status and use `Refs JSC-248` in PR metadata until the
 issue is fully complete.
