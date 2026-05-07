@@ -1131,7 +1131,7 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 	});
 
 	it("returns full capability names when full help is requested", () => {
-		const helpRows = getRegistryCommandHelpRows({ includeLegacy: true });
+		const helpRows = getRegistryCommandHelpRows({ includeExpert: true });
 		const capabilities = getRegistryCommandCapabilities();
 		const canonicalNames = helpRows
 			.filter((row) =>
@@ -1143,7 +1143,7 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 	});
 
 	it("returns full capability summaries when full help is requested", () => {
-		const helpRows = getRegistryCommandHelpRows({ includeLegacy: true });
+		const helpRows = getRegistryCommandHelpRows({ includeExpert: true });
 		const capabilities = getRegistryCommandCapabilities();
 		const canonicalRows = helpRows.filter((row) =>
 			capabilities.some((capability) => capability.name === row.name),
@@ -1154,15 +1154,15 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 		);
 	});
 
-	it("includeLegacy option appends alias rows for full help output", () => {
-		const withLegacy = getRegistryCommandHelpRows({ includeLegacy: true });
-		const withoutLegacy = getRegistryCommandHelpRows({ includeLegacy: false });
+	it("includeExpert option appends alias rows for full help output", () => {
+		const withExpert = getRegistryCommandHelpRows({ includeExpert: true });
+		const withoutExpert = getRegistryCommandHelpRows({ includeExpert: false });
 		const defaults = getRegistryCommandHelpRows();
-		expect(withoutLegacy.map((r) => r.name)).toEqual(
+		expect(withoutExpert.map((r) => r.name)).toEqual(
 			defaults.map((r) => r.name),
 		);
-		expect(withLegacy.length).toBeGreaterThan(withoutLegacy.length);
-		expect(withLegacy.map((r) => r.name)).toContain("risk-policy-gate");
+		expect(withExpert.length).toBeGreaterThan(withoutExpert.length);
+		expect(withExpert.map((r) => r.name)).toContain("risk-policy-gate");
 	});
 
 	it("does not include legacy grouped commands like 'repo' or 'gate'", () => {
@@ -1176,7 +1176,7 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 
 	it("keeps commands available only in full help rows", () => {
 		const names = getRegistryCommandHelpRows().map((r) => r.name);
-		const fullNames = getRegistryCommandHelpRows({ includeLegacy: true }).map(
+		const fullNames = getRegistryCommandHelpRows({ includeExpert: true }).map(
 			(r) => r.name,
 		);
 

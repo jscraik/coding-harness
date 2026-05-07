@@ -37,14 +37,14 @@ process.on("uncaughtException", (error) => {
 /**
  * Print CLI usage, examples, and the command list to stdout.
  *
- * When `options.includeLegacyCommands` is true the displayed list includes expert commands;
+ * When `options.includeExpertCommands` is true the displayed list includes expert commands;
  * otherwise a focused command list is shown and a hint for viewing expert commands is printed.
  *
  * @param options - Optional settings for rendering the help output.
- * @param options.includeLegacyCommands - If true, include expert commands in the displayed command list.
+ * @param options.includeExpertCommands - If true, include expert commands in the displayed command list.
  */
-function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
-	const includeLegacyCommands = options.includeLegacyCommands ?? false;
+function printUsage(options: { includeExpertCommands?: boolean } = {}): void {
+	const includeExpertCommands = options.includeExpertCommands ?? false;
 
 	console.info("Usage: harness <command> [options]");
 	console.info("");
@@ -57,19 +57,19 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	);
 	console.info("");
 	const helpRows = getRegistryCommandHelpRows({
-		includeLegacy: includeLegacyCommands,
+		includeExpert: includeExpertCommands,
 	});
 	console.info(
-		includeLegacyCommands
+		includeExpertCommands
 			? "Commands (full, with aliases):"
 			: "Commands (focused):",
 	);
-	for (const line of includeLegacyCommands
+	for (const line of includeExpertCommands
 		? renderCommandHelpRows(helpRows)
 		: renderGroupedCommandHelpRows(helpRows)) {
 		console.info(line);
 	}
-	if (!includeLegacyCommands) {
+	if (!includeExpertCommands) {
 		console.info("");
 		console.info(
 			'  Run "harness --help --all-commands" to view the full expert command list.',
@@ -183,7 +183,7 @@ export function run(args: string[]): void {
 		typeof firstArg === "string" &&
 		firstArg.length > 0 &&
 		!firstArg.startsWith("-");
-	const includeLegacyCommandsInHelp =
+	const includeExpertCommandsInHelp =
 		dispatchArgs.includes("--all-commands") || dispatchArgs.includes("--all");
 	const noCommandHelpRequested =
 		!hasCommandToken &&
@@ -210,7 +210,7 @@ export function run(args: string[]): void {
 		(hasCommandToken && commandHelpFlagIndex === 1)
 	) {
 		console.info(`harness v${version}`);
-		printUsage({ includeLegacyCommands: includeLegacyCommandsInHelp });
+		printUsage({ includeExpertCommands: includeExpertCommandsInHelp });
 		return;
 	}
 

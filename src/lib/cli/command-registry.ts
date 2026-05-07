@@ -118,16 +118,16 @@ export function getRegistryAgentCommandCatalogDocument(): CommandCapabilityCatal
 /**
  * Build display-ready help rows for registered commands.
  *
- * When `options.includeLegacy` is not set, only canonical commands intended for
- * first-contact are included; when set to `true`, alias rows for those same
- * commands are appended.
+ * When `options.includeExpert` is not set, only canonical commands intended for
+ * first-contact are included; when set to `true`, expert command and alias rows
+ * are appended.
  *
  * @param options - Optional settings
- * @param options.includeLegacy - If `true`, include alias rows alongside canonical rows
+ * @param options.includeExpert - If `true`, include expert rows and aliases alongside canonical rows
  * @returns An array of help rows, each containing `name`, `summary`, and optional `category` and `tier`
  */
 export function getRegistryCommandHelpRows(options?: {
-	includeLegacy?: boolean;
+	includeExpert?: boolean;
 }): Array<{
 	name: string;
 	summary: string;
@@ -135,7 +135,7 @@ export function getRegistryCommandHelpRows(options?: {
 	tier?: CommandTier;
 }> {
 	const capabilities = getRegistryCommandCapabilities();
-	const displayCapabilities = options?.includeLegacy
+	const displayCapabilities = options?.includeExpert
 		? capabilities
 		: capabilities.filter((capability) =>
 				isFirstContactCommandName(capability.name),
@@ -146,7 +146,7 @@ export function getRegistryCommandHelpRows(options?: {
 		category: capability.category,
 		tier: capability.tier,
 	}));
-	if (!options?.includeLegacy) {
+	if (!options?.includeExpert) {
 		return canonicalRows;
 	}
 
