@@ -352,7 +352,12 @@ const COMMAND_VISIBILITY_BY_NAME: Partial<Record<string, CommandVisibility>> = {
 
 const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(["next"]);
 
-/** Return whether a command belongs on first-contact agent surfaces. */
+/**
+ * Determine if a command belongs on first-contact agent surfaces.
+ *
+ * @param name - Command name to test
+ * @returns `true` if the command is considered a first-contact command, `false` otherwise.
+ */
 export function isFirstContactCommandName(name: string): boolean {
 	return FIRST_CONTACT_COMMAND_NAMES.has(name);
 }
@@ -487,7 +492,12 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
 	};
 }
 
-/** Return the deterministic public rail set for agent command discovery. */
+/**
+ * Produce the agent-facing subset of command capabilities limited to first-contact commands and sorted deterministically.
+ *
+ * @param commands - Array of command capability objects to filter and sort
+ * @returns The input commands filtered to only first-contact command names and sorted by visibility order, then agent-mode order, then name
+ */
 export function filterAgentCommandCapabilities(
 	commands: readonly CommandCapability[],
 ): CommandCapability[] {

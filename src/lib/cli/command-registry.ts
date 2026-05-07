@@ -115,7 +115,17 @@ export function getRegistryAgentCommandCatalogDocument(): CommandCapabilityCatal
 	return getAgentCommandCapabilityCatalogDocument(COMMAND_SPECS);
 }
 
-/** Return display-ready command help rows derived from registry capabilities. */
+/**
+ * Build display-ready help rows for registered commands.
+ *
+ * When `options.includeLegacy` is not set, only canonical commands intended for
+ * first-contact are included; when set to `true`, alias rows for those same
+ * commands are appended.
+ *
+ * @param options - Optional settings
+ * @param options.includeLegacy - If `true`, include alias rows alongside canonical rows
+ * @returns An array of help rows, each containing `name`, `summary`, and optional `category` and `tier`
+ */
 export function getRegistryCommandHelpRows(options?: {
 	includeLegacy?: boolean;
 }): Array<{

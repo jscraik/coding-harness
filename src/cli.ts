@@ -35,13 +35,10 @@ process.on("uncaughtException", (error) => {
 });
 
 /**
- * Print the CLI usage, examples, and command list to stdout.
+ * Print CLI usage, examples, and the command list to stdout.
  *
- * When `options.includeLegacyCommands` is true the full command list (including expert
- * commands) is shown; otherwise a focused command list is displayed and a hint is printed
- * instructing how to view expert commands.
- *
- * This function writes help text and options to stdout/stderr and does not return a value.
+ * When `options.includeLegacyCommands` is true the displayed list includes expert commands;
+ * otherwise a focused command list is shown and a hint for viewing expert commands is printed.
  *
  * @param options - Optional settings for rendering the help output.
  * @param options.includeLegacyCommands - If true, include expert commands in the displayed command list.
@@ -166,12 +163,9 @@ function tryFuzzyDispatch(
 }
 
 /**
- * Dispatches a CLI command from the provided argv slice and exits with the command's exit code.
+ * Parse top-level flags, dispatch the requested CLI command (exact or fuzzy), and terminate the process with the command's exit code.
  *
- * Handles top-level flags (`--version`, `--help`), performs exact and fuzzy registry dispatch, prints usage
- * or an unknown-command report with suggestions, and emits correction notes to stderr when a fuzzy match is used.
- * This function performs process-level side effects (console output and calling `process.exit`) and routes
- * asynchronous failures to the global fatal error handler.
+ * Handles top-level `--version` and `--help` behavior, emits fuzzy-correction notices when applicable, prints usage or rich unknown-command suggestions (plain or JSON), and routes asynchronous command failures to the global fatal error handler.
  *
  * @param args - Command-line arguments excluding the node and executable path (e.g., `process.argv.slice(2)`)
  */
