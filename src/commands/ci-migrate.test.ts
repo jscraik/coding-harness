@@ -4773,9 +4773,21 @@ describe("runCIMigrateCLI", () => {
 				join(tempDir, ".harness/ci-migrate-snapshots/dryrun-json-1.state.json"),
 			),
 		).toBe(false);
-		const payload = JSON.parse(
-			String(consoleInfoSpy?.mock.calls.at(-1)?.[0] ?? ""),
-		) as {
+		const consoleInfoCalls = consoleInfoSpy.mock.calls as unknown[][];
+		const jsonPayloadCalls = consoleInfoCalls.filter((call) => {
+			const value = call[0] as unknown;
+			if (typeof value !== "string") {
+				return false;
+			}
+			try {
+				JSON.parse(value);
+				return true;
+			} catch {
+				return false;
+			}
+		});
+		expect(jsonPayloadCalls).toHaveLength(1);
+		const payload = JSON.parse(jsonPayloadCalls[0]?.[0] as string) as {
 			status: string;
 			plan: Array<{ action: string; target: string; reason: string }>;
 			report: { schemaVersion: string; parity: { status: string } };

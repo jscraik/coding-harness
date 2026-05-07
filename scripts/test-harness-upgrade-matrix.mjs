@@ -74,7 +74,8 @@ git status, omits update-mode metadata, or breaks the update-mode
 created-to-updated compatibility alias.
 
 Fleet readiness also requires CircleCI, CodeRabbit, and CODESTYLE surfaces to be
-reported by the dry-run, and rejects legacy Greptile artifacts.`;
+reported by the dry-run, rejects legacy Greptile artifacts, and fails closed
+when codestyleParityFailures reports stale or malformed CODESTYLE parity data.`;
 }
 
 /**

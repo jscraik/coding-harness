@@ -907,11 +907,12 @@ function runGitHubCheckRunTransientRetryFixture(scenario, fixturePath) {
 	const retryPolicy = {
 		schemaVersion: "github-check-run-retry-policy-fixture/v1",
 		maxAttempts: 3,
-		retryableStatuses: [500, 502, 503, 504],
+		retryableStatuses: "status >= 500",
 		delaysMs: [250, 1000],
 		cases: [
 			evaluateCheckRunRetryCase([504, 200]),
 			evaluateCheckRunRetryCase([503, 502, 200]),
+			evaluateCheckRunRetryCase([501, 200]),
 			evaluateCheckRunRetryCase([403]),
 		],
 	};
@@ -927,6 +928,11 @@ function runGitHubCheckRunTransientRetryFixture(scenario, fixturePath) {
 		assertion(
 			"retry policy caps attempts before live E2E stalls",
 			byName.get("503-502-200")?.attempts === 3,
+		),
+		assertion(
+			"all transient 5xx statuses follow the same retry contract",
+			byName.get("501-200")?.attempts === 2 &&
+				byName.get("501-200")?.outcome === "success",
 		),
 		assertion(
 			"403 permission errors are not retried as flakes",
@@ -1327,7 +1333,6 @@ function classifyE2EScratchPath(scratchRoot, contractPath) {
  *   - `blockerClassification`: `"none"` when `outcome` is `"success"`, otherwise the value of `firstFailureClassification`.
  */
 function evaluateCheckRunRetryCase(statuses) {
-	const retryableStatuses = new Set([500, 502, 503, 504]);
 	let attempts = 0;
 	let outcome = "failure";
 	for (const status of statuses) {
@@ -1336,7 +1341,7 @@ function evaluateCheckRunRetryCase(statuses) {
 			outcome = "success";
 			break;
 		}
-		if (!retryableStatuses.has(status) || attempts >= 3) {
+		if (status < 500 || attempts >= 3) {
 			break;
 		}
 	}

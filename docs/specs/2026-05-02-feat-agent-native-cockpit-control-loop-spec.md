@@ -9,7 +9,7 @@ risk: high
 spec_depth: full
 ui_required: false
 traceability_required: true
-last_validated: 2026-05-04
+last_validated: 2026-05-07
 ---
 
 # Agent-Native Cockpit Control Loop

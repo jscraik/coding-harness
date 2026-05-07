@@ -512,10 +512,27 @@ function classifyRepo(
 	result: MatrixRepoResult,
 	matrixArtifact: string,
 ): FleetPlanRepo {
-	const repo = asString(result.repo) ?? "<unknown-repo>";
+	const repoCandidate = asString(result.repo);
+	const repo =
+		repoCandidate && repoCandidate.length > 0
+			? repoCandidate
+			: "<unknown-repo>";
 	const updateMode = asString(result.updateMode);
 	const trackedManifest = asBoolean(result.trackedManifest);
-	const errors = asStringArray(result.errors);
+	const schemaErrors: string[] = [];
+	if (!repoCandidate || repoCandidate.length === 0) {
+		schemaErrors.push("JSON output missing repo");
+	}
+	if (!Array.isArray(result.errors)) {
+		schemaErrors.push("JSON output missing errors array");
+	}
+	if (!Array.isArray(result.missingFleetContractSurfaces)) {
+		schemaErrors.push("JSON output missing missingFleetContractSurfaces array");
+	}
+	if (trackedManifest === null) {
+		schemaErrors.push("JSON output missing trackedManifest");
+	}
+	const errors = [...schemaErrors, ...asStringArray(result.errors)];
 	const missingSurfaces = asMissingSurfaces(
 		result.missingFleetContractSurfaces,
 	);

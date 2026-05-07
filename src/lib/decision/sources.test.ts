@@ -105,6 +105,12 @@ describe("collectSourceErrors", () => {
 		expect(
 			findBlockingSource([
 				source({
+					kind: "contract",
+					ref: "harness.contract.json",
+					status: "blocked",
+					failureClass: "contract_blocked",
+				}),
+				source({
 					kind: "config",
 					ref: ".harness/config.json",
 					status: "blocked",
@@ -115,12 +121,6 @@ describe("collectSourceErrors", () => {
 					ref: "network:github",
 					status: "blocked",
 					failureClass: "network_unavailable",
-				}),
-				source({
-					kind: "contract",
-					ref: "harness.contract.json",
-					status: "blocked",
-					failureClass: "contract_blocked",
 				}),
 			]),
 		).toMatchObject({

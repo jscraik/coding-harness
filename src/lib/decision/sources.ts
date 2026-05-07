@@ -213,7 +213,7 @@ export function sortRecommendationCandidates(
 /**
  * Choose the most recent usable run that matches the current head and report sources with errors.
  *
- * Filters the provided run sources to those with `status === "usable"` and `sha === currentHeadSha`, then selects the newest by `timestamp` (ties broken by `ref`). Also returns all decision sources that carry errors, including per-run stale head mismatches.
+ * Filters the provided run sources to those with `status === "usable"`, `freshness !== "stale"`, and `sha === currentHeadSha`, then selects the newest by `timestamp` (ties broken by `ref`). Also returns all decision sources that carry errors, including per-run stale head mismatches.
  *
  * @param sources - Candidate run decision sources to evaluate
  * @param currentHeadSha - The current head SHA to match against run sources
@@ -230,7 +230,9 @@ export function selectRecentRunSource(
 			return staleError ? [staleError] : [];
 		}),
 	]);
-	const usable = sources.filter((source) => source.status === "usable");
+	const usable = sources.filter(
+		(source) => source.status === "usable" && source.freshness !== "stale",
+	);
 	const current = usable.filter((source) => source.sha === currentHeadSha);
 	const selected =
 		[...current].sort((left, right) => {
