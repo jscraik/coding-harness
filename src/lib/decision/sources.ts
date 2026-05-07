@@ -200,6 +200,8 @@ export function sortRecommendationCandidates(
 			return left.writesFiles ? 1 : -1;
 		const score = right.score - left.score;
 		if (score !== 0) return score;
+		if (left.command === null && right.command !== null) return 1;
+		if (left.command !== null && right.command === null) return -1;
 		const command = compareStrings(left.command ?? "", right.command ?? "");
 		if (command !== 0) return command;
 		return compareStringArrays(left.sourceRefs, right.sourceRefs);
