@@ -309,6 +309,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 ] as const;
 
 export const REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS = [
+	".harness/README.md",
 	".harness/memory/LEARNINGS.md",
 	".harness/knowledge/INDEX.md",
 	".harness/knowledge/cli/knowledge.md",

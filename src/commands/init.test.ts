@@ -23,6 +23,7 @@ import { EXIT_CODES, runInit, runInitCLI } from "./init.js";
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
+	".harness/README.md",
 	".harness/ci-required-checks.json",
 	".harness/ci-provider-transition-status.json",
 	".harness/memory/LEARNINGS.md",
