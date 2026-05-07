@@ -183,14 +183,22 @@ export function parseArgs(args: string[]): {
  * Determines whether the GitHub Checks API write-permission preflight is required for a given test pattern.
  *
  * @param pattern - Optional test path or pattern (file name or path segment). If omitted, the preflight is required.
- * @returns `true` if the preflight should run (when `pattern` is missing or targets `github-integration` or `command-pipeline`, optionally suffixed with `.e2e.test.ts`), `false` otherwise.
+ * @returns `true` if the preflight should run (when `pattern` is missing, broad enough to include the Checks API suites, or targets `github-integration` or `command-pipeline`), `false` otherwise.
  */
 export function patternNeedsCheckRunWrite(pattern?: string): boolean {
 	if (!pattern) {
 		return true;
 	}
+	const normalizedPattern = pattern.replace(/\\/g, "/").replace(/^\.\//, "");
+	if (
+		normalizedPattern === "e2e" ||
+		normalizedPattern === "e2e/tests" ||
+		/[{[*?]/.test(normalizedPattern)
+	) {
+		return true;
+	}
 	return /(^|\/)(github-integration|command-pipeline)(\.e2e\.test\.ts)?$/.test(
-		pattern,
+		normalizedPattern,
 	);
 }
 

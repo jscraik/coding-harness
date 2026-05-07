@@ -38,6 +38,8 @@ describe("E2E runner helpers", () => {
 		expect(patternNeedsCheckRunWrite()).toBe(true);
 		expect(patternNeedsCheckRunWrite("github-integration")).toBe(true);
 		expect(patternNeedsCheckRunWrite("command-pipeline")).toBe(true);
+		expect(patternNeedsCheckRunWrite("e2e/tests")).toBe(true);
+		expect(patternNeedsCheckRunWrite("e2e/tests/*.e2e.test.ts")).toBe(true);
 		expect(patternNeedsCheckRunWrite("linear-integration")).toBe(false);
 		expect(
 			patternNeedsCheckRunWrite("e2e/tests/linear-integration.e2e.test.ts"),
