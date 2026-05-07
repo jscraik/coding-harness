@@ -9,6 +9,7 @@ import {
 	MIGRATED_COMMAND_NAMES,
 	dispatchRegistryCommand,
 	fuzzyFindCommand,
+	getRegistryAgentCommandCatalogDocument,
 	getRegistryCommandCapabilities,
 	getRegistryCommandCatalogDocument,
 	getRegistryCommandHelpRows,
@@ -20,6 +21,18 @@ import {
 	compareRegistryToReadme,
 	extractReadmeCommandNames,
 } from "./doc-parity.js";
+
+const AGENT_COMMAND_RAIL_NAMES = [
+	"commands",
+	"doctor",
+	"init",
+	"next",
+	"check",
+	"health",
+	"fleet-plan",
+	"validation-plan",
+	"review-context",
+] as const;
 
 describe("command registry", () => {
 	it("exposes migrated command names", () => {
@@ -160,6 +173,8 @@ describe("command registry", () => {
 				tier: "plumbing",
 				primaryAudience: "both",
 				orchestratedBy: [],
+				agentMode: "verify",
+				visibility: "plumbing",
 			});
 		} finally {
 			infoSpy.mockRestore();
@@ -289,8 +304,8 @@ describe("suggestCommandCapabilities", () => {
 });
 
 describe("COMMAND_CATALOG_SCHEMA_VERSION", () => {
-	it("equals the stable literal 'harness-command-catalog/v2'", () => {
-		expect(COMMAND_CATALOG_SCHEMA_VERSION).toBe("harness-command-catalog/v2");
+	it("equals the stable literal 'harness-command-catalog/v3'", () => {
+		expect(COMMAND_CATALOG_SCHEMA_VERSION).toBe("harness-command-catalog/v3");
 	});
 });
 
@@ -320,6 +335,8 @@ describe("getRegistryCommandCapabilities", () => {
 			expect(typeof capability.tier).toBe("string");
 			expect(typeof capability.primaryAudience).toBe("string");
 			expect(Array.isArray(capability.orchestratedBy)).toBe(true);
+			expect(typeof capability.agentMode).toBe("string");
+			expect(typeof capability.visibility).toBe("string");
 		}
 	});
 
@@ -385,6 +402,38 @@ describe("getRegistryCommandCapabilities", () => {
 		}
 	});
 
+	it("capability agent mode is one of the known union values", () => {
+		const validAgentModes = new Set([
+			"orient",
+			"plan",
+			"verify",
+			"review",
+			"repair",
+			"handoff",
+			"learn",
+			"admin",
+		]);
+		const capabilities = getRegistryCommandCapabilities();
+		for (const capability of capabilities) {
+			expect(validAgentModes.has(capability.agentMode)).toBe(true);
+		}
+	});
+
+	it("capability visibility is one of the known union values", () => {
+		const validVisibilities = new Set([
+			"default",
+			"agent",
+			"advanced",
+			"plumbing",
+			"hidden",
+			"legacy",
+		]);
+		const capabilities = getRegistryCommandCapabilities();
+		for (const capability of capabilities) {
+			expect(validVisibilities.has(capability.visibility)).toBe(true);
+		}
+	});
+
 	it("registered cockpit-tier commands are runnable specs only", () => {
 		const cockpitNames = getRegistryCommandCapabilities()
 			.filter((capability) => capability.tier === "cockpit")
@@ -425,6 +474,40 @@ describe("getRegistryCommandCapabilities", () => {
 				orchestratedBy,
 			});
 		}
+	});
+
+	it("first-slice public agent rails expose mode and visibility metadata", () => {
+		const capabilitiesByName = new Map(
+			getRegistryCommandCapabilities().map((capability) => [
+				capability.name,
+				capability,
+			]),
+		);
+
+		expect(capabilitiesByName.get("next")).toMatchObject({
+			agentMode: "orient",
+			visibility: "default",
+		});
+		expect(capabilitiesByName.get("check")).toMatchObject({
+			agentMode: "verify",
+			visibility: "default",
+		});
+		expect(capabilitiesByName.get("validation-plan")).toMatchObject({
+			agentMode: "verify",
+			visibility: "agent",
+		});
+		expect(capabilitiesByName.get("review-context")).toMatchObject({
+			agentMode: "review",
+			visibility: "agent",
+		});
+		expect(capabilitiesByName.get("review-gate")).toMatchObject({
+			agentMode: "review",
+			visibility: "plumbing",
+		});
+		expect(capabilitiesByName.get("docs-gate")).toMatchObject({
+			agentMode: "verify",
+			visibility: "plumbing",
+		});
 	});
 
 	describe("'commands' capability", () => {
@@ -948,6 +1031,102 @@ describe("'commands' command execution", () => {
 		} finally {
 			infoSpy.mockRestore();
 		}
+	});
+
+	it("JSON --for-agent emits only the public agent rail set", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--for-agent",
+			]);
+			expect(dispatch?.result).toBe(0);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const parsed = JSON.parse(String(output));
+			const commandNames = parsed.commands.map(
+				(command: CommandCapability) => command.name,
+			);
+
+			expect(parsed.schemaVersion).toBe(COMMAND_CATALOG_SCHEMA_VERSION);
+			expect(commandNames).toEqual(AGENT_COMMAND_RAIL_NAMES);
+			expect(parsed.commandCount).toBe(AGENT_COMMAND_RAIL_NAMES.length);
+			for (const command of parsed.commands as CommandCapability[]) {
+				expect(["default", "agent"]).toContain(command.visibility);
+			}
+			expect(commandNames).not.toEqual(
+				expect.arrayContaining(["policy-gate", "review-gate"]),
+			);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("JSON --for-agent --all keeps the full catalog available", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--for-agent",
+				"--all",
+			]);
+			expect(dispatch?.result).toBe(0);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const parsed = JSON.parse(String(output));
+			const commandNames = parsed.commands.map(
+				(command: CommandCapability) => command.name,
+			);
+
+			expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
+			expect(commandNames).toEqual(
+				expect.arrayContaining(["policy-gate", "review-gate"]),
+			);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("JSON --for-agent --plumbing keeps the full catalog available", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--for-agent",
+				"--plumbing",
+			]);
+			expect(dispatch?.result).toBe(0);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const parsed = JSON.parse(String(output));
+			const commandNames = parsed.commands.map(
+				(command: CommandCapability) => command.name,
+			);
+
+			expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
+			expect(commandNames).toEqual(
+				expect.arrayContaining(["policy-gate", "review-gate"]),
+			);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+});
+
+describe("getRegistryAgentCommandCatalogDocument", () => {
+	it("matches the commands --json --for-agent catalog contract", () => {
+		const fullCatalog = getRegistryCommandCatalogDocument();
+		const agentCatalog = getRegistryAgentCommandCatalogDocument();
+
+		expect(agentCatalog.commandCount).toBeLessThan(fullCatalog.commandCount);
+		expect(
+			agentCatalog.commands.every((command) =>
+				["default", "agent"].includes(command.visibility),
+			),
+		).toBe(true);
+		expect(agentCatalog.commands.map((command) => command.name)).toEqual(
+			AGENT_COMMAND_RAIL_NAMES,
+		);
 	});
 });
 

@@ -3,15 +3,17 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { cwd } from "node:process";
 import {
-	HARNESS_DECISION_SCHEMA_VERSION,
+	buildHarnessDecision,
 	type HarnessDecision,
 	type HarnessDecisionDelayClass,
 	type HarnessDecisionExecutionProfile,
 	type HarnessDecisionFrictionClass,
+	type HarnessDecisionInput,
 	type HarnessDecisionOperationalMeta,
 	type HarnessDecisionStartupCost,
 	validateHarnessDecision,
 } from "../lib/decision/harness-decision.js";
+import { COMMAND_CATALOG_SCHEMA_VERSION } from "../lib/cli/registry/command-capabilities.js";
 import {
 	type DecisionSource,
 	type RecommendationCandidate,
@@ -171,14 +173,8 @@ function fileArgsForCommand(files: string[]): string {
 	return files.map((file) => shellQuote(file)).join(" ");
 }
 
-function createDecision(
-	decision: Omit<HarnessDecision, "schemaVersion" | "producer">,
-): HarnessDecision {
-	return {
-		schemaVersion: HARNESS_DECISION_SCHEMA_VERSION,
-		producer: "harness next",
-		...decision,
-	};
+function createDecision(decision: HarnessDecisionInput): HarnessDecision {
+	return buildHarnessDecision("harness next", decision);
 }
 
 /**
@@ -364,6 +360,15 @@ function sourceBlockedDecision(args: {
 		nextAction:
 			"Run harness doctor --json, fix the reported source issue, then retry harness next --json.",
 		nextCommand: "harness doctor --json",
+		phase: "repair",
+		objective: "Restore usable decision sources before choosing workflow work.",
+		requiredEvidence: [args.source.ref, "harness doctor --json output"],
+		stopConditions: [
+			`Stop if ${args.source.failureClass ?? "source_blocked"} remains blocked after harness doctor.`,
+		],
+		humanEscalation: null,
+		followUpCommands: ["harness next --json"],
+		hiddenPlumbing: ["decision-sources", "source-error-ranking"],
 		safeToRun: true,
 		requiresHuman: false,
 		requiresNetwork: false,
@@ -403,6 +408,15 @@ function gitInspectionBlockedDecision(mode: HarnessNextMode): HarnessDecision {
 		nextAction:
 			"Run harness doctor --json, fix the reported setup issue, then retry harness next --json.",
 		nextCommand: "harness doctor --json",
+		phase: "repair",
+		objective: "Restore git-state visibility before choosing workflow work.",
+		requiredEvidence: ["git:status", "harness doctor --json output"],
+		stopConditions: [
+			"Stop if git_state_unavailable remains after harness doctor.",
+		],
+		humanEscalation: null,
+		followUpCommands: ["harness next --json"],
+		hiddenPlumbing: ["git:status", "decision-source-errors"],
 		safeToRun: true,
 		requiresHuman: false,
 		requiresNetwork: false,
@@ -440,6 +454,16 @@ function fleetMatrixArtifactDecision(args: {
 		nextAction:
 			"Convert the upgrade matrix into an agent-native fleet remediation plan.",
 		nextCommand: command,
+		phase: "orient",
+		objective:
+			"Convert the detected upgrade matrix into a safe remediation plan.",
+		requiredEvidence: [`artifact:${args.matrixArtifact}`],
+		stopConditions: [
+			"Stop if fleet-plan cannot parse the upgrade matrix artifact.",
+		],
+		humanEscalation: null,
+		followUpCommands: [],
+		hiddenPlumbing: ["artifact-discovery", "fleet-plan"],
 		safeToRun: true,
 		requiresHuman: false,
 		requiresNetwork: false,
@@ -481,6 +505,17 @@ function noChangedFilesDecision(args: {
 		summary: "No changed files detected.",
 		nextAction: "Run harness check --json to confirm repo readiness.",
 		nextCommand: "harness check --json",
+		phase: "verify",
+		objective:
+			"Confirm the repository is ready when no changed files are detected.",
+		requiredEvidence: [
+			args.filesSource === "git" ? "git:status" : "input:files",
+			"harness check --json output",
+		],
+		stopConditions: ["Stop if harness check reports a blocked or failed gate."],
+		humanEscalation: null,
+		followUpCommands: [],
+		hiddenPlumbing: ["git:status", "check"],
 		safeToRun: true,
 		requiresHuman: false,
 		requiresNetwork: false,
@@ -529,7 +564,7 @@ function createRecommendationCandidate(args: {
 				: "Generate a repo-canonical validation plan for the changed files.",
 		sourceRefs: [
 			args.filesSource === "git" ? "git:status" : "input:files",
-			"command-catalog:harness-command-catalog/v2",
+			`command-catalog:${COMMAND_CATALOG_SCHEMA_VERSION}`,
 		],
 		score: args.mode === "pr" ? 80 : 90,
 		riskTier: inferRiskTier(args.files),
@@ -557,11 +592,30 @@ function changedFilesDecision(args: {
 	sourceErrors: DecisionSource[];
 }): HarnessDecision {
 	const candidate = createRecommendationCandidate(args);
+	const reviewContextFollowUp = chooseNextCommandParts(
+		"pr",
+		args.files,
+	).command;
 	return createDecision({
 		status: "action_required",
 		summary: `Detected ${args.files.length} changed file${args.files.length === 1 ? "" : "s"}.`,
 		nextAction: candidate.reason,
 		nextCommand: candidate.command,
+		phase: args.mode === "pr" ? "review" : "verify",
+		objective:
+			args.mode === "pr"
+				? "Prepare reviewer-facing context for the changed files."
+				: "Produce the repo-canonical validation plan for the changed files.",
+		requiredEvidence: [...candidate.sourceRefs, `${candidate.command} output`],
+		stopConditions: [
+			`Stop if ${args.mode === "pr" ? "review-context" : "validation-plan"} cannot produce JSON for the changed files.`,
+		],
+		humanEscalation: null,
+		followUpCommands:
+			args.mode === "pr"
+				? ["bash scripts/validate-codestyle.sh --fast"]
+				: [reviewContextFollowUp],
+		hiddenPlumbing: ["git:status", "command-catalog", "risk-tier"],
 		safeToRun: candidate.safeToRun,
 		requiresHuman: candidate.requiresHuman,
 		requiresNetwork: candidate.requiresNetwork,

@@ -120,6 +120,16 @@ const normalizeDiagramContextLines = (lines) => {
 	const normalized = [];
 	let inMermaid = false;
 	let mermaidLines = [];
+	let skipSection = false;
+
+	const volatileContextSections = new Set([
+		"agent",
+		"c4context",
+		"class",
+		"flow",
+		"security",
+		"user",
+	]);
 
 	const flushMermaid = () => {
 		normalized.push("```mermaid");
@@ -132,6 +142,13 @@ const normalizeDiagramContextLines = (lines) => {
 
 	for (const line of lines) {
 		if (/^Generated: /.test(line)) continue;
+		const sectionMatch = line.match(/^##\s+(.+?)\s*$/);
+		if (sectionMatch) {
+			const sectionName = sectionMatch[1].trim().toLowerCase();
+			skipSection = volatileContextSections.has(sectionName);
+			if (skipSection) continue;
+		}
+		if (skipSection) continue;
 		if (line.trim() === "```mermaid") {
 			inMermaid = true;
 			mermaidLines = [];

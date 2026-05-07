@@ -13,7 +13,7 @@ describe("scaffold diagram templates", () => {
 
 		expect(script).toContain("#!/usr/bin/env bash");
 		expect(script).toContain("pnpm exec diagram generate-all .");
-		expect(script).toContain('MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"');
+		expect(script).toContain('MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"');
 		expect(script).toContain("const sourceManifest = (() => {");
 		expect(script).toContain("...sourceManifest,");
 

@@ -1,6 +1,6 @@
 import type { CommandSpec } from "./types.js";
 
-export const COMMAND_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v2";
+export const COMMAND_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v3";
 
 /** High-level grouping used by command help and machine-readable catalogs. */
 export type CommandCategory =
@@ -49,6 +49,26 @@ export type CommandPrimaryAudience = "agent" | "human" | "both";
 /** Cockpit commands that may orchestrate or recommend expert commands. */
 export type CommandOrchestrator = "next" | "pr-ready" | "fix-review" | "learn";
 
+/** Agent moment served by a command in the public command surface. */
+export type CommandAgentMode =
+	| "orient"
+	| "plan"
+	| "verify"
+	| "review"
+	| "repair"
+	| "handoff"
+	| "learn"
+	| "admin";
+
+/** Discovery layer where a command should appear by default. */
+export type CommandVisibility =
+	| "default"
+	| "agent"
+	| "advanced"
+	| "plumbing"
+	| "hidden"
+	| "legacy";
+
 /** Machine-readable capability metadata for one registry command. */
 export interface CommandCapability {
 	name: string;
@@ -64,6 +84,8 @@ export interface CommandCapability {
 	tier: CommandTier;
 	primaryAudience: CommandPrimaryAudience;
 	orchestratedBy: CommandOrchestrator[];
+	agentMode: CommandAgentMode;
+	visibility: CommandVisibility;
 }
 
 /** Versioned command capability catalog emitted by `harness commands --json`. */
@@ -290,6 +312,66 @@ const ORCHESTRATED_BY_BY_NAME: Partial<Record<string, CommandOrchestrator[]>> =
 		learnings: ["learn"],
 	};
 
+const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
+	commands: "orient",
+	check: "verify",
+	next: "orient",
+	init: "orient",
+	"fleet-plan": "plan",
+	doctor: "orient",
+	health: "orient",
+	contract: "verify",
+	"verify-work": "verify",
+	"verify-coderabbit": "review",
+	"review-gate": "review",
+	"docs-gate": "verify",
+	"validation-plan": "verify",
+	"review-context": "review",
+	"linear-gate": "handoff",
+	linear: "handoff",
+	remediate: "repair",
+	learnings: "learn",
+	"north-star-feedback": "learn",
+};
+
+const COMMAND_VISIBILITY_BY_NAME: Partial<Record<string, CommandVisibility>> = {
+	commands: "default",
+	next: "default",
+	check: "default",
+	init: "default",
+	doctor: "default",
+	health: "agent",
+	"fleet-plan": "agent",
+	"validation-plan": "agent",
+	"review-context": "agent",
+	contract: "advanced",
+	linear: "advanced",
+	"review-gate": "plumbing",
+	"docs-gate": "plumbing",
+};
+
+const AGENT_MODE_ORDER: Readonly<Record<CommandAgentMode, number>> = {
+	orient: 0,
+	plan: 1,
+	verify: 2,
+	review: 3,
+	repair: 4,
+	handoff: 5,
+	learn: 6,
+	admin: 7,
+};
+
+const AGENT_CATALOG_VISIBILITY_ORDER: Readonly<
+	Record<CommandVisibility, number>
+> = {
+	default: 0,
+	agent: 1,
+	advanced: 2,
+	plumbing: 3,
+	hidden: 4,
+	legacy: 5,
+};
+
 function getCommandCategory(name: string): CommandCategory {
 	const category = COMMAND_CATEGORY_BY_NAME[name];
 	if (!category) {
@@ -329,10 +411,49 @@ function getCommandPrimaryAudience(name: string): CommandPrimaryAudience {
 	return PRIMARY_AUDIENCE_BY_NAME[name] ?? "both";
 }
 
+function getCommandAgentMode(
+	name: string,
+	category: CommandCategory,
+	mutability: CommandMutability,
+	orchestratedBy: CommandOrchestrator[],
+): CommandAgentMode {
+	const explicit = AGENT_MODE_BY_NAME[name];
+	if (explicit) return explicit;
+	if (orchestratedBy.includes("learn")) return "learn";
+	if (category === "workflow-linear") return "handoff";
+	if (category === "pilot-remediation")
+		return mutability === "write" ? "repair" : "verify";
+	if (category === "review-policy") {
+		return name.includes("review") || name.includes("pr-template")
+			? "review"
+			: "verify";
+	}
+	if (category === "drift-search-evidence") return "orient";
+	if (mutability === "write") return "admin";
+	return "orient";
+}
+
+function getCommandVisibility(
+	name: string,
+	tier: CommandTier,
+	primaryAudience: CommandPrimaryAudience,
+): CommandVisibility {
+	const explicit = COMMAND_VISIBILITY_BY_NAME[name];
+	if (explicit) return explicit;
+	if (tier === "cockpit") return "default";
+	if (tier === "legacy") return "legacy";
+	if (tier === "plumbing") return "plumbing";
+	if (primaryAudience === "agent") return "agent";
+	return "advanced";
+}
+
 /** Convert a command registry spec into agent-consumable capability metadata. */
 export function toCommandCapability(spec: CommandSpec): CommandCapability {
 	const mutability = getCommandMutability(spec.name);
 	const category = getCommandCategory(spec.name);
+	const tier = getCommandTier(spec.name, category);
+	const primaryAudience = getCommandPrimaryAudience(spec.name);
+	const orchestratedBy = [...(ORCHESTRATED_BY_BY_NAME[spec.name] ?? [])];
 	return {
 		name: spec.name,
 		aliases: [...(spec.aliases ?? [])],
@@ -346,10 +467,35 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
 		safeFirstAlternatives: [
 			...(SAFE_FIRST_ALTERNATIVES_BY_NAME[spec.name] ?? []),
 		],
-		tier: getCommandTier(spec.name, category),
-		primaryAudience: getCommandPrimaryAudience(spec.name),
-		orchestratedBy: [...(ORCHESTRATED_BY_BY_NAME[spec.name] ?? [])],
+		tier,
+		primaryAudience,
+		orchestratedBy,
+		agentMode: getCommandAgentMode(
+			spec.name,
+			category,
+			mutability,
+			orchestratedBy,
+		),
+		visibility: getCommandVisibility(spec.name, tier, primaryAudience),
 	};
+}
+
+/** Return the deterministic public rail set for agent command discovery. */
+export function filterAgentCommandCapabilities(
+	commands: readonly CommandCapability[],
+): CommandCapability[] {
+	return commands
+		.filter((command) => ["default", "agent"].includes(command.visibility))
+		.toSorted((left, right) => {
+			const visibilityDelta =
+				AGENT_CATALOG_VISIBILITY_ORDER[left.visibility] -
+				AGENT_CATALOG_VISIBILITY_ORDER[right.visibility];
+			if (visibilityDelta !== 0) return visibilityDelta;
+			const modeDelta =
+				AGENT_MODE_ORDER[left.agentMode] - AGENT_MODE_ORDER[right.agentMode];
+			if (modeDelta !== 0) return modeDelta;
+			return left.name.localeCompare(right.name);
+		});
 }
 
 /** Build the JSON document used by the command capability catalog. */
@@ -376,4 +522,13 @@ export function getCommandCapabilityCatalogDocument(
 	specs: CommandSpec[],
 ): CommandCapabilityCatalogDocument {
 	return buildCommandCapabilityCatalogDocument(getCommandCapabilities(specs));
+}
+
+/** Build the agent-facing capability catalog document from command specs. */
+export function getAgentCommandCapabilityCatalogDocument(
+	specs: CommandSpec[],
+): CommandCapabilityCatalogDocument {
+	return buildCommandCapabilityCatalogDocument(
+		filterAgentCommandCapabilities(getCommandCapabilities(specs)),
+	);
 }

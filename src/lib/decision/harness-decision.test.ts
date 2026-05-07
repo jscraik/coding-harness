@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	HARNESS_DECISION_SCHEMA_VERSION,
+	buildHarnessDecision,
 	type HarnessDecision,
 	isHarnessDecision,
 	validateHarnessDecision,
@@ -17,6 +18,13 @@ function validDecision(
 		summary: "Review-gate behavior changed and needs focused tests.",
 		nextAction: "Run the focused review-gate tests before broader validation.",
 		nextCommand: "pnpm vitest run src/commands/review-gate.test.ts",
+		phase: "review",
+		objective: "Run focused review-gate tests before broader validation.",
+		requiredEvidence: ["git:changed-files", "harness.contract.json"],
+		stopConditions: [],
+		humanEscalation: null,
+		followUpCommands: ["bash scripts/validate-codestyle.sh --fast"],
+		hiddenPlumbing: [],
 		safeToRun: true,
 		requiresHuman: false,
 		requiresNetwork: false,
@@ -103,6 +111,8 @@ describe("validateHarnessDecision", () => {
 		const candidate = {
 			...validDecision(),
 			evidenceRef: [" "],
+			requiredEvidence: [" "],
+			followUpCommands: [" "],
 			safeToRun: "yes",
 			requiresHuman: "no",
 		};
@@ -113,8 +123,32 @@ describe("validateHarnessDecision", () => {
 		expect(result.errors).toEqual(
 			expect.arrayContaining([
 				"evidenceRef must be a non-empty string array",
+				"requiredEvidence entries must be non-empty strings",
+				"followUpCommands entries must be non-empty strings",
 				"safeToRun must be a boolean",
 				"requiresHuman must be a boolean",
+			]),
+		);
+	});
+
+	it("requires a valid work packet shape", () => {
+		const result = validateHarnessDecision({
+			...validDecision(),
+			phase: "wander",
+			objective: "",
+			stopConditions: "none",
+			humanEscalation: "",
+			hiddenPlumbing: [""],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				"phase must be one of orient, verify, review, repair, handoff",
+				"objective must be a non-empty string",
+				"stopConditions must be a string array",
+				"humanEscalation must be a non-empty string or null",
+				"hiddenPlumbing entries must be non-empty strings",
 			]),
 		);
 	});
@@ -128,6 +162,7 @@ describe("validateHarnessDecision", () => {
 				nextCommand: null,
 				safeToRun: false,
 				failureClass: "git_state_unavailable",
+				stopConditions: ["Stop until git_state_unavailable is resolved."],
 				retry: "manual",
 				riskTier: "unknown",
 			}),
@@ -171,6 +206,22 @@ describe("validateHarnessDecision", () => {
 		);
 		expect(unsafeCommand.errors).toContain(
 			"safeToRun must be true when nextCommand is set",
+		);
+	});
+
+	it("requires stop guidance when no safe next command exists", () => {
+		const result = validateHarnessDecision(
+			validDecision({
+				nextCommand: null,
+				safeToRun: false,
+				stopConditions: [],
+				humanEscalation: null,
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"stopConditions or humanEscalation must explain decisions without nextCommand",
 		);
 	});
 
@@ -248,6 +299,94 @@ describe("validateHarnessDecision", () => {
 		expect(result.errors).toContain(
 			"requiresNetwork must match meta.execution.permissionPlan.requiresNetwork",
 		);
+	});
+});
+
+describe("buildHarnessDecision", () => {
+	it("fills shared agent context from producer intent", () => {
+		const decision = buildHarnessDecision("next", {
+			status: "action_required",
+			summary: "Review-gate behavior changed and needs focused tests.",
+			nextAction: "Run focused validation.",
+			nextCommand: "harness validation-plan --files src/index.ts --json",
+			safeToRun: true,
+			requiresHuman: false,
+			requiresNetwork: false,
+			writesFiles: false,
+			evidenceRef: ["input:files"],
+			failureClass: null,
+			retry: "safe",
+			riskTier: "medium",
+		});
+
+		expect(decision).toMatchObject({
+			schemaVersion: HARNESS_DECISION_SCHEMA_VERSION,
+			producer: "next",
+			phase: "verify",
+			objective: "Run focused validation.",
+			requiredEvidence: ["input:files"],
+			stopConditions: [],
+			humanEscalation: null,
+			followUpCommands: [],
+			hiddenPlumbing: [],
+		});
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("explains blocked decisions without a next command", () => {
+		const decision = buildHarnessDecision("next", {
+			status: "blocked",
+			summary: "Git state could not be inspected.",
+			nextAction: "Run harness doctor and retry harness next.",
+			nextCommand: null,
+			safeToRun: false,
+			requiresHuman: true,
+			requiresNetwork: false,
+			writesFiles: false,
+			evidenceRef: ["git:status"],
+			failureClass: "git_state_unavailable",
+			retry: "manual",
+			riskTier: "unknown",
+		});
+
+		expect(decision.phase).toBe("repair");
+		expect(decision.humanEscalation).toBe(
+			"Run harness doctor and retry harness next.",
+		);
+		expect(decision.stopConditions).toEqual([
+			"Stop until git_state_unavailable is resolved.",
+		]);
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("treats blocked decisions as repair even when command text names another phase", () => {
+		const decision = buildHarnessDecision("next", {
+			status: "blocked",
+			summary: "Review context is unavailable.",
+			nextAction: "Restore review context inputs.",
+			nextCommand: "harness review-context --files src/index.ts --json",
+			safeToRun: true,
+			requiresHuman: true,
+			requiresNetwork: false,
+			writesFiles: false,
+			evidenceRef: ["input:files"],
+			failureClass: "review_context_unavailable",
+			retry: "manual",
+			riskTier: "unknown",
+		});
+
+		expect(decision.phase).toBe("repair");
+		expect(decision.humanEscalation).toBe("Restore review context inputs.");
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
+		});
 	});
 });
 

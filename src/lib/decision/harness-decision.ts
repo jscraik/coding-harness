@@ -11,6 +11,14 @@ export type HarnessDecisionStatus =
 	| "blocked"
 	| "action_required";
 
+/** Agent work phase represented by a decision packet. */
+export type HarnessDecisionPhase =
+	| "orient"
+	| "verify"
+	| "review"
+	| "repair"
+	| "handoff";
+
 /** Retry posture for the recommended next action. */
 export type HarnessDecisionRetry = "safe" | "conditional" | "manual";
 
@@ -110,6 +118,64 @@ export interface HarnessDecision {
 	nextAction: string;
 	/** Exact command to run next, when available. */
 	nextCommand: string | null;
+	/** Agent work phase for the recommendation. */
+	phase: HarnessDecisionPhase;
+	/** Plain-language outcome the agent is trying to complete. */
+	objective: string;
+	/** Evidence artifacts, checks, or refs needed before closeout. */
+	requiredEvidence: string[];
+	/** Conditions that require stopping instead of improvising. */
+	stopConditions: string[];
+	/** Approval, credential, network, or policy blocker when present. */
+	humanEscalation: string | null;
+	/** Ordered later commands to consider after the next step succeeds. */
+	followUpCommands: string[];
+	/** Command engines used or considered but hidden from the public choice surface. */
+	hiddenPlumbing: string[];
+	/** Whether the recommended command is safe to run without extra approval. */
+	safeToRun: boolean;
+	/** Whether the next action requires human judgment or approval. */
+	requiresHuman: boolean;
+	/** Whether the next action requires network access. */
+	requiresNetwork: boolean;
+	/** Whether the next action writes files. */
+	writesFiles: boolean;
+	/** Evidence references used to justify the decision. */
+	evidenceRef: string[];
+	/** Failure taxonomy for blocked or failed states. */
+	failureClass: string | null;
+	/** Retry posture for the next action. */
+	retry: HarnessDecisionRetry;
+	/** Coarse risk tier. */
+	riskTier: HarnessDecisionRiskTier;
+	/** Optional producer-specific metadata. */
+	meta?: Record<string, unknown>;
+}
+
+/** Producer input for constructing a complete agent-readable decision envelope. */
+export interface HarnessDecisionInput {
+	/** Decision state. */
+	status: HarnessDecisionStatus;
+	/** Human-readable summary. */
+	summary: string;
+	/** Short next action recommendation. */
+	nextAction: string;
+	/** Command to run next, if one exists. */
+	nextCommand: string | null;
+	/** Agent work phase for the recommendation. */
+	phase?: HarnessDecisionPhase;
+	/** Plain-language outcome the agent is trying to complete. */
+	objective?: string;
+	/** Evidence artifacts, checks, or refs needed before closeout. */
+	requiredEvidence?: string[];
+	/** Conditions that require stopping instead of improvising. */
+	stopConditions?: string[];
+	/** Approval, credential, network, or policy blocker when present. */
+	humanEscalation?: string | null;
+	/** Ordered later commands to consider after the next step succeeds. */
+	followUpCommands?: string[];
+	/** Command engines used or considered but hidden from the public choice surface. */
+	hiddenPlumbing?: string[];
 	/** Whether the recommended command is safe to run without extra approval. */
 	safeToRun: boolean;
 	/** Whether the next action requires human judgment or approval. */
@@ -143,6 +209,14 @@ const VALID_STATUSES: readonly HarnessDecisionStatus[] = [
 	"fail",
 	"blocked",
 	"action_required",
+];
+
+const VALID_PHASES: readonly HarnessDecisionPhase[] = [
+	"orient",
+	"verify",
+	"review",
+	"repair",
+	"handoff",
 ];
 
 const VALID_RETRIES: readonly HarnessDecisionRetry[] = [
@@ -202,6 +276,47 @@ function isStringArray(value: unknown): value is string[] {
 		Array.isArray(value) &&
 		value.every((entry) => typeof entry === "string" && entry.trim().length > 0)
 	);
+}
+
+function inferDecisionPhase(input: HarnessDecisionInput): HarnessDecisionPhase {
+	if (input.phase !== undefined) return input.phase;
+	if (input.status === "blocked" || input.status === "fail") return "repair";
+	return "verify";
+}
+
+function defaultStopConditions(input: HarnessDecisionInput): string[] {
+	if (input.stopConditions !== undefined) return input.stopConditions;
+	if (input.nextCommand !== null) return [];
+	if (input.failureClass !== null) {
+		return [`Stop until ${input.failureClass} is resolved.`];
+	}
+	return ["Stop until the blocked decision has an explicit recovery path."];
+}
+
+/**
+ * Build a complete `harness-decision/v1` envelope from producer-level intent.
+ *
+ * Producers provide the actionable recommendation; this helper fills the
+ * shared agent-routing fields so command implementations do not duplicate
+ * schema plumbing or accidentally emit shallow decision packets.
+ */
+export function buildHarnessDecision(
+	producer: HarnessDecisionProducer,
+	input: HarnessDecisionInput,
+): HarnessDecision {
+	return {
+		schemaVersion: HARNESS_DECISION_SCHEMA_VERSION,
+		producer,
+		...input,
+		phase: inferDecisionPhase(input),
+		objective: input.objective ?? input.nextAction,
+		requiredEvidence: input.requiredEvidence ?? input.evidenceRef,
+		stopConditions: defaultStopConditions(input),
+		humanEscalation:
+			input.humanEscalation ?? (input.requiresHuman ? input.nextAction : null),
+		followUpCommands: input.followUpCommands ?? [],
+		hiddenPlumbing: input.hiddenPlumbing ?? [],
+	};
 }
 
 function validateString(value: unknown, field: string, errors: string[]): void {
@@ -355,6 +470,16 @@ function validateDecisionRoutingConsistency(
 	if (typeof nextCommand === "string" && safeToRun !== true) {
 		errors.push("safeToRun must be true when nextCommand is set");
 	}
+	if (
+		nextCommand === null &&
+		Array.isArray(value.stopConditions) &&
+		value.stopConditions.length === 0 &&
+		value.humanEscalation === null
+	) {
+		errors.push(
+			"stopConditions or humanEscalation must explain decisions without nextCommand",
+		);
+	}
 }
 
 /**
@@ -428,6 +553,13 @@ export function validateHarnessDecision(
 	validateString(value.summary, "summary", errors);
 	validateString(value.nextAction, "nextAction", errors);
 	validateNullableString(value.nextCommand, "nextCommand", errors);
+	validateEnum(value.phase, "phase", VALID_PHASES, errors);
+	validateString(value.objective, "objective", errors);
+	validateStringArray(value.requiredEvidence, "requiredEvidence", errors);
+	validateStringArray(value.stopConditions, "stopConditions", errors);
+	validateNullableString(value.humanEscalation, "humanEscalation", errors);
+	validateStringArray(value.followUpCommands, "followUpCommands", errors);
+	validateStringArray(value.hiddenPlumbing, "hiddenPlumbing", errors);
 	validateBoolean(value.safeToRun, "safeToRun", errors);
 	validateBoolean(value.requiresHuman, "requiresHuman", errors);
 	validateBoolean(value.requiresNetwork, "requiresNetwork", errors);
