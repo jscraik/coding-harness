@@ -2209,7 +2209,7 @@ describe("runInit", () => {
 				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,${TMP_BASENAME}/**"',
 			);
 			expect(refreshDiagrams).toContain(
-				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"',
+				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"',
 			);
 			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
 			expect(refreshDiagrams).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
