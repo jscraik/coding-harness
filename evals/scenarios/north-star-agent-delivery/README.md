@@ -26,7 +26,7 @@ The registry intentionally favors realistic agent-delivery prompts over generic 
 
 ## Scenario Classes
 
-The registry contains 15 high-signal scenarios:
+The registry contains 19 high-signal scenarios:
 
 - `live_fixture`: deterministic local fixture executed by `pnpm test:evals`
 - `registered`: scenario contract captured for future replay or external judge execution
@@ -43,6 +43,10 @@ The first executable slice runs these local fixtures:
 - `spec-reimplementation-loop`: converts source behavior into an executable spec, simulates a fresh implementation attempt, evaluates source/spec/implementation drift, improves the spec, and verifies the next implementation attempt has fewer missing assumptions.
 - `harness-engineering-lifecycle-routing`: evaluates deterministic Harness Engineering routing doctrine before promoting any workflow route into Coding Harness command behavior.
 - `review-feedback-eval-seed`: converts repeated late-stage remediation noise into a deterministic eval-seed artifact with matched files, evidence refs, remediation source, failure class, and a concrete target surface.
+- `github-app-auth-preflight`: classifies GitHub App vs PAT auth before live Checks API scenarios run, including private-key-path config and partial app config blockers.
+- `review-gate-check-name-alignment`: proves required check names, created check runs, and review-gate `checkName` inputs stay aligned before live polling can timeout.
+- `repo-local-e2e-scratch`: verifies E2E contracts and scratch artifacts stay under repo-local `artifacts/e2e` instead of OS temp paths rejected by contract path safety.
+- `github-check-run-transient-retry`: preserves the transient GitHub check-run retry policy while proving permission failures are not retried as flakes.
 
 These fixtures require no GitHub, CircleCI, CodeRabbit, Semgrep, or npm registry credentials.
 

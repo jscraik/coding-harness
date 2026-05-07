@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated files.
 import { spawnSync } from "node:child_process";
 import {
 	existsSync,
@@ -650,7 +651,7 @@ describe("runInit", () => {
 				expect.arrayContaining([
 					expect.objectContaining({
 						tool: "npm:@brainwav/diagram",
-						version: "1.0.8",
+						version: "1.1.0",
 					}),
 					expect.objectContaining({
 						tool: "npm:agent-browser",
@@ -1770,7 +1771,7 @@ describe("runInit", () => {
 			expect(prek).toContain("make hooks-pre-push");
 			expect(prek).toContain('stages = ["pre-push"]');
 			expect(miseToml).toContain('"cargo:prek" = "0.3.4"');
-			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.0.8"');
+			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.1.0"');
 			expect(miseToml).toContain('"npm:@argos-ci/cli" = "4.1.1"');
 			expect(miseToml).toContain('"cosign" = "3.0.5"');
 			expect(miseToml).toContain('"cloudflared" = "2026.3.0"');
@@ -2208,7 +2209,7 @@ describe("runInit", () => {
 				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,${TMP_BASENAME}/**"',
 			);
 			expect(refreshDiagrams).toContain(
-				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"',
+				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"',
 			);
 			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
 			expect(refreshDiagrams).toContain('cp "$TMP_DIR/diagrams/manifest.json"');

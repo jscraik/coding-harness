@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal .npmrc token placeholders.
 /**
  * Tests for verify-coderabbit command
  */

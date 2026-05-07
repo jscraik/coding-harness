@@ -3,8 +3,9 @@
  * check-architecture-rules.cjs
  *
  * Implements the rules defined in .architecture.yml using only Node.js
- * built-ins. Replaces `diagram test` (which has a MODULE_NOT_FOUND: ./rules
- * bug in @brainwav/diagram v1.0.8).
+ * built-ins. This replaced `diagram test` when @brainwav/diagram v1.0.8 had a
+ * MODULE_NOT_FOUND: ./rules bug; keep the local checks as the stable harness
+ * contract until a deliberate migration removes them.
  *
  * Rules enforced:
  *   - no-circular-deps       : no import cycles in src/
@@ -261,7 +262,20 @@ function checkGithubLibNoFs() {
 	}
 }
 
-// ── Rule: diagram-freshness ──────────────────────────────────────────────────
+/**
+ * Validates the AI/diagrams manifest and its diagram files for presence and freshness.
+ *
+ * Checks that AI/diagrams/manifest.json exists and is valid JSON (supports either
+ * a `diagrams` array or an object shape), ensures all REQUIRED_DIAGRAM_TYPES are
+ * present in the manifest, verifies each referenced diagram file exists under
+ * AI/diagrams, and flags diagrams that appear to be placeholders (contains the
+ * substring "PLACEHOLDER", is empty/whitespace, or matches a placeholder node pattern).
+ *
+ * When a problem is detected this function records a violation via `fail(...)`
+ * (for example: missing manifest, invalid JSON, missing diagram type/file, or
+ * placeholder content). The suggested regeneration command in violation messages
+ * is: `diagram generate-all . --output-dir AI/diagrams`.
+ */
 
 function checkDiagramFreshness() {
 	if (!fs.existsSync(MANIFEST_PATH)) {
@@ -269,7 +283,7 @@ function checkDiagramFreshness() {
 			"diagram-freshness",
 			"error",
 			MANIFEST_PATH,
-			`Manifest not found: ${path.relative(ROOT, MANIFEST_PATH)}. Run: diagram all . --output-dir AI/diagrams`,
+			`Manifest not found: ${path.relative(ROOT, MANIFEST_PATH)}. Run: diagram generate-all . --output-dir AI/diagrams`,
 		);
 		return;
 	}
@@ -334,7 +348,7 @@ function checkDiagramFreshness() {
 				"diagram-freshness",
 				"error",
 				diagPath,
-				`Diagram type ${type} is a placeholder. Regenerate: diagram all . --output-dir AI/diagrams`,
+				`Diagram type ${type} is a placeholder. Regenerate: diagram generate-all . --output-dir AI/diagrams`,
 			);
 		}
 	}

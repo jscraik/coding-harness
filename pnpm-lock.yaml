@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  axios: ^1.15.2
-  '@vvago/vale>axios': ^1.15.2
+  axios: ^1.16.0
+  '@vvago/vale>axios': ^1.16.0
   brace-expansion: ^5.0.5
   follow-redirects: ^1.16.0
   handlebars: ^4.7.9
@@ -19,12 +19,12 @@ overrides:
   yaml: ^2.8.3
   vite: '>=7.3.2 <8'
   handlebars@>=4.0.0 <=4.7.8: '>=4.7.9'
+  axios@<1.15.2: '>=1.16.0'
   brace-expansion@>=4.0.0 <5.0.5: '>=5.0.5'
   handlebars@>=4.0.0 <4.7.9: '>=4.7.9'
   picomatch@<2.3.2: '>=2.3.2'
   picomatch@>=4.0.0 <4.0.4: '>=4.0.4'
   yaml@>=2.0.0 <2.8.3: '>=2.8.3'
-  axios@<1.15.2: '>=1.15.2'
 
 importers:
 
@@ -66,16 +66,13 @@ importers:
       sqlite-vec:
         specifier: 0.1.7-alpha.2
         version: 0.1.7-alpha.2
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.4.14
         version: 2.4.14
       '@brainwav/diagram':
-        specifier: ^1.0.8
-        version: 1.0.8
+        specifier: ^1.1.0
+        version: 1.1.0
       '@total-typescript/shoehorn':
         specifier: ^0.1.2
         version: 0.1.2
@@ -109,6 +106,9 @@ importers:
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
       vitest:
         specifier: ^4.1.5
         version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(tsx@4.21.0)(yaml@2.8.3)
@@ -197,14 +197,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@brainwav/diagram@1.0.8':
-    resolution: {integrity: sha512-D1RNyXXtlAqPH2Vr/xa0N/uy5j4FFhVBXJ3PMzwGMyJ05c4s2C6VKfgTPxVj47juhxCJfcHr0PjRj2+esog9nQ==}
+  '@brainwav/diagram@1.1.0':
+    resolution: {integrity: sha512-QRjwOTIJXwtTE38By2KTL03/F8hShH/vx4rDEzmA2xej2q95jYMPVxBEHbBx3CN4G4lB2agXMxRdt2J2NpuFrw==}
     engines: {node: '>=18'}
     hasBin: true
-
-  '@colors/colors@1.5.0':
-    resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
-    engines: {node: '>=0.1.90'}
 
   '@esbuild/aix-ppc64@0.27.3':
     resolution: {integrity: sha512-9fJMTNFTWZMh5qwrBItuziu834eOCUcEqymSH7pY+zoMVEZg3gcPuBNxH1EvfVYe9h0x/Ptw8KBzv7qxb7l8dg==}
@@ -984,10 +980,6 @@ packages:
     resolution: {integrity: sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==}
     engines: {node: '>=18'}
 
-  cli-table3@0.6.5:
-    resolution: {integrity: sha512-+W/5efTR7y5HRD7gACw9yQjqMVvEMLBHmboM/kPWam+H+Hmyrgjh6YncVKK122YZkXrLudzTuAukUw9FnMf7IQ==}
-    engines: {node: 10.* || >= 12.*}
-
   cli-width@4.1.0:
     resolution: {integrity: sha512-ouuZd4/dm2Sw5Gmqy6bGyNNNe1qt9RpmxveLSO7KcgsTnU7RXfsw+/bukWGo1abgBiMAic068rclZsO4IWmmxQ==}
     engines: {node: '>= 12'}
@@ -1012,9 +1004,9 @@ packages:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
     engines: {node: '>= 0.8'}
 
-  commander@12.1.0:
-    resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
-    engines: {node: '>=18'}
+  commander@14.0.3:
+    resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
+    engines: {node: '>=20'}
 
   commander@8.3.0:
     resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
@@ -1269,7 +1261,7 @@ packages:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
-      picomatch: '>=4.0.4'
+      picomatch: ^4.0.4
     peerDependenciesMeta:
       picomatch:
         optional: true
@@ -2448,8 +2440,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod@4.3.6:
-    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
@@ -2509,18 +2501,14 @@ snapshots:
   '@biomejs/cli-win32-x64@2.4.14':
     optional: true
 
-  '@brainwav/diagram@1.0.8':
+  '@brainwav/diagram@1.1.0':
     dependencies:
       chalk: 4.1.2
-      cli-table3: 0.6.5
-      commander: 12.1.0
+      commander: 14.0.3
       glob: 10.5.0
       picomatch: 4.0.4
       yaml: 2.8.3
-      zod: 4.3.6
-
-  '@colors/colors@1.5.0':
-    optional: true
+      zod: 4.4.3
 
   '@esbuild/aix-ppc64@0.27.3':
     optional: true
@@ -3158,12 +3146,6 @@ snapshots:
 
   chownr@3.0.0: {}
 
-  cli-table3@0.6.5:
-    dependencies:
-      string-width: 4.2.3
-    optionalDependencies:
-      '@colors/colors': 1.5.0
-
   cli-width@4.1.0: {}
 
   cliui@7.0.4:
@@ -3188,7 +3170,7 @@ snapshots:
     dependencies:
       delayed-stream: 1.0.0
 
-  commander@12.1.0: {}
+  commander@14.0.3: {}
 
   commander@8.3.0: {}
 
@@ -4743,4 +4725,4 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod@4.3.6: {}
+  zod@4.4.3: {}

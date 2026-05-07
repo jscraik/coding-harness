@@ -97,8 +97,10 @@ export class ResourceTracker {
 			name,
 			metadata,
 			createdAt: new Date(),
-			cleanupFunction,
 		};
+		if (cleanupFunction) {
+			resource.cleanupFunction = cleanupFunction;
+		}
 		this.resources.set(id, resource);
 		return resource;
 	}
@@ -117,12 +119,15 @@ export class ResourceTracker {
 	 * Record an error
 	 */
 	recordError(error: Error, phase: "setup" | "test" | "cleanup"): void {
-		this.errors.push({
+		const record: ErrorRecord = {
 			timestamp: new Date().toISOString(),
 			phase,
 			message: error.message,
-			stack: error.stack,
-		});
+		};
+		if (error.stack) {
+			record.stack = error.stack;
+		}
+		this.errors.push(record);
 	}
 
 	/**

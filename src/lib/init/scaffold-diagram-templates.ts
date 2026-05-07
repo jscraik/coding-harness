@@ -28,9 +28,13 @@ export function renderCheckDiagramFreshnessScript(): string {
 }
 
 /**
- * Render the initial agent-facing diagram context placeholder.
+ * Produce the Markdown template used as the initial agent-facing diagram context.
  *
- * @returns Markdown content written to `AI/context/diagram-context.md`.
+ * This template is intended to be written to `AI/context/diagram-context.md` and
+ * documents how diagrams are generated, how agents should use the pack, and how
+ * to refresh diagrams manually.
+ *
+ * @returns The Markdown content for the initial diagram context pack.
  */
 export function renderInitialDiagramContextTemplate(): string {
 	return `# Diagram Context Pack
@@ -81,7 +85,7 @@ bash scripts/refresh-diagram-context.sh --dry-run
 
 
 # Generate diagrams
-pnpm exec diagram all . --output-dir .diagram
+pnpm exec diagram generate-all . --output-dir .diagram
 
 # Update context
 

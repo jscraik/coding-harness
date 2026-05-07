@@ -19,21 +19,21 @@
 - `any` SHOULD be avoided in production paths; use concrete types or `unknown` plus narrowing. If a temporary `any` is unavoidable, keep it local, justified, and covered by tests or a follow-up waiver.
 
 ## Banned patterns
-- `: any`, `as any`, `Promise<any>`, and `Record<string, any>` MUST NOT be used in production code.
-- `value as unknown as T` double assertions MUST NOT be used without runtime validation.
-- `// @ts-ignore` and `// @ts-nocheck` MUST NOT be used; use `@ts-expect-error` with rationale only when unavoidable.
-- Unsafe type assertions MUST NOT be used without guard functions or schema validation.
+- Unjustified `: any`, `as any`, `Promise<any>`, and `Record<string, any>` in production code.
+- `value as unknown as T` double assertions without runtime validation.
+- `// @ts-ignore` and `// @ts-nocheck`; use `@ts-expect-error` with rationale only when unavoidable.
+- Unsafe type assertions without guard functions or schema validation.
 
 ## Linting and module rules
 - Biome handles formatting and style-level lint in this repository and MUST pass where enabled.
 - TypeScript type safety MUST be enforced with `tsc --noEmit`.
 - Downstream projects MAY use ESLint for additional policy checks when an `eslint.config.*` file exists; do not claim ESLint coverage where it is not configured.
-- Node/TS packages SHOULD use ESM and explicit module syntax.
+- Prefer ESM and explicit module syntax for Node/TS packages.
 - Local ESM imports MUST include `.js` extensions for emitted JavaScript compatibility.
 - NodeNext TypeScript projects MUST keep `module` and `moduleResolution` aligned to `NodeNext` unless a documented runtime migration changes both together.
 - With `verbatimModuleSyntax` enabled, imports MUST reflect runtime semantics; use `import type` for type-only imports.
 - JSON imports in NodeNext-style modules MUST use import attributes when the runtime/compiler requires them, for example `with { type: "json" }`.
-- Imports MUST be acyclic; barrels that create circular dependency chains MUST NOT be used.
+- Keep imports acyclic; avoid barrels that create circular dependency chains.
 
 ## Async and cancellation
 - Prefer `async/await` over nested Promise chains.

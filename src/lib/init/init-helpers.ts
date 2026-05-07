@@ -96,6 +96,7 @@ export function probeManifest(
 				? "rollback"
 				: "check-updates",
 		preferredCiProvider: requestedCiProvider,
+		...(options.dryRun !== undefined ? { dryRun: options.dryRun } : {}),
 	});
 	if (!manifestProbeResult.ok) {
 		if (

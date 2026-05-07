@@ -12,6 +12,13 @@ Comprehensive end-to-end testing for the coding-harness CLI.
 export GITHUB_PERSONAL_ACCESS_TOKEN=ghp_xxx    # GitHub Personal Access Token
 export LINEAR_API_KEY=lin_api_xxx              # Linear API Key
 
+# Alternative GitHub App auth for check-run tests
+export E2E_GITHUB_APP_ID=123456
+export E2E_GITHUB_APP_INSTALLATION_ID=12345678
+export E2E_GITHUB_APP_PRIVATE_KEY='-----BEGIN PRIVATE KEY-----...'
+# Or keep the key in a file instead of inline env
+export E2E_GITHUB_APP_PRIVATE_KEY_PATH=/path/to/github-app-private-key.pem
+
 # Optional - defaults shown
 export GITHUB_TEST_OWNER=jscraik               # GitHub owner/organization
 export GITHUB_TEST_REPO=coding-harness-e2e-test # Test repository name
@@ -27,6 +34,13 @@ Your GitHub token needs these permissions on the test repository:
 - `pull_requests:write` - Create/update PRs
 - `issues:write` - Create comments on issues/PRs
 - `checks:write` - Create check runs
+
+GitHub App auth is preferred for check-run scenarios because GitHub restricts
+the Checks API more tightly than ordinary PR/comment APIs. The runner accepts
+either the `E2E_GITHUB_APP_*` names above or the generic `GITHUB_APP_ID`,
+`GITHUB_APP_INSTALLATION_ID`, `GITHUB_APP_PRIVATE_KEY`, and
+`GITHUB_APP_PRIVATE_KEY_PATH` names, then mints an installation token before
+running tests.
 
 ### Test Repository Setup
 
@@ -65,6 +79,13 @@ pnpm e2e --reporter json
 # Run specific test file
 pnpm e2e github-integration
 ```
+
+The runner writes a machine-readable closeout artifact to
+`artifacts/e2e/result.json` on preflight-only and full runs. The artifact
+records pass/fail status, auth source, Checks API preflight status, test counts,
+first failing scenario/assertion when Vitest output exposes them, blocker
+classification, and explicit skip reasons such as
+`skipped_due_to_missing_linear_team_state`.
 
 ## Test Structure
 

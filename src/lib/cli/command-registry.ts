@@ -1,5 +1,6 @@
 import {
 	COMMAND_CATALOG_SCHEMA_VERSION,
+	type CommandAgentMode,
 	type CommandCapability,
 	type CommandCapabilityCatalogDocument,
 	type CommandCategory,
@@ -8,7 +9,9 @@ import {
 	type CommandPrimaryAudience,
 	type CommandRetryability,
 	type CommandTier,
+	type CommandVisibility,
 	getCommandCapabilities,
+	getAgentCommandCapabilityCatalogDocument,
 	getCommandCapabilityCatalogDocument,
 } from "./registry/command-capabilities.js";
 import { suggestCommandCapabilities as suggestCatalogCapabilities } from "./registry/command-fuzzy.js";
@@ -26,12 +29,14 @@ import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 export type {
 	CommandCapability,
 	CommandCapabilityCatalogDocument,
+	CommandAgentMode,
 	CommandCategory,
 	CommandMutability,
 	CommandOrchestrator,
 	CommandPrimaryAudience,
 	CommandRetryability,
 	CommandTier,
+	CommandVisibility,
 	CommandSpec,
 	FuzzyCommandMatch,
 	FuzzyMatchConfidence,
@@ -49,7 +54,13 @@ const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Commands Catalog Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
-			const catalog = getRegistryCommandCatalogDocument();
+			const forAgentFlag = args.includes("--for-agent");
+			const fullCatalogFlag =
+				args.includes("--all") || args.includes("--plumbing");
+			const catalog =
+				forAgentFlag && !fullCatalogFlag
+					? getRegistryAgentCommandCatalogDocument()
+					: getRegistryCommandCatalogDocument();
 			if (jsonFlag) {
 				console.info(JSON.stringify(catalog));
 				return 0;
@@ -64,7 +75,9 @@ const COMMAND_SPECS: CommandSpec[] = [
 			}
 			console.info("");
 			console.info(
-				'Run "harness commands --json" for stable machine-readable metadata.',
+				forAgentFlag && !fullCatalogFlag
+					? 'Run "harness commands --json --all" for the full capability catalog.'
+					: 'Run "harness commands --json --for-agent" for the public agent rail set.',
 			);
 			return 0;
 		},
@@ -94,6 +107,11 @@ export function getRegistryCommandCapabilities(): CommandCapability[] {
 /** Build the versioned command capability catalog for `harness commands --json`. */
 export function getRegistryCommandCatalogDocument(): CommandCapabilityCatalogDocument {
 	return getCommandCapabilityCatalogDocument(COMMAND_SPECS);
+}
+
+/** Build the public agent rail catalog for `harness commands --json --for-agent`. */
+export function getRegistryAgentCommandCatalogDocument(): CommandCapabilityCatalogDocument {
+	return getAgentCommandCapabilityCatalogDocument(COMMAND_SPECS);
 }
 
 /** Return display-ready command help rows derived from registry capabilities. */

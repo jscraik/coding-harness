@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-05
+last_validated: 2026-05-07
 ---
 
 # Agent governance
@@ -36,16 +36,13 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
 
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
-- architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`
+- architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; E2E runner or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
 - workflow-authority routing and validation behavior changes should update `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, and `docs/agents/14-docs-gate-rollout.md`
 - agent-governance/category updates should keep `AGENTS.md` and this guide synchronized in the same PR
-- release workflow validation-tool changes should keep `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, and this guide synchronized in the same PR
-- release packaging changes that alter runtime dependency metadata must keep packed CLI smoke evidence, `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized before commit if docs-gate or pre-push triggers an architecture context refresh
 - north-star contract/scaffold updates that affect architecture context should update `docs/agents/00-architecture-bootstrap.md` and this guide in the same PR
 - north-star artifact contract changes should keep the README command evidence
   surface, AGENTS shared-vocabulary guidance, and this guide synchronized in
   the same PR
-- north-star status cadence refreshes should keep `docs/roadmap/agent-first-status.md`, its `harness.contract.json` `lastReviewedAt` registry entry, `README.md`, `AGENTS.md`, and this guide synchronized in the same PR
 - agent-native cockpit changes should keep next-action safety evidence, generated environment action contracts, and docs-gate-required operator surfaces synchronized before the PR can be considered merge-ready
 - generated hook setup or readiness changes should keep agent setup evidence synchronized: `scripts/setup-git-hooks.js` must install generated `prek` shims with repo-local `PREK_HOME`, and `scripts/check-environment.sh` must fail drift across installed `pre-commit`, `pre-push`, and `commit-msg` shims
 - goal-continuation and approval-plan contract changes should keep explicit
@@ -68,7 +65,7 @@ Every agent handoff should include:
   `.harness/guardrails/north-star/drift-findings.json`, `doctor` writes
   `.harness/guardrails/north-star/surface-classification-snapshot.json`, and
   review-gate alignment decisions live at
-  `.harness/guardrails/north-star/alignment-decision.json`.
+  `.harness/review-gate/north-star-alignment.json`.
 
 When executable behavior changes, broad gates are necessary but not sufficient
 on their own. Run the smallest real executable path that exercises the exact
