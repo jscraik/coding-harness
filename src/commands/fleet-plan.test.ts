@@ -417,6 +417,7 @@ describe("fleet-plan", () => {
 						exitCode: 0,
 					},
 					null,
+					42,
 				],
 			},
 		});
@@ -428,8 +429,36 @@ describe("fleet-plan", () => {
 		expect(plan.liveUpgradeBlockedBecause).toEqual(
 			expect.arrayContaining([
 				"matrix artifact did not report pass: true",
-				"1 matrix rows were malformed",
+				"2 matrix rows were malformed",
 			]),
+		);
+	});
+
+	it("surfaces generic matrix errors as live-upgrade blockers", () => {
+		const plan = buildFleetRemediationPlan({
+			matrixArtifact: "matrix-errors.json",
+			generatedAt: "2026-05-06T12:00:00.000Z",
+			matrix: {
+				pass: true,
+				results: [
+					{
+						repo: "/repo/error",
+						trackedManifest: true,
+						missingFleetContractSurfaces: [],
+						legacyGreptilePaths: [],
+						errors: ["unexpected stderr from dry-run"],
+						exitCode: 0,
+					},
+				],
+			},
+		});
+
+		expect(plan.liveUpgradeReady).toBe(false);
+		expect(plan.safeToRun).toBe(false);
+		expect(plan.repos[0]?.blockingReasons).toContain("matrix-reported-errors");
+		expect(plan.findingCounts.matrixReportedErrors).toBe(1);
+		expect(plan.liveUpgradeBlockedBecause).toContain(
+			"1 repo reported matrix errors",
 		);
 	});
 

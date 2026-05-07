@@ -39,7 +39,10 @@ describe("E2E runner helpers", () => {
 		expect(patternNeedsCheckRunWrite("github-integration")).toBe(true);
 		expect(patternNeedsCheckRunWrite("command-pipeline")).toBe(true);
 		expect(patternNeedsCheckRunWrite("e2e/tests")).toBe(true);
-		expect(patternNeedsCheckRunWrite("e2e/tests/*.e2e.test.ts")).toBe(true);
+		expect(patternNeedsCheckRunWrite("e2e/tests/*.e2e.test.ts")).toBe(false);
+		expect(
+			patternNeedsCheckRunWrite("e2e/tests/github-integration*.e2e.test.ts"),
+		).toBe(true);
 		expect(patternNeedsCheckRunWrite("linear-integration")).toBe(false);
 		expect(
 			patternNeedsCheckRunWrite("e2e/tests/linear-integration.e2e.test.ts"),
@@ -52,6 +55,7 @@ describe("E2E runner helpers", () => {
 				{
 					bail: true,
 					reporters: ["verbose"],
+					parallel: 1,
 					timeout: 300000,
 				},
 				"github-integration",
@@ -64,6 +68,8 @@ describe("E2E runner helpers", () => {
 			"--bail",
 			"--reporter",
 			"verbose",
+			"--maxWorkers",
+			"1",
 			"--test-timeout",
 			"300000",
 			"e2e/tests/github-integration",
@@ -110,6 +116,19 @@ describe("E2E runner helpers", () => {
 	it("turns Vitest skips into explicit Linear skip reasons", () => {
 		expect(
 			classifySkipReasons(7, "Tests 18 passed | 7 skipped", undefined),
+		).toEqual([
+			{
+				reason: "skipped_unscoped",
+				count: 7,
+				evidence: "Tests 18 passed | 7 skipped",
+			},
+		]);
+		expect(
+			classifySkipReasons(
+				7,
+				"Tests 18 passed | 7 skipped",
+				"linear-integration",
+			),
 		).toEqual([
 			{
 				reason: "skipped_due_to_missing_linear_team_state",

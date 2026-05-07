@@ -214,6 +214,7 @@ export interface FleetRemediationPlan {
 		dryRunMutatedRepository: number;
 		matrixCommandFailed: number;
 		invalidMatrixJsonOutput: number;
+		matrixReportedErrors: number;
 	};
 	/** Human-readable reasons live upgrades are currently unsafe. */
 	liveUpgradeBlockedBecause: string[];
@@ -344,8 +345,9 @@ function shellQuote(value: string): string {
  * @param args.trackedManifest - `true` if the repo is tracked by Harness, `false` if explicitly untracked, `null` if unknown.
  * @returns An array of reason codes describing why the repo is not live-upgrade ready, for example:
  * `dry-run-mutated-repository`, `matrix-command-failed`, `invalid-matrix-json-output`,
- * `repo-not-harness-tracked`, `tracked-repo-missing-circleci`, `missing-coderabbit`,
- * `missing-codestyle`, `stale-codestyle`, `legacy-greptile-present`. The reasons are returned in evaluation order.
+ * `matrix-reported-errors`, `repo-not-harness-tracked`, `tracked-repo-missing-circleci`,
+ * `missing-coderabbit`, `missing-codestyle`, `stale-codestyle`, `legacy-greptile-present`.
+ * The reasons are returned in evaluation order.
  */
 function buildBlockingReasons(args: {
 	statusChangedByDryRun: boolean;
@@ -386,6 +388,12 @@ function buildBlockingReasons(args: {
 	}
 	if (args.hasGreptileGap) {
 		blockingReasons.push("legacy-greptile-present");
+	}
+	if (
+		args.errors.some((error) => !isMatrixOutputValidationError(error)) &&
+		blockingReasons.length === 0
+	) {
+		blockingReasons.push("matrix-reported-errors");
 	}
 	return blockingReasons;
 }
@@ -692,6 +700,7 @@ function buildFindingCounts(
 			repos,
 			"invalid-matrix-json-output",
 		),
+		matrixReportedErrors: countReposWithReason(repos, "matrix-reported-errors"),
 	};
 }
 
@@ -742,6 +751,11 @@ function buildLiveUpgradeBlockers(
 	if (findingCounts.invalidMatrixJsonOutput > 0) {
 		blockers.push(
 			`${pluralize(findingCounts.invalidMatrixJsonOutput, "repo", "repos")} emitted invalid matrix JSON`,
+		);
+	}
+	if (findingCounts.matrixReportedErrors > 0) {
+		blockers.push(
+			`${pluralize(findingCounts.matrixReportedErrors, "repo", "repos")} reported matrix errors`,
 		);
 	}
 	if (findingCounts.notHarnessTracked > 0) {

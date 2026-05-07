@@ -190,10 +190,13 @@ export function patternNeedsCheckRunWrite(pattern?: string): boolean {
 		return true;
 	}
 	const normalizedPattern = pattern.replace(/\\/g, "/").replace(/^\.\//, "");
+	const hasChecksLaneName = /github-integration|command-pipeline/.test(
+		normalizedPattern,
+	);
 	if (
 		normalizedPattern === "e2e" ||
 		normalizedPattern === "e2e/tests" ||
-		/[{[*?]/.test(normalizedPattern)
+		(/[{[*?]/.test(normalizedPattern) && hasChecksLaneName)
 	) {
 		return true;
 	}
@@ -223,6 +226,9 @@ export function buildVitestArgs(
 		for (const reporter of options.reporters) {
 			args.push("--reporter", reporter);
 		}
+	}
+	if (options.parallel !== undefined && options.parallel > 0) {
+		args.push("--maxWorkers", String(options.parallel));
 	}
 
 	args.push("--test-timeout", String(options.timeout));
@@ -576,7 +582,8 @@ export function classifySkipReasons(
 ): E2ESkipReason[] {
 	if (testsSkipped === 0) return [];
 	const includesLinearLane =
-		!pattern || /linear-integration|command-pipeline/.test(pattern);
+		pattern !== undefined &&
+		/linear-integration|command-pipeline/.test(pattern);
 	if (includesLinearLane) {
 		return [
 			{
@@ -589,11 +596,15 @@ export function classifySkipReasons(
 	}
 	return [
 		{
-			reason: "skipped_due_to_unclassified_vitest_skip",
+			reason: pattern
+				? "skipped_due_to_unclassified_vitest_skip"
+				: "skipped_unscoped",
 			count: testsSkipped,
 			evidence:
-				output.match(/Tests.+skipped.+/i)?.[0]?.trim() ??
-				"Vitest reported skipped tests.",
+				output.match(/Tests[^\n]*skipped[^\n]*/i)?.[0]?.trim() ??
+				(pattern
+					? "Vitest reported skipped tests."
+					: "Unscoped Vitest run reported skipped tests."),
 		},
 	];
 }
