@@ -186,9 +186,9 @@ interface SessionMatch {
 }
 
 const REMEDIATION_TERMS =
-	/\b(fix|restore|review|coderabbit|circleci|ci|validation|eval|helper|import|regression)\b/i;
+	/\b(fix|restore|review|coderabbit|circleci|ci|validation|eval|helper|regression)\b/i;
 const MISSING_HELPER_TERMS =
-	/\b(missing helper|side_effect_consistency|module not found|import)\b/i;
+	/\b(missing helper|side_effect_consistency|module not found|import error|failed to import|cannot import)\b/i;
 
 /**
  * Build and optionally persist an observed skill usage artifact.

@@ -288,7 +288,7 @@ function gitLogArgs(options: CliOptions): string[] {
 		options.gitRange ??
 			options.gitBranch ??
 			currentGitBranch(options) ??
-			"--all",
+			"HEAD",
 	);
 	if (options.gitPaths.length > 0) args.push("--", ...options.gitPaths);
 	return args;
@@ -331,7 +331,7 @@ function describeGitRange(options: CliOptions): string {
 		options.gitRange ??
 			options.gitBranch ??
 			currentGitBranch(options) ??
-			"--all",
+			"HEAD",
 		`--max-count=${options.gitMaxCount}`,
 	];
 	if (options.gitSince) parts.push(`--since=${options.gitSince}`);
