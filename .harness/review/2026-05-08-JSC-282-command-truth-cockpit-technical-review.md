@@ -183,6 +183,15 @@ Remaining before JSC-282 closure:
 
 - P2 compatibility proof remains required: full catalog probes and expert help
   must still pass in the final eval.
+- Source-repo `plan-gate` proof must use
+  `pnpm exec tsx src/cli.ts plan-gate ...`; `pnpm exec harness ...` is package
+  parity evidence and can lag the working tree.
+- Existing `drift-gate --mode advisory --json` command-surface warnings must be
+  captured and classified in the JSC-282 eval instead of silently ignored.
+- The JSC-282 eval must include real source-CLI command transcript evidence;
+  unit tests alone are not enough for closure.
+- Packaged binary/install parity must not be claimed in JSC-282; it remains
+  the JSC-283 proof target.
 - The JSC-282 eval artifact is still required before unblocking JSC-283.
 
 ## Validation Evidence
@@ -198,7 +207,7 @@ Artifact validation run after saving the plan and review:
 
 ```bash
 pnpm docs:lint .harness/plan/2026-05-08-architecture-JSC-282-command-truth-cockpit-plan.md .harness/review/2026-05-08-JSC-282-command-truth-cockpit-technical-review.md
-pnpm exec harness plan-gate --plans .harness/plan --type architecture --require-plan-id --require-origin --strict --json
+pnpm exec tsx src/cli.ts plan-gate --plans .harness/plan --type architecture --require-plan-id --require-origin --strict --json
 pnpm exec vitest run src/lib/cli/command-registry.test.ts src/cli.test.ts
 ```
 

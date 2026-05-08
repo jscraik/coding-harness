@@ -2,7 +2,7 @@
 schema_version: 1
 title: JSC-282 Command Truth Cockpit Plan
 type: architecture
-status: draft
+status: active
 date: 2026-05-08
 plan_id: jsc-282-command-truth-cockpit
 origin: docs/specs/2026-05-07-feat-ruthless-agent-native-compression-recovery-spec.md
@@ -25,6 +25,7 @@ traceability_required: true
 
 - [Plan Summary](#plan-summary)
 - [Current Live Evidence](#current-live-evidence)
+- [Loophole Review State](#loophole-review-state)
 - [Authority And Scope](#authority-and-scope)
 - [Technical Direction](#technical-direction)
 - [First-Contact Budget](#first-contact-budget)
@@ -67,8 +68,25 @@ cannot widen first-contact surfaces accidentally.
 | `src/lib/cli/registry/command-capabilities.ts` | `FIRST_CONTACT_COMMAND_NAMES` is `["next"]` | First-contact admission currently has one explicit code authority. |
 | `src/lib/cli/command-registry.ts` | `--for-agent` returns the filtered agent catalog unless `--all` or `--plumbing` is supplied | Full catalog compatibility remains available while agent catalog stays compressed. |
 | `src/lib/cli/command-registry.test.ts` | Agent rail and help-row tests assert `["next"]` | Regression tests exist and should be the closure proof baseline. |
-| `docs/specs/2026-05-07-feat-ruthless-agent-native-compression-recovery-spec.md` | Baseline prose still says agent catalog had `commandCount: 9` and help was broad | The legacy spec is source evidence, but its live-state baseline is stale. Do not let this reopen solved work. |
-| `.agents/skills/coding-harness/SKILL.md` | Packaged skill still says to treat `harness --help` as command truth | Skill guidance needs refinement: focused help is the first-contact entrypoint; `commands --json` is capability truth. |
+| `docs/specs/2026-05-07-feat-ruthless-agent-native-compression-recovery-spec.md` | The May 7 command-count rows are now explicitly historical pre-JSC-282 evidence and point back to this plan for current truth | The legacy spec remains useful context without reopening solved runtime work. |
+| `docs/plans/2026-05-02-feat-agent-native-cockpit-control-loop-plan.md` | The May 7 refresh evidence is now explicitly historical pre-JSC-282 evidence and points back to this plan for current truth | The source plan can still explain why compression was needed without pretending its old baseline is current. |
+| `.agents/skills/coding-harness/SKILL.md` | Skill guidance now distinguishes `next`, focused help, full catalog, and public agent rails | Downstream agents should not infer full capability truth from focused help alone. |
+| `pnpm exec tsx src/cli.ts drift-gate --mode advisory --json` | Warns about 64 baseline README-vs-dispatch findings with `status: warn` and 0 errors | This is residual command-doc drift evidence. JSC-282 eval must classify it instead of hiding it, but it does not invalidate the one-rail source probes. |
+
+## Loophole Review State
+
+This plan was re-reviewed after the initial blocker fixes because the first
+draft still left factual loopholes:
+
+| Loophole | Fix now encoded in this plan |
+| --- | --- |
+| The plan still described legacy docs and skill guidance as stale after they were edited. | Current evidence now records the fixed state and keeps the remaining eval proof explicit. |
+| Packaged skill guidance still contained old "help is command truth" language. | Skill and contract guidance now split first-contact help from full catalog truth. |
+| Validation used `pnpm exec harness plan-gate`, which can prove the installed package instead of the current source tree. | Source-repo validation now uses `pnpm exec tsx src/cli.ts plan-gate`; packaged parity remains a separate JSC-283 proof target. |
+| Full compatibility could be lost while only the compressed agent catalog was checked. | Acceptance and validation require full `commands --json`, `commands --json --for-agent --all`, and `--help --all-commands` probes. |
+| Existing `drift-gate` command-surface warnings could be ignored. | The JSC-282 eval must record and classify those warnings before JSC-283 is unblocked. |
+| Package parity could be mistaken for JSC-282 closure. | JSC-282 is source-truth closure only; packaged binary/install parity is explicitly JSC-283 and must not be claimed here. |
+| Eval closure could degrade into unit-test evidence only. | IU-005 now requires a real command transcript from source CLI probes; tests alone are insufficient for done-state. |
 
 ## Authority And Scope
 
@@ -133,6 +151,16 @@ ADR, update the code-level admission fixture, and add a regression test proving
 why `next` alone is insufficient.
 
 ## Implementation Steps
+
+Implementation state after the May 8 loophole review:
+
+| Unit | State | Remaining closure gate |
+| --- | --- | --- |
+| IU-001 | Source probes have been run during review. | Persist summarized metrics in the eval artifact. |
+| IU-002 | Implemented: legacy source docs now mark the old command-count snapshot as historical and point back to this plan. | Docs lint plus eval evidence. |
+| IU-003 | Implemented: skill and contract guidance now teach the `next` / focused help / full catalog split. | Markdown/YAML validation plus JSC-283 packaged proof. |
+| IU-004 | Existing registry and CLI tests already assert the one-rail budget. | Focused Vitest pass before closure. |
+| IU-005 | Pending. | Write `.harness/evals/coding-harness-jsc-282-command-truth-eval.md` before unblocking JSC-283. |
 
 ### IU-001 - Freeze Live Command Baseline
 
@@ -265,14 +293,19 @@ Affected systems:
 Eval must include:
 
 - command outputs or summarized JSON metrics from IU-001,
+- a real source-CLI command transcript for `next`, focused help, full catalog,
+  public agent rails, expert help, source `plan-gate`, and source `drift-gate`,
 - tests run and exact outcomes,
 - docs/skill reconciliation summary,
+- the `drift-gate --mode advisory --json` status and a classification of the
+  baseline README-vs-dispatch warnings,
 - remaining work intentionally deferred to JSC-283,
 - rollback notes if a later install or package build proves divergence.
 
 Closure proof:
 
 - The eval artifact says whether JSC-282 is ready to unblock JSC-283.
+- The eval artifact does not claim packaged binary/install parity.
 - JSC-283 has an exact runtime and packaged skill behavior to prove.
 
 ## Acceptance Criteria
@@ -286,6 +319,9 @@ Closure proof:
 | AC-005 | Packaged skill guidance teaches first-contact vs full-catalog truth correctly. | Skill diff and markdown/yaml validation where available. |
 | AC-006 | Regression tests fail on accidental first-contact widening. | Focused Vitest command-registry and CLI tests. |
 | AC-007 | JSC-283 receives a deterministic packaged behavior target. | Eval artifact and Linear closure note. |
+| AC-008 | Existing command-doc drift warnings are not hidden. | `drift-gate --mode advisory --json` captured and classified in the eval artifact. |
+| AC-009 | Eval closure is based on real source CLI probes, not tests alone. | Eval artifact includes command transcript or summarized command metrics for every validation surface. |
+| AC-010 | Packaged parity is not overclaimed. | Eval explicitly defers packaged binary/install proof to JSC-283. |
 
 ## Validation Plan
 
@@ -294,15 +330,23 @@ changed:
 
 ```bash
 pnpm exec tsx src/cli.ts commands --json --for-agent
+pnpm exec tsx src/cli.ts commands --json
+pnpm exec tsx src/cli.ts commands --json --for-agent --all
 pnpm exec tsx src/cli.ts --help
+pnpm exec tsx src/cli.ts --help --all-commands
 pnpm exec vitest run src/lib/cli/command-registry.test.ts src/cli.test.ts
 pnpm docs:lint .harness/plan/2026-05-08-architecture-JSC-282-command-truth-cockpit-plan.md
-pnpm exec harness plan-gate --plans .harness/plan --type architecture --require-plan-id --require-origin --strict --json
+pnpm exec tsx src/cli.ts plan-gate --plans .harness/plan --type architecture --require-plan-id --require-origin --strict --json
+pnpm exec tsx src/cli.ts drift-gate --mode advisory --json
 ```
 
 If docs or packaged skill files are edited, also run the relevant focused docs
 or skill validation available in the repo. If behavior changes, run
 `bash scripts/validate-codestyle.sh --fast` before handoff.
+
+Use `pnpm exec harness ...` only as packaged parity evidence. In this source
+repository, source-truth validation must run through `pnpm exec tsx src/cli.ts`
+so version and dispatch evidence come from the working tree under review.
 
 ## Rollback Plan
 
@@ -359,7 +403,7 @@ Agent-safe work:
 - Adding new command aliases for cockpit rails.
 - Reworking command dispatch architecture.
 - Deleting full catalog commands.
-- Proving installed package behavior in a downstream fixture. That is JSC-283.
+- Proving installed package or globally installed binary behavior in a downstream fixture. That is JSC-283.
 - Reopening the broader JSC-248 cockpit implementation unless tests prove a
   current regression.
 

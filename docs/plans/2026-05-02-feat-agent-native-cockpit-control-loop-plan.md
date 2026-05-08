@@ -188,7 +188,8 @@ non-negotiable rule is:
 Agents should only need to remember: harness next --json
 ```
 
-Live evidence collected for the refresh:
+Historical evidence collected for the May 7 refresh before the JSC-282
+command-truth cleanup:
 
 - `pnpm exec tsx src/cli.ts commands --json --for-agent` returns
   `commandCount: 9`.
@@ -198,6 +199,12 @@ Live evidence collected for the refresh:
 - `fd -e md . docs | wc -l` reports `148` documentation markdown files.
 - `README.md` still presents the cockpit loop as one route beside bootstrap,
   issue start, and review submission.
+
+Current command-truth execution for JSC-282 lives in
+`.harness/plan/2026-05-08-architecture-JSC-282-command-truth-cockpit-plan.md`.
+As of the May 8 source probe, `commands --json --for-agent` returns
+`commandCount: 1` with only `next`, while the full catalog remains available
+through explicit expert discovery.
 
 Plan implication: the next implementation pass must start with subtractive proof
 and admission gates. Do not spend the next slice deepening more metadata,

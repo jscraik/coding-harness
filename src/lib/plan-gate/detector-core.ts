@@ -236,7 +236,11 @@ function findPlanDocs(plansPath: string): string[] {
 				docs.push(...findPlanDocs(entryPath));
 				continue;
 			}
-			if (stats.isFile() && entry.endsWith(".md")) {
+			if (
+				stats.isFile() &&
+				entry.endsWith(".md") &&
+				looksLikePlanDoc(entryPath)
+			) {
 				docs.push(entryPath);
 			}
 		}
@@ -246,6 +250,30 @@ function findPlanDocs(plansPath: string): string[] {
 
 	// Sort by date (newest first)
 	return docs.sort().reverse();
+}
+
+function looksLikePlanDoc(filePath: string): boolean {
+	const filename = basename(filePath);
+	if (filename.endsWith("-plan.md")) {
+		return true;
+	}
+
+	try {
+		const content = readFileSync(filePath, "utf-8");
+		if (!content.match(/^---\s*\n[\s\S]*?\n---\s*\n/)) {
+			return false;
+		}
+
+		const { frontmatter, body } = parseFrontmatter(content);
+		if (frontmatter.planId) {
+			return true;
+		}
+
+		const sections = hasRequiredSections(body);
+		return sections.hasImplementationSteps || sections.hasAcceptanceCriteria;
+	} catch {
+		return false;
+	}
 }
 
 function resolvePlanSearchPaths(plansPath?: string): string[] {
@@ -348,7 +376,6 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 		: extractPlanIdsFromText(options.prTitle, options.prBody);
 
 	const artifacts: PlanArtifact[] = [];
-	const artifactErrors = new Map<string, PlanError[]>();
 	const errors: PlanError[] = [];
 
 	// Find all plan documents
@@ -370,12 +397,10 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 	// Load and validate each document
 	for (const docPath of docs) {
 		const result = loadPlanDoc(docPath, maxAgeDays, requireOrigin);
+		errors.push(...result.errors);
 
 		if (result.artifact) {
 			artifacts.push(result.artifact);
-			artifactErrors.set(result.artifact.path, result.errors);
-		} else {
-			errors.push(...result.errors);
 		}
 	}
 
@@ -420,10 +445,6 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 				});
 			}
 		}
-	}
-
-	for (const artifact of filteredArtifacts) {
-		errors.push(...(artifactErrors.get(artifact.path) ?? []));
 	}
 
 	if (requirePlanId) {

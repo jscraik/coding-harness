@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EXIT_CODES, runPlanGate } from "../lib/plan-gate/detector.js";
 import { runPlanGateCLI } from "./plan-gate.js";
@@ -58,8 +58,48 @@ function createHarnessPlan(
 	}
 
 	const filepath = join(plansDir, filename);
+	mkdirSync(dirname(filepath), { recursive: true });
 	writeFileSync(filepath, content, "utf-8");
 	return filepath;
+}
+
+function createValidHarnessPlan(
+	filename: string,
+	planId: string,
+	basePath: string,
+	title = "Account Settings",
+): string {
+	return createHarnessPlan(
+		filename,
+		[
+			"---",
+			`title: ${title}`,
+			"date: 2026-05-08",
+			"type: standard-plan",
+			"status: draft",
+			`plan_id: ${planId}`,
+			"---",
+			"",
+			"## Implementation Steps",
+			"",
+			"- Preserve HE plan units.",
+			"",
+			"## Acceptance Criteria",
+			"",
+			"- [ ] HE plan can be validated without a date-prefixed filename.",
+		].join("\n"),
+		basePath,
+	);
+}
+
+function withCwd<T>(cwd: string, callback: () => T): T {
+	const previousCwd = process.cwd();
+	process.chdir(cwd);
+	try {
+		return callback();
+	} finally {
+		process.chdir(previousCwd);
+	}
 }
 
 describe("plan-gate command", () => {
@@ -110,47 +150,100 @@ describe("plan-gate command", () => {
 		});
 
 		it("discovers Harness Engineering plans from .harness/plan by default", () => {
-			createHarnessPlan(
+			createValidHarnessPlan(
 				"JSC-246-account-settings.md",
-				[
-					"---",
-					"title: Account Settings",
-					"date: 2026-05-08",
-					"type: standard-plan",
-					"status: draft",
-					"plan_id: jsc-246-account-settings",
-					"---",
-					"",
-					"## Implementation Steps",
-					"",
-					"- Preserve HE plan units.",
-					"",
-					"## Acceptance Criteria",
-					"",
-					"- [ ] HE plan can be validated without a date-prefixed filename.",
-				].join("\n"),
+				"jsc-246-account-settings",
 				testDir,
 			);
 
-			const previousCwd = process.cwd();
-			process.chdir(testDir);
-			const result = (() => {
-				try {
-					return runPlanGate({
-						type: "standard-plan",
-						requirePlanId: true,
-						planIds: ["jsc-246-account-settings"],
-					});
-				} finally {
-					process.chdir(previousCwd);
-				}
-			})();
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					type: "standard-plan",
+					requirePlanId: true,
+					planIds: ["jsc-246-account-settings"],
+				}),
+			);
 
 			expect(result.passed).toBe(true);
 			expect(result.artifacts).toHaveLength(1);
 			expect(result.artifacts[0]?.path).toContain(".harness/plan");
 			expect(result.artifacts[0]?.type).toBe("standard-plan");
 			expect(result.artifacts[0]?.planId).toBe("jsc-246-account-settings");
+		});
+
+		it("ignores non-plan markdown files during recursive .harness/plan discovery", () => {
+			createValidHarnessPlan(
+				"JSC-246-account-settings.md",
+				"jsc-246-account-settings",
+				testDir,
+			);
+			createHarnessPlan(
+				"scratch/notes.md",
+				"# Scratch notes\n\nThis is operator context, not a plan artifact.",
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requirePlanId: true,
+					planIds: ["jsc-246-account-settings"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.path).toContain(
+				"JSC-246-account-settings.md",
+			);
+			expect(result.errors).toHaveLength(0);
+		});
+
+		it("preserves validation errors from discovered plans when a plan ID is selected", () => {
+			createValidHarnessPlan(
+				"JSC-246-account-settings.md",
+				"jsc-246-account-settings",
+				testDir,
+			);
+			createHarnessPlan(
+				"JSC-247-missing-origin.md",
+				[
+					"---",
+					"title: Missing Origin",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-247-missing-origin",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Keep invalid artifact visible.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Selected plan filtering does not hide this error.",
+				].join("\n"),
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requireOrigin: true,
+					planIds: ["jsc-246-account-settings"],
+				}),
+			);
+
+			expect(result.passed).toBe(false);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.planId).toBe("jsc-246-account-settings");
+			expect(
+				result.errors.some((error) => error.code === "ORIGIN_MISSING"),
+			).toBe(true);
+			expect(
+				result.errors.some((error) =>
+					error.path?.includes("JSC-247-missing-origin.md"),
+				),
+			).toBe(true);
 		});
 
 		it("filters by type", () => {

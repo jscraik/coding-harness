@@ -33,7 +33,7 @@ packet, and only learn deeper commands when the cockpit selects them.
 - [Non-Goals](#non-goals)
 - [Linear Work Item Contract](#linear-work-item-contract)
 - [System Boundary](#system-boundary)
-- [Baseline Repo Evidence](#baseline-repo-evidence)
+- [Historical Baseline Repo Evidence](#historical-baseline-repo-evidence)
 - [Domain Model](#domain-model)
 - [Compression Lifecycle](#compression-lifecycle)
 - [Interfaces](#interfaces)
@@ -195,9 +195,10 @@ The product contract must flip:
 - `docs/plans/2026-05-02-feat-agent-native-cockpit-control-loop-plan.md`
 - Any docs or tests added to prove fresh-agent behavior.
 
-## Baseline Repo Evidence
+## Historical Baseline Repo Evidence
 
-Live evidence collected on 2026-05-07:
+Historical evidence collected on 2026-05-07 before the JSC-282 command-truth
+cleanup:
 
 | Evidence command | Result | Interpretation |
 | --- | --- | --- |
@@ -210,6 +211,12 @@ Live evidence collected on 2026-05-07:
 The current shape proves progress and the remaining failure at the same time.
 The catalog can classify commands, but the product has not yet made the
 classification ruthless enough.
+
+Current command-truth execution for JSC-282 lives in
+`.harness/plan/2026-05-08-architecture-JSC-282-command-truth-cockpit-plan.md`.
+As of the May 8 source probe, `commands --json --for-agent` returns
+`commandCount: 1` with only `next`, while the full catalog remains available
+through explicit expert discovery.
 
 ## Domain Model
 
