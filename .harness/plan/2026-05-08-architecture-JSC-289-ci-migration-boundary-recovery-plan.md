@@ -67,7 +67,7 @@ public `ci-migrate` command before reducing the core file.
 | Project | `coding-harness` |
 | Initiative | `Dev Portfolio` |
 | Milestone | `CI Migration Boundary Recovery Slice` |
-| Linear status | `Triage` |
+| Linear status | `In Progress` |
 | Priority | High / `2` |
 | Labels | `Reliability`, `architecture`, `Refactor`, `Drift-Risk` |
 | Execution route | Agent-assisted; human review required at phase boundaries |
@@ -102,7 +102,7 @@ and refreshed again on 2026-05-08 after Linear OAuth access recovered.
 
 | Object | Live state | Plan response |
 | --- | --- | --- |
-| `JSC-289` | Exists in project `coding-harness`, status `Triage`, priority High / `2`. | Use as the active tracked parent issue for this plan. |
+| `JSC-289` | Exists in project `coding-harness`, status `In Progress`, priority High / `2`. | Use as the active tracked parent issue for this plan. |
 | Milestone | `CI Migration Boundary Recovery Slice` exists with zero progress. | Use as the target milestone. |
 | Labels | `Drift-Risk`, `Reliability`, `architecture`, and `Refactor` exist and are applied to `JSC-289`. | No label repair required before planning. |
 | Historical CI migration issues | `JSC-54`, `JSC-58`, `JSC-59`, `JSC-60`, `JSC-61`, `JSC-79`, `JSC-104`, and `JSC-117` are done or historical context. | Treat as evidence only; do not reopen or absorb. |

@@ -398,8 +398,15 @@ function sessionValidationOutcome(
 	session: Record<string, unknown>,
 ): ObservedWorkflowEvidence["validationOutcome"] {
 	if (Object.keys(recordValue(session.blockers)).length > 0) return "fail";
-	if (Object.keys(recordValue(session.validation_gates)).length > 0)
-		return "pass";
+	const validationGates = recordValue(session.validation_gates);
+	if (
+		Object.values(validationGates).some((value) =>
+			/(blocked|error|fail)/i.test(String(value)),
+		)
+	) {
+		return "fail";
+	}
+	if (Object.keys(validationGates).length > 0) return "pass";
 	return "unknown";
 }
 
@@ -591,9 +598,10 @@ function judgeEval(
 	sessionObservation: SessionObservation,
 	remediationEvidence: ObservedRemediationEvidence,
 ): ObservedEvalJudgment {
-	const missedIssue = remediationEvidence.followUpCommits > 0;
+	const didCatchIssue = sessionObservation.validationOutcome === "fail";
+	const missedIssue = remediationEvidence.followUpCommits > 0 && !didCatchIssue;
 	return {
-		didCatchIssue: sessionObservation.validationOutcome === "fail",
+		didCatchIssue,
 		missedIssue,
 		smallestNextEvalSeed: missedIssue
 			? seedForFailure(remediationEvidence.repeatedFailureClass)
