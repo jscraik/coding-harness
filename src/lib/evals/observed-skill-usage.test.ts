@@ -183,6 +183,45 @@ describe("buildObservedSkillUsage", () => {
 		});
 	});
 
+	it("does not mark remediation after caught failures as missed issues", () => {
+		const dir = mkdtempSync(join(tmpdir(), "observed-skill-usage-caught-"));
+		const sessionCollectorPath = join(
+			dir,
+			"artifacts/session-collector/session-collector.json",
+		);
+
+		writeJson(sessionCollectorPath, {
+			sessions: [
+				{
+					first_seen_at: "2026-05-08T10:15:00.000Z",
+					last_seen_at: "2026-05-08T10:47:00.000Z",
+					skill_mentions: { "he-eval-report": 1 },
+					validation_gates: {
+						"pnpm test:artifacts:evals": "fail",
+					},
+				},
+			],
+		});
+
+		const artifact = buildObservedSkillUsage({
+			skill: "he-eval-report",
+			repoRoot: dir,
+			sessionCollectorPath,
+			gitLogText:
+				"abc123\t2026-05-08 12:00:00 +0100\tfix: repair eval artifact drift",
+			gitRange: "HEAD~20..HEAD",
+			generatedAt: "2026-05-08T12:30:00.000Z",
+		});
+
+		expect(artifact.workflowEvidence.validationOutcome).toBe("fail");
+		expect(artifact.remediationEvidence.followUpCommits).toBe(1);
+		expect(artifact.evalJudgment).toMatchObject({
+			didCatchIssue: true,
+			missedIssue: false,
+			smallestNextEvalSeed: null,
+		});
+	});
+
 	it("does not treat generic eval project hints as skill usage", () => {
 		const dir = mkdtempSync(join(tmpdir(), "observed-skill-usage-generic-"));
 		const sessionCollectorPath = join(

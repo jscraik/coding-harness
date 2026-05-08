@@ -68,14 +68,14 @@ public `ci-migrate` command before reducing the core file.
 | Project | `coding-harness` |
 | Initiative | `Dev Portfolio` |
 | Milestone | `CI Migration Boundary Recovery Slice` |
-| Linear status | `Triage` |
+| Linear status | `In Progress` |
 | Priority | High / `2` |
 | Labels | `Reliability`, `architecture`, `Refactor`, `Drift-Risk` |
 | Execution route | Agent-assisted; human review required at phase boundaries |
 | Source Linear plan | `.harness/linear/coding-harness-linear-plan.md` |
 | Source spec | `.harness/specs/2026-05-08-JSC-289-ci-migration-boundary-recovery-spec.md` |
 | Source refactor | `.harness/refactors/ci-migration-boundary-recovery.md` |
-| Required eval | `.harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` |
+| Planned eval | `.harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` |
 
 ## Source Authority
 
@@ -103,7 +103,7 @@ and refreshed again on 2026-05-08 after Linear OAuth access recovered.
 
 | Object | Live state | Plan response |
 | --- | --- | --- |
-| `JSC-289` | Exists in project `coding-harness`, status `Triage`, priority High / `2`. | Use as the active tracked parent issue for this plan. |
+| `JSC-289` | Exists in project `coding-harness`, status `In Progress`, priority High / `2`. | Use as the active tracked parent issue for this plan. |
 | Milestone | `CI Migration Boundary Recovery Slice` exists with zero progress. | Use as the target milestone. |
 | Labels | `Drift-Risk`, `Reliability`, `architecture`, and `Refactor` exist and are applied to `JSC-289`. | No label repair required before planning. |
 | Historical CI migration issues | `JSC-54`, `JSC-58`, `JSC-59`, `JSC-60`, `JSC-61`, `JSC-79`, `JSC-104`, and `JSC-117` are done or historical context. | Treat as evidence only; do not reopen or absorb. |
@@ -363,9 +363,9 @@ Can run in parallel: no.
 Validation requirements:
 
 - Boundary decision names one candidate boundary.
-- Decision explains why alternatives were deferred.
-- Decision lists exact compatibility tests that protect the boundary.
-- Decision states whether extraction is approved or deferred.
+- Rationale explains why alternatives were deferred.
+- Compatibility tests that protect the boundary are listed explicitly.
+- Approval status states whether extraction is approved or deferred.
 
 Rollback conditions:
 
@@ -439,8 +439,8 @@ Validation requirements:
 
 - Eval report exists at
   `.harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md`.
-- Eval records exact command outcomes.
-- Eval states whether `JSC-289` is complete, blocked, or needs another slice.
+- Report records exact command outcomes.
+- Completion status states whether `JSC-289` is complete, blocked, or needs another slice.
 - Linear closure is not recommended unless acceptance IDs are traceable.
 
 Rollback conditions:
@@ -495,11 +495,16 @@ Plan artifact validation:
 
 | Command | Required before handoff |
 | --- | --- |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Yes |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Yes |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Yes |
 | `pnpm markdownlint .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Yes |
 | `git diff --check` | Yes |
+
+Planned checks:
+
+| Command | Status |
+| --- | --- |
+| `python3 ./scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Planned; blocked until `./scripts/validation-and-linting/` exists. |
+| `python3 ./scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Planned; blocked until `./scripts/validation-and-linting/` exists. |
+| `python3 ./scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Planned; blocked until `./scripts/validation-and-linting/` exists. |
 
 Implementation validation for Phase 1:
 
@@ -520,15 +525,15 @@ Implementation validation for Phase 1:
 Implementation validation for Phase 3:
 
 - Re-run all Phase 1 focused tests.
-- Run `pnpm typecheck`.
-- Run `pnpm run quality:docstrings`.
-- Run `pnpm run quality:size`.
-- Run `pnpm run test:related`.
-- Run `bash scripts/validate-codestyle.sh --fast`.
-- Run `bash scripts/verify-work.sh --fast`.
+- Execute `pnpm typecheck`.
+- Verify docstrings with `pnpm run quality:docstrings`.
+- Check size limits with `pnpm run quality:size`.
+- Validate related tests via `pnpm run test:related`.
+- Apply codestyle checks: `bash scripts/validate-codestyle.sh --fast`.
+- Verify work readiness: `bash scripts/verify-work.sh --fast`.
 - Run `pnpm check` before PR handoff unless blocked by a concrete environment
   issue.
-- Run `pnpm test:deep` if runtime or artifact behavior changes.
+- Execute `pnpm test:deep` if runtime or artifact behavior changes.
 
 Do not claim live branch-protection correctness from `--json` output alone.
 Live governance reads are required only if a later approved phase intentionally
@@ -565,13 +570,12 @@ Before any local commit for a completed phase:
 Phase-specific gates:
 
 - Phase 1: review must confirm no runtime behavior changes.
-- Phase 1: review must confirm every characterization matrix row has one of
-  the allowed proof classifications.
+- Phase 1: every characterization matrix row must have one of the allowed proof
+  classifications.
 - Phase 2: human review must approve or defer extraction boundary.
-- Phase 3: review must confirm the extraction is not a shallow wrapper and does
-  not import the old core as a hidden dependency.
-- Phase 4: review must confirm eval evidence is enough for Linear closure or
-  state the blocker.
+- Phase 3: confirm the extraction is not a shallow wrapper and does not import
+  the old core as a hidden dependency.
+- Phase 4: verify eval evidence is enough for Linear closure or state the blocker.
 
 ## Rollback Strategy
 
@@ -629,7 +633,7 @@ Protected unless explicitly approved:
 Commit slicing guidance:
 
 - Phase 1 inventory-only work should be one local commit if committed.
-- Phase 1 test additions may be a second commit if they touch test files.
+- Test additions may be a second commit if they touch test files.
 - Phase 3 extraction must not share a commit with characterization inventory.
 - Eval and closure evidence may be separate from source/test changes if it
   makes review easier.

@@ -91,3 +91,37 @@ def test_validator_emits_json_findings_on_failure(tmp_path: Path) -> None:
         and finding["file"] == "SKILL.md"
         for finding in report["findings"]
     )
+
+
+def test_validator_emits_json_findings_for_non_file_targets(tmp_path: Path) -> None:
+    """
+    Verify the validator reports directories in expected file positions without crashing.
+    """
+    script = Path(__file__).with_name("validate_reference_contracts.py")
+    (tmp_path / "SKILL.md").mkdir()
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--skill-root",
+            str(tmp_path),
+            "--package-form",
+            "extracted-local-tarball",
+            "--truth-source",
+            "JSC-282 source-command truth",
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    report = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert report["status"] == "fail"
+    assert any(
+        finding["kind"] == "unreadable-file"
+        and finding["file"] == "SKILL.md"
+        for finding in report["findings"]
+    )
