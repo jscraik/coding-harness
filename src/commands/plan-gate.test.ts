@@ -171,6 +171,63 @@ describe("plan-gate command", () => {
 			expect(result.artifacts[0]?.planId).toBe("jsc-246-account-settings");
 		});
 
+		it("selects the newest artifact when duplicate plan IDs exist", () => {
+			createHarnessPlan(
+				"2026-05-08-standard-plan-command-truth-cockpit.md",
+				[
+					"---",
+					"title: Newer Command Truth Cockpit",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-282-command-truth-cockpit",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Use the current artifact.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Newest duplicate plan ID is selected.",
+				].join("\n"),
+				testDir,
+			);
+			createHarnessPlan(
+				"2026-05-07-standard-plan-command-truth-cockpit.md",
+				[
+					"---",
+					"title: Older Command Truth Cockpit",
+					"date: 2026-05-07",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-282-command-truth-cockpit",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Keep stale metadata out of selected results.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Older duplicate plan ID is not selected.",
+				].join("\n"),
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requirePlanId: true,
+					planIds: ["jsc-282-command-truth-cockpit"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.title).toBe("Newer Command Truth Cockpit");
+			expect(result.artifacts[0]?.path).toContain("2026-05-08");
+		});
+
 		it("ignores non-plan markdown files during recursive .harness/plan discovery", () => {
 			createValidHarnessPlan(
 				"JSC-246-account-settings.md",

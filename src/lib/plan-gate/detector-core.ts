@@ -307,6 +307,25 @@ function resolvePlanSearchPaths(plansPath?: string): string[] {
 	);
 }
 
+function planArtifactTimestamp(artifact: PlanArtifact): number {
+	const timestamp = Date.parse(artifact.date);
+	return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function isNewerPlanArtifact(
+	candidate: PlanArtifact,
+	current: PlanArtifact,
+): boolean {
+	const candidateTimestamp = planArtifactTimestamp(candidate);
+	const currentTimestamp = planArtifactTimestamp(current);
+
+	if (candidateTimestamp !== currentTimestamp) {
+		return candidateTimestamp > currentTimestamp;
+	}
+
+	return candidate.path > current.path;
+}
+
 /**
  * Load and validate a plan document
  */
@@ -452,7 +471,11 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 	const artifactsByPlanId = new Map<string, PlanArtifact>();
 	for (const artifact of artifacts) {
 		if (artifact.planId) {
-			artifactsByPlanId.set(normalizePlanId(artifact.planId), artifact);
+			const planId = normalizePlanId(artifact.planId);
+			const current = artifactsByPlanId.get(planId);
+			if (!current || isNewerPlanArtifact(artifact, current)) {
+				artifactsByPlanId.set(planId, artifact);
+			}
 		}
 	}
 

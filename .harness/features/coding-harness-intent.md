@@ -320,7 +320,7 @@ Preserve these unless an explicit migration plan and compatibility window exist:
 - `.harness/ci-required-checks.json` required-check manifest.
 - `scripts/codex-preflight.sh`, `scripts/verify-work.sh`, `scripts/validate-codestyle.sh`, and codestyle parity scripts.
 - PR template testing and review artifact fields.
-- Project Brain paths under `.harness/knowledge/**`, `.harness/decisions/**`, and `.harness/review-log.md`.
+- Project Brain paths under `.harness/knowledge/**`, `.harness/decisions/**`, `.harness/review-log.md`, and `.harness/README.md`.
 - The installed downstream skill shape under `.agents/skills/coding-harness/`.
 
 Why:
