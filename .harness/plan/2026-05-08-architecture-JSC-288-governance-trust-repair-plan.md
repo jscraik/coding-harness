@@ -702,6 +702,11 @@ Implementation status:
 
 Plan artifact validation:
 
+The external Harness Engineering artifact linters are optional workspace checks:
+run them when a local `agent-skills` checkout is available at
+`AGENT_SKILLS_ROOT`, otherwise record the skipped dependency and still run the
+repo-local markdownlint and `plan-gate` commands.
+
 ```bash
 AGENT_SKILLS_ROOT="${AGENT_SKILLS_ROOT:-../agent-skills}"
 python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py" .harness/plan/2026-05-08-architecture-JSC-288-governance-trust-repair-plan.md

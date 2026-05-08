@@ -163,10 +163,14 @@ def emit_text(report: ReferenceReport) -> None:
     if report.findings:
         print("FAIL reference contract check:")
         for finding in report.findings:
-            location = finding.file
-            if finding.line is not None:
+            location = ""
+            if finding.file is not None and finding.line is not None:
                 location = f"{finding.file}:{finding.line}"
-            print(f"- {location}: {finding.message}")
+            elif finding.file is not None:
+                location = finding.file
+
+            prefix = f"{location}: " if location else ""
+            print(f"- {prefix}{finding.message}")
         return
 
     print("PASS reference contract check")

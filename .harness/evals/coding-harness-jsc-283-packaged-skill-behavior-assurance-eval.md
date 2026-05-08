@@ -172,10 +172,10 @@ Confidence: high.
 Blocks Closure: no.
 
 Command or Method: `pnpm docs:lint .harness/plan/2026-05-08-architecture-JSC-283-packaged-skill-behavior-assurance-plan.md .harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`.
-Result: pass before this eval-report rewrite.
-Evidence: 290 Markdown files linted; 0 errors.
-Confidence: high for the pre-report evidence ledger; this rewritten report must be linted again before closeout.
-Blocks Closure: no if the final lint rerun passes.
+Result: pass after this eval-report rewrite.
+Evidence: markdownlint-cli2 linted 293 Markdown files; 0 errors.
+Confidence: high; final lint rerun completed for the rewritten report.
+Blocks Closure: no.
 
 Command or Method: `jq . .harness/evidence/jsc-283-closure/closure-summary.json .harness/evidence/jsc-283-closure/fixture-records.json .harness/evidence/jsc-283-closure/artifact-index.json`.
 Result: pass.

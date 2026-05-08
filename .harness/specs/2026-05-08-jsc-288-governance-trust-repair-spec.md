@@ -218,12 +218,13 @@ Current tracker state:
 
 Live repo evidence checked during spec deepening:
 
-- `.github/PULL_REQUEST_TEMPLATE.md` requires a `memory.json` shape check as
-  part of local PR evidence.
-- `memory.json` exists and contains bootstrap placeholder values:
+- `.github/PULL_REQUEST_TEMPLATE.md` now requires
+  `bash scripts/run-harness-gate.sh tooling-audit --path . --json` as part of
+  local PR evidence.
+- `memory.json` still exists and contains bootstrap placeholder values:
   `repo: replace-with-repo-name`, `session_id: bootstrap/init`, and the entry
   content `Harness memory baseline initialized. Replace with task-specific
-  observations.`
+  observations.` It is legacy/sample evidence, not the required PR trust proof.
 - `.harness/memory/LEARNINGS.md` exists and is distinct from `memory.json`.
 - `.harness/knowledge/**` exists with domain files for `ci`, `cli`,
   `governance`, and `tooling`.
@@ -301,8 +302,8 @@ the slice cannot accidentally avoid the highest-risk truth paths:
 | --- | --- | --- |
 | `harness.contract.json` | Published aggregate contract and machine-readable governance authority. | Contract domain, owner, validation command, compatibility rule. |
 | `src/lib/contract/types-core.ts` | Typed mirror/defaults for the aggregate contract. | Matching contract domains, generated/default status, drift check. |
-| `.github/PULL_REQUEST_TEMPLATE.md` | Requires local gates and `memory.json` proof in PR evidence. | Whether each required checkbox maps to executable proof or symbolic evidence. |
-| `memory.json` | Current PR-template trust check can pass on shape alone. | Operational, fixture-only, deprecated, or removed-from-required-path decision. |
+| `.github/PULL_REQUEST_TEMPLATE.md` | Requires local gates and wrapper-backed `tooling-audit` proof in PR evidence. | Whether each required checkbox maps to executable proof or symbolic evidence. |
+| `memory.json` | Legacy/sample memory file still exists with bootstrap placeholder values. | Operational, fixture-only, deprecated, or removed-from-required-path decision. |
 | `.harness/memory/LEARNINGS.md` | Repo-local learned-fixes memory surface named by AGENTS. | Required/optional status, owner, freshness signal, and closeout rule. |
 | `.harness/knowledge/**` | Project Brain governance and learned-rule surfaces. | Operational status, generated/manual status, freshness and rule-ID policy. |
 | `.harness/review-log.md` | Review/governance history and Project Brain update ledger. | Evidence role, owner, required/optional status. |

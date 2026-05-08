@@ -40,8 +40,8 @@ No blocking findings remain.
 
 | Risk | Review result |
 | --- | --- |
-| Placeholder memory passing as required trust | Pass. The spec names the live PR-template memory check and the placeholder `memory.json` values, then blocks fixture or placeholder memory from satisfying required trust. |
-| Inventory scope avoiding the risky surfaces | Pass. The required inventory seed names the contract, typed mirror, PR template, `memory.json`, Project Brain, AGENTS, high-risk governance docs, and packaged skill references. |
+| Placeholder memory passing as required trust | Pass. The spec names the current wrapper-backed `tooling-audit` PR proof and the placeholder `memory.json` values, then blocks fixture or placeholder memory from satisfying required trust. |
+| Inventory scope avoiding the risky surfaces | Pass. The required inventory seed names the contract, typed mirror, PR template, legacy `memory.json`, Project Brain, AGENTS, high-risk governance docs, and packaged skill references. |
 | Behavior changes before ownership review | Pass. The first slice is explicitly inventory-only and behavior-preserving. |
 | Contract fragmentation before compatibility design | Pass. The spec requires bounded-context ownership and compatibility validation before schema movement. |
 | Governance prose deletion losing discoverability | Pass. Deletion or demotion is blocked when it would remove the only discoverable instruction for a required workflow. |
@@ -51,8 +51,8 @@ No blocking findings remain.
 ## Evidence Reviewed
 
 - `.harness/specs/2026-05-08-jsc-288-governance-trust-repair-spec.md:219`
-  records live repo evidence for the PR-template memory check and placeholder
-  memory content.
+  records live repo evidence for the PR-template `tooling-audit` wrapper and
+  placeholder memory content.
 - `.harness/specs/2026-05-08-jsc-288-governance-trust-repair-spec.md:268`
   defines source-of-truth classification roles.
 - `.harness/specs/2026-05-08-jsc-288-governance-trust-repair-spec.md:295`
@@ -61,9 +61,11 @@ No blocking findings remain.
   defines spec, plan, and implementation validation expectations.
 - `.harness/specs/2026-05-08-jsc-288-governance-trust-repair-spec.md:450`
   defines technical review blockers.
-- `.github/PULL_REQUEST_TEMPLATE.md:13` requires the current `memory.json`
-  shape check as local PR evidence.
-- `memory.json:2` and `memory.json:11` show placeholder bootstrap values.
+- `.github/PULL_REQUEST_TEMPLATE.md:13` requires
+  `bash scripts/run-harness-gate.sh tooling-audit --path . --json` as local PR
+  evidence.
+- `memory.json:2` and `memory.json:11` show legacy placeholder bootstrap values
+  that must not satisfy required PR trust proof.
 
 ## Residual Risks For he-plan
 
