@@ -11,7 +11,7 @@ traceability_required: true
 origin: .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md
 linear_issue: JSC-289
 linear_milestone: CI Migration Boundary Recovery Slice
-linear_status: Triage
+linear_status: In Progress
 review_target: .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md
 ---
 

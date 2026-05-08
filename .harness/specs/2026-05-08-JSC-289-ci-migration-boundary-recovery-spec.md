@@ -10,7 +10,7 @@ date: 2026-05-08
 traceability_required: true
 origin: .harness/linear/coding-harness-linear-plan.md
 linear_issue: JSC-289
-linear_status: Triage
+linear_status: In Progress
 linear_milestone: CI Migration Boundary Recovery Slice
 risk: migration-risk
 depth: bounded
