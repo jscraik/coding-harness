@@ -28,16 +28,17 @@ function parseFrontmatter(content: string): {
 	frontmatter: PlanFrontmatter;
 	body: string;
 } {
+	const normalizedContent = content.replace(/^\uFEFF/, "");
 	const frontmatter: PlanFrontmatter = {
 		title: "",
 		date: "",
 		type: "feature",
 		status: "draft",
 	};
-	let body = content;
+	let body = normalizedContent;
 
 	// Check for YAML frontmatter
-	const match = content.match(
+	const match = normalizedContent.match(
 		/^---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n([\s\S]*)$/,
 	);
 	if (match?.[1]) {
@@ -283,7 +284,7 @@ function inspectPlanDoc(
 	isUnreadable: boolean;
 } {
 	try {
-		const content = readFileSync(filePath, "utf-8");
+		const content = readFileSync(filePath, "utf-8").replace(/^\uFEFF/, "");
 		contentCache.set(filePath, content);
 		if (!content.match(/^---\s*\r?\n[\s\S]*?\r?\n---\s*\r?\n/)) {
 			return { isPlan: false, isUnreadable: false };

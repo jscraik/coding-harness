@@ -214,6 +214,43 @@ describe("plan-gate command", () => {
 			expect(result.artifacts[0]?.planId).toBe("jsc-247-windows-authored-plan");
 		});
 
+		it("discovers BOM-prefixed frontmatter in Harness Engineering plans", () => {
+			createHarnessPlan(
+				"JSC-247-bom-authored-plan.md",
+				`\uFEFF${[
+					"---",
+					"title: BOM Authored Plan",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-247-bom-authored-plan",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Preserve BOM-authored plan docs.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] BOM frontmatter is discovered.",
+				].join("\n")}`,
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					type: "standard-plan",
+					requirePlanId: true,
+					planIds: ["jsc-247-bom-authored-plan"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.title).toBe("BOM Authored Plan");
+			expect(result.artifacts[0]?.planId).toBe("jsc-247-bom-authored-plan");
+		});
+
 		it("selects the newest artifact when duplicate plan IDs exist", () => {
 			createHarnessPlan(
 				"2026-05-08-standard-plan-command-truth-cockpit.md",
