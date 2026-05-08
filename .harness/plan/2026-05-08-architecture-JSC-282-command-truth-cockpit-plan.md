@@ -2,7 +2,7 @@
 schema_version: 1
 title: JSC-282 Command Truth Cockpit Plan
 type: architecture
-status: active
+status: complete
 date: 2026-05-08
 plan_id: jsc-282-command-truth-cockpit
 origin: docs/specs/2026-05-07-feat-ruthless-agent-native-compression-recovery-spec.md
