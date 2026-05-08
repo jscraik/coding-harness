@@ -359,7 +359,7 @@ Governance compression output:
 
 Eval output:
 
-- `.harness/evals/coding-harness-governance-contract-memory-simplification-eval.md`.
+- `.harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md`.
 
 Plan output:
 
@@ -445,7 +445,7 @@ Implementation validation to be defined by `he-plan`:
 - Review-context or learning-loop validation when CodeRabbit/imported learning
   evidence remains part of closure.
 - Final eval artifact at
-  `.harness/evals/coding-harness-governance-contract-memory-simplification-eval.md`.
+  `.harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md`.
 
 ## Review Gate
 
@@ -474,7 +474,7 @@ Technical review must block the plan if any of these are true:
 | SA-288-004 | Contract bounded contexts are named without changing the published aggregate contract shape. | Contract ownership map. | Contract validation or no-behavior-change proof. |
 | SA-288-005 | Repeated governance prose has delete, link, generate, or keep-with-owner disposition. | Compression table. | Docs lint and no-orphan-required-guidance review. |
 | SA-288-006 | New governance admission criteria are specified with repeated-failure/safety reason, owner, enforcement/projection path, validation command, and deletion/revisit condition. | Admission criteria section or gate proposal. | Fixture/gate validation if implemented, otherwise plan-ready requirement. |
-| SA-288-007 | `JSC-288` closure requires a governance drift eval artifact. | Eval file path reserved and acceptance mapped. | `.harness/evals/coding-harness-governance-contract-memory-simplification-eval.md` before closure. |
+| SA-288-007 | `JSC-288` closure requires a governance drift eval artifact. | Eval file path reserved and acceptance mapped. | `.harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md` before closure. |
 | SA-288-008 | Scope does not absorb CI migration, `JSC-178`, broad contract fragmentation, or general docs cleanup. | Out-of-scope list preserved in spec and plan. | `he-plan` review. |
 | SA-288-009 | The required inventory seed is covered or each omission has a documented blocker/out-of-scope reason. | Inventory coverage table. | Technical review against the seed table. |
 | SA-288-010 | Each retained required governance surface is classified as executable policy, generated projection, or canonical human guidance with an owner. | Classification table. | No required path classified as reference-only, fixture, deprecated, or stale. |
@@ -544,7 +544,7 @@ Expected plan path:
 
 Expected eval path:
 
-`.harness/evals/coding-harness-governance-contract-memory-simplification-eval.md`
+`.harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md`
 
 ## Blackboard Delta
 

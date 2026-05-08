@@ -626,7 +626,7 @@ Entry criteria:
 
 Expected output:
 
-- `.harness/evals/coding-harness-governance-contract-memory-simplification-eval.md`.
+- `.harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md`.
 
 Eval must show:
 
@@ -664,7 +664,7 @@ Agent-assisted. Human review required for closure.
 
 Implementation status:
 
-- Implemented in `.harness/evals/coding-harness-governance-contract-memory-simplification-eval.md`.
+- Implemented in `.harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md`.
 - All implementation units are complete pending final human review and merge
   closeout gates.
 

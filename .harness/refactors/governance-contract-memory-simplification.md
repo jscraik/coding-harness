@@ -483,7 +483,7 @@ Keep active set small: memory ownership plus one contract/design issue.
 
 Expected eval artifact:
 
-`.harness/evals/coding-harness-governance-contract-memory-simplification-eval.md`
+`.harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md`
 
 Eval must prove:
 
