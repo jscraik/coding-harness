@@ -38,6 +38,55 @@ Recommended active set:
 Reason: command truth drift blocks agent confidence across the rest of the
 system. Fixing it first reduces ambiguity before deeper migrations.
 
+## Approved Current Slice
+
+None.
+
+`JSC-282` is locally complete for the source-command scope. Closure proof lives
+in `.harness/evals/coding-harness-jsc-282-command-truth-eval.md`, and the
+active plan is marked complete. Live Linear still shows `JSC-282` in `Triage`,
+so Linear state needs cleanup, but it should not reopen the implementation
+slice.
+
+## Linear Delta Capture
+
+Last synced: 2026-05-08
+Source: Linear project `coding-harness`, milestone `Agent Cockpit Compression
+Slice`, parents `JSC-282` and `JSC-283`
+Label status: resolved
+
+Required label reconciliation:
+
+| Label | Live status | Reason |
+| --- | --- | --- |
+| Developer Experience | created/applied | Planned label for command/skill UX impact; created in the JSC team and applied to `JSC-282` and `JSC-283`. |
+| Reliability | created/applied | Planned label for validation/release-confidence impact; created in the JSC team and applied to `JSC-282` and `JSC-283`. |
+| Architecture | existing as `architecture` | Case drift is obvious and reusable; acceptable normalization if applied. |
+| Routing | created/applied | Planned label for command routing determinism; created in the JSC team and applied to `JSC-282`. |
+| Drift-Risk | created/applied | Planned label for anti-drift work; created in the JSC team and applied to `JSC-282`. |
+| Agent-Native | created/applied | Planned label for agent execution/discoverability work; created in the JSC team and applied to `JSC-283`. |
+| Eval | created/applied | Planned label for eval-backed closure; created in the JSC team and applied to `JSC-283`. |
+
+Labels were reconciled through the Linear plugin on 2026-05-08 after explicit
+approval. `JSC-282` now has `Developer Experience`, `Reliability`,
+`architecture`, `Routing`, and `Drift-Risk`; `JSC-283` now has `Developer
+Experience`, `Agent-Native`, `Eval`, and `Reliability`.
+
+| Issue | Title | Status | Priority | Classification | Reason |
+| --- | --- | --- | --- | --- | --- |
+| JSC-282 | `[coding-harness] Reconcile command truth for PR-loop cockpit` | Triage | High | already_covered | Live issue exists in the planned milestone. Local source-scope implementation and eval are complete, but Linear status is stale and should be closed or advanced separately. |
+| JSC-283 | `[coding-harness] Prove packaged skill behavior for cockpit commands` | Triage | High | candidate_next_slice | This is the planned second parent issue for the active milestone and is explicitly unblocked by JSC-282 source proof. It has no child issues and no labels yet. |
+| JSC-248 | `Implement agent-native cockpit control loop first slice` | In Progress | High | already_covered | Legacy/umbrella cockpit work remains active under `Control loop hardening and flow telemetry`; do not let it expand the next spec beyond JSC-283. |
+| JSC-178 | `Modularize contract validation and command registry to reduce core-file risk` | In Progress | High | out_of_scope | Separate architecture-modularization work. It overlaps command-registry concerns but is not part of the approved cockpit packaged-skill slice. |
+
+## Approved Next Slice Queue
+
+| Order | Slice | Linear Issue | Route | Depends On | Notes |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Prove packaged skill behavior for cockpit commands | JSC-283 | he-spec -> he-plan -> he-work; agent-assisted with human review at fixture/admission boundaries | JSC-282 source-command proof; label reconciliation approval or explicit label deferral | Next bounded spec should consume `.harness/refactors/packaged-skill-behavior-assurance.md`, ADR-007, routing/moat/execution invariants, and the JSC-282 eval. Do not include broader command cleanup or JSC-248 umbrella scope. |
+| 2 | Governance Trust Repair Slice | not yet selected | hold | JSC-283 packaged behavior proof or explicit deferral | Remains next strategic lane after adoption-surface proof. |
+| 3 | CI Migration Boundary Recovery Slice | not yet selected | hold | active cockpit milestone closed or paused | High leverage but migration-risk; keep out of the current spec. |
+
 ## Target Linear Destination
 
 | Work type | Destination | Parent initiative | Reason |

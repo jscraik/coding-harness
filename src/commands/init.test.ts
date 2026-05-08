@@ -3774,6 +3774,47 @@ describe("--update flag", () => {
 		expect(updatedManifest.harnessVersion).not.toBe("0.0.1");
 	});
 
+	it("skips tracked codex environment updates after user customization", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const environmentPath = join(
+			tempDir,
+			".codex/environments/environment.toml",
+		);
+		const customizedEnvironment =
+			'# Jamie-owned custom environment\n[tools]\ncustom = "preserve-me"\n';
+		writeFileSync(environmentPath, customizedEnvironment, "utf-8");
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			harnessVersion?: string;
+		};
+		manifest.harnessVersion = "0.0.1";
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.skipped).toContain(
+				".codex/environments/environment.toml",
+			);
+			expect(result.output.updated).not.toContain(
+				".codex/environments/environment.toml",
+			);
+		}
+		expect(readFileSync(environmentPath, "utf-8")).toBe(customizedEnvironment);
+	});
+
 	it("adopts newly introduced scaffolded scripts during update when older manifests do not track them", () => {
 		const installResult = runInit(tempDir, {
 			dryRun: false,

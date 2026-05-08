@@ -7,6 +7,7 @@
 		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",
 		"scripts/validate-codestyle.sh",
+		"scripts/check-doc-style.sh",
 		"scripts/check-related-tests.sh",
 		"scripts/refresh-diagram-context.sh",
 		"scripts/check-diagram-freshness.sh",
@@ -14,6 +15,13 @@
 		"scripts/check-code-size.mjs",
 		"scripts/lib",
 		"scripts/check-codestyle-parity.sh",
+		"scripts/check-semgrep-changed.sh",
+		"scripts/check-semgrep-full.sh",
+		"scripts/semgrep-bootstrap.sh",
+		"scripts/semgrep-pre-push.yml",
+		"scripts/prepare-worktree.sh",
+		"scripts/new-task.sh",
+		"scripts/harness-cli.sh",
 		"codestyle",
 		"README.md",
 		"CHANGELOG.md",
@@ -99,7 +107,6 @@
 		"@vvago/vale": "^3.12.0",
 		"markdownlint-cli2": "^0.21.0",
 		"standard-version": "^9.5.0",
-		"typescript": "^5.9.3",
 		"tsx": "^4.21.0",
 		"vitest": "^4.1.5"
 	},
@@ -119,7 +126,8 @@
 		"lodash": "^4.18.1",
 		"picomatch": "^4.0.4",
 		"semver": "^7.7.4",
-		"sqlite-vec": "0.1.7-alpha.2"
+		"sqlite-vec": "0.1.7-alpha.2",
+		"typescript": "^5.9.3"
 	},
 	"pnpm": {
 		"overrides": {
