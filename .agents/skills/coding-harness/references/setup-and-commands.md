@@ -9,6 +9,17 @@
 - [CI Migration](#ci-migration)
 - [Environment Sync](#environment-sync)
 - [Validation](#validation)
+- [Abbreviations](#abbreviations)
+- [Metadata](#metadata)
+- [Invariants](#invariants)
+- [States](#states)
+- [Transition Table (Canonical)](#transition-table-canonical)
+- [Error Handling](#error-handling)
+- [Idempotency](#idempotency)
+- [Execution Modes](#execution-modes)
+- [Dry-Run Simulation](#dry-run-simulation)
+- [Observability Logs](#observability-logs)
+- [Validation Checklist](#validation-checklist)
 - [Boundaries](#boundaries)
 
 ## Prerequisites
@@ -130,10 +141,17 @@ bash scripts/codex-preflight.sh --stack auto --mode required
 harness check-environment --json
 harness docs-gate --mode advisory --json
 harness verify-coderabbit
-harness check-authz --contract harness.contract.json --repo <owner/repo> --branch main
+harness check-authz --contract harness.contract.json --repo <owner/repo> --branch <feature-branch>
 ```
 
-Auth-bound checks are blocked or skipped when credentials are missing.
+Auth-bound checks are blocked or skipped when credentials are missing. Use a
+real allowed repo and work branch for authorization checks; `main`, `master`,
+and `release/*` are protected-branch negative tests, not green-path validation
+targets.
+
+The following workflow-contract section is intentionally kept in this reference
+because `pnpm run workflow:validate` uses it as a compact command-lifecycle
+fixture.
 
 ## Abbreviations
 | Abbr | Meaning |

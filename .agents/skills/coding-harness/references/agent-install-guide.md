@@ -106,13 +106,15 @@ For upgrade-matrix evidence, `harness init --update --dry-run --json` may emit
 harness check-environment --json
 harness docs-gate --mode advisory --json
 harness verify-coderabbit
-harness check-authz --contract harness.contract.json --repo <owner/repo> --branch main
+harness check-authz --contract harness.contract.json --repo <owner/repo> --branch <feature-branch>
 pnpm check
 pnpm test:deep
 ```
 
 Remote checks are auth-bound. Missing credentials means blocked or skipped, not
-passed.
+passed. Use a real allowed repo and work branch for authorization checks; `main`,
+`master`, and `release/*` are protected-branch negative tests, not green-path
+install validation targets.
 
 ## Owned Surfaces
 Harness-managed or generated surfaces include `harness.contract.json`,

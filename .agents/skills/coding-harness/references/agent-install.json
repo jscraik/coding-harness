@@ -45,7 +45,7 @@
 				"bash scripts/codex-preflight.sh --stack auto --mode required",
 				"harness check-environment --json",
 				"harness verify-coderabbit",
-				"harness check-authz --contract harness.contract.json --repo <owner/repo> --branch main",
+				"harness check-authz --contract harness.contract.json --repo <owner/repo> --branch <feature-branch>",
 				"pnpm check"
 			]
 		}
