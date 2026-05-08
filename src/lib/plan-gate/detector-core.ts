@@ -28,16 +28,17 @@ function parseFrontmatter(content: string): {
 	frontmatter: PlanFrontmatter;
 	body: string;
 } {
+	const normalizedContent = content.replace(/^\uFEFF/, "");
 	const frontmatter: PlanFrontmatter = {
 		title: "",
 		date: "",
 		type: "feature",
 		status: "draft",
 	};
-	let body = content;
+	let body = normalizedContent;
 
 	// Check for YAML frontmatter
-	const match = content.match(
+	const match = normalizedContent.match(
 		/^---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n([\s\S]*)$/,
 	);
 	if (match?.[1]) {
@@ -229,6 +230,7 @@ function daysBetween(date1: string | Date, date2: string | Date): number {
 function findPlanDocs(
 	plansPath: string,
 	visited = new Set<string>(),
+	contentCache = new Map<string, string>(),
 ): string[] {
 	const docs: string[] = [];
 
@@ -256,15 +258,14 @@ function findPlanDocs(
 				continue;
 			}
 			if (stats.isDirectory()) {
-				docs.push(...findPlanDocs(entryPath, visited));
+				docs.push(...findPlanDocs(entryPath, visited, contentCache));
 				continue;
 			}
-			if (
-				stats.isFile() &&
-				entry.endsWith(".md") &&
-				looksLikePlanDoc(entryPath)
-			) {
-				docs.push(entryPath);
+			if (stats.isFile() && entry.endsWith(".md")) {
+				const discovery = inspectPlanDoc(entryPath, contentCache);
+				if (discovery.isPlan || discovery.isUnreadable) {
+					docs.push(entryPath);
+				}
 			}
 		}
 	} catch {
@@ -275,28 +276,40 @@ function findPlanDocs(
 	return docs.sort().reverse();
 }
 
-function looksLikePlanDoc(filePath: string): boolean {
-	const filename = basename(filePath);
-	if (filename.endsWith("-plan.md")) {
-		return true;
-	}
-
+function inspectPlanDoc(
+	filePath: string,
+	contentCache: Map<string, string>,
+): {
+	isPlan: boolean;
+	isUnreadable: boolean;
+} {
 	try {
-		const content = readFileSync(filePath, "utf-8");
+		const content = readFileSync(filePath, "utf-8").replace(/^\uFEFF/, "");
+		contentCache.set(filePath, content);
 		if (!content.match(/^---\s*\r?\n[\s\S]*?\r?\n---\s*\r?\n/)) {
-			return false;
+			return { isPlan: false, isUnreadable: false };
 		}
 
 		const { frontmatter, body } = parseFrontmatter(content);
 		if (frontmatter.planId) {
-			return true;
+			return { isPlan: true, isUnreadable: false };
 		}
 
 		const sections = hasRequiredSections(body);
-		return sections.hasImplementationSteps || sections.hasAcceptanceCriteria;
+		return {
+			isPlan:
+				hasPlanMetadata(frontmatter) ||
+				sections.hasImplementationSteps ||
+				sections.hasAcceptanceCriteria,
+			isUnreadable: false,
+		};
 	} catch {
-		return false;
+		return { isPlan: false, isUnreadable: true };
 	}
+}
+
+function hasPlanMetadata(frontmatter: PlanFrontmatter): boolean {
+	return Boolean(frontmatter.title || frontmatter.date);
 }
 
 function resolvePlanSearchPaths(plansPath?: string): string[] {
@@ -335,11 +348,13 @@ function loadPlanDoc(
 	filePath: string,
 	maxAgeDays: number,
 	requireOrigin: boolean,
+	contentCache = new Map<string, string>(),
 ): { artifact?: PlanArtifact; errors: PlanError[] } {
 	const errors: PlanError[] = [];
 	try {
 		const stats = statSync(filePath);
-		const content = readFileSync(filePath, "utf-8");
+		const content =
+			contentCache.get(filePath) ?? readFileSync(filePath, "utf-8");
 		const { frontmatter, body } = parseFrontmatter(content);
 		const sections = hasRequiredSections(body);
 		const acceptanceItems = extractAcceptanceItems(body);
@@ -419,10 +434,13 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 
 	const artifacts: PlanArtifact[] = [];
 	const errors: PlanError[] = [];
+	const contentCache = new Map<string, string>();
 
 	// Find all plan documents
 	const docs = planSearchPaths
-		.flatMap((planPath) => findPlanDocs(planPath))
+		.flatMap((planPath) =>
+			findPlanDocs(planPath, new Set<string>(), contentCache),
+		)
 		.sort()
 		.reverse();
 
@@ -441,7 +459,12 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 
 	// Load and validate each document
 	for (const docPath of docs) {
-		const result = loadPlanDoc(docPath, maxAgeDays, requireOrigin);
+		const result = loadPlanDoc(
+			docPath,
+			maxAgeDays,
+			requireOrigin,
+			contentCache,
+		);
 		errors.push(...result.errors);
 
 		if (result.artifact) {

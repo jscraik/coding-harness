@@ -41,7 +41,7 @@ Claim confidence labels:
 - Strong inference: not stated as a single sentence, but repeatedly implied by implementation boundaries and workflows.
 - Weak speculation: plausible strategic reading that should be verified with maintainers before becoming policy.
 
-The live preflight command `bash scripts/codex-preflight.sh --stack auto --mode required` passed during this review. It reported the repository mission as: "Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric." It also reported primary metric `pr_lead_time`, bottleneck `review_rework_loop`, low- and medium-risk automation with deterministic evidence plus rollback, high-risk human mediation, and required Project Brain paths under `.harness/knowledge/**`, `.harness/decisions/**`, `.harness/review-log.md`, and `.harness/README.md`.
+The canonical preflight command is `bash scripts/codex-preflight.sh --stack auto --mode required`. Snapshot outcomes should be recorded in time-scoped review or closeout artifacts with commit SHA and treated as evidence for that snapshot only.
 
 ## Project Intent
 
@@ -321,6 +321,7 @@ Preserve these unless an explicit migration plan and compatibility window exist:
 - `scripts/codex-preflight.sh`, `scripts/verify-work.sh`, `scripts/validate-codestyle.sh`, and codestyle parity scripts.
 - PR template testing and review artifact fields.
 - Project Brain paths under `.harness/knowledge/**`, `.harness/decisions/**`, `.harness/review-log.md`, and `.harness/README.md`.
+- Harness Engineering plan artifact discovery under `.harness/plan/**.md`, including non-date-prefixed plan filenames consumed by `plan-gate`.
 - The installed downstream skill shape under `.agents/skills/coding-harness/`.
 
 Why:
@@ -727,7 +728,7 @@ Evidence:
 - Downstream scaffold updates can become dangerous if generated/adaptable ownership metadata is incomplete.
 - Memory/context systems can become a second source of truth unless repo-local artifacts remain canonical.
 
-# Drift Detection Signals
+## Drift Detection Signals
 
 | Signal | Why it matters | Likely root cause | Operational impact | Severity | Indicator or threshold | Corrective action | Blocks merges/releases |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -750,7 +751,7 @@ Evidence:
 | More ceremony than execution | Users reject the harness | Governance artifacts do not improve outcomes | Adoption failure | Critical | PR template/gates grow while PR lead time or review rework does not improve | Delete or automate low-value ceremony | Block release positioning claims |
 | Increasing token/context cost without reliability gains | Agent work becomes slower and less reliable | Docs duplication and long prompts | Higher cost, weaker decisions | Medium | Required startup context exceeds task-relevant routing docs or repeats same rule in 3+ places | Consolidate into routed docs and executable gates | Block when duplicate instructions conflict |
 
-# Evidence & Traceability Matrix
+## Evidence & Traceability Matrix
 
 | Conclusion | Evidence category | File paths | Symbols/interfaces/components involved | Runtime behaviour observed | Confidence | Why the evidence matters |
 | --- | --- | --- | --- | --- | --- | --- |

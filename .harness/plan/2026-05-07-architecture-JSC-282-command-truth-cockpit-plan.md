@@ -140,7 +140,7 @@ review explicitly approves an exception:
 | --- | --- |
 | Golden path | `harness next --json` |
 | Setup rail | `harness init --dry-run`, `harness init --track`, `harness check --json` |
-| Verification rail | `harness verify-work --fast`, `harness review-gate ... --json` |
+| Verification rail | `bash scripts/verify-work.sh --fast`, `harness review-gate ... --json` |
 | Discovery rail | `harness commands --json --for-agent` |
 | Expert escape hatch | `harness --help --all-commands`, `harness commands --json --all` |
 
@@ -421,6 +421,11 @@ Run validation in this order. Stop at the first failed gate.
      `he_linear_traceability_lint.py` script is absent, mark this step blocked
      with the missing path instead of substituting a different traceability
      check.
+   - If blocked, IU-006 closure requires an explicit human waiver in Linear
+     from a maintainer with missing-path evidence, completed substitute
+     governance gates (`pnpm docs:lint`, `pnpm skill:validate`,
+     `bash scripts/verify-work.sh --fast`), and a follow-up task to restore
+     traceability-lint execution.
    - Required before: IU-006.
 
 6. Repo readiness gate.
