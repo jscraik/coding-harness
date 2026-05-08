@@ -2810,6 +2810,12 @@ exit 1
 				expect(chmod.status).toBe(0);
 			}
 			const fakePnpmLog = join(tempDir, ".fake-pnpm-log");
+			mkdirSync(join(tempDir, ".git"), { recursive: true });
+			writeFileSync(
+				join(tempDir, ".git/config"),
+				"[core]\n\trepositoryformatversion = 0\n\tfilemode = true\n\tbare = false\n",
+				"utf-8",
+			);
 
 			const verify = spawnSync("bash", ["scripts/verify-work.sh", "--fast"], {
 				cwd: tempDir,
