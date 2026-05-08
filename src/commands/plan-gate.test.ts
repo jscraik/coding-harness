@@ -1,5 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+	chmodSync,
+	existsSync,
+	mkdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EXIT_CODES, runPlanGate } from "../lib/plan-gate/detector.js";
@@ -290,6 +296,70 @@ describe("plan-gate command", () => {
 				"JSC-246-account-settings.md",
 			);
 			expect(result.errors).toHaveLength(0);
+		});
+
+		it("ignores filename-only plan matches without plan metadata", () => {
+			createHarnessPlan(
+				"scratch-notes-plan.md",
+				"# Scratch notes\n\nThis is operator context, not a plan artifact.",
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requirePlanId: true,
+					planIds: ["jsc-999-scratch-notes"],
+				}),
+			);
+
+			expect(result.passed).toBe(false);
+			expect(result.artifacts).toHaveLength(0);
+			expect(result.errors).toHaveLength(1);
+			expect(result.errors[0]?.code).toBe("MISSING");
+		});
+
+		it("reports unreadable Harness plan markdown as a system error", () => {
+			const unreadablePath = createHarnessPlan(
+				"JSC-248-unreadable-plan.md",
+				[
+					"---",
+					"title: Unreadable Plan",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-248-unreadable-plan",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Keep unreadable artifacts visible.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Unreadable plans fail loudly.",
+				].join("\n"),
+				testDir,
+			);
+
+			chmodSync(unreadablePath, 0);
+			try {
+				const result = withCwd(testDir, () =>
+					runPlanGate({
+						requirePlanId: true,
+						planIds: ["jsc-248-unreadable-plan"],
+					}),
+				);
+
+				expect(result.passed).toBe(false);
+				expect(
+					result.errors.some(
+						(error) =>
+							error.code === "SYSTEM_ERROR" && error.path === unreadablePath,
+					),
+				).toBe(true);
+			} finally {
+				chmodSync(unreadablePath, 0o600);
+			}
 		});
 
 		it("preserves validation errors from discovered plans when a plan ID is selected", () => {
