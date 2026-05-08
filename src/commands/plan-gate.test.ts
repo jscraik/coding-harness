@@ -171,6 +171,43 @@ describe("plan-gate command", () => {
 			expect(result.artifacts[0]?.planId).toBe("jsc-246-account-settings");
 		});
 
+		it("discovers CRLF frontmatter in Harness Engineering plans", () => {
+			createHarnessPlan(
+				"JSC-247-windows-authored-plan.md",
+				[
+					"---",
+					"title: Windows Authored Plan",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-247-windows-authored-plan",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Preserve CRLF-authored plan docs.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] CRLF frontmatter is discovered.",
+				].join("\r\n"),
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					type: "standard-plan",
+					requirePlanId: true,
+					planIds: ["jsc-247-windows-authored-plan"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.title).toBe("Windows Authored Plan");
+			expect(result.artifacts[0]?.planId).toBe("jsc-247-windows-authored-plan");
+		});
+
 		it("selects the newest artifact when duplicate plan IDs exist", () => {
 			createHarnessPlan(
 				"2026-05-08-standard-plan-command-truth-cockpit.md",

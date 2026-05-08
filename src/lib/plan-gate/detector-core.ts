@@ -37,7 +37,9 @@ function parseFrontmatter(content: string): {
 	let body = content;
 
 	// Check for YAML frontmatter
-	const match = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/);
+	const match = content.match(
+		/^---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n([\s\S]*)$/,
+	);
 	if (match?.[1]) {
 		const yamlContent = match[1];
 		body = match[2] ?? "";
@@ -281,7 +283,7 @@ function looksLikePlanDoc(filePath: string): boolean {
 
 	try {
 		const content = readFileSync(filePath, "utf-8");
-		if (!content.match(/^---\s*\n[\s\S]*?\n---\s*\n/)) {
+		if (!content.match(/^---\s*\r?\n[\s\S]*?\r?\n---\s*\r?\n/)) {
 			return false;
 		}
 
