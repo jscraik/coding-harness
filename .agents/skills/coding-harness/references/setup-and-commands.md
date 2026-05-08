@@ -220,7 +220,7 @@ Record `workflow_id`, `transition_code`, `from_state`, `to_state`,
 - Canonical `S | E | G | A | N` table exists.
 - Every non-terminal state has an outbound path.
 - Failure paths route to `FAIL` or `BLOCKED`.
-- Dry-run behavior is side-effect-free and deterministic.
+- Dry-run behavior is side-effect free and deterministic.
 
 ## Boundaries
 Harness can scaffold governed files, run local gates, emit JSON evidence,

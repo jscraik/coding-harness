@@ -71,6 +71,7 @@
 		"skill:validate": "node scripts/validate-packaged-skill.cjs",
 		"workflow:normalize": "node scripts/normalize-workflow-contracts.cjs",
 		"workflow:validate": "node scripts/validate-workflow-contracts.cjs",
+		"observed:eval-usage": "tsx scripts/collect-observed-eval-usage.ts",
 		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
 		"codestyle:parity": "bash scripts/check-codestyle-parity.sh",
 		"codestyle:validate": "bash scripts/validate-codestyle.sh",
