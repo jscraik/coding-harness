@@ -26,6 +26,9 @@ const VALIDATION_PLAN_MODULE_URL = pathToFileURL(
 const EVAL_SEED_MODULE_URL = pathToFileURL(
 	path.join(REPO_ROOT, "src/lib/learnings/eval-seed.ts"),
 ).href;
+const E2E_RUNNER_MODULE_URL = pathToFileURL(
+	path.join(REPO_ROOT, "e2e/run-e2e.ts"),
+).href;
 const fixtureModuleCache = new Map();
 
 const SCORECARD_IDS = [
@@ -605,6 +608,8 @@ async function runLiveFixture(scenario) {
 			result = runRepoLocalE2EScratchFixture(scenario, fixturePath);
 		} else if (scenario.id === "github-check-run-transient-retry") {
 			result = runGitHubCheckRunTransientRetryFixture(scenario, fixturePath);
+		} else if (scenario.id === "e2e-canary-replay") {
+			result = await runE2ECanaryReplayFixture(scenario, fixturePath);
 		} else if (scenario.id === "side-effect-authorization-validator") {
 			result = runSideEffectAuthorizationValidatorFixture(
 				scenario,
@@ -1181,6 +1186,259 @@ function runGitHubCheckRunTransientRetryFixture(scenario, fixturePath) {
 				"fixture/runtime failure",
 		),
 	]);
+}
+
+async function runE2ECanaryReplayFixture(scenario, fixturePath) {
+	const classifyE2EBlocker = await loadFixtureExport(
+		E2E_RUNNER_MODULE_URL,
+		"classifyE2EBlocker",
+	);
+	const parseVitestOutput = await loadFixtureExport(
+		E2E_RUNNER_MODULE_URL,
+		"parseVitestOutput",
+	);
+	if (
+		typeof classifyE2EBlocker !== "function" ||
+		typeof parseVitestOutput !== "function"
+	) {
+		return fixtureResult(scenario.id, [
+			assertion("E2E parser and classifier exports are available", false),
+		]);
+	}
+
+	const replayCases = buildE2ECanaryReplayCases();
+	const replayArtifacts = replayCases.map((replayCase) => {
+		const parsed = parseVitestOutput(replayCase.output);
+		const blockerClassification = classifyE2EBlocker(
+			replayCase.exitCode,
+			replayCase.output,
+		);
+		return buildReplayE2EResultArtifact({
+			replayCase,
+			parsed,
+			blockerClassification,
+		});
+	});
+	const canaryReport = {
+		schemaVersion: "e2e-canary-replay/v1",
+		source: {
+			e2eResultSchemaVersion: "coding-harness-e2e-result/v1",
+			liveCanaryScenario: "live-pr-loop-canary",
+			mode: "deterministic-replay",
+		},
+		replays: replayArtifacts,
+		nextEvalSeeds: replayArtifacts
+			.filter((artifact) => artifact.status !== "pass")
+			.map((artifact) => ({
+				caseId: artifact.caseId,
+				blockerClassification: artifact.summary.blockerClassification,
+				firstFailingScenario: artifact.summary.firstFailingScenario ?? null,
+				firstFailingAssertion: artifact.summary.firstFailingAssertion ?? null,
+				smallestNextEvalSeed: e2eCanarySeedFor(artifact),
+			})),
+	};
+
+	const replayRoot = path.join(fixturePath, "e2e-results");
+	mkdirSync(replayRoot, { recursive: true });
+	for (const artifact of replayArtifacts) {
+		writeJson(path.join(replayRoot, `${artifact.caseId}.json`), artifact);
+	}
+	writeJson(path.join(fixturePath, "canary-replay-report.json"), canaryReport);
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"E2E parser and classifier exports are available",
+			typeof classifyE2EBlocker === "function" &&
+				typeof parseVitestOutput === "function",
+		),
+		assertion(
+			"all replay artifacts use the E2E result schema",
+			replayArtifacts.every(
+				(artifact) => artifact.schemaVersion === "coding-harness-e2e-result/v1",
+			),
+		),
+		assertion(
+			"passing E2E replay stays non-blocking",
+			replayMatches(replayArtifacts, "clean-canary", {
+				status: "pass",
+				blockerClassification: "none",
+			}),
+		),
+		assertion(
+			"PAT check-run replay is classified as environment tooling",
+			replayMatches(replayArtifacts, "pat-check-run-403", {
+				status: "fail",
+				blockerClassification: "environment/tooling issue",
+				firstFailingScenario:
+					"e2e/tests/github-integration.e2e.test.ts > GitHub Integration E2E > Check Run Operations > should create and list check runs with real API",
+				firstFailingAssertion:
+					"Resource not accessible by personal access token - https://docs.github.com/rest/checks/runs#create-a-check-run",
+			}),
+		),
+		assertion(
+			"scenario regression replay preserves first failure details",
+			replayMatches(replayArtifacts, "review-gate-regression", {
+				status: "fail",
+				blockerClassification: "scenario regression",
+				firstFailingScenario:
+					"e2e/tests/github-integration.e2e.test.ts > GitHub Integration E2E > Review Gate Command > should run review-gate command against real PR",
+				firstFailingAssertion:
+					"expected false to be true // Object.is equality",
+			}),
+		),
+		assertion(
+			"missing artifact replay stays distinct from runtime regression",
+			replayMatches(replayArtifacts, "missing-result-artifact", {
+				status: "fail",
+				blockerClassification: "missing artifact",
+			}),
+		),
+		assertion(
+			"failed canary replays produce next eval seed suggestions",
+			canaryReport.nextEvalSeeds.length === 3 &&
+				canaryReport.nextEvalSeeds.every((seed) =>
+					Boolean(seed.smallestNextEvalSeed),
+				),
+		),
+		assertion(
+			"canary replay does not require live credentials or side effects",
+			replayArtifacts.every((artifact) => artifact.authSource !== "live") &&
+				canaryReport.source.mode === "deterministic-replay",
+		),
+	]);
+}
+
+function buildE2ECanaryReplayCases() {
+	return [
+		{
+			id: "clean-canary",
+			exitCode: 0,
+			authSource: "github_app",
+			checksPreflight: "passed",
+			output: `
+ ✓ e2e/tests/github-integration.e2e.test.ts > GitHub Integration E2E > Pull Request Lifecycle > should create, retrieve, and close a PR with real API 6411ms
+ ✓ e2e/tests/command-pipeline.e2e.test.ts > Command Pipeline E2E > Review Gate Pipeline > should pass review-gate on clean PR with no failing checks 6664ms
+
+ Test Files 2 passed (2)
+      Tests 8 passed (8)
+`,
+		},
+		{
+			id: "pat-check-run-403",
+			exitCode: 1,
+			authSource: "pat",
+			checksPreflight: "failed",
+			output: `
+stderr | e2e/tests/github-integration.e2e.test.ts > GitHub Integration E2E > Check Run Operations > should create and list check runs with real API
+POST /repos/jscraik/coding-harness-e2e-test/check-runs - 403 with id DBA4:0B5A in 240ms
+
+ × e2e/tests/github-integration.e2e.test.ts > GitHub Integration E2E > Check Run Operations > should create and list check runs with real API 2821ms
+   → Resource not accessible by personal access token - https://docs.github.com/rest/checks/runs#create-a-check-run
+
+ Test Files 1 failed | 0 passed (1)
+      Tests 1 failed | 7 passed (8)
+`,
+		},
+		{
+			id: "review-gate-regression",
+			exitCode: 1,
+			authSource: "github_app",
+			checksPreflight: "passed",
+			output: `
+ × e2e/tests/github-integration.e2e.test.ts > GitHub Integration E2E > Review Gate Command > should run review-gate command against real PR 4018ms
+   → expected false to be true // Object.is equality
+
+ Test Files 1 failed | 0 passed (1)
+      Tests 1 failed | 7 passed (8)
+`,
+		},
+		{
+			id: "missing-result-artifact",
+			exitCode: 1,
+			authSource: "github_app",
+			checksPreflight: "passed",
+			output: `
+Error: ENOENT: no such file or directory, open 'artifacts/e2e/result.json'
+
+ Test Files 1 failed | 0 passed (1)
+      Tests 1 failed (1)
+`,
+		},
+	];
+}
+
+function buildReplayE2EResultArtifact({
+	replayCase,
+	parsed,
+	blockerClassification,
+}) {
+	const success = replayCase.exitCode === 0;
+	return {
+		schemaVersion: "coding-harness-e2e-result/v1",
+		caseId: replayCase.id,
+		status: success ? "pass" : "fail",
+		pattern: "canary-replay",
+		authSource: replayCase.authSource,
+		checksPreflight: replayCase.checksPreflight,
+		summary: {
+			testsPassed: parsed.testsPassed,
+			testsFailed: parsed.testsFailed,
+			testsSkipped: parsed.testsSkipped,
+			durationMs: 0,
+			exitCode: replayCase.exitCode,
+			blockerClassification,
+			skipReasons: [],
+			...(parsed.firstFailingScenario
+				? { firstFailingScenario: parsed.firstFailingScenario }
+				: {}),
+			...(parsed.firstFailingAssertion
+				? { firstFailingAssertion: parsed.firstFailingAssertion }
+				: {}),
+		},
+		options: {
+			record: false,
+			checksPermissionPreflight: replayCase.checksPreflight !== "skipped",
+		},
+	};
+}
+
+function replayMatches(replayArtifacts, caseId, expected) {
+	const artifact = replayArtifacts.find((item) => item.caseId === caseId);
+	if (!artifact) return false;
+	if (expected.status && artifact.status !== expected.status) return false;
+	if (
+		expected.blockerClassification &&
+		artifact.summary.blockerClassification !== expected.blockerClassification
+	) {
+		return false;
+	}
+	if (
+		expected.firstFailingScenario &&
+		artifact.summary.firstFailingScenario !== expected.firstFailingScenario
+	) {
+		return false;
+	}
+	if (
+		expected.firstFailingAssertion &&
+		artifact.summary.firstFailingAssertion !== expected.firstFailingAssertion
+	) {
+		return false;
+	}
+	return true;
+}
+
+function e2eCanarySeedFor(artifact) {
+	const classification = artifact.summary.blockerClassification;
+	if (classification === "environment/tooling issue") {
+		return "GitHub Checks API auth preflight fixture";
+	}
+	if (classification === "scenario regression") {
+		return "review-gate live PR loop regression fixture";
+	}
+	if (classification === "missing artifact") {
+		return "E2E result artifact presence fixture";
+	}
+	return `${classification} E2E canary replay fixture`;
 }
 
 /**
