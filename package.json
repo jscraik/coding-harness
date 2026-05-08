@@ -15,6 +15,7 @@
 		"scripts/check-code-size.mjs",
 		"scripts/lib",
 		"scripts/check-codestyle-parity.sh",
+		"scripts/check-git-common-config.sh",
 		"scripts/check-semgrep-changed.sh",
 		"scripts/check-semgrep-full.sh",
 		"scripts/semgrep-bootstrap.sh",

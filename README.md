@@ -282,6 +282,10 @@ surface even if contributors use different shells or global setups.
 Use `bash scripts/verify-work.sh` as the canonical repo-local verification
 entrypoint. It runs repo-local preflight in `required` Local Memory mode and
 then executes the full verification bundle.
+The verification and worktree bootstrap paths also run
+`scripts/check-git-common-config.sh`, which blocks shared non-bare `.git/config`
+from pinning `core.worktree`; worktree-local values must live in per-worktree
+config so temp worktrees cannot poison the main checkout.
 
 When executable behavior changes, do not stop at broad validation alone. Run
 the smallest real code path that exercises the exact production code touched:

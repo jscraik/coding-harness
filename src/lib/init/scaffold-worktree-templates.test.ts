@@ -37,6 +37,7 @@ describe("scaffold worktree templates", () => {
 		expect(script).toContain(
 			'git branch --set-upstream-to=origin/main "$branch_name"',
 		);
+		expect(script).toContain("scripts/check-git-common-config.sh");
 		expect(script).toContain("git pull --ff-only origin main");
 		expect(script).toContain("node scripts/setup-git-hooks.js");
 		expect(script).toContain(

@@ -67,6 +67,7 @@ Notes:
 
 ## Fresh Worktree Bootstrap
 - Before the first push from a newly created git worktree, run `bash scripts/prepare-worktree.sh` (or `make worktree-ready`).
+- `scripts/check-git-common-config.sh` is a required worktree-safety guard: shared non-bare `.git/config` must not contain `core.worktree`; use per-worktree config for worktree-local values.
 - After bootstrap, run `bash scripts/verify-work.sh --fast` before pushing.
 - Git hooks must be installed through `make hooks`, `make setup`, or `node scripts/setup-git-hooks.js`; `scripts/check-environment.sh` fails generated `prek` `pre-commit`, `pre-push`, or `commit-msg` shims that do not export repo-local `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"`.
 

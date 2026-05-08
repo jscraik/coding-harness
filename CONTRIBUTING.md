@@ -131,6 +131,7 @@ Recommended policy:
 - The wrapper always runs `scripts/codex-preflight.sh` in `required` Local Memory mode with scaffold-safe path and binary expectations.
 - `scripts/validate-codestyle.sh` is the canonical fail-closed code style gate and is reused by `verify-work`, local hooks, and downstream repo docs.
 - `scripts/new-task.sh` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
+- `scripts/check-git-common-config.sh` guards the shared Git config before preflight, verification, and worktree bootstrap. Shared non-bare `.git/config` must not contain `core.worktree`; worktree-local values must use per-worktree config.
 - Repo-local launches should prefer `./scripts/codex-enforced` so preflight failures are recorded into repo-scoped learn state.
 - Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
 - Start new work with `bash scripts/new-task.sh <issue-key>-<slug>`, then enter the generated worktree and continue there.

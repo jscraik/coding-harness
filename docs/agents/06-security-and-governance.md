@@ -1,7 +1,5 @@
 ---
-
 last_validated: 2026-05-07
-
 ---
 
 # Security and governance
@@ -102,6 +100,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
 - `scripts/prepare-worktree.sh` should auto-attach detached HEAD checkouts to a local `jscraik/feature/<repo>-worktree-<short-sha>` branch, set `origin/main` tracking when available, and fast-forward to latest `origin/main` before dependency bootstrap so default git branch workflows are available immediately.
+- `scripts/check-git-common-config.sh` should fail preflight, verification, and worktree bootstrap if shared non-bare `.git/config` contains `core.worktree`. Repair by removing the shared value and using per-worktree config for worktree-local settings.
 - `scripts/new-task.sh` should fetch the latest remote base branch before `git worktree add` so newly created task worktrees start from current upstream commits.
 - `scripts/new-task.sh --bootstrap <issue-key>-<slug>` is the preferred one-shot path when you want creation plus immediate bootstrap in a single command.
 - `scripts/codex-enforced` should guard `main` by auto-creating a dedicated `codex/<issue-key>-<slug>` task branch/worktree (via `scripts/new-task.sh --bootstrap`) before launching Codex for feature work.

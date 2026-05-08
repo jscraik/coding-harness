@@ -133,6 +133,10 @@ export const CODEX_AND_WORKFLOW_SCRIPT_TEMPLATES: readonly Template[] = [
 		render: () => renderCheckCodestyleParityScript(),
 	},
 	{
+		path: "scripts/check-git-common-config.sh",
+		render: () => renderPackagedRootFile("scripts/check-git-common-config.sh"),
+	},
+	{
 		path: "scripts/prepare-worktree.sh",
 		render: (pm) => renderPrepareWorktreeScript(pm),
 	},

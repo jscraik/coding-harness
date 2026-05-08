@@ -37,6 +37,10 @@ done
 
 cd "$REPO_ROOT"
 
+if [[ -x "$REPO_ROOT/scripts/check-git-common-config.sh" ]]; then
+	"$REPO_ROOT/scripts/check-git-common-config.sh"
+fi
+
 if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	echo "[prepare-worktree] not inside a git work tree" >&2
 	exit 1
