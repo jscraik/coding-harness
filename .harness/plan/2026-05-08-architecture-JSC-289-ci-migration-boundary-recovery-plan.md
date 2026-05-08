@@ -27,6 +27,7 @@ ui: false
 - [Linear Delta Capture](#linear-delta-capture)
 - [Scope Guardrails](#scope-guardrails)
 - [Implementation Units](#implementation-units)
+- [IU-289-004 Boundary Decision](#iu-289-004-boundary-decision)
 - [Phase 1 Work Orders](#phase-1-work-orders)
 - [Non-Behavior Change Definition](#non-behavior-change-definition)
 - [Coverage Anchor Inventory](#coverage-anchor-inventory)
@@ -157,6 +158,24 @@ Stop if:
 
 Only `IU-289-001` is authorized as the next active unit after this plan unless
 the user explicitly requests a broader phase heartbeat.
+
+## IU-289-004 Boundary Decision
+
+`IU-289-004` selected proof-pack and promotion-evidence support as the first
+extraction boundary for `IU-289-005`.
+
+Decision artifact:
+
+```text
+.harness/review/2026-05-08-JSC-289-ci-migration-first-extraction-boundary-decision.md
+```
+
+`IU-289-005` must not begin until this decision receives human acceptance. The
+first extraction must not include whole migration report construction,
+snapshot/state handling, break-glass governance, merge-queue behavior, provider
+adapter selection, or delegated registry routing. The decision artifact pins
+the `IU-289-005` rollback file inventory and exact focused test gate before any
+source extraction may start.
 
 ## Phase 1 Work Orders
 
