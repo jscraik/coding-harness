@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -93,29 +92,39 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_files(skill_root: Path) -> tuple[list[tuple[Path, str]], list[str]]:
+def load_files(
+    skill_root: Path,
+) -> tuple[list[tuple[Path, str]], list[str], list[tuple[str, str]]]:
     """
-    Load the expected target files from the provided skill root directory and report any that are missing.
+    Load expected target files and report missing or unreadable entries.
     
     Parameters:
         skill_root (Path): Base directory under which TARGET_FILES are resolved.
     
     Returns:
-        tuple[list[tuple[Path, str]], list[str]]: A pair where the first element is a list of (absolute Path, file contents) for each file that existed and was read as UTF-8, and the second element is a list of relative paths (strings) from TARGET_FILES that were not found under skill_root.
+        tuple[list[tuple[Path, str]], list[str], list[tuple[str, str]]]: Loaded
+        file content, missing relative paths, and unreadable relative paths with
+        diagnostic messages.
     """
     loaded: list[tuple[Path, str]] = []
     missing: list[str] = []
+    unreadable: list[tuple[str, str]] = []
     for rel_path in TARGET_FILES:
         path = skill_root / rel_path
-        if not path.is_file():
+        if not path.exists():
             missing.append(rel_path)
+            continue
+        if not path.is_file():
+            unreadable.append((rel_path, "expected file is not a regular file"))
             continue
         try:
             loaded.append((path, path.read_text(encoding="utf-8")))
-        except (IOError, OSError):
-            missing.append(rel_path)
+        except (OSError, UnicodeDecodeError) as error:
+            unreadable.append(
+                (rel_path, f"unable to read expected file: {type(error).__name__}")
+            )
 
-    return loaded, missing
+    return loaded, missing, unreadable
 
 
 def find_line_number(text: str, match_start: int) -> int:
@@ -148,7 +157,7 @@ def build_report(
     Returns:
         ReferenceReport: Report with `status` set to "fail" if any findings were recorded (missing files, banned-pattern matches, or missing required patterns), otherwise "pass". The report's `checked_files` lists loaded file paths relative to `skill_root`, and `findings` contains detailed ReferenceFinding entries for each issue.
     """
-    files, missing = load_files(skill_root)
+    files, missing, unreadable = load_files(skill_root)
     findings: list[ReferenceFinding] = []
 
     findings.extend(
@@ -161,6 +170,18 @@ def build_report(
                 message=f"missing expected file: {rel_path}",
             )
             for rel_path in missing
+        )
+    )
+    findings.extend(
+        (
+            ReferenceFinding(
+                kind="unreadable-file",
+                label="unreadable expected file",
+                file=rel_path,
+                line=None,
+                message=f"{rel_path}: {message}",
+            )
+            for rel_path, message in unreadable
         )
     )
 
