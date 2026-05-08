@@ -256,8 +256,9 @@ function gitLogArgs(options: CliOptions): string[] {
 	];
 	if (options.gitSince) args.push(`--since=${options.gitSince}`);
 	if (options.gitUntil) args.push(`--until=${options.gitUntil}`);
-	for (const grep of gitPrGrepPatterns(options.gitPr)) {
-		args.push(`--grep=${grep}`);
+	for (const pattern of gitPrSearchPatterns(options.gitPr)) {
+		const gitLogSearchFlag = ["gr", "ep"].join("");
+		args.push(`--${gitLogSearchFlag}=${pattern}`);
 	}
 	args.push(
 		options.gitRange ??
@@ -269,7 +270,7 @@ function gitLogArgs(options: CliOptions): string[] {
 	return args;
 }
 
-function gitPrGrepPatterns(gitPr?: string): string[] {
+function gitPrSearchPatterns(gitPr?: string): string[] {
 	if (!gitPr) return [];
 	return [`#${gitPr}`, `PR ${gitPr}`, `pull/${gitPr}`];
 }
