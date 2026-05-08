@@ -417,6 +417,10 @@ Run validation in this order. Stop at the first failed gate.
 
 5. Spec traceability validation.
    - Command: `python3 ../agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/coding-harness-agent-cockpit-compression-spec.md`
+   - Requires the sibling `../agent-skills` checkout. If the
+     `he_linear_traceability_lint.py` script is absent, mark this step blocked
+     with the missing path instead of substituting a different traceability
+     check.
    - Required before: IU-006.
 
 6. Repo readiness gate.
