@@ -321,7 +321,7 @@ Preserve these unless an explicit migration plan and compatibility window exist:
 - `scripts/codex-preflight.sh`, `scripts/verify-work.sh`, `scripts/validate-codestyle.sh`, and codestyle parity scripts.
 - PR template testing and review artifact fields.
 - Project Brain paths under `.harness/knowledge/**`, `.harness/decisions/**`, `.harness/review-log.md`, and `.harness/README.md`.
-- Harness Engineering plan artifact discovery under `.harness/plan/**.md`, including non-date-prefixed plan filenames consumed by `plan-gate`.
+- Harness Engineering plan artifact discovery contract under `.harness/plan/**.md`, including non-date-prefixed plan filenames consumed by `plan-gate`.
 - The installed downstream skill shape under `.agents/skills/coding-harness/`.
 
 Why:

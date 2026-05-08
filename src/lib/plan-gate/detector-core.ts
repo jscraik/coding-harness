@@ -39,7 +39,7 @@ function parseFrontmatter(content: string): {
 
 	// Check for YAML frontmatter
 	const match = normalizedContent.match(
-		/^---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n([\s\S]*)$/,
+		/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n([\s\S]*)|$)/,
 	);
 	if (match?.[1]) {
 		const yamlContent = match[1];
@@ -285,7 +285,7 @@ function inspectPlanDoc(
 	try {
 		const content = readFileSync(filePath, "utf-8").replace(/^\uFEFF/, "");
 		contentCache.set(filePath, content);
-		if (!content.match(/^---\s*\r?\n[\s\S]*?\r?\n---\s*\r?\n/)) {
+		if (!content.match(/^---\s*\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/)) {
 			return { isPlan: false, isUnreadable: false };
 		}
 

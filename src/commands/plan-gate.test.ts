@@ -252,6 +252,35 @@ describe("plan-gate command", () => {
 			expect(result.artifacts[0]?.planId).toBe("jsc-247-bom-authored-plan");
 		});
 
+		it("discovers frontmatter ending at EOF in Harness Engineering plans", () => {
+			createHarnessPlan(
+				"JSC-248-frontmatter-eof-plan.md",
+				[
+					"---",
+					"title: Frontmatter EOF Plan",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-248-frontmatter-eof-plan",
+					"---",
+				].join("\n"),
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					type: "standard-plan",
+					requirePlanId: true,
+					planIds: ["jsc-248-frontmatter-eof-plan"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.title).toBe("Frontmatter EOF Plan");
+			expect(result.artifacts[0]?.planId).toBe("jsc-248-frontmatter-eof-plan");
+		});
+
 		it("selects the newest artifact when duplicate plan IDs exist", () => {
 			createHarnessPlan(
 				"2026-05-08-standard-plan-command-truth-cockpit.md",
