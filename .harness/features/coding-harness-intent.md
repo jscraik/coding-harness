@@ -41,7 +41,7 @@ Claim confidence labels:
 - Strong inference: not stated as a single sentence, but repeatedly implied by implementation boundaries and workflows.
 - Weak speculation: plausible strategic reading that should be verified with maintainers before becoming policy.
 
-The live preflight command `bash scripts/codex-preflight.sh --stack auto --mode required` passed during this review. It reported the repository mission as: "Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric." It also reported primary metric `pr_lead_time`, bottleneck `review_rework_loop`, low and medium risk automation with deterministic evidence plus rollback, high-risk human mediation, and required Project Brain paths under `.harness/knowledge/**`, `.harness/decisions/**`, and `.harness/review-log.md`.
+The live preflight command `bash scripts/codex-preflight.sh --stack auto --mode required` passed during this review. It reported the repository mission as: "Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric." It also reported primary metric `pr_lead_time`, bottleneck `review_rework_loop`, low- and medium-risk automation with deterministic evidence plus rollback, high-risk human mediation, and required Project Brain paths under `.harness/knowledge/**`, `.harness/decisions/**`, `.harness/review-log.md`, and `.harness/README.md`.
 
 ## Project Intent
 

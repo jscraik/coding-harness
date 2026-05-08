@@ -367,7 +367,7 @@ Eval must include:
 
 Validation:
 
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/coding-harness-agent-cockpit-compression-spec.md`
+- `python3 ../agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/coding-harness-agent-cockpit-compression-spec.md`
 - `pnpm docs:lint`
 - `pnpm skill:validate`
 - focused tests for changed command/help/catalog code
@@ -416,7 +416,7 @@ Run validation in this order. Stop at the first failed gate.
    - Required before: IU-006.
 
 5. Spec traceability validation.
-   - Command: `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/coding-harness-agent-cockpit-compression-spec.md`
+   - Command: `python3 ../agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/coding-harness-agent-cockpit-compression-spec.md`
    - Required before: IU-006.
 
 6. Repo readiness gate.

@@ -4,7 +4,7 @@
  * Detects and validates plan documents.
  */
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { lstatSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import {
 	type AcceptanceItem,
@@ -224,16 +224,37 @@ function daysBetween(date1: string | Date, date2: string | Date): number {
 /**
  * Find plan documents in the directory
  */
-function findPlanDocs(plansPath: string): string[] {
+function findPlanDocs(
+	plansPath: string,
+	visited = new Set<string>(),
+): string[] {
 	const docs: string[] = [];
 
 	try {
+		const rootStats = statSync(plansPath);
+		const realRoot = resolve(plansPath);
+		const visitKey = `${rootStats.dev}:${rootStats.ino}:${realRoot}`;
+		if (visited.has(visitKey)) {
+			return docs;
+		}
+		visited.add(visitKey);
+
 		const entries = readdirSync(plansPath);
 		for (const entry of entries) {
 			const entryPath = join(plansPath, entry);
-			const stats = statSync(entryPath);
+			let linkStats: ReturnType<typeof lstatSync>;
+			let stats: ReturnType<typeof statSync>;
+			try {
+				linkStats = lstatSync(entryPath);
+				if (linkStats.isSymbolicLink()) {
+					continue;
+				}
+				stats = statSync(entryPath);
+			} catch {
+				continue;
+			}
 			if (stats.isDirectory()) {
-				docs.push(...findPlanDocs(entryPath));
+				docs.push(...findPlanDocs(entryPath, visited));
 				continue;
 			}
 			if (
@@ -379,7 +400,10 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 	const errors: PlanError[] = [];
 
 	// Find all plan documents
-	const docs = planSearchPaths.flatMap(findPlanDocs).sort().reverse();
+	const docs = planSearchPaths
+		.flatMap((planPath) => findPlanDocs(planPath))
+		.sort()
+		.reverse();
 
 	if (docs.length === 0) {
 		return {

@@ -1,5 +1,23 @@
 # CI Migration Boundary Recovery
 
+# Table Of Contents
+
+- [Refactor Classification](#refactor-classification)
+- [Problem Statement](#problem-statement)
+- [Root Cause Analysis](#root-cause-analysis)
+- [Evidence](#evidence)
+- [Architectural Impact](#architectural-impact)
+- [Desired End State](#desired-end-state)
+- [Migration Strategy](#migration-strategy)
+- [Execution Phases](#execution-phases)
+- [Linear Mapping](#linear-mapping)
+- [Anti-Regression Constraints](#anti-regression-constraints)
+- [Eval Requirements](#eval-requirements)
+- [Success Criteria](#success-criteria)
+- [Safe Rollback Conditions](#safe-rollback-conditions)
+- [Future-Agent Guidance](#future-agent-guidance)
+- [Related Systems](#related-systems)
+
 # Refactor Classification
 
 modularity correction, orchestration simplification, cognition compression,

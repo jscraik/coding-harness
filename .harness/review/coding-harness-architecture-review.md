@@ -1047,7 +1047,7 @@ The smallest compelling product is:
 
 1. `harness init` installs governance files and packaged agent skill.
 2. `harness next --json` tells an agent the next safe action.
-3. `harness verify-work --fast --json` runs a deterministic local gate.
+3. `harness verify-work --fast --json` is the canonical local verification gate; shorthand strategy references to `harness verify` refer to this verification command family, not a separate command.
 4. `harness review-gate --json` checks PR readiness against current-head SHA,
    independent review, and required checks.
 5. `harness learnings gate/review-context` turns repeated review failures into

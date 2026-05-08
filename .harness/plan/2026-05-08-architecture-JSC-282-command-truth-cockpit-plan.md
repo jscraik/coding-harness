@@ -37,7 +37,7 @@ traceability_required: true
 - [Human Review Points](#human-review-points)
 - [Out Of Scope](#out-of-scope)
 - [Traceability Matrix](#traceability-matrix)
-- [he-work Handoff](#he-work-handoff)
+- [Pre-work Handoff](#pre-work-handoff)
 
 ## Plan Summary
 
@@ -418,7 +418,7 @@ Agent-safe work:
 | `.agents/skills/coding-harness/SKILL.md` | Downstream agent guidance | IU-003 | Skill guidance aligns with runtime truth |
 | Legacy May 7 spec/plan | Historical compression context | IU-002 | Stale baseline marked historical or replaced |
 
-## he-work Handoff
+## Pre-work Handoff
 
 Start with IU-001. Do not edit behavior until the current runtime baseline is
 captured.
