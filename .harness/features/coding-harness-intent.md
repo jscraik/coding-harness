@@ -314,6 +314,7 @@ Evidence:
 Preserve these unless an explicit migration plan and compatibility window exist:
 
 - CLI command names and JSON output contracts, especially `next`, `init`, `upgrade`, `verify`, `review-gate`, `docs-gate`, `plan-gate`, `policy-gate`, `risk-tier`, and `commands --json`.
+- Harness Engineering plan artifact discovery contract under `.harness/plan/**.md`, including non-date-prefixed plan filenames consumed by `plan-gate`.
 - `HarnessDecision` schema and validation semantics in `src/lib/decision/harness-decision.ts`.
 - Gate result JSON semantics used by health, docs, plan, review, and validation gates.
 - `harness.contract.json` and matching TypeScript contract schema.
@@ -321,7 +322,6 @@ Preserve these unless an explicit migration plan and compatibility window exist:
 - `scripts/codex-preflight.sh`, `scripts/verify-work.sh`, `scripts/validate-codestyle.sh`, and codestyle parity scripts.
 - PR template testing and review artifact fields.
 - Project Brain paths under `.harness/knowledge/**`, `.harness/decisions/**`, `.harness/review-log.md`, and `.harness/README.md`.
-- Harness Engineering plan artifact discovery contract under `.harness/plan/**.md`, including non-date-prefixed plan filenames consumed by `plan-gate`.
 - The installed downstream skill shape under `.agents/skills/coding-harness/`.
 
 Why:

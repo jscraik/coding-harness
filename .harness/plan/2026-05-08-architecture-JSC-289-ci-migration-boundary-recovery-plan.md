@@ -74,7 +74,7 @@ public `ci-migrate` command before reducing the core file.
 | Source Linear plan | `.harness/linear/coding-harness-linear-plan.md` |
 | Source spec | `.harness/specs/2026-05-08-JSC-289-ci-migration-boundary-recovery-spec.md` |
 | Source refactor | `.harness/refactors/ci-migration-boundary-recovery.md` |
-| Required eval | `.harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` |
+| Planned eval | `.harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` |
 
 ## Source Authority
 
@@ -476,11 +476,16 @@ Plan artifact validation:
 
 | Command | Required before handoff |
 | --- | --- |
-| `python3 ./scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` (BLOCKED: script does not exist; directory `./scripts/validation-and-linting/` not present) | Blocked |
-| `python3 ./scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` (BLOCKED: script does not exist; directory `./scripts/validation-and-linting/` not present) | Blocked |
-| `python3 ./scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` (BLOCKED: script does not exist; directory `./scripts/validation-and-linting/` not present) | Blocked |
 | `pnpm markdownlint .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Yes |
 | `git diff --check` | Yes |
+
+Planned checks:
+
+| Command | Status |
+| --- | --- |
+| `python3 ./scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Planned; blocked until `./scripts/validation-and-linting/` exists. |
+| `python3 ./scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Planned; blocked until `./scripts/validation-and-linting/` exists. |
+| `python3 ./scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md` | Planned; blocked until `./scripts/validation-and-linting/` exists. |
 
 Implementation validation for Phase 1:
 
