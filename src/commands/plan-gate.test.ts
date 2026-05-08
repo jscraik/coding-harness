@@ -319,6 +319,13 @@ describe("plan-gate command", () => {
 		});
 
 		it("reports unreadable Harness plan markdown as a system error", () => {
+			if (
+				process.platform === "win32" ||
+				(typeof process.geteuid === "function" && process.geteuid() === 0)
+			) {
+				return;
+			}
+
 			const unreadablePath = createHarnessPlan(
 				"JSC-248-unreadable-plan.md",
 				[
