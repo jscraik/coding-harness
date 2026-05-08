@@ -73,6 +73,8 @@ gardener-report.json
 !.harness/review/**.md
 !.harness/evals/
 !.harness/evals/**.md
+!.harness/solutions/
+!.harness/solutions/**.md
 !.harness/ideate/
 !.harness/ideate/**.md
 !.harness/brainstorm/
