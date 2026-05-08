@@ -67,7 +67,7 @@ public `ci-migrate` command before reducing the core file.
 | Project | `coding-harness` |
 | Initiative | `Dev Portfolio` |
 | Milestone | `CI Migration Boundary Recovery Slice` |
-| Linear status | `Triage` |
+| Linear status | `In Progress` |
 | Priority | High / `2` |
 | Labels | `Reliability`, `architecture`, `Refactor`, `Drift-Risk` |
 | Execution route | Agent-assisted; human review required at phase boundaries |

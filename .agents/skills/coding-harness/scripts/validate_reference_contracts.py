@@ -107,10 +107,13 @@ def load_files(skill_root: Path) -> tuple[list[tuple[Path, str]], list[str]]:
     missing: list[str] = []
     for rel_path in TARGET_FILES:
         path = skill_root / rel_path
-        if not path.exists():
+        if not path.is_file():
             missing.append(rel_path)
             continue
-        loaded.append((path, path.read_text(encoding="utf-8")))
+        try:
+            loaded.append((path, path.read_text(encoding="utf-8")))
+        except (IOError, OSError):
+            missing.append(rel_path)
 
     return loaded, missing
 
