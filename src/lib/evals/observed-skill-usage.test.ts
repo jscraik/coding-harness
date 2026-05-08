@@ -159,6 +159,30 @@ describe("buildObservedSkillUsage", () => {
 		expect(artifact.estimateComparison.staticActiveTokens).toBe(268);
 	});
 
+	it("does not classify routine import cleanup as missing-helper remediation", () => {
+		const dir = mkdtempSync(join(tmpdir(), "observed-skill-usage-import-"));
+
+		const artifact = buildObservedSkillUsage({
+			skill: "he-eval-report",
+			repoRoot: dir,
+			gitLogText: [
+				"abc123\t2026-05-08 12:00:00 +0100\tchore: import cleanup",
+				"def456\t2026-05-08 12:05:00 +0100\trefactor: tidy exports",
+			].join("\n"),
+			gitRange: "HEAD~20..HEAD",
+			generatedAt: "2026-05-08T12:30:00.000Z",
+		});
+
+		expect(artifact.remediationEvidence).toMatchObject({
+			followUpCommits: 0,
+			repeatedFailureClass: null,
+		});
+		expect(artifact.evalJudgment).toMatchObject({
+			missedIssue: false,
+			smallestNextEvalSeed: null,
+		});
+	});
+
 	it("does not treat generic eval project hints as skill usage", () => {
 		const dir = mkdtempSync(join(tmpdir(), "observed-skill-usage-generic-"));
 		const sessionCollectorPath = join(

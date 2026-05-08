@@ -53,7 +53,7 @@ or safe to close.
 JSC-288 now treats current executable evidence as the trust boundary:
 
 - `.github/PULL_REQUEST_TEMPLATE.md` uses
-  `pnpm exec tsx src/cli.ts tooling-audit --path . --json` as the required
+  `bash scripts/run-harness-gate.sh tooling-audit --path . --json` as the required
   local Project Brain/memory-extension proof.
 - The previous required `memory.json` shape proof was removed from the PR
   template.

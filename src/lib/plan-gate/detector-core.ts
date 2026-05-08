@@ -236,8 +236,7 @@ function findPlanDocs(
 
 	try {
 		const rootStats = statSync(plansPath);
-		const realRoot = resolve(plansPath);
-		const visitKey = `${rootStats.dev}:${rootStats.ino}:${realRoot}`;
+		const visitKey = `${rootStats.dev}:${rootStats.ino}`;
 		if (visited.has(visitKey)) {
 			return docs;
 		}

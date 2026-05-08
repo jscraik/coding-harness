@@ -4,6 +4,7 @@ import {
 	existsSync,
 	mkdirSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -306,6 +307,35 @@ describe("plan-gate command", () => {
 			expect(result.artifacts).toHaveLength(1);
 			expect(result.artifacts[0]?.title).toBe("Newer Command Truth Cockpit");
 			expect(result.artifacts[0]?.path).toContain("2026-05-08");
+		});
+
+		it("deduplicates aliased plan roots", () => {
+			const docsPlansDir = join(testDir, "docs/plans");
+			const harnessDir = join(testDir, ".harness");
+			mkdirSync(docsPlansDir, { recursive: true });
+			mkdirSync(harnessDir, { recursive: true });
+			symlinkSync(docsPlansDir, join(harnessDir, "plan"));
+			createTestPlan(
+				"Aliased Plan Root",
+				"2026-05-08",
+				"standard-plan",
+				"draft",
+				"## Implementation Steps\n\n- Scan once.\n\n## Acceptance Criteria\n\n- [ ] Aliased roots do not duplicate artifacts.",
+				testDir,
+				undefined,
+				"jsc-290-aliased-plan-root",
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requirePlanId: true,
+					planIds: ["jsc-290-aliased-plan-root"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.planId).toBe("jsc-290-aliased-plan-root");
 		});
 
 		it("ignores non-plan markdown files during recursive .harness/plan discovery", () => {
