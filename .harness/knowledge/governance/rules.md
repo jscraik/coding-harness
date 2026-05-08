@@ -1,6 +1,6 @@
 # Governance Rules
 
-**Rule count:** 3
+**Rule count:** 4
 **Last promoted:** 2026-05-08
 
 ## Active rules
@@ -22,6 +22,12 @@
   - Rationale: Source-tree validation can pass while the packaged skill users receive is broken, missing runtime dependencies, or unsafe during update. Package-form proof keeps local closure honest and prevents release-gate promotion from resting on source-only evidence.
   - Last promoted: 2026-05-08
   - Promoted from: `.harness/solutions/2026-05-08-jsc-283-packaged-skill-behavior-proof.md`
+
+- **R-004**: Governance trust proof must use current executable memory evidence and validator-clean HE eval reports before Linear closure.
+  - Severity: must
+  - Rationale: Bootstrap placeholder files and prose-only evals create false confidence. Closure proof must exercise the current Project Brain, `.harness/memory/LEARNINGS.md`, and learning-loop contract through source-truth commands, and the closeout eval must pass the canonical `he-eval-report` validator plus traceability lints.
+  - Last promoted: 2026-05-08
+  - Promoted from: `.harness/solutions/2026-05-08-jsc-288-governance-trust-repair-solution.md`
 
 ## Deprecated
 
