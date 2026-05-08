@@ -1,7 +1,7 @@
 # Governance Rules
 
-**Rule count:** 2
-**Last promoted:** 2026-04-30
+**Rule count:** 3
+**Last promoted:** 2026-05-08
 
 ## Active rules
 
@@ -17,9 +17,15 @@
   - Last promoted: 2026-04-30
   - Promoted from: CodeRabbit learnings operational-evidence tightening
 
+- **R-003**: Packaged skill closure must use package-form proof when the claim covers downstream install behavior, packaged command references, update ownership, or release-gate readiness.
+  - Severity: must
+  - Rationale: Source-tree validation can pass while the packaged skill users receive is broken, missing runtime dependencies, or unsafe during update. Package-form proof keeps local closure honest and prevents release-gate promotion from resting on source-only evidence.
+  - Last promoted: 2026-05-08
+  - Promoted from: `.harness/solutions/2026-05-08-jsc-283-packaged-skill-behavior-proof.md`
+
 ## Deprecated
 
-No deprecated governance rules as of 2026-04-30.
+No deprecated governance rules as of 2026-05-08.
 
 ## Promotion guide
 

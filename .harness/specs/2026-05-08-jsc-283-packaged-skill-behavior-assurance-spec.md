@@ -118,7 +118,7 @@ work.
   source-command truth.
 - Explicitly classify credential-required remote checks as blocked when
   credentials are unavailable.
-- Produce `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`
+- Produce `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`
   before any closure claim.
 
 ## Non-Goals
@@ -150,7 +150,7 @@ work.
 | Status | `Triage` |
 | Execution route | Agent-assisted; human review required for fixture admission and release-gate promotion |
 | Depends on | `JSC-282` source-command proof |
-| Eval artifact | `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md` |
+| Eval artifact | `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md` |
 
 ## Linear Work Item Contract
 
@@ -365,7 +365,7 @@ Likely affected interfaces:
 - Package scripts that invoke skill validation.
 - Test fixture helpers introduced for downstream-like repos.
 - Eval artifact:
-  `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`.
+  `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`.
 
 Interfaces that must remain stable:
 
@@ -486,7 +486,7 @@ Known loopholes to close before `he-work`:
 | SA-283-050 | Packaged skill command references resolve against the JSC-282 source-command truth or carry explicit blocked/deprecated status. | Resolution check compares skill references with source command truth and records mismatches. | routing invariants |
 | SA-283-060 | Credential-required remote checks are represented as blocked with missing inputs, not skipped. | Eval lists missing credentials or services for each blocked remote path. | execution invariants |
 | SA-283-070 | Fixture tests remain advisory until deterministic enough to gate release confidence. | he-plan records advisory vs blocking gate state and promotion criteria. | refactor phase 6 |
-| SA-283-080 | JSC-283 closure writes `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`. | Eval artifact validates and links back to `JSC-283`. | execution invariants |
+| SA-283-080 | JSC-283 closure writes `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`. | Eval artifact validates and links back to `JSC-283`. | execution invariants |
 | SA-283-090 | The first `he-work` slice cannot implement broad release-gate wiring before the fixture matrix and at least one local behavior fixture exist. | he-plan sequencing keeps release-gate promotion behind fixture determinism evidence. | anti-drift principles |
 
 ## Linear Acceptance Traceability
@@ -580,7 +580,7 @@ Planner constraints:
 - Main risk: confusing static skill validation with downstream usability.
 - Main dependency: JSC-282 source-command truth.
 - Required eval:
-  `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`.
+  `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`.
 
 ## Evidence
 

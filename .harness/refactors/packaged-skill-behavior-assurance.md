@@ -483,7 +483,7 @@ Keep fixture design plus one fixture implementation active.
 
 Expected eval artifact:
 
-`.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`
+`.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`
 
 Eval must prove:
 

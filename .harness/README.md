@@ -39,6 +39,8 @@ move with the repository. Local run state should stay local.
 | `.harness/strategy/**.md` | `secondary-context` | Track |
 | `.harness/triage/**.md` | `secondary-context` | Track |
 | `.harness/review/**.md` | `secondary-context` | Track when curated |
+| `.harness/evals/**.md` | `secondary-context` | Track when produced by Harness Engineering |
+| `.harness/solutions/**.md` | `secondary-context` | Track when produced by Harness Engineering |
 | `.harness/ideate/**.md` | `secondary-context` | Track when produced by Harness Engineering |
 | `.harness/brainstorm/**.md` | `secondary-context` | Track when produced by Harness Engineering |
 | `.harness/specs/**.md` | `execution-input` | Track when produced by Harness Engineering |

@@ -120,7 +120,7 @@ simplification, CI migration, or a general downstream simulator.
 | Published/global install proof | Out of JSC-283 baseline; record blocked unless credentials and release channel are intentionally available. | Prevents network/auth noise from hiding product behavior. |
 | Fixture root | Test-owned temporary directories created by fixture helpers. | Avoids Jamie-local state and keeps rollback cheap. |
 | Release-gate posture | Advisory until two consecutive local fixture runs are deterministic. | Prevents flaky fixture debt from becoming a release blocker too early. |
-| Eval artifact | `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`. | Closure requires durable evidence, not chat summary. |
+| Eval artifact | `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`. | Closure requires durable evidence, not chat summary. |
 
 ## Packaged Artifact Proof Mechanics
 
@@ -479,7 +479,7 @@ Close JSC-283 only with durable evidence and an explicit gate recommendation.
 
 Tasks:
 
-- Write `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`.
+- Write `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`.
 - Include every fixture as pass, fail, or blocked.
 - Include packed tarball path, package version, and package payload checks.
 - Include exact missing inputs for credential-blocked paths.
@@ -499,7 +499,7 @@ Acceptance IDs:
 Validation:
 
 - Eval artifact exists and links to `JSC-283`.
-- `pnpm docs:lint .harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`
+- `pnpm docs:lint .harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`
 - Closure-time rerun of all closure-eligible fixture commands against the final
   candidate tarball.
 
@@ -545,7 +545,7 @@ Behavior-slice validation:
 
 ```bash
 pnpm skill:validate
-pnpm docs:lint .harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md
+pnpm docs:lint .harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md
 bash scripts/verify-work.sh --fast
 ```
 
@@ -696,7 +696,7 @@ Do not create one issue per fixture command or one issue per skill reference.
 | `.harness/review/2026-05-08-JSC-283-packaged-skill-behavior-assurance-spec-technical-review.md` | Review blocker and risk source. | IU-283-001, IU-283-005 |
 | `.harness/refactors/packaged-skill-behavior-assurance.md` | Migration/refactor source. | All units |
 | `.harness/evals/coding-harness-jsc-282-command-truth-eval.md` | Source-command truth dependency. | IU-283-002 |
-| `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md` | Required closure proof. | IU-283-005 |
+| `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md` | Required closure proof. | IU-283-005 |
 | `.agents/skills/coding-harness/**` | Packaged skill surface under test. | IU-283-002 through IU-283-004 |
 | `scripts/validate-packaged-skill.cjs` | Static validation guard. | IU-283-001, IU-283-002 |
 | `.agents/skills/coding-harness/scripts/validate_reference_contracts.py` | Reference validator to make targetable or wrap for tarball skill roots. | IU-283-002 |
@@ -747,9 +747,9 @@ Required first-slice outputs:
 - Closure proof form: local packed artifact fixture proof.
 - Main blocker to avoid: source-only proof closing packaged behavior.
 - Required eval:
-  `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`.
+  `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`.
 - IU-283-001 evidence artifact:
-  `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`.
+  `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`.
 - IU-283-001 evidence status: payload identity recorded, closure still blocked.
 - Tested source commit:
   `9d1c51e92cdf6aa55b76c61cd1e45149b86b3c2d`.

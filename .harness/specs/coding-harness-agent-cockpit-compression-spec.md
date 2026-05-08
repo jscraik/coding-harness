@@ -373,7 +373,7 @@ Likely affected implementation surfaces:
 - `.agents/skills/coding-harness/scripts/validate_reference_contracts.py`.
 - fixture tests or helper scripts introduced for packaged skill behavior.
 - `.harness/evals/coding-harness-command-cockpit-truth-reconciliation-eval.md`.
-- `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md`.
+- `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`.
 
 Interfaces that must remain stable unless an explicit ADR supersedes them:
 
@@ -463,7 +463,7 @@ Recommended metrics:
 | SA-023 | Update/idempotence packaged skill behavior is proven in a downstream-like fixture or explicitly blocked with concrete reason. | Fixture command output is recorded in eval artifact. | skill refactor |
 | SA-024 | Packaged skill command references for selected cockpit commands resolve against real command truth. | Behavior fixture or validator proves reference resolution. | ADR-002; ADR-007 |
 | SA-030 | `.harness/evals/coding-harness-command-cockpit-truth-reconciliation-eval.md` exists before closing the command truth parent. | Eval artifact contains exact commands, outcomes, blockers, and before/after drift evidence. | execution invariants |
-| SA-031 | `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md` exists before closing the skill behavior parent. | Eval artifact contains exact commands, outcomes, blockers, and fixture evidence. | execution invariants |
+| SA-031 | `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md` exists before closing the skill behavior parent. | Eval artifact contains exact commands, outcomes, blockers, and fixture evidence. | execution invariants |
 | SA-032 | No parent issue or milestone is marked complete without eval proof and live Linear tracker linkage. | Closure checklist includes eval path and Linear IDs `JSC-282`, `JSC-283`, and the milestone. | execution invariants; Linear plan |
 | SA-033 | Rollback conditions are documented for command projection, runtime dispatch, and fixture gate changes. | Implementation plan includes rollback conditions before edits. | execution invariants |
 | SA-034 | `harness next --json`, `HarnessDecision`, and stable command exit-code contracts are not weakened. | Focused tests or direct command checks cover touched paths. | ADR-001; routing invariants |

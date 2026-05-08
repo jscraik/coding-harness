@@ -172,7 +172,7 @@ Only create sub-issues when execution starts for a milestone.
 
 | Milestone | Build | Test | Typecheck | Lint | Security | Eval | Architecture Drift | Routing Determinism | Context Load | Agent Discoverability | Rollback |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Agent Cockpit Compression Slice | As affected | Focused CLI and skill tests | Required | Required | Not primary | `.harness/evals/coding-harness-command-cockpit-truth-reconciliation-eval.md`; `.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md` | Required | Required | Required | Required | Required for demotions |
+| Agent Cockpit Compression Slice | As affected | Focused CLI and skill tests | Required | Required | Not primary | `.harness/evals/coding-harness-command-cockpit-truth-reconciliation-eval.md`; `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md` | Required | Required | Required | Required | Required for demotions |
 | Governance Trust Repair Slice | As affected | Contract/memory tests | Required | Required | Governance-sensitive | `.harness/evals/coding-harness-governance-contract-memory-simplification-eval.md` | Required | Secondary | Required | Secondary | Required for memory changes |
 | CI Migration Boundary Recovery Slice | Required | CI migration characterization | Required | Required | CI ownership-sensitive | `.harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` | Required | Secondary | Required | Secondary | Required |
 | Validation Typed Gate Specs Slice | Required | Gate spec and wrapper tests | Required | Required | Not primary | `.harness/evals/coding-harness-validation-typed-gate-specs-eval.md` | Required | Required | Secondary | Secondary | Required |
@@ -338,7 +338,7 @@ deterministic.
 
 ## Validation Gates
 skill:validate, fixture tests, lint, typecheck, verify-work --fast,
-.harness/evals/coding-harness-packaged-skill-behavior-assurance-eval.md.
+.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md.
 
 ## Rollback Conditions
 Stop if fixtures depend on Jamie-local state or fail to exercise real skill
