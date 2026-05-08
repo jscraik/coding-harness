@@ -366,7 +366,7 @@ Interpretation: future agents can inspect the closure decision without loading r
 
 Assumption: raw ignored evidence remains available locally for this workspace and is sufficient as local proof.
 
-Evidence: `.gitignore` ignores `.harness/*`; `.harness/README.md` classifies runtime outputs as generated local evidence; this report links the local evidence paths.
+Evidence: `.harness/README.md` distinguishes curated `.harness` Markdown and JSON contracts that are tracked with the repo from generated runtime outputs such as `.harness/evidence/**`, which remain local unless explicitly promoted. This report links the local evidence paths.
 
 Affected Files/Modules: `.harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`, `.harness/evidence/jsc-283-closure/**`.
 

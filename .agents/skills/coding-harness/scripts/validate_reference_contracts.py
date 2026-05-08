@@ -108,16 +108,18 @@ def build_report(
     files, missing = load_files(skill_root)
     findings: list[ReferenceFinding] = []
 
-    for rel_path in missing:
-        findings.append(
+    findings.extend(
+        (
             ReferenceFinding(
                 kind="missing-file",
                 label="missing expected file",
                 file=rel_path,
                 line=None,
                 message=f"missing expected file: {rel_path}",
-            ),
+            )
+            for rel_path in missing
         )
+    )
 
     combined = "\n".join(text for _, text in files)
 

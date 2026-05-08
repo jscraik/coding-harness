@@ -548,7 +548,7 @@ Expected eval path:
 
 ## Blackboard Delta
 
-- `linear_status`: resolved
+- `linear_status_tracker`: resolved
 - `linear_issue`: `JSC-288`
 - `linear_milestone`: `Governance Trust Repair Slice`
 - `label_status`: resolved

@@ -78,7 +78,9 @@ The packaged behavior proof is now explicit and bounded:
   on 2026-05-08 before preserving `.codex/environments/environment.toml`
   generation as intentional repository behavior.
 
-Validation rerun after the `he-eval-report` fix:
+Validation rerun after the `he-eval-report` fix, recorded from the local
+workspace where the Agent Skills checkout lived at
+`/Users/jamiecraik/dev/agent-skills`:
 
 - `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/coding-harness-jsc-283-packaged-skill-behavior-assurance-eval.md`
   passed.

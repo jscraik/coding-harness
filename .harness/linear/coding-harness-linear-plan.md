@@ -75,7 +75,7 @@ Experience`, `Agent-Native`, `Eval`, and `Reliability`.
 | Issue | Title | Status | Priority | Classification | Reason |
 | --- | --- | --- | --- | --- | --- |
 | JSC-282 | `[coding-harness] Reconcile command truth for PR-loop cockpit` | Triage | High | already_covered | Live issue exists in the planned milestone. Local source-scope implementation and eval are complete, but Linear status is stale and should be closed or advanced separately. |
-| JSC-283 | `[coding-harness] Prove packaged skill behavior for cockpit commands` | Triage | High | candidate_next_slice | This is the planned second parent issue for the active milestone and is explicitly unblocked by JSC-282 source proof. It has no child issues and no labels yet. |
+| JSC-283 | `[coding-harness] Prove packaged skill behavior for cockpit commands` | Triage | High | candidate_next_slice | This is the planned second parent issue for the active milestone and is explicitly unblocked by JSC-282 source proof. It has no child issues; labels are reconciled as `Developer Experience`, `Agent-Native`, `Eval`, and `Reliability`. |
 | JSC-248 | `Implement agent-native cockpit control loop first slice` | In Progress | High | already_covered | Legacy/umbrella cockpit work remains active under `Control loop hardening and flow telemetry`; do not let it expand the next spec beyond JSC-283. |
 | JSC-178 | `Modularize contract validation and command registry to reduce core-file risk` | In Progress | High | out_of_scope | Separate architecture-modularization work. It overlaps command-registry concerns but is not part of the approved cockpit packaged-skill slice. |
 

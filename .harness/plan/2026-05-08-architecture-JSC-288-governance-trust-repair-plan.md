@@ -703,9 +703,10 @@ Implementation status:
 Plan artifact validation:
 
 ```bash
-python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-08-architecture-JSC-288-governance-trust-repair-plan.md
-python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-288-governance-trust-repair-plan.md
-python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-288-governance-trust-repair-plan.md
+AGENT_SKILLS_ROOT="${AGENT_SKILLS_ROOT:-../agent-skills}"
+python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py" .harness/plan/2026-05-08-architecture-JSC-288-governance-trust-repair-plan.md
+python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py" .harness/plan/2026-05-08-architecture-JSC-288-governance-trust-repair-plan.md
+python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py" .harness/plan/2026-05-08-architecture-JSC-288-governance-trust-repair-plan.md
 pnpm exec markdownlint-cli2 .harness/plan/2026-05-08-architecture-JSC-288-governance-trust-repair-plan.md
 pnpm exec tsx src/cli.ts plan-gate --plans .harness/plan --type architecture --require-plan-id --require-origin --strict --json
 ```

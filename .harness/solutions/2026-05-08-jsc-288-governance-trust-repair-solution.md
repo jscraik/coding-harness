@@ -85,6 +85,10 @@ JSC-288 now treats current executable evidence as the trust boundary:
 
 Validation rerun after the eval repair:
 
+The following validation evidence records a local run from a workspace where the
+Agent Skills checkout lived at `/Users/jamiecraik/dev/agent-skills`; reruns in
+other workspaces should set the equivalent local Agent Skills path.
+
 - `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md`
   passed.
 - `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md`

@@ -435,11 +435,12 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 	const artifacts: PlanArtifact[] = [];
 	const errors: PlanError[] = [];
 	const contentCache = new Map<string, string>();
+	const visitedPlanDirs = new Set<string>();
 
 	// Find all plan documents
 	const docs = planSearchPaths
 		.flatMap((planPath) =>
-			findPlanDocs(planPath, new Set<string>(), contentCache),
+			findPlanDocs(planPath, visitedPlanDirs, contentCache),
 		)
 		.sort()
 		.reverse();

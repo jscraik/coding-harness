@@ -1,3 +1,18 @@
+---
+schema_version: 1
+artifact_id: jsc-288-governance-trust-repair-spec-technical-review
+artifact_type: he-technical-review
+canonical_slug: jsc-288-governance-trust-repair-spec-technical-review
+title: JSC-288 Governance Trust Repair Spec Technical Review
+harness_stage: he-technical-review
+status: pass
+date: 2026-05-08
+traceability_required: true
+origin: .harness/specs/2026-05-08-jsc-288-governance-trust-repair-spec.md
+linear_issue: JSC-288
+linear_milestone: Governance Trust Repair Slice
+---
+
 # JSC-288 Governance Trust Repair Spec Technical Review
 
 ## Review Target

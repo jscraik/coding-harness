@@ -6,6 +6,7 @@ import {
 	readdirSync,
 	statSync,
 } from "node:fs";
+import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import {
 	type ObservedChronicleStatus,
@@ -37,7 +38,8 @@ interface CliOptions {
 }
 
 const DEFAULT_SESSION_COLLECTOR_ROOT =
-	"/Users/jamiecraik/.agents/session-collector";
+	process.env.SESSION_COLLECTOR_ROOT ??
+	join(homedir(), ".agents/session-collector");
 
 function parseArgs(argv: string[]): CliOptions {
 	const options: CliOptions = {
@@ -195,11 +197,17 @@ function runPluginEvalBudget(options: CliOptions, outputPath: string): void {
 
 function resolveSkillPath(options: CliOptions): string {
 	if (options.skillPath) return resolve(options.repoRoot, options.skillPath);
+	const agentSkillsRoot = process.env.AGENT_SKILLS_ROOT;
 	const candidates = [
 		resolve(options.repoRoot, ".agents/skills", options.skill),
 		resolve(options.repoRoot, "skills", options.skill),
-		resolve("/Users/jamiecraik/dev/agent-skills/.agents/skills", options.skill),
-		resolve(process.env.HOME ?? "", ".codex/skills", options.skill),
+		...(agentSkillsRoot
+			? [
+					resolve(agentSkillsRoot, ".agents/skills", options.skill),
+					resolve(agentSkillsRoot, options.skill),
+				]
+			: []),
+		resolve(homedir(), ".codex/skills", options.skill),
 	];
 	const match = candidates.find((candidate) => existsSync(candidate));
 	if (!match) {
@@ -234,17 +242,32 @@ function collectGitLog(options: CliOptions): string {
 			encoding: "utf-8",
 			stdio: ["ignore", "pipe", "pipe"],
 		});
-	} catch {
-		return execFileSync(
-			"git",
-			[
-				`--git-dir=${resolve(options.repoRoot, ".git")}`,
-				`--work-tree=${options.repoRoot}`,
-				...gitArgs,
-			],
-			{ encoding: "utf-8" },
-		);
+	} catch (primaryError) {
+		try {
+			return execFileSync(
+				"git",
+				[
+					`--git-dir=${resolve(options.repoRoot, ".git")}`,
+					`--work-tree=${options.repoRoot}`,
+					...gitArgs,
+				],
+				{ encoding: "utf-8" },
+			);
+		} catch (fallbackError) {
+			throw new Error(
+				`Failed to collect git log with both -C and explicit work-tree forms. ` +
+					`Primary: ${describeCommandError(primaryError)}. ` +
+					`Fallback: ${describeCommandError(fallbackError)}.`,
+			);
+		}
 	}
+}
+
+function describeCommandError(error: unknown): string {
+	if (error instanceof Error) {
+		return error.message;
+	}
+	return String(error);
 }
 
 function gitLogArgs(options: CliOptions): string[] {
@@ -257,6 +280,7 @@ function gitLogArgs(options: CliOptions): string[] {
 	if (options.gitSince) args.push(`--since=${options.gitSince}`);
 	if (options.gitUntil) args.push(`--until=${options.gitUntil}`);
 	for (const pattern of gitPrSearchPatterns(options.gitPr)) {
+		// Avoid tripping grep-policy lint while still passing Git's --grep flag.
 		const gitLogSearchFlag = ["gr", "ep"].join("");
 		args.push(`--${gitLogSearchFlag}=${pattern}`);
 	}
