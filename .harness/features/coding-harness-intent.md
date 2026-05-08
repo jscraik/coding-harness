@@ -728,7 +728,7 @@ Evidence:
 - Downstream scaffold updates can become dangerous if generated/adaptable ownership metadata is incomplete.
 - Memory/context systems can become a second source of truth unless repo-local artifacts remain canonical.
 
-# Drift Detection Signals
+## Drift Detection Signals
 
 | Signal | Why it matters | Likely root cause | Operational impact | Severity | Indicator or threshold | Corrective action | Blocks merges/releases |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -751,7 +751,7 @@ Evidence:
 | More ceremony than execution | Users reject the harness | Governance artifacts do not improve outcomes | Adoption failure | Critical | PR template/gates grow while PR lead time or review rework does not improve | Delete or automate low-value ceremony | Block release positioning claims |
 | Increasing token/context cost without reliability gains | Agent work becomes slower and less reliable | Docs duplication and long prompts | Higher cost, weaker decisions | Medium | Required startup context exceeds task-relevant routing docs or repeats same rule in 3+ places | Consolidate into routed docs and executable gates | Block when duplicate instructions conflict |
 
-# Evidence & Traceability Matrix
+## Evidence & Traceability Matrix
 
 | Conclusion | Evidence category | File paths | Symbols/interfaces/components involved | Runtime behaviour observed | Confidence | Why the evidence matters |
 | --- | --- | --- | --- | --- | --- | --- |
