@@ -692,7 +692,7 @@ function writeText(path: string, value: string): void {
 }
 
 function parseJsonRecord(raw: string): Record<string, unknown> {
-	const parsed = JSON.parse(raw) as unknown;
+	const parsed = tryParseJson(raw);
 	return isRecord(parsed) ? parsed : {};
 }
 

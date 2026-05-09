@@ -386,6 +386,40 @@ describe("buildObservedSkillUsage", () => {
 		});
 	});
 
+	it("treats malformed session collector JSON like unavailable telemetry", () => {
+		const dir = mkdtempSync(join(tmpdir(), "observed-skill-usage-malformed-"));
+		const sessionCollectorPath = join(
+			dir,
+			"artifacts/session-collector/session-collector.json",
+		);
+		mkdirSync(dirname(sessionCollectorPath), { recursive: true });
+		writeFileSync(sessionCollectorPath, '{"sessions":', "utf-8");
+
+		const artifact = buildObservedSkillUsage({
+			skill: "he-eval-report",
+			repoRoot: dir,
+			sessionCollectorPath,
+			generatedAt: "2026-05-08T12:30:00.000Z",
+		});
+
+		expect(artifact.source.sessionCollector).toBe(sessionCollectorPath);
+		expect(artifact.observedUsage).toMatchObject({
+			inputTokens: null,
+			outputTokens: null,
+			totalTokens: null,
+			cachedTokens: null,
+			attribution: "none",
+			confidence: "none",
+		});
+		expect(artifact.workflowEvidence).toMatchObject({
+			commands: [],
+			validationOutcome: "unknown",
+			firstFailure: null,
+			blockerClass: null,
+		});
+		expect(artifact.evalJudgment.missedIssue).toBe(false);
+	});
+
 	it("stays honest when optional telemetry sources are unavailable", () => {
 		const dir = mkdtempSync(join(tmpdir(), "observed-skill-usage-empty-"));
 
