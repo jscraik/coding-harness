@@ -5,7 +5,7 @@ artifact_type: he-eval-report
 canonical_slug: validation-typed-gate-specs
 title: Validation Typed Gate Specs Eval
 harness_stage: he-eval-report
-status: draft
+status: complete-with-follow-up
 date: 2026-05-09
 traceability_required: true
 origin: .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md
@@ -46,20 +46,20 @@ linear_status: Triage
 
 ## Executive Eval Summary
 
-Status: partial pass.
+Status: pass for local implementation proof.
 
-Linear Completion Recommendation: keep `JSC-290` open. The mirror,
-characterization, parity, failure taxonomy, and resume-fixture units are
-complete with local validation evidence, but the approved plan requires human
-review and eval-backed acceptance before runtime burn-down begins.
+Linear Completion Recommendation: complete with follow-up after acceptance,
+push/PR, remote CI, and independent review. The mirror, characterization,
+parity, failure taxonomy, resume-fixture units, and the approved narrow runtime
+burn-down are complete with local validation evidence.
 
-Primary Blockers: no blocker remains for the mirror-only slice. Runtime
-burn-down remains blocked until a human accepts the boundary in this eval and
-authorizes the next implementation unit.
+Primary Blockers: none for local implementation proof. Do not close `JSC-290`
+from this eval alone until the branch is pushed, remote checks pass, and the
+independent review/acceptance loop is complete.
 
 Confidence: high for `IU-VAL-001` through `IU-VAL-005` implementation evidence;
-medium for runtime burn-down readiness because no runtime extraction has been
-performed or deep-tested.
+high for the narrow runtime guard because it is directly covered by focused
+tests, repository gates, and credential-backed `pnpm test:deep`.
 
 ## Evaluated Slice
 
@@ -83,6 +83,8 @@ Affected Files/Modules:
 - `src/lib/validation/gate-specs.ts`
 - `src/lib/validation/gate-specs.test.ts`
 - `src/lib/validation/gate-specs-parity.test.ts`
+- `src/lib/cli/registry/command-specs-core.ts`
+- `src/lib/cli/command-registry.test.ts`
 - `src/commands/verify-work.test.ts`
 - `.harness/specs/2026-05-09-validation-typed-gate-specs-spec.md`
 - `.harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md`
@@ -111,12 +113,12 @@ Related Core Invariants:
 Artifact Path:
 `.harness/evals/coding-harness-validation-typed-gate-specs-eval.md`
 
-Definition of Done Status: incomplete for parent closure. The mirror-only
-implementation units are complete, but the parent issue includes the migration
-decision about whether runtime burn-down may proceed.
+Definition of Done Status: locally satisfied with follow-up. The implementation
+units and narrow runtime burn-down are complete locally, but parent closure is
+not safe until remote PR/CI and independent review evidence exists.
 
-Closure Safety: do not close `JSC-290` yet. It is safe to move the issue to a
-review/acceptance state for the typed mirror and runtime extraction boundary.
+Closure Safety: safe to move to PR/acceptance. Do not close `JSC-290` from
+local evidence alone.
 
 ## Linear Backlink Map
 
@@ -128,8 +130,8 @@ Linear Parent Issue: `JSC-290`
 
 Linear Sub-Issues: none.
 
-Linear Status Recommendation: keep open in review. Add this eval as the
-acceptance artifact before authorizing runtime burn-down.
+Linear Status Recommendation: keep open until remote PR/CI and independent
+review pass. Add this eval as the local implementation proof artifact.
 
 Proof Artifact Links:
 
@@ -179,6 +181,8 @@ Other Source Artifacts:
 - Commit `320fef2c feat(jsc-290): type validation failure contracts`
 - Commit `5694a7df test(jsc-290): cover resume fail-closed fixtures`
 - Commit `d579c6f2 docs(jsc-290): commit validation planning artifacts`
+- Commit `1d3c5e66 docs(jsc-290): add validation typed gate eval`
+- Commit `90e97207 feat(jsc-290): guard verify-work resume gate ids`
 
 ## Planned Proof Check
 
@@ -189,7 +193,7 @@ Promised Proof From Source Artifacts:
 - Shell and typed parity tests.
 - Failure taxonomy and artifact contract metadata.
 - Resume model fixtures.
-- Eval proof before runtime burn-down or Linear closure.
+- Eval proof before Linear closure.
 
 Proof Planned Before Implementation: yes.
 
@@ -204,15 +208,13 @@ Proof Produced:
 
 Proof Missing:
 
-- `pnpm test:deep` has not been run for runtime burn-down because no runtime
-  burn-down has occurred.
-- Human acceptance of the runtime extraction boundary has not been recorded.
+- Remote PR/CI and independent review evidence are not present in local git.
 
-Interpretation: the plan's mirror-only proof is satisfied; the runtime
-burn-down proof is intentionally not satisfied yet.
+Interpretation: local implementation proof is satisfied; Linear closure still
+requires the normal remote and review loop.
 
-Blocks Closure: yes for parent issue closure; no for accepting the mirror-only
-implementation units.
+Blocks Closure: yes for final Linear closure until remote PR/CI and independent
+review pass; no for local implementation acceptance.
 
 ## Functional Validation Results
 
@@ -286,6 +288,30 @@ full `bash scripts/validate-codestyle.sh` as passing for the planning artifacts.
 Confidence: high.
 
 Blocks Closure: no for artifact commit.
+
+Command or Method: commit validation evidence for `1d3c5e66`.
+
+Result: pass.
+
+Evidence: commit body records eval-report validation, artifact identity lint,
+frontmatter safety lint, markdownlint, `bash scripts/validate-codestyle.sh
+--fast`, and full `bash scripts/validate-codestyle.sh` as passing.
+
+Confidence: high.
+
+Blocks Closure: no for eval artifact baseline.
+
+Command or Method: commit validation evidence for `90e97207`.
+
+Result: pass.
+
+Evidence: commit body records focused registry/gate-spec tests, typecheck,
+lint, quality gates, `test:related`, `bash scripts/verify-work.sh --fast`,
+fast/full codestyle, and credential-backed `pnpm test:deep` as passing.
+
+Confidence: high.
+
+Blocks Closure: no for local implementation proof.
 
 ## Eval Gate Matrix
 
@@ -381,24 +407,29 @@ Blocks Closure: no.
 
 Required Action: no `--resume-from` behavior change without human review.
 
-Gate: runtime burn-down readiness.
+Gate: runtime burn-down boundary.
 
-Expected: human review accepts a specific extraction boundary and deep validation
-passes after a runtime change.
+Expected: any runtime-facing work stays narrow, preserves shell wrappers, avoids
+extraction/rewrite, and proves the touched behavior with focused and broad
+validation.
 
-Actual: no runtime burn-down has started. No deep validation for runtime
-extraction is expected yet.
+Actual: runtime-facing scope was limited to `verify-work --resume-from`
+preflight validation in the command registry. Unknown gate IDs now fail closed
+before spawning the shell wrapper. No shell wrapper rewrite, CI change,
+run-state schema change, package-script change, or provider ownership change was
+introduced.
 
-Status: partial.
+Status: pass.
 
-Evidence: plan section "Later Runtime Burn-Down"; no matching runtime commit.
+Evidence: commit `90e97207`; `src/lib/cli/registry/command-specs-core.ts`;
+`src/lib/cli/command-registry.test.ts`; credential-backed `pnpm test:deep`.
 
 Confidence: high.
 
-Blocks Closure: yes.
+Blocks Closure: no for local implementation proof.
 
-Required Action: human acceptance of the boundary in this eval before starting
-the next implementation unit.
+Required Action: push/PR and collect remote CI plus independent review before
+closing Linear.
 
 ## Agentic Eval Validity
 
@@ -409,36 +440,39 @@ with tests.
 Task Validity: pass. The task is grounded in the JSC-290 spec and plan, not
 post-hoc implementation claims.
 
-Outcome Validity: pass for mirror-only work; partial for parent closure until
-runtime boundary is accepted or deferred.
+Outcome Validity: pass for local implementation proof; partial for final parent
+closure until remote PR/CI and independent review evidence exists.
 
 Trajectory / Transcript Evidence: phase commits show inventory first, typed
 mirror second, parity third, failure metadata fourth, resume fixtures fifth,
-and planning artifacts last.
+planning/eval artifacts next, and the narrow runtime guard last.
 
-Grader Coverage: focused tests and codestyle gates provide direct coverage for
-the mirror and parity model. No grader exists for subjective cognition gain.
+Grader Coverage: focused tests, parity tests, codestyle gates, verify-work fast
+gate, and credential-backed deep tests cover the local runtime and artifact
+claims. No grader exists for subjective cognition gain.
 
 Trial Policy: not applicable; this slice is deterministic repository behavior,
 not stochastic model output.
 
 Pass@k / Pass^k Reporting: not applicable.
 
-Authorization Validator: human review is required before runtime consumption of
-typed metadata.
+Authorization Validator: user authorized proceeding through the next phases in
+thread. External closure actions remain unauthorized until PR/CI/review evidence
+exists.
 
 Saturation / Maintenance Signal: parity tests create a maintenance signal for
 future drift; absent runtime burn-down means maintenance risk remains bounded.
 
 Blocks Completion: yes
 
-Required Action: record human acceptance before runtime burn-down.
+Required Action: record PR/CI/review evidence before tracker closure.
 
 ## Side-Effect Authorization
 
 Protected Action: none. This eval writes a local repository artifact only.
 
-User Authorization Evidence: user asked to commit all artifacts and proceed.
+User Authorization Evidence: user asked to commit all artifacts, proceed through
+the next phases, and later run this eval report.
 
 Agent Justification: the approved plan requires an eval artifact before runtime
 burn-down or parent closure.
@@ -449,13 +483,14 @@ Validator Decision: exempt
 
 Validator Confidence: high
 
-Suggested Next Step: human accepts or rejects the runtime burn-down boundary.
+Suggested Next Step: push/PR or otherwise collect remote CI and independent
+review evidence before tracker closure.
 
 Blocks Completion: no
 
 ## Domain Model Integrity Check
 
-Conclusion: pass for mirror-only validation domain modeling.
+Conclusion: pass for validation domain modeling and the narrow runtime guard.
 
 Bounded Context: repository validation orchestration and evidence artifacts.
 
@@ -469,7 +504,9 @@ Lifecycle Ownership: shell remains the execution owner; typed metadata is
 inspection and parity evidence only.
 
 Translation Evidence: `src/lib/validation/gate-specs.ts` mirrors shell gate
-facts; parity tests compare typed facts against shell source.
+facts; parity tests compare typed facts against shell source; the command
+registry consumes the typed gate lookup only to reject impossible resume IDs
+before shell execution.
 
 Scenario or Test Evidence: `src/lib/validation/gate-specs.test.ts`,
 `src/lib/validation/gate-specs-parity.test.ts`, and
@@ -477,8 +514,7 @@ Scenario or Test Evidence: `src/lib/validation/gate-specs.test.ts`,
 
 Confidence: high.
 
-Blocks Completion: no for mirror-only work; yes for runtime burn-down until
-accepted.
+Blocks Completion: no for local implementation proof.
 
 ## Drift Validation
 
@@ -506,10 +542,12 @@ Conclusion: pass for the admitted scope.
 
 Evidence: the implementation preserves `bash scripts/verify-work.sh` and
 `bash scripts/validate-codestyle.sh` as stable command entrypoints, while adding
-typed metadata and tests under `src/lib/validation/**`.
+typed metadata and tests under `src/lib/validation/**` plus a narrow registry
+guard for invalid resume IDs.
 
 Affected Files/Modules: `src/lib/validation/gate-specs.ts`, validation tests,
-and the inventory artifact.
+`src/lib/cli/registry/command-specs-core.ts`, command registry tests, and the
+inventory artifact.
 
 Confidence: high.
 
@@ -531,11 +569,12 @@ Blocks Completion: no.
 
 ## Context Load Check
 
-Conclusion: improved, with one remaining risk.
+Conclusion: improved.
 
 Evidence: future agents can load typed gate specs and inventory artifacts for
-the stable gate model. The remaining risk is that runtime execution still lives
-in shell, which is intentional until extraction is accepted.
+the stable gate model. Runtime execution still lives in shell, which remains
+intentional; the registry guard reduces impossible resume invocations without
+turning typed metadata into a competing runner.
 
 Affected Files/Modules: `.harness/review/2026-05-09-JSC-290-validation-gate-graph-inventory.md`
 and `src/lib/validation/gate-specs.ts`.
@@ -546,13 +585,14 @@ Blocks Completion: no for mirror-only work.
 
 ## Agent-Native Check
 
-Conclusion: pass for discoverability and drift detection.
+Conclusion: pass for discoverability, drift detection, and fail-closed resume
+preflight.
 
 Evidence: typed metadata, parity tests, and resume fixtures make the validation
 model more machine-readable without creating a competing runner.
 
 Affected Files/Modules: `src/lib/validation/**` and
-`src/commands/verify-work.test.ts`.
+`src/commands/verify-work.test.ts`, and command registry tests.
 
 Confidence: high.
 
@@ -573,7 +613,7 @@ Blocks Completion: no.
 
 ## Moat Protection Check
 
-Conclusion: pass with parent closure gated.
+Conclusion: pass with parent closure gated on remote evidence.
 
 Evidence: the work strengthens deterministic validation cognition and reduces
 future agent ambiguity. The moat is not the typed metadata itself; it is the
@@ -584,8 +624,8 @@ Affected Files/Modules: validation metadata, validation tests, and HE artifacts.
 
 Confidence: high.
 
-Blocks Completion: yes for parent closure until runtime boundary is accepted or
-explicitly deferred.
+Blocks Completion: no for local implementation proof; yes for parent closure
+until remote PR/CI and independent review evidence exists.
 
 ## Proof Artifacts
 
@@ -595,6 +635,8 @@ Produced:
 - `src/lib/validation/gate-specs.ts`
 - `src/lib/validation/gate-specs.test.ts`
 - `src/lib/validation/gate-specs-parity.test.ts`
+- `src/lib/cli/registry/command-specs-core.ts`
+- `src/lib/cli/command-registry.test.ts`
 - `src/commands/verify-work.test.ts`
 - `.harness/specs/2026-05-09-validation-typed-gate-specs-spec.md`
 - `.harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md`
@@ -603,56 +645,55 @@ Produced:
 Required:
 
 - This eval artifact.
-- Human acceptance before runtime burn-down.
-- Deep validation after any runtime extraction.
+- Remote PR/CI and independent review before final Linear closure.
 
 Missing:
 
-- Human acceptance of runtime boundary.
-- Runtime burn-down validation, because runtime burn-down has not started.
+- Remote PR/CI evidence.
+- Independent review evidence after push/PR.
 
 Planned Before Implementation: yes.
 
-Blocks Completion: yes for parent issue closure.
+Blocks Completion: yes for parent issue closure until remote/review evidence is
+attached.
 
 Attach or Link Back to Linear: yes after human acceptance or when preparing
 Linear status update.
 
 ## Failures / Regressions
 
-Failure or Regression: none observed in the mirror-only evidence.
+Failure or Regression: none observed in local implementation evidence.
 
-Evidence: all phase commit validation records are pass; no runtime behavior was
-changed.
+Evidence: all phase commit validation records are pass; the only runtime-facing
+change is a fail-closed preflight for invalid `--resume-from` gate IDs.
 
 Required Corrective Action: none for completed mirror-only units.
 
-Follow-Up Justified: yes, but only as the runtime burn-down boundary if a human
-accepts it.
+Follow-Up Justified: yes, but only for push/PR, remote CI, independent review,
+and tracker closure evidence.
 
-Blocks Closure: yes for parent closure because acceptance is still required.
+Blocks Closure: yes for final Linear closure because remote acceptance evidence
+is still required.
 
 ## Runtime Burn-Down Boundary
 
-Recommended boundary: start with a narrow internal extraction only after human
-acceptance. The first runtime-facing change should use typed metadata to remove
-duplicated stable metadata from shell-adjacent code or tests without changing
-the public command surface.
+Completed boundary: the runtime burn-down stayed narrower than extraction. The
+only runtime-facing change uses typed gate metadata to reject an impossible
+`verify-work --resume-from <unknown-gate>` invocation before spawning the shell
+wrapper.
 
-Allowed in the next implementation unit after acceptance:
+Preserved:
 
 - Keep `bash scripts/verify-work.sh` and `bash scripts/validate-codestyle.sh`
   as the only public validation entrypoints.
 - Preserve gate IDs, gate order, mode membership, execution classes, default
   failure classes, retry policy, artifact field names, exit-code semantics, and
   `--resume-from` behavior.
-- Add a small extraction that is fully covered by existing parity tests and a
-  direct focused runtime test.
-- Run `bash scripts/verify-work.sh --fast`,
-  `bash scripts/validate-codestyle.sh --fast`, full
-  `bash scripts/validate-codestyle.sh`, and `pnpm test:deep`.
+- Add only a small fail-closed preflight covered by command registry tests.
+- Run focused tests, `bash scripts/verify-work.sh --fast`, fast/full codestyle,
+  and credential-backed `pnpm test:deep`.
 
-Forbidden in the next implementation unit:
+Still forbidden without a new accepted plan:
 
 - Rewriting `scripts/verify-work.sh` in TypeScript.
 - Removing or renaming validation wrappers.
@@ -663,61 +704,64 @@ Forbidden in the next implementation unit:
   package script contracts.
 - Pulling in `JSC-178`, `JSC-289`, or broader validation-platform work.
 
-Operational decision: if the next phase cannot keep this boundary small, stop
-and split it into a new spec/plan rather than widening `JSC-290` in place.
+Operational decision: any further runtime extraction must be a new explicit
+slice or a reviewed continuation, not an implicit expansion of `JSC-290`.
 
 ## Linear Completion Recommendation
 
-Classification: Blocked for closure; ready for boundary review.
+Classification: Complete with follow-up.
 
-Recommended Linear Status: keep open in review or equivalent acceptance state.
+Recommended Linear Status: keep open until PR/CI/review evidence exists; then
+close if no blockers appear.
 
 Required Linear Comment/Update: link this eval and state that `IU-VAL-001`
-through `IU-VAL-005` are locally complete, while runtime burn-down requires
-human acceptance of this eval's boundary.
+through `IU-VAL-005` plus the narrow runtime guard are locally complete, with
+closure pending remote PR/CI and independent review.
 
 Issues to Close: none.
 
 Issues to Reopen: none.
 
-Issues to Leave Open: `JSC-290`.
+Issues to Leave Open: `JSC-290` until remote closure evidence exists.
 
-New Follow-Up Issues: do not create unless the human rejects runtime burn-down
-or asks to split it.
+New Follow-Up Issues: do not create from this eval unless remote CI/review finds
+a concrete defect.
 
 Labels to Add/Remove: none from local evidence.
 
-Milestone Completion: do not complete yet.
+Milestone Completion: do not complete until remote closure evidence exists.
 
 Project Status Change: none.
 
-Status Update Needed: yes, after Linear refresh and human acceptance decision.
+Status Update Needed: yes, after Linear refresh and remote evidence capture.
 
 Proof Artifacts to Attach or Link:
 `.harness/evals/coding-harness-validation-typed-gate-specs-eval.md`
 
 ## Follow-Up Work
 
-Classification: Next.
+Classification: Closure follow-up.
 
 Target Linear Project: `coding-harness`
 
 Parent Issue or Milestone: `JSC-290` /
 `Validation Typed Gate Specs Slice`
 
-Reason: runtime burn-down is the next planned migration step, but it is gated
-by human acceptance and deep validation.
+Reason: local implementation proof is complete; closure now depends on normal
+remote and independent-review evidence.
 
 Priority: High / `2`.
 
 Labels: existing `JSC-290` labels; do not create new labels.
 
-Agent-Safe or Human Review Required: agent-assisted, human review required.
+Agent-Safe or Human Review Required: agent-assisted for PR/evidence capture;
+human or independent review required before closure.
 
 ## Core / ADR Update Recommendation
 
 Core Update: not required. Existing execution and architecture invariants
-already cover stable wrappers, eval-backed closure, and deterministic routing.
+already cover stable wrappers, eval-backed closure, deterministic routing, and
+fail-closed behavior.
 
 ADR Update: not required before runtime burn-down. If future work makes typed
 metadata runtime-authoritative, add or update an ADR then.
@@ -729,8 +773,8 @@ architecture decision.
 
 | Conclusion | Fact | Interpretation | Assumption | Evidence | Affected Files/Modules | Command or Inspection Method | Confidence | Operational Impact | Blocks Completion |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Mirror-only units are complete. | Commits `26b2f686`, `16487853`, `e296d7cb`, `320fef2c`, and `5694a7df` exist with passing validation evidence. | The planned characterization, mirror, parity, failure, and resume units are satisfied. | Commit bodies accurately record the commands run. | `git show -s --format=full <commit>` for each phase. | `.harness/review/**`, `src/lib/validation/**`, `src/commands/verify-work.test.ts` | Git commit inspection. | High | The slice has a defensible implementation baseline. | No |
-| Runtime behavior has not changed. | Phase evidence records shell wrappers as stable and no runtime burn-down commit exists. | The work is safe to evaluate as pre-runtime extraction. | No untracked runtime edits exist after the artifact commit. | `git status --short --branch`; phase commit messages. | `scripts/verify-work.sh`, `scripts/validate-codestyle.sh` | Git status and commit inspection. | High | Public validation command behavior should remain stable. | No |
-| Parent issue should not close yet. | Plan requires human review and eval-backed boundary before burn-down. | `JSC-290` still has an unresolved migration decision. | The parent issue includes runtime burn-down scope. | `.harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` section "Later Runtime Burn-Down". | `.harness/plan/**`, Linear parent `JSC-290` | Plan inspection. | High | Prevents premature closure and false confidence. | Yes |
+| Mirror and characterization units are complete. | Commits `26b2f686`, `16487853`, `e296d7cb`, `320fef2c`, and `5694a7df` exist with passing validation evidence. | The planned characterization, mirror, parity, failure, and resume units are satisfied. | Commit bodies accurately record the commands run. | `git show -s --format=full <commit>` for each phase. | `.harness/review/**`, `src/lib/validation/**`, `src/commands/verify-work.test.ts` | Git commit inspection. | High | The slice has a defensible implementation baseline. | No |
+| Narrow runtime guard is complete. | Commit `90e97207` adds registry preflight validation for unknown `--resume-from` gate IDs and tests it. | Runtime burn-down stayed inside the accepted fail-closed boundary. | Commit body accurately records focused and deep validation. | `src/lib/cli/registry/command-specs-core.ts`; `src/lib/cli/command-registry.test.ts`; commit `90e97207`. | CLI registry and gate-spec lookup. | Git/source inspection and validation evidence. | High | Impossible resume requests fail before shell execution without wrapper rewrite. | No for local proof |
+| Parent issue should not close from local evidence alone. | Branch is ahead of `origin/main` and remote PR/CI/review evidence is not present in local git. | `JSC-290` can move toward PR/acceptance but should not be closed yet. | Remote checks and independent review are outside this local eval. | `git status --short --branch`; repo workflow rules in `AGENTS.md`. | Linear parent `JSC-290`; PR workflow. | Git status and instruction inspection. | High | Prevents premature closure and false confidence. | Yes for final closure |
 | The actual moat gain is cognition discipline, not typed metadata alone. | Typed metadata is backed by parity tests and shell remains command truth. | The compounding value comes from drift-sensitive validation evidence. | Future agents will use these artifacts before editing validation. | `src/lib/validation/gate-specs-parity.test.ts`; core invariants. | `src/lib/validation/**`, `.harness/core/**` | Source and artifact inspection. | Medium-high | Reduces agent ambiguity and future validation drift. | No |
-| Next work must stay narrow. | Plan stop rules exclude JSC-178, JSC-289, CI provider ownership, and branch protection. | Broad runtime rewrite would violate the approved migration path. | Human acceptance can authorize only a bounded burn-down unit. | `.harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` stop rules. | Validation wrappers and related docs/tests. | Plan inspection. | High | Keeps migration reversible and reviewable. | Yes for any broader scope |
+| Further runtime extraction must stay narrow. | Plan stop rules exclude JSC-178, JSC-289, CI provider ownership, and branch protection. | Broad runtime rewrite would violate the approved migration path. | Any continuation needs explicit plan/acceptance evidence. | `.harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` stop rules. | Validation wrappers and related docs/tests. | Plan inspection. | High | Keeps migration reversible and reviewable. | Yes for any broader scope |
