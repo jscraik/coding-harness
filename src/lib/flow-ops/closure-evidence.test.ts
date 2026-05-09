@@ -70,6 +70,24 @@ describe("classifyClosureEvidence", () => {
 		);
 	});
 
+	it("accepts checks tied to either PR head SHA or merge SHA", () => {
+		const result = classifyClosureEvidence(
+			acceptedMergedRecord({
+				requiredChecks: [
+					{
+						name: "pr-pipeline",
+						provider: "circleci",
+						status: "completed",
+						conclusion: "success",
+						checkedSha: HEAD_SHA,
+					},
+				],
+			}),
+		);
+
+		expect(result.classification).toBe("complete_linear_stale");
+	});
+
 	it("classifies open or draft follow-up work with failing required checks as blocked", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({

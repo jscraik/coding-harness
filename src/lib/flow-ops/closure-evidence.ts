@@ -105,24 +105,28 @@ function hasImplementationEvidence(record: ClosureEvidenceRecord): boolean {
 	return record.pullRequest !== undefined || record.evalArtifact !== undefined;
 }
 
-function expectedCheckSha(
+function expectedCheckShas(
 	pullRequest: ClosurePullRequestEvidence,
-): string | undefined {
-	return pullRequest.mergeSha ?? pullRequest.headSha;
+): Set<string> {
+	return new Set(
+		[pullRequest.headSha, pullRequest.mergeSha]
+			.filter((sha): sha is string => typeof sha === "string")
+			.map((sha) => sha.toLowerCase()),
+	);
 }
 
 function hasWrongShaCheck(record: ClosureEvidenceRecord): boolean {
 	if (!record.pullRequest) {
 		return false;
 	}
-	const expectedSha = expectedCheckSha(record.pullRequest)?.toLowerCase();
-	if (!expectedSha) {
+	const expectedShas = expectedCheckShas(record.pullRequest);
+	if (expectedShas.size === 0) {
 		return false;
 	}
 	return record.requiredChecks.some(
 		(check) =>
 			typeof check.checkedSha === "string" &&
-			check.checkedSha.toLowerCase() !== expectedSha,
+			!expectedShas.has(check.checkedSha.toLowerCase()),
 	);
 }
 
