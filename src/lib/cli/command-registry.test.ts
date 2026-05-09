@@ -106,6 +106,26 @@ describe("command registry", () => {
 		expect(result?.result).toBe(2);
 	});
 
+	it("rejects verify-work when --resume-from is not a typed gate id", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			const result = dispatchRegistryCommand("verify-work", [
+				"verify-work",
+				"--resume-from",
+				"not-a-real-gate",
+				"--fast",
+			]);
+
+			expect(result?.result).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"[verify-work] unknown gate id for --resume-from: not-a-real-gate",
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
+
 	it("rejects verify-work when --repo-root is missing a value", () => {
 		const result = dispatchRegistryCommand("verify-work", [
 			"verify-work",
