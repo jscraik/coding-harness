@@ -50,16 +50,18 @@ function parseShellGatePlan(source: string): ShellGatePlan {
 		/(?<prefix>[\s\S]*?)\r?\n[ \t]*if \[\[ "\$fast_mode" -eq 1 \]\]; then\r?\n(?<fast>[\s\S]*?)\r?\n[ \t]*else\r?\n(?<full>[\s\S]*?)\r?\n[ \t]*fi(?:\r?\n|$)/,
 	);
 	if (
-		!fastModeMatch?.groups?.prefix ||
-		!fastModeMatch.groups.fast ||
-		!fastModeMatch.groups.full
+		fastModeMatch?.groups?.prefix == null ||
+		fastModeMatch.groups.fast == null ||
+		fastModeMatch.groups.full == null
 	) {
 		throw new Error("Could not parse fast/full split in build_gate_plan");
 	}
 
-	const preflightGates = parseAddGateCalls(fastModeMatch.groups.prefix.trim());
-	const fastGates = parseAddGateCalls(fastModeMatch.groups.fast.trim());
-	const fullGates = parseAddGateCalls(fastModeMatch.groups.full.trim());
+	const preflightGates = parseAddGateCalls(
+		(fastModeMatch.groups.prefix ?? "").trim(),
+	);
+	const fastGates = parseAddGateCalls((fastModeMatch.groups.fast ?? "").trim());
+	const fullGates = parseAddGateCalls((fastModeMatch.groups.full ?? "").trim());
 
 	return {
 		fast: [...preflightGates, ...fastGates],
