@@ -41,21 +41,20 @@ function extractBuildGatePlan(source: string): string {
 
 function parseShellGatePlan(source: string): ShellGatePlan {
 	const body = extractBuildGatePlan(source);
-	const [prefix, conditionalBlock] = body.split(
-		/\n\tif \[\[ "\$fast_mode" -eq 1 \]\]; then\n/,
+	const fastModeMatch = body.match(
+		/(?<prefix>[\s\S]*?)\r?\n[ \t]*if \[\[ "\$fast_mode" -eq 1 \]\]; then\r?\n(?<fast>[\s\S]*?)\r?\n[ \t]*else\r?\n(?<full>[\s\S]*?)\r?\n[ \t]*fi(?:\r?\n|$)/,
 	);
-	if (!prefix || !conditionalBlock) {
-		throw new Error("Could not find fast/full split in build_gate_plan");
+	if (
+		!fastModeMatch?.groups?.prefix ||
+		!fastModeMatch.groups.fast ||
+		!fastModeMatch.groups.full
+	) {
+		throw new Error("Could not parse fast/full split in build_gate_plan");
 	}
 
-	const [fastBlock, fullBlock] = conditionalBlock.split(/\n\telse\n/);
-	if (!fastBlock || !fullBlock) {
-		throw new Error("Could not split fast and full build_gate_plan branches");
-	}
-
-	const preflightGates = parseAddGateCalls(prefix);
-	const fastGates = parseAddGateCalls(fastBlock);
-	const fullGates = parseAddGateCalls(fullBlock);
+	const preflightGates = parseAddGateCalls(fastModeMatch.groups.prefix.trim());
+	const fastGates = parseAddGateCalls(fastModeMatch.groups.fast.trim());
+	const fullGates = parseAddGateCalls(fastModeMatch.groups.full.trim());
 
 	return {
 		fast: [...preflightGates, ...fastGates],

@@ -130,18 +130,18 @@ artifact was written:
 
 | Command | Outcome |
 | --- | --- |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` | pass |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` | pass |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` | pass |
+| `python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py" .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` | pass |
+| `python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py" .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` | pass |
+| `python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py" .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` | pass |
 | `pnpm markdownlint .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` | pass |
 
 Final validation including this review artifact:
 
 | Command | Outcome |
 | --- | --- |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md .harness/review/2026-05-09-JSC-290-validation-typed-gate-specs-plan-technical-review.md` | pass |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md .harness/review/2026-05-09-JSC-290-validation-typed-gate-specs-plan-technical-review.md` | pass |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md .harness/review/2026-05-09-JSC-290-validation-typed-gate-specs-plan-technical-review.md` | pass |
+| `python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py" .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md .harness/review/2026-05-09-JSC-290-validation-typed-gate-specs-plan-technical-review.md` | pass |
+| `python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py" .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md .harness/review/2026-05-09-JSC-290-validation-typed-gate-specs-plan-technical-review.md` | pass |
+| `python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py" .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md .harness/review/2026-05-09-JSC-290-validation-typed-gate-specs-plan-technical-review.md` | pass |
 | `pnpm markdownlint .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md .harness/review/2026-05-09-JSC-290-validation-typed-gate-specs-plan-technical-review.md` | pass |
 | `bash scripts/validate-codestyle.sh --fast` | pass |
 | `bash scripts/validate-codestyle.sh` | pass |

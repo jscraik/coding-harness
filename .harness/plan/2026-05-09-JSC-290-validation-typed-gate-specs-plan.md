@@ -266,9 +266,9 @@ git diff --name-only
 Validation requirements:
 
 ```bash
-python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/review/2026-05-09-JSC-290-validation-gate-graph-inventory.md
-python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/review/2026-05-09-JSC-290-validation-gate-graph-inventory.md
-python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/review/2026-05-09-JSC-290-validation-gate-graph-inventory.md
+python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py" .harness/review/2026-05-09-JSC-290-validation-gate-graph-inventory.md
+python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py" .harness/review/2026-05-09-JSC-290-validation-gate-graph-inventory.md
+python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py" .harness/review/2026-05-09-JSC-290-validation-gate-graph-inventory.md
 pnpm markdownlint .harness/review/2026-05-09-JSC-290-validation-gate-graph-inventory.md
 bash scripts/validate-codestyle.sh --fast
 bash scripts/validate-codestyle.sh
@@ -579,9 +579,9 @@ Phase ownership rules:
 Plan artifact validation:
 
 ```bash
-python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md
-python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md
-python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md
+python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py" .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md
+python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py" .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md
+python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py" .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md
 pnpm markdownlint .harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md
 ```
 

@@ -93,6 +93,23 @@ export interface ValidationGateSpec {
 	};
 }
 
+function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
+	if (value === null || typeof value !== "object") {
+		return value;
+	}
+
+	if (seen.has(value)) {
+		return value;
+	}
+	seen.add(value);
+
+	for (const child of Object.values(value)) {
+		deepFreeze(child, seen);
+	}
+
+	return Object.freeze(value);
+}
+
 /** Public API export. */
 export const VALIDATION_GATE_SPEC_SOURCE = {
 	authority: "scripts/verify-work.sh",
@@ -102,7 +119,7 @@ export const VALIDATION_GATE_SPEC_SOURCE = {
 } as const;
 
 /** Public API export. */
-export const VALIDATION_ARTIFACT_CONTRACT = {
+export const VALIDATION_ARTIFACT_CONTRACT = deepFreeze({
 	runFile: "run.json",
 	gateFile: "gates/<gate-id>.json",
 	summaryFile: "summary.json",
@@ -143,10 +160,10 @@ export const VALIDATION_ARTIFACT_CONTRACT = {
 		{ name: "reused", presence: "resume-only" },
 		{ name: "sourceRunId", presence: "resume-only" },
 	],
-} as const satisfies ValidationArtifactContract;
+} as const satisfies ValidationArtifactContract);
 
 /** Public API export. */
-export const VALIDATION_FAILURE_TAXONOMY = {
+export const VALIDATION_FAILURE_TAXONOMY = deepFreeze({
 	status: "non-authoritative typed mirror",
 	passedNextAction: "none",
 	failureClasses: [
@@ -171,10 +188,10 @@ export const VALIDATION_FAILURE_TAXONOMY = {
 			retryEligibleExecutionClass: null,
 		},
 	],
-} as const satisfies ValidationFailureTaxonomy;
+} as const satisfies ValidationFailureTaxonomy);
 
 /** Public API export. */
-export const VALIDATION_GATE_SPECS = [
+export const VALIDATION_GATE_SPECS = deepFreeze([
 	{
 		gateId: "preflight",
 		modes: ["fast", "full"],
@@ -301,7 +318,7 @@ export const VALIDATION_GATE_SPECS = [
 			lines: "607 and 690-694",
 		},
 	},
-] as const satisfies readonly ValidationGateSpec[];
+] as const satisfies readonly ValidationGateSpec[]);
 
 /**
  * Return the mode-specific order for a gate, if it participates in that mode.
@@ -316,6 +333,22 @@ function getModeOrder(
 ): number | undefined {
 	return gate.order[mode];
 }
+
+function assertGateModeOrderConsistency(
+	specs: readonly ValidationGateSpec[],
+): void {
+	for (const gate of specs) {
+		for (const mode of gate.modes) {
+			if (getModeOrder(gate, mode) === undefined) {
+				throw new Error(
+					`Validation gate "${gate.gateId}" is missing "${mode}" order metadata.`,
+				);
+			}
+		}
+	}
+}
+
+assertGateModeOrderConsistency(VALIDATION_GATE_SPECS);
 
 /**
  * Return the non-authoritative typed validation gate specs for one wrapper mode.

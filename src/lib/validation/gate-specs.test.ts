@@ -110,6 +110,25 @@ describe("validation gate specs", () => {
 		]);
 	});
 
+	it("freezes canonical validation metadata at runtime", () => {
+		const firstGate = VALIDATION_GATE_SPECS[0];
+		expect(Object.isFrozen(VALIDATION_ARTIFACT_CONTRACT)).toBe(true);
+		expect(Object.isFrozen(VALIDATION_ARTIFACT_CONTRACT.runFields)).toBe(true);
+		expect(Object.isFrozen(VALIDATION_ARTIFACT_CONTRACT.runFields[0])).toBe(
+			true,
+		);
+		expect(Object.isFrozen(VALIDATION_FAILURE_TAXONOMY)).toBe(true);
+		expect(Object.isFrozen(VALIDATION_FAILURE_TAXONOMY.failureClasses)).toBe(
+			true,
+		);
+		expect(Object.isFrozen(VALIDATION_GATE_SPECS)).toBe(true);
+		expect(Object.isFrozen(firstGate)).toBe(true);
+		expect(Object.isFrozen(firstGate?.order)).toBe(true);
+		expect(Object.isFrozen(firstGate?.modes)).toBe(true);
+		expect(Reflect.set(firstGate?.order ?? {}, "fast", 99)).toBe(false);
+		expect(getValidationGateSpec("preflight")?.order.fast).toBe(1);
+	});
+
 	it("mirrors retry policy and resume checkpoint expectations", () => {
 		expect(
 			VALIDATION_GATE_SPECS.map((gate) => [
