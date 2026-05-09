@@ -27,14 +27,53 @@ export interface ValidationGateModeOrder {
 export type ValidationRetryPolicy = "none" | "transient-infra-only";
 
 /** Public API export. */
+export type ValidationFinalNextAction =
+	| "fix contract/policy mismatch, then rerun from this gate"
+	| "inspect gate output, fix root cause, and rerun"
+	| "retry budget exhausted; fix infrastructure blocker and resume";
+
+/** Public API export. */
+export type ValidationPassedNextAction = "none";
+
+/** Public API export. */
+export type ValidationRetryNextAction = "retry";
+
+/** Public API export. */
+export type ValidationArtifactFieldPresence =
+	| "required"
+	| "resume-only"
+	| "terminal-only";
+
+/** Public API export. */
+export interface ValidationArtifactFieldSpec {
+	name: string;
+	presence: ValidationArtifactFieldPresence;
+}
+
+/** Public API export. */
 export interface ValidationArtifactContract {
 	runFile: "run.json";
 	gateFile: "gates/<gate-id>.json";
 	summaryFile: "summary.json";
-	runFields: readonly string[];
-	gateFields: readonly string[];
-	summaryFields: readonly string[];
-	reusedGateFields: readonly string[];
+	runFields: readonly ValidationArtifactFieldSpec[];
+	gateFields: readonly ValidationArtifactFieldSpec[];
+	summaryFields: readonly ValidationArtifactFieldSpec[];
+	reusedGateFields: readonly ValidationArtifactFieldSpec[];
+}
+
+/** Public API export. */
+export interface ValidationFailureClassSpec {
+	failureClass: VerifyGateFailureClass;
+	finalNextAction: ValidationFinalNextAction;
+	retryNextAction: ValidationRetryNextAction | null;
+	retryEligibleExecutionClass: VerifyGateExecutionClass | null;
+}
+
+/** Public API export. */
+export interface ValidationFailureTaxonomy {
+	status: "non-authoritative typed mirror";
+	passedNextAction: ValidationPassedNextAction;
+	failureClasses: readonly ValidationFailureClassSpec[];
 }
 
 /** Public API export. */
@@ -68,39 +107,71 @@ export const VALIDATION_ARTIFACT_CONTRACT = {
 	gateFile: "gates/<gate-id>.json",
 	summaryFile: "summary.json",
 	runFields: [
-		"runId",
-		"mode",
-		"sourceRunId",
-		"status",
-		"startedAt",
-		"resumeFromGateId",
-		"repoRoot",
-		"providerClass",
-		"schemaVersion",
-		"contractVersion",
-		"contractFingerprint",
-		"lane",
+		{ name: "runId", presence: "required" },
+		{ name: "mode", presence: "required" },
+		{ name: "sourceRunId", presence: "required" },
+		{ name: "status", presence: "required" },
+		{ name: "startedAt", presence: "required" },
+		{ name: "resumeFromGateId", presence: "required" },
+		{ name: "repoRoot", presence: "required" },
+		{ name: "providerClass", presence: "required" },
+		{ name: "schemaVersion", presence: "required" },
+		{ name: "contractVersion", presence: "required" },
+		{ name: "contractFingerprint", presence: "required" },
+		{ name: "lane", presence: "required" },
+		{ name: "finishedAt", presence: "terminal-only" },
 	],
 	gateFields: [
-		"gateId",
-		"executionClass",
-		"attempt",
-		"status",
-		"failureClass",
-		"startedAt",
-		"finishedAt",
-		"nextAction",
-		"exitCode",
+		{ name: "gateId", presence: "required" },
+		{ name: "executionClass", presence: "required" },
+		{ name: "attempt", presence: "required" },
+		{ name: "status", presence: "required" },
+		{ name: "failureClass", presence: "required" },
+		{ name: "startedAt", presence: "required" },
+		{ name: "finishedAt", presence: "required" },
+		{ name: "nextAction", presence: "required" },
+		{ name: "exitCode", presence: "required" },
 	],
 	summaryFields: [
-		"runId",
-		"overallStatus",
-		"failedGateId",
-		"freshVsResumed",
-		"durationMs",
+		{ name: "runId", presence: "required" },
+		{ name: "overallStatus", presence: "required" },
+		{ name: "failedGateId", presence: "required" },
+		{ name: "freshVsResumed", presence: "required" },
+		{ name: "durationMs", presence: "required" },
 	],
-	reusedGateFields: ["reused", "sourceRunId"],
+	reusedGateFields: [
+		{ name: "reused", presence: "resume-only" },
+		{ name: "sourceRunId", presence: "resume-only" },
+	],
 } as const satisfies ValidationArtifactContract;
+
+/** Public API export. */
+export const VALIDATION_FAILURE_TAXONOMY = {
+	status: "non-authoritative typed mirror",
+	passedNextAction: "none",
+	failureClasses: [
+		{
+			failureClass: "contract_policy",
+			finalNextAction:
+				"fix contract/policy mismatch, then rerun from this gate",
+			retryNextAction: null,
+			retryEligibleExecutionClass: null,
+		},
+		{
+			failureClass: "transient_infra",
+			finalNextAction:
+				"retry budget exhausted; fix infrastructure blocker and resume",
+			retryNextAction: "retry",
+			retryEligibleExecutionClass: "read_only_parallel",
+		},
+		{
+			failureClass: "internal_unknown",
+			finalNextAction: "inspect gate output, fix root cause, and rerun",
+			retryNextAction: null,
+			retryEligibleExecutionClass: null,
+		},
+	],
+} as const satisfies ValidationFailureTaxonomy;
 
 /** Public API export. */
 export const VALIDATION_GATE_SPECS = [

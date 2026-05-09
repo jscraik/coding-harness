@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	VALIDATION_ARTIFACT_CONTRACT,
+	VALIDATION_FAILURE_TAXONOMY,
 	VALIDATION_GATE_SPEC_SOURCE,
 	VALIDATION_GATE_SPECS,
 	getValidationGateIdsForMode,
@@ -134,38 +135,42 @@ describe("validation gate specs", () => {
 			gateFile: "gates/<gate-id>.json",
 			summaryFile: "summary.json",
 			runFields: [
-				"runId",
-				"mode",
-				"sourceRunId",
-				"status",
-				"startedAt",
-				"resumeFromGateId",
-				"repoRoot",
-				"providerClass",
-				"schemaVersion",
-				"contractVersion",
-				"contractFingerprint",
-				"lane",
+				{ name: "runId", presence: "required" },
+				{ name: "mode", presence: "required" },
+				{ name: "sourceRunId", presence: "required" },
+				{ name: "status", presence: "required" },
+				{ name: "startedAt", presence: "required" },
+				{ name: "resumeFromGateId", presence: "required" },
+				{ name: "repoRoot", presence: "required" },
+				{ name: "providerClass", presence: "required" },
+				{ name: "schemaVersion", presence: "required" },
+				{ name: "contractVersion", presence: "required" },
+				{ name: "contractFingerprint", presence: "required" },
+				{ name: "lane", presence: "required" },
+				{ name: "finishedAt", presence: "terminal-only" },
 			],
 			gateFields: [
-				"gateId",
-				"executionClass",
-				"attempt",
-				"status",
-				"failureClass",
-				"startedAt",
-				"finishedAt",
-				"nextAction",
-				"exitCode",
+				{ name: "gateId", presence: "required" },
+				{ name: "executionClass", presence: "required" },
+				{ name: "attempt", presence: "required" },
+				{ name: "status", presence: "required" },
+				{ name: "failureClass", presence: "required" },
+				{ name: "startedAt", presence: "required" },
+				{ name: "finishedAt", presence: "required" },
+				{ name: "nextAction", presence: "required" },
+				{ name: "exitCode", presence: "required" },
 			],
 			summaryFields: [
-				"runId",
-				"overallStatus",
-				"failedGateId",
-				"freshVsResumed",
-				"durationMs",
+				{ name: "runId", presence: "required" },
+				{ name: "overallStatus", presence: "required" },
+				{ name: "failedGateId", presence: "required" },
+				{ name: "freshVsResumed", presence: "required" },
+				{ name: "durationMs", presence: "required" },
 			],
-			reusedGateFields: ["reused", "sourceRunId"],
+			reusedGateFields: [
+				{ name: "reused", presence: "resume-only" },
+				{ name: "sourceRunId", presence: "resume-only" },
+			],
 		});
 
 		expect(
@@ -173,5 +178,34 @@ describe("validation gate specs", () => {
 				(gate) => gate.artifactContract === VALIDATION_ARTIFACT_CONTRACT,
 			),
 		).toBe(true);
+	});
+
+	it("mirrors stable failure-class next actions without changing wording", () => {
+		expect(VALIDATION_FAILURE_TAXONOMY).toEqual({
+			status: "non-authoritative typed mirror",
+			passedNextAction: "none",
+			failureClasses: [
+				{
+					failureClass: "contract_policy",
+					finalNextAction:
+						"fix contract/policy mismatch, then rerun from this gate",
+					retryNextAction: null,
+					retryEligibleExecutionClass: null,
+				},
+				{
+					failureClass: "transient_infra",
+					finalNextAction:
+						"retry budget exhausted; fix infrastructure blocker and resume",
+					retryNextAction: "retry",
+					retryEligibleExecutionClass: "read_only_parallel",
+				},
+				{
+					failureClass: "internal_unknown",
+					finalNextAction: "inspect gate output, fix root cause, and rerun",
+					retryNextAction: null,
+					retryEligibleExecutionClass: null,
+				},
+			],
+		});
 	});
 });
