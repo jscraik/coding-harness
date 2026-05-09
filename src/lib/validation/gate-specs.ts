@@ -354,7 +354,7 @@ export function getValidationGateIdsForMode(
  * @returns The matching gate spec, or undefined when the ID is not mirrored.
  */
 export function getValidationGateSpec(
-	gateId: ValidationGateId,
+	gateId: string,
 ): ValidationGateSpec | undefined {
 	return VALIDATION_GATE_SPECS.find((gate) => gate.gateId === gateId);
 }
