@@ -45,12 +45,14 @@ describe("scaffold worktree templates", () => {
 		);
 	});
 
-	it("renders new-task branch and slug validation for codex branches", () => {
+	it("renders new-task branch and slug validation for agent branches", () => {
 		const script = renderNewTaskScript();
 
 		expect(script).toMatch(/^#!\/usr\/bin\/env bash/);
-		expect(script).toContain('branch_prefix="codex"');
-		expect(script).toContain('if [[ "$branch_prefix" == codex* ]]; then');
+		expect(script).toContain('branch_prefix="jscraik/feature"');
+		expect(script).toContain(
+			'if [[ "$branch_prefix" == jscraik/feature* ]]; then',
+		);
 		expect(script).toContain(
 			"slug must start with an issue key (example: JSC-123-my-task)",
 		);
