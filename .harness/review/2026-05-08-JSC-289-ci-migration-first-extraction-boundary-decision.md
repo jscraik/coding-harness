@@ -227,8 +227,8 @@ is compressed.
 Provider adapter selection is too small and too stable to justify first. It
 would likely reduce line count without reducing the hard reasoning cost.
 
-Break-glass and merge-queue behavior are real domains, but they are governance
-and operations sensitive. They should become later boundaries only after the
+Break-glass and merge-queue behavior are real domains, but they are governance-
+and operations-sensitive. They should become later boundaries only after the
 first extraction proves the command can shed a domain without drifting.
 
 Delegated registry routing was the right `IU-289-002` test target, but it is
@@ -274,13 +274,16 @@ the blocker label `Drift-Risk`, keep this decision artifact, and reopen
 ## Validation Requirements
 
 Required before accepting `IU-289-004`:
+`HE_TOOLING_ROOT` denotes the external HE tooling checkout used by the
+operator; if it is unavailable, HE artifact validation is blocked rather than
+repo-local.
 
 | Command | Purpose |
 | --- | --- |
 | `pnpm markdownlint .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md .harness/review/2026-05-08-JSC-289-ci-migration-first-extraction-boundary-decision.md` | Proves the plan update and decision artifact follow markdown rules. |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-first-extraction-boundary-decision.md` | Proves HE artifact identity is valid. |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-first-extraction-boundary-decision.md` | Proves frontmatter safety is valid. |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-first-extraction-boundary-decision.md` | Proves Linear traceability is valid. |
+| `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-first-extraction-boundary-decision.md` | Proves HE artifact identity is valid. |
+| `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-first-extraction-boundary-decision.md` | Proves frontmatter safety is valid. |
+| `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-first-extraction-boundary-decision.md` | Proves Linear traceability is valid. |
 | `git diff --check` | Proves no whitespace damage. |
 
 No runtime tests are required for `IU-289-004` because it is a docs-only

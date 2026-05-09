@@ -324,10 +324,13 @@ frontmatter safety, and markdown lint.
 
 Actual: HE eval-report validation, artifact identity lint, frontmatter safety
 lint, and markdown lint all passed after the report was corrected.
+`HE_TOOLING_ROOT` denotes the external HE tooling checkout used by the
+operator; if it is unavailable, HE artifact validation is blocked rather than
+repo-local.
 
 Status: pass
 
-Evidence: `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` -> pass; `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` -> pass; `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` -> pass; `pnpm markdownlint .harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` -> pass.
+Evidence: `python3 ${HE_TOOLING_ROOT}/Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` -> pass; `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` -> pass; `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` -> pass; `pnpm markdownlint .harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md` -> pass.
 
 Confidence: high
 
@@ -365,6 +368,8 @@ without adding a new framework; follow-up should be driven only by PR findings
 or the next approved extraction boundary.
 
 Blocks Completion: no
+
+Blocks Linear Closure: yes until human acceptance is recorded.
 
 Required Action: record human acceptance before Linear closure.
 
@@ -532,7 +537,9 @@ Missing:
 
 - Human acceptance of this eval.
 
-Blocks Completion: no
+Blocks Eval Artifact Completion: no
+
+Blocks Linear Closure: yes until human acceptance is recorded.
 
 Attach or Link Back to Linear: link this eval artifact and PR #231 in the
 Linear update after human acceptance.

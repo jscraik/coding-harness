@@ -11,7 +11,7 @@ traceability_required: true
 origin: .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md
 linear_issue: JSC-289
 linear_milestone: CI Migration Boundary Recovery Slice
-linear_status: Triage
+linear_status: In Progress
 implementation_unit: IU-289-003
 ---
 
@@ -111,15 +111,18 @@ This unit did not:
 ## Validation Plan
 
 Required validation for this artifact:
+`HE_TOOLING_ROOT` denotes the external HE tooling checkout used by the
+operator; if it is unavailable, HE artifact validation is blocked rather than
+repo-local.
 
 | Command | Purpose |
 | --- | --- |
 | `pnpm vitest run --maxWorkers=1 --dangerouslyIgnoreUnhandledErrors src/commands/ci-migrate.test.ts` | Proves the mapped runtime lifecycle suite still passes. |
 | `pnpm typecheck` | Proves no TypeScript compatibility drift after the phase. |
 | `pnpm markdownlint .harness/review/2026-05-08-JSC-289-ci-migration-runtime-lifecycle-coverage-map.md` | Proves the new coverage artifact follows markdown rules. |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-runtime-lifecycle-coverage-map.md` | Proves HE artifact identity is valid. |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-runtime-lifecycle-coverage-map.md` | Proves HE frontmatter safety is valid. |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-runtime-lifecycle-coverage-map.md` | Proves Linear traceability is valid. |
+| `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-runtime-lifecycle-coverage-map.md` | Proves HE artifact identity is valid. |
+| `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-runtime-lifecycle-coverage-map.md` | Proves HE frontmatter safety is valid. |
+| `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/review/2026-05-08-JSC-289-ci-migration-runtime-lifecycle-coverage-map.md` | Proves Linear traceability is valid. |
 | `git diff --check` | Proves no whitespace damage. |
 
 No production source changed, so `pnpm run quality:docstrings`,

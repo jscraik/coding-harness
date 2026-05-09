@@ -11,7 +11,7 @@ traceability_required: true
 origin: .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md
 linear_issue: JSC-289
 linear_milestone: CI Migration Boundary Recovery Slice
-linear_status: Triage
+linear_status: In Progress
 implementation_unit: IU-289-001
 ---
 
@@ -146,12 +146,15 @@ Avoid first:
 ## Validation Notes
 
 Artifact validation passed after one metadata/table-shape correction.
+`HE_TOOLING_ROOT` denotes the external HE tooling checkout used by the
+operator; if it is unavailable, HE artifact validation is blocked rather than
+repo-local.
 
 | Command | Outcome |
 | --- | --- |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass after traceability table was corrected to include `Linear issue` and `Acceptance IDs` columns |
+| `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass |
+| `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass |
+| `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass after traceability table was corrected to include `Linear issue` and `Acceptance IDs` columns |
 | `pnpm markdownlint .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass |
 | `git --git-dir=/Users/jamiecraik/dev/coding-harness/.git --work-tree=/Users/jamiecraik/dev/coding-harness diff --check` | pass |
 
@@ -174,9 +177,9 @@ Command: zsh -lc 'rg -n "sync-branch-protection|promote-mode|runSyncBranchProtec
 Command: zsh -lc 'rg -n "runCIMigrateCLI|prepare|commit|abort|verify|bootstrap|proof|break-glass|merge queue|JSON dry-run|snapshot|signing key|provider" src/commands/ci-migrate.test.ts src/cli-dispatch.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/ci/ci-migrate-command-contract.test.ts' -> pass
 Command: zsh -lc 'nl -ba src/lib/cli/registry/command-specs-core.ts | sed -n "2060,2195p"' -> pass
 Command: zsh -lc 'nl -ba src/commands/ci-migrate-core.ts | sed -n "2868,3020p" && nl -ba src/commands/ci-migrate-core.ts | sed -n "9328,9735p" && nl -ba src/commands/ci-migrate-core.ts | sed -n "10300,10390p"' -> pass
-Command: zsh -lc 'python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass
-Command: zsh -lc 'python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass
-Command: zsh -lc 'python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass after correcting the acceptance traceability table columns
+Command: zsh -lc 'python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass
+Command: zsh -lc 'python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass
+Command: zsh -lc 'python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass after correcting the acceptance traceability table columns
 Command: zsh -lc 'pnpm markdownlint .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass
 Command: zsh -lc 'git --git-dir=/Users/jamiecraik/dev/coding-harness/.git --work-tree=/Users/jamiecraik/dev/coding-harness diff --check' -> pass
 Command: zsh -lc 'git --git-dir=/Users/jamiecraik/dev/coding-harness/.git --work-tree=/Users/jamiecraik/dev/coding-harness status --short --branch' -> pass; dirty state is only this new inventory artifact

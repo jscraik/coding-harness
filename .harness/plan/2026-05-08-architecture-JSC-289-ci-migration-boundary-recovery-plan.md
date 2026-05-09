@@ -561,9 +561,9 @@ Phase 1 command selection rules:
 
 Before any local commit for a completed phase:
 
-1. Run `simplify` review against the phase diff.
-2. Run `he-fix-bugs` only if validation or regression evidence fails.
-3. Run `he-code-review` against the phase diff.
+1. Execute `simplify` review against the phase diff.
+2. Invoke `he-fix-bugs` only if validation or regression evidence fails.
+3. Finish with `he-code-review` against the phase diff.
 4. Commit only if gates have no blocking findings and exact validation outcomes
    are recorded.
 
