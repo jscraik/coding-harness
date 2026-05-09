@@ -52,6 +52,13 @@ function renderTrackerBlock(context: TemplateRenderContext): string {
   kind: none`;
 }
 
+/**
+ * Render the canonical Transition Table rows for the workflow, selecting tracker-specific actions.
+ *
+ * @param context - Template render context (uses `issueTracker` to choose the tracker variant)
+ * @param checkCommand - Command string to embed in the `advance` guard/action row
+ * @returns A Markdown pipe-table fragment containing rows that map workflow state transitions to guard, action, and resulting state
+ */
 function renderTransitionRows(
 	context: TemplateRenderContext,
 	checkCommand: string,

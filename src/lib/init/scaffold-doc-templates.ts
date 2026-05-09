@@ -303,10 +303,15 @@ ${options.requiredChecksList}
 }
 
 /**
- * Render the downstream GitHub pull request template scaffold.
+ * Render the GitHub pull request template used for downstream repositories.
  *
- * @param options - Commands to embed in the verification checklist.
- * @returns Markdown contents for `.github/PULL_REQUEST_TEMPLATE.md`.
+ * Embeds branch-name guidance and verification commands from `options` into
+ * a checklist and testing sections suitable for `.github/PULL_REQUEST_TEMPLATE.md`.
+ *
+ * @param options - Template options including `agentBranchPrefix` (branch-name policy)
+ *   and the verification commands `codestyleCommand`, `checkCommand`, and `memoryValidateCommand`
+ *   to insert into the checklist and testing sections.
+ * @returns The Markdown content for `.github/PULL_REQUEST_TEMPLATE.md`
  */
 export function renderPullRequestTemplate(
 	options: PullRequestTemplateOptions,
