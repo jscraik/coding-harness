@@ -19,8 +19,8 @@ export type ValidationGateId =
 
 /** Public API export. */
 export interface ValidationGateModeOrder {
-	fast?: number;
-	full?: number;
+	readonly fast?: number;
+	readonly full?: number;
 }
 
 /** Public API export. */
@@ -63,10 +63,10 @@ export interface ValidationArtifactContract {
 
 /** Public API export. */
 export interface ValidationFailureClassSpec {
-	failureClass: VerifyGateFailureClass;
-	finalNextAction: ValidationFinalNextAction;
-	retryNextAction: ValidationRetryNextAction | null;
-	retryEligibleExecutionClass: VerifyGateExecutionClass | null;
+	readonly failureClass: VerifyGateFailureClass;
+	readonly finalNextAction: ValidationFinalNextAction;
+	readonly retryNextAction: ValidationRetryNextAction | null;
+	readonly retryEligibleExecutionClass: VerifyGateExecutionClass | null;
 }
 
 /** Public API export. */

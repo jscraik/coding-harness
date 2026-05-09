@@ -29,10 +29,13 @@ interface GateParityMismatch {
 	actual: string | undefined;
 }
 
-const shellSource = readFileSync("scripts/verify-work.sh", "utf8");
+const shellSource = readFileSync(
+	new URL("../../../scripts/verify-work.sh", import.meta.url),
+	"utf8",
+);
 
 function extractBuildGatePlan(source: string): string {
-	const match = source.match(/build_gate_plan\(\) \{(?<body>[\s\S]*?)\n\}/);
+	const match = source.match(/build_gate_plan\(\) \{(?<body>[\s\S]*?)\r?\n\s*\}/);
 	if (!match?.groups?.body) {
 		throw new Error("Could not find build_gate_plan in scripts/verify-work.sh");
 	}
