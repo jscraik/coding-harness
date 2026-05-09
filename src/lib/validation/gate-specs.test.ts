@@ -1,0 +1,177 @@
+import { describe, expect, it } from "vitest";
+import {
+	VALIDATION_ARTIFACT_CONTRACT,
+	VALIDATION_GATE_SPEC_SOURCE,
+	VALIDATION_GATE_SPECS,
+	getValidationGateIdsForMode,
+	getValidationGateSpec,
+	getValidationGateSpecsForMode,
+} from "./gate-specs.js";
+
+describe("validation gate specs", () => {
+	it("identifies the shell wrapper as the authority", () => {
+		expect(VALIDATION_GATE_SPEC_SOURCE).toEqual({
+			authority: "scripts/verify-work.sh",
+			inventory:
+				".harness/review/2026-05-09-JSC-290-validation-gate-graph-inventory.md",
+			status: "non-authoritative typed mirror",
+		});
+	});
+
+	it("mirrors fast-mode gate order from the inventory", () => {
+		expect(getValidationGateIdsForMode("fast")).toEqual([
+			"preflight",
+			"ci-check-alignment",
+			"hook-governance-inventory",
+			"hook-governance-rollout-check",
+			"hook-governance-docstring-ratchet",
+			"hook-governance-format-reports",
+			"validate-codestyle-fast",
+		]);
+	});
+
+	it("mirrors full-mode gate order from the inventory", () => {
+		expect(getValidationGateIdsForMode("full")).toEqual([
+			"preflight",
+			"hook-governance-inventory",
+			"hook-governance-rollout-check",
+			"hook-governance-docstring-ratchet",
+			"hook-governance-format-reports",
+			"validate-codestyle",
+		]);
+	});
+
+	it("keeps mode-specific gate membership explicit", () => {
+		expect(getValidationGateSpec("preflight")?.modes).toEqual(["fast", "full"]);
+		expect(getValidationGateSpec("ci-check-alignment")?.order).toEqual({
+			fast: 2,
+		});
+		expect(getValidationGateSpec("ci-check-alignment")?.modes).toEqual([
+			"fast",
+		]);
+		expect(getValidationGateSpec("validate-codestyle-fast")?.order).toEqual({
+			fast: 7,
+		});
+		expect(getValidationGateSpec("validate-codestyle-fast")?.modes).toEqual([
+			"fast",
+		]);
+		expect(getValidationGateSpec("validate-codestyle")?.order).toEqual({
+			full: 6,
+		});
+		expect(getValidationGateSpec("validate-codestyle")?.modes).toEqual([
+			"full",
+		]);
+	});
+
+	it("mirrors execution and failure classes without consuming runtime behavior", () => {
+		expect(
+			VALIDATION_GATE_SPECS.map((gate) => [
+				gate.gateId,
+				gate.executionClass,
+				gate.failureClassDefault,
+			]),
+		).toEqual([
+			["preflight", "serial_guarded", "contract_policy"],
+			["ci-check-alignment", "read_only_parallel", "contract_policy"],
+			["hook-governance-inventory", "serial_guarded", "contract_policy"],
+			[
+				"hook-governance-rollout-check",
+				"read_only_parallel",
+				"contract_policy",
+			],
+			[
+				"hook-governance-docstring-ratchet",
+				"read_only_parallel",
+				"contract_policy",
+			],
+			["hook-governance-format-reports", "serial_guarded", "contract_policy"],
+			["validate-codestyle-fast", "read_only_parallel", "transient_infra"],
+			["validate-codestyle", "serial_guarded", "internal_unknown"],
+		]);
+	});
+
+	it("returns ordered specs without mutating the canonical mirror", () => {
+		const fastSpecs = getValidationGateSpecsForMode("fast");
+
+		expect(fastSpecs).not.toBe(VALIDATION_GATE_SPECS);
+		expect(fastSpecs.map((gate) => gate.gateId)).toEqual(
+			getValidationGateIdsForMode("fast"),
+		);
+		expect(VALIDATION_GATE_SPECS.map((gate) => gate.gateId)).toEqual([
+			"preflight",
+			"ci-check-alignment",
+			"hook-governance-inventory",
+			"hook-governance-rollout-check",
+			"hook-governance-docstring-ratchet",
+			"hook-governance-format-reports",
+			"validate-codestyle-fast",
+			"validate-codestyle",
+		]);
+	});
+
+	it("mirrors retry policy and resume checkpoint expectations", () => {
+		expect(
+			VALIDATION_GATE_SPECS.map((gate) => [
+				gate.gateId,
+				gate.resumeCheckpoint,
+				gate.retryPolicy,
+			]),
+		).toEqual([
+			["preflight", true, "none"],
+			["ci-check-alignment", true, "none"],
+			["hook-governance-inventory", true, "none"],
+			["hook-governance-rollout-check", true, "none"],
+			["hook-governance-docstring-ratchet", true, "none"],
+			["hook-governance-format-reports", true, "none"],
+			["validate-codestyle-fast", true, "transient-infra-only"],
+			["validate-codestyle", true, "none"],
+		]);
+	});
+
+	it("mirrors the current run artifact expectations", () => {
+		expect(VALIDATION_ARTIFACT_CONTRACT).toEqual({
+			runFile: "run.json",
+			gateFile: "gates/<gate-id>.json",
+			summaryFile: "summary.json",
+			runFields: [
+				"runId",
+				"mode",
+				"sourceRunId",
+				"status",
+				"startedAt",
+				"resumeFromGateId",
+				"repoRoot",
+				"providerClass",
+				"schemaVersion",
+				"contractVersion",
+				"contractFingerprint",
+				"lane",
+			],
+			gateFields: [
+				"gateId",
+				"executionClass",
+				"attempt",
+				"status",
+				"failureClass",
+				"startedAt",
+				"finishedAt",
+				"nextAction",
+				"exitCode",
+			],
+			summaryFields: [
+				"runId",
+				"overallStatus",
+				"failedGateId",
+				"freshVsResumed",
+				"durationMs",
+			],
+			reusedGateFields: ["reused", "sourceRunId"],
+		});
+
+		expect(
+			VALIDATION_GATE_SPECS.every(
+				(gate) => gate.artifactContract === VALIDATION_ARTIFACT_CONTRACT,
+			),
+		).toBe(true);
+	});
+});
