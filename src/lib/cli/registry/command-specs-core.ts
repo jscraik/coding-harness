@@ -94,6 +94,7 @@ import {
 import { runWorkflowGenerateCLI } from "../../../commands/workflow-generate.js";
 import type { IssueTracker } from "../../init/types.js";
 import type { PilotEvaluateOptions } from "../../pilot-evaluation/types.js";
+import { getValidationGateSpec } from "../../validation/gate-specs.js";
 import type { ProjectType } from "../../project-type/types.js";
 import { getVersion } from "../../version.js";
 import {
@@ -1028,6 +1029,15 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			}
 			if (repoRootFlag.missingValue) {
 				console.error("Error: --repo-root requires a path");
+				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
+			}
+			if (
+				resumeFromFlag.value &&
+				getValidationGateSpec(resumeFromFlag.value) === undefined
+			) {
+				console.error(
+					`[verify-work] unknown gate id for --resume-from: ${resumeFromFlag.value}`,
+				);
 				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
 			}
 			if (projectGovernanceFlag && workspaceGovernanceFlag) {

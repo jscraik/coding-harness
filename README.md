@@ -303,6 +303,18 @@ For a quicker local loop, use:
 bash scripts/verify-work.sh --fast
 ```
 
+The `harness verify-work` CLI wrapper exposes the same verification lane for
+automation and supports explicit resume checkpoints:
+
+```bash
+harness verify-work --fast --resume-from validate-codestyle-fast
+```
+
+Resume gate IDs are validated against the typed validation gate mirror in
+`src/lib/validation/gate-specs.ts` before the shell wrapper runs. The shell
+script remains the authority for execution order; the typed mirror exists so
+CLI dispatch, tests, and automation can fail closed on unknown checkpoint names.
+
 The fast lane now includes changed-file enforcement for public API docstrings,
 function/file size, and related tests through `pnpm run quality:docstrings`,
 `pnpm run quality:size`, and `pnpm run test:related`. Related tests must find
@@ -426,6 +438,19 @@ When a repository has imported CodeRabbit learning evidence, use the learning
 loop before PR handoff so repeated review feedback becomes guardrail data
 instead of another comment thread.
 
+In this source checkout, run the loop through `scripts/run-harness-gate.sh` so
+the command surface comes from `src/cli.ts` rather than a globally installed
+`harness` shim:
+
+```bash
+bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json
+```
+
+Downstream repos with the published package installed can call the same command
+families through `harness`:
+
 ```bash
 harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
 harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
@@ -540,7 +565,7 @@ harness commands --json | jq '
 | `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                      |
 | `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                  |
 | `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                               |
-| `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                              |
+| `verify-work`       | Run canonical repo-local verification (fresh or resume mode, with `--resume-from` checked against typed validation gate specs)                                            |
 | `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                         |
 | `preset`            | List and inspect bundled presets                                                                                                                                          |
 | `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                     |

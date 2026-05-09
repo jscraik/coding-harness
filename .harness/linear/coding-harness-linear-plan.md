@@ -35,12 +35,14 @@ Recommended active set:
 3. Keep all CI migration, contract/memory, and validation-orchestration work in
    `Next` or `Later` until the command cockpit stops lying.
 
-Reason: command truth drift blocks agent confidence across the rest of the
-system. Fixing it first reduces ambiguity before deeper migrations.
+Reason: command truth drift blocked agent confidence across the rest of the
+system. The current gate must now prevent stale Linear state from reopening
+completed slices and must route the next spec to the first genuinely new slice.
 
 ## Approved Current Slice
 
-Governance Trust Repair Slice: `JSC-288`.
+No new implementation slice is approved from this plan until stale Linear state
+is reconciled for completed slices.
 
 `JSC-282` is locally complete for the source-command scope. Closure proof lives
 in `.harness/evals/coding-harness-jsc-282-command-truth-eval.md`, and the
@@ -54,11 +56,25 @@ proof lives in
 Live Linear still shows `JSC-283` in `Triage`, so Linear state needs cleanup,
 but it should not remain the active implementation slice.
 
+`JSC-288` is implementation-complete for the governance trust repair scope.
+Closure proof lives in
+`.harness/evals/2026-05-08-JSC-288-coding-harness-jsc-288-governance-trust-repair-eval.md`.
+Live Linear still shows `JSC-288` in `Triage`, so Linear state needs cleanup,
+but it should not become the next `he-spec` target.
+
+`JSC-289` is implementation-complete enough for eval-backed closure review.
+Closure proof lives in
+`.harness/evals/coding-harness-ci-migration-boundary-recovery-eval.md`, which
+states that Linear closure remains gated on human acceptance. Live Linear still
+shows `JSC-289` in `In Progress`, so the next action is Linear/eval acceptance
+cleanup, not a new JSC-289 spec.
+
 ## Linear Delta Capture
 
-Last synced: 2026-05-08
-Source: Linear project `coding-harness`, milestone `Agent Cockpit Compression
-Slice`, parents `JSC-282` and `JSC-283`
+Last synced: 2026-05-09
+Source: Linear project `coding-harness`; milestones `Agent Cockpit Compression
+Slice`, `Governance Trust Repair Slice`, and `CI Migration Boundary Recovery
+Slice`; parents `JSC-282`, `JSC-283`, `JSC-288`, and `JSC-289`
 Label status: resolved
 
 Required label reconciliation:
@@ -74,14 +90,16 @@ Required label reconciliation:
 | Eval | created/applied | Planned label for eval-backed closure; created in the JSC team and applied to `JSC-283`. |
 
 Labels were reconciled through the Linear plugin on 2026-05-08 after explicit
-approval. `JSC-282` now has `Developer Experience`, `Reliability`,
-`architecture`, `Routing`, and `Drift-Risk`; `JSC-283` now has `Developer
-Experience`, `Agent-Native`, `Eval`, and `Reliability`.
+approval and were rechecked on 2026-05-09 through the Linear issue-label list.
+The repo project label set remains intentionally smaller, but the required team
+issue labels exist and are applied to the relevant parent issues.
 
 | Issue | Title | Status | Priority | Classification | Reason |
 | --- | --- | --- | --- | --- | --- |
 | JSC-282 | `[coding-harness] Reconcile command truth for PR-loop cockpit` | Triage | High | already_covered | Live issue exists in the planned milestone. Local source-scope implementation and eval are complete, but Linear status is stale and should be closed or advanced separately. |
 | JSC-283 | `[coding-harness] Prove packaged skill behavior for cockpit commands` | Triage | High | locally_complete | Local packaged-skill behavior implementation and eval are complete, but Linear status is stale and should be closed or advanced separately. |
+| JSC-288 | `[coding-harness] Resolve memory and governance truth ownership` | Triage | High | locally_complete | Local governance trust repair implementation and eval are complete. Live Linear is stale and should be moved to review or closed after human acceptance evidence is recorded. |
+| JSC-289 | `[coding-harness] Characterize and split CI migration lifecycle boundaries` | In Progress | High | closure_review_pending | Local CI migration boundary work has eval-backed closure proof. Live Linear correctly shows active history but now needs acceptance/closure cleanup instead of another spec. |
 | JSC-248 | `Implement agent-native cockpit control loop first slice` | In Progress | High | already_covered | Legacy/umbrella cockpit work remains active under `Control loop hardening and flow telemetry`; do not let it expand the next spec beyond JSC-288. |
 | JSC-178 | `Modularize contract validation and command registry to reduce core-file risk` | In Progress | High | out_of_scope | Separate architecture-modularization work. It overlaps command-registry concerns but is not part of the approved cockpit packaged-skill slice. |
 
@@ -89,8 +107,9 @@ Experience`, `Agent-Native`, `Eval`, and `Reliability`.
 
 | Order | Slice | Linear Issue | Route | Depends On | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Governance Trust Repair Slice | JSC-288 | he-spec -> he-plan -> he-work; agent-assisted with human review at memory, contract, and required-evidence demotion boundaries | JSC-283 packaged behavior proof | Active bounded slice. Consume `.harness/specs/2026-05-08-jsc-288-governance-trust-repair-spec.md` and `.harness/plan/2026-05-08-architecture-JSC-288-governance-trust-repair-plan.md`; do not reopen JSC-282 or JSC-283 implementation scope. |
-| 2 | CI Migration Boundary Recovery Slice | not yet selected | hold | active cockpit milestone closed or paused | High leverage but migration-risk; keep out of the current governance trust repair slice. |
+| 0 | Linear closure cleanup | JSC-282, JSC-283, JSC-288, JSC-289 | Linear status update only; no new spec | Human acceptance of the relevant eval artifacts | Required before opening another implementation slice. These issues have local eval evidence but live Linear status is stale or still active. |
+| 1 | Validation Typed Gate Specs Slice | JSC-290 | he-spec -> he-plan -> he-work; agent-assisted with human review before wrapper behavior changes | Closure cleanup for JSC-288 and JSC-289 | Recommended next new spec slice. The parent issue now exists; the milestone is still planned/not attached in Linear. Keep it bounded to typed gate specs behind stable shell entrypoints. |
+| 2 | Contract Validation Modularization Slice | JSC-178 or new bounded child under JSC-178 | hold | Validation Typed Gate Specs Slice admission decision | Useful but higher blast radius; do not admit until the typed gate spec clarifies the stable boundary. |
 
 ## Target Linear Destination
 
@@ -111,10 +130,10 @@ Experience`, `Agent-Native`, `Eval`, and `Reliability`.
 
 | Milestone | Target project | Status | Scope | Success criteria | Validation gates | Expected issue count | Explicitly out of scope |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Agent Cockpit Compression Slice | `coding-harness` | Now | Reconcile command truth and prove packaged skill command behavior for the cockpit path. | README/help/registry/dispatch/skill references agree for the chosen cockpit set; skill fixture matrix exists. | Lint, typecheck, tests, drift-gate, skill validation, routing determinism eval. | 2 parent, 4-6 sub | Broad command cleanup, all legacy command dispatch, UI work, new plugins. |
-| Governance Trust Repair Slice | `coding-harness` | Next | Resolve memory ownership, governance surface ownership, and contract bounded-context design. | Placeholder memory is removed/reclassified/replaced; governance surfaces have owner/enforcement status; contract split plan is approved. | Docs lint, policy/docs gates, memory health, contract validation, governance drift eval. | 1-2 parent, 3-5 sub | Full contract migration until ownership is settled. |
-| CI Migration Boundary Recovery Slice | `coding-harness` | Next | Characterize CI migration behavior and extract first lifecycle boundaries. | Characterization baseline exists; reporting/proof-pack extraction lands without behavior drift. | Test, typecheck, CI migration characterization, architecture drift eval, rollback proof. | 1 parent, 3-4 sub | Provider rewrite, broad CI redesign, break-glass changes beyond characterized paths. |
-| Validation Typed Gate Specs Slice | `coding-harness` | Later | Mirror shell-heavy validation into typed gate specs behind stable entrypoints. | Gate graph snapshot and typed mirror exist; shell launcher remains stable. | Build, test, typecheck, verify-work, gate-spec eval, rollback checks. | 1 parent, 2-4 sub | Replacing `verify-work.sh` outright, changing external command contract. |
+| Agent Cockpit Compression Slice | `coding-harness` | Linear cleanup | Reconcile command truth and prove packaged skill command behavior for the cockpit path. | README/help/registry/dispatch/skill references agree for the chosen cockpit set; skill fixture matrix exists. | Lint, typecheck, tests, drift-gate, skill validation, routing determinism eval. | 2 parent, 4-6 sub | Broad command cleanup, all legacy command dispatch, UI work, new plugins. |
+| Governance Trust Repair Slice | `coding-harness` | Linear cleanup | Resolve memory ownership, governance surface ownership, and contract bounded-context design. | Placeholder memory is removed/reclassified/replaced; governance surfaces have owner/enforcement status; contract split plan is approved. | Docs lint, policy/docs gates, memory health, contract validation, governance drift eval. | 1-2 parent, 3-5 sub | Full contract migration until ownership is settled. |
+| CI Migration Boundary Recovery Slice | `coding-harness` | Closure cleanup | Characterize CI migration behavior and extract first lifecycle boundaries. | Characterization baseline exists; reporting/proof-pack extraction lands without behavior drift. | Test, typecheck, CI migration characterization, architecture drift eval, rollback proof. | 1 parent, 3-4 sub | Provider rewrite, broad CI redesign, break-glass changes beyond characterized paths. |
+| Validation Typed Gate Specs Slice | `coding-harness` | Next spec; milestone planned/not attached | Mirror shell-heavy validation into typed gate specs behind stable entrypoints. | Gate graph snapshot and typed mirror exist; shell launcher remains stable. | Build, test, typecheck, verify-work, gate-spec eval, rollback checks. | 1 parent, 2-4 sub | Replacing `verify-work.sh` outright, changing external command contract. |
 
 ## Proposed Parent Issues
 
@@ -124,7 +143,7 @@ Experience`, `Agent-Native`, `Eval`, and `Reliability`.
 | Parent issue | `[coding-harness] Prove packaged skill behavior for cockpit commands` | `coding-harness` | `Dev Portfolio` | Agent Cockpit Compression Slice | 2 High | Developer Experience, Agent-Native, Eval, Reliability | Agent-assisted, human-review required | Release gate integration for packaged skill | Command cockpit set identified | ADR-007, skill refactor | Skill validity must mean downstream usability, not string freshness. |
 | Parent issue | `[coding-harness] Resolve memory and governance truth ownership` | `coding-harness` | `Dev Portfolio` | Governance Trust Repair Slice | 2 High | Governance, Reliability, Context, Drift-Risk | Agent-assisted, human-review required | Contract bounded-context migration | Command cockpit warnings triaged enough to avoid overlapping drift | ADR-003, ADR-004, ADR-007, governance refactor | Required governance and memory surfaces must not be symbolic. |
 | Parent issue | `[coding-harness] Characterize and split CI migration lifecycle boundaries` | `coding-harness` | `Dev Portfolio` | CI Migration Boundary Recovery Slice | 2 High | Reliability, Architecture, Refactor, Migration | Agent-assisted, human-review required | Provider adapter and policy extraction | Characterization baseline | ADR-006, CI refactor | `ci-migrate-core.ts` is the highest-risk oversized orchestrator. |
-| Parent issue | `[coding-harness] Mirror validation orchestration into typed gate specs` | `coding-harness` | `Dev Portfolio` | Validation Typed Gate Specs Slice | 3 Normal | Reliability, Automation, Eval, Refactor | Agent-assisted, human-review required | Shell launcher burn-down | Gate graph snapshot | ADR-006, execution invariants, validation refactor | Validation must become inspectable without breaking stable wrappers. |
+| Parent issue | `[coding-harness] Mirror validation gate graph in typed specs` (`JSC-290`) | `coding-harness` | `Dev Portfolio` | Validation Typed Gate Specs Slice (planned) | 2 High | Reliability, Agent-Native, CE: Spec, Refactor, Drift-Risk, architecture | Agent-assisted, human-review required | Shell launcher burn-down | Gate graph snapshot | ADR-006, execution invariants, validation refactor, `.harness/specs/2026-05-09-validation-typed-gate-specs-spec.md` | Validation must become inspectable without breaking stable wrappers. |
 
 ## Proposed Sub-Issues
 
@@ -144,17 +163,16 @@ Only create sub-issues when execution starts for a milestone.
 | `[coding-harness] Resolve memory and governance truth ownership` | `[coding-harness] Design contract bounded-context ownership map` | 2 High | Human-review required | Yes after inventory | Contract validation, ADR-004 conformance | Stop if published aggregate compatibility is unclear. |
 | `[coding-harness] Characterize and split CI migration lifecycle boundaries` | `[coding-harness] Capture CI migration characterization baseline` | 2 High | Agent-assisted | No | Existing CI migration tests, characterization artifact | Stop if baseline is non-deterministic. |
 | `[coding-harness] Characterize and split CI migration lifecycle boundaries` | `[coding-harness] Extract CI migration reporting and proof-pack boundary` | 2 High | Agent-assisted | No | Focused tests, typecheck, architecture drift eval | Roll back if extracted module imports old core as hidden dependency. |
-| `[coding-harness] Mirror validation orchestration into typed gate specs` | `[coding-harness] Snapshot verify-work gate graph and artifact expectations` | 3 Normal | Agent-assisted | No | verify-work fast, docs lint | Stop if snapshot cannot explain current shell behavior. |
-| `[coding-harness] Mirror validation orchestration into typed gate specs` | `[coding-harness] Add typed spec mirror behind stable verify-work entrypoint` | 3 Normal | Agent-assisted | No | Typecheck, tests, verify-work fast | Roll back if wrapper compatibility changes. |
+| `[coding-harness] Mirror validation gate graph in typed specs` | `[coding-harness] Snapshot verify-work gate graph and artifact expectations` | 2 High | Agent-assisted | No | full validate-codestyle, docs lint | Stop if snapshot cannot explain current shell behavior. |
+| `[coding-harness] Mirror validation gate graph in typed specs` | `[coding-harness] Add typed spec mirror behind stable verify-work entrypoint` | 2 High | Agent-assisted | No | Typecheck, tests, full validate-codestyle | Roll back if wrapper compatibility changes. |
 
 ## Now / Next / Later / Do Not Create
 
 | Bucket | Work | Destination | Rationale |
 | --- | --- | --- | --- |
-| Now | Agent Cockpit Compression Slice | `coding-harness` | Fixes the highest-context-cost path first: command truth and skill behavior. |
-| Next | Governance Trust Repair Slice | `coding-harness` | Memory/governance trust should follow command truth so agents know where to route. |
-| Next | CI Migration Boundary Recovery Slice | `coding-harness` | High leverage, but migration-risk; start after active cockpit work is bounded. |
-| Later | Validation Typed Gate Specs Slice | `coding-harness` | Important, but less urgent than trust and command drift. |
+| Now | Linear closure cleanup | `coding-harness` | JSC-282, JSC-283, JSC-288, and JSC-289 have local evidence but stale or pending Linear status; clean this before opening more implementation state. |
+| Next | Validation Typed Gate Specs Slice | `coding-harness` | First genuinely new slice after closure cleanup; keeps validation semantics inspectable without replacing stable shell entrypoints. |
+| Later | Contract Validation Modularization Slice | `coding-harness` | Valuable, but should wait until typed validation metadata clarifies the stable boundary. |
 | Later | Portfolio-level reactivation checklist | `Portfolio Ops` | Useful only if the pattern repeats across repo projects. |
 | Do Not Create | Generic architecture review issues | None | Cognition already lives in `.harness/*`; Linear should not mirror the docs. |
 | Do Not Create | One issue per ADR/invariant | None | Creates process noise without execution value. |
