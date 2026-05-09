@@ -46,13 +46,12 @@ implementation_unit: IU-289-006
 
 ## Executive Eval Summary
 
-Status: implementation evidence is strong; all live PR checks passed when
-refreshed for this eval, and Linear closure is ready for human acceptance.
+Status: implementation evidence is strong and the active PR check run is green.
 
 Linear Completion Recommendation: Complete with follow-up
 
 Primary Blockers: no technical PR checks were blocking when refreshed with
-`gh pr checks 231` on 2026-05-09. Linear closure should still wait for human
+`gh pr checks 231` on 2026-05-09. Linear closure should wait for human
 acceptance of this eval because the plan requires a human closure decision.
 
 Confidence: high for local implementation evidence and live PR check posture;
@@ -266,10 +265,10 @@ Expected: TypeScript and repo quality gates pass after extraction.
 Actual: commit `97ab2314` records `pnpm typecheck`, `pnpm lint`, `pnpm run
 quality:docstrings`, `pnpm run quality:size`, and `pnpm run test:related` as
 passing. PR #231 also had CodeRabbit, Socket Security, CircleCI `check`,
-`lint`, `typecheck`, `test`,
-`audit`, `docs-gate`, `linear-gate`, `risk-policy-gate`, `security-scan`,
-`dependency-scan`, `consistency-drift-health`, `memory`, `pr-template`, and
-`orb-pinning` passing when checked.
+`lint`, `typecheck`, `test`, `audit`, `docs-gate`, `linear-gate`,
+`risk-policy-gate`, `security-scan`, `dependency-scan`,
+`consistency-drift-health`, `memory`, `pr-template`, and `orb-pinning` passing
+when checked.
 
 Status: pass
 
@@ -418,7 +417,7 @@ new process.
 
 ## Architecture Integrity Check
 
-Conclusion: pass for local architecture integrity and current external review.
+Conclusion: pass for local architecture integrity, pending external review.
 
 Evidence: `src/lib/ci/ci-migrate-promotion-evidence.ts` owns promotion evidence
 logic; `src/commands/ci-migrate-core.ts` imports it and keeps the public
@@ -524,8 +523,10 @@ Required:
 
 Observed Complete:
 
-- PR #231 checks complete when refreshed with `gh pr checks 231`.
-- CodeRabbit review complete when refreshed with `gh pr checks 231`.
+- Local eval artifact validators passed.
+- Pre-commit and pre-push hooks passed for the eval artifact commit.
+- CircleCI and Socket checks passed on the active PR check run.
+- CodeRabbit review completed on the active PR check run.
 
 Missing:
 
@@ -541,7 +542,7 @@ Linear update after human acceptance.
 Failure or Regression: no behavior regression found in local validation.
 
 Evidence: focused runtime tests and repo quality gates recorded in commit
-`97ab2314`; PR checks passing when refreshed for this report.
+`97ab2314`; PR checks passed when refreshed for this report.
 
 Required Corrective Action: none unless PR checks regress or human review finds
 a blocker.
@@ -591,8 +592,8 @@ Target Linear Project: `coding-harness`
 
 Parent Issue or Milestone: `JSC-289` and `CI Migration Boundary Recovery Slice`
 
-Reason: no new work should be created from this eval unless CodeRabbit, CI, or
-human review produce concrete findings. Avoid issue noise.
+Reason: no new work should be created from this eval unless pending checks or
+CodeRabbit produce concrete findings. Avoid issue noise.
 
 Priority: no priority.
 
