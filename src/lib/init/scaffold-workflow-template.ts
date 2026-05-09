@@ -7,6 +7,7 @@
  * @module lib/init/scaffold-workflow-template
  */
 
+import { AGENT_BRANCH_PREFIX } from "./scaffold-root-command-templates.js";
 import type { TemplateRenderContext } from "./types.js";
 
 /**
@@ -57,7 +58,7 @@ function renderTransitionRows(
 ): string {
 	const trackerKind = context.issueTracker ?? "linear";
 	if (trackerKind === "linear") {
-		return `| \`S0 TODO\` | \`claim\` | preflight passes | \`harness linear claim --issue <LK> --branch <codex/...>\` | \`S1 IN_PROGRESS\` |
+		return `| \`S0 TODO\` | \`claim\` | preflight passes | \`harness linear claim --issue <LK> --branch <${AGENT_BRANCH_PREFIX}/...>\` | \`S1 IN_PROGRESS\` |
 | \`S1 IN_PROGRESS\` | \`advance\` | \`${checkCommand}\` passes | \`harness linear handoff --issue <LK> --pr-url <url> --evidence-urls <url>\` | \`S2 IN_REVIEW\` |
 | \`S1 IN_PROGRESS\` | \`blocked\` | dependency unavailable | emit unblock payload | \`S4 BLOCKED\` |
 | \`S1 IN_PROGRESS\` | \`error\` | unrecoverable runtime/policy issue | record failure artifact | \`S5 FAIL\` |

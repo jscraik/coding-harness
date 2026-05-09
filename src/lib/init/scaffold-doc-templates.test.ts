@@ -7,7 +7,7 @@ import {
 
 const baseContributingOptions = {
 	addCommand: "pnpm add -D @brainwav/coding-harness",
-	agentBranchPrefix: "codex",
+	agentBranchPrefix: "jscraik/feature",
 	checkCommand: "pnpm check",
 	codestyleCommand: "bash scripts/validate-codestyle.sh",
 	installCommand: "pnpm install",
@@ -23,7 +23,7 @@ describe("document scaffold templates", () => {
 
 		expect(contributing).toContain("# Contributing");
 		expect(contributing).toContain(
-			"Agent-created branch: `git switch -c codex/",
+			"Agent-created branch: `git switch -c jscraik/feature/",
 		);
 		expect(contributing).toContain("- bash scripts/validate-codestyle.sh");
 		expect(contributing).toContain("- pnpm check");
@@ -53,12 +53,16 @@ describe("document scaffold templates", () => {
 
 	it("renders the pull request template with required review evidence", () => {
 		const template = renderPullRequestTemplate({
+			agentBranchPrefix: "jscraik/feature",
 			checkCommand: "pnpm check",
 			codestyleCommand: "bash scripts/validate-codestyle.sh",
 			memoryValidateCommand: "test -f memory.json",
 		});
 
 		expect(template).toContain("# Pull request checklist");
+		expect(template).toContain(
+			"Branch name follows policy (`jscraik/feature/*` for agent-created branches).",
+		);
 		expect(template).toContain(
 			"Required local gates run: `bash scripts/validate-codestyle.sh`, `pnpm check`, `test -f memory.json`.",
 		);

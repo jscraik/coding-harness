@@ -59,7 +59,7 @@ attach_branch_if_detached() {
 	fi
 
 	short_sha="$(git rev-parse --short HEAD)"
-	branch_base="codex/$repo_slug-worktree-$short_sha"
+	branch_base="jscraik/feature/$repo_slug-worktree-$short_sha"
 	branch_name="$branch_base"
 	suffix=1
 	while git show-ref --verify --quiet "refs/heads/$branch_name"; do

@@ -38,7 +38,7 @@ describe("workflow scaffold template", () => {
 		expect(workflow).not.toContain('cd "$WORKSPACE"');
 		expect(workflow).toContain("grep -Eq");
 		expect(workflow).toContain(
-			"`harness linear claim --issue <LK> --branch <codex/...>`",
+			"`harness linear claim --issue <LK> --branch <jscraik/feature/...>`",
 		);
 		expect(workflow).toContain("`pnpm check` passes");
 	});

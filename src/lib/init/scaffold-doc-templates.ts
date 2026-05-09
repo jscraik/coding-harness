@@ -25,6 +25,7 @@ type ContributingTemplateOptions = {
 };
 
 type PullRequestTemplateOptions = {
+	agentBranchPrefix: string;
 	checkCommand: string;
 	codestyleCommand: string;
 	memoryValidateCommand: string;
@@ -327,7 +328,7 @@ export function renderPullRequestTemplate(
 ## Checklist
 
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
-- [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
+- [ ] Branch name follows policy (\`${options.agentBranchPrefix}/*\` for agent-created branches).
 - [ ] Required local gates run: \`${options.codestyleCommand}\`, \`${options.checkCommand}\`, \`${options.memoryValidateCommand}\`.
 ${codeRabbitChecklist}- [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
