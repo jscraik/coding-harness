@@ -262,7 +262,10 @@ function findPlanDocs(
 			}
 			if (stats.isFile() && entry.endsWith(".md")) {
 				const discovery = inspectPlanDoc(entryPath, contentCache);
-				if (discovery.isPlan || discovery.isUnreadable) {
+				if (
+					discovery.isPlan ||
+					isUnreadablePlanCandidate(entryPath, discovery)
+				) {
 					docs.push(entryPath);
 				}
 			}
@@ -305,6 +308,13 @@ function inspectPlanDoc(
 	} catch {
 		return { isPlan: false, isUnreadable: true };
 	}
+}
+
+function isUnreadablePlanCandidate(
+	filePath: string,
+	discovery: { isPlan: boolean; isUnreadable: boolean },
+): boolean {
+	return discovery.isUnreadable && /\bJSC-\d+\b/i.test(basename(filePath));
 }
 
 function hasPlanMetadata(frontmatter: PlanFrontmatter): boolean {

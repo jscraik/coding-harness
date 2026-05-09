@@ -394,6 +394,42 @@ describe("plan-gate command", () => {
 			expect(result.errors).toHaveLength(0);
 		});
 
+		it("ignores unreadable non-plan markdown during recursive discovery", () => {
+			if (
+				process.platform === "win32" ||
+				(typeof process.geteuid === "function" && process.geteuid() === 0)
+			) {
+				return;
+			}
+
+			createValidHarnessPlan(
+				"JSC-246-account-settings.md",
+				"jsc-246-account-settings",
+				testDir,
+			);
+			const notesPath = createHarnessPlan(
+				"scratch/notes.md",
+				"# Scratch notes\n\nThis is operator context, not a plan artifact.",
+				testDir,
+			);
+			chmodSync(notesPath, 0);
+
+			try {
+				const result = withCwd(testDir, () =>
+					runPlanGate({
+						requirePlanId: true,
+						planIds: ["jsc-246-account-settings"],
+					}),
+				);
+
+				expect(result.passed).toBe(true);
+				expect(result.artifacts).toHaveLength(1);
+				expect(result.errors).toHaveLength(0);
+			} finally {
+				chmodSync(notesPath, 0o600);
+			}
+		});
+
 		it("ignores filename-only plan matches without plan metadata", () => {
 			createHarnessPlan(
 				"scratch-notes-plan.md",
