@@ -63,13 +63,13 @@ function parseShellGatePlan(source: string): ShellGatePlan {
 }
 
 function parseAddGateCalls(source: string): readonly ShellGateSpec[] {
-	return [...source.matchAll(/add_gate\s+"([^"]+)"\s+"([^"]+)"\s+"([^"]+)"/g)].map(
-		(match) => ({
-			gateId: match[1] as ValidationGateId,
-			executionClass: match[2] as VerifyGateExecutionClass,
-			failureClassDefault: match[3] as VerifyGateFailureClass,
-		}),
-	);
+	return [
+		...source.matchAll(/add_gate\s+"([^"]+)"\s+"([^"]+)"\s+"([^"]+)"/g),
+	].map((match) => ({
+		gateId: match[1] as ValidationGateId,
+		executionClass: match[2] as VerifyGateExecutionClass,
+		failureClassDefault: match[3] as VerifyGateFailureClass,
+	}));
 }
 
 function expectedRetryPolicy(shellGate: ShellGateSpec): ValidationRetryPolicy {
