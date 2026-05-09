@@ -75,11 +75,12 @@ Proof-state vocabulary follows the plan exactly:
 | Before `IU-289-001` edits | `git status --short --branch` showed only `## codex/jsc-248-agent-native-compression...origin/codex/jsc-248-agent-native-compression`. | Clean worktree; no user changes were present in the observed status output. |
 | After `IU-289-001` edits | Explicit worktree status showed only `?? .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md`. | Dirty state belongs to this inventory artifact only. |
 
-Plain `git status` became unreliable during validation because local
-`.git/config` currently reports `core.worktree` as a temp harness fixture path.
-For after-edit ownership, use explicit
-`git --git-dir=/Users/jamiecraik/dev/coding-harness/.git --work-tree=/Users/jamiecraik/dev/coding-harness ...`
-commands until that separate environment/config drift is repaired.
+Plain `git status` became unreliable during validation because the observed local
+`.git/config` reported `core.worktree` as a temp harness fixture path. For
+after-edit ownership in a normal checkout, run `git status --short --branch`
+from the repo root. If the local checkout has `core.worktree` drift, use
+`git --git-dir=$REPO_ROOT/.git --work-tree=$REPO_ROOT ...` until that separate
+environment/config drift is repaired.
 
 ## Characterization Matrix
 
@@ -156,7 +157,7 @@ repo-local.
 | `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass |
 | `python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass after traceability table was corrected to include `Linear issue` and `Acceptance IDs` columns |
 | `pnpm markdownlint .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md` | pass |
-| `git --git-dir=/Users/jamiecraik/dev/coding-harness/.git --work-tree=/Users/jamiecraik/dev/coding-harness diff --check` | pass |
+| `git diff --check` | pass |
 
 Phase-exit gates:
 
@@ -181,8 +182,8 @@ Command: zsh -lc 'python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-a
 Command: zsh -lc 'python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass
 Command: zsh -lc 'python3 ${HE_TOOLING_ROOT}/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass after correcting the acceptance traceability table columns
 Command: zsh -lc 'pnpm markdownlint .harness/plan/2026-05-08-architecture-JSC-289-ci-migration-boundary-recovery-plan.md .harness/review/2026-05-08-JSC-289-ci-migration-characterization-inventory.md' -> pass
-Command: zsh -lc 'git --git-dir=/Users/jamiecraik/dev/coding-harness/.git --work-tree=/Users/jamiecraik/dev/coding-harness diff --check' -> pass
-Command: zsh -lc 'git --git-dir=/Users/jamiecraik/dev/coding-harness/.git --work-tree=/Users/jamiecraik/dev/coding-harness status --short --branch' -> pass; dirty state is only this new inventory artifact
+Command: zsh -lc 'git diff --check' -> pass
+Command: zsh -lc 'git status --short --branch' -> pass; dirty state is only this new inventory artifact
 ```
 
 ## Linear Acceptance Traceability
