@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import {
+	chmodSync,
+	existsSync,
+	mkdirSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EXIT_CODES, runPlanGate } from "../lib/plan-gate/detector.js";
 import { runPlanGateCLI } from "./plan-gate.js";
@@ -45,6 +52,61 @@ ${content}
 
 	writeFileSync(filepath, fullContent, "utf-8");
 	return filepath;
+}
+
+function createHarnessPlan(
+	filename: string,
+	content: string,
+	basePath: string,
+): string {
+	const plansDir = join(basePath, ".harness/plan");
+	if (!existsSync(plansDir)) {
+		mkdirSync(plansDir, { recursive: true });
+	}
+
+	const filepath = join(plansDir, filename);
+	mkdirSync(dirname(filepath), { recursive: true });
+	writeFileSync(filepath, content, "utf-8");
+	return filepath;
+}
+
+function createValidHarnessPlan(
+	filename: string,
+	planId: string,
+	basePath: string,
+	title = "Account Settings",
+): string {
+	return createHarnessPlan(
+		filename,
+		[
+			"---",
+			`title: ${title}`,
+			"date: 2026-05-08",
+			"type: standard-plan",
+			"status: draft",
+			`plan_id: ${planId}`,
+			"---",
+			"",
+			"## Implementation Steps",
+			"",
+			"- Preserve HE plan units.",
+			"",
+			"## Acceptance Criteria",
+			"",
+			"- [ ] HE plan can be validated without a date-prefixed filename.",
+		].join("\n"),
+		basePath,
+	);
+}
+
+function withCwd<T>(cwd: string, callback: () => T): T {
+	const previousCwd = process.cwd();
+	process.chdir(cwd);
+	try {
+		return callback();
+	} finally {
+		process.chdir(previousCwd);
+	}
 }
 
 describe("plan-gate command", () => {
@@ -92,6 +154,447 @@ describe("plan-gate command", () => {
 			expect(result.passed).toBe(true);
 			expect(result.artifacts).toHaveLength(1);
 			expect(result.artifacts[0]?.title).toBe("Test Feature");
+		});
+
+		it("discovers Harness Engineering plans from .harness/plan by default", () => {
+			createValidHarnessPlan(
+				"JSC-246-account-settings.md",
+				"jsc-246-account-settings",
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					type: "standard-plan",
+					requirePlanId: true,
+					planIds: ["jsc-246-account-settings"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.path).toContain(".harness/plan");
+			expect(result.artifacts[0]?.type).toBe("standard-plan");
+			expect(result.artifacts[0]?.planId).toBe("jsc-246-account-settings");
+		});
+
+		it("discovers CRLF frontmatter in Harness Engineering plans", () => {
+			createHarnessPlan(
+				"JSC-247-windows-authored-plan.md",
+				[
+					"---",
+					"title: Windows Authored Plan",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-247-windows-authored-plan",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Preserve CRLF-authored plan docs.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] CRLF frontmatter is discovered.",
+				].join("\r\n"),
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					type: "standard-plan",
+					requirePlanId: true,
+					planIds: ["jsc-247-windows-authored-plan"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.title).toBe("Windows Authored Plan");
+			expect(result.artifacts[0]?.planId).toBe("jsc-247-windows-authored-plan");
+		});
+
+		it("discovers BOM-prefixed frontmatter in Harness Engineering plans", () => {
+			createHarnessPlan(
+				"JSC-247-bom-authored-plan.md",
+				`\uFEFF${[
+					"---",
+					"title: BOM Authored Plan",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-247-bom-authored-plan",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Preserve BOM-authored plan docs.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] BOM frontmatter is discovered.",
+				].join("\n")}`,
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					type: "standard-plan",
+					requirePlanId: true,
+					planIds: ["jsc-247-bom-authored-plan"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.title).toBe("BOM Authored Plan");
+			expect(result.artifacts[0]?.planId).toBe("jsc-247-bom-authored-plan");
+		});
+
+		it("discovers frontmatter ending at EOF in Harness Engineering plans", () => {
+			createHarnessPlan(
+				"JSC-248-frontmatter-eof-plan.md",
+				[
+					"---",
+					"title: Frontmatter EOF Plan",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-248-frontmatter-eof-plan",
+					"---",
+				].join("\n"),
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					type: "standard-plan",
+					requirePlanId: true,
+					planIds: ["jsc-248-frontmatter-eof-plan"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.title).toBe("Frontmatter EOF Plan");
+			expect(result.artifacts[0]?.planId).toBe("jsc-248-frontmatter-eof-plan");
+		});
+
+		it("selects the newest artifact when duplicate plan IDs exist", () => {
+			createHarnessPlan(
+				"2026-05-08-standard-plan-command-truth-cockpit.md",
+				[
+					"---",
+					"title: Newer Command Truth Cockpit",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-282-command-truth-cockpit",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Use the current artifact.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Newest duplicate plan ID is selected.",
+				].join("\n"),
+				testDir,
+			);
+			createHarnessPlan(
+				"2026-05-07-standard-plan-command-truth-cockpit.md",
+				[
+					"---",
+					"title: Older Command Truth Cockpit",
+					"date: 2026-05-07",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-282-command-truth-cockpit",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Keep stale metadata out of selected results.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Older duplicate plan ID is not selected.",
+				].join("\n"),
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requirePlanId: true,
+					planIds: ["jsc-282-command-truth-cockpit"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.title).toBe("Newer Command Truth Cockpit");
+			expect(result.artifacts[0]?.path).toContain("2026-05-08");
+		});
+
+		it("deduplicates aliased plan roots", () => {
+			const docsPlansDir = join(testDir, "docs/plans");
+			const harnessDir = join(testDir, ".harness");
+			mkdirSync(docsPlansDir, { recursive: true });
+			mkdirSync(harnessDir, { recursive: true });
+			symlinkSync(docsPlansDir, join(harnessDir, "plan"));
+			createTestPlan(
+				"Aliased Plan Root",
+				"2026-05-08",
+				"standard-plan",
+				"draft",
+				"## Implementation Steps\n\n- Scan once.\n\n## Acceptance Criteria\n\n- [ ] Aliased roots do not duplicate artifacts.",
+				testDir,
+				undefined,
+				"jsc-290-aliased-plan-root",
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requirePlanId: true,
+					planIds: ["jsc-290-aliased-plan-root"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.planId).toBe("jsc-290-aliased-plan-root");
+		});
+
+		it("ignores non-plan markdown files during recursive .harness/plan discovery", () => {
+			createValidHarnessPlan(
+				"JSC-246-account-settings.md",
+				"jsc-246-account-settings",
+				testDir,
+			);
+			createHarnessPlan(
+				"scratch/notes.md",
+				"# Scratch notes\n\nThis is operator context, not a plan artifact.",
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requirePlanId: true,
+					planIds: ["jsc-246-account-settings"],
+				}),
+			);
+
+			expect(result.passed).toBe(true);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.path).toContain(
+				"JSC-246-account-settings.md",
+			);
+			expect(result.errors).toHaveLength(0);
+		});
+
+		it("ignores unreadable non-plan markdown during recursive discovery", () => {
+			if (
+				process.platform === "win32" ||
+				(typeof process.geteuid === "function" && process.geteuid() === 0)
+			) {
+				return;
+			}
+
+			createValidHarnessPlan(
+				"JSC-246-account-settings.md",
+				"jsc-246-account-settings",
+				testDir,
+			);
+			const notesPath = createHarnessPlan(
+				"scratch/notes.md",
+				"# Scratch notes\n\nThis is operator context, not a plan artifact.",
+				testDir,
+			);
+			chmodSync(notesPath, 0);
+
+			try {
+				const result = withCwd(testDir, () =>
+					runPlanGate({
+						requirePlanId: true,
+						planIds: ["jsc-246-account-settings"],
+					}),
+				);
+
+				expect(result.passed).toBe(true);
+				expect(result.artifacts).toHaveLength(1);
+				expect(result.errors).toHaveLength(0);
+			} finally {
+				chmodSync(notesPath, 0o600);
+			}
+		});
+
+		it("ignores filename-only plan matches without plan metadata", () => {
+			createHarnessPlan(
+				"scratch-notes-plan.md",
+				"# Scratch notes\n\nThis is operator context, not a plan artifact.",
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requirePlanId: true,
+					planIds: ["jsc-999-scratch-notes"],
+				}),
+			);
+
+			expect(result.passed).toBe(false);
+			expect(result.artifacts).toHaveLength(0);
+			expect(result.errors).toHaveLength(1);
+			expect(result.errors[0]?.code).toBe("MISSING");
+		});
+
+		it("reports unreadable Harness plan markdown as a system error", () => {
+			if (
+				process.platform === "win32" ||
+				(typeof process.geteuid === "function" && process.geteuid() === 0)
+			) {
+				return;
+			}
+
+			const unreadablePath = createHarnessPlan(
+				"JSC-248-unreadable-plan.md",
+				[
+					"---",
+					"title: Unreadable Plan",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-248-unreadable-plan",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Keep unreadable artifacts visible.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Unreadable plans fail loudly.",
+				].join("\n"),
+				testDir,
+			);
+
+			chmodSync(unreadablePath, 0);
+			try {
+				const result = withCwd(testDir, () =>
+					runPlanGate({
+						requirePlanId: true,
+						planIds: ["jsc-248-unreadable-plan"],
+					}),
+				);
+
+				expect(result.passed).toBe(false);
+				expect(
+					result.errors.some(
+						(error) =>
+							error.code === "SYSTEM_ERROR" && error.path === unreadablePath,
+					),
+				).toBe(true);
+			} finally {
+				chmodSync(unreadablePath, 0o600);
+			}
+		});
+
+		it("reports unreadable date-prefixed plan markdown as a system error", () => {
+			if (
+				process.platform === "win32" ||
+				(typeof process.geteuid === "function" && process.geteuid() === 0)
+			) {
+				return;
+			}
+
+			const unreadablePath = createTestPlan(
+				"Foo",
+				"2026-05-09",
+				"feature",
+				"draft",
+				[
+					"## Implementation Steps",
+					"",
+					"- Keep date-prefixed plans visible.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Unreadable date-prefixed plans fail loudly.",
+				].join("\n"),
+				testDir,
+				undefined,
+				"feature-foo",
+			);
+
+			chmodSync(unreadablePath, 0);
+			try {
+				const result = withCwd(testDir, () =>
+					runPlanGate({
+						requirePlanId: true,
+						planIds: ["feature-foo"],
+					}),
+				);
+
+				expect(result.passed).toBe(false);
+				expect(
+					result.errors.some(
+						(error) =>
+							error.code === "SYSTEM_ERROR" && error.path === unreadablePath,
+					),
+				).toBe(true);
+			} finally {
+				chmodSync(unreadablePath, 0o600);
+			}
+		});
+
+		it("preserves validation errors from discovered plans when a plan ID is selected", () => {
+			createValidHarnessPlan(
+				"JSC-246-account-settings.md",
+				"jsc-246-account-settings",
+				testDir,
+			);
+			createHarnessPlan(
+				"JSC-247-missing-origin.md",
+				[
+					"---",
+					"title: Missing Origin",
+					"date: 2026-05-08",
+					"type: standard-plan",
+					"status: draft",
+					"plan_id: jsc-247-missing-origin",
+					"---",
+					"",
+					"## Implementation Steps",
+					"",
+					"- Keep invalid artifact visible.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Selected plan filtering does not hide this error.",
+				].join("\n"),
+				testDir,
+			);
+
+			const result = withCwd(testDir, () =>
+				runPlanGate({
+					requireOrigin: true,
+					planIds: ["jsc-246-account-settings"],
+				}),
+			);
+
+			expect(result.passed).toBe(false);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.planId).toBe("jsc-246-account-settings");
+			expect(
+				result.errors.some((error) => error.code === "ORIGIN_MISSING"),
+			).toBe(true);
+			expect(
+				result.errors.some((error) =>
+					error.path?.includes("JSC-247-missing-origin.md"),
+				),
+			).toBe(true);
 		});
 
 		it("filters by type", () => {

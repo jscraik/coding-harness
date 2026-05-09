@@ -114,7 +114,7 @@ In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --fro
 | `preflight-gate`         | Run fast policy checks before expensive work                                        |
 | `review-gate`            | Validate SHA-linked review readiness (review check + review-policy required checks) |
 | `docs-gate`              | Enforce documentation parity for governed changes                                   |
-| `plan-gate`              | Validate plan IDs, traceability, and acceptance evidence                            |
+| `plan-gate`              | Validate plan IDs, traceability, and acceptance evidence across `docs/plans/**.md` and HE `.harness/plan/**.md` artifacts |
 | `brainstorm-gate`        | Validate brainstorm artifacts                                                       |
 | `prompt-gate`            | Validate prompt template usage                                                      |
 | `pr-template-gate`       | Validate PR template completion and placeholder replacement                         |

@@ -57,9 +57,10 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - **Trigger**: Pull requests via `risk-policy-gate`, plus any direct `harness plan-gate` run.
 - **Behavior**:
   - extracts `Plan IDs` from PR title/body or explicit `--plan-ids`
-  - verifies each referenced ID resolves to a `docs/plans/*` file with matching `plan_id` frontmatter
+  - verifies each referenced ID resolves to a `docs/plans/**.md` or Harness Engineering `.harness/plan/**.md` file with matching `plan_id` frontmatter
   - requires completed acceptance checklist items in referenced plans to carry evidence links/refs
   - fails when changed work cannot be mapped back to at least one valid plan ID
+  - accepts stable Harness Engineering artifact names such as `.harness/plan/JSC-246-account-settings.md`; date-prefixed `*-plan.md` filenames are no longer required for discovery
 - **Mode**: required for pull requests; advisory only when a caller omits the enforcing flags.
 - **Exit codes**:
   - `0`: traceability passes
@@ -68,7 +69,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
   - `7`: changed work not mapped to plan IDs
 - **Remediation**:
   - add `plan_id` to the referenced plan frontmatter
-  - list the plan IDs in the PR summary
+  - list the plan IDs in the PR summary or pass `--plan-ids`
   - add evidence refs to any completed acceptance items before merge
 
 ## Validation by change type

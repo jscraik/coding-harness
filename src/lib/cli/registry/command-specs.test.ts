@@ -709,7 +709,14 @@ describe("learnings execute validation", () => {
 	it("routes learnings promote to artifact validation", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
-		expect(spec.execute(["promote", "--json"])).toBe(1);
+		expect(
+			spec.execute([
+				"promote",
+				"--source",
+				".harness/learnings/__missing_for_command_spec_test__.json",
+				"--json",
+			]),
+		).toBe(1);
 
 		const output = String(infoSpy.mock.calls.at(-1)?.[0] ?? "");
 		expect(output).toContain("learnings.artifact_missing");

@@ -79,8 +79,12 @@ function updateDetailFor(
 		};
 	}
 	if (
+		path === ".harness/README.md" ||
 		path.startsWith(".harness/knowledge/") ||
-		path.startsWith(".harness/memory/")
+		path.startsWith(".harness/memory/") ||
+		path.startsWith(".harness/quality/") ||
+		path.startsWith(".harness/decisions/") ||
+		path === ".harness/review-log.md"
 	) {
 		return {
 			path,

@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-05-08
 ---
 
 # Local-memory workflow
@@ -81,8 +81,15 @@ Format: `**YYYY-MM-DD [Agent]:** <problem> → <fix>`
 
 ### `.gitignore` note
 
-`.harness/memory/` is gitignored by coding-harness convention — entries stay
-local and are not committed to the repository.
+Coding-harness uses selective `.harness` tracking by contract:
+
+- `.harness/memory/LEARNINGS.md` is durable repo policy and should be tracked.
+- `.harness/memory/codex-learned/` and
+  `.harness/memory/codex-preflight-overrides.env` are generated runtime state
+  and should stay ignored.
+- Curated `.harness` Markdown and JSON contract files should be reviewed like
+  docs or policy; backups, databases, caches, run output, and bulk snapshots
+  should stay local unless explicitly promoted to fixtures.
 
 ---
 

@@ -24,6 +24,7 @@ Buildable
 canonicalized
 citty
 CLIs
+in_progress
 CodeRabbit
 Codex
 config

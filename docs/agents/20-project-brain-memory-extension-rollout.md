@@ -1,10 +1,11 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-05-08
 ---
 
 # Project Brain memory-extension rollout
 
 - [Purpose](#purpose)
+- [Authority](#authority)
 - [What changed in coding-harness](#what-changed-in-coding-harness)
 - [Scope model](#scope-model)
 - [Per-repo rollout checklist](#per-repo-rollout-checklist)
@@ -12,7 +13,23 @@ last_validated: 2026-04-18
 
 ## Purpose
 
-This note documents how coding-harness now enforces Project Brain memory-extension readiness using project-local paths. Use it as the reference when mapping the same policy across other repositories.
+This is a reference-only rollout note for mapping Project Brain
+memory-extension readiness across repositories. It records the migration shape;
+it is not the live policy source for this repository.
+
+## Authority
+
+Use these live sources before this rollout note:
+
+| Question | Source of truth |
+| --- | --- |
+| Required Project Brain paths | `harness.contract.json` `toolingPolicy.projectBrainMemoryExtension.requiredPaths` |
+| Repo-local memory surface | `.harness/memory/LEARNINGS.md` and [local memory](./03-local-memory.md) |
+| Tooling and readiness contract | [tooling policy](./02-tooling-policy.md) and `scripts/check-environment.sh` |
+| PR closeout learning evidence | [validation](./04-validation.md) north-star learning loop |
+
+If this note conflicts with those surfaces, treat this note as stale reference
+context and update or delete the conflicting text.
 
 ## What changed in coding-harness
 
@@ -56,4 +73,4 @@ Use the repo-local wrappers/gates:
 3. `pnpm typecheck`
 4. `bash scripts/verify-work.sh --fast`
 
-If a repository is being migrated gradually, run `harness tooling-audit --path <repo-root>` first and land policy + scaffold updates together.
+If a repository is being migrated gradually, run `harness tooling-audit --path <repo-root>` first and land policy + scaffold updates together. In this source repository, use `pnpm exec tsx src/cli.ts tooling-audit --path . --json` when proving the current checkout before package-build parity.

@@ -58,6 +58,8 @@ vi.mock("./commands/learnings.js", () => ({
 
 vi.mock("./commands/ci-migrate.js", () => ({
 	runCIMigrateCLI: vi.fn(() => 69),
+	runPromoteModeCLI: vi.fn(() => 73),
+	runSyncBranchProtectionCLI: vi.fn(() => 72),
 }));
 
 vi.mock("./commands/remediate.js", () => ({
@@ -177,13 +179,8 @@ describe("cli command dispatch", () => {
 			});
 		expect(output).toContain("Commands (focused):");
 		expect(output).toContain("Agent Cockpit:");
-		expect(output).toContain("Discovery:");
-		expect(output).toContain("Bootstrap & Governance:");
-		expect(output).toContain("Review & Policy:");
-		expect(output.indexOf("Agent Cockpit:")).toBeLessThan(
-			output.indexOf("Discovery:"),
-		);
-		expect(hasCommandRow("check")).toBe(true);
+		expect(output).toContain('Run "harness --help --all-commands"');
+		expect(hasCommandRow("check")).toBe(false);
 		expect(hasCommandRow("next")).toBe(true);
 		expect(hasCommandRow("pr-ready")).toBe(false);
 		expect(hasCommandRow("fix-review")).toBe(false);
@@ -810,6 +807,128 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(69);
 	});
 
+	for (const scenario of [
+		{
+			label: "sync-branch-protection positional action",
+			argv: [
+				"ci-migrate",
+				"sync-branch-protection",
+				"/tmp/cutover-repo",
+				"--provider",
+				"circleci",
+				"--json",
+			],
+			expectedExit: 72,
+			expectedRunner: "sync-branch-protection",
+		},
+		{
+			label: "sync-branch-protection explicit --action",
+			argv: [
+				"ci-migrate",
+				"/tmp/cutover-repo",
+				"--action",
+				"sync-branch-protection",
+				"--provider",
+				"circleci",
+				"--json",
+			],
+			expectedExit: 72,
+			expectedRunner: "sync-branch-protection",
+		},
+		{
+			label: "promote-mode positional action",
+			argv: [
+				"ci-migrate",
+				"promote-mode",
+				"/tmp/cutover-repo",
+				"--provider",
+				"circleci",
+				"--json",
+			],
+			expectedExit: 73,
+			expectedRunner: "promote-mode",
+		},
+		{
+			label: "promote-mode explicit --action",
+			argv: [
+				"ci-migrate",
+				"/tmp/cutover-repo",
+				"--action",
+				"promote-mode",
+				"--provider",
+				"circleci",
+				"--json",
+			],
+			expectedExit: 73,
+			expectedRunner: "promote-mode",
+		},
+	] as const) {
+		it(`dispatches ci-migrate delegated ${scenario.label}`, async () => {
+			const { run } = await import("./cli.js");
+			const { runCIMigrateCLI, runPromoteModeCLI, runSyncBranchProtectionCLI } =
+				await import("./commands/ci-migrate.js");
+
+			const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+				code?: number,
+			) => {
+				throw new Error(`EXIT_${String(code)}`);
+			}) as never);
+
+			expect(() => run([...scenario.argv])).toThrowError(
+				`EXIT_${String(scenario.expectedExit)}`,
+			);
+
+			expect(vi.mocked(runCIMigrateCLI)).not.toHaveBeenCalled();
+			if (scenario.expectedRunner === "sync-branch-protection") {
+				expect(vi.mocked(runSyncBranchProtectionCLI)).toHaveBeenCalledWith(
+					"/tmp/cutover-repo",
+					["/tmp/cutover-repo", "--provider", "circleci", "--json"],
+				);
+				expect(vi.mocked(runPromoteModeCLI)).not.toHaveBeenCalled();
+			} else {
+				expect(vi.mocked(runPromoteModeCLI)).toHaveBeenCalledWith(
+					"/tmp/cutover-repo",
+					["/tmp/cutover-repo", "--provider", "circleci", "--json"],
+				);
+				expect(vi.mocked(runSyncBranchProtectionCLI)).not.toHaveBeenCalled();
+			}
+			expect(exitSpy).toHaveBeenCalledWith(scenario.expectedExit);
+		});
+	}
+
+	it("passes unsupported explicit ci-migrate --action to runtime validation", async () => {
+		const { run } = await import("./cli.js");
+		const { runCIMigrateCLI, runPromoteModeCLI, runSyncBranchProtectionCLI } =
+			await import("./commands/ci-migrate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"ci-migrate",
+				"/tmp/cutover-repo",
+				"--action",
+				"launch",
+				"--dry-run",
+			]),
+		).toThrowError("EXIT_69");
+
+		expect(vi.mocked(runCIMigrateCLI)).toHaveBeenCalledWith(
+			"/tmp/cutover-repo",
+			expect.objectContaining({
+				action: "launch",
+				dryRun: true,
+			}),
+		);
+		expect(vi.mocked(runPromoteModeCLI)).not.toHaveBeenCalled();
+		expect(vi.mocked(runSyncBranchProtectionCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(69);
+	});
+
 	it("does not treat --action value as target dir when a value flag is missing", async () => {
 		const { run } = await import("./cli.js");
 		const { runCIMigrateCLI } = await import("./commands/ci-migrate.js");
@@ -838,6 +957,30 @@ describe("cli command dispatch", () => {
 			commitMode: undefined,
 			force: false,
 		});
+		expect(exitSpy).toHaveBeenCalledWith(69);
+	});
+
+	it("treats empty ci-migrate --action as absent while preserving target dir", async () => {
+		const { run } = await import("./cli.js");
+		const { runCIMigrateCLI } = await import("./commands/ci-migrate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run(["ci-migrate", "/tmp/cutover-repo", "--action", "--dry-run"]),
+		).toThrowError("EXIT_69");
+
+		expect(vi.mocked(runCIMigrateCLI)).toHaveBeenCalledWith(
+			"/tmp/cutover-repo",
+			expect.objectContaining({
+				action: undefined,
+				dryRun: true,
+			}),
+		);
 		expect(exitSpy).toHaveBeenCalledWith(69);
 	});
 

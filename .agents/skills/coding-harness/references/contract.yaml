@@ -44,14 +44,16 @@ non_goals:
   - Managing credential generation or long-term secret storage.
 
 guardrails:
-  - Treat `harness --help` as command truth when docs disagree.
+  - Treat runtime/source output as command truth when docs disagree.
+  - Use `harness next --json` for fresh-agent entry, focused `harness --help` for first-contact truth, `harness commands --json` for full catalog truth, and `harness commands --json --for-agent` for public agent rails.
   - Require explicit approval before destructive or high-impact operations.
   - Redact tokens/secrets in logs and summaries.
   - Fail fast on first blocking validation gate and report exact remediation.
   - Do not claim full setup success without command evidence.
 
 risks:
-  - Treating stale local docs as source of truth instead of `harness --help` and repo files.
+  - Treating stale local docs as source of truth instead of runtime/source output and repo files.
+  - Reporting full capabilities from focused help instead of the machine-readable command catalog.
   - Overwriting user-owned environment configuration.
   - Misreporting capabilities when remote checks were skipped due to missing auth.
   - Skipping deep validation (`pnpm test:deep`) when runtime/artifact behavior changed.

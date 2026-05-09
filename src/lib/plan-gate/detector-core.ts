@@ -4,8 +4,8 @@
  * Detects and validates plan documents.
  */
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { lstatSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
 import {
 	type AcceptanceItem,
 	DEFAULTS,
@@ -28,16 +28,19 @@ function parseFrontmatter(content: string): {
 	frontmatter: PlanFrontmatter;
 	body: string;
 } {
+	const normalizedContent = content.replace(/^\uFEFF/, "");
 	const frontmatter: PlanFrontmatter = {
 		title: "",
 		date: "",
 		type: "feature",
 		status: "draft",
 	};
-	let body = content;
+	let body = normalizedContent;
 
 	// Check for YAML frontmatter
-	const match = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/);
+	const match = normalizedContent.match(
+		/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n([\s\S]*)|$)/,
+	);
 	if (match?.[1]) {
 		const yamlContent = match[1];
 		body = match[2] ?? "";
@@ -56,19 +59,8 @@ function parseFrontmatter(content: string): {
 		const typeMatch = yamlContent.match(/^type:\s*(.+)$/m);
 		if (typeMatch?.[1]) {
 			const typeVal = typeMatch[1].trim().replace(/['"]/g, "");
-			if (
-				[
-					"feat",
-					"feature",
-					"fix",
-					"bugfix",
-					"refactor",
-					"docs",
-					"architecture",
-					"chore",
-				].includes(typeVal)
-			) {
-				frontmatter.type = typeVal as PlanFrontmatter["type"];
+			if (typeVal) {
+				frontmatter.type = typeVal;
 			}
 		}
 
@@ -235,14 +227,47 @@ function daysBetween(date1: string | Date, date2: string | Date): number {
 /**
  * Find plan documents in the directory
  */
-function findPlanDocs(plansPath: string): string[] {
+function findPlanDocs(
+	plansPath: string,
+	visited = new Set<string>(),
+	contentCache = new Map<string, string>(),
+): string[] {
 	const docs: string[] = [];
 
 	try {
+		const rootStats = statSync(plansPath);
+		const visitKey = `${rootStats.dev}:${rootStats.ino}`;
+		if (visited.has(visitKey)) {
+			return docs;
+		}
+		visited.add(visitKey);
+
 		const entries = readdirSync(plansPath);
 		for (const entry of entries) {
-			if (entry.match(/^\d{4}-\d{2}-\d{2}-.*-plan\.md$/)) {
-				docs.push(join(plansPath, entry));
+			const entryPath = join(plansPath, entry);
+			let linkStats: ReturnType<typeof lstatSync>;
+			let stats: ReturnType<typeof statSync>;
+			try {
+				linkStats = lstatSync(entryPath);
+				if (linkStats.isSymbolicLink()) {
+					continue;
+				}
+				stats = statSync(entryPath);
+			} catch {
+				continue;
+			}
+			if (stats.isDirectory()) {
+				docs.push(...findPlanDocs(entryPath, visited, contentCache));
+				continue;
+			}
+			if (stats.isFile() && entry.endsWith(".md")) {
+				const discovery = inspectPlanDoc(entryPath, contentCache);
+				if (
+					discovery.isPlan ||
+					isUnreadablePlanCandidate(entryPath, discovery)
+				) {
+					docs.push(entryPath);
+				}
 			}
 		}
 	} catch {
@@ -253,6 +278,85 @@ function findPlanDocs(plansPath: string): string[] {
 	return docs.sort().reverse();
 }
 
+function inspectPlanDoc(
+	filePath: string,
+	contentCache: Map<string, string>,
+): {
+	isPlan: boolean;
+	isUnreadable: boolean;
+} {
+	try {
+		const content = readFileSync(filePath, "utf-8").replace(/^\uFEFF/, "");
+		contentCache.set(filePath, content);
+		if (!content.match(/^---\s*\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/)) {
+			return { isPlan: false, isUnreadable: false };
+		}
+
+		const { frontmatter, body } = parseFrontmatter(content);
+		if (frontmatter.planId) {
+			return { isPlan: true, isUnreadable: false };
+		}
+
+		const sections = hasRequiredSections(body);
+		return {
+			isPlan:
+				hasPlanMetadata(frontmatter) ||
+				sections.hasImplementationSteps ||
+				sections.hasAcceptanceCriteria,
+			isUnreadable: false,
+		};
+	} catch {
+		return { isPlan: false, isUnreadable: true };
+	}
+}
+
+function isUnreadablePlanCandidate(
+	filePath: string,
+	discovery: { isPlan: boolean; isUnreadable: boolean },
+): boolean {
+	if (!discovery.isUnreadable) {
+		return false;
+	}
+	const filename = basename(filePath);
+	return (
+		/\bJSC-\d+\b/i.test(filename) ||
+		/^\d{4}-\d{2}-\d{2}-.+-plan\.md$/i.test(filename)
+	);
+}
+
+function hasPlanMetadata(frontmatter: PlanFrontmatter): boolean {
+	return Boolean(frontmatter.title || frontmatter.date);
+}
+
+function resolvePlanSearchPaths(plansPath?: string): string[] {
+	if (plansPath) {
+		return [resolve(plansPath)];
+	}
+
+	return [DEFAULTS.PLANS_PATH, DEFAULTS.HARNESS_PLANS_PATH].map((path) =>
+		resolve(path),
+	);
+}
+
+function planArtifactTimestamp(artifact: PlanArtifact): number {
+	const timestamp = Date.parse(artifact.date);
+	return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function isNewerPlanArtifact(
+	candidate: PlanArtifact,
+	current: PlanArtifact,
+): boolean {
+	const candidateTimestamp = planArtifactTimestamp(candidate);
+	const currentTimestamp = planArtifactTimestamp(current);
+
+	if (candidateTimestamp !== currentTimestamp) {
+		return candidateTimestamp > currentTimestamp;
+	}
+
+	return candidate.path > current.path;
+}
+
 /**
  * Load and validate a plan document
  */
@@ -260,10 +364,13 @@ function loadPlanDoc(
 	filePath: string,
 	maxAgeDays: number,
 	requireOrigin: boolean,
-): { artifact?: PlanArtifact; error?: PlanError } {
+	contentCache = new Map<string, string>(),
+): { artifact?: PlanArtifact; errors: PlanError[] } {
+	const errors: PlanError[] = [];
 	try {
 		const stats = statSync(filePath);
-		const content = readFileSync(filePath, "utf-8");
+		const content =
+			contentCache.get(filePath) ?? readFileSync(filePath, "utf-8");
 		const { frontmatter, body } = parseFrontmatter(content);
 		const sections = hasRequiredSections(body);
 		const acceptanceItems = extractAcceptanceItems(body);
@@ -276,29 +383,24 @@ function loadPlanDoc(
 			const daysOld = daysBetween(fileDate, new Date());
 
 			if (daysOld > maxAgeDays) {
-				return {
-					error: {
-						code: "STALE",
-						message: `Plan is ${daysOld} days old (max: ${maxAgeDays})`,
-						path: filePath,
-					},
-				};
+				errors.push({
+					code: "STALE",
+					message: `Plan is ${daysOld} days old (max: ${maxAgeDays})`,
+					path: filePath,
+				});
 			}
 		}
 
 		// Check origin reference
 		if (requireOrigin && !frontmatter.origin) {
-			return {
-				error: {
-					code: "ORIGIN_MISSING",
-					message: "Plan missing origin reference to brainstorm",
-					path: filePath,
-				},
-			};
+			errors.push({
+				code: "ORIGIN_MISSING",
+				message: "Plan missing origin reference to brainstorm",
+				path: filePath,
+			});
 		}
 
-		const filenameParts = filePath.split("/");
-		const filename = filenameParts[filenameParts.length - 1] ?? filePath;
+		const filename = basename(filePath);
 
 		return {
 			artifact: {
@@ -314,14 +416,17 @@ function loadPlanDoc(
 				acceptanceItems,
 				frontmatter,
 			},
+			errors,
 		};
 	} catch (error) {
 		return {
-			error: {
-				code: "SYSTEM_ERROR",
-				message: `Failed to read ${filePath}: ${(error as Error).message}`,
-				path: filePath,
-			},
+			errors: [
+				{
+					code: "SYSTEM_ERROR",
+					message: `Failed to read ${filePath}: ${(error as Error).message}`,
+					path: filePath,
+				},
+			],
 		};
 	}
 }
@@ -330,7 +435,8 @@ function loadPlanDoc(
  * Run plan gate validation
  */
 export function runPlanGate(options: PlanGateOptions): PlanGateResult {
-	const plansPath = resolve(options.plansPath || DEFAULTS.PLANS_PATH);
+	const planSearchPaths = resolvePlanSearchPaths(options.plansPath);
+	const plansPathLabel = planSearchPaths.join(", ");
 	const maxAgeDays =
 		typeof options.maxAge === "number" && Number.isFinite(options.maxAge)
 			? options.maxAge
@@ -344,9 +450,16 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 
 	const artifacts: PlanArtifact[] = [];
 	const errors: PlanError[] = [];
+	const contentCache = new Map<string, string>();
+	const visitedPlanDirs = new Set<string>();
 
 	// Find all plan documents
-	const docs = findPlanDocs(plansPath);
+	const docs = planSearchPaths
+		.flatMap((planPath) =>
+			findPlanDocs(planPath, visitedPlanDirs, contentCache),
+		)
+		.sort()
+		.reverse();
 
 	if (docs.length === 0) {
 		return {
@@ -355,7 +468,7 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 			errors: [
 				{
 					code: "MISSING",
-					message: `No plan documents found in ${plansPath}`,
+					message: `No plan documents found in ${plansPathLabel}`,
 				},
 			],
 		};
@@ -363,11 +476,13 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 
 	// Load and validate each document
 	for (const docPath of docs) {
-		const result = loadPlanDoc(docPath, maxAgeDays, requireOrigin);
-
-		if (result.error) {
-			errors.push(result.error);
-		}
+		const result = loadPlanDoc(
+			docPath,
+			maxAgeDays,
+			requireOrigin,
+			contentCache,
+		);
+		errors.push(...result.errors);
 
 		if (result.artifact) {
 			artifacts.push(result.artifact);
@@ -398,7 +513,11 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 	const artifactsByPlanId = new Map<string, PlanArtifact>();
 	for (const artifact of artifacts) {
 		if (artifact.planId) {
-			artifactsByPlanId.set(normalizePlanId(artifact.planId), artifact);
+			const planId = normalizePlanId(artifact.planId);
+			const current = artifactsByPlanId.get(planId);
+			if (!current || isNewerPlanArtifact(artifact, current)) {
+				artifactsByPlanId.set(planId, artifact);
+			}
 		}
 	}
 
@@ -411,7 +530,7 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 			if (!artifactsByPlanId.has(planId)) {
 				errors.push({
 					code: "PLAN_ID_NOT_FOUND",
-					message: `Referenced plan ID '${planId}' does not exist in ${plansPath}`,
+					message: `Referenced plan ID '${planId}' does not exist in ${plansPathLabel}`,
 				});
 			}
 		}

@@ -26,9 +26,11 @@ import {
 	createTemplateRenderContext,
 	detectPackageManager,
 	getTemplatesForProvider,
+	shouldAutoUpdateTemplate,
 } from "./scaffold.js";
 import {
 	type CIProvider,
+	CODEX_ENVIRONMENT_TEMPLATE_PATH,
 	HARNESS_DIR,
 	type InitErrorOutput,
 	type InitOptions,
@@ -688,6 +690,14 @@ export function executeUpdate(
 				continue;
 			}
 
+			if (
+				entry.path === CODEX_ENVIRONMENT_TEMPLATE_PATH &&
+				!shouldAutoUpdateTemplate(entry.path, targetPath)
+			) {
+				skipped.push(entry.path);
+				continue;
+			}
+
 			// SECURITY: keep rejecting escaping parent-directory hops even when the
 			// tracked path is a safe in-repo symlink such as .mise.toml -> mise/config.toml.
 			try {
@@ -794,6 +804,14 @@ export function executeUpdate(
 
 		// Check if file exists
 		if (!existsSync(targetPath)) {
+			skipped.push(entry.path);
+			continue;
+		}
+
+		if (
+			entry.path === CODEX_ENVIRONMENT_TEMPLATE_PATH &&
+			!shouldAutoUpdateTemplate(entry.path, targetPath)
+		) {
 			skipped.push(entry.path);
 			continue;
 		}

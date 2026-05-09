@@ -309,6 +309,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 ] as const;
 
 export const REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS = [
+	".harness/README.md",
 	".harness/memory/LEARNINGS.md",
 	".harness/knowledge/INDEX.md",
 	".harness/knowledge/cli/knowledge.md",
@@ -340,6 +341,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/check-code-size.mjs",
 	"scripts/lib/changed-files.mjs",
 	"scripts/check-codestyle-parity.sh",
+	"scripts/check-git-common-config.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/setup-git-hooks.js",

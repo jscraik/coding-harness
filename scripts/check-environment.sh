@@ -58,7 +58,7 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/check-public-api-docs.mjs" "scripts/check-code-size.mjs" "scripts/lib/changed-files.mjs" "scripts/check-codestyle-parity.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/setup-git-hooks.js" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/check-semgrep-full.sh" "scripts/semgrep-bootstrap.sh" "scripts/semgrep-pre-push.yml")
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/check-public-api-docs.mjs" "scripts/check-code-size.mjs" "scripts/lib/changed-files.mjs" "scripts/check-codestyle-parity.sh" "scripts/check-git-common-config.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/setup-git-hooks.js" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/check-semgrep-full.sh" "scripts/semgrep-bootstrap.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -67,7 +67,7 @@ fi
 	done
 
 	project_brain_memory_extension_enabled=true
-	required_project_brain_paths=(".harness/memory/LEARNINGS.md" ".harness/knowledge/INDEX.md" ".harness/knowledge/cli/knowledge.md" ".harness/knowledge/cli/hypotheses.md" ".harness/knowledge/cli/rules.md" ".harness/knowledge/ci/knowledge.md" ".harness/knowledge/ci/hypotheses.md" ".harness/knowledge/ci/rules.md" ".harness/knowledge/governance/knowledge.md" ".harness/knowledge/governance/hypotheses.md" ".harness/knowledge/governance/rules.md" ".harness/knowledge/tooling/knowledge.md" ".harness/knowledge/tooling/hypotheses.md" ".harness/knowledge/tooling/rules.md" ".harness/knowledge/tooling/codex-learn-summary.md" ".harness/decisions" ".harness/quality/criteria.md" ".harness/review-log.md")
+	required_project_brain_paths=(".harness/README.md" ".harness/memory/LEARNINGS.md" ".harness/knowledge/INDEX.md" ".harness/knowledge/cli/knowledge.md" ".harness/knowledge/cli/hypotheses.md" ".harness/knowledge/cli/rules.md" ".harness/knowledge/ci/knowledge.md" ".harness/knowledge/ci/hypotheses.md" ".harness/knowledge/ci/rules.md" ".harness/knowledge/governance/knowledge.md" ".harness/knowledge/governance/hypotheses.md" ".harness/knowledge/governance/rules.md" ".harness/knowledge/tooling/knowledge.md" ".harness/knowledge/tooling/hypotheses.md" ".harness/knowledge/tooling/rules.md" ".harness/knowledge/tooling/codex-learn-summary.md" ".harness/decisions" ".harness/quality/criteria.md" ".harness/review-log.md")
 if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
 		for required_path in "${required_project_brain_paths[@]}"; do
 			if [[ ! -e "$REPO_ROOT/${required_path}" ]]; then

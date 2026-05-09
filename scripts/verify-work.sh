@@ -117,10 +117,10 @@ preflight_bins_csv() {
 # preflight_paths_csv returns a comma-separated list of repository paths required for preflight verification for the given project stack.
 preflight_paths_csv() {
 	case "$1" in
-		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		py) echo 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		rust) echo 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		repo) echo 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		py) echo 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		rust) echo 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		repo) echo 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
 		*) echo "[verify-work] unknown stack: $1" >&2; return 2 ;;
 	esac
 }
@@ -1098,6 +1098,10 @@ fi
 
 cd "$repo_root"
 log_info "[verify-work] repo root: $repo_root"
+
+if [[ -x "$repo_root/scripts/check-git-common-config.sh" ]]; then
+	bash "$repo_root/scripts/check-git-common-config.sh"
+fi
 
 current_git_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)"
 current_repo_name="$(basename "$current_git_root")"

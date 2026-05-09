@@ -124,6 +124,10 @@ fi
 
 cd "$REPO_ROOT"
 
+if [[ -x "$REPO_ROOT/scripts/check-git-common-config.sh" ]]; then
+	"$REPO_ROOT/scripts/check-git-common-config.sh"
+fi
+
 git rev-parse --show-toplevel >/dev/null
 
 if git show-ref --verify --quiet "refs/heads/${branch_name}"; then
