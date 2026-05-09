@@ -501,6 +501,54 @@ describe("plan-gate command", () => {
 			}
 		});
 
+		it("reports unreadable date-prefixed plan markdown as a system error", () => {
+			if (
+				process.platform === "win32" ||
+				(typeof process.geteuid === "function" && process.geteuid() === 0)
+			) {
+				return;
+			}
+
+			const unreadablePath = createTestPlan(
+				"Foo",
+				"2026-05-09",
+				"feature",
+				"draft",
+				[
+					"## Implementation Steps",
+					"",
+					"- Keep date-prefixed plans visible.",
+					"",
+					"## Acceptance Criteria",
+					"",
+					"- [ ] Unreadable date-prefixed plans fail loudly.",
+				].join("\n"),
+				testDir,
+				undefined,
+				"feature-foo",
+			);
+
+			chmodSync(unreadablePath, 0);
+			try {
+				const result = withCwd(testDir, () =>
+					runPlanGate({
+						requirePlanId: true,
+						planIds: ["feature-foo"],
+					}),
+				);
+
+				expect(result.passed).toBe(false);
+				expect(
+					result.errors.some(
+						(error) =>
+							error.code === "SYSTEM_ERROR" && error.path === unreadablePath,
+					),
+				).toBe(true);
+			} finally {
+				chmodSync(unreadablePath, 0o600);
+			}
+		});
+
 		it("preserves validation errors from discovered plans when a plan ID is selected", () => {
 			createValidHarnessPlan(
 				"JSC-246-account-settings.md",

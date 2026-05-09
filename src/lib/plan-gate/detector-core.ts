@@ -314,7 +314,14 @@ function isUnreadablePlanCandidate(
 	filePath: string,
 	discovery: { isPlan: boolean; isUnreadable: boolean },
 ): boolean {
-	return discovery.isUnreadable && /\bJSC-\d+\b/i.test(basename(filePath));
+	if (!discovery.isUnreadable) {
+		return false;
+	}
+	const filename = basename(filePath);
+	return (
+		/\bJSC-\d+\b/i.test(filename) ||
+		/^\d{4}-\d{2}-\d{2}-.+-plan\.md$/i.test(filename)
+	);
 }
 
 function hasPlanMetadata(frontmatter: PlanFrontmatter): boolean {

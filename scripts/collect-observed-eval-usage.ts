@@ -406,15 +406,17 @@ function newestChronicleFrame(
 	screenRecordingDir: string,
 ): { path: string; mtimeMs: number } | null {
 	if (!existsSync(screenRecordingDir)) return null;
-	return (
-		readdirSync(screenRecordingDir)
-			.filter((entry) => entry.endsWith("-latest.jpg"))
-			.map((entry) => {
-				const path = resolve(screenRecordingDir, entry);
-				return { path, mtimeMs: statSync(path).mtimeMs };
-			})
-			.sort((left, right) => right.mtimeMs - left.mtimeMs)[0] ?? null
-	);
+	const frames: { path: string; mtimeMs: number }[] = [];
+	for (const entry of readdirSync(screenRecordingDir)) {
+		if (!entry.endsWith("-latest.jpg")) continue;
+		const path = resolve(screenRecordingDir, entry);
+		try {
+			frames.push({ path, mtimeMs: statSync(path).mtimeMs });
+		} catch {
+			// Chronicle frames are optional evidence and can rotate during discovery.
+		}
+	}
+	return frames.sort((left, right) => right.mtimeMs - left.mtimeMs)[0] ?? null;
 }
 
 function main(): void {

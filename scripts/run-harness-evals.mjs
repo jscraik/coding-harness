@@ -2872,9 +2872,13 @@ function effectiveTrackedMetrics(registryValue, scenario) {
 }
 
 function effectiveTrialPolicy(registryValue, scenario) {
-	return (
-		scenario?.trialPolicy ?? registryValue.evaluationContract?.trialPolicy ?? {}
-	);
+	const contractPolicy = registryValue.evaluationContract?.trialPolicy ?? {};
+	const scenarioPolicy = scenario?.trialPolicy ?? {};
+	return {
+		...contractPolicy,
+		...scenarioPolicy,
+		report: scenarioPolicy.report ?? contractPolicy.report,
+	};
 }
 
 function effectiveMetricTypes(metrics) {
