@@ -5,11 +5,12 @@ artifact_type: he-eval-report
 canonical_slug: jsc-198-flow-ops-closure-evidence-reconciliation
 title: JSC-198 Flow Ops Closure Evidence Reconciliation Eval
 harness_stage: he-eval-report
-status: draft
+status: final
 date: 2026-05-09
 traceability_required: true
 origin: .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md
 linear_issue: JSC-198
+linear_status: blocked
 linear_milestone: Control loop hardening and flow telemetry
 ---
 
@@ -17,11 +18,12 @@ linear_milestone: Control loop hardening and flow telemetry
 
 ## Executive Eval Summary
 
-Status: partial
+Status: complete_for_recommendation
 Linear Completion Recommendation: Blocked
-Primary Blockers: JSC-198 remains Todo in Linear; no JSC-198 PR/check closure
-evidence exists yet; human acceptance for external mutation is not recorded.
-Confidence: high for IU-198-003 proof, medium for closure posture.
+Primary Blockers: JSC-198 remains Todo in Linear; PR #235 is draft and blocked
+by stale/failed PR-template pipeline evidence plus pending CodeRabbit review;
+human acceptance for external mutation is not recorded.
+Confidence: high for IU-198-003 proof and IU-198-004 recommendation posture.
 
 ## Evaluated Slice
 
@@ -43,6 +45,17 @@ Related ADRs: .harness/core/execution-invariants.md,
 Related Core Invariants: deterministic evidence, no prose-only closure,
 external mutation only after human review.
 
+## Linear Work Item Contract
+
+Linear Issue: JSC-198
+Linear Status: blocked
+Linear Milestone: Control loop hardening and flow telemetry
+Recommended Action: leave JSC-198 open; do not transition, comment, or close from
+this eval alone.
+Blocking Evidence: PR #235 remains draft, PR-template/pr-pipeline evidence is not
+current-successful, CodeRabbit is pending, and external human acceptance is not
+recorded.
+
 ## Linear Definition of Done Status
 
 Artifact Path:
@@ -62,9 +75,11 @@ Linear Status Recommendation: leave JSC-198 open; do not transition or comment
 from this artifact alone.
 Proof Artifact Links:
 .harness/evals/coding-harness-jsc-198-flow-ops-closure-evidence-reconciliation-eval.md
-Missing Identifiers: no PR exists yet for the JSC-198 branch.
-Traceability Repair: create a PR for the branch before using PR/check evidence
-as JSC-198 closure proof.
+Missing Identifiers: external human acceptance and independent CodeRabbit
+completion evidence are not recorded.
+Traceability Repair: use PR #235 as the draft branch evidence, but do not use it
+as JSC-198 closure proof until the PR leaves draft, required checks are current,
+and independent review is complete.
 
 ## Source Artifact Trace
 
@@ -81,6 +96,12 @@ Other Source Artifacts:
 .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-inventory.md,
 .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md
 
+## Linear / Spec / Plan / PR Traceability
+
+| Linear issue | Source acceptance IDs | Plan units | Acceptance IDs | PR evidence |
+| --- | --- | --- | --- | --- |
+| JSC-198 | SA-198-001, SA-198-003, SA-198-006, SA-198-007, SA-198-008, SA-198-009, SA-198-010, SA-198-011, SA-198-012 | IU-198-001, IU-198-002, IU-198-003, IU-198-004 | SA-198-001, SA-198-003, SA-198-006, SA-198-007, SA-198-008, SA-198-009, SA-198-010, SA-198-011, SA-198-012 | Draft PR #235; not closure proof until current required checks and independent review pass. |
+
 ## Planned Proof Check
 
 Promised Proof From Source Artifacts: IU-198-003 must run the classifier
@@ -90,8 +111,8 @@ Proof Planned Before Implementation: yes
 Proof Produced: live Linear reads for JSC-198/JSC-199/JSC-200/JSC-201; GitHub
 PR reads for #232/#234; GitHub check-run reads for both PR head SHAs; direct
 classifier execution with `pnpm exec tsx`.
-Proof Missing: a PR for the current JSC-198 branch, external human acceptance,
-and final JSC-198 done/intake gate recommendation.
+Proof Missing: external human acceptance, CodeRabbit completion evidence, and
+current successful PR-template/pr-pipeline evidence for PR #235.
 Interpretation: IU-198-003 is proven enough to proceed to human-reviewed
 recommendation work, but not enough to close Linear.
 Blocks Closure: yes
@@ -178,8 +199,8 @@ attempted.
 Saturation / Maintenance Signal: sufficient for IU-198-003; insufficient for
 Linear completion.
 Blocks Completion: no
-Required Action: complete human review before any Linear closure or gate
-recommendation.
+Required Action: keep recommendations local and advisory for external systems;
+only read-only evidence checks should become executable in the next gate surface.
 
 ## Side-Effect Authorization
 
@@ -287,8 +308,8 @@ Produced:
 .harness/evals/coding-harness-jsc-198-flow-ops-closure-evidence-reconciliation-eval.md
 Required: focused classifier tests, live-source evidence artifact,
 no-mutation proof, and `bash scripts/validate-codestyle.sh`.
-Missing: human accept/challenge/rework steering and PR/check evidence for the
-current JSC-198 branch.
+Missing: human accept/challenge/rework steering, CodeRabbit completion, and
+current successful PR-template/pr-pipeline evidence for PR #235.
 Planned Before Implementation: yes
 Blocks Completion: yes
 Attach or Link Back to Linear: not yet; no Linear comment mutation authorized.
@@ -321,13 +342,54 @@ Status Update Needed: no external update without explicit human approval.
 Proof Artifacts to Attach or Link:
 .harness/evals/coding-harness-jsc-198-flow-ops-closure-evidence-reconciliation-eval.md
 
+## IU-198-004 Gate Recommendation
+
+Classification: Human-Reviewed Recommendation
+Decision: make read-only evidence checks executable; keep external state changes
+advisory.
+
+Executable intake-gate candidates:
+
+- Require selected-slice resolution from `.harness/linear` before admitting the
+  next HE implementation unit.
+- Require a clean or explicitly owned dirty worktree before phase admission.
+- Require the previous implementation unit's spec, plan, proof artifact, and
+  validation evidence before admitting the next unit.
+- Fail closed to human triage when live Linear evidence cannot be refreshed.
+
+Executable done-gate candidates:
+
+- Require a valid eval artifact when implementation evidence exists.
+- Require required PR checks to be completed and successful, tied to the
+  evaluated PR head SHA or merge SHA.
+- Block closure on pending, missing, failing, cancelled, or wrong-SHA checks.
+- Block closure on unresolved independent review findings.
+- Require recorded human acceptance before closure-sensitive external mutation.
+
+Advisory-only behavior:
+
+- Linear status transitions, comments, labels, custom fields, or workflow
+  semantics.
+- CircleCI reruns, required-check policy changes, or GitHub check mutation.
+- Automatic PR readiness, merge, review-thread resolution, or CodeRabbit waiver.
+- Portfolio-level telemetry dashboards, broad lifecycle automation, or closure
+  inference across umbrella issues.
+- Using the classifier to skip eval, review, or human acceptance requirements.
+
+Rationale: the classifier is proven enough to prevent prose-only closure and
+stale evidence leaks, but it is not yet an authority for external workflow
+mutation. The executable surface should therefore be local, deterministic, and
+read-only until a separate human-approved policy stage promotes any external
+effect.
+
 ## Follow-Up Work
 
-Classification: Do Not Create
+Classification: Use Existing PR / Human Review
 Target Linear Project: coding-harness
 Parent Issue or Milestone: JSC-198
-Reason: the next planned phase is IU-198-004 recommendation work, not a new
-issue.
+Reason: IU-198-004 recommendation work is now recorded here; the remaining work
+is human review of which executable local gates should be implemented in a
+separate patch.
 Priority: n.a.
 Labels: n.a.
 Agent-Safe or Human Review Required: human review required before external
@@ -342,21 +404,24 @@ change repo-wide architecture or governance policy.
 
 ## Evidence & Traceability Matrix
 
-Conclusion: IU-198-003 live proof is useful and closure-blocking.
+Conclusion: IU-198-003 live proof is useful and IU-198-004 recommends a bounded
+local gate split, but closure remains blocked.
 Fact: Linear JSC-198 is Todo; JSC-199 is In Progress; JSC-200 and JSC-201 are
 Todo.
 Interpretation: Flow Ops remains an open parent and should not be closed from
 classifier existence alone.
 Assumption: the Linear connector output is current for this execution window.
 Evidence: Linear `get_issue` results for JSC-198, JSC-199, JSC-200, JSC-201;
-`gh pr view 232`; `gh pr view 234`; GitHub check-run API reads; local
-classifier execution.
+`gh pr view 232`; `gh pr view 234`; `gh pr view 235`; GitHub check-run API
+reads; local classifier execution; PR-template validation of PR #235 body.
 Affected Files/Modules: src/lib/flow-ops/closure-evidence.ts,
 src/lib/flow-ops/closure-evidence.test.ts,
 .harness/evals/coding-harness-jsc-198-flow-ops-closure-evidence-reconciliation-eval.md
 Command or Inspection Method: Linear connector reads, `gh pr view`, `gh api`,
 `pnpm exec tsx`, `pnpm typecheck`, `pnpm test -- src/lib/flow-ops/closure-evidence.test.ts`.
-Confidence: high for proof, medium for closure recommendation.
+Confidence: high for proof and recommendation split; medium for final closure
+readiness because independent review and current PR-template CI evidence remain
+external blockers.
 Operational Impact: next agents can see that live evidence is classifiable, but
 external closure remains blocked.
 Blocks Completion: yes
