@@ -142,5 +142,10 @@ export function renderNewTaskScript(): string {
 	const scriptPath = fileURLToPath(
 		new URL("../../../scripts/new-task.sh", import.meta.url),
 	);
-	return readFileSync(scriptPath, "utf-8");
+	return readFileSync(scriptPath, "utf-8")
+		.replace(
+			"Branch prefix (default: codex)",
+			"Branch prefix (default: jscraik/feature)",
+		)
+		.replace('branch_prefix="codex"', 'branch_prefix="jscraik/feature"');
 }

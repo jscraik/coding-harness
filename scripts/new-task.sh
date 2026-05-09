@@ -23,7 +23,7 @@ USAGE
 }
 
 base_ref="main"
-branch_prefix="jscraik/feature"
+branch_prefix="codex"
 worktree_path=""
 bootstrap=0
 slug=""
