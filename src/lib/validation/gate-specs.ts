@@ -345,6 +345,13 @@ function assertGateModeOrderConsistency(
 				);
 			}
 		}
+		for (const orderKey of Object.keys(gate.order) as ValidationGateMode[]) {
+			if (!gate.modes.includes(orderKey)) {
+				throw new Error(
+					`Validation gate "${gate.gateId}" has order entry for "${orderKey}" but mode is not declared.`,
+				);
+			}
+		}
 	}
 }
 
