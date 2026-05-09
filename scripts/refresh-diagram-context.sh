@@ -303,12 +303,31 @@ if (diagramFiles.includes("class.mmd")) {
   if (!validateContractEdge.test(classContent)) {
     classContent = `${classContent.trimEnd()}\n  ${loaderClassId} --> ${validatorClassId} : validateContract\n`;
   }
-  writeFileSync(classPath, ensureTrailingNewline(classContent.trimEnd()));
+	writeFileSync(classPath, ensureTrailingNewline(classContent.trimEnd()));
+}
+
+if (diagramFiles.includes("c4context.mmd")) {
+  const c4ContextPath = join(diagramsDir, "c4context.mmd");
+  let c4ContextContent = readFileSync(c4ContextPath, "utf8");
+  c4ContextContent = c4ContextContent
+    .replace(
+      /title "System Context — .*"/,
+      'title "System Context — Coding Harness"',
+    )
+    .replace(
+      /System\(mainSystem, "[^"]+", "[^"]+"\)/,
+      'System(mainSystem, "Coding Harness", "Control plane for agentic development")',
+    )
+    .replace(
+      /System_Ext\(ext_1, "Version Control", "[^"]+"\)/,
+      'System_Ext(ext_1, "Version Control", "@octokit/rest, @octokit/request-error, @octokit/plugin-retry, @octokit/plugin-throttling")',
+    );
+  writeFileSync(c4ContextPath, ensureTrailingNewline(c4ContextContent.trimEnd()));
 }
 
 for (const file of diagramFiles) {
-  if (file === "architecture.mmd" || file === "dependency.mmd") {
-    continue;
+	if (file === "architecture.mmd" || file === "dependency.mmd") {
+		continue;
   }
   const filePath = join(diagramsDir, file);
   writeFileSync(filePath, ensureTrailingNewline(readFileSync(filePath, "utf8").trimEnd()));
