@@ -25,6 +25,7 @@ type ContributingTemplateOptions = {
 };
 
 type PullRequestTemplateOptions = {
+	agentBranchPrefix: string;
 	checkCommand: string;
 	codestyleCommand: string;
 	memoryValidateCommand: string;
@@ -302,10 +303,15 @@ ${options.requiredChecksList}
 }
 
 /**
- * Render the downstream GitHub pull request template scaffold.
+ * Render the GitHub pull request template used for downstream repositories.
  *
- * @param options - Commands to embed in the verification checklist.
- * @returns Markdown contents for `.github/PULL_REQUEST_TEMPLATE.md`.
+ * Embeds branch-name guidance and verification commands from `options` into
+ * a checklist and testing sections suitable for `.github/PULL_REQUEST_TEMPLATE.md`.
+ *
+ * @param options - Template options including `agentBranchPrefix` (branch-name policy)
+ *   and the verification commands `codestyleCommand`, `checkCommand`, and `memoryValidateCommand`
+ *   to insert into the checklist and testing sections.
+ * @returns The Markdown content for `.github/PULL_REQUEST_TEMPLATE.md`
  */
 export function renderPullRequestTemplate(
 	options: PullRequestTemplateOptions,
@@ -327,7 +333,7 @@ export function renderPullRequestTemplate(
 ## Checklist
 
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
-- [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
+- [ ] Branch name follows policy (\`${options.agentBranchPrefix}/*\` for agent-created branches).
 - [ ] Required local gates run: \`${options.codestyleCommand}\`, \`${options.checkCommand}\`, \`${options.memoryValidateCommand}\`.
 ${codeRabbitChecklist}- [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
