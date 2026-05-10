@@ -71,6 +71,8 @@ Notes:
 - `scripts/check-git-common-config.sh` is a required worktree-safety guard: shared non-bare `.git/config` must not contain `core.worktree`; use per-worktree config for worktree-local values.
 - After bootstrap, run `bash scripts/verify-work.sh --fast` before pushing.
 - Git hooks must be installed through `make hooks`, `make setup`, or `node scripts/setup-git-hooks.js`; `scripts/check-environment.sh` fails generated `prek` `pre-commit`, `pre-push`, or `commit-msg` shims that do not export repo-local `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"`.
+- Environment-only pushes that change only `.codex/environments/environment.toml` may take the narrow `scripts/check-environment.sh` pre-push lane; all other pushes must keep the full `make hooks-pre-push` governance suite.
+- The full pre-push suite must pass its branch changed-file list into `scripts/check-diagram-freshness.sh` so diagram checks do not treat unrelated local worktree dirt as push scope.
 
 ## Quality Checks
 - During iteration, run the narrowest check first, then `bash scripts/validate-codestyle.sh --fast`.

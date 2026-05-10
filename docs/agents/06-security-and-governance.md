@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-09
+last_validated: 2026-05-10
 ---
 
 # Security and governance
@@ -166,7 +166,7 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, changed-code docstring and size gates, staged `gitleaks`, staged-doc `vale`, related tests) |
 | `commit-msg` | Validates conventional commit format, reminds about PR template                                                                                                            |
-| `pre-push`   | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`)  |
+| `pre-push`   | Runs `make hooks-pre-push` (`docs-gate --mode required`, push-scoped diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`); environment-only pushes that change only `.codex/environments/environment.toml` run `check-environment` only, and the branch diff includes type changes so file-mode or symlink changes still trigger the full lane |
 
 The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when present so approved fixture/example exceptions are consistent across local hooks, manual scans, and downstream scaffold expectations.
 `hooks-commit-msg` remains a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`; use that wrapper for deterministic commit-policy verification and cross-repo governance checks.

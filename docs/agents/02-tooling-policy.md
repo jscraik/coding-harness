@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-09
+last_validated: 2026-05-10
 ---
 
 # Tooling policy
@@ -100,7 +100,8 @@ The local hook contract is intentionally split by drag profile:
 - `scripts/check-environment.sh` must fail generated `prek` hook drift when installed `pre-commit`, `pre-push`, or `commit-msg` shims lack the repo-local `PREK_HOME` patch. Repair drift with `node scripts/setup-git-hooks.js` or `make hooks`, not raw `prek install`.
 - `pre-commit` stays fast and now adds staged `gitleaks`, staged-doc `vale`, and `vitest related` alongside `lint`, `docs:lint`, and `typecheck`.
 - The staged secret scan should use the repo-root `.gitleaks.toml` when present so fixture/example allow lists live in version control instead of hidden local defaults.
-- `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
+- `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build`. The sole exception is an environment-only push where the branch diff contains only `.codex/environments/environment.toml`; that path runs `scripts/check-environment.sh` and exits before broader repo checks so generated environment updates are not blocked by unrelated branch-local drift. The branch diff must include type changes (`--diff-filter=ACMRDT`) so file-mode or symlink changes cannot bypass the full lane.
+- In the full pre-push lane, `make hooks-pre-push` must pass the branch diff into `scripts/check-diagram-freshness.sh --changed-files <path>`, even when that branch-diff file is empty. The diagram freshness check may still derive branch and local worktree changes when run directly, but hook callers should provide the push-scoped file list so temporary worktree dirt cannot force unrelated architecture artifact refreshes.
 - `hooks-commit-msg` is the canonical wrapper target for commit-message policy checks. Keep it available even though `prek.toml` installs only `pre-commit` and `pre-push`.
 - The Semgrep lane is path-filtered to changed implementation files under `src/**` and uses the local ruleset at `scripts/semgrep-pre-push.yml` to avoid turning pre-push into a full repo scan.
 - `scripts/check-semgrep-changed.sh` pins the Semgrep version (`semgrep==1.153.1`) for changed-file hooks, and `scripts/check-semgrep-full.sh` reuses the same pinned runtime for full-repository CI scans. The CircleCI `security-scan` job calls `bash scripts/check-semgrep-changed.sh --all` directly. Keep both scripts, the `pnpm semgrep:changed` script, and the CircleCI `security-scan` invocation aligned when changing the Semgrep version.
