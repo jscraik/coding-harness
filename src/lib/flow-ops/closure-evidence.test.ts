@@ -310,6 +310,32 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["linear:todo", "implementation:none"]);
 	});
 
+	it("keeps todo work with only an absent eval placeholder in not started", () => {
+		const result = classifyClosureEvidence({
+			id: "jsc-200-not-started-with-eval-placeholder",
+			scope: "selected",
+			linear: {
+				issueKey: "JSC-200",
+				available: true,
+				status: "todo",
+			},
+			requiredChecks: [],
+			evalArtifact: {
+				path: ".harness/evals/coding-harness-jsc-200-eval.md",
+				present: false,
+				valid: false,
+			},
+			review: {
+				humanAcceptanceRequired: false,
+				humanAccepted: false,
+				blockingReviewFinding: false,
+			},
+		});
+
+		expect(result.classification).toBe("not_started");
+		expect(result.reasons).toEqual(["linear:todo", "implementation:none"]);
+	});
+
 	it("classifies merged checked work on done Linear as acceptance-ready", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({

@@ -110,10 +110,12 @@ function isLinearActive(linear: ClosureLinearEvidence): boolean {
 /**
  * Determines whether the record contains implementation evidence.
  *
- * @returns `true` if the record includes a pull request or an eval artifact, `false` otherwise.
+ * @returns `true` if the record includes a pull request or a present eval artifact, `false` otherwise.
  */
 function hasImplementationEvidence(record: ClosureEvidenceRecord): boolean {
-	return record.pullRequest !== undefined || record.evalArtifact !== undefined;
+	return (
+		record.pullRequest !== undefined || record.evalArtifact?.present === true
+	);
 }
 
 /**
