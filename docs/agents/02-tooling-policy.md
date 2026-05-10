@@ -74,7 +74,7 @@ Harness-managed repositories should treat this CLI surface as required:
 - `wsearch` for Wikidata search
 - `make`
 
-Repo-managed pins should live in `.mise.toml` where the tool can be managed there. Externally managed CLIs must still be present on `PATH`, and missing commands should block environment readiness rather than degrade silently.
+Repo-managed pins should live in `.mise.toml` where the tool can be managed there. Externally managed CLIs must still be present on `PATH`, and missing commands should block environment readiness rather than degrade silently. Readiness scripts may prepend known user-writable and platform-standard tool directories, including the mise shims directory, Homebrew bins, `/usr/sbin`, and `/sbin`, before validation so non-login agent shells can find already-installed tooling without installing or mutating global state.
 The root `Makefile` is also part of the enforced baseline and must retain the harness contract targets required by `scripts/check-environment.sh`.
 `CODESTYLE.md` and `scripts/validate-codestyle.sh` are part of the same baseline. A harness-managed repo should fail readiness if either file is missing or if the validator no longer maps cleanly to repo-defined scripts.
 `scripts/check-codestyle-parity.sh` is part of the same governed surface and must fail closed when `codestyle/` or `codestyle/CHECKSUMS.sha256` drift.

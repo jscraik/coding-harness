@@ -26,7 +26,7 @@ This repository follows conservative defaults:
 - Minimal command surface in docs and scripts.
 - Explicitly avoid ad hoc global installs and hidden mutation.
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
-- Codex environment setup should use non-destructive tool resolution (`pnpm` direct, Homebrew path fallback, then `corepack`) and fail closed on missing baseline tools instead of mutating global installs implicitly.
+- Codex environment setup should use non-destructive tool resolution (`pnpm` direct, Homebrew path fallback, then `corepack`) and fail closed on missing baseline tools instead of mutating global installs implicitly. Local readiness scripts may prepend known tool directories such as mise shims, Homebrew bins, `/usr/sbin`, and `/sbin` so non-login shells can find existing tools, but they must not install missing tools as a side effect.
 - Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
 - Treat `scripts/check-codestyle-parity.sh` as the required code-style integrity gate for `codestyle/` and `codestyle/CHECKSUMS.sha256`; parity drift must block readiness.
 - Repo-specific exception: this repository may satisfy that `CODESTYLE.md` path with a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`, but downstream harness-managed repos should keep a real repo-local `CODESTYLE.md` copy.

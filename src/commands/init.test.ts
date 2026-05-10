@@ -2020,6 +2020,10 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain(
 				"echo \"Error: required binary 'mise' is not installed or not on PATH\"",
 			);
+			expect(environmentCheck).toContain("prepend_standard_tool_paths()");
+			expect(environmentCheck).toContain("CHECK_ENVIRONMENT_REEXECED");
+			expect(environmentCheck).toContain('"/opt/homebrew/bin"');
+			expect(environmentCheck).toContain('"/usr/sbin"');
 			expect(environmentCheck).toContain(
 				'eval "$(mise --cd "$REPO_ROOT" activate bash)"',
 			);
@@ -2048,6 +2052,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"Research|tool"');
 			expect(environmentCheck).toContain('MAKEFILE_PATH="$REPO_ROOT/Makefile"');
 			expect(environmentCheck).toContain("required_support_files=(");
+			expect(environmentCheck).toContain("prepend_standard_tool_paths()");
+			expect(environmentCheck).toContain('"/opt/homebrew/bin"');
+			expect(environmentCheck).toContain('"/usr/sbin"');
 			expect(environmentCheck).toContain('"scripts/verify-work.sh"');
 			expect(environmentCheck).toContain(
 				'"scripts/codex-preflight-local-memory-legacy.sh"',
