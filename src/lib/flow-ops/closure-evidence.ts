@@ -79,7 +79,7 @@ export interface ClosureEvidenceRecord {
 	pullRequest?: ClosurePullRequestEvidence;
 	/** Required checks for the pull request. */
 	requiredChecks: readonly ClosureRequiredCheckEvidence[];
-	/** Whether this slice declares eval evidence as a closure requirement. */
+	/** Whether this slice declares eval proof as a closure requirement. */
 	evalRequired?: boolean;
 	/** Eval artifact evidence when the slice defines an eval. */
 	evalArtifact?: ClosureEvalEvidence;
@@ -212,13 +212,23 @@ function hasValidEval(record: ClosureEvidenceRecord): boolean {
 }
 
 /**
- * Determines whether the record must provide valid eval evidence before closure.
+ * Determines whether the record's slice requires eval evidence before closure.
  *
  * @param record - The closure evidence record to inspect
- * @returns `true` unless the record explicitly declares eval evidence optional
+ * @returns `false` only when the record explicitly marks eval proof optional; `true` otherwise
  */
 function requiresEval(record: ClosureEvidenceRecord): boolean {
 	return record.evalRequired !== false;
+}
+
+/**
+ * Determines whether eval evidence is satisfied for this closure record.
+ *
+ * @param record - The closure evidence record to inspect
+ * @returns `true` when eval is optional or when a present valid eval artifact exists
+ */
+function evalRequirementSatisfied(record: ClosureEvidenceRecord): boolean {
+	return !requiresEval(record) || hasValidEval(record);
 }
 
 /**
@@ -274,32 +284,30 @@ export function classifyClosureEvidence(
 		};
 	}
 
-	if (record.pullRequest) {
-		if (hasMissingRequiredChecks(record)) {
-			return {
-				classification: "blocked_failing_check",
-				nextAction:
-					"Clear failing, missing, or incomplete required checks before closure.",
-				reasons: ["checks:missing"],
-			};
-		}
+	if (hasMissingRequiredChecks(record)) {
+		return {
+			classification: "blocked_failing_check",
+			nextAction:
+				"Clear failing, missing, or incomplete required checks before closure.",
+			reasons: ["checks:missing"],
+		};
+	}
 
-		if (hasFailingRequiredCheck(record)) {
-			return {
-				classification: "blocked_failing_check",
-				nextAction:
-					"Clear failing, missing, or incomplete required checks before closure.",
-				reasons: ["checks:failing"],
-			};
-		}
+	if (hasFailingRequiredCheck(record)) {
+		return {
+			classification: "blocked_failing_check",
+			nextAction:
+				"Clear failing, missing, or incomplete required checks before closure.",
+			reasons: ["checks:failing"],
+		};
+	}
 
-		if (hasWrongShaCheck(record)) {
-			return {
-				classification: "needs_human_triage",
-				nextAction: "Refresh check evidence tied to the evaluated PR SHA.",
-				reasons: ["checks:wrong-sha"],
-			};
-		}
+	if (hasWrongShaCheck(record)) {
+		return {
+			classification: "needs_human_triage",
+			nextAction: "Refresh check evidence tied to the evaluated PR SHA.",
+			reasons: ["checks:wrong-sha"],
+		};
 	}
 
 	if (record.review.humanAcceptanceRequired && !record.review.humanAccepted) {
@@ -313,7 +321,7 @@ export function classifyClosureEvidence(
 	if (
 		record.pullRequest?.state === "merged" &&
 		allRequiredChecksPassed(record) &&
-		(!requiresEval(record) || hasValidEval(record))
+		evalRequirementSatisfied(record)
 	) {
 		const evalReason = requiresEval(record)
 			? "eval:valid"

@@ -21,6 +21,7 @@ This repository is a TypeScript control plane for agentic development and review
 - `harness.contract.json` records this split in `ciOwnership`: CircleCI is the primary PR gate, CodeRabbit is the independent review check, Semgrep Cloud is the independent external security check, and GitHub Actions fallback/release workflows must not become automatic PR gates without an intentional contract migration.
 - Tag-triggered release publishing must install `ripgrep` (`rg`) before `pnpm check` because `docs:ubiquitous:guard` depends on it in GitHub-hosted runners.
 - Release packaging, Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger a pre-push diagram-context refresh must commit the refreshed architecture context with the docs-gate-required governance surfaces.
+- Generated Codex environment action changes must keep setup PATH bootstrapping, detached-worktree branch attachment, and script-derived test/eval actions synchronized with the tooling and security governance docs.
 - Release readiness updates to governed north-star status surfaces must keep `docs/roadmap/agent-first-status.md` and the matching `harness.contract.json` `lastReviewedAt` entry synchronized.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
@@ -71,6 +72,8 @@ Notes:
 - After bootstrap, run `bash scripts/verify-work.sh --fast` before pushing.
 - Git hooks must be installed through `make hooks`, `make setup`, or `node scripts/setup-git-hooks.js`; `scripts/check-environment.sh` fails generated `prek` `pre-commit`, `pre-push`, or `commit-msg` shims that do not export repo-local `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"`.
 - Readiness scripts must preserve caller-provided `PATH` precedence and append standard tool directories as fallbacks when `PATH` is already set, so fixture shims and repo-local wrappers are not shadowed by global tools during validation.
+- Environment-only pushes that change only `.codex/environments/environment.toml` may take the narrow `scripts/check-environment.sh` pre-push lane; all other pushes must keep the full `make hooks-pre-push` governance suite.
+- The full pre-push suite must pass its branch changed-file list into `scripts/check-diagram-freshness.sh` so diagram checks do not treat unrelated local worktree dirt as push scope.
 
 ## Quality Checks
 - During iteration, run the narrowest check first, then `bash scripts/validate-codestyle.sh --fast`.
