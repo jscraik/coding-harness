@@ -43,7 +43,13 @@ resolve_package_spec() {
 			packageJson.dependencies?.[packageName] ??
 			packageJson.devDependencies?.[packageName] ??
 			packageJson.optionalDependencies?.[packageName];
-		console.log(typeof version === "string" ? `${packageName}@${version}` : fallback);
+		if (typeof version !== "string") {
+			console.log(fallback);
+		} else if (/^(file:|link:|workspace:)/.test(version)) {
+			console.log(fallback);
+		} else {
+			console.log(packageName + "@" + version.replace(/^[~^]/, ""));
+		}
 	' "$REPO_ROOT/package.json" "$PACKAGE_NAME" "$PACKAGE_SPEC"
 }
 
@@ -69,11 +75,11 @@ print_npm_auth_hint() {
 }
 
 if is_harness_source_repo; then
-	if [[ -f "$REPO_ROOT/dist/cli.js" ]]; then
-		exec node "$REPO_ROOT/dist/cli.js" "$@"
-	fi
 	if command -v pnpm >/dev/null 2>&1; then
 		exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+	fi
+	if [[ -f "$REPO_ROOT/dist/cli.js" ]]; then
+		exec node "$REPO_ROOT/dist/cli.js" "$@"
 	fi
 	echo "Error: coding-harness source checkout detected but no local runner is available." >&2
 	echo "Build the repo or install dependencies, then rerun:" >&2

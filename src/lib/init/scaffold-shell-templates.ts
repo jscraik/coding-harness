@@ -173,7 +173,13 @@ function renderHarnessCliNpmFallbackHelpers(): string {
 			packageJson.dependencies?.[packageName] ??
 			packageJson.devDependencies?.[packageName] ??
 			packageJson.optionalDependencies?.[packageName];
-		console.log(typeof version === "string" ? packageName + "@" + version : fallback);
+		if (typeof version !== "string") {
+			console.log(fallback);
+		} else if (/^(file:|link:|workspace:)/.test(version)) {
+			console.log(fallback);
+		} else {
+			console.log(packageName + "@" + version.replace(/^[~^]/, ""));
+		}
 	' "$REPO_ROOT/package.json" "$PACKAGE_NAME" "$PACKAGE_SPEC"
 }
 

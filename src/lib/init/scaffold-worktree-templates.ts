@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { renderInstallCommand } from "./scaffold-shell-templates.js";
 
-const AGENT_BRANCH_PREFIX = "codex/worktree";
+const AGENT_BRANCH_PREFIX = "codex";
 
 /**
  * Generate a bash script that prepares a git worktree for local hooks and checks.
@@ -82,7 +82,7 @@ attach_branch_if_detached() {
 	fi
 
 	short_sha="$(git rev-parse --short HEAD)"
-	branch_base="${AGENT_BRANCH_PREFIX}/$repo_slug-worktree-$short_sha"
+	branch_base="${"${"}BRANCH_PREFIX:-${AGENT_BRANCH_PREFIX}}/$repo_slug-$short_sha"
 	branch_name="$branch_base"
 	suffix=1
 	while git show-ref --verify --quiet "refs/heads/$branch_name"; do

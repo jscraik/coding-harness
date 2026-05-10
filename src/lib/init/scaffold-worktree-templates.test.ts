@@ -29,7 +29,7 @@ describe("scaffold worktree templates", () => {
 		const script = renderPrepareWorktreeScript("pnpm");
 
 		expect(script).toContain(
-			'branch_base="codex/worktree/$repo_slug-worktree-$short_sha"',
+			'branch_base="${BRANCH_PREFIX:-codex}/$repo_slug-$short_sha"',
 		);
 		expect(script).toContain(
 			'echo "[prepare-worktree] detached HEAD detected; creating branch $branch_name"',
