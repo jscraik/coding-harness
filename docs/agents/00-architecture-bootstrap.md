@@ -48,6 +48,7 @@ If either command fails, refresh artifacts before proceeding.
 When `docs-gate` reports required documentation surfaces for the same change category, update the listed operator guides in that PR before merge.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized when `docs-gate` asks for architecture-context evidence.
+Generated Codex environment action changes that add validation script actions or branch-attachment behavior are architecture-adjacent when they refresh `AI/context/diagram-context.md`; commit the refreshed context pack and this guide together when docs-gate reports the architecture-context surface.
 Goal-continuation, approval-plan, Flow Ops closure-evidence classifiers,
 eval-seed, observed usage collection, and E2E/eval artifact changes that add or
 reroute source modules must refresh `AI/context/diagram-context.md` in the same
