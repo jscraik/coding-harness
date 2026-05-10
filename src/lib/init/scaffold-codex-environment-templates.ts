@@ -86,7 +86,14 @@ ${actions.map((action) => renderCodexActionBlock(action)).join("\n\n")}
 }
 
 function renderCodexInstallCommand(packageManager: string): string {
-	return `if command -v mise >/dev/null 2>&1; then
+	return `for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/sbin" "/sbin"; do
+  if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
+    PATH="$candidate:$PATH"
+  fi
+done
+export PATH
+
+if command -v mise >/dev/null 2>&1; then
   mise trust --yes .mise.toml || true
   mise install
 fi

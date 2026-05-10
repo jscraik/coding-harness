@@ -180,9 +180,9 @@ the change repeats known review friction. Run the loop when
 scope:
 
 ```bash
-harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
-harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
-harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json
+bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json
 ```
 
 The `--files` value accepts comma-separated paths or multiple following path

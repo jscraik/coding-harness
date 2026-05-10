@@ -6,7 +6,8 @@ name = "harness local environment"
 script = '''
 set -euo pipefail
 
-for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/sbin" "/sbin"; do
+PATH="${PATH:-/usr/bin:/bin}"
+for candidate in "/sbin" "/usr/sbin" "/usr/local/bin" "/opt/homebrew/sbin" "/opt/homebrew/bin" "$HOME/.local/bin" "$HOME/.local/share/mise/shims"; do
   if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
     PATH="$candidate:$PATH"
   fi
@@ -30,7 +31,8 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/sbin" "/sbin"; do
+PATH="${PATH:-/usr/bin:/bin}"
+for candidate in "/sbin" "/usr/sbin" "/usr/local/bin" "/opt/homebrew/sbin" "/opt/homebrew/bin" "$HOME/.local/bin" "$HOME/.local/share/mise/shims"; do
   if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
     PATH="$candidate:$PATH"
   fi
@@ -116,15 +118,10 @@ if [ "$local_main_ahead_count" -ne 0 ]; then
   exit 2
 fi
 
-if git merge-base --is-ancestor HEAD origin/main; then
-  git pull --ff-only origin main
-  pull_status=$?
+if git pull --ff-only origin main; then
+  :
 else
-  echo "Local main diverges from origin/main; aborting."
-  echo "Reconcile local commits before running Release Finalize."
-  exit 2
-fi
-if [ "$pull_status" -ne 0 ]; then
+  pull_status=$?
   local_main_ahead_count="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
   if [ "$local_main_ahead_count" -ne 0 ]; then
     echo "Local main is ahead of origin/main; aborting."
@@ -179,7 +176,7 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       repo_slug="worktree"
     fi
     short_sha="$(git rev-parse --short HEAD)"
-    branch_base="${BRANCH_PREFIX:-codex}/$repo_slug-$short_sha"
+    branch_base="codex/worktree/$repo_slug-worktree-$short_sha"
     branch_name="$branch_base"
     suffix=1
     while git show-ref --verify --quiet "refs/heads/$branch_name"; do
@@ -646,6 +643,15 @@ command = '''
 set -euo pipefail
 
 pnpm 'workflow:validate'
+'''
+
+[[actions]]
+name = "Script: observed:eval-usage"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'observed:eval-usage'
 '''
 
 [[actions]]

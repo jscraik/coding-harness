@@ -59,6 +59,12 @@ describe("scaffold shell templates", () => {
 		expect(pnpmWrapper).toContain("pnpm install");
 		expect(pnpmWrapper).toContain("pnpm add -D @brainwav/coding-harness");
 		expect(pnpmWrapper).toContain("pnpm exec harness <command>");
+		expect(pnpmWrapper).toContain("not a local npm package root");
+		expect(pnpmWrapper).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
+		expect(pnpmWrapper).toContain("npm auth is missing in this process");
+		expect(pnpmWrapper).toContain(
+			"Private npm fallback is disabled by default",
+		);
 
 		expect(pnpmWrapper).toContain("is_harness_source_repo");
 		expect(pnpmWrapper).toContain('exec node "$REPO_ROOT/dist/cli.js" "$@"');

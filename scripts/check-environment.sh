@@ -4,6 +4,37 @@
 
 set -euo pipefail
 
+prepend_standard_tool_paths() {
+	local candidate
+	local idx
+	local candidates=(
+		"$HOME/.local/share/mise/shims"
+		"$HOME/.local/bin"
+		"/opt/homebrew/bin"
+		"/opt/homebrew/sbin"
+		"/usr/local/bin"
+		"/usr/sbin"
+		"/sbin"
+	)
+	PATH="${PATH:-/usr/bin:/bin}"
+	for (( idx=${#candidates[@]} - 1; idx >= 0; idx-- )); do
+		candidate="${candidates[$idx]}"
+		if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
+			PATH="$candidate:$PATH"
+		fi
+	done
+	export PATH
+}
+
+prepend_standard_tool_paths
+
+if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 && -z "${CHECK_ENVIRONMENT_REEXECED:-}" ]]; then
+	if [[ -x "/opt/homebrew/bin/bash" ]]; then
+		export CHECK_ENVIRONMENT_REEXECED=1
+		exec "/opt/homebrew/bin/bash" "$0" "$@"
+	fi
+fi
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
@@ -16,7 +47,7 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
 	CODESTYLE_DIR_PATH="$REPO_ROOT/codestyle"
 	CODESTYLE_CHECKSUM_PATH="$REPO_ROOT/codestyle/CHECKSUMS.sha256"
-	TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
+	TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$HOME/dev/configs/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
 	echo "Error: missing contract file at $CONTRACT_PATH"
@@ -391,13 +422,19 @@ else
 			exit 1
 		fi
 
+		if ! npm whoami --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
+			echo "Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness."
+			echo "The repo .npmrc only routes @brainwav packages to npm; it does not carry credentials."
+			echo "Provide npm auth with NPM_TOKEN or a user-level ~/.npmrc, then retry."
+			echo "If this is CI (CircleCI), set NPM_TOKEN as a project environment variable."
+			exit 1
+		fi
+
 		if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
 			echo "Error: @brainwav/coding-harness is not installed globally via npm."
 			echo "Install globally and retry:"
 			echo "  npm i -g @brainwav/coding-harness"
-			echo "Private registry auth is required:"
-			echo "  - Local shell: export NPM_TOKEN=<token>"
-			echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
+			echo "Private registry auth is already available in this process."
 			exit 1
 		fi
 

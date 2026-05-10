@@ -69,13 +69,40 @@ states that Linear closure remains gated on human acceptance. Live Linear still
 shows `JSC-289` in `In Progress`, so the next action is Linear/eval acceptance
 cleanup, not a new JSC-289 spec.
 
+`JSC-290` is implementation-complete and merged through PR
+[#232](https://github.com/jscraik/coding-harness/pull/232) at head
+`e18ba04d4aeea854d0d14c3b46f724f8a770a6fb`. Closure proof lives in
+`.harness/evals/coding-harness-validation-typed-gate-specs-eval.md`, and the
+PR check rollup is green. Live Linear still shows `JSC-290` in `In Progress`
+and unattached to a project milestone, so the next action is Linear closure
+cleanup, not another validation typed-gate spec.
+
 ## Linear Delta Capture
 
-Last synced: 2026-05-09
+Last synced: 2026-05-09T20:40Z
 Source: Linear project `coding-harness`; milestones `Agent Cockpit Compression
 Slice`, `Governance Trust Repair Slice`, and `CI Migration Boundary Recovery
-Slice`; parents `JSC-282`, `JSC-283`, `JSC-288`, and `JSC-289`
+Slice`; `Control loop hardening and flow telemetry`; parents `JSC-282`,
+`JSC-283`, `JSC-288`, `JSC-289`, `JSC-290`, `JSC-248`, `JSC-178`,
+`JSC-198`, `JSC-199`, `JSC-200`, `JSC-201`, `JSC-202`, and `JSC-203`
 Label status: resolved
+
+Post-JSC-290 delta: Linear now contains `JSC-290`, but live state still shows
+it as `In Progress` and unattached to a project milestone while GitHub PR
+[#232](https://github.com/jscraik/coding-harness/pull/232) is merged from
+`codex/jsc-290-validation-typed-gate-specs` with CodeRabbit, CircleCI,
+security, and `pr-pipeline` checks green. Treat `JSC-290` as Linear closure
+work, not as an available next spec slice.
+
+Post-JSC-178 delta: the contract-validation modularization slice has already
+moved through spec, plan, phased implementation, eval-report, and compound
+review. The primary PR #232 merged before the JSC-178 eval artifact was pushed,
+so follow-up GitHub PR
+[#234](https://github.com/jscraik/coding-harness/pull/234) now carries the
+missing eval evidence. Live GitHub currently shows PR #234 open as a draft with
+`ci/circleci: pr-template` failing and `pr-pipeline` still in progress. Live
+Linear shows `JSC-178` as `Todo` under `Control loop hardening and flow
+telemetry`, so this is closure/evidence repair, not the next fresh spec slice.
 
 Required label reconciliation:
 
@@ -100,16 +127,21 @@ issue labels exist and are applied to the relevant parent issues.
 | JSC-283 | `[coding-harness] Prove packaged skill behavior for cockpit commands` | Triage | High | locally_complete | Local packaged-skill behavior implementation and eval are complete, but Linear status is stale and should be closed or advanced separately. |
 | JSC-288 | `[coding-harness] Resolve memory and governance truth ownership` | Triage | High | locally_complete | Local governance trust repair implementation and eval are complete. Live Linear is stale and should be moved to review or closed after human acceptance evidence is recorded. |
 | JSC-289 | `[coding-harness] Characterize and split CI migration lifecycle boundaries` | In Progress | High | closure_review_pending | Local CI migration boundary work has eval-backed closure proof. Live Linear correctly shows active history but now needs acceptance/closure cleanup instead of another spec. |
+| JSC-290 | `[coding-harness] Mirror validation gate graph in typed specs` | In Progress | High | merged_linear_stale | PR #232 is merged and green, and the eval artifact exists, but Linear still shows active work and no milestone. Do not create another JSC-290 spec; reconcile Linear closure after human acceptance. |
 | JSC-248 | `Implement agent-native cockpit control loop first slice` | In Progress | High | already_covered | Legacy/umbrella cockpit work remains active under `Control loop hardening and flow telemetry`; do not let it expand the next spec beyond JSC-288. |
-| JSC-178 | `Modularize contract validation and command registry to reduce core-file risk` | In Progress | High | out_of_scope | Separate architecture-modularization work. It overlaps command-registry concerns but is not part of the approved cockpit packaged-skill slice. |
+| JSC-178 | `Modularize contract validation and command registry to reduce core-file risk` | Todo | High | followup_pr_blocked | The bounded contract-validation slice has already been specified, planned, implemented, reviewed, and eval-reported. PR #234 carries the missing eval artifact but is blocked by `ci/circleci: pr-template`; do not create another JSC-178 spec. |
+| JSC-198 | `Flow Ops: Instrument Linear-GitHub-CircleCI lifecycle telemetry and gates` | Todo | High | next_spec_candidate | Repeated stale Linear/PR closure across JSC-282, JSC-283, JSC-288, JSC-289, JSC-290, and JSC-178 proves this is no longer speculative process work. Admit only a narrow closure-evidence reconciliation slice, not broad telemetry. |
+| JSC-199 | `Sync GitHub PR lifecycle metadata back to Linear issues` | In Progress | High | supporting_issue | Directly matches the repeated PR/Linear drift pattern. Use as evidence and possible child routing under the JSC-198 flow slice. |
+| JSC-200 | `Sync CircleCI pipeline outcomes into Linear flow metrics` | Todo | High | supporting_issue | Relevant only for PR/check closure proof; keep subordinate to the narrow flow-slice spec. |
+| JSC-201 | `Enforce intake and done gates for HE workflow` | Todo | High | supporting_issue | Relevant to preventing completed work from remaining open or missing eval artifacts; avoid broad policy rewrites. |
 
 ## Approved Next Slice Queue
 
 | Order | Slice | Linear Issue | Route | Depends On | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 0 | Linear closure cleanup | JSC-282, JSC-283, JSC-288, JSC-289 | Linear status update only; no new spec | Human acceptance of the relevant eval artifacts | Required before opening another implementation slice. These issues have local eval evidence but live Linear status is stale or still active. |
-| 1 | Validation Typed Gate Specs Slice | JSC-290 | he-spec -> he-plan -> he-work; agent-assisted with human review before wrapper behavior changes | Closure cleanup for JSC-288 and JSC-289 | Recommended next new spec slice. The parent issue now exists; the milestone is still planned/not attached in Linear. Keep it bounded to typed gate specs behind stable shell entrypoints. |
-| 2 | Contract Validation Modularization Slice | JSC-178 or new bounded child under JSC-178 | hold | Validation Typed Gate Specs Slice admission decision | Useful but higher blast radius; do not admit until the typed gate spec clarifies the stable boundary. |
+| 0 | Closure cleanup and PR #234 unblock | JSC-178, JSC-282, JSC-283, JSC-288, JSC-289, JSC-290 | Linear/GitHub closure only; no new spec | Human acceptance of eval artifacts, PR #232 merge evidence, and PR #234 check cleanup | Required before claiming the architecture queue is clean. JSC-178 now has a follow-up PR blocked by `ci/circleci: pr-template`, while earlier completed slices still have stale Linear states. |
+| 1 | Flow Ops closure-evidence reconciliation slice | JSC-198 parent, with JSC-199/JSC-200/JSC-201 as supporting evidence or child routing | he-spec -> he-plan -> he-work; agent-assisted with human review on automation boundaries | Closure cleanup queue confirms repeated stale PR/Linear/eval evidence drift | Recommended next new spec slice. Keep it narrow: reconcile PR merge state, eval artifact presence, CircleCI check state, and Linear done/intake metadata so completed slices stop leaking into the next planning cycle. |
+| 2 | Contract Validation follow-up only if PR #234 exposes a real product blocker | JSC-178 | hold; no new spec by default | PR #234 mergeability and review state | Do not reopen JSC-178 architecture work just because Linear is stale. Only admit a follow-up if review or CI reveals a real contract-validation defect outside the eval artifact PR. |
 
 ## Target Linear Destination
 
@@ -133,7 +165,9 @@ issue labels exist and are applied to the relevant parent issues.
 | Agent Cockpit Compression Slice | `coding-harness` | Linear cleanup | Reconcile command truth and prove packaged skill command behavior for the cockpit path. | README/help/registry/dispatch/skill references agree for the chosen cockpit set; skill fixture matrix exists. | Lint, typecheck, tests, drift-gate, skill validation, routing determinism eval. | 2 parent, 4-6 sub | Broad command cleanup, all legacy command dispatch, UI work, new plugins. |
 | Governance Trust Repair Slice | `coding-harness` | Linear cleanup | Resolve memory ownership, governance surface ownership, and contract bounded-context design. | Placeholder memory is removed/reclassified/replaced; governance surfaces have owner/enforcement status; contract split plan is approved. | Docs lint, policy/docs gates, memory health, contract validation, governance drift eval. | 1-2 parent, 3-5 sub | Full contract migration until ownership is settled. |
 | CI Migration Boundary Recovery Slice | `coding-harness` | Closure cleanup | Characterize CI migration behavior and extract first lifecycle boundaries. | Characterization baseline exists; reporting/proof-pack extraction lands without behavior drift. | Test, typecheck, CI migration characterization, architecture drift eval, rollback proof. | 1 parent, 3-4 sub | Provider rewrite, broad CI redesign, break-glass changes beyond characterized paths. |
-| Validation Typed Gate Specs Slice | `coding-harness` | Next spec; milestone planned/not attached | Mirror shell-heavy validation into typed gate specs behind stable entrypoints. | Gate graph snapshot and typed mirror exist; shell launcher remains stable. | Build, test, typecheck, verify-work, gate-spec eval, rollback checks. | 1 parent, 2-4 sub | Replacing `verify-work.sh` outright, changing external command contract. |
+| Validation Typed Gate Specs Slice | `coding-harness` | Linear closure only; milestone absent in live Linear | Mirror shell-heavy validation into typed gate specs behind stable entrypoints. | Gate graph snapshot and typed mirror exist; shell launcher remains stable; PR #232 is merged and green. | Build, test, typecheck, verify-work, gate-spec eval, rollback checks, PR-template gate. | 1 parent, 2-4 sub | Replacing `verify-work.sh` outright, changing external command contract. |
+| Contract Validation Modularization Slice | `coding-harness` | Closure/follow-up only | Modularize contract validation and command-registry-adjacent boundaries now that typed gate metadata exists. | Bounded slice already landed; remaining work is PR #234 evidence closure unless review finds a real product defect. | PR-template gate, review state, eval artifact acceptance, Linear closure. | No new issues by default | Broad CLI rewrite, command catalog redesign, provider policy migration. |
+| Flow Ops closure-evidence reconciliation slice | `coding-harness` | Next spec candidate | Prove a narrow, deterministic reconciliation loop for PR merge state, eval artifact presence, CircleCI state, and Linear done/intake metadata. | Completed slices stop leaking into the next planning cycle; missing evidence is surfaced before merge or closure. | Linear refresh, GitHub PR state, CircleCI check state, eval artifact presence, markdownlint for planning artifacts. | 1 parent, 2-3 sub | Broad telemetry platform, weekly reporting, custom field rollout, portfolio-level process redesign. |
 
 ## Proposed Parent Issues
 
@@ -143,7 +177,8 @@ issue labels exist and are applied to the relevant parent issues.
 | Parent issue | `[coding-harness] Prove packaged skill behavior for cockpit commands` | `coding-harness` | `Dev Portfolio` | Agent Cockpit Compression Slice | 2 High | Developer Experience, Agent-Native, Eval, Reliability | Agent-assisted, human-review required | Release gate integration for packaged skill | Command cockpit set identified | ADR-007, skill refactor | Skill validity must mean downstream usability, not string freshness. |
 | Parent issue | `[coding-harness] Resolve memory and governance truth ownership` | `coding-harness` | `Dev Portfolio` | Governance Trust Repair Slice | 2 High | Governance, Reliability, Context, Drift-Risk | Agent-assisted, human-review required | Contract bounded-context migration | Command cockpit warnings triaged enough to avoid overlapping drift | ADR-003, ADR-004, ADR-007, governance refactor | Required governance and memory surfaces must not be symbolic. |
 | Parent issue | `[coding-harness] Characterize and split CI migration lifecycle boundaries` | `coding-harness` | `Dev Portfolio` | CI Migration Boundary Recovery Slice | 2 High | Reliability, Architecture, Refactor, Migration | Agent-assisted, human-review required | Provider adapter and policy extraction | Characterization baseline | ADR-006, CI refactor | `ci-migrate-core.ts` is the highest-risk oversized orchestrator. |
-| Parent issue | `[coding-harness] Mirror validation gate graph in typed specs` (`JSC-290`) | `coding-harness` | `Dev Portfolio` | Validation Typed Gate Specs Slice (planned) | 2 High | Reliability, Agent-Native, CE: Spec, Refactor, Drift-Risk, architecture | Agent-assisted, human-review required | Shell launcher burn-down | Gate graph snapshot | ADR-006, execution invariants, validation refactor, `.harness/specs/2026-05-09-validation-typed-gate-specs-spec.md` | Validation must become inspectable without breaking stable wrappers. |
+| Parent issue | `[coding-harness] Mirror validation gate graph in typed specs` (`JSC-290`) | `coding-harness` | `Dev Portfolio` | Not attached; Linear closure only | 2 High | Reliability, Agent-Native, CE: Spec, Refactor, Drift-Risk, architecture | Agent-assisted, human-review required | Contract validation modularization | PR #232 merge and eval acceptance evidence | ADR-006, execution invariants, validation refactor, `.harness/specs/2026-05-09-validation-typed-gate-specs-spec.md` | Validation must become inspectable without breaking stable wrappers. |
+| Parent issue | `[coding-harness] Reconcile Flow Ops closure evidence` (`JSC-198` child recommended) | `coding-harness` | `Dev Portfolio` | Flow Ops closure-evidence reconciliation slice | 2 High | Reliability, Automation, Drift-Risk, Agent-Native | Agent-assisted, human-review required | Next architecture slice | PR #234 unblock and stale Linear closure queue acknowledged | JSC-198, JSC-199, JSC-200, JSC-201, execution invariants, governance invariants | Closure evidence must become deterministic before more architecture slices stack up. |
 
 ## Proposed Sub-Issues
 
@@ -165,15 +200,19 @@ Only create sub-issues when execution starts for a milestone.
 | `[coding-harness] Characterize and split CI migration lifecycle boundaries` | `[coding-harness] Extract CI migration reporting and proof-pack boundary` | 2 High | Agent-assisted | No | Focused tests, typecheck, architecture drift eval | Roll back if extracted module imports old core as hidden dependency. |
 | `[coding-harness] Mirror validation gate graph in typed specs` | `[coding-harness] Snapshot verify-work gate graph and artifact expectations` | 2 High | Agent-assisted | No | full validate-codestyle, docs lint | Stop if snapshot cannot explain current shell behavior. |
 | `[coding-harness] Mirror validation gate graph in typed specs` | `[coding-harness] Add typed spec mirror behind stable verify-work entrypoint` | 2 High | Agent-assisted | No | Typecheck, tests, full validate-codestyle | Roll back if wrapper compatibility changes. |
+| `[coding-harness] Reconcile Flow Ops closure evidence` | `[coding-harness] Inventory closure evidence sources and stale-state failure modes` | 2 High | Agent-safe | No | Linear/GitHub/CircleCI refresh evidence, markdownlint | Stop if current live states cannot be classified without manual inference. |
+| `[coding-harness] Reconcile Flow Ops closure evidence` | `[coding-harness] Define deterministic closure queue and eval artifact checks` | 2 High | Agent-assisted | Yes after inventory | Focused fixture or command proof, docs lint, Linear delta replay | Roll back if the slice creates process-only docs without executable or checkable closure evidence. |
 
 ## Now / Next / Later / Do Not Create
 
 | Bucket | Work | Destination | Rationale |
 | --- | --- | --- | --- |
-| Now | Linear closure cleanup | `coding-harness` | JSC-282, JSC-283, JSC-288, and JSC-289 have local evidence but stale or pending Linear status; clean this before opening more implementation state. |
-| Next | Validation Typed Gate Specs Slice | `coding-harness` | First genuinely new slice after closure cleanup; keeps validation semantics inspectable without replacing stable shell entrypoints. |
-| Later | Contract Validation Modularization Slice | `coding-harness` | Valuable, but should wait until typed validation metadata clarifies the stable boundary. |
+| Now | Closure cleanup and PR #234 unblock | `coding-harness` | JSC-178 has an open draft follow-up PR blocked by `ci/circleci: pr-template`, and JSC-282/JSC-283/JSC-288/JSC-289/JSC-290 remain stale or active in Linear despite implementation/eval evidence. |
+| Next | Flow Ops closure-evidence reconciliation slice | `coding-harness` | Stale issue/PR/eval closure has now repeated across enough slices that it is execution drag, not theoretical process polish. Spec the smallest slice under JSC-198/JSC-199 that proves closure state can be derived and synchronized deterministically. |
+| Later | Contract Validation follow-up | `coding-harness` | Only useful if PR #234 or human review reveals an actual contract-validation behavior defect. Do not reopen JSC-178 for architecture expansion. |
 | Later | Portfolio-level reactivation checklist | `Portfolio Ops` | Useful only if the pattern repeats across repo projects. |
+| Do Not Create | Another Validation Typed Gate Specs spec | None | JSC-290 already has a spec, plan, implementation, eval, commit, push, and merged PR #232. Remaining work is Linear closure, not a new spec. |
+| Do Not Create | Another Contract Validation Modularization spec | None | JSC-178 already has a spec, plan, implementation, eval report, compound review, and follow-up eval PR. Remaining work is PR/Linear closure unless a real blocker appears. |
 | Do Not Create | Generic architecture review issues | None | Cognition already lives in `.harness/*`; Linear should not mirror the docs. |
 | Do Not Create | One issue per ADR/invariant | None | Creates process noise without execution value. |
 | Do Not Create | New `Project Brain` project | None | Memory confirms Project Brain is part of `coding-harness`, not a separate initiative. |

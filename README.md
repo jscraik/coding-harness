@@ -24,8 +24,6 @@ The shortest honest description of the project today is:
 - it validates review, docs, plan, and authorization policy before merge
 - it supports staged CI migration, rollback, and autonomy expansion with
   artifact-backed evidence
-- it keeps generated Codex environment actions aligned with repo scripts,
-  including test/eval script aliases and detached-worktree bootstrap behavior
 
 ## Table of Contents
 
@@ -156,7 +154,8 @@ Teams usually adopt Coding Harness for one of four jobs:
 - **Bootstrap a repo once, then keep it aligned.** `harness init` can scaffold
   `harness.contract.json`, `WORKFLOW.md`, PR templates, CodeRabbit defaults,
   repo-local verification scripts, and rollback metadata instead of leaving
-  each repo to invent its own setup.
+  each repo to invent its own setup. Generated downstream PR, workflow, and
+  worktree surfaces use `jscraik/feature/*` for agent-created branches.
 - **Put policy in code instead of chat reminders.** Commands like
   `docs-gate`, `plan-gate`, `review-gate`, `linear-gate`, `check-authz`, and
   `local-memory-preflight` make governance expectations runnable.
@@ -342,6 +341,12 @@ This is the best path when you want a governed starting point quickly. In the
 common case, `init --track` gives you the contract, workflow scaffolding,
 review policy surfaces, repo-local verification scripts, and enough metadata to
 upgrade or roll back cleanly later.
+
+Generated readiness scripts prepend existing user-writable and
+platform-standard tool directories before validation. That lets non-login agent
+shells find already-installed tools such as `mise`, Homebrew binaries,
+`/usr/sbin`, and `/sbin` without silently installing anything or mutating global
+state.
 
 Use these follow-ups when the repo already has harness material:
 

@@ -117,6 +117,38 @@ const EXPECTED_TEMPLATE_PATHS = [
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
+function probePrependStandardToolPaths(environmentCheck: string): string {
+	const start = environmentCheck.indexOf("prepend_standard_tool_paths() {");
+	const end = environmentCheck.indexOf(
+		"\n\nprepend_standard_tool_paths",
+		start,
+	);
+	expect(start).toBeGreaterThanOrEqual(0);
+	expect(end).toBeGreaterThan(start);
+
+	const homeDir = mkdtempSync(join(tmpdir(), "harness-path-home-"));
+	const miseShims = join(homeDir, ".local", "share", "mise", "shims");
+	const localBin = join(homeDir, ".local", "bin");
+	mkdirSync(miseShims, { recursive: true });
+	mkdirSync(localBin, { recursive: true });
+
+	const helper = environmentCheck.slice(start, end);
+	const probe = spawnSync(
+		"/bin/bash",
+		[
+			"-c",
+			`set -u\n${helper}\nunset PATH\nprepend_standard_tool_paths\nprintf '%s' "$PATH"`,
+		],
+		{ encoding: "utf8", env: { HOME: homeDir } },
+	);
+
+	rmSync(homeDir, { recursive: true, force: true });
+	expect(probe.stderr).toBe("");
+	expect(probe.status).toBe(0);
+	expect(probe.stdout.split(":").slice(0, 2)).toEqual([miseShims, localBin]);
+	return probe.stdout;
+}
+
 describe("runInit", () => {
 	let tempDir: string;
 
@@ -1794,11 +1826,16 @@ describe("runInit", () => {
 			expect(miseToml).toContain('"trivy" = "0.69.3"');
 			expect(miseToml).toContain('"vale" = "3.13.1"');
 			expect(harnessCli).toContain(
-				"local @brainwav/coding-harness could not be resolved from this repo",
+				"local $PACKAGE_NAME could not be resolved from this repo",
 			);
 			expect(harnessCli).toContain(
 				"local install/bootstrap problem, not a harness command failure",
 			);
+			expect(harnessCli).toContain(
+				"Private npm fallback is disabled by default",
+			);
+			expect(harnessCli).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
+			expect(harnessCli).toContain("npm auth is missing in this process");
 			expect(harnessCli).toContain("npm install");
 			expect(harnessCli).toContain(
 				"npm install --save-dev @brainwav/coding-harness",
@@ -2020,6 +2057,11 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain(
 				"echo \"Error: required binary 'mise' is not installed or not on PATH\"",
 			);
+			expect(environmentCheck).toContain("prepend_standard_tool_paths()");
+			expect(environmentCheck).toContain("CHECK_ENVIRONMENT_REEXECED");
+			expect(environmentCheck).toContain('"/opt/homebrew/bin"');
+			expect(environmentCheck).toContain('"/usr/sbin"');
+			probePrependStandardToolPaths(environmentCheck);
 			expect(environmentCheck).toContain(
 				'eval "$(mise --cd "$REPO_ROOT" activate bash)"',
 			);
@@ -2048,6 +2090,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"Research|tool"');
 			expect(environmentCheck).toContain('MAKEFILE_PATH="$REPO_ROOT/Makefile"');
 			expect(environmentCheck).toContain("required_support_files=(");
+			expect(environmentCheck).toContain("prepend_standard_tool_paths()");
+			expect(environmentCheck).toContain('"/opt/homebrew/bin"');
+			expect(environmentCheck).toContain('"/usr/sbin"');
 			expect(environmentCheck).toContain('"scripts/verify-work.sh"');
 			expect(environmentCheck).toContain(
 				'"scripts/codex-preflight-local-memory-legacy.sh"',
@@ -2287,9 +2332,13 @@ describe("runInit", () => {
 			expect(wrapper.stderr).toContain(
 				"local install/bootstrap problem, not a harness command failure",
 			);
+			expect(wrapper.stderr).toContain(
+				"Private npm fallback is disabled by default",
+			);
 			expect(wrapper.stderr).toContain("pnpm install");
 			expect(wrapper.stderr).toContain("pnpm add -D @brainwav/coding-harness");
 			expect(wrapper.stderr).toContain("pnpm exec harness <command>");
+			expect(wrapper.stderr).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
 			expect(wrapper.stdout).toBe("");
 		});
 
@@ -2508,6 +2557,13 @@ set -euo pipefail
 if [[ "$1" == "ls" ]]; then
 	exit 0
 fi
+if [[ "$1" == "whoami" ]]; then
+	if [[ "\${FAKE_NPM_AUTH_FAIL:-}" == "1" ]]; then
+		exit 1
+	fi
+	echo "fixture-user"
+	exit 0
+fi
 if [[ "$1" == "prefix" && "$2" == "-g" ]]; then
 	echo "\${FAKE_NPM_PREFIX:?}"
 	exit 0
@@ -2554,6 +2610,25 @@ exit 1
 			expect(miseRun.status, miseRun.stdout + miseRun.stderr).toBe(0);
 			expect(miseRun.stdout).toContain(
 				`Using harness runner: mise harness (${fakeMiseHarness})`,
+			);
+
+			const npmAuthFailureRun = spawnSync(
+				"bash",
+				["scripts/check-environment.sh"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...baseEnv,
+						FAKE_MISE_WHICH_MODE: "missing",
+						FAKE_NPM_AUTH_FAIL: "1",
+					},
+				},
+			);
+			expect(npmAuthFailureRun.status).toBe(1);
+			const npmAuthFailureOutput = `${npmAuthFailureRun.stdout}${npmAuthFailureRun.stderr}`;
+			expect(npmAuthFailureOutput).toContain(
+				"Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness.",
 			);
 
 			const npmFallbackRun = spawnSync(
@@ -2655,10 +2730,10 @@ exit 1
 			};
 
 			expect(runNewTask("HEAD~1", "jsc-101-commit-ish-head")).toContain(
-				"[new-task] branch: codex/jsc-101-commit-ish-head",
+				"[new-task] branch: jscraik/feature/jsc-101-commit-ish-head",
 			);
 			expect(runNewTask("v0.0.1", "jsc-102-commit-ish-tag")).toContain(
-				"[new-task] branch: codex/jsc-102-commit-ish-tag",
+				"[new-task] branch: jscraik/feature/jsc-102-commit-ish-tag",
 			);
 			expect(runNewTask(firstSha, "jsc-103-commit-ish-sha")).toContain(
 				`[new-task] base: ${firstSha}`,
@@ -2968,7 +3043,7 @@ exit 1
 			expect(scaffoldedScript).toBe(runtimeScript);
 		});
 
-		it("keeps the repo-local new-task helper aligned with scaffold output", () => {
+		it("keeps the scaffolded new-task helper aligned with the downstream branch policy", () => {
 			writeFileSync(
 				join(tempDir, "pnpm-lock.yaml"),
 				"lockfileVersion: '9.0'\n",
@@ -2986,7 +3061,14 @@ exit 1
 				join(tempDir, "scripts/new-task.sh"),
 				"utf-8",
 			);
-			expect(scaffoldedScript).toBe(runtimeScript);
+			expect(scaffoldedScript).toBe(
+				runtimeScript
+					.replace(
+						"Branch prefix (default: codex)",
+						"Branch prefix (default: jscraik/feature)",
+					)
+					.replace('branch_prefix="codex"', 'branch_prefix="jscraik/feature"'),
+			);
 		});
 	});
 });

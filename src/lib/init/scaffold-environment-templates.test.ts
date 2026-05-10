@@ -16,6 +16,10 @@ describe("scaffold environment templates", () => {
 			'CODEX_ENVIRONMENT_PATH="$REPO_ROOT/.codex/environments/environment.toml"',
 		);
 		expect(script).toContain("required_project_brain_paths=(");
+		expect(script).toContain("prepend_standard_tool_paths()");
+		expect(script).toContain("CHECK_ENVIRONMENT_REEXECED");
+		expect(script).toContain('"/opt/homebrew/bin"');
+		expect(script).toContain('"/usr/sbin"');
 		expect(script).toContain("required_mise_tools=(");
 		expect(script).toContain("required_prek_hooks=(");
 		expect(script).toContain("required_package_scripts=(");

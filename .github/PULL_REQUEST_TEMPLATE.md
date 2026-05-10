@@ -28,9 +28,9 @@
 - Command: `bash scripts/validate-codestyle.sh` -> pass/fail
 - Command: `pnpm check` -> pass/fail
 - Command: `bash scripts/run-harness-gate.sh tooling-audit --path . --json` -> pass/fail
-- Command: `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <comma-separated-changed-files> --json` -> pass/fail/n.a.
-- Command: `harness review-context --source .harness/learnings/coderabbit.local.json --files <comma-separated-changed-files> --json` -> pass/fail/n.a.
-- Command: `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json` -> pass/fail/n.a.
+- Command: `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <comma-separated-changed-files> --json` -> pass/fail/n.a.
+- Command: `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <comma-separated-changed-files> --json` -> pass/fail/n.a.
+- Command: `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json` -> pass/fail/n.a.
 - Any other command(s):
 
 ## Review artifacts

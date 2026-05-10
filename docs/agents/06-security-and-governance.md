@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-07
+last_validated: 2026-05-09
 ---
 
 # Security and governance
@@ -37,8 +37,6 @@ This repository follows conservative defaults:
 - Local Memory preflight fallback probes must fail fast: keep bounded curl timeouts in `scripts/codex-preflight-local-memory-legacy.sh`, validate only the `rest_api.*` settings actually used to construct the health URL, and treat helper-runner exit code `3` as "unavailable, try the next runner" rather than a terminal failure.
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, then a mise-resolved harness binary (`mise which harness`), and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
 - CircleCI bootstrap is allowed to install baseline shell tooling (`gh`, `rg`, `fd`, `jq`, `make`, `realpath`) and `mise`, then trust `.mise.toml`, before readiness gates run; the readiness gate itself must remain fail-closed and should not hide missing-tool drift by self-installing them.
-- Generated Codex environment setup may prepend known user/Homebrew/system tool directories to `PATH` and may trust `.mise.toml` in the active worktree, but it must not perform unbounded global installs or silently bypass the repository readiness gates.
-- Detached-worktree bootstrap in generated environment actions should create a local feature branch and track `origin/main` before dependency setup so validation, commit, and push evidence stays attached to an auditable branch.
 - CircleCI orb-pinning enforcement should verify `ralph` availability (`ralph --version`) and may install pinned `ralph-gold` in ephemeral CI jobs when the CLI is missing.
 - Project Brain memory-extension checks must stay project-local: keep required `.harness/**` knowledge paths in `toolingPolicy.projectBrainMemoryExtension.requiredPaths` and do not gate on workspace-level `~/.codex` state.
 - `.harness/README.md` is the governance map for selective `.harness` tracking. Curated Markdown and JSON contract files are reviewable repo inputs; runtime databases, backups, caches, run output, and bulk snapshots must stay local unless a validator or fixture contract admits them.
@@ -101,7 +99,35 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - No secrets in docs/memory.
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
-- `scripts/prepare-worktree.sh` should auto-attach detached HEAD checkouts to a local `jscraik/feature/<repo>-worktree-<short-sha>` branch, set `origin/main` tracking when available, and fast-forward to latest `origin/main` before dependency bootstrap so default git branch workflows are available immediately.
+- `scripts/prepare-worktree.sh` should auto-attach detached HEAD checkouts to a local branch with exact base format `branch_base="jscraik/feature/$repo_slug-worktree-$short_sha"`, set `origin/main` tracking when available, and fast-forward to latest `origin/main` before dependency bootstrap so default git branch workflows are available immediately.
+- Generated downstream setup surfaces, Codex environment setup, `Tools` actions, `make worktree-ready`, and manual or agent bootstrap runs consume that `jscraik/feature/<repo>-worktree-<short-sha>` branch rule; keep the generated worktree branch prefix synchronized with PR template and workflow branch guidance.
+- Treat `jscraik/feature/<repo>-worktree-<short-sha>` as a local worktree-readiness branch intended for bootstrap and hook execution. Do not grant it broader permissions than other agent-created branches, do not infer Linear ownership from that prefix, and prune or rename stale local instances only through the normal worktree cleanup flow.
+
+### Worktree branch naming: security and governance implications
+
+The canonical worktree branch format `jscraik/feature/$repo_slug-worktree-$short_sha` (as defined in `scripts/prepare-worktree.sh`) carries the following security and governance considerations:
+
+**Naming semantics:**
+- The `jscraik/feature/*-worktree-*` pattern explicitly identifies branches created by the readiness script
+- The embedded commit SHA provides traceability to the exact commit at branch creation time
+- Collision handling (numeric suffixes `-1`, `-2`, etc.) ensures unique branch names without overwriting existing branches
+
+**Permissions:**
+- Worktree-readiness branches should receive the same permission boundaries as other agent-created branches
+- Do not grant elevated push/merge privileges based solely on the `jscraik/feature/` prefix
+- Repository protection rules should not exempt these branches from required checks or review requirements
+
+**Retention and cleanup:**
+- These branches are ephemeral by design: intended for bootstrap, hook execution, and temporary development
+- Stale instances should be pruned through normal worktree cleanup flows (`git worktree prune`, manual `git branch -d`)
+- Do not implement special retention policies or automated cleanup for this prefix unless it's part of a broader agent-branch cleanup strategy
+- Branch retention beyond active worktree lifecycle is acceptable but should be treated as developer-local state
+
+**Distinction from task branches:**
+- Worktree-readiness branches (`jscraik/feature/*-worktree-*`) are mechanically generated for bootstrap purposes
+- Linear-tracked task branches (`codex/<issue-key>-<slug>`) represent intentional feature work with issue tracking
+- Tooling must not infer Linear ownership, task status, or work-in-progress semantics from the worktree-readiness prefix
+- CI workflows and review automation should treat worktree-readiness branches as regular development branches without special task-tracking semantics
 - `scripts/check-git-common-config.sh` should fail preflight, verification, and worktree bootstrap if shared non-bare `.git/config` contains `core.worktree`. Repair by removing the shared value and using per-worktree config for worktree-local settings.
 - `scripts/new-task.sh` should fetch the latest remote base branch before `git worktree add` so newly created task worktrees start from current upstream commits.
 - `scripts/new-task.sh --bootstrap <issue-key>-<slug>` is the preferred one-shot path when you want creation plus immediate bootstrap in a single command.

@@ -7,7 +7,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
 	NORTH_STAR_FEEDBACK_SCHEMA_VERSION,
@@ -266,14 +266,17 @@ describe("buildNorthStarFeedback", () => {
 
 	it("rejects output paths that escape repoRoot with the write failure contract", () => {
 		const dir = mkdtempSync(join(tmpdir(), "north-star-feedback-output-"));
-		cleanup.push(dir);
+		const outsideDir = mkdtempSync(
+			join(tmpdir(), "north-star-feedback-outside-"),
+		);
+		cleanup.push(dir, outsideDir);
 		const source = join(dir, "coderabbit.local.json");
-		const outsideTarget = join(dir, "..", "north-star-feedback.json");
+		const outsideTarget = join(outsideDir, "north-star-feedback.json");
 		writeFileSync(source, JSON.stringify(artifact(), null, 2));
 
 		const result = buildNorthStarFeedback({
 			source,
-			output: "../north-star-feedback.json",
+			output: `../${basename(outsideDir)}/north-star-feedback.json`,
 			repoRoot: dir,
 			generatedAt: "2026-04-30T00:00:00.000Z",
 		});

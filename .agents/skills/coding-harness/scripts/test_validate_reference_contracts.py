@@ -9,7 +9,7 @@ from pathlib import Path
 def test_validator_script_exists() -> None:
     """
     Verify the validator script file exists and contains the REQUIRED_PATTERNS marker.
-
+    
     Asserts that a file named `validate_reference_contracts.py` is present next to this test file and that its text includes the substring "REQUIRED_PATTERNS".
     """
     script = Path(__file__).with_name("validate_reference_contracts.py")
@@ -20,7 +20,7 @@ def test_validator_script_exists() -> None:
 def test_validator_emits_targetable_json_report() -> None:
     """
     Smoke test that running the reference-contracts validator on the repository root produces a passing JSON report with expected metadata and no findings.
-
+    
     Verifies the report's `status` is `pass`, `skill_root` matches the resolved repository root, `package_form` is `source-skill-root`, `truth_source` matches the provided string, `SKILL.md` is listed in `checked_files`, and `findings` is an empty list.
     """
     script = Path(__file__).with_name("validate_reference_contracts.py")
@@ -55,11 +55,11 @@ def test_validator_emits_targetable_json_report() -> None:
 def test_validator_emits_json_findings_on_failure(tmp_path: Path) -> None:
     """
     Verify the validator reports a missing SKILL.md when run against an empty skill root.
-
+    
     Runs the `validate_reference_contracts.py` script with `--package-form extracted-local-tarball`
     against the provided temporary directory and asserts the process exits with failure and the
     JSON report contains a `missing-file` finding for `SKILL.md`.
-
+    
     Parameters:
         tmp_path (Path): Temporary directory to use as the skill root (empty).
     """
