@@ -16,13 +16,17 @@ prepend_standard_tool_paths() {
 		"/usr/sbin"
 		"/sbin"
 	)
-	PATH="${PATH:-/usr/bin:/bin}"
-	for (( idx=${#candidates[@]} - 1; idx >= 0; idx-- )); do
-		candidate="${candidates[$idx]}"
-		if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
-			PATH="$candidate:$PATH"
-		fi
-	done
+	if [[ -z "${PATH:-}" ]]; then
+		PATH="/usr/bin:/bin"
+		for (( idx=${#candidates[@]} - 1; idx >= 0; idx-- )); do
+			candidate="${candidates[$idx]}"
+			[[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$candidate:$PATH"
+		done
+	else
+		for candidate in "${candidates[@]}"; do
+			[[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$PATH:$candidate"
+		done
+	fi
 	export PATH
 }
 
