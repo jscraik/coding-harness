@@ -41,6 +41,13 @@ This repository follows conservative defaults:
 - Detached-worktree bootstrap in generated environment actions should create a local feature branch and track `origin/main` before dependency setup so validation, commit, and push evidence stays attached to an auditable branch.
 - Global npm harness fallback checks should run an already-installed executable before requiring private-registry authentication; missing install diagnostics may ask for npm auth, but local readiness must not leak tokens into repo files or generated scaffolds.
 - Flow Ops closure-evidence changes that alter validation routing or source classification are governance-sensitive and must refresh architecture context plus docs-gate-required governance surfaces in the same PR.
+- Flow Ops closure-evidence merge repairs that keep generated environment setup
+  or init scaffolding behavior current must also keep this guide in the PR when
+  docs-gate reports tooling-runtime or init-scaffold categories.
+- Closure-evidence fail-closed changes for missing checks, wrong `checkedSha`
+  values, or skipped required checks should be reviewed as governance changes:
+  update the operator-facing docs surfaces that docs-gate reports before push so
+  required-check evidence and rollback expectations stay auditable.
 - CircleCI orb-pinning enforcement should verify `ralph` availability (`ralph --version`) and may install pinned `ralph-gold` in ephemeral CI jobs when the CLI is missing.
 - Project Brain memory-extension checks must stay project-local: keep required `.harness/**` knowledge paths in `toolingPolicy.projectBrainMemoryExtension.requiredPaths` and do not gate on workspace-level `~/.codex` state.
 - `.harness/README.md` is the governance map for selective `.harness` tracking. Curated Markdown and JSON contract files are reviewable repo inputs; runtime databases, backups, caches, run output, and bulk snapshots must stay local unless a validator or fixture contract admits them.
