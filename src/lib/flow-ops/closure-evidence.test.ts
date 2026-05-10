@@ -319,14 +319,32 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["review:blocking"]);
 	});
 
-	it("routes ambiguous closure evidence to human triage", () => {
+	it("classifies missing required checks as blocked", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
 				requiredChecks: [],
 			}),
 		);
 
+		expect(result.classification).toBe("blocked_failing_check");
+		expect(result.reasons).toEqual(["checks:missing"]);
+	});
+
+	it("fails closed when a completed required check has no checked SHA", () => {
+		const result = classifyClosureEvidence(
+			acceptedMergedRecord({
+				requiredChecks: [
+					{
+						name: "pr-pipeline",
+						provider: "circleci",
+						status: "completed",
+						conclusion: "success",
+					},
+				],
+			}),
+		);
+
 		expect(result.classification).toBe("needs_human_triage");
-		expect(result.reasons).toEqual(["classification:ambiguous"]);
+		expect(result.reasons).toEqual(["checks:wrong-sha"]);
 	});
 });
