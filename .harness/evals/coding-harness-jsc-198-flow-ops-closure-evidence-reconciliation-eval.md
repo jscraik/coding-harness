@@ -10,7 +10,8 @@ date: 2026-05-10
 traceability_required: true
 origin: .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md
 linear_issue: JSC-198
-linear_status: blocked
+linear_status: Todo
+linear_completion_recommendation: blocked
 linear_milestone: Control loop hardening and flow telemetry
 ---
 
@@ -20,9 +21,8 @@ linear_milestone: Control loop hardening and flow telemetry
 
 Status: complete_for_recommendation
 Linear Completion Recommendation: Blocked
-Primary Blockers: JSC-198 remains Todo in Linear; PR #235 is draft with
-`pr-pipeline` still in progress and CodeRabbit pending; human acceptance for
-external mutation is not recorded.
+Primary Blockers: JSC-198 remains Todo in Linear; PR #235 is draft; human
+acceptance for external mutation is not recorded.
 Confidence: high for IU-198-003 proof and IU-198-004 recommendation posture.
 
 ## Evaluated Slice
@@ -121,7 +121,7 @@ Blocks Closure: yes
 
 ## Functional Validation Results
 
-Command or Method: `pnpm exec tsx -e '<classifier invocation>'`
+Command or Method: `pnpm exec tsx -e 'import { classifyClosureEvidence } from "./src/lib/flow-ops/closure-evidence.ts"; const now = "2026-05-09T00:00:00.000Z"; const base = { issueKey: "JSC-198", planId: "IU-198-003", inScope: true, implementationDetected: true, evalArtifact: { exists: true, valid: true, recommendation: "blocked" }, reviewState: { required: true, status: "passed" }, humanAcceptance: { recorded: false }, pr: { number: 235, state: "open", draft: true, headSha: "7a7001f1452364a91d093cb2d75438b83a96e35e", checks: [{ name: "pr-pipeline", required: true, status: "success", checkedSha: "7a7001f1452364a91d093cb2d75438b83a96e35e" }] }, linear: { status: "Todo", updatedAt: now, evidenceRefreshedAt: now } }; console.log(JSON.stringify(classifyClosureEvidence(base), null, 2));'`
 Result: pass
 Evidence: classifier returned `complete_linear_stale` for PR #232,
 `blocked_missing_eval` for PR #234, and `not_started` for the live JSC-198
@@ -148,8 +148,7 @@ check runs tied to head SHA `e18ba04d4aeea854d0d14c3b46f724f8a770a6fb`;
 PR #234 is draft/open with failed CircleCI `pr-pipeline` tied to head SHA
 `d0ee79eda08c81638e053641f142d9c02b059be1`.
 Status: pass
-Evidence: `gh pr view 232`, `gh pr view 234`, and `gh api
-repos/jscraik/coding-harness/commits/<sha>/check-runs`.
+Evidence: `gh pr view 232 --repo jscraik/coding-harness --json number,state,isDraft,headRefOid,mergedAt,statusCheckRollup`, `gh pr view 234 --repo jscraik/coding-harness --json number,state,isDraft,headRefOid,mergedAt,statusCheckRollup`, `gh api repos/jscraik/coding-harness/commits/e18ba04d4aeea854d0d14c3b46f724f8a770a6fb/check-runs`, and `gh api repos/jscraik/coding-harness/commits/d0ee79eda08c81638e053641f142d9c02b059be1/check-runs`.
 Confidence: high
 Blocks Closure: no
 Required Action: use this as read-only proof only.
@@ -354,9 +353,8 @@ completion until PR #235 review/check evidence and human acceptance complete.
 Classification: Blocked
 Recommended Linear Status: leave JSC-198 open.
 Required Linear Comment/Update: none from this phase.
-Issues to Close: none.
-Issues to Reopen: none.
-Issues to Leave Open: JSC-198, JSC-199, JSC-200, JSC-201.
+Issue closure recommendation: close none, reopen none, and leave JSC-198,
+JSC-199, JSC-200, and JSC-201 open.
 New Follow-Up Issues: none.
 Labels to Add/Remove: none.
 Milestone Completion: no change.
