@@ -20,12 +20,20 @@ resolve_package_spec() {
 			try {
 				const pkg = JSON.parse(readFileSync(process.argv[1], "utf8"));
 				const dep = pkg.dependencies?.["@brainwav/coding-harness"] || pkg.devDependencies?.["@brainwav/coding-harness"];
-				if (dep && !dep.startsWith("file:") && !dep.startsWith("link:") && !dep.startsWith("workspace:")) {
-					console.log(dep.replace(/^[~^]/, ""));
+				if (dep) {
+					if (dep.startsWith("file:") || dep.startsWith("link:") || dep.startsWith("workspace:") || dep.startsWith("portal:") || dep.startsWith("git:") || dep.startsWith("git+")) {
+						console.log("__UNSUPPORTED_SPEC__");
+					} else {
+						console.log(dep.replace(/^[~^]/, ""));
+					}
 				}
 			} catch {}
 		' "$REPO_ROOT/package.json" 2>/dev/null || true)"
 		if [[ -n "$repo_version" ]]; then
+			if [[ "$repo_version" == "__UNSUPPORTED_SPEC__" ]]; then
+				echo "__UNSUPPORTED_SPEC__"
+				return
+			fi
 			echo "${PACKAGE_NAME}@$repo_version"
 			return
 		fi
@@ -34,6 +42,13 @@ resolve_package_spec() {
 }
 
 PACKAGE_SPEC="$(resolve_package_spec)"
+
+if [[ "$PACKAGE_SPEC" == "__UNSUPPORTED_SPEC__" ]]; then
+	echo "Error: @brainwav/coding-harness is declared with a local/non-registry package spec (file:, link:, workspace:, etc.)." >&2
+	echo "This script cannot use npm exec with local package specs." >&2
+	echo "Install the package locally and use the node_modules binary, or update package.json to use a registry version." >&2
+	exit 1
+fi
 
 is_harness_source_repo() {
 	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
@@ -90,6 +105,12 @@ if [[ ! -f "$CLI_PATH" ]]; then
 		if ! npm_auth_is_available; then
 			echo "Error: npm auth is missing in this process; cannot fetch $PACKAGE_NAME." >&2
 			print_npm_auth_hint
+			exit 1
+		fi
+		if [[ "$PACKAGE_SPEC" == "__UNSUPPORTED_SPEC__" ]]; then
+			echo "Error: cannot use npm exec with local/non-registry package spec." >&2
+			echo "The package.json declares @brainwav/coding-harness with a local spec (file:, link:, workspace:, etc.)." >&2
+			echo "Install the package locally or update package.json to use a registry version." >&2
 			exit 1
 		fi
 		exec npm exec --yes --package "$PACKAGE_SPEC" -- harness "$@"
