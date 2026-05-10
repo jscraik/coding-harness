@@ -2625,9 +2625,31 @@ exit 1
 					},
 				},
 			);
-			expect(npmAuthFailureRun.status).toBe(1);
-			const npmAuthFailureOutput = `${npmAuthFailureRun.stdout}${npmAuthFailureRun.stderr}`;
-			expect(npmAuthFailureOutput).toContain(
+			expect(
+				npmAuthFailureRun.status,
+				npmAuthFailureRun.stdout + npmAuthFailureRun.stderr,
+			).toBe(0);
+			expect(npmAuthFailureRun.stdout).toContain(
+				`Using harness runner: global npm harness (${fakeNpmHarness})`,
+			);
+
+			const missingHarnessAuthFailureRun = spawnSync(
+				"bash",
+				["scripts/check-environment.sh"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...baseEnv,
+						FAKE_MISE_WHICH_MODE: "missing",
+						FAKE_NPM_AUTH_FAIL: "1",
+						FAKE_NPM_PREFIX: join(tempDir, "missing-npm-prefix"),
+					},
+				},
+			);
+			expect(missingHarnessAuthFailureRun.status).toBe(1);
+			const missingHarnessAuthFailureOutput = `${missingHarnessAuthFailureRun.stdout}${missingHarnessAuthFailureRun.stderr}`;
+			expect(missingHarnessAuthFailureOutput).toContain(
 				"Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness.",
 			);
 

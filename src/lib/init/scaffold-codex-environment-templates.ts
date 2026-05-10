@@ -86,7 +86,8 @@ ${actions.map((action) => renderCodexActionBlock(action)).join("\n\n")}
 }
 
 function renderCodexInstallCommand(packageManager: string): string {
-	return `for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/sbin" "/sbin"; do
+	return `PATH="\${PATH:-}"
+for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/sbin" "/sbin"; do
   if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
     PATH="$candidate:$PATH"
   fi
