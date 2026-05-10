@@ -6,6 +6,13 @@ name = "harness local environment"
 script = '''
 set -euo pipefail
 
+for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/sbin" "/sbin"; do
+  if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
+    PATH="$candidate:$PATH"
+  fi
+done
+export PATH
+
 if command -v mise >/dev/null 2>&1; then
   mise trust --yes .mise.toml || true
   mise install
@@ -22,6 +29,13 @@ name = "Tools"
 icon = "tool"
 command = '''
 set -euo pipefail
+
+for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/sbin" "/sbin"; do
+  if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
+    PATH="$candidate:$PATH"
+  fi
+done
+export PATH
 
 if command -v mise >/dev/null 2>&1; then
   mise trust --yes .mise.toml || true
@@ -95,12 +109,29 @@ esac
 
 git fetch --prune origin main "$release_branch"
 git checkout main
-git pull --ff-only origin main
-local_main_ahead_count="$(git rev-list --count origin/main..main)"
+local_main_ahead_count="$(git rev-list --count origin/main..HEAD)"
 if [ "$local_main_ahead_count" -ne 0 ]; then
   echo "Local main is ahead of origin/main; aborting."
   echo "Reconcile local commits before running Release Finalize."
   exit 2
+fi
+
+if git merge-base --is-ancestor HEAD origin/main; then
+  git pull --ff-only origin main
+  pull_status=$?
+else
+  echo "Local main diverges from origin/main; aborting."
+  echo "Reconcile local commits before running Release Finalize."
+  exit 2
+fi
+if [ "$pull_status" -ne 0 ]; then
+  local_main_ahead_count="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
+  if [ "$local_main_ahead_count" -ne 0 ]; then
+    echo "Local main is ahead of origin/main; aborting."
+    echo "Reconcile local commits before running Release Finalize."
+    exit 2
+  fi
+  exit "$pull_status"
 fi
 
 git merge --ff-only "origin/$release_branch"
@@ -140,6 +171,36 @@ command = '''
 set -euo pipefail
 
 command -v mise >/dev/null 2>&1
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  current_branch="$(git symbolic-ref --short -q HEAD || true)"
+  if [ -z "$current_branch" ]; then
+    repo_slug="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+    if [ -z "$repo_slug" ]; then
+      repo_slug="worktree"
+    fi
+    short_sha="$(git rev-parse --short HEAD)"
+    branch_base="${BRANCH_PREFIX:-codex}/$repo_slug-$short_sha"
+    branch_name="$branch_base"
+    suffix=1
+    while git show-ref --verify --quiet "refs/heads/$branch_name"; do
+      branch_name="$branch_base-$suffix"
+      suffix=$((suffix + 1))
+    done
+    echo "[codex] detached HEAD detected; creating branch $branch_name"
+    git switch -c "$branch_name"
+    if git show-ref --verify --quiet "refs/remotes/origin/main"; then
+      git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
+      echo "[codex] tracking origin/main for $branch_name"
+      if git merge-base --is-ancestor HEAD origin/main; then
+        echo "[codex] fast-forwarding $branch_name with origin/main"
+        git pull --ff-only origin main
+      else
+        echo "[codex] $branch_name diverges from origin/main; skipping fast-forward"
+      fi
+    fi
+  fi
+fi
+mise trust --yes .mise.toml || true
 mise install
 '''
 
@@ -444,6 +505,42 @@ pnpm 'test:deep'
 '''
 
 [[actions]]
+name = "Script: test:evals"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'test:evals'
+'''
+
+[[actions]]
+name = "Script: test:harness-upgrade-matrix"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'test:harness-upgrade-matrix'
+'''
+
+[[actions]]
+name = "Script: test:integration"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'test:integration'
+'''
+
+[[actions]]
+name = "Script: test:e2e"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'test:e2e'
+'''
+
+[[actions]]
 name = "Script: build"
 icon = "tool"
 command = '''
@@ -507,6 +604,15 @@ pnpm 'docs:lint'
 '''
 
 [[actions]]
+name = "Script: docs:ubiquitous:guard"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'docs:ubiquitous:guard'
+'''
+
+[[actions]]
 name = "Script: docs:style:changed"
 icon = "tool"
 command = '''
@@ -552,12 +658,39 @@ pnpm 'markdownlint'
 '''
 
 [[actions]]
+name = "Script: codestyle:parity"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'codestyle:parity'
+'''
+
+[[actions]]
 name = "Script: codestyle:validate"
 icon = "debug"
 command = '''
 set -euo pipefail
 
 pnpm 'codestyle:validate'
+'''
+
+[[actions]]
+name = "Script: quality:docstrings"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'quality:docstrings'
+'''
+
+[[actions]]
+name = "Script: quality:size"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'quality:size'
 '''
 
 [[actions]]
@@ -612,6 +745,15 @@ command = '''
 set -euo pipefail
 
 pnpm 'test:artifacts:e2e'
+'''
+
+[[actions]]
+name = "Script: test:artifacts:evals"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'test:artifacts:evals'
 '''
 
 [[actions]]

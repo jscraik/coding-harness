@@ -24,6 +24,8 @@ The shortest honest description of the project today is:
 - it validates review, docs, plan, and authorization policy before merge
 - it supports staged CI migration, rollback, and autonomy expansion with
   artifact-backed evidence
+- it keeps generated Codex environment actions aligned with repo scripts,
+  including test/eval script aliases and detached-worktree bootstrap behavior
 
 ## Table of Contents
 
