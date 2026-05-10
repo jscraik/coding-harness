@@ -105,7 +105,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 
 ### Worktree branch naming: security and governance implications
 
-The canonical worktree branch format `jscraik/feature/$repo_slug-worktree-$short_sha` (defined at line 62 of `scripts/prepare-worktree.sh`) carries the following security and governance considerations:
+The canonical worktree branch format `jscraik/feature/$repo_slug-worktree-$short_sha` (as defined in `scripts/prepare-worktree.sh`) carries the following security and governance considerations:
 
 **Naming semantics:**
 - The `jscraik/feature/*-worktree-*` pattern explicitly identifies branches created by the readiness script
