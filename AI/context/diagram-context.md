@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-09T15:10:15Z
+Generated: 2026-05-09T20:29:40Z
 
 ## Table of Contents
 
@@ -80,7 +80,7 @@ flowchart TD
     normalise_test_1_6643dd83["🤖 normalise.test"]
     coderabbit_csv_test_1f36d0a4["🤖 coderabbit-csv.test"]
     artifact_io_test_aac02da3["🤖 artifact-io.test"]
-    types_15_86775c96["🤖 types"]
+    types_14_fe7507be["🤖 types"]
     scaffold_template_registry_b1cce2aa["🤖 scaffold-template-registry"]
     scaffold_environment_templates_c1ceba6a["🤖 scaffold-environment-templates"]
     scaffold_environment_templates_test_b31b6a0c["🤖 scaffold-environment-templates.test"]
@@ -164,11 +164,11 @@ flowchart TD
     observed_skill_usage_ed7d5930["🔧 observed-skill-usage"]
     observed_skill_usage_test_311c215a["🔧 observed-skill-usage.test"]
     ralph_runtime_73d63c0e["🔧 ralph-runtime"]
-    command_registry_test_0cf92cba["🔧 command-registry.test"]
     validator_helpers_7b927667["🔧 validator-helpers"]
     validator_core_1_1518647e["🔧 validator-core"]
     types_core_1_8bd0f8fd["🔧 types-core"]
     policy_validators_core_714a3fe7["🔧 policy-validators-core"]
+    command_registry_test_0cf92cba["🔧 command-registry.test"]
     module_boundaries_test_c0caf46b["🔧 module-boundaries.test"]
   end
   subgraph MemoryLayer["📚 Memory / Vector Layer"]
@@ -205,7 +205,7 @@ flowchart TD
     agent_first_throughput_integration_test_dc677cc4[("📚 agent-first-throughput.integration.test")]
     overload_guard_2748c559[("📚 overload-guard")]
     overload_guard_test_6ece9f86[("📚 overload-guard.test")]
-    types_3_9675d69b[("📚 types")]
+    types_6_1818fb91[("📚 types")]
     performance_overload_c685bfcf[("📚 performance-overload")]
     local_memory_0db17ecc[("📚 local-memory")]
     local_memory_smoke_1175abfc[("📚 local-memory-smoke")]
@@ -238,11 +238,12 @@ flowchart TD
     project_brain_templates_test_0b6509f2[("📚 project-brain-templates.test")]
     init_modes_c05ceb07[("📚 init-modes")]
     codex_preflight_symlink_test_037558db[("📚 codex-preflight-symlink.test")]
+    harness_decision_test_7e5a4fe5[("📚 harness-decision.test")]
     types_17_ed30531c[("📚 types")]
     sync_contract_c79fa191[("📚 sync-contract")]
     sync_contract_test_5dc3165c[("📚 sync-contract.test")]
     store_824d80d7[("📚 store")]
-    sources_878a52fc[("📚 sources")]
+    sources_1_e133d97d[("📚 sources")]
     rollout_a4fa034c[("📚 rollout")]
     ollama_76e3c7bf[("📚 ollama")]
     ollama_test_71f9750e[("📚 ollama.test")]
@@ -255,8 +256,6 @@ flowchart TD
     context_compact_policy_test_da148267[("📚 context-compact-policy.test")]
     constants_7517017f[("📚 constants")]
     constants_test_5492ae98[("📚 constants.test")]
-    harness_decision_test_7e5a4fe5[("📚 harness-decision.test")]
-    command_registry_test_0cf92cba[("📚 command-registry.test")]
     validator_test_5_2bb3219d[("📚 validator.test")]
     validator_core_1_1518647e[("📚 validator-core")]
     types_core_1_8bd0f8fd[("📚 types-core")]
@@ -264,19 +263,20 @@ flowchart TD
     loader_test_03424671[("📚 loader.test")]
     json_schema_core_96d7e328[("📚 json-schema-core")]
     index_6_fc9e91e2[("📚 index")]
+    command_registry_test_0cf92cba[("📚 command-registry.test")]
     branch_protect_sync_570adb18[("📚 branch-protect-sync")]
     command_specs_test_7f693e85[("📚 command-specs.test")]
     command_specs_core_1c0ffc99[("📚 command-specs-core")]
     command_capabilities_a4d5c71e[("📚 command-capabilities")]
   end
   classDef agentNode fill:#555,color:#fff
-  class cli_99bb8840,cli_test_4851f28b,collect_observed_eval_usage_1724425c,version_coherence_test_b81c6d8e,tooling_audit_test_d2aee28c,tooling_audit_core_328d6a41,simulate_b9efe395,simulate_analysis_164a460c,review_gate_test_000e2ed6,review_context_test_89806d6c,remediate_06b9c7fc,remediate_runner_helpers_929fedcc,pilot_rollback_test_e61d5a2b,pilot_evaluate_test_a2ac06fc,learnings_test_e45e0253,init_test_cbba76a6,drift_gate_test_816765e3,drift_gate_rules_9685e72d,doctor_72f4be89,doctor_file_checks_bc1301dc,doctor_config_checks_49c872e0,docs_gate_test_a25e972f,ci_migrate_test_2a015bb9,brain_bbbf7a64,brain_test_428d4d67,brain_core_aa07c380,automation_run_test_7b21d905,agent_first_throughput_integration_test_dc677cc4,orchestrator_11376b7e,orchestrator_test_18d2fe26,orchestrator_core_d0678b53,orchestrator_1_6b7137c5,orchestrator_test_1_c291cde7,tooling_baseline_50ab2eeb,suggestion_generator_0956f794,suggestion_generator_test_f68e9892,metadata_scanner_6a101b66,metadata_scanner_test_faee743d,domain_mapper_cd9333d2,domain_mapper_test_dc5a9896,brain_validator_be251832,brain_validator_test_5e40cb72,registries_06402afa,metrics_capture_core_db4bf7cf,control_plane_core_db3b4cb2,promote_test_5c615269,normalise_test_1_6643dd83,coderabbit_csv_test_1f36d0a4,artifact_io_test_aac02da3,types_15_86775c96,scaffold_template_registry_b1cce2aa,scaffold_environment_templates_c1ceba6a,scaffold_environment_templates_test_b31b6a0c,scaffold_doc_templates_f6152330,project_brain_templates_7ef51530,project_brain_templates_test_0b6509f2,init_modes_c05ceb07,validator_test_5_2bb3219d,validator_core_1_1518647e,types_core_1_8bd0f8fd,run_records_core_89286dfa,run_record_emitter_test_5475c0da,policy_validators_core_714a3fe7,north_star_alignment_00440188,north_star_alignment_test_3ae1d69b,command_specs_69167c63,command_specs_test_7f693e85,command_specs_core_1c0ffc99 agentNode
+  class cli_99bb8840,cli_test_4851f28b,collect_observed_eval_usage_1724425c,version_coherence_test_b81c6d8e,tooling_audit_test_d2aee28c,tooling_audit_core_328d6a41,simulate_b9efe395,simulate_analysis_164a460c,review_gate_test_000e2ed6,review_context_test_89806d6c,remediate_06b9c7fc,remediate_runner_helpers_929fedcc,pilot_rollback_test_e61d5a2b,pilot_evaluate_test_a2ac06fc,learnings_test_e45e0253,init_test_cbba76a6,drift_gate_test_816765e3,drift_gate_rules_9685e72d,doctor_72f4be89,doctor_file_checks_bc1301dc,doctor_config_checks_49c872e0,docs_gate_test_a25e972f,ci_migrate_test_2a015bb9,brain_bbbf7a64,brain_test_428d4d67,brain_core_aa07c380,automation_run_test_7b21d905,agent_first_throughput_integration_test_dc677cc4,orchestrator_11376b7e,orchestrator_test_18d2fe26,orchestrator_core_d0678b53,orchestrator_1_6b7137c5,orchestrator_test_1_c291cde7,tooling_baseline_50ab2eeb,suggestion_generator_0956f794,suggestion_generator_test_f68e9892,metadata_scanner_6a101b66,metadata_scanner_test_faee743d,domain_mapper_cd9333d2,domain_mapper_test_dc5a9896,brain_validator_be251832,brain_validator_test_5e40cb72,registries_06402afa,metrics_capture_core_db4bf7cf,control_plane_core_db3b4cb2,promote_test_5c615269,normalise_test_1_6643dd83,coderabbit_csv_test_1f36d0a4,artifact_io_test_aac02da3,types_14_fe7507be,scaffold_template_registry_b1cce2aa,scaffold_environment_templates_c1ceba6a,scaffold_environment_templates_test_b31b6a0c,scaffold_doc_templates_f6152330,project_brain_templates_7ef51530,project_brain_templates_test_0b6509f2,init_modes_c05ceb07,validator_test_5_2bb3219d,validator_core_1_1518647e,types_core_1_8bd0f8fd,run_records_core_89286dfa,run_record_emitter_test_5475c0da,policy_validators_core_714a3fe7,north_star_alignment_00440188,north_star_alignment_test_3ae1d69b,command_specs_69167c63,command_specs_test_7f693e85,command_specs_core_1c0ffc99 agentNode
   classDef llmNode fill:#555,color:#fff
   class cli_dispatch_test_54c9f17b,search_24193290,search_test_0c66bc11,remediate_runner_helpers_929fedcc,prompt_gate_c5e9d207,prompt_gate_test_1a442b27,index_context_de3ed39d,index_context_test_1949ea6f,contract_test_2262847f,context_ea7792a2,context_test_57aad306,check_environment_core_2c16213f,sensitive_text_7c11f760,sync_contract_c79fa191,ollama_76e3c7bf,ollama_test_71f9750e,indexer_70fa78e5,index_5_522f772a,constants_7517017f,north_star_validators_cfc926ce,command_specs_core_1c0ffc99 llmNode
   classDef toolNode fill:#555,color:#fff
-  class collect_observed_eval_usage_1724425c,verify_work_test_0e12f6c5,review_gate_test_000e2ed6,review_gate_core_4c8001f9,remediate_test_6f59cafe,remediate_runner_helpers_929fedcc,remediate_cli_output_cc165396,policy_gate_213f7313,next_c6c1c9a9,learnings_test_e45e0253,doctor_tool_checks_4acac51a,doctor_checks_5a2eb2b9,docs_gate_test_a25e972f,ci_migrate_core_7005b5af,types_1_4ecdf56e,orchestrator_test_1_c291cde7,tooling_baseline_50ab2eeb,tooling_baseline_test_d272ddb6,evaluation_engine_core_e054fe49,normalise_test_73e8a615,normalise_core_v2_f6c5ed83,validator_1_0c0621d8,metrics_tracker_98cec29c,metrics_tracker_test_3de156fa,pr_creator_dc6b1ea4,client_1_914e1681,scaffold_shell_quality_test_79567d03,scaffold_release_private_npm_template_075499f8,scaffold_github_actions_pr_pipeline_template_e2b85f62,scaffold_github_actions_pr_pipeline_template_test_be464a7b,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,scaffold_github_actions_pr_pipeline_renderer_test_2cc38272,scaffold_environment_templates_c1ceba6a,scaffold_config_templates_4b80ce53,scaffold_codex_environment_templates_334fbbed,scaffold_ci_templates_2afd6392,init_output_360dce91,observed_skill_usage_ed7d5930,observed_skill_usage_test_311c215a,ralph_runtime_73d63c0e,command_registry_test_0cf92cba,validator_helpers_7b927667,validator_core_1_1518647e,types_core_1_8bd0f8fd,policy_validators_core_714a3fe7,module_boundaries_test_c0caf46b toolNode
+  class collect_observed_eval_usage_1724425c,verify_work_test_0e12f6c5,review_gate_test_000e2ed6,review_gate_core_4c8001f9,remediate_test_6f59cafe,remediate_runner_helpers_929fedcc,remediate_cli_output_cc165396,policy_gate_213f7313,next_c6c1c9a9,learnings_test_e45e0253,doctor_tool_checks_4acac51a,doctor_checks_5a2eb2b9,docs_gate_test_a25e972f,ci_migrate_core_7005b5af,types_1_4ecdf56e,orchestrator_test_1_c291cde7,tooling_baseline_50ab2eeb,tooling_baseline_test_d272ddb6,evaluation_engine_core_e054fe49,normalise_test_73e8a615,normalise_core_v2_f6c5ed83,validator_1_0c0621d8,metrics_tracker_98cec29c,metrics_tracker_test_3de156fa,pr_creator_dc6b1ea4,client_1_914e1681,scaffold_shell_quality_test_79567d03,scaffold_release_private_npm_template_075499f8,scaffold_github_actions_pr_pipeline_template_e2b85f62,scaffold_github_actions_pr_pipeline_template_test_be464a7b,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,scaffold_github_actions_pr_pipeline_renderer_test_2cc38272,scaffold_environment_templates_c1ceba6a,scaffold_config_templates_4b80ce53,scaffold_codex_environment_templates_334fbbed,scaffold_ci_templates_2afd6392,init_output_360dce91,observed_skill_usage_ed7d5930,observed_skill_usage_test_311c215a,ralph_runtime_73d63c0e,validator_helpers_7b927667,validator_core_1_1518647e,types_core_1_8bd0f8fd,policy_validators_core_714a3fe7,command_registry_test_0cf92cba,module_boundaries_test_c0caf46b toolNode
   classDef memNode fill:#555,color:#fff
-  class cli_dispatch_test_54c9f17b,run_local_memory_preflight_36e92808,run_local_memory_preflight_test_1d7c5aa0,tooling_audit_test_d2aee28c,tooling_audit_core_328d6a41,search_24193290,search_test_0c66bc11,review_gate_test_000e2ed6,review_gate_core_4c8001f9,review_context_ca6cf81d,review_context_test_89806d6c,refresh_diagram_context_test_03bf21c4,memory_gate_a577a506,local_memory_preflight_dcc36c42,local_memory_preflight_test_5e323bbf,init_test_cbba76a6,index_context_de3ed39d,index_context_test_1949ea6f,docs_gate_test_a25e972f,docs_gate_core_eb9b6c18,context_ea7792a2,context_test_57aad306,context_integrity_acceptance_test_59f961b1,context_health_80bb7da9,context_health_test_3b5b87f3,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,check_diagram_freshness_test_c1dc40aa,branch_protect_core_a8feb0fd,brain_test_428d4d67,agent_first_throughput_integration_test_dc677cc4,overload_guard_2748c559,overload_guard_test_6ece9f86,types_3_9675d69b,performance_overload_c685bfcf,local_memory_0db17ecc,local_memory_smoke_1175abfc,tooling_baseline_50ab2eeb,suggestion_generator_0956f794,suggestion_generator_test_f68e9892,validator_1_0c0621d8,validator_test_1_c5015ca0,types_11_4be3ee64,metrics_tracker_98cec29c,metrics_tracker_test_3de156fa,branch_enforcer_acb749cd,review_context_1_e3afed15,index_2_10143590,eval_seed_5699fd3e,workflow_contract_scripts_test_681e2e3c,scaffold_workflow_template_92310587,scaffold_template_registry_b1cce2aa,scaffold_surfaces_12d6494e,scaffold_shell_templates_0ad0f915,scaffold_script_template_registry_69312d4e,scaffold_script_template_registry_test_6a8ebefe,scaffold_root_command_templates_404fed7f,scaffold_root_command_templates_test_14596939,scaffold_environment_templates_c1ceba6a,scaffold_doc_templates_f6152330,scaffold_diagram_templates_dd88e83c,scaffold_diagram_templates_test_f3774c28,project_brain_templates_7ef51530,project_brain_templates_test_0b6509f2,init_modes_c05ceb07,codex_preflight_symlink_test_037558db,types_17_ed30531c,sync_contract_c79fa191,sync_contract_test_5dc3165c,store_824d80d7,sources_878a52fc,rollout_a4fa034c,ollama_76e3c7bf,ollama_test_71f9750e,lexical_fallback_723e2b3e,init_error_5c7dd49f,indexer_70fa78e5,indexer_test_d492f0aa,index_5_522f772a,context_compact_policy_3dcaf95d,context_compact_policy_test_da148267,constants_7517017f,constants_test_5492ae98,harness_decision_test_7e5a4fe5,command_registry_test_0cf92cba,validator_test_5_2bb3219d,validator_core_1_1518647e,types_core_1_8bd0f8fd,policy_validators_core_714a3fe7,loader_test_03424671,json_schema_core_96d7e328,index_6_fc9e91e2,branch_protect_sync_570adb18,command_specs_test_7f693e85,command_specs_core_1c0ffc99,command_capabilities_a4d5c71e memNode
+  class cli_dispatch_test_54c9f17b,run_local_memory_preflight_36e92808,run_local_memory_preflight_test_1d7c5aa0,tooling_audit_test_d2aee28c,tooling_audit_core_328d6a41,search_24193290,search_test_0c66bc11,review_gate_test_000e2ed6,review_gate_core_4c8001f9,review_context_ca6cf81d,review_context_test_89806d6c,refresh_diagram_context_test_03bf21c4,memory_gate_a577a506,local_memory_preflight_dcc36c42,local_memory_preflight_test_5e323bbf,init_test_cbba76a6,index_context_de3ed39d,index_context_test_1949ea6f,docs_gate_test_a25e972f,docs_gate_core_eb9b6c18,context_ea7792a2,context_test_57aad306,context_integrity_acceptance_test_59f961b1,context_health_80bb7da9,context_health_test_3b5b87f3,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,check_diagram_freshness_test_c1dc40aa,branch_protect_core_a8feb0fd,brain_test_428d4d67,agent_first_throughput_integration_test_dc677cc4,overload_guard_2748c559,overload_guard_test_6ece9f86,types_6_1818fb91,performance_overload_c685bfcf,local_memory_0db17ecc,local_memory_smoke_1175abfc,tooling_baseline_50ab2eeb,suggestion_generator_0956f794,suggestion_generator_test_f68e9892,validator_1_0c0621d8,validator_test_1_c5015ca0,types_11_4be3ee64,metrics_tracker_98cec29c,metrics_tracker_test_3de156fa,branch_enforcer_acb749cd,review_context_1_e3afed15,index_2_10143590,eval_seed_5699fd3e,workflow_contract_scripts_test_681e2e3c,scaffold_workflow_template_92310587,scaffold_template_registry_b1cce2aa,scaffold_surfaces_12d6494e,scaffold_shell_templates_0ad0f915,scaffold_script_template_registry_69312d4e,scaffold_script_template_registry_test_6a8ebefe,scaffold_root_command_templates_404fed7f,scaffold_root_command_templates_test_14596939,scaffold_environment_templates_c1ceba6a,scaffold_doc_templates_f6152330,scaffold_diagram_templates_dd88e83c,scaffold_diagram_templates_test_f3774c28,project_brain_templates_7ef51530,project_brain_templates_test_0b6509f2,init_modes_c05ceb07,codex_preflight_symlink_test_037558db,harness_decision_test_7e5a4fe5,types_17_ed30531c,sync_contract_c79fa191,sync_contract_test_5dc3165c,store_824d80d7,sources_1_e133d97d,rollout_a4fa034c,ollama_76e3c7bf,ollama_test_71f9750e,lexical_fallback_723e2b3e,init_error_5c7dd49f,indexer_70fa78e5,indexer_test_d492f0aa,index_5_522f772a,context_compact_policy_3dcaf95d,context_compact_policy_test_da148267,constants_7517017f,constants_test_5492ae98,validator_test_5_2bb3219d,validator_core_1_1518647e,types_core_1_8bd0f8fd,policy_validators_core_714a3fe7,loader_test_03424671,json_schema_core_96d7e328,index_6_fc9e91e2,command_registry_test_0cf92cba,branch_protect_sync_570adb18,command_specs_test_7f693e85,command_specs_core_1c0ffc99,command_capabilities_a4d5c71e memNode
 
 ```
 
@@ -329,13 +329,13 @@ flowchart TD
 
 ```mermaid
 C4Context
-  title "System Context — coding harness"
-  System(mainSystem, "coding harness", "The system being documented")
+  title "System Context — Coding Harness"
+  System(mainSystem, "Coding Harness", "Control plane for agentic development")
   Person(developer, "Developer / User", "Uses the system")
   Rel(developer, mainSystem, "Uses")
   System_Ext(ext_0, "External Service", "vitest, node:fs, node:path")
   Rel(mainSystem, ext_0, "uses")
-  System_Ext(ext_1, "Version Control", "@octokit/rest, @octokit/plugin-throttling, @octokit/request-error")
+  System_Ext(ext_1, "Version Control", "@octokit/rest, @octokit/request-error, @octokit/plugin-retry, @octokit/plugin-throttling")
   Rel(mainSystem, ext_1, "uses")
   System_Ext(ext_2, "Database", "better-sqlite3, sqlite-vec")
   Rel(mainSystem, ext_2, "uses")
@@ -385,7 +385,7 @@ classDiagram
   class client_948fe603 {
     +src/lib/linear/client.ts
   }
-  class validator_3_28b6e9f3 {
+  class validator_2_744853f5 {
     +src/lib/input/validator.ts
   }
   class validation_98c41dcd {
@@ -578,7 +578,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_state_core_25a955bc_a562e9bf
   ext_node_crypto_c7dfc512["node:crypto"] --> node_scan_cache_fc02c79c_11793337
   ext_node_crypto_c7dfc512["node:crypto"] --> node_simulate_analysis_164a460c_2367e095
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_sources_878a52fc_cd312fcd
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_sources_1_e133d97d_c89b479b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_tracer_1e6243a2_cb3d802b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_ui_loop_11660889_bc33571d
   ext_node_crypto_c7dfc512["node:crypto"] --> node_upgrade_1_b277486e_4a06b7a8
@@ -799,7 +799,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_solo_mode_test_a7f03f80_a6ecd67b
   ext_node_fs_a15b7d96["node:fs"] --> node_source_outline_c86cb1d0_38ab591e
   ext_node_fs_a15b7d96["node:fs"] --> node_source_outline_test_df6fa3a7_da5a84f4
-  ext_node_fs_a15b7d96["node:fs"] --> node_sources_878a52fc_cd312fcd
+  ext_node_fs_a15b7d96["node:fs"] --> node_sources_1_e133d97d_c89b479b
   ext_node_fs_a15b7d96["node:fs"] --> node_stale_detector_a563289e_653281b0
   ext_node_fs_a15b7d96["node:fs"] --> node_stale_detector_test_7dc85478_307c0220
   ext_node_fs_a15b7d96["node:fs"] --> node_store_824d80d7_69038a3e
@@ -1143,7 +1143,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_solo_mode_test_a7f03f80_a6ecd67b
   ext_node_path_78811c13["node:path"] --> node_source_outline_c86cb1d0_38ab591e
   ext_node_path_78811c13["node:path"] --> node_source_outline_test_df6fa3a7_da5a84f4
-  ext_node_path_78811c13["node:path"] --> node_sources_878a52fc_cd312fcd
+  ext_node_path_78811c13["node:path"] --> node_sources_1_e133d97d_c89b479b
   ext_node_path_78811c13["node:path"] --> node_stale_detector_a563289e_653281b0
   ext_node_path_78811c13["node:path"] --> node_stale_detector_test_7dc85478_307c0220
   ext_node_path_78811c13["node:path"] --> node_store_824d80d7_69038a3e
@@ -1563,9 +1563,9 @@ flowchart TD
     ci_migrate_core_7005b5af{{"ci-migrate-core"}}
     pilot_tracker_test_80398a66{{"pilot-tracker.test"}}
     pilot_tracker_core_80d8ac96{{"pilot-tracker-core"}}
-    decision_packet_test_9ea0e97b{{"decision-packet.test"}}
     tracer_1e6243a2{{"tracer"}}
     trace_normalizer_cb1be1d2{{"trace-normalizer"}}
+    decision_packet_test_9ea0e97b{{"decision-packet.test"}}
     performance_overload_c685bfcf{{"performance-overload"}}
     types_core_e405ddca{{"types-core"}}
     metrics_capture_core_db4bf7cf{{"metrics-capture-core"}}
@@ -1585,7 +1585,7 @@ flowchart TD
     json_schema_core_96d7e328{{"json-schema-core"}}
   end
   classDef eventNode fill:#db2777,color:#fff
-  class cli_dispatch_test_54c9f17b,replay_ac203c98,pilot_rollback_00c1f82c,pilot_rollback_test_e61d5a2b,pilot_evaluate_test_a2ac06fc,context_health_80bb7da9,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,pilot_tracker_test_80398a66,pilot_tracker_core_80d8ac96,decision_packet_test_9ea0e97b,tracer_1e6243a2,trace_normalizer_cb1be1d2,performance_overload_c685bfcf,types_core_e405ddca,metrics_capture_core_db4bf7cf,control_plane_core_db3b4cb2,mutation_queue_ce5a530e,mutation_queue_test_10b599e8,client_1_914e1681,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,scaffold_ci_template_utils_test_b94825d9,observed_skill_usage_ed7d5930,observed_skill_usage_test_311c215a,run_records_test_3ee6a0e3,run_records_core_89286dfa,run_record_emitter_test_5475c0da,run_record_emitter_core_688049d5,policy_validators_core_714a3fe7,json_schema_core_96d7e328 eventNode
+  class cli_dispatch_test_54c9f17b,replay_ac203c98,pilot_rollback_00c1f82c,pilot_rollback_test_e61d5a2b,pilot_evaluate_test_a2ac06fc,context_health_80bb7da9,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,pilot_tracker_test_80398a66,pilot_tracker_core_80d8ac96,tracer_1e6243a2,trace_normalizer_cb1be1d2,decision_packet_test_9ea0e97b,performance_overload_c685bfcf,types_core_e405ddca,metrics_capture_core_db4bf7cf,control_plane_core_db3b4cb2,mutation_queue_ce5a530e,mutation_queue_test_10b599e8,client_1_914e1681,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,scaffold_ci_template_utils_test_b94825d9,observed_skill_usage_ed7d5930,observed_skill_usage_test_311c215a,run_records_test_3ee6a0e3,run_records_core_89286dfa,run_record_emitter_test_5475c0da,run_record_emitter_core_688049d5,policy_validators_core_714a3fe7,json_schema_core_96d7e328 eventNode
 
 ```
 
@@ -1664,7 +1664,7 @@ flowchart LR
     det_detectedmemory_agent_first_throughput_integration_test_dc677cc4[("agent-first-throughput.integration.test")]
     det_detectedmemory_overload_guard_2748c559[("overload-guard")]
     det_detectedmemory_overload_guard_test_6ece9f86[("overload-guard.test")]
-    det_detectedmemory_types_3_9675d69b[("types")]
+    det_detectedmemory_types_6_1818fb91[("types")]
     det_detectedmemory_performance_overload_c685bfcf[("performance-overload")]
     det_detectedmemory_local_memory_0db17ecc[("local-memory")]
     det_detectedmemory_local_memory_smoke_1175abfc[("local-memory-smoke")]
@@ -1697,11 +1697,12 @@ flowchart LR
     det_detectedmemory_project_brain_templates_test_0b6509f2[("project-brain-templates.test")]
     det_detectedmemory_init_modes_c05ceb07[("init-modes")]
     det_detectedmemory_codex_preflight_symlink_test_037558db[("codex-preflight-symlink.test")]
+    det_detectedmemory_harness_decision_test_7e5a4fe5[("harness-decision.test")]
     det_detectedmemory_types_17_ed30531c[("types")]
     det_detectedmemory_sync_contract_c79fa191[("sync-contract")]
     det_detectedmemory_sync_contract_test_5dc3165c[("sync-contract.test")]
     det_detectedmemory_store_824d80d7[("store")]
-    det_detectedmemory_sources_878a52fc[("sources")]
+    det_detectedmemory_sources_1_e133d97d[("sources")]
     det_detectedmemory_rollout_a4fa034c[("rollout")]
     det_detectedmemory_ollama_76e3c7bf[("ollama")]
     det_detectedmemory_ollama_test_71f9750e[("ollama.test")]
@@ -1714,8 +1715,6 @@ flowchart LR
     det_detectedmemory_context_compact_policy_test_da148267[("context-compact-policy.test")]
     det_detectedmemory_constants_7517017f[("constants")]
     det_detectedmemory_constants_test_5492ae98[("constants.test")]
-    det_detectedmemory_harness_decision_test_7e5a4fe5[("harness-decision.test")]
-    det_detectedmemory_command_registry_test_0cf92cba[("command-registry.test")]
     det_detectedmemory_validator_test_5_2bb3219d[("validator.test")]
     det_detectedmemory_validator_core_1_1518647e[("validator-core")]
     det_detectedmemory_types_core_1_8bd0f8fd[("types-core")]
@@ -1723,6 +1722,7 @@ flowchart LR
     det_detectedmemory_loader_test_03424671[("loader.test")]
     det_detectedmemory_json_schema_core_96d7e328[("json-schema-core")]
     det_detectedmemory_index_6_fc9e91e2[("index")]
+    det_detectedmemory_command_registry_test_0cf92cba[("command-registry.test")]
     det_detectedmemory_branch_protect_sync_570adb18[("branch-protect-sync")]
     det_detectedmemory_command_specs_test_7f693e85[("command-specs.test")]
     det_detectedmemory_command_specs_core_1c0ffc99[("command-specs-core")]
@@ -1794,11 +1794,11 @@ flowchart LR
     det_detectedtools_observed_skill_usage_ed7d5930["🔧 observed-skill-usage"]
     det_detectedtools_observed_skill_usage_test_311c215a["🔧 observed-skill-usage.test"]
     det_detectedtools_ralph_runtime_73d63c0e["🔧 ralph-runtime"]
-    det_detectedtools_command_registry_test_0cf92cba["🔧 command-registry.test"]
     det_detectedtools_validator_helpers_7b927667["🔧 validator-helpers"]
     det_detectedtools_validator_core_1_1518647e["🔧 validator-core"]
     det_detectedtools_types_core_1_8bd0f8fd["🔧 types-core"]
     det_detectedtools_policy_validators_core_714a3fe7["🔧 policy-validators-core"]
+    det_detectedtools_command_registry_test_0cf92cba["🔧 command-registry.test"]
     det_detectedtools_module_boundaries_test_c0caf46b["🔧 module-boundaries.test"]
   end
   LLMNode -->|tool use| DetectedTools
@@ -1808,7 +1808,7 @@ flowchart LR
   classDef llmNode fill:#555,color:#fff
   class LLMNode,Embed llmNode
   classDef toolNode fill:#555,color:#fff
-  class det_detectedtools_collect_observed_eval_usage_1724425c,det_detectedtools_verify_work_test_0e12f6c5,det_detectedtools_review_gate_test_000e2ed6,det_detectedtools_review_gate_core_4c8001f9,det_detectedtools_remediate_test_6f59cafe,det_detectedtools_remediate_runner_helpers_929fedcc,det_detectedtools_remediate_cli_output_cc165396,det_detectedtools_policy_gate_213f7313,det_detectedtools_next_c6c1c9a9,det_detectedtools_learnings_test_e45e0253,det_detectedtools_doctor_tool_checks_4acac51a,det_detectedtools_doctor_checks_5a2eb2b9,det_detectedtools_docs_gate_test_a25e972f,det_detectedtools_ci_migrate_core_7005b5af,det_detectedtools_types_1_4ecdf56e,det_detectedtools_orchestrator_test_1_c291cde7,det_detectedtools_tooling_baseline_50ab2eeb,det_detectedtools_tooling_baseline_test_d272ddb6,det_detectedtools_evaluation_engine_core_e054fe49,det_detectedtools_normalise_test_73e8a615,det_detectedtools_normalise_core_v2_f6c5ed83,det_detectedtools_validator_1_0c0621d8,det_detectedtools_metrics_tracker_98cec29c,det_detectedtools_metrics_tracker_test_3de156fa,det_detectedtools_pr_creator_dc6b1ea4,det_detectedtools_client_1_914e1681,det_detectedtools_scaffold_shell_quality_test_79567d03,det_detectedtools_scaffold_release_private_npm_template_075499f8,det_detectedtools_scaffold_github_actions_pr_pipeline_template_e2b85f62,det_detectedtools_scaffold_github_actions_pr_pipeline_template_test_be464a7b,det_detectedtools_scaffold_github_actions_pr_pipeline_renderer_1ee18de5,det_detectedtools_scaffold_github_actions_pr_pipeline_renderer_test_2cc38272,det_detectedtools_scaffold_environment_templates_c1ceba6a,det_detectedtools_scaffold_config_templates_4b80ce53,det_detectedtools_scaffold_codex_environment_templates_334fbbed,det_detectedtools_scaffold_ci_templates_2afd6392,det_detectedtools_init_output_360dce91,det_detectedtools_observed_skill_usage_ed7d5930,det_detectedtools_observed_skill_usage_test_311c215a,det_detectedtools_ralph_runtime_73d63c0e,det_detectedtools_command_registry_test_0cf92cba,det_detectedtools_validator_helpers_7b927667,det_detectedtools_validator_core_1_1518647e,det_detectedtools_types_core_1_8bd0f8fd,det_detectedtools_policy_validators_core_714a3fe7,det_detectedtools_module_boundaries_test_c0caf46b toolNode
+  class det_detectedtools_collect_observed_eval_usage_1724425c,det_detectedtools_verify_work_test_0e12f6c5,det_detectedtools_review_gate_test_000e2ed6,det_detectedtools_review_gate_core_4c8001f9,det_detectedtools_remediate_test_6f59cafe,det_detectedtools_remediate_runner_helpers_929fedcc,det_detectedtools_remediate_cli_output_cc165396,det_detectedtools_policy_gate_213f7313,det_detectedtools_next_c6c1c9a9,det_detectedtools_learnings_test_e45e0253,det_detectedtools_doctor_tool_checks_4acac51a,det_detectedtools_doctor_checks_5a2eb2b9,det_detectedtools_docs_gate_test_a25e972f,det_detectedtools_ci_migrate_core_7005b5af,det_detectedtools_types_1_4ecdf56e,det_detectedtools_orchestrator_test_1_c291cde7,det_detectedtools_tooling_baseline_50ab2eeb,det_detectedtools_tooling_baseline_test_d272ddb6,det_detectedtools_evaluation_engine_core_e054fe49,det_detectedtools_normalise_test_73e8a615,det_detectedtools_normalise_core_v2_f6c5ed83,det_detectedtools_validator_1_0c0621d8,det_detectedtools_metrics_tracker_98cec29c,det_detectedtools_metrics_tracker_test_3de156fa,det_detectedtools_pr_creator_dc6b1ea4,det_detectedtools_client_1_914e1681,det_detectedtools_scaffold_shell_quality_test_79567d03,det_detectedtools_scaffold_release_private_npm_template_075499f8,det_detectedtools_scaffold_github_actions_pr_pipeline_template_e2b85f62,det_detectedtools_scaffold_github_actions_pr_pipeline_template_test_be464a7b,det_detectedtools_scaffold_github_actions_pr_pipeline_renderer_1ee18de5,det_detectedtools_scaffold_github_actions_pr_pipeline_renderer_test_2cc38272,det_detectedtools_scaffold_environment_templates_c1ceba6a,det_detectedtools_scaffold_config_templates_4b80ce53,det_detectedtools_scaffold_codex_environment_templates_334fbbed,det_detectedtools_scaffold_ci_templates_2afd6392,det_detectedtools_init_output_360dce91,det_detectedtools_observed_skill_usage_ed7d5930,det_detectedtools_observed_skill_usage_test_311c215a,det_detectedtools_ralph_runtime_73d63c0e,det_detectedtools_validator_helpers_7b927667,det_detectedtools_validator_core_1_1518647e,det_detectedtools_types_core_1_8bd0f8fd,det_detectedtools_policy_validators_core_714a3fe7,det_detectedtools_command_registry_test_0cf92cba,det_detectedtools_module_boundaries_test_c0caf46b toolNode
 
 ```
 

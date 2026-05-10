@@ -327,12 +327,43 @@ if (diagramFiles.includes("class.mmd")) {
   if (!validateContractEdge.test(classContent)) {
     classContent = `${classContent.trimEnd()}\n  ${loaderClassId} --> ${validatorClassId} : validateContract\n`;
   }
-  writeFileSync(classPath, ensureTrailingNewline(classContent.trimEnd()));
+	writeFileSync(classPath, ensureTrailingNewline(classContent.trimEnd()));
+}
+
+if (diagramFiles.includes("c4context.mmd")) {
+  const c4ContextPath = join(diagramsDir, "c4context.mmd");
+  let c4ContextContent = readFileSync(c4ContextPath, "utf8");
+  const replaceRequired = (source, pattern, replacement, label) => {
+    if (!pattern.test(source)) {
+      throw new Error(`c4context.mmd missing expected pattern: ${label}`);
+    }
+    return source.replace(pattern, replacement);
+  };
+
+  c4ContextContent = replaceRequired(
+    c4ContextContent,
+    /title "System Context — .*"/,
+    'title "System Context — Coding Harness"',
+    "title",
+  );
+  c4ContextContent = replaceRequired(
+    c4ContextContent,
+    /System\(mainSystem, "[^"]+", "[^"]+"\)/,
+    'System(mainSystem, "Coding Harness", "Control plane for agentic development")',
+    "main system",
+  );
+  c4ContextContent = replaceRequired(
+    c4ContextContent,
+    /System_Ext\(ext_1, "Version Control", "[^"]+"\)/,
+    'System_Ext(ext_1, "Version Control", "@octokit/rest, @octokit/request-error, @octokit/plugin-retry, @octokit/plugin-throttling")',
+    "version control dependency list",
+  );
+  writeFileSync(c4ContextPath, ensureTrailingNewline(c4ContextContent.trimEnd()));
 }
 
 for (const file of diagramFiles) {
-  if (file === "architecture.mmd" || file === "dependency.mmd") {
-    continue;
+	if (file === "architecture.mmd" || file === "dependency.mmd") {
+		continue;
   }
   const filePath = join(diagramsDir, file);
   writeFileSync(

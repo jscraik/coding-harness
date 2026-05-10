@@ -22,7 +22,7 @@ describe("scaffold root command templates", () => {
 	});
 
 	it("keeps generated governance defaults explicit", () => {
-		expect(AGENT_BRANCH_PREFIX).toBe("codex");
+		expect(AGENT_BRANCH_PREFIX).toBe("jscraik/feature");
 		expect(renderMemoryValidateCommand()).toContain('.meta.version == "1.0"');
 		expect(renderDefaultNpmrc()).toContain("ignore-scripts=true");
 		expect(renderDefaultNpmrc()).toContain("node-linker=isolated");

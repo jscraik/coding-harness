@@ -154,7 +154,8 @@ Teams usually adopt Coding Harness for one of four jobs:
 - **Bootstrap a repo once, then keep it aligned.** `harness init` can scaffold
   `harness.contract.json`, `WORKFLOW.md`, PR templates, CodeRabbit defaults,
   repo-local verification scripts, and rollback metadata instead of leaving
-  each repo to invent its own setup.
+  each repo to invent its own setup. Generated downstream PR, workflow, and
+  worktree surfaces use `jscraik/feature/*` for agent-created branches.
 - **Put policy in code instead of chat reminders.** Commands like
   `docs-gate`, `plan-gate`, `review-gate`, `linear-gate`, `check-authz`, and
   `local-memory-preflight` make governance expectations runnable.

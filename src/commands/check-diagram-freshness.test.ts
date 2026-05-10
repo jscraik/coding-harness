@@ -346,16 +346,10 @@ MMD
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" > .refresh-invoked
-fence="$(printf '\\x60\\x60\\x60')"
-printf '%s\n' \
-	"" \
-	"## architecture" \
-	"" \
-	"\${fence}mermaid" \
-	"graph TD" \
-	"  A[Start] --> C[Changed]" \
-	"\${fence}" \
-	>> AI/context/diagram-context.md
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  A[Start] --> C[Changed]
+MMD
 `);
 		roots.push(root);
 
@@ -366,7 +360,7 @@ printf '%s\n' \
 		expect(result.stdout).toContain(
 			"Error: architecture diagram artifacts are stale after refresh.",
 		);
-		expect(result.stdout).toContain("AI/context/diagram-context.md");
+		expect(result.stdout).toContain(".diagram/architecture.mmd");
 	});
 
 	it("fails when refresh changes a generated persistence diagram section", () => {

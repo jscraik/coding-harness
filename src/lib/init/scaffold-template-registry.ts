@@ -254,6 +254,7 @@ export const TEMPLATES: Template[] = [
 			const codestyleCommand = "bash scripts/validate-codestyle.sh";
 			const memoryValidateCommand = renderMemoryValidateCommand();
 			return renderPullRequestTemplate({
+				agentBranchPrefix: AGENT_BRANCH_PREFIX,
 				checkCommand,
 				codestyleCommand,
 				memoryValidateCommand,
