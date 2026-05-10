@@ -147,6 +147,19 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["eval:missing"]);
 	});
 
+	it("allows eval-optional implementation evidence to complete without an eval artifact", () => {
+		const { evalArtifact: _evalArtifact, ...record } = acceptedMergedRecord({
+			evalRequired: false,
+		});
+
+		const result = classifyClosureEvidence(record);
+
+		expect(result.classification).toBe("complete_linear_stale");
+		expect(result.reasons).toEqual(
+			expect.arrayContaining(["checks:passed", "eval:not-required"]),
+		);
+	});
+
 	it("fails closed when live Linear evidence is unavailable", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
@@ -243,7 +256,7 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["checks:failing"]);
 	});
 
-	it("classifies missing required checks as blocked", () => {
+	it("classifies not_found required checks as blocked_failing_check", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
 				requiredChecks: [
@@ -259,6 +272,7 @@ describe("classifyClosureEvidence", () => {
 		);
 
 		expect(result.classification).toBe("blocked_failing_check");
+		expect(result.reasons).toEqual(["checks:failing"]);
 	});
 
 	it("requires human acceptance when the record says closure is human gated", () => {
@@ -309,6 +323,32 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["linear:todo", "implementation:none"]);
 	});
 
+	it("keeps todo work with only an absent eval placeholder in not started", () => {
+		const result = classifyClosureEvidence({
+			id: "jsc-200-not-started-with-eval-placeholder",
+			scope: "selected",
+			linear: {
+				issueKey: "JSC-200",
+				available: true,
+				status: "todo",
+			},
+			requiredChecks: [],
+			evalArtifact: {
+				path: ".harness/evals/coding-harness-jsc-200-eval.md",
+				present: false,
+				valid: false,
+			},
+			review: {
+				humanAcceptanceRequired: false,
+				humanAccepted: false,
+				blockingReviewFinding: false,
+			},
+		});
+
+		expect(result.classification).toBe("not_started");
+		expect(result.reasons).toEqual(["linear:todo", "implementation:none"]);
+	});
+
 	it("classifies merged checked work on done Linear as acceptance-ready", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
@@ -338,7 +378,7 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["review:blocking"]);
 	});
 
-	it("classifies missing required checks as blocked", () => {
+	it("classifies empty required check sets as blocked_failing_check", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
 				requiredChecks: [],
@@ -376,6 +416,13 @@ describe("classifyClosureEvidence", () => {
 						provider: "circleci",
 						status: "in_progress",
 						conclusion: null,
+					},
+					{
+						name: "security-scan",
+						provider: "circleci",
+						status: "completed",
+						conclusion: "success",
+						checkedSha: "ffffffffffffffffffffffffffffffffffffffff",
 					},
 				],
 			}),

@@ -46,6 +46,10 @@ linear_milestone: Control loop hardening and flow telemetry
 
 Pass.
 
+Superseded by the implementation phase in PR #235 after the user authorized
+runtime source, fixture, test, eval, and governance artifact changes for the
+closure-evidence classifier.
+
 The deepened plan is suitable for `he-work` on `IU-198-001` only. It keeps the
 first unit read-only, prevents broad telemetry expansion, requires current
 Linear/GitHub/CircleCI/eval evidence before classification, and adds explicit
@@ -76,7 +80,7 @@ No blocking findings remain.
 | Wrong-SHA or missing required check is accepted | Pass. Required checks must match the evaluated head or merge SHA; wrong-SHA or missing check evidence fails closed. |
 | Missing eval proof is treated as complete | Pass. Eval artifacts must exist in the current checkout and pass relevant artifact lint when claimed valid. |
 | Sensitive evidence leaks into artifacts | Pass. The plan forbids tokens, cookies, auth headers, `.env` contents, full CI logs, unredacted session payloads, and unrelated issue text. |
-| Repo setup fault causes false dirty state | Pass. The plan requires `git rev-parse --show-toplevel` to resolve to `/Users/jamiecraik/dev/coding-harness` and blocks on root mismatch or unclear dirty ownership. |
+| Repo setup fault causes false dirty state | Pass. The plan requires `git rev-parse --show-toplevel` to resolve to the expected repository root and blocks on root mismatch or unclear dirty ownership. |
 | Linear work expands into project-management theater | Pass. The plan creates no Linear objects and keeps `JSC-199`, `JSC-200`, and `JSC-201` subordinate until classification proof exists. |
 | Implementation phases are batched | Pass. Phase admission rules require one phase at a time, with validation and review gates before the next unit starts. |
 | Over-scoped credentials weaken read-only safety | Pass. The plan now requires least-privilege/read-only metadata retrieval and forbids mutation-shaped operations during `IU-198-001`. |
@@ -134,14 +138,21 @@ External provider documentation checked on 2026-05-09:
 
 ## Validation Evidence
 
+`AGENT_SKILLS_ROOT` points at the local `agent-skills` repository that provides
+the Harness Engineering validation scripts used below. Set it before replaying
+these commands, for example `export AGENT_SKILLS_ROOT=/path/to/agent-skills`.
+The referenced scripts are `he_artifact_identity_lint.py`,
+`he_linear_traceability_lint.py`, and `he_frontmatter_safety_lint.py` under
+`${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/`.
+
 - Command:
-  `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan-technical-review.md`
+  `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan-technical-review.md`
   -> pass
 - Command:
-  `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan-technical-review.md`
+  `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan-technical-review.md`
   -> pass
 - Command:
-  `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan-technical-review.md`
+  `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan-technical-review.md`
   -> pass
 - Command:
   `pnpm markdownlint .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan-technical-review.md`
@@ -171,10 +182,10 @@ External provider documentation checked on 2026-05-09:
 | Project | `coding-harness` |
 | Initiative | `Dev Portfolio` |
 | Milestone | `Control loop hardening and flow telemetry` |
-| Execution route | `he-work` for `IU-198-001` only |
+| Execution route | Superseded by PR #235 implementation phase after `IU-198-001` inventory authorization |
 | Required first output | `.harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-inventory.md` |
 | External mutation allowed | No |
-| Runtime source edits allowed | No |
+| Runtime source edits allowed | Superseded by PR #235 implementation phase |
 
 ## Linear Acceptance Traceability
 
@@ -187,12 +198,13 @@ External provider documentation checked on 2026-05-09:
 
 ## Recommended Next Step
 
-Run `he-work` for `IU-198-001` only after explicit user authorization.
+Superseded by PR #235 implementation phase after explicit user authorization.
 
-The first implementation output should be:
+The first inventory output was:
 
 `.harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-inventory.md`
 
-Do not start `IU-198-002`, edit runtime code, mutate Linear, mutate GitHub,
-mutate CircleCI, create labels, or enforce done/intake gates during the first
-phase.
+The original first-phase ban on runtime edits is retained here as historical
+plan-gate evidence only; PR #235 superseded it for the implementation phase.
+Do not start `IU-198-002`, mutate Linear, mutate GitHub, mutate CircleCI, create
+labels, or enforce done/intake gates without a later approval artifact.

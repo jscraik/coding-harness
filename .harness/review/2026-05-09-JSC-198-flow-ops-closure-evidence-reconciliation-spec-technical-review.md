@@ -94,13 +94,13 @@ No blocking findings remain.
 ## Validation Evidence
 
 - Command:
-  `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md`
+  `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md`
   -> pass
 - Command:
-  `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md`
+  `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md`
   -> pass
 - Command:
-  `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md`
+  `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md`
   -> pass
 - Command:
   `pnpm markdownlint .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md`

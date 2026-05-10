@@ -185,7 +185,11 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       repo_slug="worktree"
     fi
     short_sha="$(git rev-parse --short HEAD)"
+<<<<<<< HEAD
     branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"
+=======
+    branch_base="${BRANCH_PREFIX:-codex}/$repo_slug-$short_sha"
+>>>>>>> 7122f2d0b4d584decf43df6052d092fe9aa7b952
     branch_name="$branch_base"
     suffix=1
     while git show-ref --verify --quiet "refs/heads/$branch_name"; do
