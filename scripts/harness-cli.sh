@@ -45,7 +45,7 @@ resolve_package_spec() {
 			packageJson.optionalDependencies?.[packageName];
 		if (typeof version !== "string") {
 			console.log(fallback);
-		} else if (/^(file:|link:|workspace:)/.test(version)) {
+		} else if (/^(file:|link:|workspace:|portal:|git:|git\+)/.test(version)) {
 			console.log(fallback);
 		} else {
 			console.log(packageName + "@" + version.replace(/^[~^]/, ""));
