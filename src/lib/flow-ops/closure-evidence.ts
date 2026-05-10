@@ -110,12 +110,10 @@ function isLinearActive(linear: ClosureLinearEvidence): boolean {
 /**
  * Determines whether the record contains implementation evidence.
  *
- * @returns `true` if the record includes a pull request or a present eval artifact, `false` otherwise.
+ * @returns `true` if the record includes a pull request or an eval artifact, `false` otherwise.
  */
 function hasImplementationEvidence(record: ClosureEvidenceRecord): boolean {
-	return (
-		record.pullRequest !== undefined || record.evalArtifact?.present === true
-	);
+	return record.pullRequest !== undefined || record.evalArtifact !== undefined;
 }
 
 /**
@@ -258,32 +256,30 @@ export function classifyClosureEvidence(
 		};
 	}
 
-	if (record.pullRequest) {
-		if (hasMissingRequiredChecks(record)) {
-			return {
-				classification: "blocked_failing_check",
-				nextAction:
-					"Clear failing, missing, or incomplete required checks before closure.",
-				reasons: ["checks:missing"],
-			};
-		}
+	if (hasMissingRequiredChecks(record)) {
+		return {
+			classification: "blocked_failing_check",
+			nextAction:
+				"Clear failing, missing, or incomplete required checks before closure.",
+			reasons: ["checks:missing"],
+		};
+	}
 
-		if (hasWrongShaCheck(record)) {
-			return {
-				classification: "needs_human_triage",
-				nextAction: "Refresh check evidence tied to the evaluated PR SHA.",
-				reasons: ["checks:wrong-sha"],
-			};
-		}
+	if (hasWrongShaCheck(record)) {
+		return {
+			classification: "needs_human_triage",
+			nextAction: "Refresh check evidence tied to the evaluated PR SHA.",
+			reasons: ["checks:wrong-sha"],
+		};
+	}
 
-		if (hasFailingRequiredCheck(record)) {
-			return {
-				classification: "blocked_failing_check",
-				nextAction:
-					"Clear failing, missing, or incomplete required checks before closure.",
-				reasons: ["checks:failing"],
-			};
-		}
+	if (hasFailingRequiredCheck(record)) {
+		return {
+			classification: "blocked_failing_check",
+			nextAction:
+				"Clear failing, missing, or incomplete required checks before closure.",
+			reasons: ["checks:failing"],
+		};
 	}
 
 	if (record.review.humanAcceptanceRequired && !record.review.humanAccepted) {
