@@ -84,7 +84,7 @@ bash scripts/refresh-diagram-context.sh --force
 jq -r '.generated_at, .diagram_count, .changed' .diagram/context/diagram-context.meta.json
 ```
 
-The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.sh`. That gate now skips refresh work unless architecture-sensitive implementation paths changed, and it ignores test-only source changes to keep the local loop tighter.
+The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.sh --changed-files <path>` with the branch changed-file list. Direct script runs may still derive branch and local worktree changes from git, but pre-push must stay push-scoped so unrelated worktree dirt does not force architecture artifact refreshes. The gate skips refresh work unless architecture-sensitive implementation paths changed, and it ignores test-only source changes to keep the local loop tighter.
 
 ## Deterministic Fingerprints
 
