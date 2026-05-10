@@ -8,6 +8,9 @@
             if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
               pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
             fi
+            if [[ -z "$pr_ref" && -n "${CIRCLE_SHA1:-}" && -n "${CIRCLE_PROJECT_USERNAME:-}" && -n "${CIRCLE_PROJECT_REPONAME:-}" ]]; then
+              pr_ref="$(gh api -H "Accept: application/vnd.github+json" "/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/commits/${CIRCLE_SHA1}/pulls" --jq '.[0].html_url // ""' 2>/dev/null || true)"
+            fi
             if [[ -z "$pr_ref" ]]; then
               echo "Error: unable to resolve pull request context for linear-gate."
               exit 1
