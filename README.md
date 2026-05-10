@@ -154,7 +154,8 @@ Teams usually adopt Coding Harness for one of four jobs:
 - **Bootstrap a repo once, then keep it aligned.** `harness init` can scaffold
   `harness.contract.json`, `WORKFLOW.md`, PR templates, CodeRabbit defaults,
   repo-local verification scripts, and rollback metadata instead of leaving
-  each repo to invent its own setup.
+  each repo to invent its own setup. Generated downstream PR, workflow, and
+  worktree surfaces use `jscraik/feature/*` for agent-created branches.
 - **Put policy in code instead of chat reminders.** Commands like
   `docs-gate`, `plan-gate`, `review-gate`, `linear-gate`, `check-authz`, and
   `local-memory-preflight` make governance expectations runnable.
@@ -341,11 +342,12 @@ common case, `init --track` gives you the contract, workflow scaffolding,
 review policy surfaces, repo-local verification scripts, and enough metadata to
 upgrade or roll back cleanly later.
 
-Generated readiness scripts prepend existing user-writable and
-platform-standard tool directories before validation. That lets non-login agent
-shells find already-installed tools such as `mise`, Homebrew binaries,
-`/usr/sbin`, and `/sbin` without silently installing anything or mutating global
-state.
+Generated readiness scripts preserve caller-provided `PATH` precedence before
+validation, then add existing user-writable and platform-standard tool
+directories only as fallbacks. That lets non-login agent shells find
+already-installed tools such as `mise`, Homebrew binaries, `/usr/sbin`, and
+`/sbin` without shadowing repo-local test shims, silently installing anything,
+or mutating global state.
 
 Use these follow-ups when the repo already has harness material:
 
@@ -653,6 +655,9 @@ After instruction discovery, use `AI/context/diagram-context.md` as the compact
 architecture map; it combines Mermaid architecture, dependency, database, and
 ERD diagrams, with `.diagram/manifest.json` available when a narrower diagram
 file is enough.
+Flow Ops closure-evidence changes that alter source classification or validation
+routing are architecture-context changes: refresh and commit
+`AI/context/diagram-context.md` with the docs-gate-required governance surfaces.
 
 ## Requirements
 
@@ -693,6 +698,12 @@ Hook setup must go through `make hooks`, `make setup`, or
 for `pre-commit`, `pre-push`, and `commit-msg` so `PREK_HOME` points at the
 repo-local `.git/.cache/prek` cache, and `scripts/check-environment.sh`
 validates that drift before push.
+Environment-only pushes that change only `.codex/environments/environment.toml`
+run `scripts/check-environment.sh` instead of the full pre-push governance
+suite. Any other changed file keeps the full `make hooks-pre-push` lane.
+The full lane passes the branch changed-file list into
+`scripts/check-diagram-freshness.sh` so diagram refresh checks do not expand to
+unrelated local worktree dirt during push.
 
 When you change executable behavior in this repository, run the smallest real
 path that exercises the touched production code before claiming it works. If

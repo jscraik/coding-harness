@@ -163,6 +163,47 @@ printf '%s\n' "$*" > .refresh-invoked
 		expect(existsSync(join(root, ".refresh-invoked"))).toBe(false);
 	});
 
+	it("uses an explicit changed-file list instead of ambient worktree changes", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" > .refresh-invoked
+`);
+		roots.push(root);
+
+		write(root, "src/example.ts", "export const example = 9;\n");
+		write(root, ".changed-files", ".codex/environments/environment.toml\n");
+
+		const result = run(root, "bash", [
+			"scripts/check-diagram-freshness.sh",
+			"--changed-files",
+			".changed-files",
+		]);
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(
+			"Diagram freshness check skipped: no architecture-sensitive implementation paths changed.",
+		);
+		expect(existsSync(join(root, ".refresh-invoked"))).toBe(false);
+	});
+
+	it("fails closed when an explicit changed-file list is missing", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" > .refresh-invoked
+`);
+		roots.push(root);
+
+		const result = run(root, "bash", [
+			"scripts/check-diagram-freshness.sh",
+			"--changed-files",
+			".missing-changed-files",
+		]);
+		expect(result.status).toBe(2);
+		expect(result.stderr).toContain(
+			"Error: changed-files path not found: .missing-changed-files",
+		);
+		expect(existsSync(join(root, ".refresh-invoked"))).toBe(false);
+	});
+
 	it("refreshes and passes when implementation changes do not alter tracked artifacts", () => {
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
@@ -305,16 +346,10 @@ MMD
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" > .refresh-invoked
-fence="$(printf '\\x60\\x60\\x60')"
-printf '%s\n' \
-	"" \
-	"## architecture" \
-	"" \
-	"\${fence}mermaid" \
-	"graph TD" \
-	"  A[Start] --> C[Changed]" \
-	"\${fence}" \
-	>> AI/context/diagram-context.md
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  A[Start] --> C[Changed]
+MMD
 `);
 		roots.push(root);
 
@@ -325,7 +360,7 @@ printf '%s\n' \
 		expect(result.stdout).toContain(
 			"Error: architecture diagram artifacts are stale after refresh.",
 		);
-		expect(result.stdout).toContain("AI/context/diagram-context.md");
+		expect(result.stdout).toContain(".diagram/architecture.mmd");
 	});
 
 	it("fails when refresh changes a generated persistence diagram section", () => {

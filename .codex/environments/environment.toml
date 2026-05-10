@@ -7,7 +7,9 @@ script = '''
 set -euo pipefail
 
 PATH="${PATH:-/usr/bin:/bin}"
-for candidate in "/sbin" "/usr/sbin" "/usr/local/bin" "/opt/homebrew/sbin" "/opt/homebrew/bin" "$HOME/.local/bin" "$HOME/.local/share/mise/shims"; do
+home_dir="${HOME:-}"
+for candidate in "/sbin" "/usr/sbin" "/usr/local/bin" "/opt/homebrew/sbin" "/opt/homebrew/bin" "${home_dir:+$home_dir/.local/bin}" "${home_dir:+$home_dir/.local/share/mise/shims}"; do
+  [[ -n "$candidate" ]] || continue
   if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
     PATH="$candidate:$PATH"
   fi
@@ -32,7 +34,9 @@ command = '''
 set -euo pipefail
 
 PATH="${PATH:-/usr/bin:/bin}"
-for candidate in "/sbin" "/usr/sbin" "/usr/local/bin" "/opt/homebrew/sbin" "/opt/homebrew/bin" "$HOME/.local/bin" "$HOME/.local/share/mise/shims"; do
+home_dir="${HOME:-}"
+for candidate in "/sbin" "/usr/sbin" "/usr/local/bin" "/opt/homebrew/sbin" "/opt/homebrew/bin" "${home_dir:+$home_dir/.local/bin}" "${home_dir:+$home_dir/.local/share/mise/shims}"; do
+  [[ -n "$candidate" ]] || continue
   if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
     PATH="$candidate:$PATH"
   fi
@@ -118,10 +122,15 @@ if [ "$local_main_ahead_count" -ne 0 ]; then
   exit 2
 fi
 
-if git pull --ff-only origin main; then
-  :
-else
+if git merge-base --is-ancestor HEAD origin/main; then
+  git pull --ff-only origin main
   pull_status=$?
+else
+  echo "Local main diverges from origin/main; aborting."
+  echo "Reconcile local commits before running Release Finalize."
+  exit 2
+fi
+if [ "$pull_status" -ne 0 ]; then
   local_main_ahead_count="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
   if [ "$local_main_ahead_count" -ne 0 ]; then
     echo "Local main is ahead of origin/main; aborting."
@@ -176,7 +185,7 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       repo_slug="worktree"
     fi
     short_sha="$(git rev-parse --short HEAD)"
-    branch_base="codex/worktree/$repo_slug-worktree-$short_sha"
+    branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"
     branch_name="$branch_base"
     suffix=1
     while git show-ref --verify --quiet "refs/heads/$branch_name"; do
@@ -188,9 +197,15 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     if git show-ref --verify --quiet "refs/remotes/origin/main"; then
       git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
       echo "[codex] tracking origin/main for $branch_name"
-      if git merge-base --is-ancestor HEAD origin/main; then
+      target_ref="origin/main"
+      if git fetch --quiet origin main; then
+        target_ref="FETCH_HEAD"
+      else
+        echo "[codex] could not fetch origin/main; using cached origin/main"
+      fi
+      if git merge-base --is-ancestor HEAD "$target_ref"; then
         echo "[codex] fast-forwarding $branch_name with origin/main"
-        git pull --ff-only origin main
+        git merge --ff-only "$target_ref"
       else
         echo "[codex] $branch_name diverges from origin/main; skipping fast-forward"
       fi

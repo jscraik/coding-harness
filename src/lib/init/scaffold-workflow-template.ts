@@ -7,6 +7,7 @@
  * @module lib/init/scaffold-workflow-template
  */
 
+import { AGENT_BRANCH_PREFIX } from "./scaffold-root-command-templates.js";
 import type { TemplateRenderContext } from "./types.js";
 
 /**
@@ -51,13 +52,20 @@ function renderTrackerBlock(context: TemplateRenderContext): string {
   kind: none`;
 }
 
+/**
+ * Render the canonical Transition Table rows for the workflow, selecting tracker-specific actions.
+ *
+ * @param context - Template render context (uses `issueTracker` to choose the tracker variant)
+ * @param checkCommand - Command string to embed in the `advance` guard/action row
+ * @returns A Markdown pipe-table fragment containing rows that map workflow state transitions to guard, action, and resulting state
+ */
 function renderTransitionRows(
 	context: TemplateRenderContext,
 	checkCommand: string,
 ): string {
 	const trackerKind = context.issueTracker ?? "linear";
 	if (trackerKind === "linear") {
-		return `| \`S0 TODO\` | \`claim\` | preflight passes | \`harness linear claim --issue <LK> --branch <codex/...>\` | \`S1 IN_PROGRESS\` |
+		return `| \`S0 TODO\` | \`claim\` | preflight passes | \`harness linear claim --issue <LK> --branch <${AGENT_BRANCH_PREFIX}/...>\` | \`S1 IN_PROGRESS\` |
 | \`S1 IN_PROGRESS\` | \`advance\` | \`${checkCommand}\` passes | \`harness linear handoff --issue <LK> --pr-url <url> --evidence-urls <url>\` | \`S2 IN_REVIEW\` |
 | \`S1 IN_PROGRESS\` | \`blocked\` | dependency unavailable | emit unblock payload | \`S4 BLOCKED\` |
 | \`S1 IN_PROGRESS\` | \`error\` | unrecoverable runtime/policy issue | record failure artifact | \`S5 FAIL\` |

@@ -22,7 +22,7 @@ describe("scaffold root command templates", () => {
 	});
 
 	it("keeps generated governance defaults explicit", () => {
-		expect(AGENT_BRANCH_PREFIX).toBe("codex");
+		expect(AGENT_BRANCH_PREFIX).toBe("jscraik/feature");
 		expect(renderMemoryValidateCommand()).toContain('.meta.version == "1.0"');
 		expect(renderDefaultNpmrc()).toContain("ignore-scripts=true");
 		expect(renderDefaultNpmrc()).toContain("node-linker=isolated");
@@ -35,6 +35,12 @@ describe("scaffold root command templates", () => {
 		expect(makefile).toContain("hooks-pre-push:");
 		expect(makefile).toContain("bash ./scripts/validate-codestyle.sh --fast");
 		expect(makefile).toContain("bash ./scripts/run-harness-gate.sh docs-gate");
+		expect(makefile).toContain(
+			'git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"',
+		);
+		expect(makefile).toContain(
+			'bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"',
+		);
 		expect(makefile).toContain(
 			"bash ./scripts/run-harness-gate.sh tooling-audit",
 		);

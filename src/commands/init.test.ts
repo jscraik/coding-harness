@@ -136,9 +136,8 @@ function probePrependStandardToolPaths(environmentCheck: string): string {
 	const probe = spawnSync(
 		"/bin/bash",
 		[
-			"-u",
 			"-c",
-			`${helper}\nunset PATH\nprepend_standard_tool_paths\nprintf '%s' "$PATH"`,
+			`set -u\n${helper}\nunset PATH\nprepend_standard_tool_paths\nprintf '%s' "$PATH"`,
 		],
 		{ encoding: "utf8", env: { HOME: homeDir } },
 	);
@@ -846,11 +845,14 @@ describe("runInit", () => {
 				join(tempDir, "package.json"),
 				JSON.stringify(
 					{
+						packageManager: "pnpm@10.33.0",
 						scripts: {
 							dev: "vite",
 							check: "pnpm lint && pnpm test",
 							test: "vitest",
 							"lint:fix": "biome check --write .",
+							"observed:eval-usage":
+								"tsx scripts/collect-observed-eval-usage.ts",
 						},
 					},
 					null,
@@ -901,6 +903,10 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Script: check"\nicon = "debug"');
 			expect(content).toContain('name = "Script: test"\nicon = "test"');
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
+			expect(content).toContain(
+				'name = "Script: observed:eval-usage"\nicon = "tool"',
+			);
+			expect(content).toContain("run 'observed:eval-usage'");
 			expect(content).toContain("mise install");
 			expect(content).toContain("mise trust --yes .mise.toml || true");
 			expect(content).toContain("bash scripts/prepare-worktree.sh");
@@ -913,7 +919,8 @@ describe("runInit", () => {
 			expect(content).toContain(
 				"[codex] fast-forwarding $branch_name with origin/main",
 			);
-			expect(content).toContain("git pull --ff-only origin main");
+			expect(content).toContain("git fetch --quiet origin main");
+			expect(content).toContain('git merge --ff-only "$target_ref"');
 			expect(content).toContain("npm install");
 			expect(content).toContain("prek --version");
 			expect(content).toContain(
@@ -1772,6 +1779,15 @@ describe("runInit", () => {
 				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
 			);
 			expect(makefile).toContain(
+				'changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)"',
+			);
+			expect(makefile).toContain(
+				"grep -v '^\\.codex/environments/environment\\.toml$$'",
+			);
+			expect(makefile).toContain(
+				"Environment-only push detected; running check-environment only.",
+			);
+			expect(makefile).toContain(
 				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
 			);
 
@@ -1786,7 +1802,10 @@ describe("runInit", () => {
 				"\t@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
 			expect(makefile).toContain(
-				"\t@bash ./scripts/check-diagram-freshness.sh",
+				'git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"',
+			);
+			expect(makefile).toContain(
+				'bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"',
 			);
 			expect(makefile).toContain(
 				"\t@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json",
@@ -1935,7 +1954,8 @@ describe("runInit", () => {
 			expect(prepareWorktree).toContain(
 				"[prepare-worktree] fast-forwarding $branch_name with origin/main",
 			);
-			expect(prepareWorktree).toContain("git pull --ff-only origin main");
+			expect(prepareWorktree).toContain("git fetch --quiet origin main");
+			expect(prepareWorktree).toContain('git merge --ff-only "$target_ref"');
 			expect(prepareWorktree).toContain('git switch -c "$branch_name"');
 			expect(newTask).toContain(
 				"[new-task] fetching latest $remote_name/$remote_base_branch",
@@ -2626,9 +2646,31 @@ exit 1
 					},
 				},
 			);
-			expect(npmAuthFailureRun.status).toBe(1);
-			const npmAuthFailureOutput = `${npmAuthFailureRun.stdout}${npmAuthFailureRun.stderr}`;
-			expect(npmAuthFailureOutput).toContain(
+			expect(
+				npmAuthFailureRun.status,
+				npmAuthFailureRun.stdout + npmAuthFailureRun.stderr,
+			).toBe(0);
+			expect(npmAuthFailureRun.stdout).toContain(
+				`Using harness runner: global npm harness (${fakeNpmHarness})`,
+			);
+
+			const missingHarnessAuthFailureRun = spawnSync(
+				"bash",
+				["scripts/check-environment.sh"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...baseEnv,
+						FAKE_MISE_WHICH_MODE: "missing",
+						FAKE_NPM_AUTH_FAIL: "1",
+						FAKE_NPM_PREFIX: join(tempDir, "missing-npm-prefix"),
+					},
+				},
+			);
+			expect(missingHarnessAuthFailureRun.status).toBe(1);
+			const missingHarnessAuthFailureOutput = `${missingHarnessAuthFailureRun.stdout}${missingHarnessAuthFailureRun.stderr}`;
+			expect(missingHarnessAuthFailureOutput).toContain(
 				"Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness.",
 			);
 
@@ -2731,10 +2773,10 @@ exit 1
 			};
 
 			expect(runNewTask("HEAD~1", "jsc-101-commit-ish-head")).toContain(
-				"[new-task] branch: codex/jsc-101-commit-ish-head",
+				"[new-task] branch: jscraik/feature/jsc-101-commit-ish-head",
 			);
 			expect(runNewTask("v0.0.1", "jsc-102-commit-ish-tag")).toContain(
-				"[new-task] branch: codex/jsc-102-commit-ish-tag",
+				"[new-task] branch: jscraik/feature/jsc-102-commit-ish-tag",
 			);
 			expect(runNewTask(firstSha, "jsc-103-commit-ish-sha")).toContain(
 				`[new-task] base: ${firstSha}`,
@@ -3044,7 +3086,7 @@ exit 1
 			expect(scaffoldedScript).toBe(runtimeScript);
 		});
 
-		it("keeps the repo-local new-task helper aligned with scaffold output", () => {
+		it("keeps the scaffolded new-task helper aligned with the downstream branch policy", () => {
 			writeFileSync(
 				join(tempDir, "pnpm-lock.yaml"),
 				"lockfileVersion: '9.0'\n",
@@ -3062,7 +3104,14 @@ exit 1
 				join(tempDir, "scripts/new-task.sh"),
 				"utf-8",
 			);
-			expect(scaffoldedScript).toBe(runtimeScript);
+			expect(scaffoldedScript).toBe(
+				runtimeScript
+					.replace(
+						"Branch prefix (default: codex)",
+						"Branch prefix (default: jscraik/feature)",
+					)
+					.replace('branch_prefix="codex"', 'branch_prefix="jscraik/feature"'),
+			);
 		});
 	});
 });

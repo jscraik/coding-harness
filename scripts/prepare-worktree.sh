@@ -46,6 +46,7 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	exit 1
 fi
 
+# attach_branch_if_detached attaches HEAD to a new uniquely named branch when the repository is in a detached HEAD state (branch name uses the `jscraik/feature/<repo>-worktree-<short_sha>` pattern); if already on a branch it prints that branch.
 attach_branch_if_detached() {
 	current_branch="$(git symbolic-ref --short -q HEAD || true)"
 	if [[ -n "$current_branch" ]]; then
@@ -59,7 +60,7 @@ attach_branch_if_detached() {
 	fi
 
 	short_sha="$(git rev-parse --short HEAD)"
-	branch_base="${BRANCH_PREFIX:-codex}/$repo_slug-$short_sha"
+	branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"
 	branch_name="$branch_base"
 	suffix=1
 	while git show-ref --verify --quiet "refs/heads/$branch_name"; do
@@ -72,9 +73,11 @@ attach_branch_if_detached() {
 	if git show-ref --verify --quiet "refs/remotes/origin/main"; then
 		git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
 		echo "[prepare-worktree] tracking origin/main for $branch_name"
-		if git merge-base --is-ancestor HEAD origin/main; then
+		target_ref="origin/main"
+		git fetch --quiet origin main && target_ref="FETCH_HEAD" || echo "[prepare-worktree] could not fetch origin/main; using cached origin/main"
+		if git merge-base --is-ancestor HEAD "$target_ref"; then
 			echo "[prepare-worktree] fast-forwarding $branch_name with origin/main"
-			git pull --ff-only origin main
+			git merge --ff-only "$target_ref"
 		else
 			echo "[prepare-worktree] $branch_name diverges from origin/main; skipping fast-forward"
 		fi

@@ -25,6 +25,9 @@
 - Required checks must pass before merge.
 - CodeRabbit + Codex review artifacts are required before merge.
 - The coding agent must not approve its own PR; review must be independent.
+- Flow Ops closure-evidence changes that reroute validation or source
+  classification must refresh `AI/context/diagram-context.md` and the
+  docs-gate-required governance surfaces in the same PR.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
 - CI ownership is contractual: CircleCI owns PR governance, CodeRabbit remains an
@@ -109,6 +112,7 @@ Recommended policy:
 - Treat `scripts/new-task.sh` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
 - Treat `scripts/prepare-worktree.sh` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
+- Keep pre-push diagram freshness branch-scoped: hook callers pass the branch changed-file list to `scripts/check-diagram-freshness.sh --changed-files <path>` so unrelated local worktree dirt does not force architecture artifact refreshes.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - When a pinned tooling dependency has a matching generated configuration schema, update the package version, the repo config, and the scaffold template together. Biome is governed this way: the root `biome.json` schema version and generated init template must match the installed `@biomejs/biome` major line.
 - For repositories with explicit `ui` / `chatgpt_apps_sdk` capabilities or matching dependency signals, install `@brainwav/design-system-guidance` and treat its absence as a readiness failure.
