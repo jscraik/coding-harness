@@ -61,7 +61,8 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 ## 17. Security, Supply Chain & Compliance
 
 * Secrets MUST NOT be hard-coded; use env injection/secret manager.
-* All external inputs MUST be validated/sanitized.
+* External inputs MUST be validated at trust boundaries; untrusted content MUST
+  be sanitized or encoded before rendering, shell, database, or network sinks.
 * Scanning per PR SHOULD include:
 
   * OSV / audits per ecosystem
