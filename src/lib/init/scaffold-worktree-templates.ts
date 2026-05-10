@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { renderInstallCommand } from "./scaffold-shell-templates.js";
 
-const AGENT_BRANCH_PREFIX = "codex";
+const AGENT_BRANCH_PREFIX = "jscraik/feature";
 
 /**
  * Generate a bash script that prepares a git worktree for local hooks and checks.

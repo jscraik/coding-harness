@@ -47,6 +47,9 @@ describe("tooling baseline codex actions", () => {
 		expect(action?.icon).toBe("tool");
 		expect(action?.command).toContain("git rev-parse --is-inside-work-tree");
 		expect(action?.command).toContain(
+			'branch_base="jscraik/feature/$repo_slug-worktree-$short_sha"',
+		);
+		expect(action?.command).toContain(
 			'echo "[codex] detached HEAD detected; creating branch $branch_name"',
 		);
 		expect(action?.command).toContain('git switch -c "$branch_name"');

@@ -1794,11 +1794,16 @@ describe("runInit", () => {
 			expect(miseToml).toContain('"trivy" = "0.69.3"');
 			expect(miseToml).toContain('"vale" = "3.13.1"');
 			expect(harnessCli).toContain(
-				"local @brainwav/coding-harness could not be resolved from this repo",
+				"local $PACKAGE_NAME could not be resolved from this repo",
 			);
 			expect(harnessCli).toContain(
 				"local install/bootstrap problem, not a harness command failure",
 			);
+			expect(harnessCli).toContain(
+				"Private npm fallback is disabled by default",
+			);
+			expect(harnessCli).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
+			expect(harnessCli).toContain("npm auth is missing in this process");
 			expect(harnessCli).toContain("npm install");
 			expect(harnessCli).toContain(
 				"npm install --save-dev @brainwav/coding-harness",
@@ -2294,9 +2299,13 @@ describe("runInit", () => {
 			expect(wrapper.stderr).toContain(
 				"local install/bootstrap problem, not a harness command failure",
 			);
+			expect(wrapper.stderr).toContain(
+				"Private npm fallback is disabled by default",
+			);
 			expect(wrapper.stderr).toContain("pnpm install");
 			expect(wrapper.stderr).toContain("pnpm add -D @brainwav/coding-harness");
 			expect(wrapper.stderr).toContain("pnpm exec harness <command>");
+			expect(wrapper.stderr).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
 			expect(wrapper.stdout).toBe("");
 		});
 
@@ -2513,6 +2522,10 @@ exit 1
 				`#!/usr/bin/env bash
 set -euo pipefail
 if [[ "$1" == "ls" ]]; then
+	exit 0
+fi
+if [[ "$1" == "whoami" ]]; then
+	echo "fixture-user"
 	exit 0
 fi
 if [[ "$1" == "prefix" && "$2" == "-g" ]]; then

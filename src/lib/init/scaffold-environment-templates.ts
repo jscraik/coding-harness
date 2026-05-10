@@ -561,7 +561,7 @@ else
 			echo "Error: @brainwav/coding-harness is not installed globally via npm."
 			echo "Install globally and retry:"
 			echo "  npm i -g @brainwav/coding-harness"
-			echo "Private registry auth is required:"
+			echo "Private registry auth may be required:"
 			echo "  - Local shell: export NPM_TOKEN=<token>"
 			echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
 			exit 1
