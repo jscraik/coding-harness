@@ -224,6 +224,25 @@ describe("classifyClosureEvidence", () => {
 		expect(result.nextAction).toContain("incomplete required checks");
 	});
 
+	it("classifies skipped required checks as blocked", () => {
+		const result = classifyClosureEvidence(
+			acceptedMergedRecord({
+				requiredChecks: [
+					{
+						name: "pr-pipeline",
+						provider: "circleci",
+						status: "completed",
+						conclusion: "skipped",
+						checkedSha: MERGE_SHA,
+					},
+				],
+			}),
+		);
+
+		expect(result.classification).toBe("blocked_failing_check");
+		expect(result.reasons).toEqual(["checks:failing"]);
+	});
+
 	it("classifies missing required checks as blocked", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({

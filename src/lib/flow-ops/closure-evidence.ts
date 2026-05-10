@@ -95,7 +95,7 @@ export interface ClosureEvidenceClassificationResult {
 	reasons: string[];
 }
 
-const passingConclusions = new Set(["success", "skipped"]);
+const passingConclusions = new Set(["success"]);
 
 /**
  * Determine whether a Linear issue is considered active.
@@ -136,7 +136,7 @@ function expectedCheckShas(
  * Determines whether any required check was recorded against a commit SHA that does not match the pull request's expected SHAs.
  *
  * @param record - The closure evidence record containing `pullRequest` and `requiredChecks`
- * @returns `true` if at least one required check has a string `checkedSha` that (case-insensitively) is not among the pull request's expected SHAs; `false` otherwise. Returns `false` when there is no pull request or no expected SHAs.
+ * @returns `true` if at least one required check lacks a checked SHA or has a `checkedSha` that (case-insensitively) is not among the pull request's expected SHAs; `false` otherwise. Returns `false` when there is no pull request or no expected SHAs.
  */
 function hasWrongShaCheck(record: ClosureEvidenceRecord): boolean {
 	if (!record.pullRequest) {
@@ -148,7 +148,7 @@ function hasWrongShaCheck(record: ClosureEvidenceRecord): boolean {
 	}
 	return record.requiredChecks.some(
 		(check) =>
-			typeof check.checkedSha === "string" &&
+			typeof check.checkedSha !== "string" ||
 			!expectedShas.has(check.checkedSha.toLowerCase()),
 	);
 }
@@ -157,7 +157,7 @@ function hasWrongShaCheck(record: ClosureEvidenceRecord): boolean {
  * Determines whether any required check in the provided evidence record is incomplete or has a non-passing conclusion.
  *
  * @param record - The closure evidence record whose required checks are evaluated
- * @returns `true` if at least one required check is not `"completed"` or is completed with a conclusion other than `"success"` or `"skipped"`, `false` otherwise.
+ * @returns `true` if at least one required check is not `"completed"` or is completed with a conclusion other than `"success"`, `false` otherwise.
  */
 function hasFailingRequiredCheck(record: ClosureEvidenceRecord): boolean {
 	return record.requiredChecks.some((check) => {
@@ -169,10 +169,20 @@ function hasFailingRequiredCheck(record: ClosureEvidenceRecord): boolean {
 }
 
 /**
+ * Determines whether the required check evidence is absent.
+ *
+ * @param record - The closure evidence record whose required checks are inspected
+ * @returns `true` when no required checks were recorded, `false` otherwise.
+ */
+function hasMissingRequiredChecks(record: ClosureEvidenceRecord): boolean {
+	return record.requiredChecks.length === 0;
+}
+
+/**
  * Determine whether the record's required checks exist and all have completed with passing conclusions.
  *
  * @param record - The closure evidence record whose `requiredChecks` will be evaluated
- * @returns `true` if there is at least one required check and every required check has `status` === "completed" and a conclusion of `success` or `skipped`, `false` otherwise.
+ * @returns `true` if there is at least one required check and every required check has `status` === "completed" and a conclusion of `success`, `false` otherwise.
  */
 function allRequiredChecksPassed(record: ClosureEvidenceRecord): boolean {
 	return (
@@ -241,6 +251,15 @@ export function classifyClosureEvidence(
 			classification: "blocked_missing_eval",
 			nextAction: "Add or repair the eval artifact before closure.",
 			reasons: [`eval:${record.evalArtifact?.path ?? "missing"}`],
+		};
+	}
+
+	if (hasMissingRequiredChecks(record)) {
+		return {
+			classification: "blocked_failing_check",
+			nextAction:
+				"Clear failing, missing, or incomplete required checks before closure.",
+			reasons: ["checks:missing"],
 		};
 	}
 
