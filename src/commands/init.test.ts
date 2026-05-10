@@ -136,9 +136,8 @@ function probePrependStandardToolPaths(environmentCheck: string): string {
 	const probe = spawnSync(
 		"/bin/bash",
 		[
-			"-u",
 			"-c",
-			`${helper}\nunset PATH\nprepend_standard_tool_paths\nprintf '%s' "$PATH"`,
+			`set -u\n${helper}\nunset PATH\nprepend_standard_tool_paths\nprintf '%s' "$PATH"`,
 		],
 		{ encoding: "utf8", env: { HOME: homeDir } },
 	);
