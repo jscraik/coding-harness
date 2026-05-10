@@ -694,6 +694,12 @@ Hook setup must go through `make hooks`, `make setup`, or
 for `pre-commit`, `pre-push`, and `commit-msg` so `PREK_HOME` points at the
 repo-local `.git/.cache/prek` cache, and `scripts/check-environment.sh`
 validates that drift before push.
+Environment-only pushes that change only `.codex/environments/environment.toml`
+run `scripts/check-environment.sh` instead of the full pre-push governance
+suite. Any other changed file keeps the full `make hooks-pre-push` lane.
+The full lane passes the branch changed-file list into
+`scripts/check-diagram-freshness.sh` so diagram refresh checks do not expand to
+unrelated local worktree dirt during push.
 
 When you change executable behavior in this repository, run the smallest real
 path that exercises the touched production code before claiming it works. If

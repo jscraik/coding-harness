@@ -3,12 +3,48 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+CHANGED_FILES_PATH=""
 
 TRACKED_ARTIFACT_PATHS=(
 	".diagram"
 	"AI/context/diagram-context.md"
 	".diagram/context/diagram-context.meta.json"
 )
+
+usage() {
+	cat <<'USAGE'
+Usage: scripts/check-diagram-freshness.sh [--changed-files PATH]
+
+Refreshes architecture diagrams when architecture-sensitive files changed.
+
+Options:
+  --changed-files PATH  Read the changed-file list from PATH instead of deriving
+                        branch, unstaged, and staged changes from git.
+  -h, --help            Show this help text.
+USAGE
+}
+
+while (( $# > 0 )); do
+	case "$1" in
+		--changed-files)
+			CHANGED_FILES_PATH="${2:-}"
+			if [[ -z "$CHANGED_FILES_PATH" ]]; then
+				echo "Error: --changed-files requires a path" >&2
+				exit 2
+			fi
+			shift 2
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		*)
+			echo "Error: unknown argument: $1" >&2
+			usage >&2
+			exit 2
+			;;
+	esac
+done
 
 is_ignored_change() {
 	local changed_path="$1"
@@ -131,6 +167,15 @@ resolve_diff_base() {
 }
 
 collect_changed_paths() {
+	if [[ -n "$CHANGED_FILES_PATH" ]]; then
+		if [[ ! -f "$CHANGED_FILES_PATH" ]]; then
+			echo "Error: changed-files path not found: $CHANGED_FILES_PATH" >&2
+			return 2
+		fi
+		awk 'NF { print }' "$CHANGED_FILES_PATH" | sort -u
+		return 0
+	fi
+
 	local base
 	if base="$(resolve_diff_base)"; then
 		{
@@ -146,6 +191,15 @@ collect_changed_paths() {
 	fi
 }
 
+changed_paths_tmp="$(mktemp)"
+trap 'rm -f "$changed_paths_tmp"' EXIT
+if collect_changed_paths > "$changed_paths_tmp"; then
+	:
+else
+	status=$?
+	exit "$status"
+fi
+
 should_refresh=0
 while IFS= read -r changed_path; do
 	[[ -n "$changed_path" ]] || continue
@@ -153,7 +207,7 @@ while IFS= read -r changed_path; do
 		should_refresh=1
 		break
 	fi
-done < <(collect_changed_paths)
+done < "$changed_paths_tmp"
 
 if [[ "$should_refresh" -ne 1 ]]; then
 	echo "Diagram freshness check skipped: no architecture-sensitive implementation paths changed."
