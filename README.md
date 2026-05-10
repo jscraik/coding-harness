@@ -342,11 +342,12 @@ common case, `init --track` gives you the contract, workflow scaffolding,
 review policy surfaces, repo-local verification scripts, and enough metadata to
 upgrade or roll back cleanly later.
 
-Generated readiness scripts prepend existing user-writable and
-platform-standard tool directories before validation. That lets non-login agent
-shells find already-installed tools such as `mise`, Homebrew binaries,
-`/usr/sbin`, and `/sbin` without silently installing anything or mutating global
-state.
+Generated readiness scripts preserve caller-provided `PATH` precedence before
+validation, then add existing user-writable and platform-standard tool
+directories only as fallbacks. That lets non-login agent shells find
+already-installed tools such as `mise`, Homebrew binaries, `/usr/sbin`, and
+`/sbin` without shadowing repo-local test shims, silently installing anything,
+or mutating global state.
 
 Use these follow-ups when the repo already has harness material:
 
