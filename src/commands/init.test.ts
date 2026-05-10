@@ -1739,6 +1739,9 @@ describe("runInit", () => {
 				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
 			);
 			expect(makefile).toContain(
+				"Environment-only push detected; running check-environment only.",
+			);
+			expect(makefile).toContain(
 				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
 			);
 
