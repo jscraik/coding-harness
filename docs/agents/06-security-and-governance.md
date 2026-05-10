@@ -101,6 +101,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
 - `scripts/prepare-worktree.sh` should auto-attach detached HEAD checkouts to a local branch with exact base format `branch_base="jscraik/feature/$repo_slug-worktree-$short_sha"`, set `origin/main` tracking when available, and fast-forward to latest `origin/main` before dependency bootstrap so default git branch workflows are available immediately.
 - Generated downstream setup surfaces, Codex environment setup, `Tools` actions, `make worktree-ready`, and manual or agent bootstrap runs consume that `jscraik/feature/<repo>-worktree-<short-sha>` branch rule; keep the generated worktree branch prefix synchronized with PR template and workflow branch guidance.
+- When a merge refresh changes worktree helper behavior, keep this governance surface in the PR diff with the matching tooling policy update so docs-gate can verify the complete runtime-contract surface set.
 - Treat `jscraik/feature/<repo>-worktree-<short-sha>` as a local worktree-readiness branch intended for bootstrap and hook execution. Do not grant it broader permissions than other agent-created branches, do not infer Linear ownership from that prefix, and prune or rename stale local instances only through the normal worktree cleanup flow.
 
 ### Worktree branch naming: security and governance implications
