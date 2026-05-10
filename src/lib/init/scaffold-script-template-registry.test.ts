@@ -40,6 +40,7 @@ describe("scaffold script template registry", () => {
 			"scripts/verify-work.sh",
 			"scripts/validate-codestyle.sh",
 			"scripts/check-codestyle-parity.sh",
+			"scripts/check-git-common-config.sh",
 			"scripts/prepare-worktree.sh",
 			"scripts/new-task.sh",
 			"scripts/harness-cli.sh",

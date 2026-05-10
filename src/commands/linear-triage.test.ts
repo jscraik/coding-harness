@@ -26,6 +26,11 @@ import { runLinearTriage } from "./linear-triage.js";
 const mockLinearClient = vi.mocked(LinearClient);
 const mockLinearTriageClient = (client: PartialDeep<LinearClient>) =>
 	fromPartial<LinearClient>(client);
+const mockLinearClientImplementation = (createClient: () => LinearClient) => {
+	mockLinearClient.mockImplementation(function LinearClient() {
+		return createClient();
+	});
+};
 
 const baseTeam = {
 	id: "team-1",
@@ -55,7 +60,7 @@ describe("runLinearTriage", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		vi.stubEnv("LINEAR_API_KEY", "");
-		mockLinearClient.mockImplementation(() => mockLinearTriageClient(client));
+		mockLinearClientImplementation(() => mockLinearTriageClient(client));
 	});
 
 	afterEach(() => {

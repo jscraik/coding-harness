@@ -140,18 +140,19 @@ describe("check-run helpers", () => {
 		expect(result.conclusion).toBe("failure");
 	});
 
-	it.each(["in_progress", "queued", "pending"] as const)(
-		"treats %s as in-progress",
-		(status) => {
-			expect(
-				isCheckRunInProgress({
-					found: true,
-					status,
-					conclusion: null,
-				}),
-			).toBe(true);
-		},
-	);
+	it.each([
+		"in_progress",
+		"queued",
+		"pending",
+	] as const)("treats %s as in-progress", (status) => {
+		expect(
+			isCheckRunInProgress({
+				found: true,
+				status,
+				conclusion: null,
+			}),
+		).toBe(true);
+	});
 
 	it("reports passing only for completed + success", () => {
 		expect(

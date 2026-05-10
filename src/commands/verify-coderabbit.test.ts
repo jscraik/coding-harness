@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal .npmrc token placeholders.
 /**
  * Tests for verify-coderabbit command
  */
@@ -27,6 +28,13 @@ import { GitHubClient } from "../lib/github/client.js";
 const mockGitHubClient = vi.mocked(GitHubClient);
 const mockVerifyCodeRabbitClient = (client: PartialDeep<GitHubClient>) =>
 	fromPartial<GitHubClient>(client);
+const mockGitHubClientImplementation = (
+	createClient: (options: unknown) => GitHubClient,
+) => {
+	mockGitHubClient.mockImplementation(function GitHubClient(options: unknown) {
+		return createClient(options);
+	});
+};
 
 const DEFAULT_REPO_NPMRC_CONTENT = [
 	"@brainwav:registry=https://registry.npmjs.org/",
@@ -496,7 +504,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("passes check run check when CodeRabbit run exists on default branch", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
@@ -525,7 +533,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("warns when no CodeRabbit check run exists on default branch", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [
@@ -557,7 +565,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("passes ruleset check when protect ruleset requires CodeRabbit", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
@@ -589,7 +597,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("fails ruleset check when protect ruleset does not require CodeRabbit", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
@@ -626,7 +634,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("fails ruleset check when protect ruleset is disabled", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
@@ -662,7 +670,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("warns when no protect ruleset is found", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
@@ -689,7 +697,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("warns when getDefaultBranch throws", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => {
 					throw new Error("API error: 503");
@@ -717,7 +725,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("warns when listRulesets throws", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
@@ -747,7 +755,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 		vi.stubEnv("GITHUB_TOKEN", "ghp_env_token");
 
 		let capturedOptions: { token?: string } | undefined;
-		mockGitHubClient.mockImplementation((opts) => {
+		mockGitHubClientImplementation((opts) => {
 			capturedOptions = opts as { token?: string };
 			return mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
@@ -771,7 +779,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 		vi.stubEnv("GITHUB_PERSONAL_ACCESS_TOKEN", "ghp_pat_token");
 
 		let capturedOptions: { token?: string } | undefined;
-		mockGitHubClient.mockImplementation((opts) => {
+		mockGitHubClientImplementation((opts) => {
 			capturedOptions = opts as { token?: string };
 			return mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
@@ -793,7 +801,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("includes check run conclusion in pass message", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "develop"),
 				listCheckRunsForRef: vi.fn(
@@ -831,7 +839,7 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 	it("handles check run with null conclusion (pending)", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(
@@ -1098,7 +1106,7 @@ describe("runVerifyCodeRabbit - edge cases", () => {
 	it("ruleset with no required_status_checks rule treats as missing CodeRabbit", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
@@ -1135,7 +1143,7 @@ describe("runVerifyCodeRabbit - edge cases", () => {
 	it("only the first non-CodeRabbit check run in list still returns warn for check run presence", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [
@@ -1163,7 +1171,7 @@ describe("runVerifyCodeRabbit - edge cases", () => {
 	it("a non-protect ruleset with CodeRabbit does not satisfy the protect check", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockVerifyCodeRabbitClient({
 				getDefaultBranch: vi.fn(async () => "main"),
 				listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),

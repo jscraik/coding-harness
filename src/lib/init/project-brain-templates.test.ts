@@ -20,6 +20,7 @@ function renderTemplate(path: string): string {
 describe("project brain templates", () => {
 	it("exposes the expected project brain scaffold paths", () => {
 		expect(PROJECT_BRAIN_TEMPLATES.map((template) => template.path)).toEqual([
+			".harness/README.md",
 			".harness/memory/LEARNINGS.md",
 			".harness/knowledge/INDEX.md",
 			".harness/knowledge/cli/knowledge.md",
@@ -110,6 +111,7 @@ describe("project brain templates", () => {
 	});
 
 	it("renders project brain support artifacts", () => {
+		const harnessReadme = renderTemplate(".harness/README.md");
 		const learnings = renderTemplate(".harness/memory/LEARNINGS.md");
 		const codexLearnSummary = renderTemplate(
 			".harness/knowledge/tooling/codex-learn-summary.md",
@@ -117,6 +119,9 @@ describe("project brain templates", () => {
 		const qualityCriteria = renderTemplate(".harness/quality/criteria.md");
 		const reviewLog = renderTemplate(".harness/review-log.md");
 
+		expect(harnessReadme).toContain("Track curated Markdown and JSON");
+		expect(harnessReadme).toContain("secondary-context");
+		expect(harnessReadme).toContain("Admission Rule");
 		expect(learnings).toContain("schema_version: 1");
 		expect(learnings).toContain(
 			"Repo-specific agent knowledge base. Append-only.",

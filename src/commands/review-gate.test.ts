@@ -74,6 +74,11 @@ import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-pac
 const mockGitHubClient = vi.mocked(GitHubClient);
 const mockReviewGateGitHubClient = (client: PartialDeep<GitHubClient>) =>
 	fromPartial<GitHubClient>(client);
+const mockGitHubClientImplementation = (createClient: () => GitHubClient) => {
+	mockGitHubClient.mockImplementation(function GitHubClient() {
+		return createClient();
+	});
+};
 
 const mockLoadContract = vi.mocked(loadContract);
 const mockValidateSha = vi.mocked(validateSha);
@@ -109,6 +114,7 @@ describe("runReviewGate", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockGitHubClient.mockReset();
 		mockEmitReviewGateDecisionArtifacts.mockReturnValue({
 			runId: "review-gate-run-1",
 			decisionPacketPath:
@@ -146,7 +152,7 @@ describe("runReviewGate", () => {
 		});
 
 		// Default: PR head SHA matches the supplied SHA so unchanged tests pass.
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -187,7 +193,7 @@ describe("runReviewGate", () => {
 	// Security: provided SHA must match the PR's actual head SHA
 	it("returns validation error when provided SHA does not match PR head", async () => {
 		const mismatchedSha = "fedcba9876543210fedcba9876543210fedcba98";
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -216,7 +222,7 @@ describe("runReviewGate", () => {
 			reviewPolicy: { timeoutSeconds: 0, timeoutAction: "warn" },
 		});
 		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -256,7 +262,7 @@ describe("runReviewGate", () => {
 			reviewPolicy: { timeoutSeconds: 0, timeoutAction: "fail" },
 		});
 		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -303,7 +309,7 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -375,7 +381,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -474,7 +480,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -560,7 +566,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -613,7 +619,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -696,7 +702,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -761,7 +767,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -823,7 +829,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -867,7 +873,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -926,7 +932,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -983,7 +989,7 @@ describe("runReviewGate", () => {
 				user: { login: "coding-actor" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -1047,7 +1053,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1122,7 +1128,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1192,7 +1198,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1280,7 +1286,7 @@ describe("runReviewGate", () => {
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1399,7 +1405,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1468,7 +1474,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: src/commands/review-gate.ts:220",
 			"- safety_floor: yes. Evidence: src/commands/review-gate.test.ts:600",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1544,7 +1550,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: .github/workflows/pr-pipeline.yml:42",
 			"- safety_floor: yes. Evidence: codex/hooks/pre-tool-use-guard.sh:19",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1629,7 +1635,7 @@ describe("runReviewGate", () => {
 			"3. agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"4. safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1707,7 +1713,7 @@ describe("runReviewGate", () => {
 					`- ${question.prompt}: yes. Evidence: [evidence-${index + 1}](/artifacts/review/proof-${index + 1}.md:1)`,
 			),
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1785,7 +1791,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes",
 			"- safety_floor: yes",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1868,7 +1874,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes",
 			"- safety_floor: yes",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -1948,7 +1954,7 @@ describe("runReviewGate", () => {
 			"- [x] agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- [x] safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -2032,7 +2038,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -2114,7 +2120,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -2198,7 +2204,7 @@ describe("runReviewGate", () => {
 				return `- ${question.prompt}: ${answerToken}. Evidence: [evidence-${index + 1}](/artifacts/review/proof-${index + 1}.md:1)`;
 			}),
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -2279,7 +2285,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -2356,7 +2362,7 @@ describe("runReviewGate", () => {
 			"- manual_glue: yes. Evidence: [workflow](/artifacts/review/glue.md:7)",
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -2437,7 +2443,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -2518,7 +2524,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -2596,7 +2602,7 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -2663,7 +2669,7 @@ describe("runReviewGate", () => {
 				user: { login: "coding-actor" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -2694,7 +2700,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -2743,7 +2749,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -2787,7 +2793,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -2835,7 +2841,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -2876,7 +2882,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -2924,7 +2930,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -2966,7 +2972,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -3029,7 +3035,7 @@ describe("runReviewGate", () => {
 		});
 		// No reviews at all — this is the bypass vector
 		const mockListReviews = vi.fn().mockResolvedValue([]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -3106,7 +3112,7 @@ describe("runReviewGate", () => {
 				user: { login: "coding-actor" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -3158,7 +3164,7 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -3209,7 +3215,7 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -3261,7 +3267,7 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -3305,7 +3311,7 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -3363,7 +3369,7 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -3448,7 +3454,7 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -3542,7 +3548,7 @@ describe("runReviewGate", () => {
 					},
 				},
 			];
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -3649,7 +3655,7 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -3742,7 +3748,7 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -3817,7 +3823,7 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -3912,7 +3918,7 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -4035,7 +4041,7 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -4158,7 +4164,7 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -4287,7 +4293,7 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -4392,7 +4398,7 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -4497,7 +4503,7 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockReviewGateGitHubClient({
 					listPullRequestFiles: vi
 						.fn()
@@ -4566,7 +4572,7 @@ describe("runReviewGate", () => {
 				},
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -4629,7 +4635,7 @@ describe("runReviewGate", () => {
 				},
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -4671,7 +4677,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -4710,55 +4716,55 @@ describe("runReviewGate", () => {
 		}
 	});
 
-	it.each(["coderabbitai", "coderabbitai[bot]"])(
-		"allows unresolved CodeRabbit-only review threads for %s",
-		async (botLogin) => {
-			const mockCheckRuns: CheckRun[] = [
-				{
-					id: 1,
-					name: "review-check",
-					status: "completed",
-					conclusion: "success",
-					head_sha: validSha,
-				},
-			];
-			mockGitHubClient.mockImplementation(() =>
-				mockReviewGateGitHubClient({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-					listPullRequestReviewThreads: vi.fn().mockResolvedValue([
-						{
-							id: "thread-1",
-							isResolved: false,
-							comments: [{ author: { login: botLogin } }],
-						},
-					]),
+	it.each([
+		"coderabbitai",
+		"coderabbitai[bot]",
+	])("allows unresolved CodeRabbit-only review threads for %s", async (botLogin) => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClientImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
 				}),
-			);
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+				listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+					{
+						id: "thread-1",
+						isResolved: false,
+						comments: [{ author: { login: botLogin } }],
+					},
+				]),
+			}),
+		);
 
-			const result = await runReviewGate(defaultOptions);
+		const result = await runReviewGate(defaultOptions);
 
-			expect(result.ok).toBe(true);
-			if (result.ok) {
-				expect(result.output.verified).toBe(true);
-				expect(result.output.blockers).toEqual([]);
-			}
-		},
-	);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
 
 	it("uses the newest check run when duplicate required check names exist", async () => {
 		mockLoadContract.mockReturnValue({
@@ -4815,7 +4821,7 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -4852,7 +4858,7 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				listPullRequestFiles: vi
 					.fn()
@@ -4894,7 +4900,7 @@ describe("runReviewGate", () => {
 			},
 		];
 		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -4940,7 +4946,7 @@ describe("runReviewGate", () => {
 			},
 		];
 		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -4962,59 +4968,60 @@ describe("runReviewGate", () => {
 		}
 	});
 
-	it.each(["in_progress", "queued", "pending"] as const)(
-		"returns warn timeout output when timeoutAction is warn and check status is %s",
-		async (checkStatus) => {
-			mockLoadContract.mockReturnValue({
-				version: "1.0",
-				riskTierRules: {},
-				reviewPolicy: { timeoutSeconds: 1, timeoutAction: "warn" },
-			});
+	it.each([
+		"in_progress",
+		"queued",
+		"pending",
+	] as const)("returns warn timeout output when timeoutAction is warn and check status is %s", async (checkStatus) => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: { timeoutSeconds: 1, timeoutAction: "warn" },
+		});
 
-			const mockCheckRuns: CheckRun[] = [
-				{
-					id: 1,
-					name: "review-check",
-					status: checkStatus,
-					conclusion: null,
-					head_sha: validSha,
-				},
-			];
-			mockGitHubClient.mockImplementation(() =>
-				mockReviewGateGitHubClient({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: checkStatus,
+				conclusion: null,
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClientImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
 				}),
-			);
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+			}),
+		);
 
-			vi.useFakeTimers();
-			try {
-				const resultPromise = runReviewGate(defaultOptions);
-				await vi.advanceTimersByTimeAsync(1000);
-				const result = await resultPromise;
+		vi.useFakeTimers();
+		try {
+			const resultPromise = runReviewGate(defaultOptions);
+			await vi.advanceTimersByTimeAsync(1000);
+			const result = await resultPromise;
 
-				expect(result.ok).toBe(true);
-				if (result.ok) {
-					expect(result.output.verified).toBe(false);
-					expect(result.output.timedOut).toBe(true);
-					expect(result.output.needsRerun).toBe(true);
-					expect(result.output.policy_gate_status).toBe("pending");
-					expect(result.output.blockers.join(" ")).toContain(
-						"verification is incomplete",
-					);
-				}
-			} finally {
-				vi.useRealTimers();
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(false);
+				expect(result.output.timedOut).toBe(true);
+				expect(result.output.needsRerun).toBe(true);
+				expect(result.output.policy_gate_status).toBe("pending");
+				expect(result.output.blockers.join(" ")).toContain(
+					"verification is incomplete",
+				);
 			}
-		},
-	);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
 });
 
 describe("runReviewGateCLI", () => {
@@ -5082,7 +5089,7 @@ describe("runReviewGateCLI", () => {
 				head_sha: validSha,
 			},
 		]);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockResolvedValue({
 					number: defaultOptions.prNumber,
@@ -5180,7 +5187,7 @@ describe("runReviewGateCLI", () => {
 		const consoleErrorSpy = vi
 			.spyOn(console, "error")
 			.mockImplementation(() => undefined);
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockRejectedValue(
 					Object.assign(new Error("PR not found"), {
@@ -5221,7 +5228,7 @@ describe("runReviewGateCLI", () => {
 	});
 
 	it("returns PERMISSION_DENIED for ForbiddenError", async () => {
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockRejectedValue(
 					Object.assign(new Error("Forbidden"), {
@@ -5237,7 +5244,7 @@ describe("runReviewGateCLI", () => {
 	});
 
 	it("returns NOT_FOUND for NotFoundError", async () => {
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockRejectedValue(
 					Object.assign(new Error("Not Found"), {
@@ -5253,7 +5260,7 @@ describe("runReviewGateCLI", () => {
 	});
 
 	it("returns PERMISSION_DENIED for UnauthorizedError", async () => {
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockReviewGateGitHubClient({
 				getPullRequest: vi.fn().mockRejectedValue(
 					Object.assign(new Error("Unauthorized"), {
@@ -5278,8 +5285,8 @@ describe("runReviewGateCLI", () => {
 		const mockResolveThread = vi.fn().mockResolvedValue(undefined);
 
 		mockGitHubClient
-			.mockImplementationOnce(() =>
-				mockReviewGateGitHubClient({
+			.mockImplementationOnce(function GitHubClient() {
+				return mockReviewGateGitHubClient({
 					getPullRequest: vi.fn().mockResolvedValue({
 						number: defaultOptions.prNumber,
 						user: { login: "coding-actor" },
@@ -5305,10 +5312,10 @@ describe("runReviewGateCLI", () => {
 						},
 					]),
 					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
-				}),
-			)
-			.mockImplementationOnce(() =>
-				mockReviewGateGitHubClient({
+				});
+			})
+			.mockImplementationOnce(function GitHubClient() {
+				return mockReviewGateGitHubClient({
 					listPullRequestReviewThreads: vi.fn().mockResolvedValue([
 						{
 							id: "thread-bot-only",
@@ -5325,8 +5332,8 @@ describe("runReviewGateCLI", () => {
 						},
 					]),
 					resolvePullRequestReviewThread: mockResolveThread,
-				}),
-			);
+				});
+			});
 
 		const exitCode = await runReviewGateCLI({
 			...defaultOptions,
@@ -5352,8 +5359,8 @@ describe("runReviewGateCLI", () => {
 			.mockImplementation(() => undefined);
 
 		mockGitHubClient
-			.mockImplementationOnce(() =>
-				mockReviewGateGitHubClient({
+			.mockImplementationOnce(function GitHubClient() {
+				return mockReviewGateGitHubClient({
 					getPullRequest: vi.fn().mockResolvedValue({
 						number: defaultOptions.prNumber,
 						user: { login: "coding-actor" },
@@ -5379,15 +5386,15 @@ describe("runReviewGateCLI", () => {
 						},
 					]),
 					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
-				}),
-			)
-			.mockImplementationOnce(() =>
-				mockReviewGateGitHubClient({
+				});
+			})
+			.mockImplementationOnce(function GitHubClient() {
+				return mockReviewGateGitHubClient({
 					listPullRequestReviewThreads: vi
 						.fn()
 						.mockRejectedValue(new Error("resolve failure")),
-				}),
-			);
+				});
+			});
 
 		const exitCode = await runReviewGateCLI({
 			...defaultOptions,

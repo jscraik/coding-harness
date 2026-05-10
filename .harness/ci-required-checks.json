@@ -1,230 +1,182 @@
 {
-  "version": 1,
-  "activeProvider": "circleci",
-  "requiredChecks": [
-    {
-      "policyId": "required-check-1",
-      "displayName": "pr-template",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-2",
-      "displayName": "linear-gate",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-3",
-      "displayName": "risk-policy-gate",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-4",
-      "displayName": "dependency-scan",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-5",
-      "displayName": "orb-pinning",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-6",
-      "displayName": "consistency-drift-health",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-7",
-      "displayName": "docs-gate",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-8",
-      "displayName": "lint",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-9",
-      "displayName": "typecheck",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-10",
-      "displayName": "test",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-11",
-      "displayName": "audit",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-12",
-      "displayName": "check",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-13",
-      "displayName": "memory",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline"
-    },
-    {
-      "policyId": "required-check-15",
-      "displayName": "security-scan",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^security-scan$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "security-scan"
-    },
-    {
-      "policyId": "required-check-16",
-      "displayName": "CodeRabbit",
-      "sourceAppSlug": "coderabbit",
-      "sourceAppId": "coderabbit",
-      "externalIdPattern": "^CodeRabbit$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "CodeRabbit"
-    },
-    {
-      "policyId": "required-check-17",
-      "displayName": "semgrep-cloud-platform/scan",
-      "sourceAppSlug": "semgrep-cloud-platform",
-      "sourceAppId": "semgrep-cloud-platform",
-      "externalIdPattern": "^semgrep-cloud-platform/scan$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "semgrep-cloud-platform/scan"
-    }
-  ]
+	"version": 1,
+	"activeProvider": "circleci",
+	"requiredChecks": [
+		{
+			"policyId": "required-check-1",
+			"displayName": "pr-template",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-2",
+			"displayName": "linear-gate",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-3",
+			"displayName": "risk-policy-gate",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-4",
+			"displayName": "dependency-scan",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-5",
+			"displayName": "orb-pinning",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-6",
+			"displayName": "consistency-drift-health",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-7",
+			"displayName": "docs-gate",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-8",
+			"displayName": "lint",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-9",
+			"displayName": "typecheck",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-10",
+			"displayName": "test",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-11",
+			"displayName": "audit",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-12",
+			"displayName": "check",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-13",
+			"displayName": "memory",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^pr-pipeline$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline"
+		},
+		{
+			"policyId": "required-check-15",
+			"displayName": "security-scan",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^security-scan$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "security-scan"
+		},
+		{
+			"policyId": "required-check-16",
+			"displayName": "CodeRabbit",
+			"sourceAppSlug": "coderabbit",
+			"sourceAppId": "coderabbit",
+			"externalIdPattern": "^CodeRabbit$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "CodeRabbit"
+		},
+		{
+			"policyId": "required-check-17",
+			"displayName": "semgrep-cloud-platform/scan",
+			"sourceAppSlug": "semgrep-cloud-platform",
+			"sourceAppId": "semgrep-cloud-platform",
+			"externalIdPattern": "^semgrep-cloud-platform/scan$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "semgrep-cloud-platform/scan"
+		}
+	]
 }

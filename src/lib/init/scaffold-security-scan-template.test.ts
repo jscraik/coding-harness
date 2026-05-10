@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal GitHub Actions expressions.
 import { describe, expect, it } from "vitest";
 import { renderSecurityScanWorkflow } from "./scaffold-security-scan-template.js";
 

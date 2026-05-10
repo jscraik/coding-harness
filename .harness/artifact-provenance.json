@@ -1,0 +1,23 @@
+{
+	"schemaVersion": "artifact-provenance/v1",
+	"artifacts": [
+		{
+			"path": "scripts/codex-preflight.sh",
+			"source": "src/templates/codex-preflight.sh",
+			"checkCommand": "node scripts/sync-codex-preflight.cjs --check",
+			"writeCommand": "node scripts/sync-codex-preflight.cjs --write",
+			"reviewPolicy": "review-source-and-sync-generated-copy",
+			"enforcement": "required",
+			"description": "Repo-local codex preflight script is generated from the checked-in template."
+		},
+		{
+			"path": "scripts/codex-preflight-local-memory-legacy.sh",
+			"source": "src/templates/codex-preflight-local-memory-legacy.sh",
+			"checkCommand": "node scripts/sync-codex-preflight.cjs --check",
+			"writeCommand": "node scripts/sync-codex-preflight.cjs --write",
+			"reviewPolicy": "review-source-and-sync-generated-copy",
+			"enforcement": "advisory",
+			"description": "Legacy local-memory preflight mirror should stay tied to the template source."
+		}
+	]
+}

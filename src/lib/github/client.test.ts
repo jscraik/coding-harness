@@ -214,4 +214,53 @@ describe("GitHubClient.listCheckRunsForRef", () => {
 			code: "FORBIDDEN",
 		});
 	});
+
+	it("retries transient server failures when listing check runs", async () => {
+		vi.useFakeTimers();
+		try {
+			const client = new GitHubClient({
+				token: "token",
+				owner: "acme",
+				repo: "example",
+			});
+			const listForRef = vi.fn();
+			const paginate = vi
+				.fn()
+				.mockRejectedValueOnce(createRequestError(504, "Gateway Timeout"))
+				.mockResolvedValueOnce([
+					{
+						id: 301,
+						name: "review-check",
+						status: "completed",
+						conclusion: "success",
+						head_sha: "0123456789abcdef0123456789abcdef01234567",
+					},
+				]);
+			(client as unknown as { octokit: unknown }).octokit = {
+				paginate,
+				checks: {
+					listForRef,
+				},
+			};
+
+			const resultPromise = client.listCheckRunsForRef(
+				"0123456789abcdef0123456789abcdef01234567",
+			);
+			await vi.advanceTimersByTimeAsync(250);
+			const result = await resultPromise;
+
+			expect(result).toEqual([
+				{
+					id: 301,
+					name: "review-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: "0123456789abcdef0123456789abcdef01234567",
+				},
+			]);
+			expect(paginate).toHaveBeenCalledTimes(2);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
 });

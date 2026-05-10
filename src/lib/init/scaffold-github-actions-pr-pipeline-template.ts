@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: generated workflow scripts must preserve shell placeholders.
 import { renderGitHubActionsPrPipelineWorkflowTemplate } from "./scaffold-github-actions-pr-pipeline-renderer.js";
 
 /**

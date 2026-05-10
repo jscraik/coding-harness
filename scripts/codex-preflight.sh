@@ -58,7 +58,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${SCRIPT_PATH}")" && pwd -P)"
 WORKSPACE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"
 LOCAL_MEMORY_FALLBACK_SCRIPT="${SCRIPT_DIR}/codex-preflight-local-memory-legacy.sh"
-PROJECT_BRAIN_REQUIRED_PATHS='.harness/memory/LEARNINGS.md,.harness/knowledge/INDEX.md,.harness/knowledge/cli/knowledge.md,.harness/knowledge/cli/hypotheses.md,.harness/knowledge/cli/rules.md,.harness/knowledge/ci/knowledge.md,.harness/knowledge/ci/hypotheses.md,.harness/knowledge/ci/rules.md,.harness/knowledge/governance/knowledge.md,.harness/knowledge/governance/hypotheses.md,.harness/knowledge/governance/rules.md,.harness/knowledge/tooling/knowledge.md,.harness/knowledge/tooling/hypotheses.md,.harness/knowledge/tooling/rules.md,.harness/knowledge/tooling/codex-learn-summary.md,.harness/decisions,.harness/quality/criteria.md,.harness/review-log.md'
+GIT_COMMON_CONFIG_GUARD_SCRIPT="${SCRIPT_DIR}/check-git-common-config.sh"
+PROJECT_BRAIN_REQUIRED_PATHS='.harness/README.md,.harness/memory/LEARNINGS.md,.harness/knowledge/INDEX.md,.harness/knowledge/cli/knowledge.md,.harness/knowledge/cli/hypotheses.md,.harness/knowledge/cli/rules.md,.harness/knowledge/ci/knowledge.md,.harness/knowledge/ci/hypotheses.md,.harness/knowledge/ci/rules.md,.harness/knowledge/governance/knowledge.md,.harness/knowledge/governance/hypotheses.md,.harness/knowledge/governance/rules.md,.harness/knowledge/tooling/knowledge.md,.harness/knowledge/tooling/hypotheses.md,.harness/knowledge/tooling/rules.md,.harness/knowledge/tooling/codex-learn-summary.md,.harness/decisions,.harness/quality/criteria.md,.harness/review-log.md'
 WORKSPACE_GIT_USE_WORKTREE_OVERRIDE=0
 WORKSPACE_GIT_ROOT=''
 
@@ -277,10 +278,10 @@ stack_bins_csv() {
 # stack_paths_csv returns a comma-separated list of repository paths required for the given stack (js, py, rust, repo); on unknown stack it logs an error and returns exit code 2.
 stack_paths_csv() {
 	case "$1" in
-		js) append_project_brain_paths 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		py) append_project_brain_paths 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		rust) append_project_brain_paths 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		repo) append_project_brain_paths 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		js) append_project_brain_paths 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		py) append_project_brain_paths 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		rust) append_project_brain_paths 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		repo) append_project_brain_paths 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
 		*) log_err "unknown stack: $1"; return 2 ;;
 	esac
 }
@@ -793,6 +794,9 @@ main() {
 	if ! command -v git >/dev/null 2>&1; then
 		log_err 'missing binary: git'
 		exit 2
+	fi
+	if [[ -x "${GIT_COMMON_CONFIG_GUARD_SCRIPT}" ]]; then
+		"${GIT_COMMON_CONFIG_GUARD_SCRIPT}"
 	fi
 
 	if ! resolve_workspace_git_root; then

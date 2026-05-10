@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated hooks.
 import { describe, expect, it } from "vitest";
 import {
 	renderCheckHookCriticalConfigSyncScript,
@@ -29,7 +30,10 @@ describe("git-hook scaffold templates", () => {
 			'const PREK_HOME = process.env.PREK_HOME ?? resolve(GIT_DIR, ".cache/prek")',
 		);
 		expect(script).toContain('execFileSync("git", ["rev-parse", "--git-dir"]');
-		expect(script).toContain('const hooksDir = resolve(GIT_DIR, "hooks")');
+		expect(script).toContain(
+			'execFileSync("git", ["rev-parse", "--git-path", "hooks"]',
+		);
+		expect(script).toContain("GIT_HOOKS_DIR");
 		expect(script).toContain("mkdirSync(PREK_HOME, { recursive: true })");
 		expect(script).toContain('execFileSync("prek", ["install", "--overwrite"]');
 		expect(script).toContain("env: { ...process.env, PREK_HOME }");

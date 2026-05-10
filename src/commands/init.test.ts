@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated files.
 import { spawnSync } from "node:child_process";
 import {
 	existsSync,
@@ -22,6 +23,7 @@ import { EXIT_CODES, runInit, runInitCLI } from "./init.js";
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
+	".harness/README.md",
 	".harness/ci-required-checks.json",
 	".harness/ci-provider-transition-status.json",
 	".harness/memory/LEARNINGS.md",
@@ -100,6 +102,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
 	"scripts/check-codestyle-parity.sh",
+	"scripts/check-git-common-config.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/harness-cli.sh",
@@ -650,7 +653,7 @@ describe("runInit", () => {
 				expect.arrayContaining([
 					expect.objectContaining({
 						tool: "npm:@brainwav/diagram",
-						version: "1.0.8",
+						version: "1.1.0",
 					}),
 					expect.objectContaining({
 						tool: "npm:agent-browser",
@@ -1770,11 +1773,11 @@ describe("runInit", () => {
 			expect(prek).toContain("make hooks-pre-push");
 			expect(prek).toContain('stages = ["pre-push"]');
 			expect(miseToml).toContain('"cargo:prek" = "0.3.4"');
-			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.0.8"');
+			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.1.0"');
 			expect(miseToml).toContain('"npm:@argos-ci/cli" = "4.1.1"');
 			expect(miseToml).toContain('"cosign" = "3.0.5"');
 			expect(miseToml).toContain('"cloudflared" = "2026.3.0"');
-			expect(miseToml).toContain('"npm:vitest" = "4.0.18"');
+			expect(miseToml).toContain('"npm:vitest" = "4.1.5"');
 			expect(miseToml).toContain('"ruff" = "0.15.5"');
 			expect(miseToml).toContain('"npm:eslint" = "10.0.3"');
 			expect(miseToml).toContain('"npm:agent-browser" = "0.17.1"');
@@ -2208,7 +2211,7 @@ describe("runInit", () => {
 				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,${TMP_BASENAME}/**"',
 			);
 			expect(refreshDiagrams).toContain(
-				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"',
+				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"',
 			);
 			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
 			expect(refreshDiagrams).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
@@ -2476,13 +2479,13 @@ args=("$@")
 if [[ "\${args[0]:-}" == "--cd" ]]; then
 	args=("\${args[@]:2}")
 fi
-if [[ "\${args[0]:-}" == "trust" ]]; then
-	if [[ "\${args[1]:-}" == "--show" ]]; then
-		target="\${args[2]:-.}"
-		echo "$target: trusted"
+	if [[ "\${args[0]:-}" == "trust" ]]; then
+		if [[ "\${args[1]:-}" == "--show" ]]; then
+			target="\${args[2]:-.}"
+			echo "\${target%/.mise.toml}: trusted"
+		fi
+		exit 0
 	fi
-	exit 0
-fi
 if [[ "\${args[0]:-}" == "activate" ]]; then
 	echo 'true'
 	exit 0
@@ -2807,6 +2810,12 @@ exit 1
 				expect(chmod.status).toBe(0);
 			}
 			const fakePnpmLog = join(tempDir, ".fake-pnpm-log");
+			mkdirSync(join(tempDir, ".git"), { recursive: true });
+			writeFileSync(
+				join(tempDir, ".git/config"),
+				"[core]\n\trepositoryformatversion = 0\n\tfilemode = true\n\tbare = false\n",
+				"utf-8",
+			);
 
 			const verify = spawnSync("bash", ["scripts/verify-work.sh", "--fast"], {
 				cwd: tempDir,
@@ -3770,6 +3779,47 @@ describe("--update flag", () => {
 			require("node:fs").readFileSync(manifestPath, "utf-8"),
 		);
 		expect(updatedManifest.harnessVersion).not.toBe("0.0.1");
+	});
+
+	it("skips tracked codex environment updates after user customization", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const environmentPath = join(
+			tempDir,
+			".codex/environments/environment.toml",
+		);
+		const customizedEnvironment =
+			'# Jamie-owned custom environment\n[tools]\ncustom = "preserve-me"\n';
+		writeFileSync(environmentPath, customizedEnvironment, "utf-8");
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			harnessVersion?: string;
+		};
+		manifest.harnessVersion = "0.0.1";
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.skipped).toContain(
+				".codex/environments/environment.toml",
+			);
+			expect(result.output.updated).not.toContain(
+				".codex/environments/environment.toml",
+			);
+		}
+		expect(readFileSync(environmentPath, "utf-8")).toBe(customizedEnvironment);
 	});
 
 	it("adopts newly introduced scaffolded scripts during update when older manifests do not track them", () => {
@@ -5204,11 +5254,11 @@ describe("tooling version detection (JSC-57)", () => {
 	});
 
 	it("skips biome.json if existing version is newer than template", () => {
-		// Write a biome.json with a newer schema version than the template (1.9.4)
+		// Write a biome.json with a newer schema version than the template (2.4.14)
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				$schema: "https://biomejs.dev/schemas/2.5.0/schema.json",
 				organizeImports: { enabled: true },
 			}),
 		);
@@ -5225,11 +5275,11 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("2.3.13");
+		expect(biomecontent.$schema).toContain("2.5.0");
 	});
 
 	it("overwrites biome.json if existing version is older than template", () => {
-		// Write a biome.json with an older schema version (0.5.0 is older than 1.9.4)
+		// Write a biome.json with an older schema version (0.5.0 is older than 2.4.14)
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
@@ -5248,14 +5298,14 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("1.9.4");
+		expect(biomecontent.$schema).toContain("2.4.14");
 	});
 
 	it("skips biome.json if existing version equals template version", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/1.9.4/schema.json",
+				$schema: "https://biomejs.dev/schemas/2.4.14/schema.json",
 			}),
 		);
 
@@ -5271,7 +5321,7 @@ describe("tooling version detection (JSC-57)", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				$schema: "https://biomejs.dev/schemas/2.5.0/schema.json",
 			}),
 		);
 
@@ -5286,14 +5336,14 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("1.9.4");
+		expect(biomecontent.$schema).toContain("2.4.14");
 	});
 
 	it("interactive mode shows biome.json with newer version as 'skip'", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				$schema: "https://biomejs.dev/schemas/2.5.0/schema.json",
 			}),
 		);
 

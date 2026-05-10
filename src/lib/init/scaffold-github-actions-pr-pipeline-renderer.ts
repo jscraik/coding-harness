@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: generated workflow fragments must preserve GitHub Actions expressions.
 import {
 	renderCiTemplate,
 	replaceTemplateTokens,

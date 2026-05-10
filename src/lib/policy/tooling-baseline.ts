@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: generated environment actions must preserve shell placeholders.
 export const TOOLING_READINESS_SCRIPT_PATH =
 	"scripts/check-environment.sh" as const;
 export const TOOLING_CODEX_ENVIRONMENT_PATH =
@@ -106,11 +107,11 @@ export const PROJECT_MISE_REQUIRED_TOOLS = [
 	["python", "3.12"],
 	["uv", "0.11.3"],
 	["cargo:prek", "0.3.4"],
-	["npm:@brainwav/diagram", "1.0.8"],
+	["npm:@brainwav/diagram", "1.1.0"],
 	["npm:@argos-ci/cli", "4.1.1"],
 	["cosign", "3.0.5"],
 	["cloudflared", "2026.3.0"],
-	["npm:vitest", "4.0.18"],
+	["npm:vitest", "4.1.5"],
 	["ruff", "0.15.5"],
 	["npm:eslint", "10.0.3"],
 	["npm:agent-browser", "0.17.1"],
@@ -308,6 +309,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 ] as const;
 
 export const REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS = [
+	".harness/README.md",
 	".harness/memory/LEARNINGS.md",
 	".harness/knowledge/INDEX.md",
 	".harness/knowledge/cli/knowledge.md",
@@ -339,6 +341,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/check-code-size.mjs",
 	"scripts/lib/changed-files.mjs",
 	"scripts/check-codestyle-parity.sh",
+	"scripts/check-git-common-config.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/setup-git-hooks.js",

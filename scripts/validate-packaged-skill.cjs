@@ -280,6 +280,18 @@ function validateForbiddenPatterns() {
 	}
 }
 
+function validateReferenceContracts() {
+	runCommand("python3", [
+		join(SKILL_ROOT, "scripts/validate_reference_contracts.py"),
+		"--skill-root",
+		SKILL_ROOT,
+		"--package-form",
+		"source-skill-root",
+		"--truth-source",
+		"JSC-282 source-command truth",
+	]);
+}
+
 function main() {
 	validateRequiredFiles();
 	validateLintSurfaces();
@@ -287,6 +299,7 @@ function main() {
 	validateInstallJson();
 	validateEvals();
 	validateForbiddenPatterns();
+	validateReferenceContracts();
 	console.info("packaged-skill: pass");
 }
 

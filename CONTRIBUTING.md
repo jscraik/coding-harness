@@ -77,7 +77,6 @@ Harness-managed repositories should keep this baseline available locally before 
 - `cloudflared`
 - `vitest`
 - `ruff`
-- `ripgrep` (`rg`)
 - `eslint`
 - `agent-browser`
 - `agentation` (backed by the `agentation-mcp` CLI)
@@ -111,13 +110,17 @@ Recommended policy:
 - Treat `scripts/prepare-worktree.sh` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
+- When a pinned tooling dependency has a matching generated configuration schema, update the package version, the repo config, and the scaffold template together. Biome is governed this way: the root `biome.json` schema version and generated init template must match the installed `@biomejs/biome` major line.
 - For repositories with explicit `ui` / `chatgpt_apps_sdk` capabilities or matching dependency signals, install `@brainwav/design-system-guidance` and treat its absence as a readiness failure.
 
 ## Project Brain workflow
 
 - `harness init` scaffolds a Project Brain baseline under `.harness/`:
+  - `.harness/README.md` as the tracked control-plane map and selective tracking policy.
   - `knowledge/INDEX.md`, domain folders (`cli`, `ci`, `governance`, `tooling`), `decisions/`, `quality/criteria.md`, and `review-log.md`.
   - `.harness/memory/LEARNINGS.md` as the repo-scoped learned-fixes ledger.
+- Track curated `.harness` Markdown and JSON contract files with the repo; keep runtime databases, backups, caches, run output, and bulk snapshots local unless a fixture or validator explicitly consumes them.
+- Treat `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` as secondary context until an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slice references them.
 - Repo-local preflight treats the Project Brain scaffold as required baseline paths.
 - Run `./scripts/codex-learn analyze` to generate suggestions and refresh `.harness/knowledge/tooling/codex-learn-summary.md`.
 - Promote repeated patterns into `rules.md` after 3+ confirmations; keep uncertain patterns in `hypotheses.md`.
@@ -128,6 +131,7 @@ Recommended policy:
 - The wrapper always runs `scripts/codex-preflight.sh` in `required` Local Memory mode with scaffold-safe path and binary expectations.
 - `scripts/validate-codestyle.sh` is the canonical fail-closed code style gate and is reused by `verify-work`, local hooks, and downstream repo docs.
 - `scripts/new-task.sh` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
+- `scripts/check-git-common-config.sh` guards the shared Git config before preflight, verification, and worktree bootstrap. Shared non-bare `.git/config` must not contain `core.worktree`; worktree-local values must use per-worktree config.
 - Repo-local launches should prefer `./scripts/codex-enforced` so preflight failures are recorded into repo-scoped learn state.
 - Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
 - Start new work with `bash scripts/new-task.sh <issue-key>-<slug>`, then enter the generated worktree and continue there.

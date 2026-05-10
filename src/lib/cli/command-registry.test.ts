@@ -9,6 +9,7 @@ import {
 	MIGRATED_COMMAND_NAMES,
 	dispatchRegistryCommand,
 	fuzzyFindCommand,
+	getRegistryAgentCommandCatalogDocument,
 	getRegistryCommandCapabilities,
 	getRegistryCommandCatalogDocument,
 	getRegistryCommandHelpRows,
@@ -20,6 +21,8 @@ import {
 	compareRegistryToReadme,
 	extractReadmeCommandNames,
 } from "./doc-parity.js";
+
+const AGENT_COMMAND_RAIL_NAMES = ["next"] as const;
 
 describe("command registry", () => {
 	it("exposes migrated command names", () => {
@@ -103,6 +106,26 @@ describe("command registry", () => {
 		expect(result?.result).toBe(2);
 	});
 
+	it("rejects verify-work when --resume-from is not a typed gate id", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			const result = dispatchRegistryCommand("verify-work", [
+				"verify-work",
+				"--resume-from",
+				"not-a-real-gate",
+				"--fast",
+			]);
+
+			expect(result?.result).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"[verify-work] unknown gate id for --resume-from: not-a-real-gate",
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
+
 	it("rejects verify-work when --repo-root is missing a value", () => {
 		const result = dispatchRegistryCommand("verify-work", [
 			"verify-work",
@@ -117,12 +140,13 @@ describe("command registry", () => {
 		expect(new Set(names).size).toBe(names.length);
 	});
 
-	it("keeps the first cockpit help surface limited to runnable commands", () => {
+	it("keeps the first cockpit help surface limited to the runnable memory rule", () => {
 		const cockpitRows = getRegistryCommandHelpRows()
 			.filter((row) => row.tier === "cockpit")
 			.map((row) => row.name);
 
-		expect(cockpitRows).toEqual(["check", "next"]);
+		expect(cockpitRows).toEqual(["next"]);
+		expect(cockpitRows).not.toContain("check");
 		expect(cockpitRows).not.toContain("pr-ready");
 		expect(cockpitRows).not.toContain("fix-review");
 		expect(cockpitRows).not.toContain("learn");
@@ -160,15 +184,19 @@ describe("command registry", () => {
 				tier: "plumbing",
 				primaryAudience: "both",
 				orchestratedBy: [],
+				agentMode: "verify",
+				visibility: "plumbing",
 			});
 		} finally {
 			infoSpy.mockRestore();
 		}
 	});
 
-	it("derives help rows from the capability catalog", () => {
+	it("derives default help rows from default-visible capabilities", () => {
 		const helpRows = getRegistryCommandHelpRows();
-		const capabilities = getRegistryCommandCapabilities();
+		const capabilities = getRegistryCommandCapabilities().filter(
+			(capability) => capability.visibility === "default",
+		);
 		expect(helpRows.map((row) => row.name)).toEqual(
 			capabilities.map((capability) => capability.name),
 		);
@@ -289,8 +317,8 @@ describe("suggestCommandCapabilities", () => {
 });
 
 describe("COMMAND_CATALOG_SCHEMA_VERSION", () => {
-	it("equals the stable literal 'harness-command-catalog/v2'", () => {
-		expect(COMMAND_CATALOG_SCHEMA_VERSION).toBe("harness-command-catalog/v2");
+	it("equals the stable literal 'harness-command-catalog/v3'", () => {
+		expect(COMMAND_CATALOG_SCHEMA_VERSION).toBe("harness-command-catalog/v3");
 	});
 });
 
@@ -320,6 +348,8 @@ describe("getRegistryCommandCapabilities", () => {
 			expect(typeof capability.tier).toBe("string");
 			expect(typeof capability.primaryAudience).toBe("string");
 			expect(Array.isArray(capability.orchestratedBy)).toBe(true);
+			expect(typeof capability.agentMode).toBe("string");
+			expect(typeof capability.visibility).toBe("string");
 		}
 	});
 
@@ -385,6 +415,38 @@ describe("getRegistryCommandCapabilities", () => {
 		}
 	});
 
+	it("capability agent mode is one of the known union values", () => {
+		const validAgentModes = new Set([
+			"orient",
+			"plan",
+			"verify",
+			"review",
+			"repair",
+			"handoff",
+			"learn",
+			"admin",
+		]);
+		const capabilities = getRegistryCommandCapabilities();
+		for (const capability of capabilities) {
+			expect(validAgentModes.has(capability.agentMode)).toBe(true);
+		}
+	});
+
+	it("capability visibility is one of the known union values", () => {
+		const validVisibilities = new Set([
+			"default",
+			"agent",
+			"advanced",
+			"plumbing",
+			"hidden",
+			"legacy",
+		]);
+		const capabilities = getRegistryCommandCapabilities();
+		for (const capability of capabilities) {
+			expect(validVisibilities.has(capability.visibility)).toBe(true);
+		}
+	});
+
 	it("registered cockpit-tier commands are runnable specs only", () => {
 		const cockpitNames = getRegistryCommandCapabilities()
 			.filter((capability) => capability.tier === "cockpit")
@@ -409,6 +471,7 @@ describe("getRegistryCommandCapabilities", () => {
 		const expected = [
 			["check", "cockpit", "both", ["next"]],
 			["next", "cockpit", "agent", []],
+			["fleet-plan", "domain", "agent", ["next"]],
 			["doctor", "domain", "both", ["next"]],
 			["health", "domain", "both", ["next"]],
 			["review-gate", "domain", "agent", ["next", "pr-ready"]],
@@ -424,6 +487,40 @@ describe("getRegistryCommandCapabilities", () => {
 				orchestratedBy,
 			});
 		}
+	});
+
+	it("first-slice public agent rails expose mode and visibility metadata", () => {
+		const capabilitiesByName = new Map(
+			getRegistryCommandCapabilities().map((capability) => [
+				capability.name,
+				capability,
+			]),
+		);
+
+		expect(capabilitiesByName.get("next")).toMatchObject({
+			agentMode: "orient",
+			visibility: "default",
+		});
+		expect(capabilitiesByName.get("check")).toMatchObject({
+			agentMode: "verify",
+			visibility: "advanced",
+		});
+		expect(capabilitiesByName.get("validation-plan")).toMatchObject({
+			agentMode: "verify",
+			visibility: "advanced",
+		});
+		expect(capabilitiesByName.get("review-context")).toMatchObject({
+			agentMode: "review",
+			visibility: "advanced",
+		});
+		expect(capabilitiesByName.get("review-gate")).toMatchObject({
+			agentMode: "review",
+			visibility: "plumbing",
+		});
+		expect(capabilitiesByName.get("docs-gate")).toMatchObject({
+			agentMode: "verify",
+			visibility: "plumbing",
+		});
 	});
 
 	describe("'commands' capability", () => {
@@ -474,20 +571,20 @@ describe("getRegistryCommandCapabilities", () => {
 			"pilot-rollback",
 		] as const;
 
-		it.each(EXPECTED_WRITE_COMMANDS)(
-			"'%s' has mutability 'write'",
-			(commandName) => {
-				const capability = getRegistryCommandCapabilities().find(
-					(c) => c.name === commandName,
-				);
-				expect(capability?.mutability).toBe("write");
-			},
-		);
+		it.each(
+			EXPECTED_WRITE_COMMANDS,
+		)("'%s' has mutability 'write'", (commandName) => {
+			const capability = getRegistryCommandCapabilities().find(
+				(c) => c.name === commandName,
+			);
+			expect(capability?.mutability).toBe("write");
+		});
 	});
 
 	describe("read command mutability", () => {
 		const EXPECTED_READ_COMMANDS = [
 			"commands",
+			"fleet-plan",
 			"check",
 			"doctor",
 			"health",
@@ -503,15 +600,14 @@ describe("getRegistryCommandCapabilities", () => {
 			"source-outline",
 		] as const;
 
-		it.each(EXPECTED_READ_COMMANDS)(
-			"'%s' has mutability 'read'",
-			(commandName) => {
-				const capability = getRegistryCommandCapabilities().find(
-					(c) => c.name === commandName,
-				);
-				expect(capability?.mutability).toBe("read");
-			},
-		);
+		it.each(
+			EXPECTED_READ_COMMANDS,
+		)("'%s' has mutability 'read'", (commandName) => {
+			const capability = getRegistryCommandCapabilities().find(
+				(c) => c.name === commandName,
+			);
+			expect(capability?.mutability).toBe("read");
+		});
 	});
 
 	describe("required flags", () => {
@@ -825,15 +921,14 @@ describe("getRegistryCommandCapabilities", () => {
 			["ui:explore", "drift-search-evidence"],
 		];
 
-		it.each(CATEGORY_CASES)(
-			"'%s' has category '%s'",
-			(commandName, expectedCategory) => {
-				const cap = getRegistryCommandCapabilities().find(
-					(c) => c.name === commandName,
-				);
-				expect(cap?.category).toBe(expectedCategory);
-			},
-		);
+		it.each(
+			CATEGORY_CASES,
+		)("'%s' has category '%s'", (commandName, expectedCategory) => {
+			const cap = getRegistryCommandCapabilities().find(
+				(c) => c.name === commandName,
+			);
+			expect(cap?.category).toBe(expectedCategory);
+		});
 	});
 
 	describe("capability example field", () => {
@@ -950,34 +1045,144 @@ describe("'commands' command execution", () => {
 			infoSpy.mockRestore();
 		}
 	});
+
+	it("JSON --for-agent emits only the public agent rail set", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--for-agent",
+			]);
+			expect(dispatch?.result).toBe(0);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const parsed = JSON.parse(String(output));
+			const commandNames = parsed.commands.map(
+				(command: CommandCapability) => command.name,
+			);
+
+			expect(parsed.schemaVersion).toBe(COMMAND_CATALOG_SCHEMA_VERSION);
+			expect(commandNames).toEqual(AGENT_COMMAND_RAIL_NAMES);
+			expect(parsed.commandCount).toBe(AGENT_COMMAND_RAIL_NAMES.length);
+			for (const command of parsed.commands as CommandCapability[]) {
+				expect(["default", "agent"]).toContain(command.visibility);
+			}
+			expect(commandNames).not.toEqual(
+				expect.arrayContaining(["policy-gate", "review-gate"]),
+			);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("JSON --for-agent --all keeps the full catalog available", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--for-agent",
+				"--all",
+			]);
+			expect(dispatch?.result).toBe(0);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const parsed = JSON.parse(String(output));
+			const commandNames = parsed.commands.map(
+				(command: CommandCapability) => command.name,
+			);
+
+			expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
+			expect(commandNames).toEqual(
+				expect.arrayContaining(["policy-gate", "review-gate"]),
+			);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("JSON --for-agent --plumbing keeps the full catalog available", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--for-agent",
+				"--plumbing",
+			]);
+			expect(dispatch?.result).toBe(0);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const parsed = JSON.parse(String(output));
+			const commandNames = parsed.commands.map(
+				(command: CommandCapability) => command.name,
+			);
+
+			expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
+			expect(commandNames).toEqual(
+				expect.arrayContaining(["policy-gate", "review-gate"]),
+			);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+});
+
+describe("getRegistryAgentCommandCatalogDocument", () => {
+	it("matches the commands --json --for-agent catalog contract", () => {
+		const fullCatalog = getRegistryCommandCatalogDocument();
+		const agentCatalog = getRegistryAgentCommandCatalogDocument();
+
+		expect(agentCatalog.commandCount).toBeLessThan(fullCatalog.commandCount);
+		expect(
+			agentCatalog.commands.every((command) =>
+				["default", "agent"].includes(command.visibility),
+			),
+		).toBe(true);
+		expect(agentCatalog.commands.map((command) => command.name)).toEqual(
+			AGENT_COMMAND_RAIL_NAMES,
+		);
+	});
 });
 
 describe("getRegistryCommandHelpRows (updated)", () => {
-	it("returns same names as getRegistryCommandCapabilities", () => {
+	it("returns only default first-contact rows by default", () => {
 		const helpRows = getRegistryCommandHelpRows();
-		const capabilities = getRegistryCommandCapabilities();
-		expect(helpRows.map((r) => r.name)).toEqual(
-			capabilities.map((c) => c.name),
-		);
+
+		expect(helpRows.map((r) => r.name)).toEqual(["next"]);
 	});
 
-	it("returns same summaries as getRegistryCommandCapabilities", () => {
-		const helpRows = getRegistryCommandHelpRows();
+	it("returns full capability names when full help is requested", () => {
+		const helpRows = getRegistryCommandHelpRows({ includeExpert: true });
 		const capabilities = getRegistryCommandCapabilities();
-		expect(helpRows.map((r) => r.summary)).toEqual(
+		const canonicalNames = helpRows
+			.filter((row) =>
+				capabilities.some((capability) => capability.name === row.name),
+			)
+			.map((row) => row.name);
+
+		expect(canonicalNames).toEqual(capabilities.map((c) => c.name));
+	});
+
+	it("returns full capability summaries when full help is requested", () => {
+		const helpRows = getRegistryCommandHelpRows({ includeExpert: true });
+		const capabilities = getRegistryCommandCapabilities();
+		const canonicalRows = helpRows.filter((row) =>
+			capabilities.some((capability) => capability.name === row.name),
+		);
+
+		expect(canonicalRows.map((r) => r.summary)).toEqual(
 			capabilities.map((c) => c.summary),
 		);
 	});
 
-	it("includeLegacy option appends alias rows for full help output", () => {
-		const withLegacy = getRegistryCommandHelpRows({ includeLegacy: true });
-		const withoutLegacy = getRegistryCommandHelpRows({ includeLegacy: false });
+	it("includeExpert option appends alias rows for full help output", () => {
+		const withExpert = getRegistryCommandHelpRows({ includeExpert: true });
+		const withoutExpert = getRegistryCommandHelpRows({ includeExpert: false });
 		const defaults = getRegistryCommandHelpRows();
-		expect(withoutLegacy.map((r) => r.name)).toEqual(
+		expect(withoutExpert.map((r) => r.name)).toEqual(
 			defaults.map((r) => r.name),
 		);
-		expect(withLegacy.length).toBeGreaterThan(withoutLegacy.length);
-		expect(withLegacy.map((r) => r.name)).toContain("risk-policy-gate");
+		expect(withExpert.length).toBeGreaterThan(withoutExpert.length);
+		expect(withExpert.map((r) => r.name)).toContain("risk-policy-gate");
 	});
 
 	it("does not include legacy grouped commands like 'repo' or 'gate'", () => {
@@ -989,9 +1194,14 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 		expect(names.has("pilot")).toBe(false);
 	});
 
-	it("includes 'commands' in help rows", () => {
+	it("keeps commands available only in full help rows", () => {
 		const names = getRegistryCommandHelpRows().map((r) => r.name);
-		expect(names).toContain("commands");
+		const fullNames = getRegistryCommandHelpRows({ includeExpert: true }).map(
+			(r) => r.name,
+		);
+
+		expect(names).not.toContain("commands");
+		expect(fullNames).toContain("commands");
 	});
 });
 

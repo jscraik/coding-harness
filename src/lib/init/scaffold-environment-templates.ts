@@ -64,6 +64,14 @@ export function renderCheckEnvironmentScript(): string {
 	].join("\n");
 }
 
+/**
+ * Builds the Bash script body that validates required repository files and directories for the local environment preflight.
+ *
+ * @param packageJsonPath - Path to package.json relative to the repository root
+ * @param projectBrainMemoryExtensionEnabled - If `true`, the script will also validate paths listed in `requiredProjectBrainPaths`
+ * @param requiredProjectBrainPaths - Paths (relative to the repository root) that must exist when the Project Brain memory-extension check is enabled
+ * @returns A string containing the Bash script which checks for required artifacts and exits with status 1 while printing an error if any required file or directory is missing
+ */
 function renderEnvironmentFileChecks(
 	packageJsonPath: string,
 	projectBrainMemoryExtensionEnabled: boolean,
@@ -142,7 +150,7 @@ fi
 	if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
 		for required_path in "\${required_project_brain_paths[@]}"; do
 			if [[ ! -e "$REPO_ROOT/\${required_path}" ]]; then
-				echo "Error: required Project Brain memory-extension path '\$required_path' is missing under $REPO_ROOT"
+				echo "Error: required Project Brain memory-extension path '$required_path' is missing under $REPO_ROOT"
 				echo "Fix: run harness init --update to restore Project Brain scaffolding."
 				exit 1
 			fi
@@ -150,6 +158,13 @@ fi
 	fi`;
 }
 
+/**
+ * Produces a Bash script fragment that enforces the repository's toolchain policy.
+ *
+ * The returned script verifies the presence of the `mise` binary, validates and normalizes mise trust for the repository, activates the mise runtime, ensures required mise tools are pinned in the mise config, checks required terms in the tooling documentation (when present), and verifies the presence of required tooling binaries.
+ *
+ * @returns A string containing the Bash code implementing the above toolchain policy checks.
+ */
 function renderToolchainPolicyChecks(): string {
 	return `ensure_mise_available() {
 	command -v mise >/dev/null 2>&1
@@ -169,8 +184,11 @@ fi
 	# pinned runtime versions and required approval posture, not only the caller
 	# shell's PATH.
 	MISE_TRUST_STATUS="$(mise --cd "$REPO_ROOT" trust --show "$MISE_PATH" 2>/dev/null || true)"
-	MISE_TRUST_LINE_COUNT="$(printf '%s\n' "$MISE_TRUST_STATUS" | awk 'NF{count++} END{print count+0}')"
-	if [[ "$MISE_TRUST_LINE_COUNT" -ne 1 ]] || [[ "$MISE_TRUST_STATUS" != *": trusted" ]]; then
+	MISE_TRUST_REPO_PATH="$REPO_ROOT"
+	if [[ "$MISE_TRUST_REPO_PATH" == "$HOME"/* ]]; then
+		MISE_TRUST_REPO_PATH="~/\${MISE_TRUST_REPO_PATH#"$HOME"/}"
+	fi
+	if ! rg --fixed-strings --line-regexp --quiet "$MISE_TRUST_REPO_PATH: trusted" <<<"$MISE_TRUST_STATUS"; then
 		echo "Error: mise config at $MISE_PATH is not trusted"
 		echo "Fix: run 'mise trust --yes $MISE_PATH' and retry."
 		exit 1
@@ -187,10 +205,10 @@ required_mise_tools=(${renderShellArray(
 		PROJECT_MISE_REQUIRED_TOOLS.map(([tool]) => tool),
 	)})
 for tool in "\${required_mise_tools[@]}"; do
-	tool_pattern="$(printf '%s' "\$tool" | sed 's/[][(){}.^$*+?|\\\\]/\\\\&/g')"
-	if ! rg -q "^[[:space:]]*(\\\"\${tool_pattern}\\\"|\${tool_pattern})[[:space:]]*=" "$MISE_PATH"; then
-		echo "Error: required tool '\$tool' is not pinned in $MISE_PATH [tools]"
-		echo "Fix: add '\$tool = \\\"<version>\\\"' to $MISE_PATH."
+	tool_pattern="$(printf '%s' "$tool" | sed 's/[][(){}.^$*+?|\\\\]/\\\\&/g')"
+	if ! rg -q "^[[:space:]]*(\\"\${tool_pattern}\\"|\${tool_pattern})[[:space:]]*=" "$MISE_PATH"; then
+		echo "Error: required tool '$tool' is not pinned in $MISE_PATH [tools]"
+		echo "Fix: add '$tool = \\"<version>\\"' to $MISE_PATH."
 		exit 1
 	fi
 done
@@ -199,7 +217,7 @@ if [[ -f "$TOOLING_DOC_PATH" ]]; then
 	required_tooling_doc_terms=(${renderShellArray(REQUIRED_TOOLING_DOC_TERMS)})
 	for term in "\${required_tooling_doc_terms[@]}"; do
 		if ! rg -qi "(^|[^A-Za-z0-9_-])\${term}([^A-Za-z0-9_-]|$)" "$TOOLING_DOC_PATH"; then
-			echo "Error: tooling doc missing expected term '\$term': $TOOLING_DOC_PATH"
+			echo "Error: tooling doc missing expected term '$term': $TOOLING_DOC_PATH"
 			echo "Fix: update tooling inventory and keep it aligned with $MISE_PATH."
 			echo "Interactive flow: run a Codex AskQuestion/request_user_input prompt before applying installs."
 			exit 1
@@ -218,6 +236,16 @@ fi
 	done`;
 }
 
+/**
+ * Produce a Bash script fragment that validates repository-level policy artifacts, hooks, Makefile targets, and package scripts.
+ *
+ * The generated script verifies Codex environment action mappings, required Makefile targets, and configured prek hooks
+ * (including name, entry, language, pass_filenames, and optional stages). It also checks installed git hooks for the
+ * repo-local PREK_HOME patch (pre-commit, pre-push, and commit-msg), validates required package.json scripts, and
+ * errors if legacy simple-git-hooks configuration is present.
+ *
+ * @returns A string containing the Bash code that performs the repository policy checks described above.
+ */
 function renderRepositoryPolicyChecks(): string {
 	return `	required_codex_actions=(${renderCodexActionSpecs()})
 	for action in "\${required_codex_actions[@]}"; do
@@ -228,7 +256,7 @@ function renderRepositoryPolicyChecks(): string {
 			{ prev = $0 }
 			END { exit found ? 0 : 1 }
 		' "$CODEX_ENVIRONMENT_PATH"; then
-			echo "Error: Codex environment action '\$name' is missing or mapped to the wrong icon in $CODEX_ENVIRONMENT_PATH"
+			echo "Error: Codex environment action '$name' is missing or mapped to the wrong icon in $CODEX_ENVIRONMENT_PATH"
 			exit 1
 		fi
 	done
@@ -236,7 +264,7 @@ function renderRepositoryPolicyChecks(): string {
 	required_make_targets=(${renderShellArray(REQUIRED_MAKEFILE_TARGETS)})
 	for target in "\${required_make_targets[@]}"; do
 		if ! rg -q "^\${target}:" "$MAKEFILE_PATH"; then
-			echo "Error: required Makefile target '\$target' is missing from $MAKEFILE_PATH"
+			echo "Error: required Makefile target '$target' is missing from $MAKEFILE_PATH"
 			exit 1
 		fi
 	done
@@ -250,7 +278,7 @@ function renderRepositoryPolicyChecks(): string {
 					printf "%s", block
 				}
 			}
-			/^\\[\\[hooks\\]\\]/ {
+			/^\\[\\[repos\\.hooks\\]\\]/ {
 				flush()
 				block = $0 ORS
 				matched = 0
@@ -258,7 +286,7 @@ function renderRepositoryPolicyChecks(): string {
 			}
 			{
 				block = block $0 ORS
-				if ($0 ~ "^[[:space:]]*id[[:space:]]*=[[:space:]]*\\\"" wanted "\\\"[[:space:]]*$") {
+				if ($0 ~ "^[[:space:]]*id[[:space:]]*=[[:space:]]*\\"" wanted "\\"[[:space:]]*$") {
 					matched = 1
 				}
 			}
@@ -267,37 +295,37 @@ function renderRepositoryPolicyChecks(): string {
 			}
 		' "$PREK_CONFIG_PATH")"
 		if [[ -z "$hook_block" ]]; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*name[[:space:]]*=[[:space:]]*\\\"\${hook_display_name}\\\"[[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+		if ! rg -q "^[[:space:]]*name[[:space:]]*=[[:space:]]*\\"\${hook_display_name}\\"[[:space:]]*$" <<< "$hook_block"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\\\"\${hook_command}\\\"[[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\\"\${hook_command}\\"[[:space:]]*$" <<< "$hook_block"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*language[[:space:]]*=[[:space:]]*\\\"\${hook_language}\\\"[[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+		if ! rg -q "^[[:space:]]*language[[:space:]]*=[[:space:]]*\\"\${hook_language}\\"[[:space:]]*$" <<< "$hook_block"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
 		if ! rg -q "^[[:space:]]*pass_filenames[[:space:]]*=[[:space:]]*\${hook_pass_filenames}[[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\\\[\\\"$hook_stages\\\"\\\\][[:space:]]*$" <<< "$hook_block"; then
-			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\\\[\\"$hook_stages\\"\\\\][[:space:]]*$" <<< "$hook_block"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
 	done
 
 	installed_hooks_dir="$(git -C "$REPO_ROOT" rev-parse --git-path hooks 2>/dev/null || true)"
 	if [[ -n "$installed_hooks_dir" && -d "$installed_hooks_dir" ]]; then
-		for hook_name in pre-commit pre-push; do
+		for hook_name in pre-commit pre-push commit-msg; do
 			installed_hook="$installed_hooks_dir/$hook_name"
 			if [[ -f "$installed_hook" ]] && rg -q "# File generated by prek: https://github.com/j178/prek" "$installed_hook" && ! rg -F -q 'PREK_HOME="\${PREK_HOME:-$HERE/../.cache/prek}"' "$installed_hook"; then
-				echo "Error: installed prek hook '\$hook_name' is missing repo-local PREK_HOME patch"
+				echo "Error: installed prek hook '$hook_name' is missing repo-local PREK_HOME patch"
 				echo "Fix: run node scripts/setup-git-hooks.js"
 				exit 1
 			fi
@@ -312,7 +340,7 @@ function renderRepositoryPolicyChecks(): string {
 			if ! jq -e --arg script_name "$script_name" --arg script_command "$script_command" '
 				(.scripts // {})[$script_name] == $script_command
 				' "$PACKAGE_JSON_PATH" >/dev/null; then
-					echo "Error: package script '\$script_name' is missing or out of date in $PACKAGE_JSON_PATH"
+					echo "Error: package script '$script_name' is missing or out of date in $PACKAGE_JSON_PATH"
 					echo "Fix: run harness init --update"
 					exit 1
 				fi
@@ -412,6 +440,13 @@ ${renderCapabilityDetectorBlocks(capabilityDetectors)}
 echo "Running harness environment preflight..."`;
 }
 
+/**
+ * Produces a Bash function that runs a candidate harness runner to execute the environment preflight and capture its attestation.
+ *
+ * The generated function is named `run_check_environment_with_runner` and, when invoked with a label and a runner command, executes the runner's `check-environment` action, prints its output, verifies the runner exit status, ensures an attestation file is created (recovering a JSON line from stdout if needed), and returns nonzero on failure.
+ *
+ * @returns A string containing the Bash function definition for `run_check_environment_with_runner`.
+ */
 function renderEnvironmentRunnerFunction(): string {
 	return `run_check_environment_with_runner() {
 	local label="$1"
@@ -457,6 +492,13 @@ function renderEnvironmentRunnerFunction(): string {
 }`;
 }
 
+/**
+ * Produces a Bash script that selects and invokes an appropriate harness runner to execute the repository's check-environment, validates the resulting attestation, and reports success or failure.
+ *
+ * The generated script prefers, in order: the repo source CLI (src/cli.ts) when Node is available, a repo wrapper (scripts/harness-cli.sh), the repo dist CLI (dist/cli.js) when Node is available, a mise-resolved harness, and finally a globally installed npm harness (@brainwav/coding-harness). It emits actionable error messages and exits on runner failures or missing tooling, and verifies the attestation at ATTESTATION_PATH before printing a success line.
+ *
+ * @returns The complete Bash script text that performs runner selection, executes check-environment via the chosen runner, enforces failures with informative messages, and validates the attestation.
+ */
 function renderEnvironmentRunnerSelection(): string {
 	return `if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
 	if ! run_check_environment_with_runner "repo source CLI (cd repo && node --import tsx src/cli.ts)" bash -lc 'cd "$1" && shift && exec "$@"' _ "$REPO_ROOT" node --import tsx src/cli.ts; then
@@ -480,7 +522,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
-			echo 'Fix: ensure the session activates mise first (eval "$(mise --cd \"$REPO_ROOT\" activate bash)") or invoke the mise binary directly.'
+			printf 'Fix: ensure the session activates mise first (eval "$(mise --cd "%s" activate bash)") or invoke the mise binary directly.\\n' "$REPO_ROOT"
 			exit 1
 		fi
 	else

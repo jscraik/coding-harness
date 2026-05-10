@@ -129,6 +129,12 @@ help: ## Show this help message
 `;
 }
 
+/**
+ * Render the "Setup" section of a Makefile, filling in provided command strings.
+ *
+ * @param commands - Object containing Makefile command strings; `commands.install` is inserted for the `install` target.
+ * @returns The Makefile "Setup" section as a string with populated targets (install, setup, preflight, worktree-ready, verify-work, codestyle-parity, codestyle, hooks).
+ */
 function renderMakefileSetupSection(commands: MakefileCommands): string {
 	return `
 # === Setup ===
@@ -158,6 +164,17 @@ hooks: ## Setup git hooks
 `;
 }
 
+/**
+ * Render the "Hooks" section of the repository Makefile containing pre-commit, pre-push,
+ * commit-message, and related governance targets.
+ *
+ * Interpolates the provided Makefile command strings into the appropriate targets so the
+ * generated section invokes linting, typechecking, docs checks, security scans, and other
+ * pre-commit/pre-push workflows.
+ *
+ * @param commands - An object with command strings for Makefile targets (see MakefileCommands)
+ * @returns The text content for the Makefile "Hooks" section
+ */
 function renderMakefileHookSection(commands: MakefileCommands): string {
 	return `
 
@@ -191,7 +208,7 @@ hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_
 	elif [ -n "$${"${"}MSG_FILE:-}" ]; then \
 		cat "$${"${"}MSG_FILE}" > "$tmp_file"; \
 	else \
-		echo "Usage: HOOK_COMMIT_MSG=\"feat: test\" make hooks-commit-msg or make hooks-commit-msg MSG_FILE=/path/to/commit-msg" >&2; \
+		echo 'Usage: HOOK_COMMIT_MSG="feat: test" make hooks-commit-msg or make hooks-commit-msg MSG_FILE=/path/to/commit-msg' >&2; \
 		exit 2; \
 	fi; \
 	node scripts/validate-commit-msg.js "$tmp_file"

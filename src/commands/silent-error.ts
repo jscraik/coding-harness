@@ -14,7 +14,17 @@ export { runSilentErrorDetector, EXIT_CODES };
 export type { SilentErrorDetectorOptions };
 
 /**
- * CLI entry point for silent error detection
+ * Run the silent error detector and print the results to stdout.
+ *
+ * Runs the detector with the provided options and formats output either as
+ * pretty JSON (when `options.json` is true) or as a human-readable report that
+ * includes a pass/fail header, per-file grouped detections, per-detection
+ * location, description, a 60-character snippet, optional suggestions, and a
+ * summary with counts by severity and type.
+ *
+ * @param options - Configuration for the detection run and output (for example
+ *   controls whether JSON output is produced and whether suggestions are shown).
+ * @returns `EXIT_CODES.SUCCESS` when no silent errors were found, `EXIT_CODES.SILENT_ERRORS_FOUND` otherwise.
  */
 export function runSilentErrorDetectorCLI(
 	options: SilentErrorDetectorOptions,
@@ -22,15 +32,12 @@ export function runSilentErrorDetectorCLI(
 	const result = runSilentErrorDetector(options);
 
 	if (options.json) {
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
 		console.log(JSON.stringify(result, null, 2));
 	} else {
 		// Print summary header
 		const statusIcon = result.passed ? "✓" : "✗";
 		const statusText = result.passed ? "PASSED" : "FAILED";
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
 		console.log(`${statusIcon} Silent error detection ${statusText}`);
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
 		console.log();
 
 		if (result.detections.length > 0) {
@@ -43,40 +50,31 @@ export function runSilentErrorDetectorCLI(
 			}
 
 			for (const [file, detections] of byFile) {
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log(`📁 ${file}`);
 				for (const d of detections) {
 					const icon = d.severity === "error" ? "✗" : "⚠";
-					// biome-ignore lint/suspicious/noConsoleLog: CLI output
 					console.log(
 						`  ${icon} Line ${d.line}:${d.column} - ${d.description}`,
 					);
-					// biome-ignore lint/suspicious/noConsoleLog: CLI output
 					console.log(`     ${d.snippet.slice(0, 60)}...`);
 					if (options.suggestions && d.suggestion) {
-						// biome-ignore lint/suspicious/noConsoleLog: CLI output
 						console.log(`     💡 ${d.suggestion}`);
 					}
 				}
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log();
 			}
 		}
 
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
 		console.log(`Summary: ${result.filesAnalyzed} files analyzed`);
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
 		console.log(
 			`  ${result.summary.errors} errors, ${result.summary.warnings} warnings`,
 		);
 
 		// Show breakdown by type if any found
 		if (result.summary.total > 0) {
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log("  By type:");
 			for (const [type, count] of Object.entries(result.summary.byType)) {
 				if (count > 0) {
-					// biome-ignore lint/suspicious/noConsoleLog: CLI output
 					console.log(`    - ${type}: ${count}`);
 				}
 			}

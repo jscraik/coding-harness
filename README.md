@@ -53,6 +53,16 @@ The shortest honest description of the project today is:
 
 ## Start Here
 
+For agents, start with the cockpit decision packet:
+
+```bash
+harness next --json
+```
+
+`harness --help` now keeps first contact intentionally narrow and points agents
+at `harness next --json`. Use `harness --help --all-commands` or
+`harness commands --json` only when you need the full expert command surface.
+
 Get from zero to a governed, agent-ready repository in five steps (standard path):
 
 ```bash
@@ -130,11 +140,8 @@ The canonical statement of that contract lives in
 [docs/roadmap/north-star.md](./docs/roadmap/north-star.md).
 
 North-star command outputs also use canonical artifact contracts so agents can
-carry evidence between tools without guessing path or schema names. The
-`harness.contract.json` product-surface registry records review cadence for
-these governed surfaces, so release readiness checks update the status matrix
-and its `lastReviewedAt` contract entry together. Current stable artifact paths
-include
+carry evidence between tools without guessing path or schema names. Current
+stable artifact paths include
 `.harness/guardrails/north-star/drift-findings.json` for `drift-gate`,
 `.harness/guardrails/north-star/surface-classification-snapshot.json` for
 `doctor`, and `.harness/guardrails/north-star/alignment-decision.json` for
@@ -205,14 +212,10 @@ artifacts that are versioned alongside code.
   `.circleci/config.yml` (`security-scan` in `pr-pipeline`)
 - External Semgrep Cloud gate:
   GitHub required check `semgrep-cloud-platform/scan`
-- Release workflow validation tool:
-  `ripgrep` (`rg`) for `docs:ubiquitous:guard` during tag-triggered publish
 
 Security scanning now runs in CircleCI as part of `pr-pipeline`. GitHub Actions
 in this repository is reserved for release publishing only
 (`.github/workflows/release-private-npm.yml`).
-That release workflow installs `ripgrep` before `pnpm check` because the
-`docs:ubiquitous:guard` step shells out to `rg` on GitHub-hosted runners.
 Semgrep Cloud is enforced separately as an external GitHub App required check.
 The machine-readable `harness.contract.json` `ciOwnership` block keeps that split
 explicit: CircleCI owns the primary PR gate, CodeRabbit remains the independent
@@ -279,6 +282,10 @@ surface even if contributors use different shells or global setups.
 Use `bash scripts/verify-work.sh` as the canonical repo-local verification
 entrypoint. It runs repo-local preflight in `required` Local Memory mode and
 then executes the full verification bundle.
+The verification and worktree bootstrap paths also run
+`scripts/check-git-common-config.sh`, which blocks shared non-bare `.git/config`
+from pinning `core.worktree`; worktree-local values must live in per-worktree
+config so temp worktrees cannot poison the main checkout.
 
 When executable behavior changes, do not stop at broad validation alone. Run
 the smallest real code path that exercises the exact production code touched:
@@ -294,6 +301,18 @@ For a quicker local loop, use:
 ```bash
 bash scripts/verify-work.sh --fast
 ```
+
+The `harness verify-work` CLI wrapper exposes the same verification lane for
+automation and supports explicit resume checkpoints:
+
+```bash
+harness verify-work --fast --resume-from validate-codestyle-fast
+```
+
+Resume gate IDs are validated against the typed validation gate mirror in
+`src/lib/validation/gate-specs.ts` before the shell wrapper runs. The shell
+script remains the authority for execution order; the typed mirror exists so
+CLI dispatch, tests, and automation can fail closed on unknown checkpoint names.
 
 The fast lane now includes changed-file enforcement for public API docstrings,
 function/file size, and related tests through `pnpm run quality:docstrings`,
@@ -418,6 +437,19 @@ When a repository has imported CodeRabbit learning evidence, use the learning
 loop before PR handoff so repeated review feedback becomes guardrail data
 instead of another comment thread.
 
+In this source checkout, run the loop through `scripts/run-harness-gate.sh` so
+the command surface comes from `src/cli.ts` rather than a globally installed
+`harness` shim:
+
+```bash
+bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json
+```
+
+Downstream repos with the published package installed can call the same command
+families through `harness`:
+
 ```bash
 harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
 harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
@@ -486,7 +518,8 @@ just dashboard reporting.
 ## Command Index
 
 The tables below keep README parity with the CLI while staying short. For full
-flags, use `harness --help`.
+expert command discovery, use `harness --help --all-commands`. Default
+`harness --help` is intentionally focused on the agent cockpit entrypoint.
 
 For agent planning and command safety routing, prefer the machine-readable
 capability catalog:
@@ -522,6 +555,7 @@ harness commands --json | jq '
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)        |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                |
 | `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--mode local\|pr\|ci`)                            |
+| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                        |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                        |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                   |
 | `health`            | Unified gate status scorecard across all gates                                                                                                                            |
@@ -530,7 +564,7 @@ harness commands --json | jq '
 | `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                      |
 | `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                  |
 | `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                               |
-| `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                              |
+| `verify-work`       | Run canonical repo-local verification (fresh or resume mode, with `--resume-from` checked against typed validation gate specs)                                            |
 | `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                         |
 | `preset`            | List and inspect bundled presets                                                                                                                                          |
 | `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                     |
@@ -647,6 +681,12 @@ pnpm build
 pnpm exec tsx src/cli.ts --help
 pnpm check
 ```
+
+Hook setup must go through `make hooks`, `make setup`, or
+`node scripts/setup-git-hooks.js`. The wrapper patches generated `prek` shims
+for `pre-commit`, `pre-push`, and `commit-msg` so `PREK_HOME` points at the
+repo-local `.git/.cache/prek` cache, and `scripts/check-environment.sh`
+validates that drift before push.
 
 When you change executable behavior in this repository, run the smallest real
 path that exercises the touched production code before claiming it works. If

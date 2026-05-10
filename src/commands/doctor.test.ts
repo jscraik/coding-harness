@@ -220,7 +220,9 @@ describe("runDoctor — tool checks", () => {
 			(c) => c.id === "tool:harness-version-coherence",
 		);
 		expect(coherenceCheck?.status).toBe("warn");
-		expect(coherenceCheck?.message).toContain("Could not determine");
+		expect((coherenceCheck?.message ?? "").toLowerCase()).toContain(
+			"could not determine",
+		);
 	});
 
 	it("reports ok for harness version coherence when versions match", () => {

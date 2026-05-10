@@ -1,5 +1,6 @@
 import {
 	COMMAND_CATALOG_SCHEMA_VERSION,
+	type CommandAgentMode,
 	type CommandCapability,
 	type CommandCapabilityCatalogDocument,
 	type CommandCategory,
@@ -8,8 +9,11 @@ import {
 	type CommandPrimaryAudience,
 	type CommandRetryability,
 	type CommandTier,
+	type CommandVisibility,
 	getCommandCapabilities,
+	getAgentCommandCapabilityCatalogDocument,
 	getCommandCapabilityCatalogDocument,
+	isFirstContactCommandName,
 } from "./registry/command-capabilities.js";
 import { suggestCommandCapabilities as suggestCatalogCapabilities } from "./registry/command-fuzzy.js";
 import { COMMAND_SPECS as EXTRACTED_COMMAND_SPECS } from "./registry/command-specs.js";
@@ -26,12 +30,14 @@ import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 export type {
 	CommandCapability,
 	CommandCapabilityCatalogDocument,
+	CommandAgentMode,
 	CommandCategory,
 	CommandMutability,
 	CommandOrchestrator,
 	CommandPrimaryAudience,
 	CommandRetryability,
 	CommandTier,
+	CommandVisibility,
 	CommandSpec,
 	FuzzyCommandMatch,
 	FuzzyMatchConfidence,
@@ -49,7 +55,13 @@ const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Commands Catalog Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
-			const catalog = getRegistryCommandCatalogDocument();
+			const forAgentFlag = args.includes("--for-agent");
+			const fullCatalogFlag =
+				args.includes("--all") || args.includes("--plumbing");
+			const catalog =
+				forAgentFlag && !fullCatalogFlag
+					? getRegistryAgentCommandCatalogDocument()
+					: getRegistryCommandCatalogDocument();
 			if (jsonFlag) {
 				console.info(JSON.stringify(catalog));
 				return 0;
@@ -64,7 +76,9 @@ const COMMAND_SPECS: CommandSpec[] = [
 			}
 			console.info("");
 			console.info(
-				'Run "harness commands --json" for stable machine-readable metadata.',
+				forAgentFlag && !fullCatalogFlag
+					? 'Run "harness commands --json --all" for the full capability catalog.'
+					: 'Run "harness commands --json --for-agent" for the public agent rail set.',
 			);
 			return 0;
 		},
@@ -96,9 +110,24 @@ export function getRegistryCommandCatalogDocument(): CommandCapabilityCatalogDoc
 	return getCommandCapabilityCatalogDocument(COMMAND_SPECS);
 }
 
-/** Return display-ready command help rows derived from registry capabilities. */
+/** Build the public agent rail catalog for `harness commands --json --for-agent`. */
+export function getRegistryAgentCommandCatalogDocument(): CommandCapabilityCatalogDocument {
+	return getAgentCommandCapabilityCatalogDocument(COMMAND_SPECS);
+}
+
+/**
+ * Build display-ready help rows for registered commands.
+ *
+ * When `options.includeExpert` is not set, only canonical commands intended for
+ * first-contact are included; when set to `true`, expert command and alias rows
+ * are appended.
+ *
+ * @param options - Optional settings
+ * @param options.includeExpert - If `true`, include expert rows and aliases alongside canonical rows
+ * @returns An array of help rows, each containing `name`, `summary`, and optional `category` and `tier`
+ */
 export function getRegistryCommandHelpRows(options?: {
-	includeLegacy?: boolean;
+	includeExpert?: boolean;
 }): Array<{
 	name: string;
 	summary: string;
@@ -106,17 +135,22 @@ export function getRegistryCommandHelpRows(options?: {
 	tier?: CommandTier;
 }> {
 	const capabilities = getRegistryCommandCapabilities();
-	const canonicalRows = capabilities.map((capability) => ({
+	const displayCapabilities = options?.includeExpert
+		? capabilities
+		: capabilities.filter((capability) =>
+				isFirstContactCommandName(capability.name),
+			);
+	const canonicalRows = displayCapabilities.map((capability) => ({
 		name: capability.name,
 		summary: capability.summary,
 		category: capability.category,
 		tier: capability.tier,
 	}));
-	if (!options?.includeLegacy) {
+	if (!options?.includeExpert) {
 		return canonicalRows;
 	}
 
-	const aliasRows = capabilities.flatMap((capability) =>
+	const aliasRows = displayCapabilities.flatMap((capability) =>
 		(capability.aliases ?? []).map((alias) => ({
 			name: alias,
 			summary: capability.summary,

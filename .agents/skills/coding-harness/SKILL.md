@@ -1,294 +1,99 @@
 ---
 name: coding-harness
-description: "Use when users need to install, bootstrap, update, audit, or explain @brainwav/coding-harness in a repository, including harness init lifecycle, governance command routing, and .codex/environments/environment.toml action-sync validation; do not use for unrelated feature delivery."
+description: "Use when users need to install, bootstrap, upgrade, audit, diagnose, or explain @brainwav/coding-harness in a repository, including harness init/upgrade, CI migration, governance gates, command discovery, and Codex environment action sync; do not use for unrelated feature delivery."
 ---
 
 # Coding Harness Skill
 
-Codex skill for reliable setup and operation of `@brainwav/coding-harness` in real repositories.
+Use this skill to operate `@brainwav/coding-harness` from live repo evidence, not stale install memory.
 
 ## Table of Contents
-- [Working agreement](#working-agreement)
-- [When to use](#when-to-use)
-- [Inputs](#inputs)
-- [Outputs](#outputs)
-- [Philosophy](#philosophy)
-- [Capabilities and boundaries](#capabilities-and-boundaries)
-- [Constraints](#constraints)
-- [Memory layer](#memory-layer)
-- [Structured JSON Output](#structured-json-output)
+- [Use](#use)
+- [Command Truth](#command-truth)
 - [Workflow](#workflow)
 - [Validation](#validation)
-- [Anti-patterns](#anti-patterns)
-- [Examples](#examples)
-- [Decision feedback protocol](#decision-feedback-protocol)
+- [References](#references)
+- [Boundaries](#boundaries)
 
-## Working agreement
-- Follow repository `AGENTS.md` instructions before any edit or command-heavy sequence.
-- Keep `SKILL.md` as a map; put deeper command references in `references/`.
-- Write run artifacts to `./artifacts/` (local) or `/mnt/data/` (hosted).
-- Treat `harness --help` as the runtime command truth and use docs as supporting context.
-- When maintaining the `coding-harness` source repository itself, prefer `pnpm exec tsx src/cli.ts --help` over a globally installed `harness` binary so command guidance matches the current source tree.
+## Use
+- Install, bootstrap, update, repair, or explain `@brainwav/coding-harness`.
+- Run or interpret `harness init`, `harness upgrade`, `harness ci-migrate`, or governance gates.
+- Verify harness state with command evidence before calling a repo green.
+- Align generated `.codex/environments/environment.toml` actions with current project scripts.
+- Maintain this source repo's packaged skill, templates, command contracts, or eval fixtures.
 
-## When to use
-- Install `@brainwav/coding-harness` globally for repository preflight and environment checks.
-- Run and maintain `harness init` safely, including update/rollback paths.
-- Explain what harness can and cannot do, including required tokens, checks, and environment setup.
-- Keep `.codex/environments/environment.toml` in sync with current project scripts (Tools/Run/Debug/Test + generated script actions).
+Do not use for unrelated feature delivery, generic cloud deployment, or security work that is not tied to harness setup, policy gates, or CI ownership.
 
-Non-triggers:
-- Building unrelated application features.
-- General-purpose security audits not tied to harness setup/governance.
-- Cloud deployment tasks without harness policy-governance scope.
-
-## Inputs
-- Target repository path and package manager context.
-- Global install posture (`npm i -g @brainwav/coding-harness`) and desired verification depth.
-- Access mode for remote checks (for example GitHub App JWT for installation checks).
-- Existing harness state (`not installed`, `installed`, `needs update`, `broken`).
-- Execution posture (`no-execution` guidance vs `execution` with commands).
-
-Ask clarifying questions only when one of these blocks safe execution.
-
-## Outputs
-- Setup or remediation summary with exact commands run.
-- File-level change list (for example generated contract/workflow/environment files).
-- Validation ladder summary (baseline gate, deep gate when applicable, harness-specific checks).
-- Capability boundary summary (`can`, `cannot`, `requires user-provided auth`).
-- Verification status with pass/fail results and next actions.
-
-## Philosophy
-- Prefer deterministic, evidence-backed setup over assumptions.
-- Keep installation guidance minimal, reversible, and command-first.
-- Treat capability boundaries as a contract: explicitly list what requires user input.
-- Prioritize safe update behavior for existing repositories over broad rewrites.
-
-## Capabilities and boundaries
-Use:
-- [`references/agent-install.json`](./references/agent-install.json) — machine-readable install spec (phases, secrets, scaffolded files)
-- [`references/agent-install-guide.md`](./references/agent-install-guide.md) — human + agent step-by-step install guide
-- [`references/setup-and-commands.md`](./references/setup-and-commands.md) — full command map and lifecycle reference
-- [`references/contract.yaml`](./references/contract.yaml)
-- [`references/evals.yaml`](./references/evals.yaml)
-
-Core boundaries to enforce:
-- Harness can scaffold governance templates and run policy checks.
-- Harness can verify repository and policy state, including CodeRabbit, authorization, and environment checks.
-- Harness cannot create credentials/secrets for the user.
-- Harness cannot bypass required checks/branch protection.
-- Harness should only auto-update `.codex/environments/environment.toml` when it is harness-autogenerated.
-
-### What is enforced, adaptable, and optional (quick reference)
-
-**Enforced** — `harness init --update` will overwrite; do not hand-edit:
-- `harness.contract.json`, `.harness/ci-required-checks.json`, `memory.json`
-- `.circleci/config.yml` (full CI pipeline)
-- `.coderabbit.yaml` (CodeRabbit baseline)
-- `scripts/check-semgrep-changed.sh`, `scripts/check-semgrep-full.sh`
-- `scripts/semgrep-bootstrap.sh`, `scripts/semgrep-pre-push.yml`
-- `scripts/check-environment.sh` (generated from tooling baseline)
-
-**Adaptable** — harness writes a starter, project owns it after:
-- `.github/CODEOWNERS`, `.github/PULL_REQUEST_TEMPLATE.md`, `CONTRIBUTING.md`
-- `Makefile`, `biome.json`, `prek.toml`, `.mise.toml`, `.gitleaks.toml`
-- `scripts/codex-preflight.sh`
-
-**Optional tooling** — not scaffolded by init; install with `mise install -g` if needed:
-- `@brainwav/diagram`, `mmdc`, `agentation`, `agentation-mcp`, `agent-browser`
-- `beautiful-mermaid`, `markdownlint-cli2`, `wrangler`, `prek` (cargo)
-
-Full table: [`references/agent-install-guide.md#what-is-enforced-adaptable-and-optional`](./references/agent-install-guide.md)
-
-## Constraints
-- Redact secrets and sensitive data by default in logs, artifacts, and summaries.
-- Never print token or secret values in logs/output.
-- Treat remote checks as optional unless auth material is provided.
-- Require user confirmation before mutative/destructive operations.
-- Do not claim success without command evidence from the current repository state.
-- If command help output conflicts with older docs, prioritize command output and call out the mismatch.
-
-## Memory layer
-
-Every repo with coding-harness installed has a per-project knowledge base at
-`.harness/memory/LEARNINGS.md` (gitignored, append-only).
-
-**Session-start bootstrap — run this when entering any harness-enabled repo:**
-
-```bash
-mkdir -p .harness/memory
-test -f .harness/memory/LEARNINGS.md || cat > .harness/memory/LEARNINGS.md << 'EOF'
----
-schema_version: 1
-purpose: Per-project agent knowledge base — repo-specific gotchas and hard-won fixes.
-scope: This repo only.
-update_policy: |
-  Append after any bug, tool failure, or extra-effort fix specific to this repo.
-  Universal gotchas go in ~/.codex/instructions/Learnings.md instead.
-  Do NOT delete entries. Append only.
-  Format: **YYYY-MM-DD [Agent]:** <problem> → <fix>
----
-
-# Learnings
-
-Repo-specific agent knowledge base. Append-only.
-
-> **Scope:** This repo only. Universal gotchas → `~/.codex/instructions/Learnings.md`.
-> **Format:** `**YYYY-MM-DD [Agent]:** <problem> → <fix>`
-EOF
-```
-
-**Read order at session start:**
-1. `~/.codex/instructions/Learnings.md` (always).
-2. `.harness/memory/LEARNINGS.md` (when present).
-
-**Write rule:** repo-specific → `.harness/memory/LEARNINGS.md`; universal → `~/.codex/instructions/Learnings.md`.
-
-If the repo has no `.harness/` directory, skip creation entirely.
-
-## Structured JSON Output
-
-All gate commands (`drift-gate`, `docs-gate`, `policy-gate`, `pr-template-gate`, `plan-gate`, `linear-gate`) emit a canonical **`GateResult`** JSON object when `--json` is passed via `process.stdout` (JSC-71, v0.8.x+).
-
-### GateResult schema
-
-```json
-{
-  "gate":      "drift-gate",
-  "version":   "0.8.2",
-  "timestamp": "2026-03-24T21:00:00.000Z",
-  "status":    "fail",
-  "findings": [
-    {
-      "id":          "drift-gate.docs.MD041/first-line-heading",
-      "severity":    "error",
-      "gate":        "drift-gate",
-      "message":     "First line must be a top-level heading",
-      "baseline":    false,
-      "fix": {
-        "command":      "harness drift-gate --seed-baseline",
-        "manual":       "Add # heading as first line",
-        "suppressible": true
-      }
-    }
-  ],
-  "summary": { "errors": 1, "warnings": 0, "info": 0, "total": 1 }
-}
-```
-
-### jq patterns for agent consumption
-
-```bash
-# Filter error-severity findings from drift-gate
-harness drift-gate --json | jq '.findings[] | select(.severity=="error")'
-
-# List all fixable findings (have fix.command) across all gates
-harness health --auto-fix --dry-run --json | jq '.findings[] | select(.command != null) | .command'
-
-# Count failing gates during health check
-harness health --json | jq '[.gates[] | select(.status == "error")] | length'
-
-# Extract all fix commands for safe automation
-harness drift-gate --json | jq -r '.findings[].fix.command // empty'
-```
-
-### `health --auto-fix` usage
-
-```bash
-# Dry run: see what would be fixed (no execution)
-harness health --auto-fix --dry-run
-
-# Execute safe fixes (excludes: branch-protect, contract, ci-migrate commit)
-harness health --auto-fix
-
-# JSON output of AutoFixResult for agent parsing
-harness health --auto-fix --dry-run --json | jq '.summary'
-
-# Target specific gates only
-harness health --gate drift-gate,plan-gate --auto-fix --dry-run
-```
-
-**Excluded fix prefixes** (require explicit human approval):
-- `harness branch-protect`
-- `harness contract`
-- `harness ci-migrate commit`
-
-**Exit codes for `--auto-fix`**: `0` = all fixes applied (or no fixable findings); `2` = one or more fix commands failed (remaining fixes continue).
+## Command Truth
+- Fresh-agent entrypoint: `harness next --json`.
+- Focused first-contact help: `harness --help`.
+- Public agent rail catalog: `harness commands --json --for-agent`.
+- Full expert catalog: `harness commands --json` and `harness --help --all-commands`.
+- Source-repo probes: `pnpm exec tsx src/cli.ts ...` so command evidence matches the current tree.
+- Consumer-repo installs: use the installed `harness` binary, preferably via `mise install -g npm:@brainwav/coding-harness`.
+- Existing-repo updates: preview with `harness upgrade --dry-run`, then apply with `harness upgrade`.
+- Scaffold transitions only: `harness init --update`, `--interactive`, `--migrate`, or `--rollback`.
+- CI migration is snapshot-backed. Use `prepare`, `verify`, `commit`, and `abort`; do not manually delete `.github/workflows/`.
+- CI ownership: CircleCI is the primary PR gate, CodeRabbit is the independent review check, Semgrep Cloud is the independent external security check, and GitHub Actions is release/fallback unless intentionally migrated.
 
 ## Workflow
-1. **Choose execution mode**
-   - If user asks for planning/explanation only, stay in **no-execution mode** and provide commands/checklists without running tools.
-   - If user asks to apply or verify changes, use **execution mode** and continue with preflight + validation.
-2. **Preflight context (execution mode)**
-   - Confirm repo root, available toolchain (`rg`, `fd`, `jq`, `node`, `pnpm`), and current harness state.
-   - For path-sensitive or multi-step operations, run `bash scripts/codex-preflight.sh --stack auto --mode required` when available.
-3. **Install/upgrade harness**
-   - Use global npm install for consumer repositories: `mise install -g npm:@brainwav/coding-harness` (preferred) or `npm i -g @brainwav/coding-harness`.
-   - Ensure private package auth is wired (`NPM_TOKEN` locally and as a **CircleCI project environment variable** in CI — not a GitHub Actions secret).
-   - Bootstrap with `harness init --dry-run`, then `harness init`. Do not pass `--ci circleci`: the current CLI treats the extra positional argument as a target directory.
-   - **If the repo already has `.github/workflows/` CI files:** run `harness ci-migrate prepare --provider circleci --dry-run`, then `harness ci-migrate prepare --provider circleci --apply`, `harness ci-migrate verify --snapshot <snapshot-id>`, and `harness ci-migrate commit --snapshot <snapshot-id>`. If verification fails or the cutover must be reversed, use `harness ci-migrate abort --snapshot <snapshot-id>`. Never delete GHA workflow files manually.
-   - Use project-local/source execution only when explicitly developing the coding-harness repository itself.
-   - For a full new-project install: follow [`references/agent-install-guide.md`](./references/agent-install-guide.md) or parse [`references/agent-install.json`](./references/agent-install.json).
-4. **Initialize/update contract**
-   - First-time: run `harness init` (start with `--dry-run` when risk is unclear; use `--track` before high-impact updates).
-   - Existing setup (routine): run `harness init --check-updates`, then `harness upgrade --dry-run`, then `harness upgrade`.
-   - Existing setup (re-scaffold tracked baselines): run `harness init --update` when tracked files must be rewritten.
-   - Use `--interactive` for selective template updates.
-   - Use `--migrate` for contract schema upgrades and `--rollback` when tracked rollback is requested.
-5. **Validate setup**
-   - Run required baseline gate and any requested policy checks.
-   - Run deep gate when runtime or artifact behavior changed.
-   - Verify `.codex/environments/environment.toml` canonical action blocks and script-derived actions are current.
-6. **Report capabilities and limits**
-   - Explicitly state what was validated, what remains user-managed, and why.
+1. Confirm the mode: explanation-only or execution.
+2. Confirm repo root, dirty worktree, package manager, and available auth before mutations.
+3. Discover live truth with `harness next --json`; in this source repo use `pnpm exec tsx src/cli.ts next --json`.
+4. For first-time bootstrap, run `harness init --dry-run`, review planned writes, then run `harness init`.
+5. For update checks, run `harness init --check-updates`; use `harness upgrade --dry-run` and `harness upgrade` for routine existing-repo updates.
+6. For CI migration, run the snapshot commands in order and preserve rollback evidence.
+7. Validate the smallest real path first, widen when runtime, artifact, CI, or governed docs changed.
+8. Report exact command outcomes, skipped auth-bound checks, residual risk, and next safe command.
 
 ## Validation
-- Command surface: `harness --help`
-- Baseline repo gate: `pnpm check`
-- Deep repo gate (when runtime/artifact behavior changed): `pnpm test:deep`
-- Setup and lifecycle checks (as needed):
-  - `harness init --dry-run`
-  - `harness init --check-updates`
-  - `harness upgrade --dry-run`
-  - `harness upgrade`
-  - `harness init --update`
-  - `harness init --migrate`
-  - `harness init --rollback`
-  - `harness ci-migrate [prepare|commit|abort|verify]`
-- Governance checks (as needed):
-  - `harness verify-coderabbit`
-  - `harness verify-coderabbit --token <token-or-jwt> --owner <owner> --repo <repo>`
-  - `harness check-authz --contract <path> --repo <owner/repo> --branch <branch>`
-  - `harness check-environment --contract <path> --attestation <path>`
-  - `harness docs-gate --mode advisory --json`
-  - `harness tooling-audit --path <dir> --format table`
-  - `harness evidence-verify --files <paths>`
+Command discovery:
+- `harness next --json`
+- `harness --help`
+- `harness commands --json --for-agent`
+- `harness commands --json`
+- `harness --help --all-commands`
 
-Fail fast on first blocking gate and report exact remediation.
+Source-repo equivalents:
+- `pnpm exec tsx src/cli.ts next --json`
+- `pnpm exec tsx src/cli.ts --help`
+- `pnpm exec tsx src/cli.ts commands --json --for-agent`
+- `pnpm exec tsx src/cli.ts commands --json`
+- `pnpm exec tsx src/cli.ts --help --all-commands`
 
-## Anti-patterns
-- ❌ Claiming harness is "fully configured" without running verification commands.
-- ❌ Editing non-autogenerated `.codex/environments/environment.toml` without explicit user approval.
-- ❌ Using PAT-only guidance when user requested GitHub App JWT checks.
-- ❌ Reporting capabilities that are not backed by `harness --help` or repository docs.
-- ❌ Treating `harness init --update` as the default existing-repo upgrade lane instead of using `harness upgrade`.
-- ❌ Running high-impact `harness init --update` without preview (`--check-updates`, `--dry-run`) when repository state is unclear.
-- ❌ Treating `pnpm check` and `pnpm test:deep` as interchangeable for behavior-changing work.
-- ❌ Manually deleting `.github/workflows/` files — always use `harness ci-migrate` so snapshots and rollback are available.
-- ❌ Hand-editing enforced files (`harness.contract.json`, `.circleci/config.yml`, `scripts/check-environment.sh`) — changes will be overwritten on next `harness init --update`.
+Setup and governance:
+- `harness init --dry-run`
+- `harness init`
+- `harness init --check-updates`
+- `harness upgrade --dry-run`
+- `harness upgrade`
+- `harness ci-migrate prepare --provider circleci --dry-run`
+- `harness ci-migrate prepare --provider circleci --apply`
+- `harness ci-migrate verify --snapshot <snapshot-id>`
+- `harness ci-migrate commit --snapshot <snapshot-id>`
+- `harness ci-migrate abort --snapshot <snapshot-id>`
+- `harness docs-gate --mode advisory --json`
+- `harness check-environment --contract <path> --attestation <path>`
+- `harness verify-coderabbit`
+- `harness check-authz --contract <path> --repo <owner/repo> --branch <branch>`
 
-## Examples
-- Triggering prompt: “Install coding-harness in this repo and make sure env actions match current scripts.”
-- Triggering prompt: “Explain what harness can and can’t do, then run the setup checks.”
-- Triggering prompt: “Audit our repo for harness governance readiness before we open a PR.”
-- Non-triggering prompt: “Build a new React dashboard from scratch.”
+Source-repo baseline:
+- `pnpm skill:validate`
+- `pnpm check`
+- `pnpm test:deep` when runtime or artifact behavior changed
+- `bash scripts/validate-codestyle.sh` before handoff when code or governed docs changed
 
-## Decision feedback protocol
+Fail fast on the first blocking gate. Rerun the exact failed check after fixing it.
 
-<!-- decision-feedback-protocol:v2 -->
-- Question timing is runtime-owned. Do not hardcode when feedback prompts appear.
-- If post-run capture is enabled, emit a non-blocking `post_run_feedback` via `request_user_input` after result delivery.
-- Capture: `decision` (`accepted|partial|rejected|deferred`), `outcome` (`good|neutral|bad|unknown`), and `confidence` (`high|medium|low`).
-- Persist with:
-  - `python3 scripts/record_skill_feedback.py --skill-path <path/to/SKILL.md> --decision <...> --outcome <...> --confidence <...> --notes \"...\"` (when running inside the skill-builder bundle), or
-  - `python3 /Users/jamiecraik/dev/agent-skills/utilities/skill-builder/scripts/record_skill_feedback.py --skill-path <path/to/SKILL.md> --decision <...> --outcome <...> --confidence <...> --notes \"...\"`.
-<!-- /decision-feedback-protocol -->
+## References
+- Install and repair: [`references/agent-install-guide.md`](./references/agent-install-guide.md)
+- Machine-readable install phases: [`references/agent-install.json`](./references/agent-install.json)
+- Command lifecycle and validation ladder: [`references/setup-and-commands.md`](./references/setup-and-commands.md)
+- Contract alignment: [`references/contract.yaml`](./references/contract.yaml)
+- Benchmark expectations: [`references/evals.yaml`](./references/evals.yaml)
+- Reference validator implementation: [`scripts/validate_reference_contracts.py`](./scripts/validate_reference_contracts.py)
+
+## Boundaries
+Can scaffold governed files, run local gates, emit JSON evidence, manage snapshot-backed CI migration, and verify remote policy when credentials exist.
+
+Cannot create credentials, install GitHub Apps, bypass branch protection, turn missing auth into a pass, overwrite user-owned environment files without approval, or claim full capabilities from focused `harness --help`.

@@ -32,6 +32,22 @@ import {
 	VALID_CI_MIGRATE_PROVIDERS,
 } from "../lib/ci/ci-migrate-command-contract.js";
 import {
+	type CIParityDownstreamRepositoryEvidence,
+	type CIParityProofPack,
+	type CIParityProofPackArtifact,
+	type CIParityProofPackInput,
+	type CIParityProofPackRepoBinding,
+	type CIParityScenarioEvidence,
+	PARITY_PROOF_PACK_PATH,
+	PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
+	PARITY_PROOF_PACK_SIGNATURE_PATH,
+	REQUIRED_PARITY_SCENARIOS,
+	type PromotionEvidenceReport,
+	type RequiredParityScenario,
+	evaluatePromotionEvidence as evaluatePromotionEvidenceWithDependencies,
+	isPathInsideRepository,
+} from "../lib/ci/ci-migrate-promotion-evidence.js";
+import {
 	SNAPSHOT_SIGNATURE_ALGORITHM,
 	hashContent,
 	resolveSnapshotSigningKey,
@@ -105,8 +121,6 @@ export function setCIMigrateTestOverrides(
 
 const MAX_SNAPSHOT_AGE_DAYS = 30;
 const STATE_SIGNATURE_ALGORITHM = SNAPSHOT_SIGNATURE_ALGORITHM;
-const PARITY_PROOF_PACK_PATH = ".harness/ci-parity-proof-pack.json";
-const PARITY_PROOF_PACK_SIGNATURE_PATH = ".harness/ci-parity-proof-pack.sig";
 const PARITY_PROOF_PACK_INPUT_PATH = ".harness/ci-parity-proof-pack.input.json";
 const PARITY_PROOF_PACK_ARTIFACTS_DIR =
 	".harness/ci-parity-proof-pack-artifacts";
@@ -130,21 +144,8 @@ const PARITY_PROVENANCE_MANIFEST_SCHEMA_VERSION =
 	"ci-parity-proof-provenance-manifest/v1";
 const PARITY_PROVENANCE_ARTIFACT_INDEX_SCHEMA_VERSION =
 	"ci-parity-proof-artifact-index/v2";
-const PARITY_PROOF_PACK_SIGNATURE_ALGORITHM = "hmac-sha256";
 const PARITY_PROOF_PACK_MAX_AGE_DAYS = 30;
 const PARITY_PROOF_PACK_MAX_FUTURE_SKEW_MINUTES = 5;
-const REQUIRED_PARITY_SCENARIOS = [
-	"pull_request",
-	"main",
-	"merge_queue",
-	"fork_pr",
-	"docs_only_pr",
-	"canceled_run",
-	"flaky_retry",
-	"release_candidate_tag",
-] as const;
-const MIN_PARITY_DOWNSTREAM_REPOS = 3;
-const MIN_PARITY_ECOSYSTEM_PROFILES = 2;
 const EXTERNAL_CONTROL_PLANE_PATHS = [
 	".harness/control-plane/github-rulesets.json",
 	".harness/control-plane/circleci-project-settings.json",
@@ -159,6 +160,7 @@ const MERGE_QUEUE_WINDOW_PATH =
 	".harness/control-plane/merge-queue-cutover-window.json";
 const DEFAULT_MERGE_QUEUE_EVIDENCE_PATH =
 	".harness/control-plane/merge-queue-cutover-evidence.json";
+const CI_MIGRATE_VERIFY_FAILED_EXIT_CODE = 1;
 
 const BREAK_GLASS_POLICY_PATH =
 	".harness/control-plane/ci-migrate-break-glass-policy.json";
@@ -187,7 +189,6 @@ type CIProviderMigrationStage =
 	| "dual-provider"
 	| "circleci-primary"
 	| "circleci-only";
-type RequiredParityScenario = (typeof REQUIRED_PARITY_SCENARIOS)[number];
 
 /**
  * Runtime options accepted by the `harness ci-migrate` CLI entry point.
@@ -195,6 +196,7 @@ type RequiredParityScenario = (typeof REQUIRED_PARITY_SCENARIOS)[number];
 export interface CIMigrateOptions {
 	provider?: string | undefined;
 	dryRun?: boolean | undefined;
+	json?: boolean | undefined;
 	apply?: boolean | undefined;
 	rollback?: boolean | undefined;
 	snapshot?: string | undefined;
@@ -229,107 +231,6 @@ interface MigrationCheckClassification {
 interface MigrationParityReport {
 	status: "parity" | "drift";
 	unexpectedDiffs: string[];
-}
-
-interface PromotionEvidenceReport {
-	required: boolean;
-	status: "verified" | "missing" | "insufficient" | "not-required";
-	proofPackPath: string;
-	proofPackPayloadSha256?: string | undefined;
-	proofPackSignature?: string | undefined;
-	violations: string[];
-}
-
-interface CIParityProofPack {
-	schemaVersion: "ci-parity-proof-pack/v2";
-	generatedAt: string;
-	sourceProvider: "github-actions";
-	targetProvider: "circleci";
-	repo: CIParityProofPackRepoBinding;
-	policyDigests: CIParityProofPackPolicyDigests;
-	artifacts: CIParityProofPackArtifact[];
-	integrity: CIParityProofPackIntegrity;
-	behavioralParity: {
-		scenarios: CIParityScenarioEvidence[];
-	};
-	promotionGate: {
-		zeroUnexpectedDiffs: boolean;
-		outcomeParity: boolean;
-		skippedSemanticsParity: boolean;
-		artifactParity: boolean;
-		codeRabbitParity: boolean;
-		releaseParity: boolean;
-	};
-	downstream: {
-		repositories: CIParityDownstreamRepositoryEvidence[];
-	};
-}
-
-interface CIParityProofPackRepoBinding {
-	fullName: string;
-	originUrl: string;
-	trustedPolicyRef: string;
-	requiredCheckManifestPath: string;
-	baseSha: string;
-	headSha: string;
-}
-
-interface CIParityProofPackPolicyDigests {
-	authorityConfigSha256: string;
-	requiredCheckManifestSha256: string;
-}
-
-interface CIParityProofPackArtifact {
-	artifactId: string;
-	path: string;
-	sha256: string;
-	signature: string;
-}
-
-interface CIParityProofPackIntegrity {
-	signatureAlgorithm: typeof PARITY_PROOF_PACK_SIGNATURE_ALGORITHM;
-	signingKeyId: string;
-	payloadSha256: string;
-}
-
-interface CIParityScenarioEvidence {
-	scenario: RequiredParityScenario;
-	providersCompared: CIProvider[];
-	commitCount: number;
-	unexpectedDiffs: string[];
-}
-
-interface CIParityDownstreamRepositoryEvidence {
-	repo: string;
-	ecosystemProfile: string;
-	mergeQueue: boolean;
-	parityMatrixVerified: boolean;
-	rollbackRehearsed: boolean;
-}
-
-interface CIParityProofPackInput {
-	schemaVersion: "ci-parity-proof-input/v1";
-	generatedAt?: string | undefined;
-	repo?: {
-		baseSha?: string | undefined;
-		headSha?: string | undefined;
-		fullName?: string | undefined;
-		originUrl?: string | undefined;
-	} | null;
-	behavioralParity: {
-		scenarios: CIParityScenarioEvidence[];
-	};
-	promotionGate: {
-		zeroUnexpectedDiffs: boolean;
-		outcomeParity: boolean;
-		skippedSemanticsParity: boolean;
-		artifactParity: boolean;
-		codeRabbitParity: boolean;
-		releaseParity: boolean;
-	};
-	downstream: {
-		repositories: CIParityDownstreamRepositoryEvidence[];
-	};
 }
 
 interface CIParityProvenanceInputArtifact {
@@ -1083,6 +984,15 @@ function normalizeUniqueApprovers(
 	return { ok: true, value: normalized };
 }
 
+/**
+ * Resolve the file path to the break-glass roster within a repository.
+ *
+ * If `overridePath` is a non-empty string it is used (trimmed); otherwise the default roster path is used. The returned path is the result of resolving that relative path against `targetDir`.
+ *
+ * @param targetDir - Repository root directory to resolve the roster path against
+ * @param overridePath - Optional repository-relative override path for the roster
+ * @returns The absolute path to the break-glass roster file
+ */
 function resolveBreakGlassRosterPath(
 	targetDir: string,
 	overridePath: string | undefined,
@@ -1094,6 +1004,18 @@ function resolveBreakGlassRosterPath(
 	return resolve(targetDir, configuredPath);
 }
 
+/**
+ * Parses and validates a break-glass roster JSON document.
+ *
+ * The function verifies the document conforms to the `ci-migrate-break-glass-roster/v1`
+ * schema and enforces field-level constraints (approved approvers list, ISO timestamps,
+ * integer ranges for TTL and rotation cadence, and optional rotation metadata).
+ *
+ * @param content - The raw JSON text of the break-glass roster
+ * @returns `{ ok: true, value: BreakGlassRoster }` when the input is a valid roster;
+ *          `{ ok: false, error: string }` when parsing or validation fails, with `error`
+ *          describing the validation problem.
+ */
 function parseBreakGlassRoster(
 	content: string,
 ): { ok: true; value: BreakGlassRoster } | { ok: false; error: string } {
@@ -1161,7 +1083,7 @@ function parseBreakGlassRoster(
 					"Break-glass roster requireDualApprovalForRollbackWeakening must be a boolean when provided.",
 			};
 		}
-		let rotation: BreakGlassRoster["rotation"] | undefined = undefined;
+		let rotation: BreakGlassRoster["rotation"] | undefined;
 		if (record.rotation !== undefined) {
 			if (!record.rotation || typeof record.rotation !== "object") {
 				return {
@@ -3844,11 +3766,7 @@ function isSafeProofArtifactPath(
 	targetDir: string,
 	relativePath: string,
 ): boolean {
-	const rootPath = resolve(targetDir);
-	const absolutePath = resolve(targetDir, relativePath);
-	return (
-		absolutePath === rootPath || absolutePath.startsWith(`${rootPath}${sep}`)
-	);
+	return isPathInsideRepository(targetDir, relativePath);
 }
 
 /**
@@ -7346,435 +7264,26 @@ function evaluatePromotionEvidence(
 	targetDir: string,
 	targetProvider: CIProvider,
 ): PromotionEvidenceReport {
-	const proofPackPath = resolve(targetDir, PARITY_PROOF_PACK_PATH);
-	const signaturePath = resolve(targetDir, PARITY_PROOF_PACK_SIGNATURE_PATH);
-	let proofPackPayloadSha256: string | undefined;
-	let proofPackSignature: string | undefined;
-	const required = shouldRequirePromotionEvidence(targetDir, targetProvider);
-	if (!required) {
-		return {
-			required,
-			status: "not-required",
-			proofPackPath,
-			proofPackPayloadSha256,
-			proofPackSignature,
-			violations: [],
-		};
-	}
-	if (!existsSync(proofPackPath)) {
-		return {
-			required,
-			status: "missing",
-			proofPackPath,
-			proofPackPayloadSha256,
-			proofPackSignature,
-			violations: [
-				`Missing required parity proof pack: ${PARITY_PROOF_PACK_PATH}`,
-			],
-		};
-	}
-	if (!existsSync(signaturePath)) {
-		return {
-			required,
-			status: "insufficient",
-			proofPackPath,
-			proofPackPayloadSha256,
-			proofPackSignature,
-			violations: [
-				`Missing required parity proof pack signature: ${PARITY_PROOF_PACK_SIGNATURE_PATH}`,
-			],
-		};
-	}
-	const policyResult = readContractProviderPolicy(targetDir);
-	if (!policyResult.ok) {
-		return {
-			required,
-			status: "insufficient",
-			proofPackPath,
-			proofPackPayloadSha256,
-			proofPackSignature,
-			violations: [policyResult.error],
-		};
-	}
-	const signingKeyResult = resolveSnapshotSigningKey();
-	if (!signingKeyResult.ok) {
-		return {
-			required,
-			status: "insufficient",
-			proofPackPath,
-			proofPackPayloadSha256,
-			proofPackSignature,
-			violations: [signingKeyResult.error],
-		};
-	}
-
-	let proofPackContent = "";
-	let sidecarSignature = "";
-	try {
-		proofPackContent = readFileSync(proofPackPath, "utf-8");
-		sidecarSignature = readFileSync(signaturePath, "utf-8").trim();
-	} catch (error) {
-		return {
-			required,
-			status: "insufficient",
-			proofPackPath,
-			proofPackPayloadSha256,
-			proofPackSignature,
-			violations: [
-				`Failed to read parity proof pack trust artifacts: ${sanitizeError(error)}`,
-			],
-		};
-	}
-	if (!isHexDigest(sidecarSignature)) {
-		return {
-			required,
-			status: "insufficient",
-			proofPackPath,
-			proofPackPayloadSha256,
-			proofPackSignature,
-			violations: [
-				`Parity proof pack signature must be a sha256 hex digest: ${PARITY_PROOF_PACK_SIGNATURE_PATH}`,
-			],
-		};
-	}
-	const expectedSidecarSignature = signContent(
-		proofPackContent,
-		signingKeyResult.key,
-	);
-	if (expectedSidecarSignature !== sidecarSignature) {
-		proofPackSignature = sidecarSignature;
-		return {
-			required,
-			status: "insufficient",
-			proofPackPath,
-			proofPackPayloadSha256,
-			proofPackSignature,
-			violations: [
-				"Parity proof pack signature mismatch. Refusing unsigned or tampered promotion evidence.",
-			],
-		};
-	}
-	proofPackSignature = sidecarSignature;
-
-	const parsedResult = parseParityProofPack(proofPackContent);
-	if (!parsedResult.ok) {
-		return {
-			required,
-			status: "insufficient",
-			proofPackPath,
-			proofPackPayloadSha256,
-			proofPackSignature,
-			violations: [parsedResult.error],
-		};
-	}
-
-	const proofPack = parsedResult.value;
-	const violations: string[] = [];
-	proofPackPayloadSha256 = proofPack.integrity.payloadSha256;
-	const trustedPolicyRefResult = resolveGitRefToCommit(
-		targetDir,
-		policyResult.value.trustedPolicyRef,
-	);
-	const trustedPolicyRefCommit = trustedPolicyRefResult.ok
-		? trustedPolicyRefResult.commitSha
-		: null;
-	const freshnessResult = validateProofPackFreshness(proofPack.generatedAt);
-	if (!freshnessResult.ok) {
-		violations.push(freshnessResult.error);
-	}
-	if (
-		proofPack.integrity.signatureAlgorithm !==
-		PARITY_PROOF_PACK_SIGNATURE_ALGORITHM
-	) {
-		violations.push(
-			`Parity proof pack integrity signature algorithm must be ${PARITY_PROOF_PACK_SIGNATURE_ALGORITHM}.`,
-		);
-	}
-	const payloadSha256 = hashContent(
-		canonicalizeParityProofPackForDigest(proofPack),
-	);
-	if (proofPack.integrity.payloadSha256 !== payloadSha256) {
-		violations.push(
-			"Parity proof pack integrity payloadSha256 does not match signed payload.",
-		);
-	}
-	if (proofPack.integrity.signingKeyId !== signingKeyResult.keyId) {
-		violations.push(
-			"Parity proof pack integrity signingKeyId does not match active signing key.",
-		);
-	}
-	if (!trustedPolicyRefResult.ok) {
-		violations.push(trustedPolicyRefResult.error);
-	}
-	if (proofPack.repo.trustedPolicyRef !== policyResult.value.trustedPolicyRef) {
-		violations.push(
-			`Parity proof pack trustedPolicyRef (${proofPack.repo.trustedPolicyRef}) does not match ciProviderPolicy.trustedPolicyRef (${policyResult.value.trustedPolicyRef}).`,
-		);
-	}
-	if (
-		proofPack.repo.requiredCheckManifestPath !==
-		policyResult.value.requiredCheckManifestPath
-	) {
-		violations.push(
-			`Parity proof pack requiredCheckManifestPath (${proofPack.repo.requiredCheckManifestPath}) does not match ciProviderPolicy.requiredCheckManifestPath (${policyResult.value.requiredCheckManifestPath}).`,
-		);
-	}
-	if (
-		!isCommitSha(proofPack.repo.baseSha) ||
-		!isCommitSha(proofPack.repo.headSha)
-	) {
-		violations.push(
-			"Parity proof pack repo base/head SHAs must be 40-character lowercase commit SHAs.",
-		);
-	}
-	if (proofPack.repo.baseSha === proofPack.repo.headSha) {
-		violations.push(
-			"Parity proof pack repo baseSha and headSha must differ to prove cross-commit comparison.",
-		);
-	}
-	if (trustedPolicyRefCommit) {
-		const trustedRefToHeadResult = isAncestorCommit(
-			targetDir,
-			trustedPolicyRefCommit,
-			proofPack.repo.headSha,
-		);
-		if (!trustedRefToHeadResult.ok) {
-			violations.push(
-				`Unable to verify trustedPolicyRef ancestry against proof-pack headSha: ${trustedRefToHeadResult.error}`,
-			);
-		} else if (!trustedRefToHeadResult.isAncestor) {
-			violations.push(
-				"trustedPolicyRef in ciProviderPolicy must be an ancestor of proof-pack headSha.",
-			);
-		}
-	}
-	const baseToHeadResult = isAncestorCommit(
-		targetDir,
-		proofPack.repo.baseSha,
-		proofPack.repo.headSha,
-	);
-	if (!baseToHeadResult.ok) {
-		violations.push(
-			`Unable to verify parity proof pack base/head ancestry: ${baseToHeadResult.error}`,
-		);
-	} else if (!baseToHeadResult.isAncestor) {
-		violations.push(
-			"Parity proof pack baseSha must be an ancestor of headSha.",
-		);
-	}
-
-	const authorityDigestResult = readHashedPolicyFile(
-		targetDir,
-		policyResult.value.authorityConfigPath,
-	);
-	const authorityHeadDigestResult = readHashedPolicyFileFromCommit(
-		targetDir,
-		proofPack.repo.headSha,
-		policyResult.value.authorityConfigPath,
-	);
-	if (!authorityDigestResult.ok) {
-		violations.push(authorityDigestResult.error);
-	} else if (
-		proofPack.policyDigests.authorityConfigSha256 !==
-		(authorityHeadDigestResult.ok ? authorityHeadDigestResult.digest : "")
-	) {
-		violations.push(
-			"Parity proof pack authorityConfigSha256 does not match repository policy at proof-pack head commit.",
-		);
-	}
-	const requiredManifestDigestResult = readHashedPolicyFile(
-		targetDir,
-		policyResult.value.requiredCheckManifestPath,
-	);
-	const requiredManifestHeadDigestResult = readHashedPolicyFileFromCommit(
-		targetDir,
-		proofPack.repo.headSha,
-		policyResult.value.requiredCheckManifestPath,
-	);
-	if (!requiredManifestDigestResult.ok) {
-		violations.push(requiredManifestDigestResult.error);
-	} else if (
-		proofPack.policyDigests.requiredCheckManifestSha256 !==
-		(requiredManifestHeadDigestResult.ok
-			? requiredManifestHeadDigestResult.digest
-			: "")
-	) {
-		violations.push(
-			"Parity proof pack requiredCheckManifestSha256 does not match repository policy at proof-pack head commit.",
-		);
-	}
-
-	const originUrl = readGitOriginUrl(targetDir);
-	if (!originUrl) {
-		violations.push(
-			"Git origin URL is not available; cannot verify parity proof pack repository binding.",
-		);
-	} else {
-		if (originUrl !== proofPack.repo.originUrl) {
-			violations.push(
-				`Parity proof pack originUrl (${proofPack.repo.originUrl}) does not match repository origin (${originUrl}).`,
-			);
-		}
-		const normalizedOriginRepo = normalizeRepoFullName(originUrl);
-		if (!normalizedOriginRepo) {
-			violations.push(
-				`Repository origin URL is unsupported for repo binding verification: ${originUrl}`,
-			);
-		} else if (normalizedOriginRepo !== proofPack.repo.fullName) {
-			violations.push(
-				`Parity proof pack repo.fullName (${proofPack.repo.fullName}) does not match repository origin identity (${normalizedOriginRepo}).`,
-			);
-		}
-	}
-
-	const artifactIds = new Set<string>();
-	const artifactPaths = new Set<string>();
-	for (const artifact of proofPack.artifacts) {
-		if (artifactIds.has(artifact.artifactId)) {
-			violations.push(
-				`Parity proof pack artifactId must be unique. Duplicate: ${artifact.artifactId}.`,
-			);
-		}
-		artifactIds.add(artifact.artifactId);
-		if (artifactPaths.has(artifact.path)) {
-			violations.push(
-				`Parity proof pack artifact paths must be unique. Duplicate: ${artifact.path}.`,
-			);
-		}
-		artifactPaths.add(artifact.path);
-		if (!isSafeProofArtifactPath(targetDir, artifact.path)) {
-			violations.push(
-				`Parity proof pack artifact path escapes repository root: ${artifact.path}.`,
-			);
-			continue;
-		}
-		const artifactAbsolutePath = resolve(targetDir, artifact.path);
-		if (!existsSync(artifactAbsolutePath)) {
-			violations.push(
-				`Parity proof artifact missing from repository: ${artifact.path}.`,
-			);
-			continue;
-		}
-		const artifactContent = readFileSync(artifactAbsolutePath, "utf-8");
-		const actualArtifactDigest = hashContent(artifactContent);
-		if (actualArtifactDigest !== artifact.sha256) {
-			violations.push(
-				`Parity proof artifact digest mismatch for ${artifact.path}.`,
-			);
-		}
-		const expectedArtifactSignature = signContent(
-			`${artifact.path}:${artifact.sha256}`,
-			signingKeyResult.key,
-		);
-		if (expectedArtifactSignature !== artifact.signature) {
-			violations.push(
-				`Parity proof artifact signature mismatch for ${artifact.path}.`,
-			);
-		}
-	}
-	violations.push(
-		...evaluateProvenanceEvidence(
-			targetDir,
-			required,
-			proofPack,
-			signingKeyResult.key,
-			signingKeyResult.keyId,
-		),
-	);
-
-	const scenariosById = new Map(
-		proofPack.behavioralParity.scenarios.map((scenario) => [
-			scenario.scenario,
-			scenario,
-		]),
-	);
-	if (scenariosById.size !== proofPack.behavioralParity.scenarios.length) {
-		violations.push(
-			"Parity proof pack behavioralParity.scenarios contains duplicate scenario entries.",
-		);
-	}
-	for (const requiredScenario of REQUIRED_PARITY_SCENARIOS) {
-		const scenario = scenariosById.get(requiredScenario);
-		if (!scenario) {
-			violations.push(`Missing parity scenario evidence: ${requiredScenario}.`);
-			continue;
-		}
-		if (
-			!scenario.providersCompared.includes("github-actions") ||
-			!scenario.providersCompared.includes("circleci")
-		) {
-			violations.push(
-				`Parity scenario ${requiredScenario} must compare github-actions and circleci results.`,
-			);
-		}
-		if (scenario.unexpectedDiffs.length > 0) {
-			violations.push(
-				`Parity scenario ${requiredScenario} has unexpected diffs: ${scenario.unexpectedDiffs.join(", ")}.`,
-			);
-		}
-	}
-
-	if (
-		proofPack.promotionGate.zeroUnexpectedDiffs !== true ||
-		proofPack.promotionGate.outcomeParity !== true ||
-		proofPack.promotionGate.skippedSemanticsParity !== true ||
-		proofPack.promotionGate.artifactParity !== true ||
-		proofPack.promotionGate.codeRabbitParity !== true ||
-		proofPack.promotionGate.releaseParity !== true
-	) {
-		violations.push(
-			"Promotion gate booleans must all be true (zeroUnexpectedDiffs, outcomeParity, skippedSemanticsParity, artifactParity, codeRabbitParity, releaseParity).",
-		);
-	}
-
-	const uniqueRepos = new Set(
-		proofPack.downstream.repositories.map((repository) => repository.repo),
-	);
-	if (uniqueRepos.size < MIN_PARITY_DOWNSTREAM_REPOS) {
-		violations.push(
-			`Downstream proof requires at least ${MIN_PARITY_DOWNSTREAM_REPOS} repositories.`,
-		);
-	}
-	const uniqueProfiles = new Set(
-		proofPack.downstream.repositories.map(
-			(repository) => repository.ecosystemProfile,
-		),
-	);
-	if (uniqueProfiles.size < MIN_PARITY_ECOSYSTEM_PROFILES) {
-		violations.push(
-			`Downstream proof requires at least ${MIN_PARITY_ECOSYSTEM_PROFILES} ecosystem profiles.`,
-		);
-	}
-	if (
-		!proofPack.downstream.repositories.some(
-			(repository) => repository.mergeQueue,
-		)
-	) {
-		violations.push(
-			"Downstream proof requires at least one merge-queue-enabled repository.",
-		);
-	}
-	for (const repository of proofPack.downstream.repositories) {
-		if (!repository.parityMatrixVerified) {
-			violations.push(
-				`Downstream repository ${repository.repo} is missing parity matrix verification evidence.`,
-			);
-		}
-		if (!repository.rollbackRehearsed) {
-			violations.push(
-				`Downstream repository ${repository.repo} is missing rollback rehearsal evidence.`,
-			);
-		}
-	}
-
-	return {
-		required,
-		status: violations.length > 0 ? "insufficient" : "verified",
-		proofPackPath,
-		proofPackPayloadSha256,
-		proofPackSignature,
-		violations,
-	};
+	return evaluatePromotionEvidenceWithDependencies(targetDir, targetProvider, {
+		shouldRequirePromotionEvidence,
+		readContractProviderPolicy,
+		resolveSnapshotSigningKey,
+		isHexDigest,
+		signContent,
+		parseParityProofPack,
+		resolveGitRefToCommit,
+		validateProofPackFreshness,
+		hashContent,
+		canonicalizeParityProofPackForDigest,
+		isCommitSha,
+		isAncestorCommit,
+		readHashedPolicyFile,
+		readHashedPolicyFileFromCommit,
+		readGitOriginUrl,
+		normalizeRepoFullName,
+		isSafeProofArtifactPath,
+		evaluateProvenanceEvidence,
+	});
 }
 
 function detectSourceProvider(targetDir: string): CIProvider {
@@ -9068,8 +8577,52 @@ function hashMigrationReport(report: MigrationReport): string {
 	return hashContent(JSON.stringify(canonicalReport));
 }
 
+/**
+ * Produces a deterministic digest for a set of required check display names.
+ *
+ * @param requiredCheckNames - Array of required check display names; ordering of the input does not affect the result.
+ * @returns A digest computed from the sorted list of names (stable across input reorderings).
+ */
 function hashRequiredCheckNames(requiredCheckNames: string[]): string {
 	return hashContent(JSON.stringify([...requiredCheckNames].sort()));
+}
+
+/**
+ * Builds a JSON-serializable dry-run plan of preview actions for a migration snapshot.
+ *
+ * The plan lists preview steps that a real prepare/apply run would perform, suitable for
+ * emitting as JSON instead of mutating repository state.
+ *
+ * @param snapshotId - Snapshot identifier used to derive the report file path included in the plan
+ * @param report - Migration report whose fields `sourceConfigPaths`, `sourceProvider`, `targetConfigPaths`,
+ * and `targetProvider` are used to populate preview targets
+ * @returns An array of preview actions; each entry contains:
+ * - `action`: action name (always `"preview"` for dry-run)
+ * - `target`: human-identifiable target being inspected (config paths, provider, or report path)
+ * - `reason`: brief explanation of the preview step
+ */
+function buildMigrationDryRunPlan(
+	snapshotId: string,
+	report: MigrationReport,
+): Array<{ action: string; target: string; reason: string }> {
+	return [
+		{
+			action: "preview",
+			target: report.sourceConfigPaths.join(", ") || report.sourceProvider,
+			reason: `Inspect ${report.sourceProvider} CI configuration before CircleCI migration.`,
+		},
+		{
+			action: "preview",
+			target: report.targetConfigPaths.join(", ") || report.targetProvider,
+			reason: `Evaluate ${report.targetProvider} governance target without writing migration artifacts.`,
+		},
+		{
+			action: "preview",
+			target: `.harness/ci-migrate-snapshots/${snapshotId}.report.json`,
+			reason:
+				"Report is emitted to stdout in JSON dry-run mode instead of writing into the target repository.",
+		},
+	];
 }
 
 /**
@@ -9117,7 +8670,12 @@ export function runCIMigrateCLI(
 	const snapshotId = snapshotIdResult.value;
 
 	// JSC-58: Resolve solo mode once, passed downstream to all gating logic.
-	const soloMode = isSoloCommitMode(dir, { commitMode: options.commitMode });
+	const explicitJsonDryRun = options.dryRun === true && options.json === true;
+	const soloMode = isSoloCommitMode(
+		dir,
+		{ commitMode: options.commitMode },
+		!options.json,
+	);
 
 	let migrationReport: MigrationReport | null = null;
 	let sourceProviderForRollback: CIProvider = "github-actions";
@@ -9518,7 +9076,7 @@ export function runCIMigrateCLI(
 		const activeImportedChecks = requiredChecksImportResult.value.filter(
 			(check) => check.class === "required" && check.enabled !== false,
 		);
-		if (requiredChecksImportResult.imported) {
+		if (requiredChecksImportResult.imported && !options.json) {
 			if (requiredChecksImportResult.persisted) {
 				console.info(
 					"Required checks manifest bootstrapped from legacy contract/workflow evidence: .harness/ci-required-checks.json",
@@ -9539,7 +9097,7 @@ export function runCIMigrateCLI(
 			console.error(`Error: ${autoGenerateProofPackResult.error}`);
 			return EXIT_CODES.INVALID_PATH;
 		}
-		if (autoGenerateProofPackResult.generated) {
+		if (autoGenerateProofPackResult.generated && !options.json) {
 			console.info(
 				`Parity proof pack generated: ${resolve(dir, PARITY_PROOF_PACK_PATH)}`,
 			);
@@ -9574,14 +9132,9 @@ export function runCIMigrateCLI(
 			return EXIT_CODES.INVALID_PATH;
 		}
 
-		const reportExitCode = writeMigrationReport(
-			dir,
-			snapshotId,
-			migrationReport,
-		);
-		if (reportExitCode !== EXIT_CODES.SUCCESS) {
-			return reportExitCode;
-		}
+		// For explicitJsonDryRun, collect verify violations before emitting JSON
+		let verifyViolations: string[] = [];
+		let verifyExitCode: 0 | 1 = EXIT_CODES.SUCCESS;
 
 		if (action === "verify") {
 			// JSC-58: solo mode skips strict verify (no trustedPolicyRef / authorityConfigPath)
@@ -9590,40 +9143,87 @@ export function runCIMigrateCLI(
 				soloMode ? { strict: false } : { strict: true },
 			);
 			if (!policyResult.ok) {
-				console.error(`Error: ${policyResult.error}`);
-				return EXIT_CODES.INVALID_PATH;
-			}
-			// JSC-59: Validate CI config syntax before declaring verify success
-			const configSyntaxViolations = validateCIConfigSyntax(
-				dir,
-				provider === "circleci" ? "circleci" : "github-actions",
-			).map((v) => v.message);
-			const verificationViolations = [
-				...configSyntaxViolations,
-				...validateRequiredChecksForVerify(activeImportedChecks),
-				...validateTransitionStatusArtifact(
+				if (!explicitJsonDryRun) {
+					console.error(`Error: ${policyResult.error}`);
+				}
+				verifyViolations.push(policyResult.error);
+				verifyExitCode = CI_MIGRATE_VERIFY_FAILED_EXIT_CODE;
+			} else {
+				// JSC-59: Validate CI config syntax before declaring verify success
+				const configSyntaxViolations = validateCIConfigSyntax(
 					dir,
-					policyResult.value.transitionStatusArtifactPath,
-					!soloMode &&
-						policyResult.value.mode === "required" &&
-						policyResult.value.migrationStage !== "circleci-only",
-				),
-			];
+					provider === "circleci" ? "circleci" : "github-actions",
+				).map((v) => v.message);
+				const verificationViolations = [
+					...configSyntaxViolations,
+					...validateRequiredChecksForVerify(activeImportedChecks),
+					...validateTransitionStatusArtifact(
+						dir,
+						policyResult.value.transitionStatusArtifactPath,
+						!soloMode &&
+							policyResult.value.mode === "required" &&
+							policyResult.value.migrationStage !== "circleci-only",
+					),
+				];
 
-			if (verificationViolations.length > 0) {
-				if (soloMode) {
-					console.info(
-						`ℹ️  Solo mode: ${verificationViolations.length} verify check(s) skipped (not enforced in solo/lightweight mode).`,
-					);
-				} else {
-					console.error("Error: strict verify failed:");
-					for (const violation of verificationViolations) {
-						console.error(`- ${violation}`);
+				if (verificationViolations.length > 0) {
+					if (soloMode) {
+						if (!explicitJsonDryRun) {
+							console.info(
+								`ℹ️  Solo mode: ${verificationViolations.length} verify check(s) skipped (not enforced in solo/lightweight mode).`,
+							);
+						}
+					} else {
+						verifyViolations = verificationViolations;
+						verifyExitCode = CI_MIGRATE_VERIFY_FAILED_EXIT_CODE;
+						if (!explicitJsonDryRun) {
+							console.error("Error: strict verify failed:");
+							for (const violation of verificationViolations) {
+								console.error(`- ${violation}`);
+							}
+						}
 					}
-					return EXIT_CODES.INVALID_PATH;
 				}
 			}
+		}
+
+		if (explicitJsonDryRun) {
+			console.info(
+				JSON.stringify(
+					{
+						status:
+							verifyExitCode === EXIT_CODES.SUCCESS
+								? "dry-run"
+								: "verify-failed",
+						snapshotId,
+						targetDir: dir,
+						sourceProvider,
+						targetProvider: provider,
+						plan: buildMigrationDryRunPlan(snapshotId, migrationReport),
+						report: migrationReport,
+						violations: verifyViolations,
+					},
+					null,
+					2,
+				),
+			);
+			return verifyExitCode;
+		}
+
+		if (action === "verify") {
+			if (verifyExitCode !== EXIT_CODES.SUCCESS) {
+				return verifyExitCode;
+			}
 			return EXIT_CODES.SUCCESS;
+		}
+
+		const reportExitCode = writeMigrationReport(
+			dir,
+			snapshotId,
+			migrationReport,
+		);
+		if (reportExitCode !== EXIT_CODES.SUCCESS) {
+			return reportExitCode;
 		}
 
 		const blockingCount =
@@ -9887,10 +9487,23 @@ export function runCIMigrateCLI(
 		) {
 			return EXIT_CODES.WRITE_ERROR;
 		}
+		if (explicitJsonDryRun) {
+			// For JSON dry-run, still run validation but format output as JSON
+			console.info(
+				JSON.stringify(
+					{
+						status: "init-validation-failed",
+						exitCode,
+					},
+					null,
+					2,
+				),
+			);
+		}
 		return exitCode;
 	}
 
-	if (action === "prepare" && migrationReport) {
+	if (action === "prepare" && migrationReport && !explicitJsonDryRun) {
 		const now = new Date().toISOString();
 		const preparedStateWriteExitCode = writeMigrationState(dir, {
 			schemaVersion: "ci-migrate-state/v1",

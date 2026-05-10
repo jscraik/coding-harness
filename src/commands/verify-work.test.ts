@@ -439,6 +439,7 @@ function runVerifyWorkScript(
 		env?: NodeJS.ProcessEnv;
 		json?: boolean;
 		inheritEnv?: boolean;
+		allowExternalNormalization?: boolean;
 	} = {},
 ) {
 	const includeJson = options.json ?? true;
@@ -460,6 +461,9 @@ function runVerifyWorkScript(
 		env: {
 			...parentEnv,
 			HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
+			HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION:
+				options.allowExternalNormalization === true ? "0" : "1",
+			HARNESS_VERIFY_WORK_EXTERNAL_NORMALIZE_TIMEOUT_SECONDS: "1",
 			...options.env,
 		},
 	});
@@ -483,6 +487,7 @@ function writePriorRun(options: {
 	contractVersion?: string;
 	contractFingerprint?: string;
 	omitContractFingerprint?: boolean;
+	priorRunRepoRoot?: string;
 	providerClass?: string;
 	schemaVersion?: string;
 }): void {
@@ -494,6 +499,7 @@ function writePriorRun(options: {
 		contractVersion = "1",
 		contractFingerprint = "missing",
 		omitContractFingerprint = false,
+		priorRunRepoRoot = repoRoot,
 		providerClass = "github-actions",
 		schemaVersion = "1",
 	} = options;
@@ -512,7 +518,7 @@ function writePriorRun(options: {
 				startedAt: "2026-04-21T00:00:00Z",
 				finishedAt: "2026-04-21T00:00:01Z",
 				resumeFromGateId: null,
-				repoRoot,
+				repoRoot: priorRunRepoRoot,
 				providerClass,
 				schemaVersion,
 				contractVersion,
@@ -835,6 +841,7 @@ exit 1
 
 		const result = runVerifyWorkScript(repoRoot, [], {
 			inheritEnv: false,
+			allowExternalNormalization: true,
 			env: sandboxedEnv,
 		});
 		const combinedOutput = `${result.stdout}${result.stderr}`;
@@ -845,6 +852,66 @@ exit 1
 		);
 		expect(combinedOutput).toContain(
 			"required checks normalization via repo runner failed, trying fallback runners",
+		);
+		rmSync(binDir, { recursive: true, force: true });
+	});
+
+	it("skips external normalization when the skip flag is set to a truthy value", () => {
+		scaffoldVerifyWorkScriptRepo({
+			repoRoot,
+			manifest: {
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{
+						sourceAppSlug: "github-actions",
+						githubCheckName: "ci / raw-fallback",
+					},
+				],
+			},
+		});
+		writeExecutable(
+			join(repoRoot, "dist/cli.js"),
+			`#!/usr/bin/env node
+process.exit(1);
+`,
+		);
+		mkdirSync(join(repoRoot, "src"), { recursive: true });
+		writeFileSync(join(repoRoot, "src/cli.ts"), "process.exit(1);\n", "utf-8");
+
+		const binDir = mkdtempSync(join(tmpdir(), "verify-work-bin-"));
+		const miseHarnessPath = writeBinExecutable(
+			binDir,
+			"harness-from-mise",
+			`#!/usr/bin/env bash
+set -euo pipefail
+echo '{"schemaVersion":1,"contractVersion":"1","activeProvider":"github-actions","gates":[]}'
+`,
+		);
+		writeBinExecutable(
+			binDir,
+			"mise",
+			`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$#" -ge 2 && "$1" == "which" && "$2" == "harness" ]]; then
+	echo "${miseHarnessPath}"
+	exit 0
+fi
+exit 1
+`,
+		);
+
+		const result = runVerifyWorkScript(repoRoot, [], {
+			inheritEnv: false,
+			env: {
+				...makeDeterministicScriptEnv(`${binDir}:${process.env.PATH ?? ""}`),
+				HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION: "true",
+			},
+		});
+		const combinedOutput = `${result.stdout}${result.stderr}`;
+
+		expect(result.status).toBe(0);
+		expect(combinedOutput).toContain(
+			"required checks normalization unavailable; using raw manifest fallback",
 		);
 		rmSync(binDir, { recursive: true, force: true });
 	});
@@ -899,6 +966,7 @@ echo '${payload}'
 		);
 
 		const result = runVerifyWorkScript(repoRoot, [], {
+			allowExternalNormalization: true,
 			env: { PATH: `${binDir}:${process.env.PATH ?? ""}` },
 		});
 		const combinedOutput = `${result.stdout}${result.stderr}`;
@@ -1503,6 +1571,35 @@ exit 127
 		);
 	});
 
+	it("blocks resume when a required prior gate result is missing", () => {
+		scaffoldVerifyWorkScriptRepo({
+			repoRoot,
+			manifest: {
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{ sourceAppSlug: "github-actions", githubCheckName: "ci / test" },
+				],
+			},
+		});
+		writePriorRun({
+			repoRoot,
+			runId: "run-compatible-missing-prior-gate",
+			lane: { fastMode: true, changedOnly: true, strictMode: false },
+			gates: {
+				preflight: { status: "passed" },
+			},
+		});
+
+		const result = runVerifyWorkScript(repoRoot, [
+			"--resume-from",
+			"hook-governance-inventory",
+		]);
+		expect(result.status).toBe(1);
+		expect(`${result.stdout}${result.stderr}`).toContain(
+			"resume blocked: missing prior gate result for 'ci-check-alignment'",
+		);
+	});
+
 	it("returns usage error when --resume-from references an unknown gate id", () => {
 		scaffoldVerifyWorkScriptRepo({
 			repoRoot,
@@ -1538,6 +1635,37 @@ exit 127
 			repoRoot,
 			runId: "run-only-provider-mismatch",
 			providerClass: "circleci",
+			lane: { fastMode: true, changedOnly: true, strictMode: false },
+			gates: {
+				preflight: { status: "passed" },
+				"ci-check-alignment": { status: "passed" },
+			},
+		});
+
+		const result = runVerifyWorkScript(repoRoot, [
+			"--resume-from",
+			"hook-governance-inventory",
+		]);
+		expect(result.status).toBe(1);
+		expect(`${result.stdout}${result.stderr}`).toContain(
+			"no compatible prior run found for resume (contract/provider/root/fingerprint must match)",
+		);
+	});
+
+	it("fails resume when prior run repo root differs", () => {
+		scaffoldVerifyWorkScriptRepo({
+			repoRoot,
+			manifest: {
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{ sourceAppSlug: "github-actions", githubCheckName: "ci / test" },
+				],
+			},
+		});
+		writePriorRun({
+			repoRoot,
+			runId: "run-repo-root-mismatch",
+			priorRunRepoRoot: join(repoRoot, "other-worktree"),
 			lane: { fastMode: true, changedOnly: true, strictMode: false },
 			gates: {
 				preflight: { status: "passed" },

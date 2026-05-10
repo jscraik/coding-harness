@@ -1,7 +1,5 @@
 ---
-
-last_validated: 2026-05-03
-
+last_validated: 2026-05-07
 ---
 
 # Security and governance
@@ -41,6 +39,8 @@ This repository follows conservative defaults:
 - CircleCI bootstrap is allowed to install baseline shell tooling (`gh`, `rg`, `fd`, `jq`, `make`, `realpath`) and `mise`, then trust `.mise.toml`, before readiness gates run; the readiness gate itself must remain fail-closed and should not hide missing-tool drift by self-installing them.
 - CircleCI orb-pinning enforcement should verify `ralph` availability (`ralph --version`) and may install pinned `ralph-gold` in ephemeral CI jobs when the CLI is missing.
 - Project Brain memory-extension checks must stay project-local: keep required `.harness/**` knowledge paths in `toolingPolicy.projectBrainMemoryExtension.requiredPaths` and do not gate on workspace-level `~/.codex` state.
+- `.harness/README.md` is the governance map for selective `.harness` tracking. Curated Markdown and JSON contract files are reviewable repo inputs; runtime databases, backups, caches, run output, and bulk snapshots must stay local unless a validator or fixture contract admits them.
+- Tracked secondary context under `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` is evidence only. It becomes implementation authority only through an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slice.
 - CI pnpm bootstrap must avoid privileged shim rewrites. Prefer a user-writable prefix such as `$HOME/.local` plus `$BASH_ENV`/`$GITHUB_PATH` path propagation over `corepack enable`, which can fail on hosted runners when `/usr/local/bin/pnpm` is not writable.
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `security/openssf-scorecard-policy.json` and `scripts/check-scorecard-regressions.mjs`.
 - Greptile is a legacy cleanup concern only. Keep active review governance, scaffold defaults, and runtime verification aligned to CodeRabbit, and treat any live Greptile scaffold path as contract drift unless it exists solely to remove or quarantine old artifacts.
@@ -100,6 +100,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
 - `scripts/prepare-worktree.sh` should auto-attach detached HEAD checkouts to a local `jscraik/feature/<repo>-worktree-<short-sha>` branch, set `origin/main` tracking when available, and fast-forward to latest `origin/main` before dependency bootstrap so default git branch workflows are available immediately.
+- `scripts/check-git-common-config.sh` should fail preflight, verification, and worktree bootstrap if shared non-bare `.git/config` contains `core.worktree`. Repair by removing the shared value and using per-worktree config for worktree-local settings.
 - `scripts/new-task.sh` should fetch the latest remote base branch before `git worktree add` so newly created task worktrees start from current upstream commits.
 - `scripts/new-task.sh --bootstrap <issue-key>-<slug>` is the preferred one-shot path when you want creation plus immediate bootstrap in a single command.
 - `scripts/codex-enforced` should guard `main` by auto-creating a dedicated `codex/<issue-key>-<slug>` task branch/worktree (via `scripts/new-task.sh --bootstrap`) before launching Codex for feature work.
@@ -109,6 +110,9 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep `scripts/codex-preflight.sh` executable as a CLI script and invoke it with `bash scripts/codex-preflight.sh --stack auto --mode required` (or `--mode optional` for softer checks); do not source it.
 - Treat `scripts/verify-work.sh` as the canonical repo-local verification entrypoint; it should keep `required` Local Memory enforcement and repo-scoped preflight expectations without depending on codex-maintenance-only paths.
 - Hook-governance scope in `scripts/verify-work.sh` should default to `project-local`; workspace-level mutation and reporting must stay opt-in behind `--workspace-governance`, and direct governance scripts must require explicit input file flags (`--manifest`, `--inventory`, `--classification`, `--metrics`) instead of implicit workspace fallbacks.
+- Environment variables controlling external normalization behavior in `scripts/verify-work.sh`:
+  - `HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION` — When set to an enabled value (`1`, `true`, `yes`, or `on`, case-insensitive where applicable), opts out of external manifest normalization (the flow that may call mise-provided harness or harness on PATH). Defaults to unset (external normalization is attempted). Security implication: bypasses external harness binary fallback; may cause verify-work to use raw-fallback manifest mode when repo-local normalization also fails. See `prepare_normalized_required_checks_manifest` in the script for details.
+  - `HARNESS_VERIFY_WORK_EXTERNAL_NORMALIZE_TIMEOUT_SECONDS` — Configurable timeout in integer seconds for external normalization operations (for example mise which harness). Defaults to `5`. Operational implication: longer timeouts permit slower external tool resolution but delay verify-work startup when external binaries are slow. See `external_normalization_timeout` in `scripts/verify-work.sh` for the timeout application point.
 - When scorecard policy surfaces change, confirm `security/openssf-scorecard-policy.json`, `scripts/check-scorecard-regressions.mjs`, and `docs/security/2026-04-09-openssf-osps-baseline-status.md` remain aligned, then capture that command path in change evidence.
 - Treat scaffolded `scripts/harness-cli.sh` resolution failures as local install/bootstrap drift rather than harness command failures, and remediate with repo-local dependency repair (`pnpm install`, `pnpm add -D @brainwav/coding-harness`, then `pnpm exec harness <command>`).
 - For Local Memory enforcement, pin `~/.local-memory/config.yaml` to `host: 127.0.0.1` and `auto_port: false`, and prefer the pinned REST health endpoint as the source of truth when CLI status output is stale under sandboxed execution.
@@ -117,6 +121,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - If `toolingPolicy.projectBrainMemoryExtension.enabled=true`, capture verification evidence that the required `.harness/**` paths exist and that `scripts/check-environment.sh` still declares `required_project_brain_paths`.
 - When bumping tooling dependencies that have mirrored configuration schemas, update the package version, the repo config, and the scaffold template in the same change. The init suite enforces this for the Biome schema URL.
 - Diagram freshness enforcement should compare only git-tracked artifacts before and after refresh. Gitignored `.diagram/` refresh output may exist for local analysis, but it must not block `pre-push` unless tracked architecture artifacts actually drift.
+- Agent-native cockpit and fleet remediation changes must keep command evidence machine-readable and permission-aware: `harness next --json` should carry required local source blockers before recommending work, optional network source errors should remain metadata rather than silent assumptions, and `harness fleet-plan --from <upgrade-matrix> --json` should separate dry-run recommendations from approval-required mutation steps.
 
 ## Pre-commit hooks
 
@@ -132,7 +137,8 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 
 The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when present so approved fixture/example exceptions are consistent across local hooks, manual scans, and downstream scaffold expectations.
 `hooks-commit-msg` remains a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`; use that wrapper for deterministic commit-policy verification and cross-repo governance checks.
-`scripts/setup-git-hooks.js` must run `prek install --overwrite` and patch generated `prek` shims with `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logs/cache writes stay repo-local under sandboxed executions and legacy hook wrappers are not chained.
+`scripts/setup-git-hooks.js` must run `prek install --overwrite`, resolve the installed hook directory with `git rev-parse --git-path hooks`, and patch generated `prek` shims with `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logs/cache writes stay repo-local under sandboxed executions and legacy hook wrappers are not chained.
+`scripts/check-environment.sh` must treat installed generated `pre-commit`, `pre-push`, and `commit-msg` shims without that repo-local `PREK_HOME` patch as hook drift, with `node scripts/setup-git-hooks.js` or `make hooks` as the repair path.
 
 `docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, tooling-runtime, and architecture-context changes are expected to update this guide together with `docs/agents/02-tooling-policy.md`, `docs/agents/00-architecture-bootstrap.md`, and the operator-facing surfaces (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`) in the same change so pre-push drift is caught before GitHub does.
 Agent-native cockpit changes that alter next-action safety, generated environment actions, or hook setup must preserve that same docs-gate synchronization so permission, execution-profile, and validation evidence remain auditable before merge.

@@ -27,6 +27,7 @@ import { runDoctorCLI } from "../../../commands/doctor.js";
 import { runDriftGateCLI } from "../../../commands/drift-gate.js";
 import { runEjectCLI } from "../../../commands/eject.js";
 import { runEvidenceVerifyCLI } from "../../../commands/evidence-verify.js";
+import { runFleetPlanCLI } from "../../../commands/fleet-plan.js";
 import { runGapCaseCLI } from "../../../commands/gap-case.js";
 import { runGardenerCLI } from "../../../commands/gardener.js";
 import { runHealthCLI } from "../../../commands/health.js";
@@ -93,6 +94,7 @@ import {
 import { runWorkflowGenerateCLI } from "../../../commands/workflow-generate.js";
 import type { IssueTracker } from "../../init/types.js";
 import type { PilotEvaluateOptions } from "../../pilot-evaluation/types.js";
+import { getValidationGateSpec } from "../../validation/gate-specs.js";
 import type { ProjectType } from "../../project-type/types.js";
 import { getVersion } from "../../version.js";
 import {
@@ -105,6 +107,15 @@ import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-
 import type { CommandSpec } from "./types.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
+	{
+		name: "fleet-plan",
+		summary:
+			"Build an agent-native remediation plan from a harness upgrade matrix artifact",
+		example:
+			"fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json",
+		errorLabel: "Fleet Plan Error",
+		execute: (args) => runFleetPlanCLI(args),
+	},
 	{
 		name: "linear",
 		summary:
@@ -1018,6 +1029,15 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			}
 			if (repoRootFlag.missingValue) {
 				console.error("Error: --repo-root requires a path");
+				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
+			}
+			if (
+				resumeFromFlag.value &&
+				getValidationGateSpec(resumeFromFlag.value) === undefined
+			) {
+				console.error(
+					`[verify-work] unknown gate id for --resume-from: ${resumeFromFlag.value}`,
+				);
 				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
 			}
 			if (projectGovernanceFlag && workspaceGovernanceFlag) {
@@ -2069,6 +2089,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				"--merge-queue-orchestrator",
 			);
 			const commitModeIndex = args.indexOf("--commit-mode");
+			const jsonFlag = args.includes("--json");
 			const dryRunFlag = args.includes("--dry-run");
 			const applyFlag = args.includes("--apply");
 			const rollbackFlag = args.includes("--rollback");
@@ -2170,6 +2191,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runCIMigrateCLI(targetDir, {
 				provider,
 				dryRun: dryRunFlag,
+				...(jsonFlag ? { json: true } : {}),
 				apply: applyFlag,
 				rollback: rollbackFlag,
 				snapshot,

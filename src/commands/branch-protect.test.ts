@@ -24,6 +24,11 @@ const mockLoadContract = vi.mocked(loadContract);
 
 const mockBranchProtectClient = (client: PartialDeep<GitHubClient>) =>
 	fromPartial<GitHubClient>(client);
+const mockGitHubClientImplementation = (createClient: () => GitHubClient) => {
+	mockGitHubClient.mockImplementation(function GitHubClient() {
+		return createClient();
+	});
+};
 
 describe("runBranchProtect", () => {
 	beforeEach(() => {
@@ -84,7 +89,7 @@ describe("runBranchProtect", () => {
 				}) as Ruleset,
 		);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				createRuleset,
@@ -159,7 +164,7 @@ describe("runBranchProtect", () => {
 			throw new Error("merge settings denied");
 		});
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				createRuleset,
@@ -246,7 +251,7 @@ describe("runBranchProtect", () => {
 				}) as Ruleset,
 		);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRuleset,
@@ -293,7 +298,7 @@ describe("runBranchProtect", () => {
 		);
 		const getRepositoryVisibility = vi.fn(async () => "public");
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				createRuleset,
@@ -385,7 +390,7 @@ describe("runBranchProtect", () => {
 		);
 		const getRepositoryVisibility = vi.fn(async () => "private");
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRuleset,
@@ -470,7 +475,7 @@ describe("runBranchProtect", () => {
 		);
 		const getRepositoryVisibility = vi.fn(async () => "internal");
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRuleset,
@@ -509,7 +514,7 @@ describe("runBranchProtect", () => {
 		);
 		const getRepositoryVisibility = vi.fn(async () => undefined);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				createRuleset,
@@ -545,7 +550,7 @@ describe("runBranchProtect", () => {
 				}) as Ruleset,
 		);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				createRuleset,
@@ -599,7 +604,7 @@ describe("runBranchProtect", () => {
 				}) as Ruleset,
 		);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				createRuleset,
@@ -643,7 +648,7 @@ describe("runBranchProtect", () => {
 				}) as Ruleset,
 		);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				createRuleset,
@@ -677,7 +682,7 @@ describe("runBranchProtect", () => {
 		const createRuleset = vi.fn();
 		const getRepositoryVisibility = vi.fn(async () => "public");
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				createRuleset,
@@ -735,7 +740,7 @@ describe("runBranchProtect", () => {
 			.spyOn(console, "info")
 			.mockImplementation(() => undefined);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRepositoryVisibility,
@@ -840,7 +845,7 @@ describe("runBranchProtect", () => {
 		);
 		const createRuleset = vi.fn();
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRuleset,
@@ -910,7 +915,7 @@ describe("runBranchProtect", () => {
 		);
 		const createRuleset = vi.fn();
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRuleset,
@@ -964,7 +969,7 @@ describe("runBranchProtect", () => {
 		);
 		const updateRuleset = vi.fn();
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				createRuleset,
@@ -1034,7 +1039,7 @@ describe("runBranchProtect", () => {
 		);
 		const createRuleset = vi.fn();
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				getDefaultBranch,
 				listRulesets,
@@ -1114,7 +1119,7 @@ describe("runBranchProtect", () => {
 				}) as Ruleset,
 		);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRuleset,
@@ -1192,7 +1197,7 @@ describe("runBranchProtect", () => {
 				}) as Ruleset,
 		);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRuleset,
@@ -1275,7 +1280,7 @@ describe("runBranchProtect", () => {
 				}) as Ruleset,
 		);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRuleset,
@@ -1348,7 +1353,7 @@ describe("runBranchProtect", () => {
 				}) as Ruleset,
 		);
 
-		mockGitHubClient.mockImplementation(() =>
+		mockGitHubClientImplementation(() =>
 			mockBranchProtectClient({
 				listRulesets,
 				getRuleset,
@@ -1384,7 +1389,7 @@ describe("runBranchProtect", () => {
 					}) as Ruleset,
 			);
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockBranchProtectClient({
 					listRulesets,
 					createRuleset,
@@ -1428,7 +1433,7 @@ describe("runBranchProtect", () => {
 					}) as Ruleset,
 			);
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockBranchProtectClient({
 					listRulesets,
 					createRuleset,
@@ -1466,7 +1471,7 @@ describe("runBranchProtect", () => {
 					}) as Ruleset,
 			);
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockBranchProtectClient({
 					listRulesets,
 					createRuleset,
@@ -1504,7 +1509,7 @@ describe("runBranchProtect", () => {
 					}) as Ruleset,
 			);
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockBranchProtectClient({
 					listRulesets,
 					createRuleset,
@@ -1561,7 +1566,7 @@ describe("runBranchProtect", () => {
 					}) as Ruleset,
 			);
 
-			mockGitHubClient.mockImplementation(() =>
+			mockGitHubClientImplementation(() =>
 				mockBranchProtectClient({
 					listRulesets,
 					createRuleset,

@@ -1,5 +1,8 @@
 import { inspectFlagList, inspectFlagValue } from "../lib/cli/parse-utils.js";
-import { buildValidationPlan } from "../lib/learnings/validation-plan.js";
+import {
+	buildValidationPlan,
+	type ValidationPlanResult,
+} from "../lib/learnings/validation-plan.js";
 
 const EXIT_CODES = {
 	SUCCESS: 0,
@@ -79,23 +82,7 @@ function emitError(options: {
 	if (options.json) {
 		console.info(
 			JSON.stringify(
-				{
-					schemaVersion: "validation-plan/v1",
-					status: "error",
-					source: "",
-					changedFiles: [],
-					commands: [],
-					networkRequired: [],
-					summary: {
-						commands: 0,
-						networkRequired: 0,
-						matchedLearnings: 0,
-					},
-					error: {
-						code: options.errorCode,
-						message: options.message,
-					},
-				},
+				buildErrorResult(options.errorCode, options.message),
 				null,
 				2,
 			),
@@ -104,4 +91,30 @@ function emitError(options: {
 		console.error(`Error: ${options.message}`);
 	}
 	return options.exitCode;
+}
+
+function buildErrorResult(code: string, message: string): ValidationPlanResult {
+	return {
+		schemaVersion: "validation-plan/v1",
+		status: "error",
+		source: "",
+		changedFiles: [],
+		warnings: [],
+		commands: [],
+		fast: [],
+		required: [],
+		beforePr: [],
+		deep: [],
+		networkRequired: [],
+		summary: {
+			commands: 0,
+			fast: 0,
+			required: 0,
+			beforePr: 0,
+			deep: 0,
+			networkRequired: 0,
+			matchedLearnings: 0,
+		},
+		error: { code, message },
+	};
 }

@@ -5,13 +5,16 @@ import { GitHubApiError } from "./errors.js";
 import { mutationQueue } from "./mutation-queue.js";
 
 const MyOctokit = Octokit.plugin(throttling, retry);
+const TRANSIENT_RETRY_DELAYS_MS = [250, 1000] as const;
 
+/** Options used to bind the GitHub client to one repository. */
 export interface GitHubClientOptions {
 	token: string;
 	owner: string;
 	repo: string;
 }
 
+/** Normalized GitHub check-run data consumed by harness gates. */
 export interface CheckRun {
 	id: number;
 	name: string;
@@ -25,6 +28,7 @@ export interface CheckRun {
 	};
 }
 
+/** Normalized GitHub issue or pull request comment data. */
 export interface Comment {
 	id: number;
 	body: string;
@@ -35,6 +39,7 @@ export interface Comment {
 	};
 }
 
+/** Pull request fields required by harness review and workflow commands. */
 export interface PullRequest {
 	number: number;
 	title?: string;
@@ -51,11 +56,13 @@ export interface PullRequest {
 	};
 }
 
+/** File entry returned for a pull request diff. */
 export interface PullRequestFile {
 	filename: string;
 	status?: string;
 }
 
+/** Pull request review metadata used to evaluate review readiness. */
 export interface PullRequestReview {
 	id: number;
 	state: string;
@@ -66,6 +73,7 @@ export interface PullRequestReview {
 	};
 }
 
+/** Commit metadata for a pull request head history entry. */
 export interface PullRequestCommit {
 	sha: string;
 	author?: {
@@ -76,23 +84,27 @@ export interface PullRequestCommit {
 	} | null;
 }
 
+/** Minimal review-thread comment author data needed for independence checks. */
 export interface PullRequestReviewThreadComment {
 	author?: {
 		login?: string;
 	} | null;
 }
 
+/** Pull request review thread state returned by the GraphQL API. */
 export interface PullRequestReviewThread {
 	id: string;
 	isResolved: boolean;
 	comments: PullRequestReviewThreadComment[];
 }
 
+/** GitHub repository ruleset rule record. */
 export interface RulesetRule {
 	type: string;
 	parameters?: Record<string, unknown>;
 }
 
+/** GitHub ruleset bypass actor record. */
 export interface RulesetBypassActor {
 	actor_id?: number | null;
 	actor_type:
@@ -104,6 +116,7 @@ export interface RulesetBypassActor {
 	bypass_mode?: "pull_request" | "always";
 }
 
+/** Branch matching conditions for GitHub repository rulesets. */
 export interface BranchRulesetConditions {
 	ref_name?: {
 		include?: string[];
@@ -111,6 +124,7 @@ export interface BranchRulesetConditions {
 	};
 }
 
+/** Summary record returned when listing repository rulesets. */
 export interface RulesetSummary {
 	id: number;
 	name: string;
@@ -119,6 +133,7 @@ export interface RulesetSummary {
 	conditions?: BranchRulesetConditions;
 }
 
+/** Full GitHub repository ruleset used for branch-protection reconciliation. */
 export interface Ruleset {
 	id: number;
 	name: string;
@@ -129,6 +144,7 @@ export interface Ruleset {
 	rules: RulesetRule[];
 }
 
+/** Payload accepted when creating or updating a branch ruleset. */
 export interface RulesetPayload {
 	name: string;
 	target: "branch";
@@ -138,12 +154,40 @@ export interface RulesetPayload {
 	rules: RulesetRule[];
 }
 
+/** Repository merge strategy flags managed by harness governance commands. */
 export interface RepositoryMergeSettings {
 	allowMergeCommit: boolean;
 	allowSquashMerge: boolean;
 	allowRebaseMerge: boolean;
 }
 
+/**
+ * Pause execution for the specified number of milliseconds.
+ *
+ * @param ms - Number of milliseconds to wait.
+ * @returns A promise that resolves when the delay has completed.
+ */
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Determines whether an error represents a transient GitHub server error (HTTP status 500 or greater).
+ *
+ * @param error - The error to classify
+ * @returns `true` if `error` is a `GitHubApiError` with `status` >= 500, `false` otherwise
+ */
+function isTransientGitHubError(error: Error): boolean {
+	return error instanceof GitHubApiError && error.status >= 500;
+}
+
+/**
+ * Create an Octokit client configured for the repository with throttling behavior.
+ * Octokit's retry plugin remains active for general API calls; listCheckRunsForRef adds a small explicit retry loop for its check-run polling path.
+ *
+ * @param token - The authentication token used by Octokit for API requests
+ * @returns An Octokit instance configured to use the provided token and built-in throttling handlers
+ */
 function createOctokit(token: string): InstanceType<typeof MyOctokit> {
 	return new MyOctokit({
 		auth: token,
@@ -180,6 +224,7 @@ function createOctokit(token: string): InstanceType<typeof MyOctokit> {
 	});
 }
 
+/** Repository-scoped GitHub API adapter used by harness workflow commands. */
 export class GitHubClient {
 	private octokit: InstanceType<typeof MyOctokit>;
 	private owner: string;
@@ -196,39 +241,62 @@ export class GitHubClient {
 	}
 
 	async listCheckRunsForRef(ref: string): Promise<CheckRun[]> {
-		try {
-			const response = await this.octokit.paginate(
-				this.octokit.checks.listForRef,
-				{
-					owner: this.owner,
-					repo: this.repo,
-					ref,
-					per_page: 100,
-				},
-			);
-			return response.map((item) => ({
-				id: item.id,
-				name: item.name,
-				status: item.status as CheckRun["status"],
-				conclusion: item.conclusion,
-				head_sha: typeof item.head_sha === "string" ? item.head_sha : "",
-				...(item.app
-					? {
-							app: {
-								...(typeof item.app.id === "number" ? { id: item.app.id } : {}),
-								...(typeof item.app.slug === "string"
-									? { slug: item.app.slug }
-									: {}),
-								...(typeof item.app.name === "string"
-									? { name: item.app.name }
-									: {}),
-							},
-						}
-					: {}),
-			}));
-		} catch (error) {
-			throw this.classifyError(error);
+		for (
+			let attempt = 0;
+			attempt <= TRANSIENT_RETRY_DELAYS_MS.length;
+			attempt++
+		) {
+			try {
+				const response = await this.octokit.paginate(
+					this.octokit.checks.listForRef,
+					{
+						owner: this.owner,
+						repo: this.repo,
+						ref,
+						per_page: 100,
+					},
+				);
+				return response.map((item) => ({
+					id: item.id,
+					name: item.name,
+					status: item.status as CheckRun["status"],
+					conclusion: item.conclusion,
+					head_sha: typeof item.head_sha === "string" ? item.head_sha : "",
+					...(item.app
+						? {
+								app: {
+									...(typeof item.app.id === "number"
+										? { id: item.app.id }
+										: {}),
+									...(typeof item.app.slug === "string"
+										? { slug: item.app.slug }
+										: {}),
+									...(typeof item.app.name === "string"
+										? { name: item.app.name }
+										: {}),
+								},
+							}
+						: {}),
+				}));
+			} catch (error) {
+				const classifiedError = this.classifyError(error);
+				const retryDelay = TRANSIENT_RETRY_DELAYS_MS[attempt];
+				if (
+					retryDelay !== undefined &&
+					isTransientGitHubError(classifiedError)
+				) {
+					await sleep(retryDelay);
+					continue;
+				}
+				throw classifiedError;
+			}
 		}
+
+		throw new GitHubApiError({
+			code: "SYSTEM_ERROR",
+			status: 0,
+			message: "GitHub check run listing failed after retries",
+		});
 	}
 
 	async createIssueComment(

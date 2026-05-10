@@ -1,12 +1,13 @@
 {
 	"name": "@brainwav/coding-harness",
-	"version": "0.15.0",
+	"version": "0.15.1",
 	"files": [
 		"dist",
 		"scripts/codex-preflight.sh",
 		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",
 		"scripts/validate-codestyle.sh",
+		"scripts/check-doc-style.sh",
 		"scripts/check-related-tests.sh",
 		"scripts/refresh-diagram-context.sh",
 		"scripts/check-diagram-freshness.sh",
@@ -14,6 +15,14 @@
 		"scripts/check-code-size.mjs",
 		"scripts/lib",
 		"scripts/check-codestyle-parity.sh",
+		"scripts/check-git-common-config.sh",
+		"scripts/check-semgrep-changed.sh",
+		"scripts/check-semgrep-full.sh",
+		"scripts/semgrep-bootstrap.sh",
+		"scripts/semgrep-pre-push.yml",
+		"scripts/prepare-worktree.sh",
+		"scripts/new-task.sh",
+		"scripts/harness-cli.sh",
 		"codestyle",
 		"README.md",
 		"CHANGELOG.md",
@@ -63,6 +72,7 @@
 		"skill:validate": "node scripts/validate-packaged-skill.cjs",
 		"workflow:normalize": "node scripts/normalize-workflow-contracts.cjs",
 		"workflow:validate": "node scripts/validate-workflow-contracts.cjs",
+		"observed:eval-usage": "tsx scripts/collect-observed-eval-usage.ts",
 		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
 		"codestyle:parity": "bash scripts/check-codestyle-parity.sh",
 		"codestyle:validate": "bash scripts/validate-codestyle.sh",
@@ -87,20 +97,20 @@
 		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
-		"@brainwav/diagram": "^1.0.8",
+		"@biomejs/biome": "^2.4.14",
+		"@brainwav/diagram": "^1.1.0",
 		"@total-typescript/shoehorn": "^0.1.2",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/lodash": "^4.17.24",
-		"@types/node": "^22.19.11",
+		"@types/node": "^24.12.2",
 		"@types/picomatch": "^4.0.2",
 		"@types/semver": "^7.7.1",
-		"@vitest/coverage-v8": "^3.2.4",
+		"@vitest/coverage-v8": "^4.1.5",
 		"@vvago/vale": "^3.12.0",
 		"markdownlint-cli2": "^0.21.0",
 		"standard-version": "^9.5.0",
 		"tsx": "^4.21.0",
-		"vitest": "^3.2.4"
+		"vitest": "^4.1.5"
 	},
 	"packageManager": "pnpm@10.33.0",
 	"engines": {
@@ -123,8 +133,8 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"axios": "^1.15.2",
-			"@vvago/vale>axios": "^1.15.2",
+			"axios": "^1.16.0",
+			"@vvago/vale>axios": "^1.16.0",
 			"brace-expansion": "^5.0.5",
 			"follow-redirects": "^1.16.0",
 			"handlebars": "^4.7.9",
@@ -137,12 +147,12 @@
 			"yaml": "^2.8.3",
 			"vite": ">=7.3.2 <8",
 			"handlebars@>=4.0.0 <=4.7.8": ">=4.7.9",
+			"axios@<1.15.2": ">=1.16.0",
 			"brace-expansion@>=4.0.0 <5.0.5": ">=5.0.5",
 			"handlebars@>=4.0.0 <4.7.9": ">=4.7.9",
 			"picomatch@<2.3.2": ">=2.3.2",
 			"picomatch@>=4.0.0 <4.0.4": ">=4.0.4",
-			"yaml@>=2.0.0 <2.8.3": ">=2.8.3",
-			"axios@<1.15.2": ">=1.15.2"
+			"yaml@>=2.0.0 <2.8.3": ">=2.8.3"
 		}
 	},
 	"license": "Apache-2.0",

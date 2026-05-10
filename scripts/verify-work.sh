@@ -117,10 +117,10 @@ preflight_bins_csv() {
 # preflight_paths_csv returns a comma-separated list of repository paths required for preflight verification for the given project stack.
 preflight_paths_csv() {
 	case "$1" in
-		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		py) echo 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		rust) echo 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		repo) echo 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		py) echo 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		rust) echo 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		repo) echo 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/check-git-common-config.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
 		*) echo "[verify-work] unknown stack: $1" >&2; return 2 ;;
 	esac
 }
@@ -131,6 +131,15 @@ has_package_script() {
 	jq -e --arg script_name "$script_name" '(.scripts // {}) | has($script_name)' "$repo_root/package.json" >/dev/null 2>&1
 }
 
+is_truthy() {
+	case "${1:-}" in
+		1|true|TRUE|yes|YES|on|ON) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+# prepare_normalized_required_checks_manifest locates .harness/ci-required-checks.json and produces a normalized manifest in a temporary file, setting the globals `normalized_manifest_path` and `normalized_manifest_source`.
+# It tries, in order, the repo dist CLI, a pnpm/tsx repo runner, a mise-provided harness (with configurable timeout), a harness on PATH, and finally falls back to copying the raw manifest if it is a JSON object; exits success when a normalized or raw-fallback manifest is available, and non-zero if normalization fails.
 prepare_normalized_required_checks_manifest() {
 	local manifest_path="$repo_root/.harness/ci-required-checks.json"
 	normalized_manifest_path=""
@@ -143,6 +152,7 @@ prepare_normalized_required_checks_manifest() {
 	local pnpm_bin=""
 	local mise_harness_bin=""
 	local harness_bin=""
+	local external_normalization_timeout="${HARNESS_VERIFY_WORK_EXTERNAL_NORMALIZE_TIMEOUT_SECONDS:-5}"
 	local normalized_tmp
 	normalized_tmp="$(mktemp)"
 
@@ -164,22 +174,46 @@ prepare_normalized_required_checks_manifest() {
 		echo "[verify-work] required checks normalization via repo runner failed, trying fallback runners" >&2
 	fi
 
-	mise_harness_bin="$(mise which harness 2>/dev/null || true)"
-	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-		if "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
-			normalized_manifest_path="$normalized_tmp"
-			normalized_manifest_source="normalized"
-			return 0
+	if ! is_truthy "${HARNESS_VERIFY_WORK_SKIP_EXTERNAL_NORMALIZATION:-0}"; then
+		if command -v mise >/dev/null 2>&1; then
+			if command -v timeout >/dev/null 2>&1; then
+				mise_harness_bin="$(timeout "$external_normalization_timeout" mise which harness 2>/dev/null || true)"
+			else
+				mise_harness_bin="$(mise which harness 2>/dev/null || true)"
+			fi
 		fi
-		echo "[verify-work] required checks normalization via mise harness failed, trying PATH harness" >&2
-	fi
+		if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
+			if command -v timeout >/dev/null 2>&1; then
+				if timeout "$external_normalization_timeout" "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+					normalized_manifest_path="$normalized_tmp"
+					normalized_manifest_source="normalized"
+					return 0
+				fi
+			else
+				if "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+					normalized_manifest_path="$normalized_tmp"
+					normalized_manifest_source="normalized"
+					return 0
+				fi
+			fi
+			echo "[verify-work] required checks normalization via mise harness failed, trying PATH harness" >&2
+		fi
 
-	harness_bin="$(command -v harness 2>/dev/null || true)"
-	if [[ -n "$harness_bin" ]]; then
-		if "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
-			normalized_manifest_path="$normalized_tmp"
-			normalized_manifest_source="normalized"
-			return 0
+		harness_bin="$(command -v harness 2>/dev/null || true)"
+		if [[ -n "$harness_bin" ]]; then
+			if command -v timeout >/dev/null 2>&1; then
+				if timeout "$external_normalization_timeout" "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+					normalized_manifest_path="$normalized_tmp"
+					normalized_manifest_source="normalized"
+					return 0
+				fi
+			else
+				if "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+					normalized_manifest_path="$normalized_tmp"
+					normalized_manifest_source="normalized"
+					return 0
+				fi
+			fi
 		fi
 	fi
 
@@ -1064,6 +1098,10 @@ fi
 
 cd "$repo_root"
 log_info "[verify-work] repo root: $repo_root"
+
+if [[ -x "$repo_root/scripts/check-git-common-config.sh" ]]; then
+	bash "$repo_root/scripts/check-git-common-config.sh"
+fi
 
 current_git_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)"
 current_repo_name="$(basename "$current_git_root")"
