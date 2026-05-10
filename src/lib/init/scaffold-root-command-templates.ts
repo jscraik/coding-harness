@@ -192,15 +192,6 @@ hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	$(MAKE) related-tests
 
 hooks-pre-push: ## Run local pre-push governance gates before pushing
-	@if base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)" && \
-		[ -n "$$base_ref" ] && \
-		changed_files="$$(git diff --name-only --diff-filter=ACMR "$$base_ref"...HEAD --)" && \
-		[ -n "$$changed_files" ] && \
-		! printf '%s\\n' "$$changed_files" | grep -v '^\\.codex/environments/environment\\.toml$$' >/dev/null; then \
-		echo "Environment-only push detected; running check-environment only."; \
-		bash ./scripts/check-environment.sh; \
-		exit 0; \
-	fi
 	@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json
 	@bash ./scripts/check-diagram-freshness.sh
 	@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json
