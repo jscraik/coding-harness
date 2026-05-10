@@ -900,6 +900,7 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Script: check"\nicon = "debug"');
 			expect(content).toContain('name = "Script: test"\nicon = "test"');
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
+			expect(content).toContain('name = "Script: observed:eval-usage"\nicon = "tool"');
 			expect(content).toContain("mise install");
 			expect(content).toContain("mise trust --yes .mise.toml || true");
 			expect(content).toContain("bash scripts/prepare-worktree.sh");
