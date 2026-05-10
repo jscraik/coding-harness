@@ -56,6 +56,14 @@ vi.mock("./commands/learnings.js", () => ({
 	runLearningsCLI: vi.fn(() => 71),
 }));
 
+vi.mock("./commands/review-context.js", () => ({
+	runReviewContextCLI: vi.fn(() => 74),
+}));
+
+vi.mock("./commands/north-star-feedback.js", () => ({
+	runNorthStarFeedbackCLI: vi.fn(() => 75),
+}));
+
 vi.mock("./commands/ci-migrate.js", () => ({
 	runCIMigrateCLI: vi.fn(() => 69),
 	runPromoteModeCLI: vi.fn(() => 73),
@@ -708,6 +716,101 @@ describe("cli command dispatch", () => {
 			"--json",
 		]);
 		expect(exitSpy).toHaveBeenCalledWith(71);
+	});
+
+	it("dispatches learnings gate through the command registry", async () => {
+		const { run } = await import("./cli.js");
+		const { runLearningsCLI } = await import("./commands/learnings.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"learnings",
+				"gate",
+				"--source",
+				".harness/learnings/coderabbit.local.json",
+				"--files",
+				"src/cli.ts",
+				"--json",
+			]),
+		).toThrowError("EXIT_71");
+
+		expect(vi.mocked(runLearningsCLI)).toHaveBeenCalledWith([
+			"gate",
+			"--source",
+			".harness/learnings/coderabbit.local.json",
+			"--files",
+			"src/cli.ts",
+			"--json",
+		]);
+		expect(exitSpy).toHaveBeenCalledWith(71);
+	});
+
+	it("dispatches review-context through the command registry", async () => {
+		const { run } = await import("./cli.js");
+		const { runReviewContextCLI } = await import(
+			"./commands/review-context.js"
+		);
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"review-context",
+				"--source",
+				".harness/learnings/coderabbit.local.json",
+				"--files",
+				"src/cli.ts",
+				"--json",
+			]),
+		).toThrowError("EXIT_74");
+
+		expect(vi.mocked(runReviewContextCLI)).toHaveBeenCalledWith([
+			"--source",
+			".harness/learnings/coderabbit.local.json",
+			"--files",
+			"src/cli.ts",
+			"--json",
+		]);
+		expect(exitSpy).toHaveBeenCalledWith(74);
+	});
+
+	it("dispatches north-star-feedback through the command registry", async () => {
+		const { run } = await import("./cli.js");
+		const { runNorthStarFeedbackCLI } = await import(
+			"./commands/north-star-feedback.js"
+		);
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"north-star-feedback",
+				"--source",
+				".harness/learnings/coderabbit.local.json",
+				"--json",
+			]),
+		).toThrowError("EXIT_75");
+
+		expect(vi.mocked(runNorthStarFeedbackCLI)).toHaveBeenCalledWith([
+			"--source",
+			".harness/learnings/coderabbit.local.json",
+			"--json",
+		]);
+		expect(exitSpy).toHaveBeenCalledWith(75);
 	});
 
 	it("dispatches ci-migrate with positional action and target directory", async () => {
