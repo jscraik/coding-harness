@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { renderInstallCommand } from "./scaffold-shell-templates.js";
 
-const AGENT_BRANCH_PREFIX = "jscraik/feature";
+const AGENT_BRANCH_PREFIX = "codex/worktree";
 
 /**
  * Generate a bash script that prepares a git worktree for local hooks and checks.
@@ -95,8 +95,12 @@ attach_branch_if_detached() {
 	if git show-ref --verify --quiet "refs/remotes/origin/main"; then
 		git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
 		echo "[prepare-worktree] tracking origin/main for $branch_name"
-		echo "[prepare-worktree] fast-forwarding $branch_name with origin/main"
-		git pull --ff-only origin main
+		if git merge-base --is-ancestor HEAD origin/main; then
+			echo "[prepare-worktree] fast-forwarding $branch_name with origin/main"
+			git pull --ff-only origin main
+		else
+			echo "[prepare-worktree] $branch_name diverges from origin/main; skipping fast-forward"
+		fi
 	fi
 }
 

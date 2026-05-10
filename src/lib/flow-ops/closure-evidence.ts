@@ -136,7 +136,7 @@ function expectedCheckShas(
  * Determines whether any required check was recorded against a commit SHA that does not match the pull request's expected SHAs.
  *
  * @param record - The closure evidence record containing `pullRequest` and `requiredChecks`
- * @returns `true` if at least one required check lacks a checked SHA or has a `checkedSha` that (case-insensitively) is not among the pull request's expected SHAs; `false` otherwise. Returns `false` when there is no pull request or no expected SHAs.
+ * @returns `true` if at least one completed required check lacks a checked SHA or has a `checkedSha` that (case-insensitively) is not among the pull request's expected SHAs; `false` otherwise. Returns `false` when there is no pull request or no expected SHAs.
  */
 function hasWrongShaCheck(record: ClosureEvidenceRecord): boolean {
 	if (!record.pullRequest) {
@@ -148,8 +148,10 @@ function hasWrongShaCheck(record: ClosureEvidenceRecord): boolean {
 	}
 	return record.requiredChecks.some(
 		(check) =>
-			typeof check.checkedSha !== "string" ||
-			!expectedShas.has(check.checkedSha.toLowerCase()),
+			check.status === "completed" &&
+			(typeof check.checkedSha !== "string" ||
+				check.checkedSha.trim() === "" ||
+				!expectedShas.has(check.checkedSha.toLowerCase())),
 	);
 }
 

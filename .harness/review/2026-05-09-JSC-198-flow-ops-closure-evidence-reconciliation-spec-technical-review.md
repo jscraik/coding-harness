@@ -105,6 +105,12 @@ No blocking findings remain.
 - Command:
   `pnpm markdownlint .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md`
   -> pass
+- Synchronization evidence:
+  `AI/context/diagram-context.md` and `AGENTS.md` were included in the
+  current JSC-198 branch synchronization set before review handoff.
+- Command:
+  `bash scripts/run-harness-gate.sh docs-gate --mode required --json`
+  -> pass (2026-05-10T13:29:08.771Z; errors=0; warnings=0)
 
 ## Residual Risks For he-plan
 

@@ -29,6 +29,40 @@ npm_auth_is_available() {
 	npm whoami --registry="$NPM_REGISTRY" >/dev/null 2>&1
 }
 
+resolve_package_spec() {
+	if [[ ! -f "$REPO_ROOT/package.json" ]]; then
+		printf '%s\n' "$PACKAGE_SPEC"
+		return 0
+	fi
+	node -e '
+		const { readFileSync } = require("node:fs");
+		const packageName = process.argv[2];
+		const fallback = process.argv[3];
+		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
+		const version =
+			packageJson.dependencies?.[packageName] ??
+			packageJson.devDependencies?.[packageName] ??
+			packageJson.optionalDependencies?.[packageName];
+		console.log(typeof version === "string" ? `${packageName}@${version}` : fallback);
+	' "$REPO_ROOT/package.json" "$PACKAGE_NAME" "$PACKAGE_SPEC"
+}
+
+run_npm_fallback() {
+	if [[ "${HARNESS_CLI_ALLOW_NPM_EXEC:-}" != "1" ]]; then
+		return 1
+	fi
+	if ! command -v npm >/dev/null 2>&1; then
+		echo "Error: npm is required for HARNESS_CLI_ALLOW_NPM_EXEC=1 but is not on PATH." >&2
+		exit 1
+	fi
+	if ! npm_auth_is_available; then
+		echo "Error: npm auth is missing in this process; cannot fetch $PACKAGE_NAME." >&2
+		print_npm_auth_hint
+		exit 1
+	fi
+	exec npm exec --yes --package "$(resolve_package_spec)" -- harness "$@"
+}
+
 print_npm_auth_hint() {
 	echo "The repo .npmrc only routes @brainwav packages to npm; it does not carry credentials." >&2
 	echo "Provide npm auth in this process with NPM_TOKEN or a user-level ~/.npmrc, then retry." >&2
@@ -52,6 +86,7 @@ CLI_PATH="$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js"
 
 if [[ ! -f "$CLI_PATH" ]]; then
 	if [[ ! -f "$REPO_ROOT/package.json" ]]; then
+		run_npm_fallback "$@" || true
 		echo "Error: local @brainwav/coding-harness could not be resolved because this is not a local npm package root." >&2
 		echo "Detected repo root: $REPO_ROOT" >&2
 		echo "Create or restore package.json before relying on node_modules, or run from the intended project root." >&2
@@ -60,18 +95,7 @@ if [[ ! -f "$CLI_PATH" ]]; then
 		exit 1
 	fi
 
-	if [[ "${HARNESS_CLI_ALLOW_NPM_EXEC:-}" == "1" ]]; then
-		if ! command -v npm >/dev/null 2>&1; then
-			echo "Error: npm is required for HARNESS_CLI_ALLOW_NPM_EXEC=1 but is not on PATH." >&2
-			exit 1
-		fi
-		if ! npm_auth_is_available; then
-			echo "Error: npm auth is missing in this process; cannot fetch $PACKAGE_NAME." >&2
-			print_npm_auth_hint
-			exit 1
-		fi
-		exec npm exec --yes --package "$PACKAGE_SPEC" -- harness "$@"
-	fi
+	run_npm_fallback "$@" || true
 
 	echo "Error: local $PACKAGE_NAME could not be resolved from this repo." >&2
 	echo "This is a local install/bootstrap problem, not a harness command failure." >&2

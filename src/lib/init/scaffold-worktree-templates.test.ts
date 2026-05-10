@@ -29,7 +29,7 @@ describe("scaffold worktree templates", () => {
 		const script = renderPrepareWorktreeScript("pnpm");
 
 		expect(script).toContain(
-			'branch_base="jscraik/feature/$repo_slug-worktree-$short_sha"',
+			'branch_base="codex/worktree/$repo_slug-worktree-$short_sha"',
 		);
 		expect(script).toContain(
 			'echo "[prepare-worktree] detached HEAD detected; creating branch $branch_name"',
@@ -38,6 +38,7 @@ describe("scaffold worktree templates", () => {
 			'git branch --set-upstream-to=origin/main "$branch_name"',
 		);
 		expect(script).toContain("scripts/check-git-common-config.sh");
+		expect(script).toContain("git merge-base --is-ancestor HEAD origin/main");
 		expect(script).toContain("git pull --ff-only origin main");
 		expect(script).toContain("node scripts/setup-git-hooks.js");
 		expect(script).toContain(

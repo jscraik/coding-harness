@@ -366,4 +366,22 @@ describe("classifyClosureEvidence", () => {
 		expect(result.classification).toBe("needs_human_triage");
 		expect(result.reasons).toEqual(["checks:wrong-sha"]);
 	});
+
+	it("classifies incomplete required checks as failing before SHA triage", () => {
+		const result = classifyClosureEvidence(
+			acceptedMergedRecord({
+				requiredChecks: [
+					{
+						name: "pr-pipeline",
+						provider: "circleci",
+						status: "in_progress",
+						conclusion: null,
+					},
+				],
+			}),
+		);
+
+		expect(result.classification).toBe("blocked_failing_check");
+		expect(result.reasons).toEqual(["checks:failing"]);
+	});
 });

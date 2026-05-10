@@ -95,6 +95,7 @@ prepend_standard_tool_paths() {
 		"/usr/sbin"
 		"/sbin"
 	)
+	PATH="${"${"}PATH:-/usr/bin:/bin}"
 	for (( idx=${"${"}#candidates[@]} - 1; idx >= 0; idx-- )); do
 		candidate="${"${"}candidates[$idx]}"
 		if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then

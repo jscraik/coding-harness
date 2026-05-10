@@ -117,6 +117,39 @@ const EXPECTED_TEMPLATE_PATHS = [
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
+function probePrependStandardToolPaths(environmentCheck: string): string {
+	const start = environmentCheck.indexOf("prepend_standard_tool_paths() {");
+	const end = environmentCheck.indexOf(
+		"\n\nprepend_standard_tool_paths",
+		start,
+	);
+	expect(start).toBeGreaterThanOrEqual(0);
+	expect(end).toBeGreaterThan(start);
+
+	const homeDir = mkdtempSync(join(tmpdir(), "harness-path-home-"));
+	const miseShims = join(homeDir, ".local", "share", "mise", "shims");
+	const localBin = join(homeDir, ".local", "bin");
+	mkdirSync(miseShims, { recursive: true });
+	mkdirSync(localBin, { recursive: true });
+
+	const helper = environmentCheck.slice(start, end);
+	const probe = spawnSync(
+		"/bin/bash",
+		[
+			"-u",
+			"-c",
+			`${helper}\nunset PATH\nprepend_standard_tool_paths\nprintf '%s' "$PATH"`,
+		],
+		{ encoding: "utf8", env: { HOME: homeDir } },
+	);
+
+	rmSync(homeDir, { recursive: true, force: true });
+	expect(probe.stderr).toBe("");
+	expect(probe.status).toBe(0);
+	expect(probe.stdout.split(":").slice(0, 2)).toEqual([miseShims, localBin]);
+	return probe.stdout;
+}
+
 describe("runInit", () => {
 	let tempDir: string;
 
@@ -2029,6 +2062,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("CHECK_ENVIRONMENT_REEXECED");
 			expect(environmentCheck).toContain('"/opt/homebrew/bin"');
 			expect(environmentCheck).toContain('"/usr/sbin"');
+			probePrependStandardToolPaths(environmentCheck);
 			expect(environmentCheck).toContain(
 				'eval "$(mise --cd "$REPO_ROOT" activate bash)"',
 			);

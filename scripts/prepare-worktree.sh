@@ -59,7 +59,7 @@ attach_branch_if_detached() {
 	fi
 
 	short_sha="$(git rev-parse --short HEAD)"
-	branch_base="jscraik/feature/$repo_slug-worktree-$short_sha"
+	branch_base="codex/worktree/$repo_slug-worktree-$short_sha"
 	branch_name="$branch_base"
 	suffix=1
 	while git show-ref --verify --quiet "refs/heads/$branch_name"; do
@@ -72,8 +72,12 @@ attach_branch_if_detached() {
 	if git show-ref --verify --quiet "refs/remotes/origin/main"; then
 		git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
 		echo "[prepare-worktree] tracking origin/main for $branch_name"
-		echo "[prepare-worktree] fast-forwarding $branch_name with origin/main"
-		git pull --ff-only origin main
+		if git merge-base --is-ancestor HEAD origin/main; then
+			echo "[prepare-worktree] fast-forwarding $branch_name with origin/main"
+			git pull --ff-only origin main
+		else
+			echo "[prepare-worktree] $branch_name diverges from origin/main; skipping fast-forward"
+		fi
 	fi
 }
 
