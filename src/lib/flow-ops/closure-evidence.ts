@@ -97,14 +97,31 @@ export interface ClosureEvidenceClassificationResult {
 
 const passingConclusions = new Set(["success", "skipped"]);
 
+/**
+ * Determine whether a Linear issue is considered active.
+ *
+ * @param linear - Linear metadata whose `status` is evaluated
+ * @returns `true` if `linear.status` is `"todo"` or `"in_progress"`, `false` otherwise
+ */
 function isLinearActive(linear: ClosureLinearEvidence): boolean {
 	return linear.status === "todo" || linear.status === "in_progress";
 }
 
+/**
+ * Determines whether the record contains implementation evidence.
+ *
+ * @returns `true` if the record includes a pull request or an eval artifact, `false` otherwise.
+ */
 function hasImplementationEvidence(record: ClosureEvidenceRecord): boolean {
 	return record.pullRequest !== undefined || record.evalArtifact !== undefined;
 }
 
+/**
+ * Builds a set of expected commit SHAs for required checks from a pull request.
+ *
+ * @param pullRequest - Pull request metadata containing `headSha` and optional `mergeSha`
+ * @returns A Set of lowercased SHA strings derived from `headSha` and `mergeSha`; missing values are omitted
+ */
 function expectedCheckShas(
 	pullRequest: ClosurePullRequestEvidence,
 ): Set<string> {
@@ -115,6 +132,12 @@ function expectedCheckShas(
 	);
 }
 
+/**
+ * Determines whether any required check was recorded against a commit SHA that does not match the pull request's expected SHAs.
+ *
+ * @param record - The closure evidence record containing `pullRequest` and `requiredChecks`
+ * @returns `true` if at least one required check has a string `checkedSha` that (case-insensitively) is not among the pull request's expected SHAs; `false` otherwise. Returns `false` when there is no pull request or no expected SHAs.
+ */
 function hasWrongShaCheck(record: ClosureEvidenceRecord): boolean {
 	if (!record.pullRequest) {
 		return false;
@@ -130,6 +153,12 @@ function hasWrongShaCheck(record: ClosureEvidenceRecord): boolean {
 	);
 }
 
+/**
+ * Determines whether any required check in the provided evidence record is incomplete or has a non-passing conclusion.
+ *
+ * @param record - The closure evidence record whose required checks are evaluated
+ * @returns `true` if at least one required check is not `"completed"` or is completed with a conclusion other than `"success"` or `"skipped"`, `false` otherwise.
+ */
 function hasFailingRequiredCheck(record: ClosureEvidenceRecord): boolean {
 	return record.requiredChecks.some((check) => {
 		if (check.status !== "completed") {
@@ -139,6 +168,12 @@ function hasFailingRequiredCheck(record: ClosureEvidenceRecord): boolean {
 	});
 }
 
+/**
+ * Determine whether the record's required checks exist and all have completed with passing conclusions.
+ *
+ * @param record - The closure evidence record whose `requiredChecks` will be evaluated
+ * @returns `true` if there is at least one required check and every required check has `status` === "completed" and a conclusion of `success` or `skipped`, `false` otherwise.
+ */
 function allRequiredChecksPassed(record: ClosureEvidenceRecord): boolean {
 	return (
 		record.requiredChecks.length > 0 &&
@@ -150,13 +185,21 @@ function allRequiredChecksPassed(record: ClosureEvidenceRecord): boolean {
 	);
 }
 
+/**
+ * Determines whether the record contains a present and valid evaluation artifact.
+ *
+ * @param record - The closure evidence record to inspect
+ * @returns `true` if an eval artifact is present and its `valid` flag is `true`, `false` otherwise
+ */
 function hasValidEval(record: ClosureEvidenceRecord): boolean {
 	return record.evalArtifact?.present === true && record.evalArtifact.valid;
 }
 
 /**
- * Classify a closure evidence record without reading live providers or mutating
- * external state.
+ * Determine the closure classification for a given closure evidence record.
+ *
+ * @param record - The evidence record used to determine closure state.
+ * @returns The classification result containing the chosen classification, a bounded `nextAction` recommendation, and the array of `reasons` that justified the decision.
  */
 export function classifyClosureEvidence(
 	record: ClosureEvidenceRecord,
