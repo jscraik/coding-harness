@@ -79,6 +79,8 @@ export interface ClosureEvidenceRecord {
 	pullRequest?: ClosurePullRequestEvidence;
 	/** Required checks for the pull request. */
 	requiredChecks: readonly ClosureRequiredCheckEvidence[];
+	/** Whether this slice declares eval proof as a closure requirement. */
+	evalRequired?: boolean;
 	/** Eval artifact evidence when the slice defines an eval. */
 	evalArtifact?: ClosureEvalEvidence;
 	/** Review and acceptance evidence. */
@@ -110,10 +112,12 @@ function isLinearActive(linear: ClosureLinearEvidence): boolean {
 /**
  * Determines whether the record contains implementation evidence.
  *
- * @returns `true` if the record includes a pull request or an eval artifact, `false` otherwise.
+ * @returns `true` if the record includes a pull request or a present eval artifact, `false` otherwise.
  */
 function hasImplementationEvidence(record: ClosureEvidenceRecord): boolean {
-	return record.pullRequest !== undefined || record.evalArtifact !== undefined;
+	return (
+		record.pullRequest !== undefined || record.evalArtifact?.present === true
+	);
 }
 
 /**
@@ -208,6 +212,26 @@ function hasValidEval(record: ClosureEvidenceRecord): boolean {
 }
 
 /**
+ * Determines whether the record's slice requires eval evidence before closure.
+ *
+ * @param record - The closure evidence record to inspect
+ * @returns `false` only when the record explicitly marks eval proof optional; `true` otherwise
+ */
+function requiresEval(record: ClosureEvidenceRecord): boolean {
+	return record.evalRequired !== false;
+}
+
+/**
+ * Determines whether eval evidence is satisfied for this closure record.
+ *
+ * @param record - The closure evidence record to inspect
+ * @returns `true` when eval is optional or when a present valid eval artifact exists
+ */
+function evalRequirementSatisfied(record: ClosureEvidenceRecord): boolean {
+	return !requiresEval(record) || hasValidEval(record);
+}
+
+/**
  * Determine the closure classification for a given closure evidence record.
  *
  * @param record - The evidence record used to determine closure state.
@@ -248,7 +272,11 @@ export function classifyClosureEvidence(
 		};
 	}
 
-	if (hasImplementationEvidence(record) && !hasValidEval(record)) {
+	if (
+		hasImplementationEvidence(record) &&
+		requiresEval(record) &&
+		!hasValidEval(record)
+	) {
 		return {
 			classification: "blocked_missing_eval",
 			nextAction: "Add or repair the eval artifact before closure.",
@@ -265,20 +293,20 @@ export function classifyClosureEvidence(
 		};
 	}
 
-	if (hasWrongShaCheck(record)) {
-		return {
-			classification: "needs_human_triage",
-			nextAction: "Refresh check evidence tied to the evaluated PR SHA.",
-			reasons: ["checks:wrong-sha"],
-		};
-	}
-
 	if (hasFailingRequiredCheck(record)) {
 		return {
 			classification: "blocked_failing_check",
 			nextAction:
 				"Clear failing, missing, or incomplete required checks before closure.",
 			reasons: ["checks:failing"],
+		};
+	}
+
+	if (hasWrongShaCheck(record)) {
+		return {
+			classification: "needs_human_triage",
+			nextAction: "Refresh check evidence tied to the evaluated PR SHA.",
+			reasons: ["checks:wrong-sha"],
 		};
 	}
 
@@ -293,7 +321,7 @@ export function classifyClosureEvidence(
 	if (
 		record.pullRequest?.state === "merged" &&
 		allRequiredChecksPassed(record) &&
-		hasValidEval(record)
+		evalRequirementSatisfied(record)
 	) {
 		if (isLinearActive(record.linear)) {
 			return {
