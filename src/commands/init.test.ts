@@ -912,7 +912,8 @@ describe("runInit", () => {
 			expect(content).toContain(
 				"[codex] fast-forwarding $branch_name with origin/main",
 			);
-			expect(content).toContain("git pull --ff-only origin main");
+			expect(content).toContain("git fetch --quiet origin main");
+			expect(content).toContain('git merge --ff-only "$target_ref"');
 			expect(content).toContain("npm install");
 			expect(content).toContain("prek --version");
 			expect(content).toContain(
@@ -1934,7 +1935,8 @@ describe("runInit", () => {
 			expect(prepareWorktree).toContain(
 				"[prepare-worktree] fast-forwarding $branch_name with origin/main",
 			);
-			expect(prepareWorktree).toContain("git pull --ff-only origin main");
+			expect(prepareWorktree).toContain("git fetch --quiet origin main");
+			expect(prepareWorktree).toContain('git merge --ff-only "$target_ref"');
 			expect(prepareWorktree).toContain('git switch -c "$branch_name"');
 			expect(newTask).toContain(
 				"[new-task] fetching latest $remote_name/$remote_base_branch",

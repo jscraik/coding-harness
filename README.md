@@ -654,6 +654,9 @@ After instruction discovery, use `AI/context/diagram-context.md` as the compact
 architecture map; it combines Mermaid architecture, dependency, database, and
 ERD diagrams, with `.diagram/manifest.json` available when a narrower diagram
 file is enough.
+Flow Ops closure-evidence changes that alter source classification or validation
+routing are architecture-context changes: refresh and commit
+`AI/context/diagram-context.md` with the docs-gate-required governance surfaces.
 
 ## Requirements
 

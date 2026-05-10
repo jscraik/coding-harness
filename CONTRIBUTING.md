@@ -25,6 +25,9 @@
 - Required checks must pass before merge.
 - CodeRabbit + Codex review artifacts are required before merge.
 - The coding agent must not approve its own PR; review must be independent.
+- Flow Ops closure-evidence changes that reroute validation or source
+  classification must refresh `AI/context/diagram-context.md` and the
+  docs-gate-required governance surfaces in the same PR.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
 - CI ownership is contractual: CircleCI owns PR governance, CodeRabbit remains an
