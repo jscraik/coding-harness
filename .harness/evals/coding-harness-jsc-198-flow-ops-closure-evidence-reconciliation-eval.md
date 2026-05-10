@@ -6,7 +6,7 @@ canonical_slug: jsc-198-flow-ops-closure-evidence-reconciliation
 title: JSC-198 Flow Ops Closure Evidence Reconciliation Eval
 harness_stage: he-eval-report
 status: final
-date: 2026-05-09
+date: 2026-05-10
 traceability_required: true
 origin: .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md
 linear_issue: JSC-198
@@ -20,9 +20,9 @@ linear_milestone: Control loop hardening and flow telemetry
 
 Status: complete_for_recommendation
 Linear Completion Recommendation: Blocked
-Primary Blockers: JSC-198 remains Todo in Linear; PR #235 is draft and blocked
-by stale/failed PR-template pipeline evidence plus pending CodeRabbit review;
-human acceptance for external mutation is not recorded.
+Primary Blockers: JSC-198 remains Todo in Linear; PR #235 is draft with
+`pr-pipeline` still in progress and CodeRabbit pending; human acceptance for
+external mutation is not recorded.
 Confidence: high for IU-198-003 proof and IU-198-004 recommendation posture.
 
 ## Evaluated Slice
@@ -52,9 +52,11 @@ Linear Status: blocked
 Linear Milestone: Control loop hardening and flow telemetry
 Recommended Action: leave JSC-198 open; do not transition, comment, or close from
 this eval alone.
-Blocking Evidence: PR #235 remains draft, PR-template/pr-pipeline evidence is not
-current-successful, CodeRabbit is pending, and external human acceptance is not
-recorded.
+Blocking Evidence: PR #235 remains draft at head
+`e88b3344452cba631046339cda6c12b98b033c32`; CircleCI `pr-template`,
+`security-scan`, and most job contexts are successful, but the aggregate
+`pr-pipeline` check is still in progress, CodeRabbit is pending, and external
+human acceptance is not recorded.
 
 ## Linear Definition of Done Status
 
@@ -78,8 +80,8 @@ Proof Artifact Links:
 Missing Identifiers: external human acceptance and independent CodeRabbit
 completion evidence are not recorded.
 Traceability Repair: use PR #235 as the draft branch evidence, but do not use it
-as JSC-198 closure proof until the PR leaves draft, required checks are current,
-and independent review is complete.
+as JSC-198 closure proof until the PR leaves draft by human decision, required
+checks are current and complete, and independent review is complete.
 
 ## Source Artifact Trace
 
@@ -100,7 +102,7 @@ Other Source Artifacts:
 
 | Linear issue | Source acceptance IDs | Plan units | Acceptance IDs | PR evidence |
 | --- | --- | --- | --- | --- |
-| JSC-198 | SA-198-001, SA-198-003, SA-198-006, SA-198-007, SA-198-008, SA-198-009, SA-198-010, SA-198-011, SA-198-012 | IU-198-001, IU-198-002, IU-198-003, IU-198-004 | SA-198-001, SA-198-003, SA-198-006, SA-198-007, SA-198-008, SA-198-009, SA-198-010, SA-198-011, SA-198-012 | Draft PR #235; not closure proof until current required checks and independent review pass. |
+| JSC-198 | SA-198-001, SA-198-003, SA-198-006, SA-198-007, SA-198-008, SA-198-009, SA-198-010, SA-198-011, SA-198-012 | IU-198-001, IU-198-002, IU-198-003, IU-198-004 | SA-198-001, SA-198-003, SA-198-006, SA-198-007, SA-198-008, SA-198-009, SA-198-010, SA-198-011, SA-198-012 | Draft PR #235 at `e88b3344452cba631046339cda6c12b98b033c32`; not closure proof until aggregate PR checks and independent review complete. |
 
 ## Planned Proof Check
 
@@ -112,7 +114,7 @@ Proof Produced: live Linear reads for JSC-198/JSC-199/JSC-200/JSC-201; GitHub
 PR reads for #232/#234; GitHub check-run reads for both PR head SHAs; direct
 classifier execution with `pnpm exec tsx`.
 Proof Missing: external human acceptance, CodeRabbit completion evidence, and
-current successful PR-template/pr-pipeline evidence for PR #235.
+completed successful aggregate `pr-pipeline` evidence for PR #235.
 Interpretation: IU-198-003 is proven enough to proceed to human-reviewed
 recommendation work, but not enough to close Linear.
 Blocks Closure: yes
@@ -151,6 +153,22 @@ repos/jscraik/coding-harness/commits/<sha>/check-runs`.
 Confidence: high
 Blocks Closure: no
 Required Action: use this as read-only proof only.
+
+Gate: PR #235 delivery-state refresh
+Expected: verify the current PR head, draft state, review state, and check
+rollup after pushing the repair branch.
+Actual: PR #235 is draft at head
+`e88b3344452cba631046339cda6c12b98b033c32`; `pr-template`,
+`security-scan`, Socket checks, and multiple CircleCI job contexts are
+successful; aggregate `pr-pipeline`, CodeRabbit, and several CircleCI contexts
+remain pending or in progress.
+Status: partial
+Evidence: `gh pr view 235 --json url,isDraft,headRefName,headRefOid,mergeStateStatus,reviewDecision,statusCheckRollup`
+on 2026-05-10.
+Confidence: high
+Blocks Closure: yes
+Required Action: wait for current PR checks and independent review before any
+Linear closure recommendation.
 
 Gate: classifier live execution
 Expected: classify live evidence without external mutation.
@@ -309,22 +327,27 @@ Produced:
 Required: focused classifier tests, live-source evidence artifact,
 no-mutation proof, and `bash scripts/validate-codestyle.sh`.
 Missing: human accept/challenge/rework steering, CodeRabbit completion, and
-current successful PR-template/pr-pipeline evidence for PR #235.
+completed successful aggregate `pr-pipeline` evidence for PR #235.
 Planned Before Implementation: yes
 Blocks Completion: yes
 Attach or Link Back to Linear: not yet; no Linear comment mutation authorized.
 
 ## Failures / Regressions
 
-Failure or Regression: live proof found wrong-SHA classification for merged PR
-check runs tied to PR head SHA.
+Failure or Regression: live proof and HE review found weak-check classification
+gaps for merged PR check runs, skipped checks, and missing check SHAs.
 Evidence: first live classifier run returned `needs_human_triage` for PR #232
 with reason `checks:wrong-sha`; GitHub check runs showed CircleCI checks tied
-to the PR head SHA.
+to the PR head SHA. HE code review then found that skipped required checks were
+counted as passing and missing `checkedSha` evidence could evade wrong-SHA
+triage.
 Required Corrective Action: accept both PR head SHA and merge SHA as valid
-check evidence, then rerun typecheck and focused tests.
+check evidence, count only `success` as a passing conclusion, treat missing
+`checkedSha` as weak/wrong-SHA evidence, preserve missing required checks as
+`checks:missing`, then rerun focused tests and learning-loop gates.
 Follow-Up Justified: no new Linear issue; the repair is in the same phase.
-Blocks Closure: yes until validation passes.
+Blocks Closure: no for the local repair after validation; yes for Linear
+completion until PR #235 review/check evidence and human acceptance complete.
 
 ## Linear Completion Recommendation
 
@@ -418,10 +441,15 @@ Affected Files/Modules: src/lib/flow-ops/closure-evidence.ts,
 src/lib/flow-ops/closure-evidence.test.ts,
 .harness/evals/coding-harness-jsc-198-flow-ops-closure-evidence-reconciliation-eval.md
 Command or Inspection Method: Linear connector reads, `gh pr view`, `gh api`,
-`pnpm exec tsx`, `pnpm typecheck`, `pnpm test -- src/lib/flow-ops/closure-evidence.test.ts`.
+`pnpm exec tsx`, `pnpm typecheck`, `pnpm test -- src/lib/flow-ops/closure-evidence.test.ts`,
+`pnpm vitest run src/lib/flow-ops/closure-evidence.test.ts`,
+`bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files src/lib/flow-ops/closure-evidence.ts,src/lib/flow-ops/closure-evidence.test.ts --json`,
+`bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files src/lib/flow-ops/closure-evidence.ts,src/lib/flow-ops/closure-evidence.test.ts --json`,
+`bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json`,
+`bash scripts/validate-codestyle.sh --fast`.
 Confidence: high for proof and recommendation split; medium for final closure
-readiness because independent review and current PR-template CI evidence remain
-external blockers.
+readiness because independent review and current aggregate PR-pipeline evidence
+remain external blockers.
 Operational Impact: next agents can see that live evidence is classifiable, but
 external closure remains blocked.
 Blocks Completion: yes
