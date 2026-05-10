@@ -1739,7 +1739,7 @@ describe("runInit", () => {
 				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
 			);
 			expect(makefile).toContain(
-				'changed_files="$$(git diff --name-only --diff-filter=ACMRD "$$base_ref"...HEAD --)"',
+				'changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)"',
 			);
 			expect(makefile).toContain(
 				"grep -v '^\\.codex/environments/environment\\.toml$$'",
@@ -1762,7 +1762,7 @@ describe("runInit", () => {
 				"\t@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
 			expect(makefile).toContain(
-				'git diff --name-only --diff-filter=ACMRD "$$base_ref"...HEAD -- > "$$tmp_changed_files"',
+				'git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"',
 			);
 			expect(makefile).toContain(
 				'bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"',

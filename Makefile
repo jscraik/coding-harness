@@ -52,7 +52,7 @@ hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 hooks-pre-push: ## Run local pre-push governance gates before pushing
 	@if base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)" && \
 		[ -n "$$base_ref" ] && \
-		changed_files="$$(git diff --name-only --diff-filter=ACMRD "$$base_ref"...HEAD --)" && \
+		changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)" && \
 		[ -n "$$changed_files" ] && \
 		! printf '%s\n' "$$changed_files" | grep -v '^\.codex/environments/environment\.toml$$' >/dev/null; then \
 		echo "Environment-only push detected; running check-environment only."; \
@@ -64,12 +64,12 @@ hooks-pre-push: ## Run local pre-push governance gates before pushing
 	trap 'rm -f "$$tmp_changed_files"' EXIT; \
 	base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)"; \
 	if [ -n "$$base_ref" ]; then \
-		git diff --name-only --diff-filter=ACMRD "$$base_ref"...HEAD -- > "$$tmp_changed_files"; \
+		git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"; \
 	fi; \
 	if [ -s "$$tmp_changed_files" ]; then \
 		bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"; \
 	else \
-		bash ./scripts/check-diagram-freshness.sh; \
+		bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"; \
 	fi
 	pnpm exec tsx src/cli.ts tooling-audit --path . --json
 	@bash ./scripts/check-environment.sh
