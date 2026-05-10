@@ -25,6 +25,9 @@
 - Required checks must pass before merge.
 - CodeRabbit + Codex review artifacts are required before merge.
 - The coding agent must not approve its own PR; review must be independent.
+- Flow Ops closure-evidence changes that reroute validation or source
+  classification must refresh `AI/context/diagram-context.md` and the
+  docs-gate-required governance surfaces in the same PR.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
 - CI ownership is contractual: CircleCI owns PR governance, CodeRabbit remains an
@@ -181,9 +184,9 @@ the change repeats known review friction. Run the loop when
 scope:
 
 ```bash
-harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
-harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
-harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json
+bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json
 ```
 
 The `--files` value accepts comma-separated paths or multiple following path

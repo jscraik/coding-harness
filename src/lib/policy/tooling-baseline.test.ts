@@ -47,6 +47,12 @@ describe("tooling baseline codex actions", () => {
 		expect(action?.icon).toBe("tool");
 		expect(action?.command).toContain("git rev-parse --is-inside-work-tree");
 		expect(action?.command).toContain(
+			[
+				'branch_base="${BRANCH_PREFIX:',
+				'-jscraik/feature}/$repo_slug-worktree-$short_sha"',
+			].join(""),
+		);
+		expect(action?.command).toContain(
 			'echo "[codex] detached HEAD detected; creating branch $branch_name"',
 		);
 		expect(action?.command).toContain('git switch -c "$branch_name"');
@@ -59,7 +65,8 @@ describe("tooling baseline codex actions", () => {
 		expect(action?.command).toContain(
 			'echo "[codex] fast-forwarding $branch_name with origin/main"',
 		);
-		expect(action?.command).toContain("git pull --ff-only origin main");
+		expect(action?.command).toContain("git fetch --quiet origin main");
+		expect(action?.command).toContain('git merge --ff-only "$target_ref"');
 		expect(action?.command).toContain("mise trust --yes .mise.toml || true");
 		expect(action?.command).toContain("mise install");
 	});

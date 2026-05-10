@@ -57,7 +57,7 @@ class ReferenceReport:
 def parse_args() -> argparse.Namespace:
     """
     Builds and parses command-line arguments for validating skill reference contracts.
-
+    
     Returns:
         argparse.Namespace: Parsed arguments with the following attributes:
             skill_root (Path): Path to the skill root to validate (defaults to the packaged script's skill root).
@@ -97,10 +97,10 @@ def load_files(
 ) -> tuple[list[tuple[Path, str]], list[str], list[tuple[str, str]]]:
     """
     Load expected target files and report missing or unreadable entries.
-
+    
     Parameters:
         skill_root (Path): Base directory under which TARGET_FILES are resolved.
-
+    
     Returns:
         tuple[list[tuple[Path, str]], list[str], list[tuple[str, str]]]: Loaded
         file content, missing relative paths, and unreadable relative paths with
@@ -130,11 +130,11 @@ def load_files(
 def find_line_number(text: str, match_start: int) -> int:
     """
     Compute the 1-based line number that contains the character index `match_start` within `text`.
-
+    
     Parameters:
         text (str): The source text in which to locate the line.
         match_start (int): Zero-based character index into `text` representing the start position of a match.
-
+    
     Returns:
         int: The line number (starting at 1) that contains `match_start`. The result is equal to the count of newline characters before `match_start` plus one.
     """
@@ -148,12 +148,12 @@ def build_report(
 ) -> ReferenceReport:
     """
     Builds a ReferenceReport describing missing files and pattern violations found under a skill root.
-
+    
     Parameters:
         skill_root (Path): Root directory to search for expected target files.
         package_form (str): Identifier for the package form to include in the report.
         truth_source (str): Human-readable source identifier to include in the report.
-
+    
     Returns:
         ReferenceReport: Report with `status` set to "fail" if any findings were recorded (missing files, banned-pattern matches, or missing required patterns), otherwise "pass". The report's `checked_files` lists loaded file paths relative to `skill_root`, and `findings` contains detailed ReferenceFinding entries for each issue.
     """
@@ -226,14 +226,14 @@ def build_report(
 def emit_text(report: ReferenceReport) -> None:
     """
     Prints a human-readable summary of a ReferenceReport to standard output.
-
+    
     When the report contains findings, prints a "FAIL reference contract check:" header followed by one line per finding. Each finding line includes a location if available:
     - "<file>:<line>: <message>" when both file and line exist,
     - "<file>: <message>" when only file exists,
     - "<message>" when no file is present.
-
+    
     When the report has no findings, prints "PASS reference contract check".
-
+    
     Parameters:
         report (ReferenceReport): The result of a contract check whose findings will be emitted.
     """
@@ -256,9 +256,9 @@ def emit_text(report: ReferenceReport) -> None:
 def main() -> int:
     """
     Run the command-line validation flow: parse CLI arguments, build a reference report for the given skill root, and emit results.
-
+    
     Depending on the `--json` flag, prints the report as JSON or as human-readable text to stdout. Exits with code 1 if the report status is "fail", 0 otherwise.
-
+    
     Returns:
         int: 1 when the validation report status is `"fail"`, 0 when it is `"pass"`.
     """

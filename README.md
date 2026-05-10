@@ -24,8 +24,6 @@ The shortest honest description of the project today is:
 - it validates review, docs, plan, and authorization policy before merge
 - it supports staged CI migration, rollback, and autonomy expansion with
   artifact-backed evidence
-- it keeps generated Codex environment actions aligned with repo scripts,
-  including test/eval script aliases and detached-worktree bootstrap behavior
 
 ## Table of Contents
 
@@ -344,6 +342,12 @@ common case, `init --track` gives you the contract, workflow scaffolding,
 review policy surfaces, repo-local verification scripts, and enough metadata to
 upgrade or roll back cleanly later.
 
+Generated readiness scripts prepend existing user-writable and
+platform-standard tool directories before validation. That lets non-login agent
+shells find already-installed tools such as `mise`, Homebrew binaries,
+`/usr/sbin`, and `/sbin` without silently installing anything or mutating global
+state.
+
 Use these follow-ups when the repo already has harness material:
 
 ```bash
@@ -650,6 +654,9 @@ After instruction discovery, use `AI/context/diagram-context.md` as the compact
 architecture map; it combines Mermaid architecture, dependency, database, and
 ERD diagrams, with `.diagram/manifest.json` available when a narrower diagram
 file is enough.
+Flow Ops closure-evidence changes that alter source classification or validation
+routing are architecture-context changes: refresh and commit
+`AI/context/diagram-context.md` with the docs-gate-required governance surfaces.
 
 ## Requirements
 
