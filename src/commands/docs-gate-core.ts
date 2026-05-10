@@ -1105,14 +1105,14 @@ function resolveChangedFiles(
 			repoRoot,
 			"diff",
 			"--name-status",
-			"--diff-filter=ACMRD",
+			"--diff-filter=ACMRDT",
 		] as const;
 		const workingTreeDiffArgs = [
 			"-C",
 			repoRoot,
 			"diff",
 			"--name-status",
-			"--diff-filter=ACMRD",
+			"--diff-filter=ACMRDT",
 		] as const;
 		const stagedDiffArgs = [
 			"-C",
@@ -1120,7 +1120,7 @@ function resolveChangedFiles(
 			"diff",
 			"--name-status",
 			"--cached",
-			"--diff-filter=ACMRD",
+			"--diff-filter=ACMRDT",
 		] as const;
 		const baseRefCandidates = [
 			options.mergeQueueBaseSha,

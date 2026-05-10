@@ -1739,6 +1739,15 @@ describe("runInit", () => {
 				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
 			);
 			expect(makefile).toContain(
+				'changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)"',
+			);
+			expect(makefile).toContain(
+				"grep -v '^\\.codex/environments/environment\\.toml$$'",
+			);
+			expect(makefile).toContain(
+				"Environment-only push detected; running check-environment only.",
+			);
+			expect(makefile).toContain(
 				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
 			);
 
@@ -1753,7 +1762,10 @@ describe("runInit", () => {
 				"\t@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
 			expect(makefile).toContain(
-				"\t@bash ./scripts/check-diagram-freshness.sh",
+				'git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"',
+			);
+			expect(makefile).toContain(
+				'bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"',
 			);
 			expect(makefile).toContain(
 				"\t@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json",
