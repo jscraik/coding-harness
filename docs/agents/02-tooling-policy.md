@@ -131,7 +131,7 @@ The `scripts/prepare-worktree.sh` script defines a canonical branch naming conve
 **Format:** `jscraik/feature/$repo_slug-worktree-$short_sha`
 
 **Components:**
-- `$repo_slug`: sanitized repository directory name (lowercased, non-alphanumeric characters replaced with hyphens, leading/trailing hyphens trimmed)
+- `$repo_slug`: sanitized repository directory name (lower-case, non-alphanumeric characters replaced with hyphens, leading/trailing hyphens trimmed)
 - `$short_sha`: short commit SHA from `git rev-parse --short HEAD`
 
 **Example:**
