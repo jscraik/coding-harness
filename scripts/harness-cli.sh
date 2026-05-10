@@ -4,7 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 PACKAGE_NAME="@brainwav/coding-harness"
-PACKAGE_SPEC="${PACKAGE_NAME}@latest"
 NPM_REGISTRY="https://registry.npmjs.org/"
 
 if ! command -v node >/dev/null 2>&1; then
@@ -12,6 +11,29 @@ if ! command -v node >/dev/null 2>&1; then
 	echo "Install Node.js and retry." >&2
 	exit 1
 fi
+
+resolve_package_spec() {
+	if [[ -f "$REPO_ROOT/package.json" ]]; then
+		local repo_version
+		repo_version="$(node -e '
+			const { readFileSync } = require("node:fs");
+			try {
+				const pkg = JSON.parse(readFileSync(process.argv[1], "utf8"));
+				const dep = pkg.dependencies?.["@brainwav/coding-harness"] || pkg.devDependencies?.["@brainwav/coding-harness"];
+				if (dep && !dep.startsWith("file:") && !dep.startsWith("link:") && !dep.startsWith("workspace:")) {
+					console.log(dep.replace(/^[~^]/, ""));
+				}
+			} catch {}
+		' "$REPO_ROOT/package.json" 2>/dev/null || true)"
+		if [[ -n "$repo_version" ]]; then
+			echo "${PACKAGE_NAME}@$repo_version"
+			return
+		fi
+	fi
+	echo "${PACKAGE_NAME}@latest"
+}
+
+PACKAGE_SPEC="$(resolve_package_spec)"
 
 is_harness_source_repo() {
 	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
