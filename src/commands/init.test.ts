@@ -133,6 +133,8 @@ function probePrependStandardToolPaths(environmentCheck: string): string {
 	mkdirSync(localBin, { recursive: true });
 
 	const helper = environmentCheck.slice(start, end);
+
+	// Test with unset PATH
 	const probe = spawnSync(
 		"/bin/bash",
 		[
@@ -142,10 +144,31 @@ function probePrependStandardToolPaths(environmentCheck: string): string {
 		{ encoding: "utf8", env: { HOME: homeDir } },
 	);
 
-	rmSync(homeDir, { recursive: true, force: true });
 	expect(probe.stderr).toBe("");
 	expect(probe.status).toBe(0);
 	expect(probe.stdout.split(":").slice(0, 2)).toEqual([miseShims, localBin]);
+
+	// Test with pre-set PATH to validate precedence
+	const customDir = join(homeDir, "custom");
+	const pathTail = "/usr/bin:/bin";
+	mkdirSync(customDir, { recursive: true });
+
+	const probeWithPreset = spawnSync(
+		"/bin/bash",
+		[
+			"-c",
+			`set -u\n${helper}\nexport PATH="${customDir}:${pathTail}"\nprepend_standard_tool_paths\nprintf '%s' "$PATH"`,
+		],
+		{ encoding: "utf8", env: { HOME: homeDir } },
+	);
+
+	rmSync(homeDir, { recursive: true, force: true });
+	expect(probeWithPreset.stderr).toBe("");
+	expect(probeWithPreset.status).toBe(0);
+	const presetPathEntries = probeWithPreset.stdout.split(":");
+	expect(presetPathEntries[0]).toBe(customDir);
+	expect(presetPathEntries.slice(0, 3)).toEqual([customDir, miseShims, localBin]);
+
 	return probe.stdout;
 }
 
@@ -1785,7 +1808,7 @@ describe("runInit", () => {
 				"\t@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
 			expect(makefile).toContain(
-				"\t@bash ./scripts/check-diagram-freshness.sh",
+				"\t@bash ./scripts/check-diagram-freshness.sh --changed-files",
 			);
 			expect(makefile).toContain(
 				"\t@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json",
@@ -2627,16 +2650,10 @@ exit 1
 				},
 			);
 			const npmAuthFailureOutput = `${npmAuthFailureRun.stdout}${npmAuthFailureRun.stderr}`;
-			if (npmAuthFailureRun.status === 0) {
-				expect(npmAuthFailureRun.stdout).toContain(
-					`Using harness runner: global npm harness (${fakeNpmHarness})`,
-				);
-			} else {
-				expect(npmAuthFailureRun.status).toBe(1);
-				expect(npmAuthFailureOutput).toContain(
-					"Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness.",
-				);
-			}
+			expect(npmAuthFailureRun.status).toBe(1);
+			expect(npmAuthFailureOutput).toContain(
+				"Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness.",
+			);
 
 			const npmFallbackRun = spawnSync(
 				"bash",

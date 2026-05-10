@@ -595,8 +595,8 @@ the next unit starts.
 
 Plan artifact validation:
 
-- `python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py" .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md`
-- `python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py" .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md`
+- `: "${AGENT_SKILLS_ROOT:?AGENT_SKILLS_ROOT must be set}" && python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py" .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md`
+- `: "${AGENT_SKILLS_ROOT:?AGENT_SKILLS_ROOT must be set}" && python3 "$AGENT_SKILLS_ROOT/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py" .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md`
 - `pnpm markdownlint .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md`
 
 Phase validation:
