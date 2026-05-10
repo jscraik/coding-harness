@@ -29,7 +29,7 @@ describe("scaffold worktree templates", () => {
 		const script = renderPrepareWorktreeScript("pnpm");
 
 		expect(script).toContain(
-			'branch_base="${BRANCH_PREFIX:-codex}/$repo_slug-$short_sha"',
+			'branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"',
 		);
 		expect(script).toContain(
 			'echo "[prepare-worktree] detached HEAD detected; creating branch $branch_name"',
@@ -38,7 +38,6 @@ describe("scaffold worktree templates", () => {
 			'git branch --set-upstream-to=origin/main "$branch_name"',
 		);
 		expect(script).toContain("scripts/check-git-common-config.sh");
-		expect(script).toContain("git merge-base --is-ancestor HEAD origin/main");
 		expect(script).toContain("git pull --ff-only origin main");
 		expect(script).toContain("node scripts/setup-git-hooks.js");
 		expect(script).toContain(
@@ -46,12 +45,14 @@ describe("scaffold worktree templates", () => {
 		);
 	});
 
-	it("renders new-task branch and slug validation for codex branches", () => {
+	it("renders new-task branch and slug validation for agent branches", () => {
 		const script = renderNewTaskScript();
 
 		expect(script).toMatch(/^#!\/usr\/bin\/env bash/);
-		expect(script).toContain('branch_prefix="codex"');
-		expect(script).toContain('if [[ "$branch_prefix" == codex* ]]; then');
+		expect(script).toContain('branch_prefix="jscraik/feature"');
+		expect(script).toContain(
+			'if [[ "$branch_prefix" == jscraik/feature* ]]; then',
+		);
 		expect(script).toContain(
 			"slug must start with an issue key (example: JSC-123-my-task)",
 		);

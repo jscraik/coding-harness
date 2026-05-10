@@ -9,9 +9,8 @@
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { AGENT_BRANCH_PREFIX } from "./scaffold-root-command-templates.js";
 import { renderInstallCommand } from "./scaffold-shell-templates.js";
-
-const AGENT_BRANCH_PREFIX = "codex";
 
 /**
  * Generate a bash script that prepares a git worktree for local hooks and checks.
@@ -69,6 +68,7 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	exit 1
 fi
 
+# attach_branch_if_detached attaches HEAD to a new uniquely named branch when the repository is in a detached HEAD state (branch name uses the \`${AGENT_BRANCH_PREFIX}/<repo>-worktree-<short_sha>\` pattern); if already on a branch it prints that branch.
 attach_branch_if_detached() {
 	current_branch="$(git symbolic-ref --short -q HEAD || true)"
 	if [[ -n "$current_branch" ]]; then
@@ -82,7 +82,7 @@ attach_branch_if_detached() {
 	fi
 
 	short_sha="$(git rev-parse --short HEAD)"
-	branch_base="${"${"}BRANCH_PREFIX:-${AGENT_BRANCH_PREFIX}}/$repo_slug-$short_sha"
+	branch_base="${"${"}BRANCH_PREFIX:-${AGENT_BRANCH_PREFIX}}/$repo_slug-worktree-$short_sha"
 	branch_name="$branch_base"
 	suffix=1
 	while git show-ref --verify --quiet "refs/heads/$branch_name"; do
@@ -146,5 +146,10 @@ export function renderNewTaskScript(): string {
 	const scriptPath = fileURLToPath(
 		new URL("../../../scripts/new-task.sh", import.meta.url),
 	);
-	return readFileSync(scriptPath, "utf-8");
+	return readFileSync(scriptPath, "utf-8")
+		.replace(
+			"Branch prefix (default: codex)",
+			"Branch prefix (default: jscraik/feature)",
+		)
+		.replace('branch_prefix="codex"', 'branch_prefix="jscraik/feature"');
 }

@@ -2730,10 +2730,10 @@ exit 1
 			};
 
 			expect(runNewTask("HEAD~1", "jsc-101-commit-ish-head")).toContain(
-				"[new-task] branch: codex/jsc-101-commit-ish-head",
+				"[new-task] branch: jscraik/feature/jsc-101-commit-ish-head",
 			);
 			expect(runNewTask("v0.0.1", "jsc-102-commit-ish-tag")).toContain(
-				"[new-task] branch: codex/jsc-102-commit-ish-tag",
+				"[new-task] branch: jscraik/feature/jsc-102-commit-ish-tag",
 			);
 			expect(runNewTask(firstSha, "jsc-103-commit-ish-sha")).toContain(
 				`[new-task] base: ${firstSha}`,
@@ -3043,7 +3043,7 @@ exit 1
 			expect(scaffoldedScript).toBe(runtimeScript);
 		});
 
-		it("keeps the repo-local new-task helper aligned with scaffold output", () => {
+		it("keeps the scaffolded new-task helper aligned with the downstream branch policy", () => {
 			writeFileSync(
 				join(tempDir, "pnpm-lock.yaml"),
 				"lockfileVersion: '9.0'\n",
@@ -3061,7 +3061,14 @@ exit 1
 				join(tempDir, "scripts/new-task.sh"),
 				"utf-8",
 			);
-			expect(scaffoldedScript).toBe(runtimeScript);
+			expect(scaffoldedScript).toBe(
+				runtimeScript
+					.replace(
+						"Branch prefix (default: codex)",
+						"Branch prefix (default: jscraik/feature)",
+					)
+					.replace('branch_prefix="codex"', 'branch_prefix="jscraik/feature"'),
+			);
 		});
 	});
 });

@@ -10,7 +10,7 @@
 import { renderInstallCommand } from "./scaffold-shell-templates.js";
 
 /** Default agent branch prefix emitted into generated governance files. */
-export const AGENT_BRANCH_PREFIX = "codex";
+export const AGENT_BRANCH_PREFIX = "jscraik/feature";
 
 /**
  * Build the shell command to invoke a package script using the given package manager.

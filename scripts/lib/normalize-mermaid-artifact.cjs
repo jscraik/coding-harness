@@ -127,10 +127,13 @@ const normalizeDiagramContextLines = (lines) => {
 
 	const volatileContextSections = new Set([
 		"agent",
+		"architecture",
 		"c4context",
 		"class",
+		"events",
 		"flow",
 		"security",
+		"sequence",
 		"user",
 	]);
 
