@@ -46,6 +46,10 @@ linear_milestone: Control loop hardening and flow telemetry
 
 Pass.
 
+Superseded by the implementation phase in PR #235 after the user authorized
+runtime source, fixture, test, eval, and governance artifact changes for the
+closure-evidence classifier.
+
 The deepened plan is suitable for `he-work` on `IU-198-001` only. It keeps the
 first unit read-only, prevents broad telemetry expansion, requires current
 Linear/GitHub/CircleCI/eval evidence before classification, and adds explicit
@@ -178,10 +182,10 @@ The referenced scripts are `he_artifact_identity_lint.py`,
 | Project | `coding-harness` |
 | Initiative | `Dev Portfolio` |
 | Milestone | `Control loop hardening and flow telemetry` |
-| Execution route | `he-work` for `IU-198-001` only |
+| Execution route | Superseded by PR #235 implementation phase after `IU-198-001` inventory authorization |
 | Required first output | `.harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-inventory.md` |
 | External mutation allowed | No |
-| Runtime source edits allowed | No |
+| Runtime source edits allowed | Superseded by PR #235 implementation phase |
 
 ## Linear Acceptance Traceability
 
@@ -194,12 +198,13 @@ The referenced scripts are `he_artifact_identity_lint.py`,
 
 ## Recommended Next Step
 
-Run `he-work` for `IU-198-001` only after explicit user authorization.
+Superseded by PR #235 implementation phase after explicit user authorization.
 
-The first implementation output should be:
+The first inventory output was:
 
 `.harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-inventory.md`
 
-Do not start `IU-198-002`, edit runtime code, mutate Linear, mutate GitHub,
-mutate CircleCI, create labels, or enforce done/intake gates during the first
-phase.
+The original first-phase ban on runtime edits is retained here as historical
+plan-gate evidence only; PR #235 superseded it for the implementation phase.
+Do not start `IU-198-002`, mutate Linear, mutate GitHub, mutate CircleCI, create
+labels, or enforce done/intake gates without a later approval artifact.

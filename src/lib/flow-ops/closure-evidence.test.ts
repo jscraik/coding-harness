@@ -147,6 +147,19 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["eval:missing"]);
 	});
 
+	it("allows eval-optional implementation evidence to complete without an eval artifact", () => {
+		const { evalArtifact: _evalArtifact, ...record } = acceptedMergedRecord({
+			evalRequired: false,
+		});
+
+		const result = classifyClosureEvidence(record);
+
+		expect(result.classification).toBe("complete_linear_stale");
+		expect(result.reasons).toEqual(
+			expect.arrayContaining(["checks:passed", "eval:not-required"]),
+		);
+	});
+
 	it("fails closed when live Linear evidence is unavailable", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
@@ -403,6 +416,13 @@ describe("classifyClosureEvidence", () => {
 						provider: "circleci",
 						status: "in_progress",
 						conclusion: null,
+					},
+					{
+						name: "security-scan",
+						provider: "circleci",
+						status: "completed",
+						conclusion: "success",
+						checkedSha: "ffffffffffffffffffffffffffffffffffffffff",
 					},
 				],
 			}),

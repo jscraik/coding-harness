@@ -79,6 +79,8 @@ export interface ClosureEvidenceRecord {
 	pullRequest?: ClosurePullRequestEvidence;
 	/** Required checks for the pull request. */
 	requiredChecks: readonly ClosureRequiredCheckEvidence[];
+	/** Whether this slice declares eval evidence as a closure requirement. */
+	evalRequired?: boolean;
 	/** Eval artifact evidence when the slice defines an eval. */
 	evalArtifact?: ClosureEvalEvidence;
 	/** Review and acceptance evidence. */
@@ -210,6 +212,16 @@ function hasValidEval(record: ClosureEvidenceRecord): boolean {
 }
 
 /**
+ * Determines whether the record must provide valid eval evidence before closure.
+ *
+ * @param record - The closure evidence record to inspect
+ * @returns `true` unless the record explicitly declares eval evidence optional
+ */
+function requiresEval(record: ClosureEvidenceRecord): boolean {
+	return record.evalRequired !== false;
+}
+
+/**
  * Determine the closure classification for a given closure evidence record.
  *
  * @param record - The evidence record used to determine closure state.
@@ -250,7 +262,11 @@ export function classifyClosureEvidence(
 		};
 	}
 
-	if (hasImplementationEvidence(record) && !hasValidEval(record)) {
+	if (
+		hasImplementationEvidence(record) &&
+		requiresEval(record) &&
+		!hasValidEval(record)
+	) {
 		return {
 			classification: "blocked_missing_eval",
 			nextAction: "Add or repair the eval artifact before closure.",
@@ -268,20 +284,20 @@ export function classifyClosureEvidence(
 			};
 		}
 
-		if (hasWrongShaCheck(record)) {
-			return {
-				classification: "needs_human_triage",
-				nextAction: "Refresh check evidence tied to the evaluated PR SHA.",
-				reasons: ["checks:wrong-sha"],
-			};
-		}
-
 		if (hasFailingRequiredCheck(record)) {
 			return {
 				classification: "blocked_failing_check",
 				nextAction:
 					"Clear failing, missing, or incomplete required checks before closure.",
 				reasons: ["checks:failing"],
+			};
+		}
+
+		if (hasWrongShaCheck(record)) {
+			return {
+				classification: "needs_human_triage",
+				nextAction: "Refresh check evidence tied to the evaluated PR SHA.",
+				reasons: ["checks:wrong-sha"],
 			};
 		}
 	}
@@ -297,21 +313,24 @@ export function classifyClosureEvidence(
 	if (
 		record.pullRequest?.state === "merged" &&
 		allRequiredChecksPassed(record) &&
-		hasValidEval(record)
+		(!requiresEval(record) || hasValidEval(record))
 	) {
+		const evalReason = requiresEval(record)
+			? "eval:valid"
+			: "eval:not-required";
 		if (isLinearActive(record.linear)) {
 			return {
 				classification: "complete_linear_stale",
 				nextAction:
 					"Recommend Linear closure after confirming human acceptance scope.",
-				reasons: ["pr:merged", "checks:passed", "eval:valid", "linear:active"],
+				reasons: ["pr:merged", "checks:passed", evalReason, "linear:active"],
 			};
 		}
 
 		return {
 			classification: "complete_ready_for_human_acceptance",
 			nextAction: "Record or confirm human acceptance for final closure.",
-			reasons: ["pr:merged", "checks:passed", "eval:valid", "linear:done"],
+			reasons: ["pr:merged", "checks:passed", evalReason, "linear:done"],
 		};
 	}
 
