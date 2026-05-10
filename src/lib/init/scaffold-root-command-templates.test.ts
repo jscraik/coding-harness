@@ -36,6 +36,9 @@ describe("scaffold root command templates", () => {
 		expect(makefile).toContain("bash ./scripts/validate-codestyle.sh --fast");
 		expect(makefile).toContain("bash ./scripts/run-harness-gate.sh docs-gate");
 		expect(makefile).toContain(
+			"bash ./scripts/check-diagram-freshness.sh --changed-files",
+		);
+		expect(makefile).toContain(
 			"bash ./scripts/run-harness-gate.sh tooling-audit",
 		);
 		expect(makefile).toContain("pnpm quality:size");

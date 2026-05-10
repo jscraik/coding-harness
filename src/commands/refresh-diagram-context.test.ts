@@ -41,6 +41,10 @@ function createRepo(): { root: string; binDir: string } {
 	const root = mkdtempSync(join(tmpdir(), "diagram-context-refresh-"));
 	const binDir = join(root, "bin");
 	mkdirSync(join(root, "scripts"), { recursive: true });
+	writeFileSync(
+		join(root, "package.json"),
+		`${JSON.stringify({ name: "@brainwav/coding-harness" }, null, 2)}\n`,
+	);
 	copyFileSync(
 		SCRIPT_SOURCE,
 		join(root, "scripts", "refresh-diagram-context.sh"),
@@ -88,6 +92,11 @@ erDiagram
   USER {
     string id PK
   }
+MMD
+cat > "$out_dir/c4.mmd" <<'MMD'
+C4Context
+  title "System Context — diagram context refresh random checkout"
+  System(mainSystem, "diagram context refresh random checkout", "The system being documented")
 MMD
 cat > "$out_dir/manifest.json" <<'JSON'
 {
@@ -173,6 +182,11 @@ describe("refresh-diagram-context.sh", () => {
 		);
 		expect(context).toContain("## erd");
 		expect(context).toContain("erDiagram");
+		expect(context).toContain('title "System Context — coding harness"');
+		expect(context).toContain(
+			'System(mainSystem, "coding harness", "The system being documented")',
+		);
+		expect(context).not.toContain("diagram context refresh random checkout");
 		expect(context.match(/\["api"\]/g)).toHaveLength(2);
 	});
 });

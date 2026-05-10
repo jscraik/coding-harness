@@ -100,7 +100,7 @@ MANIFEST_PATH="$TMP_DIR/diagrams/manifest.json"
 ROOT_DIR="$ROOT_DIR" TMP_DIR="$TMP_DIR" MANIFEST_PATH="$MANIFEST_PATH" node <<'NODE'
 const { createHash } = require("node:crypto");
 const { readdirSync, readFileSync, writeFileSync } = require("node:fs");
-const { join } = require("node:path");
+const { basename, join } = require("node:path");
 
 const rootDir = process.env.ROOT_DIR;
 const tmpDir = process.env.TMP_DIR;
@@ -129,6 +129,30 @@ const stableId = (prefix, value) => {
   const digest = createHash("sha1").update(value).digest("hex").slice(0, 8);
   return `${prefix}_${slug}_${digest}`;
 };
+const projectDisplayName = (() => {
+  try {
+    const packageJson = JSON.parse(readFileSync(join(rootDir, "package.json"), "utf8"));
+    if (typeof packageJson.name === "string" && packageJson.name.trim()) {
+      return packageJson.name
+        .replace(/^@[^/]+\//, "")
+        .replace(/[-_]+/g, " ")
+        .trim();
+    }
+  } catch {
+    // Fall back to the checkout folder for repositories without package metadata.
+  }
+  return basename(rootDir).replace(/[-_]+/g, " ").trim() || "repository";
+})();
+const normalizeProjectReferences = (content) =>
+  content
+    .replace(
+      /^\s*title\s+"System Context \u2014 .+"$/m,
+      `  title "System Context \u2014 ${projectDisplayName}"`,
+    )
+    .replace(
+      /^\s*System\(mainSystem,\s*".+?",\s*"The system being documented"\)$/m,
+      `  System(mainSystem, "${projectDisplayName}", "The system being documented")`,
+    );
 
 const parseArchitecture = (content) => {
   const lines = content.trimEnd().split(/\r?\n/);
@@ -311,7 +335,12 @@ for (const file of diagramFiles) {
     continue;
   }
   const filePath = join(diagramsDir, file);
-  writeFileSync(filePath, ensureTrailingNewline(readFileSync(filePath, "utf8").trimEnd()));
+  writeFileSync(
+    filePath,
+    ensureTrailingNewline(
+      normalizeProjectReferences(readFileSync(filePath, "utf8").trimEnd()),
+    ),
+  );
 }
 
 const diagrams = readdirSync(diagramsDir)

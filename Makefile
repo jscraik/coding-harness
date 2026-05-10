@@ -60,7 +60,17 @@ hooks-pre-push: ## Run local pre-push governance gates before pushing
 		exit 0; \
 	fi
 	pnpm exec tsx src/cli.ts docs-gate --mode required --json
-	@bash ./scripts/check-diagram-freshness.sh
+	@tmp_changed_files="$$(mktemp)"; \
+	trap 'rm -f "$$tmp_changed_files"' EXIT; \
+	base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)"; \
+	if [ -n "$$base_ref" ]; then \
+		git diff --name-only --diff-filter=ACMR "$$base_ref"...HEAD -- > "$$tmp_changed_files"; \
+	fi; \
+	if [ -s "$$tmp_changed_files" ]; then \
+		bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"; \
+	else \
+		bash ./scripts/check-diagram-freshness.sh; \
+	fi
 	pnpm exec tsx src/cli.ts tooling-audit --path . --json
 	@bash ./scripts/check-environment.sh
 	$(MAKE) semgrep-changed
