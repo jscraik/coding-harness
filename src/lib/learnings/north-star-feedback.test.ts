@@ -269,8 +269,6 @@ describe("buildNorthStarFeedback", () => {
 		cleanup.push(dir);
 		const source = join(dir, "coderabbit.local.json");
 		const outsideTarget = join(dir, "..", "north-star-feedback.json");
-		rmSync(outsideTarget, { force: true });
-		cleanup.push(outsideTarget);
 		writeFileSync(source, JSON.stringify(artifact(), null, 2));
 
 		const result = buildNorthStarFeedback({

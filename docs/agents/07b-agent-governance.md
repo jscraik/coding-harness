@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-10
+last_validated: 2026-05-09
 ---
 
 # Agent governance
@@ -47,7 +47,8 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - Project Brain or Harness Engineering control-plane changes should keep `.harness/README.md`, AGENTS, CONTRIBUTING, tooling policy, and security/governance guidance synchronized so agents know which `.harness` files are durable authority, secondary context, or generated runtime state.
 - Tracked secondary `.harness` context is not enough to authorize implementation; agent execution should still route through admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slices.
 - agent-native cockpit changes should keep next-action safety evidence, generated environment action contracts, and docs-gate-required operator surfaces synchronized before the PR can be considered merge-ready
-- generated hook setup or readiness changes should keep agent setup evidence synchronized: `scripts/setup-git-hooks.js` must install generated `prek` shims with repo-local `PREK_HOME`, and `scripts/check-environment.sh` must fail drift across installed `pre-commit`, `pre-push`, and `commit-msg` shims while keeping macOS Bash/tool-path normalization deterministic
+- generated Codex environment action changes should keep detached-worktree branch attachment, PATH bootstrapping, and script-derived validation actions aligned with the tooling and security docs so agent runs stay branch-attached and auditable
+- generated hook setup or readiness changes should keep agent setup evidence synchronized: `scripts/setup-git-hooks.js` must install generated `prek` shims with repo-local `PREK_HOME`, and `scripts/check-environment.sh` must fail drift across installed `pre-commit`, `pre-push`, and `commit-msg` shims
 - goal-continuation and approval-plan contract changes should keep explicit
   authorization, fail-closed reviewer resolution, and snapshot-only state
   evidence visible through the same agent-native cockpit surfaces before PR

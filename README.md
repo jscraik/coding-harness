@@ -24,6 +24,8 @@ The shortest honest description of the project today is:
 - it validates review, docs, plan, and authorization policy before merge
 - it supports staged CI migration, rollback, and autonomy expansion with
   artifact-backed evidence
+- it keeps generated Codex environment actions aligned with repo scripts,
+  including test/eval script aliases and detached-worktree bootstrap behavior
 
 ## Table of Contents
 
@@ -687,8 +689,6 @@ Hook setup must go through `make hooks`, `make setup`, or
 for `pre-commit`, `pre-push`, and `commit-msg` so `PREK_HOME` points at the
 repo-local `.git/.cache/prek` cache, and `scripts/check-environment.sh`
 validates that drift before push.
-On macOS, `scripts/check-environment.sh` also adds the standard mise, Homebrew, and local tool paths ahead of existing PATH entries before readiness checks and re-execs Homebrew
-Bash when the system Bash is too old for the repo script contract.
 
 When you change executable behavior in this repository, run the smallest real
 path that exercises the touched production code before claiming it works. If

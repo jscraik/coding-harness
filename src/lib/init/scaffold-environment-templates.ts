@@ -95,7 +95,7 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
 	CODESTYLE_DIR_PATH="$REPO_ROOT/codestyle"
 	CODESTYLE_CHECKSUM_PATH="$REPO_ROOT/codestyle/CHECKSUMS.sha256"
-	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/configs/codex/instructions/tooling.md}"
+	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
 	echo "Error: missing contract file at $CONTRACT_PATH"
