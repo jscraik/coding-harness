@@ -2612,6 +2612,10 @@ exit 1
 				`Using harness runner: mise harness (${fakeMiseHarness})`,
 			);
 
+			const logBeforeAuthFailure = existsSync(runnerLog)
+				? readFileSync(runnerLog, "utf-8").trim().split("\n").filter(Boolean)
+				: [];
+
 			const npmAuthFailureRun = spawnSync(
 				"bash",
 				["scripts/check-environment.sh"],
@@ -2630,6 +2634,10 @@ exit 1
 			expect(npmAuthFailureOutput).toContain(
 				"Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness.",
 			);
+			const logAfterAuthFailure = existsSync(runnerLog)
+				? readFileSync(runnerLog, "utf-8").trim().split("\n").filter(Boolean)
+				: [];
+			expect(logAfterAuthFailure).toEqual(logBeforeAuthFailure);
 
 			const npmFallbackRun = spawnSync(
 				"bash",

@@ -243,7 +243,7 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["checks:failing"]);
 	});
 
-	it("classifies missing required checks as blocked", () => {
+	it("classifies not_found required checks as blocked_failing_check", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
 				requiredChecks: [
@@ -259,6 +259,7 @@ describe("classifyClosureEvidence", () => {
 		);
 
 		expect(result.classification).toBe("blocked_failing_check");
+		expect(result.reasons).toEqual(["checks:failing"]);
 	});
 
 	it("requires human acceptance when the record says closure is human gated", () => {
@@ -338,7 +339,7 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["review:blocking"]);
 	});
 
-	it("classifies missing required checks as blocked", () => {
+	it("classifies empty required check sets as blocked_failing_check", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
 				requiredChecks: [],
