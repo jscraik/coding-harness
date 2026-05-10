@@ -89,7 +89,8 @@ implementation into the harness.
 - If any required gate fails: stop, fix, and rerun from first failure.
 - If command tooling is unavailable: mark check as blocked and escalate environment dependency.
 - If instructions conflict: resolve precedence before further edits.
-- Agent-created branches must use `codex/<linear-key>-<short-description>` naming when the work is tracked in Linear.
+- For this repository, agent-created branches must use `codex/<linear-key>-<short-description>` naming when the work is tracked in Linear.
+- For downstream scaffold output, repositories scaffolded by `harness init` receive generated PR, workflow, and worktree guidance that uses `jscraik/feature/*` for agent-created branches; keep those emitted surfaces synchronized through the init scaffold prefix constant.
 - CodeRabbit review must be independent from code authorship (coding agent cannot act as approving review agent).
 - Legacy review bridge workflows may exist in downstream repositories, but they are not the primary review authority for this repository.
 - CI ownership is enforced by `harness.contract.json` `ciOwnership`: CircleCI owns the primary PR gate, CodeRabbit remains the independent review check, Semgrep Cloud remains the independent external security check, and GitHub Actions workflows are release/fallback surfaces only unless an intentional contract migration says otherwise.
