@@ -487,6 +487,7 @@ function writePriorRun(options: {
 	contractVersion?: string;
 	contractFingerprint?: string;
 	omitContractFingerprint?: boolean;
+	priorRunRepoRoot?: string;
 	providerClass?: string;
 	schemaVersion?: string;
 }): void {
@@ -498,6 +499,7 @@ function writePriorRun(options: {
 		contractVersion = "1",
 		contractFingerprint = "missing",
 		omitContractFingerprint = false,
+		priorRunRepoRoot = repoRoot,
 		providerClass = "github-actions",
 		schemaVersion = "1",
 	} = options;
@@ -516,7 +518,7 @@ function writePriorRun(options: {
 				startedAt: "2026-04-21T00:00:00Z",
 				finishedAt: "2026-04-21T00:00:01Z",
 				resumeFromGateId: null,
-				repoRoot,
+				repoRoot: priorRunRepoRoot,
 				providerClass,
 				schemaVersion,
 				contractVersion,
@@ -1569,6 +1571,35 @@ exit 127
 		);
 	});
 
+	it("blocks resume when a required prior gate result is missing", () => {
+		scaffoldVerifyWorkScriptRepo({
+			repoRoot,
+			manifest: {
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{ sourceAppSlug: "github-actions", githubCheckName: "ci / test" },
+				],
+			},
+		});
+		writePriorRun({
+			repoRoot,
+			runId: "run-compatible-missing-prior-gate",
+			lane: { fastMode: true, changedOnly: true, strictMode: false },
+			gates: {
+				preflight: { status: "passed" },
+			},
+		});
+
+		const result = runVerifyWorkScript(repoRoot, [
+			"--resume-from",
+			"hook-governance-inventory",
+		]);
+		expect(result.status).toBe(1);
+		expect(`${result.stdout}${result.stderr}`).toContain(
+			"resume blocked: missing prior gate result for 'ci-check-alignment'",
+		);
+	});
+
 	it("returns usage error when --resume-from references an unknown gate id", () => {
 		scaffoldVerifyWorkScriptRepo({
 			repoRoot,
@@ -1604,6 +1635,37 @@ exit 127
 			repoRoot,
 			runId: "run-only-provider-mismatch",
 			providerClass: "circleci",
+			lane: { fastMode: true, changedOnly: true, strictMode: false },
+			gates: {
+				preflight: { status: "passed" },
+				"ci-check-alignment": { status: "passed" },
+			},
+		});
+
+		const result = runVerifyWorkScript(repoRoot, [
+			"--resume-from",
+			"hook-governance-inventory",
+		]);
+		expect(result.status).toBe(1);
+		expect(`${result.stdout}${result.stderr}`).toContain(
+			"no compatible prior run found for resume (contract/provider/root/fingerprint must match)",
+		);
+	});
+
+	it("fails resume when prior run repo root differs", () => {
+		scaffoldVerifyWorkScriptRepo({
+			repoRoot,
+			manifest: {
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{ sourceAppSlug: "github-actions", githubCheckName: "ci / test" },
+				],
+			},
+		});
+		writePriorRun({
+			repoRoot,
+			runId: "run-repo-root-mismatch",
+			priorRunRepoRoot: join(repoRoot, "other-worktree"),
 			lane: { fastMode: true, changedOnly: true, strictMode: false },
 			gates: {
 				preflight: { status: "passed" },

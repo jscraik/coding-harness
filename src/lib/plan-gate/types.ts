@@ -18,6 +18,7 @@ export const EXIT_CODES = {
 
 export const DEFAULTS = {
 	PLANS_PATH: "docs/plans",
+	HARNESS_PLANS_PATH: ".harness/plan",
 	MAX_AGE_DAYS: 30,
 } as const;
 
@@ -26,6 +27,7 @@ export const REQUIRED_PLAN_SECTIONS = [
 	"Acceptance Criteria",
 ] as const;
 
+/** Options that control plan artifact discovery and validation. */
 export interface PlanGateOptions {
 	/** Path to plans directory */
 	plansPath?: string;
@@ -55,18 +57,11 @@ export interface PlanGateOptions {
 	json?: boolean;
 }
 
+/** Parsed frontmatter fields from a plan Markdown artifact. */
 export interface PlanFrontmatter {
 	title: string;
 	date: string;
-	type:
-		| "feat"
-		| "feature"
-		| "fix"
-		| "bugfix"
-		| "refactor"
-		| "docs"
-		| "architecture"
-		| "chore";
+	type: string;
 	status:
 		| "draft"
 		| "future"
@@ -81,6 +76,7 @@ export interface PlanFrontmatter {
 	decisions?: string[];
 }
 
+/** Acceptance checklist item extracted from a plan artifact body. */
 export interface AcceptanceItem {
 	text: string;
 	completed: boolean;
@@ -88,6 +84,7 @@ export interface AcceptanceItem {
 	line: number;
 }
 
+/** Normalized plan artifact metadata used by plan-gate checks. */
 export interface PlanArtifact {
 	path: string;
 	title: string;
@@ -102,6 +99,7 @@ export interface PlanArtifact {
 	frontmatter: PlanFrontmatter;
 }
 
+/** Structured plan-gate validation error. */
 export interface PlanError {
 	code:
 		| "MISSING"
@@ -117,12 +115,14 @@ export interface PlanError {
 	path?: string;
 }
 
+/** Summary of requested and matched plan IDs for changed work. */
 export interface PlanTraceabilitySummary {
 	planIds: string[];
 	matchedPlanIds: string[];
 	changedFiles: string[];
 }
 
+/** Complete plan-gate result for CLI and library consumers. */
 export interface PlanGateResult {
 	passed: boolean;
 	artifacts: PlanArtifact[];

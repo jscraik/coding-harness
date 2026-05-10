@@ -1,0 +1,28 @@
+{
+	"harnessVersion": "0.13.0",
+	"ciProvider": "circleci",
+	"issueTracker": "linear",
+	"files": [
+		{
+			"path": "scripts/setup-git-hooks.js",
+			"action": "created"
+		},
+		{
+			"path": "AI/diagrams/.gitkeep",
+			"action": "created"
+		},
+		{
+			"path": "scripts/check-environment.sh",
+			"action": "created"
+		},
+		{
+			"path": ".codex/environments/environment.toml",
+			"action": "modified",
+			"backupHash": "cd49adffccd28c2b"
+		},
+		{
+			"path": "scripts/harness-cli.sh",
+			"action": "created"
+		}
+	]
+}

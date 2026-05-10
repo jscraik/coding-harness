@@ -32,7 +32,7 @@ export type ScaffoldSurface =
 	| "git-hooks" // commit-msg validation, setup-git-hooks, prek hooks
 	| "community" // ISSUE_TEMPLATE, CODEOWNERS, Makefile
 	| "workflow" // WORKFLOW.md (governance workflow spec)
-	| "project-brain" // .harness/knowledge/*, project brain templates
+	| "project-brain" // .harness control-plane docs, knowledge, decisions, quality, review log
 	| "other"; // Unclassified templates
 
 export const ALL_SURFACES: readonly ScaffoldSurface[] = [
@@ -148,10 +148,23 @@ export function classifySurface(templatePath: string): ScaffoldSurface {
 
 	// Project brain
 	if (
+		templatePath === ".harness/README.md" ||
+		templatePath.startsWith(".harness/memory") ||
 		templatePath.startsWith(".harness/knowledge") ||
 		templatePath.startsWith(".harness/quality") ||
 		templatePath.startsWith(".harness/decisions") ||
-		templatePath.startsWith(".harness/review-log")
+		templatePath.startsWith(".harness/review-log") ||
+		templatePath.startsWith(".harness/core") ||
+		templatePath.startsWith(".harness/linear") ||
+		templatePath.startsWith(".harness/refactors") ||
+		templatePath.startsWith(".harness/features") ||
+		templatePath.startsWith(".harness/strategy") ||
+		templatePath.startsWith(".harness/triage") ||
+		templatePath.startsWith(".harness/review") ||
+		templatePath.startsWith(".harness/ideate") ||
+		templatePath.startsWith(".harness/brainstorm") ||
+		templatePath.startsWith(".harness/specs") ||
+		templatePath.startsWith(".harness/plan")
 	) {
 		return "project-brain";
 	}

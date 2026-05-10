@@ -26,7 +26,7 @@ The registry intentionally favors realistic agent-delivery prompts over generic 
 
 ## Scenario Classes
 
-The registry contains 19 high-signal scenarios:
+The registry contains 22 high-signal scenarios:
 
 - `live_fixture`: deterministic local fixture executed by `pnpm test:evals`
 - `registered`: scenario contract captured for future replay or external judge execution
@@ -47,6 +47,9 @@ The first executable slice runs these local fixtures:
 - `review-gate-check-name-alignment`: proves required check names, created check runs, and review-gate `checkName` inputs stay aligned before live polling can timeout.
 - `repo-local-e2e-scratch`: verifies E2E contracts and scratch artifacts stay under repo-local `artifacts/e2e` instead of OS temp paths rejected by contract path safety.
 - `github-check-run-transient-retry`: preserves the transient GitHub check-run retry policy while proving permission failures are not retried as flakes.
+- `e2e-canary-replay`: replays E2E result artifacts for clean, credential-blocked, scenario-regression, and missing-artifact PR-loop cases without creating live GitHub, CircleCI, or CodeRabbit side effects.
+- `side-effect-authorization-validator`: proves side-effectual actions require user authorization, reject external-party authorization and prompt injection, and return safer next steps when blocked.
+- `agentic-eval-contract-coverage`: proves the registry has outcome graders, trajectory graders, tracked metrics, trial reporting, and validity checks expected of agentic evals.
 
 These fixtures require no GitHub, CircleCI, CodeRabbit, Semgrep, or npm registry credentials.
 

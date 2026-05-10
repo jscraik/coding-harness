@@ -1,0 +1,361 @@
+{
+	"schemaVersion": "upgrade-manifest/v1",
+	"harnessVersion": "0.13.0",
+	"updatedAt": "2026-04-18T22:33:16.508Z",
+	"files": [
+		{
+			"path": "harness.contract.json",
+			"templateHash": "8da881abe2f753cfd058bd1477d8ac978466809ebbaf1e4a7386280f5f187a67",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "memory.json",
+			"templateHash": "0278b059108fa0632d4d57cf740f19cd1421d298bdbb709c9167db3836e3cedb",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".harness/ci-required-checks.json",
+			"templateHash": "17bfd1b2ddc2566f738ef6e6014656bd3f9666a9cdc64c777a8f3511b07b720f",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".harness/ci-provider-transition-status.json",
+			"templateHash": "175eb1aef403b866f9ada202f1edb8ff9fe0bcb1e4f631dfed554d86ab60c1f3",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/memory/LEARNINGS.md",
+			"templateHash": "eeb60bb7d716b37fe7673c8466e2a6e6e0d4b55ca73b7a8874633e2baed60f22",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".harness/knowledge/INDEX.md",
+			"templateHash": "6beb8ed530e499247053823b1e99cb9d71ea8a2d6dd351345d0f0c293d30d3ad",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/cli/knowledge.md",
+			"templateHash": "7cb09b5fb5d7afb9285a7473839b2ef169407bdeb8bc26dfe1795fd4e24dba0b",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/cli/hypotheses.md",
+			"templateHash": "2f141b0003d0e872927daecef2002b8b88cdc7382a306fefb8c87b55ae521545",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/cli/rules.md",
+			"templateHash": "410c823f542e9c6e6d23098002468f3c80d5b3c58988aec0d0b92e99859ff5c5",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/ci/knowledge.md",
+			"templateHash": "70dd7da9955da29d7012bbabbd7fcd310e4fcbb991d7eac7bb6a8f295e9389ad",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/ci/hypotheses.md",
+			"templateHash": "34ce0e6fc6886bfc27f7ead0c8748e48628af8ab53fbd06362e20d9e718df918",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/ci/rules.md",
+			"templateHash": "80cc0355628fd2a50c8b9b29b244ed266da8b990b3beb9cbbe2afb11156c0cbb",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/governance/knowledge.md",
+			"templateHash": "86ecdd07cff4899e8d9d7764833a1fd1c2a68bc6fdf23d39b3efbe70c8545bd1",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/governance/hypotheses.md",
+			"templateHash": "d8337009f49b414dd6dd69efbbe20466f4f4995f1378520b1ab087b12e4b5e2a",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/governance/rules.md",
+			"templateHash": "7c0dcb60cc633987912baf27da1159499822ccc0bcd57b8b4b3b300db691c5c1",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/tooling/knowledge.md",
+			"templateHash": "407730006e57dab30602670aa25d6d42cd73409fd15670e5e1e3e0c9a79e2184",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/tooling/hypotheses.md",
+			"templateHash": "690dd20536ad9bf236011e9caffa49dc317cb127fabd7c1f284a3310bb09acf3",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/tooling/rules.md",
+			"templateHash": "79a340c04738dd0f7d1cb943ca823bb357dbce7d24471565aa4ee6b1a003bb54",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/knowledge/tooling/codex-learn-summary.md",
+			"templateHash": "91c1f1a1166cd4f33bd987d229b72746793d584a951cd7f89bfdf17a27f8d8e2",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/decisions/.gitkeep",
+			"templateHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/quality/criteria.md",
+			"templateHash": "f82aa3a256d0a9d93aa82fb6cd33e9b7c1d89f0a56c7579686e4de632711b82a",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".harness/review-log.md",
+			"templateHash": "463e54b1fffad805b8b0e410c710147d960d72531e48ef119662fa47ff7e7855",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".npmrc",
+			"templateHash": "cd85f662fa051e06e69ce35d03c78be2250cfa300ee6546022b0e399801a91ea",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".coderabbit.yaml",
+			"templateHash": "179f1ef5d848afd1f93e2dbcbcf1b06b7c557494253c51e836959ba29f482b39",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".circleci/config.yml",
+			"templateHash": "850f5d56137d42e89f5f023e7bf12d385d3a152fc0c02ef460dc78b16402445b",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "CONTRIBUTING.md",
+			"templateHash": "cc1a731d5aa165a47596b01379c0ed226035ba06c52f59b5fdfe75fe27e9b8c6",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".github/PULL_REQUEST_TEMPLATE.md",
+			"templateHash": "f0892bacddfb5415d9ad567edff5f75360e1160cb882e75b54c535bc86831fdf",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/validate-commit-msg.js",
+			"templateHash": "50b2ee451ba9c2367b22595f9d9ad2a6ab409fe6dad226bd17eb23a8ad8eb5ee",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "scripts/setup-git-hooks.js",
+			"templateHash": "7f945cfc919d9869ab6aaa590c039cb0c241ac15df5152155d7c544497c27f29",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "scripts/check-staged-secrets.sh",
+			"templateHash": "175f482c76d6581f79b5632b044727b6e9168dd2231ccd364e43243b3ca3258c",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/check-doc-style.sh",
+			"templateHash": "2fa6d0f10c368587108b946c776ad7c7cb989c2b6bfd415748ec57a3272d564d",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/check-related-tests.sh",
+			"templateHash": "13951ef9cdaadb9e60aa423f4635f726becf90bc4c22d257f04d753ef5dec305",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/check-semgrep-changed.sh",
+			"templateHash": "eecb35cf6fbfbf8eee90408e286d1fe33b902b1ab29a236975c4a540a5328bd8",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/semgrep-pre-push.yml",
+			"templateHash": "71108f5c58f471e15e4301c947b7f02418bb0622fc38b317e2d0525fe7e6a3b6",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "scripts/refresh-diagram-context.sh",
+			"templateHash": "f438b595ebceb0a8f0358fdc6e104d5fa99c69b5425109e1f234011964ee0015",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "scripts/check-diagram-freshness.sh",
+			"templateHash": "47dea6f7324c1b339c4835396df42fa210ef8e9aef809c7c7a4ef59bb44010e4",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".diagram/.gitkeep",
+			"templateHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".diagram/context/diagram-context.md",
+			"templateHash": "3f89864a16883845e050d87aab0e5b67336a330f5fb4f4b639aacd63e9416e39",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".diagramrc",
+			"templateHash": "3ded0c9cd4ddd3075c2abc9b8b78081b7bf8d9ad1b7bc815d6626fcc62a7193e",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "biome.json",
+			"templateHash": "930d001ad153c2423efa1789906d439966a943fa8e9f0278be3ca66be2506441",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".gitleaks.toml",
+			"templateHash": "c9296124145d858a1ffd8b912858407db3230425071427e81684f0ea6f68b192",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "prek.toml",
+			"templateHash": "345f43b1c2686db6e5d22bf127d32445a768f409239a275e5ebe58cfc542423f",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".mise.toml",
+			"templateHash": "3e95f67f13d4035b0334efcf8f98283474acbe8367588c05abce65a712dba7ad",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "CODESTYLE.md",
+			"templateHash": "d040708fbbe27dc779a46623349ffbbca4f37a723f9b7eec02149bf09be64a40",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/codex-preflight.sh",
+			"templateHash": "bf9853a4636bf2a40ad147b5cec2490bb9e69f25e4d7225441ed79c262a431d7",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/codex-preflight-local-memory-legacy.sh",
+			"templateHash": "c36ec2124d0ad1d8c5710aefbc7aca7d6c8f489d9dea41dffef3a499befcb577",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/codex-learn",
+			"templateHash": "5e760f22804adf2b6efa99c3c48e0093194eba1efac6654f7766d37e9368b1e0",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/codex-enforced",
+			"templateHash": "8bb0415ee446b312d6045e2bcf328c9f07a37cd193466e6a413219f6f88d862d",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/verify-work.sh",
+			"templateHash": "c8113159091f53d7829cff33790ec241e696be1083f355daf488b5f2fa6605d7",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "scripts/validate-codestyle.sh",
+			"templateHash": "7703319c2c1267266b15649f8fa4b2f4f821c22376cf5811a381f9ec577095cc",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "scripts/prepare-worktree.sh",
+			"templateHash": "77e291579bde54f236177946003d626bae2c4bd079eaba9a4f7d8200ee466bdb",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "scripts/new-task.sh",
+			"templateHash": "a6d80dda88de92f2835d186947651d7cd5f1583431790e0f44f456b3f26ed794",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/harness-cli.sh",
+			"templateHash": "8940812ce8b0ec6ee79a28f1d35a11e7818a30c006a4bf4736afe70fe3074b37",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "scripts/check-environment.sh",
+			"templateHash": "3442f0248ce960fa4b6f66aac77e8bc23cb59e85d28d938fb47ccb07fa6b00ab",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".codex/environments/environment.toml",
+			"templateHash": "89d52b7e2d9dc3db06d290b1f38124ee756a620da13fcaf0360d894b74beea83",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": ".github/ISSUE_TEMPLATE/config.yml",
+			"templateHash": "7c7754b47b6b7f45384f36fb7bdab03d862bb765b52edad747896e6b574c4170",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": ".github/CODEOWNERS",
+			"templateHash": "d0b50bd6362af89c2638c2e3a6cc776c01b99930f63c2b5e5be819059438e516",
+			"version": "0.13.0",
+			"customized": false
+		},
+		{
+			"path": "Makefile",
+			"templateHash": "80e2d0cff206453f59501ac6c0b8c8a2c88ffa5c80df9dec8199c66040c41be2",
+			"version": "0.13.0",
+			"customized": true
+		},
+		{
+			"path": "WORKFLOW.md",
+			"templateHash": "a4d86796903c7a891ccf7cd15dcf8133fcb7fcbe18672c8cc105bcacf74bc0bf",
+			"version": "0.13.0",
+			"customized": true
+		}
+	]
+}

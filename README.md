@@ -282,6 +282,10 @@ surface even if contributors use different shells or global setups.
 Use `bash scripts/verify-work.sh` as the canonical repo-local verification
 entrypoint. It runs repo-local preflight in `required` Local Memory mode and
 then executes the full verification bundle.
+The verification and worktree bootstrap paths also run
+`scripts/check-git-common-config.sh`, which blocks shared non-bare `.git/config`
+from pinning `core.worktree`; worktree-local values must live in per-worktree
+config so temp worktrees cannot poison the main checkout.
 
 When executable behavior changes, do not stop at broad validation alone. Run
 the smallest real code path that exercises the exact production code touched:
@@ -297,6 +301,18 @@ For a quicker local loop, use:
 ```bash
 bash scripts/verify-work.sh --fast
 ```
+
+The `harness verify-work` CLI wrapper exposes the same verification lane for
+automation and supports explicit resume checkpoints:
+
+```bash
+harness verify-work --fast --resume-from validate-codestyle-fast
+```
+
+Resume gate IDs are validated against the typed validation gate mirror in
+`src/lib/validation/gate-specs.ts` before the shell wrapper runs. The shell
+script remains the authority for execution order; the typed mirror exists so
+CLI dispatch, tests, and automation can fail closed on unknown checkpoint names.
 
 The fast lane now includes changed-file enforcement for public API docstrings,
 function/file size, and related tests through `pnpm run quality:docstrings`,
@@ -421,6 +437,19 @@ When a repository has imported CodeRabbit learning evidence, use the learning
 loop before PR handoff so repeated review feedback becomes guardrail data
 instead of another comment thread.
 
+In this source checkout, run the loop through `scripts/run-harness-gate.sh` so
+the command surface comes from `src/cli.ts` rather than a globally installed
+`harness` shim:
+
+```bash
+bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
+bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json
+```
+
+Downstream repos with the published package installed can call the same command
+families through `harness`:
+
 ```bash
 harness learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
 harness review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json
@@ -535,7 +564,7 @@ harness commands --json | jq '
 | `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                      |
 | `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                  |
 | `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                               |
-| `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                              |
+| `verify-work`       | Run canonical repo-local verification (fresh or resume mode, with `--resume-from` checked against typed validation gate specs)                                            |
 | `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                         |
 | `preset`            | List and inspect bundled presets                                                                                                                                          |
 | `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                     |

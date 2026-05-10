@@ -23,6 +23,7 @@ import { EXIT_CODES, runInit, runInitCLI } from "./init.js";
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
+	".harness/README.md",
 	".harness/ci-required-checks.json",
 	".harness/ci-provider-transition-status.json",
 	".harness/memory/LEARNINGS.md",
@@ -101,6 +102,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
 	"scripts/check-codestyle-parity.sh",
+	"scripts/check-git-common-config.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/harness-cli.sh",
@@ -2808,6 +2810,12 @@ exit 1
 				expect(chmod.status).toBe(0);
 			}
 			const fakePnpmLog = join(tempDir, ".fake-pnpm-log");
+			mkdirSync(join(tempDir, ".git"), { recursive: true });
+			writeFileSync(
+				join(tempDir, ".git/config"),
+				"[core]\n\trepositoryformatversion = 0\n\tfilemode = true\n\tbare = false\n",
+				"utf-8",
+			);
 
 			const verify = spawnSync("bash", ["scripts/verify-work.sh", "--fast"], {
 				cwd: tempDir,
@@ -3771,6 +3779,47 @@ describe("--update flag", () => {
 			require("node:fs").readFileSync(manifestPath, "utf-8"),
 		);
 		expect(updatedManifest.harnessVersion).not.toBe("0.0.1");
+	});
+
+	it("skips tracked codex environment updates after user customization", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const environmentPath = join(
+			tempDir,
+			".codex/environments/environment.toml",
+		);
+		const customizedEnvironment =
+			'# Jamie-owned custom environment\n[tools]\ncustom = "preserve-me"\n';
+		writeFileSync(environmentPath, customizedEnvironment, "utf-8");
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			harnessVersion?: string;
+		};
+		manifest.harnessVersion = "0.0.1";
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.skipped).toContain(
+				".codex/environments/environment.toml",
+			);
+			expect(result.output.updated).not.toContain(
+				".codex/environments/environment.toml",
+			);
+		}
+		expect(readFileSync(environmentPath, "utf-8")).toBe(customizedEnvironment);
 	});
 
 	it("adopts newly introduced scaffolded scripts during update when older manifests do not track them", () => {
