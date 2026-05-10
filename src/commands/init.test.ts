@@ -845,11 +845,14 @@ describe("runInit", () => {
 				join(tempDir, "package.json"),
 				JSON.stringify(
 					{
+						packageManager: "pnpm@10.33.0",
 						scripts: {
 							dev: "vite",
 							check: "pnpm lint && pnpm test",
 							test: "vitest",
 							"lint:fix": "biome check --write .",
+							"observed:eval-usage":
+								"tsx scripts/collect-observed-eval-usage.ts",
 						},
 					},
 					null,
@@ -900,7 +903,10 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Script: check"\nicon = "debug"');
 			expect(content).toContain('name = "Script: test"\nicon = "test"');
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
-			expect(content).toContain('name = "Script: observed:eval-usage"\nicon = "tool"');
+			expect(content).toContain(
+				'name = "Script: observed:eval-usage"\nicon = "tool"',
+			);
+			expect(content).toContain("run 'observed:eval-usage'");
 			expect(content).toContain("mise install");
 			expect(content).toContain("mise trust --yes .mise.toml || true");
 			expect(content).toContain("bash scripts/prepare-worktree.sh");
