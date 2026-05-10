@@ -562,23 +562,38 @@ else
 			exit 1
 		fi
 
-		if ! npm whoami --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
-			echo "Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness."
-			echo "The repo .npmrc only routes @brainwav packages to npm; it does not carry credentials."
-			echo "Provide npm auth with NPM_TOKEN or a user-level ~/.npmrc, then retry."
-			echo "If this is CI (CircleCI), set NPM_TOKEN as a project environment variable."
-			exit 1
+		npm_global_bin=""
+		npm_global_prefix="$(npm prefix -g 2>/dev/null || true)"
+		if [[ -n "$npm_global_prefix" ]]; then
+			npm_global_bin="$npm_global_prefix/bin"
 		fi
+		npm_harness_bin="$npm_global_bin/harness"
 
-		if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
-			echo "Error: @brainwav/coding-harness is not installed globally via npm."
-			echo "Install globally and retry:"
-			echo "  npm i -g @brainwav/coding-harness"
-			echo "Private registry auth is already available in this process."
-			exit 1
-		fi
+		if [[ -n "$npm_global_bin" && -x "$npm_harness_bin" ]]; then
+			if ! run_check_environment_with_runner "global npm harness ($npm_harness_bin)" "$npm_harness_bin"; then
+				echo "Error: global npm harness failed to run check-environment successfully."
+				echo "Reinstall and retry:"
+				echo "  npm i -g @brainwav/coding-harness"
+				echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
+				exit 1
+			fi
+		else
+			if ! npm whoami --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
+				echo "Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness."
+				echo "The repo .npmrc only routes @brainwav packages to npm; it does not carry credentials."
+				echo "Provide npm auth with NPM_TOKEN or a user-level ~/.npmrc, then retry."
+				echo "If this is CI (CircleCI), set NPM_TOKEN as a project environment variable."
+				exit 1
+			fi
 
-			npm_global_bin=""
+			if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
+				echo "Error: @brainwav/coding-harness is not installed globally via npm."
+				echo "Install globally and retry:"
+				echo "  npm i -g @brainwav/coding-harness"
+				echo "Private registry auth is already available in this process."
+				exit 1
+			fi
+
 			npm_global_prefix="$(npm prefix -g 2>/dev/null || true)"
 			if [[ -n "$npm_global_prefix" ]]; then
 				npm_global_bin="$npm_global_prefix/bin"
@@ -598,6 +613,7 @@ else
 				echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
 				exit 1
 			fi
+		fi
 		fi
 	fi
 

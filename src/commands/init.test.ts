@@ -845,11 +845,14 @@ describe("runInit", () => {
 				join(tempDir, "package.json"),
 				JSON.stringify(
 					{
+						packageManager: "pnpm@10.33.0",
 						scripts: {
 							dev: "vite",
 							check: "pnpm lint && pnpm test",
 							test: "vitest",
 							"lint:fix": "biome check --write .",
+							"observed:eval-usage":
+								"tsx scripts/collect-observed-eval-usage.ts",
 						},
 					},
 					null,
@@ -900,6 +903,10 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Script: check"\nicon = "debug"');
 			expect(content).toContain('name = "Script: test"\nicon = "test"');
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
+			expect(content).toContain(
+				'name = "Script: observed:eval-usage"\nicon = "tool"',
+			);
+			expect(content).toContain("run 'observed:eval-usage'");
 			expect(content).toContain("mise install");
 			expect(content).toContain("mise trust --yes .mise.toml || true");
 			expect(content).toContain("bash scripts/prepare-worktree.sh");
@@ -912,7 +919,8 @@ describe("runInit", () => {
 			expect(content).toContain(
 				"[codex] fast-forwarding $branch_name with origin/main",
 			);
-			expect(content).toContain("git pull --ff-only origin main");
+			expect(content).toContain("git fetch --quiet origin main");
+			expect(content).toContain('git merge --ff-only "$target_ref"');
 			expect(content).toContain("npm install");
 			expect(content).toContain("prek --version");
 			expect(content).toContain(
@@ -1946,7 +1954,8 @@ describe("runInit", () => {
 			expect(prepareWorktree).toContain(
 				"[prepare-worktree] fast-forwarding $branch_name with origin/main",
 			);
-			expect(prepareWorktree).toContain("git pull --ff-only origin main");
+			expect(prepareWorktree).toContain("git fetch --quiet origin main");
+			expect(prepareWorktree).toContain('git merge --ff-only "$target_ref"');
 			expect(prepareWorktree).toContain('git switch -c "$branch_name"');
 			expect(newTask).toContain(
 				"[new-task] fetching latest $remote_name/$remote_base_branch",
@@ -2624,10 +2633,6 @@ exit 1
 				`Using harness runner: mise harness (${fakeMiseHarness})`,
 			);
 
-			const logBeforeAuthFailure = existsSync(runnerLog)
-				? readFileSync(runnerLog, "utf-8").trim().split("\n").filter(Boolean)
-				: [];
-
 			const npmAuthFailureRun = spawnSync(
 				"bash",
 				["scripts/check-environment.sh"],
@@ -2641,15 +2646,33 @@ exit 1
 					},
 				},
 			);
-			expect(npmAuthFailureRun.status).toBe(1);
-			const npmAuthFailureOutput = `${npmAuthFailureRun.stdout}${npmAuthFailureRun.stderr}`;
-			expect(npmAuthFailureOutput).toContain(
+			expect(
+				npmAuthFailureRun.status,
+				npmAuthFailureRun.stdout + npmAuthFailureRun.stderr,
+			).toBe(0);
+			expect(npmAuthFailureRun.stdout).toContain(
+				`Using harness runner: global npm harness (${fakeNpmHarness})`,
+			);
+
+			const missingHarnessAuthFailureRun = spawnSync(
+				"bash",
+				["scripts/check-environment.sh"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...baseEnv,
+						FAKE_MISE_WHICH_MODE: "missing",
+						FAKE_NPM_AUTH_FAIL: "1",
+						FAKE_NPM_PREFIX: join(tempDir, "missing-npm-prefix"),
+					},
+				},
+			);
+			expect(missingHarnessAuthFailureRun.status).toBe(1);
+			const missingHarnessAuthFailureOutput = `${missingHarnessAuthFailureRun.stdout}${missingHarnessAuthFailureRun.stderr}`;
+			expect(missingHarnessAuthFailureOutput).toContain(
 				"Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness.",
 			);
-			const logAfterAuthFailure = existsSync(runnerLog)
-				? readFileSync(runnerLog, "utf-8").trim().split("\n").filter(Boolean)
-				: [];
-			expect(logAfterAuthFailure).toEqual(logBeforeAuthFailure);
 
 			const npmFallbackRun = spawnSync(
 				"bash",

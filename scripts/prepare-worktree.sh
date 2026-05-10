@@ -73,9 +73,11 @@ attach_branch_if_detached() {
 	if git show-ref --verify --quiet "refs/remotes/origin/main"; then
 		git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
 		echo "[prepare-worktree] tracking origin/main for $branch_name"
-		if git merge-base --is-ancestor HEAD origin/main; then
+		target_ref="origin/main"
+		git fetch --quiet origin main && target_ref="FETCH_HEAD" || echo "[prepare-worktree] could not fetch origin/main; using cached origin/main"
+		if git merge-base --is-ancestor HEAD "$target_ref"; then
 			echo "[prepare-worktree] fast-forwarding $branch_name with origin/main"
-			git pull --ff-only origin main
+			git merge --ff-only "$target_ref"
 		else
 			echo "[prepare-worktree] $branch_name diverges from origin/main; skipping fast-forward"
 		fi
