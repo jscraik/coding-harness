@@ -2525,6 +2525,9 @@ if [[ "$1" == "ls" ]]; then
 	exit 0
 fi
 if [[ "$1" == "whoami" ]]; then
+	if [[ "\${FAKE_NPM_AUTH_FAIL:-}" == "1" ]]; then
+		exit 1
+	fi
 	echo "fixture-user"
 	exit 0
 fi
@@ -2574,6 +2577,25 @@ exit 1
 			expect(miseRun.status, miseRun.stdout + miseRun.stderr).toBe(0);
 			expect(miseRun.stdout).toContain(
 				`Using harness runner: mise harness (${fakeMiseHarness})`,
+			);
+
+			const npmAuthFailureRun = spawnSync(
+				"bash",
+				["scripts/check-environment.sh"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...baseEnv,
+						FAKE_MISE_WHICH_MODE: "missing",
+						FAKE_NPM_AUTH_FAIL: "1",
+					},
+				},
+			);
+			expect(npmAuthFailureRun.status).toBe(1);
+			const npmAuthFailureOutput = `${npmAuthFailureRun.stdout}${npmAuthFailureRun.stderr}`;
+			expect(npmAuthFailureOutput).toContain(
+				"Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness.",
 			);
 
 			const npmFallbackRun = spawnSync(

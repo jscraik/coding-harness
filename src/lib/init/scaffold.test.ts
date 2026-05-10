@@ -397,9 +397,7 @@ describe("scaffold templates resolution", () => {
 		expect(rendered).toContain('exec node "$CLI_PATH" "$@"');
 
 		// If missing, the wrapper should provide package-manager-specific recovery commands.
-		expect(rendered).toContain(
-			"local @brainwav/coding-harness could not be resolved",
-		);
+		expect(rendered).toContain("local $PACKAGE_NAME could not be resolved");
 		expect(rendered).toContain("not a local npm package root");
 		expect(rendered).toContain("Private npm fallback is disabled by default");
 		expect(rendered).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");

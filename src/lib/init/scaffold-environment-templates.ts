@@ -557,13 +557,19 @@ else
 			exit 1
 		fi
 
+		if ! npm whoami --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
+			echo "Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness."
+			echo "The repo .npmrc only routes @brainwav packages to npm; it does not carry credentials."
+			echo "Provide npm auth with NPM_TOKEN or a user-level ~/.npmrc, then retry."
+			echo "If this is CI (CircleCI), set NPM_TOKEN as a project environment variable."
+			exit 1
+		fi
+
 		if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
 			echo "Error: @brainwav/coding-harness is not installed globally via npm."
 			echo "Install globally and retry:"
 			echo "  npm i -g @brainwav/coding-harness"
-			echo "Private registry auth may be required:"
-			echo "  - Local shell: export NPM_TOKEN=<token>"
-			echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
+			echo "Private registry auth is already available in this process."
 			exit 1
 		fi
 
