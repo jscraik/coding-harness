@@ -8,6 +8,7 @@
 - [Proposed Milestones](#proposed-milestones)
 - [Proposed Parent Issues](#proposed-parent-issues)
 - [Proposed Sub-Issues](#proposed-sub-issues)
+- [JSC-301 Future Work: Skill-Backed HE Gates](#jsc-301-future-work-skill-backed-he-gates)
 - [Now / Next / Later / Do Not Create](#now--next--later--do-not-create)
 - [Dependency Map](#dependency-map)
 - [Eval Gate Map](#eval-gate-map)
@@ -79,13 +80,18 @@ cleanup, not another validation typed-gate spec.
 
 ## Linear Delta Capture
 
-Last synced: 2026-05-09T20:40Z
+Last synced: 2026-05-10T21:18Z
 Source: Linear project `coding-harness`; milestones `Agent Cockpit Compression
 Slice`, `Governance Trust Repair Slice`, and `CI Migration Boundary Recovery
 Slice`; `Control loop hardening and flow telemetry`; parents `JSC-282`,
 `JSC-283`, `JSC-288`, `JSC-289`, `JSC-290`, `JSC-248`, `JSC-178`,
 `JSC-198`, `JSC-199`, `JSC-200`, `JSC-201`, `JSC-202`, and `JSC-203`
 Label status: resolved
+
+Post-JSC-301 future-work delta: the RouteDecision/v1 spec and plan now identify
+`JSC-311` as the live downstream issue for HE phase-exit evidence gates.
+This is future work only. It should not widen the active JSC-301 contract slice,
+which remains route-decision contract plus compatibility metadata mapping.
 
 Post-JSC-290 delta: Linear now contains `JSC-290`, but live state still shows
 it as `In Progress` and unattached to a project milestone while GitHub PR
@@ -129,19 +135,23 @@ issue labels exist and are applied to the relevant parent issues.
 | JSC-289 | `[coding-harness] Characterize and split CI migration lifecycle boundaries` | In Progress | High | closure_review_pending | Local CI migration boundary work has eval-backed closure proof. Live Linear correctly shows active history but now needs acceptance/closure cleanup instead of another spec. |
 | JSC-290 | `[coding-harness] Mirror validation gate graph in typed specs` | In Progress | High | merged_linear_stale | PR #232 is merged and green, and the eval artifact exists, but Linear still shows active work and no milestone. Do not create another JSC-290 spec; reconcile Linear closure after human acceptance. |
 | JSC-248 | `Implement agent-native cockpit control loop first slice` | In Progress | High | already_covered | Legacy/umbrella cockpit work remains active under `Control loop hardening and flow telemetry`; do not let it expand the next spec beyond JSC-288. |
-| JSC-178 | `Modularize contract validation and command registry to reduce core-file risk` | Todo | High | followup_pr_blocked | The bounded contract-validation slice has already been specified, planned, implemented, reviewed, and eval-reported. PR #234 carries the missing eval artifact but is blocked by `ci/circleci: pr-template`; do not create another JSC-178 spec. |
-| JSC-198 | `Flow Ops: Instrument Linear-GitHub-CircleCI lifecycle telemetry and gates` | Todo | High | next_spec_candidate | Repeated stale Linear/PR closure across JSC-282, JSC-283, JSC-288, JSC-289, JSC-290, and JSC-178 proves this is no longer speculative process work. Admit only a narrow closure-evidence reconciliation slice, not broad telemetry. |
-| JSC-199 | `Sync GitHub PR lifecycle metadata back to Linear issues` | In Progress | High | supporting_issue | Directly matches the repeated PR/Linear drift pattern. Use as evidence and possible child routing under the JSC-198 flow slice. |
-| JSC-200 | `Sync CircleCI pipeline outcomes into Linear flow metrics` | Todo | High | supporting_issue | Relevant only for PR/check closure proof; keep subordinate to the narrow flow-slice spec. |
-| JSC-201 | `Enforce intake and done gates for HE workflow` | Todo | High | supporting_issue | Relevant to preventing completed work from remaining open or missing eval artifacts; avoid broad policy rewrites. |
+| JSC-178 | `Modularize contract validation and command registry to reduce core-file risk` | In Progress | High | followup_pr_blocked | The bounded contract-validation slice has already been specified, planned, implemented, reviewed, and eval-reported. PR #234 carries the missing eval artifact and Linear now shows active follow-up, so this remains closure/evidence repair, not a fresh spec candidate. |
+| JSC-198 | `Flow Ops: Instrument Linear-GitHub-CircleCI lifecycle telemetry and gates` | In Progress | High | next_spec_candidate | Live status now matches the expected architecture queue. Repeated stale Linear/PR closure across JSC-282, JSC-283, JSC-288, JSC-289, JSC-290, and JSC-178 proves this is execution drag. Admit only a narrow closure-evidence reconciliation slice, not broad telemetry. |
+| JSC-199 | `Sync GitHub PR lifecycle metadata back to Linear issues` | Done | High | supporting_issue_done | This support issue is now completed in Linear. Keep it as historical evidence and pattern input for the JSC-198 slice, not as active implementation scope. |
+| JSC-200 | `Sync CircleCI pipeline outcomes into Linear flow metrics` | Done | High | supporting_issue_done | This support issue is now completed in Linear. Use its outcomes as closure-evidence inputs under the JSC-198 slice. |
+| JSC-201 | `Enforce intake and done gates for HE workflow` | Done | High | supporting_issue_done | This support issue is now completed in Linear. Use its gates as constraints while scoping the narrow JSC-198 closure-evidence slice. |
+| JSC-202 | `Add telemetry confidence score for flow reliability` | Done | High | supporting_issue_done | This support issue is now completed and should be treated as prior telemetry groundwork, not new slice scope. |
+| JSC-203 | `Build flow reconciliation dashboard and drift alerts` | Done | High | supporting_issue_done | This support issue is now completed. Preserve as evidence context while keeping the next slice narrowly focused on deterministic closure reconciliation. |
+| JSC-311 | `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` | Todo | High | future_work | Created downstream from JSC-301. Model `$simplify`, `@testing-reviewer`, `$he-fix-bugs`, `$he-code-review`, and `$autofix` as evidence gates so phase exit and commit readiness do not rely on prompt-memory claims. |
 
 ## Approved Next Slice Queue
 
 | Order | Slice | Linear Issue | Route | Depends On | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 0 | Closure cleanup and PR #234 unblock | JSC-178, JSC-282, JSC-283, JSC-288, JSC-289, JSC-290 | Linear/GitHub closure only; no new spec | Human acceptance of eval artifacts, PR #232 merge evidence, and PR #234 check cleanup | Required before claiming the architecture queue is clean. JSC-178 now has a follow-up PR blocked by `ci/circleci: pr-template`, while earlier completed slices still have stale Linear states. |
-| 1 | Flow Ops closure-evidence reconciliation slice | JSC-198 parent, with JSC-199/JSC-200/JSC-201 as supporting evidence or child routing | he-spec -> he-plan -> he-work; agent-assisted with human review on automation boundaries | Closure cleanup queue confirms repeated stale PR/Linear/eval evidence drift | Recommended next new spec slice. Keep it narrow: reconcile PR merge state, eval artifact presence, CircleCI check state, and Linear done/intake metadata so completed slices stop leaking into the next planning cycle. |
+| 0 | Closure cleanup and PR #234 unblock | JSC-178, JSC-282, JSC-283, JSC-288, JSC-289, JSC-290 | Linear/GitHub closure only; no new spec | Human acceptance of eval artifacts, PR #232 merge evidence, and PR #234 check cleanup | Required before claiming the architecture queue is clean. JSC-178 is now `In Progress`, while earlier completed slices still have stale Linear states. |
+| 1 | Flow Ops closure-evidence reconciliation slice | JSC-198 parent, with JSC-199/JSC-200/JSC-201/JSC-202/JSC-203 as supporting evidence | he-spec -> he-plan -> he-work; agent-assisted with human review on automation boundaries | Closure cleanup queue confirms repeated stale PR/Linear/eval evidence drift | Recommended next new spec slice. Keep it narrow: reconcile PR merge state, eval artifact presence, CircleCI check state, and Linear done/intake metadata so completed slices stop leaking into the next planning cycle. |
 | 2 | Contract Validation follow-up only if PR #234 exposes a real product blocker | JSC-178 | hold; no new spec by default | PR #234 mergeability and review state | Do not reopen JSC-178 architecture work just because Linear is stale. Only admit a follow-up if review or CI reveals a real contract-validation defect outside the eval artifact PR. |
+| 3 | HE phase-exit evidence gates for skill-backed commit readiness | JSC-311 live | he-spec -> he-plan -> he-work after JSC-301 closeout | JSC-301 route metadata contract and human approval to admit the future slice | Add typed gate evidence contracts for simplify, testing-reviewer, he-fix-bugs, he-code-review, and autofix. Keep it internal first; do not add public CLI exposure or mutate external systems in the first slice. |
 
 ## Target Linear Destination
 
@@ -168,6 +178,7 @@ issue labels exist and are applied to the relevant parent issues.
 | Validation Typed Gate Specs Slice | `coding-harness` | Linear closure only; milestone absent in live Linear | Mirror shell-heavy validation into typed gate specs behind stable entrypoints. | Gate graph snapshot and typed mirror exist; shell launcher remains stable; PR #232 is merged and green. | Build, test, typecheck, verify-work, gate-spec eval, rollback checks, PR-template gate. | 1 parent, 2-4 sub | Replacing `verify-work.sh` outright, changing external command contract. |
 | Contract Validation Modularization Slice | `coding-harness` | Closure/follow-up only | Modularize contract validation and command-registry-adjacent boundaries now that typed gate metadata exists. | Bounded slice already landed; remaining work is PR #234 evidence closure unless review finds a real product defect. | PR-template gate, review state, eval artifact acceptance, Linear closure. | No new issues by default | Broad CLI rewrite, command catalog redesign, provider policy migration. |
 | Flow Ops closure-evidence reconciliation slice | `coding-harness` | Next spec candidate | Prove a narrow, deterministic reconciliation loop for PR merge state, eval artifact presence, CircleCI state, and Linear done/intake metadata. | Completed slices stop leaking into the next planning cycle; missing evidence is surfaced before merge or closure. | Linear refresh, GitHub PR state, CircleCI check state, eval artifact presence, markdownlint for planning artifacts. | 1 parent, 2-3 sub | Broad telemetry platform, weekly reporting, custom field rollout, portfolio-level process redesign. |
+| HE phase-exit evidence gates slice | `coding-harness` | Future work after JSC-301 | Model skill-backed gate evidence and phase-exit recommendations for commit readiness. | Required gates can distinguish direct skill evidence, proxy review evidence, not-applicable cases, and blockers before commit. | Focused TypeScript tests, gate fixture matrix, codestyle fast, he-code-review evidence. | 1 parent, 3-4 sub | Public CLI exposure, arbitrary skill prompt execution from TypeScript, external tracker mutation, replacing route decisions. |
 
 ## Proposed Parent Issues
 
@@ -179,6 +190,7 @@ issue labels exist and are applied to the relevant parent issues.
 | Parent issue | `[coding-harness] Characterize and split CI migration lifecycle boundaries` | `coding-harness` | `Dev Portfolio` | CI Migration Boundary Recovery Slice | 2 High | Reliability, Architecture, Refactor, Migration | Agent-assisted, human-review required | Provider adapter and policy extraction | Characterization baseline | ADR-006, CI refactor | `ci-migrate-core.ts` is the highest-risk oversized orchestrator. |
 | Parent issue | `[coding-harness] Mirror validation gate graph in typed specs` (`JSC-290`) | `coding-harness` | `Dev Portfolio` | Not attached; Linear closure only | 2 High | Reliability, Agent-Native, CE: Spec, Refactor, Drift-Risk, architecture | Agent-assisted, human-review required | Contract validation modularization | PR #232 merge and eval acceptance evidence | ADR-006, execution invariants, validation refactor, `.harness/specs/2026-05-09-validation-typed-gate-specs-spec.md` | Validation must become inspectable without breaking stable wrappers. |
 | Parent issue | `[coding-harness] Reconcile Flow Ops closure evidence` (`JSC-198` child recommended) | `coding-harness` | `Dev Portfolio` | Flow Ops closure-evidence reconciliation slice | 2 High | Reliability, Automation, Drift-Risk, Agent-Native | Agent-assisted, human-review required | Next architecture slice | PR #234 unblock and stale Linear closure queue acknowledged | JSC-198, JSC-199, JSC-200, JSC-201, execution invariants, governance invariants | Closure evidence must become deterministic before more architecture slices stack up. |
+| Parent issue | `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` (`JSC-311`) | `Harness cockpit routing` | `Dev Portfolio` | HE phase-exit evidence gates slice | 2 High | Reliability, Agent-Native, Eval, Routing, Drift-Risk | Agent-assisted, human-review required | Commit-readiness gates and heartbeat stop rules | JSC-301 RouteDecision/v1 contract closeout | `$simplify`, `$he-code-review`, `$he-fix-bugs`, `$autofix`, `@testing-reviewer`, JSC-301 spec and plan | Skills must become checkable gate evidence, not ceremonial closeout wording. |
 
 ## Proposed Sub-Issues
 
@@ -202,6 +214,67 @@ Only create sub-issues when execution starts for a milestone.
 | `[coding-harness] Mirror validation gate graph in typed specs` | `[coding-harness] Add typed spec mirror behind stable verify-work entrypoint` | 2 High | Agent-assisted | No | Typecheck, tests, full validate-codestyle | Roll back if wrapper compatibility changes. |
 | `[coding-harness] Reconcile Flow Ops closure evidence` | `[coding-harness] Inventory closure evidence sources and stale-state failure modes` | 2 High | Agent-safe | No | Linear/GitHub/CircleCI refresh evidence, markdownlint | Stop if current live states cannot be classified without manual inference. |
 | `[coding-harness] Reconcile Flow Ops closure evidence` | `[coding-harness] Define deterministic closure queue and eval artifact checks` | 2 High | Agent-assisted | Yes after inventory | Focused fixture or command proof, docs lint, Linear delta replay | Roll back if the slice creates process-only docs without executable or checkable closure evidence. |
+| `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` | `[coding-harness] Define HeGateResult/v1 and gate execution-mode taxonomy` | 2 High | Agent-assisted | No | Typecheck, focused gate-contract tests, markdownlint | Stop if gate evidence cannot distinguish direct skill use from proxy review or manual validation. |
+| `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` | `[coding-harness] Add fixtures for simplify, testing-reviewer, he-fix-bugs, he-code-review, and autofix gates` | 2 High | Agent-assisted | Yes after taxonomy | Focused fixture tests, codestyle fast | Roll back if fixtures treat route labels as proof that a gate ran. |
+| `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` | `[coding-harness] Add HePhaseExit/v1 aggregator for continue, stop, and commit-blocked decisions` | 2 High | Agent-assisted | No | Aggregator tests, focused route-decision regression tests | Stop if commit can be allowed while a required configured gate is fail, blocked, or not_run. |
+
+## JSC-301 Future Work: Skill-Backed HE Gates
+
+The JSC-301 RouteDecision/v1 work exposed a separate control-plane gap:
+lifecycle routing can say which HE stage applies, but it cannot prove that a
+required closeout gate actually ran. The future work should make those gates
+typed and testable before they are used as commit or heartbeat stop rules.
+
+Recommended Linear issue:
+
+| Field | Value |
+| --- | --- |
+| Issue | `JSC-311` |
+| Title | `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` |
+| Parent | `JSC-300` |
+| Project | `Harness cockpit routing` |
+| Priority | High |
+| Labels | Reliability, Agent-Native, Eval, Routing, Drift-Risk |
+| Status | Todo future work |
+
+Scope:
+
+- Define `HeGateResult/v1` for one gate's evidence, status, execution mode,
+  source refs, findings, actions, skipped items, validation, and blockers.
+- Define `HePhaseExit/v1` for aggregating required gates into continue, stop,
+  human-review, or commit-blocked decisions.
+- Model the first gate set from `$simplify`, `@testing-reviewer`,
+  `$he-fix-bugs`, `$he-code-review`, and `$autofix`.
+- Keep `testing-reviewer` as test-adequacy evidence only.
+- Keep `$he-fix-bugs` conditional on concrete failing evidence; use
+  `not_applicable` when there is no bug evidence.
+- Keep `$autofix` tied to review-feedback inventory and accounting, not generic
+  cleanup.
+
+Out of scope:
+
+- Public CLI exposure in the first slice.
+- Executing arbitrary skill prompt bodies from TypeScript.
+- Inferring that a skill ran from prose that merely resembles a skill output.
+- Mutating git, Linear, GitHub, CodeRabbit, or CircleCI.
+- Replacing `RouteDecision/v1` or `HarnessDecision/v1`.
+
+Acceptance:
+
+- Gate fixtures distinguish `direct_skill`, `subagent_proxy`, `manual_review`,
+  `validation_only`, `not_applicable`, and `not_run`.
+- `simplify` requires reuse, quality, and efficiency review accounting.
+- `testing-reviewer` cannot satisfy `$he-fix-bugs`.
+- `he-fix-bugs` blocks when failing evidence exists without reproduction and
+  repair proof.
+- `he-code-review` requires findings-first evidence, traceability, validation,
+  and `safe_to_continue`.
+- `autofix` blocks when review feedback exists but inventory/accounting is
+  missing.
+- Phase exit refuses commit when any required configured gate is `fail`,
+  `blocked`, or `not_run`.
+- Tests prove `RouteDecision/v1` route labels are not treated as gate-run
+  evidence.
 
 ## Now / Next / Later / Do Not Create
 
@@ -210,6 +283,7 @@ Only create sub-issues when execution starts for a milestone.
 | Now | Closure cleanup and PR #234 unblock | `coding-harness` | JSC-178 has an open draft follow-up PR blocked by `ci/circleci: pr-template`, and JSC-282/JSC-283/JSC-288/JSC-289/JSC-290 remain stale or active in Linear despite implementation/eval evidence. |
 | Next | Flow Ops closure-evidence reconciliation slice | `coding-harness` | Stale issue/PR/eval closure has now repeated across enough slices that it is execution drag, not theoretical process polish. Spec the smallest slice under JSC-198/JSC-199 that proves closure state can be derived and synchronized deterministically. |
 | Later | Contract Validation follow-up | `coding-harness` | Only useful if PR #234 or human review reveals an actual contract-validation behavior defect. Do not reopen JSC-178 for architecture expansion. |
+| Later | HE phase-exit evidence gates for skill-backed commit readiness | `coding-harness` | Admit after JSC-301 closeout or when commit/heartbeat stop rules need typed evidence for simplify, testing-reviewer, he-fix-bugs, he-code-review, and autofix gates. |
 | Later | Portfolio-level reactivation checklist | `Portfolio Ops` | Useful only if the pattern repeats across repo projects. |
 | Do Not Create | Another Validation Typed Gate Specs spec | None | JSC-290 already has a spec, plan, implementation, eval, commit, push, and merged PR #232. Remaining work is Linear closure, not a new spec. |
 | Do Not Create | Another Contract Validation Modularization spec | None | JSC-178 already has a spec, plan, implementation, eval report, compound review, and follow-up eval PR. Remaining work is PR/Linear closure unless a real blocker appears. |
