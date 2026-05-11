@@ -8,7 +8,7 @@
 
 import { PROJECT_MISE_REQUIRED_TOOLS } from "../policy/tooling-baseline.js";
 
-export const BIOME_SCHEMA_VERSION = "2.4.14";
+export const BIOME_SCHEMA_VERSION = "2.4.15";
 const BIOME_SCHEMA_URL = `https://biomejs.dev/schemas/${BIOME_SCHEMA_VERSION}/schema.json`;
 
 /**

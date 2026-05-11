@@ -150,6 +150,9 @@ MDX:
 ## 14. Toolchain & Lockfiles
 
 * Node and package-manager contract is defined in [11-package-managers-pnpm-npm.md](./11-package-managers-pnpm-npm.md).
+* `.mise.toml`, `docs/agents/tooling.md`, `scripts/check-environment.sh`, and `harness.contract.json` MUST stay aligned when a managed CLI is added, removed, or renamed.
+* Global npm CLIs used by agents SHOULD be pinned through mise as `npm:<package>` tools instead of installed manually with `npm install -g`.
+* If mise lockfile support is adopted for this repository, commit the lockfile and document the update workflow in the tooling policy before requiring it in CI.
 * Python dependency locks should remain deterministic and validated in CI.
 * Rust lockfiles should remain deterministic and validated in CI.
 * Frozen or locked install/build modes SHOULD be used for CI reproducibility.

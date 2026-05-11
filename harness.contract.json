@@ -676,6 +676,7 @@
 			"eslint",
 			"agent-browser",
 			"agentation",
+			"ctx7",
 			"mermaid-cli",
 			"markdownlint-cli2",
 			"wrangler",
@@ -705,6 +706,7 @@
 			"eslint",
 			"agent-browser",
 			"agentation-mcp",
+			"ctx7",
 			"mmdc",
 			"markdownlint-cli2",
 			"wrangler",
@@ -775,6 +777,10 @@
 			{
 				"tool": "npm:agentation-mcp",
 				"version": "1.2.0"
+			},
+			{
+				"tool": "npm:ctx7",
+				"version": "0.4.2"
 			},
 			{
 				"tool": "npm:@mermaid-js/mermaid-cli",
@@ -888,6 +894,10 @@
 				},
 				{
 					"name": "Agentation",
+					"icon": "tool"
+				},
+				{
+					"name": "Context7",
 					"icon": "tool"
 				},
 				{

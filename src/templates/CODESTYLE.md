@@ -11,6 +11,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 
 ## Table of Contents
 - [Baselines](#baselines)
+- [Toolchain config](#toolchain-config)
 - [Codestyle modules](#codestyle-modules)
 - [Enforcement model](#enforcement-model)
 - [How to use this pack](#how-to-use-this-pack)
@@ -26,6 +27,13 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - TypeScript baseline: 5.9.x with NodeNext module semantics when TS is used.
 - Rust baseline: 2024 edition (rustc >= 1.85).
 - Security advisories override baselines: patch immediately when a baseline dependency has a published fix.
+
+## Toolchain config
+- `.mise.toml` is the canonical runtime and global CLI pin surface for this repository.
+- `package.json` `packageManager` plus `pnpm-lock.yaml` are the canonical package-manager and dependency lock surfaces.
+- `biome.json` is the canonical Biome formatter, assist, and style-lint configuration; run it through `pnpm lint`.
+- `scripts/check-environment.sh` and `docs/agents/tooling.md` MUST stay aligned with `.mise.toml` whenever managed CLIs change.
+- For this repository, `biome check` intentionally excludes the root `CODESTYLE.md` path; downstream packages should ship a real checked-in `CODESTYLE.md` file.
 
 ## Codestyle modules
 - [codestyle/01-foundations.md](./codestyle/01-foundations.md)
