@@ -146,6 +146,13 @@ No blocking findings remain.
   heartbeat behavior belongs to `JSC-303`.
 - Live Linear status should be refreshed before `he-plan`; this review validates
   the artifact and local source evidence, not current external tracker state.
+- The he-plan must keep route-decision/v1 contract changes additive to
+  harness-decision/v1 when updating `withLifecycleRouteMeta` and `targetCommand`
+  symbols. Refresh `AI/context/diagram-context.md` via
+  `bash scripts/refresh-diagram-context.sh`, validate with `pnpm docs:lint`
+  (docs-gate), and commit the updated architecture/context guide when docs-gate
+  passes to maintain contract consistency between route-decision/v1 and
+  harness-decision/v1.
 
 ## Linear Work Item Contract
 

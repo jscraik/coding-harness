@@ -589,6 +589,10 @@ Before PR handoff if production source changed:
 
 - `pnpm check`
 - `bash scripts/verify-work.sh --fast`
+- `pnpm docs:lint` (docs-gate validation)
+- `bash scripts/refresh-diagram-context.sh` (regenerate `AI/context/diagram-context.md`)
+- Commit refreshed `AI/context/diagram-context.md` when docs-gate passes
+- Ensure route-decision/v1 remains additive to harness-decision/v1 in architecture/context updates
 
 Artifact validation for this plan:
 
