@@ -85,7 +85,7 @@ Notes:
 - If runtime or artifact behavior changed, run `pnpm test:deep`.
 - When docs-gate categories are affected, run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and clear warnings before merge.
 - Agent-native cockpit, generated environment action, hook setup, and architecture-artifact changes must keep the docs-gate required surfaces synchronized in the same PR so `harness next --json` recommendations, local runtime setup, and reviewer-facing evidence describe the current contract.
-- RouteDecision lifecycle metadata is agent-native cockpit contract work: keep `route-decision/v1` additive to `harness-decision/v1`, refresh architecture context, and synchronize docs-gate-required governance surfaces in the same PR.
+- RouteDecision lifecycle metadata is agent-native cockpit contract work: keep `route-decision/v1` additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and synchronize docs-gate-required governance surfaces in the same PR.
 - Validation gate graph changes that add typed gate specs, parity tests, or resume-checkpoint guards are architecture-artifact changes; refresh `AI/context/diagram-context.md` and keep docs-gate-required governance surfaces synchronized in the same PR.
 - Goal-continuation or approval-plan contract changes must keep `harness next --json` safety metadata, snapshot-only state evidence, and agent-governance docs synchronized in the same PR.
 - When AGENTS/vocabulary surfaces change, run `pnpm run docs:ubiquitous:guard` to ensure `AGENTS.md` keeps the glossary linkage contract.
