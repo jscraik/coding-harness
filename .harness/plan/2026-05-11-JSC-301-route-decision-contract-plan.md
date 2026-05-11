@@ -592,9 +592,9 @@ Before PR handoff if production source changed:
 
 Artifact validation for this plan:
 
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md`
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md`
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md`
+- `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md`
+- `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md`
+- `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md`
 - `pnpm markdownlint .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md`
 
 Do not run `pnpm test:deep` for `JSC-301` unless implementation unexpectedly
