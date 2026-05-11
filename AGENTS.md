@@ -131,10 +131,10 @@ Core routing (Layer 2):
 - Keep command-language and closeout wording consistent with glossary canonical terms when reporting validation, drift, swarms, blockers, and lifecycle state.
 
 ## Project Brain
-- Use Project Brain files in `.harness/` with Local Memory; canonical guidance lives at `/Users/jamiecraik/dev/config/codex/instructions/project-brain.md`.
+- Use Project Brain files in `.harness/` with Local Memory; canonical guidance lives at `/Users/jamiecraik/dev/configs/codex/instructions/project-brain.md`.
 - `.harness/README.md` is the tracked control-plane map for selective `.harness` tracking: durable Markdown and JSON contracts move with the repo, while runtime databases, backups, caches, run output, and bulk snapshots stay local unless explicitly promoted.
 - `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` are secondary context; they do not drive implementation unless an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slice references them.
-- Bootstrap with `bash /Users/jamiecraik/dev/config/codex/scripts/init-project-brain.sh --domains cli,ci,governance,tooling --index`; use `--force` only for re-init after backing up `.harness/memory/LEARNINGS.md`.
+- Bootstrap with `bash /Users/jamiecraik/dev/configs/codex/scripts/init-project-brain.sh --domains cli,ci,governance,tooling --index`; use `--force` only for re-init after backing up `.harness/memory/LEARNINGS.md`.
 - When the north-star learning loop finds a repeated high-value rule, keep the imported learning artifact as operational evidence and promote the distilled durable rule, decision, or explicit skip reason into Project Brain before closeout.
 
 ## Implementation Conventions
