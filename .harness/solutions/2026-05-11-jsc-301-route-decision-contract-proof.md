@@ -110,11 +110,11 @@ Local validation evidence recorded for JSC-301:
   passed, 0 errors.
 - `bash scripts/validate-codestyle.sh --fast` passed, including related
   RouteDecision tests.
-- `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/2026-05-11-JSC-301-route-decision-contract-coding-harness-eval.md --json`
+- `python3 Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/2026-05-11-JSC-301-route-decision-contract-coding-harness-eval.md --json`
   passed.
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/evals/2026-05-11-JSC-301-route-decision-contract-coding-harness-eval.md`
+- `python3 Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/evals/2026-05-11-JSC-301-route-decision-contract-coding-harness-eval.md`
   passed.
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/evals/2026-05-11-JSC-301-route-decision-contract-coding-harness-eval.md`
+- `python3 Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/evals/2026-05-11-JSC-301-route-decision-contract-coding-harness-eval.md`
   passed.
 - `pnpm markdownlint .harness/evals/2026-05-11-JSC-301-route-decision-contract-coding-harness-eval.md`
   passed, 0 errors.
