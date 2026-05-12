@@ -106,15 +106,17 @@ is acknowledged.
 
 2026-05-11 hold delta: `JSC-301`, `JSC-302`, `JSC-304`, and parent
 `JSC-300` still appear in the `Harness cockpit routing` project, but Linear
-reports them as archived. Treat them as historical route-integration context,
-not active next-slice candidates. `JSC-303` remains under the archived legacy
-`coding-harness` project and is also not an active next-slice candidate.
+reports them as archived. Treat them as archived issue records with active
+closeout evidence only for PR-linked reconciliation, not as active next-slice
+candidates. `JSC-303` remains under the archived legacy `coding-harness`
+project and is also not an active next-slice candidate.
 
 2026-05-12 reconciliation note: the active PR #242 branch and review flow are
 implementation-closeout evidence for archived `JSC-301`, not proof that
 `JSC-301` is unarchived in Linear. Keep `JSC-311` as the only active next-slice
-issue and keep `JSC-300`/`JSC-301`/`JSC-302`/`JSC-304` classified as archived
-until Linear state changes.
+issue in `Harness cockpit routing`, and keep
+`JSC-300`/`JSC-301`/`JSC-302`/`JSC-304` classified as archived until Linear
+state changes.
 
 2026-05-11 closure delta: `JSC-282`, `JSC-283`, `JSC-288`, `JSC-289`,
 and `JSC-290` now report `Done` in Linear. This resolves the previous stale
@@ -142,7 +144,7 @@ issue labels exist and are applied to the relevant parent issues.
 | Issue | Title | Status | Priority | Classification | Reason |
 | --- | --- | --- | --- | --- | --- |
 | JSC-300 | `HE lifecycle routing integration for coding-harness cockpit` | Triage, archived | High | archived_parent_context | Parent issue for the route-integration family. Keep as context for `JSC-311`; do not spec directly while archived. |
-| JSC-301 | `RouteDecision/v1 contract and cockpit compatibility mapping` | Triage, archived | High | active_pr_closeout | Implementation is represented by draft PR #242 in this repo. Treat as closeout/review state, not a new spec target. |
+| JSC-301 | `RouteDecision/v1 contract and cockpit compatibility mapping` | Triage, archived | High | active_pr_closeout | Implementation is represented by draft PR #242 in this repo. Treat as archived Linear context with active PR closeout/review evidence, not a new spec target. |
 | JSC-302 | `Advisory lifecycle route adapter for harness next` | Triage, archived | High | hold_archived | Archived Linear state makes this unavailable as the next slice. Re-admit only with explicit human decision after JSC-301/JSC-311 evidence. |
 | JSC-303 | `Executable resume and automation loop eval fixtures` | Triage, archived | Medium | hold_archived | Legacy `coding-harness` project issue. Keep as future routing/eval context, not current next-slice queue. |
 | JSC-304 | `Decide expert exposure for harness route --json` | Triage, archived | Low | hold_decision | Optional expert exposure remains a later decision gate; do not spec before internal evidence gates exist. |
@@ -176,7 +178,7 @@ issue labels exist and are applied to the relevant parent issues.
 | Work type | Destination | Parent initiative | Reason |
 | --- | --- | --- | --- |
 | Lifecycle routing and HE cockpit refactors | `Harness cockpit routing` project | `Dev Portfolio` | Current active Linear destination for JSC-300/JSC-311 lifecycle routing work. |
-| Legacy repo-specific refactors | Archived `coding-harness` project | `Dev Portfolio` | Historical destination for completed or archived CLI, contract, validation, skill, docs, and harness artifacts. Re-admit only with explicit Linear reactivation. |
+| Legacy repo-specific refactors | Archived `coding-harness` project | `Dev Portfolio` | Historical destination for completed or archived CLI, contract, validation, skill, docs, and harness artifacts. Re-admit only with explicit Linear reactivation. Excludes `JSC-311`. |
 | JSC-311 project routing guard | `Harness cockpit routing` project only | `Dev Portfolio` | Do not route `JSC-311` to legacy `coding-harness`; legacy routing is historical-only context. |
 | Cross-repo operating hygiene | `Portfolio Ops` project | `Dev Portfolio` | Only reusable portfolio cadence, labels, or project hygiene belongs here. |
 | New initiative | Do not create | `Dev Portfolio` already exists | The existing initiative cleanly represents the work. |
@@ -199,7 +201,7 @@ issue labels exist and are applied to the relevant parent issues.
 | Validation Typed Gate Specs Slice | `coding-harness` | Linear closure only; milestone absent in live Linear | Mirror shell-heavy validation into typed gate specs behind stable entrypoints. | Gate graph snapshot and typed mirror exist; shell launcher remains stable; PR #232 is merged and green. | Build, test, typecheck, verify-work, gate-spec eval, rollback checks, PR-template gate. | 1 parent, 2-4 sub | Replacing `verify-work.sh` outright, changing external command contract. |
 | Contract Validation Modularization Slice | `coding-harness` | Closure/follow-up only | Modularize contract validation and command-registry-adjacent boundaries now that typed gate metadata exists. | Bounded slice already landed; remaining work is PR #234 evidence closure unless review finds a real product defect. | PR-template gate, review state, eval artifact acceptance, Linear closure. | No new issues by default | Broad CLI rewrite, command catalog redesign, provider policy migration. |
 | Flow Ops closure-evidence reconciliation slice | `coding-harness` | Next spec candidate | Prove a narrow, deterministic reconciliation loop for PR merge state, eval artifact presence, CircleCI state, and Linear done/intake metadata. | Completed slices stop leaking into the next planning cycle; missing evidence is surfaced before merge or closure. | Linear refresh, GitHub PR state, CircleCI check state, eval artifact presence, markdownlint for planning artifacts. | 1 parent, 2-3 sub | Broad telemetry platform, weekly reporting, custom field rollout, portfolio-level process redesign. |
-| HE phase-exit evidence gates slice | `Harness cockpit routing` | Future work after JSC-301 | Model skill-backed gate evidence and phase-exit recommendations for commit readiness. | Required gates can distinguish direct skill evidence, proxy review evidence, not-applicable cases, and blockers before commit. | Focused TypeScript tests, gate fixture matrix, codestyle fast, he-code-review evidence. | 1 parent, 3-4 sub | Public CLI exposure, arbitrary skill prompt execution from TypeScript, external tracker mutation, replacing route decisions. |
+| HE phase-exit evidence gates slice | `Harness cockpit routing` | Active next-slice lane after JSC-301 PR closeout evidence | Model skill-backed gate evidence and phase-exit recommendations for commit readiness. | Required gates can distinguish direct skill evidence, proxy review evidence, not-applicable cases, and blockers before commit. | Focused TypeScript tests, gate fixture matrix, codestyle fast, he-code-review evidence. | 1 parent, 3-4 sub | Public CLI exposure, arbitrary skill prompt execution from TypeScript, external tracker mutation, replacing route decisions. |
 
 ## Proposed Parent Issues
 
