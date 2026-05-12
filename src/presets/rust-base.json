@@ -92,6 +92,7 @@
 			"eslint",
 			"agent-browser",
 			"agentation",
+			"ctx7",
 			"markdownlint-cli2",
 			"wrangler",
 			"beautiful-mermaid",
@@ -120,6 +121,7 @@
 			"eslint",
 			"agent-browser",
 			"agentation-mcp",
+			"ctx7",
 			"markdownlint-cli2",
 			"wrangler",
 			"beautiful-mermaid",
@@ -189,6 +191,10 @@
 			{
 				"tool": "npm:agentation-mcp",
 				"version": "1.2.0"
+			},
+			{
+				"tool": "npm:ctx7",
+				"version": "0.4.2"
 			},
 			{
 				"tool": "npm:@brainwav/rsearch",
@@ -298,6 +304,10 @@
 				},
 				{
 					"name": "Agentation",
+					"icon": "tool"
+				},
+				{
+					"name": "Context7",
 					"icon": "tool"
 				},
 				{
