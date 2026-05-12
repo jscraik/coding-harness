@@ -141,7 +141,7 @@ Core routing (Layer 2):
 - Local ESM imports must include `.js` extensions.
 - This repo publishes a harness skill to downstream repos via `harness init`; installed path is `.agents/skills/coding-harness/` in the target repo (not this repo's local skills tree).
 - `harness init` emits downstream PR, workflow, and worktree scaffolding with `jscraik/feature/*` as the agent-created branch prefix; keep those generated surfaces synchronized through `AGENT_BRANCH_PREFIX`.
-- Keep the repo-root code-style pack (`CODESTYLE.md` + `codestyle/`) verbatim-synced from the canonical source and enforce integrity with `codestyle/CHECKSUMS.sha256` plus `bash scripts/check-codestyle-parity.sh`.
+- Keep the repo-root code-style pack (`CODESTYLE.md` + `codestyle/`) synchronized and enforce integrity with `codestyle/CHECKSUMS.sha256` plus `bash scripts/check-codestyle-parity.sh`.
 - Use repo script contracts: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts` (see [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)).
 
 ## References
