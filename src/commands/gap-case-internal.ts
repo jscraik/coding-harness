@@ -170,7 +170,13 @@ export function saveStore(storePath: string, store: GapCaseStoreV1): void {
 	// so readers always see either the old or the new content — never a partial write.
 	const tmpPath = `${absolutePath}.tmp`;
 	try {
-		writeFileSync(tmpPath, JSON.stringify(store, null, 2), "utf-8");
+		const serialized = JSON.stringify(store, null, 2);
+		if (Buffer.byteLength(serialized, "utf8") > MAX_STORE_SIZE_BYTES) {
+			throw new Error(
+				`Store file exceeds max size (${MAX_STORE_SIZE_BYTES} bytes)`,
+			);
+		}
+		writeFileSync(tmpPath, serialized, "utf-8");
 		renameSync(tmpPath, absolutePath);
 	} catch (err) {
 		// Best-effort cleanup of the temp file on failure
@@ -183,6 +189,7 @@ export function saveStore(storePath: string, store: GapCaseStoreV1): void {
 		}
 		throw err;
 	}
+}
 }
 
 /**
