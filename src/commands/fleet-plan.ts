@@ -1,617 +1,24 @@
 import { readFileSync } from "node:fs";
 
-export const FLEET_PLAN_SCHEMA_VERSION = "harness-fleet-remediation-plan/v1";
+import { classifyRepo } from "./fleet-plan-repo.js";
+import {
+	countReposWithReason,
+	pluralize,
+	repoVerb,
+	type FleetPlanCommand,
+	type FleetPlanRepo,
+	type FleetRemediationPlan,
+	type MatrixReport,
+	type ParsedFleetPlanArgs,
+	FLEET_PLAN_SCHEMA_VERSION,
+} from "./fleet-plan-types.js";
 
-type FleetRepoStatus =
-	| "ready"
-	| "needs-adoption"
-	| "needs-circleci-migration"
-	| "needs-coderabbit-setup"
-	| "needs-codestyle-install"
-	| "needs-codestyle-refresh"
-	| "needs-greptile-cleanup"
-	| "blocked";
-
-type FleetRisk = "low" | "medium" | "high" | "unknown";
-
-interface MatrixMissingSurface {
-	group?: unknown;
-	path?: unknown;
-	fix?: unknown;
-	reason?: unknown;
-}
-
-interface MatrixRepoResult {
-	repo?: unknown;
-	updateMode?: unknown;
-	trackedManifest?: unknown;
-	missingFleetContractSurfaces?: unknown;
-	legacyGreptilePaths?: unknown;
-	codestyleParityFailures?: unknown;
-	errors?: unknown;
-	statusChangedByDryRun?: unknown;
-	exitCode?: unknown;
-}
-
-interface MatrixReport {
-	schemaVersion?: unknown;
-	pass?: unknown;
-	repoCount?: unknown;
-	results?: unknown;
-}
-
-interface RepoSignals {
-	statusChangedByDryRun: boolean;
-	exitCode?: number;
-	errors: string[];
-	trackedManifest: boolean | null;
-	hasCircleCiGap: boolean;
-	hasCodeRabbitGap: boolean;
-	hasCodestyleGap: boolean;
-	codestyleParityFailurePaths: string[];
-	hasCodestyleMissingFailure: boolean;
-	hasGreptileGap: boolean;
-}
-
-interface RepoRecommendation {
-	status: FleetRepoStatus;
-	risk: FleetRisk;
-	nextAction: string;
-	nextCommandArgv: string[] | null;
-	safeToRun: boolean;
-	requiresApprovalBeforeMutation: boolean;
-}
-
-function isMatrixOutputValidationError(error: string): boolean {
-	return (
-		error.includes("invalid JSON output") ||
-		error.startsWith("JSON output missing ") ||
-		error === "created array no longer matches updated array"
-	);
-}
-
-/**
- * Builds a RepoRecommendation from the provided fields and marks it as requiring approval before any mutation.
- *
- * @returns A `RepoRecommendation` containing the supplied `status`, `risk`, `nextAction`, `nextCommandArgv`, and `safeToRun` fields, with `requiresApprovalBeforeMutation` set to `true`.
- */
-function recommendation(args: {
-	status: FleetRepoStatus;
-	risk: FleetRisk;
-	nextAction: string;
-	nextCommandArgv: string[] | null;
-	safeToRun: boolean;
-}): RepoRecommendation {
-	return {
-		...args,
-		requiresApprovalBeforeMutation: true,
-	};
-}
-
-/**
- * Create a read-only "init" dry-run recommendation for a single repository.
- *
- * The recommendation is marked `safeToRun` with `risk` set to `low` and includes a
- * `nextCommandArgv` that runs `harness init <repo> --dry-run --json`. When
- * `update` is true, the `--update` flag is included in the command.
- *
- * @param repo - Repository identifier (passed as the positional argument to `harness init`)
- * @param status - Classification status to assign to the recommendation
- * @param nextAction - Short human-readable description of the recommended next action
- * @param update - If true, include `--update` in the generated init command
- * @returns A `RepoRecommendation` representing a read-only init dry-run for the repo
- */
-function initDryRunRecommendation(args: {
-	repo: string;
-	status: FleetRepoStatus;
-	nextAction: string;
-	update: boolean;
-}): RepoRecommendation {
-	return recommendation({
-		status: args.status,
-		risk: "low",
-		nextAction: args.nextAction,
-		nextCommandArgv: [
-			"harness",
-			"init",
-			args.repo,
-			...(args.update ? ["--update"] : []),
-			"--dry-run",
-			"--json",
-		],
-		safeToRun: true,
-	});
-}
-
-/** Read-only command recommendation included in the first safe remediation wave. */
-export interface FleetPlanCommand {
-	/** Repository the command targets. */
-	repo: string;
-	/** Current fleet status for the repository. */
-	status: FleetRepoStatus;
-	/** Relative risk for the dry-run command. */
-	risk: FleetRisk;
-	/** Shell-display command for humans. */
-	nextCommand: string;
-	/** Machine-safe argv for agents. */
-	nextCommandArgv: string[];
-	/** Human-readable description of the recommended next action. */
-	nextAction: string;
-}
-
-/** Per-repository remediation recommendation derived from one matrix result. */
-export interface FleetPlanRepo {
-	/** Absolute or input repository path reported by the matrix. */
-	repo: string;
-	/** Fleet remediation classification for the repository. */
-	status: FleetRepoStatus;
-	/** Relative risk of the recommended next step. */
-	risk: FleetRisk;
-	/** True when the recommended command is read-only and safe to run now. */
-	safeToRun: boolean;
-	/** Human-readable next step. */
-	nextAction: string;
-	/** Shell-display command for the next step, or null when blocked. */
-	nextCommand: string | null;
-	/** Machine-safe argv for the next step, or null when blocked. */
-	nextCommandArgv: string[] | null;
-	/** True when the eventual mutating follow-up still needs human approval. */
-	requiresApprovalBeforeMutation: boolean;
-	/** True when this recommendation itself writes files. */
-	writesFiles: boolean;
-	/** Stable reason codes explaining why the repository is not live-upgrade ready. */
-	blockingReasons: string[];
-	/** Matrix evidence retained so agents do not need to re-parse stderr text. */
-	evidence: {
-		matrixArtifact: string;
-		updateMode: string | null;
-		trackedManifest: boolean | null;
-		missingSurfaces: string[];
-		legacyGreptilePaths: string[];
-		codestyleParityFailures: string[];
-		errors: string[];
-	};
-}
-
-/** Agent-native fleet remediation plan produced from an upgrade matrix artifact. */
-export interface FleetRemediationPlan {
-	/** Schema identifier for downstream automation. */
-	schemaVersion: typeof FLEET_PLAN_SCHEMA_VERSION;
-	/** ISO timestamp when the plan was generated. */
-	generatedAt: string;
-	/** Matrix artifact path used as source evidence. */
-	generatedFrom: string;
-	/** True only when every repo is already classified as ready. */
-	liveUpgradeReady: boolean;
-	/** True when at least one read-only next command can be run safely. */
-	safeToRun: boolean;
-	/** Human-readable top-level next step. */
-	nextAction: string;
-	/** Shell-display top-level command, or null when all results are blocked. */
-	nextCommand: string | null;
-	/** Machine-safe top-level argv, or null when all results are blocked. */
-	nextCommandArgv: string[] | null;
-	/** Status counts for quick fleet triage. */
-	summary: {
-		repoCount: number;
-		ready: number;
-		needsAdoption: number;
-		needsCircleCiMigration: number;
-		needsCodeRabbitSetup: number;
-		needsCodestyleInstall: number;
-		needsCodestyleRefresh: number;
-		needsGreptileCleanup: number;
-		blocked: number;
-	};
-	/** Cross-cutting finding counts that may be hidden behind higher-priority statuses. */
-	findingCounts: {
-		notHarnessTracked: number;
-		missingCircleCi: number;
-		missingCodeRabbit: number;
-		missingCodestyle: number;
-		staleCodestyle: number;
-		legacyGreptile: number;
-		dryRunMutatedRepository: number;
-		matrixCommandFailed: number;
-		invalidMatrixJsonOutput: number;
-		matrixReportedErrors: number;
-	};
-	/** Human-readable reasons live upgrades are currently unsafe. */
-	liveUpgradeBlockedBecause: string[];
-	/** Bounded dry-run-only command wave for agents to try before live mutation. */
-	firstSafeWave: FleetPlanCommand[];
-	/** Ordered per-repo remediation recommendations. */
-	repos: FleetPlanRepo[];
-}
-
-interface ParsedFleetPlanArgs {
-	from?: string;
-	json: boolean;
-	help: boolean;
-	error?: string;
-}
-
-/**
- * Normalize a value to a non-empty string or indicate missing content.
- *
- * @returns The original string if it is non-empty, `null` otherwise.
- */
-function asString(value: unknown): string | null {
-	return typeof value === "string" && value.length > 0 ? value : null;
-}
-
-/**
- * Coerces an unknown input to a boolean, returning `null` when the input is not a boolean.
- *
- * @param value - The value to inspect; boolean values are returned unchanged.
- * @returns The input boolean if `value` is a boolean, `null` otherwise.
- */
-function asBoolean(value: unknown): boolean | null {
-	return typeof value === "boolean" ? value : null;
-}
-
-/**
- * Extracts string elements from an array, returning them in their original order.
- *
- * @param value - The value to inspect; if it's an array, string entries will be kept.
- * @returns The array of string elements, or an empty array if `value` is not an array or contains no strings.
- */
-function asStringArray(value: unknown): string[] {
-	return Array.isArray(value)
-		? value.filter((entry): entry is string => typeof entry === "string")
-		: [];
-}
-
-/**
- * Normalize a value to an array of matrix missing-surface objects.
- *
- * @param value - The input to coerce; expected to be an array of entries that may represent missing-surface objects.
- * @returns An array of entries from `value` that are plain objects, typed as `MatrixMissingSurface`; returns an empty array if `value` is not an array.
- */
-function asMissingSurfaces(value: unknown): MatrixMissingSurface[] {
-	return Array.isArray(value)
-		? value.filter(
-				(entry): entry is MatrixMissingSurface =>
-					typeof entry === "object" && entry !== null,
-			)
-		: [];
-}
-
-/**
- * Checks whether any missing-surface entry belongs to the specified group.
- *
- * @param surfaces - Array of missing-surface entries to search
- * @param group - The group name to match against each surface's `group` field
- * @returns `true` if at least one entry has `group` equal to `group`, `false` otherwise
- */
-function hasMissingSurface(
-	surfaces: MatrixMissingSurface[],
-	group: string,
-): boolean {
-	return surfaces.some((surface) => surface.group === group);
-}
-
-/**
- * Extracts `path` string values from an array of missing-surface entries.
- *
- * @param surfaces - Array of objects that may contain a `path` property
- * @returns The list of `path` values present on the input entries; entries without a string `path` are omitted
- */
-function surfacePaths(surfaces: MatrixMissingSurface[]): string[] {
-	return surfaces
-		.map((surface) => asString(surface.path))
-		.filter((path): path is string => path !== null);
-}
-
-/**
- * Determines whether any missing-surface entry in `surfaces` has the given `reason`.
- *
- * @param surfaces - Array of missing-surface entries to inspect
- * @param reason - Reason string to match against each surface's `reason` field
- * @returns `true` if any entry's `reason` equals `reason`, `false` otherwise
- */
-function hasCodestyleFailureReason(
-	surfaces: MatrixMissingSurface[],
-	reason: string,
-): boolean {
-	return surfaces.some((surface) => surface.reason === reason);
-}
-
-/**
- * Create a shell-escaped command line from an argv array.
- *
- * @param argv - Array of command arguments in order
- * @returns The command string with each argument shell-escaped and joined by spaces
- */
-function commandText(argv: string[]): string {
-	return argv.map((part) => shellQuote(part)).join(" ");
-}
-
-/**
- * Produce a shell-escaped token for safe use as a single POSIX shell argv element.
- *
- * @param value - The input string to quote when necessary
- * @returns The input as a shell-safe token: returned unchanged if already safe, otherwise wrapped in single quotes with embedded single quotes escaped
- */
-function shellQuote(value: string): string {
-	if (/^[A-Za-z0-9_./:=@%+,-]+$/.test(value)) return value;
-	return `'${value.replaceAll("'", "'\\''")}'`;
-}
-
-/**
- * Assembles an ordered list of stable blocking reason codes for a repository based on dry-run results, exit status, detected gaps, and reported errors.
- *
- * @param args.statusChangedByDryRun - Whether a dry-run reported repository mutations.
- * @param args.trackedManifest - `true` if the repo is tracked by Harness, `false` if explicitly untracked, `null` if unknown.
- * @returns An array of reason codes describing why the repo is not live-upgrade ready, for example:
- * `dry-run-mutated-repository`, `matrix-command-failed`, `invalid-matrix-json-output`,
- * `matrix-reported-errors`, `repo-not-harness-tracked`, `tracked-repo-missing-circleci`,
- * `missing-coderabbit`, `missing-codestyle`, `stale-codestyle`, `legacy-greptile-present`.
- * The reasons are returned in evaluation order.
- */
-function buildBlockingReasons(args: {
-	statusChangedByDryRun: boolean;
-	exitCode?: number;
-	errors: string[];
-	trackedManifest: boolean | null;
-	hasCircleCiGap: boolean;
-	hasCodeRabbitGap: boolean;
-	hasCodestyleGap: boolean;
-	hasCodestyleMissingFailure: boolean;
-	codestyleParityFailurePaths: string[];
-	hasGreptileGap: boolean;
-}): string[] {
-	const blockingReasons: string[] = [];
-	if (args.statusChangedByDryRun) {
-		blockingReasons.push("dry-run-mutated-repository");
-	}
-	if (args.exitCode !== undefined && args.exitCode !== 0) {
-		blockingReasons.push("matrix-command-failed");
-	}
-	if (args.errors.some(isMatrixOutputValidationError)) {
-		blockingReasons.push("invalid-matrix-json-output");
-	}
-	if (args.trackedManifest === false) {
-		blockingReasons.push("repo-not-harness-tracked");
-	}
-	if (args.trackedManifest === true && args.hasCircleCiGap) {
-		blockingReasons.push("tracked-repo-missing-circleci");
-	}
-	if (args.hasCodeRabbitGap) {
-		blockingReasons.push("missing-coderabbit");
-	}
-	if (args.hasCodestyleGap || args.hasCodestyleMissingFailure) {
-		blockingReasons.push("missing-codestyle");
-	}
-	if (args.codestyleParityFailurePaths.length > 0) {
-		blockingReasons.push("stale-codestyle");
-	}
-	if (args.hasGreptileGap) {
-		blockingReasons.push("legacy-greptile-present");
-	}
-	if (
-		args.errors.some((error) => !isMatrixOutputValidationError(error)) &&
-		blockingReasons.length === 0
-	) {
-		blockingReasons.push("matrix-reported-errors");
-	}
-	return blockingReasons;
-}
-
-/**
- * Choose a remediation recommendation for a repository based on normalized matrix signals.
- *
- * Selects a definitive per-repo remediation status and constructs a `RepoRecommendation`
- * containing the risk level, a human-facing `nextAction`, an optional `nextCommandArgv`
- * (command argv for a dry-run preview or null when not safe), and whether the next step
- * is considered safe to run.
- *
- * @param repo - Repository identifier or path used to build command arguments and messages
- * @param signals - Normalized `RepoSignals` extracted from the matrix row
- * @returns A `RepoRecommendation` describing the chosen status, `risk`, `nextAction`,
- *          `nextCommandArgv` (or `null`), and `safeToRun`; the recommendation will also
- *          indicate whether approval is required before mutation.
- */
-function recommendRepoAction(
-	repo: string,
-	signals: RepoSignals,
-): RepoRecommendation {
-	const invalidJson = signals.errors.some(isMatrixOutputValidationError);
-	if (
-		signals.statusChangedByDryRun ||
-		(signals.exitCode !== undefined && signals.exitCode !== 0) ||
-		invalidJson
-	) {
-		return recommendation({
-			status: "blocked",
-			risk: "high",
-			nextAction:
-				"Inspect the matrix failure before running remediation; dry-run safety is not established.",
-			nextCommandArgv: null,
-			safeToRun: false,
-		});
-	}
-	if (signals.trackedManifest === false) {
-		return initDryRunRecommendation({
-			repo,
-			status: "needs-adoption",
-			nextAction: "Run first-adoption dry-run before tracking the repo.",
-			update: false,
-		});
-	}
-	if (signals.hasCircleCiGap) {
-		return recommendation({
-			status: "needs-circleci-migration",
-			risk: "medium",
-			nextAction: "Prepare CircleCI migration snapshot in dry-run mode.",
-			nextCommandArgv: [
-				"harness",
-				"ci-migrate",
-				"prepare",
-				repo,
-				"--provider",
-				"circleci",
-				"--dry-run",
-				"--json",
-			],
-			safeToRun: true,
-		});
-	}
-	if (signals.hasCodeRabbitGap) {
-		return initDryRunRecommendation({
-			repo,
-			status: "needs-coderabbit-setup",
-			nextAction: "Refresh the CodeRabbit review baseline in dry-run mode.",
-			update: true,
-		});
-	}
-	if (signals.hasCodestyleGap || signals.hasCodestyleMissingFailure) {
-		return initDryRunRecommendation({
-			repo,
-			status: "needs-codestyle-install",
-			nextAction: "Install the canonical CODESTYLE pack in dry-run mode.",
-			update: true,
-		});
-	}
-	if (signals.codestyleParityFailurePaths.length > 0) {
-		return initDryRunRecommendation({
-			repo,
-			status: "needs-codestyle-refresh",
-			nextAction: "Refresh the canonical CODESTYLE pack in dry-run mode.",
-			update: true,
-		});
-	}
-	if (signals.hasGreptileGap) {
-		return recommendation({
-			status: "needs-greptile-cleanup",
-			risk: "medium",
-			nextAction:
-				"Preview harness-managed cleanup for legacy Greptile artifacts.",
-			nextCommandArgv: ["harness", "eject", repo, "--dry-run", "--json"],
-			safeToRun: true,
-		});
-	}
-	if (signals.errors.length > 0) {
-		return recommendation({
-			status: "blocked",
-			risk: "unknown",
-			nextAction: "Inspect remaining matrix errors before remediation.",
-			nextCommandArgv: null,
-			safeToRun: false,
-		});
-	}
-	return recommendation({
-		status: "ready",
-		risk: "low",
-		nextAction: "Run live upgrade dry-run before applying update.",
-		nextCommandArgv: ["harness", "upgrade", repo, "--dry-run", "--json"],
-		safeToRun: true,
-	});
-}
-
-/**
- * Convert a single matrix row into a normalized FleetPlanRepo containing the chosen recommendation, blocking reasons, and retained evidence.
- *
- * @param result - A single repository result object from a parsed matrix artifact.
- * @param matrixArtifact - The source matrix artifact path or identifier included in the repo's evidence.
- * @returns A FleetPlanRepo describing the repo's status, risk, whether it is safe to run, the recommended next action/command, any blocking reason codes, and the evidence extracted from the matrix row.
- */
-function classifyRepo(
-	result: MatrixRepoResult,
-	matrixArtifact: string,
-): FleetPlanRepo {
-	const repoCandidate = asString(result.repo);
-	const repo =
-		repoCandidate && repoCandidate.length > 0
-			? repoCandidate
-			: "<unknown-repo>";
-	const updateMode = asString(result.updateMode);
-	const trackedManifest = asBoolean(result.trackedManifest);
-	const schemaErrors: string[] = [];
-	if (!repoCandidate || repoCandidate.length === 0) {
-		schemaErrors.push("JSON output missing repo");
-	}
-	if (!Array.isArray(result.errors)) {
-		schemaErrors.push("JSON output missing errors array");
-	}
-	if (!Array.isArray(result.missingFleetContractSurfaces)) {
-		schemaErrors.push("JSON output missing missingFleetContractSurfaces array");
-	}
-	if (trackedManifest === null) {
-		schemaErrors.push("JSON output missing trackedManifest");
-	}
-	const errors = [...schemaErrors, ...asStringArray(result.errors)];
-	const missingSurfaces = asMissingSurfaces(
-		result.missingFleetContractSurfaces,
-	);
-	const missingSurfacePaths = surfacePaths(missingSurfaces);
-	const legacyGreptilePaths = asStringArray(result.legacyGreptilePaths);
-	const codestyleParityFailures = asMissingSurfaces(
-		result.codestyleParityFailures,
-	);
-	const codestyleParityFailurePaths = surfacePaths(codestyleParityFailures);
-	const hasCodestyleMissingFailure = hasCodestyleFailureReason(
-		codestyleParityFailures,
-		"missing",
-	);
-	const statusChangedByDryRun = result.statusChangedByDryRun === true;
-	const exitCode =
-		typeof result.exitCode === "number" ? result.exitCode : undefined;
-
-	const hasCircleCiGap = hasMissingSurface(missingSurfaces, "circleci");
-	const hasCodeRabbitGap = hasMissingSurface(missingSurfaces, "coderabbit");
-	const hasCodestyleGap = hasMissingSurface(missingSurfaces, "codestyle");
-	const hasGreptileGap = legacyGreptilePaths.length > 0;
-	const recommendation = recommendRepoAction(repo, {
-		statusChangedByDryRun,
-		...(exitCode === undefined ? {} : { exitCode }),
-		errors,
-		trackedManifest,
-		hasCircleCiGap,
-		hasCodeRabbitGap,
-		hasCodestyleGap,
-		codestyleParityFailurePaths,
-		hasCodestyleMissingFailure,
-		hasGreptileGap,
-	});
-	const blockingReasons = buildBlockingReasons({
-		statusChangedByDryRun,
-		...(exitCode === undefined ? {} : { exitCode }),
-		errors,
-		trackedManifest,
-		hasCircleCiGap,
-		hasCodeRabbitGap,
-		hasCodestyleGap,
-		hasCodestyleMissingFailure,
-		codestyleParityFailurePaths,
-		hasGreptileGap,
-	});
-
-	return {
-		repo,
-		status: recommendation.status,
-		risk: recommendation.risk,
-		safeToRun: recommendation.safeToRun,
-		nextAction: recommendation.nextAction,
-		nextCommand: recommendation.nextCommandArgv
-			? commandText(recommendation.nextCommandArgv)
-			: null,
-		nextCommandArgv: recommendation.nextCommandArgv,
-		requiresApprovalBeforeMutation:
-			recommendation.requiresApprovalBeforeMutation,
-		writesFiles: false,
-		blockingReasons,
-		evidence: {
-			matrixArtifact,
-			updateMode,
-			trackedManifest,
-			missingSurfaces: missingSurfacePaths,
-			legacyGreptilePaths,
-			codestyleParityFailures: codestyleParityFailurePaths,
-			errors,
-		},
-	};
-}
+export {
+	FLEET_PLAN_SCHEMA_VERSION,
+	type FleetPlanCommand,
+	type FleetPlanRepo,
+	type FleetRemediationPlan,
+} from "./fleet-plan-types.js";
 
 /**
  * Compute aggregated counts of repository statuses for inclusion in a fleet remediation summary.
@@ -653,17 +60,6 @@ function buildSummary(repos: FleetPlanRepo[]): FleetRemediationPlan["summary"] {
 }
 
 /**
- * Count repositories that include a specific blocking reason code.
- *
- * @param repos - The list of per-repo plan entries to inspect
- * @param reason - The blocking reason code to count (e.g., `needs-codestyle-install`)
- * @returns The number of repositories whose `blockingReasons` include `reason`
- */
-function countReposWithReason(repos: FleetPlanRepo[], reason: string): number {
-	return repos.filter((repo) => repo.blockingReasons.includes(reason)).length;
-}
-
-/**
  * Compute aggregated counts of predefined finding categories from a list of per-repo recommendations.
  *
  * @param repos - Array of per-repo remediation recommendations to aggregate
@@ -702,30 +98,6 @@ function buildFindingCounts(
 		),
 		matrixReportedErrors: countReposWithReason(repos, "matrix-reported-errors"),
 	};
-}
-
-/**
- * Format a numeric count with the appropriate singular or plural noun.
- *
- * @param count - The numeric quantity to format
- * @param singular - Noun to use when `count` is 1
- * @param plural - Noun to use when `count` is any value other than 1
- * @returns A string in the form `"<count> <noun>"`, using `singular` when `count` is 1 and `plural` otherwise
- */
-function pluralize(count: number, singular: string, plural: string): string {
-	return `${count} ${count === 1 ? singular : plural}`;
-}
-
-/**
- * Selects the appropriate singular or plural word form based on a numeric count.
- *
- * @param count - The quantity used to choose between forms
- * @param singular - The singular form to use when `count` is 1
- * @param plural - The plural form to use when `count` is not 1
- * @returns The `singular` form if `count` is 1, otherwise the `plural` form
- */
-function repoVerb(count: number, singular: string, plural: string): string {
-	return count === 1 ? singular : plural;
 }
 
 /**
@@ -803,14 +175,15 @@ function buildLiveUpgradeBlockers(
  */
 function buildFirstSafeWave(repos: FleetPlanRepo[]): FleetPlanCommand[] {
 	const wave: FleetPlanCommand[] = [];
-	const statusOrder: Array<{ status: FleetRepoStatus; limit: number }> = [
-		{ status: "needs-adoption", limit: 3 },
-		{ status: "needs-circleci-migration", limit: 2 },
-		{ status: "needs-coderabbit-setup", limit: 2 },
-		{ status: "needs-codestyle-install", limit: 2 },
-		{ status: "needs-codestyle-refresh", limit: 2 },
-		{ status: "needs-greptile-cleanup", limit: 2 },
-	];
+	const statusOrder: Array<{ status: FleetPlanRepo["status"]; limit: number }> =
+		[
+			{ status: "needs-adoption", limit: 3 },
+			{ status: "needs-circleci-migration", limit: 2 },
+			{ status: "needs-coderabbit-setup", limit: 2 },
+			{ status: "needs-codestyle-install", limit: 2 },
+			{ status: "needs-codestyle-refresh", limit: 2 },
+			{ status: "needs-greptile-cleanup", limit: 2 },
+		];
 	for (const { status, limit } of statusOrder) {
 		let addedForStatus = 0;
 		for (const repo of repos) {
@@ -878,7 +251,9 @@ export function buildFleetRemediationPlan(args: {
 		: [];
 	const rawResults = Array.isArray(args.matrix.results)
 		? args.matrix.results.filter(
-				(result): result is MatrixRepoResult =>
+				(
+					result,
+				): result is MatrixReport["results"] extends (infer U)[] ? U : never =>
 					typeof result === "object" && result !== null,
 			)
 		: [];
@@ -893,7 +268,10 @@ export function buildFleetRemediationPlan(args: {
 	];
 	const matrixArtifactValid = matrixArtifactBlockers.length === 0;
 	const repos = rawResults.map((result) =>
-		classifyRepo(result, args.matrixArtifact),
+		classifyRepo(
+			result as import("./fleet-plan-types.js").MatrixRepoResult,
+			args.matrixArtifact,
+		),
 	);
 	const summary = buildSummary(repos);
 	const findingCounts = buildFindingCounts(repos);
