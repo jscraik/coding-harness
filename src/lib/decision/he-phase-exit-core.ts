@@ -569,8 +569,9 @@ function validateEvidenceRefs(
 				errors.push(`evidenceRefs[${index}].id must be unique`);
 			ids.add(entry.id);
 		}
-		if (entry.gateLocal === false && entry.kind === "route-decision")
+		if (entry.kind === "route-decision") {
 			errors.push("route-decision refs are context, not gate evidence");
+		}
 		refs.push(entry as unknown as HeEvidenceRef);
 	}
 	return refs;
