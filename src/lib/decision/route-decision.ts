@@ -2,6 +2,14 @@ import type {
 	HarnessDecision,
 	HarnessDecisionStatus,
 } from "./harness-decision.js";
+import {
+	isRecord,
+	validateBoolean,
+	validateEnum,
+	validateNullableString,
+	validateString,
+	validateStringArray,
+} from "./validators.js";
 
 /** Schema version for the first lifecycle route decision envelope. */
 export const ROUTE_DECISION_SCHEMA_VERSION = "route-decision/v1" as const;
@@ -131,67 +139,6 @@ const VALID_ROUTE_STATUSES: readonly RouteDecisionStatus[] = [
 	"blocked",
 	"action_required",
 ];
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function validateString(value: unknown, field: string, errors: string[]): void {
-	if (typeof value !== "string" || value.trim().length === 0) {
-		errors.push(`${field} must be a non-empty string`);
-	}
-}
-
-function validateNullableString(
-	value: unknown,
-	field: string,
-	errors: string[],
-): void {
-	if (
-		value !== null &&
-		(typeof value !== "string" || value.trim().length === 0)
-	) {
-		errors.push(`${field} must be a non-empty string or null`);
-	}
-}
-
-function validateBoolean(
-	value: unknown,
-	field: string,
-	errors: string[],
-): void {
-	if (typeof value !== "boolean") {
-		errors.push(`${field} must be a boolean`);
-	}
-}
-
-function validateEnum<T extends string>(
-	value: unknown,
-	field: string,
-	validValues: readonly T[],
-	errors: string[],
-): void {
-	if (!validValues.includes(value as T)) {
-		errors.push(`${field} must be one of ${validValues.join(", ")}`);
-	}
-}
-
-function validateStringArray(
-	value: unknown,
-	field: string,
-	errors: string[],
-): void {
-	if (!Array.isArray(value)) {
-		errors.push(`${field} must be a string array`);
-		return;
-	}
-	for (const entry of value) {
-		if (typeof entry !== "string" || entry.trim().length === 0) {
-			errors.push(`${field} entries must be non-empty strings`);
-			return;
-		}
-	}
-}
 
 function validateRouteShape(
 	value: unknown,

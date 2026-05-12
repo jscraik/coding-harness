@@ -1,3 +1,13 @@
+import {
+	isRecord,
+	validateBoolean,
+	validateEnum,
+	validateNullableString,
+	validateNumber,
+	validateString,
+	validateStringArray,
+} from "./validators.js";
+
 /** Schema version for a single Harness Engineering phase-exit gate result. */
 export const HE_GATE_RESULT_SCHEMA_VERSION = "he-gate-result/v1" as const;
 
@@ -280,7 +290,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			efficiencyReviewed: false,
 		}),
 	},
-	"testing_reviewer": {
+	testing_reviewer: {
 		validatePayload(payload, _result, _context, errors) {
 			validateStringArray(
 				payload.scopeEvidence,
@@ -307,7 +317,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			missingEdgeCases: [],
 		}),
 	},
-	"he_fix_bugs": {
+	he_fix_bugs: {
 		validatePayload(payload, result, context, errors) {
 			validateStringArray(
 				payload.scopeEvidence,
@@ -363,7 +373,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			rollbackNote: null,
 		}),
 	},
-	"he_code_review": {
+	he_code_review: {
 		validatePayload(payload, _result, _context, errors) {
 			validateStringArray(
 				payload.scopeEvidence,
@@ -467,10 +477,6 @@ const RECOMMENDATIONS: readonly HePhaseExitRecommendation[] = [
 	"human_review_required",
 ];
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function hasEntries(value: unknown): value is string[] {
 	return (
 		Array.isArray(value) &&
@@ -481,66 +487,6 @@ function hasEntries(value: unknown): value is string[] {
 
 function isExecuted(result: HeGateResult): boolean {
 	return !["not_applicable", "not_run"].includes(result.status);
-}
-
-function validateBoolean(
-	value: unknown,
-	field: string,
-	errors: string[],
-): void {
-	if (typeof value !== "boolean") errors.push(`${field} must be a boolean`);
-}
-
-function validateNumber(value: unknown, field: string, errors: string[]): void {
-	if (typeof value !== "number" || !Number.isInteger(value) || value < 0)
-		errors.push(`${field} must be a non-negative integer`);
-}
-
-function validateString(value: unknown, field: string, errors: string[]): void {
-	if (typeof value !== "string" || value.trim().length === 0)
-		errors.push(`${field} must be a non-empty string`);
-}
-
-function validateNullableString(
-	value: unknown,
-	field: string,
-	errors: string[],
-): void {
-	if (
-		value !== null &&
-		(typeof value !== "string" || value.trim().length === 0)
-	)
-		errors.push(`${field} must be a non-empty string or null`);
-}
-
-function validateStringArray(
-	value: unknown,
-	field: string,
-	errors: string[],
-): void {
-	if (!Array.isArray(value)) {
-		errors.push(`${field} must be a string array`);
-		return;
-	}
-	if (
-		value.some(
-			(entry) => typeof entry !== "string" || entry.trim().length === 0,
-		)
-	)
-		errors.push(`${field} entries must be non-empty strings`);
-}
-
-function validateEnum<T extends string>(
-	value: unknown,
-	field: string,
-	validValues: readonly T[],
-	errors: string[],
-): value is T {
-	if (!validValues.includes(value as T)) {
-		errors.push(`${field} must be one of ${validValues.join(", ")}`);
-		return false;
-	}
-	return true;
 }
 
 function validateEvidenceRefs(
@@ -874,10 +820,7 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 		value.phaseContext.phase !== "closeout"
 	)
 		errors.push("commitAllowed can only be true during closeout");
-	if (
-		value.commitAllowed === true &&
-		value.recommendation !== "continue"
-	)
+	if (value.commitAllowed === true && value.recommendation !== "continue")
 		errors.push("commitAllowed requires continue recommendation");
 	if (
 		value.recommendation === "human_review_required" &&
@@ -947,8 +890,7 @@ function chooseRecommendation(
 				gate.requiresHuman &&
 				blockers.some(
 					(blocker) =>
-						blocker === gate.blockedReason ||
-						blocker.includes(gate.gateId),
+						blocker === gate.blockedReason || blocker.includes(gate.gateId),
 				),
 		)
 	)

@@ -503,12 +503,10 @@ describe("aggregateHePhaseExit", () => {
 	});
 
 	it("fails closed without throwing when aggregate input is malformed", () => {
-		const result = aggregateHePhaseExit(
-			{
-				phaseContext: null,
-				gates: null,
-			} as unknown as HePhaseExitInput,
-		);
+		const result = aggregateHePhaseExit({
+			phaseContext: null,
+			gates: null,
+		} as unknown as HePhaseExitInput);
 
 		expect(result.recommendation).toBe("commit_blocked");
 		expect(result.commitAllowed).toBe(false);
