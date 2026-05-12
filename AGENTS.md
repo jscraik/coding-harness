@@ -4,6 +4,24 @@ schema_version: 1
 
 # Coding Harness - AGENTS.md
 
+## Table of Contents
+- [Project Description](`#project-description`)
+- [Mandatory Workflow Snippet](`#mandatory-workflow-snippet`)
+- [Required Essentials](`#required-essentials`)
+- [Harness CLI for Agents](`#harness-cli-for-agents`)
+- [Codex Discovery Order](`#codex-discovery-order`)
+- [Startup Workflow](`#startup-workflow`)
+- [Command Preflight](`#command-preflight`)
+- [Fresh Worktree Bootstrap](`#fresh-worktree-bootstrap`)
+- [Quality Checks](`#quality-checks`)
+- [Repo Workflow](`#repo-workflow`)
+- [Instruction Routing](`#instruction-routing`)
+- [Memory Layer](`#memory-layer`)
+- [Shared Vocabulary](`#shared-vocabulary`)
+- [Project Brain](`#project-brain`)
+- [Implementation Conventions](`#implementation-conventions`)
+- [References](`#references`)
+
 ## Project Description
 
 This repository is a TypeScript control plane for agentic development and review workflows.
