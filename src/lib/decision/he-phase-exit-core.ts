@@ -7,9 +7,9 @@ export const HE_PHASE_EXIT_SCHEMA_VERSION = "he-phase-exit/v1" as const;
 /** Stable gate identifiers modelled from HE closeout skills and reviewers. */
 export const HE_GATE_IDS = [
 	"simplify",
-	"testing-reviewer",
-	"he-fix-bugs",
-	"he-code-review",
+	"testing_reviewer",
+	"he_fix_bugs",
+	"he_code_review",
 	"autofix",
 ] as const;
 
@@ -34,7 +34,7 @@ export type HeGateStatus =
 	| "not_run";
 
 /** HE lifecycle phase. */
-export type HePhase = "route" | "lifecycle" | "work" | "closeout";
+export type HePhase = "route" | "lifecycle" | "closeout";
 
 /** HE phase-exit recommendation. */
 export type HePhaseExitRecommendation =
@@ -217,6 +217,8 @@ export interface HePhaseExit {
 	recommendation: HePhaseExitRecommendation;
 	/** Whether local commit is allowed by configured gate evidence. */
 	commitAllowed: boolean;
+	/** Whether phase exit is allowed by configured gate evidence. */
+	exitAllowed: boolean;
 	/** Required gates that are not passing or not safe to continue. */
 	blockers: string[];
 	/** Non-blocking optional-gate warnings. */
@@ -278,7 +280,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			efficiencyReviewed: false,
 		}),
 	},
-	"testing-reviewer": {
+	"testing_reviewer": {
 		validatePayload(payload, _result, _context, errors) {
 			validateStringArray(
 				payload.scopeEvidence,
@@ -296,7 +298,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 				errors,
 			);
 			if (payload.testAdequacyReviewed !== true) {
-				errors.push("testing-reviewer must evaluate test adequacy");
+				errors.push("testing_reviewer must evaluate test adequacy");
 			}
 		},
 		missingPayload: () => ({
@@ -305,7 +307,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			missingEdgeCases: [],
 		}),
 	},
-	"he-fix-bugs": {
+	"he_fix_bugs": {
 		validatePayload(payload, result, context, errors) {
 			validateStringArray(
 				payload.scopeEvidence,
@@ -330,14 +332,14 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			);
 			if (!context) return;
 			if (!context.failingEvidencePresent && isExecuted(result)) {
-				errors.push("he-fix-bugs must not run without failing evidence");
+				errors.push("he_fix_bugs must not run without failing evidence");
 			}
 			if (
 				context.failingEvidencePresent &&
 				result.status === "not_applicable"
 			) {
 				errors.push(
-					"he-fix-bugs cannot be not_applicable with failing evidence",
+					"he_fix_bugs cannot be not_applicable with failing evidence",
 				);
 			}
 			if (
@@ -349,7 +351,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 					typeof payload.rollbackNote !== "string")
 			) {
 				errors.push(
-					"he-fix-bugs pass requires reproduction, root cause, regression protection, and rollback note",
+					"he_fix_bugs pass requires reproduction, root cause, regression protection, and rollback note",
 				);
 			}
 		},
@@ -361,7 +363,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			rollbackNote: null,
 		}),
 	},
-	"he-code-review": {
+	"he_code_review": {
 		validatePayload(payload, _result, _context, errors) {
 			validateStringArray(
 				payload.scopeEvidence,
@@ -391,7 +393,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 				payload.safeToContinueReviewed !== true
 			) {
 				errors.push(
-					"he-code-review must prove findings-first traceable blocker and safe-to-continue review",
+					"he_code_review must prove findings-first traceable blocker and safe-to-continue review",
 				);
 			}
 		},
@@ -457,7 +459,7 @@ const STATUSES: readonly HeGateStatus[] = [
 	"not_applicable",
 	"not_run",
 ];
-const PHASES: readonly HePhase[] = ["route", "lifecycle", "work", "closeout"];
+const PHASES: readonly HePhase[] = ["route", "lifecycle", "closeout"];
 const RECOMMENDATIONS: readonly HePhaseExitRecommendation[] = [
 	"continue",
 	"stop",
@@ -569,7 +571,7 @@ function validateEvidenceRefs(
 				errors.push(`evidenceRefs[${index}].id must be unique`);
 			ids.add(entry.id);
 		}
-		if (entry.gateLocal === false && entry.kind === "route-decision")
+		if (entry.kind === "route-decision")
 			errors.push("route-decision refs are context, not gate evidence");
 		refs.push(entry as unknown as HeEvidenceRef);
 	}
@@ -826,6 +828,7 @@ export function aggregateHePhaseExit(input: HePhaseExitInput): HePhaseExit {
 			input.phaseContext.phase === "closeout" &&
 			recommendation === "continue" &&
 			blockers.length === 0,
+		exitAllowed: recommendation === "continue" && blockers.length === 0,
 		blockers,
 		warnings,
 		gates,
@@ -842,12 +845,38 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 	validatePhaseContext(value.phaseContext, errors);
 	validateEnum(value.recommendation, "recommendation", RECOMMENDATIONS, errors);
 	validateBoolean(value.commitAllowed, "commitAllowed", errors);
+	validateBoolean(value.exitAllowed, "exitAllowed", errors);
 	validateStringArray(value.blockers, "blockers", errors);
 	validateStringArray(value.warnings, "warnings", errors);
 	if (!Array.isArray(value.gates)) errors.push("gates must be an array");
 	else
 		for (const gate of value.gates)
 			gateResultFromRecord(gate, value.phaseContext as HePhaseContext, errors);
+	if (
+		value.recommendation === "commit_blocked" &&
+		value.phaseContext &&
+		isRecord(value.phaseContext) &&
+		value.phaseContext.phase !== "closeout"
+	)
+		errors.push("commit_blocked recommendation is only valid during closeout");
+	if (
+		value.commitAllowed === true &&
+		value.phaseContext &&
+		isRecord(value.phaseContext) &&
+		value.phaseContext.phase !== "closeout"
+	)
+		errors.push("commitAllowed can only be true during closeout");
+	if (
+		value.commitAllowed === true &&
+		value.recommendation !== "continue"
+	)
+		errors.push("commitAllowed requires continue recommendation");
+	if (
+		value.recommendation === "human_review_required" &&
+		Array.isArray(value.blockers) &&
+		value.blockers.length === 0
+	)
+		errors.push("human_review_required requires correlated blocker evidence");
 	return { valid: errors.length === 0, errors };
 }
 
@@ -904,7 +933,18 @@ function chooseRecommendation(
 	blockers: string[],
 	gates: HeGateResult[],
 ): HePhaseExitRecommendation {
-	if (gates.some((gate) => gate.requiresHuman)) return "human_review_required";
+	if (
+		gates.some(
+			(gate) =>
+				gate.requiresHuman &&
+				blockers.some(
+					(blocker) =>
+						blocker === gate.blockedReason ||
+						blocker.includes(gate.gateId),
+				),
+		)
+	)
+		return "human_review_required";
 	if (blockers.length === 0) return "continue";
 	return context.phase === "closeout" ? "commit_blocked" : "stop";
 }
@@ -916,6 +956,7 @@ function invalidExit(input: HePhaseExitInput, errors: string[]): HePhaseExit {
 		recommendation:
 			input.phaseContext.phase === "closeout" ? "commit_blocked" : "stop",
 		commitAllowed: false,
+		exitAllowed: false,
 		blockers: errors,
 		warnings: [],
 		gates: input.gates,

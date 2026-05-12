@@ -587,8 +587,8 @@ Artifact validation already required for this plan:
 | Command | Expected |
 | --- | --- |
 | pnpm exec markdownlint-cli2 .harness/plan/2026-05-11-JSC-311-he-phase-exit-evidence-gates-plan.md | pass |
-| python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-11-JSC-311-he-phase-exit-evidence-gates-plan.md | pass |
-| python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-11-JSC-311-he-phase-exit-evidence-gates-plan.md | pass |
+| python3 Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-11-JSC-311-he-phase-exit-evidence-gates-plan.md | pass |
+| python3 Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-11-JSC-311-he-phase-exit-evidence-gates-plan.md | pass |
 
 Implementation validation required before commit:
 

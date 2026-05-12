@@ -114,22 +114,26 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 The canonical worktree branch format `jscraik/feature/$repo_slug-worktree-$short_sha` (as defined in `scripts/prepare-worktree.sh`) carries the following security and governance considerations:
 
 **Naming semantics:**
+
 - The `jscraik/feature/*-worktree-*` pattern explicitly identifies branches created by the readiness script
 - The embedded commit SHA provides traceability to the exact commit at branch creation time
 - Collision handling (numeric suffixes `-1`, `-2`, etc.) ensures unique branch names without overwriting existing branches
 
 **Permissions:**
+
 - Worktree-readiness branches should receive the same permission boundaries as other agent-created branches
 - Do not grant elevated push/merge privileges based solely on the `jscraik/feature/` prefix
 - Repository protection rules should not exempt these branches from required checks or review requirements
 
 **Retention and cleanup:**
+
 - These branches are ephemeral by design: intended for bootstrap, hook execution, and temporary development
 - Stale instances should be pruned through normal worktree cleanup flows (`git worktree prune`, manual `git branch -d`)
 - Do not implement special retention policies or automated cleanup for this prefix unless it's part of a broader agent-branch cleanup strategy
 - Branch retention beyond active worktree lifecycle is acceptable but should be treated as developer-local state
 
 **Distinction from task branches:**
+
 - Worktree-readiness branches (`jscraik/feature/*-worktree-*`) are mechanically generated for bootstrap purposes
 - Linear-tracked task branches (`codex/<issue-key>-<slug>`) represent intentional feature work with issue tracking
 - Tooling must not infer Linear ownership, task status, or work-in-progress semantics from the worktree-readiness prefix
@@ -163,10 +167,10 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 
 ### Hooks installed
 
-| Hook         | Purpose                                                                                                                                                                    |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, changed-code docstring and size gates, staged `gitleaks`, staged-doc `vale`, related tests) |
-| `commit-msg` | Validates conventional commit format, reminds about PR template                                                                                                            |
+| Hook         | Purpose                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, changed-code docstring and size gates, staged `gitleaks`, staged-doc `vale`, related tests)                                                                                                                                                                                                                                 |
+| `commit-msg` | Validates conventional commit format, reminds about PR template                                                                                                                                                                                                                                                                                                                                            |
 | `pre-push`   | Runs `make hooks-pre-push` (`docs-gate --mode required`, push-scoped diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`); environment-only pushes that change only `.codex/environments/environment.toml` run `check-environment` only, and the branch diff includes type changes so file-mode or symlink changes still trigger the full lane |
 
 The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when present so approved fixture/example exceptions are consistent across local hooks, manual scans, and downstream scaffold expectations.

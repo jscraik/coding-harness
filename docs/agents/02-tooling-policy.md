@@ -134,16 +134,19 @@ The `scripts/prepare-worktree.sh` script defines a canonical branch naming conve
 **Format:** `jscraik/feature/$repo_slug-worktree-$short_sha`
 
 **Components:**
+
 - `$repo_slug`: sanitized repository directory name (lower-case, non-alphanumeric characters replaced with hyphens, leading/trailing hyphens trimmed)
 - `$short_sha`: short commit SHA from `git rev-parse --short HEAD`
 
 **Example:**
 For a repository named "coding-harness" with commit `abcdef1`, the generated branch name would be:
+
 ```
 jscraik/feature/coding-harness-worktree-abcdef1
 ```
 
 **Expected callers/consumers:**
+
 - Generated downstream setup surfaces in scaffolded repositories
 - Generated Codex environment setup actions
 - Generated `Tools` actions in `.codex/environments/environment.toml`
@@ -153,6 +156,7 @@ jscraik/feature/coding-harness-worktree-abcdef1
 
 **Tooling guidance:**
 Branch name consumers should treat this pattern as an agent worktree-readiness branch intended for bootstrap and hook execution. This is distinct from Linear-tracked task branches (`codex/<issue-key>-<slug>`). When detecting branches, tooling should:
+
 - Recognize the `jscraik/feature/*-worktree-*` pattern as a transient readiness branch
 - Not infer Linear ownership or task tracking from this prefix
 - Allow normal branch operations (push, pull, merge) but consider these branches ephemeral

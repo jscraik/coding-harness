@@ -73,11 +73,11 @@ safe. Casts can document intent, but they do not sanitize runtime data.
 - `bash scripts/validate-codestyle.sh --fast` -> pass.
 - `bash scripts/verify-work.sh --fast` -> pass, run id
   `20260511T214015Z-8050`.
-- `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md`
+- `python3 Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md`
   -> pass.
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md`
+- `python3 Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md`
   -> pass.
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md`
+- `python3 Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md`
   -> pass.
 
 ## Prevention

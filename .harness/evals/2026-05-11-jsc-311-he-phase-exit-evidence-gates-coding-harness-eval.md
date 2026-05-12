@@ -166,55 +166,11 @@ completion.
 
 ## Functional Validation Results
 
-Command or Method: pnpm vitest run src/lib/decision/he-phase-exit.test.ts.
-
-Result: pass.
-
-Evidence: 22 tests passed.
-
-Confidence: high.
-
-Blocks Closure: no.
-
-Command or Method: pnpm vitest run src/lib/decision/route-decision.test.ts.
-
-Result: pass.
-
-Evidence: 44 tests passed.
-
-Confidence: high.
-
-Blocks Closure: no.
-
-Command or Method: pnpm exec tsc --noEmit --pretty false.
-
-Result: pass.
-
-Evidence: command completed with exit code 0 during focused validation.
-
-Confidence: high.
-
-Blocks Closure: no.
-
-Command or Method: bash scripts/validate-codestyle.sh --fast.
-
-Result: pass.
-
-Evidence: codestyle parity, lint, docs lint, skill validation, workflow
-validation, typecheck, public API docs, size checks, and related tests passed.
-Related tests reported 17 test files and 752 passed with 1 skipped.
-
-Confidence: high.
-
-Blocks Closure: no.
-
-Command or Method: bash scripts/verify-work.sh --fast.
-
-Result: pass.
-
-Evidence: run id 20260511T214015Z-8050; status pass.
-
-Confidence: high for local readiness.
+Command: pnpm vitest run src/lib/decision/he-phase-exit.test.ts -> pass (22 tests passed; blocks_closure=no; confidence=high)
+Command: pnpm vitest run src/lib/decision/route-decision.test.ts -> pass (44 tests passed; blocks_closure=no; confidence=high)
+Command: pnpm exec tsc --noEmit --pretty false -> pass (exit code 0 during focused validation; blocks_closure=no; confidence=high)
+Command: bash scripts/validate-codestyle.sh --fast -> pass (codestyle parity, lint, docs lint, skill validation, workflow validation, typecheck, public API docs, size checks, and related tests passed: 17 files/752 passed/1 skipped; blocks_closure=no; confidence=high)
+Command: bash scripts/verify-work.sh --fast -> pass (run id 20260511T214015Z-8050; status pass; blocks_closure=no; confidence=high)
 
 Blocks Closure: no.
 
@@ -610,11 +566,11 @@ Assumption: CI will reproduce local results after PR creation.
 
 Evidence:
 
-- pnpm vitest run src/lib/decision/he-phase-exit.test.ts -> pass, 22 tests.
-- pnpm vitest run src/lib/decision/route-decision.test.ts -> pass, 44 tests.
-- pnpm exec tsc --noEmit --pretty false -> pass.
-- bash scripts/validate-codestyle.sh --fast -> pass.
-- bash scripts/verify-work.sh --fast -> pass, run id 20260511T214015Z-8050.
+- Command: pnpm vitest run src/lib/decision/he-phase-exit.test.ts -> pass (22 tests)
+- Command: pnpm vitest run src/lib/decision/route-decision.test.ts -> pass (44 tests)
+- Command: pnpm exec tsc --noEmit --pretty false -> pass
+- Command: bash scripts/validate-codestyle.sh --fast -> pass
+- Command: bash scripts/verify-work.sh --fast -> pass (run id 20260511T214015Z-8050)
 
 Affected Files/Modules: TypeScript decision contract and tests.
 

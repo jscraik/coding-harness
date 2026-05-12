@@ -40,13 +40,13 @@ function payloadFor(gateId: HeGateId): HeGatePayload {
 				qualityReviewed: true,
 				efficiencyReviewed: true,
 			};
-		case "testing-reviewer":
+		case "testing_reviewer":
 			return {
 				scopeEvidence: ["test file"],
 				testAdequacyReviewed: true,
 				missingEdgeCases: [],
 			};
-		case "he-fix-bugs":
+		case "he_fix_bugs":
 			return {
 				scopeEvidence: ["validation passed"],
 				reproductionEvidence: [],
@@ -54,7 +54,7 @@ function payloadFor(gateId: HeGateId): HeGatePayload {
 				regressionProtection: [],
 				rollbackNote: null,
 			};
-		case "he-code-review":
+		case "he_code_review":
 			return {
 				scopeEvidence: ["review artifact"],
 				findingsFirst: true,
@@ -77,7 +77,7 @@ function passingGate(gateId: HeGateId, required = true): HeGateResult {
 		gateId,
 		required,
 		executionMode:
-			gateId === "testing-reviewer" ? "subagent_proxy" : "direct_skill",
+			gateId === "testing_reviewer" ? "subagent_proxy" : "direct_skill",
 		status: "pass",
 		payload: payloadFor(gateId),
 		evidenceRefs: evidence(gateId),
@@ -129,16 +129,16 @@ function input(overrides: Partial<HePhaseExitInput> = {}): HePhaseExitInput {
 		phaseContext: closeoutContext,
 		requiredGates: [
 			"simplify",
-			"testing-reviewer",
-			"he-fix-bugs",
-			"he-code-review",
+			"testing_reviewer",
+			"he_fix_bugs",
+			"he_code_review",
 		],
 		optionalGates: ["autofix"],
 		gates: [
 			passingGate("simplify"),
-			passingGate("testing-reviewer"),
-			notApplicableGate("he-fix-bugs"),
-			passingGate("he-code-review"),
+			passingGate("testing_reviewer"),
+			notApplicableGate("he_fix_bugs"),
+			passingGate("he_code_review"),
 			notApplicableGate("autofix", false),
 		],
 		...overrides,
@@ -185,22 +185,22 @@ describe("validateHeGateResult", () => {
 		).toContain("simplify must account for reuse, quality, and efficiency");
 	});
 
-	it("rejects incomplete he-code-review accounting", () => {
-		const gate = passingGate("he-code-review");
+	it("rejects incomplete he_code_review accounting", () => {
+		const gate = passingGate("he_code_review");
 		expect(
 			validateHeGateResult({
 				...gate,
 				payload: { ...gate.payload, safeToContinueReviewed: false },
 			}).errors,
 		).toContain(
-			"he-code-review must prove findings-first traceable blocker and safe-to-continue review",
+			"he_code_review must prove findings-first traceable blocker and safe-to-continue review",
 		);
 	});
 
 	it("rejects failed or blocked gates without gate-local evidence", () => {
 		for (const status of ["fail", "blocked"] as const) {
 			const result = validateHeGateResult({
-				...blockedGate("he-code-review"),
+				...blockedGate("he_code_review"),
 				status,
 				evidenceRefs: [],
 			});
@@ -215,7 +215,7 @@ describe("validateHeGateResult", () => {
 	it("returns deterministic errors for failed or blocked gates with malformed findings", () => {
 		for (const findings of [undefined, 1, null]) {
 			const result = validateHeGateResult({
-				...blockedGate("he-code-review"),
+				...blockedGate("he_code_review"),
 				findings,
 			});
 
@@ -229,7 +229,7 @@ describe("validateHeGateResult", () => {
 
 	it("rejects blocked gates without an open finding or reason", () => {
 		const result = validateHeGateResult({
-			...passingGate("he-code-review"),
+			...passingGate("he_code_review"),
 			status: "blocked",
 			safeToContinue: false,
 			findings: [],
@@ -297,7 +297,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 	});
 
-	it("blocks he-fix-bugs not_applicable when failing evidence exists", () => {
+	it("blocks he_fix_bugs not_applicable when failing evidence exists", () => {
 		const result = validateHePhaseExitInput(
 			input({
 				phaseContext: {
@@ -310,29 +310,29 @@ describe("validateHePhaseExitInput", () => {
 
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContain(
-			"he-fix-bugs cannot be not_applicable with failing evidence",
+			"he_fix_bugs cannot be not_applicable with failing evidence",
 		);
 	});
 
-	it("blocks he-fix-bugs execution when no failing evidence exists", () => {
+	it("blocks he_fix_bugs execution when no failing evidence exists", () => {
 		const result = validateHePhaseExitInput(
 			input({
 				gates: [
 					passingGate("simplify"),
-					passingGate("testing-reviewer"),
-					passingGate("he-fix-bugs"),
-					passingGate("he-code-review"),
+					passingGate("testing_reviewer"),
+					passingGate("he_fix_bugs"),
+					passingGate("he_code_review"),
 				],
 			}),
 		);
 
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContain(
-			"he-fix-bugs must not run without failing evidence",
+			"he_fix_bugs must not run without failing evidence",
 		);
 	});
 
-	it("requires he-fix-bugs proof when failing evidence exists", () => {
+	it("requires he_fix_bugs proof when failing evidence exists", () => {
 		const result = validateHePhaseExitInput(
 			input({
 				phaseContext: {
@@ -342,16 +342,16 @@ describe("validateHePhaseExitInput", () => {
 				},
 				gates: [
 					passingGate("simplify"),
-					passingGate("testing-reviewer"),
-					passingGate("he-fix-bugs"),
-					passingGate("he-code-review"),
+					passingGate("testing_reviewer"),
+					passingGate("he_fix_bugs"),
+					passingGate("he_code_review"),
 				],
 			}),
 		);
 
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContain(
-			"he-fix-bugs pass requires reproduction, root cause, regression protection, and rollback note",
+			"he_fix_bugs pass requires reproduction, root cause, regression protection, and rollback note",
 		);
 	});
 
@@ -360,9 +360,9 @@ describe("validateHePhaseExitInput", () => {
 			input({
 				gates: [
 					passingGate("simplify"),
-					passingGate("testing-reviewer"),
-					notApplicableGate("he-fix-bugs"),
-					passingGate("he-code-review"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
 					passingGate("autofix", false),
 				],
 			}),
@@ -384,9 +384,9 @@ describe("validateHePhaseExitInput", () => {
 				},
 				gates: [
 					passingGate("simplify"),
-					passingGate("testing-reviewer"),
-					notApplicableGate("he-fix-bugs"),
-					passingGate("he-code-review"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
 					notApplicableGate("autofix", false),
 				],
 			}),
@@ -407,6 +407,7 @@ describe("aggregateHePhaseExit", () => {
 			schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
 			recommendation: "continue",
 			commitAllowed: true,
+			exitAllowed: true,
 			blockers: [],
 			warnings: [],
 		});
@@ -420,9 +421,9 @@ describe("aggregateHePhaseExit", () => {
 
 		expect(result.recommendation).toBe("commit_blocked");
 		expect(result.commitAllowed).toBe(false);
-		expect(result.blockers).toContain("testing-reviewer gate has not run");
+		expect(result.blockers).toContain("testing_reviewer gate has not run");
 		expect(result.gates).toContainEqual(
-			createMissingGateResult("he-code-review"),
+			createMissingGateResult("he_code_review"),
 		);
 	});
 
@@ -430,7 +431,7 @@ describe("aggregateHePhaseExit", () => {
 		const result = aggregateHePhaseExit(
 			input({
 				phaseContext: {
-					phase: "work",
+					phase: "route",
 					failingEvidencePresent: false,
 					reviewFeedbackPresent: false,
 				},
@@ -442,16 +443,16 @@ describe("aggregateHePhaseExit", () => {
 		expect(result.commitAllowed).toBe(false);
 	});
 
-	it("requires human review when any gate requires human judgment", () => {
-		const gate = { ...passingGate("he-code-review"), requiresHuman: true };
+	it("requires human review when a human-required gate is blocking", () => {
+		const gate = { ...blockedGate("he_code_review"), requiresHuman: true };
 
 		expect(
 			aggregateHePhaseExit(
 				input({
 					gates: [
 						passingGate("simplify"),
-						passingGate("testing-reviewer"),
-						notApplicableGate("he-fix-bugs"),
+						passingGate("testing_reviewer"),
+						notApplicableGate("he_fix_bugs"),
 						gate,
 					],
 				}),
@@ -462,11 +463,11 @@ describe("aggregateHePhaseExit", () => {
 	it("does not let a forged optional required flag bypass configured required gates", () => {
 		const result = aggregateHePhaseExit(
 			input({
-				requiredGates: ["simplify", "he-code-review"],
+				requiredGates: ["simplify", "he_code_review"],
 				optionalGates: ["autofix"],
 				gates: [
 					passingGate("simplify"),
-					{ ...blockedGate("he-code-review"), required: false },
+					{ ...blockedGate("he_code_review"), required: false },
 					notApplicableGate("autofix", false),
 				],
 			}),
@@ -488,9 +489,9 @@ describe("aggregateHePhaseExit", () => {
 				},
 				gates: [
 					passingGate("simplify"),
-					passingGate("testing-reviewer"),
-					notApplicableGate("he-fix-bugs"),
-					passingGate("he-code-review"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
 					blockedGate("autofix", false),
 				],
 			}),
