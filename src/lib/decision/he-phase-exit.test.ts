@@ -501,4 +501,18 @@ describe("aggregateHePhaseExit", () => {
 		expect(result.commitAllowed).toBe(true);
 		expect(result.warnings).toContain("autofix blocker");
 	});
+
+	it("fails closed without throwing when aggregate input is malformed", () => {
+		const result = aggregateHePhaseExit(
+			{
+				phaseContext: null,
+				gates: null,
+			} as unknown as HePhaseExitInput,
+		);
+
+		expect(result.recommendation).toBe("commit_blocked");
+		expect(result.commitAllowed).toBe(false);
+		expect(result.exitAllowed).toBe(false);
+		expect(Array.isArray(result.blockers)).toBe(true);
+	});
 });

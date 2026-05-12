@@ -794,7 +794,14 @@ export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 /** Aggregate configured HE gate evidence into a fail-closed phase-exit decision. */
 export function aggregateHePhaseExit(input: HePhaseExitInput): HePhaseExit {
 	const inputValidation = validateHePhaseExitInput(input);
-	if (!inputValidation.valid) return invalidExit(input, inputValidation.errors);
+	if (!inputValidation.valid)
+		return invalidExit(
+			{
+				phaseContext: sanitizePhaseContext(input),
+				gates: sanitizeGateArray(input),
+			},
+			inputValidation.errors,
+		);
 
 	const gatesById = new Map(input.gates.map((gate) => [gate.gateId, gate]));
 	const requiredGateSet = new Set(input.requiredGates);
@@ -950,7 +957,10 @@ function chooseRecommendation(
 	return context.phase === "closeout" ? "commit_blocked" : "stop";
 }
 
-function invalidExit(input: HePhaseExitInput, errors: string[]): HePhaseExit {
+function invalidExit(
+	input: Pick<HePhaseExitInput, "phaseContext" | "gates">,
+	errors: string[],
+): HePhaseExit {
 	return {
 		schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
 		phaseContext: input.phaseContext,
@@ -961,5 +971,32 @@ function invalidExit(input: HePhaseExitInput, errors: string[]): HePhaseExit {
 		blockers: errors,
 		warnings: [],
 		gates: input.gates,
+	};
+}
+
+function sanitizePhaseContext(input: unknown): HePhaseContext {
+	if (!isRecord(input)) return fallbackPhaseContext("closeout");
+	if (!isRecord(input.phaseContext)) return fallbackPhaseContext("closeout");
+	const phase = input.phaseContext.phase;
+	return {
+		phase:
+			phase === "route" || phase === "lifecycle" || phase === "closeout"
+				? phase
+				: "closeout",
+		failingEvidencePresent: input.phaseContext.failingEvidencePresent === true,
+		reviewFeedbackPresent: input.phaseContext.reviewFeedbackPresent === true,
+	};
+}
+
+function sanitizeGateArray(input: unknown): HeGateResult[] {
+	if (!isRecord(input) || !Array.isArray(input.gates)) return [];
+	return input.gates.filter(isRecord) as unknown as HeGateResult[];
+}
+
+function fallbackPhaseContext(phase: HePhase): HePhaseContext {
+	return {
+		phase,
+		failingEvidencePresent: false,
+		reviewFeedbackPresent: false,
 	};
 }

@@ -110,6 +110,12 @@ reports them as archived. Treat them as historical route-integration context,
 not active next-slice candidates. `JSC-303` remains under the archived legacy
 `coding-harness` project and is also not an active next-slice candidate.
 
+2026-05-12 reconciliation note: the active PR #242 branch and review flow are
+implementation-closeout evidence for archived `JSC-301`, not proof that
+`JSC-301` is unarchived in Linear. Keep `JSC-311` as the only active next-slice
+issue and keep `JSC-300`/`JSC-301`/`JSC-302`/`JSC-304` classified as archived
+until Linear state changes.
+
 2026-05-11 closure delta: `JSC-282`, `JSC-283`, `JSC-288`, `JSC-289`,
 and `JSC-290` now report `Done` in Linear. This resolves the previous stale
 closure blocker for those slices. `JSC-178` and `JSC-198` still report
@@ -171,6 +177,7 @@ issue labels exist and are applied to the relevant parent issues.
 | --- | --- | --- | --- |
 | Lifecycle routing and HE cockpit refactors | `Harness cockpit routing` project | `Dev Portfolio` | Current active Linear destination for JSC-300/JSC-311 lifecycle routing work. |
 | Legacy repo-specific refactors | Archived `coding-harness` project | `Dev Portfolio` | Historical destination for completed or archived CLI, contract, validation, skill, docs, and harness artifacts. Re-admit only with explicit Linear reactivation. |
+| JSC-311 project routing guard | `Harness cockpit routing` project only | `Dev Portfolio` | Do not route `JSC-311` to legacy `coding-harness`; legacy routing is historical-only context. |
 | Cross-repo operating hygiene | `Portfolio Ops` project | `Dev Portfolio` | Only reusable portfolio cadence, labels, or project hygiene belongs here. |
 | New initiative | Do not create | `Dev Portfolio` already exists | The existing initiative cleanly represents the work. |
 
