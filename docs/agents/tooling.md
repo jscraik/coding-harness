@@ -44,8 +44,6 @@ Required `[tools]` entries in [`.mise.toml`](../../.mise.toml):
 - `ruff`
 - `npm:eslint`
 - `npm:agent-browser`
-- `npm:agentation`
-- `npm:agentation-mcp`
 - `npm:ctx7`
 - `npm:@mermaid-js/mermaid-cli`
 - `npm:@brainwav/rsearch`
@@ -80,7 +78,6 @@ Required binaries on `PATH` validated by
 - `ruff`
 - `eslint`
 - `agent-browser`
-- `agentation-mcp`
 - `ctx7`
 - `mmdc`
 - `markdownlint-cli2`
@@ -113,7 +110,6 @@ Required action and icon mappings in
 - `Ruff` -> `debug`
 - `ESLint` -> `debug`
 - `Agent Browser` -> `tool`
-- `Agentation` -> `tool`
 - `Context7` -> `tool`
 - `Mermaid CLI` -> `tool`
 - `MarkdownLint` -> `debug`
