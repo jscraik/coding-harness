@@ -31,11 +31,13 @@ import {
 	computeContractHash,
 	computeDeltas,
 	computeMetrics,
-	determineFlags,
-	generateRecommendations,
 	readArtifactManifests,
 	readTraceFiles,
 } from "./simulate-analysis.js";
+import {
+	determineFlags,
+	generateRecommendations,
+} from "./simulate-analysis-recommendations.js";
 
 // ============================================================================
 // HELP TEXT
