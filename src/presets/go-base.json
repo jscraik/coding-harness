@@ -91,7 +91,6 @@
 			"ruff",
 			"eslint",
 			"agent-browser",
-			"agentation",
 			"ctx7",
 			"markdownlint-cli2",
 			"wrangler",
@@ -120,7 +119,6 @@
 			"ruff",
 			"eslint",
 			"agent-browser",
-			"agentation-mcp",
 			"ctx7",
 			"markdownlint-cli2",
 			"wrangler",
@@ -183,14 +181,6 @@
 			{
 				"tool": "npm:agent-browser",
 				"version": "0.17.1"
-			},
-			{
-				"tool": "npm:agentation",
-				"version": "2.3.2"
-			},
-			{
-				"tool": "npm:agentation-mcp",
-				"version": "1.2.0"
 			},
 			{
 				"tool": "npm:ctx7",
@@ -300,10 +290,6 @@
 				},
 				{
 					"name": "Agent Browser",
-					"icon": "tool"
-				},
-				{
-					"name": "Agentation",
 					"icon": "tool"
 				},
 				{

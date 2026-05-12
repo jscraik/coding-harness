@@ -102,9 +102,9 @@ Repository evidence:
 
 Harness Engineering evidence:
 
-- `/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-plan/SKILL.md`
-- `/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-plan/references/deepening-review.md`
-- `/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-code-review/SKILL.md`
+- `<USER_HOME>/dev/agent-skills/Plugins/harness-engineering/skills/he-plan/SKILL.md`
+- `<USER_HOME>/dev/agent-skills/Plugins/harness-engineering/skills/he-plan/references/deepening-review.md`
+- `<USER_HOME>/dev/agent-skills/Plugins/harness-engineering/skills/he-code-review/SKILL.md`
 
 Reviewer evidence:
 
@@ -115,9 +115,9 @@ Reviewer evidence:
 
 Completed before this review artifact was written:
 
-- Command: `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` -> pass
-- Command: `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` -> pass
-- Command: `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` -> pass
+- Command: `python3 <USER_HOME>/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` -> pass
+- Command: `python3 <USER_HOME>/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` -> pass
+- Command: `python3 <USER_HOME>/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` -> pass
 - Command: `pnpm markdownlint .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` -> pass
 
 Pending after this artifact is written:

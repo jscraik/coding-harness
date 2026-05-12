@@ -12,7 +12,7 @@ origin: .harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md
 linear_issue: JSC-301
 linear_parent: JSC-300
 linear_status: Todo
-linear_project: Harness cockpit routing
+linear_project: coding-harness
 closure_recommendation: Blocked
 ---
 
@@ -56,7 +56,7 @@ Confidence: high for the RouteDecision/v1 contract implementation; medium for Li
 
 ## Evaluated Slice
 
-Linear Project: Harness cockpit routing.
+Linear Project: coding-harness.
 Linear Milestone: Not assigned in local artifact evidence.
 Linear Parent Issue: JSC-300.
 Linear Sub-Issues: JSC-301 active slice; JSC-302, JSC-303, JSC-304, and JSC-311 remain downstream or future work.
@@ -75,7 +75,7 @@ Closure Safety: Blocked until the staged JSC-301 patch is committed or an approv
 
 ## Linear Backlink Map
 
-Linear Project: Harness cockpit routing.
+Linear Project: coding-harness.
 Linear Milestone: Not assigned in local artifact evidence.
 Linear Parent Issue: JSC-300.
 Linear Sub-Issues: JSC-301, with downstream references to JSC-302, JSC-303, JSC-304, and JSC-311.
@@ -310,7 +310,7 @@ Proof Artifacts to Attach or Link: this eval report plus commit SHA/PR URL when 
 ## Follow-Up Work
 
 Classification: Do Not Create.
-Target Linear Project: Harness cockpit routing.
+Target Linear Project: coding-harness.
 Parent Issue or Milestone: JSC-300.
 Reason: Follow-up gate work already exists as JSC-311; adapter/public route work already exists as JSC-302/JSC-304.
 Agent-Safe or Human Review Required: Agent-safe for future specs; human review required before public CLI exposure or executable route behavior.

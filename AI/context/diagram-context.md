@@ -26,6 +26,10 @@ Generated: 2026-05-12T14:04:53Z
 - Use .diagram/manifest.json to choose a focused Mermaid file when this combined pack is too large.
 - For TypeScript implementation detail in this checkout, run `bash scripts/harness-cli.sh source-outline <path> --json` first, then unwrap one symbol with `--symbol <name>`. Downstream repositories can use `harness source-outline <path>`.
 
+### Governance Constraints
+
+- RouteDecision lifecycle metadata is agent-native cockpit contract work: `route-decision/v1` is additive to `harness-decision/v1` and must remain advisory/read-only, must not promote `targetCommand` to executable authority by itself, and must not introduce a public "harness route" command. RouteDecision additions must not change runtime recommendation behavior or alter how "harness next" operates. RouteDecision labels MUST NOT be treated as gate-run evidence (per JSC-311); phase-exit logic must refuse commit when required gates are fail/blocked/not_run. Keep `AI/context/diagram-context.md` architecture context and docs-gate-required governance surfaces synchronized in the same PR.
+
 ## agent
 
 ```mermaid

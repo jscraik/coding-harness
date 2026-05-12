@@ -82,7 +82,7 @@ Harness-managed repositories should keep this baseline available locally before 
 - `ruff`
 - `eslint`
 - `agent-browser`
-- `agentation` (backed by the `agentation-mcp` CLI)
+- `ctx7` (Context7 documentation retrieval)
 - `mermaid-cli` (via the `mmdc` CLI)
 - `markdownlint-cli2`
 - `wrangler`

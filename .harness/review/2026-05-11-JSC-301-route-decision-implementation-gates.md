@@ -12,7 +12,7 @@ origin: src/lib/decision/route-decision.ts
 linear_issue: JSC-301
 linear_parent: JSC-300
 linear_status: Todo
-linear_project: Harness cockpit routing
+linear_project: coding-harness
 review_mode: manual_artifact_after_subagent_timeout
 simplify_mode: direct_skill_with_parallel_reviewers
 simplify_rerun_at: 2026-05-11T18:00:37+01:00
