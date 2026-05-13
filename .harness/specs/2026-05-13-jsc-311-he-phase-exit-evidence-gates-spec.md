@@ -384,7 +384,7 @@ Minimum required fields:
 | Field | Type | Required | Rule |
 | --- | --- | ---: | --- |
 | `schemaVersion` | string | yes | Must equal `he-gate-result/v1`. |
-| `gateId` | string | yes | Stable gate identifier such as `simplify`, `testing-reviewer`, `he-fix-bugs`, `he-code-review`, `autofix`, or a future documented gate. |
+| `gateId` | string | yes | Stable gate identifier such as `simplify`, `testing_reviewer`, `he_fix_bugs`, `he_code_review`, `autofix`, or a future documented gate. |
 | `required` | boolean | yes | Whether this gate is required for the phase. |
 | `status` | enum | yes | `pass`, `fail`, `blocked`, `not_applicable`, or `not_run`. |
 | `executionMode` | enum | yes | `direct_skill`, `subagent_proxy`, `manual_review`, `validation_only`, `not_applicable`, or `not_run`. |
@@ -417,14 +417,14 @@ Example:
 ```json
 {
   "schemaVersion": "he-gate-result/v1",
-  "gateId": "he-code-review",
+  "gateId": "he_code_review",
   "required": true,
   "status": "pass",
   "executionMode": "manual_review",
   "evidenceRefs": [
     {
       "type": "artifact",
-      "path": "artifacts/reviews/he-code-review.md"
+      "path": "artifacts/reviews/he_code_review.md"
     }
   ],
   "findings": [],
@@ -442,7 +442,7 @@ Minimum required fields:
 | `schemaVersion` | string | yes | Must equal `he-phase-exit/v1`. |
 | `phaseId` | string | yes | Stable phase or plan work-unit identifier. |
 | `phaseContractRef` | string | yes | Path, issue, or work-unit reference that declares required gates. |
-| `decision` | enum | yes | `continue`, `stop`, `human_review`, or `commit_blocked`. |
+| `decision` | enum | yes | `continue`, `stop`, `human_review_required`, or `commit_blocked`. |
 | `requiredGateIds` | array | yes | Gate IDs required for the phase. |
 | `gateResults` | array | yes | Validated `HeGateResult/v1` objects. |
 | `missingRequiredGateIds` | array | yes | Required gates with no result. |
@@ -460,11 +460,11 @@ Decision rules:
   gates.
 - `decision` is `stop` when the failure means the agent must not continue
   without repair or human guidance.
-- `decision` is `human_review` when evidence is present but requires human
+- `decision` is `human_review_required` when evidence is present but requires human
   judgment before handoff.
 - `decision` is `continue` only when no blocking required-gate condition exists.
 - Duplicate required gate results for the same `gateId` must produce
-  `human_review` or `commit_blocked` unless the first implementation explicitly
+  `human_review_required` or `commit_blocked` unless the first implementation explicitly
   defines and tests a stricter deterministic rule.
 
 ## Security, Privacy, and Safety

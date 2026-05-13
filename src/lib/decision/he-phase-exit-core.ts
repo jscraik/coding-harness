@@ -771,6 +771,13 @@ function validateGateConsistency(
 	if (result.status === "blocked" && result.blockedReason === null)
 		errors.push("blocked gates require blockedReason");
 	if (
+		["pass", "fail", "blocked"].includes(result.status) &&
+		["not_applicable", "not_run"].includes(result.executionMode)
+	)
+		errors.push(
+			"pass, fail, and blocked gates cannot have not_applicable or not_run executionMode",
+		);
+	if (
 		result.status === "not_applicable" &&
 		result.executionMode !== "not_applicable"
 	)
