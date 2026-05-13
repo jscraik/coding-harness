@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-10
+last_validated: 2026-05-13
 ---
 
 # Architecture bootstrap
@@ -64,7 +64,7 @@ one branch, keep this guide in the diff with the refreshed architecture context
 so reviewers can trace why the context pack changed.
 For release packaging changes that alter runtime dependency metadata, pass the packed CLI smoke path before publish, and commit any required `AI/context/diagram-context.md` refresh and its required docs-gate surfaces (including this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`) that pre-push or docs-gate reports.
 For formatter or linter major-version migrations, expect generated architecture context to drop newly ignored local analysis paths and refresh this guide with the committed `AI/context/diagram-context.md` update so reviewers know the architecture pack changed because tracked tooling rules changed.
-For validation gate graph changes, refresh `AI/context/diagram-context.md` and keep the validation governance surfaces synchronized (this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`) when typed gate specs, parity tests, or resume-checkpoint guards are added or changed. Rollback: revert the branch to remove the typed mirror, dispatch guard, parity tests, and synchronized doc updates.
+For validation gate graph changes, refresh `AI/context/diagram-context.md` and keep the validation governance surfaces synchronized (this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`) when typed gate specs, phase-exit evidence gates, parity tests, or resume-checkpoint guards are added or changed. Rollback: revert the branch to remove the typed mirror, evidence-gate contract, dispatch guard, parity tests, and synchronized doc updates.
 
 For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
 For CI ownership architecture changes, keep `harness.contract.json` `ciOwnership` aligned with those required-check identities: CircleCI remains the primary PR gate, CodeRabbit remains independent review evidence, Semgrep Cloud remains independent external security evidence, and GitHub Actions workflows must not become automatic PR gates without a deliberate contract migration.
