@@ -877,6 +877,19 @@ export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 			errors.push(`gates[${index}].required must match requiredGates`);
 		if (optional.has(result.gateId) && result.required !== false)
 			errors.push(`gates[${index}].required must match optionalGates`);
+		if (context) {
+			if (
+				context.failingEvidencePresent === true &&
+				!required.has("he_fix_bugs")
+			) {
+				errors.push(
+					"failingEvidencePresent requires he_fix_bugs in required gates",
+				);
+			}
+			if (context.reviewFeedbackPresent === true && !required.has("autofix")) {
+				errors.push("reviewFeedbackPresent requires autofix in required gates");
+			}
+		}
 	}
 	return { valid: errors.length === 0, errors };
 }
