@@ -3,6 +3,11 @@
 
 reviews:
   profile: "assertive"
+  tools:
+    biome:
+      enabled: true
+    eslint:
+      enabled: false
   request_changes_workflow: false
   high_level_summary_in_walkthrough: true
   review_details: true
