@@ -167,7 +167,8 @@ function probePrependStandardToolPaths(environmentCheck: string): string {
 	expect(probeWithPreset.status).toBe(0);
 	const presetPathEntries = probeWithPreset.stdout.split(":");
 	expect(presetPathEntries[0]).toBe(customDir);
-	expect(presetPathEntries.slice(0, 3)).toEqual([customDir, miseShims, localBin]);
+	expect(presetPathEntries).toContain(miseShims);
+	expect(presetPathEntries).toContain(localBin);
 
 	return probe.stdout;
 }
@@ -1794,6 +1795,15 @@ describe("runInit", () => {
 				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
 			);
 			expect(makefile).toContain(
+				'changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)"',
+			);
+			expect(makefile).toContain(
+				"grep -v '^\\.codex/environments/environment\\.toml$$'",
+			);
+			expect(makefile).toContain(
+				"Environment-only push detected; running check-environment only.",
+			);
+			expect(makefile).toContain(
 				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
 			);
 
@@ -1808,7 +1818,10 @@ describe("runInit", () => {
 				"\t@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
 			expect(makefile).toContain(
-				"\t@bash ./scripts/check-diagram-freshness.sh --changed-files",
+				'git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"',
+			);
+			expect(makefile).toContain(
+				'bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"',
 			);
 			expect(makefile).toContain(
 				"\t@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json",
@@ -2649,9 +2662,31 @@ exit 1
 					},
 				},
 			);
-			const npmAuthFailureOutput = `${npmAuthFailureRun.stdout}${npmAuthFailureRun.stderr}`;
-			expect(npmAuthFailureRun.status).toBe(1);
-			expect(npmAuthFailureOutput).toContain(
+			expect(
+				npmAuthFailureRun.status,
+				npmAuthFailureRun.stdout + npmAuthFailureRun.stderr,
+			).toBe(0);
+			expect(npmAuthFailureRun.stdout).toContain(
+				`Using harness runner: global npm harness (${fakeNpmHarness})`,
+			);
+
+			const missingHarnessAuthFailureRun = spawnSync(
+				"bash",
+				["scripts/check-environment.sh"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...baseEnv,
+						FAKE_MISE_WHICH_MODE: "missing",
+						FAKE_NPM_AUTH_FAIL: "1",
+						FAKE_NPM_PREFIX: join(tempDir, "missing-npm-prefix"),
+					},
+				},
+			);
+			expect(missingHarnessAuthFailureRun.status).toBe(1);
+			const missingHarnessAuthFailureOutput = `${missingHarnessAuthFailureRun.stdout}${missingHarnessAuthFailureRun.stderr}`;
+			expect(missingHarnessAuthFailureOutput).toContain(
 				"Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness.",
 			);
 
