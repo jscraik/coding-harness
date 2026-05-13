@@ -863,6 +863,22 @@ export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 			errors.push(`gates[${index}].required must match requiredGates`);
 		if (optional.has(result.gateId) && result.required !== false)
 			errors.push(`gates[${index}].required must match optionalGates`);
+		if (context) {
+			if (
+				context.failingEvidencePresent === true &&
+				!required.has("he_fix_bugs")
+			) {
+				errors.push(
+					"failingEvidencePresent requires he_fix_bugs in required gates",
+				);
+			}
+			if (
+				context.reviewFeedbackPresent === true &&
+				!required.has("autofix")
+			) {
+				errors.push("reviewFeedbackPresent requires autofix in required gates");
+			}
+		}
 	}
 	return { valid: errors.length === 0, errors };
 }
@@ -902,7 +918,11 @@ export function aggregateHePhaseExit(input: HePhaseExitInput): HePhaseExit {
 		.map((gate) => gate.blockedReason ?? `${gate.gateId} did not pass`);
 	const warnings = gates
 		.filter((gate) => !requiredGateSet.has(gate.gateId))
-		.filter((gate) => !["pass", "not_applicable"].includes(gate.status))
+		.filter(
+			(gate) =>
+				gate.safeToContinue === false ||
+				!["pass", "not_applicable"].includes(gate.status),
+		)
 		.map((gate) => gate.blockedReason ?? `${gate.gateId} did not pass`);
 	const recommendation = chooseRecommendation(
 		input.phaseContext,
