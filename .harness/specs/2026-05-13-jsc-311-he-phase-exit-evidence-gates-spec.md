@@ -506,7 +506,7 @@ evidence:
 
 | Surface | Required Content | Purpose |
 | --- | --- | --- |
-| `HePhaseExit/v1` decision | `decision`, `commitAllowed`, `safeToContinue`, missing gate IDs, blocking reasons, and evidence refs | Lets agents and reviewers see why a phase may or may not exit. |
+| `HePhaseExit/v1` decision | `recommendation`, `commitAllowed`, `exitAllowed`, missing gate IDs, blocking reasons, and evidence refs | Lets agents and reviewers see why a phase may or may not exit. |
 | Unit-test fixtures | Valid, invalid, missing, failed, blocked, not-run, not-applicable, advisory-only, duplicate, and conflicting gate examples | Proves the decision table is executable, not prose-only. |
 | Validation report / closeout artifact | Exact commands and `pass`, `fail`, `blocked`, or `not applicable` outcomes | Separates local implementation evidence from PR, CI, review, and tracker closure evidence. |
 | Repo-state inventory | `git status`, direct file reads, and filesystem inventory for prior `he-phase-exit` paths and canonical plan/spec artifacts | Prevents phantom untracked files or invisible control-plane artifacts from being treated as implementation or planning proof. |
