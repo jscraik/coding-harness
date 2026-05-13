@@ -315,12 +315,12 @@ Stop instead of continuing when any of the following is true:
 | FR-007 | Missing required gate results MUST produce `commit_allowed: false`. |
 | FR-008 | `not_applicable` MUST require a non-empty reason and MUST NOT be accepted when phase scope triggers that gate. |
 | FR-009 | RouteDecision labels, skill names, user prompts, and recovery state MUST NOT count as gate-run evidence. |
-| FR-010 | Testing-reviewer evidence MUST NOT satisfy he-fix-bugs evidence unless a separate he-fix-bugs result exists. |
+| FR-010 | `testing_reviewer` evidence MUST NOT satisfy `he_fix_bugs` evidence unless a separate `he_fix_bugs` result exists. |
 | FR-011 | The v1 contract MUST remain local and read-only. |
 | FR-012 | The v1 contract MUST preserve existing `harness-decision/v1` and `harness next` behavior unless a later plan explicitly wires metadata. |
 | FR-013 | Malformed `findings`, `actions`, or `evidenceRefs` payloads MUST fail validation without throwing through the phase-exit caller. |
 | FR-014 | Review-gate evidence MUST be artifact-backed or command-backed; mailbox text, role labels, or chat status text alone MUST NOT satisfy a required review gate. |
-| FR-015 | Duplicate or conflicting required gate results MUST fail closed to `human_review` or `commit_blocked` unless the plan defines a deterministic precedence rule and tests it. |
+| FR-015 | Duplicate or conflicting required gate results MUST fail closed to `human_review_required` or `commit_blocked` unless the plan defines a deterministic precedence rule and tests it. |
 | FR-016 | Required gate selection MUST come from an explicit phase contract or plan work-unit declaration, not from inferred keywords alone. |
 | FR-017 | The first implementation MUST reconcile `git status`, filesystem inventory, and direct file reads for any prior `he-phase-exit` paths and canonical plan/spec artifacts before deciding to restore, replace, or supersede them. If the sources disagree, coding is blocked until the ambiguity is resolved or explicitly waived by the spec owner. |
 | FR-018 | The evaluator MUST surface a compact list of missing, invalid, failed, blocked, not-run, advisory-only, duplicate, and conflicting evidence reasons so closeout notes can explain why commit readiness is blocked. |
@@ -384,7 +384,7 @@ Minimum required fields:
 | Field | Type | Required | Rule |
 | --- | --- | ---: | --- |
 | `schemaVersion` | string | yes | Must equal `he-gate-result/v1`. |
-| `gateId` | string | yes | Stable gate identifier such as `simplify`, `testing-reviewer`, `he-fix-bugs`, `he-code-review`, `autofix`, or a future documented gate. |
+| `gateId` | string | yes | Stable gate identifier such as `simplify`, `testing_reviewer`, `he_fix_bugs`, `he_code_review`, `autofix`, or a future documented gate. |
 | `required` | boolean | yes | Whether this gate is required for the phase. |
 | `status` | enum | yes | `pass`, `fail`, `blocked`, `not_applicable`, or `not_run`. |
 | `executionMode` | enum | yes | `direct_skill`, `subagent_proxy`, `manual_review`, `validation_only`, `not_applicable`, or `not_run`. |
@@ -397,9 +397,12 @@ Minimum required fields:
 
 Conformance rules:
 
-- `pass` requires at least one evidence reference.
-- `fail` requires either findings or an explicit reason.
-- `blocked` requires a blocker reason.
+- `pass` requires at least one gate-local evidence reference.
+- `fail` requires at least one gate-local evidence reference and an open finding.
+- `blocked` requires at least one gate-local evidence reference, an open finding,
+  and a blocker reason.
+- `pass`, `fail`, and `blocked` must not use `not_applicable` or `not_run`
+  execution modes.
 - `not_run` requires a reason and blocks commit readiness when required.
 - `not_applicable` requires a reason and must be rejected if the phase scope
   declares that gate triggered.
@@ -417,14 +420,14 @@ Example:
 ```json
 {
   "schemaVersion": "he-gate-result/v1",
-  "gateId": "he-code-review",
+  "gateId": "he_code_review",
   "required": true,
   "status": "pass",
   "executionMode": "manual_review",
   "evidenceRefs": [
     {
       "type": "artifact",
-      "path": "artifacts/reviews/he-code-review.md"
+      "path": "artifacts/reviews/he_code_review.md"
     }
   ],
   "findings": [],
@@ -440,32 +443,34 @@ Minimum required fields:
 | Field | Type | Required | Rule |
 | --- | --- | ---: | --- |
 | `schemaVersion` | string | yes | Must equal `he-phase-exit/v1`. |
-| `phaseId` | string | yes | Stable phase or plan work-unit identifier. |
-| `phaseContractRef` | string | yes | Path, issue, or work-unit reference that declares required gates. |
-| `decision` | enum | yes | `continue`, `stop`, `human_review`, or `commit_blocked`. |
-| `requiredGateIds` | array | yes | Gate IDs required for the phase. |
-| `gateResults` | array | yes | Validated `HeGateResult/v1` objects. |
-| `missingRequiredGateIds` | array | yes | Required gates with no result. |
-| `blockingReasons` | array | yes | Human-readable reasons for non-continuation. |
-| `safeToContinue` | boolean | yes | Whether local work can continue. |
+| `phaseContext` | object | yes | Phase, failing-evidence, and review-feedback context used to evaluate the decision. |
+| `recommendation` | enum | yes | `continue`, `stop`, `human_review_required`, or `commit_blocked`. |
 | `commitAllowed` | boolean | yes | Whether commit-ready handoff is allowed. |
-| `summary` | string | yes | Compact explanation. |
+| `exitAllowed` | boolean | yes | Whether the current local phase may exit. |
+| `blockers` | array | yes | Deterministic human-readable reasons for non-continuation or blocked commit readiness. |
+| `warnings` | array | yes | Non-blocking advisory gate concerns, including optional gates with `safeToContinue: false`. |
+| `gates` | array | yes | Validated or synthesized `HeGateResult/v1` objects. |
 
 Decision rules:
 
-- `commitAllowed` is `true` only when every required gate is `pass` or accepted
-  `not_applicable`.
-- `decision` is `commit_blocked` when local work may continue but commit-ready
+- `commitAllowed` is `true` only during closeout when every required gate is
+  `pass` or accepted `not_applicable`, no blockers exist, and the recommendation
+  is `continue`.
+- `exitAllowed` is `true` only when the recommendation is `continue` and no
+  blockers exist.
+- `recommendation` is `commit_blocked` when local work may continue but
+  commit-ready
   handoff is blocked by missing, failed, blocked, invalid, or unrun required
   gates.
-- `decision` is `stop` when the failure means the agent must not continue
+- `recommendation` is `stop` when the failure means the agent must not continue
   without repair or human guidance.
-- `decision` is `human_review` when evidence is present but requires human
-  judgment before handoff.
-- `decision` is `continue` only when no blocking required-gate condition exists.
+- `recommendation` is `human_review_required` when evidence is present but
+  requires human judgment before handoff.
+- `recommendation` is `continue` only when no blocking required-gate condition
+  exists.
 - Duplicate required gate results for the same `gateId` must produce
-  `human_review` or `commit_blocked` unless the first implementation explicitly
-  defines and tests a stricter deterministic rule.
+  `human_review_required` or `commit_blocked` unless the first implementation
+  explicitly defines and tests a stricter deterministic rule.
 
 ## Security, Privacy, and Safety
 
@@ -566,7 +571,7 @@ Future implementation validation:
 - Focused unit tests for required gate aggregation and commit blocking.
 - Fixture proving RouteDecision labels are not accepted as gate evidence.
 - Fixture proving Recovery Capsule status is not accepted as gate evidence.
-- Fixture proving testing-reviewer evidence does not satisfy he-fix-bugs.
+- Fixture proving `testing_reviewer` evidence does not satisfy `he_fix_bugs`.
 - Fixture proving malformed `findings`, `actions`, and `evidenceRefs` fail
   closed without runtime throws.
 - Fixture proving duplicate/conflicting required gate results force human review
@@ -591,7 +596,7 @@ Future implementation validation:
 | SA-004 | Missing required gate results block commit readiness. | Table-driven tests. |
 | SA-005 | `not_applicable` requires a reason and is rejected when scope triggers the gate. | Negative tests. |
 | SA-006 | RouteDecision labels and recovery state are rejected as gate-run evidence. | Fixture tests. |
-| SA-007 | Testing-reviewer evidence does not satisfy he-fix-bugs evidence. | Fixture tests. |
+| SA-007 | `testing_reviewer` evidence does not satisfy `he_fix_bugs` evidence. | Fixture tests. |
 | SA-008 | The evaluator is pure local logic with no network or external writes. | Code review and tests without live services. |
 | SA-009 | Existing `harness-decision/v1` and `harness next` behavior remains unchanged in the first implementation slice. | Focused regression tests if metadata wiring is attempted; otherwise changed-file review. |
 | SA-010 | Invalid schemas or invalid enum values fail closed. | Negative schema tests. |
@@ -599,7 +604,7 @@ Future implementation validation:
 | SA-012 | Plan handoff is bounded to pure reader/normalizer, fixtures, and tests before CLI wiring. | `he-plan` review against this spec. |
 | SA-013 | First implementation resolves the repo-state ambiguity around prior `he-phase-exit` files and canonical plan/spec artifacts before coding starts. | `fd`/`find`/`stat` file inventory plus `git status` reconciliation; if Git still reports inaccessible phantom files or omits live control-plane artifacts, stop and report the blocker. |
 | SA-014 | Malformed `findings`, `actions`, and `evidenceRefs` payloads become validation failures without uncaught runtime exceptions. | Negative unit tests. |
-| SA-015 | Duplicate or conflicting required gate results force `human_review` or `commit_blocked` unless a deterministic precedence rule is explicitly tested. | Conflict fixture tests. |
+| SA-015 | Duplicate or conflicting required gate results force `human_review_required` or `commit_blocked` unless a deterministic precedence rule is explicitly tested. | Conflict fixture tests. |
 | SA-016 | Required gates are derived from an explicit phase contract or work-unit declaration. | Unit test or plan fixture showing required gate list input. |
 | SA-017 | Review gate evidence requires non-empty artifact or command evidence; role labels or chat status are insufficient. | Fixture tests with advisory-only evidence rejected. |
 | SA-018 | The final handoff distinguishes local implementation proof from PR, CI, review, commit, push, and Linear closure proof. | Eval or closeout artifact with separate local and external closure classifications. |
@@ -674,7 +679,7 @@ into Runtime Card, Closeout Guardian, MCP, plugin, or telemetry work.
 | P1 | Ownership and escalation were implicit, so an implementer could silently change gate semantics or wire runtime surfaces. | The original spec defined behavior but not authority for changing phase-exit semantics, tracker mutation, or integration boundaries. | Added ownership, authority, escalation, and execution stop-condition sections. |
 | P2 | Observability was implied through validation but not stated as a local evidence surface. | Future consumers need compact decision fields and fixture evidence without external telemetry. | Added Observability and Evidence Surfaces section plus FR-018 and SA-019. |
 | P2 | Risk handling was scattered through findings and non-goals rather than consolidated for reviewers. | Reviewers need a quick failure-mode map before plan/implementation. | Added Risks and Mitigations section. |
-| P2 | Duplicate or conflicting gate results were under-specified and could lead to timestamp or latest-wins drift. | The original open question allowed later choice without setting a safe default. | Added FR-015 and SA-015: fail closed to `human_review` or `commit_blocked` unless explicitly tested. |
+| P2 | Duplicate or conflicting gate results were under-specified and could lead to timestamp or latest-wins drift. | The original open question allowed later choice without setting a safe default. | Added FR-015 and SA-015: fail closed to `human_review_required` or `commit_blocked` unless explicitly tested. |
 | P2 | Review-gate evidence could be confused with reviewer-role labels or chat status text. | `src/commands/review-gate-core.ts` already produces blocker fields from concrete policy, traceability, and check-run evidence. | Added FR-014 and SA-017 to require artifact-backed or command-backed evidence. |
 | P2 | Required gate selection could be inferred from keywords instead of a phase contract. | The original contract listed required gate IDs but did not say where they came from. | Added FR-016, `phaseContractRef`, and SA-016. |
 | P3 | The spec risked conflating local implementation proof with external closure proof. | JSC-311 Recovery eval solution records this exact eval-report closure-proof risk. | Added SA-018 and strengthened validation/closeout expectations. |
@@ -690,7 +695,7 @@ answer all of these without guessing:
 | What is not allowed yet? | CLI wiring, tracker mutation, external writes, Runtime Card, Closeout Guardian, MCP, plugin, Slack, telemetry, commit, push, merge, or release work. |
 | What proves a required gate passed? | A valid `HeGateResult/v1` with concrete evidence refs and a passing status. |
 | What never proves a required gate passed? | Route labels, skill names, prompt text, recovery state, memory summaries, role labels, or chat status text alone. |
-| What happens when evidence is malformed, missing, failed, blocked, not run, duplicated, or contradictory? | Commit readiness is blocked and the decision is `commit_blocked`, `stop`, or `human_review`. |
+| What happens when evidence is malformed, missing, failed, blocked, not run, duplicated, or contradictory? | Commit readiness is blocked and the recommendation is `commit_blocked`, `stop`, or `human_review_required`. |
 | What must be checked before coding? | Whether prior `he-phase-exit` files exist locally, whether Git status and filesystem inventory agree for source and plan/spec artifacts, and whether the current branch/worktree contains unrelated dirty changes. |
 
 ## Linear Work Item Contract
@@ -713,7 +718,7 @@ answer all of these without guessing:
 | --- | --- | --- |
 | JSC-311 | SA-001, SA-002 | Typed `HeGateResult/v1` and `HePhaseExit/v1` contracts with focused tests. |
 | JSC-311 | SA-003, SA-004, SA-005 | Table-driven phase-exit tests for failed, blocked, not-run, missing, and not-applicable gates. |
-| JSC-311 | SA-006, SA-007 | Fixtures proving advisory RouteDecision/Recovery Capsule metadata and testing-reviewer evidence cannot satisfy required gate evidence. |
+| JSC-311 | SA-006, SA-007 | Fixtures proving advisory RouteDecision/Recovery Capsule metadata and `testing_reviewer` evidence cannot satisfy required gate evidence. |
 | JSC-311 | SA-008, SA-009 | Changed-file review and regression tests preserving local-only behavior and existing `harness-decision/v1` compatibility. |
 | JSC-311 | SA-010, SA-011, SA-012 | Negative schema tests, spec validators, markdownlint, and bounded `he-plan` handoff. |
 | JSC-311 | SA-013, SA-014, SA-015 | Repo-state reconciliation, malformed payload tests, and duplicate/conflict fixture tests. |
@@ -796,8 +801,8 @@ Recommended first plan slice:
 3. Reconcile `git status`, direct file reads, `fd`/`find`, and `stat` results
    for any prior `he-phase-exit` files before coding; if they disagree, stop
    until the repo-state ambiguity is resolved or explicitly waived.
-4. Add fixtures for `simplify`, `testing-reviewer`, `he-fix-bugs`,
-   `he-code-review`, and `autofix`.
+4. Add fixtures for `simplify`, `testing_reviewer`, `he_fix_bugs`,
+   `he_code_review`, and `autofix`.
 5. Add tests for missing, failed, blocked, not-run, not-applicable, advisory
    metadata, malformed array, duplicate, and conflicting-result cases.
 6. Add tests for deterministic blocker-summary text.

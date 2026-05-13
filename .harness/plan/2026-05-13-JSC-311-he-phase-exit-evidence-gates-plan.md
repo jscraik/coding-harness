@@ -612,10 +612,10 @@ Sequencing rules:
 
 | Gate | When | Command | Required | Current Result |
 | --- | --- | --- | ---: | --- |
-| Plan BLUF structure | After plan creation/update | `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_bluf_structure.py .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md --json` | yes | pass |
-| Plan artifact shape | After plan creation/update | `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md --kind plan --json` | yes | pass |
-| Plan artifact identity | After plan creation/update | `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | yes | pass |
-| Linear traceability | After plan creation/update | `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | yes | pass |
+| Plan BLUF structure | After plan creation/update | `bash scripts/run-he-artifact-validator.sh bluf .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md --json` | yes | pass |
+| Plan artifact shape | After plan creation/update | `bash scripts/run-he-artifact-validator.sh shape .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md --kind plan --json` | yes | pass |
+| Plan artifact identity | After plan creation/update | `bash scripts/run-he-artifact-validator.sh artifact-identity .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | yes | pass |
+| Linear traceability | After plan creation/update | `bash scripts/run-he-artifact-validator.sh linear-traceability .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | yes | pass |
 | Markdown lint | After plan creation/update | `pnpm exec markdownlint-cli2 .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | yes | pass with `.npmrc` warning |
 | Repo-state inventory | PU-000 | `git status --short --untracked-files=all -- src/lib/decision .harness/specs .harness/plan` plus direct reads/stats | yes | pass after stale `core.worktree` pointer was removed and source files were reconciled into `/Users/jamiecraik/dev/coding-harness` |
 | Focused unit tests | PU-001 through PU-004 | `pnpm vitest run src/lib/decision/he-phase-exit.test.ts` | yes | pass: 27 tests passed |

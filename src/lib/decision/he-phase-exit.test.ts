@@ -126,6 +126,17 @@ function blockedGate(gateId: HeGateId, required = true): HeGateResult {
 	};
 }
 
+function gateWithExecutionMode(
+	gateId: HeGateId,
+	executionMode: HeGateResult["executionMode"],
+	required = true,
+): HeGateResult {
+	return {
+		...passingGate(gateId, required),
+		executionMode,
+	};
+}
+
 function input(overrides: Partial<HePhaseExitInput> = {}): HePhaseExitInput {
 	return {
 		phaseContext: closeoutContext,
@@ -264,6 +275,29 @@ describe("validateHeGateResult", () => {
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContain("not_run gates require reason");
 	});
+
+	it("accepts manual review and validation-only execution modes with complete evidence", () => {
+		for (const executionMode of ["manual_review", "validation_only"] as const) {
+			expect(
+				validateHeGateResult(
+					gateWithExecutionMode("he_code_review", executionMode),
+				),
+			).toEqual({ valid: true, errors: [] });
+		}
+	});
+
+	it("rejects executed statuses with non-executed execution modes", () => {
+		for (const executionMode of ["not_applicable", "not_run"] as const) {
+			const result = validateHeGateResult(
+				gateWithExecutionMode("simplify", executionMode),
+			);
+
+			expect(result.valid).toBe(false);
+			expect(result.errors).toContain(
+				"pass, fail, and blocked gates require an executed executionMode",
+			);
+		}
+	});
 });
 
 describe("validateHePhaseExitInput", () => {
@@ -333,6 +367,25 @@ describe("validateHePhaseExitInput", () => {
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContain(
 			"he_fix_bugs cannot be not_applicable with failing evidence",
+		);
+	});
+
+	it("requires he_fix_bugs in required gates when failing evidence exists", () => {
+		const result = validateHePhaseExitInput(
+			input({
+				phaseContext: {
+					phase: "closeout",
+					failingEvidencePresent: true,
+					reviewFeedbackPresent: false,
+				},
+				requiredGates: ["simplify", "testing_reviewer", "he_code_review"],
+				optionalGates: ["he_fix_bugs", "autofix"],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"phaseContext.failingEvidencePresent requires he_fix_bugs in requiredGates",
 		);
 	});
 
@@ -417,6 +470,30 @@ describe("validateHePhaseExitInput", () => {
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContain(
 			"autofix cannot be not_applicable with review feedback",
+		);
+	});
+
+	it("requires autofix in required gates when review feedback exists", () => {
+		const result = validateHePhaseExitInput(
+			input({
+				phaseContext: {
+					phase: "closeout",
+					failingEvidencePresent: false,
+					reviewFeedbackPresent: true,
+				},
+				requiredGates: [
+					"simplify",
+					"testing_reviewer",
+					"he_fix_bugs",
+					"he_code_review",
+				],
+				optionalGates: ["autofix"],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"phaseContext.reviewFeedbackPresent requires autofix in requiredGates",
 		);
 	});
 
@@ -541,24 +618,44 @@ describe("aggregateHePhaseExit", () => {
 	it("records optional gate failures as warnings only", () => {
 		const result = aggregateHePhaseExit(
 			input({
-				phaseContext: {
-					phase: "closeout",
-					failingEvidencePresent: false,
-					reviewFeedbackPresent: true,
-				},
+				requiredGates: ["simplify", "testing_reviewer", "he_fix_bugs"],
+				optionalGates: ["he_code_review", "autofix"],
 				gates: [
 					passingGate("simplify"),
 					passingGate("testing_reviewer"),
 					notApplicableGate("he_fix_bugs"),
-					passingGate("he_code_review"),
-					blockedGate("autofix", false),
+					blockedGate("he_code_review", false),
+					notApplicableGate("autofix", false),
 				],
 			}),
 		);
 
 		expect(result.recommendation).toBe("continue");
 		expect(result.commitAllowed).toBe(true);
-		expect(result.warnings).toContain("autofix blocker");
+		expect(result.warnings).toContain("he_code_review blocker");
+	});
+
+	it("records optional safe-to-continue failures as warnings only", () => {
+		const result = aggregateHePhaseExit(
+			input({
+				requiredGates: ["simplify", "testing_reviewer", "he_fix_bugs"],
+				optionalGates: ["he_code_review", "autofix"],
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					{
+						...passingGate("he_code_review", false),
+						safeToContinue: false,
+					},
+					notApplicableGate("autofix", false),
+				],
+			}),
+		);
+
+		expect(result.recommendation).toBe("continue");
+		expect(result.commitAllowed).toBe(true);
+		expect(result.warnings).toContain("he_code_review is not safe to continue");
 	});
 
 	it("fails closed without throwing when aggregate input is malformed", () => {

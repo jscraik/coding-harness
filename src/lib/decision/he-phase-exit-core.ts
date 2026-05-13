@@ -758,6 +758,14 @@ function validateGateConsistency(
 ): void {
 	if (
 		["pass", "fail", "blocked"].includes(result.status) &&
+		["not_applicable", "not_run"].includes(result.executionMode)
+	) {
+		errors.push(
+			"pass, fail, and blocked gates require an executed executionMode",
+		);
+	}
+	if (
+		["pass", "fail", "blocked"].includes(result.status) &&
 		!evidenceRefs.some((ref) => ref.gateLocal)
 	)
 		errors.push(
@@ -837,6 +845,19 @@ export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 		: [];
 	const required = new Set(requiredList as HeGateId[]);
 	const optional = new Set(optionalList as HeGateId[]);
+	if (
+		context?.failingEvidencePresent === true &&
+		!required.has("he_fix_bugs")
+	) {
+		errors.push(
+			"phaseContext.failingEvidencePresent requires he_fix_bugs in requiredGates",
+		);
+	}
+	if (context?.reviewFeedbackPresent === true && !required.has("autofix")) {
+		errors.push(
+			"phaseContext.reviewFeedbackPresent requires autofix in requiredGates",
+		);
+	}
 	for (const gateId of required) {
 		if (optional.has(gateId)) {
 			errors.push("gate cannot be both required and optional");
@@ -895,8 +916,18 @@ export function aggregateHePhaseExit(input: HePhaseExitInput): HePhaseExit {
 		.map((gate) => gate.blockedReason ?? `${gate.gateId} did not pass`);
 	const warnings = gates
 		.filter((gate) => !requiredGateSet.has(gate.gateId))
-		.filter((gate) => !["pass", "not_applicable"].includes(gate.status))
-		.map((gate) => gate.blockedReason ?? `${gate.gateId} did not pass`);
+		.filter(
+			(gate) =>
+				!gate.safeToContinue ||
+				!["pass", "not_applicable"].includes(gate.status),
+		)
+		.map(
+			(gate) =>
+				gate.blockedReason ??
+				(gate.safeToContinue
+					? `${gate.gateId} did not pass`
+					: `${gate.gateId} is not safe to continue`),
+		);
 	const recommendation = chooseRecommendation(
 		input.phaseContext,
 		blockers,
