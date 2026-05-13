@@ -503,15 +503,19 @@ function isExecuted(result: HeGateResult): boolean {
 }
 
 /**
- * Validates an unknown value as an array of evidence references and returns the parsed list.
+ * Validate and parse an untrusted value expected to contain evidence references.
  *
- * Appends human-readable error messages to `errors` when the top-level value is not an array,
- * when entries are not objects, when `id`, `kind`, or `ref` are not strings, when `gateLocal`
- * is not a boolean, when an `id` is duplicated, or when an entry's `kind` equals `"route-decision"`.
+ * Appends human-readable messages to `errors` for structural and field-level problems:
+ * - when the top-level value is not an array,
+ * - when an entry is not an object,
+ * - when `id`, `kind`, or `ref` are not strings,
+ * - when `gateLocal` is not a boolean,
+ * - when an `id` is duplicated,
+ * - when an entry's `kind` matches a `route-decision` pattern (treated as context, not gate evidence).
  *
- * @param value - The unknown value to validate as `HeEvidenceRef[]`
+ * @param value - The untrusted input to validate and parse
  * @param errors - Collector for validation error messages; messages are appended in-place
- * @returns The validated `HeEvidenceRef[]`; returns an empty array when the top-level value is not an array
+ * @returns The validated evidence reference entries; returns an empty array when the top-level value is not an array
  */
 function validateEvidenceRefs(
 	value: unknown,
@@ -663,13 +667,11 @@ function validateGateValidation(value: unknown, errors: string[]): void {
 }
 
 /**
- * Validate a phase-scoped context object and return it typed as `HePhaseContext`.
+ * Validate a phase-scoped context and record any field validation errors.
  *
- * Appends human-readable error messages to `errors` for any invalid fields (`phase`,
- * `failingEvidencePresent`, `reviewFeedbackPresent`). Returns `null` only when the
- * top-level value is not an object; otherwise returns the input cast to `HePhaseContext`.
+ * Validates `phase`, `failingEvidencePresent`, and `reviewFeedbackPresent`, pushing human-readable messages into `errors`. Returns `null` only when the top-level `value` is not an object.
  *
- * @param value - The unknown input to validate as a phase context
+ * @param value - The input to validate as a phase context
  * @param errors - Mutable array that receives validation error messages
  * @returns The validated `HePhaseContext`, or `null` if `value` is not an object
  */
@@ -696,15 +698,14 @@ function validatePhaseContext(
 }
 
 /**
- * Validate an unknown input as a gate result and return a normalized `HeGateResult`.
+ * Validate and normalize a raw gate result record.
  *
- * Performs structural validation of core fields, runs gate-specific payload validation (when possible),
- * enforces cross-field consistency rules, and appends human-readable error messages to `errors`.
+ * Performs structural checks, runs gate-specific payload validation when available, and enforces cross-field consistency, appending human-readable messages to `errors`.
  *
- * @param value - The raw input to validate and normalize into a gate result
+ * @param value - The raw input to validate and normalize
  * @param context - Phase-scoped context used by gate-specific payload validators; may be `null`
  * @param errors - Mutable array that will receive validation error messages
- * @returns The normalized `HeGateResult` when the top-level input is an object; `null` if the top-level input is not an object
+ * @returns The normalized `HeGateResult` when the top-level input is an object, `null` if the top-level input is not an object
  */
 function gateResultFromRecord(
 	value: unknown,
@@ -743,12 +744,12 @@ function gateResultFromRecord(
 }
 
 /**
- * Validate cross-field consistency rules for a single gate result and append any discovered errors to `errors`.
+ * Validate cross-field consistency of a single gate result and append any discovered error messages to `errors`.
  *
- * Performs checks such as: requiring at least one gate-local evidence ref for `pass`/`fail`/`blocked` statuses; requiring an open finding for `fail`/`blocked`; requiring `blockedReason` when status is `blocked`; enforcing matching `executionMode` and non-empty `reason` for `not_applicable` and `not_run`; and ensuring any finding `evidenceRef` references an existing `evidenceRefs.id`.
+ * Performs checks for executionMode/status alignment; requires at least one gate-local evidence ref when status is `pass`, `fail`, or `blocked`; requires an open finding when status is `fail` or `blocked`; requires a non-null `blockedReason` when status is `blocked`; requires matching `executionMode` and a non-empty `reason` for `not_applicable` and `not_run`; and ensures every finding `evidenceRef` (when non-null) references an existing `evidenceRefs.id`.
  *
- * @param result - The gate result to validate
- * @param evidenceRefs - The list of evidence references present on the gate result
+ * @param result - The normalized gate result to validate
+ * @param evidenceRefs - The evidence references declared on the gate result
  * @param errors - Mutable array that will receive human-readable error messages for each violated rule
  */
 function validateGateConsistency(
@@ -1045,7 +1046,13 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 	return { valid: errors.length === 0, errors };
 }
 
-/** Create a deterministic missing-gate result for fail-closed aggregation. */
+/**
+ * Produce a deterministic `HeGateResult` representing a missing (not-run) gate used to fail-closed during aggregation.
+ *
+ * @param gateId - The gate identifier to synthesize
+ * @param required - Whether the synthesized gate should be marked as required (defaults to `true`)
+ * @returns A `HeGateResult` with `executionMode` and `status` set to `"not_run"`, an open high-severity finding indicating the gate has not run, `safeToContinue` set to `false`, and `reason`/`blockedReason` describing that the gate has not run
+ */
 export function createMissingGateResult(
 	gateId: HeGateId,
 	required = true,
@@ -1183,9 +1190,9 @@ function sanitizePhaseContext(input: unknown): HePhaseContext {
 }
 
 /**
- * Return the array of gate results from an arbitrary input object's `gates` property, filtering out non-record entries.
+ * Extracts an array of gate-result objects from an object's `gates` property.
  *
- * @param input - The unknown value to sanitize; expected to be an object with a `gates` array.
+ * @param input - The value to sanitize; expected to be an object with a `gates` array.
  * @returns An array of `HeGateResult`-shaped objects taken from `input.gates`. Returns an empty array if `input` is not an object or `input.gates` is not an array.
  */
 function sanitizeGateArray(input: unknown): HeGateResult[] {
