@@ -788,8 +788,13 @@ function validateGateConsistency(
 		!result.findings.some((finding) => finding.status === "open")
 	)
 		errors.push("failed or blocked gates require an open finding");
-	if (result.status === "blocked" && result.blockedReason === null)
+	if (
+		result.status === "blocked" &&
+		(typeof result.blockedReason !== "string" ||
+			result.blockedReason.trim().length === 0)
+	) {
 		errors.push("blocked gates require blockedReason");
+	}
 	if (
 		result.status === "not_applicable" &&
 		result.executionMode !== "not_applicable"
