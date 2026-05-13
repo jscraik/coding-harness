@@ -959,6 +959,13 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 	if (value.commitAllowed === true && value.recommendation !== "continue")
 		errors.push("commitAllowed requires continue recommendation");
 	if (
+		value.commitAllowed === true &&
+		isRecord(value.phaseContext) &&
+		Array.isArray(value.blockers) &&
+		value.blockers.length > 0
+	)
+		errors.push("commitAllowed requires no blockers");
+	if (
 		value.exitAllowed === true &&
 		(value.recommendation !== "continue" ||
 			!Array.isArray(value.blockers) ||
