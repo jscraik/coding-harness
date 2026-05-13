@@ -796,3 +796,59 @@ describe("aggregateHePhaseExit", () => {
 		expect(result.blockers).toEqual([]);
 	});
 });
+
+describe("validateHePhaseExit", () => {
+	it("rejects duplicate gate IDs in decision artifacts", () => {
+		const decision = aggregateHePhaseExit(input());
+		const result = validateHePhaseExit({
+			...decision,
+			gates: [...decision.gates, passingGate("simplify")],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain("gates[5].gateId must be unique");
+	});
+
+	it("rejects commit-ready decisions with blocking required gate evidence", () => {
+		const decision = aggregateHePhaseExit(input());
+		const result = validateHePhaseExit({
+			...decision,
+			gates: decision.gates.map((gate) =>
+				gate.gateId === "simplify" ? blockedGate("simplify") : gate,
+			),
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"commitAllowed requires passing required gates",
+		);
+		expect(result.errors).toContain(
+			"exitAllowed requires continue recommendation with no blockers and passing required gates",
+		);
+		expect(result.errors).toContain(
+			"continue recommendation requires passing required gates",
+		);
+	});
+
+	it("requires human-review recommendations to cite human gate evidence", () => {
+		const decision = aggregateHePhaseExit(
+			input({
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					blockedGate("he_code_review"),
+				],
+			}),
+		);
+		const result = validateHePhaseExit({
+			...decision,
+			recommendation: "human_review_required",
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"human_review_required requires human gate evidence",
+		);
+	});
+});

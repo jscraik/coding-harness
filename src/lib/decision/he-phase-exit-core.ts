@@ -969,10 +969,30 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 	validateBoolean(value.exitAllowed, "exitAllowed", errors);
 	validateStringArray(value.blockers, "blockers", errors);
 	validateStringArray(value.warnings, "warnings", errors);
+	const validatedGates: HeGateResult[] = [];
 	if (!Array.isArray(value.gates)) errors.push("gates must be an array");
-	else
-		for (const gate of value.gates)
-			gateResultFromRecord(gate, value.phaseContext as HePhaseContext, errors);
+	else {
+		const seenGateIds = new Set<HeGateId>();
+		for (const [index, gate] of value.gates.entries()) {
+			const before = errors.length;
+			const parsedGate = gateResultFromRecord(
+				gate,
+				value.phaseContext as HePhaseContext,
+				errors,
+			);
+			if (!parsedGate || errors.length > before) continue;
+			if (seenGateIds.has(parsedGate.gateId))
+				errors.push(`gates[${index}].gateId must be unique`);
+			seenGateIds.add(parsedGate.gateId);
+			validatedGates.push(parsedGate);
+		}
+	}
+	const blockingRequiredGates = validatedGates.filter(
+		(gate) =>
+			gate.required &&
+			(!gate.safeToContinue ||
+				!["pass", "not_applicable"].includes(gate.status)),
+	);
 	if (
 		value.recommendation === "commit_blocked" &&
 		value.phaseContext &&
@@ -989,6 +1009,8 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 		errors.push("commitAllowed can only be true during closeout");
 	if (value.commitAllowed === true && value.recommendation !== "continue")
 		errors.push("commitAllowed requires continue recommendation");
+	if (value.commitAllowed === true && blockingRequiredGates.length > 0)
+		errors.push("commitAllowed requires passing required gates");
 	if (
 		value.commitAllowed === true &&
 		isRecord(value.phaseContext) &&
@@ -1000,18 +1022,26 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 		value.exitAllowed === true &&
 		(value.recommendation !== "continue" ||
 			!Array.isArray(value.blockers) ||
-			value.blockers.length > 0)
+			value.blockers.length > 0 ||
+			blockingRequiredGates.length > 0)
 	) {
 		errors.push(
-			"exitAllowed requires continue recommendation with no blockers",
+			"exitAllowed requires continue recommendation with no blockers and passing required gates",
 		);
 	}
+	if (value.recommendation === "continue" && blockingRequiredGates.length > 0)
+		errors.push("continue recommendation requires passing required gates");
 	if (
 		value.recommendation === "human_review_required" &&
 		Array.isArray(value.blockers) &&
 		value.blockers.length === 0
 	)
 		errors.push("human_review_required requires correlated blocker evidence");
+	if (
+		value.recommendation === "human_review_required" &&
+		!validatedGates.some((gate) => gate.requiresHuman)
+	)
+		errors.push("human_review_required requires human gate evidence");
 	return { valid: errors.length === 0, errors };
 }
 
