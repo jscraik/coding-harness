@@ -75,11 +75,11 @@ acceptance_ids:
 
 BLUF: This plan gives the operator, developer, and future agent a bounded, proof-first implementation path for the JSC-311 phase-exit evidence-gates spec in `coding-harness`: first reconcile the current Git/filesystem disagreement around prior `he-phase-exit` files and the plan artifact itself, then add a pure local `HeGateResult/v1` validator and `HePhaseExit/v1` aggregator with fixture-backed tests. The work matters because Harness Engineering phases must not become commit-ready from route labels, recovery summaries, memory, role names, or chat prose; only typed gate evidence may satisfy required gates. Execution is deliberately narrow: no public CLI, no `harness next` behavior change, no tracker mutation, no external services, and no commit/push/release work. The PU-000 blocker was resolved by identifying that the shell path `/Users/jamiecraik/dev/coding-harness` resolves Git operations to `/private/tmp/coding-harness-skill-pr`; source implementation and validation therefore proceeded in that Git-resolved worktree. Handoff after this plan remains `he-work` for the local evaluator slice only.
 
-Decision Needed: none for local source validation. A spec-owner or operator decision is still required before staging, committing, pushing, or opening a PR.
+Decision Needed: none. Commit, push, and draft PR on codex/jsc-311-he-phase-exit-evidence-gates are operator-authorized.
 
 Top Risks: Git reports inaccessible `he-phase-exit` paths and an agent treats them as usable source; Git omits the live plan artifact while reporting nonexistent older artifacts; advisory metadata is accepted as gate evidence; conflicting or malformed gate payloads pass or throw instead of failing closed; scope expands into CLI, tracker, cockpit, or external-service work before the local contract is proven.
 
-Next Action: run independent review or request explicit staging/commit/PR authority. Do not mutate Linear, GitHub, CI, Slack, release surfaces, or staging without explicit authority.
+Next Action: commit, push, and open a draft PR on codex/jsc-311-he-phase-exit-evidence-gates. Do not mutate Linear, GitHub, CI, Slack, release surfaces, staging, merge, deploy, or release without explicit authority.
 
 ## Objective
 
@@ -262,9 +262,9 @@ Current delivery boundaries:
   independent review has not been run in this phase-work turn.
 - Reconciliation status: copied into `/Users/jamiecraik/dev/coding-harness` and
   temp worktree deleted.
-- Safe to continue: yes for local validation and review within the current
-  checkout; no for staging, commit, push, PR, tracker mutation, merge, deploy,
-  or release without explicit authority.
+- Safe to continue: yes for commit, push, and draft PR on
+  codex/jsc-311-he-phase-exit-evidence-gates; no for tracker mutation, merge,
+  deploy, or release.
 
 ## Implementation Strategy
 
