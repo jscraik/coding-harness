@@ -397,6 +397,43 @@ describe("validateHePhaseExitInput", () => {
 			"autofix cannot be not_applicable with review feedback",
 		);
 	});
+
+	it("rejects unknown evidenceRefs.id", () => {
+		const gateWithInvalidRef = passingGate("simplify");
+		gateWithInvalidRef.findings = [
+			{
+				id: "finding-1",
+				severity: "medium",
+				status: "open",
+				summary: "Test finding",
+				evidenceRef: "missing-id",
+			},
+		];
+
+		const result = validateHePhaseExitInput(
+			input({
+				gates: [gateWithInvalidRef],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain("unknown evidenceRefs.id: missing-id");
+	});
+
+	it("rejects gate in both requiredGates and optionalGates", () => {
+		const result = validateHePhaseExitInput(
+			input({
+				requiredGates: ["simplify"],
+				optionalGates: ["simplify"],
+				gates: [passingGate("simplify")],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"gate cannot be both required and optional",
+		);
+	});
 });
 
 describe("aggregateHePhaseExit", () => {

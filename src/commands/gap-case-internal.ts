@@ -165,10 +165,11 @@ export function saveStore(storePath: string, store: GapCaseStoreV1): void {
 		mkdirSync(dir, { recursive: true });
 	}
 
-	// Write atomically: write to sibling temp file, then rename over target.
+	// Write atomically: write to unique temp file, then rename over target.
 	// renameSync is atomic on POSIX when src and dst are on the same filesystem,
 	// so readers always see either the old or the new content — never a partial write.
-	const tmpPath = `${absolutePath}.tmp`;
+	const nonce = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+	const tmpPath = `${absolutePath}.tmp.${nonce}`;
 	try {
 		const serialized = JSON.stringify(store, null, 2);
 		if (Buffer.byteLength(serialized, "utf8") > MAX_STORE_SIZE_BYTES) {
@@ -176,7 +177,7 @@ export function saveStore(storePath: string, store: GapCaseStoreV1): void {
 				`Store file exceeds max size (${MAX_STORE_SIZE_BYTES} bytes)`,
 			);
 		}
-		writeFileSync(tmpPath, serialized, "utf-8");
+		writeFileSync(tmpPath, serialized, { encoding: "utf-8", flag: "wx" });
 		renameSync(tmpPath, absolutePath);
 	} catch (err) {
 		// Best-effort cleanup of the temp file on failure
