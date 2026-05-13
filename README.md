@@ -727,6 +727,7 @@ It covers:
 - harness install and update workflows
 - capability boundaries and safe usage rules
 - command discovery and validation expectations
+- eval case validation and anti-overfit criteria
 
 Run the packaged-skill validation lane after changing the bundle:
 
