@@ -971,7 +971,9 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 			!Array.isArray(value.blockers) ||
 			value.blockers.length > 0)
 	) {
-		errors.push("exitAllowed requires continue recommendation with no blockers");
+		errors.push(
+			"exitAllowed requires continue recommendation with no blockers",
+		);
 	}
 	if (
 		value.recommendation === "human_review_required" &&
