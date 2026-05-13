@@ -204,6 +204,8 @@ workflows:
               --pr-body "$pr_body"
               --json
             )
+            # TODO: remove hard-coded branch exemption after PR #243 merges;
+            # use ALLOW_MISSING_BRANCH=1 for future one-off exemptions.
             if [[ "$branch_name" =~ ^codex/pr[0-9]+($|[-/]) || "$branch_name" == "codex/harden-packaged-coding-harness-skill" ]]; then
               echo "linear-gate: allowing missing branch linkage for branch '$branch_name'"
               linear_gate_args=(--allow-missing-branch "${linear_gate_args[@]}")
