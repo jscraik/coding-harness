@@ -249,7 +249,8 @@ The evaluator must be conservative:
 
 - Required gates with `pass` may satisfy phase exit.
 - Required gates with `not_applicable` may satisfy phase exit only with a
-  concrete reason and only when the phase scope does not trigger the gate.
+  concrete reason, gate-local evidence, and only when the phase scope does not
+  trigger the gate.
 - Required gates with `fail`, `blocked`, or `not_run` must block commit
   readiness.
 - Missing required gate results must block commit readiness.
@@ -313,7 +314,7 @@ Stop instead of continuing when any of the following is true:
 | FR-005 | The system MUST define a versioned `HePhaseExit/v1` aggregate decision contract. |
 | FR-006 | Required gates with `fail`, `blocked`, or `not_run` MUST produce `commit_allowed: false`. |
 | FR-007 | Missing required gate results MUST produce `commit_allowed: false`. |
-| FR-008 | `not_applicable` MUST require a non-empty reason and MUST NOT be accepted when phase scope triggers that gate. |
+| FR-008 | `not_applicable` MUST require a non-empty reason and gate-local evidence, and MUST NOT be accepted when phase scope triggers that gate. |
 | FR-009 | RouteDecision labels, skill names, user prompts, and recovery state MUST NOT count as gate-run evidence. |
 | FR-010 | `testing_reviewer` evidence MUST NOT satisfy `he_fix_bugs` evidence unless a separate `he_fix_bugs` result exists. |
 | FR-011 | The v1 contract MUST remain local and read-only. |
@@ -404,8 +405,9 @@ Conformance rules:
 - `pass`, `fail`, and `blocked` must not use `not_applicable` or `not_run`
   execution modes.
 - `not_run` requires a reason and blocks commit readiness when required.
-- `not_applicable` requires a reason and must be rejected if the phase scope
-  declares that gate triggered.
+- `not_applicable` requires a reason and at least one gate-local evidence
+  reference, and must be rejected if the phase scope declares that gate
+  triggered.
 - `validation_only` may support a validation gate but must not be accepted as
   proof that a named skill-backed review ran.
 - Evidence references must not contain secrets or credential values.
@@ -506,7 +508,7 @@ evidence:
 
 | Surface | Required Content | Purpose |
 | --- | --- | --- |
-| `HePhaseExit/v1` decision | `decision`, `commitAllowed`, `safeToContinue`, missing gate IDs, blocking reasons, and evidence refs | Lets agents and reviewers see why a phase may or may not exit. |
+| `HePhaseExit/v1` decision | `recommendation`, `commitAllowed`, `exitAllowed`, `blockers`, `warnings`, and `gates[].gateId/status/executionMode/reason/blockedReason/evidenceRefs` | Lets agents and reviewers see why a phase may or may not exit. |
 | Unit-test fixtures | Valid, invalid, missing, failed, blocked, not-run, not-applicable, advisory-only, duplicate, and conflicting gate examples | Proves the decision table is executable, not prose-only. |
 | Validation report / closeout artifact | Exact commands and `pass`, `fail`, `blocked`, or `not applicable` outcomes | Separates local implementation evidence from PR, CI, review, and tracker closure evidence. |
 | Repo-state inventory | `git status`, direct file reads, and filesystem inventory for prior `he-phase-exit` paths and canonical plan/spec artifacts | Prevents phantom untracked files or invisible control-plane artifacts from being treated as implementation or planning proof. |
@@ -548,20 +550,20 @@ state, or public command compatibility is introduced by this spec.
 
 Spec validation:
 
-- `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_bluf_structure.py .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md --json`
-- `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md --kind spec --json`
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`
-- `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`
+- `bash scripts/run-he-artifact-validator.sh bluf .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md --json`
+- `bash scripts/run-he-artifact-validator.sh shape .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md --kind spec --json`
+- `bash scripts/run-he-artifact-validator.sh artifact-identity .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`
+- `bash scripts/run-he-artifact-validator.sh linear-traceability .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`
 - `pnpm exec markdownlint-cli2 .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`
 
 Current spec validation evidence:
 
 | Check | Command | Result |
 | --- | --- | --- |
-| HE BLUF structure | `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_bluf_structure.py .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md --json` | pass |
-| HE artifact shape | `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md --kind spec --json` | pass |
-| HE artifact identity | `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | pass |
-| Linear traceability | `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | pass |
+| HE BLUF structure | `bash scripts/run-he-artifact-validator.sh bluf .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md --json` | pass |
+| HE artifact shape | `bash scripts/run-he-artifact-validator.sh shape .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md --kind spec --json` | pass |
+| HE artifact identity | `bash scripts/run-he-artifact-validator.sh artifact-identity .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | pass |
+| Linear traceability | `bash scripts/run-he-artifact-validator.sh linear-traceability .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | pass |
 | Markdown lint | `pnpm exec markdownlint-cli2 .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | pass; 0 markdown errors, non-blocking `.npmrc` `${NPM_TOKEN}` substitution warning emitted |
 
 Future implementation validation:
@@ -594,7 +596,7 @@ Future implementation validation:
 | SA-002 | `HePhaseExit/v1` contract exists with deterministic aggregate decisions. | Focused aggregation tests. |
 | SA-003 | Required gates with `fail`, `blocked`, or `not_run` block commit readiness. | Table-driven tests. |
 | SA-004 | Missing required gate results block commit readiness. | Table-driven tests. |
-| SA-005 | `not_applicable` requires a reason and is rejected when scope triggers the gate. | Negative tests. |
+| SA-005 | `not_applicable` requires a reason and gate-local evidence, and is rejected when scope triggers the gate. | Negative tests. |
 | SA-006 | RouteDecision labels and recovery state are rejected as gate-run evidence. | Fixture tests. |
 | SA-007 | `testing_reviewer` evidence does not satisfy `he_fix_bugs` evidence. | Fixture tests. |
 | SA-008 | The evaluator is pure local logic with no network or external writes. | Code review and tests without live services. |
@@ -624,7 +626,7 @@ flowchart TD
     C -->|yes| X["HePhaseExit/v1: commit_blocked"]
     C -->|no| D{"Any required gate fail, blocked, or not_run?"}
     D -->|yes| X
-    D -->|no| E{"Any required gate not_applicable without valid reason?"}
+    D -->|no| E{"Any required gate not_applicable without valid reason or gate-local evidence?"}
     E -->|yes| X
     E -->|no| F{"Any evidence only advisory label or recovery state?"}
     F -->|yes| X

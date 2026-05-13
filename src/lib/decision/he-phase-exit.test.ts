@@ -102,7 +102,6 @@ function notApplicableGate(gateId: HeGateId, required = true): HeGateResult {
 		...passingGate(gateId, required),
 		executionMode: "not_applicable",
 		status: "not_applicable",
-		evidenceRefs: [],
 		validation: [],
 		reason: `${gateId} not applicable to this phase`,
 	};
@@ -266,6 +265,18 @@ describe("validateHeGateResult", () => {
 		expect(result.errors).toContain("not_applicable gates require reason");
 	});
 
+	it("rejects not_applicable gates without gate-local evidence", () => {
+		const result = validateHeGateResult({
+			...notApplicableGate("he_fix_bugs"),
+			evidenceRefs: [],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"not_applicable gates require at least one gate-local evidence ref",
+		);
+	});
+
 	it("rejects not_run gates without a reason", () => {
 		const result = validateHeGateResult({
 			...createMissingGateResult("he_code_review"),
@@ -276,14 +287,23 @@ describe("validateHeGateResult", () => {
 		expect(result.errors).toContain("not_run gates require reason");
 	});
 
-	it("accepts manual review and validation-only execution modes with complete evidence", () => {
-		for (const executionMode of ["manual_review", "validation_only"] as const) {
-			expect(
-				validateHeGateResult(
-					gateWithExecutionMode("he_code_review", executionMode),
-				),
-			).toEqual({ valid: true, errors: [] });
-		}
+	it("accepts manual review execution mode with complete evidence", () => {
+		expect(
+			validateHeGateResult(
+				gateWithExecutionMode("he_code_review", "manual_review"),
+			),
+		).toEqual({ valid: true, errors: [] });
+	});
+
+	it("rejects validation_only as skill-gate execution evidence", () => {
+		const result = validateHeGateResult(
+			gateWithExecutionMode("he_code_review", "validation_only"),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+		);
 	});
 
 	it("rejects executed statuses with non-executed execution modes", () => {
@@ -582,7 +602,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 	});
 
-	it("accepts validation_only executionMode with gate-local evidence", () => {
+	it("rejects validation_only executionMode even with gate-local evidence", () => {
 		const gate = passingGate("simplify");
 		const result = validateHePhaseExitInput(
 			input({
@@ -595,8 +615,10 @@ describe("validateHePhaseExitInput", () => {
 			}),
 		);
 
-		expect(result.valid).toBe(true);
-		expect(result.errors).toEqual([]);
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+		);
 	});
 
 	it("rejects validation_only gates without gate-local evidence", () => {
@@ -617,6 +639,9 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+		);
 		expect(result.errors).toContain(
 			"pass, fail, and blocked gates require at least one gate-local evidence ref",
 		);
@@ -777,7 +802,7 @@ describe("aggregateHePhaseExit", () => {
 		expect(result.blockers).toEqual([]);
 	});
 
-	it("allows commit when all required gates pass with validation_only executionMode", () => {
+	it("blocks commit when a required skill gate uses validation_only evidence", () => {
 		const gate = passingGate("simplify");
 		const result = aggregateHePhaseExit(
 			input({
@@ -790,10 +815,12 @@ describe("aggregateHePhaseExit", () => {
 			}),
 		);
 
-		expect(result.recommendation).toBe("continue");
-		expect(result.commitAllowed).toBe(true);
-		expect(result.exitAllowed).toBe(true);
-		expect(result.blockers).toEqual([]);
+		expect(result.recommendation).toBe("commit_blocked");
+		expect(result.commitAllowed).toBe(false);
+		expect(result.exitAllowed).toBe(false);
+		expect(result.blockers).toContain(
+			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+		);
 	});
 
 	it("preserves unsafe-continuation reasons for required gate blockers", () => {

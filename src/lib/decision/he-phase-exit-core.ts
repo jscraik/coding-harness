@@ -746,7 +746,7 @@ function gateResultFromRecord(
 /**
  * Validate cross-field consistency of a single gate result and append any discovered error messages to `errors`.
  *
- * Performs checks for executionMode/status alignment; requires at least one gate-local evidence ref when status is `pass`, `fail`, or `blocked`; requires an open finding when status is `fail` or `blocked`; requires a non-null `blockedReason` when status is `blocked`; requires matching `executionMode` and a non-empty `reason` for `not_applicable` and `not_run`; and ensures every finding `evidenceRef` (when non-null) references an existing `evidenceRefs.id`.
+ * Performs checks for executionMode/status alignment; requires at least one gate-local evidence ref when status is `pass`, `fail`, `blocked`, or `not_applicable`; rejects `validation_only` as proof for skill-backed gate outcomes; requires an open finding when status is `fail` or `blocked`; requires a non-null `blockedReason` when status is `blocked`; requires matching `executionMode` and a non-empty `reason` for `not_applicable` and `not_run`; and ensures every finding `evidenceRef` (when non-null) references an existing `evidenceRefs.id`.
  *
  * @param result - The normalized gate result to validate
  * @param evidenceRefs - The evidence references declared on the gate result
@@ -763,6 +763,14 @@ function validateGateConsistency(
 	) {
 		errors.push(
 			"pass, fail, and blocked gates cannot have not_applicable or not_run executionMode",
+		);
+	}
+	if (
+		["pass", "fail", "blocked"].includes(result.status) &&
+		result.executionMode === "validation_only"
+	) {
+		errors.push(
+			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
 		);
 	}
 	if (
@@ -789,6 +797,13 @@ function validateGateConsistency(
 		(typeof result.reason !== "string" || result.reason.trim().length === 0)
 	)
 		errors.push("not_applicable gates require reason");
+	if (
+		result.status === "not_applicable" &&
+		!evidenceRefs.some((ref) => ref.gateLocal)
+	)
+		errors.push(
+			"not_applicable gates require at least one gate-local evidence ref",
+		);
 	if (result.status === "not_run" && result.executionMode !== "not_run")
 		errors.push("not_run gates require not_run executionMode");
 	if (
