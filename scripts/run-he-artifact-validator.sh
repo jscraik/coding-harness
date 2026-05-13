@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
+# usage prints a usage message to stderr listing supported validators, their corresponding Python scripts, and a note about setting AGENT_SKILLS_ROOT.
 usage() {
 	cat >&2 <<'USAGE'
 Usage: bash scripts/run-he-artifact-validator.sh <validator> [args...]

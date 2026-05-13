@@ -5,7 +5,11 @@
  * every contract failure without trusting or executing payload content.
  */
 
-/** Type guard for plain objects (excludes arrays and null). */
+/**
+ * Determines whether a value is a plain object (not null and not an array).
+ *
+ * @returns `true` if `value` is an object, not `null`, and not an array; `false` otherwise.
+ */
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -84,11 +88,12 @@ export function validateNumber(
 }
 
 /**
- * Check that a value is an array of non-empty strings and record validation failures.
+ * Validates that `value` is an array of non-empty trimmed strings and appends a descriptive error to `errors` on failure.
  *
- * @param field - The name of the field used in generated error messages.
- * @param errors - Accumulator array; on failure this function pushes one of:
- *   - `${field} must be a string array` when the value is not an array
+ * @param value - The value to validate.
+ * @param field - The field name used in generated error messages.
+ * @param errors - Accumulator array; on failure this function pushes either
+ *   - `${field} must be a string array` when `value` is not an array, or
  *   - `${field} entries must be non-empty strings` when any array entry is not a non-empty string
  */
 export function validateStringArray(
