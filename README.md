@@ -687,6 +687,9 @@ can verify the full operator-facing contract before push.
   workflows
 - **Ralph CLI:** required for environment readiness and CircleCI orb-pinning
   validation (`ralph --version`)
+- **Codex environment actions:** `.codex/environments/environment.toml` must
+  keep the required action/icon pairs checked by
+  `scripts/check-environment.sh`, including `Release Finalize`
 
 Coding Harness does **not** create secrets for you and does **not** bypass
 branch protection or review policy. It also does **not** run your CI provider

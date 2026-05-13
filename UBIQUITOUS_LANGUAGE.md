@@ -23,6 +23,8 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | Canonical-only | The policy that requires using the documented, source-of-truth path instead of ad hoc or duplicate alternatives. |
 | Wrapper Command | A repository-defined script entrypoint (for example in `scripts/` or `pnpm` scripts) that should be preferred over equivalent one-off commands. |
 | Validation Lane | A scoped set of required checks used to prove a specific change surface is correct and compliant. |
+| Validation Failure Classifier | A read-only classifier that turns one validation command observation into an actionable failure bucket such as introduced regression, pre-existing drift, environment/tooling failure, unrelated dirty worktree, missing credential, expected fixture stderr, or unknown failure. |
+| Outcome Closeout Schema | A machine-readable closeout packet that summarizes changed items, proof, blockers, handoffs, and claim boundaries from structured source events instead of prose-only status. |
 | Focused Config-Drift Lane | The `validate-codex-config`, hook validation, and symlink audit sequence used to verify Codex runtime integrity. |
 | Codex-Subtree Workflow Lane | The preflight plus fast verify sequence used to validate operational readiness in the Codex workflow path. |
 | Config Drift | Any mismatch between canonical config/policy expectations and the current runtime or repository state. |
@@ -42,6 +44,8 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | "Config issue" | `Config drift` or `startup blocker` | Narrower terms improve routing and remediation speed. |
 | "Do all the checks" | Name the exact lane (`focused config-drift` or `codex-subtree workflow`) | Lane naming reduces ambiguity and missed gates. |
 | "Swarm done" | `Artifact-first review complete` | Completion requires files, not status text alone. |
+| "The check is red" | `Validation Failure Classifier` result | Red status alone does not distinguish current-patch regressions from pre-existing drift, tooling failures, fixture output, or unrelated worktree dirt. |
+| "Can I call this done?" | Outcome Closeout Schema | Completion claims must be constrained by source events, proof, blockers, handoffs, and claim boundaries. |
 
 ## Relationships and Lifecycle
 1. User prompt enters with plain language.
@@ -59,6 +63,8 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | "Use a swarm" | Bounded multi-review with artifacts | "Run a bounded review swarm, require one artifact file per reviewer under `artifacts/reviews/`, and synthesize severity-ranked findings." |
 | "Startup is broken" | MCP/runtime startup triage | "Run startup diagnostics, classify the blocker with `codex mcp list` evidence, and route through the MCP startup triage workflow." |
 | "Do the preflight" | Execute bootstrap gate | "Run `bash scripts/codex-preflight.sh --stack auto --mode required` and report explicit pass/fail/blocker status." |
+| "Why did validation fail?" | Classify command failure ownership | "Use the validation failure classifier on the exact command observation and report whether the failure is an introduced regression, pre-existing drift, environment/tooling failure, unrelated dirty worktree, missing credential, expected fixture stderr, or unknown failure." |
+| "Close this out" | Build outcome closeout packet | "Emit an outcome closeout from structured PR readiness, artifact, and validation classifier events; include what changed, what proved it, what blocked, what was handed off, and what must not be claimed complete." |
 
 ## Example Dialogue
 Developer: "Can you make sure this change works?"
@@ -72,6 +78,8 @@ Developer: "Perfect, and if anything blocks, call out the blocker string exactly
 | "check" | Could mean one command or the aggregate `pnpm check` contract. | Ask or infer from changed surface, then name the exact command set in output. |
 | "review done" | Could mean mailbox completion or artifact completion. | Consider review complete only when all expected artifact files exist and are non-empty. |
 | "startup failure" | Could refer to config drift, MCP auth, runtime path, or shell drift. | Classify with observable command evidence before choosing remediation. |
+| "red validation" | Could be a real regression, pre-existing drift, unrelated worktree dirt, missing credential, environment/tooling failure, or expected fixture stderr. | Use the validation failure classifier before assigning ownership or blocking the current patch. |
+| "done" | Could mean implemented, validated, ready to merge, handed off, or advisory only. | Use the outcome closeout schema to separate outcome, proof, blockers, handoffs, and claim boundaries. |
 
 ## Decision Log
 1. Glossary scope is repository-local to `/Users/jamiecraik/dev/coding-harness`.
