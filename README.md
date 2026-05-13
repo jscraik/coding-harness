@@ -138,6 +138,10 @@ without weakening evidence quality, SHA discipline, or rollback safety.
 
 The canonical statement of that contract lives in
 [docs/roadmap/north-star.md](./docs/roadmap/north-star.md).
+The weekly status surface is
+[docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md),
+and its review cadence is mirrored in `harness.contract.json` so
+`drift-gate --mode health` can fail closed on stale north-star evidence.
 
 North-star command outputs also use canonical artifact contracts so agents can
 carry evidence between tools without guessing path or schema names. Current
