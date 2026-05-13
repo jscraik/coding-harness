@@ -914,7 +914,7 @@ export function aggregateHePhaseExit(input: HePhaseExitInput): HePhaseExit {
 				!gate.safeToContinue ||
 				!["pass", "not_applicable"].includes(gate.status),
 		)
-		.map((gate) => gate.blockedReason ?? `${gate.gateId} did not pass`);
+		.map(gateIssueReason);
 	const warnings = gates
 		.filter((gate) => !requiredGateSet.has(gate.gateId))
 		.filter(
@@ -922,13 +922,7 @@ export function aggregateHePhaseExit(input: HePhaseExitInput): HePhaseExit {
 				!gate.safeToContinue ||
 				!["pass", "not_applicable"].includes(gate.status),
 		)
-		.map(
-			(gate) =>
-				gate.blockedReason ??
-				(gate.safeToContinue
-					? `${gate.gateId} did not pass`
-					: `${gate.gateId} is not safe to continue`),
-		);
+		.map(gateIssueReason);
 	const recommendation = chooseRecommendation(
 		input.phaseContext,
 		blockers,
@@ -1013,6 +1007,13 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 	if (value.commitAllowed === true && blockingRequiredGates.length > 0)
 		errors.push("commitAllowed requires passing required gates");
 	if (
+		(value.recommendation === "commit_blocked" ||
+			value.recommendation === "stop") &&
+		Array.isArray(value.blockers) &&
+		value.blockers.length === 0
+	)
+		errors.push("blocking recommendations require blocker evidence");
+	if (
 		value.commitAllowed === true &&
 		isRecord(value.phaseContext) &&
 		Array.isArray(value.blockers) &&
@@ -1044,6 +1045,13 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 	)
 		errors.push("human_review_required requires human gate evidence");
 	return { valid: errors.length === 0, errors };
+}
+
+function gateIssueReason(gate: HeGateResult): string {
+	if (gate.blockedReason) return gate.blockedReason;
+	return gate.safeToContinue
+		? `${gate.gateId} did not pass`
+		: `${gate.gateId} is not safe to continue`;
 }
 
 /**

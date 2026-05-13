@@ -795,6 +795,27 @@ describe("aggregateHePhaseExit", () => {
 		expect(result.exitAllowed).toBe(true);
 		expect(result.blockers).toEqual([]);
 	});
+
+	it("preserves unsafe-continuation reasons for required gate blockers", () => {
+		const result = aggregateHePhaseExit(
+			input({
+				gates: [
+					{
+						...passingGate("simplify"),
+						safeToContinue: false,
+						blockedReason: null,
+					},
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
+				],
+			}),
+		);
+
+		expect(result.recommendation).toBe("commit_blocked");
+		expect(result.commitAllowed).toBe(false);
+		expect(result.blockers).toEqual(["simplify is not safe to continue"]);
+	});
 });
 
 describe("validateHePhaseExit", () => {
@@ -850,5 +871,24 @@ describe("validateHePhaseExit", () => {
 		expect(result.errors).toContain(
 			"human_review_required requires human gate evidence",
 		);
+	});
+
+	it("requires blocker evidence for blocking recommendations", () => {
+		const decision = aggregateHePhaseExit(input());
+
+		for (const recommendation of ["commit_blocked", "stop"] as const) {
+			const result = validateHePhaseExit({
+				...decision,
+				recommendation,
+				commitAllowed: false,
+				exitAllowed: false,
+				blockers: [],
+			});
+
+			expect(result.valid).toBe(false);
+			expect(result.errors).toContain(
+				"blocking recommendations require blocker evidence",
+			);
+		}
 	});
 });
