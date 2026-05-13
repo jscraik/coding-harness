@@ -386,6 +386,7 @@ describe("validateHePhaseExitInput", () => {
 				},
 				requiredGates: ["simplify", "testing_reviewer", "he_code_review"],
 				optionalGates: ["he_fix_bugs", "autofix"],
+				gates: [],
 			}),
 		);
 
@@ -494,6 +495,7 @@ describe("validateHePhaseExitInput", () => {
 					"he_code_review",
 				],
 				optionalGates: ["autofix"],
+				gates: [],
 			}),
 		);
 
