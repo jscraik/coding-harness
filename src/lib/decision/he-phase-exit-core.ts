@@ -479,6 +479,11 @@ const RECOMMENDATIONS: readonly HePhaseExitRecommendation[] = [
 	"human_review_required",
 ];
 
+/**
+ * Determines whether a value is an array containing one or more non-empty strings.
+ *
+ * @returns `true` if `value` is an array of at least one string where each string has non-whitespace characters after trimming, `false` otherwise.
+ */
 function hasEntries(value: unknown): value is string[] {
 	return (
 		Array.isArray(value) &&
@@ -487,10 +492,27 @@ function hasEntries(value: unknown): value is string[] {
 	);
 }
 
+/**
+ * Determines whether a gate result represents an executed gate.
+ *
+ * @param result - The gate result to evaluate
+ * @returns `true` if `result.status` is not `"not_applicable"` or `"not_run"`, `false` otherwise.
+ */
 function isExecuted(result: HeGateResult): boolean {
 	return !["not_applicable", "not_run"].includes(result.status);
 }
 
+/**
+ * Validates an unknown value as an array of evidence references and returns the parsed list.
+ *
+ * Appends human-readable error messages to `errors` when the top-level value is not an array,
+ * when entries are not objects, when `id`, `kind`, or `ref` are not strings, when `gateLocal`
+ * is not a boolean, when an `id` is duplicated, or when an entry's `kind` equals `"route-decision"`.
+ *
+ * @param value - The unknown value to validate as `HeEvidenceRef[]`
+ * @param errors - Collector for validation error messages; messages are appended in-place
+ * @returns The validated `HeEvidenceRef[]`; returns an empty array when the top-level value is not an array
+ */
 function validateEvidenceRefs(
 	value: unknown,
 	errors: string[],
@@ -527,6 +549,13 @@ function validateEvidenceRefs(
 	return refs;
 }
 
+/**
+ * Validate an input as an array of gate findings and produce a typed findings list.
+ *
+ * @param value - The unknown input to validate as a findings array.
+ * @param errors - Mutable array that will be appended with human-readable validation errors.
+ * @returns An array of `HeGateFinding` objects parsed from `value`; returns an empty array if `value` is not an array or entries are structurally invalid.
+ */
 function validateFindings(value: unknown, errors: string[]): HeGateFinding[] {
 	if (!Array.isArray(value)) {
 		errors.push("findings must be an array");
@@ -562,6 +591,18 @@ function validateFindings(value: unknown, errors: string[]): HeGateFinding[] {
 	return findings;
 }
 
+/**
+ * Validate that `value` represents an array of action records and append any validation errors to `errors`.
+ *
+ * Each action is expected to be an object with the following fields:
+ * - `id` (string)
+ * - `status` (one of `"fixed"`, `"deferred"`, `"blocked"`, `"accepted"`)
+ * - `summary` (string)
+ * - `evidenceRefs` (string array)
+ *
+ * @param value - The value to validate as an array of action records
+ * @param errors - Accumulator array; any validation error messages are pushed into this array
+ */
 function validateActions(value: unknown, errors: string[]): void {
 	if (!Array.isArray(value)) {
 		errors.push("actions must be an array");
@@ -588,6 +629,15 @@ function validateActions(value: unknown, errors: string[]): void {
 	}
 }
 
+/**
+ * Validates a gate result `validation` field and appends human-readable error messages.
+ *
+ * Ensures `value` is an array of objects where each entry has a string `command`,
+ * an `outcome` equal to `"pass"`, `"fail"`, or `"blocked"`, and a nullable string `reason`.
+ *
+ * @param value - The unknown value to validate as the `validation` array
+ * @param errors - Accumulator array; validation error messages will be pushed into this array
+ */
 function validateGateValidation(value: unknown, errors: string[]): void {
 	if (!Array.isArray(value)) {
 		errors.push("validation must be an array");
@@ -609,6 +659,17 @@ function validateGateValidation(value: unknown, errors: string[]): void {
 	}
 }
 
+/**
+ * Validate a phase-scoped context object and return it typed as `HePhaseContext`.
+ *
+ * Appends human-readable error messages to `errors` for any invalid fields (`phase`,
+ * `failingEvidencePresent`, `reviewFeedbackPresent`). Returns `null` only when the
+ * top-level value is not an object; otherwise returns the input cast to `HePhaseContext`.
+ *
+ * @param value - The unknown input to validate as a phase context
+ * @param errors - Mutable array that receives validation error messages
+ * @returns The validated `HePhaseContext`, or `null` if `value` is not an object
+ */
 function validatePhaseContext(
 	value: unknown,
 	errors: string[],
@@ -631,6 +692,17 @@ function validatePhaseContext(
 	return value as unknown as HePhaseContext;
 }
 
+/**
+ * Validate an unknown input as a gate result and return a normalized `HeGateResult`.
+ *
+ * Performs structural validation of core fields, runs gate-specific payload validation (when possible),
+ * enforces cross-field consistency rules, and appends human-readable error messages to `errors`.
+ *
+ * @param value - The raw input to validate and normalize into a gate result
+ * @param context - Phase-scoped context used by gate-specific payload validators; may be `null`
+ * @param errors - Mutable array that will receive validation error messages
+ * @returns The normalized `HeGateResult` when the top-level input is an object; `null` if the top-level input is not an object
+ */
 function gateResultFromRecord(
 	value: unknown,
 	context: HePhaseContext | null,
@@ -667,6 +739,15 @@ function gateResultFromRecord(
 	return result;
 }
 
+/**
+ * Validate cross-field consistency rules for a single gate result and append any discovered errors to `errors`.
+ *
+ * Performs checks such as: requiring at least one gate-local evidence ref for `pass`/`fail`/`blocked` statuses; requiring an open finding for `fail`/`blocked`; requiring `blockedReason` when status is `blocked`; enforcing matching `executionMode` and non-empty `reason` for `not_applicable` and `not_run`; and ensuring any finding `evidenceRef` references an existing `evidenceRefs.id`.
+ *
+ * @param result - The gate result to validate
+ * @param evidenceRefs - The list of evidence references present on the gate result
+ * @param errors - Mutable array that will receive human-readable error messages for each violated rule
+ */
 function validateGateConsistency(
 	result: HeGateResult,
 	evidenceRefs: HeEvidenceRef[],
@@ -714,14 +795,26 @@ function validateGateConsistency(
 	}
 }
 
-/** Validate an unknown value as a HeGateResult/v1. */
+/**
+ * Validate an arbitrary value against the HeGateResult contract and collect any validation errors.
+ *
+ * @param value - The value to validate as a gate result
+ * @returns `valid` is `true` when the value conforms to the HeGateResult schema; `errors` lists validation failures otherwise
+ */
 export function validateHeGateResult(value: unknown): HeValidationResult {
 	const errors: string[] = [];
 	gateResultFromRecord(value, null, errors);
 	return { valid: errors.length === 0, errors };
 }
 
-/** Validate an unknown value as HePhaseExitInput. */
+/**
+ * Validate that a value conforms to the HePhaseExitInput contract.
+ *
+ * Performs structural and semantic checks for `phaseContext`, `requiredGates`, `optionalGates`, and `gates`, including uniqueness of gate IDs, that gates are configured as required or optional, and that each provided gate result itself is valid.
+ *
+ * @param value - The unknown input to validate
+ * @returns An object with `valid` set to `true` when `value` satisfies the HePhaseExitInput contract, and `errors` containing human-readable validation messages otherwise.
+ */
 export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 	const errors: string[] = [];
 	if (!isRecord(value))
@@ -764,7 +857,12 @@ export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 	return { valid: errors.length === 0, errors };
 }
 
-/** Aggregate configured HE gate evidence into a fail-closed phase-exit decision. */
+/**
+ * Builds a phase-exit decision from configured HE gate results, synthesizing missing required gates and applying fail-closed rules.
+ *
+ * @param input - Phase context plus lists of required/optional gate IDs and the provided gate results used to compute the decision
+ * @returns A `HePhaseExit` decision containing `recommendation`, `commitAllowed`, `exitAllowed`, `blockers`, `warnings`, and `gates`. If the input fails validation, returns a fail-closed decision where `blockers` contains the validation errors and missing required gates are synthesized into the `gates` list.
+ */
 export function aggregateHePhaseExit(input: HePhaseExitInput): HePhaseExit {
 	const inputValidation = validateHePhaseExitInput(input);
 	if (!inputValidation.valid)
@@ -816,7 +914,15 @@ export function aggregateHePhaseExit(input: HePhaseExitInput): HePhaseExit {
 	};
 }
 
-/** Validate an unknown value as a HePhaseExit/v1 decision. */
+/**
+ * Validate an arbitrary value as a HePhaseExit/v1 decision.
+ *
+ * Performs structural and cross-field validation of phaseContext, recommendation,
+ * commitAllowed, exitAllowed, blockers, warnings, and gates according to the
+ * HePhaseExit/v1 contract and returns descriptive error messages for any violations.
+ *
+ * @returns `valid: true` when the value conforms to the HePhaseExit/v1 contract; `valid: false` and `errors` with diagnostic messages otherwise.
+ */
 export function validateHePhaseExit(value: unknown): HeValidationResult {
 	const errors: string[] = [];
 	if (!isRecord(value))
@@ -897,6 +1003,18 @@ export function createMissingGateResult(
 	};
 }
 
+/**
+ * Validates that `value` is an array of unique `HeGateId` entries and appends any errors.
+ *
+ * If `value` is not an array, an error is added for `field`. Each element is validated
+ * against the known `HE_GATE_IDS` enum (via `validateEnum`); elements that fail validation
+ * produce errors and are not considered for uniqueness. Duplicate entries produce a
+ * `${field}[index] must be unique` error.
+ *
+ * @param value - The unknown value to validate as an array of gate IDs
+ * @param field - The field name used when constructing error messages
+ * @param errors - Mutable array to which validation error messages are appended
+ */
 function validateGateIdArray(
 	value: unknown,
 	field: string,
@@ -915,6 +1033,14 @@ function validateGateIdArray(
 	}
 }
 
+/**
+ * Choose a phase-exit recommendation based on the phase context, identified blockers, and gate results.
+ *
+ * @param context - Phase context used to distinguish closeout behavior
+ * @param blockers - Array of blocker messages
+ * @param gates - Gate results; used to detect gates that require human review and their blocked reasons
+ * @returns `human_review_required` if any gate requires human review and a blocker matches that gate (exact `blockedReason` match or a blocker containing the `gateId`); `continue` if there are no blockers; otherwise `commit_blocked` when `context.phase === "closeout"`, or `stop` for other phases.
+ */
 function chooseRecommendation(
 	context: HePhaseContext,
 	blockers: string[],
@@ -935,6 +1061,17 @@ function chooseRecommendation(
 	return context.phase === "closeout" ? "commit_blocked" : "stop";
 }
 
+/**
+ * Produce a fail-closed HePhaseExit used when phase-exit input validation fails.
+ *
+ * The returned object preserves the provided `phaseContext` and `gates`, sets
+ * `blockers` to the supplied `errors`, leaves `warnings` empty, and disables
+ * commits and exits.
+ *
+ * @param input - Partial phase-exit input containing `phaseContext` and `gates` to mirror into the result
+ * @param errors - Validation error messages to include as `blockers`
+ * @returns A `HePhaseExit` where `recommendation` is `"commit_blocked"` if `phaseContext.phase === "closeout"`; otherwise `"stop"`. `commitAllowed` and `exitAllowed` are `false`. `blockers` contains `errors`, `warnings` is empty, and `gates` are copied from `input.gates`.
+ */
 function invalidExit(
 	input: Pick<HePhaseExitInput, "phaseContext" | "gates">,
 	errors: string[],
@@ -952,6 +1089,12 @@ function invalidExit(
 	};
 }
 
+/**
+ * Normalize an unknown value into a valid HePhaseContext, using safe defaults.
+ *
+ * @param input - The raw input that may contain a `phaseContext` object.
+ * @returns A normalized `HePhaseContext`. If `input` or `input.phaseContext` is not an object, or `phase` is not one of `"route" | "lifecycle" | "closeout"`, returns a fallback context with `phase` set to `"closeout"`. Boolean fields are coerced: only strict `true` becomes `true`, everything else becomes `false`.
+ */
 function sanitizePhaseContext(input: unknown): HePhaseContext {
 	if (!isRecord(input)) return fallbackPhaseContext("closeout");
 	if (!isRecord(input.phaseContext)) return fallbackPhaseContext("closeout");
@@ -966,11 +1109,23 @@ function sanitizePhaseContext(input: unknown): HePhaseContext {
 	};
 }
 
+/**
+ * Return the array of gate results from an arbitrary input object's `gates` property, filtering out non-record entries.
+ *
+ * @param input - The unknown value to sanitize; expected to be an object with a `gates` array.
+ * @returns An array of `HeGateResult`-shaped objects taken from `input.gates`. Returns an empty array if `input` is not an object or `input.gates` is not an array.
+ */
 function sanitizeGateArray(input: unknown): HeGateResult[] {
 	if (!isRecord(input) || !Array.isArray(input.gates)) return [];
 	return input.gates.filter(isRecord) as unknown as HeGateResult[];
 }
 
+/**
+ * Create a fallback phase context for the specified phase with default boolean flags.
+ *
+ * @param phase - The phase to use in the fallback context
+ * @returns A `HePhaseContext` whose `phase` is `phase` and both `failingEvidencePresent` and `reviewFeedbackPresent` are `false`
+ */
 function fallbackPhaseContext(phase: HePhase): HePhaseContext {
 	return {
 		phase,
