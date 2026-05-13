@@ -761,7 +761,7 @@ function validateGateConsistency(
 		["not_applicable", "not_run"].includes(result.executionMode)
 	) {
 		errors.push(
-			"pass, fail, and blocked gates require an executed executionMode",
+			"pass, fail, and blocked gates cannot have not_applicable or not_run executionMode",
 		);
 	}
 	if (

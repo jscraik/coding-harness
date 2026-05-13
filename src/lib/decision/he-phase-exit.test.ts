@@ -287,14 +287,20 @@ describe("validateHeGateResult", () => {
 	});
 
 	it("rejects executed statuses with non-executed execution modes", () => {
-		for (const executionMode of ["not_applicable", "not_run"] as const) {
-			const result = validateHeGateResult(
-				gateWithExecutionMode("simplify", executionMode),
-			);
+		const invalidGates: HeGateResult[] = [
+			gateWithExecutionMode("simplify", "not_applicable"),
+			{
+				...blockedGate("he_code_review"),
+				executionMode: "not_run",
+			},
+		];
+
+		for (const gate of invalidGates) {
+			const result = validateHeGateResult(gate);
 
 			expect(result.valid).toBe(false);
 			expect(result.errors).toContain(
-				"pass, fail, and blocked gates require an executed executionMode",
+				"pass, fail, and blocked gates cannot have not_applicable or not_run executionMode",
 			);
 		}
 	});
@@ -533,6 +539,86 @@ describe("validateHePhaseExitInput", () => {
 			"gate cannot be both required and optional",
 		);
 	});
+
+	it("accepts manual_review executionMode with gate-local evidence", () => {
+		const gate = passingGate("he_code_review");
+		const result = validateHePhaseExitInput(
+			input({
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					{ ...gate, executionMode: "manual_review" },
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(true);
+		expect(result.errors).toEqual([]);
+	});
+
+	it("rejects manual_review gates without gate-local evidence", () => {
+		const gate = passingGate("he_code_review");
+		const result = validateHePhaseExitInput(
+			input({
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					{
+						...gate,
+						executionMode: "manual_review",
+						evidenceRefs: [],
+					},
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"pass, fail, and blocked gates require at least one gate-local evidence ref",
+		);
+	});
+
+	it("accepts validation_only executionMode with gate-local evidence", () => {
+		const gate = passingGate("simplify");
+		const result = validateHePhaseExitInput(
+			input({
+				gates: [
+					{ ...gate, executionMode: "validation_only" },
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(true);
+		expect(result.errors).toEqual([]);
+	});
+
+	it("rejects validation_only gates without gate-local evidence", () => {
+		const gate = passingGate("simplify");
+		const result = validateHePhaseExitInput(
+			input({
+				gates: [
+					{
+						...gate,
+						executionMode: "validation_only",
+						evidenceRefs: [],
+					},
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"pass, fail, and blocked gates require at least one gate-local evidence ref",
+		);
+	});
 });
 
 describe("aggregateHePhaseExit", () => {
@@ -668,5 +754,43 @@ describe("aggregateHePhaseExit", () => {
 		expect(result.commitAllowed).toBe(false);
 		expect(result.exitAllowed).toBe(false);
 		expect(Array.isArray(result.blockers)).toBe(true);
+	});
+
+	it("allows commit when all required gates pass with manual_review executionMode", () => {
+		const gate = passingGate("he_code_review");
+		const result = aggregateHePhaseExit(
+			input({
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					{ ...gate, executionMode: "manual_review" },
+				],
+			}),
+		);
+
+		expect(result.recommendation).toBe("continue");
+		expect(result.commitAllowed).toBe(true);
+		expect(result.exitAllowed).toBe(true);
+		expect(result.blockers).toEqual([]);
+	});
+
+	it("allows commit when all required gates pass with validation_only executionMode", () => {
+		const gate = passingGate("simplify");
+		const result = aggregateHePhaseExit(
+			input({
+				gates: [
+					{ ...gate, executionMode: "validation_only" },
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
+				],
+			}),
+		);
+
+		expect(result.recommendation).toBe("continue");
+		expect(result.commitAllowed).toBe(true);
+		expect(result.exitAllowed).toBe(true);
+		expect(result.blockers).toEqual([]);
 	});
 });
