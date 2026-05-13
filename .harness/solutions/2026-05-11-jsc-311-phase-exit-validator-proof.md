@@ -67,18 +67,14 @@ safe. Casts can document intent, but they do not sanitize runtime data.
 
 ## Validation
 
-- `pnpm vitest run src/lib/decision/he-phase-exit.test.ts` -> pass, 22 tests.
-- `pnpm vitest run src/lib/decision/route-decision.test.ts` -> pass, 44 tests.
-- `pnpm exec tsc --noEmit --pretty false` -> pass.
-- `bash scripts/validate-codestyle.sh --fast` -> pass.
-- `bash scripts/verify-work.sh --fast` -> pass, run id
-  `20260511T214015Z-8050`.
-- `python3 Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md`
-  -> pass.
-- `python3 Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md`
-  -> pass.
-- `python3 Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md`
-  -> pass.
+- Command: pnpm vitest run src/lib/decision/he-phase-exit.test.ts -> pass (22 tests)
+- Command: pnpm vitest run src/lib/decision/route-decision.test.ts -> pass (44 tests)
+- Command: pnpm exec tsc --noEmit --pretty false -> pass
+- Command: bash scripts/validate-codestyle.sh --fast -> pass
+- Command: bash scripts/verify-work.sh --fast -> pass (run id 20260511T214015Z-8050)
+- Command: python3 Plugins/harness-engineering/skills/he-eval-report/scripts/validate_eval_report.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md -> pass
+- Command: python3 Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md -> pass
+- Command: python3 Infrastructure/scripts/validation-and-linting/he_frontmatter_safety_lint.py .harness/evals/2026-05-11-jsc-311-he-phase-exit-evidence-gates-coding-harness-eval.md -> pass
 
 ## Prevention
 

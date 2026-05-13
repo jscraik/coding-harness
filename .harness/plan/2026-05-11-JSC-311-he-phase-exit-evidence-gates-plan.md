@@ -716,7 +716,7 @@ Open review risks:
 | JSC-311: Make he_fix_bugs conditional on concrete failing evidence. | SA-311-005, SA-311-006, SA-311-021 |
 | JSC-311: Validate he_code_review findings-first evidence and blocker classification. | SA-311-007, SA-311-023 |
 | JSC-311: Validate autofix inventory and accounting. | SA-311-008, SA-311-009, SA-311-021 |
-| JSC-311: Refuse commit when required configured gates fail, block, or do not run. | SA-311-010, SA-311-011, SA-311-022, SA-311-024 |
+| JSC-311: Refuse commit when required gates configured for this phase fail, block, or do not run. | SA-311-010, SA-311-011, SA-311-022, SA-311-024 |
 | JSC-311: Keep RouteDecision/v1 route labels separate from gate-run evidence. | SA-311-012 |
 | JSC-311: Separate source refs from outcome evidence refs. | SA-311-013 |
 | JSC-311: Avoid external mutation and repo-wide gate policy in the first slice. | SA-311-014, SA-311-018 |

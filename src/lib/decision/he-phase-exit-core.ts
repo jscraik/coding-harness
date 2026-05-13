@@ -525,7 +525,11 @@ function validateEvidenceRefs(
 	return refs;
 }
 
-function validateFindings(value: unknown, errors: string[]): HeGateFinding[] {
+function validateFindings(
+	value: unknown,
+	evidenceRefIds: Set<string>,
+	errors: string[],
+): HeGateFinding[] {
 	if (!Array.isArray(value)) {
 		errors.push("findings must be an array");
 		return [];
@@ -555,12 +559,25 @@ function validateFindings(value: unknown, errors: string[]): HeGateFinding[] {
 			`findings[${index}].evidenceRef`,
 			errors,
 		);
+		if (
+			typeof entry.evidenceRef === "string" &&
+			entry.evidenceRef !== null &&
+			!evidenceRefIds.has(entry.evidenceRef)
+		) {
+			errors.push(
+				`findings[${index}].evidenceRef references unknown id "${entry.evidenceRef}"`,
+			);
+		}
 		findings.push(entry as unknown as HeGateFinding);
 	}
 	return findings;
 }
 
-function validateActions(value: unknown, errors: string[]): void {
+function validateActions(
+	value: unknown,
+	evidenceRefIds: Set<string>,
+	errors: string[],
+): void {
 	if (!Array.isArray(value)) {
 		errors.push("actions must be an array");
 		return;
@@ -583,6 +600,15 @@ function validateActions(value: unknown, errors: string[]): void {
 			`actions[${index}].evidenceRefs`,
 			errors,
 		);
+		if (Array.isArray(entry.evidenceRefs)) {
+			for (const [refIndex, ref] of entry.evidenceRefs.entries()) {
+				if (typeof ref === "string" && !evidenceRefIds.has(ref)) {
+					errors.push(
+						`actions[${index}].evidenceRefs[${refIndex}] references unknown id "${ref}"`,
+					);
+				}
+			}
+		}
 	}
 }
 
@@ -646,8 +672,9 @@ function gateResultFromRecord(
 	validateEnum(value.status, "status", STATUSES, errors);
 	if (!isRecord(value.payload)) errors.push("payload must be an object");
 	const evidenceRefs = validateEvidenceRefs(value.evidenceRefs, errors);
-	const findings = validateFindings(value.findings, errors);
-	validateActions(value.actions, errors);
+	const evidenceRefIds = new Set(evidenceRefs.map((ref) => ref.id));
+	const findings = validateFindings(value.findings, evidenceRefIds, errors);
+	validateActions(value.actions, evidenceRefIds, errors);
 	validateGateValidation(value.validation, errors);
 	validateBoolean(value.requiresHuman, "requiresHuman", errors);
 	validateBoolean(value.safeToContinue, "safeToContinue", errors);
@@ -690,15 +717,6 @@ function validateGateConsistency(
 		errors.push("not_applicable gates require not_applicable executionMode");
 	if (result.status === "not_run" && result.executionMode !== "not_run")
 		errors.push("not_run gates require not_run executionMode");
-	const evidenceRefIds = new Set(evidenceRefs.map((ref) => ref.id));
-	for (const finding of result.findings) {
-		if (
-			finding.evidenceRef !== null &&
-			!evidenceRefIds.has(finding.evidenceRef)
-		) {
-			errors.push(`unknown evidenceRefs.id: ${finding.evidenceRef}`);
-		}
-	}
 }
 
 /** Validate an unknown value as a HeGateResult/v1. */
@@ -730,8 +748,13 @@ export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 	const optional = new Set(optionalList as HeGateId[]);
 	for (const gateId of required) {
 		if (optional.has(gateId)) {
-			errors.push("gate cannot be both required and optional");
+			errors.push(
+				`gate "${gateId}" present in both requiredGates and optionalGates`,
+			);
 		}
+	}
+	if (errors.some((e) => e.includes("present in both"))) {
+		return { valid: false, errors };
 	}
 	const seen = new Set<HeGateId>();
 	for (const [index, candidate] of value.gates.entries()) {

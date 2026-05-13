@@ -133,6 +133,23 @@ export function loadStore(storePath: string): GapCaseStoreV1 {
 			throw new Error("Invalid store format");
 		}
 
+		// Validate each case entry has required fields with correct types
+		const cases = (data as Record<string, unknown>).cases;
+		if (!Array.isArray(cases)) {
+			throw new Error("Invalid store format");
+		}
+		for (let i = 0; i < cases.length; i++) {
+			const entry = cases[i];
+			if (
+				typeof entry !== "object" ||
+				entry === null ||
+				typeof (entry as Record<string, unknown>).id !== "string" ||
+				typeof (entry as Record<string, unknown>).incidentId !== "string"
+			) {
+				throw new Error("Invalid store format");
+			}
+		}
+
 		return data as GapCaseStoreV1;
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
