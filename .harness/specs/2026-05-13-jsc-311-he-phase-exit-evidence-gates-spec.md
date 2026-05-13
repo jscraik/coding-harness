@@ -312,8 +312,8 @@ Stop instead of continuing when any of the following is true:
 | FR-003 | The system MUST support execution modes `direct_skill`, `subagent_proxy`, `manual_review`, `validation_only`, `not_applicable`, and `not_run`. |
 | FR-004 | The system MUST model whether a gate is required for the current phase. |
 | FR-005 | The system MUST define a versioned `HePhaseExit/v1` aggregate decision contract. |
-| FR-006 | Required gates with `fail`, `blocked`, or `not_run` MUST produce `commit_allowed: false`. |
-| FR-007 | Missing required gate results MUST produce `commit_allowed: false`. |
+| FR-006 | Required gates with `fail`, `blocked`, or `not_run` MUST produce `commitAllowed: false`. |
+| FR-007 | Missing required gate results MUST produce `commitAllowed: false`. |
 | FR-008 | `not_applicable` MUST require a non-empty reason and gate-local evidence, and MUST NOT be accepted when phase scope triggers that gate. |
 | FR-009 | RouteDecision labels, skill names, user prompts, and recovery state MUST NOT count as gate-run evidence. |
 | FR-010 | `testing_reviewer` evidence MUST NOT satisfy `he_fix_bugs` evidence unless a separate `he_fix_bugs` result exists. |
