@@ -116,7 +116,7 @@ function blockedGate(gateId: HeGateId, required = true): HeGateResult {
 				severity: "high",
 				status: "open",
 				summary: `${gateId} is blocked`,
-				evidenceRef: `${gateId}:line`,
+				evidenceRef: `${gateId}-evidence`,
 			},
 		],
 		safeToContinue: false,

@@ -690,6 +690,15 @@ function validateGateConsistency(
 		errors.push("not_applicable gates require not_applicable executionMode");
 	if (result.status === "not_run" && result.executionMode !== "not_run")
 		errors.push("not_run gates require not_run executionMode");
+	const evidenceRefIds = new Set(evidenceRefs.map((ref) => ref.id));
+	for (const finding of result.findings) {
+		if (
+			finding.evidenceRef !== null &&
+			!evidenceRefIds.has(finding.evidenceRef)
+		) {
+			errors.push(`unknown evidenceRefs.id: ${finding.evidenceRef}`);
+		}
+	}
 }
 
 /** Validate an unknown value as a HeGateResult/v1. */
@@ -719,6 +728,11 @@ export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 		: [];
 	const required = new Set(requiredList as HeGateId[]);
 	const optional = new Set(optionalList as HeGateId[]);
+	for (const gateId of required) {
+		if (optional.has(gateId)) {
+			errors.push("gate cannot be both required and optional");
+		}
+	}
 	const seen = new Set<HeGateId>();
 	for (const [index, candidate] of value.gates.entries()) {
 		const before = errors.length;

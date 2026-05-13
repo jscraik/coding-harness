@@ -168,7 +168,8 @@ export function saveStore(storePath: string, store: GapCaseStoreV1): void {
 	// Write atomically: write to unique temp file, then rename over target.
 	// renameSync is atomic on POSIX when src and dst are on the same filesystem,
 	// so readers always see either the old or the new content — never a partial write.
-	const nonce = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+	const nonce =
+		Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 	const tmpPath = `${absolutePath}.tmp.${nonce}`;
 	try {
 		const serialized = JSON.stringify(store, null, 2);
