@@ -850,6 +850,14 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 	if (value.commitAllowed === true && value.recommendation !== "continue")
 		errors.push("commitAllowed requires continue recommendation");
 	if (
+		value.exitAllowed === true &&
+		(value.recommendation !== "continue" ||
+			!Array.isArray(value.blockers) ||
+			value.blockers.length > 0)
+	) {
+		errors.push("exitAllowed requires continue recommendation with no blockers");
+	}
+	if (
 		value.recommendation === "human_review_required" &&
 		Array.isArray(value.blockers) &&
 		value.blockers.length === 0
