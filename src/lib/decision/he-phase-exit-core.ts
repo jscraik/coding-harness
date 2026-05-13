@@ -774,12 +774,15 @@ function validateGateConsistency(
 		);
 	}
 	if (
-		["pass", "fail", "blocked"].includes(result.status) &&
+		["pass", "fail", "blocked", "not_applicable"].includes(result.status) &&
 		!evidenceRefs.some((ref) => ref.gateLocal)
-	)
+	) {
 		errors.push(
-			"pass, fail, and blocked gates require at least one gate-local evidence ref",
+			result.status === "not_applicable"
+				? "not_applicable gates require at least one gate-local evidence ref"
+				: "pass, fail, and blocked gates require at least one gate-local evidence ref",
 		);
+	}
 	if (
 		["fail", "blocked"].includes(result.status) &&
 		!result.findings.some((finding) => finding.status === "open")
@@ -797,13 +800,6 @@ function validateGateConsistency(
 		(typeof result.reason !== "string" || result.reason.trim().length === 0)
 	)
 		errors.push("not_applicable gates require reason");
-	if (
-		result.status === "not_applicable" &&
-		!evidenceRefs.some((ref) => ref.gateLocal)
-	)
-		errors.push(
-			"not_applicable gates require at least one gate-local evidence ref",
-		);
 	if (result.status === "not_run" && result.executionMode !== "not_run")
 		errors.push("not_run gates require not_run executionMode");
 	if (
