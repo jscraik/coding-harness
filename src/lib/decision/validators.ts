@@ -5,12 +5,23 @@
  * every contract failure without trusting or executing payload content.
  */
 
-/** Type guard for plain objects (excludes arrays and null). */
+/**
+ * Determines whether a value is a plain object (not null and not an array).
+ *
+ * @returns `true` if `value` is an object, not `null`, and not an array; `false` otherwise.
+ */
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Validate that `value` is a non-empty string. */
+/**
+ * Validates that the provided value is a non-empty string after trimming whitespace.
+ *
+ * If validation fails, appends `${field} must be a non-empty string` to `errors`.
+ *
+ * @param field - Field name used in the appended error message
+ * @param errors - Array that will receive the validation error message when validation fails
+ */
 export function validateString(
 	value: unknown,
 	field: string,
@@ -21,7 +32,14 @@ export function validateString(
 	}
 }
 
-/** Validate that `value` is a non-empty string or `null`. */
+/**
+ * Validate that a value is either `null` or a non-empty string.
+ *
+ * If the check fails, appends `"<field> must be a non-empty string or null"` to `errors`.
+ *
+ * @param field - The name of the field used in the appended error message
+ * @param errors - Array to receive validation error messages
+ */
 export function validateNullableString(
 	value: unknown,
 	field: string,
@@ -35,7 +53,13 @@ export function validateNullableString(
 	}
 }
 
-/** Validate that `value` is a boolean. */
+/**
+ * Validates that a value is a boolean and appends an error message when it is not.
+ *
+ * @param value - The value to validate
+ * @param field - The field name to include in the error message
+ * @param errors - The array that will receive an error string if validation fails
+ */
 export function validateBoolean(
 	value: unknown,
 	field: string,
@@ -46,7 +70,13 @@ export function validateBoolean(
 	}
 }
 
-/** Validate that `value` is a non-negative integer. */
+/**
+ * Checks whether a value is a non-negative integer and appends an error message to `errors` when it is not.
+ *
+ * @param value - The value to validate
+ * @param field - The field name used in the generated error message
+ * @param errors - The array to which the error string will be appended on validation failure
+ */
 export function validateNumber(
 	value: unknown,
 	field: string,
@@ -57,7 +87,15 @@ export function validateNumber(
 	}
 }
 
-/** Validate that `value` is an array of non-empty strings. */
+/**
+ * Validates that `value` is an array of non-empty trimmed strings and appends a descriptive error to `errors` on failure.
+ *
+ * @param value - The value to validate.
+ * @param field - The field name used in generated error messages.
+ * @param errors - Accumulator array; on failure this function pushes either
+ *   - `${field} must be a string array` when `value` is not an array, or
+ *   - `${field} entries must be non-empty strings` when any array entry is not a non-empty string
+ */
 export function validateStringArray(
 	value: unknown,
 	field: string,
@@ -77,9 +115,14 @@ export function validateStringArray(
 }
 
 /**
- * Validate that `value` is one of the allowed enum values.
+ * Determines whether `value` is one of the allowed string values.
  *
- * @returns `true` when the value is valid, `false` otherwise.
+ * Appends an error message to `errors` when `value` is not included in `validValues`.
+ *
+ * @param field - The name of the field used in the error message
+ * @param validValues - The list of allowed string values
+ * @param errors - Array to which validation error messages are appended
+ * @returns `true` if `value` is one of `validValues`, `false` otherwise
  */
 export function validateEnum<T extends string>(
 	value: unknown,

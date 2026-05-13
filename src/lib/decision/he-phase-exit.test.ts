@@ -92,6 +92,7 @@ function passingGate(gateId: HeGateId, required = true): HeGateResult {
 		],
 		requiresHuman: false,
 		safeToContinue: true,
+		reason: null,
 		blockedReason: null,
 	};
 }
@@ -101,8 +102,8 @@ function notApplicableGate(gateId: HeGateId, required = true): HeGateResult {
 		...passingGate(gateId, required),
 		executionMode: "not_applicable",
 		status: "not_applicable",
-		evidenceRefs: [],
 		validation: [],
+		reason: `${gateId} not applicable to this phase`,
 	};
 }
 
@@ -121,6 +122,17 @@ function blockedGate(gateId: HeGateId, required = true): HeGateResult {
 		],
 		safeToContinue: false,
 		blockedReason: `${gateId} blocker`,
+	};
+}
+
+function gateWithExecutionMode(
+	gateId: HeGateId,
+	executionMode: HeGateResult["executionMode"],
+	required = true,
+): HeGateResult {
+	return {
+		...passingGate(gateId, required),
+		executionMode,
 	};
 }
 
@@ -242,6 +254,76 @@ describe("validateHeGateResult", () => {
 		);
 		expect(result.errors).toContain("blocked gates require blockedReason");
 	});
+
+	it("rejects not_applicable gates without a reason", () => {
+		const result = validateHeGateResult({
+			...notApplicableGate("he_fix_bugs"),
+			reason: null,
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain("not_applicable gates require reason");
+	});
+
+	it("rejects not_applicable gates without gate-local evidence", () => {
+		const result = validateHeGateResult({
+			...notApplicableGate("he_fix_bugs"),
+			evidenceRefs: [],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"not_applicable gates require at least one gate-local evidence ref",
+		);
+	});
+
+	it("rejects not_run gates without a reason", () => {
+		const result = validateHeGateResult({
+			...createMissingGateResult("he_code_review"),
+			reason: null,
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain("not_run gates require reason");
+	});
+
+	it("accepts manual review execution mode with complete evidence", () => {
+		expect(
+			validateHeGateResult(
+				gateWithExecutionMode("he_code_review", "manual_review"),
+			),
+		).toEqual({ valid: true, errors: [] });
+	});
+
+	it("rejects validation_only as skill-gate execution evidence", () => {
+		const result = validateHeGateResult(
+			gateWithExecutionMode("he_code_review", "validation_only"),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+		);
+	});
+
+	it("rejects executed statuses with non-executed execution modes", () => {
+		const invalidGates: HeGateResult[] = [
+			gateWithExecutionMode("simplify", "not_applicable"),
+			{
+				...blockedGate("he_code_review"),
+				executionMode: "not_run",
+			},
+		];
+
+		for (const gate of invalidGates) {
+			const result = validateHeGateResult(gate);
+
+			expect(result.valid).toBe(false);
+			expect(result.errors).toContain(
+				"pass, fail, and blocked gates cannot have not_applicable or not_run executionMode",
+			);
+		}
+	});
 });
 
 describe("validateHePhaseExitInput", () => {
@@ -311,6 +393,26 @@ describe("validateHePhaseExitInput", () => {
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContain(
 			"he_fix_bugs cannot be not_applicable with failing evidence",
+		);
+	});
+
+	it("requires he_fix_bugs in required gates when failing evidence exists", () => {
+		const result = validateHePhaseExitInput(
+			input({
+				phaseContext: {
+					phase: "closeout",
+					failingEvidencePresent: true,
+					reviewFeedbackPresent: false,
+				},
+				requiredGates: ["simplify", "testing_reviewer", "he_code_review"],
+				optionalGates: ["he_fix_bugs", "autofix"],
+				gates: [],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"phaseContext.failingEvidencePresent requires he_fix_bugs in requiredGates",
 		);
 	});
 
@@ -398,6 +500,31 @@ describe("validateHePhaseExitInput", () => {
 		);
 	});
 
+	it("requires autofix in required gates when review feedback exists", () => {
+		const result = validateHePhaseExitInput(
+			input({
+				phaseContext: {
+					phase: "closeout",
+					failingEvidencePresent: false,
+					reviewFeedbackPresent: true,
+				},
+				requiredGates: [
+					"simplify",
+					"testing_reviewer",
+					"he_fix_bugs",
+					"he_code_review",
+				],
+				optionalGates: ["autofix"],
+				gates: [],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"phaseContext.reviewFeedbackPresent requires autofix in requiredGates",
+		);
+	});
+
 	it("rejects unknown evidenceRefs.id", () => {
 		const gateWithInvalidRef = passingGate("simplify");
 		gateWithInvalidRef.findings = [
@@ -432,6 +559,91 @@ describe("validateHePhaseExitInput", () => {
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContain(
 			"gate cannot be both required and optional",
+		);
+	});
+
+	it("accepts manual_review executionMode with gate-local evidence", () => {
+		const gate = passingGate("he_code_review");
+		const result = validateHePhaseExitInput(
+			input({
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					{ ...gate, executionMode: "manual_review" },
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(true);
+		expect(result.errors).toEqual([]);
+	});
+
+	it("rejects manual_review gates without gate-local evidence", () => {
+		const gate = passingGate("he_code_review");
+		const result = validateHePhaseExitInput(
+			input({
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					{
+						...gate,
+						executionMode: "manual_review",
+						evidenceRefs: [],
+					},
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"pass, fail, and blocked gates require at least one gate-local evidence ref",
+		);
+	});
+
+	it("rejects validation_only executionMode even with gate-local evidence", () => {
+		const gate = passingGate("simplify");
+		const result = validateHePhaseExitInput(
+			input({
+				gates: [
+					{ ...gate, executionMode: "validation_only" },
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+		);
+	});
+
+	it("rejects validation_only gates without gate-local evidence", () => {
+		const gate = passingGate("simplify");
+		const result = validateHePhaseExitInput(
+			input({
+				gates: [
+					{
+						...gate,
+						executionMode: "validation_only",
+						evidenceRefs: [],
+					},
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+		);
+		expect(result.errors).toContain(
+			"pass, fail, and blocked gates require at least one gate-local evidence ref",
 		);
 	});
 });
@@ -519,24 +731,44 @@ describe("aggregateHePhaseExit", () => {
 	it("records optional gate failures as warnings only", () => {
 		const result = aggregateHePhaseExit(
 			input({
-				phaseContext: {
-					phase: "closeout",
-					failingEvidencePresent: false,
-					reviewFeedbackPresent: true,
-				},
+				requiredGates: ["simplify", "testing_reviewer", "he_fix_bugs"],
+				optionalGates: ["he_code_review", "autofix"],
 				gates: [
 					passingGate("simplify"),
 					passingGate("testing_reviewer"),
 					notApplicableGate("he_fix_bugs"),
-					passingGate("he_code_review"),
-					blockedGate("autofix", false),
+					blockedGate("he_code_review", false),
+					notApplicableGate("autofix", false),
 				],
 			}),
 		);
 
 		expect(result.recommendation).toBe("continue");
 		expect(result.commitAllowed).toBe(true);
-		expect(result.warnings).toContain("autofix blocker");
+		expect(result.warnings).toContain("he_code_review blocker");
+	});
+
+	it("records optional safe-to-continue failures as warnings only", () => {
+		const result = aggregateHePhaseExit(
+			input({
+				requiredGates: ["simplify", "testing_reviewer", "he_fix_bugs"],
+				optionalGates: ["he_code_review", "autofix"],
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					{
+						...passingGate("he_code_review", false),
+						safeToContinue: false,
+					},
+					notApplicableGate("autofix", false),
+				],
+			}),
+		);
+
+		expect(result.recommendation).toBe("continue");
+		expect(result.commitAllowed).toBe(true);
+		expect(result.warnings).toContain("he_code_review is not safe to continue");
 	});
 
 	it("fails closed without throwing when aggregate input is malformed", () => {
@@ -549,5 +781,141 @@ describe("aggregateHePhaseExit", () => {
 		expect(result.commitAllowed).toBe(false);
 		expect(result.exitAllowed).toBe(false);
 		expect(Array.isArray(result.blockers)).toBe(true);
+	});
+
+	it("allows commit when all required gates pass with manual_review executionMode", () => {
+		const gate = passingGate("he_code_review");
+		const result = aggregateHePhaseExit(
+			input({
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					{ ...gate, executionMode: "manual_review" },
+				],
+			}),
+		);
+
+		expect(result.recommendation).toBe("continue");
+		expect(result.commitAllowed).toBe(true);
+		expect(result.exitAllowed).toBe(true);
+		expect(result.blockers).toEqual([]);
+	});
+
+	it("blocks commit when a required skill gate uses validation_only evidence", () => {
+		const gate = passingGate("simplify");
+		const result = aggregateHePhaseExit(
+			input({
+				gates: [
+					{ ...gate, executionMode: "validation_only" },
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
+				],
+			}),
+		);
+
+		expect(result.recommendation).toBe("commit_blocked");
+		expect(result.commitAllowed).toBe(false);
+		expect(result.exitAllowed).toBe(false);
+		expect(result.blockers).toContain(
+			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+		);
+	});
+
+	it("preserves unsafe-continuation reasons for required gate blockers", () => {
+		const result = aggregateHePhaseExit(
+			input({
+				gates: [
+					{
+						...passingGate("simplify"),
+						safeToContinue: false,
+						blockedReason: null,
+					},
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					passingGate("he_code_review"),
+				],
+			}),
+		);
+
+		expect(result.recommendation).toBe("commit_blocked");
+		expect(result.commitAllowed).toBe(false);
+		expect(result.blockers).toEqual(["simplify is not safe to continue"]);
+	});
+});
+
+describe("validateHePhaseExit", () => {
+	it("rejects duplicate gate IDs in decision artifacts", () => {
+		const decision = aggregateHePhaseExit(input());
+		const result = validateHePhaseExit({
+			...decision,
+			gates: [...decision.gates, passingGate("simplify")],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain("gates[5].gateId must be unique");
+	});
+
+	it("rejects commit-ready decisions with blocking required gate evidence", () => {
+		const decision = aggregateHePhaseExit(input());
+		const result = validateHePhaseExit({
+			...decision,
+			gates: decision.gates.map((gate) =>
+				gate.gateId === "simplify" ? blockedGate("simplify") : gate,
+			),
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"commitAllowed requires passing required gates",
+		);
+		expect(result.errors).toContain(
+			"exitAllowed requires continue recommendation with no blockers and passing required gates",
+		);
+		expect(result.errors).toContain(
+			"continue recommendation requires passing required gates",
+		);
+	});
+
+	it("requires human-review recommendations to cite human gate evidence", () => {
+		const decision = aggregateHePhaseExit(
+			input({
+				gates: [
+					passingGate("simplify"),
+					passingGate("testing_reviewer"),
+					notApplicableGate("he_fix_bugs"),
+					blockedGate("he_code_review"),
+				],
+			}),
+		);
+		const result = validateHePhaseExit({
+			...decision,
+			recommendation: "human_review_required",
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContain(
+			"human_review_required requires human gate evidence",
+		);
+	});
+
+	it("requires blocker evidence for blocking recommendations", () => {
+		const decision = aggregateHePhaseExit(input());
+
+		for (const recommendation of ["commit_blocked", "stop"] as const) {
+			const result = validateHePhaseExit({
+				...decision,
+				recommendation,
+				commitAllowed: false,
+				exitAllowed: false,
+				blockers: [],
+			});
+
+			expect(result.valid).toBe(false);
+			expect(result.errors).toContain(
+				"blocking recommendations require blocker evidence",
+			);
+		}
 	});
 });
