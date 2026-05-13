@@ -1,10 +1,8 @@
 ---
 last_validated: 2026-05-13
-linear_tracking: |
-  JSC-98: Should be updated to "In Review" status (PR #243 is ready)
-  Follow-up items needing Linear issues linked to PR #243:
-    - Decide on codex-heavy timeout vs prompt shortening approach
-    - Re-run full release eval after policy changes are merged
+---
+last_validated: 2026-05-13
+---
 ---
 
 # Agent-First Status Matrix
