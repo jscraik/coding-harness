@@ -539,11 +539,16 @@ export function validateOutcomeCloseout(
 		errors.push("blocked outcome requires at least one blocker");
 	}
 	if (
-		value.outcome === "handoff" &&
-		Array.isArray(value.handedOff) &&
-		value.handedOff.length === 0
-	) {
-		errors.push("handoff outcome requires at least one handoff");
+	if (value.outcome === "handoff") {
+		if (Array.isArray(value.handedOff) && value.handedOff.length === 0) {
+			errors.push("handoff outcome requires at least one handoff");
+		}
+		if (
+			Array.isArray(value.claimBoundaries) &&
+			value.claimBoundaries.length === 0
+		) {
+			errors.push("handoff outcome requires at least one claim boundary");
+		}
 	}
 
 	return { valid: errors.length === 0, errors };
