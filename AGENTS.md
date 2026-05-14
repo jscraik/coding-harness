@@ -41,7 +41,7 @@ This repository is a TypeScript control plane for agentic development and review
 - CircleCI owns repo-run PR governance and security checks; GitHub Actions is reserved for release publishing, and Semgrep Cloud remains an independent external required check.
 - `harness.contract.json` records this split in `ciOwnership`: CircleCI is the primary PR gate, CodeRabbit is the independent review check, Semgrep Cloud is the independent external security check, and GitHub Actions fallback/release workflows must not become automatic PR gates without an intentional contract migration.
 - Tag-triggered release publishing must install `ripgrep` (`rg`) before `pnpm check` because `docs:ubiquitous:guard` depends on it in GitHub-hosted runners.
-- Release packaging, Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger a pre-push diagram-context refresh must commit the refreshed architecture context with the docs-gate-required governance surfaces.
+- Release packaging, Flow Ops closure-evidence, outcome-closeout classification, E2E runner, or eval artifact changes that trigger a pre-push diagram-context refresh must commit the refreshed architecture context with the docs-gate-required governance surfaces.
 - Generated Codex environment action changes must keep setup PATH bootstrapping, detached-worktree branch attachment, and script-derived test/eval actions synchronized with the tooling and security governance docs.
 - Release readiness updates to governed north-star status surfaces must keep `docs/roadmap/agent-first-status.md` and the matching `harness.contract.json` `lastReviewedAt` entry synchronized.
 - Compatibility posture: canonical-only.
