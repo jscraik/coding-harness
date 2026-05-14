@@ -213,7 +213,7 @@ workflows:
               branch_matched=true
             elif [[ -n "${LINEAR_GATE_ALLOW_BRANCHES:-}" ]]; then
               # Parse comma/space-separated allowlist
-              IFS=', ' read -ra allowed_branches <<< "${LINEAR_GATE_ALLOW_BRANCHES}"
+              IFS=', ' read -ra allowed_branches < <(printf '%s\n' "${LINEAR_GATE_ALLOW_BRANCHES}")
               for allowed_branch in "${allowed_branches[@]}"; do
                 if [[ "$branch_name" == "$allowed_branch" ]]; then
                   echo "linear-gate: TEMPORARY EXEMPTION via LINEAR_GATE_ALLOW_BRANCHES for branch '$branch_name'"
