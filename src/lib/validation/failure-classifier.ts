@@ -96,12 +96,25 @@ const FIXTURE_PATTERNS = [
 const PATH_PATTERN =
 	/(?:^|[\s"'(])((?:\.?[\w.-]+\/)*(?:[\w.@:+-]+)(?:\.[\w+-]+)?)/g;
 
+/**
+ * Concatenates an observation's stdout and stderr into a single output string.
+ *
+ * @param observation - The validation command observation whose `stdout` and `stderr` should be combined
+ * @returns The combined output: `stdout` and `stderr` joined with a single newline; empty or missing parts are omitted. */
 function combinedOutput(observation: ValidationCommandObservation): string {
 	return [observation.stdout ?? "", observation.stderr ?? ""]
 		.filter((part) => part.length > 0)
 		.join("\n");
 }
 
+/**
+ * Normalizes a path-like token by removing common surrounding and trailing artifacts.
+ *
+ * Removes a leading "./", strips trailing ":<line>" or ":<line>:<column>" suffixes, and trims trailing punctuation or closing delimiters such as commas, colons, semicolons, parentheses, and greater-than signs.
+ *
+ * @param path - The extracted path-like token to normalize
+ * @returns The cleaned, normalized path
+ */
 function normalizePath(path: string): string {
 	return path
 		.replace(/^\.\//, "")
@@ -109,18 +122,44 @@ function normalizePath(path: string): string {
 		.replace(/[,:;)>]+$/g, "");
 }
 
+/**
+ * Normalize a list of file paths and return them as a set of unique normalized paths.
+ *
+ * @param paths - An optional array of file path strings; undefined is treated as an empty list.
+ * @returns A Set containing each input path after `normalizePath` has been applied, with duplicates removed.
+ */
 function normalizePaths(paths: readonly string[] | undefined): Set<string> {
 	return new Set((paths ?? []).map((path) => normalizePath(path)));
 }
 
+/**
+ * Escapes special regular expression characters in a string so it can be used literally in a RegExp.
+ *
+ * @param value - The string to escape
+ * @returns The input with all RegExp metacharacters escaped
+ */
 function escapeRegExp(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Checks whether any regular expression in `patterns` matches the provided `output`.
+ *
+ * @param output - The text to test against the patterns
+ * @param patterns - An array of regular expressions to test
+ * @returns `true` if any pattern matches `output`, `false` otherwise
+ */
 function matchesAny(output: string, patterns: readonly RegExp[]): boolean {
 	return patterns.some((pattern) => pattern.test(output));
 }
 
+/**
+ * Checks whether any of the observation's required credential names appear in the provided output.
+ *
+ * @param observation - Observation containing optional `requiredCredentialNames` to search for
+ * @param output - Text to search for credential names
+ * @returns The first credential name from `observation.requiredCredentialNames` that matches `output` using a case-insensitive, word-boundary match, or `undefined` if none match
+ */
 function requiredCredentialSeen(
 	observation: ValidationCommandObservation,
 	output: string,
@@ -134,6 +173,14 @@ function requiredCredentialSeen(
 	return undefined;
 }
 
+/**
+ * Extracts unique normalized file or path tokens from a text blob.
+ *
+ * Scans `output` for path-like tokens, ignores tokens that start with "http", normalizes each extracted path (e.g., removing leading `./` and trimming trailing line/column and punctuation), and returns the unique normalized paths.
+ *
+ * @param output - The text to scan for path-like tokens
+ * @returns An array of unique normalized path strings extracted from `output` (URLs starting with "http" are ignored)
+ */
 function extractOutputPaths(output: string): string[] {
 	const paths = new Set<string>();
 	for (const match of output.matchAll(PATH_PATTERN)) {
@@ -145,6 +192,15 @@ function extractOutputPaths(output: string): string[] {
 	return [...paths];
 }
 
+/**
+ * Returns the unique normalized entries from `left` that are present in `right`.
+ *
+ * Each value from `left` is normalized before comparison.
+ *
+ * @param left - Array of path-like strings to check; each entry is normalized before matching
+ * @param right - Set of normalized strings to intersect against
+ * @returns The unique normalized entries from `left` that are present in `right`
+ */
 function intersect(left: readonly string[], right: Set<string>): string[] {
 	const matches = new Set<string>();
 	for (const value of left) {
@@ -156,6 +212,12 @@ function intersect(left: readonly string[], right: Set<string>): string[] {
 	return [...matches];
 }
 
+/**
+ * Builds a map from normalized repository-relative paths to their corresponding dirty-file entries.
+ *
+ * @param dirtyFiles - Optional list of dirty worktree files to index
+ * @returns A Map whose keys are normalized paths and whose values are the corresponding `ValidationDirtyFile` entries
+ */
 function dirtyPathIndex(
 	dirtyFiles: readonly ValidationDirtyFile[] | undefined,
 ): Map<string, ValidationDirtyFile> {
@@ -166,6 +228,17 @@ function dirtyPathIndex(
 	return index;
 }
 
+/**
+ * Constructs a ValidationFailureClassifierResult from the provided classification details.
+ *
+ * @param classification - The classification label for the validation outcome
+ * @param blocking - Whether the classification should block further progress
+ * @param confidence - Confidence level for the classification
+ * @param nextAction - Suggested next action for the caller (human-readable)
+ * @param reasons - Short human-readable reasons that justify the classification
+ * @param evidenceRefs - Optional list of evidence references (for example, normalized file paths) supporting the classification
+ * @returns The assembled ValidationFailureClassifierResult populated with the provided fields
+ */
 function result(
 	classification: ValidationFailureClassification,
 	blocking: boolean,
@@ -184,6 +257,11 @@ function result(
 	};
 }
 
+/**
+ * Determine the classifier result for an observation whose command exited with code 0.
+ *
+ * @returns A ValidationFailureClassifierResult classifying the observation as `"expected_fixture_stderr"` when the caller explicitly marked expected fixture output or when output matches fixture patterns (confidence `"high"` for explicit marker, `"medium"` for pattern match), otherwise as `"passed"` with confidence `"high"`. The result includes explanatory reasons and any provided output path evidence.
+ */
 function classifyZeroExit(
 	observation: ValidationCommandObservation,
 	output: string,
@@ -213,10 +291,10 @@ function classifyZeroExit(
 }
 
 /**
- * Classify one validation command observation into an actionable failure bucket.
+ * Classifies a single validation command observation into a deterministic failure classification and remediation guidance.
  *
- * @param observation - Command, exit code, output, and optional repo context.
- * @returns A deterministic failure class, closeout blocking flag, reasons, and next action.
+ * @param observation - Observation containing the command text, exit code, captured stdout/stderr, and optional changed/dirty file context and metadata
+ * @returns The classifier result including `classification`, `blocking`, `confidence`, `nextAction`, `reasons`, and `evidenceRefs`
  */
 export function classifyValidationFailure(
 	observation: ValidationCommandObservation,

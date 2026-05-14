@@ -194,20 +194,44 @@ const VALID_BLOCKER_CLASSES: readonly OutcomeCloseoutBlockerClassification[] = [
 	"unknown_blocker",
 ];
 
+/**
+ * Determines whether a value is a plain object (an object that is not `null` and not an array).
+ *
+ * @returns `true` if `value` is a non-null, non-array object, `false` otherwise.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Determines whether a value is a non-empty string.
+ *
+ * @returns `true` if `value` is a string containing at least one non-whitespace character, `false` otherwise.
+ */
 function isNonEmptyString(value: unknown): value is string {
 	return typeof value === "string" && value.trim().length > 0;
 }
 
+/**
+ * Validate that a value is a non-empty string and append an error message when it is not.
+ *
+ * @param value - The value to validate
+ * @param field - The human-readable field name used in the appended error message
+ * @param errors - The array to which the function will push an error string if validation fails
+ */
 function validateString(value: unknown, field: string, errors: string[]): void {
 	if (!isNonEmptyString(value)) {
 		errors.push(`${field} must be a non-empty string`);
 	}
 }
 
+/**
+ * Validate that a value, when present, is a non-empty string and record an error if not.
+ *
+ * @param value - The value to validate; validation runs only if `value` is not `undefined`
+ * @param field - Human-readable field name used in the pushed error message
+ * @param errors - Array to which a descriptive error string will be appended on validation failure
+ */
 function validateOptionalString(
 	value: unknown,
 	field: string,
@@ -218,6 +242,14 @@ function validateOptionalString(
 	}
 }
 
+/**
+ * Adds a validation error if the provided value is not one of the allowed values.
+ *
+ * @param value - The value to validate against the allowed values
+ * @param field - The display name of the field used in the error message
+ * @param validValues - Readonly array of permitted string values
+ * @param errors - Mutable array of error messages; a new message is pushed when validation fails
+ */
 function validateEnum<T extends string>(
 	value: unknown,
 	field: string,
@@ -229,6 +261,17 @@ function validateEnum<T extends string>(
 	}
 }
 
+/**
+ * Validate that a value is an array of non-empty strings and record the first violation.
+ *
+ * If `value` is not an array, appends "`<field> must be a string array`" to `errors`.
+ * If any element is not a non-empty string, appends "`<field> entries must be non-empty strings`" to `errors`.
+ * Validation stops after the first detected error.
+ *
+ * @param value - The value to validate
+ * @param field - The label used in generated error messages
+ * @param errors - Collector array that will be mutated with at most one error message
+ */
 function validateStringArray(
 	value: unknown,
 	field: string,
@@ -246,6 +289,13 @@ function validateStringArray(
 	}
 }
 
+/**
+ * Validates that `value` is an array of non-empty strings representing source references and that it contains at least one entry; appends human-readable error messages to `errors` when validation fails.
+ *
+ * @param value - The value to validate as a source reference array
+ * @param field - The name of the field used in generated error messages
+ * @param errors - An array to which validation error strings will be appended
+ */
 function validateSourceRefs(
 	value: unknown,
 	field: string,
@@ -257,6 +307,16 @@ function validateSourceRefs(
 	}
 }
 
+/**
+ * Ensures a value is an array and applies a per-element validator to each entry.
+ *
+ * If `value` is not an array, an error is appended to `errors` using `field`.
+ *
+ * @param value - The value to validate as an array of entries
+ * @param field - The name of the field used to build error messages
+ * @param validateEntry - Callback invoked for each array element with the element, its indexed field name, and the shared `errors` array
+ * @param errors - Accumulator for validation error messages
+ */
 function validateObjectArray(
 	value: unknown,
 	field: string,
@@ -272,6 +332,13 @@ function validateObjectArray(
 	});
 }
 
+/**
+ * Validates that `value` is a well-formed OutcomeCloseout source event and appends any validation messages to `errors`.
+ *
+ * @param value - The value to validate as a source event
+ * @param field - The field path used as a prefix in generated error messages
+ * @param errors - Array to which validation error strings will be appended
+ */
 function validateSourceEvent(
 	value: unknown,
 	field: string,
@@ -287,6 +354,17 @@ function validateSourceEvent(
 	validateString(value.summary, `${field}.summary`, errors);
 }
 
+/**
+ * Validates a changed-item object and appends any validation errors to `errors`.
+ *
+ * Ensures `value` is an object, that `summary` is a non-empty string, that `path`
+ * (if present) is a non-empty string, and that `sourceRefs` is an array of
+ * non-empty strings referencing source events.
+ *
+ * @param value - The value to validate as a changed item
+ * @param field - The field path used when reporting errors (prefixed to error messages)
+ * @param errors - Array to which validation error messages will be appended
+ */
 function validateChangedItem(
 	value: unknown,
 	field: string,
@@ -301,6 +379,18 @@ function validateChangedItem(
 	validateSourceRefs(value.sourceRefs, `${field}.sourceRefs`, errors);
 }
 
+/**
+ * Validates a proof item object and appends any validation errors to `errors`.
+ *
+ * Ensures `value` is an object with a non-empty `summary`, an optional non-empty `command`,
+ * a `status` included in `VALID_PROOF_STATUSES`, and a `sourceRefs` array of non-empty strings.
+ * If present, `artifactRefs` must be an array of non-empty strings. If `value` is not an object
+ * a single error `${field} must be an object` is appended and validation stops.
+ *
+ * @param value - The value to validate as a proof item
+ * @param field - Field path prefix used when reporting errors (e.g., `"provedBy[0]"`)
+ * @param errors - Mutable array that will receive error messages for any validation failures
+ */
 function validateProofItem(
 	value: unknown,
 	field: string,
@@ -319,6 +409,19 @@ function validateProofItem(
 	}
 }
 
+/**
+ * Validates a blocker entry and appends any validation errors to the provided errors array.
+ *
+ * Ensures `value` is an object and validates these fields (using `field` as the error-path prefix):
+ * - `classification` is one of the allowed blocker classifications
+ * - `summary` is a non-empty string
+ * - `blocksCompletion` is a boolean
+ * - `sourceRefs` is an array of non-empty strings
+ *
+ * @param value - The candidate blocker value to validate
+ * @param field - The dotted field path used when reporting errors
+ * @param errors - Mutable array that will receive error messages for any validation failures
+ */
 function validateBlocker(
 	value: unknown,
 	field: string,
@@ -341,6 +444,15 @@ function validateBlocker(
 	validateSourceRefs(value.sourceRefs, `${field}.sourceRefs`, errors);
 }
 
+/**
+ * Validates a handoff entry object and appends any validation errors to the provided errors array.
+ *
+ * Validates that `value` is an object and that the following fields are present and valid: `owner` (one of the allowed handoff owners), `summary` (non-empty string), `nextAction` (non-empty string), and `sourceRefs` (array of non-empty strings referencing source events).
+ *
+ * @param value - The value to validate as an OutcomeCloseout handoff entry
+ * @param field - The field path prefix used when recording error messages
+ * @param errors - The array to which validation error messages will be pushed
+ */
 function validateHandoff(
 	value: unknown,
 	field: string,
@@ -356,6 +468,16 @@ function validateHandoff(
 	validateSourceRefs(value.sourceRefs, `${field}.sourceRefs`, errors);
 }
 
+/**
+ * Validates that `value` is a ClaimBoundary-like object and appends any validation errors to `errors`.
+ *
+ * Ensures `value` is an object, that `claim` and `reason` are non-empty strings, and that `sourceRefs`
+ * is an array containing at least one non-empty string. Errors use `field` as the message prefix.
+ *
+ * @param value - The value to validate as a ClaimBoundary
+ * @param field - The dot-qualified field name to use in generated error messages
+ * @param errors - The array to which validation error messages will be appended
+ */
 function validateClaimBoundary(
 	value: unknown,
 	field: string,
@@ -370,6 +492,12 @@ function validateClaimBoundary(
 	validateSourceRefs(value.sourceRefs, `${field}.sourceRefs`, errors);
 }
 
+/**
+ * Checks whether an input contains any blocker object that blocks completion.
+ *
+ * @param value - The value to inspect; expected to be an array of blocker-like objects
+ * @returns `true` if `value` is an array containing at least one object with `blocksCompletion === true`, `false` otherwise
+ */
 function hasCompletionBlockingBlocker(value: unknown): boolean {
 	if (!Array.isArray(value)) {
 		return false;
@@ -379,6 +507,12 @@ function hasCompletionBlockingBlocker(value: unknown): boolean {
 	);
 }
 
+/**
+ * Determine whether the provided value is an array that contains at least one source event whose `kind` is not `"manual"`.
+ *
+ * @param value - The value to inspect (expected to be an array of potential source event objects)
+ * @returns `true` if at least one array element is an object with a `kind` property not equal to `"manual"`, `false` otherwise.
+ */
 function hasNonManualSourceEvent(value: unknown): boolean {
 	if (!Array.isArray(value)) {
 		return false;
@@ -386,6 +520,12 @@ function hasNonManualSourceEvent(value: unknown): boolean {
 	return value.some((event) => isRecord(event) && event.kind !== "manual");
 }
 
+/**
+ * Determines whether the provided value contains at least one proof item with status `"pass"`.
+ *
+ * @param value - The value to inspect; expected to be an array of proof-like objects.
+ * @returns `true` if at least one array element is an object whose `status` is `"pass"`, `false` otherwise.
+ */
 function hasPassingProof(value: unknown): boolean {
 	if (!Array.isArray(value)) {
 		return false;
@@ -393,6 +533,12 @@ function hasPassingProof(value: unknown): boolean {
 	return value.some((proof) => isRecord(proof) && proof.status === "pass");
 }
 
+/**
+ * Determines whether the provided value contains any proof item with status "fail" or "blocked".
+ *
+ * @param value - The value to inspect; expected to be an array of proof items (objects may include a `status` property)
+ * @returns `true` if any entry is an object whose `status` is `"fail"` or `"blocked"`, `false` otherwise
+ */
 function hasNonPassingProof(value: unknown): boolean {
 	if (!Array.isArray(value)) {
 		return false;
@@ -404,6 +550,12 @@ function hasNonPassingProof(value: unknown): boolean {
 	);
 }
 
+/**
+ * Collects all non-empty `ref` strings from an array of source-event-like objects.
+ *
+ * @param value - The value to inspect; expected to be an array whose elements may be objects with a `ref` string property
+ * @returns A set containing each non-empty `ref` value found (duplicates removed)
+ */
 function sourceEventRefs(value: unknown): Set<string> {
 	const refs = new Set<string>();
 	if (!Array.isArray(value)) {
@@ -417,6 +569,18 @@ function sourceEventRefs(value: unknown): Set<string> {
 	return refs;
 }
 
+/**
+ * Adds an error for each non-empty string in `value` that is not present in `validRefs`.
+ *
+ * Validates only when `value` is an array; for each entry that is a non-empty string and not found
+ * in `validRefs`, an error message of the form "`<field> contains unknown source reference <ref>`"
+ * is appended to `errors`.
+ *
+ * @param value - The value to validate (expected to be an array of reference strings)
+ * @param field - The name of the field used in generated error messages
+ * @param validRefs - Set of allowed reference strings
+ * @param errors - Mutable array to which validation error messages are appended
+ */
 function validateSourceRefMembership(
 	value: unknown,
 	field: string,
@@ -433,6 +597,14 @@ function validateSourceRefMembership(
 	}
 }
 
+/**
+ * Ensures that any `sourceRefs` used by closeout sub-entries reference `ref` values declared in `value.sourceEvents`.
+ *
+ * Iterates the `changed`, `provedBy`, `blockers`, `handedOff`, and `claimBoundaries` arrays (when present) and appends error messages to `errors` for any `sourceRefs` that are missing or not listed in `value.sourceEvents`.
+ *
+ * @param value - The closeout-like object containing `sourceEvents` and optional sub-entry arrays to validate
+ * @param errors - Mutable array that will receive error strings for any invalid or unknown `sourceRefs`
+ */
 function validateReferencedSourceEvents(
 	value: Record<string, unknown>,
 	errors: string[],
@@ -555,10 +727,10 @@ export function validateOutcomeCloseout(
 }
 
 /**
- * Determine whether a candidate value satisfies the outcome closeout contract.
+ * Determines whether a value conforms to the OutcomeCloseout schema.
  *
  * @param value - Candidate value to test
- * @returns true when value is a valid OutcomeCloseout
+ * @returns `true` if the value is a valid `OutcomeCloseout`, `false` otherwise.
  */
 export function isOutcomeCloseout(value: unknown): value is OutcomeCloseout {
 	return validateOutcomeCloseout(value).valid;
