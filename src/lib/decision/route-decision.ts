@@ -148,10 +148,7 @@ const VALID_ROUTE_STATUSES: readonly RouteDecisionStatus[] = [
  * @param path - Optional field path that failed validation
  * @returns A structured validation error with code derived from the message
  */
-function toValidationError(
-	message: string,
-	path?: string,
-): HeValidationError {
+function toValidationError(message: string, path?: string): HeValidationError {
 	const error: HeValidationError = {
 		code: message,
 		severity: "error",
@@ -314,7 +311,9 @@ export function validateRouteDecision(
 	validateStringArray(value.redactionsApplied, "redactionsApplied", errors);
 	validateStringArray(value.warnings, "warnings", errors);
 	if (value.meta !== undefined && !isRecord(value.meta)) {
-		errors.push(toValidationError("meta must be an object when present", "meta"));
+		errors.push(
+			toValidationError("meta must be an object when present", "meta"),
+		);
 	}
 	validateRouteConsistency(value, route, errors);
 

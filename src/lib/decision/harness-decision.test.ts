@@ -8,6 +8,10 @@ import {
 	validateHarnessDecisionOperationalMeta,
 } from "./harness-decision.js";
 
+function errorCodes(result: { errors: { code: string }[] }): string[] {
+	return result.errors.map((error) => error.code);
+}
+
 function validDecision(
 	overrides: Partial<HarnessDecision> = {},
 ): HarnessDecision {
@@ -43,14 +47,13 @@ function validDecision(
 
 describe("validateHarnessDecision", () => {
 	it("rejects non-object candidates", () => {
-		expect(validateHarnessDecision(null)).toEqual({
-			valid: false,
-			errors: ["decision must be an object"],
-		});
-		expect(validateHarnessDecision(["not", "a", "decision"])).toEqual({
-			valid: false,
-			errors: ["decision must be an object"],
-		});
+		const nullResult = validateHarnessDecision(null);
+		const arrayResult = validateHarnessDecision(["not", "a", "decision"]);
+
+		expect(nullResult.valid).toBe(false);
+		expect(errorCodes(nullResult)).toEqual(["decision must be an object"]);
+		expect(arrayResult.valid).toBe(false);
+		expect(errorCodes(arrayResult)).toEqual(["decision must be an object"]);
 	});
 
 	it("accepts a complete harness-decision/v1 fixture", () => {
@@ -79,10 +82,10 @@ describe("validateHarnessDecision", () => {
 		const result = validateHarnessDecision(candidate);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"schemaVersion must be harness-decision/v1",
 		);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"status must be pass, fail, blocked, or action_required",
 		);
 	});
@@ -98,7 +101,7 @@ describe("validateHarnessDecision", () => {
 		const result = validateHarnessDecision(candidate);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toEqual(
+		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"retry must be safe, conditional, or manual",
 				"riskTier must be low, medium, high, critical, or unknown",
@@ -120,7 +123,7 @@ describe("validateHarnessDecision", () => {
 		const result = validateHarnessDecision(candidate);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toEqual(
+		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"evidenceRef must be a non-empty string array",
 				"requiredEvidence entries must be non-empty strings",
@@ -142,7 +145,7 @@ describe("validateHarnessDecision", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toEqual(
+		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"phase must be one of orient, verify, review, repair, handoff",
 				"objective must be a non-empty string",
@@ -182,7 +185,7 @@ describe("validateHarnessDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"failureClass must be set when status is blocked or fail",
 		);
 	});
@@ -201,10 +204,10 @@ describe("validateHarnessDecision", () => {
 			}),
 		);
 
-		expect(missingCommand.errors).toContain(
+		expect(errorCodes(missingCommand)).toContain(
 			"safeToRun must be false when nextCommand is null",
 		);
-		expect(unsafeCommand.errors).toContain(
+		expect(errorCodes(unsafeCommand)).toContain(
 			"safeToRun must be true when nextCommand is set",
 		);
 	});
@@ -220,7 +223,7 @@ describe("validateHarnessDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"stopConditions or humanEscalation must explain decisions without nextCommand",
 		);
 	});
@@ -234,7 +237,7 @@ describe("validateHarnessDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toEqual(
+		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"nextCommand must be a non-empty string or null",
 				"failureClass must be a non-empty string or null",
@@ -266,7 +269,7 @@ describe("validateHarnessDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"meta.frictionClass must be one of none, tool_friction, permission_sandbox, repo_state, unclear_instruction, validation_failure, implementation_complexity, external_service",
 		);
 	});
@@ -296,7 +299,7 @@ describe("validateHarnessDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"requiresNetwork must match meta.execution.permissionPlan.requiresNetwork",
 		);
 	});
@@ -479,7 +482,7 @@ describe("validateHarnessDecisionOperationalMeta", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toEqual(
+		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"frictionClass must be one of none, tool_friction, permission_sandbox, repo_state, unclear_instruction, validation_failure, implementation_complexity, external_service",
 				"delayClass must be one of normal, waiting_on_command, waiting_on_agent, repeated_failure, human_needed",

@@ -598,7 +598,9 @@ function validateEvidenceRefs(
 	errors: HeValidationError[],
 ): HeEvidenceRef[] {
 	if (!Array.isArray(value)) {
-		errors.push(toValidationError("evidenceRefs must be an array", "evidenceRefs"));
+		errors.push(
+			toValidationError("evidenceRefs must be an array", "evidenceRefs"),
+		);
 		return [];
 	}
 	const ids = new Set<string>();
@@ -974,7 +976,11 @@ function validateGateConsistency(
 		(typeof result.reason !== "string" || result.reason.trim().length === 0)
 	)
 		errors.push(
-			toValidationError("not_run gates require reason", "reason", result.gateId),
+			toValidationError(
+				"not_run gates require reason",
+				"reason",
+				result.gateId,
+			),
 		);
 	const evidenceRefIds = new Set(evidenceRefs.map((ref) => ref.id));
 	for (const finding of result.findings) {
@@ -1396,7 +1402,10 @@ function validateGateIdArray(
 		if (validateEnum(entry, `${field}[${index}]`, HE_GATE_IDS, errors)) {
 			if (seen.has(entry))
 				errors.push(
-					toValidationError(`${field}[${index}] must be unique`, `${field}[${index}]`),
+					toValidationError(
+						`${field}[${index}] must be unique`,
+						`${field}[${index}]`,
+					),
 				);
 			seen.add(entry);
 		}

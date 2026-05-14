@@ -16,6 +16,10 @@ import {
 	withLifecycleRouteMeta,
 } from "./route-decision.js";
 
+function errorCodes(result: { errors: { code: string }[] }): string[] {
+	return result.errors.map((error) => error.code);
+}
+
 function validRouteDecision(
 	overrides: Partial<RouteDecision> = {},
 ): RouteDecision {
@@ -121,14 +125,17 @@ function validHarnessDecision(
 
 describe("validateRouteDecision", () => {
 	it("rejects non-object candidates", () => {
-		expect(validateRouteDecision(null)).toEqual({
-			valid: false,
-			errors: ["route decision must be an object"],
-		});
-		expect(validateRouteDecision(["not", "a", "route"])).toEqual({
-			valid: false,
-			errors: ["route decision must be an object"],
-		});
+		const nullResult = validateRouteDecision(null);
+		const arrayResult = validateRouteDecision(["not", "a", "route"]);
+
+		expect(nullResult.valid).toBe(false);
+		expect(errorCodes(nullResult)).toEqual([
+			"route decision must be an object",
+		]);
+		expect(arrayResult.valid).toBe(false);
+		expect(errorCodes(arrayResult)).toEqual([
+			"route decision must be an object",
+		]);
 	});
 
 	it("accepts a complete route-decision/v1 fixture", () => {
@@ -178,7 +185,7 @@ describe("validateRouteDecision", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toEqual(
+		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"schemaVersion must be route-decision/v1",
 				"status must be pass, fail, blocked, or action_required",
@@ -202,7 +209,7 @@ describe("validateRouteDecision", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toEqual(
+		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"producer must be a non-empty string",
 				"route must be an object",
@@ -228,7 +235,7 @@ describe("validateRouteDecision", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toEqual(
+		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"route.label must be a non-empty string",
 				"route.targetCommand must be a non-empty string or null",
@@ -247,7 +254,7 @@ describe("validateRouteDecision", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toEqual(
+		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"evidenceRef must be a string array",
 				"redactionsApplied entries must be non-empty strings",
@@ -275,13 +282,13 @@ describe("validateRouteDecision", () => {
 			}),
 		);
 
-		expect(blocked.errors).toEqual(
+		expect(errorCodes(blocked)).toEqual(
 			expect.arrayContaining([
 				"failureClass must be set when status is blocked or fail",
 				"blocked or fail routes must use a non-none blockerBoundary",
 			]),
 		);
-		expect(failed.errors).toEqual(
+		expect(errorCodes(failed)).toEqual(
 			expect.arrayContaining([
 				"failureClass must be set when status is blocked or fail",
 				"blocked or fail routes must use a non-none blockerBoundary",
@@ -299,7 +306,7 @@ describe("validateRouteDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"pass routes must use failureClass null and blockerBoundary none",
 		);
 	});
@@ -314,7 +321,7 @@ describe("validateRouteDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"action_required routes without blockerBoundary must use failureClass null",
 		);
 	});
@@ -333,7 +340,7 @@ describe("validateRouteDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"human_escalation routes must require human review",
 		);
 	});
@@ -351,7 +358,7 @@ describe("validateRouteDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"none routes must not set targetCommand or targetSkill",
 		);
 	});
@@ -365,7 +372,7 @@ describe("validateRouteDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"mutating routes must require human review",
 		);
 	});
@@ -399,7 +406,7 @@ describe("validateRouteDecision", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"safeToUse must be false when status is blocked or fail",
 		);
 	});

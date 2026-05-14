@@ -24,10 +24,7 @@ export interface HeValidationError {
  * @param path - Optional field path that failed validation
  * @returns A structured validation error with code derived from the message
  */
-function toValidationError(
-	message: string,
-	path?: string,
-): HeValidationError {
+function toValidationError(message: string, path?: string): HeValidationError {
 	const error: HeValidationError = {
 		code: message,
 		severity: "error",
@@ -61,7 +58,9 @@ export function validateString(
 	errors: HeValidationError[],
 ): void {
 	if (typeof value !== "string" || value.trim().length === 0) {
-		errors.push(toValidationError(`${field} must be a non-empty string`, field));
+		errors.push(
+			toValidationError(`${field} must be a non-empty string`, field),
+		);
 	}
 }
 

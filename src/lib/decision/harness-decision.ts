@@ -284,10 +284,7 @@ const VALID_STARTUP_COSTS: readonly HarnessDecisionStartupCost[] = [
  * @param path - Optional field path that failed validation
  * @returns A structured validation error with code derived from the message
  */
-function toValidationError(
-	message: string,
-	path?: string,
-): HeValidationError {
+function toValidationError(message: string, path?: string): HeValidationError {
 	const error: HeValidationError = {
 		code: message,
 		severity: "error",
@@ -601,10 +598,7 @@ export function validateHarnessDecision(
 	validateNullableString(value.failureClass, "failureClass", errors);
 	if (!VALID_RETRIES.includes(value.retry as HarnessDecisionRetry)) {
 		errors.push(
-			toValidationError(
-				"retry must be safe, conditional, or manual",
-				"retry",
-			),
+			toValidationError("retry must be safe, conditional, or manual", "retry"),
 		);
 	}
 	if (!VALID_RISK_TIERS.includes(value.riskTier as HarnessDecisionRiskTier)) {
@@ -617,7 +611,9 @@ export function validateHarnessDecision(
 	}
 	validateDecisionRoutingConsistency(value, errors);
 	if (value.meta !== undefined && !isRecord(value.meta)) {
-		errors.push(toValidationError("meta must be an object when present", "meta"));
+		errors.push(
+			toValidationError("meta must be an object when present", "meta"),
+		);
 	}
 	if (isRecord(value.meta) && hasOperationalMetaShape(value.meta)) {
 		const metaValidation = validateHarnessDecisionOperationalMeta(value.meta);
