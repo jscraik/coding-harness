@@ -2,6 +2,7 @@
 import {
 	type HeValidationError,
 	isRecord,
+	toValidationError,
 	validateBoolean,
 	validateEnum,
 	validateNullableString,
@@ -276,27 +277,6 @@ const VALID_STARTUP_COSTS: readonly HarnessDecisionStartupCost[] = [
 	"medium",
 	"high",
 ];
-
-/**
- * Convert a validation error message string to a structured HeValidationError.
- *
- * @param message - The human-readable validation error message
- * @param path - Optional field path that failed validation
- * @returns A structured validation error with code derived from the message
- */
-function toValidationError(
-	message: string,
-	path?: string,
-): HeValidationError {
-	const error: HeValidationError = {
-		code: message,
-		severity: "error",
-	};
-	if (path !== undefined) {
-		error.path = path;
-	}
-	return error;
-}
 
 function isStringArray(value: unknown): value is string[] {
 	return (
