@@ -50,11 +50,19 @@ For north-star contract/scaffold updates that affect workflow authority, update 
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized when `docs-gate` asks for architecture-context evidence.
 RouteDecision lifecycle metadata belongs to this cockpit architecture-adjacent lane: keep `route-decision/v1` contract changes additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and commit this guide when `docs-gate` reports the architecture-context surface.
 Generated Codex environment action changes that add validation script actions or branch-attachment behavior are architecture-adjacent when they refresh `AI/context/diagram-context.md`; commit the refreshed context pack and this guide together when docs-gate reports the architecture-context surface.
+Generated environment action merge repairs that preserve setup PATH behavior,
+detached worktree attachment, or script-derived test/eval actions should keep
+this guide in the PR when `AI/context/diagram-context.md` is part of the branch
+diff, even if the architecture text is otherwise unchanged.
 Goal-continuation, approval-plan, Flow Ops closure-evidence classifiers,
 eval-seed, observed usage collection, and E2E/eval artifact changes that add or
 reroute source modules must refresh `AI/context/diagram-context.md` in the same
 PR so agent reviewers can discover the new evidence path from the architecture
 context pack.
+When closure-evidence follow-up changes fail-closed required-check
+classification, generated Codex environment setup, or init scaffolding tests in
+one branch, keep this guide in the diff with the refreshed architecture context
+so reviewers can trace why the context pack changed.
 For release packaging changes that alter runtime dependency metadata, pass the packed CLI smoke path before publish, and commit any required `AI/context/diagram-context.md` refresh and its required docs-gate surfaces (including this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`) that pre-push or docs-gate reports.
 For formatter or linter major-version migrations, expect generated architecture context to drop newly ignored local analysis paths and refresh this guide with the committed `AI/context/diagram-context.md` update so reviewers know the architecture pack changed because tracked tooling rules changed.
 For validation gate graph changes, refresh `AI/context/diagram-context.md` and keep the validation governance surfaces synchronized (this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`) when typed gate specs, phase-exit evidence gates, parity tests, or resume-checkpoint guards are added or changed. Rollback: revert the branch to remove the typed mirror, evidence-gate contract, dispatch guard, parity tests, and synchronized doc updates.

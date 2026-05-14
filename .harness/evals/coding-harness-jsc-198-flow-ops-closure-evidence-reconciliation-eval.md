@@ -209,7 +209,7 @@ but JSC-198 remains unsafe to close.
 Trajectory / Transcript Evidence: PR #235 merge commit
 `19ee8b5c5ebb90b5a1d43c237d98d2b12485846b`; live connector and GitHub reads
 refreshed on 2026-05-10.
-Grader Coverage: focused fixture tests plus full codestyle gate passed before
+Grader Coverage: focused fixture tests plus fast codestyle check passed before
 committing this phase.
 Trial Policy: one live proof run over the two inventory-selected PR examples
 and the live JSC-198 parent issue.
