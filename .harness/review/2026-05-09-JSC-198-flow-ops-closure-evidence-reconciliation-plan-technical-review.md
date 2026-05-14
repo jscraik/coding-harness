@@ -46,11 +46,14 @@ linear_milestone: Control loop hardening and flow telemetry
 
 Pass.
 
-This plan-gate verdict is retained as historical evidence for the
-inventory-only admission of `IU-198-001`. It is superseded for implementation
-scope by the later JSC-198 implementation phase in this PR, which admitted the
-runtime classifier, fixture, eval, and validation updates after inventory proof
-was captured.
+Superseded by the implementation phase in PR #235 after the user authorized
+runtime source, fixture, test, eval, and governance artifact changes for the
+closure-evidence classifier.
+
+The deepened plan is suitable for `he-work` on `IU-198-001` only. It keeps the
+first unit read-only, prevents broad telemetry expansion, requires current
+Linear/GitHub/CircleCI/eval evidence before classification, and adds explicit
+redaction, inventory-table, and dirty-worktree guardrails.
 
 ## Findings
 
@@ -135,6 +138,13 @@ External provider documentation checked on 2026-05-09:
 
 ## Validation Evidence
 
+`AGENT_SKILLS_ROOT` points at the local `agent-skills` repository that provides
+the Harness Engineering validation scripts used below. Set it before replaying
+these commands, for example `export AGENT_SKILLS_ROOT=/path/to/agent-skills`.
+The referenced scripts are `he_artifact_identity_lint.py`,
+`he_linear_traceability_lint.py`, and `he_frontmatter_safety_lint.py` under
+`${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/`.
+
 - Command:
   `python3 ${AGENT_SKILLS_ROOT}/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/specs/2026-05-09-jsc-198-flow-ops-closure-evidence-reconciliation-spec.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-spec-technical-review.md .harness/plan/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan.md .harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-reconciliation-plan-technical-review.md`
   -> pass
@@ -172,10 +182,10 @@ External provider documentation checked on 2026-05-09:
 | Project | `coding-harness` |
 | Initiative | `Dev Portfolio` |
 | Milestone | `Control loop hardening and flow telemetry` |
-| Execution route | Superseded after `IU-198-001`; later JSC-198 implementation phase admitted runtime classifier and test work in this PR. |
+| Execution route | Superseded by PR #235 implementation phase after `IU-198-001` inventory authorization |
 | Required first output | `.harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-inventory.md` |
 | External mutation allowed | No |
-| Runtime source edits allowed | No during `IU-198-001`; superseded by the later implementation phase for the classifier and fixture changes in this PR. |
+| Runtime source edits allowed | Superseded by PR #235 implementation phase |
 
 ## Linear Acceptance Traceability
 
@@ -188,15 +198,13 @@ External provider documentation checked on 2026-05-09:
 
 ## Recommended Next Step
 
-Historical instruction: run `he-work` for `IU-198-001` only after explicit user
-authorization. That instruction is complete and superseded by the later
-implementation phase admitted in this PR.
+Superseded by PR #235 implementation phase after explicit user authorization.
 
-The first implementation output should be:
+The first inventory output was:
 
 `.harness/review/2026-05-09-JSC-198-flow-ops-closure-evidence-inventory.md`
 
+The original first-phase ban on runtime edits is retained here as historical
+plan-gate evidence only; PR #235 superseded it for the implementation phase.
 Do not start `IU-198-002`, mutate Linear, mutate GitHub, mutate CircleCI, create
-labels, or enforce done/intake gates from this plan-gate artifact alone. Runtime
-source edits are authorized only by the later implementation phase that
-superseded this inventory-only gate.
+labels, or enforce done/intake gates without a later approval artifact.

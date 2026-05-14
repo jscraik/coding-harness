@@ -4,6 +4,24 @@ schema_version: 1
 
 # Coding Harness - AGENTS.md
 
+## Table of Contents
+- [Project Description](#project-description)
+- [Mandatory Workflow Snippet](#mandatory-workflow-snippet)
+- [Required Essentials](#required-essentials)
+- [Harness CLI for Agents](#harness-cli-for-agents)
+- [Codex Discovery Order](#codex-discovery-order)
+- [Startup Workflow](#startup-workflow)
+- [Command Preflight](#command-preflight)
+- [Fresh Worktree Bootstrap](#fresh-worktree-bootstrap)
+- [Quality Checks](#quality-checks)
+- [Repo Workflow](#repo-workflow)
+- [Instruction Routing](#instruction-routing)
+- [Memory Layer](#memory-layer)
+- [Shared Vocabulary](#shared-vocabulary)
+- [Project Brain](#project-brain)
+- [Implementation Conventions](#implementation-conventions)
+- [References](#references)
+
 ## Project Description
 
 This repository is a TypeScript control plane for agentic development and review workflows.
@@ -50,7 +68,7 @@ harness risk-tier --files src/payments.ts --json
 
 ## Codex Discovery Order
 
-1. `/Users/jamiecraik/.codex/AGENTS.md`
+1. `~/.codex/AGENTS.md`
 2. This root `AGENTS.md`
 3. Any deeper scoped `AGENTS.md` or `AGENTS.override.md`
 
@@ -146,10 +164,10 @@ Core routing (Layer 2):
 
 ## Project Brain
 
-- Use Project Brain files in `.harness/` with Local Memory; canonical guidance lives at `/Users/jamiecraik/dev/config/codex/instructions/project-brain.md`.
+- Use Project Brain files in `.harness/` with Local Memory; see [docs/agents/03-local-memory.md](./docs/agents/03-local-memory.md) for guidance.
 - `.harness/README.md` is the tracked control-plane map for selective `.harness` tracking: durable Markdown and JSON contracts move with the repo, while runtime databases, backups, caches, run output, and bulk snapshots stay local unless explicitly promoted.
 - `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` are secondary context; they do not drive implementation unless an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slice references them.
-- Bootstrap with `bash /Users/jamiecraik/dev/config/codex/scripts/init-project-brain.sh --domains cli,ci,governance,tooling --index`; use `--force` only for re-init after backing up `.harness/memory/LEARNINGS.md`.
+- Initialize Project Brain using the harness CLI (`harness brain` or `harness init` scaffolding). Run environment checks in `scripts/check-environment.sh`. See [docs/agents/20-project-brain-memory-extension-rollout.md](./docs/agents/20-project-brain-memory-extension-rollout.md) for detailed setup steps. Use `--force` only when re-initializing after backing up `.harness/memory/LEARNINGS.md`.
 - When the north-star learning loop finds a repeated high-value rule, keep the imported learning artifact as operational evidence and promote the distilled durable rule, decision, or explicit skip reason into Project Brain before closeout.
 
 ## Implementation Conventions
@@ -157,7 +175,7 @@ Core routing (Layer 2):
 - Local ESM imports must include `.js` extensions.
 - This repo publishes a harness skill to downstream repos via `harness init`; installed path is `.agents/skills/coding-harness/` in the target repo (not this repo's local skills tree). Keep skill eval cases and acceptance criteria synchronized with skill behavior changes.
 - `harness init` emits downstream PR, workflow, and worktree scaffolding with `jscraik/feature/*` as the agent-created branch prefix; keep those generated surfaces synchronized through `AGENT_BRANCH_PREFIX`.
-- Keep the repo-root code-style pack (`CODESTYLE.md` + `codestyle/`) verbatim-synced from `/Users/jamiecraik/dev/configs/codex/instructions/` and enforce integrity with `codestyle/CHECKSUMS.sha256` plus `bash scripts/check-codestyle-parity.sh`.
+- Keep the repo-root code-style pack (`CODESTYLE.md` + `codestyle/`) synchronized and enforce integrity with `codestyle/CHECKSUMS.sha256` plus `bash scripts/check-codestyle-parity.sh`.
 - Use repo script contracts: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts` (see [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)).
 
 ## References
