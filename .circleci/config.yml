@@ -204,8 +204,25 @@ workflows:
               --pr-body "$pr_body"
               --json
             )
+            # Check for branch exemptions via pattern or environment variable allowlist.
+            # LINEAR_GATE_ALLOW_BRANCHES: comma/space-separated list of branches for temporary exemptions.
+            # Use ALLOW_MISSING_BRANCH=1 for ad-hoc one-off exemptions.
+            branch_matched=false
             if [[ "$branch_name" =~ ^codex/pr[0-9]+($|[-/]) ]]; then
-              echo "linear-gate: allowing missing branch linkage for split PR branch '$branch_name'"
+              echo "linear-gate: allowing missing branch linkage for pattern-matched branch '$branch_name'"
+              branch_matched=true
+            elif [[ -n "${LINEAR_GATE_ALLOW_BRANCHES:-}" ]]; then
+              # Parse comma/space-separated allowlist
+              IFS=', ' read -ra allowed_branches < <(printf '%s\n' "${LINEAR_GATE_ALLOW_BRANCHES}")
+              for allowed_branch in "${allowed_branches[@]}"; do
+                if [[ "$branch_name" == "$allowed_branch" ]]; then
+                  echo "linear-gate: TEMPORARY EXEMPTION via LINEAR_GATE_ALLOW_BRANCHES for branch '$branch_name'"
+                  branch_matched=true
+                  break
+                fi
+              done
+            fi
+            if [[ "$branch_matched" == "true" ]]; then
               linear_gate_args=(--allow-missing-branch "${linear_gate_args[@]}")
             elif [[ "${ALLOW_MISSING_BRANCH:-0}" == "1" ]]; then
               echo "linear-gate: allowing missing branch linkage via ALLOW_MISSING_BRANCH=1"
