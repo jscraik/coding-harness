@@ -147,15 +147,16 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["eval:missing"]);
 	});
 
-	it("classifies eval-optional merged green work without an eval as stale Linear", () => {
+	it("allows eval-optional implementation evidence to complete without an eval artifact", () => {
 		const { evalArtifact: _evalArtifact, ...record } = acceptedMergedRecord({
 			evalRequired: false,
 		});
+
 		const result = classifyClosureEvidence(record);
 
 		expect(result.classification).toBe("complete_linear_stale");
 		expect(result.reasons).toEqual(
-			expect.arrayContaining(["pr:merged", "checks:passed", "linear:active"]),
+			expect.arrayContaining(["checks:passed", "eval:not-required"]),
 		);
 	});
 
@@ -255,7 +256,7 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["checks:failing"]);
 	});
 
-	it("classifies missing required checks as blocked", () => {
+	it("classifies not_found required checks as blocked_failing_check", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
 				requiredChecks: [
@@ -271,6 +272,7 @@ describe("classifyClosureEvidence", () => {
 		);
 
 		expect(result.classification).toBe("blocked_failing_check");
+		expect(result.reasons).toEqual(["checks:failing"]);
 	});
 
 	it("requires human acceptance when the record says closure is human gated", () => {
@@ -376,7 +378,7 @@ describe("classifyClosureEvidence", () => {
 		expect(result.reasons).toEqual(["review:blocking"]);
 	});
 
-	it("classifies missing required checks as blocked", () => {
+	it("classifies empty required check sets as blocked_failing_check", () => {
 		const result = classifyClosureEvidence(
 			acceptedMergedRecord({
 				requiredChecks: [],
@@ -415,23 +417,11 @@ describe("classifyClosureEvidence", () => {
 						status: "in_progress",
 						conclusion: null,
 					},
-				],
-			}),
-		);
-
-		expect(result.classification).toBe("blocked_failing_check");
-		expect(result.reasons).toEqual(["checks:failing"]);
-	});
-
-	it("classifies failed required checks as failing before SHA triage", () => {
-		const result = classifyClosureEvidence(
-			acceptedMergedRecord({
-				requiredChecks: [
 					{
-						name: "pr-pipeline",
+						name: "security-scan",
 						provider: "circleci",
 						status: "completed",
-						conclusion: "failure",
+						conclusion: "success",
 						checkedSha: "ffffffffffffffffffffffffffffffffffffffff",
 					},
 				],

@@ -39,6 +39,7 @@ describe("scaffold worktree templates", () => {
 		);
 		expect(script).toContain("scripts/check-git-common-config.sh");
 		expect(script).toContain("git fetch --quiet origin main");
+		expect(script).toContain('git merge-base --is-ancestor HEAD "$target_ref"');
 		expect(script).toContain('git merge --ff-only "$target_ref"');
 		expect(script).toContain("node scripts/setup-git-hooks.js");
 		expect(script).toContain(

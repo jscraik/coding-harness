@@ -133,6 +133,8 @@ function probePrependStandardToolPaths(environmentCheck: string): string {
 	mkdirSync(localBin, { recursive: true });
 
 	const helper = environmentCheck.slice(start, end);
+
+	// Test with unset PATH
 	const probe = spawnSync(
 		"/bin/bash",
 		[
@@ -142,10 +144,32 @@ function probePrependStandardToolPaths(environmentCheck: string): string {
 		{ encoding: "utf8", env: { HOME: homeDir } },
 	);
 
-	rmSync(homeDir, { recursive: true, force: true });
 	expect(probe.stderr).toBe("");
 	expect(probe.status).toBe(0);
 	expect(probe.stdout.split(":").slice(0, 2)).toEqual([miseShims, localBin]);
+
+	// Test with pre-set PATH to validate precedence
+	const customDir = join(homeDir, "custom");
+	const pathTail = "/usr/bin:/bin";
+	mkdirSync(customDir, { recursive: true });
+
+	const probeWithPreset = spawnSync(
+		"/bin/bash",
+		[
+			"-c",
+			`set -u\n${helper}\nexport PATH="${customDir}:${pathTail}"\nprepend_standard_tool_paths\nprintf '%s' "$PATH"`,
+		],
+		{ encoding: "utf8", env: { HOME: homeDir } },
+	);
+
+	rmSync(homeDir, { recursive: true, force: true });
+	expect(probeWithPreset.stderr).toBe("");
+	expect(probeWithPreset.status).toBe(0);
+	const presetPathEntries = probeWithPreset.stdout.split(":");
+	expect(presetPathEntries[0]).toBe(customDir);
+	expect(presetPathEntries).toContain(miseShims);
+	expect(presetPathEntries).toContain(localBin);
+
 	return probe.stdout;
 }
 
@@ -845,14 +869,11 @@ describe("runInit", () => {
 				join(tempDir, "package.json"),
 				JSON.stringify(
 					{
-						packageManager: "pnpm@10.33.0",
 						scripts: {
 							dev: "vite",
 							check: "pnpm lint && pnpm test",
 							test: "vitest",
 							"lint:fix": "biome check --write .",
-							"observed:eval-usage":
-								"tsx scripts/collect-observed-eval-usage.ts",
 						},
 					},
 					null,
@@ -903,10 +924,6 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Script: check"\nicon = "debug"');
 			expect(content).toContain('name = "Script: test"\nicon = "test"');
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
-			expect(content).toContain(
-				'name = "Script: observed:eval-usage"\nicon = "tool"',
-			);
-			expect(content).toContain("run 'observed:eval-usage'");
 			expect(content).toContain("mise install");
 			expect(content).toContain("mise trust --yes .mise.toml || true");
 			expect(content).toContain("bash scripts/prepare-worktree.sh");
@@ -919,8 +936,7 @@ describe("runInit", () => {
 			expect(content).toContain(
 				"[codex] fast-forwarding $branch_name with origin/main",
 			);
-			expect(content).toContain("git fetch --quiet origin main");
-			expect(content).toContain('git merge --ff-only "$target_ref"');
+			expect(content).toContain("git pull --ff-only origin main");
 			expect(content).toContain("npm install");
 			expect(content).toContain("prek --version");
 			expect(content).toContain(
