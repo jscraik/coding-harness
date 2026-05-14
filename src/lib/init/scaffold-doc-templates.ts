@@ -157,9 +157,9 @@ Recommended policy:
 - Prefer invoking production functions, classes, CLI commands, shell scripts, validators, or routes directly. If no existing test covers the path, create a temporary reproduction harness under \`codex-scripts/\` and keep that directory gitignored.
 - If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, record the blocker clearly, run the nearest meaningful validation, and do not describe production behavior as verified unless the touched path actually ran.
 - Treat \`scripts/new-task.sh\` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
-- Treat \`scripts/new-task.sh\` as an upstream-sync helper that fetches \`origin/<base>\` only when local refs do not already resolve the requested base.
-- Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies, canonical hook wiring, and detached-head fast-forwarding to latest \`origin/main\`.
-- Treat \`scripts/check-git-common-config.sh\` as the shared Git config guard; shared non-bare \`.git/config\` must not contain \`core.worktree\`.
+- Treat \`scripts/new-task.sh\` as a fail-closed upstream-sync helper: default-base worktrees fetch \`origin/<base>\` before creation and require explicit \`--allow-stale-base\` when a stale cached base is acceptable.
+- Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies, canonical hook wiring, remote branch collision checks, and detached-head fast-forwarding to latest \`origin/main\`.
+- Treat \`scripts/check-git-common-config.sh\` as the shared Git config guard; shared non-bare \`.git/config\` must not contain \`core.worktree\`, and repairs should run \`bash scripts/check-git-common-config.sh --repair\` so the resolved common config is fixed directly.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - For repositories with explicit \`ui\` / \`chatgpt_apps_sdk\` capabilities or matching dependency signals, install \`@brainwav/design-system-guidance\` and treat its absence as a readiness failure.
@@ -188,8 +188,8 @@ function renderContributingProjectBrainAndWrappers(
 - The wrapper always runs \`scripts/codex-preflight.sh\` in \`required\` Local Memory mode with scaffold-safe path and binary expectations.
 - \`scripts/check-codestyle-parity.sh\` is the canonical codestyle parity gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
 - \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle validation gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
-- \`scripts/new-task.sh\` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
-- \`scripts/check-git-common-config.sh\` guards shared Git config before preflight, verification, and worktree bootstrap. Shared non-bare \`.git/config\` must not contain \`core.worktree\`; worktree-local values must use per-worktree config.
+- \`scripts/new-task.sh\` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself. Its default remote-base path is fail-closed; use \`--allow-stale-base\` only when the run explicitly accepts cached-base risk.
+- \`scripts/check-git-common-config.sh\` guards shared Git config before preflight, verification, and worktree bootstrap. Shared non-bare \`.git/config\` must not contain \`core.worktree\`; repair failures with \`bash scripts/check-git-common-config.sh --repair\`, and keep worktree-local values in per-worktree config.
 - Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
 - \`scripts/codex-enforced\` should guard \`main\` by auto-creating a dedicated task worktree (via \`scripts/new-task.sh --bootstrap\`) before launching Codex for feature work.
 - Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
@@ -202,8 +202,8 @@ function renderContributingProjectBrainAndWrappers(
 - Use \`bash scripts/validate-codestyle.sh\` before handoff for the fail-closed codestyle bundle.
 - Use \`bash scripts/verify-work.sh\` for the broader verification bundle.
 - Use \`bash scripts/verify-work.sh --fast\` for preflight + codestyle fast lane coverage.
-- Before the first push from a fresh worktree, run \`bash scripts/prepare-worktree.sh\` to ensure detached checkouts are attached and fast-forwarded to latest \`origin/main\`.
-- Generated \`.codex/environments/environment.toml\` setup and \`Tools\` actions should invoke \`scripts/prepare-worktree.sh\` when available so Codex app bootstrap matches manual worktree setup.
+- Before the first push from a fresh worktree, run \`bash scripts/prepare-worktree.sh\` to ensure detached checkouts are attached with local and remote branch collision checks, then fast-forwarded to latest \`origin/main\`.
+- Generated \`.codex/environments/environment.toml\` setup, \`Tools\` actions, and tool bootstrap actions should invoke \`scripts/prepare-worktree.sh\` when available so Codex app bootstrap matches manual worktree setup.
 
 ## Repo-local harness wrapper
 

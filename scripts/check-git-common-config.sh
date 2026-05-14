@@ -6,22 +6,34 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
 usage() {
 	cat <<'USAGE'
-Usage: scripts/check-git-common-config.sh
+Usage: scripts/check-git-common-config.sh [--repair]
 
 Fail when shared Git config contains values that break linked worktrees.
+
+Options:
+  --repair   Remove shared non-bare core.worktree from the common Git config.
 USAGE
 }
 
+repair=0
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 	usage
 	exit 0
 fi
 
-if [[ $# -gt 0 ]]; then
-	echo "[check-git-common-config] unknown argument: $1" >&2
-	usage >&2
-	exit 2
-fi
+while (( $# > 0 )); do
+	case "$1" in
+		--repair)
+			repair=1
+			shift
+			;;
+		*)
+			echo "[check-git-common-config] unknown argument: $1" >&2
+			usage >&2
+			exit 2
+			;;
+	esac
+done
 
 resolve_git_dir() {
 	local git_marker="$REPO_ROOT/.git"
@@ -82,6 +94,12 @@ core_bare="$(git config --file "$common_config" --bool --get core.bare 2>/dev/nu
 core_worktree="$(git config --file "$common_config" --get core.worktree 2>/dev/null || true)"
 
 if [[ "$core_bare" != "true" && -n "$core_worktree" ]]; then
+	if [[ "$repair" -eq 1 ]]; then
+		git config --file "$common_config" --unset core.worktree
+		echo "[check-git-common-config] removed shared core.worktree from $common_config"
+		exit 0
+	fi
+
 	cat >&2 <<EOF
 Error: shared Git config contains core.worktree=$core_worktree
 
@@ -90,7 +108,10 @@ pin core.worktree, because one temp worktree can poison normal Git commands for
 the main checkout and sibling worktrees.
 
 Fix:
-  git config --local --unset core.worktree
+  bash scripts/check-git-common-config.sh --repair
+
+Manual equivalent:
+  git config --file "$common_config" --unset core.worktree
 
 Common Git config:
   $common_config

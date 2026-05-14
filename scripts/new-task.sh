@@ -17,30 +17,51 @@ Options:
   --base <ref>            Start the branch from this ref (default: main)
   --branch-prefix <name>  Branch prefix (default: codex)
   --path <dir>            Worktree path (default: ../wt-<issue-key>-<slug>)
+  --allow-stale-base      Continue from local refs when default remote-base fetch fails
   --bootstrap             Run worktree bootstrap immediately after creation
   -h, --help              Show this help text
 USAGE
 }
 
+require_option_value() {
+	local option_name="$1"
+	local option_value="${2:-}"
+	if [[ -z "$option_value" || "$option_value" == -* ]]; then
+		echo "[new-task] $option_name requires a value" >&2
+		usage >&2
+		exit 2
+	fi
+}
+
 base_ref="main"
 branch_prefix="codex"
 worktree_path=""
+explicit_worktree_path=0
+allow_stale_base=0
 bootstrap=0
 slug=""
 
 while (( $# > 0 )); do
 	case "$1" in
 		--base)
+			require_option_value "$1" "${2:-}"
 			base_ref="${2:-}"
 			shift 2
 			;;
 		--branch-prefix)
+			require_option_value "$1" "${2:-}"
 			branch_prefix="${2:-}"
 			shift 2
 			;;
 		--path)
+			require_option_value "$1" "${2:-}"
 			worktree_path="${2:-}"
+			explicit_worktree_path=1
 			shift 2
+			;;
+		--allow-stale-base)
+			allow_stale_base=1
+			shift
 			;;
 		--bootstrap)
 			bootstrap=1
@@ -119,7 +140,13 @@ elif [[ "$base_ref" != *"/"* ]]; then
 fi
 
 if [[ -z "$worktree_path" ]]; then
-	worktree_path="${REPO_ROOT}/../wt-${slug}"
+	worktree_base_path="${REPO_ROOT}/../wt-${slug}"
+	worktree_path="$worktree_base_path"
+	path_suffix=1
+	while [[ -e "$worktree_path" ]]; do
+		worktree_path="${worktree_base_path}-${path_suffix}"
+		path_suffix=$((path_suffix + 1))
+	done
 fi
 
 cd "$REPO_ROOT"
@@ -129,6 +156,11 @@ if [[ -x "$REPO_ROOT/scripts/check-git-common-config.sh" ]]; then
 fi
 
 git rev-parse --show-toplevel >/dev/null
+
+if ! git check-ref-format --branch "$branch_name" >/dev/null 2>&1; then
+	echo "[new-task] invalid git branch name: ${branch_name}" >&2
+	exit 2
+fi
 
 if git show-ref --verify --quiet "refs/heads/${branch_name}"; then
 	echo "[new-task] local branch already exists: ${branch_name}" >&2
@@ -140,7 +172,7 @@ if git remote get-url origin >/dev/null 2>&1 && git ls-remote --exit-code --head
 	exit 1
 fi
 
-if [[ -e "$worktree_path" ]]; then
+if [[ "$explicit_worktree_path" -eq 1 && -e "$worktree_path" ]]; then
 	echo "[new-task] worktree path already exists: $worktree_path" >&2
 	exit 1
 fi
@@ -151,6 +183,11 @@ if [[ -n "$remote_base_branch" ]]; then
 		if ! git fetch --prune "$remote_name" "$remote_base_branch"; then
 			if [[ "$explicit_remote_ref" -eq 1 ]]; then
 				echo "[new-task] failed to fetch explicit remote base: $base_ref" >&2
+				exit 2
+			fi
+			if [[ "$allow_stale_base" -eq 0 ]]; then
+				echo "[new-task] failed to fetch $remote_name/$remote_base_branch" >&2
+				echo "[new-task] refusing to create from stale local refs; pass --allow-stale-base to continue intentionally" >&2
 				exit 2
 			fi
 			echo "[new-task] warning: could not fetch $remote_name/$remote_base_branch; continuing with local refs" >&2
@@ -180,17 +217,25 @@ echo "[new-task] branch: ${branch_name}"
 echo "[new-task] path: $worktree_path"
 
 git worktree add "$worktree_path" -b "${branch_name}" "$resolved_base_ref"
+created_worktree=1
 
 if [[ "$bootstrap" -eq 1 ]]; then
 	echo "[new-task] bootstrapping worktree"
-	(
+	if ! (
 		cd "$worktree_path"
 		if [[ -f Makefile ]] && rg -q '^worktree-ready:' Makefile; then
 			make worktree-ready
 		else
 			bash scripts/prepare-worktree.sh
 		fi
-	)
+	); then
+		echo "[new-task] bootstrap failed; cleaning up created worktree and branch" >&2
+		if [[ "${created_worktree:-0}" -eq 1 ]]; then
+			git worktree remove --force "$worktree_path" >/dev/null 2>&1 || true
+			git branch -D "$branch_name" >/dev/null 2>&1 || true
+		fi
+		exit 1
+	fi
 fi
 
 echo

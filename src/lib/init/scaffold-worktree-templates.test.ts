@@ -39,6 +39,10 @@ describe("scaffold worktree templates", () => {
 		);
 		expect(script).toContain("scripts/check-git-common-config.sh");
 		expect(script).toContain("git fetch --quiet origin main");
+		expect(script).toContain("origin_branch_exists()");
+		expect(script).toContain(
+			'echo "[prepare-worktree] failed to check origin branch: $branch_name"',
+		);
 		expect(script).toContain('git merge-base --is-ancestor HEAD "$target_ref"');
 		expect(script).toContain('git merge --ff-only "$target_ref"');
 		expect(script).toContain("node scripts/setup-git-hooks.js");
@@ -87,7 +91,18 @@ describe("scaffold worktree templates", () => {
 		expect(script).toContain(
 			'git worktree add "$worktree_path" -b "${branch_name}" "$resolved_base_ref"',
 		);
+		expect(script).toContain("git check-ref-format --branch");
+		expect(script).toContain("--allow-stale-base");
+		expect(script).toContain("refusing to create from stale local refs");
+		expect(script).toContain(
+			'worktree_path="${worktree_base_path}-${path_suffix}"',
+		);
 		expect(script).toContain('echo "[new-task] bootstrapping worktree"');
+		expect(script).toContain(
+			'echo "[new-task] bootstrap failed; cleaning up created worktree and branch"',
+		);
+		expect(script).toContain('git worktree remove --force "$worktree_path"');
+		expect(script).toContain('git branch -D "$branch_name"');
 		expect(script).toContain("make worktree-ready");
 		expect(script).toContain("bash scripts/prepare-worktree.sh");
 		expect(script).toContain(

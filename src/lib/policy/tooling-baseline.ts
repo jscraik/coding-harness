@@ -60,6 +60,7 @@ export const REQUIRED_TOOLING_DOC_TERMS = [
 	"eslint",
 	"agent-browser",
 	"agentation",
+	"ctx7",
 	"mermaid-cli",
 	"markdownlint-cli2",
 	"wrangler",
@@ -90,6 +91,7 @@ export const REQUIRED_TOOLING_BINARIES = [
 	"eslint",
 	"agent-browser",
 	"agentation-mcp",
+	"ctx7",
 	"mmdc",
 	"markdownlint-cli2",
 	"wrangler",
@@ -117,6 +119,7 @@ export const PROJECT_MISE_REQUIRED_TOOLS = [
 	["npm:agent-browser", "0.17.1"],
 	["npm:agentation", "2.3.2"],
 	["npm:agentation-mcp", "1.2.0"],
+	["npm:ctx7", "0.4.2"],
 	["npm:@mermaid-js/mermaid-cli", "11.12.0"],
 	["npm:@brainwav/rsearch", "0.1.6"],
 	["npm:@brainwav/wsearch-cli", "0.1.9"],
@@ -155,7 +158,7 @@ export const REQUIRED_CODEX_TOOL_ACTIONS = [
 		name: "Mise",
 		icon: "tool",
 		command:
-			'command -v mise >/dev/null 2>&1\nif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then\n  current_branch="$(git symbolic-ref --short -q HEAD || true)"\n  if [ -z "$current_branch" ]; then\n    repo_slug="$(basename "$PWD" | tr \'[:upper:]\' \'[:lower:]\' | sed -E \'s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//\')"\n    if [ -z "$repo_slug" ]; then\n      repo_slug="worktree"\n    fi\n    short_sha="$(git rev-parse --short HEAD)"\n    branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"\n    branch_name="$branch_base"\n    suffix=1\n    while git show-ref --verify --quiet "refs/heads/$branch_name"; do\n      branch_name="$branch_base-$suffix"\n      suffix=$((suffix + 1))\n    done\n    echo "[codex] detached HEAD detected; creating branch $branch_name"\n    git switch -c "$branch_name"\n    if git show-ref --verify --quiet "refs/remotes/origin/main"; then\n      git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true\n      echo "[codex] tracking origin/main for $branch_name"\n      target_ref="origin/main"\n      if git fetch --quiet origin main; then\n        target_ref="FETCH_HEAD"\n      else\n        echo "[codex] could not fetch origin/main; using cached origin/main"\n      fi\n      if git merge-base --is-ancestor HEAD "$target_ref"; then\n        echo "[codex] fast-forwarding $branch_name with origin/main"\n        git merge --ff-only "$target_ref"\n      else\n        echo "[codex] $branch_name diverges from origin/main; skipping fast-forward"\n      fi\n    fi\n  fi\nfi\nmise trust --yes .mise.toml || true\nmise install',
+			'command -v mise >/dev/null 2>&1\nif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then\n  if [ -f scripts/prepare-worktree.sh ]; then\n    bash scripts/prepare-worktree.sh\n  else\n    origin_branch_exists() {\n      branch_name="$1"\n      status=0\n      if ! git remote get-url origin >/dev/null 2>&1; then\n        return 1\n      fi\n      git ls-remote --exit-code --heads origin "$branch_name" >/dev/null 2>&1 || status=$?\n      if [ "$status" -eq 0 ]; then\n        return 0\n      fi\n      if [ "$status" -eq 2 ]; then\n        return 1\n      fi\n      echo "[codex] failed to check origin branch: $branch_name" >&2\n      exit 2\n    }\n\n    current_branch="$(git symbolic-ref --short -q HEAD || true)"\n    if [ -z "$current_branch" ]; then\n      repo_slug="$(basename "$PWD" | tr \'[:upper:]\' \'[:lower:]\' | sed -E \'s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//\')"\n      if [ -z "$repo_slug" ]; then\n        repo_slug="worktree"\n      fi\n      short_sha="$(git rev-parse --short HEAD)"\n      branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"\n      branch_name="$branch_base"\n      suffix=1\n      while git show-ref --verify --quiet "refs/heads/$branch_name" || origin_branch_exists "$branch_name"; do\n        branch_name="$branch_base-$suffix"\n        suffix=$((suffix + 1))\n      done\n      echo "[codex] detached HEAD detected; creating branch $branch_name"\n      git switch -c "$branch_name"\n      if git show-ref --verify --quiet "refs/remotes/origin/main"; then\n        git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true\n        echo "[codex] tracking origin/main for $branch_name"\n        target_ref="origin/main"\n        if git fetch --quiet origin main; then\n          target_ref="FETCH_HEAD"\n        else\n          echo "[codex] could not fetch origin/main; using cached origin/main"\n        fi\n        if git merge-base --is-ancestor HEAD "$target_ref"; then\n          echo "[codex] fast-forwarding $branch_name with origin/main"\n          git merge --ff-only "$target_ref"\n        else\n          echo "[codex] $branch_name diverges from origin/main; skipping fast-forward"\n        fi\n      fi\n    fi\n  fi\nfi\nmise trust --yes .mise.toml || true\nmise install',
 	},
 	{
 		name: "Vale",
@@ -201,6 +204,11 @@ export const REQUIRED_CODEX_TOOL_ACTIONS = [
 		name: "Agentation",
 		icon: "tool",
 		command: "command -v agentation-mcp >/dev/null 2>&1\nagentation-mcp --help",
+	},
+	{
+		name: "Context7",
+		icon: "tool",
+		command: "command -v ctx7 >/dev/null 2>&1\nctx7 --help",
 	},
 	{
 		name: "Mermaid CLI",
