@@ -609,6 +609,25 @@ function validateReferencedSourceEvents(
 	value: Record<string, unknown>,
 	errors: string[],
 ): void {
+	// Check for duplicate refs in sourceEvents
+	if (Array.isArray(value.sourceEvents)) {
+		const refCounts = new Map<string, number[]>();
+		value.sourceEvents.forEach((event, index) => {
+			if (isRecord(event) && isNonEmptyString(event.ref)) {
+				const indices = refCounts.get(event.ref) || [];
+				indices.push(index);
+				refCounts.set(event.ref, indices);
+			}
+		});
+		for (const [ref, indices] of refCounts.entries()) {
+			if (indices.length > 1) {
+				errors.push(
+					`sourceEvents contains duplicate ref "${ref}" at indices ${indices.join(", ")}`,
+				);
+			}
+		}
+	}
+
 	const validRefs = sourceEventRefs(value.sourceEvents);
 	for (const [field, entries] of [
 		["changed", value.changed],
@@ -703,12 +722,14 @@ export function validateOutcomeCloseout(
 			);
 		}
 	}
-	if (
-		value.outcome === "blocked" &&
-		Array.isArray(value.blockers) &&
-		value.blockers.length === 0
-	) {
-		errors.push("blocked outcome requires at least one blocker");
+	if (value.outcome === "blocked") {
+		if (Array.isArray(value.blockers) && value.blockers.length === 0) {
+			errors.push("blocked outcome requires at least one blocker");
+		} else if (!hasCompletionBlockingBlocker(value.blockers)) {
+			errors.push(
+				"blocked outcome requires at least one completion-blocking blocker",
+			);
+		}
 	}
 	if (value.outcome === "handoff") {
 		if (Array.isArray(value.handedOff) && value.handedOff.length === 0) {
