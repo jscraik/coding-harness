@@ -59,6 +59,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   authorization, fail-closed reviewer resolution, and snapshot-only state
   evidence visible through the same agent-native cockpit surfaces before PR
   handoff
+- packaged coding-harness skill changes should keep AGENTS, README, skill
+  eval cases, and this guide synchronized so downstream agent behavior,
+  validation expectations, and anti-overfit criteria remain governed together
 
 ## Evidence and communication
 
