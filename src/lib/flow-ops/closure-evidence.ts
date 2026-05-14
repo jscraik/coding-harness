@@ -323,19 +323,22 @@ export function classifyClosureEvidence(
 		allRequiredChecksPassed(record) &&
 		evalRequirementSatisfied(record)
 	) {
+		const evalReason = requiresEval(record)
+			? "eval:valid"
+			: "eval:not-required";
 		if (isLinearActive(record.linear)) {
 			return {
 				classification: "complete_linear_stale",
 				nextAction:
 					"Recommend Linear closure after confirming human acceptance scope.",
-				reasons: ["pr:merged", "checks:passed", "eval:valid", "linear:active"],
+				reasons: ["pr:merged", "checks:passed", evalReason, "linear:active"],
 			};
 		}
 
 		return {
 			classification: "complete_ready_for_human_acceptance",
 			nextAction: "Record or confirm human acceptance for final closure.",
-			reasons: ["pr:merged", "checks:passed", "eval:valid", "linear:done"],
+			reasons: ["pr:merged", "checks:passed", evalReason, "linear:done"],
 		};
 	}
 

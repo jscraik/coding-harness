@@ -268,6 +268,7 @@ flowchart TD
     loader_test_03424671[("📚 loader.test")]
     json_schema_core_96d7e328[("📚 json-schema-core")]
     index_6_fc9e91e2[("📚 index")]
+    branch_protect_sync_570adb18[("📚 branch-protect-sync")]
     command_specs_test_7f693e85[("📚 command-specs.test")]
     command_specs_core_1c0ffc99[("📚 command-specs-core")]
     command_capabilities_a4d5c71e[("📚 command-capabilities")]
@@ -388,14 +389,14 @@ classDiagram
   class client_948fe603 {
     +src/lib/linear/client.ts
   }
+  class eval_seed_5699fd3e {
+    +src/lib/learnings/eval-seed.ts
+  }
   class validator_3_28b6e9f3 {
     +src/lib/input/validator.ts
   }
   class validation_98c41dcd {
     +src/lib/input/validation.ts
-  }
-  class eval_seed_5699fd3e {
-    +src/lib/learnings/eval-seed.ts
   }
   class sha_d600474b {
     +src/lib/github/sha.ts
@@ -1588,6 +1589,8 @@ flowchart TD
     run_records_core_89286dfa{{"run-records-core"}}
     run_record_emitter_test_5475c0da{{"run-record-emitter.test"}}
     run_record_emitter_core_688049d5{{"run-record-emitter-core"}}
+    policy_validators_core_714a3fe7{{"policy-validators-core"}}
+    json_schema_core_96d7e328{{"json-schema-core"}}
   end
   classDef eventNode fill:#db2777,color:#fff
   class cli_dispatch_test_54c9f17b,replay_ac203c98,pilot_rollback_00c1f82c,pilot_rollback_test_e61d5a2b,pilot_evaluate_test_a2ac06fc,context_health_80bb7da9,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,pilot_tracker_test_80398a66,pilot_tracker_core_80d8ac96,decision_packet_test_9ea0e97b,tracer_1e6243a2,trace_normalizer_cb1be1d2,performance_overload_c685bfcf,types_core_e405ddca,metrics_capture_core_db4bf7cf,control_plane_core_db3b4cb2,mutation_queue_ce5a530e,mutation_queue_test_10b599e8,client_1_914e1681,observed_skill_usage_ed7d5930,observed_skill_usage_test_311c215a,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,scaffold_ci_template_utils_test_b94825d9,ownership_gate_2e194d13,ci_migrate_promotion_evidence_1a2dc527,run_records_test_3ee6a0e3,run_records_core_89286dfa,run_record_emitter_test_5475c0da,run_record_emitter_core_688049d5 eventNode
@@ -1729,6 +1732,7 @@ flowchart LR
     det_detectedmemory_loader_test_03424671[("loader.test")]
     det_detectedmemory_json_schema_core_96d7e328[("json-schema-core")]
     det_detectedmemory_index_6_fc9e91e2[("index")]
+    det_detectedmemory_branch_protect_sync_570adb18[("branch-protect-sync")]
     det_detectedmemory_command_specs_test_7f693e85[("command-specs.test")]
     det_detectedmemory_command_specs_core_1c0ffc99[("command-specs-core")]
     det_detectedmemory_command_capabilities_a4d5c71e[("command-capabilities")]
