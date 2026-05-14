@@ -24,7 +24,10 @@ export interface HeValidationError {
  * @param path - Optional field path that failed validation
  * @returns A structured validation error with code derived from the message
  */
-function toValidationError(message: string, path?: string): HeValidationError {
+export function toValidationError(
+	message: string,
+	path?: string,
+): HeValidationError {
 	const error: HeValidationError = {
 		code: message,
 		severity: "error",
