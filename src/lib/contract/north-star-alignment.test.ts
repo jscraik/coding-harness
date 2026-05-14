@@ -13,7 +13,7 @@ describe("evaluateNorthStarSurfaceParity", () => {
 		riskTierRules: {},
 		northStar: {
 			mission:
-				"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				"Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff.",
 			primaryMetric: "pr_lead_time",
 			primaryBottleneck: "review_rework_loop",
 			autonomyBoundary:
@@ -102,9 +102,10 @@ describe("evaluateNorthStarSurfaceParity", () => {
 			{
 				key: "north_star_doc",
 				path: "docs/roadmap/north-star.md",
-				content: `Humans steer and agents execute safely, with PR lead time as the primary north-star metric.
-The primary bottleneck is the review and rework loop.
-Low and medium-risk autonomy should be automated.
+				content: `Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff.
+	PR lead time is the primary north-star metric.
+	The primary bottleneck is the review and rework loop.
+	Low and medium-risk autonomy should be automated.
 High-risk changes remain human-mediated.
 deterministic evidence, current-head sha discipline, bounded auto-remediation, explicit rollback paths, independent review`,
 			},

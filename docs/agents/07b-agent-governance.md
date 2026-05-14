@@ -79,7 +79,7 @@ Every agent handoff should include:
   `.harness/guardrails/north-star/drift-findings.json`, `doctor` writes
   `.harness/guardrails/north-star/surface-classification-snapshot.json`, and
   review-gate alignment decisions live at
-  `.harness/review-gate/north-star-alignment.json`.
+  `.harness/guardrails/north-star/alignment-decision.json`.
 
 When executable behavior changes, broad gates are necessary but not sufficient
 on their own. Run the smallest real executable path that exercises the exact

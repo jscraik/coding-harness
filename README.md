@@ -1,15 +1,18 @@
 # Coding Harness
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/jscraik/coding-harness/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/jscraik/coding-harness/tree/main)
-[![npm](https://img.shields.io/npm/v/@brainwav/coding-harness?label=npm)](https://www.npmjs.com/package/@brainwav/coding-harness)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/jscraik/coding-harness/badge)](https://scorecard.dev/viewer/?uri=github.com/jscraik/coding-harness)
+Status: [CircleCI main](https://app.circleci.com/pipelines/github/jscraik/coding-harness?branch=main) | [npm package](https://www.npmjs.com/package/@brainwav/coding-harness) | [Apache-2.0 license](LICENSE) | [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/jscraik/coding-harness)
 
 Coding Harness is a CLI control plane for repositories that use AI coding
-agents. Coding Harness exists to let humans steer and agents execute safely,
-with PR lead time as the primary north-star metric. Its north star is reducing
-PR lead time by shrinking the review and rework loop while keeping humans in
-the steering role and preserving strict evidence, SHA, and rollback discipline.
+agents. Coding Harness exists to let a solo developer with limited cognitive
+bandwidth orchestrate agentic software work to professional standards through
+compact orientation, executable guardrails, durable memory, and evidence-based
+handoff.
+
+Thin surface. Strong guardrails. Durable memory. Professional output.
+
+Its primary metric is PR lead time: reducing time from open to merge by
+shrinking the review and rework loop while keeping humans in the steering role
+and preserving strict evidence, SHA, and rollback discipline.
 
 It is best thought of as the layer around the agents, not the agent runtime
 itself. It helps you make a repo safer to automate by giving it a contract,
@@ -18,7 +21,7 @@ artifact-backed rollout checks.
 
 The shortest honest description of the project today is:
 
-- it helps humans steer and agents execute safely
+- it helps a solo developer steer agentic software work safely
 - it reduces PR lead time by making review and rework cheaper
 - it gives downstream repos repo-local verification and preflight scripts
 - it validates review, docs, plan, and authorization policy before merge
@@ -126,15 +129,24 @@ recommended default policy layers for team-scale operation.
 ## North Star
 
 Coding Harness is not trying to maximize governance surface area. Its canonical
-north star is to reduce PR lead time by shrinking the review and rework loop
-without weakening evidence quality, SHA discipline, or rollback safety.
+north star is the contract below; every README summary, roadmap update,
+decision question, and governed PR-body decision should derive from these same
+terms.
 
-- Humans steer. Agents execute.
-- Low and medium-risk autonomy should be automated when evidence is
-  deterministic.
-- High-risk changes remain human-mediated.
-- Repeated failures should become durable guardrails instead of repeated review
-  comments or chat reminders.
+| Contract field | Canonical meaning |
+| --- | --- |
+| Mission | Let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff. |
+| Mnemonic | Thin surface. Strong guardrails. Durable memory. Professional output. |
+| Primary metric | Reduce `PR lead time` from open to merge. |
+| Primary bottleneck | Shrink the review and rework loop. |
+| Autonomy boundary | Automate low and medium-risk work only when evidence is deterministic and rollback is clear; keep high-risk changes human-mediated. |
+| Safety floor | Preserve evidence quality, current-head SHA discipline, bounded remediation, rollback paths, and independent review. |
+| Durable learning rule | Turn repeated failures into guardrails, tests, prompts, policy checks, or explicit exceptions instead of repeated review comments or chat reminders. |
+
+That means a feature, document, policy, or artifact is north-star aligned only
+when it reduces PR lead time directly, lowers review or rework cost, removes
+manual glue work, improves agent reliability, or strengthens the safety floor.
+Adding process without one of those outcomes is not progress.
 
 The canonical statement of that contract lives in
 [docs/roadmap/north-star.md](./docs/roadmap/north-star.md).
