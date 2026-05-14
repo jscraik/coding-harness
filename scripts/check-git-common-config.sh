@@ -97,7 +97,7 @@ core_worktree="$(git config --file "$common_config" --get core.worktree 2>/dev/n
 
 if [[ "$core_bare" != "true" && -n "$core_worktree" ]]; then
 	if [[ "$repair" -eq 1 ]]; then
-		git config --file "$common_config" --unset core.worktree
+		git config --file "$common_config" --unset-all core.worktree
 		echo "[check-git-common-config] removed shared core.worktree from $common_config"
 		exit 0
 	fi
@@ -113,7 +113,7 @@ Fix:
   bash scripts/check-git-common-config.sh --repair
 
 Manual equivalent:
-  git config --file "$common_config" --unset core.worktree
+	git config --file "$common_config" --unset-all core.worktree
 
 Common Git config:
   $common_config

@@ -40,6 +40,8 @@ describe("scaffold worktree templates", () => {
 		expect(script).toContain("scripts/check-git-common-config.sh");
 		expect(script).toContain("git fetch --quiet origin main");
 		expect(script).toContain("origin_branch_exists()");
+		expect(script).toContain('if [[ "$status" -eq 0 ]]; then');
+		expect(script).toContain('if [[ "$status" -eq 2 ]]; then');
 		expect(script).toContain(
 			'echo "[prepare-worktree] failed to check origin branch: $branch_name"',
 		);
