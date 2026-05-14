@@ -25,9 +25,9 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | Validation Lane | A scoped set of required checks used to prove a specific change surface is correct and compliant. |
 | Validation Failure Classifier | A read-only classifier that turns one validation command observation into an actionable failure bucket such as introduced regression, pre-existing drift, environment/tooling failure, unrelated dirty worktree, missing credential, expected fixture stderr, or unknown failure. |
 | Outcome Closeout Schema | A machine-readable closeout packet that summarizes changed items, proof, blockers, handoffs, and claim boundaries from structured source events instead of prose-only status. |
-| North-Star Contract | The canonical mission, metric, bottleneck, autonomy boundary, safety floor, and decision rubric in `docs/roadmap/north-star.md`; summaries and governed PR decisions should derive from this contract. |
-| North-Star Mission | Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff. |
-| North-Star Mnemonic | Thin surface. Strong guardrails. Durable memory. Professional output. |
+| North-Star Contract | The canonical mission, metric, bottleneck, autonomy boundary, safety floor, and decision rubric in `docs/roadmap/north-star.md`; summaries and governed PR decisions should derive from this contract. Does the change improve or preserve durable learning and evidence capture? |
+| North-Star Mission | Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff. Does the change improve or preserve durable learning and evidence capture? |
+| North-Star Mnemonic | Thin surface. Strong guardrails. Durable memory. Professional output. Does the change improve or preserve durable learning and evidence capture? |
 | PR Lead Time | The primary north-star metric: time from PR open to merge. |
 | Review and Rework Loop | The primary bottleneck Coding Harness optimizes: finding issues, producing acceptable fixes, verifying them, and getting the PR ready to merge. |
 | Manual Glue Work | Repeated human coordination between review, remediation, verification, and merge that should become automation, guardrails, templates, or explicit exceptions. |
@@ -53,7 +53,7 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | "Swarm done" | `Artifact-first review complete` | Completion requires files, not status text alone. |
 | "The check is red" | `Validation Failure Classifier` result | Red status alone does not distinguish current-patch regressions from pre-existing drift, tooling failures, fixture output, or unrelated worktree dirt. |
 | "Can I call this done?" | Outcome Closeout Schema | Completion claims must be constrained by source events, proof, blockers, handoffs, and claim boundaries. |
-| "Is this aligned with the north star?" | `North-Star Contract` decision check | Answer against PR lead time, review/rework cost, manual glue reduction, agent reliability, and the safety floor; do not treat generic usefulness as enough. |
+| "Is this aligned with the north star?" | `North-Star Contract` decision check | Answer against PR lead time, review/rework cost, manual glue reduction, agent reliability, and the safety floor; do not treat generic usefulness as enough. Does the change improve or preserve durable learning and evidence capture? |
 | "Agents never forget" | Durable north-star guardrail | Convert repeated failures into guardrails, tests, prompts, policy checks, review-context facts, or explicit exceptions in Project Brain. |
 | "Thin surface. Strong guardrails. Durable memory. Professional output." | `North-Star Mnemonic` | Use this as the compact orientation phrase for the project, not as a replacement for the PR lead-time metric. |
 
