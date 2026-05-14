@@ -710,7 +710,6 @@ export function validateOutcomeCloseout(
 	) {
 		errors.push("blocked outcome requires at least one blocker");
 	}
-	if (
 	if (value.outcome === "handoff") {
 		if (Array.isArray(value.handedOff) && value.handedOff.length === 0) {
 			errors.push("handoff outcome requires at least one handoff");
