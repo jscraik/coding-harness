@@ -1,4 +1,5 @@
 import {
+	type HeValidationError,
 	isRecord,
 	validateBoolean,
 	validateEnum,
@@ -7,6 +8,9 @@ import {
 	validateString,
 	validateStringArray,
 } from "./validators.js";
+
+/** Re-export HeValidationError for external consumers. */
+export type { HeValidationError } from "./validators.js";
 
 /** Schema version for a single Harness Engineering phase-exit gate result. */
 export const HE_GATE_RESULT_SCHEMA_VERSION = "he-gate-result/v1" as const;
@@ -244,14 +248,40 @@ export interface HeValidationResult {
 	/** Whether the candidate satisfies the requested contract. */
 	valid: boolean;
 	/** Validation errors, empty when valid. */
-	errors: string[];
+	errors: HeValidationError[];
+}
+
+/**
+ * Convert a validation error message string to a structured HeValidationError.
+ *
+ * @param message - The human-readable validation error message
+ * @param path - Optional field path that failed validation
+ * @param gate - Optional gate identifier for gate-specific errors
+ * @returns A structured validation error with code derived from the message
+ */
+function toValidationError(
+	message: string,
+	path?: string,
+	gate?: string,
+): HeValidationError {
+	const error: HeValidationError = {
+		code: message,
+		severity: "error",
+	};
+	if (path !== undefined) {
+		error.path = path;
+	}
+	if (gate !== undefined) {
+		error.gate = gate;
+	}
+	return error;
 }
 
 type PayloadValidator = (
 	payload: Record<string, unknown>,
 	result: HeGateResult,
 	context: HePhaseContext | null,
-	errors: string[],
+	errors: HeValidationError[],
 ) => void;
 type GateSpec = {
 	validatePayload: PayloadValidator;
@@ -282,7 +312,13 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 				payload.qualityReviewed !== true ||
 				payload.efficiencyReviewed !== true
 			) {
-				errors.push("simplify must account for reuse, quality, and efficiency");
+				errors.push(
+					toValidationError(
+						"simplify must account for reuse, quality, and efficiency",
+						"payload",
+						"simplify",
+					),
+				);
 			}
 		},
 		missingPayload: () => ({
@@ -310,7 +346,13 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 				errors,
 			);
 			if (payload.testAdequacyReviewed !== true) {
-				errors.push("testing_reviewer must evaluate test adequacy");
+				errors.push(
+					toValidationError(
+						"testing_reviewer must evaluate test adequacy",
+						"payload.testAdequacyReviewed",
+						"testing_reviewer",
+					),
+				);
 			}
 		},
 		missingPayload: () => ({
@@ -344,14 +386,24 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			);
 			if (!context) return;
 			if (!context.failingEvidencePresent && isExecuted(result)) {
-				errors.push("he_fix_bugs must not run without failing evidence");
+				errors.push(
+					toValidationError(
+						"he_fix_bugs must not run without failing evidence",
+						"executionMode",
+						"he_fix_bugs",
+					),
+				);
 			}
 			if (
 				context.failingEvidencePresent &&
 				result.status === "not_applicable"
 			) {
 				errors.push(
-					"he_fix_bugs cannot be not_applicable with failing evidence",
+					toValidationError(
+						"he_fix_bugs cannot be not_applicable with failing evidence",
+						"status",
+						"he_fix_bugs",
+					),
 				);
 			}
 			if (
@@ -363,7 +415,11 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 					typeof payload.rollbackNote !== "string")
 			) {
 				errors.push(
-					"he_fix_bugs pass requires reproduction, root cause, regression protection, and rollback note",
+					toValidationError(
+						"he_fix_bugs pass requires reproduction, root cause, regression protection, and rollback note",
+						"payload",
+						"he_fix_bugs",
+					),
 				);
 			}
 		},
@@ -405,7 +461,11 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 				payload.safeToContinueReviewed !== true
 			) {
 				errors.push(
-					"he_code_review must prove findings-first traceable blocker and safe-to-continue review",
+					toValidationError(
+						"he_code_review must prove findings-first traceable blocker and safe-to-continue review",
+						"payload",
+						"he_code_review",
+					),
 				);
 			}
 		},
@@ -432,10 +492,22 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			validateNumber(payload.accountedItems, "payload.accountedItems", errors);
 			if (!context) return;
 			if (!context.reviewFeedbackPresent && isExecuted(result)) {
-				errors.push("autofix must not run without review feedback");
+				errors.push(
+					toValidationError(
+						"autofix must not run without review feedback",
+						"executionMode",
+						"autofix",
+					),
+				);
 			}
 			if (context.reviewFeedbackPresent && result.status === "not_applicable") {
-				errors.push("autofix cannot be not_applicable with review feedback");
+				errors.push(
+					toValidationError(
+						"autofix cannot be not_applicable with review feedback",
+						"status",
+						"autofix",
+					),
+				);
 			}
 			if (
 				context.reviewFeedbackPresent &&
@@ -444,7 +516,11 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 					payload.accountedItems !== payload.feedbackInventory.length)
 			) {
 				errors.push(
-					"autofix pass requires review-feedback inventory with full accounting",
+					toValidationError(
+						"autofix pass requires review-feedback inventory with full accounting",
+						"payload",
+						"autofix",
+					),
 				);
 			}
 		},
@@ -519,17 +595,22 @@ function isExecuted(result: HeGateResult): boolean {
  */
 function validateEvidenceRefs(
 	value: unknown,
-	errors: string[],
+	errors: HeValidationError[],
 ): HeEvidenceRef[] {
 	if (!Array.isArray(value)) {
-		errors.push("evidenceRefs must be an array");
+		errors.push(toValidationError("evidenceRefs must be an array", "evidenceRefs"));
 		return [];
 	}
 	const ids = new Set<string>();
 	const refs: HeEvidenceRef[] = [];
 	for (const [index, entry] of value.entries()) {
 		if (!isRecord(entry)) {
-			errors.push(`evidenceRefs[${index}] must be an object`);
+			errors.push(
+				toValidationError(
+					`evidenceRefs[${index}] must be an object`,
+					`evidenceRefs[${index}]`,
+				),
+			);
 			continue;
 		}
 		validateString(entry.id, `evidenceRefs[${index}].id`, errors);
@@ -542,14 +623,24 @@ function validateEvidenceRefs(
 		);
 		if (typeof entry.id === "string") {
 			if (ids.has(entry.id))
-				errors.push(`evidenceRefs[${index}].id must be unique`);
+				errors.push(
+					toValidationError(
+						`evidenceRefs[${index}].id must be unique`,
+						`evidenceRefs[${index}].id`,
+					),
+				);
 			ids.add(entry.id);
 		}
 		if (
 			typeof entry.kind === "string" &&
 			/^route[-_]?decision(\/v\d+)?$/i.test(entry.kind.trim())
 		) {
-			errors.push("route-decision refs are context, not gate evidence");
+			errors.push(
+				toValidationError(
+					"route-decision refs are context, not gate evidence",
+					`evidenceRefs[${index}].kind`,
+				),
+			);
 		}
 		refs.push(entry as unknown as HeEvidenceRef);
 	}
@@ -563,15 +654,23 @@ function validateEvidenceRefs(
  * @param errors - Mutable array that will be appended with human-readable validation errors.
  * @returns An array of `HeGateFinding` objects parsed from `value`; returns an empty array if `value` is not an array or entries are structurally invalid.
  */
-function validateFindings(value: unknown, errors: string[]): HeGateFinding[] {
+function validateFindings(
+	value: unknown,
+	errors: HeValidationError[],
+): HeGateFinding[] {
 	if (!Array.isArray(value)) {
-		errors.push("findings must be an array");
+		errors.push(toValidationError("findings must be an array", "findings"));
 		return [];
 	}
 	const findings: HeGateFinding[] = [];
 	for (const [index, entry] of value.entries()) {
 		if (!isRecord(entry)) {
-			errors.push(`findings[${index}] must be an object`);
+			errors.push(
+				toValidationError(
+					`findings[${index}] must be an object`,
+					`findings[${index}]`,
+				),
+			);
 			continue;
 		}
 		validateString(entry.id, `findings[${index}].id`, errors);
@@ -610,14 +709,19 @@ function validateFindings(value: unknown, errors: string[]): HeGateFinding[] {
  * @param value - The value to validate as an array of action records
  * @param errors - Accumulator array; any validation error messages are pushed into this array
  */
-function validateActions(value: unknown, errors: string[]): void {
+function validateActions(value: unknown, errors: HeValidationError[]): void {
 	if (!Array.isArray(value)) {
-		errors.push("actions must be an array");
+		errors.push(toValidationError("actions must be an array", "actions"));
 		return;
 	}
 	for (const [index, entry] of value.entries()) {
 		if (!isRecord(entry)) {
-			errors.push(`actions[${index}] must be an object`);
+			errors.push(
+				toValidationError(
+					`actions[${index}] must be an object`,
+					`actions[${index}]`,
+				),
+			);
 			continue;
 		}
 		validateString(entry.id, `actions[${index}].id`, errors);
@@ -645,14 +749,22 @@ function validateActions(value: unknown, errors: string[]): void {
  * @param value - The unknown value to validate as the `validation` array
  * @param errors - Accumulator array; validation error messages will be pushed into this array
  */
-function validateGateValidation(value: unknown, errors: string[]): void {
+function validateGateValidation(
+	value: unknown,
+	errors: HeValidationError[],
+): void {
 	if (!Array.isArray(value)) {
-		errors.push("validation must be an array");
+		errors.push(toValidationError("validation must be an array", "validation"));
 		return;
 	}
 	for (const [index, entry] of value.entries()) {
 		if (!isRecord(entry)) {
-			errors.push(`validation[${index}] must be an object`);
+			errors.push(
+				toValidationError(
+					`validation[${index}] must be an object`,
+					`validation[${index}]`,
+				),
+			);
 			continue;
 		}
 		validateString(entry.command, `validation[${index}].command`, errors);
@@ -677,10 +789,12 @@ function validateGateValidation(value: unknown, errors: string[]): void {
  */
 function validatePhaseContext(
 	value: unknown,
-	errors: string[],
+	errors: HeValidationError[],
 ): HePhaseContext | null {
 	if (!isRecord(value)) {
-		errors.push("phaseContext must be an object");
+		errors.push(
+			toValidationError("phaseContext must be an object", "phaseContext"),
+		);
 		return null;
 	}
 	validateEnum(value.phase, "phaseContext.phase", PHASES, errors);
@@ -710,19 +824,25 @@ function validatePhaseContext(
 function gateResultFromRecord(
 	value: unknown,
 	context: HePhaseContext | null,
-	errors: string[],
+	errors: HeValidationError[],
 ): HeGateResult | null {
 	if (!isRecord(value)) {
-		errors.push("gate result must be an object");
+		errors.push(toValidationError("gate result must be an object"));
 		return null;
 	}
 	if (value.schemaVersion !== HE_GATE_RESULT_SCHEMA_VERSION)
-		errors.push("schemaVersion must be he-gate-result/v1");
+		errors.push(
+			toValidationError(
+				"schemaVersion must be he-gate-result/v1",
+				"schemaVersion",
+			),
+		);
 	const gateIdValid = validateEnum(value.gateId, "gateId", HE_GATE_IDS, errors);
 	validateBoolean(value.required, "required", errors);
 	validateEnum(value.executionMode, "executionMode", EXECUTION_MODES, errors);
 	validateEnum(value.status, "status", STATUSES, errors);
-	if (!isRecord(value.payload)) errors.push("payload must be an object");
+	if (!isRecord(value.payload))
+		errors.push(toValidationError("payload must be an object", "payload"));
 	const evidenceRefs = validateEvidenceRefs(value.evidenceRefs, errors);
 	const findings = validateFindings(value.findings, errors);
 	validateActions(value.actions, errors);
@@ -755,14 +875,18 @@ function gateResultFromRecord(
 function validateGateConsistency(
 	result: HeGateResult,
 	evidenceRefs: HeEvidenceRef[],
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	if (
 		["pass", "fail", "blocked"].includes(result.status) &&
 		["not_applicable", "not_run"].includes(result.executionMode)
 	) {
 		errors.push(
-			"pass, fail, and blocked gates cannot have not_applicable or not_run executionMode",
+			toValidationError(
+				"pass, fail, and blocked gates cannot have not_applicable or not_run executionMode",
+				"executionMode",
+				result.gateId,
+			),
 		);
 	}
 	if (
@@ -770,7 +894,11 @@ function validateGateConsistency(
 		result.executionMode === "validation_only"
 	) {
 		errors.push(
-			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+			toValidationError(
+				"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
+				"executionMode",
+				result.gateId,
+			),
 		);
 	}
 	if (
@@ -778,47 +906,89 @@ function validateGateConsistency(
 		!evidenceRefs.some((ref) => ref.gateLocal)
 	) {
 		errors.push(
-			result.status === "not_applicable"
-				? "not_applicable gates require at least one gate-local evidence ref"
-				: "pass, fail, and blocked gates require at least one gate-local evidence ref",
+			toValidationError(
+				result.status === "not_applicable"
+					? "not_applicable gates require at least one gate-local evidence ref"
+					: "pass, fail, and blocked gates require at least one gate-local evidence ref",
+				"evidenceRefs",
+				result.gateId,
+			),
 		);
 	}
 	if (
 		["fail", "blocked"].includes(result.status) &&
 		!result.findings.some((finding) => finding.status === "open")
 	)
-		errors.push("failed or blocked gates require an open finding");
+		errors.push(
+			toValidationError(
+				"failed or blocked gates require an open finding",
+				"findings",
+				result.gateId,
+			),
+		);
 	if (
 		result.status === "blocked" &&
 		(typeof result.blockedReason !== "string" ||
 			result.blockedReason.trim().length === 0)
 	) {
-		errors.push("blocked gates require blockedReason");
+		errors.push(
+			toValidationError(
+				"blocked gates require blockedReason",
+				"blockedReason",
+				result.gateId,
+			),
+		);
 	}
 	if (
 		result.status === "not_applicable" &&
 		result.executionMode !== "not_applicable"
 	)
-		errors.push("not_applicable gates require not_applicable executionMode");
+		errors.push(
+			toValidationError(
+				"not_applicable gates require not_applicable executionMode",
+				"executionMode",
+				result.gateId,
+			),
+		);
 	if (
 		result.status === "not_applicable" &&
 		(typeof result.reason !== "string" || result.reason.trim().length === 0)
 	)
-		errors.push("not_applicable gates require reason");
+		errors.push(
+			toValidationError(
+				"not_applicable gates require reason",
+				"reason",
+				result.gateId,
+			),
+		);
 	if (result.status === "not_run" && result.executionMode !== "not_run")
-		errors.push("not_run gates require not_run executionMode");
+		errors.push(
+			toValidationError(
+				"not_run gates require not_run executionMode",
+				"executionMode",
+				result.gateId,
+			),
+		);
 	if (
 		result.status === "not_run" &&
 		(typeof result.reason !== "string" || result.reason.trim().length === 0)
 	)
-		errors.push("not_run gates require reason");
+		errors.push(
+			toValidationError("not_run gates require reason", "reason", result.gateId),
+		);
 	const evidenceRefIds = new Set(evidenceRefs.map((ref) => ref.id));
 	for (const finding of result.findings) {
 		if (
 			finding.evidenceRef !== null &&
 			!evidenceRefIds.has(finding.evidenceRef)
 		) {
-			errors.push(`unknown evidenceRefs.id: ${finding.evidenceRef}`);
+			errors.push(
+				toValidationError(
+					`unknown evidenceRefs.id: ${finding.evidenceRef}`,
+					"findings.evidenceRef",
+					result.gateId,
+				),
+			);
 		}
 	}
 }
@@ -830,7 +1000,7 @@ function validateGateConsistency(
  * @returns `valid` is `true` when the value conforms to the HeGateResult schema; `errors` lists validation failures otherwise
  */
 export function validateHeGateResult(value: unknown): HeValidationResult {
-	const errors: string[] = [];
+	const errors: HeValidationError[] = [];
 	gateResultFromRecord(value, null, errors);
 	return { valid: errors.length === 0, errors };
 }
@@ -844,14 +1014,17 @@ export function validateHeGateResult(value: unknown): HeValidationResult {
  * @returns An object with `valid` set to `true` when `value` satisfies the HePhaseExitInput contract, and `errors` containing human-readable validation messages otherwise.
  */
 export function validateHePhaseExitInput(value: unknown): HeValidationResult {
-	const errors: string[] = [];
+	const errors: HeValidationError[] = [];
 	if (!isRecord(value))
-		return { valid: false, errors: ["phase-exit input must be an object"] };
+		return {
+			valid: false,
+			errors: [toValidationError("phase-exit input must be an object")],
+		};
 	const context = validatePhaseContext(value.phaseContext, errors);
 	validateGateIdArray(value.requiredGates, "requiredGates", errors);
 	validateGateIdArray(value.optionalGates, "optionalGates", errors);
 	if (!Array.isArray(value.gates)) {
-		errors.push("gates must be an array");
+		errors.push(toValidationError("gates must be an array", "gates"));
 		return { valid: false, errors };
 	}
 	const requiredList = Array.isArray(value.requiredGates)
@@ -867,17 +1040,28 @@ export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 		!required.has("he_fix_bugs")
 	) {
 		errors.push(
-			"phaseContext.failingEvidencePresent requires he_fix_bugs in requiredGates",
+			toValidationError(
+				"phaseContext.failingEvidencePresent requires he_fix_bugs in requiredGates",
+				"requiredGates",
+			),
 		);
 	}
 	if (context?.reviewFeedbackPresent === true && !required.has("autofix")) {
 		errors.push(
-			"phaseContext.reviewFeedbackPresent requires autofix in requiredGates",
+			toValidationError(
+				"phaseContext.reviewFeedbackPresent requires autofix in requiredGates",
+				"requiredGates",
+			),
 		);
 	}
 	for (const gateId of required) {
 		if (optional.has(gateId)) {
-			errors.push("gate cannot be both required and optional");
+			errors.push(
+				toValidationError(
+					"gate cannot be both required and optional",
+					"requiredGates",
+				),
+			);
 		}
 	}
 	const seen = new Set<HeGateId>();
@@ -886,14 +1070,34 @@ export function validateHePhaseExitInput(value: unknown): HeValidationResult {
 		const result = gateResultFromRecord(candidate, context, errors);
 		if (!result || errors.length > before) continue;
 		if (seen.has(result.gateId))
-			errors.push(`gates[${index}].gateId must be unique`);
+			errors.push(
+				toValidationError(
+					`gates[${index}].gateId must be unique`,
+					`gates[${index}].gateId`,
+				),
+			);
 		seen.add(result.gateId);
 		if (!required.has(result.gateId) && !optional.has(result.gateId))
-			errors.push(`gates[${index}].gateId must be configured`);
+			errors.push(
+				toValidationError(
+					`gates[${index}].gateId must be configured`,
+					`gates[${index}].gateId`,
+				),
+			);
 		if (required.has(result.gateId) && result.required !== true)
-			errors.push(`gates[${index}].required must match requiredGates`);
+			errors.push(
+				toValidationError(
+					`gates[${index}].required must match requiredGates`,
+					`gates[${index}].required`,
+				),
+			);
 		if (optional.has(result.gateId) && result.required !== false)
-			errors.push(`gates[${index}].required must match optionalGates`);
+			errors.push(
+				toValidationError(
+					`gates[${index}].required must match optionalGates`,
+					`gates[${index}].required`,
+				),
+			);
 	}
 	return { valid: errors.length === 0, errors };
 }
@@ -969,11 +1173,19 @@ export function aggregateHePhaseExit(input: HePhaseExitInput): HePhaseExit {
  * @returns `valid: true` when the value conforms to the HePhaseExit/v1 contract; `valid: false` and `errors` with diagnostic messages otherwise.
  */
 export function validateHePhaseExit(value: unknown): HeValidationResult {
-	const errors: string[] = [];
+	const errors: HeValidationError[] = [];
 	if (!isRecord(value))
-		return { valid: false, errors: ["phase exit must be an object"] };
+		return {
+			valid: false,
+			errors: [toValidationError("phase exit must be an object")],
+		};
 	if (value.schemaVersion !== HE_PHASE_EXIT_SCHEMA_VERSION)
-		errors.push("schemaVersion must be he-phase-exit/v1");
+		errors.push(
+			toValidationError(
+				"schemaVersion must be he-phase-exit/v1",
+				"schemaVersion",
+			),
+		);
 	validatePhaseContext(value.phaseContext, errors);
 	validateEnum(value.recommendation, "recommendation", RECOMMENDATIONS, errors);
 	validateBoolean(value.commitAllowed, "commitAllowed", errors);
@@ -981,7 +1193,8 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 	validateStringArray(value.blockers, "blockers", errors);
 	validateStringArray(value.warnings, "warnings", errors);
 	const validatedGates: HeGateResult[] = [];
-	if (!Array.isArray(value.gates)) errors.push("gates must be an array");
+	if (!Array.isArray(value.gates))
+		errors.push(toValidationError("gates must be an array", "gates"));
 	else {
 		const seenGateIds = new Set<HeGateId>();
 		for (const [index, gate] of value.gates.entries()) {
@@ -993,7 +1206,12 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 			);
 			if (!parsedGate || errors.length > before) continue;
 			if (seenGateIds.has(parsedGate.gateId))
-				errors.push(`gates[${index}].gateId must be unique`);
+				errors.push(
+					toValidationError(
+						`gates[${index}].gateId must be unique`,
+						`gates[${index}].gateId`,
+					),
+				);
 			seenGateIds.add(parsedGate.gateId);
 			validatedGates.push(parsedGate);
 		}
@@ -1010,32 +1228,59 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 		isRecord(value.phaseContext) &&
 		value.phaseContext.phase !== "closeout"
 	)
-		errors.push("commit_blocked recommendation is only valid during closeout");
+		errors.push(
+			toValidationError(
+				"commit_blocked recommendation is only valid during closeout",
+				"recommendation",
+			),
+		);
 	if (
 		value.commitAllowed === true &&
 		value.phaseContext &&
 		isRecord(value.phaseContext) &&
 		value.phaseContext.phase !== "closeout"
 	)
-		errors.push("commitAllowed can only be true during closeout");
+		errors.push(
+			toValidationError(
+				"commitAllowed can only be true during closeout",
+				"commitAllowed",
+			),
+		);
 	if (value.commitAllowed === true && value.recommendation !== "continue")
-		errors.push("commitAllowed requires continue recommendation");
+		errors.push(
+			toValidationError(
+				"commitAllowed requires continue recommendation",
+				"commitAllowed",
+			),
+		);
 	if (value.commitAllowed === true && blockingRequiredGates.length > 0)
-		errors.push("commitAllowed requires passing required gates");
+		errors.push(
+			toValidationError(
+				"commitAllowed requires passing required gates",
+				"commitAllowed",
+			),
+		);
 	if (
 		(value.recommendation === "commit_blocked" ||
 			value.recommendation === "stop") &&
 		Array.isArray(value.blockers) &&
 		value.blockers.length === 0
 	)
-		errors.push("blocking recommendations require blocker evidence");
+		errors.push(
+			toValidationError(
+				"blocking recommendations require blocker evidence",
+				"blockers",
+			),
+		);
 	if (
 		value.commitAllowed === true &&
 		isRecord(value.phaseContext) &&
 		Array.isArray(value.blockers) &&
 		value.blockers.length > 0
 	)
-		errors.push("commitAllowed requires no blockers");
+		errors.push(
+			toValidationError("commitAllowed requires no blockers", "commitAllowed"),
+		);
 	if (
 		value.exitAllowed === true &&
 		(value.recommendation !== "continue" ||
@@ -1044,22 +1289,40 @@ export function validateHePhaseExit(value: unknown): HeValidationResult {
 			blockingRequiredGates.length > 0)
 	) {
 		errors.push(
-			"exitAllowed requires continue recommendation with no blockers and passing required gates",
+			toValidationError(
+				"exitAllowed requires continue recommendation with no blockers and passing required gates",
+				"exitAllowed",
+			),
 		);
 	}
 	if (value.recommendation === "continue" && blockingRequiredGates.length > 0)
-		errors.push("continue recommendation requires passing required gates");
+		errors.push(
+			toValidationError(
+				"continue recommendation requires passing required gates",
+				"recommendation",
+			),
+		);
 	if (
 		value.recommendation === "human_review_required" &&
 		Array.isArray(value.blockers) &&
 		value.blockers.length === 0
 	)
-		errors.push("human_review_required requires correlated blocker evidence");
+		errors.push(
+			toValidationError(
+				"human_review_required requires correlated blocker evidence",
+				"recommendation",
+			),
+		);
 	if (
 		value.recommendation === "human_review_required" &&
 		!validatedGates.some((gate) => gate.requiresHuman)
 	)
-		errors.push("human_review_required requires human gate evidence");
+		errors.push(
+			toValidationError(
+				"human_review_required requires human gate evidence",
+				"recommendation",
+			),
+		);
 	return { valid: errors.length === 0, errors };
 }
 
@@ -1122,16 +1385,19 @@ export function createMissingGateResult(
 function validateGateIdArray(
 	value: unknown,
 	field: string,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	if (!Array.isArray(value)) {
-		errors.push(`${field} must be an array`);
+		errors.push(toValidationError(`${field} must be an array`, field));
 		return;
 	}
 	const seen = new Set<HeGateId>();
 	for (const [index, entry] of value.entries()) {
 		if (validateEnum(entry, `${field}[${index}]`, HE_GATE_IDS, errors)) {
-			if (seen.has(entry)) errors.push(`${field}[${index}] must be unique`);
+			if (seen.has(entry))
+				errors.push(
+					toValidationError(`${field}[${index}] must be unique`, `${field}[${index}]`),
+				);
 			seen.add(entry);
 		}
 	}
@@ -1178,7 +1444,7 @@ function chooseRecommendation(
  */
 function invalidExit(
 	input: Pick<HePhaseExitInput, "phaseContext" | "gates">,
-	errors: string[],
+	errors: HeValidationError[],
 ): HePhaseExit {
 	return {
 		schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
@@ -1187,7 +1453,7 @@ function invalidExit(
 			input.phaseContext.phase === "closeout" ? "commit_blocked" : "stop",
 		commitAllowed: false,
 		exitAllowed: false,
-		blockers: errors,
+		blockers: errors.map((e) => e.code),
 		warnings: [],
 		gates: input.gates,
 	};

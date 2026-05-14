@@ -161,7 +161,7 @@ issue labels exist and are applied to the relevant parent issues.
 | JSC-201 | `Enforce intake and done gates for HE workflow` | Done | High | supporting_issue_done | This support issue is now completed in Linear. Use its gates as constraints while scoping the narrow JSC-198 closure-evidence slice. |
 | JSC-202 | `Add telemetry confidence score for flow reliability` | Done | High | supporting_issue_done | This support issue is now completed and should be treated as prior telemetry groundwork, not new slice scope. |
 | JSC-203 | `Build flow reconciliation dashboard and drift alerts` | Done | High | supporting_issue_done | This support issue is now completed. Preserve as evidence context while keeping the next slice narrowly focused on deterministic closure reconciliation. |
-| JSC-311 | `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` | Todo | High | next_spec_candidate | Live, unarchived, labeled, parented by `JSC-300`, and aligned with the post-JSC-301 control-plane gap. Model `$simplify`, `@testing-reviewer`, `$he-fix-bugs`, `$he-code-review`, and `$autofix` as evidence gates so phase exit and commit readiness do not rely on prompt-memory claims. |
+| JSC-311 | `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` | In Progress | High | next_spec_candidate | Live, unarchived, labeled, parented by `JSC-300`, and aligned with the post-JSC-301 control-plane gap. Model `$simplify`, `@testing-reviewer`, `$he-fix-bugs`, `$he-code-review`, and `$autofix` as evidence gates so phase exit and commit readiness do not rely on prompt-memory claims. (status refreshed 2026-05-13 to avoid routing mismatches) |
 
 ## Approved Next Slice Queue
 
@@ -258,7 +258,7 @@ Recommended Linear issue:
 | Project | `Harness cockpit routing` |
 | Priority | High |
 | Labels | Reliability, Agent-Native, Eval, Routing, Drift-Risk |
-| Status | Todo future work |
+| Status | In Progress |
 
 Scope:
 

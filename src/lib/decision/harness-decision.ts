@@ -1,5 +1,6 @@
 /** Schema version for the first agent-native decision envelope. */
 import {
+	type HeValidationError,
 	isRecord,
 	validateBoolean,
 	validateEnum,
@@ -210,7 +211,7 @@ export interface HarnessDecisionValidationResult {
 	/** Whether the candidate satisfies the v1 decision contract. */
 	valid: boolean;
 	/** Validation errors, empty when valid. */
-	errors: string[];
+	errors: HeValidationError[];
 }
 
 const VALID_STATUSES: readonly HarnessDecisionStatus[] = [
@@ -276,6 +277,27 @@ const VALID_STARTUP_COSTS: readonly HarnessDecisionStartupCost[] = [
 	"high",
 ];
 
+/**
+ * Convert a validation error message string to a structured HeValidationError.
+ *
+ * @param message - The human-readable validation error message
+ * @param path - Optional field path that failed validation
+ * @returns A structured validation error with code derived from the message
+ */
+function toValidationError(
+	message: string,
+	path?: string,
+): HeValidationError {
+	const error: HeValidationError = {
+		code: message,
+		severity: "error",
+	};
+	if (path !== undefined) {
+		error.path = path;
+	}
+	return error;
+}
+
 function isStringArray(value: unknown): value is string[] {
 	return (
 		Array.isArray(value) &&
@@ -340,10 +362,10 @@ export function buildHarnessDecision(
 function validatePermissionPlan(
 	value: unknown,
 	field: string,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	if (!isRecord(value)) {
-		errors.push(`${field} must be an object`);
+		errors.push(toValidationError(`${field} must be an object`, field));
 		return;
 	}
 	validateBoolean(value.requiresHuman, `${field}.requiresHuman`, errors);
@@ -377,7 +399,7 @@ function getOperationalPermissionPlan(
 function validateOperationalMetaConsistency(
 	decision: Record<string, unknown>,
 	meta: Record<string, unknown>,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	const permissionPlan = getOperationalPermissionPlan(meta);
 	if (!permissionPlan) return;
@@ -387,7 +409,10 @@ function validateOperationalMetaConsistency(
 		decision.requiresHuman !== permissionPlan.requiresHuman
 	) {
 		errors.push(
-			"requiresHuman must match meta.execution.permissionPlan.requiresHuman",
+			toValidationError(
+				"requiresHuman must match meta.execution.permissionPlan.requiresHuman",
+				"requiresHuman",
+			),
 		);
 	}
 	if (
@@ -396,7 +421,10 @@ function validateOperationalMetaConsistency(
 		decision.requiresNetwork !== permissionPlan.requiresNetwork
 	) {
 		errors.push(
-			"requiresNetwork must match meta.execution.permissionPlan.requiresNetwork",
+			toValidationError(
+				"requiresNetwork must match meta.execution.permissionPlan.requiresNetwork",
+				"requiresNetwork",
+			),
 		);
 	}
 	if (
@@ -405,14 +433,17 @@ function validateOperationalMetaConsistency(
 		decision.writesFiles !== permissionPlan.writesFiles
 	) {
 		errors.push(
-			"writesFiles must match meta.execution.permissionPlan.writesFiles",
+			toValidationError(
+				"writesFiles must match meta.execution.permissionPlan.writesFiles",
+				"writesFiles",
+			),
 		);
 	}
 }
 
 function validateDecisionRoutingConsistency(
 	value: Record<string, unknown>,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	const status = value.status;
 	const nextCommand = value.nextCommand;
@@ -423,13 +454,28 @@ function validateDecisionRoutingConsistency(
 		(status === "blocked" || status === "fail") &&
 		typeof failureClass !== "string"
 	) {
-		errors.push("failureClass must be set when status is blocked or fail");
+		errors.push(
+			toValidationError(
+				"failureClass must be set when status is blocked or fail",
+				"failureClass",
+			),
+		);
 	}
 	if (nextCommand === null && safeToRun === true) {
-		errors.push("safeToRun must be false when nextCommand is null");
+		errors.push(
+			toValidationError(
+				"safeToRun must be false when nextCommand is null",
+				"safeToRun",
+			),
+		);
 	}
 	if (typeof nextCommand === "string" && safeToRun !== true) {
-		errors.push("safeToRun must be true when nextCommand is set");
+		errors.push(
+			toValidationError(
+				"safeToRun must be true when nextCommand is set",
+				"safeToRun",
+			),
+		);
 	}
 	if (
 		nextCommand === null &&
@@ -438,7 +484,10 @@ function validateDecisionRoutingConsistency(
 		value.humanEscalation === null
 	) {
 		errors.push(
-			"stopConditions or humanEscalation must explain decisions without nextCommand",
+			toValidationError(
+				"stopConditions or humanEscalation must explain decisions without nextCommand",
+				"stopConditions",
+			),
 		);
 	}
 }
@@ -453,9 +502,12 @@ function validateDecisionRoutingConsistency(
 export function validateHarnessDecisionOperationalMeta(
 	value: unknown,
 ): HarnessDecisionValidationResult {
-	const errors: string[] = [];
+	const errors: HeValidationError[] = [];
 	if (!isRecord(value)) {
-		return { valid: false, errors: ["operational meta must be an object"] };
+		return {
+			valid: false,
+			errors: [toValidationError("operational meta must be an object")],
+		};
 	}
 
 	validateEnum(
@@ -466,7 +518,7 @@ export function validateHarnessDecisionOperationalMeta(
 	);
 	validateEnum(value.delayClass, "delayClass", VALID_DELAY_CLASSES, errors);
 	if (!isRecord(value.execution)) {
-		errors.push("execution must be an object");
+		errors.push(toValidationError("execution must be an object", "execution"));
 	} else {
 		validateEnum(
 			value.execution.profile,
@@ -499,17 +551,30 @@ export function validateHarnessDecisionOperationalMeta(
 export function validateHarnessDecision(
 	value: unknown,
 ): HarnessDecisionValidationResult {
-	const errors: string[] = [];
+	const errors: HeValidationError[] = [];
 	if (!isRecord(value)) {
-		return { valid: false, errors: ["decision must be an object"] };
+		return {
+			valid: false,
+			errors: [toValidationError("decision must be an object")],
+		};
 	}
 
 	if (value.schemaVersion !== HARNESS_DECISION_SCHEMA_VERSION) {
-		errors.push(`schemaVersion must be ${HARNESS_DECISION_SCHEMA_VERSION}`);
+		errors.push(
+			toValidationError(
+				`schemaVersion must be ${HARNESS_DECISION_SCHEMA_VERSION}`,
+				"schemaVersion",
+			),
+		);
 	}
 	validateString(value.producer, "producer", errors);
 	if (!VALID_STATUSES.includes(value.status as HarnessDecisionStatus)) {
-		errors.push("status must be pass, fail, blocked, or action_required");
+		errors.push(
+			toValidationError(
+				"status must be pass, fail, blocked, or action_required",
+				"status",
+			),
+		);
 	}
 	validateString(value.summary, "summary", errors);
 	validateString(value.nextAction, "nextAction", errors);
@@ -526,23 +591,42 @@ export function validateHarnessDecision(
 	validateBoolean(value.requiresNetwork, "requiresNetwork", errors);
 	validateBoolean(value.writesFiles, "writesFiles", errors);
 	if (!isStringArray(value.evidenceRef) || value.evidenceRef.length === 0) {
-		errors.push("evidenceRef must be a non-empty string array");
+		errors.push(
+			toValidationError(
+				"evidenceRef must be a non-empty string array",
+				"evidenceRef",
+			),
+		);
 	}
 	validateNullableString(value.failureClass, "failureClass", errors);
 	if (!VALID_RETRIES.includes(value.retry as HarnessDecisionRetry)) {
-		errors.push("retry must be safe, conditional, or manual");
+		errors.push(
+			toValidationError(
+				"retry must be safe, conditional, or manual",
+				"retry",
+			),
+		);
 	}
 	if (!VALID_RISK_TIERS.includes(value.riskTier as HarnessDecisionRiskTier)) {
-		errors.push("riskTier must be low, medium, high, critical, or unknown");
+		errors.push(
+			toValidationError(
+				"riskTier must be low, medium, high, critical, or unknown",
+				"riskTier",
+			),
+		);
 	}
 	validateDecisionRoutingConsistency(value, errors);
 	if (value.meta !== undefined && !isRecord(value.meta)) {
-		errors.push("meta must be an object when present");
+		errors.push(toValidationError("meta must be an object when present", "meta"));
 	}
 	if (isRecord(value.meta) && hasOperationalMetaShape(value.meta)) {
 		const metaValidation = validateHarnessDecisionOperationalMeta(value.meta);
 		if (!metaValidation.valid) {
-			errors.push(...metaValidation.errors.map((error) => `meta.${error}`));
+			errors.push(
+				...metaValidation.errors.map((error) =>
+					toValidationError(`meta.${error.code}`, `meta.${error.path ?? ""}`),
+				),
+			);
 		} else {
 			validateOperationalMetaConsistency(value, value.meta, errors);
 		}

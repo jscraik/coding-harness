@@ -3,6 +3,7 @@ import type {
 	HarnessDecisionStatus,
 } from "./harness-decision.js";
 import {
+	type HeValidationError,
 	isRecord,
 	validateBoolean,
 	validateEnum,
@@ -70,7 +71,7 @@ export interface RouteDecisionValidationResult {
 	/** Whether the candidate satisfies the `route-decision/v1` contract. */
 	valid: boolean;
 	/** Validation errors, empty when valid. */
-	errors: string[];
+	errors: HeValidationError[];
 }
 
 interface RouteDecisionLifecycleFields {
@@ -140,12 +141,33 @@ const VALID_ROUTE_STATUSES: readonly RouteDecisionStatus[] = [
 	"action_required",
 ];
 
+/**
+ * Convert a validation error message string to a structured HeValidationError.
+ *
+ * @param message - The human-readable validation error message
+ * @param path - Optional field path that failed validation
+ * @returns A structured validation error with code derived from the message
+ */
+function toValidationError(
+	message: string,
+	path?: string,
+): HeValidationError {
+	const error: HeValidationError = {
+		code: message,
+		severity: "error",
+	};
+	if (path !== undefined) {
+		error.path = path;
+	}
+	return error;
+}
+
 function validateRouteShape(
 	value: unknown,
-	errors: string[],
+	errors: HeValidationError[],
 ): Record<string, unknown> | null {
 	if (!isRecord(value)) {
-		errors.push("route must be an object");
+		errors.push(toValidationError("route must be an object", "route"));
 		return null;
 	}
 	validateEnum(value.id, "route.id", ROUTE_DECISION_IDS, errors);
@@ -158,7 +180,7 @@ function validateRouteShape(
 function validateRouteConsistency(
 	value: Record<string, unknown>,
 	route: Record<string, unknown> | null,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	const status = value.status;
 	const failureClass = value.failureClass;
@@ -166,14 +188,22 @@ function validateRouteConsistency(
 	const isBlockedOrFail = status === "blocked" || status === "fail";
 
 	if (isBlockedOrFail && typeof failureClass !== "string") {
-		errors.push("failureClass must be set when status is blocked or fail");
+		errors.push(
+			toValidationError(
+				"failureClass must be set when status is blocked or fail",
+				"failureClass",
+			),
+		);
 	}
 	if (
 		status === "pass" &&
 		(failureClass !== null || blockerBoundary !== "none")
 	) {
 		errors.push(
-			"pass routes must use failureClass null and blockerBoundary none",
+			toValidationError(
+				"pass routes must use failureClass null and blockerBoundary none",
+				"failureClass",
+			),
 		);
 	}
 	if (
@@ -182,26 +212,54 @@ function validateRouteConsistency(
 		failureClass !== null
 	) {
 		errors.push(
-			"action_required routes without blockerBoundary must use failureClass null",
+			toValidationError(
+				"action_required routes without blockerBoundary must use failureClass null",
+				"failureClass",
+			),
 		);
 	}
 	if (isBlockedOrFail && blockerBoundary === "none") {
-		errors.push("blocked or fail routes must use a non-none blockerBoundary");
+		errors.push(
+			toValidationError(
+				"blocked or fail routes must use a non-none blockerBoundary",
+				"blockerBoundary",
+			),
+		);
 	}
 	if (route?.id === "human_escalation" && value.requiresHuman !== true) {
-		errors.push("human_escalation routes must require human review");
+		errors.push(
+			toValidationError(
+				"human_escalation routes must require human review",
+				"requiresHuman",
+			),
+		);
 	}
 	if (
 		route?.id === "none" &&
 		(route.targetCommand !== null || route.targetSkill !== null)
 	) {
-		errors.push("none routes must not set targetCommand or targetSkill");
+		errors.push(
+			toValidationError(
+				"none routes must not set targetCommand or targetSkill",
+				"route",
+			),
+		);
 	}
 	if (value.mutates === true && value.requiresHuman !== true) {
-		errors.push("mutating routes must require human review");
+		errors.push(
+			toValidationError(
+				"mutating routes must require human review",
+				"requiresHuman",
+			),
+		);
 	}
 	if (isBlockedOrFail && value.safeToUse === true) {
-		errors.push("safeToUse must be false when status is blocked or fail");
+		errors.push(
+			toValidationError(
+				"safeToUse must be false when status is blocked or fail",
+				"safeToUse",
+			),
+		);
 	}
 }
 
@@ -214,17 +272,30 @@ function validateRouteConsistency(
 export function validateRouteDecision(
 	value: unknown,
 ): RouteDecisionValidationResult {
-	const errors: string[] = [];
+	const errors: HeValidationError[] = [];
 	if (!isRecord(value)) {
-		return { valid: false, errors: ["route decision must be an object"] };
+		return {
+			valid: false,
+			errors: [toValidationError("route decision must be an object")],
+		};
 	}
 
 	if (value.schemaVersion !== ROUTE_DECISION_SCHEMA_VERSION) {
-		errors.push(`schemaVersion must be ${ROUTE_DECISION_SCHEMA_VERSION}`);
+		errors.push(
+			toValidationError(
+				`schemaVersion must be ${ROUTE_DECISION_SCHEMA_VERSION}`,
+				"schemaVersion",
+			),
+		);
 	}
 	validateString(value.producer, "producer", errors);
 	if (!VALID_ROUTE_STATUSES.includes(value.status as RouteDecisionStatus)) {
-		errors.push("status must be pass, fail, blocked, or action_required");
+		errors.push(
+			toValidationError(
+				"status must be pass, fail, blocked, or action_required",
+				"status",
+			),
+		);
 	}
 	const route = validateRouteShape(value.route, errors);
 	validateNullableString(value.sourcePath, "sourcePath", errors);
@@ -243,7 +314,7 @@ export function validateRouteDecision(
 	validateStringArray(value.redactionsApplied, "redactionsApplied", errors);
 	validateStringArray(value.warnings, "warnings", errors);
 	if (value.meta !== undefined && !isRecord(value.meta)) {
-		errors.push("meta must be an object when present");
+		errors.push(toValidationError("meta must be an object when present", "meta"));
 	}
 	validateRouteConsistency(value, route, errors);
 
