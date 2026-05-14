@@ -295,6 +295,16 @@ describe("validateOutcomeCloseout", () => {
 		);
 	});
 
+	it("requires handoff outcomes to include at least one claim boundary", () => {
+		const result = validateOutcomeCloseout(
+			validCloseout({ outcome: "handoff", claimBoundaries: [] }),
+		);
+
+		expect(result.errors).toContain(
+			"handoff outcome requires at least one claim boundary",
+		);
+	});
+
 	it("requires all closeout facts to cite source references", () => {
 		const result = validateOutcomeCloseout(
 			validCloseout({
