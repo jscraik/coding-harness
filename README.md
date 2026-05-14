@@ -704,6 +704,9 @@ operator-facing contract before push.
 - **Context7 CLI:** required when current dependency documentation lookup is part
   of the agent workflow; managed through mise as `npm:ctx7` and validated by
   `scripts/check-environment.sh`
+- **Codex environment actions:** `.codex/environments/environment.toml` must
+  keep the required action/icon pairs checked by
+  `scripts/check-environment.sh`, including `Context7` and `Release Finalize`
 
 Coding Harness does **not** create secrets for you and does **not** bypass
 branch protection or review policy. It also does **not** run your CI provider

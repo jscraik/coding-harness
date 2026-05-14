@@ -60,9 +60,10 @@ reroute source modules must refresh `AI/context/diagram-context.md` in the same
 PR so agent reviewers can discover the new evidence path from the architecture
 context pack.
 When closure-evidence follow-up changes fail-closed required-check
-classification, generated Codex environment setup, or init scaffolding tests in
-one branch, keep this guide in the diff with the refreshed architecture context
-so reviewers can trace why the context pack changed.
+classification, outcome-closeout validation, generated Codex environment setup,
+or init scaffolding tests in one branch, keep this guide in the diff with the
+refreshed architecture context so reviewers can trace why the context pack
+changed.
 For release packaging changes that alter runtime dependency metadata, pass the packed CLI smoke path before publish, and commit any required `AI/context/diagram-context.md` refresh and its required docs-gate surfaces (including this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`) that pre-push or docs-gate reports.
 For formatter or linter major-version migrations, expect generated architecture context to drop newly ignored local analysis paths and refresh this guide with the committed `AI/context/diagram-context.md` update so reviewers know the architecture pack changed because tracked tooling rules changed.
 For validation gate graph changes, refresh `AI/context/diagram-context.md` and keep the validation governance surfaces synchronized (this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`) when typed gate specs, phase-exit evidence gates, parity tests, or resume-checkpoint guards are added or changed. Rollback: revert the branch to remove the typed mirror, evidence-gate contract, dispatch guard, parity tests, and synchronized doc updates.

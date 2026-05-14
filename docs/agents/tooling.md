@@ -99,6 +99,7 @@ Required action and icon mappings in
 - `Debug` -> `debug`
 - `Test` -> `test`
 - `Prek` -> `test`
+- `Release Finalize` -> `tool`
 - `Diagram` -> `tool`
 - `Ralph` -> `debug`
 - `Mise` -> `tool`
