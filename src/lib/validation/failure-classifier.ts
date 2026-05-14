@@ -94,7 +94,7 @@ const FIXTURE_PATTERNS = [
 ] as const;
 
 const PATH_PATTERN =
-	/(?:^|[\s"'(])((?:\.?[\w.-]+\/)+(?:[\w.@:+-]+)(?:\.[\w+-]+)?)/g;
+	/(?:^|[\s"'(])((?:\.?[\w.-]+\/)*(?:[\w.@:+-]+)(?:\.[\w+-]+)?)/g;
 
 function combinedOutput(observation: ValidationCommandObservation): string {
 	return [observation.stdout ?? "", observation.stderr ?? ""]
