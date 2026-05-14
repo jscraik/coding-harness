@@ -5,262 +5,24 @@
  * Supports open and resolve actions with contract-gated behavior.
  */
 
-import {
-	existsSync,
-	mkdirSync,
-	readFileSync,
-	renameSync,
-	statSync,
-	unlinkSync,
-	writeFileSync,
-} from "node:fs";
-
-import { dirname, relative, resolve, sep } from "node:path";
-
-import { loadContract } from "../lib/contract/loader.js";
-import type { PilotGapCasePolicy, RiskTier } from "../lib/contract/types.js";
-import { DEFAULT_PILOT_GAP_CASE_POLICY } from "../lib/contract/types.js";
+import type { RiskTier } from "../lib/contract/types.js";
 import type {
 	GapCaseOpenOptions,
-	GapCaseRecord,
 	GapCaseResolveOptions,
 	GapCaseResult,
-	GapCaseStoreV1,
 } from "../lib/gap-case/types.js";
 import { GAP_CASE_EXIT_CODES } from "../lib/gap-case/types.js";
-import { PathTraversalError, validatePath } from "../lib/input/validator.js";
-
-const DEFAULT_STORE_PATH = ".harness/gap-cases.v1.json";
-const MAX_STORE_SIZE_BYTES = 1024 * 1024; // 1 MiB
-
-/** Policy-supplied store paths are only honoured if they stay within this prefix. */
-const SAFE_POLICY_STORE_PREFIX = ".harness/";
-
-/**
- * Returns true if a policy-supplied storePath is within the allowed subdirectory.
- * CLI-supplied overrides bypass this check (they are operator-intentional).
- */
-function isAllowedPolicyStorePath(storePath: string): boolean {
-	const cwd = process.cwd();
-	const absolutePath = resolve(cwd, storePath);
-	try {
-		validatePath(cwd, absolutePath);
-	} catch {
-		return false;
-	}
-	const rel = relative(cwd, absolutePath).split(sep).join("/");
-	return rel.startsWith(SAFE_POLICY_STORE_PREFIX);
-}
-
-/**
- * Resolves the case-store path with policy sandboxing:
- * - Explicit CLI override is always accepted (operator-intentional).
- * - Policy-supplied path is only accepted when within .harness/.
- * - Falls back to DEFAULT_STORE_PATH otherwise.
- */
-function resolveStorePath(
-	overridePath?: string,
-	policyStorePath?: string,
-): string {
-	if (overridePath) return overridePath;
-	if (policyStorePath && isAllowedPolicyStorePath(policyStorePath))
-		return policyStorePath;
-	return DEFAULT_STORE_PATH;
-}
-
-/**
- * Generate a unique gap-case ID
- */
-function generateCaseId(): string {
-	const timestamp = Date.now().toString(36);
-	const random = Math.random().toString(36).slice(2, 8);
-	return `gc-${timestamp}-${random}`;
-}
-
-/**
- * Validate SHA format (40 hex characters)
- */
-function isValidSha(sha: string | undefined): boolean {
-	if (!sha) return false;
-	return /^[a-f0-9]{40}$/i.test(sha);
-}
-
-/**
- * Validate severity tier
- */
-function isValidSeverity(value: string): value is RiskTier {
-	return value === "high" || value === "medium" || value === "low";
-}
-
-/**
- * Validate URL format (must be HTTPS)
- */
-function isValidHttpsUrl(value: string): boolean {
-	try {
-		const url = new URL(value);
-		return url.protocol === "https:";
-	} catch {
-		return false;
-	}
-}
-
-/**
- * Load gap-case store from disk
- */
-function loadStore(storePath: string): GapCaseStoreV1 {
-	const absolutePath = resolve(storePath);
-	const cwd = process.cwd();
-
-	// Validate path stays within cwd and doesn't follow symlinks outside
-	try {
-		validatePath(cwd, absolutePath);
-	} catch (e) {
-		if (e instanceof PathTraversalError) {
-			throw new Error("Store path escapes working directory");
-		}
-		throw e;
-	}
-
-	if (!existsSync(absolutePath)) {
-		return { version: "1", cases: [] };
-	}
-
-	try {
-		const stats = statSync(absolutePath);
-		if (!stats.isFile()) {
-			throw new Error("Store path must be a regular file");
-		}
-		if (stats.size > MAX_STORE_SIZE_BYTES) {
-			throw new Error(
-				`Store file exceeds max size (${MAX_STORE_SIZE_BYTES} bytes)`,
-			);
-		}
-
-		const content = readFileSync(absolutePath, "utf-8");
-		const data = JSON.parse(content) as unknown;
-
-		// Validate structure
-		if (
-			typeof data !== "object" ||
-			data === null ||
-			(data as Record<string, unknown>).version !== "1" ||
-			!Array.isArray((data as Record<string, unknown>).cases)
-		) {
-			throw new Error("Invalid store format");
-		}
-
-		return data as GapCaseStoreV1;
-	} catch (error) {
-		const message = error instanceof Error ? error.message : "Unknown error";
-		throw new Error(`Corrupt gap-case store: ${message}`);
-	}
-}
-
-/**
- * Save gap-case store to disk.
- * Uses a write-to-temp-then-rename pattern to prevent store corruption
- * if the process is interrupted mid-write.
- */
-function saveStore(storePath: string, store: GapCaseStoreV1): void {
-	const absolutePath = resolve(storePath);
-
-	// Validate path stays within cwd (prevent traversal)
-	const cwd = process.cwd();
-	try {
-		validatePath(cwd, absolutePath);
-	} catch (e) {
-		if (e instanceof PathTraversalError) {
-			throw new Error("Store path escapes working directory");
-		}
-		throw e;
-	}
-
-	// Ensure directory exists
-	const dir = dirname(absolutePath);
-	if (!existsSync(dir)) {
-		mkdirSync(dir, { recursive: true });
-	}
-
-	// Write atomically: write to sibling temp file, then rename over target.
-	// renameSync is atomic on POSIX when src and dst are on the same filesystem,
-	// so readers always see either the old or the new content — never a partial write.
-	const tmpPath = `${absolutePath}.tmp`;
-	try {
-		writeFileSync(tmpPath, JSON.stringify(store, null, 2), "utf-8");
-		renameSync(tmpPath, absolutePath);
-	} catch (err) {
-		// Best-effort cleanup of the temp file on failure
-		try {
-			if (existsSync(tmpPath)) {
-				unlinkSync(tmpPath);
-			}
-		} catch {
-			// ignore cleanup errors
-		}
-		throw err;
-	}
-}
-
-/**
- * Find existing case by fingerprint (incidentId + sha + findingId)
- */
-function findExistingCase(
-	store: GapCaseStoreV1,
-	incidentId: string,
-	headSha?: string,
-	findingId?: string,
-): GapCaseRecord | undefined {
-	return store.cases.find((c) => {
-		if (c.incidentId !== incidentId) return false;
-		if (headSha && c.headSha !== headSha) return false;
-		if (findingId && c.findingId !== findingId) return false;
-		return true;
-	});
-}
-
-/**
- * Load gap-case policy from contract, falling back to the default.
- * Verifies that gap-case tracking is enabled.
- * @returns The loaded policy and an optional error result.
- */
-function loadGapCasePolicy(contractPath?: string): {
-	policy: PilotGapCasePolicy;
-	error?: GapCaseResult;
-} {
-	let policy = DEFAULT_PILOT_GAP_CASE_POLICY;
-	if (contractPath) {
-		try {
-			const contract = loadContract(contractPath);
-			if (contract.pilotGapCasePolicy) {
-				policy = contract.pilotGapCasePolicy;
-			}
-		} catch (error) {
-			return {
-				policy: DEFAULT_PILOT_GAP_CASE_POLICY,
-				error: {
-					ok: false,
-					error: {
-						code: "E_CONTRACT_LOAD",
-						message: `Failed to load contract: ${error instanceof Error ? error.message : "Unknown error"}`,
-					},
-				},
-			};
-		}
-	}
-	if (!policy.enabled) {
-		return {
-			policy,
-			error: {
-				ok: false,
-				error: {
-					code: "E_DISABLED",
-					message: "Gap-case tracking is disabled in policy",
-				},
-			},
-		};
-	}
-	return { policy };
-}
+import {
+	findExistingCase,
+	generateCaseId,
+	isValidHttpsUrl,
+	isValidSeverity,
+	isValidSha,
+	loadGapCasePolicy,
+	loadStore,
+	resolveStorePath,
+	saveStore,
+} from "./gap-case-internal.js";
 
 /**
  * Validate all required fields for opening a gap-case.
@@ -334,8 +96,8 @@ function validateOpenOptions(
  */
 function persistNewGapCase(
 	options: GapCaseOpenOptions,
-	policy: PilotGapCasePolicy,
-	store: GapCaseStoreV1,
+	policy: import("../lib/contract/types.js").PilotGapCasePolicy,
+	store: import("../lib/gap-case/types.js").GapCaseStoreV1,
 	storePath: string,
 ): GapCaseResult {
 	const severity = options.severity;
@@ -355,7 +117,7 @@ function persistNewGapCase(
 		Date.now() + slaHours * 60 * 60 * 1000,
 	).toISOString();
 
-	const newCase: GapCaseRecord = {
+	const newCase: import("../lib/gap-case/types.js").GapCaseRecord = {
 		id: generateCaseId(),
 		incidentId: options.incidentId.trim(),
 		status: "open",
@@ -401,7 +163,7 @@ export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
 
 	const storePath = resolveStorePath(options.storePath, policy.storePath);
 
-	let store: GapCaseStoreV1;
+	let store: import("../lib/gap-case/types.js").GapCaseStoreV1;
 	try {
 		store = loadStore(storePath);
 	} catch (error) {
@@ -433,7 +195,7 @@ export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
  */
 function validateResolveOptions(
 	options: GapCaseResolveOptions,
-	policy: PilotGapCasePolicy,
+	policy: import("../lib/contract/types.js").PilotGapCasePolicy,
 ): GapCaseResult | undefined {
 	if (!options.caseId?.trim()) {
 		return {
@@ -469,14 +231,14 @@ function validateResolveOptions(
  * Build a resolved gap-case record, update the store, and persist.
  */
 function persistResolvedGapCase(
-	existingCase: GapCaseRecord,
+	existingCase: import("../lib/gap-case/types.js").GapCaseRecord,
 	options: GapCaseResolveOptions,
-	store: GapCaseStoreV1,
+	store: import("../lib/gap-case/types.js").GapCaseStoreV1,
 	caseIndex: number,
 	storePath: string,
 ): GapCaseResult {
 	const now = new Date().toISOString();
-	const resolvedCase: GapCaseRecord = {
+	const resolvedCase: import("../lib/gap-case/types.js").GapCaseRecord = {
 		id: existingCase.id,
 		incidentId: existingCase.incidentId,
 		status: "resolved",
@@ -529,7 +291,7 @@ export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
 
 	const storePath = resolveStorePath(options.storePath, policy.storePath);
 
-	let store: GapCaseStoreV1;
+	let store: import("../lib/gap-case/types.js").GapCaseStoreV1;
 	try {
 		store = loadStore(storePath);
 	} catch (error) {

@@ -26,6 +26,7 @@
 
 ## Linting and module rules
 - Biome handles formatting and style-level lint in this repository and MUST pass where enabled.
+- Biome configuration lives in `biome.json`; when the Biome package version changes, keep the schema URL and lockfile in sync.
 - TypeScript type safety MUST be enforced with `tsc --noEmit`.
 - Downstream projects MAY use ESLint for additional policy checks when an `eslint.config.*` file exists; do not claim ESLint coverage where it is not configured.
 - Prefer ESM and explicit module syntax for Node/TS packages.

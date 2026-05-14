@@ -14,6 +14,10 @@ import {
 	validateHePhaseExitInput,
 } from "./he-phase-exit.js";
 
+function errorCodes(result: { errors: { code: string }[] }): string[] {
+	return result.errors.map((error) => error.code);
+}
+
 const closeoutContext: HePhaseContext = {
 	phase: "closeout",
 	failingEvidencePresent: false,
@@ -179,10 +183,10 @@ describe("validateHeGateResult", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"route-decision refs are context, not gate evidence",
 		);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"pass, fail, and blocked gates require at least one gate-local evidence ref",
 		);
 	});
@@ -190,20 +194,24 @@ describe("validateHeGateResult", () => {
 	it("rejects incomplete simplify accounting", () => {
 		const gate = passingGate("simplify");
 		expect(
-			validateHeGateResult({
-				...gate,
-				payload: { ...gate.payload, efficiencyReviewed: false },
-			}).errors,
+			errorCodes(
+				validateHeGateResult({
+					...gate,
+					payload: { ...gate.payload, efficiencyReviewed: false },
+				}),
+			),
 		).toContain("simplify must account for reuse, quality, and efficiency");
 	});
 
 	it("rejects incomplete he_code_review accounting", () => {
 		const gate = passingGate("he_code_review");
 		expect(
-			validateHeGateResult({
-				...gate,
-				payload: { ...gate.payload, safeToContinueReviewed: false },
-			}).errors,
+			errorCodes(
+				validateHeGateResult({
+					...gate,
+					payload: { ...gate.payload, safeToContinueReviewed: false },
+				}),
+			),
 		).toContain(
 			"he_code_review must prove findings-first traceable blocker and safe-to-continue review",
 		);
@@ -218,7 +226,7 @@ describe("validateHeGateResult", () => {
 			});
 
 			expect(result.valid).toBe(false);
-			expect(result.errors).toContain(
+			expect(errorCodes(result)).toContain(
 				"pass, fail, and blocked gates require at least one gate-local evidence ref",
 			);
 		}
@@ -232,8 +240,8 @@ describe("validateHeGateResult", () => {
 			});
 
 			expect(result.valid).toBe(false);
-			expect(result.errors).toContain("findings must be an array");
-			expect(result.errors).toContain(
+			expect(errorCodes(result)).toContain("findings must be an array");
+			expect(errorCodes(result)).toContain(
 				"failed or blocked gates require an open finding",
 			);
 		}
@@ -249,10 +257,10 @@ describe("validateHeGateResult", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"failed or blocked gates require an open finding",
 		);
-		expect(result.errors).toContain("blocked gates require blockedReason");
+		expect(errorCodes(result)).toContain("blocked gates require blockedReason");
 	});
 
 	it("rejects not_applicable gates without a reason", () => {
@@ -262,7 +270,7 @@ describe("validateHeGateResult", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain("not_applicable gates require reason");
+		expect(errorCodes(result)).toContain("not_applicable gates require reason");
 	});
 
 	it("rejects not_applicable gates without gate-local evidence", () => {
@@ -272,7 +280,7 @@ describe("validateHeGateResult", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"not_applicable gates require at least one gate-local evidence ref",
 		);
 	});
@@ -284,7 +292,7 @@ describe("validateHeGateResult", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain("not_run gates require reason");
+		expect(errorCodes(result)).toContain("not_run gates require reason");
 	});
 
 	it("accepts manual review execution mode with complete evidence", () => {
@@ -301,7 +309,7 @@ describe("validateHeGateResult", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
 		);
 	});
@@ -319,7 +327,7 @@ describe("validateHeGateResult", () => {
 			const result = validateHeGateResult(gate);
 
 			expect(result.valid).toBe(false);
-			expect(result.errors).toContain(
+			expect(errorCodes(result)).toContain(
 				"pass, fail, and blocked gates cannot have not_applicable or not_run executionMode",
 			);
 		}
@@ -343,9 +351,9 @@ describe("validateHePhaseExitInput", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain("requiredGates must be an array");
-		expect(result.errors).toContain("optionalGates must be an array");
-		expect(result.errors).toContain("gates[0].gateId must be configured");
+		expect(errorCodes(result)).toContain("requiredGates must be an array");
+		expect(errorCodes(result)).toContain("optionalGates must be an array");
+		expect(errorCodes(result)).toContain("gates[0].gateId must be configured");
 	});
 
 	it("rejects duplicate configured gates", () => {
@@ -358,7 +366,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain("gates[1].gateId must be unique");
+		expect(errorCodes(result)).toContain("gates[1].gateId must be unique");
 	});
 
 	it("rejects gate required flags that disagree with configuration", () => {
@@ -371,10 +379,10 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"gates[0].required must match requiredGates",
 		);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"gates[1].required must match optionalGates",
 		);
 	});
@@ -391,7 +399,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"he_fix_bugs cannot be not_applicable with failing evidence",
 		);
 	});
@@ -411,7 +419,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"phaseContext.failingEvidencePresent requires he_fix_bugs in requiredGates",
 		);
 	});
@@ -429,7 +437,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"he_fix_bugs must not run without failing evidence",
 		);
 	});
@@ -452,7 +460,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"he_fix_bugs pass requires reproduction, root cause, regression protection, and rollback note",
 		);
 	});
@@ -471,7 +479,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"autofix must not run without review feedback",
 		);
 	});
@@ -495,7 +503,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"autofix cannot be not_applicable with review feedback",
 		);
 	});
@@ -520,7 +528,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"phaseContext.reviewFeedbackPresent requires autofix in requiredGates",
 		);
 	});
@@ -544,7 +552,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain("unknown evidenceRefs.id: missing-id");
+		expect(errorCodes(result)).toContain("unknown evidenceRefs.id: missing-id");
 	});
 
 	it("rejects gate in both requiredGates and optionalGates", () => {
@@ -557,7 +565,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"gate cannot be both required and optional",
 		);
 	});
@@ -576,7 +584,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(true);
-		expect(result.errors).toEqual([]);
+		expect(errorCodes(result)).toEqual([]);
 	});
 
 	it("rejects manual_review gates without gate-local evidence", () => {
@@ -597,7 +605,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"pass, fail, and blocked gates require at least one gate-local evidence ref",
 		);
 	});
@@ -616,7 +624,7 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
 		);
 	});
@@ -639,10 +647,10 @@ describe("validateHePhaseExitInput", () => {
 		);
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
 		);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"pass, fail, and blocked gates require at least one gate-local evidence ref",
 		);
 	});
@@ -854,7 +862,7 @@ describe("validateHePhaseExit", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain("gates[5].gateId must be unique");
+		expect(errorCodes(result)).toContain("gates[5].gateId must be unique");
 	});
 
 	it("rejects commit-ready decisions with blocking required gate evidence", () => {
@@ -867,13 +875,13 @@ describe("validateHePhaseExit", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"commitAllowed requires passing required gates",
 		);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"exitAllowed requires continue recommendation with no blockers and passing required gates",
 		);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"continue recommendation requires passing required gates",
 		);
 	});
@@ -895,7 +903,7 @@ describe("validateHePhaseExit", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(result.errors).toContain(
+		expect(errorCodes(result)).toContain(
 			"human_review_required requires human gate evidence",
 		);
 	});
@@ -913,7 +921,7 @@ describe("validateHePhaseExit", () => {
 			});
 
 			expect(result.valid).toBe(false);
-			expect(result.errors).toContain(
+			expect(errorCodes(result)).toContain(
 				"blocking recommendations require blocker evidence",
 			);
 		}

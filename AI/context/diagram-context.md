@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-14T00:52:14Z
+Generated: 2026-05-14T00:58:16Z
 
 ## Table of Contents
 
@@ -425,6 +425,9 @@ classDiagram
 flowchart TD
   UserRequest["User request"]
   Decision{Record exists?}
+  fleet_plan_repo_ecdc6499["fleet-plan-repo"]
+  UserRequest --> fleet_plan_repo_ecdc6499
+  fleet_plan_repo_ecdc6499 --> fleet_plan_repo_ecdc6499_result["result"]
   repo_scanner_a8b2579e["repo-scanner"]
   UserRequest --> repo_scanner_a8b2579e
   repo_scanner_a8b2579e --> repo_scanner_a8b2579e_result["result"]
@@ -447,7 +450,7 @@ flowchart TD
   UserRequest --> json_schema_core_96d7e328
   json_schema_core_96d7e328 --> json_schema_core_96d7e328_result["result"]
   classDef dbNode fill:#0ea5e9,color:#fff
-  class repo_scanner_a8b2579e,repo_scanner_test_cb7e9d00,repo_scanner_core_8e9f7646,schema_migrate_c0646635,migration_8a6cead4,json_schema_74a768d7,json_schema_core_96d7e328 dbNode
+  class fleet_plan_repo_ecdc6499,repo_scanner_a8b2579e,repo_scanner_test_cb7e9d00,repo_scanner_core_8e9f7646,schema_migrate_c0646635,migration_8a6cead4,json_schema_74a768d7,json_schema_core_96d7e328 dbNode
   classDef decisionNode fill:#0284c7,color:#fff
   class Decision decisionNode
 
@@ -541,7 +544,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_symphony_check_test_6cb33eb2_e662e055
   ext_node_child_process_f62b7d19["node:child_process"] --> node_test_harness_6e520b98_6b3d1d32
   ext_node_child_process_f62b7d19["node:child_process"] --> node_test_harness_upgrade_matrix_script_test_e56b84c8_9ec5673a
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_ui_loop_11660889_bc33571d
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ui_loop_test_f0eabc42_dda19a75
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_commit_msg_43b008fe_f9560ef9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_verify_work_df70ecac_6b1b8433
@@ -583,7 +586,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_simulate_analysis_164a460c_2367e095
   ext_node_crypto_c7dfc512["node:crypto"] --> node_sources_1_e133d97d_c89b479b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_tracer_1e6243a2_cb3d802b
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_ui_loop_11660889_bc33571d
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_crypto_c7dfc512["node:crypto"] --> node_upgrade_1_b277486e_4a06b7a8
   ext_node_dns_828a0bbf["node:dns"] --> node_url_validator_3c5a1568_b9b1dc66
   ext_node_fs_a15b7d96["node:fs"] --> node_agent_first_throughput_integration_test_dc677cc4_9826cf8a
@@ -681,7 +684,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_fleet_plan_test_16f1cec9_9f6f9656
   ext_node_fs_a15b7d96["node:fs"] --> node_frontmatter_metadata_gate_6901bbe4_282d02fe
   ext_node_fs_a15b7d96["node:fs"] --> node_frontmatter_metadata_gate_test_3d0999f8_1c1f50e9
-  ext_node_fs_a15b7d96["node:fs"] --> node_gap_case_82e69111_1f16d3fe
+  ext_node_fs_a15b7d96["node:fs"] --> node_gap_case_internal_b9871ddf_dcd73f98
   ext_node_fs_a15b7d96["node:fs"] --> node_gap_case_test_e32159fb_289a4f44
   ext_node_fs_a15b7d96["node:fs"] --> node_gardener_9416a9df_87b06be0
   ext_node_fs_a15b7d96["node:fs"] --> node_gardener_test_98f0b9a5_b1b225f8
@@ -817,7 +820,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_tooling_audit_test_d2aee28c_0125bff0
   ext_node_fs_a15b7d96["node:fs"] --> node_tracer_1e6243a2_cb3d802b
   ext_node_fs_a15b7d96["node:fs"] --> node_tracer_test_cb965d81_d3b45f3f
-  ext_node_fs_a15b7d96["node:fs"] --> node_ui_loop_11660889_bc33571d
+  ext_node_fs_a15b7d96["node:fs"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_fs_a15b7d96["node:fs"] --> node_ui_loop_test_f0eabc42_dda19a75
   ext_node_fs_a15b7d96["node:fs"] --> node_ui_loop_tooling_12b2d2c7_1abedab2
   ext_node_fs_a15b7d96["node:fs"] --> node_update_core_bced358c_b710dd59
@@ -1031,7 +1034,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_fleet_plan_test_16f1cec9_9f6f9656
   ext_node_path_78811c13["node:path"] --> node_frontmatter_metadata_gate_6901bbe4_282d02fe
   ext_node_path_78811c13["node:path"] --> node_frontmatter_metadata_gate_test_3d0999f8_1c1f50e9
-  ext_node_path_78811c13["node:path"] --> node_gap_case_82e69111_1f16d3fe
+  ext_node_path_78811c13["node:path"] --> node_gap_case_internal_b9871ddf_dcd73f98
   ext_node_path_78811c13["node:path"] --> node_gap_case_test_e32159fb_289a4f44
   ext_node_path_78811c13["node:path"] --> node_gardener_9416a9df_87b06be0
   ext_node_path_78811c13["node:path"] --> node_gardener_test_98f0b9a5_b1b225f8
@@ -1160,7 +1163,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_tooling_audit_core_328d6a41_01cbc905
   ext_node_path_78811c13["node:path"] --> node_tooling_audit_test_d2aee28c_0125bff0
   ext_node_path_78811c13["node:path"] --> node_tracer_1e6243a2_cb3d802b
-  ext_node_path_78811c13["node:path"] --> node_ui_loop_11660889_bc33571d
+  ext_node_path_78811c13["node:path"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_path_78811c13["node:path"] --> node_ui_loop_tooling_12b2d2c7_1abedab2
   ext_node_path_78811c13["node:path"] --> node_update_core_bced358c_b710dd59
   ext_node_path_78811c13["node:path"] --> node_upgrade_1_b277486e_4a06b7a8
@@ -1219,7 +1222,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_scaffold_shell_templates_0ad0f915_ccc86664
   ext_node_url_d0cb3ad7["node:url"] --> node_scaffold_test_96f4ccea_81b2735c
   ext_node_url_d0cb3ad7["node:url"] --> node_scaffold_worktree_templates_66a38e9a_ff3c085c
-  ext_node_url_d0cb3ad7["node:url"] --> node_ui_loop_11660889_bc33571d
+  ext_node_url_d0cb3ad7["node:url"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_url_d0cb3ad7["node:url"] --> node_version_5ca4f385_fd75945b
   ext_os_999a3419["os"] --> node_test_inventory_repos_1d0a81a8_4af74826
   ext_os_999a3419["os"] --> node_test_rollout_check_0c81edd1_05f72b8b
@@ -1415,6 +1418,7 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_risk_tier_test_1_6f021f87_62741b76
   ext_vitest_4c9cfa13["vitest"] --> node_risk_tier_test_ae056367_e756c418
   ext_vitest_4c9cfa13["vitest"] --> node_rollback_test_5435eb9c_5b377796
+  ext_vitest_4c9cfa13["vitest"] --> node_route_decision_test_94861ac2_d0530930
   ext_vitest_4c9cfa13["vitest"] --> node_run_e2e_test_99011120_ac9bea0a
   ext_vitest_4c9cfa13["vitest"] --> node_run_local_memory_preflight_test_1d7c5aa0_f3ec9a80
   ext_vitest_4c9cfa13["vitest"] --> node_run_record_emitter_test_5475c0da_d7333a13
@@ -1949,6 +1953,8 @@ flowchart LR
   User --> ui_loop_tooling_12b2d2c7
   ui_loop_shared_8c83b841["ui-loop-shared"]
   User --> ui_loop_shared_8c83b841
+  ui_loop_internal_f2eb8892["ui-loop-internal"]
+  User --> ui_loop_internal_f2eb8892
   tooling_audit_test_d2aee28c["tooling-audit.test"]
   User --> tooling_audit_test_d2aee28c
   symphony_check_e97f2ea0["symphony-check"]
@@ -1989,10 +1995,8 @@ flowchart LR
   User --> ci_migrate_core_7005b5af
   check_environment_core_2c16213f["check-environment-core"]
   User --> check_environment_core_2c16213f
-  branch_protect_test_c8d80aab["branch-protect.test"]
-  User --> branch_protect_test_c8d80aab
   classDef userNode fill:#16a34a,color:#fff
-  class cli_dispatch_test_54c9f17b,circleci_linear_sync_19c0d6da,run_e2e_39efe696,verify_coderabbit_490b4e71,verify_coderabbit_test_46cfcf29,ui_loop_11660889,ui_loop_test_f0eabc42,ui_loop_tooling_12b2d2c7,ui_loop_shared_8c83b841,tooling_audit_test_d2aee28c,symphony_check_e97f2ea0,symphony_check_test_6cb33eb2,review_gate_test_000e2ed6,review_gate_core_4c8001f9,local_memory_preflight_test_5e323bbf,linear_workflow_test_a351dcb0,linear_workflow_core_0e19cff4,linear_triage_test_1b75a8b8,linear_triage_core_7cbca73e,linear_sync_a2fa2bf7,linear_sync_test_da1e1eab,linear_prepare_0c613ba6,linear_prepare_test_678f11a9,init_test_cbba76a6,evidence_verify_3b73c290,ci_ownership_gate_test_7b1c196d,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,check_environment_core_2c16213f,branch_protect_test_c8d80aab userNode
+  class cli_dispatch_test_54c9f17b,circleci_linear_sync_19c0d6da,run_e2e_39efe696,verify_coderabbit_490b4e71,verify_coderabbit_test_46cfcf29,ui_loop_11660889,ui_loop_test_f0eabc42,ui_loop_tooling_12b2d2c7,ui_loop_shared_8c83b841,ui_loop_internal_f2eb8892,tooling_audit_test_d2aee28c,symphony_check_e97f2ea0,symphony_check_test_6cb33eb2,review_gate_test_000e2ed6,review_gate_core_4c8001f9,local_memory_preflight_test_5e323bbf,linear_workflow_test_a351dcb0,linear_workflow_core_0e19cff4,linear_triage_test_1b75a8b8,linear_triage_core_7cbca73e,linear_sync_a2fa2bf7,linear_sync_test_da1e1eab,linear_prepare_0c613ba6,linear_prepare_test_678f11a9,init_test_cbba76a6,evidence_verify_3b73c290,ci_ownership_gate_test_7b1c196d,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,check_environment_core_2c16213f userNode
 
 ```
 
