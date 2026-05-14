@@ -2495,6 +2495,7 @@ printf '%s\\n' '{"passed":true}'
 				"eslint",
 				"agent-browser",
 				"agentation-mcp",
+				"ctx7",
 				"mmdc",
 				"markdownlint-cli2",
 				"wrangler",
