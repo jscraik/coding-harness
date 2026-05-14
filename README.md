@@ -667,9 +667,11 @@ when setup, validation routing, branch attachment, or generated test/eval
 actions change, update the operator docs that docs-gate reports before pushing
 the PR.
 If a closure-evidence merge repair also changes generated environment setup or
-init scaffolding tests, include the README, root agent guidance, security and
-governance guide, and architecture bootstrap guide in the same PR so docs-gate
-can verify the full operator-facing contract before push.
+init scaffolding tests, include the full docs-gate operator-facing documentation
+(e.g., README, CONTRIBUTING.md, root agent guidance, security and governance
+guides, tooling-policy/security surfaces, architecture bootstrap guide, and any
+other operator-facing docs) in the same PR so docs-gate can verify the full
+operator-facing contract before push.
 
 ## Requirements
 
