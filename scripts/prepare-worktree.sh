@@ -45,6 +45,8 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	exit 1
 fi
 
+# origin_branch_exists checks whether the given branch exists on the `origin` remote.
+# Returns exit status 0 if the branch exists, 1 if it does not exist, and exits with status 2 on unexpected errors (an error message is printed to stderr).
 origin_branch_exists() {
 	local branch_name="$1"
 	local status=0

@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
+# usage prints help text describing the required <issue-key>-<slug> positional argument and supported options for creating a task-specific git worktree and branch and for optionally bootstrapping it.
 usage() {
 	cat <<'USAGE'
 Usage: scripts/new-task.sh [options] <issue-key>-<slug>
@@ -23,6 +24,7 @@ Options:
 USAGE
 }
 
+# require_option_value ensures the given option has a non-empty value that does not begin with `-`; on failure it prints an error and usage to stderr and exits with status 2.
 require_option_value() {
 	local option_name="$1"
 	local option_value="${2:-}"

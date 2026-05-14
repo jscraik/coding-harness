@@ -11,6 +11,12 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { renderInstallCommand } from "./scaffold-shell-templates.js";
 
+/**
+ * Read a text file from the repository and return its contents.
+ *
+ * @param relativePath - Path to the file relative to the repository root (for example `"scripts/prepare-worktree.sh"`)
+ * @returns The file contents decoded as UTF-8
+ */
 function readRepoScript(relativePath: string): string {
 	const scriptPath = fileURLToPath(
 		new URL(`../../../${relativePath}`, import.meta.url),
@@ -41,9 +47,12 @@ export function renderPrepareWorktreeScript(packageManager: string): string {
 }
 
 /**
- * Generate a bash helper that creates a dedicated worktree and branch for one task.
+ * Return the `new-task` bash script with its default branch prefix customized.
  *
- * @returns The complete `scripts/new-task.sh` contents.
+ * The returned script is sourced from the repository template and has the default
+ * branch prefix and its prompt adjusted to `jscraik/feature`.
+ *
+ * @returns The complete `scripts/new-task.sh` contents with the default branch prefix set to `jscraik/feature`.
  */
 export function renderNewTaskScript(): string {
 	return readRepoScript("scripts/new-task.sh")

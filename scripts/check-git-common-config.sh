@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
+# usage prints the script's usage/help text, including the `--repair` option.
 usage() {
 	cat <<'USAGE'
 Usage: scripts/check-git-common-config.sh [--repair]
@@ -35,6 +36,7 @@ while (( $# > 0 )); do
 	esac
 done
 
+# resolve_git_dir determines the effective Git directory for the repository's metadata (resolving a .git file or directory) and echoes its absolute physical path, returning non-zero on error.
 resolve_git_dir() {
 	local git_marker="$REPO_ROOT/.git"
 	local git_dir=""

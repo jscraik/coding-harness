@@ -112,6 +112,15 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 `;
 }
 
+/**
+ * Generate the "Required tooling baseline" Markdown section used in contributing documentation.
+ *
+ * The section enumerates required local tooling and provides recommended repository policy and
+ * operational guidance (preflight, codestyle, verification, worktree and git config handling,
+ * task entry and prepare-worktree conventions, telemetry locations, and fail-closed behaviors).
+ *
+ * @returns The rendered Markdown string for the "Required tooling baseline" section
+ */
 function renderRequiredToolingBaseline(): string {
 	return `
 ## Required tooling baseline
@@ -166,6 +175,21 @@ Recommended policy:
 `;
 }
 
+/**
+ * Render the CONTRIBUTING.md sections describing the Project Brain scaffold and
+ * the repository-local verification and harness wrapper workflows.
+ *
+ * The returned Markdown includes guidance on Project Brain layout and files,
+ * repository verification scripts and conventions, worktree/task bootstrap
+ * commands, and harness wrapper repair instructions. Command stubs from
+ * `options` are interpolated where appropriate.
+ *
+ * @param options - Template values (command strings and policy-derived text)
+ *   used to populate repair and execution command examples in the rendered text.
+ * @returns The Markdown content for the "Project Brain workflow", "Repo-local
+ *   verification wrapper", and "Repo-local harness wrapper" sections with
+ *   `options` values inserted where required.
+ */
 function renderContributingProjectBrainAndWrappers(
 	options: ContributingTemplateOptions,
 ): string {
