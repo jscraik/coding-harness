@@ -301,8 +301,8 @@ export function shouldAutoUpdateTemplate(
 /**
  * Extracts the Biome schema version from a $schema URL.
  *
- * @param schemaUrl - The $schema URL to parse (for example: "https://biomejs.dev/schemas/2.4.14/schema.json")
- * @returns The version string (e.g. "2.4.14") if present, `undefined` otherwise
+ * @param schemaUrl - The $schema URL to parse (for example: "https://biomejs.dev/schemas/2.4.15/schema.json")
+ * @returns The version string (e.g. "2.4.15") if present, `undefined` otherwise
  */
 function extractBiomeSchemaVersion(schemaUrl: string): string | undefined {
 	const match = schemaUrl.match(/\/schemas\/([0-9]+\.[0-9]+\.[0-9]+)\//);

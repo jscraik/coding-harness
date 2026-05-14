@@ -5,6 +5,39 @@
  * every contract failure without trusting or executing payload content.
  */
 
+/** Structured validation error with metadata. */
+export interface HeValidationError {
+	/** Error code or slug identifying the error type. */
+	code: string;
+	/** Optional path to the field or element that failed validation. */
+	path?: string;
+	/** Error severity level. */
+	severity: "error" | "warning";
+	/** Optional gate identifier when the error is gate-specific. */
+	gate?: string;
+}
+
+/**
+ * Convert a validation error message string to a structured HeValidationError.
+ *
+ * @param message - The human-readable validation error message
+ * @param path - Optional field path that failed validation
+ * @returns A structured validation error with code derived from the message
+ */
+export function toValidationError(
+	message: string,
+	path?: string,
+): HeValidationError {
+	const error: HeValidationError = {
+		code: message,
+		severity: "error",
+	};
+	if (path !== undefined) {
+		error.path = path;
+	}
+	return error;
+}
+
 /**
  * Determines whether a value is a plain object (not null and not an array).
  *
@@ -25,10 +58,12 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 export function validateString(
 	value: unknown,
 	field: string,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	if (typeof value !== "string" || value.trim().length === 0) {
-		errors.push(`${field} must be a non-empty string`);
+		errors.push(
+			toValidationError(`${field} must be a non-empty string`, field),
+		);
 	}
 }
 
@@ -43,13 +78,15 @@ export function validateString(
 export function validateNullableString(
 	value: unknown,
 	field: string,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	if (
 		value !== null &&
 		(typeof value !== "string" || value.trim().length === 0)
 	) {
-		errors.push(`${field} must be a non-empty string or null`);
+		errors.push(
+			toValidationError(`${field} must be a non-empty string or null`, field),
+		);
 	}
 }
 
@@ -63,10 +100,10 @@ export function validateNullableString(
 export function validateBoolean(
 	value: unknown,
 	field: string,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	if (typeof value !== "boolean") {
-		errors.push(`${field} must be a boolean`);
+		errors.push(toValidationError(`${field} must be a boolean`, field));
 	}
 }
 
@@ -80,10 +117,12 @@ export function validateBoolean(
 export function validateNumber(
 	value: unknown,
 	field: string,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
-		errors.push(`${field} must be a non-negative integer`);
+		errors.push(
+			toValidationError(`${field} must be a non-negative integer`, field),
+		);
 	}
 }
 
@@ -99,10 +138,10 @@ export function validateNumber(
 export function validateStringArray(
 	value: unknown,
 	field: string,
-	errors: string[],
+	errors: HeValidationError[],
 ): void {
 	if (!Array.isArray(value)) {
-		errors.push(`${field} must be a string array`);
+		errors.push(toValidationError(`${field} must be a string array`, field));
 		return;
 	}
 	if (
@@ -110,7 +149,9 @@ export function validateStringArray(
 			(entry) => typeof entry !== "string" || entry.trim().length === 0,
 		)
 	) {
-		errors.push(`${field} entries must be non-empty strings`);
+		errors.push(
+			toValidationError(`${field} entries must be non-empty strings`, field),
+		);
 	}
 }
 
@@ -128,10 +169,15 @@ export function validateEnum<T extends string>(
 	value: unknown,
 	field: string,
 	validValues: readonly T[],
-	errors: string[],
+	errors: HeValidationError[],
 ): value is T {
 	if (!validValues.includes(value as T)) {
-		errors.push(`${field} must be one of ${validValues.join(", ")}`);
+		errors.push(
+			toValidationError(
+				`${field} must be one of ${validValues.join(", ")}`,
+				field,
+			),
+		);
 		return false;
 	}
 	return true;

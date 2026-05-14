@@ -5395,7 +5395,7 @@ describe("tooling version detection (JSC-57)", () => {
 	});
 
 	it("skips biome.json if existing version is newer than template", () => {
-		// Write a biome.json with a newer schema version than the template (2.4.14)
+		// Write a biome.json with a newer schema version than the template (2.4.15)
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
@@ -5420,7 +5420,7 @@ describe("tooling version detection (JSC-57)", () => {
 	});
 
 	it("overwrites biome.json if existing version is older than template", () => {
-		// Write a biome.json with an older schema version (0.5.0 is older than 2.4.14)
+		// Write a biome.json with an older schema version (0.5.0 is older than 2.4.15)
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
@@ -5439,14 +5439,14 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("2.4.14");
+		expect(biomecontent.$schema).toContain("2.4.15");
 	});
 
 	it("skips biome.json if existing version equals template version", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.4.14/schema.json",
+				$schema: "https://biomejs.dev/schemas/2.4.15/schema.json",
 			}),
 		);
 
@@ -5477,7 +5477,7 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("2.4.14");
+		expect(biomecontent.$schema).toContain("2.4.15");
 	});
 
 	it("interactive mode shows biome.json with newer version as 'skip'", () => {

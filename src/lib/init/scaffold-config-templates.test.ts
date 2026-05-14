@@ -22,7 +22,7 @@ describe("config scaffold templates", () => {
 		};
 
 		expect(parsed.$schema).toBe(
-			"https://biomejs.dev/schemas/2.4.14/schema.json",
+			"https://biomejs.dev/schemas/2.4.15/schema.json",
 		);
 		expect(parsed.files.includes).toContain("!**/node_modules");
 		expect(parsed.files.includes).toContain("!**/CODESTYLE.md");

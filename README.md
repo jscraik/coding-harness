@@ -689,6 +689,9 @@ operator-facing contract before push.
   workflows
 - **Ralph CLI:** required for environment readiness and CircleCI orb-pinning
   validation (`ralph --version`)
+- **Context7 CLI:** required when current dependency documentation lookup is part
+  of the agent workflow; managed through mise as `npm:ctx7` and validated by
+  `scripts/check-environment.sh`
 
 Coding Harness does **not** create secrets for you and does **not** bypass
 branch protection or review policy. It also does **not** run your CI provider
