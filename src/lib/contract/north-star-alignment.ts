@@ -21,8 +21,12 @@ const PRIMARY_BOTTLENECK_ALIASES = [
 ];
 
 const MISSION_CLAUSES = [
-	"humans steer and agents execute safely",
-	"PR lead time as the primary north-star metric",
+	"solo developer with limited cognitive bandwidth",
+	"agentic software work to professional standards",
+	"compact orientation",
+	"executable guardrails",
+	"durable memory",
+	"evidence-based handoff",
 ];
 
 const AUTONOMY_BOUNDARY_CLAUSES = [

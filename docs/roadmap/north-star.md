@@ -21,8 +21,15 @@ project from scratch.
 
 ## Mission
 
-Coding Harness exists to let humans steer and agents execute safely, with PR
-lead time as the primary north-star metric.
+Coding Harness exists to let a solo developer with limited cognitive bandwidth
+orchestrate agentic software work to professional standards through compact
+orientation, executable guardrails, durable memory, and evidence-based handoff.
+
+Short form: Thin surface. Strong guardrails. Durable memory. Professional
+output.
+
+PR lead time remains the primary north-star metric; the mission defines who the
+system serves and how it should feel to operate.
 
 ## Primary Metric
 

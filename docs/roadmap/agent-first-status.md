@@ -28,7 +28,11 @@ The canonical north-star contract lives in
 
 ## North-Star Snapshot
 
-- Mission: let humans steer and agents execute safely.
+- Mission: let a solo developer with limited cognitive bandwidth orchestrate
+  agentic software work to professional standards through compact orientation,
+  executable guardrails, durable memory, and evidence-based handoff.
+- Mnemonic: Thin surface. Strong guardrails. Durable memory. Professional
+  output.
 - Primary metric: PR lead time from open to merge.
 - Primary bottleneck: review and rework loop cost.
 - Boundary: low and medium-risk autonomy only; high-risk remains

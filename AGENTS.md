@@ -24,7 +24,12 @@ schema_version: 1
 
 ## Project Description
 
-This repository is a TypeScript control plane for agentic development and review workflows.
+This repository is a TypeScript control plane for agentic development and
+review workflows. Its north-star mission is to let a solo developer with
+limited cognitive bandwidth orchestrate agentic software work to professional
+standards through compact orientation, executable guardrails, durable memory,
+and evidence-based handoff. Short form: Thin surface. Strong guardrails.
+Durable memory. Professional output.
 
 ## Mandatory Workflow Snippet
 

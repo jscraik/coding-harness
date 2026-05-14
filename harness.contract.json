@@ -7,7 +7,7 @@
 		"**/*.test.ts": "low"
 	},
 	"northStar": {
-		"mission": "Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+		"mission": "Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff.",
 		"primaryMetric": "pr_lead_time",
 		"primaryBottleneck": "review_rework_loop",
 		"autonomyBoundary": "Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
