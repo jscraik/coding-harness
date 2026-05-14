@@ -41,7 +41,7 @@ This repository is a TypeScript control plane for agentic development and review
 - CircleCI owns repo-run PR governance and security checks; GitHub Actions is reserved for release publishing, and Semgrep Cloud remains an independent external required check.
 - `harness.contract.json` records this split in `ciOwnership`: CircleCI is the primary PR gate, CodeRabbit is the independent review check, Semgrep Cloud is the independent external security check, and GitHub Actions fallback/release workflows must not become automatic PR gates without an intentional contract migration.
 - Tag-triggered release publishing must install `ripgrep` (`rg`) before `pnpm check` because `docs:ubiquitous:guard` depends on it in GitHub-hosted runners.
-- Release packaging, Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger a pre-push diagram-context refresh must commit the refreshed architecture context with the docs-gate-required governance surfaces.
+- Release packaging, Flow Ops closure-evidence, outcome-closeout classification, E2E runner, or eval artifact changes that trigger a pre-push diagram-context refresh must commit the refreshed architecture context with the docs-gate-required governance surfaces.
 - Generated Codex environment action changes must keep setup PATH bootstrapping, detached-worktree branch attachment, and script-derived test/eval actions synchronized with the tooling and security governance docs.
 - Release readiness updates to governed north-star status surfaces must keep `docs/roadmap/agent-first-status.md` and the matching `harness.contract.json` `lastReviewedAt` entry synchronized.
 - Compatibility posture: canonical-only.
@@ -173,7 +173,7 @@ Core routing (Layer 2):
 ## Implementation Conventions
 
 - Local ESM imports must include `.js` extensions.
-- This repo publishes a harness skill to downstream repos via `harness init`; installed path is `.agents/skills/coding-harness/` in the target repo (not this repo's local skills tree).
+- This repo publishes a harness skill to downstream repos via `harness init`; installed path is `.agents/skills/coding-harness/` in the target repo (not this repo's local skills tree). Keep skill eval cases and acceptance criteria synchronized with skill behavior changes.
 - `harness init` emits downstream PR, workflow, and worktree scaffolding with `jscraik/feature/*` as the agent-created branch prefix; keep those generated surfaces synchronized through `AGENT_BRANCH_PREFIX`.
 - Keep the repo-root code-style pack (`CODESTYLE.md` + `codestyle/`) synchronized and enforce integrity with `codestyle/CHECKSUMS.sha256` plus `bash scripts/check-codestyle-parity.sh`.
 - Use repo script contracts: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts` (see [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)).
