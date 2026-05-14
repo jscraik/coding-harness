@@ -2495,6 +2495,7 @@ printf '%s\\n' '{"passed":true}'
 				"eslint",
 				"agent-browser",
 				"agentation-mcp",
+				"ctx7",
 				"mmdc",
 				"markdownlint-cli2",
 				"wrangler",
@@ -2843,6 +2844,311 @@ exit 1
 					rmSync(worktreePath, { recursive: true, force: true });
 				}
 			}
+		});
+
+		it("cleans up scaffolded new-task branch and worktree when bootstrap fails", () => {
+			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "", "utf-8");
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const runGit = (args: string[], cwd = tempDir) =>
+				spawnSync("git", args, {
+					cwd,
+					encoding: "utf8",
+					env: sanitizeGitEnv(),
+				});
+
+			expect(runGit(["init", "-b", "main"]).status).toBe(0);
+			expect(runGit(["config", "user.email", "test@example.com"]).status).toBe(
+				0,
+			);
+			expect(runGit(["config", "user.name", "Test User"]).status).toBe(0);
+
+			writeFileSync(join(tempDir, "README.md"), "seed\n", "utf-8");
+			writeFileSync(
+				join(tempDir, "scripts/prepare-worktree.sh"),
+				'#!/usr/bin/env bash\necho "[prepare-worktree] forced failure" >&2\nexit 42\n',
+				"utf-8",
+			);
+			expect(
+				runGit(["add", "README.md", "scripts/prepare-worktree.sh"]).status,
+			).toBe(0);
+			expect(runGit(["commit", "-m", "seed failing bootstrap"]).status).toBe(0);
+
+			const slug = `jsc-105-bootstrap-cleanup-${process.pid}`;
+			const branchName = `jscraik/feature/${slug}`;
+			const worktreePath = join(dirname(tempDir), `wt-${slug}`);
+			const taskRun = spawnSync(
+				"bash",
+				[join(tempDir, "scripts/new-task.sh"), "--bootstrap", slug],
+				{
+					cwd: tmpdir(),
+					encoding: "utf8",
+					env: sanitizeGitEnv(),
+				},
+			);
+			const output = `${taskRun.stdout}${taskRun.stderr}`;
+
+			expect(taskRun.status).toBe(1);
+			expect(output).toContain(
+				"[new-task] bootstrap failed; cleaning up created worktree and branch",
+			);
+			expect(
+				runGit(["show-ref", "--verify", "--quiet", `refs/heads/${branchName}`])
+					.status,
+			).toBe(1);
+			expect(runGit(["worktree", "list", "--porcelain"]).stdout).not.toContain(
+				worktreePath,
+			);
+			expect(existsSync(worktreePath)).toBe(false);
+		});
+
+		it("uses a suffixed scaffolded new-task path when the default path exists", () => {
+			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "", "utf-8");
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const runGit = (args: string[], cwd = tempDir) =>
+				spawnSync("git", args, {
+					cwd,
+					encoding: "utf8",
+					env: sanitizeGitEnv(),
+				});
+
+			expect(runGit(["init", "-b", "main"]).status).toBe(0);
+			expect(runGit(["config", "user.email", "test@example.com"]).status).toBe(
+				0,
+			);
+			expect(runGit(["config", "user.name", "Test User"]).status).toBe(0);
+			writeFileSync(join(tempDir, "README.md"), "seed\n", "utf-8");
+			expect(runGit(["add", "README.md"]).status).toBe(0);
+			expect(runGit(["commit", "-m", "seed main"]).status).toBe(0);
+
+			const slug = `jsc-106-path-collision-${process.pid}`;
+			const branchName = `jscraik/feature/${slug}`;
+			const defaultPath = join(dirname(realpathSync(tempDir)), `wt-${slug}`);
+			const expectedWorktreePath = `${defaultPath}-1`;
+			mkdirSync(defaultPath, { recursive: true });
+
+			try {
+				const taskRun = spawnSync(
+					"bash",
+					[join(tempDir, "scripts/new-task.sh"), "--base", "HEAD", slug],
+					{
+						cwd: tmpdir(),
+						encoding: "utf8",
+						env: sanitizeGitEnv(),
+					},
+				);
+				const output = `${taskRun.stdout}${taskRun.stderr}`;
+
+				expect(taskRun.status).toBe(0);
+				expect(output).toContain(`[new-task] path: `);
+				expect(output).toContain(`wt-${slug}-1`);
+				expect(runGit(["worktree", "list", "--porcelain"]).stdout).toContain(
+					expectedWorktreePath,
+				);
+			} finally {
+				runGit(["worktree", "remove", "--force", expectedWorktreePath]);
+				runGit(["branch", "-D", branchName]);
+				rmSync(defaultPath, { recursive: true, force: true });
+				rmSync(expectedWorktreePath, { recursive: true, force: true });
+			}
+		});
+
+		it("refuses a stale default remote base unless explicitly allowed", () => {
+			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "", "utf-8");
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const realGit = spawnSync("bash", ["-lc", "command -v git"], {
+				encoding: "utf8",
+			}).stdout.trim();
+			const fakeBin = join(tempDir, ".fake-bin");
+			const fakeGit = join(fakeBin, "git");
+			mkdirSync(fakeBin, { recursive: true });
+			writeFileSync(
+				fakeGit,
+				`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "\${1:-}" == "ls-remote" ]]; then
+	exit 2
+fi
+if [[ "\${1:-}" == "fetch" ]]; then
+	echo "fatal: simulated fetch failure" >&2
+	exit 128
+fi
+exec "\${REAL_GIT:?}" "$@"
+`,
+				"utf-8",
+			);
+			expect(spawnSync("chmod", ["+x", fakeGit]).status).toBe(0);
+
+			const runGit = (args: string[], cwd = tempDir) =>
+				spawnSync("git", args, {
+					cwd,
+					encoding: "utf8",
+					env: sanitizeGitEnv(),
+				});
+
+			expect(runGit(["init", "-b", "main"]).status).toBe(0);
+			expect(runGit(["config", "user.email", "test@example.com"]).status).toBe(
+				0,
+			);
+			expect(runGit(["config", "user.name", "Test User"]).status).toBe(0);
+			writeFileSync(join(tempDir, "README.md"), "seed\n", "utf-8");
+			expect(runGit(["add", "README.md"]).status).toBe(0);
+			expect(runGit(["commit", "-m", "seed main"]).status).toBe(0);
+			expect(
+				runGit(["remote", "add", "origin", "https://example.invalid/repo.git"])
+					.status,
+			).toBe(0);
+
+			const blockedSlug = `jsc-107-stale-base-blocked-${process.pid}`;
+			const blockedRun = spawnSync(
+				"bash",
+				[join(tempDir, "scripts/new-task.sh"), blockedSlug],
+				{
+					cwd: tmpdir(),
+					encoding: "utf8",
+					env: {
+						...sanitizeGitEnv(),
+						PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
+						REAL_GIT: realGit,
+					},
+				},
+			);
+			const blockedOutput = `${blockedRun.stdout}${blockedRun.stderr}`;
+			expect(blockedRun.status).toBe(2);
+			expect(blockedOutput).toContain(
+				"refusing to create from stale local refs",
+			);
+			expect(
+				runGit([
+					"show-ref",
+					"--verify",
+					"--quiet",
+					`refs/heads/jscraik/feature/${blockedSlug}`,
+				]).status,
+			).toBe(1);
+
+			const allowedSlug = `jsc-108-stale-base-allowed-${process.pid}`;
+			const allowedWorktreePath = join(
+				dirname(realpathSync(tempDir)),
+				`wt-${allowedSlug}`,
+			);
+			try {
+				const allowedRun = spawnSync(
+					"bash",
+					[
+						join(tempDir, "scripts/new-task.sh"),
+						"--allow-stale-base",
+						allowedSlug,
+					],
+					{
+						cwd: tmpdir(),
+						encoding: "utf8",
+						env: {
+							...sanitizeGitEnv(),
+							PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
+							REAL_GIT: realGit,
+						},
+					},
+				);
+				const allowedOutput = `${allowedRun.stdout}${allowedRun.stderr}`;
+				expect(allowedRun.status).toBe(0);
+				expect(allowedOutput).toContain(
+					"warning: could not fetch origin/main; continuing with local refs",
+				);
+				expect(runGit(["worktree", "list", "--porcelain"]).stdout).toContain(
+					allowedWorktreePath,
+				);
+			} finally {
+				runGit(["worktree", "remove", "--force", allowedWorktreePath]);
+				runGit(["branch", "-D", `jscraik/feature/${allowedSlug}`]);
+			}
+		});
+
+		it("fails closed when detached prepare-worktree cannot check origin branch names", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				'{"private":true}\n',
+				"utf-8",
+			);
+			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "", "utf-8");
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const realGit = spawnSync("bash", ["-lc", "command -v git"], {
+				encoding: "utf8",
+			}).stdout.trim();
+			const fakeBin = join(tempDir, ".fake-bin");
+			mkdirSync(fakeBin, { recursive: true });
+			writeFileSync(
+				join(fakeBin, "git"),
+				`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "\${1:-}" == "ls-remote" ]]; then
+	echo "fatal: simulated remote lookup failure" >&2
+	exit 128
+fi
+exec "\${REAL_GIT:?}" "$@"
+`,
+				"utf-8",
+			);
+			writeFileSync(
+				join(fakeBin, "pnpm"),
+				"#!/usr/bin/env bash\nexit 0\n",
+				"utf-8",
+			);
+			for (const toolPath of [join(fakeBin, "git"), join(fakeBin, "pnpm")]) {
+				expect(spawnSync("chmod", ["+x", toolPath]).status).toBe(0);
+			}
+
+			const runGit = (args: string[], cwd = tempDir) =>
+				spawnSync("git", args, {
+					cwd,
+					encoding: "utf8",
+					env: sanitizeGitEnv(),
+				});
+
+			expect(runGit(["init", "-b", "main"]).status).toBe(0);
+			expect(runGit(["config", "user.email", "test@example.com"]).status).toBe(
+				0,
+			);
+			expect(runGit(["config", "user.name", "Test User"]).status).toBe(0);
+			writeFileSync(join(tempDir, "README.md"), "seed\n", "utf-8");
+			expect(runGit(["add", "."]).status).toBe(0);
+			expect(runGit(["commit", "-m", "seed detached prep"]).status).toBe(0);
+			expect(
+				runGit(["remote", "add", "origin", "https://example.invalid/repo.git"])
+					.status,
+			).toBe(0);
+			expect(runGit(["checkout", "--detach", "HEAD"]).status).toBe(0);
+
+			const prepareRun = spawnSync(
+				"bash",
+				[join(tempDir, "scripts/prepare-worktree.sh")],
+				{
+					cwd: tmpdir(),
+					encoding: "utf8",
+					env: {
+						...sanitizeGitEnv(),
+						PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
+						REAL_GIT: realGit,
+					},
+				},
+			);
+			const output = `${prepareRun.stdout}${prepareRun.stderr}`;
+			expect(prepareRun.status).toBe(2);
+			expect(output).toContain(
+				"[prepare-worktree] failed to check origin branch:",
+			);
+			expect(runGit(["symbolic-ref", "--short", "-q", "HEAD"]).stdout).toBe("");
 		});
 
 		it("passes the scaffolded repo-local verify-work wrapper outside /codex", () => {

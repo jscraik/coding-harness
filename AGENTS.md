@@ -100,8 +100,9 @@ Notes:
 
 ## Fresh Worktree Bootstrap
 
-- Before the first push from a newly created git worktree, run `bash scripts/prepare-worktree.sh` (or `make worktree-ready`).
-- `scripts/check-git-common-config.sh` is a required worktree-safety guard: shared non-bare `.git/config` must not contain `core.worktree`; use per-worktree config for worktree-local values.
+- Before the first push from a newly created git worktree, run `bash scripts/prepare-worktree.sh` (or `make worktree-ready`); detached Codex app worktrees are disposable by default, and this repo attaches them to a deterministic local branch only when branch-aware validation, commits, or pushes are needed.
+- `scripts/check-git-common-config.sh` is a required worktree-safety guard: shared non-bare `.git/config` must not contain `core.worktree`; repair failures with `bash scripts/check-git-common-config.sh --repair`, and use per-worktree config for worktree-local values.
+- `scripts/prepare-worktree.sh` and generated Codex environment bootstrap actions must check both local and reachable `origin` branch names before creating readiness branches; ambiguous remote branch lookup fails closed instead of guessing.
 - After bootstrap, run `bash scripts/verify-work.sh --fast` before pushing.
 - Git hooks must be installed through `make hooks`, `make setup`, or `node scripts/setup-git-hooks.js`; `scripts/check-environment.sh` fails generated `prek` `pre-commit`, `pre-push`, or `commit-msg` shims that do not export repo-local `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"`.
 - Readiness scripts must preserve caller-provided `PATH` precedence and append standard tool directories as fallbacks when `PATH` is already set, so fixture shims and repo-local wrappers are not shadowed by global tools during validation.

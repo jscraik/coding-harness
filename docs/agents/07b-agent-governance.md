@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-13
+last_validated: 2026-05-14
 ---
 
 # Agent governance
@@ -53,6 +53,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - agent-native cockpit changes should keep next-action safety evidence, generated environment action contracts, and docs-gate-required operator surfaces synchronized before the PR can be considered merge-ready
 - RouteDecision lifecycle metadata is part of the agent-native cockpit contract: `route-decision/v1` must remain additive to `harness-decision/v1`, must not make target commands executable authority by itself, and must keep architecture-context plus docs-gate-required governance surfaces synchronized
 - generated hook setup or readiness changes should keep agent setup evidence synchronized: `scripts/setup-git-hooks.js` must install generated `prek` shims with repo-local `PREK_HOME`, and `scripts/check-environment.sh` must fail drift across installed `pre-commit`, `pre-push`, and `commit-msg` shims
+- worktree bootstrap and generated Codex environment action changes should keep
+  the shared Git common-config guard, detached-worktree branch attachment, and
+  canonical tooling baseline synchronized across source scripts, scaffold
+  templates, environment actions, AGENTS, README, tooling policy, and
+  security/governance guidance
 - generated readiness and environment setup changes should preserve caller-provided `PATH` precedence before adding standard tool fallbacks, so local wrappers, fixture shims, and branch-scoped validation evidence remain auditable
 - environment-only push behavior is a narrow governance exception: if the branch diff contains only `.codex/environments/environment.toml`, `make hooks-pre-push` may run only `scripts/check-environment.sh`; any other changed file must use the full pre-push suite
 - full pre-push diagram freshness must be branch-scoped: `make hooks-pre-push` passes the branch changed-file list into `scripts/check-diagram-freshness.sh --changed-files <path>` so agents do not refresh architecture artifacts for unrelated local worktree dirt

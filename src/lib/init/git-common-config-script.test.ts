@@ -50,6 +50,87 @@ describe("check-git-common-config.sh", () => {
 		expect(result.stderr).toContain(
 			`shared Git config contains core.worktree=${poisonedWorktree}`,
 		);
-		expect(result.stderr).toContain("git config --local --unset core.worktree");
+		expect(result.stderr).toContain(
+			"bash scripts/check-git-common-config.sh --repair",
+		);
+		expect(result.stderr).toContain("git config --file");
+		expect(result.stderr).toContain("--unset-all core.worktree");
+	});
+
+	it("repairs shared core.worktree through the common config path", () => {
+		const repoRoot = createFixtureRepo();
+		const poisonedWorktree = join(tmpdir(), "poisoned-worktree");
+		execFileSync(
+			"git",
+			["config", "--local", "core.worktree", poisonedWorktree],
+			{
+				cwd: repoRoot,
+			},
+		);
+
+		const repairResult = spawnSync(
+			"bash",
+			["scripts/check-git-common-config.sh", "--repair"],
+			{
+				cwd: repoRoot,
+				encoding: "utf8",
+			},
+		);
+		const checkResult = spawnSync(
+			"bash",
+			["scripts/check-git-common-config.sh"],
+			{
+				cwd: repoRoot,
+				encoding: "utf8",
+			},
+		);
+
+		expect(repairResult.status).toBe(0);
+		expect(repairResult.stdout).toContain("removed shared core.worktree");
+		expect(checkResult.status).toBe(0);
+		expect(checkResult.stdout).toContain("[check-git-common-config] ok");
+	});
+
+	it("repairs every shared core.worktree value when config contains duplicates", () => {
+		const repoRoot = createFixtureRepo();
+		const firstPoisonedWorktree = join(tmpdir(), "poisoned-worktree-one");
+		const secondPoisonedWorktree = join(tmpdir(), "poisoned-worktree-two");
+		const configPath = join(repoRoot, ".git/config");
+		execFileSync(
+			"git",
+			["config", "--local", "--add", "core.worktree", firstPoisonedWorktree],
+			{
+				cwd: repoRoot,
+			},
+		);
+		execFileSync(
+			"git",
+			["config", "--local", "--add", "core.worktree", secondPoisonedWorktree],
+			{
+				cwd: repoRoot,
+			},
+		);
+
+		const repairResult = spawnSync(
+			"bash",
+			["scripts/check-git-common-config.sh", "--repair"],
+			{
+				cwd: repoRoot,
+				encoding: "utf8",
+			},
+		);
+		const remainingValues = spawnSync(
+			"git",
+			["config", "--file", configPath, "--get-all", "core.worktree"],
+			{
+				cwd: repoRoot,
+				encoding: "utf8",
+			},
+		);
+
+		expect(repairResult.status).toBe(0);
+		expect(repairResult.stdout).toContain("removed shared core.worktree");
+		expect(remainingValues.status).toBe(1);
+		expect(remainingValues.stdout).toBe("");
 	});
 });

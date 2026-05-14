@@ -34,7 +34,6 @@ while (( $# > 0 )); do
 			;;
 	esac
 done
-
 cd "$REPO_ROOT"
 
 if [[ -x "$REPO_ROOT/scripts/check-git-common-config.sh" ]]; then
@@ -45,6 +44,28 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	echo "[prepare-worktree] not inside a git work tree" >&2
 	exit 1
 fi
+
+# origin_branch_exists checks whether the given branch exists on the `origin` remote.
+# Returns exit status 0 if the branch exists, 1 if it does not exist, and exits with status 2 on unexpected errors (an error message is printed to stderr).
+origin_branch_exists() {
+	local branch_name="$1"
+	local status=0
+
+	if ! git remote get-url origin >/dev/null 2>&1; then
+		return 1
+	fi
+
+	git ls-remote --exit-code --heads origin "$branch_name" >/dev/null 2>&1 || status=$?
+	if [[ "$status" -eq 0 ]]; then
+		return 0
+	fi
+	if [[ "$status" -eq 2 ]]; then
+		return 1
+	fi
+
+	echo "[prepare-worktree] failed to check origin branch: $branch_name" >&2
+	exit 2
+}
 
 # attach_branch_if_detached attaches HEAD to a new uniquely named branch when the repository is in a detached HEAD state (branch name uses the `jscraik/feature/<repo>-worktree-<short_sha>` pattern); if already on a branch it prints that branch.
 attach_branch_if_detached() {
@@ -63,7 +84,7 @@ attach_branch_if_detached() {
 	branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"
 	branch_name="$branch_base"
 	suffix=1
-	while git show-ref --verify --quiet "refs/heads/$branch_name"; do
+	while git show-ref --verify --quiet "refs/heads/$branch_name" || origin_branch_exists "$branch_name"; do
 		branch_name="$branch_base-$suffix"
 		suffix=$((suffix + 1))
 	done

@@ -133,15 +133,15 @@ north star is the contract below; every README summary, roadmap update,
 decision question, and governed PR-body decision should derive from these same
 terms.
 
-| Contract field | Canonical meaning |
-| --- | --- |
-| Mission | Let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff. |
-| Mnemonic | Thin surface. Strong guardrails. Durable memory. Professional output. |
-| Primary metric | Reduce `PR lead time` from open to merge. |
-| Primary bottleneck | Shrink the review and rework loop. |
-| Autonomy boundary | Automate low and medium-risk work only when evidence is deterministic and rollback is clear; keep high-risk changes human-mediated. |
-| Safety floor | Preserve evidence quality, current-head SHA discipline, bounded remediation, rollback paths, and independent review. |
-| Durable learning rule | Turn repeated failures into guardrails, tests, prompts, policy checks, or explicit exceptions instead of repeated review comments or chat reminders. |
+| Contract field        | Canonical meaning                                                                                                                                                                                                 |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mission               | Let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff. |
+| Mnemonic              | Thin surface. Strong guardrails. Durable memory. Professional output.                                                                                                                                             |
+| Primary metric        | Reduce `PR lead time` from open to merge.                                                                                                                                                                         |
+| Primary bottleneck    | Shrink the review and rework loop.                                                                                                                                                                                |
+| Autonomy boundary     | Automate low and medium-risk work only when evidence is deterministic and rollback is clear; keep high-risk changes human-mediated.                                                                               |
+| Safety floor          | Preserve evidence quality, current-head SHA discipline, bounded remediation, rollback paths, and independent review.                                                                                              |
+| Durable learning rule | Turn repeated failures into guardrails, tests, prompts, policy checks, or explicit exceptions instead of repeated review comments or chat reminders.                                                              |
 
 That means a feature, document, policy, or artifact is north-star aligned only
 when it reduces PR lead time directly, lowers review or rework cost, removes
@@ -302,7 +302,16 @@ then executes the full verification bundle.
 The verification and worktree bootstrap paths also run
 `scripts/check-git-common-config.sh`, which blocks shared non-bare `.git/config`
 from pinning `core.worktree`; worktree-local values must live in per-worktree
-config so temp worktrees cannot poison the main checkout.
+config so temp worktrees cannot poison the main checkout. If the guard fails,
+run `bash scripts/check-git-common-config.sh --repair` from the repository root
+so the resolved common Git config is repaired directly.
+Fresh worktree bootstrap uses `scripts/prepare-worktree.sh` as the canonical
+branch-attach path: detached Codex app worktrees stay disposable until this
+repo needs branch-aware validation, then the script creates a deterministic
+readiness branch after checking both local and reachable `origin` branch names.
+`scripts/new-task.sh` fetches the default remote base before creating task
+worktrees and requires explicit `--allow-stale-base` before accepting cached
+base risk.
 
 When executable behavior changes, do not stop at broad validation alone. Run
 the smallest real code path that exercises the exact production code touched:
