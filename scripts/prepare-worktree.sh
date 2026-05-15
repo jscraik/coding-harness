@@ -106,11 +106,11 @@ attach_branch_if_detached() {
 		elif origin_branch_exists "$branch_name"; then
 			:
 		else
-			origin_status="$?"
-			if [[ "$origin_status" -eq 2 ]]; then
-				exit 2
-			fi
 			break
+		fi
+		branch_name="$branch_base-$suffix"
+		suffix=$((suffix + 1))
+	done
 		fi
 		branch_name="$branch_base-$suffix"
 		suffix=$((suffix + 1))
