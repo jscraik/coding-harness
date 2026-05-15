@@ -340,8 +340,8 @@ ${options.requiredChecksList}
 export function renderPullRequestTemplate(
 	options: PullRequestTemplateOptions,
 ): string {
-	const codeRabbitChecklist = `- [ ] CodeRabbit review completed and findings handled (or explicitly waived).
-- [ ] CodeRabbit review was performed by an independent reviewer (not the coding agent).
+	const codeRabbitChecklist = `- [ ] **(Pending)** CodeRabbit review completed and findings handled (or explicitly waived).
+- [ ] **(Pending)** CodeRabbit review was performed by an independent reviewer (not the coding agent).
 `;
 	const codeRabbitArtifacts = `- CodeRabbit: <link / artifact path / comment ID>
 - Independent reviewer evidence: <reviewer + link>
@@ -359,7 +359,7 @@ export function renderPullRequestTemplate(
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`${options.agentBranchPrefix}/*\` for agent-created branches).
 - [ ] Required local gates run: \`${options.codestyleCommand}\`, \`${options.checkCommand}\`, \`${options.memoryValidateCommand}\`.
-${codeRabbitChecklist}- [ ] Codex review completed and findings handled (or explicitly waived).
+${codeRabbitChecklist}- [ ] **(Pending)** Codex review completed and findings handled (or explicitly waived).
 - [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.

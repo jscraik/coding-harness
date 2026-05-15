@@ -118,6 +118,13 @@ issue in `Harness cockpit routing`, and keep
 `JSC-300`/`JSC-301`/`JSC-302`/`JSC-304` classified as archived until Linear
 state changes.
 
+2026-05-15 local artifact reconcile note: PR #247 merged the first JSC-311
+internal contract slice on `main` as `8ba56537 JSC-311: Harden worktree
+environment baseline (#247)`. Local artifacts now distinguish the merged
+internal `HeGateResult/v1` / `HePhaseExit/v1` contract from later integration
+work. Live Linear was not refreshed by this local artifact pass, so tracker
+status remains a separate reconcile action.
+
 2026-05-11 closure delta: `JSC-282`, `JSC-283`, `JSC-288`, `JSC-289`,
 and `JSC-290` now report `Done` in Linear. This resolves the previous stale
 closure blocker for those slices. `JSC-178` and `JSC-198` still report
@@ -161,14 +168,14 @@ issue labels exist and are applied to the relevant parent issues.
 | JSC-201 | `Enforce intake and done gates for HE workflow` | Done | High | supporting_issue_done | This support issue is now completed in Linear. Use its gates as constraints while scoping the narrow JSC-198 closure-evidence slice. |
 | JSC-202 | `Add telemetry confidence score for flow reliability` | Done | High | supporting_issue_done | This support issue is now completed and should be treated as prior telemetry groundwork, not new slice scope. |
 | JSC-203 | `Build flow reconciliation dashboard and drift alerts` | Done | High | supporting_issue_done | This support issue is now completed. Preserve as evidence context while keeping the next slice narrowly focused on deterministic closure reconciliation. |
-| JSC-311 | `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` | In Progress | High | next_spec_candidate | Live, unarchived, labeled, parented by `JSC-300`, and aligned with the post-JSC-301 control-plane gap. Model `$simplify`, `@testing-reviewer`, `$he-fix-bugs`, `$he-code-review`, and `$autofix` as evidence gates so phase exit and commit readiness do not rely on prompt-memory claims. (status refreshed 2026-05-13 to avoid routing mismatches) |
+| JSC-311 | `[coding-harness] Add HE phase-exit evidence gates for skill-backed commit readiness` | In Progress; local internal contract merged | High | next_integration_candidate | PR #247 merged the internal `HeGateResult/v1` / `HePhaseExit/v1` contract and worktree baseline. The next local slice is integration evidence visibility/adapters, not replaying the first spec/plan/work implementation. Live Linear still needs an explicit refresh before tracker closure claims. |
 
 ## Approved Next Slice Queue
 
 | Order | Slice | Linear Issue | Route | Depends On | Notes |
 | --- | --- | --- | --- | --- | --- |
 | 0 | JSC-301 PR closeout guard | JSC-301 / PR #242 | Review/merge hygiene only; no new spec | Draft PR #242 checks and review state | Keep the active branch honest. Do not widen JSC-301 beyond the RouteDecision/v1 contract and governance sync already in PR. |
-| 1 | HE phase-exit evidence gates for skill-backed commit readiness | JSC-311 live | he-spec -> he-plan -> he-work | JSC-301 route metadata contract accepted as the dependency; no public CLI exposure in first slice | Recommended next spec slice. Add typed gate evidence contracts for simplify, testing-reviewer, he-fix-bugs, he-code-review, and autofix. Keep it internal first; do not mutate external systems. |
+| 1 | Phase-exit evidence visibility and adapter follow-up | JSC-311 live | he-spec -> he-plan -> he-work | PR #247 internal contract and worktree baseline merged | Recommended next local slice. Expose phase-exit evidence where operators see it and adapt live review/validation outputs into `HeGateResult/v1`; do not replay the completed internal contract slice. |
 | 2 | Advisory lifecycle route adapter | JSC-302 archived | hold; requires explicit re-admission | JSC-311 proves phase-exit evidence can be represented without prompt-memory claims | Do not spec now. Archived state and route-adapter behavior risk make this a later slice. |
 | 3 | Executable resume/automation loop eval fixtures | JSC-303 archived | hold; requires explicit re-admission | JSC-311 evidence gates and route-adapter decision | Keep as later eval/control-loop context. |
 | 4 | Flow Ops closure-evidence reconciliation | JSC-198 archived legacy context | later; no current spec | Fresh direct read plus human decision to reactivate archived legacy project work | Demoted because prior stale closure blockers are mostly closed and live active route work points to JSC-311. |
@@ -303,10 +310,10 @@ Acceptance:
 
 | Bucket | Work | Destination | Rationale |
 | --- | --- | --- | --- |
-| Now | Closure cleanup and PR #234 unblock | `coding-harness` | JSC-178 has an open draft follow-up PR blocked by `ci/circleci: pr-template`, and JSC-282/JSC-283/JSC-288/JSC-289/JSC-290 remain stale or active in Linear despite implementation/eval evidence. |
-| Next | Flow Ops closure-evidence reconciliation slice | `coding-harness` | Stale issue/PR/eval closure has now repeated across enough slices that it is execution drag, not theoretical process polish. Spec the smallest slice under JSC-198/JSC-199 that proves closure state can be derived and synchronized deterministically. |
+| Now | JSC-311 phase-exit control-plane reconcile and worktree bootstrap follow-up | `Harness cockpit routing` | The internal contract and worktree baseline landed in PR #247; local artifacts now need to route future work to integration/adapters instead of replaying the completed internal slice. |
+| Next | Phase-exit evidence visibility and adapter slice | `Harness cockpit routing` | Spec the smallest follow-up that exposes phase-exit evidence where operators see it and maps real review/validation outputs into `HeGateResult/v1`. |
+| Later | Flow Ops closure-evidence reconciliation slice | `coding-harness` | Still useful if stale issue/PR/eval closure repeats, but it is not the immediate route while JSC-311 integration remains the active cockpit lane. |
 | Later | Contract Validation follow-up | `coding-harness` | Only useful if PR #234 or human review reveals an actual contract-validation behavior defect. Do not reopen JSC-178 for architecture expansion. |
-| Later | HE phase-exit evidence gates for skill-backed commit readiness | `Harness cockpit routing` | Admit after JSC-301 closeout or when commit/heartbeat stop rules need typed evidence for simplify, testing-reviewer, he-fix-bugs, he-code-review, and autofix gates. |
 | Later | Portfolio-level reactivation checklist | `Portfolio Ops` | Useful only if the pattern repeats across repo projects. |
 | Do Not Create | Another Validation Typed Gate Specs spec | None | JSC-290 already has a spec, plan, implementation, eval, commit, push, and merged PR #232. Remaining work is Linear closure, not a new spec. |
 | Do Not Create | Another Contract Validation Modularization spec | None | JSC-178 already has a spec, plan, implementation, eval report, compound review, and follow-up eval PR. Remaining work is PR/Linear closure unless a real blocker appears. |

@@ -7,6 +7,7 @@ last_validated: 2026-05-13
 - [Security posture](#security-posture)
 - [Code-style parity verification surface](#code-style-parity-verification-surface)
 - [Secret handling](#secret-handling)
+- [Execution-input governance](#execution-input-governance)
 - [Code and data governance](#code-and-data-governance)
 - [Risk controls](#risk-controls)
 - [Governance escalation](#governance-escalation)
@@ -36,8 +37,8 @@ This repository follows conservative defaults:
 - Repo-specific preflight maintenance rule: author downstream-facing changes in `src/templates/codex-preflight.sh`, then sync the repo runtime mirror with `node scripts/sync-codex-preflight.cjs --write`. `pnpm lint` runs the matching `--check` gate so runtime/template drift is treated as a policy failure, not a later merge surprise.
 - Local Memory preflight fallback probes must fail fast: keep bounded curl timeouts in `scripts/codex-preflight-local-memory-legacy.sh`, validate only the `rest_api.*` settings actually used to construct the health URL, and treat helper-runner exit code `3` as "unavailable, try the next runner" rather than a terminal failure.
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, then a mise-resolved harness binary (`mise which harness`), and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
-- CircleCI bootstrap is allowed to install baseline shell tooling (`gh`, `rg`, `fd`, `jq`, `make`, `realpath`) and `mise`, then trust `.mise.toml`, before readiness gates run; the readiness gate itself must remain fail-closed and should not hide missing-tool drift by self-installing them.
-- Generated Codex environment setup may add known user/Homebrew/system tool directories to `PATH` and may trust `.mise.toml` in the active worktree, but it must preserve caller-provided `PATH` precedence when `PATH` is already set, and it must not perform unbounded global installs or silently bypass the repository readiness gates.
+- CircleCI bootstrap is allowed to install baseline shell tooling (`gh`, `rg`, `fd`, `jq`, `make`, `realpath`) and `mise`, then trust `.mise.toml` (via `mise trust --yes`), before readiness gates run; the readiness gate itself must remain fail-closed and should not hide missing-tool drift by self-installing them.
+- Generated Codex environment setup may add known user/Homebrew/system tool directories to `PATH` and may trust `.mise.toml` in the active worktree (via `mise trust --yes` when both file and CLI are present), but it must preserve caller-provided `PATH` precedence when `PATH` is already set, and it must not perform unbounded global installs or silently bypass the repository readiness gates.
 - Agent documentation CLIs such as `ctx7` must be pinned through mise and represented in `.mise.toml`, `scripts/check-environment.sh`, `harness.contract.json`, and `.codex/environments/environment.toml` before they become required readiness tools.
 - Detached-worktree bootstrap in generated environment actions should create a local feature branch and track `origin/main` before dependency setup so validation, commit, and push evidence stays attached to an auditable branch.
 - Global npm harness fallback checks should run an already-installed executable before requiring private-registry authentication; missing install diagnostics may ask for npm auth, but local readiness must not leak tokens into repo files or generated scaffolds.
@@ -52,7 +53,8 @@ This repository follows conservative defaults:
 - CircleCI orb-pinning enforcement should verify `ralph` availability (`ralph --version`) and may install pinned `ralph-gold` in ephemeral CI jobs when the CLI is missing.
 - Project Brain memory-extension checks must stay project-local: keep required `.harness/**` knowledge paths in `toolingPolicy.projectBrainMemoryExtension.requiredPaths` and do not gate on workspace-level `~/.codex` state.
 - `.harness/README.md` is the governance map for selective `.harness` tracking. Curated Markdown and JSON contract files are reviewable repo inputs; runtime databases, backups, caches, run output, and bulk snapshots must stay local unless a validator or fixture contract admits them.
-- Tracked secondary context under `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` is evidence only. It becomes implementation authority only through an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slice.
+- `.harness/active-artifacts.md` is an `execution-input` index for active slices. Treat it as routing authority only after validating referenced artifacts and current branch/PR state; it is not validation evidence, tracker closure evidence, or release authority by itself.
+- Tracked secondary context under `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` is evidence only. It becomes implementation authority only through an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, `.harness/plan`, or `.harness/active-artifacts.md` slice reference.
 - CI pnpm bootstrap must avoid privileged shim rewrites. Prefer a user-writable prefix such as `$HOME/.local` plus `$BASH_ENV`/`$GITHUB_PATH` path propagation over `corepack enable`, which can fail on hosted runners when `/usr/local/bin/pnpm` is not writable.
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `security/openssf-scorecard-policy.json` and `scripts/check-scorecard-regressions.mjs`.
 - Greptile is a legacy cleanup concern only. Keep active review governance, scaffold defaults, and runtime verification aligned to CodeRabbit, and treat any live Greptile scaffold path as contract drift unless it exists solely to remove or quarantine old artifacts.
@@ -74,6 +76,20 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
 - `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
+
+## Execution-input governance
+
+`execution-input` artifacts can route work, so they are governance-sensitive.
+Before acting on `.harness/active-artifacts.md`, confirm each referenced
+Linear/spec/plan artifact exists, has a clear lifecycle status, and matches live
+branch or PR reality. If the index conflicts with tracked artifacts, local Git
+state, or live PR/CI evidence, stop and reconcile instead of implementing.
+
+Review changes to `execution-input` artifacts as control-plane edits. The risk
+model is stale or forged routing: an agent could implement the wrong slice, skip
+required gates, or treat old validation as current. Mitigations are small diffs,
+source links, explicit lifecycle status, exact validation evidence, and
+post-change markdown/docs validation.
 
 ## Code and data governance
 
@@ -110,8 +126,9 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Exact behavior evidence captured whenever executable behavior changed, or the blocker recorded when the touched path could not be run safely.
 - No secrets in docs/memory.
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
-- For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
-- `scripts/prepare-worktree.sh` should auto-attach detached HEAD checkouts to a local branch with base format `branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"` (BRANCH_PREFIX is overridable via environment variable, defaults to `jscraik/feature`), check both local and reachable `origin` branch names before choosing that branch name, set `origin/main` tracking when available, and fast-forward to latest `origin/main` before dependency bootstrap so default git branch workflows are available immediately. Ambiguous remote branch lookup must fail closed rather than guessing.
+- For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so the active worktree's repo-local `.mise.toml` is trusted when `mise` is available and local pre-push hooks do not fail from missing dependencies in the new worktree.
+- `.mise.toml` trust behavior: `scripts/prepare-worktree.sh` automatically trusts the repository's `.mise.toml` via `mise trust --yes` when both the file and `mise` CLI are present. This grants mise permission to execute the tool definitions in `.mise.toml` without interactive prompts. Security implication: The trust operation runs without user confirmation when conditions are met, relying on repository checkout integrity and the user's PATH configuration. The trust step is skipped silently if `.mise.toml` is absent or `mise` is unavailable. Cache-write failures from `mise trust` emit warnings and do not block worktree preparation, but any other `mise trust` validation errors follow a fail-closed path and will stop the worktree preparation during the VALIDATION state.
+- `scripts/prepare-worktree.sh` should auto-attach detached HEAD checkouts to a local branch with base format `branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"` (BRANCH_PREFIX can be overridden with an environment variable and defaults to `jscraik/feature`), check both local and reachable `origin` branch names before choosing that branch name, set `origin/main` tracking when available, and fast-forward to latest `origin/main` before dependency bootstrap so default git branch workflows are available immediately. Ambiguous remote branch lookup must fail closed rather than guessing.
 - Generated downstream setup surfaces, Codex environment setup, `Tools` actions, `make worktree-ready`, and manual or agent bootstrap runs consume that `jscraik/feature/<repo>-worktree-<short-sha>` branch rule; keep the generated worktree branch prefix synchronized with PR template and workflow branch guidance.
 - When a merge refresh changes worktree helper behavior, keep this governance surface in the PR diff with the matching tooling policy update so docs-gate can verify the complete runtime-contract surface set.
 - Treat `jscraik/feature/<repo>-worktree-<short-sha>` as a local worktree-readiness branch intended for bootstrap and hook execution. Do not grant it broader permissions than other agent-created branches, do not infer Linear ownership from that prefix, and prune or rename stale local instances only through the normal worktree cleanup flow.

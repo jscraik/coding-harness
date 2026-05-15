@@ -5,18 +5,18 @@ artifact_type: he-spec
 canonical_slug: jsc-311-he-phase-exit-evidence-gates
 title: JSC-311 HE Phase-Exit Evidence Gates Spec
 harness_stage: he-spec
-status: ready_for_plan
+status: merged_internal_contract
 date: 2026-05-13
 origin: .harness/linear/coding-harness-linear-plan.md
 linear_issue: JSC-311
 linear_parent: JSC-300
 linear_project: Harness cockpit routing
-linear_status: Todo
+linear_status: local_queue_in_progress_live_refresh_required
 linear_mutation_status: not_needed
-linear_action_required: "Use existing live JSC-311; no Linear mutation is performed by this local spec."
+linear_action_required: "Refresh live Linear before tracker closure; no Linear mutation is performed by this local spec."
 safe_to_continue: true
 blocked_reason: null
-safe_to_continue_scope: Plan and implementation may proceed only through repo-state reconciliation until Git/filesystem artifact visibility is stable or explicitly waived
+safe_to_continue_scope: Future work should proceed as a follow-up visibility/adapter slice; do not replay the merged internal contract slice.
 traceability_required: true
 risk: commit-readiness evidence contract
 depth: full
@@ -754,9 +754,9 @@ validation:
     - markdownlint: pass
 safe_to_continue: true
 blocked_reason: null
-safe_to_continue_scope: Plan and implementation may proceed only through repo-state reconciliation until artifact visibility is stable or explicitly waived
+safe_to_continue_scope: Future work should proceed as a follow-up visibility/adapter slice; do not replay the merged internal contract slice.
 linear_mutation_status: not_needed
-linear_action_required: Use existing live JSC-311; no Linear mutation was performed.
+linear_action_required: "Refresh live Linear before tracker closure; no Linear mutation is performed by this local spec."
 spec_path: .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md
 acceptance_ids:
   - SA-001

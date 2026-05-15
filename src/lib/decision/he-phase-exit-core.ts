@@ -308,9 +308,10 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 				errors,
 			);
 			if (
-				payload.reuseReviewed !== true ||
-				payload.qualityReviewed !== true ||
-				payload.efficiencyReviewed !== true
+				_result.status === "pass" &&
+				(payload.reuseReviewed !== true ||
+					payload.qualityReviewed !== true ||
+					payload.efficiencyReviewed !== true)
 			) {
 				errors.push(
 					toValidationError(
@@ -345,7 +346,7 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 				"payload.missingEdgeCases",
 				errors,
 			);
-			if (payload.testAdequacyReviewed !== true) {
+			if (_result.status === "pass" && payload.testAdequacyReviewed !== true) {
 				errors.push(
 					toValidationError(
 						"testing_reviewer must evaluate test adequacy",
@@ -455,10 +456,11 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 				errors,
 			);
 			if (
-				payload.findingsFirst !== true ||
-				payload.traceabilityReviewed !== true ||
-				payload.blockerClassification !== true ||
-				payload.safeToContinueReviewed !== true
+				_result.status === "pass" &&
+				(payload.findingsFirst !== true ||
+					payload.traceabilityReviewed !== true ||
+					payload.blockerClassification !== true ||
+					payload.safeToContinueReviewed !== true)
 			) {
 				errors.push(
 					toValidationError(

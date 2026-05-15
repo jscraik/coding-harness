@@ -12,78 +12,25 @@ import {
 } from "../lib/contract/north-star-artifact-io.js";
 import type { HarnessContract } from "../lib/contract/types.js";
 import {
+	extractDispatchCommands,
+	extractHelpCommands,
+	extractReadmeCommands,
+	extractRegistryCommands,
+	resolveRegistryCommandSpecsSource,
+} from "./drift-gate-command-surface.js";
+import {
 	type DriftBaselineState,
 	type DriftFinding,
 	type DriftFixGuidance,
 	readTextFile,
 } from "./drift-gate-types.js";
 
-function extractDispatchCommands(cliSource: string): string[] {
-	const commands = new Set<string>();
-	const regex = /if \(command === "([^"]+)"(?: \|\| command === "([^"]+)")?/g;
-	let match: RegExpExecArray | null = regex.exec(cliSource);
-	while (match) {
-		if (match[1]) commands.add(match[1]);
-		if (match[2]) commands.add(match[2]);
-		match = regex.exec(cliSource);
-	}
-	commands.delete("--help");
-	commands.delete("--version");
-	return Array.from(commands).sort();
-}
-
-function extractRegistryCommands(commandSpecsSource: string): string[] {
-	const commands = new Set<string>();
-	const nameRegex = /name:\s*"([a-z][a-z0-9:-]*)"/g;
-	let match: RegExpExecArray | null = nameRegex.exec(commandSpecsSource);
-	while (match) {
-		if (match[1]) {
-			commands.add(match[1]);
-		}
-		match = nameRegex.exec(commandSpecsSource);
-	}
-	return Array.from(commands).sort();
-}
-
-function extractHelpCommands(cliSource: string): {
-	commands: string[];
-	duplicates: string[];
-} {
-	const helpRegex = /console\.info\("\s{2}([a-z][a-z0-9:-]*)\s+/gi;
-	const seen = new Set<string>();
-	const duplicates = new Set<string>();
-	let match: RegExpExecArray | null = helpRegex.exec(cliSource);
-	while (match) {
-		const command = match[1];
-		if (!command) {
-			match = helpRegex.exec(cliSource);
-			continue;
-		}
-		if (seen.has(command)) {
-			duplicates.add(command);
-		}
-		seen.add(command);
-		match = helpRegex.exec(cliSource);
-	}
-	return {
-		commands: Array.from(seen).sort(),
-		duplicates: Array.from(duplicates).sort(),
-	};
-}
-
-function extractReadmeCommands(readmeSource: string): string[] {
-	const commands = new Set<string>();
-	const regex = /^\|\s+`([^`]+)`\s+\|/gm;
-	let match: RegExpExecArray | null = regex.exec(readmeSource);
-	while (match) {
-		if (match[1]) {
-			commands.add(match[1]);
-		}
-		match = regex.exec(readmeSource);
-	}
-	return Array.from(commands).sort();
-}
-
+/**
+ * Extracts the `status` value from YAML frontmatter of a markdown file.
+ *
+ * @param contents - File contents to scan for YAML frontmatter delimited by `---`
+ * @returns The `status` value from frontmatter, lowercased and trimmed, or `undefined` if not present
+ */
 function parseFrontmatterStatus(contents: string): string | undefined {
 	const frontmatterMatch = contents.match(/^---\n([\s\S]*?)\n---/);
 	if (!frontmatterMatch) {
@@ -251,11 +198,11 @@ function attachFixGuidance(finding: DriftFinding): void {
 }
 
 /**
- * Push a drift finding into the findings array, computing its baseline state from fingerprints.
+ * Append a drift finding to the provided findings array after computing its baseline state and attaching fix guidance.
  *
- * @param findings - Mutable array of findings to append to
- * @param raw - Finding data without baseline_state (computed automatically)
- * @param baselineFingerprints - Set of fingerprints for baseline comparison
+ * @param findings - Mutable array to which the constructed finding will be appended
+ * @param raw - Finding data without a reliable `baseline_state`; additional discriminator fields (`fingerprint_key`, `command`, `command_name`, or `target`) may be included and are used when present
+ * @param baselineFingerprints - Set of fingerprint strings used to determine whether the finding is `preexisting` or `new`
  */
 export function push(
 	findings: DriftFinding[],
@@ -287,6 +234,16 @@ export function push(
 	findings.push(finding);
 }
 
+/**
+ * Validate the repository's CLI command surface and append findings for any inconsistencies.
+ *
+ * Compares dispatched commands (including registry-backed specs when present) against the README command index
+ * and detects missing sources and duplicate CLI help entries, emitting findings for each discrepancy.
+ *
+ * @param findings - Array to which new DriftFinding items will be appended
+ * @param repoRoot - Path to the repository root used to locate source files
+ * @param baselineFingerprints - Set of baseline fingerprint keys used to mark findings as preexisting or new
+ */
 function evaluateCommandSurface(
 	findings: DriftFinding[],
 	repoRoot: string,
@@ -321,7 +278,7 @@ function evaluateCommandSurface(
 		"src/lib/cli/registry/command-specs.ts",
 	);
 	const commandSpecsSource = usesRegistryDispatch
-		? readTextFile(commandSpecsPath)
+		? resolveRegistryCommandSpecsSource(repoRoot, commandSpecsPath)
 		: undefined;
 	if (usesRegistryDispatch && !commandSpecsSource) {
 		push(

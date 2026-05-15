@@ -45,8 +45,39 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	exit 1
 fi
 
-# origin_branch_exists checks whether the given branch exists on the `origin` remote.
-# Returns exit status 0 if the branch exists, 1 if it does not exist, and exits with status 2 on unexpected errors (an error message is printed to stderr).
+# trust_mise_config_if_present trusts the repository's .mise.toml using the `mise` CLI when the file and CLI are present; if the file or CLI is missing it does nothing, and if `mise trust` fails it prints a warning and continues.
+trust_mise_config_if_present() {
+	local mise_config="$REPO_ROOT/.mise.toml"
+	if [[ ! -f "$mise_config" ]]; then
+		return 0
+	fi
+	if ! command -v mise >/dev/null 2>&1; then
+		return 0
+	fi
+
+	echo "[prepare-worktree] trusting repo mise config"
+	local stderr_tmp
+	stderr_tmp="$(mktemp)"
+	local status=0
+	mise trust --yes "$mise_config" >/dev/null 2>"$stderr_tmp" || status=$?
+	if [[ "$status" -ne 0 ]]; then
+		local stderr_content
+		stderr_content="$(cat "$stderr_tmp")"
+		rm -f "$stderr_tmp"
+		if [[ "$stderr_content" == *"trusted-configs"* ]] ||
+			{ [[ "$stderr_content" == *"cache"* ]] && { [[ "$stderr_content" == *"write"* ]] || [[ "$stderr_content" == *"trust"* ]]; }; }; then
+			echo "[prepare-worktree] warning: mise trust cache write failed; continuing with existing trust state" >&2
+		else
+			echo "[prepare-worktree] error: mise trust failed:" >&2
+			echo "$stderr_content" >&2
+			exit 1
+		fi
+	else
+		rm -f "$stderr_tmp"
+	fi
+}
+
+# origin_branch_exists checks whether the given branch exists on the 'origin' remote; returns 0 if it does, 1 if it does not, and exits with status 2 (after printing an error to stderr) on unexpected errors.
 origin_branch_exists() {
 	local branch_name="$1"
 	local status=0
@@ -67,7 +98,7 @@ origin_branch_exists() {
 	exit 2
 }
 
-# attach_branch_if_detached attaches HEAD to a new uniquely named branch when the repository is in a detached HEAD state (branch name uses the `jscraik/feature/<repo>-worktree-<short_sha>` pattern); if already on a branch it prints that branch.
+# attach_branch_if_detached attaches HEAD to a new uniquely named branch when in a detached HEAD state using the pattern '${BRANCH_PREFIX:-jscraik/feature}/<repo>-worktree-<short_sha>', prints the current branch when already attached, and exits with status 2 on unexpected remote-check errors.
 attach_branch_if_detached() {
 	current_branch="$(git symbolic-ref --short -q HEAD || true)"
 	if [[ -n "$current_branch" ]]; then
@@ -84,7 +115,14 @@ attach_branch_if_detached() {
 	branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"
 	branch_name="$branch_base"
 	suffix=1
-	while git show-ref --verify --quiet "refs/heads/$branch_name" || origin_branch_exists "$branch_name"; do
+	while true; do
+		if git show-ref --verify --quiet "refs/heads/$branch_name"; then
+			:
+		elif origin_branch_exists "$branch_name"; then
+			:
+		else
+			break
+		fi
 		branch_name="$branch_base-$suffix"
 		suffix=$((suffix + 1))
 	done
@@ -109,6 +147,8 @@ if [[ ! -f package.json ]]; then
 	echo "[prepare-worktree] package.json not found; nothing to bootstrap for this repo shape"
 	exit 0
 fi
+
+trust_mise_config_if_present
 
 if ! command -v pnpm >/dev/null 2>&1; then
 	echo "[prepare-worktree] pnpm is required but not on PATH" >&2

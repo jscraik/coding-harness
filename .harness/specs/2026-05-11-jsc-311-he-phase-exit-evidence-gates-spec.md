@@ -5,8 +5,10 @@ artifact_type: he-spec
 canonical_slug: jsc-311-he-phase-exit-evidence-gates
 title: JSC-311 HE Phase-Exit Evidence Gates Spec
 harness_stage: he-spec
-status: ready_for_plan
+status: superseded
 date: 2026-05-11
+superseded_by: .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md
+superseded_reason: 2026-05-13 spec reconciles repo-state ambiguity and is the active JSC-311 phase-exit evidence-gates source.
 traceability_required: true
 origin: Linear JSC-311 plus JSC-301 RouteDecision future-work evidence
 linear_issue: JSC-311
@@ -22,6 +24,11 @@ contract_dependency: JSC-301
 ---
 
 # JSC-311 HE Phase-Exit Evidence Gates Spec
+
+> Superseded: use
+> .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md
+> as the active JSC-311 phase-exit evidence-gates specification. This earlier
+> artifact is retained for history only and must not drive new phase work.
 
 ## Table Of Contents
 

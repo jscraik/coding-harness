@@ -5,6 +5,7 @@ last_validated: 2026-05-13
 # Tooling policy
 
 - [Verified command authority](#verified-command-authority)
+- [Harness execution inputs](#harness-execution-inputs)
 - [Tool and shell defaults](#tool-and-shell-defaults)
 - [Required tooling baseline](#required-tooling-baseline)
 - [Codex environment actions](#codex-environment-actions)
@@ -31,6 +32,21 @@ For all repo operations, this repository treats scripts and package manager sett
 - `package.json` (`packageManager`, scripts, repository command contract)
 - `pnpm-lock.yaml` (lockfile and package provenance)
 - `tsconfig.json` (TypeScript and module rules)
+
+## Harness execution inputs
+
+`.harness/active-artifacts.md` is an `execution-input` index, not a runtime
+cache. Agents may use it to identify the active Linear/spec/plan slice only
+after validating that each referenced artifact exists, is tracked or explicitly
+admitted by `.harness/README.md`, and does not conflict with live branch or PR
+state.
+
+Allowed actions are read, compare, and route to the active implementation slice.
+It must not be used by itself as validation evidence, release authority, tracker
+closure evidence, or permission to stage, commit, push, merge, deploy, or mutate
+external systems. Updates to the index should be small, reviewed, and auditable:
+record the source artifact, Linear key when present, lifecycle status, and the
+validation or reconciliation evidence that made the entry active.
 
 ## Tool and shell defaults
 
@@ -293,7 +309,11 @@ For fresh git worktrees before first push, run:
 4. `./scripts/codex-enforced --worktree-slug <issue-key>-<slug> "<prompt>"` auto-creates and bootstraps a dedicated worktree when launched from `main`, then re-runs Codex inside that worktree.
 
 The helper codifies the required sequence: `bash scripts/codex-preflight.sh --stack auto --mode required`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh` (which resolves and validates pinned `uv`), and `pnpm check`.
-`scripts/prepare-worktree.sh` is the lightweight bootstrap lane for new worktrees; it ensures dependencies are installed in the active worktree so pre-push hooks that execute `pnpm` gates do not fail from missing `node_modules/`.
+`scripts/prepare-worktree.sh` is the lightweight bootstrap lane for new worktrees; it trusts the active worktree's repo-local `.mise.toml` when both the file and `mise` CLI are available (via `mise trust --yes .mise.toml`), then ensures dependencies are installed in the active worktree so pre-push hooks that execute `pnpm` gates do not fail from missing `node_modules/`.
+The `mise trust` step runs automatically when:
+- A `.mise.toml` file exists in the repository root
+- The `mise` command is available on PATH
+If either condition is not met, the step is skipped silently. If `mise trust` fails due to trust-cache write limitations, a warning is printed and worktree preparation continues with the existing trust state; other `mise trust` failures are treated as blocking errors.
 When `scripts/prepare-worktree.sh` sees a detached HEAD, it must compute `branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"`, create a local branch from that base with a numeric suffix only after checking both local branches and reachable `origin` branch names, wire `origin/main` tracking when present, fetch the latest `origin/main` when possible, and fast-forward to that fetched ref so branch-aware workflows do not fail on fresh worktree sessions. Ambiguous remote branch lookup must fail closed rather than guessing. If `BRANCH_PREFIX` is supplied, generated setup may use that prefix for downstream fixture validation, but the default branch shape remains `jscraik/feature/<repo>-worktree-<short-sha>`.
 The expected callers and consumers are generated downstream setup surfaces, generated Codex environment setup, generated `Tools` actions, `make worktree-ready`, and human or agent bootstrap runs in temporary worktrees. For example, a detached checkout in `coding-harness` at `abcdef1` should attach to `jscraik/feature/coding-harness-worktree-abcdef1`. Tooling that reads branch names must treat this as an agent worktree-readiness branch, not as a Linear-tracked `codex/<issue-key>-<slug>` task branch.
 `scripts/check-git-common-config.sh` must run before worktree-sensitive Git operations in preflight, verification, and worktree bootstrap. It fails when shared non-bare `.git/config` contains `core.worktree`, because that pins all linked worktrees to one path and can make temp PR fixtures poison the main checkout. Repair with `bash scripts/check-git-common-config.sh --repair` so the guard removes the value from the resolved common Git config path; avoid ad hoc `git config --local` repairs because linked worktrees can resolve that flag against the wrong config layer.

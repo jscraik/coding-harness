@@ -2,8 +2,10 @@
 schema_version: 1
 title: JSC-282 Command Truth Cockpit Plan
 type: architecture
-status: draft
+status: superseded
 date: 2026-05-07
+superseded_by: .harness/plan/2026-05-08-architecture-JSC-282-command-truth-cockpit-plan.md
+superseded_reason: 2026-05-08 plan carries the active completed JSC-282 command-truth evidence.
 plan_id: jsc-282-command-truth-cockpit
 origin: .harness/specs/coding-harness-agent-cockpit-compression-spec.md
 repo: coding-harness
@@ -19,6 +21,11 @@ traceability_required: true
 ---
 
 # JSC-282 Command Truth Cockpit Plan
+
+> Superseded: use
+> .harness/plan/2026-05-08-architecture-JSC-282-command-truth-cockpit-plan.md
+> as the active JSC-282 command-truth cockpit plan. This draft is retained for
+> historical context only.
 
 ## Table Of Contents
 
