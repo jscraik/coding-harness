@@ -39,11 +39,11 @@ export function extractRegistryCommands(commandSpecsSource: string): string[] {
 }
 
 /**
- * Resolve the effective registry command specs source by reading the provided file and, if it contains no registry commands, appending known registry fragment files from the repository.
+ * Produce the effective registry command specs source by returning the primary specs content or the primary content augmented with known registry fragment files when the primary contains no registry commands.
  *
  * @param repoRoot - Repository root used to resolve additional registry fragment file paths.
  * @param commandSpecsPath - Path to the primary command specs file to read.
- * @returns The original file content if it contains registry command names; otherwise the primary content concatenated with any available registry fragment files. Returns `undefined` if the primary file cannot be read.
+ * @returns `undefined` if the primary file cannot be read; otherwise the primary file content as-is if it contains registry command names, or the primary content concatenated with any available registry fragment files.
  */
 export function resolveRegistryCommandSpecsSource(
 	repoRoot: string,

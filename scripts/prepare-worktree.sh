@@ -45,7 +45,7 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	exit 1
 fi
 
-# trust_mise_config_if_present trusts the repository's .mise.toml with `mise` when present and the `mise` CLI is available; if the file is missing or `mise` is not found it does nothing, and if `mise trust` fails it prints a warning and continues.
+# trust_mise_config_if_present trusts the repository's .mise.toml using the `mise` CLI when the file and CLI are present; if the file or CLI is missing it does nothing, and if `mise trust` fails it prints a warning and continues.
 trust_mise_config_if_present() {
 	local mise_config="$REPO_ROOT/.mise.toml"
 	if [[ ! -f "$mise_config" ]]; then
@@ -62,7 +62,7 @@ trust_mise_config_if_present() {
 }
 
 # origin_branch_exists checks whether the given branch exists on the `origin` remote.
-# origin_branch_exists checks whether the given branch exists on the 'origin' remote and returns 0 if it does, 1 if it does not, and exits with status 2 on unexpected errors (an error message is printed to stderr).
+# origin_branch_exists checks whether the given branch exists on the 'origin' remote; returns 0 if it does, 1 if it does not, and exits with status 2 (after printing an error to stderr) on unexpected errors.
 origin_branch_exists() {
 	local branch_name="$1"
 	local status=0
@@ -83,7 +83,7 @@ origin_branch_exists() {
 	exit 2
 }
 
-# attach_branch_if_detached attaches HEAD to a new uniquely named branch when the repository is in a detached HEAD state (branch name uses the `jscraik/feature/<repo>-worktree-<short_sha>` pattern); if already on a branch it prints that branch.
+# attach_branch_if_detached attaches HEAD to a new uniquely named branch when in a detached HEAD state using the pattern '${BRANCH_PREFIX:-jscraik/feature}/<repo>-worktree-<short_sha>', prints the current branch when already attached, and exits with status 2 on unexpected remote-check errors.
 attach_branch_if_detached() {
 	current_branch="$(git symbolic-ref --short -q HEAD || true)"
 	if [[ -n "$current_branch" ]]; then

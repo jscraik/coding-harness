@@ -172,7 +172,7 @@ export function createHeFixBugsGateResult(
 }
 
 /**
- * Build an he-code-review HeGateResult/v1 from structured review evidence.
+ * Constructs a normalized code-review gate result for phase-exit processing.
  *
  * @param input - Review artifact evidence already extracted into structured fields
  * @returns A normalized gate result suitable for phase-exit aggregation
@@ -221,10 +221,10 @@ export function createAutofixGateResult(
 }
 
 /**
- * Build a normalized HeGateResult from a gate adapter input, enforcing presence of gate-local evidence and resolving status, findings, reason, and blockedReason.
+ * Constructs a normalized HeGateResult from a gate adapter input, enforcing presence of gate-local evidence and resolving status, findings, reason, and blockedReason.
  *
- * @param input - Gate-specific build input (includes `gateId`, `defaultExecutionMode`, typed `payload`, and adapter fields such as `evidenceRefs`, `status`, `findings`, `validation`, `actions`, `requiresHuman`, and `safeToContinue`). If no gate-local evidence is present, the function returns a missing-gate result with `reason` and `blockedReason` set accordingly.
- * @returns The assembled `HeGateResult` containing schemaVersion, computed `status`, normalized `payload` and shallow-copied `evidenceRefs`, `findings` (with an added blocking finding when appropriate), `actions`, `validation`, `requiresHuman`, `safeToContinue`, `reason`, and `blockedReason`.
+ * @param input - Builder input containing `gateId`, `defaultExecutionMode`, typed `payload`, and adapter fields (e.g., `evidenceRefs`, `status`, `findings`, `validation`, `actions`, `requiresHuman`, `safeToContinue`). If no gate-local evidence is present, a missing-gate result is returned with `reason` and `blockedReason` set to indicate the absence of gate-local evidence.
+ * @returns The assembled `HeGateResult` with computed `status` and `executionMode`, normalized `payload`, shallow-copied `evidenceRefs`, normalized `findings` (with an added open blocker when appropriate), `actions`, `validation`, `requiresHuman`, `safeToContinue`, `reason`, and `blockedReason`.
  */
 function buildGateResult<TPayload>({
 	gateId,

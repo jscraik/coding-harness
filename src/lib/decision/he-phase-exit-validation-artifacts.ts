@@ -46,10 +46,12 @@ export interface HeFixBugsValidationArtifactInput {
 }
 
 /**
- * Derive HE phase context from local validation artifacts.
+ * Create a HePhaseContext for a phase based on provided local validation artifacts.
  *
- * @param input - Phase and local validation artifacts inspected for the current slice
- * @returns A phase context with failingEvidencePresent derived from fail or blocked artifacts
+ * If `input.reviewFeedbackPresent` is omitted, `reviewFeedbackPresent` will be `false`.
+ *
+ * @param input - Phase and local validation artifacts used to derive the context
+ * @returns A phase context where `failingEvidencePresent` is `true` if any artifact's outcome is not `"pass"`, `false` otherwise
  */
 export function createPhaseContextFromValidationArtifacts(
 	input: HeValidationArtifactPhaseContextInput,
@@ -62,15 +64,17 @@ export function createPhaseContextFromValidationArtifacts(
 }
 
 /**
- * Create an he-fix-bugs gate result from local validation artifacts.
+ * Builds an HeGateResult for the he-fix-bugs gate from local validation artifacts.
  *
- * Produces a normalized HeGateResult that reflects whether local validation
- * artifacts make the gate `blocked` (with a finding for the first blocked or
- * failed artifact) or `not_applicable` when no failing artifacts exist.
+ * When any artifact has outcome `blocked` or `fail`, the result has status `blocked`
+ * and includes a single finding for the first such artifact along with `blockedReason`,
+ * `scopeEvidence`, `evidenceRefs`, and per-artifact `validation`. When no failing or
+ * blocking artifacts exist, the result has status `not_applicable` with a human-readable
+ * `reason` and the same scope/evidence/validation data.
  *
- * @param input - Local validation artifacts and optional `required` flag used to build the gate result
- * @returns A HeGateResult with `status` set to `blocked` (including `blockedReason`, `findings`, and validation data)
- *          or `not_applicable` (including a human-readable `reason`, and validation data)
+ * @param input - Local validation artifacts and an optional `required` flag used to build the gate result
+ * @returns A HeGateResult reflecting either a `blocked` gate (with `blockedReason`, `findings`, and validation data)
+ *          or a `not_applicable` gate (with a `reason` and validation data)
  */
 export function createHeFixBugsGateResultFromValidationArtifacts(
 	input: HeFixBugsValidationArtifactInput,
@@ -125,10 +129,10 @@ export function createHeFixBugsGateResultFromValidationArtifacts(
 }
 
 /**
- * Determine whether local validation artifacts contain failing evidence.
+ * Check whether any local validation artifact has failed or is blocked.
  *
- * @param artifacts - Local validation command or check artifacts
- * @returns true when any artifact outcome is fail or blocked
+ * @param artifacts - The list of local validation artifacts to inspect
+ * @returns `true` if any artifact has outcome `'fail'` or `'blocked'`, `false` otherwise
  */
 export function hasFailingValidationArtifact(
 	artifacts: readonly HeLocalValidationArtifact[],
@@ -156,9 +160,9 @@ function validationEvidenceRef(
 }
 
 /**
- * Convert a local validation artifact into a gate validation record.
+ * Converts a local validation artifact into a gate validation record.
  *
- * @returns An object containing `command`, `outcome`, and `reason` (or `null` when the artifact has no reason)
+ * @returns The gate validation record with `command`, `outcome`, and `reason` (or `null` when the artifact has no reason)
  */
 function validationOutcome(
 	artifact: HeLocalValidationArtifact,
@@ -225,10 +229,10 @@ function validationEvidenceRefId(
 }
 
 /**
- * Produce an array of unique, non-empty strings from the given list, preserving first-seen order.
+ * Return unique, non-empty strings from the input while preserving first-seen order.
  *
- * @param values - The input strings to filter and deduplicate
- * @returns An array containing strings whose `trim()` length is greater than zero, deduplicated while preserving the first occurrence of each value
+ * @param values - Input strings to filter and deduplicate
+ * @returns The input strings whose trimmed length is greater than zero, with duplicates removed while keeping the first occurrence
  */
 function uniqueStrings(values: readonly string[]): string[] {
 	return [...new Set(values.filter((value) => value.trim().length > 0))];

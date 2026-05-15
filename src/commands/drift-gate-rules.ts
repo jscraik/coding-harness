@@ -198,11 +198,11 @@ function attachFixGuidance(finding: DriftFinding): void {
 }
 
 /**
- * Push a drift finding into the findings array, computing its baseline state from fingerprints.
+ * Append a drift finding to the provided findings array after computing its baseline state and attaching fix guidance.
  *
- * @param findings - Mutable array of findings to append to
- * @param raw - Finding data without baseline_state (computed automatically)
- * @param baselineFingerprints - Set of fingerprints for baseline comparison
+ * @param findings - Mutable array to which the constructed finding will be appended
+ * @param raw - Finding data without a reliable `baseline_state`; additional discriminator fields (`fingerprint_key`, `command`, `command_name`, or `target`) may be included and are used when present
+ * @param baselineFingerprints - Set of fingerprint strings used to determine whether the finding is `preexisting` or `new`
  */
 export function push(
 	findings: DriftFinding[],
@@ -235,12 +235,10 @@ export function push(
 }
 
 /**
- * Validate the CLI command surface and append findings for any inconsistencies.
+ * Validate the repository's CLI command surface and append findings for any inconsistencies.
  *
- * Checks that required sources (src/cli.ts and README.md) exist, derives the canonical
- * set of dispatched commands (including registry-backed command specs when applicable),
- * compares them against commands documented in the README, and detects duplicate CLI help entries.
- * Emits findings for missing sources, README vs. dispatch mismatches, and duplicate help entries.
+ * Compares dispatched commands (including registry-backed specs when present) against the README command index
+ * and detects missing sources and duplicate CLI help entries, emitting findings for each discrepancy.
  *
  * @param findings - Array to which new DriftFinding items will be appended
  * @param repoRoot - Path to the repository root used to locate source files

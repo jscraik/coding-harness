@@ -731,9 +731,10 @@ function phaseExitActionNow(result: HePhaseExit): string[] {
 }
 
 /**
- * Return a blocker-form recommendation finding when the recommendation prevents automatic continuation and there are no explicit blockers.
+ * Produce a blocker-style `GateFinding` for the HE phase-exit recommendation when it prevents automatic continuation and there are no explicit blockers.
  *
- * @returns An array with a single `GateFinding` describing the phase-exit recommendation, or an empty array if the recommendation is `"continue"` or any blockers are present.
+ * @param result - The HE phase-exit decision whose `recommendation` and `blockers` are evaluated
+ * @returns An array containing a single `GateFinding` for the recommendation when `recommendation` is not `"continue"` and `blockers` is empty; otherwise an empty array
  */
 function phaseExitRecommendationFinding(result: HePhaseExit): GateFinding[] {
 	if (result.recommendation === "continue" || result.blockers.length > 0) {
@@ -827,15 +828,13 @@ function phaseExitGateSummary(
 }
 
 /**
- * Convert a validated HE phase-exit decision into the canonical operator-visible GateResult.
+ * Normalize a validated HE phase-exit decision into a canonical GateResult for operator visibility.
  *
- * The adapter is intentionally pure: it does not validate, read artifacts, run
- * tools, or mutate tracker state. It only exposes phase-exit blockers,
- * optional warnings, gate statuses, and compact evidence references in the same
- * shape as other harness gate outputs.
+ * Produces a GateResult that exposes phase-exit findings, compact evidence references, per-gate summary metadata,
+ * and operator-facing decision guidance (reason, immediate actions, and suggested re-run).
  *
- * @param result - The HE phase-exit decision to expose to gate consumers
- * @returns A canonical GateResult for operator-facing phase-exit visibility
+ * @param result - The validated HE phase-exit decision to convert
+ * @returns A canonical GateResult representing phase-exit findings, metadata, and operator decisions
  */
 export function normaliseHePhaseExitResult(result: HePhaseExit): GateResult {
 	const gate = "he-phase-exit";
