@@ -7,6 +7,7 @@ last_validated: 2026-05-13
 - [Security posture](#security-posture)
 - [Code-style parity verification surface](#code-style-parity-verification-surface)
 - [Secret handling](#secret-handling)
+- [Execution-input governance](#execution-input-governance)
 - [Code and data governance](#code-and-data-governance)
 - [Risk controls](#risk-controls)
 - [Governance escalation](#governance-escalation)
@@ -52,7 +53,8 @@ This repository follows conservative defaults:
 - CircleCI orb-pinning enforcement should verify `ralph` availability (`ralph --version`) and may install pinned `ralph-gold` in ephemeral CI jobs when the CLI is missing.
 - Project Brain memory-extension checks must stay project-local: keep required `.harness/**` knowledge paths in `toolingPolicy.projectBrainMemoryExtension.requiredPaths` and do not gate on workspace-level `~/.codex` state.
 - `.harness/README.md` is the governance map for selective `.harness` tracking. Curated Markdown and JSON contract files are reviewable repo inputs; runtime databases, backups, caches, run output, and bulk snapshots must stay local unless a validator or fixture contract admits them.
-- Tracked secondary context under `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` is evidence only. It becomes implementation authority only through an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slice.
+- `.harness/active-artifacts.md` is an `execution-input` index for active slices. Treat it as routing authority only after validating referenced artifacts and current branch/PR state; it is not validation evidence, tracker closure evidence, or release authority by itself.
+- Tracked secondary context under `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` is evidence only. It becomes implementation authority only through an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, `.harness/plan`, or `.harness/active-artifacts.md` slice reference.
 - CI pnpm bootstrap must avoid privileged shim rewrites. Prefer a user-writable prefix such as `$HOME/.local` plus `$BASH_ENV`/`$GITHUB_PATH` path propagation over `corepack enable`, which can fail on hosted runners when `/usr/local/bin/pnpm` is not writable.
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `security/openssf-scorecard-policy.json` and `scripts/check-scorecard-regressions.mjs`.
 - Greptile is a legacy cleanup concern only. Keep active review governance, scaffold defaults, and runtime verification aligned to CodeRabbit, and treat any live Greptile scaffold path as contract drift unless it exists solely to remove or quarantine old artifacts.
@@ -74,6 +76,20 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
 - `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
+
+## Execution-input governance
+
+`execution-input` artifacts can route work, so they are governance-sensitive.
+Before acting on `.harness/active-artifacts.md`, confirm each referenced
+Linear/spec/plan artifact exists, has a clear lifecycle status, and matches live
+branch or PR reality. If the index conflicts with tracked artifacts, local Git
+state, or live PR/CI evidence, stop and reconcile instead of implementing.
+
+Review changes to `execution-input` artifacts as control-plane edits. The risk
+model is stale or forged routing: an agent could implement the wrong slice, skip
+required gates, or treat old validation as current. Mitigations are small diffs,
+source links, explicit lifecycle status, exact validation evidence, and
+post-change markdown/docs validation.
 
 ## Code and data governance
 

@@ -65,7 +65,7 @@ trust_mise_config_if_present() {
 		stderr_content="$(cat "$stderr_tmp")"
 		rm -f "$stderr_tmp"
 		if [[ "$stderr_content" == *"trusted-configs"* ]] ||
-			([[ "$stderr_content" == *"cache"* ]] && [[ "$stderr_content" == *"write"* || "$stderr_content" == *"trust"* ]]); then
+			{ [[ "$stderr_content" == *"cache"* ]] && { [[ "$stderr_content" == *"write"* ]] || [[ "$stderr_content" == *"trust"* ]]; }; }; then
 			echo "[prepare-worktree] warning: mise trust cache write failed; continuing with existing trust state" >&2
 		else
 			echo "[prepare-worktree] error: mise trust failed:" >&2

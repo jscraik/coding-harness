@@ -15,7 +15,7 @@ linear_mutation_status: not_applicable
 linear_action_required: false
 safe_to_continue: true
 blocked_reason: null
-safe_to_continue_scope: Local implementation and validation are reconciled into dedicated branch codex/jsc-311-he-phase-exit-evidence-gates; commit, push, and draft PR are authorized by the operator; tracker mutation, merge, deploy, and release remain out of scope
+safe_to_continue_scope: Historical post-merge reference only; this merged plan authorizes no new staging, commit, push, PR, tracker mutation, merge, deploy, or release work
 risk: commit-readiness evidence contract
 depth: deep
 ui: false
@@ -81,7 +81,7 @@ outputs into HeGateResult/v1, reconcile live tracker state, and prove the
 intended fresh-worktree flow end to end before relying on it as an operator
 guarantee.
 
-BLUF: This plan gives the operator, developer, and future agent a bounded, proof-first implementation path for the JSC-311 phase-exit evidence-gates spec in `coding-harness`: first reconcile the current Git/filesystem disagreement around prior `he-phase-exit` files and the plan artifact itself, then add a pure local `HeGateResult/v1` validator and `HePhaseExit/v1` aggregator with fixture-backed tests. The work matters because Harness Engineering phases must not become commit-ready from route labels, recovery summaries, memory, role names, or chat prose; only typed gate evidence may satisfy required gates. Execution is deliberately narrow: no public CLI, no `harness next` behavior change, no tracker mutation, no external services, and no commit/push/release work. The PU-000 blocker was resolved by identifying that the shell path `/Users/jamiecraik/dev/coding-harness` resolves Git operations to `/private/tmp/coding-harness-skill-pr`; source implementation and validation therefore proceeded in that Git-resolved worktree. Handoff after this plan remains `he-work` for the local evaluator slice only.
+BLUF: This plan records the bounded, proof-first implementation path used for the JSC-311 phase-exit evidence-gates spec in `coding-harness`: first reconcile the Git/filesystem disagreement around prior `he-phase-exit` files and the plan artifact itself, then add a pure local `HeGateResult/v1` validator and `HePhaseExit/v1` aggregator with fixture-backed tests. The work matters because Harness Engineering phases must not become commit-ready from route labels, recovery summaries, memory, role names, or chat prose; only typed gate evidence may satisfy required gates. This artifact is now a post-merge historical record: it authorizes no new public CLI work, `harness next` behavior change, tracker mutation, external service work, staging, commit, push, PR, merge, deploy, or release. The PU-000 blocker was resolved by identifying that the shell path `/Users/jamiecraik/dev/coding-harness` resolved Git operations to `/private/tmp/coding-harness-skill-pr`; source implementation and validation therefore proceeded in that Git-resolved worktree.
 
 Decision Needed: none for the merged internal contract. Future implementation
 should create or reconcile a narrow follow-up slice for operator-visible
@@ -748,12 +748,11 @@ flowchart LR
 
 ## Final Decision
 
-Proceed with local `he-work` only for the bounded JSC-311 phase-exit evidence
-slice. The implementation has local validation evidence in the Git-resolved
-worktree, but it is not release-ready, tracker-ready, or commit-ready until an
-operator explicitly authorizes staging/commit/PR work and decides whether the
-user-visible 2026-05-13 plan/spec artifacts must be reconciled into the
-Git-resolved worktree.
+This artifact remains as the historical post-merge record for the bounded
+JSC-311 phase-exit evidence slice. It does not authorize fresh
+staging/commit/PR work, tracker mutation, merge, deploy, or release; any later
+gap follow-up must use its own active branch, validation evidence, and operator
+authorization.
 
 ## Appendix A. Harness Metadata / Traceability
 
@@ -802,7 +801,7 @@ validation:
     - north_star_learning_loop: not_applicable_missing_local_source
 safe_to_continue: true
 blocked_reason: null
-safe_to_continue_scope: commit, push, and draft PR on codex/jsc-311-he-phase-exit-evidence-gates are operator-authorized; tracker mutation, merge, deploy, and release remain out of scope
+safe_to_continue_scope: historical post-merge record only; no fresh staging, commit, push, PR, tracker mutation, merge, deploy, or release authorized by this artifact
 linear_action_required: false
 linear_mutation_status: not_applicable
 post_plan_handoff:
@@ -819,7 +818,7 @@ blackboard_delta:
   - updated README.md, AGENTS.md, docs/agents/00-architecture-bootstrap.md, and docs/agents/07b-agent-governance.md for docs-gate contract/architecture/governance coverage
   - refreshed docs/roadmap/agent-first-status.md and harness.contract.json weekly review dates after drift-gate cadence failure
   - no public CLI, tracker mutation, merge, deploy, or release
-git_staging_status: staged_scoped_files_only
+git_staging_status: historical_staged_scope_only_not_current_authority
 staged_paths:
   - .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md
   - .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md

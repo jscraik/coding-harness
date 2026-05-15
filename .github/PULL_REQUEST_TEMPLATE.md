@@ -12,9 +12,6 @@
 - [ ] Branch name follows policy (`codex/*` for agent-created branches).
 - [ ] Required local gates run: `bash scripts/validate-codestyle.sh`, `pnpm check`, `bash scripts/run-harness-gate.sh tooling-audit --path . --json`.
 - [ ] `scripts/validate-codestyle.sh` was treated as the enforcement point for hook env sanitization (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*` values are untrusted and sanitized before `pnpm run`).
-- [ ] **(Pending)** CodeRabbit review completed and findings handled (or explicitly waived).
-- [ ] **(Pending)** CodeRabbit review was performed by an independent reviewer (not the coding agent).
-- [ ] **(Pending)** Codex review completed and findings handled (or explicitly waived).
 - [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
 - [ ] North-star learning loop considered for changed files; relevant learning gate, review-context, promotion, or feedback evidence is listed below, or marked `n.a.` with a reason.
 - [ ] Merge is blocked until all required checks pass.
@@ -36,6 +33,10 @@
 
 ## Review artifacts
 
+- Review status:
+  - CodeRabbit review: pending completion and finding resolution or waiver.
+  - Independent reviewer: pending confirmation that review was performed outside the coding agent.
+  - Codex review: pending completion and finding resolution or waiver.
 - CodeRabbit: <link / artifact path / comment ID>
 - Independent reviewer evidence: <reviewer + link>
 - Codex: <link / artifact path / comment ID>

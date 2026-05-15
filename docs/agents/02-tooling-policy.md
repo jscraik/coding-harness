@@ -5,6 +5,7 @@ last_validated: 2026-05-13
 # Tooling policy
 
 - [Verified command authority](#verified-command-authority)
+- [Harness execution inputs](#harness-execution-inputs)
 - [Tool and shell defaults](#tool-and-shell-defaults)
 - [Required tooling baseline](#required-tooling-baseline)
 - [Codex environment actions](#codex-environment-actions)
@@ -31,6 +32,21 @@ For all repo operations, this repository treats scripts and package manager sett
 - `package.json` (`packageManager`, scripts, repository command contract)
 - `pnpm-lock.yaml` (lockfile and package provenance)
 - `tsconfig.json` (TypeScript and module rules)
+
+## Harness execution inputs
+
+`.harness/active-artifacts.md` is an `execution-input` index, not a runtime
+cache. Agents may use it to identify the active Linear/spec/plan slice only
+after validating that each referenced artifact exists, is tracked or explicitly
+admitted by `.harness/README.md`, and does not conflict with live branch or PR
+state.
+
+Allowed actions are read, compare, and route to the active implementation slice.
+It must not be used by itself as validation evidence, release authority, tracker
+closure evidence, or permission to stage, commit, push, merge, deploy, or mutate
+external systems. Updates to the index should be small, reviewed, and auditable:
+record the source artifact, Linear key when present, lifecycle status, and the
+validation or reconciliation evidence that made the entry active.
 
 ## Tool and shell defaults
 
