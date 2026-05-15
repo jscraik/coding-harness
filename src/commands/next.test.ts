@@ -808,6 +808,60 @@ describe("runNextCLI", () => {
 		}
 	});
 
+	it("blocks valid HE phase-exit artifacts when status is blocking", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-phase-exit-"));
+		try {
+			const blockingPhaseExit = aggregateHePhaseExit({
+				phaseContext: {
+					phase: "closeout",
+					failingEvidencePresent: false,
+					reviewFeedbackPresent: false,
+				},
+				requiredGates: ["he_code_review"],
+				optionalGates: [],
+				gates: [
+					{
+						...heGate("he_code_review"),
+						status: "blocked",
+						requiresHuman: true,
+						safeToContinue: false,
+						blockedReason: "he_code_review found an unresolved blocker",
+						findings: [
+							{
+								id: "he-code-review-blocker",
+								severity: "high",
+								status: "open",
+								summary: "Unresolved blocker",
+								evidenceRef: "he_code_review-evidence",
+							},
+						],
+					},
+				],
+			});
+
+			writeFileSync(
+				join(repoRoot, "phase-exit.json"),
+				JSON.stringify(blockingPhaseExit),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--phase-exit", "phase-exit.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => ["src/commands/next.ts"],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("he_phase_exit_blocked");
+			expect(decision.evidenceRef).toEqual(["artifact:phase-exit.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("emits a usage decision when --phase-exit has no artifact path", () => {
 		const { exitCode, output } = captureNextCLI(["--json", "--phase-exit"], {});
 
