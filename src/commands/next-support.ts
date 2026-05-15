@@ -8,6 +8,14 @@ import type {
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { HarnessNextMode } from "./next-decisions.js";
 
+/**
+ * Decode a Git-quoted path string into its unescaped UTF-8 form.
+ *
+ * Decodes when `path` is wrapped in double quotes; supports octal escapes (`\NNN`, up to 3 octal digits), common backslash escapes (`\\`, `\"`, `\n`, `\r`, `\t`), and treats a trailing backslash as a literal backslash. If `path` is not quoted, it is returned unchanged.
+ *
+ * @param path - A Git-style path string that may be wrapped in double quotes and contain escape sequences
+ * @returns The decoded path as a UTF-8 string, or the original `path` if it was not quoted
+ */
 function decodeGitQuotedPath(path: string): string {
 	if (!path.startsWith('"') || !path.endsWith('"')) return path;
 	const bytes: number[] = [];
@@ -134,9 +142,9 @@ export function sourceMetaExtra(sourceErrors: readonly DecisionSource[]): {
 }
 
 /**
- * Build a standardized operational `meta` object for a HarnessDecision from contextual inputs.
+ * Construct a standardized operational metadata object for a HarnessDecision from contextual inputs.
  *
- * @returns An object containing `mode`, optional `filesSource`, optional `changedFileCount` and `nextCommandArgv`, defaulted `frictionClass`/`delayClass`, and an `execution` block with `profile`, `startupCost` and a `permissionPlan` describing human/network/filesystem/command/secrets requirements
+ * @returns An object containing `mode`; optional `filesSource`, `changedFileCount`, `nextCommandArgv`, and any `extra` fields; defaulted `frictionClass` and `delayClass`; and an `execution` block with `profile`, `startupCost`, and a `permissionPlan` describing `requiresHuman`, `requiresNetwork`, `writesFiles`, `requiresGitWrite`, `filesystemWrite`, `commands`, and `secrets`.
  */
 export function decisionMeta(args: {
 	mode: string;

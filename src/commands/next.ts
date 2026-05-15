@@ -110,21 +110,16 @@ function inspectGitChangedFiles(repoRoot: string): string[] {
 }
 
 /**
- * Determine the next recommended Harness command or produce a blocked/action-required/pass decision
- * based on the provided options, available decision sources, and changed-files state.
- *
- * The function validates `mode`, consults `decisionSources` (including optional network sources),
- * respects a `files` override when provided, handles a CI-specific upgrade-matrix artifact shortcut,
- * and falls back to inspecting git for changed files when no override is present.
+ * Produce a HarnessDecision recommending the next Harness command or explaining why no safe action can be taken.
  *
  * @param options - Configuration for decision production:
  *   - `mode`: execution posture (`"local" | "pr" | "ci"`); defaults to `"local"`.
  *   - `files`: optional override list of changed file paths; when provided, git is not inspected.
- *   - `repoRoot`: optional repository root for git inspection and artifact checks; defaults to cwd.
+ *   - `repoRoot`: optional repository root for git inspection and artifact checks; defaults to the current working directory.
  *   - `inspectChangedFiles`: optional hook to obtain changed files (used instead of git inspection).
  *   - `decisionSources`: optional additional DecisionSource entries to consider for blocking conditions.
- * @returns A `HarnessDecision` describing the next action: a recommended command (`nextCommand`) when
- *   a safe recommendation can be made, or a blocked/action_required decision explaining required remediation.
+ *   - `phaseExit`: optional pre-collected HE phase-exit evidence that can prevent commit/exit actions.
+ * @returns A `HarnessDecision` describing the next action; when actionable the decision includes a recommended `nextCommand`, otherwise it explains blocking or required remediation. 
  */
 export function runHarnessNext(
 	options: HarnessNextOptions = {},
@@ -314,6 +309,13 @@ function parseNextArgs(args: string[]): ParsedNextArgs {
 	};
 }
 
+/**
+ * Determine the process exit code for the given HarnessDecision and usage-error flag.
+ *
+ * @param decision - The decision whose status is used to determine the exit code
+ * @param usageError - When true, indicates a CLI usage or argument error (overrides decision)
+ * @returns `2` when `usageError` is true, `1` when `decision.status` is `"blocked"` or `"fail"`, `0` otherwise
+ */
 function decisionExitCode(
 	decision: HarnessDecision,
 	usageError = false,
@@ -333,7 +335,13 @@ function printDecision(decision: HarnessDecision, json: boolean): void {
 		console.info(`Next command: ${decision.nextCommand}`);
 }
 
-/** CLI adapter for `harness next`. */
+/**
+ * Parse CLI arguments for `harness next`, produce and print a HarnessDecision, and return an appropriate process exit code.
+ *
+ * @param args - Command-line tokens passed to the CLI (e.g., process.argv.slice(2))
+ * @param options - Runner options forwarded to `runHarnessNext` (omitting `mode` and `files`)
+ * @returns `0` on success, `1` on failure (including invalid decision or runtime errors), `2` for usage errors (invalid CLI usage)
+ */
 export function runNextCLI(
 	args: string[],
 	options: Omit<HarnessNextOptions, "mode" | "files"> = {},
