@@ -25,6 +25,12 @@ import {
 	readTextFile,
 } from "./drift-gate-types.js";
 
+/**
+ * Extracts the `status` value from YAML frontmatter of a markdown file.
+ *
+ * @param contents - File contents to scan for YAML frontmatter delimited by `---`
+ * @returns The `status` value from frontmatter, lowercased and trimmed, or `undefined` if not present
+ */
 function parseFrontmatterStatus(contents: string): string | undefined {
 	const frontmatterMatch = contents.match(/^---\n([\s\S]*?)\n---/);
 	if (!frontmatterMatch) {
@@ -228,6 +234,18 @@ export function push(
 	findings.push(finding);
 }
 
+/**
+ * Validate the CLI command surface and append findings for any inconsistencies.
+ *
+ * Checks that required sources (src/cli.ts and README.md) exist, derives the canonical
+ * set of dispatched commands (including registry-backed command specs when applicable),
+ * compares them against commands documented in the README, and detects duplicate CLI help entries.
+ * Emits findings for missing sources, README vs. dispatch mismatches, and duplicate help entries.
+ *
+ * @param findings - Array to which new DriftFinding items will be appended
+ * @param repoRoot - Path to the repository root used to locate source files
+ * @param baselineFingerprints - Set of baseline fingerprint keys used to mark findings as preexisting or new
+ */
 function evaluateCommandSurface(
 	findings: DriftFinding[],
 	repoRoot: string,

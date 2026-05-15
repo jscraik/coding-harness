@@ -106,10 +106,10 @@ type GateBuildInput<TPayload> = HeGateEvidenceAdapterInput & {
 };
 
 /**
- * Build a simplify HeGateResult/v1 from structured local artifact evidence.
+ * Builds a normalized gate result for the "simplify" phase from structured local evidence.
  *
- * @param input - Simplify skill evidence already extracted into structured fields
- * @returns A normalized gate result suitable for phase-exit aggregation
+ * @param input - Simplify skill evidence extracted into normalized adapter fields
+ * @returns A normalized HeGateResult for the "simplify" gate
  */
 export function createSimplifyGateResult(
 	input: HeSimplifyEvidenceAdapterInput,
@@ -149,10 +149,10 @@ export function createTestingReviewerGateResult(
 }
 
 /**
- * Build an he-fix-bugs HeGateResult/v1 from structured repair evidence.
+ * Produce a normalized gate result for the "he_fix_bugs" phase from structured bug-fix evidence.
  *
- * @param input - Bug-fix evidence already extracted into structured fields
- * @returns A normalized gate result suitable for phase-exit aggregation
+ * @param input - Bug-fix evidence and gate metadata used to build the gate result
+ * @returns The normalized gate result for the "he_fix_bugs" gate
  */
 export function createHeFixBugsGateResult(
 	input: HeFixBugsEvidenceAdapterInput,
@@ -195,10 +195,14 @@ export function createHeCodeReviewGateResult(
 }
 
 /**
- * Build an autofix HeGateResult/v1 from structured review-feedback evidence.
+ * Create an autofix phase-exit gate result from structured autofix evidence.
  *
- * @param input - Autofix artifact evidence already extracted into structured fields
- * @returns A normalized gate result suitable for phase-exit aggregation
+ * The returned result is normalized to the HeGateResult v1 shape and includes a payload
+ * with a copied scopeEvidence array, a feedbackInventory array (defaults to empty),
+ * and accountedItems (defaults to `input.accountedItems` or the feedbackInventory length).
+ *
+ * @param input - Structured autofix evidence and optional metadata
+ * @returns The normalized `HeGateResult` for the `autofix` gate
  */
 export function createAutofixGateResult(
 	input: HeAutofixEvidenceAdapterInput,
@@ -216,6 +220,12 @@ export function createAutofixGateResult(
 	});
 }
 
+/**
+ * Build a normalized HeGateResult from a gate adapter input, enforcing presence of gate-local evidence and resolving status, findings, reason, and blockedReason.
+ *
+ * @param input - Gate-specific build input (includes `gateId`, `defaultExecutionMode`, typed `payload`, and adapter fields such as `evidenceRefs`, `status`, `findings`, `validation`, `actions`, `requiresHuman`, and `safeToContinue`). If no gate-local evidence is present, the function returns a missing-gate result with `reason` and `blockedReason` set accordingly.
+ * @returns The assembled `HeGateResult` containing schemaVersion, computed `status`, normalized `payload` and shallow-copied `evidenceRefs`, `findings` (with an added blocking finding when appropriate), `actions`, `validation`, `requiresHuman`, `safeToContinue`, `reason`, and `blockedReason`.
+ */
 function buildGateResult<TPayload>({
 	gateId,
 	defaultExecutionMode,
@@ -265,6 +275,12 @@ function buildGateResult<TPayload>({
 	};
 }
 
+/**
+ * Determine the gate status from adapter input according to priority rules.
+ *
+ * @param input - Adapter evidence and flags that influence status resolution
+ * @returns The resolved gate status: `'not_applicable'`, `'blocked'`, `'fail'`, or `'pass'`
+ */
 function resolveStatus(
 	input: HeGateEvidenceAdapterInput,
 ): Exclude<HeGateStatus, "not_run"> {
@@ -281,10 +297,24 @@ function resolveStatus(
 	return input.status ?? "pass";
 }
 
+/**
+ * Check whether any evidence reference is marked as gate-local.
+ *
+ * @param evidenceRefs - Array of evidence references to inspect
+ * @returns `true` if at least one entry has `gateLocal` set, `false` otherwise
+ */
 function hasGateLocalEvidence(evidenceRefs: readonly HeEvidenceRef[]): boolean {
 	return evidenceRefs.some((ref) => ref.gateLocal);
 }
 
+/**
+ * Ensure an open blocker finding is present when the gate status is `fail` or `blocked`.
+ *
+ * @param gateId - Identifier of the gate; used to build the generated finding's id and default summary.
+ * @param status - Gate status to evaluate for blocker creation.
+ * @param input - Adapter input whose existing `findings` and `evidenceRefs` are consulted when generating the blocker.
+ * @returns The findings array: original findings with an adapter-generated open blocker appended if `status` is `"fail"` or `"blocked"` and no existing open finding is present; otherwise the original findings unchanged.
+ */
 function ensureBlockingFinding(
 	gateId: HeGateId,
 	status: HeGateStatus,
@@ -306,12 +336,23 @@ function ensureBlockingFinding(
 	return findings;
 }
 
+/**
+ * Finds the first finding with status "open".
+ *
+ * @param findings - The list of gate findings to search.
+ * @returns The first finding whose `status` is `"open"`, or `undefined` if none exist.
+ */
 function firstOpenFinding(
 	findings: readonly HeGateFinding[],
 ): HeGateFinding | undefined {
 	return findings.find((finding) => finding.status === "open");
 }
 
+/**
+ * Determine whether a gate status is considered safe to continue.
+ *
+ * @returns `true` if `status` is `"pass"` or `"not_applicable"`, `false` otherwise.
+ */
 function isSafeStatus(status: HeGateStatus): boolean {
 	return status === "pass" || status === "not_applicable";
 }

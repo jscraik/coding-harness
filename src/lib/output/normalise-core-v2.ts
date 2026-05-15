@@ -658,7 +658,12 @@ export function normaliseLinearGateResult(
 	});
 }
 
-// --- HE phase-exit adapter ----------------------------------------------------
+/**
+ * Derives the canonical gate status for a HE phase-exit aggregation result.
+ *
+ * @param result - The HE phase-exit result used to evaluate blockers, recommendation, and warnings
+ * @returns `fail` if `result.blockers` is non-empty or `result.recommendation` is not `"continue"`; `warn` if there are warnings and no blockers and the recommendation is `"continue"`; `pass` otherwise
+ */
 
 function phaseExitStatus(result: HePhaseExit): GateResult["status"] {
 	if (result.blockers.length > 0 || result.recommendation !== "continue") {
@@ -667,6 +672,14 @@ function phaseExitStatus(result: HePhaseExit): GateResult["status"] {
 	return result.warnings.length > 0 ? "warn" : "pass";
 }
 
+/**
+ * Create a GateFinding representing a HE phase-exit blocker or warning.
+ *
+ * @param message - The human-readable issue message to include in the finding
+ * @param index - The zero-based index used to build a deterministic finding id
+ * @param kind - Whether the issue is a `"blocker"` (error) or `"warning"`
+ * @returns A `GateFinding` with a deterministic `id`, appropriate `severity`, `failureClass`, and a `fix.manual` guidance string
+ */
 function adaptPhaseExitIssue(
 	message: string,
 	index: number,
@@ -690,6 +703,12 @@ function adaptPhaseExitIssue(
 	};
 }
 
+/**
+ * Produce operator-facing immediate action steps based on the HE phase-exit recommendation.
+ *
+ * @param result - HE phase-exit decision whose `recommendation` and `warnings` determine the returned actions
+ * @returns An array of immediate action strings to present to operators; empty when no immediate action is required
+ */
 function phaseExitActionNow(result: HePhaseExit): string[] {
 	switch (result.recommendation) {
 		case "continue":
@@ -711,6 +730,11 @@ function phaseExitActionNow(result: HePhaseExit): string[] {
 	}
 }
 
+/**
+ * Return a blocker-form recommendation finding when the recommendation prevents automatic continuation and there are no explicit blockers.
+ *
+ * @returns An array with a single `GateFinding` describing the phase-exit recommendation, or an empty array if the recommendation is `"continue"` or any blockers are present.
+ */
 function phaseExitRecommendationFinding(result: HePhaseExit): GateFinding[] {
 	if (result.recommendation === "continue" || result.blockers.length > 0) {
 		return [];
@@ -724,6 +748,14 @@ function phaseExitRecommendationFinding(result: HePhaseExit): GateFinding[] {
 	];
 }
 
+/**
+ * Synthesizes GateFinding entries for an HE phase-exit result.
+ *
+ * Builds a list that first includes a recommendation finding when applicable, followed by one finding per blocker and one per warning.
+ *
+ * @param result - The HE phase-exit outcome containing recommendation, blockers, and warnings
+ * @returns An array of `GateFinding` representing the recommendation (optional), blockers, and warnings in that order
+ */
 function phaseExitFindings(result: HePhaseExit): GateFinding[] {
 	return [
 		...phaseExitRecommendationFinding(result),
@@ -736,6 +768,12 @@ function phaseExitFindings(result: HePhaseExit): GateFinding[] {
 	];
 }
 
+/**
+ * Builds an operator-facing reason message describing the HE phase-exit outcome.
+ *
+ * @param result - The HE phase-exit decision containing `blockers`, `warnings`, and `recommendation`
+ * @returns A human-readable reason explaining whether the HE phase exit is blocked, blocked by recommendation, may continue with warnings, or passed with all required evidence
+ */
 function phaseExitReason(result: HePhaseExit): string {
 	if (result.blockers.length > 0) {
 		return `HE phase exit is blocked: ${result.blockers.join("; ")}`;
@@ -749,6 +787,12 @@ function phaseExitReason(result: HePhaseExit): string {
 	return "HE phase exit passed with all required gate evidence satisfied.";
 }
 
+/**
+ * Builds a de-duplicated list of evidence reference identifiers for an HE phase-exit result.
+ *
+ * @param result - The HE phase-exit decision containing `schemaVersion`, `recommendation`, and `gates` (each with `gateId`, `status`, and `evidenceRefs`).
+ * @returns Unique evidence reference strings: schema version (`schema:<schemaVersion>`), recommendation (`recommendation:<recommendation>`), per-gate status (`gate:<gateId>:<status>`), and per-gate evidence ids (`gate-evidence:<gateId>:<ref.id>`).
+ */
 function phaseExitEvidenceRefs(result: HePhaseExit): string[] {
 	return uniqueStrings([
 		`schema:${result.schemaVersion}`,
@@ -760,6 +804,12 @@ function phaseExitEvidenceRefs(result: HePhaseExit): string[] {
 	]);
 }
 
+/**
+ * Builds a concise summary object for each HE gate containing key metadata and evidence reference ids.
+ *
+ * @param gates - The list of HE gate results to summarize
+ * @returns An array of per-gate summary objects with the properties: `gateId`, `required`, `executionMode`, `status`, `safeToContinue`, `requiresHuman`, `reason`, `blockedReason`, and `evidenceRefs` (an array of evidence reference ids)
+ */
 function phaseExitGateSummary(
 	gates: HeGateResult[],
 ): Record<string, unknown>[] {
