@@ -83,11 +83,16 @@ guarantee.
 
 BLUF: This plan gives the operator, developer, and future agent a bounded, proof-first implementation path for the JSC-311 phase-exit evidence-gates spec in `coding-harness`: first reconcile the current Git/filesystem disagreement around prior `he-phase-exit` files and the plan artifact itself, then add a pure local `HeGateResult/v1` validator and `HePhaseExit/v1` aggregator with fixture-backed tests. The work matters because Harness Engineering phases must not become commit-ready from route labels, recovery summaries, memory, role names, or chat prose; only typed gate evidence may satisfy required gates. Execution is deliberately narrow: no public CLI, no `harness next` behavior change, no tracker mutation, no external services, and no commit/push/release work. The PU-000 blocker was resolved by identifying that the shell path `/Users/jamiecraik/dev/coding-harness` resolves Git operations to `/private/tmp/coding-harness-skill-pr`; source implementation and validation therefore proceeded in that Git-resolved worktree. Handoff after this plan remains `he-work` for the local evaluator slice only.
 
-Decision Needed: none. Commit, push, and draft PR on codex/jsc-311-he-phase-exit-evidence-gates are operator-authorized.
+Decision Needed: none for the merged internal contract. Future implementation
+should create or reconcile a narrow follow-up slice for operator-visible
+phase-exit evidence and adapters before adding more source behavior.
 
 Top Risks: Git reports inaccessible `he-phase-exit` paths and an agent treats them as usable source; Git omits the live plan artifact while reporting nonexistent older artifacts; advisory metadata is accepted as gate evidence; conflicting or malformed gate payloads pass or throw instead of failing closed; scope expands into CLI, tracker, cockpit, or external-service work before the local contract is proven.
 
-Next Action: commit, push, and open a draft PR on codex/jsc-311-he-phase-exit-evidence-gates. Do not mutate Linear, GitHub, CI, Slack, release surfaces, staging, merge, deploy, or release without explicit authority.
+Next Action: create or update the follow-up spec/plan for phase-exit evidence
+visibility and adapters into `HeGateResult/v1`. Do not replay the merged
+internal contract slice, and do not mutate Linear, GitHub, CI, Slack, release
+surfaces, staging, merge, deploy, or release without explicit authority.
 
 ## Objective
 

@@ -15,6 +15,7 @@ import type {
 import type { LinearGateResult } from "../../commands/linear-gate.js";
 import type { PolicyGateResult } from "../../commands/policy-gate.js";
 import type { PrTemplateGateResult } from "../../commands/pr-template-gate.js";
+import type { HeGateResult, HePhaseExit } from "../decision/he-phase-exit.js";
 import type { PlanGateResult } from "../plan-gate/types.js";
 import type { GateFailureClass } from "../policy/required-checks.js";
 import { buildGateResult, uniqueStrings } from "./normalise-core.js";
@@ -654,6 +655,164 @@ export function normaliseLinearGateResult(
 					},
 				}
 			: {}),
+	});
+}
+
+// --- HE phase-exit adapter ----------------------------------------------------
+
+function phaseExitStatus(result: HePhaseExit): GateResult["status"] {
+	if (result.blockers.length > 0 || result.recommendation !== "continue") {
+		return "fail";
+	}
+	return result.warnings.length > 0 ? "warn" : "pass";
+}
+
+function adaptPhaseExitIssue(
+	message: string,
+	index: number,
+	kind: "blocker" | "warning",
+): GateFinding {
+	return {
+		id: `he-phase-exit.${kind}.${index}`,
+		severity: kind === "blocker" ? "error" : "warning",
+		gate: "he-phase-exit",
+		message,
+		baseline: false,
+		failureClass:
+			kind === "blocker" ? "phase_exit_blocked" : "phase_exit_warning",
+		fix: {
+			manual:
+				kind === "blocker"
+					? "Resolve the blocking HE gate evidence, then rerun phase-exit aggregation."
+					: "Review optional HE gate warning before handoff.",
+			suppressible: false,
+		},
+	};
+}
+
+function phaseExitActionNow(result: HePhaseExit): string[] {
+	switch (result.recommendation) {
+		case "continue":
+			return result.warnings.length > 0
+				? ["Review optional HE phase-exit warnings before handoff."]
+				: [];
+		case "human_review_required":
+			return [
+				"Run the required human review gate, record artifact-backed evidence, then rerun phase-exit aggregation.",
+			];
+		case "commit_blocked":
+			return [
+				"Resolve required HE phase-exit blockers before commit readiness.",
+			];
+		case "stop":
+			return [
+				"Stop the current HE phase and repair the blocking gate evidence before continuing.",
+			];
+	}
+}
+
+function phaseExitRecommendationFinding(result: HePhaseExit): GateFinding[] {
+	if (result.recommendation === "continue" || result.blockers.length > 0) {
+		return [];
+	}
+	return [
+		adaptPhaseExitIssue(
+			`HE phase exit recommendation is ${result.recommendation}.`,
+			0,
+			"blocker",
+		),
+	];
+}
+
+function phaseExitFindings(result: HePhaseExit): GateFinding[] {
+	return [
+		...phaseExitRecommendationFinding(result),
+		...result.blockers.map((blocker, index) =>
+			adaptPhaseExitIssue(blocker, index, "blocker"),
+		),
+		...result.warnings.map((warning, index) =>
+			adaptPhaseExitIssue(warning, index, "warning"),
+		),
+	];
+}
+
+function phaseExitReason(result: HePhaseExit): string {
+	if (result.blockers.length > 0) {
+		return `HE phase exit is blocked: ${result.blockers.join("; ")}`;
+	}
+	if (result.recommendation !== "continue") {
+		return `HE phase exit is blocked by recommendation: ${result.recommendation}`;
+	}
+	if (result.warnings.length > 0) {
+		return `HE phase exit may continue with warnings: ${result.warnings.join("; ")}`;
+	}
+	return "HE phase exit passed with all required gate evidence satisfied.";
+}
+
+function phaseExitEvidenceRefs(result: HePhaseExit): string[] {
+	return uniqueStrings([
+		`schema:${result.schemaVersion}`,
+		`recommendation:${result.recommendation}`,
+		...result.gates.map((gate) => `gate:${gate.gateId}:${gate.status}`),
+		...result.gates.flatMap((gate) =>
+			gate.evidenceRefs.map((ref) => `gate-evidence:${gate.gateId}:${ref.id}`),
+		),
+	]);
+}
+
+function phaseExitGateSummary(
+	gates: HeGateResult[],
+): Record<string, unknown>[] {
+	return gates.map((gate) => ({
+		gateId: gate.gateId,
+		required: gate.required,
+		executionMode: gate.executionMode,
+		status: gate.status,
+		safeToContinue: gate.safeToContinue,
+		requiresHuman: gate.requiresHuman,
+		reason: gate.reason,
+		blockedReason: gate.blockedReason,
+		evidenceRefs: gate.evidenceRefs.map((ref) => ref.id),
+	}));
+}
+
+/**
+ * Convert a validated HE phase-exit decision into the canonical operator-visible GateResult.
+ *
+ * The adapter is intentionally pure: it does not validate, read artifacts, run
+ * tools, or mutate tracker state. It only exposes phase-exit blockers,
+ * optional warnings, gate statuses, and compact evidence references in the same
+ * shape as other harness gate outputs.
+ *
+ * @param result - The HE phase-exit decision to expose to gate consumers
+ * @returns A canonical GateResult for operator-facing phase-exit visibility
+ */
+export function normaliseHePhaseExitResult(result: HePhaseExit): GateResult {
+	const gate = "he-phase-exit";
+	const findings = phaseExitFindings(result);
+
+	return buildGateResult({
+		gate,
+		status: phaseExitStatus(result),
+		findings,
+		meta: {
+			schemaVersion: result.schemaVersion,
+			phase: result.phaseContext.phase,
+			failingEvidencePresent: result.phaseContext.failingEvidencePresent,
+			reviewFeedbackPresent: result.phaseContext.reviewFeedbackPresent,
+			recommendation: result.recommendation,
+			commitAllowed: result.commitAllowed,
+			exitAllowed: result.exitAllowed,
+			gateSummary: phaseExitGateSummary(result.gates),
+		},
+		decision: {
+			reason: phaseExitReason(result),
+			actionNow: phaseExitActionNow(result),
+			actionLater: [
+				"Re-run HE phase-exit aggregation after the next gate evidence change.",
+			],
+			evidenceRef: phaseExitEvidenceRefs(result),
+		},
 	});
 }
 

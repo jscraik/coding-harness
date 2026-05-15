@@ -34,6 +34,7 @@ move with the repository. Local run state should stay local.
 | `.harness/core/**.md` | `policy` | Track |
 | `.harness/decisions/**.md` | `decision` | Track |
 | `.harness/linear/**.md` | `execution-input` | Track |
+| `.harness/active-artifacts.md` | `execution-input` | Track |
 | `.harness/refactors/**.md` | `execution-input` | Track |
 | `.harness/features/**.md` | `secondary-context` | Track |
 | `.harness/strategy/**.md` | `secondary-context` | Track |

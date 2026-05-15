@@ -58,6 +58,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   canonical tooling baseline synchronized across source scripts, scaffold
   templates, environment actions, AGENTS, README, tooling policy, and
   security/governance guidance
+- worktree readiness may tolerate a local `mise trust` cache-write warning only
+  when the remaining Git safety checks still run; ambiguous local or
+  reachable-`origin` branch state must remain a hard stop before attachment
 - generated readiness and environment setup changes should preserve caller-provided `PATH` precedence before adding standard tool fallbacks, so local wrappers, fixture shims, and branch-scoped validation evidence remain auditable
 - environment-only push behavior is a narrow governance exception: if the branch diff contains only `.codex/environments/environment.toml`, `make hooks-pre-push` may run only `scripts/check-environment.sh`; any other changed file must use the full pre-push suite
 - full pre-push diagram freshness must be branch-scoped: `make hooks-pre-push` passes the branch changed-file list into `scripts/check-diagram-freshness.sh --changed-files <path>` so agents do not refresh architecture artifacts for unrelated local worktree dirt

@@ -54,6 +54,7 @@ gardener-report.json
 # Harness runtime/scratch outputs
 .harness/*
 !.harness/README.md
+!.harness/active-artifacts.md
 !.harness/core/
 !.harness/core/**/*.md
 !.harness/decisions/

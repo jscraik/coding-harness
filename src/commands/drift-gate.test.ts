@@ -256,6 +256,79 @@ describe("drift-gate command", () => {
 		).toBe(false);
 	});
 
+	it("uses registry core commands when the registry entrypoint re-exports them", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-registry-core",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		write(
+			join(root, "README.md"),
+			[
+				"| Command | Purpose |",
+				"| --- | --- |",
+				"| `commands` | List command metadata. |",
+				"| `init` | Install harness. |",
+				"| `drift-gate` | Check consistency drift. |",
+				"| `learnings` | Import learning evidence. |",
+				"| `review-context` | Build review context. |",
+				"| `source-outline` | Inspect source signatures. |",
+				"| `validation-plan` | Recommend validation commands. |",
+			].join("\n"),
+		);
+		write(
+			join(root, "src/cli.ts"),
+			[
+				'import { dispatchRegistryCommand } from "./lib/cli/command-registry.js";',
+				"dispatchRegistryCommand(command, dispatchArgs);",
+			].join("\n"),
+		);
+		write(
+			join(root, "src/lib/cli/registry/command-specs.ts"),
+			'export * from "./command-specs-core.js";',
+		);
+		write(
+			join(root, "src/lib/cli/registry/command-specs-core.ts"),
+			[
+				"export const COMMAND_SPECS = [",
+				'\t{ name: "init" },',
+				'\t{ name: "drift-gate" },',
+				"];",
+			].join("\n"),
+		);
+		write(
+			join(root, "src/lib/cli/command-registry.ts"),
+			["const COMMAND_SPECS = [", '\t{ name: "commands" },', "];"].join("\n"),
+		);
+		write(
+			join(root, "src/lib/cli/registry/learning-evidence-command-specs.ts"),
+			[
+				"return [",
+				'\t{ name: "learnings" },',
+				'\t{ name: "review-context" },',
+				'\t{ name: "validation-plan" },',
+				"];",
+			].join("\n"),
+		);
+		write(
+			join(root, "src/lib/cli/registry/source-outline-spec.ts"),
+			'export const SOURCE_OUTLINE_COMMAND_SPEC = { name: "source-outline" };',
+		);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+		});
+
+		expect(
+			result.report.findings.some(
+				(f) => f.rule_id === "command.surface.dispatch.missing",
+			),
+		).toBe(false);
+	});
+
 	it("blocks writes through symlinked output path", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-test-7");
 		roots.push(root);

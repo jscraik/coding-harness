@@ -3144,7 +3144,7 @@ exec "\${REAL_GIT:?}" "$@"
 				},
 			);
 			const output = `${prepareRun.stdout}${prepareRun.stderr}`;
-			expect(prepareRun.status).toBe(2);
+			expect(prepareRun.status, output).toBe(2);
 			expect(output).toContain(
 				"[prepare-worktree] failed to check origin branch:",
 			);

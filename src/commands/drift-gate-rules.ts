@@ -12,77 +12,18 @@ import {
 } from "../lib/contract/north-star-artifact-io.js";
 import type { HarnessContract } from "../lib/contract/types.js";
 import {
+	extractDispatchCommands,
+	extractHelpCommands,
+	extractReadmeCommands,
+	extractRegistryCommands,
+	resolveRegistryCommandSpecsSource,
+} from "./drift-gate-command-surface.js";
+import {
 	type DriftBaselineState,
 	type DriftFinding,
 	type DriftFixGuidance,
 	readTextFile,
 } from "./drift-gate-types.js";
-
-function extractDispatchCommands(cliSource: string): string[] {
-	const commands = new Set<string>();
-	const regex = /if \(command === "([^"]+)"(?: \|\| command === "([^"]+)")?/g;
-	let match: RegExpExecArray | null = regex.exec(cliSource);
-	while (match) {
-		if (match[1]) commands.add(match[1]);
-		if (match[2]) commands.add(match[2]);
-		match = regex.exec(cliSource);
-	}
-	commands.delete("--help");
-	commands.delete("--version");
-	return Array.from(commands).sort();
-}
-
-function extractRegistryCommands(commandSpecsSource: string): string[] {
-	const commands = new Set<string>();
-	const nameRegex = /name:\s*"([a-z][a-z0-9:-]*)"/g;
-	let match: RegExpExecArray | null = nameRegex.exec(commandSpecsSource);
-	while (match) {
-		if (match[1]) {
-			commands.add(match[1]);
-		}
-		match = nameRegex.exec(commandSpecsSource);
-	}
-	return Array.from(commands).sort();
-}
-
-function extractHelpCommands(cliSource: string): {
-	commands: string[];
-	duplicates: string[];
-} {
-	const helpRegex = /console\.info\("\s{2}([a-z][a-z0-9:-]*)\s+/gi;
-	const seen = new Set<string>();
-	const duplicates = new Set<string>();
-	let match: RegExpExecArray | null = helpRegex.exec(cliSource);
-	while (match) {
-		const command = match[1];
-		if (!command) {
-			match = helpRegex.exec(cliSource);
-			continue;
-		}
-		if (seen.has(command)) {
-			duplicates.add(command);
-		}
-		seen.add(command);
-		match = helpRegex.exec(cliSource);
-	}
-	return {
-		commands: Array.from(seen).sort(),
-		duplicates: Array.from(duplicates).sort(),
-	};
-}
-
-function extractReadmeCommands(readmeSource: string): string[] {
-	const commands = new Set<string>();
-	const regex = /^\|\s+`([^`]+)`\s+\|/gm;
-	let match: RegExpExecArray | null = regex.exec(readmeSource);
-	while (match) {
-		if (match[1]) {
-			commands.add(match[1]);
-		}
-		match = regex.exec(readmeSource);
-	}
-	return Array.from(commands).sort();
-}
 
 function parseFrontmatterStatus(contents: string): string | undefined {
 	const frontmatterMatch = contents.match(/^---\n([\s\S]*?)\n---/);
@@ -321,7 +262,7 @@ function evaluateCommandSurface(
 		"src/lib/cli/registry/command-specs.ts",
 	);
 	const commandSpecsSource = usesRegistryDispatch
-		? readTextFile(commandSpecsPath)
+		? resolveRegistryCommandSpecsSource(repoRoot, commandSpecsPath)
 		: undefined;
 	if (usesRegistryDispatch && !commandSpecsSource) {
 		push(

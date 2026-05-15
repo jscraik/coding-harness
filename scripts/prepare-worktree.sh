@@ -55,7 +55,9 @@ trust_mise_config_if_present() {
 	fi
 
 	echo "[prepare-worktree] trusting repo mise config"
-	mise trust --yes "$mise_config" >/dev/null
+	if ! mise trust --yes "$mise_config" >/dev/null; then
+		echo "[prepare-worktree] warning: mise trust failed; continuing with existing trust state" >&2
+	fi
 }
 
 # origin_branch_exists checks whether the given branch exists on the `origin` remote.
@@ -97,7 +99,18 @@ attach_branch_if_detached() {
 	branch_base="${BRANCH_PREFIX:-jscraik/feature}/$repo_slug-worktree-$short_sha"
 	branch_name="$branch_base"
 	suffix=1
-	while git show-ref --verify --quiet "refs/heads/$branch_name" || origin_branch_exists "$branch_name"; do
+	while true; do
+		if git show-ref --verify --quiet "refs/heads/$branch_name"; then
+			:
+		elif origin_branch_exists "$branch_name"; then
+			:
+		else
+			origin_status="$?"
+			if [[ "$origin_status" -eq 2 ]]; then
+				exit 2
+			fi
+			break
+		fi
 		branch_name="$branch_base-$suffix"
 		suffix=$((suffix + 1))
 	done
