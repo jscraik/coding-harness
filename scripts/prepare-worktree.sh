@@ -56,8 +56,23 @@ trust_mise_config_if_present() {
 	fi
 
 	echo "[prepare-worktree] trusting repo mise config"
-	if ! mise trust --yes "$mise_config" >/dev/null; then
-		echo "[prepare-worktree] warning: mise trust failed; continuing with existing trust state" >&2
+	local stderr_tmp
+	stderr_tmp="$(mktemp)"
+	local status=0
+	mise trust --yes "$mise_config" >/dev/null 2>"$stderr_tmp" || status=$?
+	if [[ "$status" -ne 0 ]]; then
+		local stderr_content
+		stderr_content="$(cat "$stderr_tmp")"
+		rm -f "$stderr_tmp"
+		if [[ "$stderr_content" == *"cache"* ]] && [[ "$stderr_content" == *"write"* || "$stderr_content" == *"trust"* ]]; then
+			echo "[prepare-worktree] warning: mise trust cache write failed; continuing with existing trust state" >&2
+		else
+			echo "[prepare-worktree] error: mise trust failed:" >&2
+			echo "$stderr_content" >&2
+			exit 1
+		fi
+	else
+		rm -f "$stderr_tmp"
 	fi
 }
 

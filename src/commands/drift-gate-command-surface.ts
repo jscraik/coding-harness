@@ -51,9 +51,6 @@ export function resolveRegistryCommandSpecsSource(
 ): string | undefined {
 	const commandSpecsSource = readTextFile(commandSpecsPath);
 	if (!commandSpecsSource) return undefined;
-	if (extractRegistryCommands(commandSpecsSource).length > 0) {
-		return commandSpecsSource;
-	}
 	return [
 		commandSpecsSource,
 		...[
