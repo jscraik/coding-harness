@@ -3,6 +3,7 @@ import { isAbsolute, join } from "node:path";
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import { validateHePhaseExit } from "../lib/decision/he-phase-exit.js";
+import { sanitizeError } from "../lib/input/sanitize.js";
 import { blockedDecision, type HarnessNextMode } from "./next-decisions.js";
 import { humanRequiredDecisionMeta } from "./next-support.js";
 
@@ -32,8 +33,7 @@ export function loadPhaseExitArtifact(
 					frictionClass: "repo_state",
 					extra: {
 						artifactPath,
-						error:
-							error instanceof Error ? error.message : "unknown read error",
+						error: sanitizeError(error),
 					},
 				}),
 			}),
@@ -55,8 +55,7 @@ export function loadPhaseExitArtifact(
 					frictionClass: "validation_failure",
 					extra: {
 						artifactPath,
-						error:
-							error instanceof Error ? error.message : "unknown parse error",
+						error: sanitizeError(error),
 					},
 				}),
 			}),

@@ -30,6 +30,40 @@ function phaseExitMeta(
 	};
 }
 
+function nextDecisionOperationalMeta(args: {
+	mode: HarnessNextMode;
+	filesSource?: "override" | "git";
+	changedFileCount?: number;
+	nextCommandArgv?: string[];
+	frictionClass?: Parameters<typeof decisionMeta>[0]["frictionClass"];
+	delayClass?: Parameters<typeof decisionMeta>[0]["delayClass"];
+	startupCost?: Parameters<typeof decisionMeta>[0]["startupCost"];
+	commands?: string[];
+	requiresHuman?: boolean;
+	sourceErrors?: readonly DecisionSource[];
+	phaseExit?: HePhaseExit | undefined;
+}): ReturnType<typeof decisionMeta> {
+	return decisionMeta({
+		mode: args.mode,
+		...(args.filesSource ? { filesSource: args.filesSource } : {}),
+		...(args.changedFileCount !== undefined
+			? { changedFileCount: args.changedFileCount }
+			: {}),
+		...(args.nextCommandArgv ? { nextCommandArgv: args.nextCommandArgv } : {}),
+		...(args.frictionClass ? { frictionClass: args.frictionClass } : {}),
+		...(args.delayClass ? { delayClass: args.delayClass } : {}),
+		...(args.startupCost ? { startupCost: args.startupCost } : {}),
+		...(args.commands ? { commands: args.commands } : {}),
+		...(args.requiresHuman !== undefined
+			? { requiresHuman: args.requiresHuman }
+			: {}),
+		extra: {
+			...sourceMetaExtra(args.sourceErrors ?? []),
+			...phaseExitMeta(args.phaseExit),
+		},
+	});
+}
+
 function createDecision(decision: HarnessDecisionInput): HarnessDecision {
 	return buildHarnessDecision("harness next", decision);
 }
@@ -242,16 +276,14 @@ export function phaseExitBlockedDecision(args: {
 		failureClass: "he_phase_exit_blocked",
 		retry: "manual",
 		riskTier: "medium",
-		meta: decisionMeta({
+		meta: nextDecisionOperationalMeta({
 			mode: args.mode,
 			frictionClass: "validation_failure",
 			delayClass: requiresHuman ? "human_needed" : "normal",
 			startupCost: "none",
 			requiresHuman: requiresHuman,
-			extra: {
-				...sourceMetaExtra(args.sourceErrors),
-				...phaseExitMeta(args.phaseExit),
-			},
+			sourceErrors: args.sourceErrors,
+			phaseExit: args.phaseExit,
 		}),
 	});
 }
@@ -293,7 +325,7 @@ export function fleetMatrixArtifactDecision(args: {
 		failureClass: null,
 		retry: "safe",
 		riskTier: "low",
-		meta: decisionMeta({
+		meta: nextDecisionOperationalMeta({
 			mode: args.mode,
 			nextCommandArgv: [
 				"harness",
@@ -303,7 +335,7 @@ export function fleetMatrixArtifactDecision(args: {
 				"--json",
 			],
 			commands: [command],
-			...(args.phaseExit ? { extra: phaseExitMeta(args.phaseExit) ?? {} } : {}),
+			phaseExit: args.phaseExit,
 		}),
 	});
 }
@@ -347,15 +379,13 @@ export function noChangedFilesDecision(args: {
 		failureClass: null,
 		retry: "safe",
 		riskTier: "low",
-		meta: decisionMeta({
+		meta: nextDecisionOperationalMeta({
 			mode: args.mode,
 			filesSource: args.filesSource,
 			changedFileCount: 0,
 			commands: ["harness check --json"],
-			extra: {
-				...sourceMetaExtra(args.sourceErrors),
-				...phaseExitMeta(args.phaseExit),
-			},
+			sourceErrors: args.sourceErrors,
+			phaseExit: args.phaseExit,
 		}),
 	});
 }
@@ -445,16 +475,14 @@ export function changedFilesDecision(args: {
 		failureClass: null,
 		retry: "safe",
 		riskTier: candidate.riskTier,
-		meta: decisionMeta({
+		meta: nextDecisionOperationalMeta({
 			mode: args.mode,
 			filesSource: args.filesSource,
 			changedFileCount: args.files.length,
 			nextCommandArgv: candidate.argv,
 			commands: candidate.command ? [candidate.command] : [],
-			extra: {
-				...sourceMetaExtra(args.sourceErrors),
-				...phaseExitMeta(args.phaseExit),
-			},
+			sourceErrors: args.sourceErrors,
+			phaseExit: args.phaseExit,
 		}),
 	});
 }
