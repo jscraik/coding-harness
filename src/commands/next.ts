@@ -6,13 +6,15 @@ import {
 	type HarnessDecision,
 	validateHarnessDecision,
 } from "../lib/decision/harness-decision.js";
+import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import {
 	type DecisionSource,
 	collectSourceErrors,
 	findBlockingSource,
 } from "../lib/decision/sources.js";
+import { loadPhaseExitArtifact } from "./next-phase-exit.js";
 import {
-	decisionMeta,
+	humanRequiredDecisionMeta,
 	optionalNetworkSources,
 	parseGitStatusShort,
 	sourceMetaExtra,
@@ -24,6 +26,7 @@ import {
 	gitInspectionBlockedDecision,
 	invalidModeDecision,
 	noChangedFilesDecision,
+	phaseExitBlockedDecision,
 	sourceBlockedDecision,
 	type HarnessNextMode,
 } from "./next-decisions.js";
@@ -42,17 +45,21 @@ export interface HarnessNextOptions {
 	inspectChangedFiles?: (repoRoot: string) => string[];
 	/** Test hook or future normalized source provider. */
 	decisionSources?: DecisionSource[];
+	/** Optional HE phase-exit evidence already collected by the caller. */
+	phaseExit?: HePhaseExit;
 }
 
 interface ParsedNextArgs {
 	json: boolean;
 	mode: HarnessNextMode;
 	files?: string[];
+	phaseExitPath?: string;
 	error?:
 		| "invalid_mode"
 		| "mode_missing"
 		| "files_missing"
 		| "files_empty"
+		| "phase_exit_missing"
 		| "unknown_argument";
 	errorValue?: string;
 }
@@ -144,6 +151,17 @@ export function runHarnessNext(
 		});
 	}
 
+	if (
+		options.phaseExit &&
+		(!options.phaseExit.commitAllowed || !options.phaseExit.exitAllowed)
+	) {
+		return phaseExitBlockedDecision({
+			mode,
+			phaseExit: options.phaseExit,
+			sourceErrors,
+		});
+	}
+
 	if (filesFromOverride && (options.files ?? []).length === 0) {
 		return blockedDecision({
 			summary: "--files did not include any paths.",
@@ -151,13 +169,10 @@ export function runHarnessNext(
 				"Pass one or more changed files, or omit --files so harness next can inspect git state.",
 			failureClass: "files_override_empty",
 			evidenceRef: ["input:files"],
-			meta: decisionMeta({
+			meta: humanRequiredDecisionMeta({
 				mode,
 				filesSource: "override",
 				frictionClass: "unclear_instruction",
-				delayClass: "human_needed",
-				startupCost: "none",
-				requiresHuman: true,
 				extra: sourceMetaExtra(sourceErrors),
 			}),
 		});
@@ -171,6 +186,7 @@ export function runHarnessNext(
 		return fleetMatrixArtifactDecision({
 			mode,
 			matrixArtifact: DEFAULT_FLEET_MATRIX_ARTIFACT,
+			...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
 		});
 	}
 
@@ -189,10 +205,21 @@ export function runHarnessNext(
 	}
 
 	if (files.length === 0) {
-		return noChangedFilesDecision({ mode, filesSource, sourceErrors });
+		return noChangedFilesDecision({
+			mode,
+			filesSource,
+			sourceErrors,
+			...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
+		});
 	}
 
-	return changedFilesDecision({ mode, files, filesSource, sourceErrors });
+	return changedFilesDecision({
+		mode,
+		files,
+		filesSource,
+		sourceErrors,
+		...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
+	});
 }
 
 /**
@@ -209,6 +236,7 @@ function parseNextArgs(args: string[]): ParsedNextArgs {
 	let json = args.includes("--json");
 	let mode: HarnessNextMode = "local";
 	let files: string[] | undefined;
+	let phaseExitPath: string | undefined;
 
 	for (let index = 0; index < args.length; index += 1) {
 		const arg = args[index];
@@ -253,6 +281,15 @@ function parseNextArgs(args: string[]): ParsedNextArgs {
 			index = valueIndex - 1;
 			continue;
 		}
+		if (arg === "--phase-exit") {
+			const value = args[index + 1];
+			if (!value || value.startsWith("-")) {
+				return { json, mode, error: "phase_exit_missing" };
+			}
+			phaseExitPath = value;
+			index += 1;
+			continue;
+		}
 		if (arg.startsWith("-")) {
 			return {
 				json,
@@ -269,7 +306,12 @@ function parseNextArgs(args: string[]): ParsedNextArgs {
 		};
 	}
 
-	return { json, mode, ...(files !== undefined ? { files } : {}) };
+	return {
+		json,
+		mode,
+		...(files !== undefined ? { files } : {}),
+		...(phaseExitPath !== undefined ? { phaseExitPath } : {}),
+	};
 }
 
 function decisionExitCode(
@@ -297,7 +339,7 @@ export function runNextCLI(
 	options: Omit<HarnessNextOptions, "mode" | "files"> = {},
 ): number {
 	const parsed = parseNextArgs(args);
-	let decision: HarnessDecision;
+	let decision: HarnessDecision | undefined;
 	let usageError = false;
 
 	if (parsed.error === "invalid_mode") {
@@ -309,12 +351,9 @@ export function runNextCLI(
 			summary: "--mode requires a value.",
 			nextAction: "Use --mode local, --mode pr, or --mode ci.",
 			failureClass: "mode_missing",
-			meta: decisionMeta({
+			meta: humanRequiredDecisionMeta({
 				mode: parsed.mode,
 				frictionClass: "unclear_instruction",
-				delayClass: "human_needed",
-				startupCost: "none",
-				requiresHuman: true,
 			}),
 		});
 	} else if (parsed.error === "files_missing") {
@@ -324,13 +363,10 @@ export function runNextCLI(
 			nextAction: "Pass one or more changed files, or omit --files.",
 			failureClass: "files_missing",
 			evidenceRef: ["input:files"],
-			meta: decisionMeta({
+			meta: humanRequiredDecisionMeta({
 				mode: parsed.mode,
 				filesSource: "override",
 				frictionClass: "unclear_instruction",
-				delayClass: "human_needed",
-				startupCost: "none",
-				requiresHuman: true,
 			}),
 		});
 	} else if (parsed.error === "files_empty") {
@@ -340,28 +376,56 @@ export function runNextCLI(
 			mode: parsed.mode,
 			files: [],
 		});
+	} else if (parsed.error === "phase_exit_missing") {
+		usageError = true;
+		decision = blockedDecision({
+			summary: "--phase-exit requires a JSON artifact path.",
+			nextAction: "Pass a HePhaseExit/v1 artifact path, or omit --phase-exit.",
+			failureClass: "phase_exit_missing",
+			evidenceRef: ["input:phase-exit"],
+			meta: humanRequiredDecisionMeta({
+				mode: parsed.mode,
+				frictionClass: "unclear_instruction",
+			}),
+		});
 	} else if (parsed.error === "unknown_argument") {
 		usageError = true;
 		decision = blockedDecision({
 			summary: `Unknown next argument: ${parsed.errorValue}.`,
 			nextAction:
-				"Use harness next --json with optional --files and --mode flags.",
+				"Use harness next --json with optional --files, --phase-exit, and --mode flags.",
 			failureClass: "unknown_argument",
-			meta: decisionMeta({
+			meta: humanRequiredDecisionMeta({
 				mode: parsed.mode,
 				frictionClass: "unclear_instruction",
-				delayClass: "human_needed",
-				startupCost: "none",
-				requiresHuman: true,
 				extra: { argument: parsed.errorValue },
 			}),
 		});
 	} else {
-		decision = runHarnessNext({
+		let phaseExit: HePhaseExit | undefined;
+		if (parsed.phaseExitPath !== undefined) {
+			const loadedPhaseExit = loadPhaseExitArtifact(
+				options.repoRoot ?? cwd(),
+				parsed.phaseExitPath,
+				parsed.mode,
+			);
+			if ("decision" in loadedPhaseExit) {
+				decision = loadedPhaseExit.decision;
+			} else {
+				phaseExit = loadedPhaseExit.phaseExit;
+			}
+		}
+		decision ??= runHarnessNext({
 			...options,
 			mode: parsed.mode,
 			...(parsed.files !== undefined ? { files: parsed.files } : {}),
+			...(phaseExit !== undefined ? { phaseExit } : {}),
 		});
+	}
+
+	if (decision === undefined) {
+		console.error("Invalid harness next state: no decision was produced.");
+		return 1;
 	}
 
 	const validation = validateHarnessDecision(decision);

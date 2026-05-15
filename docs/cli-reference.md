@@ -38,17 +38,23 @@ Optional overrides:
 
 ```bash
 harness next --json --files src/cli.ts docs/cli-reference.md
+harness next --json --phase-exit .harness/runs/phase-exit.json
 harness next --json --mode pr
 ```
 
+`--phase-exit` accepts a local `HePhaseExit/v1` JSON artifact. When supplied,
+`harness next` normalizes the phase-exit result into `meta.hePhaseExit` and
+blocks the recommendation if the artifact reports `commitAllowed=false` or
+`exitAllowed=false`.
+
 First-slice routing is intentionally small:
 
-| State | Recommended command |
-| --- | --- |
-| No changed files | `harness check --json` |
-| Git state unavailable | `harness doctor --json` |
+| State                               | Recommended command                              |
+| ----------------------------------- | ------------------------------------------------ |
+| No changed files                    | `harness check --json`                           |
+| Git state unavailable               | `harness doctor --json`                          |
 | Changed files, `local` or `ci` mode | `harness validation-plan --files <files> --json` |
-| Changed files, `pr` mode | `harness review-context --files <files> --json` |
+| Changed files, `pr` mode            | `harness review-context --files <files> --json`  |
 
 ## Machine-readable command catalog
 
@@ -83,53 +89,53 @@ Fuzzy typo/case correction is opt-in via `--allow-fuzzy` (or `HARNESS_ALLOW_FUZZ
 
 Taxonomy note: section headings in this document represent command families. They are not additional callable top-level commands.
 
-| Command             | Purpose                                                                                                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                 |
-| `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
-| `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)        |
-| `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                |
-| `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--mode local\|pr\|ci`)                         |
-| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                        |
-| `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                   |
-| `audit`             | Comprehensive governance state check with actionable recommendations                                                                                                      |
-| `brain`             | Project Brain knowledge, rules, and quality management (status, query, add, preflight, stale)                                                                             |
-| `health`            | Unified gate status scorecard across all gates                                                                                                                            |
-| `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                  |
-| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                      |
-| `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                  |
-| `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                               |
-| `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                              |
-| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                         |
-| `preset`            | List and inspect bundled presets                                                                                                                                          |
-| `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                     |
+| Command             | Purpose                                                                                                                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                  |
+| `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)  |
+| `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)         |
+| `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                 |
+| `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--mode local\|pr\|ci`) |
+| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                         |
+| `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                    |
+| `audit`             | Comprehensive governance state check with actionable recommendations                                                                                                       |
+| `brain`             | Project Brain knowledge, rules, and quality management (status, query, add, preflight, stale)                                                                              |
+| `health`            | Unified gate status scorecard across all gates                                                                                                                             |
+| `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                   |
+| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                       |
+| `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                   |
+| `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                                |
+| `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                               |
+| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                          |
+| `preset`            | List and inspect bundled presets                                                                                                                                           |
+| `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                      |
 
 In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json` when the upgrade-matrix artifact exists.
 
 ## Review and policy gates
 
-| Command                  | Purpose                                                                             |
-| ------------------------ | ----------------------------------------------------------------------------------- |
-| `policy-gate`            | Validate policy expectations from changed files                                     |
-| `preflight-gate`         | Run fast policy checks before expensive work                                        |
-| `review-gate`            | Validate SHA-linked review readiness (review check + review-policy required checks) |
-| `docs-gate`              | Enforce documentation parity for governed changes                                   |
+| Command                  | Purpose                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `policy-gate`            | Validate policy expectations from changed files                                                                           |
+| `preflight-gate`         | Run fast policy checks before expensive work                                                                              |
+| `review-gate`            | Validate SHA-linked review readiness (review check + review-policy required checks)                                       |
+| `docs-gate`              | Enforce documentation parity for governed changes                                                                         |
 | `plan-gate`              | Validate plan IDs, traceability, and acceptance evidence across `docs/plans/**.md` and HE `.harness/plan/**.md` artifacts |
-| `brainstorm-gate`        | Validate brainstorm artifacts                                                       |
-| `prompt-gate`            | Validate prompt template usage                                                      |
-| `pr-template-gate`       | Validate PR template completion and placeholder replacement                         |
-| `license-gate`           | Validate open-source license expectations                                           |
-| `check-authz`            | Validate authorization policy for mutative operations                               |
-| `check-environment`      | Validate pilot environment governance checks                                        |
-| `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                              |
-| `artifact-gate`          | Check generated artifact changes against the artifact provenance registry           |
-| `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks     |
-| `blast-radius`           | Determine required checks from changed files                                        |
-| `risk-tier`              | Classify changed files by risk tier                                                 |
-| `diff-budget`            | Enforce diff budget constraints                                                     |
-| `observability-gate`     | Check metrics cardinality limits                                                    |
-| `silent-error`           | Detect silent error-handling anti-patterns                                          |
-| `memory-gate`            | Validate local-memory workflow compliance                                           |
+| `brainstorm-gate`        | Validate brainstorm artifacts                                                                                             |
+| `prompt-gate`            | Validate prompt template usage                                                                                            |
+| `pr-template-gate`       | Validate PR template completion and placeholder replacement                                                               |
+| `license-gate`           | Validate open-source license expectations                                                                                 |
+| `check-authz`            | Validate authorization policy for mutative operations                                                                     |
+| `check-environment`      | Validate pilot environment governance checks                                                                              |
+| `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                                                                    |
+| `artifact-gate`          | Check generated artifact changes against the artifact provenance registry                                                 |
+| `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks                                           |
+| `blast-radius`           | Determine required checks from changed files                                                                              |
+| `risk-tier`              | Classify changed files by risk tier                                                                                       |
+| `diff-budget`            | Enforce diff budget constraints                                                                                           |
+| `observability-gate`     | Check metrics cardinality limits                                                                                          |
+| `silent-error`           | Detect silent error-handling anti-patterns                                                                                |
+| `memory-gate`            | Validate local-memory workflow compliance                                                                                 |
 
 ## review-gate north-star evidence
 

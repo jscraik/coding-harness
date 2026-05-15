@@ -6,7 +6,7 @@ import type {
 	HarnessDecisionStartupCost,
 } from "../lib/decision/harness-decision.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
-import type { HarnessNextMode } from "./next.js";
+import type { HarnessNextMode } from "./next-decisions.js";
 
 function decodeGitQuotedPath(path: string): string {
 	if (!path.startsWith('"') || !path.endsWith('"')) return path;
@@ -180,4 +180,28 @@ export function decisionMeta(args: {
 			},
 		},
 	};
+}
+
+/**
+ * Build metadata for blocked harness next decisions that require operator
+ * input before the command can safely continue.
+ *
+ * @param args - Mode, optional file-source context, friction class, and extra metadata to attach.
+ * @returns Standard operational metadata with human intervention, no startup cost, and normal read-only execution defaults.
+ */
+export function humanRequiredDecisionMeta(args: {
+	mode: string;
+	filesSource?: "override" | "git";
+	frictionClass: HarnessDecisionFrictionClass;
+	extra?: Record<string, unknown>;
+}): HarnessDecisionOperationalMeta & Record<string, unknown> {
+	return decisionMeta({
+		mode: args.mode,
+		...(args.filesSource ? { filesSource: args.filesSource } : {}),
+		frictionClass: args.frictionClass,
+		delayClass: "human_needed",
+		startupCost: "none",
+		requiresHuman: true,
+		...(args.extra ? { extra: args.extra } : {}),
+	});
 }

@@ -4,19 +4,31 @@ import {
 	type HarnessDecision,
 	type HarnessDecisionInput,
 } from "../lib/decision/harness-decision.js";
+import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type {
 	DecisionSource,
 	RecommendationCandidate,
 } from "../lib/decision/sources.js";
+import { normaliseHePhaseExitResult } from "../lib/output/normalise.js";
 import {
 	chooseNextCommandParts,
 	decisionMeta,
+	humanRequiredDecisionMeta,
 	shellQuote,
 	sourceMetaExtra,
 } from "./next-support.js";
 
 /** Context posture used by `harness next` when selecting a recommendation. */
 export type HarnessNextMode = "local" | "pr" | "ci";
+
+function phaseExitMeta(
+	phaseExit: HePhaseExit | undefined,
+): Record<string, unknown> | undefined {
+	if (!phaseExit) return undefined;
+	return {
+		hePhaseExit: normaliseHePhaseExitResult(phaseExit),
+	};
+}
 
 function createDecision(decision: HarnessDecisionInput): HarnessDecision {
 	return buildHarnessDecision("harness next", decision);
@@ -83,12 +95,9 @@ export function invalidModeDecision(mode: string): HarnessDecision {
 		summary: `Unsupported next mode: ${mode}.`,
 		nextAction: "Use --mode local, --mode pr, or --mode ci.",
 		failureClass: "invalid_mode",
-		meta: decisionMeta({
+		meta: humanRequiredDecisionMeta({
 			mode,
 			frictionClass: "unclear_instruction",
-			delayClass: "human_needed",
-			startupCost: "none",
-			requiresHuman: true,
 		}),
 	});
 }
@@ -192,6 +201,62 @@ export function gitInspectionBlockedDecision(
 }
 
 /**
+ * Produce a blocked decision when supplied HE phase-exit evidence says the
+ * current phase cannot safely exit or commit.
+ *
+ * @param args - Phase-exit evidence and ambient harness-next context
+ * @returns A blocked HarnessDecision carrying normalized HE phase-exit metadata for operator visibility
+ */
+export function phaseExitBlockedDecision(args: {
+	mode: HarnessNextMode;
+	phaseExit: HePhaseExit;
+	sourceErrors: DecisionSource[];
+}): HarnessDecision {
+	const gateResult = normaliseHePhaseExitResult(args.phaseExit);
+	const requiresHuman = args.phaseExit.gates.some((gate) => gate.requiresHuman);
+	const actionNow =
+		gateResult.action_now[0] ??
+		"Resolve required HE phase-exit blockers before continuing.";
+	return createDecision({
+		status: "blocked",
+		summary: "HE phase-exit evidence blocks continuation.",
+		nextAction: actionNow,
+		nextCommand: null,
+		phase: "repair",
+		objective:
+			"Resolve required HE phase-exit evidence before choosing workflow work.",
+		requiredEvidence: gateResult.evidence_ref,
+		stopConditions: [
+			"Stop until HE phase-exit aggregation reports commitAllowed=true and exitAllowed=true.",
+		],
+		humanEscalation: requiresHuman
+			? "HE phase-exit evidence requires human review before continuing."
+			: null,
+		followUpCommands: ["harness next --json"],
+		hiddenPlumbing: ["he-phase-exit", "gate-normalizer"],
+		safeToRun: false,
+		requiresHuman: requiresHuman,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: gateResult.evidence_ref,
+		failureClass: "he_phase_exit_blocked",
+		retry: "manual",
+		riskTier: "medium",
+		meta: decisionMeta({
+			mode: args.mode,
+			frictionClass: "validation_failure",
+			delayClass: requiresHuman ? "human_needed" : "normal",
+			startupCost: "none",
+			requiresHuman: requiresHuman,
+			extra: {
+				...sourceMetaExtra(args.sourceErrors),
+				...phaseExitMeta(args.phaseExit),
+			},
+		}),
+	});
+}
+
+/**
  * Produce a decision recommending conversion of a Harness upgrade matrix artifact into a fleet remediation plan.
  *
  * @param args.mode - The current harness next mode (`"local" | "pr" | "ci"`) used to populate decision metadata.
@@ -201,6 +266,7 @@ export function gitInspectionBlockedDecision(
 export function fleetMatrixArtifactDecision(args: {
 	mode: HarnessNextMode;
 	matrixArtifact: string;
+	phaseExit?: HePhaseExit | undefined;
 }): HarnessDecision {
 	const command = `harness fleet-plan --from ${shellQuote(args.matrixArtifact)} --json`;
 	return createDecision({
@@ -237,6 +303,7 @@ export function fleetMatrixArtifactDecision(args: {
 				"--json",
 			],
 			commands: [command],
+			...(args.phaseExit ? { extra: phaseExitMeta(args.phaseExit) ?? {} } : {}),
 		}),
 	});
 }
@@ -254,6 +321,7 @@ export function noChangedFilesDecision(args: {
 	mode: HarnessNextMode;
 	filesSource: "override" | "git";
 	sourceErrors: DecisionSource[];
+	phaseExit?: HePhaseExit | undefined;
 }): HarnessDecision {
 	return createDecision({
 		status: "pass",
@@ -284,7 +352,10 @@ export function noChangedFilesDecision(args: {
 			filesSource: args.filesSource,
 			changedFileCount: 0,
 			commands: ["harness check --json"],
-			extra: sourceMetaExtra(args.sourceErrors),
+			extra: {
+				...sourceMetaExtra(args.sourceErrors),
+				...phaseExitMeta(args.phaseExit),
+			},
 		}),
 	});
 }
@@ -334,6 +405,7 @@ export function changedFilesDecision(args: {
 	files: string[];
 	filesSource: "override" | "git";
 	sourceErrors: DecisionSource[];
+	phaseExit?: HePhaseExit | undefined;
 }): HarnessDecision {
 	const candidate = createRecommendationCandidate(args);
 	const reviewContextFollowUp = chooseNextCommandParts(
@@ -359,7 +431,12 @@ export function changedFilesDecision(args: {
 			args.mode === "pr"
 				? ["bash scripts/validate-codestyle.sh --fast"]
 				: [reviewContextFollowUp],
-		hiddenPlumbing: ["git:status", "command-catalog", "risk-tier"],
+		hiddenPlumbing: [
+			"git:status",
+			"command-catalog",
+			"risk-tier",
+			...(args.phaseExit ? ["he-phase-exit"] : []),
+		],
 		safeToRun: candidate.safeToRun,
 		requiresHuman: candidate.requiresHuman,
 		requiresNetwork: candidate.requiresNetwork,
@@ -374,7 +451,10 @@ export function changedFilesDecision(args: {
 			changedFileCount: args.files.length,
 			nextCommandArgv: candidate.argv,
 			commands: candidate.command ? [candidate.command] : [],
-			extra: sourceMetaExtra(args.sourceErrors),
+			extra: {
+				...sourceMetaExtra(args.sourceErrors),
+				...phaseExitMeta(args.phaseExit),
+			},
 		}),
 	});
 }
