@@ -5,8 +5,10 @@ artifact_type: he-plan
 canonical_slug: jsc-311-he-phase-exit-evidence-gates
 title: JSC-311 HE Phase-Exit Evidence Gates Plan
 harness_stage: he-plan
-status: ready_for_work
+status: superseded
 date: 2026-05-11
+superseded_by: .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md
+superseded_reason: 2026-05-13 plan reconciles repo-state ambiguity and records the active implementation evidence.
 traceability_required: true
 origin: .harness/specs/2026-05-11-jsc-311-he-phase-exit-evidence-gates-spec.md
 linear_issue: JSC-311
@@ -23,6 +25,11 @@ post_plan_handoff: explicit_stop
 ---
 
 # JSC-311 HE Phase-Exit Evidence Gates Plan
+
+> Superseded: use
+> .harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md as
+> the active JSC-311 phase-exit evidence-gates plan. This earlier artifact is
+> retained for history only and still contains pre-implementation traceability.
 
 ## Table Of Contents
 

@@ -5,7 +5,7 @@ artifact_type: he-plan
 canonical_slug: jsc-311-he-phase-exit-evidence-gates
 title: JSC-311 HE Phase-Exit Evidence Gates Plan
 harness_stage: he-plan
-status: dedicated_branch_validated
+status: merged_internal_contract
 date: 2026-05-13
 source: .harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md
 linear_issue: JSC-311
@@ -72,6 +72,14 @@ acceptance_ids:
 - [No-Fog Gate](#no-fog-gate)
 
 ## Command Summary
+
+Post-merge status: PR #247 landed the local internal contract and worktree
+environment hardening on main as 8ba56537 JSC-311: Harden worktree environment
+baseline (#247). The active remaining gaps are later integration slices: expose
+phase-exit evidence where operators see it, adapt live review and validation
+outputs into HeGateResult/v1, reconcile live tracker state, and prove the
+intended fresh-worktree flow end to end before relying on it as an operator
+guarantee.
 
 BLUF: This plan gives the operator, developer, and future agent a bounded, proof-first implementation path for the JSC-311 phase-exit evidence-gates spec in `coding-harness`: first reconcile the current Git/filesystem disagreement around prior `he-phase-exit` files and the plan artifact itself, then add a pure local `HeGateResult/v1` validator and `HePhaseExit/v1` aggregator with fixture-backed tests. The work matters because Harness Engineering phases must not become commit-ready from route labels, recovery summaries, memory, role names, or chat prose; only typed gate evidence may satisfy required gates. Execution is deliberately narrow: no public CLI, no `harness next` behavior change, no tracker mutation, no external services, and no commit/push/release work. The PU-000 blocker was resolved by identifying that the shell path `/Users/jamiecraik/dev/coding-harness` resolves Git operations to `/private/tmp/coding-harness-skill-pr`; source implementation and validation therefore proceeded in that Git-resolved worktree. Handoff after this plan remains `he-work` for the local evaluator slice only.
 

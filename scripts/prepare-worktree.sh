@@ -45,6 +45,19 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	exit 1
 fi
 
+trust_mise_config_if_present() {
+	local mise_config="$REPO_ROOT/.mise.toml"
+	if [[ ! -f "$mise_config" ]]; then
+		return 0
+	fi
+	if ! command -v mise >/dev/null 2>&1; then
+		return 0
+	fi
+
+	echo "[prepare-worktree] trusting repo mise config"
+	mise trust --yes "$mise_config" >/dev/null
+}
+
 # origin_branch_exists checks whether the given branch exists on the `origin` remote.
 # Returns exit status 0 if the branch exists, 1 if it does not exist, and exits with status 2 on unexpected errors (an error message is printed to stderr).
 origin_branch_exists() {
@@ -109,6 +122,8 @@ if [[ ! -f package.json ]]; then
 	echo "[prepare-worktree] package.json not found; nothing to bootstrap for this repo shape"
 	exit 0
 fi
+
+trust_mise_config_if_present
 
 if ! command -v pnpm >/dev/null 2>&1; then
 	echo "[prepare-worktree] pnpm is required but not on PATH" >&2
