@@ -64,7 +64,8 @@ trust_mise_config_if_present() {
 		local stderr_content
 		stderr_content="$(cat "$stderr_tmp")"
 		rm -f "$stderr_tmp"
-		if [[ "$stderr_content" == *"cache"* ]] && [[ "$stderr_content" == *"write"* || "$stderr_content" == *"trust"* ]]; then
+		if [[ "$stderr_content" == *"trusted-configs"* ]] ||
+			([[ "$stderr_content" == *"cache"* ]] && [[ "$stderr_content" == *"write"* || "$stderr_content" == *"trust"* ]]); then
 			echo "[prepare-worktree] warning: mise trust cache write failed; continuing with existing trust state" >&2
 		else
 			echo "[prepare-worktree] error: mise trust failed:" >&2
@@ -76,7 +77,6 @@ trust_mise_config_if_present() {
 	fi
 }
 
-# origin_branch_exists checks whether the given branch exists on the `origin` remote.
 # origin_branch_exists checks whether the given branch exists on the 'origin' remote; returns 0 if it does, 1 if it does not, and exits with status 2 (after printing an error to stderr) on unexpected errors.
 origin_branch_exists() {
 	local branch_name="$1"
@@ -122,10 +122,6 @@ attach_branch_if_detached() {
 			:
 		else
 			break
-		fi
-		branch_name="$branch_base-$suffix"
-		suffix=$((suffix + 1))
-	done
 		fi
 		branch_name="$branch_base-$suffix"
 		suffix=$((suffix + 1))
