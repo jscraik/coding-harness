@@ -1,7 +1,12 @@
 import { join } from "node:path";
 import { readTextFile } from "./drift-gate-types.js";
 
-/** Extract command names dispatched by the legacy direct CLI branch style. */
+/**
+ * Extracts command names used in legacy `if (command === "...")` dispatch branches.
+ *
+ * @param cliSource - Source code text to scan for legacy dispatch conditionals
+ * @returns Sorted unique command names found in the source; `--help` and `--version` are excluded
+ */
 export function extractDispatchCommands(cliSource: string): string[] {
 	const commands = new Set<string>();
 	const regex = /if \(command === "([^"]+)"(?: \|\| command === "([^"]+)")?/g;
@@ -16,7 +21,12 @@ export function extractDispatchCommands(cliSource: string): string[] {
 	return Array.from(commands).sort();
 }
 
-/** Extract canonical command names from registry spec source fragments. */
+/**
+ * Extract canonical command names from registry spec fragments in the provided source.
+ *
+ * @param commandSpecsSource - Source text containing one or more registry spec fragments.
+ * @returns Sorted array of unique command names found (matching the pattern `[a-z][a-z0-9:-]*`).
+ */
 export function extractRegistryCommands(commandSpecsSource: string): string[] {
 	const commands = new Set<string>();
 	const nameRegex = /name:\s*"([a-z][a-z0-9:-]*)"/g;
@@ -28,7 +38,13 @@ export function extractRegistryCommands(commandSpecsSource: string): string[] {
 	return Array.from(commands).sort();
 }
 
-/** Resolve command registry source, including registry fragments composed outside the re-export entrypoint. */
+/**
+ * Resolve the effective registry command specs source by reading the provided file and, if it contains no registry commands, appending known registry fragment files from the repository.
+ *
+ * @param repoRoot - Repository root used to resolve additional registry fragment file paths.
+ * @param commandSpecsPath - Path to the primary command specs file to read.
+ * @returns The original file content if it contains registry command names; otherwise the primary content concatenated with any available registry fragment files. Returns `undefined` if the primary file cannot be read.
+ */
 export function resolveRegistryCommandSpecsSource(
 	repoRoot: string,
 	commandSpecsPath: string,
@@ -51,7 +67,12 @@ export function resolveRegistryCommandSpecsSource(
 		.join("\n");
 }
 
-/** Extract command names printed by legacy hand-written help rows. */
+/**
+ * Extract command names from legacy console.info help rows and identify duplicates.
+ *
+ * @param cliSource - Source text containing legacy help output
+ * @returns An object with `commands`: a sorted array of unique command names found, and `duplicates`: a sorted array of command names that appeared more than once
+ */
 export function extractHelpCommands(cliSource: string): {
 	commands: string[];
 	duplicates: string[];
@@ -74,7 +95,12 @@ export function extractHelpCommands(cliSource: string): {
 	};
 }
 
-/** Extract command names from the README command index table. */
+/**
+ * Extracts command names listed in a README command index table.
+ *
+ * @param readmeSource - README text containing a Markdown table whose rows start with a first-column inline-code command (e.g., `| `command` | ...`)
+ * @returns A sorted array of unique command names found in the table's first column
+ */
 export function extractReadmeCommands(readmeSource: string): string[] {
 	const commands = new Set<string>();
 	const regex = /^\|\s+`([^`]+)`\s+\|/gm;

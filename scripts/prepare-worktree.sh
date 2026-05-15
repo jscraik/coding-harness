@@ -45,6 +45,7 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	exit 1
 fi
 
+# trust_mise_config_if_present trusts the repository's .mise.toml with `mise` when present and the `mise` CLI is available; if the file is missing or `mise` is not found it does nothing, and if `mise trust` fails it prints a warning and continues.
 trust_mise_config_if_present() {
 	local mise_config="$REPO_ROOT/.mise.toml"
 	if [[ ! -f "$mise_config" ]]; then
@@ -61,7 +62,7 @@ trust_mise_config_if_present() {
 }
 
 # origin_branch_exists checks whether the given branch exists on the `origin` remote.
-# Returns exit status 0 if the branch exists, 1 if it does not exist, and exits with status 2 on unexpected errors (an error message is printed to stderr).
+# origin_branch_exists checks whether the given branch exists on the 'origin' remote and returns 0 if it does, 1 if it does not, and exits with status 2 on unexpected errors (an error message is printed to stderr).
 origin_branch_exists() {
 	local branch_name="$1"
 	local status=0
