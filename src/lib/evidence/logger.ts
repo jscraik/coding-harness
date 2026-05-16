@@ -5,6 +5,9 @@
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
+/**
+ * Structured log event emitted by the evidence logger.
+ */
 export interface LogEntry {
 	/** ISO 8601 timestamp */
 	timestamp: string;
@@ -16,6 +19,9 @@ export interface LogEntry {
 	[key: string]: unknown;
 }
 
+/**
+ * Configuration for structured console logging and optional OTLP export.
+ */
 export interface LoggerOptions {
 	/** Minimum log level to emit (default: 'info') */
 	minLevel?: LogLevel | undefined;
