@@ -198,7 +198,7 @@ function loadRuleLifecycleManifest(
 		}
 
 		// Then validate against JSON Schema for additional structural checks
-		const schemaValidation = validateAgainstSchema(parsed);
+		const schemaValidation = validateAgainstSchema(repoRoot, parsed);
 		if (!schemaValidation.valid) {
 			return {
 				ok: false,
@@ -429,16 +429,15 @@ function buildRuleLifecycleGateResult(input: {
 	};
 }
 
-function validateAgainstSchema(value: unknown): {
+function validateAgainstSchema(
+	repoRoot: string,
+	value: unknown,
+): {
 	valid: boolean;
 	errors: string[];
 } {
 	try {
-		// Load the JSON schema from docs/rule-lifecycle.schema.json
-		const schemaPath = resolve(
-			process.cwd(),
-			"docs/rule-lifecycle.schema.json",
-		);
+		const schemaPath = resolve(repoRoot, "docs/rule-lifecycle.schema.json");
 		if (!existsSync(schemaPath)) {
 			return {
 				valid: false,
@@ -497,23 +496,17 @@ function validateAgainstSchema(value: unknown): {
 						}
 					}
 
-				// Validate id pattern
-				if (
-					typeof rule.id === "string" &&
-					ruleDef.properties?.id?.pattern
-				) {
-					// Use known-safe pattern rather than schema-derived regex to avoid ReDoS
-					const pattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-					if (!pattern.test(rule.id)) {
-						errors.push(`rules[${i}].id has invalid format: ${rule.id}`);
+					// Validate id pattern using the known-safe local pattern rather than
+					// compiling schema-derived regex text.
+					if (typeof rule.id === "string" && ruleDef.properties?.id?.pattern) {
+						const pattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+						if (!pattern.test(rule.id)) {
+							errors.push(`rules[${i}].id has invalid format: ${rule.id}`);
+						}
 					}
-				}
 
 					// Validate status enum
-					if (
-						rule.status !== undefined &&
-						ruleDef.properties?.status?.enum
-					) {
+					if (rule.status !== undefined && ruleDef.properties?.status?.enum) {
 						if (!ruleDef.properties.status.enum.includes(rule.status)) {
 							errors.push(
 								`rules[${i}].status must be one of: ${ruleDef.properties.status.enum.join(", ")}`,

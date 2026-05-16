@@ -120,6 +120,7 @@ Notes:
 - Before handoff when behavior changed, run `bash scripts/validate-codestyle.sh`; use `bash scripts/verify-work.sh` as the broader readiness gate.
 - If runtime or artifact behavior changed, run `pnpm test:deep`.
 - When docs-gate categories are affected, run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and clear warnings before merge.
+- Rule lifecycle governance changes that alter `.harness/rule-lifecycle-manifest.json`, `docs/rule-lifecycle.schema.json`, `rule-lifecycle-gate`, or lifecycle validation behavior must keep `AGENTS.md`, `README.md`, and `docs/agents/00-architecture-bootstrap.md` synchronized when docs-gate reports contract-policy or architecture-context surfaces.
 - Agent-native cockpit, generated environment action, hook setup, and architecture-artifact changes must keep the docs-gate required surfaces synchronized in the same PR so `harness next --json` recommendations, local runtime setup, and reviewer-facing evidence describe the current contract.
 - RouteDecision lifecycle metadata is agent-native cockpit contract work. Governance constraints:
   - `route-decision/v1` must remain advisory/read-only

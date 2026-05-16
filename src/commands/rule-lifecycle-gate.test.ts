@@ -1,4 +1,5 @@
 import {
+	readFileSync,
 	mkdirSync,
 	mkdtempSync,
 	rmSync,
@@ -10,6 +11,11 @@ import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runRuleLifecycleGate } from "../lib/rule-lifecycle.js";
 import { runRuleLifecycleGateCLI } from "./rule-lifecycle-gate.js";
+
+const RULE_LIFECYCLE_SCHEMA = readFileSync(
+	resolve(process.cwd(), "docs/rule-lifecycle.schema.json"),
+	"utf-8",
+);
 
 describe("rule-lifecycle-gate", () => {
 	const cleanup: string[] = [];
@@ -25,6 +31,11 @@ describe("rule-lifecycle-gate", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "rule-lifecycle-"));
 		cleanup.push(repoRoot);
 		mkdirSync(join(repoRoot, ".harness"), { recursive: true });
+		mkdirSync(join(repoRoot, "docs"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, "docs/rule-lifecycle.schema.json"),
+			RULE_LIFECYCLE_SCHEMA,
+		);
 		writeFileSync(
 			join(repoRoot, ".harness/rule-lifecycle-manifest.json"),
 			JSON.stringify(
@@ -379,6 +390,26 @@ describe("rule-lifecycle-gate", () => {
 				}),
 			]),
 		);
+	});
+
+	it("resolves the lifecycle schema from the repo root instead of process cwd", () => {
+		const repoRoot = makeRepo([activeRule()]);
+		const otherCwd = mkdtempSync(join(tmpdir(), "rule-lifecycle-cwd-"));
+		cleanup.push(otherCwd);
+		const originalCwd = process.cwd();
+
+		try {
+			process.chdir(otherCwd);
+			const result = runRuleLifecycleGate({
+				repoRoot,
+				now: new Date("2026-06-01T12:00:00.000Z"),
+			});
+
+			expect(result.status).toBe("pass");
+			expect(result.findings).toEqual([]);
+		} finally {
+			process.chdir(originalCwd);
+		}
 	});
 
 	it("prints JSON and returns a failing exit code for blocking findings", () => {
