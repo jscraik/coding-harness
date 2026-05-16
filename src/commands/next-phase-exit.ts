@@ -7,7 +7,14 @@ import { sanitizeError } from "../lib/input/sanitize.js";
 import { blockedDecision, type HarnessNextMode } from "./next-decisions.js";
 import { humanRequiredDecisionMeta } from "./next-support.js";
 
-/** Load and validate a HePhaseExit artifact for the harness next CLI. */
+/**
+ * Load and validate a phase-exit artifact and produce either the parsed artifact or a blocking Harness decision.
+ *
+ * @param repoRoot - Repository root used to resolve `artifactPath` when `artifactPath` is not absolute
+ * @param artifactPath - Path to the phase-exit JSON artifact (may be absolute or relative to `repoRoot`)
+ * @param mode - CLI mode to include in human-facing decision metadata
+ * @returns `{ phaseExit: HePhaseExit }` when the artifact was read, parsed as JSON, and validated as HePhaseExit/v1; otherwise `{ decision: HarnessDecision }` describing the blocking error
+ */
 export function loadPhaseExitArtifact(
 	repoRoot: string,
 	artifactPath: string,

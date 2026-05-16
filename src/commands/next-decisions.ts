@@ -26,6 +26,12 @@ import {
 /** Context posture used by `harness next` when selecting a recommendation. */
 export type HarnessNextMode = "local" | "pr" | "ci";
 
+/**
+ * Produce metadata containing a normalized HE phase-exit result for inclusion in decision `meta`.
+ *
+ * @param phaseExit - The HE phase-exit evidence to normalize; when `undefined` no metadata is produced
+ * @returns An object with `hePhaseExit` set to the normalized phase-exit result, or `undefined` when `phaseExit` is not provided
+ */
 function phaseExitMeta(
 	phaseExit: HePhaseExit | undefined,
 ): Record<string, unknown> | undefined {
@@ -44,6 +50,23 @@ function runtimeCardMeta(
 	};
 }
 
+/**
+ * Builds standardized operational metadata for a `harness next` decision.
+ *
+ * @param args.mode - Execution mode (`"local" | "pr" | "ci"`) that produced the decision
+ * @param args.filesSource - Origin of the changed-files list (`"git"` or `"override"`)
+ * @param args.changedFileCount - Number of changed files detected
+ * @param args.nextCommandArgv - Argument vector for the proposed next command
+ * @param args.frictionClass - Optional friction classification to attach to the meta
+ * @param args.delayClass - Optional delay classification to attach to the meta
+ * @param args.startupCost - Optional startup cost classification to attach to the meta
+ * @param args.commands - List of command strings relevant to the decision
+ * @param args.requiresHuman - Whether the decision requires human intervention
+ * @param args.sourceErrors - Source diagnostic records to include in meta.extra
+ * @param args.phaseExit - Optional HE phase-exit evidence to normalize and include in meta.extra
+ * @param args.runtimeCard - Optional runtime-card evidence to normalize and include in meta.extra
+ * @returns A decision meta object populated with the provided operational fields and `extra` merged from `sourceErrors`, normalized HE phase-exit evidence, and normalized runtime-card evidence when present
+ */
 function nextDecisionOperationalMeta(args: {
 	mode: HarnessNextMode;
 	filesSource?: "override" | "git";
@@ -80,6 +103,12 @@ function nextDecisionOperationalMeta(args: {
 	});
 }
 
+/**
+ * Build a standardized HarnessDecision scoped to the "harness next" CLI.
+ *
+ * @param decision - Input decision fields used to construct the final HarnessDecision
+ * @returns A fully formed HarnessDecision with "harness next" as its producer context
+ */
 function createDecision(decision: HarnessDecisionInput): HarnessDecision {
 	return buildHarnessDecision("harness next", decision);
 }
@@ -358,11 +387,13 @@ export function runtimeCardBlockedDecision(args: {
 }
 
 /**
- * Produce a decision recommending conversion of a Harness upgrade matrix artifact into a fleet remediation plan.
+ * Recommend converting a Harness upgrade matrix artifact into a fleet remediation plan.
  *
- * @param args.mode - The current harness next mode (`"local" | "pr" | "ci"`) used to populate decision metadata.
  * @param args.matrixArtifact - Filesystem path to the detected upgrade matrix artifact.
- * @returns A `HarnessDecision` with `status: "action_required"` that includes a `nextCommand` invoking `harness fleet-plan --from <artifact> --json`, execution metadata, evidence referencing the artifact, and a low risk tier.
+ * @param args.mode - Current operation mode used to populate decision metadata.
+ * @param args.phaseExit - Optional normalized HE phase-exit evidence to attach to decision metadata.
+ * @param args.runtimeCard - Optional normalized runtime-card evidence to attach to decision metadata.
+ * @returns A `HarnessDecision` with `status: "action_required"` that directs running `harness fleet-plan --from <artifact> --json`, references `artifact:<matrixArtifact>` as required evidence, and has `riskTier: "low"`.
  */
 export function fleetMatrixArtifactDecision(args: {
 	mode: HarnessNextMode;
