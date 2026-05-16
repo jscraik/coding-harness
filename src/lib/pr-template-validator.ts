@@ -103,7 +103,7 @@ function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[.*+?^${}()|[\]]/g, "\\$&");
 	const pattern = new RegExp(
 		`(?:^|\\n)${escapedHeading}[ \\t]*(?:\\r?\\n)([\\s\\S]*?)(?=\\r?\\n## |\\r?\\n# |$)`,
-		"im",
+		"i",
 	);
 	const match = body.match(pattern);
 	if (!match) {
@@ -229,7 +229,7 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	for (const section of REQUIRED_SECTIONS) {
-		if (!body.includes(section)) {
+		if (extractSectionBody(body, section) === null) {
 			errors.push(`Missing required section: ${section}`);
 		}
 	}
