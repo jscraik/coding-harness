@@ -78,6 +78,7 @@ export function inspectRuntimeEvidenceBundle(
 	}
 	const bundle = asRuntimeEvidenceBundle(value);
 	const sources = uniqueSources([
+		...bundle.sources,
 		{
 			kind: "session",
 			ref: bundle.provenance.ref,
@@ -85,7 +86,6 @@ export function inspectRuntimeEvidenceBundle(
 			status: "usable",
 			failureClass: null,
 		},
-		...bundle.sources,
 	]);
 	const phaseExit = bundle.phaseExit
 		? collapsePhaseExit(bundle.phaseExit)

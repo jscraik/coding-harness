@@ -1,5 +1,5 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { cwd } from "node:process";
 import {
 	buildLiveRuntimeCard,
@@ -134,11 +134,13 @@ function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
 	const resolvedPath = isAbsolute(artifactPath)
 		? artifactPath
 		: resolve(repoRoot, artifactPath);
-	const rel = relative(repoRoot, resolvedPath);
-	if (isAbsolute(artifactPath) || rel.startsWith("..")) {
+	const canonicalRepo = realpathSync(repoRoot);
+	const canonicalEvidence = realpathSync(resolvedPath);
+	const rel = relative(canonicalRepo, canonicalEvidence);
+	if (isAbsolute(artifactPath) || rel.startsWith("..") || rel === "..") {
 		throw new Error("--evidence must stay within --repo");
 	}
-	return JSON.parse(readFileSync(resolvedPath, "utf8"));
+	return JSON.parse(readFileSync(canonicalEvidence, "utf8"));
 }
 
 /**
@@ -201,12 +203,15 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 				parsed.options.repoRoot,
 				parsed.options.outPath,
 			);
-			const rel = relative(parsed.options.repoRoot, outputPath);
-			if (isAbsolute(parsed.options.outPath) || rel.startsWith("..")) {
+			mkdirSync(dirname(outputPath), { recursive: true });
+			const canonicalRepo = realpathSync(parsed.options.repoRoot);
+			const canonicalDir = realpathSync(dirname(outputPath));
+			const canonicalOutput = join(canonicalDir, basename(outputPath));
+			const rel = relative(canonicalRepo, canonicalOutput);
+			if (isAbsolute(parsed.options.outPath) || rel.startsWith("..") || rel === "..") {
 				throw new Error("--out must stay within --repo");
 			}
-			mkdirSync(dirname(outputPath), { recursive: true });
-			writeFileSync(outputPath, `${json}\n`, "utf8");
+			writeFileSync(canonicalOutput, `${json}\n`, "utf8");
 		}
 		if (parsed.options.json) {
 			console.info(json);
