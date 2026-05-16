@@ -3,6 +3,7 @@ import {
 	asRuntimeEvidenceBundle,
 	type RuntimeEvidenceBundle,
 } from "./runtime-evidence-bundle.js";
+import { HE_PHASE_EXIT_SCHEMA_VERSION } from "../decision/he-phase-exit.js";
 import type { RuntimeCard, RuntimeCardSource } from "./runtime-card.js";
 
 /** Inputs for producing a normalized runtime evidence bundle from runtime-card state. */
@@ -43,6 +44,29 @@ function uniqueSources(sources: RuntimeCardSource[]): RuntimeCardSource[] {
 	});
 }
 
+function phaseExitFromRuntimeCard(
+	card: RuntimeCard,
+): RuntimeEvidenceBundle["phaseExit"] {
+	const isPass = card.phaseExit.status === "pass";
+	const blocker =
+		card.phaseExit.reason ??
+		"Runtime-card phase-exit state blocks continuation.";
+	return {
+		schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
+		phaseContext: {
+			phase: "closeout",
+			failingEvidencePresent: card.phaseExit.status !== "pass",
+			reviewFeedbackPresent: false,
+		},
+		recommendation: isPass ? "continue" : "commit_blocked",
+		commitAllowed: isPass,
+		exitAllowed: isPass,
+		blockers: isPass ? [] : [blocker],
+		warnings: isPass && card.phaseExit.reason ? [card.phaseExit.reason] : [],
+		gates: [],
+	};
+}
+
 /** Produce a reusable runtime-evidence-bundle/v1 artifact from runtime-card/v1 state. */
 export function buildRuntimeEvidenceBundleFromCard(
 	card: RuntimeCard,
@@ -59,6 +83,7 @@ export function buildRuntimeEvidenceBundleFromCard(
 		},
 		...(hasKnownPullRequest(card) ? { pullRequest: card.pullRequest } : {}),
 		...(hasKnownLinearState(card) ? { linear: card.linear } : {}),
+		phaseExit: phaseExitFromRuntimeCard(card),
 		sources: uniqueSources(card.sources),
 		blockers: [...card.blockers],
 	};

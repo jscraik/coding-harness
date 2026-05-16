@@ -379,6 +379,53 @@ describe("buildLocalRuntimeCard", () => {
 		]);
 	});
 
+	it("prefers local issue context over imported runtime evidence keys", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: runtimeEvidenceBundle({ issueKey: "JSC-999" }),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.issueKey).toBe("JSC-311");
+		expect(card.artifacts.status).toBe("current");
+	});
+
+	it("drops evidence phase-exit blockers when explicit phase-exit evidence is supplied", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+		writeFileSync(
+			join(repoRoot, "phase-exit.json"),
+			JSON.stringify(passingPhaseExit(), null, 2),
+		);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			phaseExitPath: "phase-exit.json",
+			evidenceBundle: runtimeEvidenceBundle({
+				phaseExit: {
+					...passingPhaseExit(),
+					recommendation: "commit_blocked",
+					commitAllowed: false,
+					exitAllowed: false,
+					blockers: ["Stale imported phase-exit blocks continuation."],
+					warnings: [],
+				},
+				blockers: ["Stale imported phase-exit blocks continuation."],
+			}),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.phaseExit.status).toBe("pass");
+		expect(card.blockers).toEqual([]);
+	});
+
 	it("fails closed when normalized session evidence has invalid phase-exit shape", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
 		writeActiveArtifacts(repoRoot);

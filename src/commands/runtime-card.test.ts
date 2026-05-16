@@ -183,6 +183,10 @@ describe("runRuntimeCardCLI", () => {
 				ref: `artifact:${evidenceOutPath}`,
 			},
 		});
+		expect(evidence.phaseExit).toMatchObject({
+			schemaVersion: "he-phase-exit/v1",
+			recommendation: "commit_blocked",
+		});
 		expect(
 			evidence.sources.map((source: { kind: string }) => source.kind),
 		).toEqual(["git", "artifact"]);
@@ -331,6 +335,29 @@ describe("runRuntimeCardCLI", () => {
 		]);
 
 		expect(exitCode).toBe(1);
+		expect(JSON.parse(output)).toMatchObject({
+			schemaVersion: "runtime-card-error/v1",
+			status: "fail",
+			error: "Error: --evidence-out must stay within --repo",
+		});
+	});
+
+	it("rejects evidence output paths under symlinked parent directories outside the repository", async () => {
+		const repoRoot = setupRepo();
+		const outsideRoot = mkdtempSync(join(tmpdir(), "runtime-card-outside-"));
+		const outsideEvidence = join(outsideRoot, "session-evidence.json");
+		symlinkSync(outsideRoot, join(repoRoot, ".harness/runtime"), "dir");
+
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--evidence-out",
+			".harness/runtime/session-evidence.json",
+		]);
+
+		expect(exitCode).toBe(1);
+		expect(existsSync(outsideEvidence)).toBe(false);
 		expect(JSON.parse(output)).toMatchObject({
 			schemaVersion: "runtime-card-error/v1",
 			status: "fail",

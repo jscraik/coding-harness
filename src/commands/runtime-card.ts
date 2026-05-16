@@ -184,6 +184,23 @@ function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
 	return JSON.parse(readFileSync(canonicalEvidence, "utf8"));
 }
 
+function nearestExistingPath(pathToCheck: string): string {
+	let current = pathToCheck;
+	while (true) {
+		try {
+			lstatSync(current);
+			return current;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+				throw error;
+			}
+			const parent = dirname(current);
+			if (parent === current) return current;
+			current = parent;
+		}
+	}
+}
+
 function writeJsonArtifact(
 	repoRoot: string,
 	artifactPath: string,
@@ -196,6 +213,19 @@ function writeJsonArtifact(
 	const canonicalRepo = realpathSync(repoRoot);
 	const outputPath = resolve(canonicalRepo, artifactPath);
 	if (isOutsideRepo(canonicalRepo, outputPath)) {
+		throw new Error(`${flagName} must stay within --repo`);
+	}
+	const nearestExisting = nearestExistingPath(outputPath);
+	let canonicalNearestExisting: string;
+	try {
+		canonicalNearestExisting = realpathSync(nearestExisting);
+	} catch (error) {
+		if (lstatSync(nearestExisting).isSymbolicLink()) {
+			throw new Error(`${flagName} must stay within --repo`);
+		}
+		throw error;
+	}
+	if (isOutsideRepo(canonicalRepo, canonicalNearestExisting)) {
 		throw new Error(`${flagName} must stay within --repo`);
 	}
 	mkdirSync(dirname(outputPath), { recursive: true });
