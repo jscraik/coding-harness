@@ -32,12 +32,11 @@ export default defineConfig({
 				(error.message.includes("timed out") ||
 					error.message.includes("timeout"));
 
-			console.error(`[vitest] Unhandled ${type} error:`, error);
+			console.error("[vitest] Unhandled error:", error);
 
 			// Fail on unexpected errors, log worker timeouts but continue
-			if (!isWorkerTimeout) {
-				throw error;
-			}
+			if (isWorkerTimeout) return false;
+			throw error;
 		},
 	},
 });
