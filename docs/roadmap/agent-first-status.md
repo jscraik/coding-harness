@@ -291,10 +291,10 @@ understood.
 
 | Repo                                  | Role                                              | First Pass                                                           | Status     |
 | ------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
-| `/Users/jamiecraik/dev/agent-skills`  | Brownfield repo with mature eval/workout patterns | Audit install state, eval model, and old/new harness surfaces.       | 📋 Planned |
-| `/Users/jamiecraik/dev/diagram-cli`   | Brownfield CLI with project-specific workflow     | Audit command discovery, validation mapping, and local instructions. | 📋 Planned |
-| `/Users/jamiecraik/dev/design-system` | Product/design repo                               | Audit visual/evidence workflow and frontend validation fit.          | 📋 Planned |
-| `/Users/jamiecraik/dev/x-writer`      | Active app/product repo                           | Audit non-destructive adoption and runtime-card degradation.         | 📋 Planned |
+| `~/dev/agent-skills` (brownfield)  | Brownfield repo with mature eval/workout patterns | Audit install state, eval model, and old/new harness surfaces.       | 📋 Planned |
+| `~/dev/diagram-cli` (brownfield)   | Brownfield CLI with project-specific workflow     | Audit command discovery, validation mapping, and local instructions. | 📋 Planned |
+| `~/dev/design-system` (product)    | Product/design repo                               | Audit visual/evidence workflow and frontend validation fit.          | 📋 Planned |
+| `~/dev/x-writer` (active product)  | Active app/product repo                           | Audit non-destructive adoption and runtime-card degradation.         | 📋 Planned |
 
 Read-only canary command shape:
 
