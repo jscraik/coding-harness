@@ -195,11 +195,21 @@ function collectFieldErrors(
 }
 
 function collectTestingFieldErrors(body: string): string[] {
-	return collectFieldErrors(body, "## Testing", REQUIRED_TESTING_FIELDS, "testing");
+	return collectFieldErrors(
+		body,
+		"## Testing",
+		REQUIRED_TESTING_FIELDS,
+		"testing",
+	);
 }
 
 function collectWorkPerformedFieldErrors(body: string): string[] {
-	return collectFieldErrors(body, "## Work performed", REQUIRED_WORK_FIELDS, "work performed");
+	return collectFieldErrors(
+		body,
+		"## Work performed",
+		REQUIRED_WORK_FIELDS,
+		"work performed",
+	);
 }
 
 /**
