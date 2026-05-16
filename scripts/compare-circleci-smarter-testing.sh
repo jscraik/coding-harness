@@ -24,7 +24,7 @@ run_measured() {
     printf '$ %s\n\n' "$command_text"
   } >"$log_path"
 
-  bash -lc "$command_text" >>"$log_path" 2>&1
+  zsh -lc "$command_text" >>"$log_path" 2>&1
   exit_code=$?
   ended_at="$(date +%s)"
   duration_seconds=$((ended_at - started_at))
