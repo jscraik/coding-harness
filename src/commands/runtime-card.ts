@@ -1,11 +1,26 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import {
+	lstatSync,
+	mkdirSync,
+	readFileSync,
+	realpathSync,
+	writeFileSync,
+} from "node:fs";
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+	sep,
+} from "node:path";
 import { cwd } from "node:process";
 import {
 	buildLiveRuntimeCard,
 	buildLocalRuntimeCard,
 } from "../lib/runtime/local-runtime-card.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { buildRuntimeEvidenceBundleFromCard } from "../lib/runtime/runtime-evidence-producer.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 
 interface RuntimeCardCLIOptions {
@@ -13,7 +28,9 @@ interface RuntimeCardCLIOptions {
 	repoRoot: string;
 	issueKey?: string;
 	phaseExitPath?: string;
+	evidencePath?: string;
 	outPath?: string;
+	evidenceOutPath?: string;
 	live: boolean;
 }
 
@@ -21,16 +38,28 @@ type RuntimeCardParseResult =
 	| { options: RuntimeCardCLIOptions }
 	| { exitCode: number };
 
+/**
+ * Print usage syntax and a one-line description for the "harness runtime-card" command.
+ *
+ * Emits a usage line listing supported flags and a brief summary of the command's purpose.
+ */
 function printRuntimeCardUsage(): void {
 	console.info(
-		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--issue <key>] [--phase-exit <path>] [--out <path>]",
+		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>] [--evidence-out <path>]",
 	);
 	console.info("");
 	console.info(
-		"Build a runtime-card/v1 artifact from git, .harness evidence, and optional live provider state.",
+		"Build a runtime-card/v1 artifact from git, .harness evidence, normalized evidence bundles, and optional live provider state.",
 	);
 }
 
+/**
+ * Retrieves the next command-line token after a flag, if it is a valid value.
+ *
+ * @param args - The full argument list (typically process.argv slice)
+ * @param index - The index of the flag within `args`
+ * @returns The next argument after the flag if present and does not start with `--`, `undefined` otherwise
+ */
 function readFlagValue(
 	args: readonly string[],
 	index: number,
@@ -40,6 +69,12 @@ function readFlagValue(
 	return value;
 }
 
+/**
+ * Parse CLI arguments for the `harness runtime-card` command and produce runtime options or an exit code.
+ *
+ * @param args - Command-line arguments to parse.
+ * @returns An object with `options` containing parsed `RuntimeCardCLIOptions` on success, or an object with `exitCode` when parsing requests early exit or encounters invalid arguments. `exitCode` values: `0` for help/usage, `2` for missing flag values or unknown arguments.
+ */
 function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
 	if (args.includes("--help") || args.includes("-h")) {
 		printRuntimeCardUsage();
@@ -84,6 +119,16 @@ function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
 			index += 1;
 			continue;
 		}
+		if (arg === "--evidence") {
+			const value = readFlagValue(args, index);
+			if (!value) {
+				console.error("runtime-card: --evidence requires an artifact path");
+				return { exitCode: 2 };
+			}
+			options.evidencePath = value;
+			index += 1;
+			continue;
+		}
 		if (arg === "--out") {
 			const value = readFlagValue(args, index);
 			if (!value) {
@@ -94,12 +139,162 @@ function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
 			index += 1;
 			continue;
 		}
+		if (arg === "--evidence-out") {
+			const value = readFlagValue(args, index);
+			if (!value) {
+				console.error("runtime-card: --evidence-out requires a file path");
+				return { exitCode: 2 };
+			}
+			options.evidenceOutPath = value;
+			index += 1;
+			continue;
+		}
 		console.error(`runtime-card: unknown argument ${String(arg)}`);
 		return { exitCode: 2 };
 	}
 	return { options };
 }
 
+function isOutsideRepo(repoRoot: string, pathToCheck: string): boolean {
+	const rel = relative(repoRoot, pathToCheck);
+	return rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel);
+}
+
+/**
+ * Loads and parses a JSON evidence bundle file referenced by `artifactPath`, constrained to stay within `repoRoot`.
+ *
+ * @param repoRoot - The repository root used to resolve relative `artifactPath` values.
+ * @param artifactPath - Path to the evidence JSON file relative to `repoRoot`.
+ * @returns The parsed JSON value from the evidence file.
+ * @throws Error if `artifactPath` is absolute or resolves outside `repoRoot` with the message "--evidence must stay within --repo".
+ */
+function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
+	if (isAbsolute(artifactPath)) {
+		throw new Error("--evidence must stay within --repo");
+	}
+	const canonicalRepo = realpathSync(repoRoot);
+	const resolvedPath = resolve(canonicalRepo, artifactPath);
+	if (isOutsideRepo(canonicalRepo, resolvedPath)) {
+		throw new Error("--evidence must stay within --repo");
+	}
+	const canonicalEvidence = realpathSync(resolvedPath);
+	if (isOutsideRepo(canonicalRepo, canonicalEvidence)) {
+		throw new Error("--evidence must stay within --repo");
+	}
+	return JSON.parse(readFileSync(canonicalEvidence, "utf8"));
+}
+
+function nearestExistingPath(pathToCheck: string): string {
+	let current = pathToCheck;
+	while (true) {
+		try {
+			lstatSync(current);
+			return current;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+				throw error;
+			}
+			const parent = dirname(current);
+			if (parent === current) return current;
+			current = parent;
+		}
+	}
+}
+
+function resolveArtifactOutputPath(
+	repoRoot: string,
+	artifactPath: string,
+	flagName: string,
+): string {
+	if (isAbsolute(artifactPath)) {
+		throw new Error(`${flagName} must stay within --repo`);
+	}
+	const canonicalRepo = realpathSync(repoRoot);
+	const outputPath = resolve(canonicalRepo, artifactPath);
+	if (isOutsideRepo(canonicalRepo, outputPath)) {
+		throw new Error(`${flagName} must stay within --repo`);
+	}
+	const nearestExisting = nearestExistingPath(outputPath);
+	let canonicalNearestExisting: string;
+	try {
+		canonicalNearestExisting = realpathSync(nearestExisting);
+	} catch (error) {
+		if (lstatSync(nearestExisting).isSymbolicLink()) {
+			throw new Error(`${flagName} must stay within --repo`);
+		}
+		throw error;
+	}
+	if (isOutsideRepo(canonicalRepo, canonicalNearestExisting)) {
+		throw new Error(`${flagName} must stay within --repo`);
+	}
+	const relativeFromNearest = relative(nearestExisting, outputPath);
+	return relativeFromNearest === ""
+		? canonicalNearestExisting
+		: resolve(canonicalNearestExisting, relativeFromNearest);
+}
+
+function writeJsonArtifact(
+	repoRoot: string,
+	artifactPath: string,
+	flagName: string,
+	value: unknown,
+): void {
+	const canonicalRepo = realpathSync(repoRoot);
+	const outputPath = resolveArtifactOutputPath(
+		repoRoot,
+		artifactPath,
+		flagName,
+	);
+	mkdirSync(dirname(outputPath), { recursive: true });
+	const canonicalDir = realpathSync(dirname(outputPath));
+	const canonicalOutput = join(canonicalDir, basename(outputPath));
+	if (isOutsideRepo(canonicalRepo, canonicalOutput)) {
+		throw new Error(`${flagName} must stay within --repo`);
+	}
+	let outputEntryExists = false;
+	try {
+		lstatSync(canonicalOutput);
+		outputEntryExists = true;
+		const canonicalExistingOutput = realpathSync(canonicalOutput);
+		if (isOutsideRepo(canonicalRepo, canonicalExistingOutput)) {
+			throw new Error(`${flagName} must stay within --repo`);
+		}
+	} catch (error) {
+		if (outputEntryExists) {
+			throw new Error(`${flagName} must stay within --repo`);
+		}
+		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+			throw error;
+		}
+	}
+	writeFileSync(canonicalOutput, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+function assertDistinctOutputArtifacts(options: RuntimeCardCLIOptions): void {
+	if (!options.outPath || !options.evidenceOutPath) return;
+	const outPath = resolveArtifactOutputPath(
+		options.repoRoot,
+		options.outPath,
+		"--out",
+	);
+	const evidenceOutPath = resolveArtifactOutputPath(
+		options.repoRoot,
+		options.evidenceOutPath,
+		"--evidence-out",
+	);
+	if (outPath === evidenceOutPath) {
+		throw new Error("--out and --evidence-out must target different files");
+	}
+}
+
+/**
+ * Render a human-readable summary of a runtime card to the console.
+ *
+ * Prints key runtime-card/v1 fields (issue, lifecycle, branch, pull request, linear status/freshness,
+ * artifacts status, phase-exit status, next safe action) and any blockers to console.info.
+ *
+ * @param card - The RuntimeCard to render
+ */
 function renderRuntimeCardHuman(card: RuntimeCard): void {
 	console.info("runtime-card/v1");
 	console.info(`issue: ${card.issueKey ?? "unknown"}`);
@@ -120,36 +315,55 @@ function renderRuntimeCardHuman(card: RuntimeCard): void {
 	}
 }
 
-/** Build and optionally persist a local runtime-card/v1 artifact. */
+/**
+ * Execute the `harness runtime-card` CLI: parse flags, build a `runtime-card/v1`, and emit or persist its output.
+ *
+ * Performs argument parsing and validation, optionally loads an evidence bundle constrained to `--repo`, builds the card using local or live providers based on flags, writes JSON artifacts to `--out` and `--evidence-out` when specified, and prints either pretty JSON or a human-readable view. On failure, prints a sanitized error in the selected output format.
+ *
+ * @param args - Command-line arguments (typically `process.argv.slice(2)`)
+ * @returns Exit code: `0` on success, `1` on runtime error, or another code returned by the argument parser (for example, help or invalid arguments)
+ */
 export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 	const parsed = parseRuntimeCardArgs(args);
 	if ("exitCode" in parsed) return parsed.exitCode;
 	try {
+		const evidenceBundle = parsed.options.evidencePath
+			? loadEvidenceBundle(parsed.options.repoRoot, parsed.options.evidencePath)
+			: undefined;
 		const buildOptions = {
 			repoRoot: parsed.options.repoRoot,
 			...(parsed.options.issueKey ? { issueKey: parsed.options.issueKey } : {}),
 			...(parsed.options.phaseExitPath
 				? { phaseExitPath: parsed.options.phaseExitPath }
 				: {}),
+			...(evidenceBundle !== undefined ? { evidenceBundle } : {}),
 		};
 		const card = parsed.options.live
 			? await buildLiveRuntimeCard(buildOptions)
 			: buildLocalRuntimeCard(buildOptions);
-		const json = JSON.stringify(card, null, 2);
+		assertDistinctOutputArtifacts(parsed.options);
 		if (parsed.options.outPath) {
-			const outputPath = resolve(
+			writeJsonArtifact(
 				parsed.options.repoRoot,
 				parsed.options.outPath,
+				"--out",
+				card,
 			);
-			const rel = relative(parsed.options.repoRoot, outputPath);
-			if (isAbsolute(parsed.options.outPath) || rel.startsWith("..")) {
-				throw new Error("--out must stay within --repo");
-			}
-			mkdirSync(dirname(outputPath), { recursive: true });
-			writeFileSync(outputPath, `${json}\n`, "utf8");
+		}
+		if (parsed.options.evidenceOutPath) {
+			const evidence = buildRuntimeEvidenceBundleFromCard(card, {
+				provenanceRef: `artifact:${parsed.options.evidenceOutPath}`,
+				generatedAt: card.generatedAt,
+			});
+			writeJsonArtifact(
+				parsed.options.repoRoot,
+				parsed.options.evidenceOutPath,
+				"--evidence-out",
+				evidence,
+			);
 		}
 		if (parsed.options.json) {
-			console.info(json);
+			console.info(JSON.stringify(card, null, 2));
 		} else {
 			renderRuntimeCardHuman(card);
 		}

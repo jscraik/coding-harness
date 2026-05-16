@@ -7,6 +7,7 @@ import {
 } from "../decision/he-phase-exit.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { LinearAPIError, LinearClient } from "../linear/client.js";
+import { inspectRuntimeEvidenceBundle } from "./runtime-evidence-adapter.js";
 import {
 	RUNTIME_CARD_SCHEMA_VERSION,
 	type RuntimeCard,
@@ -34,6 +35,8 @@ export interface LocalRuntimeCardOptions {
 	issueKey?: string;
 	/** Optional HePhaseExit/v1 artifact to collapse into the runtime card. */
 	phaseExitPath?: string;
+	/** Optional normalized runtime evidence bundle from session or CI collectors. */
+	evidenceBundle?: unknown;
 	/** Clock override for deterministic tests. */
 	now?: Date;
 	/** Optional git runner override for deterministic tests. */
@@ -586,6 +589,12 @@ function deriveLifecycle(args: {
 	return "unknown";
 }
 
+/**
+ * Selects the next recommended safe action based on the card's blockers and phase-exit state.
+ *
+ * @param card - Object containing `blockers` and `phaseExit` used to determine the action
+ * @returns A concise instruction: the first blocker message if any blockers exist; if not and the phase-exit status is `"not_run"`, guidance to run focused validation and provide a HePhaseExit/v1 artifact; otherwise the default `harness next` command instruction.
+ */
 function nextSafeAction(
 	card: Pick<RuntimeCard, "blockers" | "phaseExit">,
 ): string {
@@ -596,24 +605,52 @@ function nextSafeAction(
 	return "Run harness next --json --runtime-card <runtime-card.json>.";
 }
 
-/** Build a runtime-card/v1 artifact from local git and harness control-plane evidence. */
+/**
+ * Generate a validated runtime-card/v1 artifact from local repository state and an optional runtime evidence bundle.
+ *
+ * @param options - Configuration for card generation (repo root, optional preferred issue key, optional phase-exit artifact path, optional normalized evidence bundle, deterministic `now` override, and optional git runner override).
+ * @returns The validated `RuntimeCard` describing the repository's local runtime state.
+ * @throws Error - If the constructed runtime card fails schema validation.
+ */
 export function buildLocalRuntimeCard(
 	options: LocalRuntimeCardOptions,
 ): RuntimeCard {
 	const git = inspectGit(options.repoRoot, options.git);
-	const branchIssueKey = detectIssueKey(options.issueKey, git.branchName);
-	const artifacts = inspectArtifacts(options.repoRoot, branchIssueKey);
-	const phaseExit = inspectPhaseExit(options.repoRoot, options.phaseExitPath);
+	const evidence = inspectRuntimeEvidenceBundle(
+		options.evidenceBundle,
+		collapsePhaseExit,
+	);
+	const localIssueKey = detectIssueKey(options.issueKey, git.branchName);
+	const artifacts = inspectArtifacts(
+		options.repoRoot,
+		localIssueKey ?? evidence.issueKey,
+	);
+	const phaseExit =
+		options.phaseExitPath !== undefined
+			? inspectPhaseExit(options.repoRoot, options.phaseExitPath)
+			: (evidence.phaseExit ?? inspectPhaseExit(options.repoRoot, undefined));
 	const issueKey = detectIssueKey(
 		options.issueKey,
 		artifacts.issueKey,
 		git.branchName,
+		evidence.issueKey,
 	);
-	const blockers = [...artifacts.blockers, ...phaseExit.blockers];
+	const evidenceBlockers =
+		options.phaseExitPath !== undefined && evidence.phaseExit !== undefined
+			? evidence.blockers.filter(
+					(blocker) => !evidence.phaseExit?.blockers.includes(blocker),
+				)
+			: evidence.blockers;
+	const blockers = [
+		...artifacts.blockers,
+		...phaseExit.blockers,
+		...evidenceBlockers,
+	];
 	const sources = [
 		git.source,
 		artifacts.source,
 		...(phaseExit.source ? [phaseExit.source] : []),
+		...evidence.sources,
 	];
 	const partial = {
 		blockers,
@@ -639,22 +676,25 @@ export function buildLocalRuntimeCard(
 			ref: git.ref,
 		},
 		pullRequest: {
-			number: null,
-			state: null,
-			isDraft: null,
-			mergeStateStatus: null,
-			url: null,
+			number: evidence.pullRequest?.number ?? null,
+			state: evidence.pullRequest?.state ?? null,
+			isDraft: evidence.pullRequest?.isDraft ?? null,
+			mergeStateStatus: evidence.pullRequest?.mergeStateStatus ?? null,
+			url: evidence.pullRequest?.url ?? null,
 		},
 		artifacts: artifacts.artifacts,
-		linear: {
-			issueKey,
-			freshness: issueKey ? "unknown" : "missing",
-			status: null,
-			statusType: null,
-			url: null,
-			actionRequired:
-				"Live Linear state was not refreshed by local runtime-card generation.",
-		},
+		linear:
+			evidence.linear && evidence.linear.issueKey === issueKey
+				? evidence.linear
+				: {
+						issueKey,
+						freshness: issueKey ? "unknown" : "missing",
+						status: null,
+						statusType: null,
+						url: null,
+						actionRequired:
+							"Live Linear state was not refreshed by local runtime-card generation.",
+					},
 		phaseExit: phaseExit.phaseExit,
 		sources,
 		blockers,

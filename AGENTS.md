@@ -132,6 +132,20 @@ Notes:
   - phase-exit logic must refuse commit when gates are fail/blocked/not_run
   - Keep `AI/context/diagram-context.md` architecture context and docs-gate-required governance surfaces synchronized in the same PR
 - Validation gate graph changes that add typed gate specs, phase-exit evidence gates, `harness next --phase-exit` visibility, parity tests, or resume-checkpoint guards are architecture-artifact changes; refresh `AI/context/diagram-context.md` and keep docs-gate-required governance surfaces synchronized in the same PR.
+- Runtime-card evidence adapter changes that add or alter `--evidence`,
+  normalized session evidence, or runtime-card source/blocker projection are
+  architecture-adjacent changes; keep `runtime-card/v1` and
+  `runtime-evidence-bundle/v1` advisory and artifact-backed, keep paths
+  constrained to `--repo`, refresh architecture context when required, and
+  synchronize `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` when docs-gate reports governance
+  surfaces.
+- Runtime-card evidence producer changes that add or alter `--evidence-out`,
+  `runtime-evidence-bundle/v1`, or producer/adapter wiring are
+  architecture-adjacent changes; refresh `AI/context/diagram-context.md` and
+  keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized in the same PR when
+  docs-gate reports governance surfaces.
 - Goal-continuation or approval-plan contract changes must keep `harness next --json` safety metadata, snapshot-only state evidence, and agent-governance docs synchronized in the same PR.
 - When AGENTS/vocabulary surfaces change, run `pnpm run docs:ubiquitous:guard` to ensure `AGENTS.md` keeps the glossary linkage contract.
 - Before PR handoff in this source checkout, run or explicitly mark `n.a.` for the north-star learning loop when changed files can be matched against imported CodeRabbit evidence: `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, and `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json`. Use plain `harness ...` for downstream or installed-package contexts only. The `--files` value accepts comma-separated paths or multiple following path tokens.

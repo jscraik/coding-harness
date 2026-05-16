@@ -15,6 +15,10 @@ import {
 	buildLocalRuntimeCard,
 	type RuntimeCardGitRunner,
 } from "./local-runtime-card.js";
+import {
+	RUNTIME_EVIDENCE_BUNDLE_SCHEMA_VERSION,
+	type RuntimeEvidenceBundle,
+} from "./runtime-evidence-bundle.js";
 import { validateRuntimeCard } from "./runtime-card.js";
 
 const CODE = String.fromCharCode(96);
@@ -112,6 +116,50 @@ function passingPhaseExit(): HePhaseExit {
 		blockers: [],
 		warnings: [],
 		gates: [gate("simplify")],
+	};
+}
+
+function runtimeEvidenceBundle(
+	overrides: Partial<RuntimeEvidenceBundle> = {},
+): RuntimeEvidenceBundle {
+	return {
+		schemaVersion: RUNTIME_EVIDENCE_BUNDLE_SCHEMA_VERSION,
+		generatedAt: "2026-05-15T12:00:00.000Z",
+		issueKey: "JSC-311",
+		provenance: {
+			kind: "session_collector",
+			ref: "session-collector:run-123",
+			collectedAt: "2026-05-15T12:00:00.000Z",
+		},
+		pullRequest: {
+			number: 250,
+			state: "OPEN",
+			isDraft: false,
+			mergeStateStatus: "BLOCKED",
+			url: "https://github.com/jscraik/coding-harness/pull/250",
+		},
+		linear: {
+			issueKey: "JSC-311",
+			freshness: "current",
+			status: "In Progress",
+			statusType: "started",
+			url: "https://linear.app/jscraik/issue/JSC-311/example",
+			actionRequired: null,
+		},
+		phaseExit: passingPhaseExit(),
+		sources: [
+			{
+				kind: "validation",
+				ref: "command:pnpm check",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+		],
+		blockers: [
+			"Session collector reports PR checks are blocked; resolve CI before closeout.",
+		],
+		...overrides,
 	};
 }
 
@@ -297,5 +345,122 @@ describe("buildLocalRuntimeCard", () => {
 		expect(card.blockers).toEqual([
 			"GitHub PR merge state is DIRTY; resolve PR blockers before continuing.",
 		]);
+	});
+
+	it("adapts normalized session evidence into runtime-card and phase-exit state", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			issueKey: "JSC-311",
+			evidenceBundle: runtimeEvidenceBundle(),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.lifecycle).toBe("blocked");
+		expect(card.pullRequest.number).toBe(250);
+		expect(card.linear.status).toBe("In Progress");
+		expect(card.phaseExit).toEqual({
+			status: "pass",
+			reason: "Required phase-exit gates passed.",
+		});
+		expect(card.sources.map((source) => source.kind)).toEqual([
+			"git",
+			"artifact",
+			"phase_exit",
+			"session",
+			"validation",
+		]);
+		expect(card.blockers).toEqual([
+			"Session collector reports PR checks are blocked; resolve CI before closeout.",
+		]);
+	});
+
+	it("prefers local issue context over imported runtime evidence keys", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: runtimeEvidenceBundle({
+				issueKey: "JSC-999",
+				linear: {
+					issueKey: "JSC-999",
+					freshness: "current",
+					status: "Done",
+					statusType: "completed",
+					url: "https://linear.app/jscraik/issue/JSC-999/stale",
+					actionRequired: "Stale imported guidance.",
+				},
+			}),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.issueKey).toBe("JSC-311");
+		expect(card.linear.issueKey).toBe("JSC-311");
+		expect(card.linear.freshness).toBe("unknown");
+		expect(card.linear.status).toBeNull();
+		expect(card.artifacts.status).toBe("current");
+	});
+
+	it("drops only stale phase-exit blockers when explicit phase-exit evidence is supplied", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+		writeFileSync(
+			join(repoRoot, "phase-exit.json"),
+			JSON.stringify(passingPhaseExit(), null, 2),
+		);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			phaseExitPath: "phase-exit.json",
+			evidenceBundle: runtimeEvidenceBundle({
+				phaseExit: {
+					...passingPhaseExit(),
+					recommendation: "commit_blocked",
+					commitAllowed: false,
+					exitAllowed: false,
+					blockers: ["Stale imported phase-exit blocks continuation."],
+					warnings: [],
+				},
+				blockers: [
+					"Stale imported phase-exit blocks continuation.",
+					"Session collector reports PR checks are blocked; resolve CI before closeout.",
+				],
+			}),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.phaseExit.status).toBe("pass");
+		expect(card.blockers).toEqual([
+			"Session collector reports PR checks are blocked; resolve CI before closeout.",
+		]);
+	});
+
+	it("fails closed when normalized session evidence has invalid phase-exit shape", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		expect(() =>
+			buildLocalRuntimeCard({
+				repoRoot,
+				evidenceBundle: {
+					...runtimeEvidenceBundle(),
+					phaseExit: {
+						schemaVersion: "he-phase-exit/v1",
+						recommendation: "continue",
+					},
+				},
+				now: new Date("2026-05-15T12:00:00.000Z"),
+				git: gitRunner(),
+			}),
+		).toThrow(/runtime evidence bundle failed validation/u);
 	});
 });

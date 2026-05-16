@@ -66,7 +66,9 @@ When a local runtime artifact already exists, pass it into the same read-only
 cockpit command so blockers and lifecycle state are reflected in the decision:
 
 ```bash
-harness runtime-card --json --live --out .harness/runtime/JSC-311.json
+harness runtime-card --json --live \
+  --out .harness/runtime/JSC-311.json \
+  --evidence-out .harness/runtime/JSC-311-evidence.json
 harness next --json --runtime-card .harness/runtime/JSC-311.json
 ```
 
@@ -590,27 +592,27 @@ harness commands --json | jq '
 
 ### Bootstrap And Governance
 
-| Command             | Purpose                                                                                                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                 |
-| `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
-| `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)        |
-| `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                |
-| `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`) |
-| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, and optional live provider state (`--json`, optional `--live`, optional `--issue`, optional `--phase-exit`, optional `--out`) |
-| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                        |
-| `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                        |
-| `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                   |
-| `health`            | Unified gate status scorecard across all gates                                                                                                                            |
-| `brain`             | Query and update Project Brain context artifacts                                                                                                                          |
-| `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                  |
-| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                      |
-| `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                  |
-| `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                               |
-| `verify-work`       | Run canonical repo-local verification (fresh or resume mode, with `--resume-from` checked against typed validation gate specs)                                            |
-| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                         |
-| `preset`            | List and inspect bundled presets                                                                                                                                          |
-| `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                     |
+| Command             | Purpose                                                                                                                                                                                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                                                                                                                   |
+| `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                   |
+| `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                          |
+| `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                  |
+| `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                          |
+| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`) |
+| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                          |
+| `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                                                                                                                          |
+| `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                                                                                                                     |
+| `health`            | Unified gate status scorecard across all gates                                                                                                                                                                                                                              |
+| `brain`             | Query and update Project Brain context artifacts                                                                                                                                                                                                                            |
+| `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                                                                                                                    |
+| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                                                                                                                        |
+| `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                                                                                                                    |
+| `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                                                                                                                                 |
+| `verify-work`       | Run canonical repo-local verification (fresh or resume mode, with `--resume-from` checked against typed validation gate specs)                                                                                                                                              |
+| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                                                                                                                           |
+| `preset`            | List and inspect bundled presets                                                                                                                                                                                                                                            |
+| `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                                                                                                                       |
 
 ### Review And Policy Gates
 
@@ -660,21 +662,21 @@ harness commands --json | jq '
 
 ### Drift, Search, And Evidence
 
-| Command             | Purpose                                                                                                                                                                                                                           |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `drift-gate`        | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
-| `org-audit`         | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
-| `tooling-audit`     | Audit managed repo tooling baselines                                                                                                                                                                                              |
-| `gardener`          | Detect stale docs and broken links                                                                                                                                                                                                |
-| `context-health`    | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
+| Command               | Purpose                                                                                                                                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `drift-gate`          | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
+| `org-audit`           | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
+| `tooling-audit`       | Audit managed repo tooling baselines                                                                                                                                                                                              |
+| `gardener`            | Detect stale docs and broken links                                                                                                                                                                                                |
+| `context-health`      | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
 | `learnings`           | Import local operational review evidence, run exact-file learning gates, and generate high-usage promotion candidates via `learnings import`, `learnings gate`, and `learnings promote`                                           |
 | `review-context`      | Generate PR review context from changed files and imported operational learnings, including applicable learned constraints and validation-plan entries                                                                            |
 | `validation-plan`     | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated                                                                              |
 | `north-star-feedback` | Measure learning hits, gate blocks/warnings, promotion candidates, promoted learnings, high-usage unenforced learnings, review-thread count, and validation reruns from imported learning evidence and optional run artifacts     |
 | `artifact-gate`       | Check changed generated artifacts against `.harness/artifact-provenance.json` so template/source edits accompany runtime mirrors                                                                                                  |
-| `ci-ownership-gate` | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                                                                         |
-| `search`            | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
-| `context`           | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
+| `ci-ownership-gate`   | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                                                                         |
+| `search`              | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
+| `context`             | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 
 | `source-outline` | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol` |
 
