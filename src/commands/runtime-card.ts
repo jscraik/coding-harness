@@ -227,7 +227,10 @@ function resolveArtifactOutputPath(
 	if (isOutsideRepo(canonicalRepo, canonicalNearestExisting)) {
 		throw new Error(`${flagName} must stay within --repo`);
 	}
-	return outputPath;
+	const relativeFromNearest = relative(nearestExisting, outputPath);
+	return relativeFromNearest === ""
+		? canonicalNearestExisting
+		: resolve(canonicalNearestExisting, relativeFromNearest);
 }
 
 function writeJsonArtifact(

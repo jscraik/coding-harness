@@ -334,6 +334,31 @@ describe("runRuntimeCardCLI", () => {
 		});
 	});
 
+	it("rejects colliding output paths through repo-internal symlink parents", async () => {
+		const repoRoot = setupRepo();
+		mkdirSync(join(repoRoot, ".harness/runtime/real"), { recursive: true });
+		symlinkSync(
+			join(repoRoot, ".harness/runtime/real"),
+			join(repoRoot, ".harness/runtime/link"),
+		);
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--out",
+			".harness/runtime/real/card.json",
+			"--evidence-out",
+			".harness/runtime/link/card.json",
+		]);
+
+		expect(exitCode).toBe(1);
+		expect(JSON.parse(output)).toMatchObject({
+			schemaVersion: "runtime-card-error/v1",
+			status: "fail",
+			error: "Error: --out and --evidence-out must target different files",
+		});
+	});
+
 	it("rejects evidence output symlinks that point outside the repository", async () => {
 		const repoRoot = setupRepo();
 		const outsideRoot = mkdtempSync(join(tmpdir(), "runtime-card-outside-"));
