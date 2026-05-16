@@ -94,7 +94,7 @@ Keep the CircleCI Snyk lane explicit and report-only:
 - Command: `pnpm run docs:style:changed` -> pass.
 - Command: `bash scripts/run-harness-gate.sh docs-gate --mode required --json`
   -> pass.
-- Command: `python3 Plugins/harness-engineering/scripts/check_bluf_structure.py .harness/solutions/2026-05-16-circleci-snyk-delta-gate.md --json`
+- Command: `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_bluf_structure.py .harness/solutions/2026-05-16-circleci-snyk-delta-gate.md --json`
   -> pass after tightening the BLUF.
 - Pending after patch: `gh pr checks 254 --watch=false` after push.
 
