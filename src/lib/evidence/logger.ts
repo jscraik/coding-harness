@@ -60,7 +60,7 @@ function createConsoleWriter(): { write: (str: string) => void } {
 export class StructuredLogger {
 	private minLevel: LogLevel;
 	private otelEndpoint: string | undefined;
-	private otelHeaders: Record<string, string>;
+	private otelHeaders: Headers;
 	private serviceName: string;
 	private output: { write: (str: string) => void };
 
@@ -68,11 +68,31 @@ export class StructuredLogger {
 		this.minLevel = options.minLevel ?? "info";
 		this.otelEndpoint =
 			options.otelEndpoint ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
-		this.otelHeaders = {
-			...parseOtelExporterHeaders(process.env.OTEL_EXPORTER_OTLP_HEADERS),
-			...createCollectorTokenHeader(process.env),
-			...options.otelHeaders,
-		};
+
+		// Build normalized headers using Headers API to handle case-insensitive deduplication
+		this.otelHeaders = new Headers();
+
+		// Add headers from OTEL_EXPORTER_OTLP_HEADERS environment variable
+		const envHeaders = parseOtelExporterHeaders(
+			process.env.OTEL_EXPORTER_OTLP_HEADERS,
+		);
+		for (const [key, value] of Object.entries(envHeaders)) {
+			this.otelHeaders.set(key, value);
+		}
+
+		// Add collector token header if configured
+		const collectorHeaders = createCollectorTokenHeader(process.env);
+		for (const [key, value] of Object.entries(collectorHeaders)) {
+			this.otelHeaders.set(key, value);
+		}
+
+		// Add headers from LoggerOptions (highest priority)
+		if (options.otelHeaders) {
+			for (const [key, value] of Object.entries(options.otelHeaders)) {
+				this.otelHeaders.set(key, value);
+			}
+		}
+
 		this.serviceName = options.serviceName ?? "coding-harness";
 		this.output = options.output ?? createConsoleWriter();
 	}
@@ -171,12 +191,13 @@ export class StructuredLogger {
 				],
 			});
 
+			// Create headers for fetch with Content-Type and normalized OTEL headers
+			const fetchHeaders = new Headers(this.otelHeaders);
+			fetchHeaders.set("Content-Type", "application/json");
+
 			await fetch(this.otelEndpoint, {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					...this.otelHeaders,
-				},
+				headers: fetchHeaders,
 				body,
 			});
 		} catch {
