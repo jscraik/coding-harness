@@ -34,6 +34,12 @@ export interface RuntimeEvidenceBundleSnapshot {
 	blockers: string[];
 }
 
+/**
+ * Deduplicates runtime card sources by their `kind` and `ref`, preserving the first occurrence of each.
+ *
+ * @param sources - The list of runtime card sources to filter
+ * @returns An array containing the first occurrence of each unique source where uniqueness is determined by `source.kind` and `source.ref`
+ */
 function uniqueSources(sources: RuntimeCardSource[]): RuntimeCardSource[] {
 	const seen = new Set<string>();
 	return sources.filter((source) => {
@@ -44,7 +50,21 @@ function uniqueSources(sources: RuntimeCardSource[]): RuntimeCardSource[] {
 	});
 }
 
-/** Inspect a normalized runtime-evidence-bundle/v1 artifact for runtime-card generation. */
+/**
+ * Produce a normalized snapshot of a runtime evidence bundle for runtime-card generation.
+ *
+ * When `value` is `undefined`, returns a snapshot with `issueKey` set to `null` and empty
+ * `sources` and `blockers`.
+ *
+ * @param value - The runtime evidence bundle (or unknown) to inspect; expected to conform to the normalized runtime-evidence-bundle/v1 shape.
+ * @param collapsePhaseExit - Function that converts a bundle `phaseExit` into a `RuntimeCardPhaseExitState`; invoked only if the bundle contains `phaseExit`.
+ * @returns A `RuntimeEvidenceBundleSnapshot` containing:
+ *  - `issueKey` copied from the bundle (or `null` when `value` is `undefined`),
+ *  - optional `pullRequest` and `linear` when present on the bundle,
+ *  - optional `phaseExit` (with the collapsed `phaseExit` state, a generated `phase_exit` source whose `status` and `failureClass` reflect the phase result, and `blockers` derived from the phase result),
+ *  - `sources` composed of a synthetic `session` source prepended to the bundle sources and deduplicated,
+ *  - `blockers` copied from the bundle.
+ */
 export function inspectRuntimeEvidenceBundle(
 	value: RuntimeEvidenceBundle | unknown | undefined,
 	collapsePhaseExit: RuntimeEvidencePhaseExitCollapser,

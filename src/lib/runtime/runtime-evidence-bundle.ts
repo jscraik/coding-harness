@@ -88,6 +88,13 @@ export interface RuntimeEvidenceBundleValidationResult {
 	errors: HeValidationError[];
 }
 
+/**
+ * Validates that a value is either a boolean or null and records an error if it is not.
+ *
+ * @param value - The value to validate
+ * @param field - The field path used in any produced validation error
+ * @param errors - The accumulator array to which a `HeValidationError` will be appended on validation failure
+ */
 function validateNullableBoolean(
 	value: unknown,
 	field: string,
@@ -98,6 +105,16 @@ function validateNullableBoolean(
 	}
 }
 
+/**
+ * Validate that `value` is either `null` or a non-negative integer and record a validation error if not.
+ *
+ * If `value` is not `null` and is not an integer number greater than or equal to zero, a `HeValidationError`
+ * describing the violation is appended to `errors` with `field` as the error path.
+ *
+ * @param value - The value to validate
+ * @param field - The dotted path or field name to use in any generated validation error
+ * @param errors - Accumulator array to which a `HeValidationError` will be pushed on validation failure
+ */
 function validateNullableNumber(
 	value: unknown,
 	field: string,
@@ -116,6 +133,13 @@ function validateNullableNumber(
 	}
 }
 
+/**
+ * If `value` is `undefined` no validation is performed; otherwise validates that `value` is either `null` or a string and appends any validation errors to `errors`.
+ *
+ * @param value - The value to validate
+ * @param field - The field path used when recording validation errors
+ * @param errors - Accumulator array to receive any validation errors
+ */
 function validateOptionalNullableString(
 	value: unknown,
 	field: string,
@@ -125,6 +149,15 @@ function validateOptionalNullableString(
 	validateNullableString(value, field, errors);
 }
 
+/**
+ * Validates a pull request state object and appends any validation errors to `errors`.
+ *
+ * If `value` is `undefined` this function does nothing. If `value` is present but not an object, a single validation error is pushed for `field` and validation stops. When `value` is an object, the following nullable properties are validated on the given path prefix: `number` (nullable non-negative integer), `state` (nullable string), `isDraft` (nullable boolean), `mergeStateStatus` (nullable string), and `url` (nullable string).
+ *
+ * @param value - The value to validate as a pull request state
+ * @param field - Path prefix used in generated validation error `path` values
+ * @param errors - Array to which discovered `HeValidationError`s are appended
+ */
 function validatePullRequestState(
 	value: unknown,
 	field: string,
@@ -146,6 +179,19 @@ function validatePullRequestState(
 	validateNullableString(value.url, `${field}.url`, errors);
 }
 
+/**
+ * Validates a Linear state object and appends any validation errors to `errors`.
+ *
+ * If `value` is `undefined` no validation is performed. When present, `value` must be an object whose properties are validated as:
+ * - `issueKey`: nullable string
+ * - `freshness`: one of `VALID_FRESHNESS`
+ * - `status`, `statusType`, `url`: optional nullable strings
+ * - `actionRequired`: nullable string
+ *
+ * @param value - The value to validate as a Linear state
+ * @param field - Path prefix used when recording validation error locations (e.g. "linear")
+ * @param errors - Mutable array that will receive `HeValidationError` entries for any validation failures
+ */
 function validateLinearState(
 	value: unknown,
 	field: string,
@@ -172,6 +218,19 @@ function validateLinearState(
 	);
 }
 
+/**
+ * Validates the `sources` field of a runtime evidence bundle and appends any validation errors to `errors`.
+ *
+ * Ensures `value` is an array; for each element it requires an object with:
+ * - `kind`: one of the allowed source kinds
+ * - `ref`: a string reference
+ * - `freshness`: one of the allowed freshness values
+ * - `status`: one of the allowed source statuses
+ * - `failureClass`: `null` or a string (if present)
+ *
+ * @param value - The value to validate as the `sources` array
+ * @param errors - Accumulator for validation errors; new errors will be pushed into this array
+ */
 function validateSources(value: unknown, errors: HeValidationError[]): void {
 	if (!Array.isArray(value)) {
 		errors.push(toValidationError("sources must be an array", "sources"));
@@ -205,6 +264,14 @@ function validateSources(value: unknown, errors: HeValidationError[]): void {
 	}
 }
 
+/**
+ * Validates a runtime evidence bundle provenance object and appends any validation errors to `errors`.
+ *
+ * Ensures `value` is an object and that `kind`, `ref`, and `collectedAt` conform to the expected enums/types; reported error paths are prefixed with `provenance`.
+ *
+ * @param value - The value to validate as a provenance object
+ * @param errors - Mutable array to which validation errors will be appended
+ */
 function validateProvenance(value: unknown, errors: HeValidationError[]): void {
 	if (!isRecord(value)) {
 		errors.push(
@@ -222,7 +289,12 @@ function validateProvenance(value: unknown, errors: HeValidationError[]): void {
 	validateNullableString(value.collectedAt, "provenance.collectedAt", errors);
 }
 
-/** Validate an unknown value as a runtime-evidence-bundle/v1 artifact. */
+/**
+ * Validate a value against the `runtime-evidence-bundle/v1` schema.
+ *
+ * @param value - The value to validate
+ * @returns An object with `valid` set to `true` when `value` conforms to the schema and `errors` containing any `HeValidationError` entries describing violations
+ */
 export function validateRuntimeEvidenceBundle(
 	value: unknown,
 ): RuntimeEvidenceBundleValidationResult {
@@ -260,7 +332,12 @@ export function validateRuntimeEvidenceBundle(
 	return { valid: errors.length === 0, errors };
 }
 
-/** Cast a validated runtime-evidence-bundle/v1 candidate. */
+/**
+ * Casts a validated runtime evidence bundle candidate to a RuntimeEvidenceBundle.
+ *
+ * @returns The input value asserted as `RuntimeEvidenceBundle`.
+ * @throws Error if the value fails validation; the error message contains the validation error codes joined by "; ".
+ */
 export function asRuntimeEvidenceBundle(value: unknown): RuntimeEvidenceBundle {
 	const validation = validateRuntimeEvidenceBundle(value);
 	if (!validation.valid) {

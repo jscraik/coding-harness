@@ -22,6 +22,11 @@ type RuntimeCardParseResult =
 	| { options: RuntimeCardCLIOptions }
 	| { exitCode: number };
 
+/**
+ * Prints the CLI usage syntax and a brief description for the `harness runtime-card` command.
+ *
+ * Outputs a usage line showing supported flags and a short one-line summary of the command's purpose to console.info.
+ */
 function printRuntimeCardUsage(): void {
 	console.info(
 		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>]",
@@ -41,6 +46,12 @@ function readFlagValue(
 	return value;
 }
 
+/**
+ * Parse CLI arguments for the `harness runtime-card` command and produce runtime options or an exit code.
+ *
+ * @param args - Command-line arguments to parse.
+ * @returns An object with `options` containing parsed `RuntimeCardCLIOptions` on success, or an object with `exitCode` when parsing requests early exit or encounters invalid arguments. `exitCode` values: `0` for help/usage, `2` for missing flag values or unknown arguments.
+ */
 function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
 	if (args.includes("--help") || args.includes("-h")) {
 		printRuntimeCardUsage();
@@ -111,6 +122,14 @@ function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
 	return { options };
 }
 
+/**
+ * Loads and parses a JSON evidence bundle file referenced by `artifactPath`, constrained to stay within `repoRoot`.
+ *
+ * @param repoRoot - The repository root used to resolve relative `artifactPath` values.
+ * @param artifactPath - Path to the evidence JSON file (absolute or relative to `repoRoot`).
+ * @returns The parsed JSON value from the evidence file.
+ * @throws Error if `artifactPath` is absolute or resolves outside `repoRoot` with the message "--evidence must stay within --repo".
+ */
 function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
 	const resolvedPath = isAbsolute(artifactPath)
 		? artifactPath
@@ -122,6 +141,14 @@ function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
 	return JSON.parse(readFileSync(resolvedPath, "utf8"));
 }
 
+/**
+ * Render a human-readable summary of a runtime card to the console.
+ *
+ * Prints key runtime-card/v1 fields (issue, lifecycle, branch, pull request, linear status/freshness,
+ * artifacts status, phase-exit status, next safe action) and any blockers to console.info.
+ *
+ * @param card - The RuntimeCard to render
+ */
 function renderRuntimeCardHuman(card: RuntimeCard): void {
 	console.info("runtime-card/v1");
 	console.info(`issue: ${card.issueKey ?? "unknown"}`);
@@ -142,7 +169,14 @@ function renderRuntimeCardHuman(card: RuntimeCard): void {
 	}
 }
 
-/** Build and optionally persist a local runtime-card/v1 artifact. */
+/**
+ * Execute the `harness runtime-card` CLI: parse flags, build a `runtime-card/v1`, and emit or persist its output.
+ *
+ * Performs argument parsing and validation, optionally loads an evidence bundle constrained to `--repo`, builds the card using local or live providers based on flags, writes the JSON artifact to `--out` when specified, and prints either pretty JSON or a human-readable view. On failure, prints a sanitized error in the selected output format.
+ *
+ * @param args - Command-line arguments (typically `process.argv.slice(2)`)
+ * @returns Exit code: `0` on success, `1` on runtime error, or another code returned by the argument parser (e.g., help or invalid arguments)
+ */
 export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 	const parsed = parseRuntimeCardArgs(args);
 	if ("exitCode" in parsed) return parsed.exitCode;

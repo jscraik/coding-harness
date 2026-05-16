@@ -599,7 +599,13 @@ function nextSafeAction(
 	return "Run harness next --json --runtime-card <runtime-card.json>.";
 }
 
-/** Build a runtime-card/v1 artifact from local git and harness control-plane evidence. */
+/**
+ * Generate a validated runtime-card/v1 artifact from local repository state and an optional runtime evidence bundle.
+ *
+ * @param options - Configuration for card generation (repo root, optional preferred issue key, optional phase-exit artifact path, optional normalized evidence bundle, deterministic `now` override, and optional git runner override).
+ * @returns The validated `RuntimeCard` describing the repository's local runtime state.
+ * @throws Error - If the constructed runtime card fails schema validation.
+ */
 export function buildLocalRuntimeCard(
 	options: LocalRuntimeCardOptions,
 ): RuntimeCard {
