@@ -1,10 +1,10 @@
 ---
-last_validated: 2026-05-13
+last_validated: 2026-05-16
 ---
 
 # Agent-First Status Matrix
 
-> Last updated: 2026-05-13
+> Last updated: 2026-05-16
 > Owner: Jamie Craik
 > Review cadence: Weekly
 
@@ -22,6 +22,8 @@ The canonical north-star contract lives in
 - [Phase Implementation Status](#phase-implementation-status)
 - [Agent-First Throughput v1 Pilot](#agent-first-throughput-v1-pilot)
 - [CLI Surface Parity (P0/P1 Gap Closure)](#cli-surface-parity-p0p1-gap-closure)
+- [Portable Installability Roadmap](#portable-installability-roadmap)
+- [Eval And Trace Roadmap](#eval-and-trace-roadmap)
 - [Outstanding Items](#outstanding-items)
 - [Section 27 Optional Enhancements](#section-27-optional-enhancements)
 - [References](#references)
@@ -254,6 +256,123 @@ Tie-back to north-star contract:
 | Strategic docs normalization      | ✅     | Strategic status docs and implementation plans now cite this matrix as canonical   |
 | README link                       | ✅     | README documentation section links to this matrix                                  |
 | Ready-backlog narrative coherence | 🔶     | Keep this phase partial until status narrative and backlog lifecycle stay aligned. |
+
+## Portable Installability Roadmap
+
+This roadmap now treats portability as a product outcome, not a later packaging
+task. The target is an installable Codex-native control plane that can land in
+greenfield and brownfield repos while preserving local project truth.
+
+### Adoption Levels
+
+| Level                          | Status     | Purpose                                                              | Proof Needed                                                                                                                      |
+| ------------------------------ | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Level 0: Diagnose only         | 📋 Planned | Inspect repo state with no writes.                                   | `harness init --dry-run --json` reports stack, existing surfaces, conflicts, proposed writes, and rollback plan.                  |
+| Level 1: Thin operator surface | 📋 Planned | Install compact Codex orientation and validation mapping.            | Existing `AGENTS.md`, scripts, CI, and PR templates are patched or skipped without overwrite.                                     |
+| Level 2: Guardrails            | 📋 Planned | Add executable checks for repeated PR/review failures.               | Metadata gates, rule lifecycle, and review-context checks catch known failure classes before remote CI.                           |
+| Level 3: Runtime evidence      | 🔶 Partial | Feed current repo truth into `runtime-card` and `harness next`.      | Missing integrations degrade to `unknown`; available git/PR/CI/Linear/session evidence changes recommendations deterministically. |
+| Level 4: Compounding memory    | 🔶 Partial | Convert failures into Project Brain, solutions, evals, and fixtures. | `he-reinforce` outputs map to durable rules only when evidence proves recurrence or resolution.                                   |
+
+Unknown-provider semantics:
+
+| Adoption Level | `unknown` Means                                                                          | Blocks Promotion?                                                             |
+| -------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Level 0        | Provider or local surface is absent or unreadable during diagnosis.                      | No, but it must appear in the installability report.                          |
+| Level 1        | Required local validation or instruction ownership is ambiguous.                         | Yes, until skipped with an explicit reason or mapped to a local command.      |
+| Level 2        | A governance gate cannot prove PR metadata, rule lifecycle, or required-check ownership. | Yes for the affected guardrail.                                               |
+| Level 3        | CI, PR, Linear, session, or runtime evidence is unavailable.                             | Yes only when that provider is required by the repo contract or active phase. |
+| Level 4        | A learning cannot be tied to evidence, scope, owner, or retirement condition.            | Yes; keep it as a hypothesis, not a durable rule.                             |
+
+### Live Canary Repos
+
+Live repos are canaries, not playgrounds. The first pass is read-only. Stable
+failures become installer rules and fixtures only after the canary evidence is
+understood.
+
+| Repo                                  | Role                                              | First Pass                                                           | Status     |
+| ------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
+| `/Users/jamiecraik/dev/agent-skills`  | Brownfield repo with mature eval/workout patterns | Audit install state, eval model, and old/new harness surfaces.       | 📋 Planned |
+| `/Users/jamiecraik/dev/diagram-cli`   | Brownfield CLI with project-specific workflow     | Audit command discovery, validation mapping, and local instructions. | 📋 Planned |
+| `/Users/jamiecraik/dev/design-system` | Product/design repo                               | Audit visual/evidence workflow and frontend validation fit.          | 📋 Planned |
+| `/Users/jamiecraik/dev/x-writer`      | Active app/product repo                           | Audit non-destructive adoption and runtime-card degradation.         | 📋 Planned |
+
+Read-only canary command shape:
+
+```bash
+pwd
+git status --short --branch
+harness --version || true
+harness doctor --json || true
+harness init --dry-run --json || true
+harness next --json || true
+```
+
+Brownfield safety rules:
+
+| Rule                                                                               | Reason                                                              |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| No writes on first pass.                                                           | Preserve local project truth while classifying install risk.        |
+| Always create a branch before applying.                                            | Keeps adoption reversible and reviewable.                           |
+| Capture a before manifest.                                                         | Enables rollback and generated-surface ownership.                   |
+| Never overwrite `AGENTS.md`, CI, scripts, or PR templates without a patch preview. | These are local governance surfaces, not blank scaffolding targets. |
+| Prefer minimal profile first.                                                      | Protects the thin surface principle.                                |
+| Record failures as installer evidence.                                             | Turns real portability pain into eval cases and guardrails.         |
+
+## Eval And Trace Roadmap
+
+The `agent-skills` repository provides the reference pattern for proving behavior:
+structural mode for fast local iteration, trusted-live mode for real runner proof,
+and release-ready mode for retained current-run evidence. Coding Harness should
+reuse that shape instead of inventing a separate proof culture.
+
+External AI workflow material reinforces the same loop: instrument real
+executions, capture nested spans, curate production failures into datasets, add
+human labels or expected outputs, then score future runs. Coding Harness should
+use that vocabulary where it helps, while keeping data repo-local and portable.
+
+### Proof Modes
+
+| Mode          | Purpose                | Required Evidence                                                                                            |
+| ------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Structural    | Fast local confidence. | Schemas, command output shape, fixture dry-runs, and static validators pass.                                 |
+| Trusted live  | Behavioral confidence. | Real Codex/session/CI/git/PR inputs run successfully against a live or canary repo.                          |
+| Release-ready | Closeout confidence.   | Current-run evidence index records branch, commit SHA, `generatedAt`, commands, outcomes, and residual risk. |
+
+### Trace Model
+
+| Trace Concept | Coding Harness Meaning                                                                                                                                           |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trace         | One PR loop, install attempt, canary audit, phase exit, or review remediation run.                                                                               |
+| Span          | A named operation such as `doctor`, `init-dry-run`, `runtime-card`, `linear-gate`, `ci-state`, `review-context`, `validator`, `tool-call`, or `human-feedback`.  |
+| Score         | Operational quality signal such as install safety, evidence freshness, next-action correctness, rollback completeness, stack health, or review-rework reduction. |
+| Dataset       | Curated cases from canaries, CI failures, review failures, session collector evidence, and Project Brain solutions.                                              |
+
+### Trace Execution Contract
+
+| Span            | Command Or Source                                               | Required Artifact                                                         | Pass/Fail/Unknown Semantics                                                                                                                          |
+| --------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `doctor`        | `harness doctor --json`                                         | Doctor JSON or blocked command reason.                                    | Pass when repo prerequisites are healthy; fail on required setup errors; unknown when command is absent in a canary repo.                            |
+| `init-dry-run`  | `harness init --dry-run --json`                                 | Installability report with proposed writes, conflicts, and rollback plan. | Pass when no unsafe overwrite exists; fail on locally owned required-surface conflict; unknown only before the command exists.                       |
+| `runtime-card`  | `harness runtime-card --json` or current runtime-card artifact  | `runtime-card/v1` evidence.                                               | Pass when current evidence is fresh; fail on stale or contradictory evidence; unknown when optional providers are unavailable.                       |
+| `next`          | `harness next --json`                                           | `HarnessDecision` JSON.                                                   | Pass when a safe next command and stop conditions are explicit; fail when required sources are blocked; unknown sources must stay visible in `meta`. |
+| `linear-gate`   | `harness linear-gate --json`                                    | Gate JSON with issue key and PR metadata result.                          | Pass when metadata is current; fail before PR handoff if required references are missing; unknown if Linear is not part of the repo contract.        |
+| `ci-state`      | CI provider adapter or required-check mapping                   | CI/check evidence tied to branch and SHA.                                 | Pass when required checks match current head; fail on red, stale, or missing required checks; unknown for optional providers.                        |
+| `reinforcement` | `he-reinforce` output, solution record, or Project Brain update | Solution, rule, fixture, or explicit skip reason.                         | Pass when lesson has evidence and scope; fail when it would create stale doctrine; unknown remains a hypothesis.                                     |
+
+Canary audit artifacts should include resolved path, git remote, branch, commit
+SHA, detected harness version, existing managed or locally owned surfaces, dry-run
+writes, conflicts, rollback plan, provider availability, validation commands,
+scores, and residual risk.
+
+### Next Evaluation Slices
+
+| Slice                              | Status     | Outcome                                                                                           |
+| ---------------------------------- | ---------- | ------------------------------------------------------------------------------------------------- |
+| Live repo installability matrix    | 📋 Planned | Read-only audit across the four canary repos.                                                     |
+| Minimal greenfield fixture         | 📋 Planned | Deterministic proof that fresh install creates only the thin operator surface.                    |
+| Brownfield old-harness fixture     | 📋 Planned | Regression proof for managed and locally owned surface detection and rollback.                    |
+| Runtime-card partial-adoption eval | 🔶 Partial | `harness next` remains useful when Linear, CI, Project Brain, or session evidence is unavailable. |
+| PR stack-health eval               | 📋 Planned | Upper PR work pauses when lower stack layers are red, behind, or conflicted.                      |
 
 ## Outstanding Items
 
