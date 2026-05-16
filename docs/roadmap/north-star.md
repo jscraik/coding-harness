@@ -79,6 +79,9 @@ The harness safety floor is:
 Coding Harness should be installable into Jamie's greenfield and brownfield
 projects without turning those projects into copies of this repo.
 
+Portability means adapting to each repo with the smallest useful surface, not
+installing every harness capability everywhere.
+
 The portable product promise is:
 
 - `harness init --dry-run --json` can inspect a repo, classify current harness

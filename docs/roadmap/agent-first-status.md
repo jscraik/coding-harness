@@ -263,6 +263,9 @@ This roadmap now treats portability as a product outcome, not a later packaging
 task. The target is an installable Codex-native control plane that can land in
 greenfield and brownfield repos while preserving local project truth.
 
+Portability means adapting to each repo with the smallest useful surface, not
+installing every harness capability everywhere.
+
 ### Adoption Levels
 
 | Level                          | Status     | Purpose                                                              | Proof Needed                                                                                                                      |
@@ -291,10 +294,10 @@ understood.
 
 | Repo                                  | Role                                              | First Pass                                                           | Status     |
 | ------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
-| `~/dev/agent-skills` (brownfield)  | Brownfield repo with mature eval/workout patterns | Audit install state, eval model, and old/new harness surfaces.       | 📋 Planned |
-| `~/dev/diagram-cli` (brownfield)   | Brownfield CLI with project-specific workflow     | Audit command discovery, validation mapping, and local instructions. | 📋 Planned |
-| `~/dev/design-system` (product)    | Product/design repo                               | Audit visual/evidence workflow and frontend validation fit.          | 📋 Planned |
-| `~/dev/x-writer` (active product)  | Active app/product repo                           | Audit non-destructive adoption and runtime-card degradation.         | 📋 Planned |
+| `~/dev/agent-skills` (brownfield)     | Brownfield repo with mature eval/workout patterns | Audit install state, eval model, and old/new harness surfaces.       | 📋 Planned |
+| `~/dev/diagram-cli` (brownfield)      | Brownfield CLI with project-specific workflow     | Audit command discovery, validation mapping, and local instructions. | 📋 Planned |
+| `~/dev/design-system` (product)       | Product/design repo                               | Audit visual/evidence workflow and frontend validation fit.          | 📋 Planned |
+| `~/dev/x-writer` (active product)     | Active app/product repo                           | Audit non-destructive adoption and runtime-card degradation.         | 📋 Planned |
 
 Read-only canary command shape:
 

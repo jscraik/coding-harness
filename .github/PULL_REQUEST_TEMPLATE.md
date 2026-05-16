@@ -10,8 +10,9 @@
 
 - Plan IDs: list Linear keys, spec paths, plan paths, or `n.a.` with reason
 - Phase / slice: list completed phase, implementation slice, or `n.a.` with reason
-- Session IDs: list Codex/session-collector/harness session IDs, or `n.a.` with reason
-- Trace IDs: list CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason
+- Session IDs: list Codex thread/session IDs, session-collector artifact IDs or paths, harness run IDs, or `n.a.` with reason. For AI-assisted work, include at least one session reference or explain why no session artifact was captured.
+- Trace IDs: list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.
+- AI session / traceability: map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body.
 - Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR
 - Acceptance trace: map completed acceptance items to evidence refs, or `n.a.` with reason
 - Validation evidence: list command outcomes, CI jobs, artifact paths, or `n.a.` with reason
