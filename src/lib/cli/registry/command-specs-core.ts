@@ -60,6 +60,7 @@ import { runPrTemplateGateCLI } from "../../../commands/pr-template-gate.js";
 import { runPreflightGateCLI } from "../../../commands/preflight-gate.js";
 import { runPresetCLI } from "../../../commands/preset.js";
 import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
+import { runRuleLifecycleGateCLI } from "../../../commands/rule-lifecycle-gate.js";
 import {
 	type RemediateOptions,
 	runRemediateCLI,
@@ -335,6 +336,37 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			if (prBodyFileArg !== undefined) options.prBodyFile = prBodyFileArg;
 
 			return runPrTemplateGateCLI(options);
+		},
+	},
+	{
+		name: "rule-lifecycle-gate",
+		summary:
+			"Validate governance rules have owner, evidence, enforcement, freshness, and retirement metadata",
+		example: "rule-lifecycle-gate --json",
+		errorLabel: "Rule Lifecycle Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const manifestFlag = inspectFlagValue(args, "--manifest");
+			const repoRootFlag = inspectFlagValue(args, "--repo-root");
+
+			if (manifestFlag.present && manifestFlag.missingValue) {
+				console.error("rule-lifecycle-gate requires a value for --manifest.");
+				return 2;
+			}
+			if (repoRootFlag.present && repoRootFlag.missingValue) {
+				console.error("rule-lifecycle-gate requires a value for --repo-root.");
+				return 2;
+			}
+
+			const options: Parameters<typeof runRuleLifecycleGateCLI>[0] = {};
+			if (jsonFlag) options.json = true;
+			if (manifestFlag.value !== undefined) {
+				options.manifestPath = manifestFlag.value;
+			}
+			if (repoRootFlag.value !== undefined) {
+				options.repoRoot = repoRootFlag.value;
+			}
+			return runRuleLifecycleGateCLI(options);
 		},
 	},
 	{
