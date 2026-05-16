@@ -142,7 +142,7 @@ For ownership overlap detection, manually verify:
 | Node.js version     | `cimg/node:24.13`                                 | `actions/setup-node@v6` (node-version: 24)     |
 | pnpm version        | npm install --global `pnpm@10.33.0`               | `pnpm/action-setup@v5` (version: `10.33.0`)    |
 | Install command     | `pnpm install --frozen-lockfile --prefer-offline` | `pnpm install --frozen-lockfile`               |
-| Security scan lane  | `security-scan` workflow in `.circleci/config.yml` with Semgrep and Snyk jobs | N/A (release-only)                             |
-| Snyk token          | `SNYK_TOKEN` project environment variable for the Snyk orb | N/A                                      |
+| Security scan lane  | `security-scan` workflow in `.circleci/config.yml` with Semgrep and report-only Snyk jobs | N/A (release-only)                             |
+| Snyk token          | `SNYK_TOKEN` project environment variable for the report-only Snyk CLI step | N/A                                      |
 | npm publish token   | N/A (does not publish)                            | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
 | Attestation signing | N/A                                               | OIDC (`actions/attest-build-provenance`)       |
