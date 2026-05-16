@@ -47,6 +47,7 @@ function uniqueSources(sources: RuntimeCardSource[]): RuntimeCardSource[] {
 function phaseExitFromRuntimeCard(
 	card: RuntimeCard,
 ): RuntimeEvidenceBundle["phaseExit"] {
+	if (card.phaseExit.status === "not_run") return undefined;
 	const isPass = card.phaseExit.status === "pass";
 	const blocker =
 		card.phaseExit.reason ??
@@ -83,7 +84,9 @@ export function buildRuntimeEvidenceBundleFromCard(
 		},
 		...(hasKnownPullRequest(card) ? { pullRequest: card.pullRequest } : {}),
 		...(hasKnownLinearState(card) ? { linear: card.linear } : {}),
-		phaseExit: phaseExitFromRuntimeCard(card),
+		...(card.phaseExit.status === "not_run"
+			? {}
+			: { phaseExit: phaseExitFromRuntimeCard(card) }),
 		sources: uniqueSources(card.sources),
 		blockers: [...card.blockers],
 	};

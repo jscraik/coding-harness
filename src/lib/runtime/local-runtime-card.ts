@@ -681,15 +681,18 @@ export function buildLocalRuntimeCard(
 			url: evidence.pullRequest?.url ?? null,
 		},
 		artifacts: artifacts.artifacts,
-		linear: evidence.linear ?? {
-			issueKey,
-			freshness: issueKey ? "unknown" : "missing",
-			status: null,
-			statusType: null,
-			url: null,
-			actionRequired:
-				"Live Linear state was not refreshed by local runtime-card generation.",
-		},
+		linear:
+			evidence.linear && evidence.linear.issueKey === issueKey
+				? evidence.linear
+				: {
+						issueKey,
+						freshness: issueKey ? "unknown" : "missing",
+						status: null,
+						statusType: null,
+						url: null,
+						actionRequired:
+							"Live Linear state was not refreshed by local runtime-card generation.",
+					},
 		phaseExit: phaseExit.phaseExit,
 		sources,
 		blockers,

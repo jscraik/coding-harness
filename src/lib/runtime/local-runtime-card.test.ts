@@ -385,13 +385,26 @@ describe("buildLocalRuntimeCard", () => {
 
 		const card = buildLocalRuntimeCard({
 			repoRoot,
-			evidenceBundle: runtimeEvidenceBundle({ issueKey: "JSC-999" }),
+			evidenceBundle: runtimeEvidenceBundle({
+				issueKey: "JSC-999",
+				linear: {
+					issueKey: "JSC-999",
+					freshness: "current",
+					status: "Done",
+					statusType: "completed",
+					url: "https://linear.app/jscraik/issue/JSC-999/stale",
+					actionRequired: "Stale imported guidance.",
+				},
+			}),
 			now: new Date("2026-05-15T12:00:00.000Z"),
 			git: gitRunner(),
 		});
 
 		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
 		expect(card.issueKey).toBe("JSC-311");
+		expect(card.linear.issueKey).toBe("JSC-311");
+		expect(card.linear.freshness).toBe("unknown");
+		expect(card.linear.status).toBeNull();
 		expect(card.artifacts.status).toBe("current");
 	});
 

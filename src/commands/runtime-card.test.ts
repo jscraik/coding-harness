@@ -183,10 +183,7 @@ describe("runRuntimeCardCLI", () => {
 				ref: `artifact:${evidenceOutPath}`,
 			},
 		});
-		expect(evidence.phaseExit).toMatchObject({
-			schemaVersion: "he-phase-exit/v1",
-			recommendation: "commit_blocked",
-		});
+		expect(evidence.phaseExit).toBeUndefined();
 		expect(
 			evidence.sources.map((source: { kind: string }) => source.kind),
 		).toEqual(["git", "artifact"]);
@@ -217,6 +214,7 @@ describe("runRuntimeCardCLI", () => {
 		expect(second.exitCode).toBe(0);
 		const card = JSON.parse(second.output);
 		expect(card.issueKey).toBe("JSC-311");
+		expect(card.phaseExit.status).toBe("not_run");
 		expect(card.sources).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
