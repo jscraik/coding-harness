@@ -62,6 +62,14 @@ For agents, start with the cockpit decision packet:
 harness next --json
 ```
 
+When a local runtime artifact already exists, pass it into the same read-only
+cockpit command so blockers and lifecycle state are reflected in the decision:
+
+```bash
+harness runtime-card --json --live --out .harness/runtime/JSC-311.json
+harness next --json --runtime-card .harness/runtime/JSC-311.json
+```
+
 `harness --help` now keeps first contact intentionally narrow and points agents
 at `harness next --json`. Use `harness --help --all-commands` or
 `harness commands --json` only when you need the full expert command surface.
@@ -587,7 +595,8 @@ harness commands --json | jq '
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)        |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                |
-| `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--mode local\|pr\|ci`)                            |
+| `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`) |
+| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, and optional live provider state (`--json`, optional `--live`, optional `--issue`, optional `--phase-exit`, optional `--out`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                        |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                        |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                   |

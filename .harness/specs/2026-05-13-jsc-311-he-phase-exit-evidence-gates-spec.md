@@ -74,6 +74,7 @@ acceptance_ids:
 - [Decision](#decision)
 - [Evidence and References](#evidence-and-references)
 - [Technical Review Findings](#technical-review-findings)
+- [Runtime Card v1 Addendum](#runtime-card-v1-addendum)
 - [No-Fog Gate](#no-fog-gate)
 - [Linear Work Item Contract](#linear-work-item-contract)
 - [Linear Acceptance Traceability](#linear-acceptance-traceability)
@@ -685,6 +686,34 @@ into Runtime Card, Closeout Guardian, MCP, plugin, or telemetry work.
 | P2 | Review-gate evidence could be confused with reviewer-role labels or chat status text. | `src/commands/review-gate-core.ts` already produces blocker fields from concrete policy, traceability, and check-run evidence. | Added FR-014 and SA-017 to require artifact-backed or command-backed evidence. |
 | P2 | Required gate selection could be inferred from keywords instead of a phase contract. | The original contract listed required gate IDs but did not say where they came from. | Added FR-016, `phaseContractRef`, and SA-016. |
 | P3 | The spec risked conflating local implementation proof with external closure proof. | JSC-311 Recovery eval solution records this exact eval-report closure-proof risk. | Added SA-018 and strengthened validation/closeout expectations. |
+
+## Runtime Card v1 Addendum
+
+This follow-up slice admits `runtime-card/v1` as an operator-visible cockpit
+summary artifact for JSC-311. The runtime card may summarize branch, PR, Linear,
+artifact, validation, review, session, and phase-exit evidence so
+`harness next` can block or guide continuation from a single local artifact.
+
+The runtime card does not replace `HeGateResult/v1` or `HePhaseExit/v1`.
+It may reference phase-exit evidence, but it must not treat route labels,
+recovery summaries, reviewer names, stale artifact indexes, or session prose as
+gate-run proof. Blocking lifecycle states such as `blocked`, `stale`, and
+`ci_blocked` must remain advisory-to-operator but fail closed for continuation
+recommendations until refreshed evidence is available.
+
+Acceptance addendum:
+
+- RA-001: `runtime-card/v1` validates locally and fails closed on malformed
+  lifecycle, freshness, or evidence arrays.
+- RA-002: `harness runtime-card --json` emits a machine-readable artifact that
+  can be persisted and passed to `harness next --runtime-card <path>`.
+- RA-003: `harness next` includes runtime-card metadata when the card is safe
+  and returns a blocked decision when the card lifecycle blocks continuation.
+- RA-004: CLI read, parse, validation, and write failures use sanitized error
+  text.
+- RA-005: Automatic session-collector ingestion remains a separate future
+  adapter slice; this PR only defines the runtime-card contract and explicit
+  artifact handoff.
 
 ## No-Fog Gate
 

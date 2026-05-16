@@ -12,7 +12,12 @@ import {
 	collectSourceErrors,
 	findBlockingSource,
 } from "../lib/decision/sources.js";
+import {
+	runtimeCardBlocksContinuation,
+	type RuntimeCard,
+} from "../lib/runtime/runtime-card.js";
 import { loadPhaseExitArtifact } from "./next-phase-exit.js";
+import { loadRuntimeCardArtifact } from "./next-runtime-card.js";
 import {
 	humanRequiredDecisionMeta,
 	optionalNetworkSources,
@@ -27,6 +32,7 @@ import {
 	invalidModeDecision,
 	noChangedFilesDecision,
 	phaseExitBlockedDecision,
+	runtimeCardBlockedDecision,
 	sourceBlockedDecision,
 	type HarnessNextMode,
 } from "./next-decisions.js";
@@ -47,6 +53,8 @@ export interface HarnessNextOptions {
 	decisionSources?: DecisionSource[];
 	/** Optional HE phase-exit evidence already collected by the caller. */
 	phaseExit?: HePhaseExit;
+	/** Optional runtime-card evidence already collected by the caller. */
+	runtimeCard?: RuntimeCard;
 }
 
 interface ParsedNextArgs {
@@ -54,12 +62,14 @@ interface ParsedNextArgs {
 	mode: HarnessNextMode;
 	files?: string[];
 	phaseExitPath?: string;
+	runtimeCardPath?: string;
 	error?:
 		| "invalid_mode"
 		| "mode_missing"
 		| "files_missing"
 		| "files_empty"
 		| "phase_exit_missing"
+		| "runtime_card_missing"
 		| "unknown_argument";
 	errorValue?: string;
 }
@@ -162,6 +172,17 @@ export function runHarnessNext(
 		});
 	}
 
+	if (
+		options.runtimeCard &&
+		runtimeCardBlocksContinuation(options.runtimeCard)
+	) {
+		return runtimeCardBlockedDecision({
+			mode,
+			runtimeCard: options.runtimeCard,
+			sourceErrors,
+		});
+	}
+
 	if (filesFromOverride && (options.files ?? []).length === 0) {
 		return blockedDecision({
 			summary: "--files did not include any paths.",
@@ -187,6 +208,7 @@ export function runHarnessNext(
 			mode,
 			matrixArtifact: DEFAULT_FLEET_MATRIX_ARTIFACT,
 			...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
+			...(options.runtimeCard ? { runtimeCard: options.runtimeCard } : {}),
 		});
 	}
 
@@ -210,6 +232,7 @@ export function runHarnessNext(
 			filesSource,
 			sourceErrors,
 			...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
+			...(options.runtimeCard ? { runtimeCard: options.runtimeCard } : {}),
 		});
 	}
 
@@ -219,6 +242,7 @@ export function runHarnessNext(
 		filesSource,
 		sourceErrors,
 		...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
+		...(options.runtimeCard ? { runtimeCard: options.runtimeCard } : {}),
 	});
 }
 
@@ -237,6 +261,7 @@ function parseNextArgs(args: string[]): ParsedNextArgs {
 	let mode: HarnessNextMode = "local";
 	let files: string[] | undefined;
 	let phaseExitPath: string | undefined;
+	let runtimeCardPath: string | undefined;
 
 	for (let index = 0; index < args.length; index += 1) {
 		const arg = args[index];
@@ -290,6 +315,15 @@ function parseNextArgs(args: string[]): ParsedNextArgs {
 			index += 1;
 			continue;
 		}
+		if (arg === "--runtime-card") {
+			const value = args[index + 1];
+			if (!value || value.startsWith("-")) {
+				return { json, mode, error: "runtime_card_missing" };
+			}
+			runtimeCardPath = value;
+			index += 1;
+			continue;
+		}
 		if (arg.startsWith("-")) {
 			return {
 				json,
@@ -311,6 +345,7 @@ function parseNextArgs(args: string[]): ParsedNextArgs {
 		mode,
 		...(files !== undefined ? { files } : {}),
 		...(phaseExitPath !== undefined ? { phaseExitPath } : {}),
+		...(runtimeCardPath !== undefined ? { runtimeCardPath } : {}),
 	};
 }
 
@@ -333,6 +368,82 @@ function printDecision(decision: HarnessDecision, json: boolean): void {
 		console.info(`Next command: ${decision.nextCommand}`);
 }
 
+function usageErrorDecision(
+	parsed: ParsedNextArgs,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+): HarnessDecision | undefined {
+	switch (parsed.error) {
+		case "invalid_mode":
+			return invalidModeDecision(parsed.errorValue ?? "unknown");
+		case "mode_missing":
+			return blockedDecision({
+				summary: "--mode requires a value.",
+				nextAction: "Use --mode local, --mode pr, or --mode ci.",
+				failureClass: "mode_missing",
+				meta: humanRequiredDecisionMeta({
+					mode: parsed.mode,
+					frictionClass: "unclear_instruction",
+				}),
+			});
+		case "files_missing":
+			return blockedDecision({
+				summary: "--files requires a comma-separated path list.",
+				nextAction: "Pass one or more changed files, or omit --files.",
+				failureClass: "files_missing",
+				evidenceRef: ["input:files"],
+				meta: humanRequiredDecisionMeta({
+					mode: parsed.mode,
+					filesSource: "override",
+					frictionClass: "unclear_instruction",
+				}),
+			});
+		case "files_empty":
+			return runHarnessNext({
+				...options,
+				mode: parsed.mode,
+				files: [],
+			});
+		case "phase_exit_missing":
+			return blockedDecision({
+				summary: "--phase-exit requires a JSON artifact path.",
+				nextAction:
+					"Pass a HePhaseExit/v1 artifact path, or omit --phase-exit.",
+				failureClass: "phase_exit_missing",
+				evidenceRef: ["input:phase-exit"],
+				meta: humanRequiredDecisionMeta({
+					mode: parsed.mode,
+					frictionClass: "unclear_instruction",
+				}),
+			});
+		case "runtime_card_missing":
+			return blockedDecision({
+				summary: "--runtime-card requires a JSON artifact path.",
+				nextAction:
+					"Pass a runtime-card/v1 artifact path, or omit --runtime-card.",
+				failureClass: "runtime_card_missing",
+				evidenceRef: ["input:runtime-card"],
+				meta: humanRequiredDecisionMeta({
+					mode: parsed.mode,
+					frictionClass: "unclear_instruction",
+				}),
+			});
+		case "unknown_argument":
+			return blockedDecision({
+				summary: `Unknown next argument: ${parsed.errorValue}.`,
+				nextAction:
+					"Use harness next --json with optional --files, --phase-exit, --runtime-card, and --mode flags.",
+				failureClass: "unknown_argument",
+				meta: humanRequiredDecisionMeta({
+					mode: parsed.mode,
+					frictionClass: "unclear_instruction",
+					extra: { argument: parsed.errorValue },
+				}),
+			});
+		default:
+			return undefined;
+	}
+}
+
 /** CLI adapter for `harness next`. */
 export function runNextCLI(
 	args: string[],
@@ -342,67 +453,12 @@ export function runNextCLI(
 	let decision: HarnessDecision | undefined;
 	let usageError = false;
 
-	if (parsed.error === "invalid_mode") {
+	if (parsed.error !== undefined) {
 		usageError = true;
-		decision = invalidModeDecision(parsed.errorValue ?? "unknown");
-	} else if (parsed.error === "mode_missing") {
-		usageError = true;
-		decision = blockedDecision({
-			summary: "--mode requires a value.",
-			nextAction: "Use --mode local, --mode pr, or --mode ci.",
-			failureClass: "mode_missing",
-			meta: humanRequiredDecisionMeta({
-				mode: parsed.mode,
-				frictionClass: "unclear_instruction",
-			}),
-		});
-	} else if (parsed.error === "files_missing") {
-		usageError = true;
-		decision = blockedDecision({
-			summary: "--files requires a comma-separated path list.",
-			nextAction: "Pass one or more changed files, or omit --files.",
-			failureClass: "files_missing",
-			evidenceRef: ["input:files"],
-			meta: humanRequiredDecisionMeta({
-				mode: parsed.mode,
-				filesSource: "override",
-				frictionClass: "unclear_instruction",
-			}),
-		});
-	} else if (parsed.error === "files_empty") {
-		usageError = true;
-		decision = runHarnessNext({
-			...options,
-			mode: parsed.mode,
-			files: [],
-		});
-	} else if (parsed.error === "phase_exit_missing") {
-		usageError = true;
-		decision = blockedDecision({
-			summary: "--phase-exit requires a JSON artifact path.",
-			nextAction: "Pass a HePhaseExit/v1 artifact path, or omit --phase-exit.",
-			failureClass: "phase_exit_missing",
-			evidenceRef: ["input:phase-exit"],
-			meta: humanRequiredDecisionMeta({
-				mode: parsed.mode,
-				frictionClass: "unclear_instruction",
-			}),
-		});
-	} else if (parsed.error === "unknown_argument") {
-		usageError = true;
-		decision = blockedDecision({
-			summary: `Unknown next argument: ${parsed.errorValue}.`,
-			nextAction:
-				"Use harness next --json with optional --files, --phase-exit, and --mode flags.",
-			failureClass: "unknown_argument",
-			meta: humanRequiredDecisionMeta({
-				mode: parsed.mode,
-				frictionClass: "unclear_instruction",
-				extra: { argument: parsed.errorValue },
-			}),
-		});
+		decision = usageErrorDecision(parsed, options);
 	} else {
 		let phaseExit: HePhaseExit | undefined;
+		let runtimeCard: RuntimeCard | undefined;
 		if (parsed.phaseExitPath !== undefined) {
 			const loadedPhaseExit = loadPhaseExitArtifact(
 				options.repoRoot ?? cwd(),
@@ -415,11 +471,24 @@ export function runNextCLI(
 				phaseExit = loadedPhaseExit.phaseExit;
 			}
 		}
+		if (decision === undefined && parsed.runtimeCardPath !== undefined) {
+			const loadedRuntimeCard = loadRuntimeCardArtifact(
+				options.repoRoot ?? cwd(),
+				parsed.runtimeCardPath,
+				parsed.mode,
+			);
+			if ("decision" in loadedRuntimeCard) {
+				decision = loadedRuntimeCard.decision;
+			} else {
+				runtimeCard = loadedRuntimeCard.runtimeCard;
+			}
+		}
 		decision ??= runHarnessNext({
 			...options,
 			mode: parsed.mode,
 			...(parsed.files !== undefined ? { files: parsed.files } : {}),
 			...(phaseExit !== undefined ? { phaseExit } : {}),
+			...(runtimeCard !== undefined ? { runtimeCard } : {}),
 		});
 	}
 

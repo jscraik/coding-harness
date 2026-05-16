@@ -19,6 +19,11 @@ import {
 	type HeGatePayload,
 	type HeGateResult,
 } from "../lib/decision/he-phase-exit.js";
+import {
+	RUNTIME_CARD_SCHEMA_VERSION,
+	type RuntimeCard,
+	validateRuntimeCard,
+} from "../lib/runtime/runtime-card.js";
 import { parseGitStatusShort, runHarnessNext, runNextCLI } from "./next.js";
 
 function captureNextCLI(
@@ -137,6 +142,60 @@ function passingPhaseExit() {
 			heGate("he_code_review"),
 		],
 	});
+}
+
+function runtimeCard(overrides: Partial<RuntimeCard> = {}): RuntimeCard {
+	return {
+		schemaVersion: RUNTIME_CARD_SCHEMA_VERSION,
+		generatedAt: "2026-05-15T12:00:00.000Z",
+		issueKey: "JSC-311",
+		lifecycle: "active",
+		summary: "Runtime card is current.",
+		nextSafeAction: "Run harness next --json.",
+		branch: {
+			name: "codex/jsc-311-phase-exit-next",
+			clean: true,
+			ref: "a".repeat(40),
+		},
+		pullRequest: {
+			number: 250,
+			state: "OPEN",
+			isDraft: false,
+			mergeStateStatus: "CLEAN",
+			url: "https://github.com/jscraik/coding-harness/pull/250",
+		},
+		artifacts: {
+			activeSpec:
+				".harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md",
+			activePlan:
+				".harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md",
+			status: "current",
+			staleRefs: [],
+		},
+		linear: {
+			issueKey: "JSC-311",
+			freshness: "current",
+			status: "In Review",
+			statusType: "started",
+			url: "https://linear.app/jscraik/issue/JSC-311/example",
+			actionRequired: null,
+		},
+		phaseExit: {
+			status: "pass",
+			reason: "Required phase-exit gates passed.",
+		},
+		sources: [
+			{
+				kind: "git",
+				ref: "git:status",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+		],
+		blockers: [],
+		...overrides,
+	};
 }
 
 describe("parseGitStatusShort", () => {
@@ -293,6 +352,80 @@ describe("runHarnessNext", () => {
 					commitAllowed: true,
 					exitAllowed: true,
 				},
+			},
+		});
+	});
+
+	it("surfaces current runtime-card evidence in operator-visible metadata", () => {
+		const card = runtimeCard();
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [],
+			repoRoot: "/tmp/repo",
+			runtimeCard: card,
+		});
+
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(decision.status).toBe("pass");
+		expect(decision.meta).toMatchObject({
+			runtimeCard: {
+				schemaVersion: "runtime-card/v1",
+				issueKey: "JSC-311",
+				lifecycle: "active",
+				nextSafeAction: "Run harness next --json.",
+				pullRequest: {
+					number: 250,
+					mergeStateStatus: "CLEAN",
+				},
+				blockers: [],
+				sourceCount: 1,
+			},
+		});
+	});
+
+	it("blocks recommendations when runtime-card evidence reports live blockers", () => {
+		const card = runtimeCard({
+			lifecycle: "ci_blocked",
+			summary: "PR checks are failing.",
+			nextSafeAction: "Resolve failing CI before starting the next slice.",
+			pullRequest: {
+				number: 250,
+				state: "OPEN",
+				isDraft: true,
+				mergeStateStatus: "BLOCKED",
+				url: "https://github.com/jscraik/coding-harness/pull/250",
+			},
+			blockers: ["PR #250 merge state is BLOCKED."],
+		});
+
+		const decision = runHarnessNext({
+			files: ["src/commands/next.ts"],
+			runtimeCard: card,
+		});
+
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "runtime_card_blocked",
+			nextAction: "Resolve failing CI before starting the next slice.",
+			nextCommand: null,
+			safeToRun: false,
+			requiresHuman: true,
+			humanEscalation: "PR #250 merge state is BLOCKED.",
+		});
+		expect(decision.hiddenPlumbing).toContain("runtime-card");
+		expect(decision.meta).toMatchObject({
+			frictionClass: "repo_state",
+			delayClass: "human_needed",
+			runtimeCard: {
+				lifecycle: "ci_blocked",
+				blockers: ["PR #250 merge state is BLOCKED."],
 			},
 		});
 	});
@@ -733,6 +866,64 @@ describe("runNextCLI", () => {
 						exitAllowed: true,
 					},
 				},
+			});
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("emits runtime-card metadata from an explicit local artifact", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-runtime-card-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "runtime-card.json"),
+				JSON.stringify(runtimeCard()),
+			);
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--runtime-card", "runtime-card.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(0);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("pass");
+			expect(decision.meta).toMatchObject({
+				runtimeCard: {
+					schemaVersion: "runtime-card/v1",
+					issueKey: "JSC-311",
+					lifecycle: "active",
+					blockers: [],
+				},
+			});
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks invalid runtime-card artifacts before normal recommendations", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-runtime-card-"));
+		try {
+			writeFileSync(join(repoRoot, "runtime-card.json"), "{}");
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--runtime-card", "runtime-card.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => ["src/commands/next.ts"],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("runtime_card_artifact_invalid");
+			expect(decision.nextAction).toBe(
+				"Regenerate the runtime card with valid current-state evidence, then rerun harness next --json.",
+			);
+			expect(decision.meta).toMatchObject({
+				frictionClass: "validation_failure",
 			});
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });

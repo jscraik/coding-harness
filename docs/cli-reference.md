@@ -37,8 +37,10 @@ harness next --json
 Optional overrides:
 
 ```bash
+harness runtime-card --json --live --out .harness/runtime/JSC-311.json
 harness next --json --files src/cli.ts docs/cli-reference.md
 harness next --json --phase-exit .harness/runs/phase-exit.json
+harness next --json --runtime-card .harness/runtime/JSC-311.json
 harness next --json --mode pr
 ```
 
@@ -46,6 +48,20 @@ harness next --json --mode pr
 `harness next` normalizes the phase-exit result into `meta.hePhaseExit` and
 blocks the recommendation if the artifact reports `commitAllowed=false` or
 `exitAllowed=false`.
+
+`--runtime-card` accepts a local `runtime-card/v1` JSON artifact that summarizes
+the current branch, PR, tracker, artifact, and phase-exit lifecycle state. When
+supplied, `harness next` normalizes the card into `meta.runtimeCard` and blocks
+the recommendation if the card reports blockers or a blocking lifecycle such as
+`ci_blocked`, `blocked`, or `stale`.
+
+Use `harness runtime-card --json` to produce the first local-only runtime card
+from git state and `.harness/active-artifacts.md`. Add `--live` when the card
+should also refresh bounded GitHub PR and Linear issue state. Live provider
+failures are recorded as explicit runtime-card blockers instead of being treated
+as validation evidence. Add `--phase-exit <path>` to collapse a local
+`HePhaseExit/v1` artifact into the runtime card, and `--out <path>` when the
+card should be persisted for a later `harness next --runtime-card <path>` call.
 
 First-slice routing is intentionally small:
 
@@ -95,7 +111,8 @@ Taxonomy note: section headings in this document represent command families. The
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)  |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)         |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                 |
-| `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--mode local\|pr\|ci`) |
+| `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`) |
+| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, and optional live provider state (`--json`, optional `--live`, optional `--issue`, optional `--phase-exit`, optional `--out`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                         |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                    |
 | `audit`             | Comprehensive governance state check with actionable recommendations                                                                                                       |

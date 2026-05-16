@@ -11,6 +11,11 @@ import type {
 } from "../lib/decision/sources.js";
 import { normaliseHePhaseExitResult } from "../lib/output/normalise.js";
 import {
+	normaliseRuntimeCard,
+	runtimeCardBlocksContinuation,
+	type RuntimeCard,
+} from "../lib/runtime/runtime-card.js";
+import {
 	chooseNextCommandParts,
 	decisionMeta,
 	humanRequiredDecisionMeta,
@@ -30,6 +35,15 @@ function phaseExitMeta(
 	};
 }
 
+function runtimeCardMeta(
+	runtimeCard: RuntimeCard | undefined,
+): Record<string, unknown> | undefined {
+	if (!runtimeCard) return undefined;
+	return {
+		runtimeCard: normaliseRuntimeCard(runtimeCard),
+	};
+}
+
 function nextDecisionOperationalMeta(args: {
 	mode: HarnessNextMode;
 	filesSource?: "override" | "git";
@@ -42,6 +56,7 @@ function nextDecisionOperationalMeta(args: {
 	requiresHuman?: boolean;
 	sourceErrors?: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
+	runtimeCard?: RuntimeCard | undefined;
 }): ReturnType<typeof decisionMeta> {
 	return decisionMeta({
 		mode: args.mode,
@@ -60,6 +75,7 @@ function nextDecisionOperationalMeta(args: {
 		extra: {
 			...sourceMetaExtra(args.sourceErrors ?? []),
 			...phaseExitMeta(args.phaseExit),
+			...runtimeCardMeta(args.runtimeCard),
 		},
 	});
 }
@@ -289,6 +305,59 @@ export function phaseExitBlockedDecision(args: {
 }
 
 /**
+ * Produce a blocked decision when supplied runtime-card evidence says the
+ * current lifecycle state is blocked, stale, or otherwise unsafe to advance.
+ *
+ * @param args - Runtime-card evidence and ambient harness-next context
+ * @returns A blocked HarnessDecision carrying normalized runtime-card metadata for operator visibility
+ */
+export function runtimeCardBlockedDecision(args: {
+	mode: HarnessNextMode;
+	runtimeCard: RuntimeCard;
+	sourceErrors: DecisionSource[];
+}): HarnessDecision {
+	const runtimeBlocked = runtimeCardBlocksContinuation(args.runtimeCard);
+	const blockerSummary =
+		args.runtimeCard.blockers[0] ??
+		(args.runtimeCard.lifecycle === "stale"
+			? "Runtime card evidence is stale."
+			: "Runtime card lifecycle blocks continuation.");
+	return createDecision({
+		status: "blocked",
+		summary: "Runtime card evidence blocks continuation.",
+		nextAction: args.runtimeCard.nextSafeAction,
+		nextCommand: null,
+		phase: "repair",
+		objective:
+			"Resolve current runtime blockers before choosing workflow work.",
+		requiredEvidence: args.runtimeCard.sources.map((source) => source.ref),
+		stopConditions: [
+			"Stop until runtime-card/v1 reports no blockers and a non-blocking lifecycle.",
+		],
+		humanEscalation: runtimeBlocked ? blockerSummary : null,
+		followUpCommands: ["harness next --json"],
+		hiddenPlumbing: ["runtime-card", "decision-sources"],
+		safeToRun: false,
+		requiresHuman: true,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: args.runtimeCard.sources.map((source) => source.ref),
+		failureClass: "runtime_card_blocked",
+		retry: "manual",
+		riskTier: "medium",
+		meta: nextDecisionOperationalMeta({
+			mode: args.mode,
+			frictionClass: "repo_state",
+			delayClass: "human_needed",
+			startupCost: "none",
+			requiresHuman: true,
+			sourceErrors: args.sourceErrors,
+			runtimeCard: args.runtimeCard,
+		}),
+	});
+}
+
+/**
  * Produce a decision recommending conversion of a Harness upgrade matrix artifact into a fleet remediation plan.
  *
  * @param args.mode - The current harness next mode (`"local" | "pr" | "ci"`) used to populate decision metadata.
@@ -299,6 +368,7 @@ export function fleetMatrixArtifactDecision(args: {
 	mode: HarnessNextMode;
 	matrixArtifact: string;
 	phaseExit?: HePhaseExit | undefined;
+	runtimeCard?: RuntimeCard | undefined;
 }): HarnessDecision {
 	const command = `harness fleet-plan --from ${shellQuote(args.matrixArtifact)} --json`;
 	return createDecision({
@@ -336,6 +406,7 @@ export function fleetMatrixArtifactDecision(args: {
 			],
 			commands: [command],
 			phaseExit: args.phaseExit,
+			runtimeCard: args.runtimeCard,
 		}),
 	});
 }
@@ -354,6 +425,7 @@ export function noChangedFilesDecision(args: {
 	filesSource: "override" | "git";
 	sourceErrors: DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
+	runtimeCard?: RuntimeCard | undefined;
 }): HarnessDecision {
 	return createDecision({
 		status: "pass",
@@ -386,6 +458,7 @@ export function noChangedFilesDecision(args: {
 			commands: ["harness check --json"],
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
+			runtimeCard: args.runtimeCard,
 		}),
 	});
 }
@@ -436,6 +509,7 @@ export function changedFilesDecision(args: {
 	filesSource: "override" | "git";
 	sourceErrors: DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
+	runtimeCard?: RuntimeCard | undefined;
 }): HarnessDecision {
 	const candidate = createRecommendationCandidate(args);
 	const reviewContextFollowUp = chooseNextCommandParts(
@@ -466,6 +540,7 @@ export function changedFilesDecision(args: {
 			"command-catalog",
 			"risk-tier",
 			...(args.phaseExit ? ["he-phase-exit"] : []),
+			...(args.runtimeCard ? ["runtime-card"] : []),
 		],
 		safeToRun: candidate.safeToRun,
 		requiresHuman: candidate.requiresHuman,
@@ -483,6 +558,7 @@ export function changedFilesDecision(args: {
 			commands: candidate.command ? [candidate.command] : [],
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
+			runtimeCard: args.runtimeCard,
 		}),
 	});
 }

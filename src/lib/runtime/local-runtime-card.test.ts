@@ -1,0 +1,301 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import {
+	HE_GATE_RESULT_SCHEMA_VERSION,
+	HE_PHASE_EXIT_SCHEMA_VERSION,
+	type HeGateId,
+	type HeGatePayload,
+	type HeGateResult,
+	type HePhaseExit,
+} from "../decision/he-phase-exit.js";
+import {
+	buildLiveRuntimeCard,
+	buildLocalRuntimeCard,
+	type RuntimeCardGitRunner,
+} from "./local-runtime-card.js";
+import { validateRuntimeCard } from "./runtime-card.js";
+
+const CODE = String.fromCharCode(96);
+
+function codePath(path: string): string {
+	return CODE + path + CODE;
+}
+
+function writeActiveArtifacts(repoRoot: string): void {
+	const specPath =
+		".harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md";
+	const planPath =
+		".harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md";
+	mkdirSync(join(repoRoot, ".harness/specs"), { recursive: true });
+	mkdirSync(join(repoRoot, ".harness/plan"), { recursive: true });
+	writeFileSync(join(repoRoot, specPath), "# Spec\n");
+	writeFileSync(join(repoRoot, planPath), "# Plan\n");
+	writeFileSync(
+		join(repoRoot, ".harness/active-artifacts.md"),
+		[
+			"# Active Harness Specs And Plans",
+			"",
+			"| Linear Key | Active Spec | Active Plan |",
+			"| --- | --- | --- |",
+			`| JSC-311 | ${codePath(specPath)} | ${codePath(planPath)} |`,
+			"",
+		].join("\n"),
+	);
+}
+
+function gitRunner(status = ""): RuntimeCardGitRunner {
+	return (args) => {
+		if (args.join(" ") === "branch --show-current") {
+			return "codex/jsc-311-phase-exit-next";
+		}
+		if (args.join(" ") === "rev-parse HEAD") {
+			return "a".repeat(40);
+		}
+		if (args.join(" ") === "status --porcelain") {
+			return status;
+		}
+		return undefined;
+	};
+}
+
+function gate(gateId: HeGateId): HeGateResult {
+	const payload: HeGatePayload = {
+		scopeEvidence: ["src/lib/runtime/local-runtime-card.ts"],
+		reuseReviewed: true,
+		qualityReviewed: true,
+		efficiencyReviewed: true,
+	};
+	return {
+		schemaVersion: HE_GATE_RESULT_SCHEMA_VERSION,
+		gateId,
+		required: true,
+		executionMode: "direct_skill",
+		status: "pass",
+		payload,
+		evidenceRefs: [
+			{
+				id: "validation",
+				kind: "command",
+				ref: "pnpm vitest run src/lib/runtime/local-runtime-card.test.ts",
+				gateLocal: true,
+			},
+		],
+		findings: [],
+		actions: [],
+		validation: [
+			{
+				command: "pnpm vitest run src/lib/runtime/local-runtime-card.test.ts",
+				outcome: "pass",
+				reason: null,
+			},
+		],
+		requiresHuman: false,
+		safeToContinue: true,
+		reason: null,
+		blockedReason: null,
+	};
+}
+
+function passingPhaseExit(): HePhaseExit {
+	return {
+		schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
+		phaseContext: {
+			phase: "closeout",
+			failingEvidencePresent: false,
+			reviewFeedbackPresent: false,
+		},
+		recommendation: "continue",
+		commitAllowed: true,
+		exitAllowed: true,
+		blockers: [],
+		warnings: [],
+		gates: [gate("simplify")],
+	};
+}
+
+describe("buildLocalRuntimeCard", () => {
+	it("builds a valid active runtime card from local git and active artifacts", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.issueKey).toBe("JSC-311");
+		expect(card.lifecycle).toBe("active");
+		expect(card.branch).toEqual({
+			name: "codex/jsc-311-phase-exit-next",
+			clean: true,
+			ref: "a".repeat(40),
+		});
+		expect(card.artifacts).toMatchObject({
+			status: "current",
+			staleRefs: [],
+		});
+		expect(card.phaseExit.status).toBe("not_run");
+		expect(card.sources.map((source) => source.kind)).toEqual([
+			"git",
+			"artifact",
+		]);
+	});
+
+	it("keeps runtime-card/v1 validation compatible with older linear snapshots", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+		const legacyCard = {
+			...card,
+			linear: {
+				issueKey: card.linear.issueKey,
+				freshness: card.linear.freshness,
+				actionRequired: card.linear.actionRequired,
+			},
+		};
+
+		expect(validateRuntimeCard(legacyCard)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("normalizes lowercase issue keys from branch names", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.issueKey).toBe("JSC-311");
+		expect(card.linear.issueKey).toBe("JSC-311");
+		expect(card.linear.freshness).toBe("unknown");
+	});
+
+	it("collapses passing phase-exit evidence into locally validated lifecycle", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+		writeFileSync(
+			join(repoRoot, "phase-exit.json"),
+			JSON.stringify(passingPhaseExit(), null, 2),
+		);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			phaseExitPath: "phase-exit.json",
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(" M src/commands/runtime-card.ts\n"),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.lifecycle).toBe("locally_validated");
+		expect(card.branch.clean).toBe(false);
+		expect(card.phaseExit).toEqual({
+			status: "pass",
+			reason: "Required phase-exit gates passed.",
+		});
+		expect(card.sources.map((source) => source.kind)).toContain("phase_exit");
+	});
+
+	it("blocks when active artifact references are stale", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		const specPath = ".harness/specs/missing-spec.md";
+		const planPath = ".harness/plan/missing-plan.md";
+		mkdirSync(join(repoRoot, ".harness"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".harness/active-artifacts.md"),
+			[
+				"| Linear Key | Active Spec | Active Plan |",
+				"| --- | --- | --- |",
+				`| JSC-311 | ${codePath(specPath)} | ${codePath(planPath)} |`,
+				"",
+			].join("\n"),
+		);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			issueKey: "JSC-311",
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.lifecycle).toBe("blocked");
+		expect(card.blockers).toEqual([
+			"Active spec or plan references are stale or missing on disk.",
+		]);
+		expect(card.artifacts.staleRefs).toEqual([specPath, planPath]);
+	});
+
+	it("merges live provider evidence and blocks continuation when provider state is unsafe", async () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = await buildLiveRuntimeCard({
+			repoRoot,
+			issueKey: "JSC-311",
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+			liveProvider: () => ({
+				pullRequest: {
+					number: 247,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "DIRTY",
+					url: "https://github.com/jscraik/coding-harness/pull/247",
+				},
+				linear: {
+					issueKey: "JSC-311",
+					freshness: "current",
+					status: "In Review",
+					statusType: "started",
+					url: "https://linear.app/jscraik/issue/JSC-311/example",
+					actionRequired: null,
+				},
+				sources: [
+					{
+						kind: "pr",
+						ref: "command:gh pr view",
+						freshness: "current",
+						status: "usable",
+						failureClass: null,
+					},
+					{
+						kind: "linear",
+						ref: "api:linear:JSC-311",
+						freshness: "current",
+						status: "usable",
+						failureClass: null,
+					},
+				],
+				blockers: [
+					"GitHub PR merge state is DIRTY; resolve PR blockers before continuing.",
+				],
+			}),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.lifecycle).toBe("blocked");
+		expect(card.pullRequest.number).toBe(247);
+		expect(card.linear.status).toBe("In Review");
+		expect(card.sources.map((source) => source.kind)).toEqual([
+			"git",
+			"artifact",
+			"pr",
+			"linear",
+		]);
+		expect(card.blockers).toEqual([
+			"GitHub PR merge state is DIRTY; resolve PR blockers before continuing.",
+		]);
+	});
+});

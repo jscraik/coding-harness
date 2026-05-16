@@ -1,6 +1,8 @@
 const LINEAR_API_URL = "https://api.linear.app/graphql";
 
+/** Error raised when a Linear GraphQL request fails or returns an unusable payload. */
 export class LinearAPIError extends Error {
+	/** Stable Linear or harness-side error code. */
 	readonly code: string;
 
 	constructor(code: string, message: string) {
@@ -10,96 +12,164 @@ export class LinearAPIError extends Error {
 	}
 }
 
+/** Options used to construct a Linear API client. */
 export interface LinearClientOptions {
+	/** Linear API token used for GraphQL requests. */
 	token: string;
+	/** Optional per-request timeout in milliseconds for bounded live refreshes. */
+	timeoutMs?: number;
 }
 
+/** Minimal Linear team identity returned by issue and team queries. */
 export interface LinearTeamSummary {
+	/** Linear team id. */
 	id: string;
+	/** Linear team key such as JSC. */
 	key: string;
+	/** Human-readable team name. */
 	name: string;
 }
 
+/** Minimal Linear issue summary used by read-only command flows. */
 export interface LinearIssueSummary {
+	/** Linear issue id. */
 	id: string;
+	/** Linear issue identifier such as JSC-311. */
 	identifier: string;
+	/** Issue title. */
 	title: string;
+	/** Browser URL for the issue. */
 	url: string;
+	/** Branch name suggested by Linear, when present. */
 	branchName?: string | null;
+	/** Owning Linear team. */
 	team: LinearTeamSummary;
+	/** Current workflow state. */
 	state: {
+		/** Workflow-state id. */
 		id: string;
+		/** Human-readable workflow-state name. */
 		name: string;
+		/** Linear workflow-state type. */
 		type: string;
 	};
 }
 
+/** Linear issue label summary. */
 export interface LinearIssueLabelSummary {
+	/** Label id. */
 	id: string;
+	/** Label name. */
 	name: string;
 }
 
+/** Linear cycle summary attached to an issue. */
 export interface LinearCycleSummary {
+	/** Cycle id. */
 	id: string;
+	/** Cycle name, when present. */
 	name?: string | null;
+	/** Cycle number, when present. */
 	number?: number | null;
+	/** ISO start time, when present. */
 	startsAt?: string | null;
+	/** ISO end time, when present. */
 	endsAt?: string | null;
 }
 
+/** Linear project summary attached to an issue. */
 export interface LinearProjectSummary {
+	/** Project id. */
 	id: string;
+	/** Project name. */
 	name: string;
+	/** Project slug id, when present. */
 	slugId?: string | null;
 }
 
+/** Linear issue with optional planning metadata used by team issue exports. */
 export interface LinearTeamIssue extends LinearIssueSummary {
+	/** Issue description markdown, when present. */
 	description?: string | null;
+	/** Linear priority value, when set. */
 	priority?: number | null;
+	/** Linear estimate value, when set. */
 	estimate?: number | null;
+	/** Issue labels. */
 	labels: LinearIssueLabelSummary[];
+	/** Assigned cycle, when present. */
 	cycle?: LinearCycleSummary | null;
+	/** Assigned project, when present. */
 	project?: LinearProjectSummary | null;
 }
 
+/** Input for creating a Linear issue. */
 export interface LinearCreateIssueInput {
+	/** Team id where the issue should be created. */
 	teamId: string;
+	/** Issue title. */
 	title: string;
+	/** Optional issue description markdown. */
 	description?: string;
+	/** Optional label ids to attach. */
 	labelIds?: string[];
+	/** Optional Linear priority value. */
 	priority?: number;
 }
 
+/** Summary returned after creating a Linear issue. */
 export interface LinearCreatedIssueSummary {
+	/** Created issue id. */
 	id: string;
+	/** Created issue identifier. */
 	identifier: string;
+	/** Created issue title. */
 	title: string;
+	/** Browser URL for the created issue. */
 	url: string;
 }
 
+/** Linear label summary returned by label queries. */
 export interface LinearLabelSummary {
+	/** Label id. */
 	id: string;
+	/** Label name. */
 	name: string;
+	/** Owning team, when Linear returns one. */
 	team?: LinearTeamSummary | null;
 }
 
+/** Input for creating a Linear label. */
 export interface LinearCreateLabelInput {
+	/** Label name. */
 	name: string;
+	/** Optional team id to scope the label. */
 	teamId?: string;
+	/** Optional hex color. */
 	color?: string;
+	/** Optional label description. */
 	description?: string;
 }
 
+/** Linear workflow-state summary. */
 export interface LinearWorkflowState {
+	/** Workflow-state id. */
 	id: string;
+	/** Workflow-state name. */
 	name: string;
+	/** Workflow-state type. */
 	type: string;
+	/** Owning team. */
 	team: LinearTeamSummary;
 }
 
+/** Authenticated Linear viewer identity. */
 export interface LinearViewer {
+	/** Viewer id. */
 	id: string;
+	/** Viewer name. */
 	name: string;
+	/** Viewer email. */
 	email: string;
 }
 
@@ -128,11 +198,14 @@ function parseErrorMessage(errors: GraphQLResponse<unknown>["errors"]): {
 	return { code, message };
 }
 
+/** Minimal Linear GraphQL client used by harness commands. */
 export class LinearClient {
 	private readonly token: string;
+	private readonly timeoutMs: number | undefined;
 
 	constructor(options: LinearClientOptions) {
 		this.token = options.token;
+		this.timeoutMs = options.timeoutMs;
 	}
 
 	private async graphql<T>(
@@ -145,6 +218,9 @@ export class LinearClient {
 				"content-type": "application/json",
 				authorization: this.token,
 			},
+			...(this.timeoutMs !== undefined
+				? { signal: AbortSignal.timeout(this.timeoutMs) }
+				: {}),
 			body: JSON.stringify({ query, variables }),
 		});
 

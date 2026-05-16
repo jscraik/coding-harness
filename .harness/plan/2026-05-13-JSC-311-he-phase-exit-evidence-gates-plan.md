@@ -58,6 +58,7 @@ acceptance_ids:
 - [Dependencies and Sequencing](#dependencies-and-sequencing)
 - [Validation Gates](#validation-gates)
 - [Technical Review Findings](#technical-review-findings)
+- [Runtime Card v1 Addendum](#runtime-card-v1-addendum)
 - [Review Plan](#review-plan)
 - [Rollback Plan](#rollback-plan)
 - [Risk Register](#risk-register)
@@ -659,6 +660,38 @@ Technical review verdict after phase-work execution: local source validation is
 safe only in the Git-resolved worktree. The next safe action is independent
 review or operator-approved staging/reconciliation; external tracker, PR,
 merge, release, and deployment actions remain forbidden by this plan.
+
+## Runtime Card v1 Addendum
+
+PR #250 extends the JSC-311 visibility slice beyond direct
+`harness next --phase-exit <artifact>` handoff by adding an explicit
+`runtime-card/v1` cockpit artifact. Keep this work in the current PR because it
+uses the same operator-facing continuation boundary: `harness next` should be
+able to explain whether the current checkout is safe to continue from local
+evidence without asking an agent to re-read all surrounding plans.
+
+Implementation scope for this addendum:
+
+- Add `src/lib/runtime/runtime-card.ts` as the typed `runtime-card/v1`
+  contract, validator, normalizer, and continuation-blocking predicate.
+- Add `src/lib/runtime/local-runtime-card.ts` to build local and optional live
+  runtime cards from git, PR, Linear, artifact, review, validation, and
+  phase-exit evidence.
+- Add `harness runtime-card` for explicit artifact generation and
+  `harness next --runtime-card <path>` for explicit runtime-card consumption.
+- Preserve `HePhaseExit/v1` as the phase-exit evidence authority; runtime-card
+  summarizes and routes evidence, but it does not create gate-run proof.
+- Keep automatic session-collector evidence ingestion out of this PR. The next
+  implementation slice should adapt session-collector evidence into
+  runtime-card and phase-exit evidence after PR #250 is green.
+
+Validation ownership:
+
+- Local tests must cover valid runtime-card generation, malformed artifacts,
+  blocking lifecycle decisions, and next-decision metadata.
+- PR #250 closeout must fix stale CI failures before tracker closure.
+- Live Linear reconciliation remains a closeout action, not a hidden source
+  mutation inside this plan addendum.
 
 ## Review Plan
 
