@@ -30,9 +30,9 @@ type RuntimeCardParseResult =
 	| { exitCode: number };
 
 /**
- * Prints the CLI usage syntax and a brief description for the `harness runtime-card` command.
+ * Print usage syntax and a one-line description for the "harness runtime-card" command.
  *
- * Outputs a usage line showing supported flags and a short one-line summary of the command's purpose to console.info.
+ * Emits a usage line listing supported flags and a brief summary of the command's purpose.
  */
 function printRuntimeCardUsage(): void {
 	console.info(
@@ -44,6 +44,13 @@ function printRuntimeCardUsage(): void {
 	);
 }
 
+/**
+ * Retrieves the next command-line token after a flag, if it is a valid value.
+ *
+ * @param args - The full argument list (typically process.argv slice)
+ * @param index - The index of the flag within `args`
+ * @returns The next argument after the flag if present and does not start with `--`, `undefined` otherwise
+ */
 function readFlagValue(
 	args: readonly string[],
 	index: number,

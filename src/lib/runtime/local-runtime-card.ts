@@ -589,6 +589,12 @@ function deriveLifecycle(args: {
 	return "unknown";
 }
 
+/**
+ * Selects the next recommended safe action based on the card's blockers and phase-exit state.
+ *
+ * @param card - Object containing `blockers` and `phaseExit` used to determine the action
+ * @returns A concise instruction: the first blocker message if any blockers exist; if not and the phase-exit status is `"not_run"`, guidance to run focused validation and provide a HePhaseExit/v1 artifact; otherwise the default `harness next` command instruction.
+ */
 function nextSafeAction(
 	card: Pick<RuntimeCard, "blockers" | "phaseExit">,
 ): string {
