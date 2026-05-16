@@ -95,10 +95,10 @@ The portable product promise is:
 
 Initial portability canaries:
 
-- `/Users/jamiecraik/dev/agent-skills`
-- `/Users/jamiecraik/dev/diagram-cli`
-- `/Users/jamiecraik/dev/design-system`
-- `/Users/jamiecraik/dev/x-writer`
+- `~/dev/agent-skills` (brownfield eval/workout repo)
+- `~/dev/diagram-cli` (brownfield CLI)
+- `~/dev/design-system` (product/design repo)
+- `~/dev/x-writer` (active product repo)
 
 Brownfield installs must follow:
 
