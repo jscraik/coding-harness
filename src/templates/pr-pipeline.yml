@@ -93,6 +93,29 @@ jobs:
               }
             }
 
+            const requiredTestingFields = [
+              { label: 'verification_commands' },
+              { label: 'verification_outcomes' },
+              { label: 'blocked_steps_reason' },
+            ];
+            const testingBody = extractSectionBody('## Testing');
+            if (!testingBody) {
+              errors.push('Missing testing block.');
+            } else {
+              for (const field of requiredTestingFields) {
+                const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const match = testingBody.match(new RegExp('^-\\s*' + escapedLabel + ':\\s*(.+)$', 'im'));
+                if (!match) {
+                  errors.push('Missing required testing field: ' + field.label);
+                } else {
+                  const value = normalizeFieldValue(match[1]);
+                  const placeholder = normalizeFieldValue('');
+                  if (value.length === 0 || value === placeholder) {
+                    errors.push('Replace testing field placeholder: ' + field.label);
+                  }
+                }
+              }
+            }
 
             const checklistMatch = body.match(/## Checklist([\s\S]*?)(?:\n## |\n# |$)/i);
 
