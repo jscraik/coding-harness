@@ -429,6 +429,19 @@ function buildRuleLifecycleGateResult(input: {
 	};
 }
 
+function validateAdditionalProperties(
+	value: Record<string, unknown>,
+	properties: unknown,
+	errors: string[],
+	message: (property: string) => string,
+): void {
+	if (!isRecord(properties)) return;
+	const allowed = new Set(Object.keys(properties));
+	for (const property of Object.keys(value)) {
+		if (!allowed.has(property)) errors.push(message(property));
+	}
+}
+
 function validateAgainstSchema(
 	repoRoot: string,
 	value: unknown,
@@ -448,10 +461,18 @@ function validateAgainstSchema(
 		const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
 		const errors: string[] = [];
 
-		// Basic JSON Schema validation (Draft 2020-12 subset)
 		if (!isRecord(value)) {
 			errors.push("Manifest must be an object");
 			return { valid: false, errors };
+		}
+
+		if (schema.additionalProperties === false && isRecord(schema.properties)) {
+			validateAdditionalProperties(
+				value,
+				schema.properties,
+				errors,
+				(property) => `Unexpected property: ${property}`,
+			);
 		}
 
 		// Validate required properties
@@ -485,6 +506,18 @@ function validateAgainstSchema(
 					if (!isRecord(rule)) {
 						errors.push(`rules[${i}] must be an object`);
 						continue;
+					}
+
+					if (
+						ruleDef.additionalProperties === false &&
+						isRecord(ruleDef.properties)
+					) {
+						validateAdditionalProperties(
+							rule,
+							ruleDef.properties,
+							errors,
+							(property) => `rules[${i}] has unexpected field: ${property}`,
+						);
 					}
 
 					// Validate required fields

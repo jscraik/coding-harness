@@ -392,6 +392,42 @@ describe("rule-lifecycle-gate", () => {
 		);
 	});
 
+	it("rejects root and rule fields not admitted by the lifecycle schema", () => {
+		const repoRoot = makeRepo([activeRule({ untrackedField: true })]);
+		writeFileSync(
+			join(repoRoot, ".harness/rule-lifecycle-manifest.json"),
+			JSON.stringify(
+				{
+					schemaVersion: "rule-lifecycle-manifest/v1",
+					rules: [activeRule({ untrackedField: true })],
+					untrackedRoot: true,
+				},
+				null,
+				2,
+			),
+		);
+
+		const result = runRuleLifecycleGate({ repoRoot });
+
+		expect(result.status).toBe("fail");
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.manifest.invalid",
+					message: expect.stringContaining(
+						"Unexpected property: untrackedRoot",
+					),
+				}),
+				expect.objectContaining({
+					id: "rule-lifecycle.manifest.invalid",
+					message: expect.stringContaining(
+						"rules[0] has unexpected field: untrackedField",
+					),
+				}),
+			]),
+		);
+	});
+
 	it("resolves the lifecycle schema from the repo root instead of process cwd", () => {
 		const repoRoot = makeRepo([activeRule()]);
 		const otherCwd = mkdtempSync(join(tmpdir(), "rule-lifecycle-cwd-"));
