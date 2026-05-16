@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  snyk: snyk/snyk@2.3.0
+
 jobs:
   run-governance-check:
     docker:
@@ -154,6 +157,40 @@ jobs:
       - store_artifacts:
           path: artifacts/test-results
           when: always
+
+  snyk-dependency-scan:
+    docker:
+      # Pinned to specific minor for reproducibility (JSC-115)
+      - image: cimg/node:24.13
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Ensure pnpm available
+          command: |
+            required_pnpm_version="10.33.0"
+            current_pnpm_version=""
+            if command -v pnpm >/dev/null 2>&1; then
+              current_pnpm_version="$(pnpm --version || true)"
+            fi
+            if [[ "$current_pnpm_version" != "$required_pnpm_version" ]]; then
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
+              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+              npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"
+            fi
+            pnpm --version
+      - run:
+          name: Install dependencies for Snyk package graph
+          command: pnpm install --frozen-lockfile --prefer-offline
+      - snyk/scan:
+          additional-arguments: --package-manager=pnpm
+          fail-on-issues: true
+          monitor-on-build: false
+          severity-threshold: high
+          target-file: package.json
+          token-variable: SNYK_TOKEN
 
 workflows:
   pr-pipeline:
@@ -409,6 +446,11 @@ workflows:
           check_name: security-scan
           skip_dependency_bootstrap: true
           command: bash scripts/check-semgrep-full.sh
+          filters:
+            tags:
+              ignore: /.*/
+      - snyk-dependency-scan:
+          name: snyk-dependency-scan
           filters:
             tags:
               ignore: /.*/
