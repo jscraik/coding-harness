@@ -371,8 +371,8 @@ describe("buildLocalRuntimeCard", () => {
 			"git",
 			"artifact",
 			"phase_exit",
-			"session",
 			"validation",
+			"session",
 		]);
 		expect(card.blockers).toEqual([
 			"Session collector reports PR checks are blocked; resolve CI before closeout.",

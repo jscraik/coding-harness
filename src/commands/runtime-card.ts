@@ -1,5 +1,12 @@
 import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
-import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+} from "node:path";
 import { cwd } from "node:process";
 import {
 	buildLiveRuntimeCard,
@@ -122,6 +129,11 @@ function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
 	return { options };
 }
 
+function isOutsideRepo(canonicalRepo: string, targetPath: string): boolean {
+	const rel = relative(canonicalRepo, targetPath);
+	return rel.startsWith("..") || rel === ".." || isAbsolute(rel);
+}
+
 /**
  * Loads and parses a JSON evidence bundle file referenced by `artifactPath`, constrained to stay within `repoRoot`.
  *
@@ -131,13 +143,13 @@ function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
  * @throws Error if `artifactPath` is absolute or resolves outside `repoRoot` with the message "--evidence must stay within --repo".
  */
 function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
-	const resolvedPath = isAbsolute(artifactPath)
-		? artifactPath
-		: resolve(repoRoot, artifactPath);
 	const canonicalRepo = realpathSync(repoRoot);
+	const resolvedPath = resolve(canonicalRepo, artifactPath);
+	if (isAbsolute(artifactPath) || isOutsideRepo(canonicalRepo, resolvedPath)) {
+		throw new Error("--evidence must stay within --repo");
+	}
 	const canonicalEvidence = realpathSync(resolvedPath);
-	const rel = relative(canonicalRepo, canonicalEvidence);
-	if (isAbsolute(artifactPath) || rel.startsWith("..") || rel === "..") {
+	if (isOutsideRepo(canonicalRepo, canonicalEvidence)) {
 		throw new Error("--evidence must stay within --repo");
 	}
 	return JSON.parse(readFileSync(canonicalEvidence, "utf8"));
@@ -208,7 +220,11 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 			const canonicalDir = realpathSync(dirname(outputPath));
 			const canonicalOutput = join(canonicalDir, basename(outputPath));
 			const rel = relative(canonicalRepo, canonicalOutput);
-			if (isAbsolute(parsed.options.outPath) || rel.startsWith("..") || rel === "..") {
+			if (
+				isAbsolute(parsed.options.outPath) ||
+				rel.startsWith("..") ||
+				rel === ".."
+			) {
 				throw new Error("--out must stay within --repo");
 			}
 			writeFileSync(canonicalOutput, `${json}\n`, "utf8");
