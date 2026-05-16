@@ -259,11 +259,13 @@ For repositories that use Harness, recommend installing these scanners as projec
 - Gitleaks
 - Trivy
 - Semgrep
+- Snyk in CircleCI through the pinned Snyk orb and \`SNYK_TOKEN\` environment variable
 
 Recommended policy:
 
 - Keep scanner binaries available in local development environments and CI runners.
 - Run scanner checks in CI on pull requests and pushes to protected branches.
+- Keep Snyk monitoring disabled unless the repository explicitly approves external snapshot writes.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
 ${
 	options.isCircleCI

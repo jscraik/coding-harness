@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  snyk: snyk/snyk@2.3.0
+
 jobs:
   run-governance-check:
     docker:
@@ -130,6 +133,31 @@ jobs:
       - store_artifacts:
           path: artifacts/test-results
           when: always
+
+  snyk-dependency-scan:
+    docker:
+      # Pinned to specific minor for reproducibility (JSC-115)
+      - image: cimg/node:24.13
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Enable package manager
+          command: |
+            if [[ "{{packageManager}}" == "pnpm" ]]; then
+              npm install --global "pnpm@10.33.0"
+            fi
+            {{packageManager}} --version
+      - run:
+          name: Install dependencies for Snyk package graph
+          command: {{installCommand}}
+      - snyk/scan:
+          additional-arguments: --package-manager={{packageManager}}
+          fail-on-issues: true
+          monitor-on-build: false
+          severity-threshold: high
+          target-file: package.json
+          token-variable: SNYK_TOKEN
 
 workflows:
   pr-pipeline:
@@ -284,6 +312,11 @@ workflows:
             {{gitleaksCommand}}
             {{trivyCommand}}
             {{semgrepCommand}}
+          filters:
+            tags:
+              ignore: /.*/
+      - snyk-dependency-scan:
+          name: snyk-dependency-scan
           filters:
             tags:
               ignore: /.*/

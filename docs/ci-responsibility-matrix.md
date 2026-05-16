@@ -40,7 +40,7 @@ This document is the operational source of truth for CI ownership intent. `harne
 | Responsibility                                                                                                                                            | Workflow        | Job                                 | Trigger                                                |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------- | ------------------------------------------------------ |
 | PR governance and quality checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) | `pr-pipeline`   | `run-governance-check` fan-out jobs | Pull request and merge queue events via GitHub webhook |
-| Security scanning (`security-scan`)                                                                                                                       | `security-scan` | `security-scan`                     | Pull request and merge queue events via GitHub webhook |
+| Security scanning (`security-scan`)                                                                                                                       | `security-scan` | `security-scan`, `snyk-dependency-scan` | Pull request and merge queue events via GitHub webhook |
 | Environment and dependency policy checks (`dependency-scan`, `orb-pinning`)                                                                               | `pr-pipeline`   | `dependency-scan`, `orb-pinning`    | Pull request and merge queue events via GitHub webhook |
 
 ### GitHub Actions Owns
@@ -93,6 +93,7 @@ Developer pushes tag v1.2.3
 The repository is in a **CircleCI-primary state**:
 
 - CircleCI is the canonical owner for PR governance and security checks.
+- The CircleCI `security-scan` workflow runs repo-owned Semgrep and Snyk lanes while preserving the single GitHub check-run name `security-scan`.
 - GitHub Actions is retained only for release publishing at `.github/workflows/release-private-npm.yml`.
 - `.harness/ci-required-checks.json` maps `security-scan` to CircleCI, `CodeRabbit` to the CodeRabbit app, and `semgrep-cloud-platform/scan` to the Semgrep Cloud app.
 
@@ -141,6 +142,7 @@ For ownership overlap detection, manually verify:
 | Node.js version     | `cimg/node:24.13`                                 | `actions/setup-node@v6` (node-version: 24)     |
 | pnpm version        | npm install --global `pnpm@10.33.0`               | `pnpm/action-setup@v5` (version: `10.33.0`)    |
 | Install command     | `pnpm install --frozen-lockfile --prefer-offline` | `pnpm install --frozen-lockfile`               |
-| Security scan lane  | `security-scan` job in `.circleci/config.yml`     | N/A (release-only)                             |
+| Security scan lane  | `security-scan` workflow in `.circleci/config.yml` with Semgrep and Snyk jobs | N/A (release-only)                             |
+| Snyk token          | `SNYK_TOKEN` project environment variable for the Snyk orb | N/A                                      |
 | npm publish token   | N/A (does not publish)                            | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
 | Attestation signing | N/A                                               | OIDC (`actions/attest-build-provenance`)       |
