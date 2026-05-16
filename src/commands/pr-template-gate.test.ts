@@ -23,6 +23,19 @@ const VALID_BODY = `## Summary
 - Why this change was needed: Prevent incomplete PR templates before CI.
 - Risk and rollback plan: Revert the command and docs updates.
 
+## Work performed
+
+- Plan IDs: JSC-999; .harness/plan/example-plan.md
+- Phase / slice: PU-001 PR evidence ledger
+- Session IDs: codex-session-019c-example
+- Trace IDs: circleci-workflow-123; harness-gate-pr-template
+- Completed work: Added pr-template-gate command and docs update with evidence refs.
+- Acceptance trace: SA-999-001 -> src/commands/pr-template-gate.test.ts.
+- Validation evidence: pnpm vitest run src/commands/pr-template-gate.test.ts -> pass.
+- Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
+- Learning / reinforcement: none; no durable learning promoted.
+- Deferred work: none
+
 ## Checklist
 
 - [x] I did not push directly to \`main\`; this PR is from a dedicated branch.

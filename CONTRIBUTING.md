@@ -200,6 +200,23 @@ repeat findings should become a validator, gate, scaffold regression,
 generated-artifact rule, review-context fact, or explicit exception instead of
 remaining a review comment.
 
+## Work performed ledger
+
+Every PR must keep `## Work performed` filled in with concrete evidence:
+
+- `Plan IDs`: Linear keys, spec paths, plan paths, or `n.a.` with reason.
+- `Phase / slice`: completed phase, implementation slice, or `n.a.` with reason.
+- `Session IDs`: Codex, session-collector, or Harness Engineering session IDs, or `n.a.` with reason.
+- `Trace IDs`: CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason.
+- `Completed work`: implementation units, docs/config changes, or evidence-only work completed in the PR.
+- `Acceptance trace`: completed acceptance items mapped to evidence refs, or `n.a.` with reason.
+- `Validation evidence`: command outcomes, CI jobs, artifact paths, or `n.a.` with reason.
+- `Review artifacts`: CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason.
+- `Learning / reinforcement`: promoted learnings, memory updates, or `none` with reason.
+- `Deferred work`: follow-up work intentionally left out, or `none`.
+
+Use this section as the compact handoff ledger. It should say what was actually done, which sessions and traces produced the evidence, what was promoted into durable learning, and what remains, not repeat the full implementation story.
+
 ## Review artifacts requirement
 
 Each PR must include:

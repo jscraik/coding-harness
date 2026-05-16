@@ -1,5 +1,6 @@
 const REQUIRED_SECTIONS = [
 	"## Summary",
+	"## Work performed",
 	"## Checklist",
 	"## Testing",
 	"## Review artifacts",
@@ -27,6 +28,58 @@ const REQUIRED_TESTING_FIELDS = [
 	{
 		label: "blocked_steps_reason",
 		placeholder: "none if all planned steps ran",
+	},
+] as const;
+
+const REQUIRED_WORK_FIELDS = [
+	{
+		label: "Plan IDs",
+		placeholder:
+			"list Linear keys, spec paths, plan paths, or `n.a.` with reason",
+	},
+	{
+		label: "Phase / slice",
+		placeholder:
+			"list completed phase, implementation slice, or `n.a.` with reason",
+	},
+	{
+		label: "Session IDs",
+		placeholder:
+			"list Codex/session-collector/harness session IDs, or `n.a.` with reason",
+	},
+	{
+		label: "Trace IDs",
+		placeholder:
+			"list CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason",
+	},
+	{
+		label: "Completed work",
+		placeholder:
+			"list implementation units, docs/config changes, or evidence-only work completed in this PR",
+	},
+	{
+		label: "Acceptance trace",
+		placeholder:
+			"map completed acceptance items to evidence refs, or `n.a.` with reason",
+	},
+	{
+		label: "Validation evidence",
+		placeholder:
+			"list command outcomes, CI jobs, artifact paths, or `n.a.` with reason",
+	},
+	{
+		label: "Review artifacts",
+		placeholder:
+			"list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason",
+	},
+	{
+		label: "Learning / reinforcement",
+		placeholder:
+			"list promoted learnings, memory updates, or `none` with reason",
+	},
+	{
+		label: "Deferred work",
+		placeholder: "list follow-up work intentionally left out, or `none`",
 	},
 ] as const;
 
@@ -118,7 +171,8 @@ function collectTestingFieldErrors(body: string): string[] {
 	const errors: string[] = [];
 
 	for (const field of REQUIRED_TESTING_FIELDS) {
-		const pattern = new RegExp(`^-\\s*${field.label}:\\s*(.+)$`, "im");
+		const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const pattern = new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im");
 		const match = testingBody.match(pattern);
 		if (!match) {
 			errors.push(`Missing required testing field: ${field.label}`);
@@ -135,6 +189,36 @@ function collectTestingFieldErrors(body: string): string[] {
 	return errors;
 }
 
+function collectWorkPerformedFieldErrors(body: string): string[] {
+	const workBody = extractSectionBody(body, "## Work performed");
+	if (workBody === null) {
+		return ["Missing work performed block."];
+	}
+
+	const errors: string[] = [];
+
+	for (const field of REQUIRED_WORK_FIELDS) {
+		const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const pattern = new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im");
+		const match = workBody.match(pattern);
+		if (!match) {
+			errors.push(`Missing required work performed field: ${field.label}`);
+			continue;
+		}
+
+		const value = normalizeTestingFieldValue(match[1] ?? "");
+		const placeholder = normalizeTestingFieldValue(field.placeholder);
+		if (value.length === 0 || value === placeholder) {
+			errors.push(`Replace work performed field placeholder: ${field.label}`);
+		}
+	}
+
+	return errors;
+}
+
+/**
+ * Validate a pull request body against the repository PR template contract.
+ */
 export function validatePrTemplateBody(body: string): string[] {
 	const errors: string[] = [];
 	if (body.length > MAX_BODY_LENGTH) {
@@ -154,6 +238,7 @@ export function validatePrTemplateBody(body: string): string[] {
 		}
 	}
 
+	errors.push(...collectWorkPerformedFieldErrors(body));
 	errors.push(...collectChecklistErrors(body));
 	errors.push(...collectTestingFieldErrors(body));
 	errors.push(...collectPlaceholderErrors(body));
