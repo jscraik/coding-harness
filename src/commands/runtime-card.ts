@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { cwd } from "node:process";
 import {
 	buildLiveRuntimeCard,
@@ -141,6 +141,10 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 				parsed.options.repoRoot,
 				parsed.options.outPath,
 			);
+			const rel = relative(parsed.options.repoRoot, outputPath);
+			if (isAbsolute(parsed.options.outPath) || rel.startsWith("..")) {
+				throw new Error("--out must stay within --repo");
+			}
 			mkdirSync(dirname(outputPath), { recursive: true });
 			writeFileSync(outputPath, `${json}\n`, "utf8");
 		}
