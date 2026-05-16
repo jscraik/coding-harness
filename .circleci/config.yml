@@ -20,6 +20,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Fetch comparison base
+          command: |
+            git fetch --no-tags --depth=200 origin main:refs/remotes/origin/main || \
+              git fetch --no-tags origin main:refs/remotes/origin/main
+      - run:
           name: Verify GH token wiring
           command: |
             if [ -n "${GH_TOKEN:-}" ]; then
