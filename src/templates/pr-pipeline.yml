@@ -41,7 +41,7 @@ jobs:
 
             const extractSectionBody = (heading) => {
               const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              const match = body.match(new RegExp(`${escapedHeading}([\\s\\S]*?)(?:\\n## |\\n# |$)`, 'i'));
+              const match = body.match(new RegExp(`(?:^|\\n)${escapedHeading}([\\s\\S]*?)(?:\\n## |\\n# |$)`, 'im'));
               return match ? (match[1] ?? '') : null;
             };
             const normalizeFieldValue = (value) => {
