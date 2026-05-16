@@ -150,7 +150,11 @@ jobs:
           name: Enable package manager
           command: |
             if [[ "{{packageManager}}" == "pnpm" ]]; then
-              npm install --global "pnpm@10.33.0"
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
+              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+              npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@10.33.0"
             fi
             {{packageManager}} --version
       - run:

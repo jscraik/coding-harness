@@ -83,7 +83,7 @@ const REQUIRED_WORK_FIELDS = [
 	},
 ] as const;
 
-function normalizeTestingFieldValue(value: string): string {
+function normalizeFieldValue(value: string): string {
 	let normalized = value.trim();
 
 	const fencedMatch = normalized.match(/^```[\w-]*\s*([\s\S]*?)\s*```$/);
@@ -162,58 +162,44 @@ function collectPlaceholderErrors(body: string): string[] {
 	return errors;
 }
 
-function collectTestingFieldErrors(body: string): string[] {
-	const testingBody = extractSectionBody(body, "## Testing");
-	if (testingBody === null) {
-		return ["Missing testing block."];
+function collectFieldErrors(
+	body: string,
+	sectionHeading: string,
+	fields: ReadonlyArray<{ label: string; placeholder: string }>,
+	errorPrefix: string,
+): string[] {
+	const sectionBody = extractSectionBody(body, sectionHeading);
+	if (sectionBody === null) {
+		return [`Missing ${errorPrefix} block.`];
 	}
 
 	const errors: string[] = [];
 
-	for (const field of REQUIRED_TESTING_FIELDS) {
+	for (const field of fields) {
 		const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 		const pattern = new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im");
-		const match = testingBody.match(pattern);
+		const match = sectionBody.match(pattern);
 		if (!match) {
-			errors.push(`Missing required testing field: ${field.label}`);
+			errors.push(`Missing required ${errorPrefix} field: ${field.label}`);
 			continue;
 		}
 
-		const value = normalizeTestingFieldValue(match[1] ?? "");
-		const placeholder = normalizeTestingFieldValue(field.placeholder);
+		const value = normalizeFieldValue(match[1] ?? "");
+		const placeholder = normalizeFieldValue(field.placeholder);
 		if (value.length === 0 || value === placeholder) {
-			errors.push(`Replace testing field placeholder: ${field.label}`);
+			errors.push(`Replace ${errorPrefix} field placeholder: ${field.label}`);
 		}
 	}
 
 	return errors;
 }
 
+function collectTestingFieldErrors(body: string): string[] {
+	return collectFieldErrors(body, "## Testing", REQUIRED_TESTING_FIELDS, "testing");
+}
+
 function collectWorkPerformedFieldErrors(body: string): string[] {
-	const workBody = extractSectionBody(body, "## Work performed");
-	if (workBody === null) {
-		return ["Missing work performed block."];
-	}
-
-	const errors: string[] = [];
-
-	for (const field of REQUIRED_WORK_FIELDS) {
-		const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-		const pattern = new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im");
-		const match = workBody.match(pattern);
-		if (!match) {
-			errors.push(`Missing required work performed field: ${field.label}`);
-			continue;
-		}
-
-		const value = normalizeTestingFieldValue(match[1] ?? "");
-		const placeholder = normalizeTestingFieldValue(field.placeholder);
-		if (value.length === 0 || value === placeholder) {
-			errors.push(`Replace work performed field placeholder: ${field.label}`);
-		}
-	}
-
-	return errors;
+	return collectFieldErrors(body, "## Work performed", REQUIRED_WORK_FIELDS, "work performed");
 }
 
 /**

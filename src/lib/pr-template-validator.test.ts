@@ -59,7 +59,7 @@ describe("validatePrTemplateBody", () => {
 	it("does not treat heading names in prose as section starts", () => {
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",
-			"Added the required `## Work performed` ledger to the PR body.",
+			"Added the required \`## Work performed\` ledger to the PR body.",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual([]);
