@@ -37,7 +37,9 @@ harness next --json
 Optional overrides:
 
 ```bash
-harness runtime-card --json --live --out .harness/runtime/JSC-311.json
+harness runtime-card --json --live \
+  --out .harness/runtime/JSC-311.json \
+  --evidence-out .harness/runtime/JSC-311-evidence.json
 harness runtime-card --json --evidence .harness/runtime/session-evidence.json --out .harness/runtime/JSC-311.json
 harness next --json --files src/cli.ts docs/cli-reference.md
 harness next --json --phase-exit .harness/runs/phase-exit.json
@@ -65,7 +67,10 @@ as validation evidence. Add `--phase-exit <path>` to collapse a local
 adapt a normalized `runtime-evidence-bundle/v1` artifact from a session,
 collector, CI job, or manual adapter without exposing collector storage details
 to `harness next`. Use `--out <path>` when the card should be persisted for a
-later `harness next --runtime-card <path>` call.
+later `harness next --runtime-card <path>` call. Use `--evidence-out <path>`
+to persist a reusable `runtime-evidence-bundle/v1` that can be consumed by a
+later `harness runtime-card --evidence <path>` run without reassembling PR,
+Linear, source, and blocker state by hand.
 
 First-slice routing is intentionally small:
 
@@ -109,27 +114,27 @@ Fuzzy typo/case correction is opt-in via `--allow-fuzzy` (or `HARNESS_ALLOW_FUZZ
 
 Taxonomy note: section headings in this document represent command families. They are not additional callable top-level commands.
 
-| Command             | Purpose                                                                                                                                                                    |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                  |
-| `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)  |
-| `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)         |
-| `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                 |
-| `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`) |
-| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`) |
-| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                         |
-| `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                    |
-| `audit`             | Comprehensive governance state check with actionable recommendations                                                                                                       |
-| `brain`             | Project Brain knowledge, rules, and quality management (status, query, add, preflight, stale)                                                                              |
-| `health`            | Unified gate status scorecard across all gates                                                                                                                             |
-| `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                   |
-| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                       |
-| `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                   |
-| `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                                |
-| `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                               |
-| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                          |
-| `preset`            | List and inspect bundled presets                                                                                                                                           |
-| `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                      |
+| Command             | Purpose                                                                                                                                                                                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                                                                                                                   |
+| `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                   |
+| `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                          |
+| `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                  |
+| `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                       |
+| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`) |
+| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                          |
+| `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                                                                                                                     |
+| `audit`             | Comprehensive governance state check with actionable recommendations                                                                                                                                                                                                        |
+| `brain`             | Project Brain knowledge, rules, and quality management (status, query, add, preflight, stale)                                                                                                                                                                               |
+| `health`            | Unified gate status scorecard across all gates                                                                                                                                                                                                                              |
+| `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                                                                                                                    |
+| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                                                                                                                        |
+| `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                                                                                                                    |
+| `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                                                                                                                                 |
+| `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                                                                                                                                |
+| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                                                                                                                           |
+| `preset`            | List and inspect bundled presets                                                                                                                                                                                                                                            |
+| `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                                                                                                                       |
 
 In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json` when the upgrade-matrix artifact exists.
 
