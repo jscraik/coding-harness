@@ -93,7 +93,7 @@ Developer pushes tag v1.2.3
 The repository is in a **CircleCI-primary state**:
 
 - CircleCI is the canonical owner for PR governance and security checks.
-- The CircleCI `security-scan` workflow runs repo-owned Semgrep and Snyk lanes while preserving the single GitHub check-run name `security-scan`.
+- The CircleCI `security-scan` workflow runs repo-owned Semgrep and report-only Snyk lanes while preserving the single GitHub check-run name `security-scan`.
 - GitHub Actions is retained only for release publishing at `.github/workflows/release-private-npm.yml`.
 - `.harness/ci-required-checks.json` maps `security-scan` to CircleCI, `CodeRabbit` to the CodeRabbit app, and `semgrep-cloud-platform/scan` to the Semgrep Cloud app.
 
