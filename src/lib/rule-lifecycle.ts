@@ -497,16 +497,17 @@ function validateAgainstSchema(value: unknown): {
 						}
 					}
 
-					// Validate id pattern
-					if (
-						typeof rule.id === "string" &&
-						ruleDef.properties?.id?.pattern
-					) {
-						const pattern = new RegExp(ruleDef.properties.id.pattern);
-						if (!pattern.test(rule.id)) {
-							errors.push(`rules[${i}].id has invalid format: ${rule.id}`);
-						}
+				// Validate id pattern
+				if (
+					typeof rule.id === "string" &&
+					ruleDef.properties?.id?.pattern
+				) {
+					// Use known-safe pattern rather than schema-derived regex to avoid ReDoS
+					const pattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+					if (!pattern.test(rule.id)) {
+						errors.push(`rules[${i}].id has invalid format: ${rule.id}`);
 					}
+				}
 
 					// Validate status enum
 					if (
