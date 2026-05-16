@@ -50,6 +50,14 @@ function uniqueSources(sources: RuntimeCardSource[]): RuntimeCardSource[] {
 	});
 }
 
+function provenanceSourceKind(
+	kind: RuntimeEvidenceBundle["provenance"]["kind"],
+): RuntimeCardSource["kind"] {
+	if (kind === "ci") return "validation";
+	if (kind === "session_collector") return "session";
+	return "artifact";
+}
+
 /**
  * Produce a normalized snapshot of a runtime evidence bundle for runtime-card generation.
  *
@@ -58,12 +66,7 @@ function uniqueSources(sources: RuntimeCardSource[]): RuntimeCardSource[] {
  *
  * @param value - The runtime evidence bundle (or unknown) to inspect; expected to conform to the normalized runtime-evidence-bundle/v1 shape.
  * @param collapsePhaseExit - Function that converts a bundle `phaseExit` into a `RuntimeCardPhaseExitState`; invoked only if the bundle contains `phaseExit`.
- * @returns A `RuntimeEvidenceBundleSnapshot` containing:
- *  - `issueKey` copied from the bundle (or `null` when `value` is `undefined`),
- *  - optional `pullRequest` and `linear` when present on the bundle,
- *  - optional `phaseExit` (with the collapsed `phaseExit` state, a generated `phase_exit` source whose `status` and `failureClass` reflect the phase result, and `blockers` derived from the phase result),
- *  - `sources` composed of bundle sources followed by a synthetic `session` source, deduplicated such that producer-provided metadata in bundle sources wins,
- *  - `blockers` copied from the bundle.
+ * @returns A `RuntimeEvidenceBundleSnapshot` containing issue key, optional PR/tracker/phase-exit state, normalized sources, and blockers.
  */
 export function inspectRuntimeEvidenceBundle(
 	value: RuntimeEvidenceBundle | unknown | undefined,
@@ -78,14 +81,14 @@ export function inspectRuntimeEvidenceBundle(
 	}
 	const bundle = asRuntimeEvidenceBundle(value);
 	const sources = uniqueSources([
-		...bundle.sources,
 		{
-			kind: "session",
+			kind: provenanceSourceKind(bundle.provenance.kind),
 			ref: bundle.provenance.ref,
 			freshness: "current",
 			status: "usable",
 			failureClass: null,
 		},
+		...bundle.sources,
 	]);
 	const phaseExit = bundle.phaseExit
 		? collapsePhaseExit(bundle.phaseExit)

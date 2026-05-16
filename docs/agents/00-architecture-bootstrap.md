@@ -72,6 +72,11 @@ For runtime-card evidence adapter changes, keep `runtime-card/v1` and
 reads and persisted outputs must stay within `--repo`, and the refreshed
 diagram context plus this guide must travel with producer or adapter wiring
 changes.
+Runtime-card evidence producer changes are architecture-adjacent because they add
+new durable evidence artifacts consumed by the agent cockpit. Refresh
+`AI/context/diagram-context.md` and keep this guide in the PR when
+`runtime-card --evidence-out`, `runtime-evidence-bundle/v1`, or related
+producer and adapter wiring changes.
 
 For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
 For CI ownership architecture changes, keep `harness.contract.json` `ciOwnership` aligned with those required-check identities: CircleCI remains the primary PR gate, CodeRabbit remains independent review evidence, Semgrep Cloud remains independent external security evidence, and GitHub Actions workflows must not become automatic PR gates without a deliberate contract migration.
