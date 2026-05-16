@@ -21,6 +21,8 @@ export interface LoggerOptions {
 	minLevel?: LogLevel | undefined;
 	/** OTLP endpoint URL for log export (optional) */
 	otelEndpoint?: string | undefined;
+	/** Additional headers for OTLP export requests. */
+	otelHeaders?: Record<string, string> | undefined;
 	/** Service name for OTLP metadata */
 	serviceName?: string | undefined;
 	/** Output stream (default: console) */
@@ -52,6 +54,7 @@ function createConsoleWriter(): { write: (str: string) => void } {
 export class StructuredLogger {
 	private minLevel: LogLevel;
 	private otelEndpoint: string | undefined;
+	private otelHeaders: Record<string, string>;
 	private serviceName: string;
 	private output: { write: (str: string) => void };
 
@@ -59,6 +62,11 @@ export class StructuredLogger {
 		this.minLevel = options.minLevel ?? "info";
 		this.otelEndpoint =
 			options.otelEndpoint ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
+		this.otelHeaders = {
+			...parseOtelExporterHeaders(process.env.OTEL_EXPORTER_OTLP_HEADERS),
+			...createCollectorTokenHeader(process.env),
+			...options.otelHeaders,
+		};
 		this.serviceName = options.serviceName ?? "coding-harness";
 		this.output = options.output ?? createConsoleWriter();
 	}
@@ -161,6 +169,7 @@ export class StructuredLogger {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
+					...this.otelHeaders,
 				},
 				body,
 			});
@@ -203,6 +212,51 @@ export class StructuredLogger {
 	child(defaultContext: Record<string, unknown>): ChildLogger {
 		return new ChildLogger(this, defaultContext);
 	}
+}
+
+function parseOtelExporterHeaders(
+	value: string | undefined,
+): Record<string, string> {
+	if (!value) return {};
+
+	const headers: Record<string, string> = {};
+	for (const pair of value.split(",")) {
+		const trimmed = pair.trim();
+		if (!trimmed) continue;
+
+		const separatorIndex = trimmed.indexOf("=");
+		if (separatorIndex <= 0) continue;
+
+		const key = trimmed.slice(0, separatorIndex).trim();
+		const rawValue = trimmed.slice(separatorIndex + 1).trim();
+		if (!key) continue;
+
+		headers[key] = decodeHeaderValue(rawValue);
+	}
+
+	return headers;
+}
+
+function decodeHeaderValue(value: string): string {
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return value;
+	}
+}
+
+function createCollectorTokenHeader(
+	env: NodeJS.ProcessEnv,
+): Record<string, string> {
+	const token = env.OTEL_COLLECTOR_EXTERNAL_INGEST_TOKEN?.trim();
+	if (!token) return {};
+
+	const headerName =
+		env.OTEL_COLLECTOR_EXTERNAL_INGEST_TOKEN_HEADER?.trim() ??
+		"x-otel-collector-token";
+	if (!headerName) return {};
+
+	return { [headerName]: token };
 }
 
 /**
