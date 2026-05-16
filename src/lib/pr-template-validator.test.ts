@@ -56,6 +56,15 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
 	});
 
+	it("does not treat heading names in prose as section starts", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"Added the required `## Work performed` ledger to the PR body.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
 	it("fails when required sections are missing", () => {
 		const errors = validatePrTemplateBody("## Summary\n\nOnly summary.");
 		expect(errors).toContain("Missing required section: ## Work performed");
