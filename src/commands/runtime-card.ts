@@ -136,13 +136,20 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 			? await buildLiveRuntimeCard(buildOptions)
 			: buildLocalRuntimeCard(buildOptions);
 		const json = JSON.stringify(card, null, 2);
+import { dirname, isAbsolute, relative, resolve } from "node:path";
+...
 		if (parsed.options.outPath) {
 			const outputPath = resolve(
 				parsed.options.repoRoot,
 				parsed.options.outPath,
 			);
+			const rel = relative(parsed.options.repoRoot, outputPath);
+			if (isAbsolute(parsed.options.outPath) || rel.startsWith("..")) {
+				throw new Error("--out must stay within --repo");
+			}
 			mkdirSync(dirname(outputPath), { recursive: true });
 			writeFileSync(outputPath, `${json}\n`, "utf8");
+		}
 		}
 		if (parsed.options.json) {
 			console.info(json);
