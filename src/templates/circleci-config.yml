@@ -155,13 +155,18 @@ jobs:
       - run:
           name: Install dependencies for Snyk package graph
           command: {{installCommand}}
-      - snyk/scan:
-          additional-arguments: --package-manager={{packageManager}}
-          fail-on-issues: true
-          monitor-on-build: false
-          severity-threshold: high
-          target-file: package.json
-          token-variable: SNYK_TOKEN
+      - run:
+          name: Run Snyk dependency scan
+          command: |
+            if [[ -z "${SNYK_TOKEN:-}" ]]; then
+              echo "SNYK_TOKEN is not available in this CircleCI job."
+              echo "Configure the project environment variable or attach the required context before running snyk-dependency-scan."
+              exit 1
+            fi
+            npm exec --yes snyk@1.1304.3 -- test \
+              --package-manager={{packageManager}} \
+              --file=package.json \
+              --severity-threshold=high
 
 workflows:
   pr-pipeline:

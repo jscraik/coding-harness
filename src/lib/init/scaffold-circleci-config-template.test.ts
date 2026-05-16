@@ -38,8 +38,12 @@ describe("scaffold CircleCI config template", () => {
 		expect(config).toContain("v2-pnpm-store-{{ arch }}-");
 		expect(config).toContain("snyk: snyk/snyk@2.3.0");
 		expect(config).toContain("name: snyk-dependency-scan");
-		expect(config).toContain("monitor-on-build: false");
-		expect(config).toContain("additional-arguments: --package-manager=pnpm");
+		expect(config).toContain("name: Run Snyk dependency scan");
+		expect(config).toContain(
+			"SNYK_TOKEN is not available in this CircleCI job.",
+		);
+		expect(config).toContain("npm exec --yes snyk@1.1304.3 -- test");
+		expect(config).toContain("--package-manager=pnpm");
 		expect(config).toContain("name: security-scan");
 		expect(config).not.toContain("}}      -");
 		expect(config).not.toMatch(/{{[a-zA-Z]+}}/);
