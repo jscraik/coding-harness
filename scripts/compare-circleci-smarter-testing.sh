@@ -62,28 +62,39 @@ fi
 
 duration_delta=$((smarter_duration - baseline_duration))
 
-cat >"$SUMMARY_JSON" <<JSON
-{
-  "baseline": {
-    "command": "$baseline_command",
-    "exitCode": $baseline_exit,
-    "durationSeconds": $baseline_duration,
-    "resultsPath": "$BASELINE_RESULTS_DIR",
-    "logPath": "$baseline_log"
-  },
-  "smarterTesting": {
-    "command": "$smarter_command",
-    "status": "$smarter_status",
-    "exitCode": $smarter_exit,
-    "durationSeconds": $smarter_duration,
-    "resultsPath": "$SMARTER_RESULTS_DIR",
-    "logPath": "$smarter_log"
-  },
-  "comparison": {
-    "durationDeltaSeconds": $duration_delta
-  }
-}
-JSON
+jq -n \
+  --arg baseline_command "$baseline_command" \
+  --argjson baseline_exit "$baseline_exit" \
+  --argjson baseline_duration "$baseline_duration" \
+  --arg baseline_results_path "$BASELINE_RESULTS_DIR" \
+  --arg baseline_log "$baseline_log" \
+  --arg smarter_command "$smarter_command" \
+  --arg smarter_status "$smarter_status" \
+  --argjson smarter_exit "$smarter_exit" \
+  --argjson smarter_duration "$smarter_duration" \
+  --arg smarter_results_path "$SMARTER_RESULTS_DIR" \
+  --arg smarter_log "$smarter_log" \
+  --argjson duration_delta "$duration_delta" \
+  '{
+    baseline: {
+      command: $baseline_command,
+      exitCode: $baseline_exit,
+      durationSeconds: $baseline_duration,
+      resultsPath: $baseline_results_path,
+      logPath: $baseline_log
+    },
+    smarterTesting: {
+      command: $smarter_command,
+      status: $smarter_status,
+      exitCode: $smarter_exit,
+      durationSeconds: $smarter_duration,
+      resultsPath: $smarter_results_path,
+      logPath: $smarter_log
+    },
+    comparison: {
+      durationDeltaSeconds: $duration_delta
+    }
+  }' >"$SUMMARY_JSON"
 
 cat >"$SUMMARY_MD" <<MD
 # CircleCI Smarter Testing Comparison
