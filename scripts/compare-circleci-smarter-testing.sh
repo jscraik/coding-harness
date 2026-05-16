@@ -7,7 +7,10 @@ SMARTER_RESULTS_DIR="$ARTIFACT_ROOT/smarter"
 SUMMARY_JSON="$ARTIFACT_ROOT/comparison.json"
 SUMMARY_MD="$ARTIFACT_ROOT/comparison.md"
 
-mkdir -p "$BASELINE_RESULTS_DIR" "$SMARTER_RESULTS_DIR"
+if ! mkdir -p "$BASELINE_RESULTS_DIR" "$SMARTER_RESULTS_DIR"; then
+  printf 'ERROR: Failed to create artifact directories\n' >&2
+  exit 1
+fi
 
 run_measured() {
   local label="$1"
