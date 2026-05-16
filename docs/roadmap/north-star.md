@@ -139,7 +139,7 @@ For Coding Harness, that means:
 
 The `agent-skills` eval pattern is the reference model: structural mode is for
 fast local iteration, trusted-live mode proves behavior against the real runner,
-and release-ready mode requires retained current-run evidence.
+and release-ready mode requires retaining current-run evidence.
 
 ## Operating Principles
 

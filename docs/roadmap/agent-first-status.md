@@ -320,7 +320,7 @@ Brownfield safety rules:
 
 ## Eval And Trace Roadmap
 
-The `agent-skills` repository provides the reference pattern for proving behavior:
+The internal `agent-skills` repository (a reference repo demonstrating proof patterns for agent evaluation) provides the reference pattern for proving behavior:
 structural mode for fast local iteration, trusted-live mode for real runner proof,
 and release-ready mode for retained current-run evidence. Coding Harness should
 reuse that shape instead of inventing a separate proof culture.
