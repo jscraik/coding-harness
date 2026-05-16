@@ -637,7 +637,9 @@ export function buildLocalRuntimeCard(
 	);
 	const evidenceBlockers =
 		options.phaseExitPath !== undefined && evidence.phaseExit !== undefined
-			? []
+			? evidence.blockers.filter(
+					(blocker) => !evidence.phaseExit?.blockers.includes(blocker),
+				)
 			: evidence.blockers;
 	const blockers = [
 		...artifacts.blockers,

@@ -201,12 +201,11 @@ function nearestExistingPath(pathToCheck: string): string {
 	}
 }
 
-function writeJsonArtifact(
+function resolveArtifactOutputPath(
 	repoRoot: string,
 	artifactPath: string,
 	flagName: string,
-	value: unknown,
-): void {
+): string {
 	if (isAbsolute(artifactPath)) {
 		throw new Error(`${flagName} must stay within --repo`);
 	}
@@ -228,6 +227,21 @@ function writeJsonArtifact(
 	if (isOutsideRepo(canonicalRepo, canonicalNearestExisting)) {
 		throw new Error(`${flagName} must stay within --repo`);
 	}
+	return outputPath;
+}
+
+function writeJsonArtifact(
+	repoRoot: string,
+	artifactPath: string,
+	flagName: string,
+	value: unknown,
+): void {
+	const canonicalRepo = realpathSync(repoRoot);
+	const outputPath = resolveArtifactOutputPath(
+		repoRoot,
+		artifactPath,
+		flagName,
+	);
 	mkdirSync(dirname(outputPath), { recursive: true });
 	const canonicalDir = realpathSync(dirname(outputPath));
 	const canonicalOutput = join(canonicalDir, basename(outputPath));
@@ -251,6 +265,23 @@ function writeJsonArtifact(
 		}
 	}
 	writeFileSync(canonicalOutput, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+function assertDistinctOutputArtifacts(options: RuntimeCardCLIOptions): void {
+	if (!options.outPath || !options.evidenceOutPath) return;
+	const outPath = resolveArtifactOutputPath(
+		options.repoRoot,
+		options.outPath,
+		"--out",
+	);
+	const evidenceOutPath = resolveArtifactOutputPath(
+		options.repoRoot,
+		options.evidenceOutPath,
+		"--evidence-out",
+	);
+	if (outPath === evidenceOutPath) {
+		throw new Error("--out and --evidence-out must target different files");
+	}
 }
 
 /**
@@ -307,6 +338,7 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 		const card = parsed.options.live
 			? await buildLiveRuntimeCard(buildOptions)
 			: buildLocalRuntimeCard(buildOptions);
+		assertDistinctOutputArtifacts(parsed.options);
 		if (parsed.options.outPath) {
 			writeJsonArtifact(
 				parsed.options.repoRoot,

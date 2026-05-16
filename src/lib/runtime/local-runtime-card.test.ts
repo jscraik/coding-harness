@@ -408,7 +408,7 @@ describe("buildLocalRuntimeCard", () => {
 		expect(card.artifacts.status).toBe("current");
 	});
 
-	it("drops evidence phase-exit blockers when explicit phase-exit evidence is supplied", () => {
+	it("drops only stale phase-exit blockers when explicit phase-exit evidence is supplied", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
 		writeActiveArtifacts(repoRoot);
 		writeFileSync(
@@ -428,7 +428,10 @@ describe("buildLocalRuntimeCard", () => {
 					blockers: ["Stale imported phase-exit blocks continuation."],
 					warnings: [],
 				},
-				blockers: ["Stale imported phase-exit blocks continuation."],
+				blockers: [
+					"Stale imported phase-exit blocks continuation.",
+					"Session collector reports PR checks are blocked; resolve CI before closeout.",
+				],
 			}),
 			now: new Date("2026-05-15T12:00:00.000Z"),
 			git: gitRunner(),
@@ -436,7 +439,9 @@ describe("buildLocalRuntimeCard", () => {
 
 		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
 		expect(card.phaseExit.status).toBe("pass");
-		expect(card.blockers).toEqual([]);
+		expect(card.blockers).toEqual([
+			"Session collector reports PR checks are blocked; resolve CI before closeout.",
+		]);
 	});
 
 	it("fails closed when normalized session evidence has invalid phase-exit shape", () => {

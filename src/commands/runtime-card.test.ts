@@ -314,6 +314,26 @@ describe("runRuntimeCardCLI", () => {
 		});
 	});
 
+	it("rejects colliding runtime-card and evidence output paths", async () => {
+		const repoRoot = setupRepo();
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--out",
+			".harness/runtime/card.json",
+			"--evidence-out",
+			".harness/runtime/card.json",
+		]);
+
+		expect(exitCode).toBe(1);
+		expect(JSON.parse(output)).toMatchObject({
+			schemaVersion: "runtime-card-error/v1",
+			status: "fail",
+			error: "Error: --out and --evidence-out must target different files",
+		});
+	});
+
 	it("rejects evidence output symlinks that point outside the repository", async () => {
 		const repoRoot = setupRepo();
 		const outsideRoot = mkdtempSync(join(tmpdir(), "runtime-card-outside-"));
