@@ -597,7 +597,7 @@ harness commands --json | jq '
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)        |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                |
 | `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`) |
-| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, and optional live provider state (`--json`, optional `--live`, optional `--issue`, optional `--phase-exit`, optional `--out`) |
+| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                        |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                        |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                   |

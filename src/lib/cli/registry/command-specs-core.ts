@@ -971,8 +971,9 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "runtime-card",
 		summary:
-			"Build a runtime-card/v1 artifact from git, harness evidence, and optional live provider state",
-		example: "runtime-card --json --live --out .harness/runtime/JSC-311.json",
+			"Build a runtime-card/v1 artifact from git, harness evidence, normalized evidence bundles, and optional live provider state",
+		example:
+			"runtime-card --json --evidence .harness/runtime/session-evidence.json --out .harness/runtime/JSC-311.json",
 		errorLabel: "Runtime Card Error",
 		execute: (args) => runRuntimeCardCLI(args),
 	},

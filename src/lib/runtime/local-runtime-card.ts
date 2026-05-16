@@ -7,6 +7,7 @@ import {
 } from "../decision/he-phase-exit.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { LinearAPIError, LinearClient } from "../linear/client.js";
+import { inspectRuntimeEvidenceBundle } from "./runtime-evidence-adapter.js";
 import {
 	RUNTIME_CARD_SCHEMA_VERSION,
 	type RuntimeCard,
@@ -34,6 +35,8 @@ export interface LocalRuntimeCardOptions {
 	issueKey?: string;
 	/** Optional HePhaseExit/v1 artifact to collapse into the runtime card. */
 	phaseExitPath?: string;
+	/** Optional normalized runtime evidence bundle from session or CI collectors. */
+	evidenceBundle?: unknown;
 	/** Clock override for deterministic tests. */
 	now?: Date;
 	/** Optional git runner override for deterministic tests. */
@@ -601,19 +604,36 @@ export function buildLocalRuntimeCard(
 	options: LocalRuntimeCardOptions,
 ): RuntimeCard {
 	const git = inspectGit(options.repoRoot, options.git);
-	const branchIssueKey = detectIssueKey(options.issueKey, git.branchName);
+	const evidence = inspectRuntimeEvidenceBundle(
+		options.evidenceBundle,
+		collapsePhaseExit,
+	);
+	const branchIssueKey = detectIssueKey(
+		options.issueKey,
+		evidence.issueKey,
+		git.branchName,
+	);
 	const artifacts = inspectArtifacts(options.repoRoot, branchIssueKey);
-	const phaseExit = inspectPhaseExit(options.repoRoot, options.phaseExitPath);
+	const phaseExit =
+		options.phaseExitPath !== undefined
+			? inspectPhaseExit(options.repoRoot, options.phaseExitPath)
+			: (evidence.phaseExit ?? inspectPhaseExit(options.repoRoot, undefined));
 	const issueKey = detectIssueKey(
 		options.issueKey,
+		evidence.issueKey,
 		artifacts.issueKey,
 		git.branchName,
 	);
-	const blockers = [...artifacts.blockers, ...phaseExit.blockers];
+	const blockers = [
+		...artifacts.blockers,
+		...phaseExit.blockers,
+		...evidence.blockers,
+	];
 	const sources = [
 		git.source,
 		artifacts.source,
 		...(phaseExit.source ? [phaseExit.source] : []),
+		...evidence.sources,
 	];
 	const partial = {
 		blockers,
@@ -639,14 +659,14 @@ export function buildLocalRuntimeCard(
 			ref: git.ref,
 		},
 		pullRequest: {
-			number: null,
-			state: null,
-			isDraft: null,
-			mergeStateStatus: null,
-			url: null,
+			number: evidence.pullRequest?.number ?? null,
+			state: evidence.pullRequest?.state ?? null,
+			isDraft: evidence.pullRequest?.isDraft ?? null,
+			mergeStateStatus: evidence.pullRequest?.mergeStateStatus ?? null,
+			url: evidence.pullRequest?.url ?? null,
 		},
 		artifacts: artifacts.artifacts,
-		linear: {
+		linear: evidence.linear ?? {
 			issueKey,
 			freshness: issueKey ? "unknown" : "missing",
 			status: null,

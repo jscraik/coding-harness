@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { cwd } from "node:process";
 import {
@@ -13,6 +13,7 @@ interface RuntimeCardCLIOptions {
 	repoRoot: string;
 	issueKey?: string;
 	phaseExitPath?: string;
+	evidencePath?: string;
 	outPath?: string;
 	live: boolean;
 }
@@ -23,11 +24,11 @@ type RuntimeCardParseResult =
 
 function printRuntimeCardUsage(): void {
 	console.info(
-		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--issue <key>] [--phase-exit <path>] [--out <path>]",
+		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>]",
 	);
 	console.info("");
 	console.info(
-		"Build a runtime-card/v1 artifact from git, .harness evidence, and optional live provider state.",
+		"Build a runtime-card/v1 artifact from git, .harness evidence, normalized evidence bundles, and optional live provider state.",
 	);
 }
 
@@ -84,6 +85,16 @@ function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
 			index += 1;
 			continue;
 		}
+		if (arg === "--evidence") {
+			const value = readFlagValue(args, index);
+			if (!value) {
+				console.error("runtime-card: --evidence requires an artifact path");
+				return { exitCode: 2 };
+			}
+			options.evidencePath = value;
+			index += 1;
+			continue;
+		}
 		if (arg === "--out") {
 			const value = readFlagValue(args, index);
 			if (!value) {
@@ -98,6 +109,17 @@ function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
 		return { exitCode: 2 };
 	}
 	return { options };
+}
+
+function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
+	const resolvedPath = isAbsolute(artifactPath)
+		? artifactPath
+		: resolve(repoRoot, artifactPath);
+	const rel = relative(repoRoot, resolvedPath);
+	if (isAbsolute(artifactPath) || rel.startsWith("..")) {
+		throw new Error("--evidence must stay within --repo");
+	}
+	return JSON.parse(readFileSync(resolvedPath, "utf8"));
 }
 
 function renderRuntimeCardHuman(card: RuntimeCard): void {
@@ -125,12 +147,16 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 	const parsed = parseRuntimeCardArgs(args);
 	if ("exitCode" in parsed) return parsed.exitCode;
 	try {
+		const evidenceBundle = parsed.options.evidencePath
+			? loadEvidenceBundle(parsed.options.repoRoot, parsed.options.evidencePath)
+			: undefined;
 		const buildOptions = {
 			repoRoot: parsed.options.repoRoot,
 			...(parsed.options.issueKey ? { issueKey: parsed.options.issueKey } : {}),
 			...(parsed.options.phaseExitPath
 				? { phaseExitPath: parsed.options.phaseExitPath }
 				: {}),
+			...(evidenceBundle !== undefined ? { evidenceBundle } : {}),
 		};
 		const card = parsed.options.live
 			? await buildLiveRuntimeCard(buildOptions)
