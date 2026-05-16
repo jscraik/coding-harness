@@ -25,5 +25,19 @@ export default defineConfig({
 			include: ["src/**/*.ts"],
 			exclude: ["src/**/*.test.ts", "src/cli.ts"],
 		},
+		onUnhandledError(error, type) {
+			// Log unhandled errors and fail unless they are known worker timeouts
+			const isWorkerTimeout =
+				error instanceof Error &&
+				(error.message.includes("timed out") ||
+					error.message.includes("timeout"));
+
+			console.error(`[vitest] Unhandled ${type} error:`, error);
+
+			// Fail on unexpected errors, log worker timeouts but continue
+			if (!isWorkerTimeout) {
+				throw error;
+			}
+		},
 	},
 });

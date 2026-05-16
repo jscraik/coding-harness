@@ -77,19 +77,40 @@ export class StructuredLogger {
 			process.env.OTEL_EXPORTER_OTLP_HEADERS,
 		);
 		for (const [key, value] of Object.entries(envHeaders)) {
-			this.otelHeaders.set(key, value);
+			try {
+				this.otelHeaders.set(key, value);
+			} catch (error) {
+				console.warn(
+					`[StructuredLogger] Invalid header from OTEL_EXPORTER_OTLP_HEADERS: ${key}`,
+					error instanceof Error ? error.message : String(error),
+				);
+			}
 		}
 
 		// Add collector token header if configured
 		const collectorHeaders = createCollectorTokenHeader(process.env);
 		for (const [key, value] of Object.entries(collectorHeaders)) {
-			this.otelHeaders.set(key, value);
+			try {
+				this.otelHeaders.set(key, value);
+			} catch (error) {
+				console.warn(
+					`[StructuredLogger] Invalid collector token header: ${key}`,
+					error instanceof Error ? error.message : String(error),
+				);
+			}
 		}
 
 		// Add headers from LoggerOptions (highest priority)
 		if (options.otelHeaders) {
 			for (const [key, value] of Object.entries(options.otelHeaders)) {
-				this.otelHeaders.set(key, value);
+				try {
+					this.otelHeaders.set(key, value);
+				} catch (error) {
+					console.warn(
+						`[StructuredLogger] Invalid header from options.otelHeaders: ${key}`,
+						error instanceof Error ? error.message : String(error),
+					);
+				}
 			}
 		}
 
