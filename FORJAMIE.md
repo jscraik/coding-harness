@@ -17,6 +17,16 @@ branches and branch-scoped release or governance changes.
 
 ## Recent Changes
 
+- 2026-05-16: refreshed branch closeout evidence for PR #250 CircleCI recovery.
+  - PR #250 is now carrying the JSC-311 runtime-card/phase-exit continuation
+    slice, with CI triage focused on the live PR body contract and branch memory
+    freshness rather than production TypeScript regressions.
+  - Local reproduction showed docs-gate, pnpm lint, pnpm typecheck,
+    pnpm test:ci, pnpm check, drift-gate, and environment checks passing;
+    the blocking CI items were the missing PR Work performed section and this
+    stale closeout file.
+  - Next closeout should keep Linear, PR body evidence, and .harness routing
+    notes synchronized before treating JSC-311 as complete.
 - 2026-04-29: tightened PR governance gate behavior to resolve active review findings.
   - `linear-gate` now exits with the standard 0/1/2 envelope and only enforces
     `pr-reference-mode` when PR issue-key enforcement is enabled; issue-template

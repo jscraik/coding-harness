@@ -65,6 +65,37 @@ describe("LinearClient", () => {
 		]);
 	});
 
+	it("passes an abort signal when a request timeout is configured", async () => {
+		const fetchMock = vi.fn(async () => ({
+			ok: true,
+			json: async () => ({
+				data: {
+					viewer: {
+						id: "viewer-1",
+						name: "Jamie",
+						email: "jamie@example.com",
+					},
+				},
+			}),
+		}));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const client = new LinearClient({
+			token: "linear-token",
+			timeoutMs: 250,
+		});
+		await expect(client.getViewer()).resolves.toMatchObject({
+			id: "viewer-1",
+		});
+
+		expect(fetchMock).toHaveBeenCalledWith(
+			expect.any(String),
+			expect.objectContaining({
+				signal: expect.any(AbortSignal),
+			}),
+		);
+	});
+
 	it("paginates team issues until all pages are fetched", async () => {
 		const fetchMock = vi
 			.fn()

@@ -68,6 +68,7 @@ import { runReplayCLI } from "../../../commands/replay.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
 import type { runReviewGateCLI } from "../../../commands/review-gate.js";
 import { runRiskTierCLI } from "../../../commands/risk-tier.js";
+import { runRuntimeCardCLI } from "../../../commands/runtime-card.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import { runSilentErrorDetectorCLI } from "../../../commands/silent-error.js";
 import {
@@ -961,10 +962,19 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	},
 	{
 		name: "next",
-		summary: "Recommend the next safe harness command from current repo state",
-		example: "next --json",
+		summary:
+			"Recommend the next safe harness command from current repo/runtime state",
+		example: "next --json --runtime-card .harness/runtime/JSC-311.json",
 		errorLabel: "Next Error",
 		execute: (args) => runNextCLI(args),
+	},
+	{
+		name: "runtime-card",
+		summary:
+			"Build a runtime-card/v1 artifact from git, harness evidence, and optional live provider state",
+		example: "runtime-card --json --live --out .harness/runtime/JSC-311.json",
+		errorLabel: "Runtime Card Error",
+		execute: (args) => runRuntimeCardCLI(args),
 	},
 	{
 		name: "audit",

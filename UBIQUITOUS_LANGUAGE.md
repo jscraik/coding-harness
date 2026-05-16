@@ -24,6 +24,17 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | Wrapper Command | A repository-defined script entrypoint (for example in `scripts/` or `pnpm` scripts) that should be preferred over equivalent one-off commands. |
 | Validation Lane | A scoped set of required checks used to prove a specific change surface is correct and compliant. |
 | Validation Failure Classifier | A read-only classifier that turns one validation command observation into an actionable failure bucket such as introduced regression, pre-existing drift, environment/tooling failure, unrelated dirty worktree, missing credential, expected fixture stderr, or unknown failure. |
+| Decision Contract | The stable machine-readable output schema family behind `HarnessDecision`, gates, and next-step recommendations. |
+| Decision Source | Input evidence used to build a decision, such as git state, local artifacts, PR state, Linear state, command catalogs, or validation results. |
+| Recommended Command | A wrapper command suggested by `harness next` or another decision surface as the next safe action; it is guidance, not executable authority by itself. |
+| Operational Meta | Decision metadata that explains mode, file source, friction class, delay class, permission plan, source errors, and supporting evidence visibility. |
+| Command Facade | The CLI/options adapter layer that parses user input, loads boundary artifacts, invokes command core behavior, and renders command output. |
+| Command Core | The pure behavior layer that owns command decisions and should be easiest to test without terminal or filesystem setup. |
+| Output Renderer | The layer that turns a command result into human output or a JSON contract without changing command behavior. |
+| Architecture Context Pack | The generated architecture evidence set, including `.diagram/**` and `AI/context/diagram-context.md`; it is evidence, not hand-written narrative. |
+| Projection Surface | A generated, packaged, mirrored, or emitted surface that should be updated through its canonical source rather than patched directly. |
+| Required Check Identity | The exact check name and owner contract used by branch protection and readiness validation, such as CircleCI, CodeRabbit, Semgrep Cloud, or GitHub Actions ownership. |
+| Tracer Proof | The smallest production-like command, test, or executable path that proves an architecture-sensitive change without over-running unrelated validation. |
 | Outcome Closeout Schema | A machine-readable closeout packet that summarizes changed items, proof, blockers, handoffs, and claim boundaries from structured source events instead of prose-only status. |
 | North-Star Contract | The canonical mission, metric, bottleneck, autonomy boundary, safety floor, and decision rubric in `docs/roadmap/north-star.md`; summaries and governed PR decisions should derive from this contract. Does the change improve or preserve durable learning and evidence capture? |
 | North-Star Mission | Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff. Does the change improve or preserve durable learning and evidence capture? |
@@ -52,6 +63,11 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | "Do all the checks" | Name the exact lane (`focused config-drift` or `codex-subtree workflow`) | Lane naming reduces ambiguity and missed gates. |
 | "Swarm done" | `Artifact-first review complete` | Completion requires files, not status text alone. |
 | "The check is red" | `Validation Failure Classifier` result | Red status alone does not distinguish current-patch regressions from pre-existing drift, tooling failures, fixture output, or unrelated worktree dirt. |
+| "API" for `HarnessDecision` output | `Decision Contract` | The decision output is a governed schema and operator contract, not just a callable programming API. |
+| "Evidence blob" | `Decision Source` | Naming the source keeps input evidence separate from the decision that consumes it. |
+| "Run this next" | `Recommended Command` | The command recommendation remains advisory until an operator or automation with authority executes it. |
+| "CLI logic" | `Command Facade`, `Command Core`, or `Output Renderer` | Naming the layer avoids mixing parsing, behavior, and printing in one change. |
+| "Generated doc" | `Projection Surface` or `Architecture Context Pack` | Generated surfaces should route agents to the canonical owner instead of inviting direct patching. |
 | "Can I call this done?" | Outcome Closeout Schema | Completion claims must be constrained by source events, proof, blockers, handoffs, and claim boundaries. |
 | "Is this aligned with the north star?" | `North-Star Contract` decision check | Answer against PR lead time, review/rework cost, manual glue reduction, agent reliability, and the safety floor; do not treat generic usefulness as enough. Does the change improve or preserve durable learning and evidence capture? |
 | "Agents never forget" | Durable north-star guardrail | Convert repeated failures into guardrails, tests, prompts, policy checks, review-context facts, or explicit exceptions in Project Brain. |
@@ -76,6 +92,11 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | "Why did validation fail?" | Classify command failure ownership | "Use the validation failure classifier on the exact command observation and report whether the failure is an introduced regression, pre-existing drift, environment/tooling failure, unrelated dirty worktree, missing credential, expected fixture stderr, or unknown failure." |
 | "Close this out" | Build outcome closeout packet | "Emit an outcome closeout from structured PR readiness, artifact, and validation classifier events; include what changed, what proved it, what blocked, what was handed off, and what must not be claimed complete." |
 | "Remove north-star ambiguity" | Align wording to canonical contract | "Update the README, glossary, and any touched governance docs so north-star language derives from `docs/roadmap/north-star.md` and `harness.contract.json` decision questions." |
+| "list broader arch ops" | Rank architecture opportunities by north-star leverage | "Rank architecture opportunities by review/rework-loop leverage, name the complexity symptom, and give the first reversible tracer-proof move." |
+| "make agents never forget" | Promote repeated failures into durable guardrails | "Promote repeated review failures into durable guardrails, Project Brain learnings, validation checks, or glossary prompt translations." |
+| "this is confusing" | Resolve overloaded language | "Identify overloaded project terms, choose canonical wording, add aliases, and update the nearest instruction pointer." |
+| "fix the architecture" | Improve one evidenced boundary | "Choose one boundary with live evidence, compare patch design versus interface design, implement the smallest reversible move, and validate the exact path." |
+| "make the checks less messy" | Unify validation lane language | "Unify validation lane language and source-of-truth command contracts without weakening the safety floor." |
 
 ## Example Dialogue
 Developer: "Can you make sure this change works?"

@@ -103,6 +103,7 @@ const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	eject: "bootstrap-governance",
 	check: "bootstrap-governance",
 	next: "bootstrap-governance",
+	"runtime-card": "bootstrap-governance",
 	doctor: "bootstrap-governance",
 	audit: "bootstrap-governance",
 	brain: "bootstrap-governance",
@@ -207,6 +208,7 @@ const RETRYABILITY_BY_NAME: Partial<Record<string, CommandRetryability>> = {
 	commands: "safe",
 	check: "safe",
 	next: "safe",
+	"runtime-card": "safe",
 	"fleet-plan": "safe",
 	doctor: "safe",
 	health: "safe",
@@ -240,6 +242,7 @@ const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<Record<string, string[]>> = {
 const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	check: "cockpit",
 	next: "cockpit",
+	"runtime-card": "domain",
 	"fleet-plan": "domain",
 
 	init: "domain",
@@ -282,6 +285,7 @@ const PRIMARY_AUDIENCE_BY_NAME: Partial<
 	commands: "agent",
 	check: "both",
 	next: "agent",
+	"runtime-card": "agent",
 	"fleet-plan": "agent",
 	doctor: "both",
 	health: "both",
@@ -299,6 +303,7 @@ const PRIMARY_AUDIENCE_BY_NAME: Partial<
 const ORCHESTRATED_BY_BY_NAME: Partial<Record<string, CommandOrchestrator[]>> =
 	{
 		next: [],
+		"runtime-card": ["next"],
 		"fleet-plan": ["next"],
 		check: ["next"],
 		doctor: ["next"],
@@ -316,6 +321,7 @@ const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	commands: "orient",
 	check: "verify",
 	next: "orient",
+	"runtime-card": "orient",
 	init: "orient",
 	"fleet-plan": "plan",
 	doctor: "orient",
@@ -339,6 +345,7 @@ const COMMAND_VISIBILITY_BY_NAME: Partial<Record<string, CommandVisibility>> = {
 	commands: "advanced",
 	check: "advanced",
 	init: "advanced",
+	"runtime-card": "advanced",
 	doctor: "advanced",
 	health: "advanced",
 	"fleet-plan": "advanced",
