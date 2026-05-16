@@ -75,7 +75,12 @@ jobs:
               ];
               for (const field of requiredWorkFields) {
                 const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const match = workPerformedBody.match(new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, 'im'));
+                const match = workPerformedBody.match(
+                  new RegExp(
+                    `^-\\s*${escapedLabel}:\\s*([\\s\\S]*?)(?=\\n-\\s*[A-Za-z][^:\\n]*:\\s*|$)`,
+                    'im',
+                  ),
+                );
                 if (!match) {
                   errors.push('Missing required work performed field: ' + field.label);
                   continue;
