@@ -1,0 +1,60 @@
+{
+	"schemaVersion": "rule-lifecycle-manifest/v1",
+	"rules": [
+		{
+			"id": "ci-security-authority-is-explicit",
+			"title": "CI security authority must stay explicit",
+			"status": "active",
+			"owner": "ci-security-governance",
+			"scope": [
+				".circleci/config.yml",
+				"src/templates/circleci-config.yml",
+				"harness.contract.json",
+				".harness/ci-required-checks.json",
+				"docs/agents/06-security-and-governance.md"
+			],
+			"evidence": [
+				"incident:2026-05-16-circleci-snyk-authority-drift",
+				"lesson:CircleCI security-scan may report Snyk status, but dependency/security blocking authority must stay aligned with external required checks and the repo contract."
+			],
+			"enforcement": ["ci", "doc", "reviewer"],
+			"enforcementRefs": [
+				"security-scan",
+				"semgrep-cloud-platform/scan",
+				"harness.contract.json ciOwnership",
+				"docs/agents/06-security-and-governance.md",
+				".harness/ci-required-checks.json"
+			],
+			"lastReviewedAt": "2026-05-16",
+			"reviewCadenceDays": 90,
+			"removalCondition": "Retire only after dependency/security blocking authority is intentionally migrated and the replacement required-check contract is green on main.",
+			"notes": "This rule exists because the Snyk/CircleCI recovery showed how report-only lanes, external required checks, and generated config can drift when authority is implicit."
+		},
+		{
+			"id": "circleci-snyk-orb-blocking-scan",
+			"title": "Legacy CircleCI Snyk orb is not the blocking dependency authority",
+			"status": "superseded",
+			"owner": "ci-security-governance",
+			"scope": [
+				".circleci/config.yml",
+				"src/templates/circleci-config.yml",
+				"docs/ci-responsibility-matrix.md"
+			],
+			"evidence": [
+				"incident:2026-05-16-circleci-snyk-authority-drift",
+				"replacement:ci-security-authority-is-explicit"
+			],
+			"enforcement": ["ci", "doc"],
+			"enforcementRefs": [
+				"security-scan",
+				"harness.contract.json ciOwnership",
+				"docs/agents/06-security-and-governance.md"
+			],
+			"lastReviewedAt": "2026-05-16",
+			"reviewCadenceDays": 90,
+			"removalCondition": "Remove this retired entry once all CI templates and docs reference ci-security-authority-is-explicit instead of legacy Snyk orb blocking semantics.",
+			"supersededBy": "ci-security-authority-is-explicit",
+			"notes": "Kept temporarily as a deprecated example so agents learn to retire old guardrails instead of letting them fossilize."
+		}
+	]
+}

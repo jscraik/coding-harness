@@ -42,6 +42,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   synchronized with the implementation and required documentation surfaces so
   docs-gate does not pass with stale operator guidance.
 - validation gate graph changes that add typed gate specs, phase-exit evidence gates, `harness next --phase-exit` visibility, parity tests, or resume-checkpoint guards should refresh `AI/context/diagram-context.md` and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
+- rule lifecycle governance changes that alter rule metadata validation, `.harness/rule-lifecycle-manifest.json`, `docs/rule-lifecycle.schema.json`, or `rule-lifecycle-gate` should keep this guide synchronized with `AGENTS.md`, `README.md`, and `docs/agents/00-architecture-bootstrap.md` when docs-gate reports agent-governance, contract-policy, or architecture-context surfaces
 - workflow-authority routing and validation behavior changes should update `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, and `docs/agents/14-docs-gate-rollout.md`
 - agent-governance/category updates should keep `AGENTS.md` and this guide synchronized in the same PR
 - north-star contract/scaffold updates that affect architecture context should update `docs/agents/00-architecture-bootstrap.md` and this guide in the same PR

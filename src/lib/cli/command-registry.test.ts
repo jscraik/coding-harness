@@ -886,6 +886,7 @@ describe("getRegistryCommandCapabilities", () => {
 			["brainstorm-gate", "review-policy"],
 			["prompt-gate", "review-policy"],
 			["pr-template-gate", "review-policy"],
+			["rule-lifecycle-gate", "review-policy"],
 			["license-gate", "review-policy"],
 			["check-authz", "review-policy"],
 			["check-environment", "review-policy"],
