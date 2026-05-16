@@ -93,7 +93,7 @@ The portable product promise is:
 - `harness next --json` can still produce useful next-action guidance in a
   partially adopted repo by degrading unavailable integrations to `unknown`
   instead of treating them as failures.
-- Live repos are portability canaries. Fixture repos are regression proof after
+- Live repos are portability canaries. Fixture repos are regression-proof after
   live canaries expose real upgrade and drift behavior.
 
 Initial portability canaries:
