@@ -229,7 +229,7 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	for (const section of REQUIRED_SECTIONS) {
-		if (!body.includes(section)) {
+		if (extractSectionBody(body, section) === null) {
 			errors.push(`Missing required section: ${section}`);
 		}
 	}

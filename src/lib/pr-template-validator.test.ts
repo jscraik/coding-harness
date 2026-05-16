@@ -74,6 +74,18 @@ describe("validatePrTemplateBody", () => {
 		expect(errors).toContain("Missing required section: ## Notes");
 	});
 
+	it("fails when headings appear only in prose without markdown headers", () => {
+		const body = `## Summary
+
+This PR addresses the Work performed: field, the Checklist: items, Testing: outcomes, Review artifacts: links, and Notes: section.`;
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain("Missing required section: ## Work performed");
+		expect(errors).toContain("Missing required section: ## Checklist");
+		expect(errors).toContain("Missing required section: ## Testing");
+		expect(errors).toContain("Missing required section: ## Review artifacts");
+		expect(errors).toContain("Missing required section: ## Notes");
+	});
+
 	it("fails missing or placeholder work performed fields", () => {
 		const body = VALID_BODY.replace(
 			"- Completed work: Added pr-template-gate command and docs update with evidence refs.",
