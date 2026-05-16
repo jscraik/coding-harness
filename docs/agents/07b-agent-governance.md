@@ -86,6 +86,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - PR-template contract changes should keep local validation, GitHub PR body
   structure, and reviewer handoff evidence synchronized so the work-performed
   ledger remains enforceable before closeout
+- AI-assisted PRs should cite a concrete Codex/session-collector/harness run
+  reference and, when available, CI, eval, runtime-card, evidence-bundle, or
+  review trace references. Use `n.a.` only with a concrete reason, and keep raw
+  transcripts, prompts, secrets, and bulky telemetry out of PR bodies.
 
 ## Evidence and communication
 

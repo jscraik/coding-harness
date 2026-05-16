@@ -151,6 +151,7 @@ Notes:
 - Before PR handoff in this source checkout, run or explicitly mark `n.a.` for the north-star learning loop when changed files can be matched against imported CodeRabbit evidence: `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, and `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json`. Use plain `harness ...` for downstream or installed-package contexts only. The `--files` value accepts comma-separated paths or multiple following path tokens.
 - When changing validation, required-check, tooling/runtime, or architecture-context behavior, update the docs-gate required surfaces in the same change (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/06-security-and-governance.md`, `docs/agents/00-architecture-bootstrap.md`).
 - Report exact commands/outcomes in handoff notes and update the matching Linear issue for durable findings.
+- PR bodies for AI-assisted work must include a concrete session or traceability reference: Codex thread/session ID, session-collector artifact, harness run, CI job URL, eval/runtime trace, runtime-card/evidence bundle, or a specific `n.a.` reason. Do not paste raw transcripts, prompts, secrets, or bulky telemetry into PR bodies.
 
 ## Repo Workflow
 

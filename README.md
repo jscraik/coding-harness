@@ -164,6 +164,8 @@ The weekly status surface is
 [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md),
 and its review cadence is mirrored in `harness.contract.json` so
 `drift-gate --mode health` can fail closed on stale north-star evidence.
+The roadmap and status metadata were last synchronized on 2026-05-16 as part
+of the portability and eval-trace roadmap refresh.
 
 North-star command outputs also use canonical artifact contracts so agents can
 carry evidence between tools without guessing path or schema names. Current

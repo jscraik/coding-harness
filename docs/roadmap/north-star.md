@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-20
+last_validated: 2026-05-16
 ---
 
 # North Star
@@ -15,6 +15,8 @@ project from scratch.
 - [Primary Bottleneck](#primary-bottleneck)
 - [Autonomy Boundary](#autonomy-boundary)
 - [Safety Floor](#safety-floor)
+- [Portable Outcome](#portable-outcome)
+- [Evaluation And Observability Model](#evaluation-and-observability-model)
 - [Operating Principles](#operating-principles)
 - [Non-Goals](#non-goals)
 - [What This Means For Product Decisions](#what-this-means-for-product-decisions)
@@ -72,6 +74,76 @@ The harness safety floor is:
 - explicit rollback paths for higher-risk automation
 - independent review surfaces that do not collapse back into self-approval
 
+## Portable Outcome
+
+Coding Harness should be installable into Jamie's greenfield and brownfield
+projects without turning those projects into copies of this repo.
+
+Portability means adapting to each repo with the smallest useful surface, not
+installing every harness capability everywhere.
+
+The portable product promise is:
+
+- `harness init --dry-run --json` can inspect a repo, classify current harness
+  maturity, propose the smallest useful install, identify conflicts, and show
+  rollback before writing.
+- `harness init` can install or upgrade a thin Codex-facing operating contract
+  without overwriting local project truth, existing `AGENTS.md` guidance,
+  validation scripts, CI ownership, or PR templates.
+- `harness next --json` can still produce useful next-action guidance in a
+  partially adopted repo by degrading unavailable integrations to `unknown`
+  instead of treating them as failures.
+- Live repos are portability canaries. Fixture repos are regression-proof after
+  live canaries expose real upgrade and drift behavior.
+
+Initial portability canaries:
+
+- `~/dev/agent-skills` (brownfield eval/workout repo)
+- `~/dev/diagram-cli` (brownfield CLI)
+- `~/dev/design-system` (product/design repo)
+- `~/dev/x-writer` (active product repo)
+
+Brownfield installs must follow:
+
+```text
+detect -> propose -> apply minimal reversible patch -> validate -> record rollback
+```
+
+The harness must not normalize bulk scaffolding, hidden overwrites, or required
+CI/check changes without a dry-run diff and rollback plan.
+
+## Evaluation And Observability Model
+
+The harness should adopt the useful parts of modern AI workflow platforms
+without making any vendor workflow the architecture. The durable pattern is:
+
+```text
+trace real work
+curate failures and edge cases
+turn them into datasets or eval cases
+score structural and live behavior
+promote only improvements with current evidence
+```
+
+For Coding Harness, that means:
+
+- a trace is one end-to-end harness run, PR loop, install attempt, review loop,
+  or canary upgrade
+- spans are named units of work such as `doctor`, `init-dry-run`,
+  `runtime-card`, `linear-gate`, `ci-state`, `review-context`, `validator`,
+  `tool-call`, and `human-feedback`
+- scores measure operational quality: install safety, next-action correctness,
+  evidence freshness, rollback completeness, PR metadata readiness, stack
+  health, and review-rework reduction
+- curated datasets come from live repo canaries, CI failures, review failures,
+  session collector evidence, and Project Brain solutions
+- release-grade claims require trusted-live evidence, not only structural
+  shape checks
+
+The `agent-skills` eval pattern is the reference model: structural mode is for
+fast local iteration, trusted-live mode proves behavior against the real runner,
+and release-ready mode requires retaining current-run evidence.
+
 ## Operating Principles
 
 - Treat code as abundant and human attention as scarce.
@@ -86,6 +158,10 @@ The harness safety floor is:
 - If the same failure happens twice, the repo should gain a durable guardrail.
 - Prefer Codex runtime contracts when they exist, but wrap them in
   harness-stable interfaces before exposing them to repo workflows.
+- Prefer live canary evidence before broadening installer behavior, then convert
+  stable canary lessons into deterministic fixtures.
+- Keep observability outputs structured, small, and searchable; raw event volume
+  is not useful unless it improves decisions or evals.
 
 ## Non-Goals
 
@@ -109,6 +185,9 @@ questions clearly:
 2. Does this remove repeated manual glue work rather than normalizing it?
 3. Does this make acceptable output easier for agents to produce reliably?
 4. Does this preserve strict evidence, SHA discipline, and rollback safety?
+5. Does this improve portability across greenfield and brownfield repos without
+   increasing the visible operating surface?
+6. Can this claim be proven through structural and trusted-live evidence?
 
 If the answer is no, the work is either out of scope or needs a stronger
 justification before it becomes part of the control plane.
