@@ -182,6 +182,8 @@ function loadRuleLifecycleManifest(
 			};
 		}
 		const parsed = JSON.parse(readFileSync(resolvedPath, "utf-8")) as unknown;
+
+		// Run the type guard for runtime type safety first
 		if (!isRuleLifecycleManifest(parsed)) {
 			return {
 				ok: false,
@@ -194,6 +196,21 @@ function loadRuleLifecycleManifest(
 				},
 			};
 		}
+
+		// Then validate against JSON Schema for additional structural checks
+		const schemaValidation = validateAgainstSchema(parsed);
+		if (!schemaValidation.valid) {
+			return {
+				ok: false,
+				finding: {
+					id: "rule-lifecycle.manifest.invalid",
+					severity: "error",
+					message: `Rule lifecycle manifest failed schema validation: ${schemaValidation.errors.join("; ")}`,
+					fix: "Validate manifest shape against docs/rule-lifecycle.schema.json before adding new governance rules.",
+				},
+			};
+		}
+
 		return { ok: true, manifest: parsed };
 	} catch (error) {
 		return {
@@ -410,6 +427,113 @@ function buildRuleLifecycleGateResult(input: {
 			rules: input.rules,
 		},
 	};
+}
+
+function validateAgainstSchema(value: unknown): {
+	valid: boolean;
+	errors: string[];
+} {
+	try {
+		// Load the JSON schema from docs/rule-lifecycle.schema.json
+		const schemaPath = resolve(
+			process.cwd(),
+			"docs/rule-lifecycle.schema.json",
+		);
+		if (!existsSync(schemaPath)) {
+			return {
+				valid: false,
+				errors: ["Schema file not found at docs/rule-lifecycle.schema.json"],
+			};
+		}
+
+		const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
+		const errors: string[] = [];
+
+		// Basic JSON Schema validation (Draft 2020-12 subset)
+		if (!isRecord(value)) {
+			errors.push("Manifest must be an object");
+			return { valid: false, errors };
+		}
+
+		// Validate required properties
+		if (schema.required && Array.isArray(schema.required)) {
+			for (const required of schema.required) {
+				if (!(required in value)) {
+					errors.push(`Missing required property: ${required}`);
+				}
+			}
+		}
+
+		// Validate schemaVersion
+		if (schema.properties?.schemaVersion?.const !== undefined) {
+			if (value.schemaVersion !== schema.properties.schemaVersion.const) {
+				errors.push(
+					`schemaVersion must be "${schema.properties.schemaVersion.const}"`,
+				);
+			}
+		}
+
+		// Validate rules array
+		if (Array.isArray(value.rules)) {
+			// Skip minItems and contains checks - these are handled by validateRuleLifecycleManifestState
+			// which provides more specific error messages (rules_missing, active_rule_missing)
+
+			// Validate each rule against the rule definition
+			const ruleDef = schema.$defs?.rule;
+			if (ruleDef) {
+				for (let i = 0; i < value.rules.length; i++) {
+					const rule = value.rules[i];
+					if (!isRecord(rule)) {
+						errors.push(`rules[${i}] must be an object`);
+						continue;
+					}
+
+					// Validate required fields
+					if (ruleDef.required && Array.isArray(ruleDef.required)) {
+						for (const required of ruleDef.required) {
+							if (!(required in rule)) {
+								errors.push(`rules[${i}] missing required field: ${required}`);
+							}
+						}
+					}
+
+					// Validate id pattern
+					if (
+						typeof rule.id === "string" &&
+						ruleDef.properties?.id?.pattern
+					) {
+						const pattern = new RegExp(ruleDef.properties.id.pattern);
+						if (!pattern.test(rule.id)) {
+							errors.push(`rules[${i}].id has invalid format: ${rule.id}`);
+						}
+					}
+
+					// Validate status enum
+					if (
+						rule.status !== undefined &&
+						ruleDef.properties?.status?.enum
+					) {
+						if (!ruleDef.properties.status.enum.includes(rule.status)) {
+							errors.push(
+								`rules[${i}].status must be one of: ${ruleDef.properties.status.enum.join(", ")}`,
+							);
+						}
+					}
+				}
+			}
+		} else if ("rules" in value) {
+			errors.push("rules must be an array");
+		}
+
+		return { valid: errors.length === 0, errors };
+	} catch (error) {
+		return {
+			valid: false,
+			errors: [
+				`Schema validation error: ${error instanceof Error ? error.message : String(error)}`,
+			],
+		};
+	}
 }
 
 function isRuleLifecycleManifest(

@@ -100,11 +100,15 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.rule.owner.missing",
-			ruleId: "ci-security-authority",
-			severity: "error",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.rule.owner.missing",
+					ruleId: "ci-security-authority",
+					severity: "error",
+				}),
+			]),
+		);
 	});
 
 	it("fails when a rule omits evidence metadata", () => {
@@ -116,9 +120,13 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.rule.evidence.missing",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.rule.evidence.missing",
+				}),
+			]),
+		);
 	});
 
 	it("fails when enforcement destinations or references are missing", () => {
@@ -132,9 +140,13 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.rule.enforcement_missing",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.rule.enforcement_missing",
+				}),
+			]),
+		);
 	});
 
 	it("fails when a retired rule points at an unknown replacement", () => {
@@ -153,9 +165,13 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.rule.supersession_unknown",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.rule.supersession_unknown",
+				}),
+			]),
+		);
 	});
 
 	it("fails when a deprecated rule does not point at a replacement", () => {
@@ -170,9 +186,13 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.rule.supersession_missing",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.rule.supersession_missing",
+				}),
+			]),
+		);
 	});
 
 	it("fails when a rule is past its review cadence", () => {
@@ -186,10 +206,14 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.rule.stale",
-			severity: "error",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.rule.stale",
+					severity: "error",
+				}),
+			]),
+		);
 	});
 
 	it("fails impossible calendar dates instead of normalizing them", () => {
@@ -203,10 +227,14 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.rule.last_reviewed_invalid",
-			severity: "error",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.rule.last_reviewed_invalid",
+					severity: "error",
+				}),
+			]),
+		);
 	});
 
 	it("fails empty manifests", () => {
@@ -218,10 +246,14 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.manifest.rules_missing",
-			severity: "error",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.manifest.rules_missing",
+					severity: "error",
+				}),
+			]),
+		);
 	});
 
 	it("fails manifests outside the repository", () => {
@@ -250,10 +282,14 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.manifest.outside_repo",
-			severity: "error",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.manifest.outside_repo",
+					severity: "error",
+				}),
+			]),
+		);
 	});
 
 	it("fails manifests that resolve outside the repository through symlinks", () => {
@@ -288,10 +324,14 @@ describe("rule-lifecycle-gate", () => {
 		});
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.manifest.outside_repo",
-			severity: "error",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.manifest.outside_repo",
+					severity: "error",
+				}),
+			]),
+		);
 	});
 
 	it("fails supersession chains that cycle instead of reaching an active rule", () => {
@@ -332,9 +372,13 @@ describe("rule-lifecycle-gate", () => {
 		const result = runRuleLifecycleGate({ repoRoot });
 
 		expect(result.status).toBe("fail");
-		expect(result.findings[0]).toMatchObject({
-			id: "rule-lifecycle.manifest.invalid",
-		});
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "rule-lifecycle.manifest.invalid",
+				}),
+			]),
+		);
 	});
 
 	it("prints JSON and returns a failing exit code for blocking findings", () => {
