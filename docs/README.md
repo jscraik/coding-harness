@@ -65,6 +65,7 @@ last_validated: 2026-04-18
 - [Documentation layers](./architecture/documentation-layers.md)
 - [Blast radius](./architecture/blast-radius.md)
 - [Agent run records](./architecture/agent-run-records.md)
+- [Runtime-aware harness control plane](./architecture/runtime-aware-harness-control-plane.md)
 - [Module boundaries](./architecture/module-boundaries.md)
 - [Architecture decision records](./adr/001-result-type-error-handling.md)
 - [Plans](./plans/2026-04-08-feat-coding-harness-reliability-orchestration-plan.md)

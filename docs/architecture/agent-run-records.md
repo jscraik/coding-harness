@@ -16,6 +16,12 @@ last_validated: 2026-04-18
 
 Define the canonical storage and discovery contract for run-level runtime artifacts produced by autonomy-relevant commands.
 
+`harness-run-context/v1` is the local runtime-evidence packet that can feed
+run-record producers. It captures repo/worktree identity, session ids, trace
+ids, workspace roots, permission context, lifecycle status, targets, validation
+evidence references, review artifact references, and blockers before a command
+persists terminal run evidence.
+
 ## Canonical Layout
 
 Canonical records are stored under `artifacts/agent-runs/<runId>/` with:
@@ -60,6 +66,11 @@ Current companion-artifact pattern:
 Companion artifacts are additive evidence. Canonical manifest/event files remain
 the runtime truth foundation and should reference companion artifacts through
 `artifactRefs` when they are produced.
+
+A future run-record companion artifact may persist the validated
+`harness-run-context/v1` packet, but it must remain additive. Do not extend
+`agent-run-manifest/v1` or `agent-run-event/v1` solely to carry operator-facing
+context that can live beside the canonical manifest and event stream.
 
 ## Discovery Order
 

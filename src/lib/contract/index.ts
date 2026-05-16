@@ -12,8 +12,9 @@
  * 3. **Validation** — Schema and semantic validation (validator.ts, policy-validators.ts)
  * 4. **Inheritance & Merge** — Preset resolution and contract merging (merger.ts, preset-resolver.ts, contract-presets.ts)
  * 5. **Standards Alignment** — NIST control map (standards-map.ts)
- * 6. **Run Records** — Execution telemetry (run-records.ts, run-record-emitter.ts)
- * 7. **UI Loop** — Developer experience loop commands (ui-loop-command.ts)
+ * 6. **Runtime Context** — Repo/worktree/session evidence (harness-run-context.ts)
+ * 7. **Run Records** — Execution telemetry (run-records.ts, run-record-emitter.ts)
+ * 8. **UI Loop** — Developer experience loop commands (ui-loop-command.ts)
  *
  * Safety guarantees:
  * - Path traversal protection on all file reads
@@ -240,6 +241,23 @@ export {
 	generateControlMapReport,
 	getControlById,
 } from "./standards-map.js";
+
+// ─── Runtime Context ────────────────────────────────────────────────────────
+
+export {
+	type HarnessLifecycleStatus,
+	type HarnessNetworkAccess,
+	type HarnessOperationProfile,
+	type HarnessPermissionContext,
+	type HarnessRunContext,
+	type HarnessRunContextValidationError,
+	type HarnessRunContextValidationResult,
+	type HarnessRunRepoContext,
+	type HarnessRunTargets,
+	HARNESS_RUN_CONTEXT_SCHEMA_VERSION,
+	isValidHarnessRunContext,
+	validateHarnessRunContext,
+} from "./harness-run-context.js";
 
 // ─── Run Records ─────────────────────────────────────────────────────────────
 
