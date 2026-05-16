@@ -1,4 +1,10 @@
-import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import {
+	lstatSync,
+	mkdirSync,
+	readFileSync,
+	realpathSync,
+	writeFileSync,
+} from "node:fs";
 import {
 	basename,
 	dirname,
@@ -190,6 +196,22 @@ function writeJsonArtifact(
 	const canonicalOutput = join(canonicalDir, basename(outputPath));
 	if (isOutsideRepo(canonicalRepo, canonicalOutput)) {
 		throw new Error(`${flagName} must stay within --repo`);
+	}
+	let outputEntryExists = false;
+	try {
+		lstatSync(canonicalOutput);
+		outputEntryExists = true;
+		const canonicalExistingOutput = realpathSync(canonicalOutput);
+		if (isOutsideRepo(canonicalRepo, canonicalExistingOutput)) {
+			throw new Error(`${flagName} must stay within --repo`);
+		}
+	} catch (error) {
+		if (outputEntryExists) {
+			throw new Error(`${flagName} must stay within --repo`);
+		}
+		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+			throw error;
+		}
 	}
 	writeFileSync(canonicalOutput, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }

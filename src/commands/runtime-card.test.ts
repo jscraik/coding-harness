@@ -4,6 +4,7 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
+	symlinkSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -301,6 +302,32 @@ describe("runRuntimeCardCLI", () => {
 			repoRoot,
 			"--evidence-out",
 			"../runtime-evidence.json",
+		]);
+
+		expect(exitCode).toBe(1);
+		expect(JSON.parse(output)).toMatchObject({
+			schemaVersion: "runtime-card-error/v1",
+			status: "fail",
+			error: "Error: --evidence-out must stay within --repo",
+		});
+	});
+
+	it("rejects evidence output symlinks that point outside the repository", async () => {
+		const repoRoot = setupRepo();
+		const outsideRoot = mkdtempSync(join(tmpdir(), "runtime-card-outside-"));
+		const evidenceOutPath = ".harness/runtime/session-evidence.json";
+		mkdirSync(join(repoRoot, ".harness/runtime"), { recursive: true });
+		symlinkSync(
+			join(outsideRoot, "session-evidence.json"),
+			join(repoRoot, evidenceOutPath),
+		);
+
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--evidence-out",
+			evidenceOutPath,
 		]);
 
 		expect(exitCode).toBe(1);
