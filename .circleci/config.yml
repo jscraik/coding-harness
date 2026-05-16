@@ -411,6 +411,15 @@ workflows:
             tags:
               ignore: /.*/
       - run-governance-check:
+          name: smarter-testing-comparison
+          check_name: smarter-testing-comparison
+          command: bash scripts/compare-circleci-smarter-testing.sh
+          requires:
+            - test
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
           name: audit
           check_name: audit
           command: pnpm audit
