@@ -1,5 +1,6 @@
 const REQUIRED_SECTIONS = [
 	"## Summary",
+	"## Work performed",
 	"## Checklist",
 	"## Testing",
 	"## Review artifacts",
@@ -30,7 +31,59 @@ const REQUIRED_TESTING_FIELDS = [
 	},
 ] as const;
 
-function normalizeTestingFieldValue(value: string): string {
+const REQUIRED_WORK_FIELDS = [
+	{
+		label: "Plan IDs",
+		placeholder:
+			"list Linear keys, spec paths, plan paths, or `n.a.` with reason",
+	},
+	{
+		label: "Phase / slice",
+		placeholder:
+			"list completed phase, implementation slice, or `n.a.` with reason",
+	},
+	{
+		label: "Session IDs",
+		placeholder:
+			"list Codex/session-collector/harness session IDs, or `n.a.` with reason",
+	},
+	{
+		label: "Trace IDs",
+		placeholder:
+			"list CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason",
+	},
+	{
+		label: "Completed work",
+		placeholder:
+			"list implementation units, docs/config changes, or evidence-only work completed in this PR",
+	},
+	{
+		label: "Acceptance trace",
+		placeholder:
+			"map completed acceptance items to evidence refs, or `n.a.` with reason",
+	},
+	{
+		label: "Validation evidence",
+		placeholder:
+			"list command outcomes, CI jobs, artifact paths, or `n.a.` with reason",
+	},
+	{
+		label: "Review artifacts",
+		placeholder:
+			"list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason",
+	},
+	{
+		label: "Learning / reinforcement",
+		placeholder:
+			"list promoted learnings, memory updates, or `none` with reason",
+	},
+	{
+		label: "Deferred work",
+		placeholder: "list follow-up work intentionally left out, or `none`",
+	},
+] as const;
+
+function normalizeFieldValue(value: string): string {
 	let normalized = value.trim();
 
 	const fencedMatch = normalized.match(/^```[\w-]*\s*([\s\S]*?)\s*```$/);
@@ -49,7 +102,7 @@ function normalizeTestingFieldValue(value: string): string {
 function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[.*+?^${}()|[\]]/g, "\\$&");
 	const pattern = new RegExp(
-		`${escapedHeading}([\\s\\S]*?)(?:\\n## |\\n# |$)`,
+		`(?:^|\\n)${escapedHeading}[ \\t]*(?:\\r?\\n)([\\s\\S]*?)(?=\\r?\\n## |\\r?\\n# |$)`,
 		"i",
 	);
 	const match = body.match(pattern);
@@ -109,32 +162,59 @@ function collectPlaceholderErrors(body: string): string[] {
 	return errors;
 }
 
-function collectTestingFieldErrors(body: string): string[] {
-	const testingBody = extractSectionBody(body, "## Testing");
-	if (testingBody === null) {
-		return ["Missing testing block."];
+function collectFieldErrors(
+	body: string,
+	sectionHeading: string,
+	fields: ReadonlyArray<{ label: string; placeholder: string }>,
+	errorPrefix: string,
+): string[] {
+	const sectionBody = extractSectionBody(body, sectionHeading);
+	if (sectionBody === null) {
+		return [`Missing ${errorPrefix} block.`];
 	}
 
 	const errors: string[] = [];
 
-	for (const field of REQUIRED_TESTING_FIELDS) {
-		const pattern = new RegExp(`^-\\s*${field.label}:\\s*(.+)$`, "im");
-		const match = testingBody.match(pattern);
+	for (const field of fields) {
+		const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const pattern = new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im");
+		const match = sectionBody.match(pattern);
 		if (!match) {
-			errors.push(`Missing required testing field: ${field.label}`);
+			errors.push(`Missing required ${errorPrefix} field: ${field.label}`);
 			continue;
 		}
 
-		const value = normalizeTestingFieldValue(match[1] ?? "");
-		const placeholder = normalizeTestingFieldValue(field.placeholder);
+		const value = normalizeFieldValue(match[1] ?? "");
+		const placeholder = normalizeFieldValue(field.placeholder);
 		if (value.length === 0 || value === placeholder) {
-			errors.push(`Replace testing field placeholder: ${field.label}`);
+			errors.push(`Replace ${errorPrefix} field placeholder: ${field.label}`);
 		}
 	}
 
 	return errors;
 }
 
+function collectTestingFieldErrors(body: string): string[] {
+	return collectFieldErrors(
+		body,
+		"## Testing",
+		REQUIRED_TESTING_FIELDS,
+		"testing",
+	);
+}
+
+function collectWorkPerformedFieldErrors(body: string): string[] {
+	return collectFieldErrors(
+		body,
+		"## Work performed",
+		REQUIRED_WORK_FIELDS,
+		"work performed",
+	);
+}
+
+/**
+ * Validate a pull request body against the repository PR template contract.
+ */
 export function validatePrTemplateBody(body: string): string[] {
 	const errors: string[] = [];
 	if (body.length > MAX_BODY_LENGTH) {
@@ -149,11 +229,12 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	for (const section of REQUIRED_SECTIONS) {
-		if (!body.includes(section)) {
+		if (extractSectionBody(body, section) === null) {
 			errors.push(`Missing required section: ${section}`);
 		}
 	}
 
+	errors.push(...collectWorkPerformedFieldErrors(body));
 	errors.push(...collectChecklistErrors(body));
 	errors.push(...collectTestingFieldErrors(body));
 	errors.push(...collectPlaceholderErrors(body));

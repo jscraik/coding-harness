@@ -36,6 +36,14 @@ describe("scaffold CircleCI config template", () => {
 		expect(config).toContain("command: pnpm memory:validate");
 		expect(config).toContain("name: Configure pnpm store");
 		expect(config).toContain("v2-pnpm-store-{{ arch }}-");
+		expect(config).toContain("name: snyk-dependency-scan");
+		expect(config).toContain("name: Run report-only Snyk dependency scan");
+		expect(config).toContain(
+			"Skipping report-only CircleCI Snyk scan; external GitHub Snyk remains the blocking PR check.",
+		);
+		expect(config).toContain(
+			"snyk test --severity-threshold=high --file=package.json --package-manager=pnpm || true",
+		);
 		expect(config).toContain("name: security-scan");
 		expect(config).not.toContain("}}      -");
 		expect(config).not.toMatch(/{{[a-zA-Z]+}}/);

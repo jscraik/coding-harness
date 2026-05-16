@@ -9,6 +9,19 @@ const VALID_BODY = `## Summary
 - Why this change was needed: Prevent incomplete PR templates before CI.
 - Risk and rollback plan: Revert the command and docs updates.
 
+## Work performed
+
+- Plan IDs: JSC-999; .harness/plan/example-plan.md
+- Phase / slice: PU-001 PR evidence ledger
+- Session IDs: codex-session-019c-example
+- Trace IDs: circleci-workflow-123; harness-gate-pr-template
+- Completed work: Added pr-template-gate command and docs update with evidence refs.
+- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.
+- Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass.
+- Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
+- Learning / reinforcement: none; no durable learning promoted.
+- Deferred work: none
+
 ## Checklist
 
 - [x] I did not push directly to \`main\`; this PR is from a dedicated branch.
@@ -43,12 +56,61 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
 	});
 
+	it("does not treat heading names in prose as section starts", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"Added the required `## Work performed` ledger to the PR body.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
 	it("fails when required sections are missing", () => {
 		const errors = validatePrTemplateBody("## Summary\n\nOnly summary.");
+		expect(errors).toContain("Missing required section: ## Work performed");
 		expect(errors).toContain("Missing required section: ## Checklist");
 		expect(errors).toContain("Missing required section: ## Testing");
 		expect(errors).toContain("Missing required section: ## Review artifacts");
 		expect(errors).toContain("Missing required section: ## Notes");
+	});
+
+	it("fails when headings appear only in prose without markdown headers", () => {
+		const body = `## Summary
+
+This PR addresses the Work performed: field, the Checklist: items, Testing: outcomes, Review artifacts: links, and Notes: section.`;
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain("Missing required section: ## Work performed");
+		expect(errors).toContain("Missing required section: ## Checklist");
+		expect(errors).toContain("Missing required section: ## Testing");
+		expect(errors).toContain("Missing required section: ## Review artifacts");
+		expect(errors).toContain("Missing required section: ## Notes");
+	});
+
+	it("fails missing or placeholder work performed fields", () => {
+		const body = VALID_BODY.replace(
+			"- Completed work: Added pr-template-gate command and docs update with evidence refs.",
+			"- Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR",
+		)
+			.replace(
+				"- Trace IDs: circleci-workflow-123; harness-gate-pr-template",
+				"- Trace IDs: list CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason",
+			)
+			.replace("- Session IDs: codex-session-019c-example\n", "")
+			.replace("- Deferred work: none\n", "");
+
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain(
+			"Missing required work performed field: Session IDs",
+		);
+		expect(errors).toContain(
+			"Replace work performed field placeholder: Trace IDs",
+		);
+		expect(errors).toContain(
+			"Replace work performed field placeholder: Completed work",
+		);
+		expect(errors).toContain(
+			"Missing required work performed field: Deferred work",
+		);
 	});
 
 	it("fails unchecked checklist items without explicit Pending or N/A marker", () => {

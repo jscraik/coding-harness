@@ -155,6 +155,10 @@ CircleCI reports **one check run per workflow**, not per job:
 > [!NOTE]
 > CircleCI jobs appear in the CircleCI UI but **do not create individual GitHub check-run entries**. GitHub branch protection must use the workflow name, not the job name.
 
+The `security-scan` workflow follows the same rule. Its repo-owned Semgrep job
+and Snyk dependency-scan job both roll up to the single GitHub check-run name
+`security-scan`, so adding Snyk does not add a new branch-protection check.
+
 ### GitHub Actions
 
 GHA reports **one check run per job** under the workflow:

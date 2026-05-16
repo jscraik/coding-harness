@@ -59,6 +59,7 @@ export function renderCircleCIConfig(input: CircleCIConfigRenderInput): string {
 		linearGateJob,
 		lintCommand: input.lintCommand,
 		memoryValidateCommand: input.memoryValidateCommand,
+		packageManager: input.packageManager,
 		riskPolicyRequires,
 		saveCacheStep,
 		semgrepCommand,

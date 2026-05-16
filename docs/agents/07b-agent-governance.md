@@ -71,6 +71,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - packaged coding-harness skill changes should keep AGENTS, README, skill
   eval cases, and this guide synchronized so downstream agent behavior,
   validation expectations, and anti-overfit criteria remain governed together
+- PR-template contract changes should keep local validation, GitHub PR body
+  structure, and reviewer handoff evidence synchronized so the work-performed
+  ledger remains enforceable before closeout
 
 ## Evidence and communication
 

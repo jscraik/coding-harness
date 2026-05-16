@@ -18,6 +18,9 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | Term | Definition |
 | --- | --- |
 | Coding Harness | The TypeScript control-plane repository that governs agentic development, review workflows, and validation contracts. |
+| Codex Runtime | The agent execution environment that owns sessions, permissions, workspace roots, tools, hooks, lifecycle events, and memory contributors. |
+| Harness Control Plane | The Coding Harness interpretation layer that turns Codex/runtime evidence into repo workflow policy, validation lanes, PR evidence, Project Brain context, and safe next-action recommendations. |
+| Codex-Aligned, Harness-Stable | The architecture posture that prefers Codex runtime contracts when available while exposing them through stable harness interfaces instead of private Codex internals. |
 | Codex Subtree | The `codex/` configuration surface that owns runtime config, agents, hooks, automations, and related verification scripts. |
 | Control Plane | The canonical set of config files, scripts, and policies that decides how agents execute and validate work. |
 | Canonical-only | The policy that requires using the documented, source-of-truth path instead of ad hoc or duplicate alternatives. |
@@ -35,6 +38,14 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | Projection Surface | A generated, packaged, mirrored, or emitted surface that should be updated through its canonical source rather than patched directly. |
 | Required Check Identity | The exact check name and owner contract used by branch protection and readiness validation, such as CircleCI, CodeRabbit, Semgrep Cloud, or GitHub Actions ownership. |
 | Tracer Proof | The smallest production-like command, test, or executable path that proves an architecture-sensitive change without over-running unrelated validation. |
+| Operation Profile | A bounded operating mode, such as `triage`, `fix`, `review`, `ci-babysit`, `linear-mutate`, or `release`, that names intent, allowed evidence, stop conditions, and required validation. |
+| Harness Run Context | The `harness-run-context/v1` packet that records local runtime evidence such as repo identity, worktree roots, session IDs, trace IDs, workspace roots, permissions, targets, blockers, and lifecycle status. |
+| Run Record | Durable run evidence under `artifacts/agent-runs/<runId>/`, including terminal manifests, event streams, and additive companion artifacts. |
+| Runtime Evidence | Structured evidence about what actually happened during a run, including profile, roots, permissions, sessions, traces, validation, review artifacts, blockers, and lifecycle state. |
+| Workspace Root Evidence | The explicit repository, worktree, selected cwd, readable root, and writable root evidence used to prove an operation is acting in the intended workspace. |
+| Permission Context | The runtime sandbox, permission profile, network state, and root access evidence available to a harness operation. |
+| Lifecycle Status | A bounded status value that distinguishes active work from waiting on CI, waiting on review, waiting on user input, waiting on auth, merge-conflict blockers, required-check blockers, ready-to-merge, merged, or closed states. |
+| Project Brain Provider | A harness-readable memory surface that lets agents list, read, search, and route active Project Brain artifacts without relying on chat history or manual recall. |
 | Outcome Closeout Schema | A machine-readable closeout packet that summarizes changed items, proof, blockers, handoffs, and claim boundaries from structured source events instead of prose-only status. |
 | North-Star Contract | The canonical mission, metric, bottleneck, autonomy boundary, safety floor, and decision rubric in `docs/roadmap/north-star.md`; summaries and governed PR decisions should derive from this contract. Does the change improve or preserve durable learning and evidence capture? |
 | North-Star Mission | Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff. Does the change improve or preserve durable learning and evidence capture? |

@@ -192,4 +192,5 @@ skillification
 Skillify
 skillify
 sla
+Snyk
 URIs
