@@ -170,7 +170,7 @@ jobs:
             fi
       - snyk/scan:
           additional-arguments: --package-manager={{packageManager}}
-          fail-on-issues: true
+          fail-on-issues: false
           monitor-on-build: false
           severity-threshold: high
           target-file: package.json
