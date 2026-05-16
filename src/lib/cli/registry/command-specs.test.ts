@@ -86,6 +86,7 @@ describe("COMMAND_SPECS structural integrity", () => {
 			"linear",
 			"linear-gate",
 			"pr-template-gate",
+			"rule-lifecycle-gate",
 			"policy-gate",
 			"evidence-verify",
 			"preflight-gate",

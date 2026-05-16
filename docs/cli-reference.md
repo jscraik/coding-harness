@@ -150,6 +150,7 @@ In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --fro
 | `brainstorm-gate`        | Validate brainstorm artifacts                                                                                             |
 | `prompt-gate`            | Validate prompt template usage                                                                                            |
 | `pr-template-gate`       | Validate PR template completion and placeholder replacement                                                               |
+| `rule-lifecycle-gate`    | Validate governance rules have owner, evidence, enforcement, freshness, and retirement metadata                          |
 | `license-gate`           | Validate open-source license expectations                                                                                 |
 | `check-authz`            | Validate authorization policy for mutative operations                                                                     |
 | `check-environment`      | Validate pilot environment governance checks                                                                              |
