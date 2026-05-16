@@ -62,7 +62,7 @@ function uniqueSources(sources: RuntimeCardSource[]): RuntimeCardSource[] {
  *  - `issueKey` copied from the bundle (or `null` when `value` is `undefined`),
  *  - optional `pullRequest` and `linear` when present on the bundle,
  *  - optional `phaseExit` (with the collapsed `phaseExit` state, a generated `phase_exit` source whose `status` and `failureClass` reflect the phase result, and `blockers` derived from the phase result),
- *  - `sources` composed of a synthetic `session` source prepended to the bundle sources and deduplicated,
+ *  - `sources` composed of bundle sources followed by a synthetic `session` source, deduplicated such that producer-provided metadata in bundle sources wins,
  *  - `blockers` copied from the bundle.
  */
 export function inspectRuntimeEvidenceBundle(
