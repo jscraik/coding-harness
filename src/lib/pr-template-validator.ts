@@ -102,7 +102,7 @@ function normalizeFieldValue(value: string): string {
 function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[.*+?^${}()|[\]]/g, "\\$&");
 	const pattern = new RegExp(
-		`${escapedHeading}([\\s\\S]*?)(?:\\n## |\\n# |$)`,
+		`(?:^|\\n)${escapedHeading}[ \\t]*(?:\\r?\\n)([\\s\\S]*?)(?=\\r?\\n## |\\r?\\n# |$)`,
 		"i",
 	);
 	const match = body.match(pattern);
