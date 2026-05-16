@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runRuntimeCardCLI } from "./runtime-card.js";
+import { validateRuntimeEvidenceBundle } from "../lib/runtime/runtime-evidence-bundle.js";
 
 const CODE = String.fromCharCode(96);
 
@@ -150,6 +151,77 @@ describe("runRuntimeCardCLI", () => {
 		expect(card.schemaVersion).toBe("runtime-card/v1");
 	});
 
+	it("persists normalized runtime evidence when --evidence-out is supplied", async () => {
+		const repoRoot = setupRepo();
+		const evidenceOutPath = ".harness/runtime/JSC-311-evidence.json";
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence-out",
+			evidenceOutPath,
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		expect(JSON.parse(output).schemaVersion).toBe("runtime-card/v1");
+		const persistedPath = join(repoRoot, evidenceOutPath);
+		expect(existsSync(persistedPath)).toBe(true);
+		const evidence = JSON.parse(readFileSync(persistedPath, "utf8"));
+		expect(validateRuntimeEvidenceBundle(evidence)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(evidence).toMatchObject({
+			schemaVersion: "runtime-evidence-bundle/v1",
+			issueKey: "JSC-311",
+			provenance: {
+				kind: "runtime_card_adapter",
+				ref: `artifact:${evidenceOutPath}`,
+			},
+		});
+		expect(
+			evidence.sources.map((source: { kind: string }) => source.kind),
+		).toEqual(["git", "artifact"]);
+	});
+
+	it("can consume runtime evidence produced by --evidence-out", async () => {
+		const repoRoot = setupRepo();
+		const evidenceOutPath = ".harness/runtime/JSC-311-evidence.json";
+		const first = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence-out",
+			evidenceOutPath,
+		]);
+		expect(first.exitCode).toBe(0);
+
+		const second = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--evidence",
+			evidenceOutPath,
+		]);
+
+		expect(second.exitCode).toBe(0);
+		const card = JSON.parse(second.output);
+		expect(card.issueKey).toBe("JSC-311");
+		expect(card.sources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "artifact",
+					ref: `artifact:${evidenceOutPath}`,
+				}),
+			]),
+		);
+	});
+
 	it("adapts normalized evidence bundles through --evidence", async () => {
 		const repoRoot = setupRepo();
 		const evidencePath = writeRuntimeEvidenceBundle(repoRoot);
@@ -196,6 +268,13 @@ describe("runRuntimeCardCLI", () => {
 		expect(error).toContain("--evidence requires an artifact path");
 	});
 
+	it("returns usage errors for missing evidence output path", async () => {
+		const { exitCode, error } = await captureRuntimeCardCLI(["--evidence-out"]);
+
+		expect(exitCode).toBe(2);
+		expect(error).toContain("--evidence-out requires a file path");
+	});
+
 	it("rejects evidence paths outside the repository", async () => {
 		const repoRoot = setupRepo();
 		const { exitCode, output } = await captureRuntimeCardCLI([
@@ -211,6 +290,24 @@ describe("runRuntimeCardCLI", () => {
 			schemaVersion: "runtime-card-error/v1",
 			status: "fail",
 			error: "Error: --evidence must stay within --repo",
+		});
+	});
+
+	it("rejects evidence output paths outside the repository", async () => {
+		const repoRoot = setupRepo();
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--evidence-out",
+			"../runtime-evidence.json",
+		]);
+
+		expect(exitCode).toBe(1);
+		expect(JSON.parse(output)).toMatchObject({
+			schemaVersion: "runtime-card-error/v1",
+			status: "fail",
+			error: "Error: --evidence-out must stay within --repo",
 		});
 	});
 });

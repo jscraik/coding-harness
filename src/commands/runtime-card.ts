@@ -1,11 +1,20 @@
 import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
-import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+	sep,
+} from "node:path";
 import { cwd } from "node:process";
 import {
 	buildLiveRuntimeCard,
 	buildLocalRuntimeCard,
 } from "../lib/runtime/local-runtime-card.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { buildRuntimeEvidenceBundleFromCard } from "../lib/runtime/runtime-evidence-producer.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 
 interface RuntimeCardCLIOptions {
@@ -15,6 +24,7 @@ interface RuntimeCardCLIOptions {
 	phaseExitPath?: string;
 	evidencePath?: string;
 	outPath?: string;
+	evidenceOutPath?: string;
 	live: boolean;
 }
 
@@ -29,7 +39,7 @@ type RuntimeCardParseResult =
  */
 function printRuntimeCardUsage(): void {
 	console.info(
-		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>]",
+		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>] [--evidence-out <path>]",
 	);
 	console.info("");
 	console.info(
@@ -116,31 +126,72 @@ function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
 			index += 1;
 			continue;
 		}
+		if (arg === "--evidence-out") {
+			const value = readFlagValue(args, index);
+			if (!value) {
+				console.error("runtime-card: --evidence-out requires a file path");
+				return { exitCode: 2 };
+			}
+			options.evidenceOutPath = value;
+			index += 1;
+			continue;
+		}
 		console.error(`runtime-card: unknown argument ${String(arg)}`);
 		return { exitCode: 2 };
 	}
 	return { options };
 }
 
+function isOutsideRepo(repoRoot: string, pathToCheck: string): boolean {
+	const rel = relative(repoRoot, pathToCheck);
+	return rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel);
+}
+
 /**
  * Loads and parses a JSON evidence bundle file referenced by `artifactPath`, constrained to stay within `repoRoot`.
  *
  * @param repoRoot - The repository root used to resolve relative `artifactPath` values.
- * @param artifactPath - Path to the evidence JSON file (absolute or relative to `repoRoot`).
+ * @param artifactPath - Path to the evidence JSON file relative to `repoRoot`.
  * @returns The parsed JSON value from the evidence file.
  * @throws Error if `artifactPath` is absolute or resolves outside `repoRoot` with the message "--evidence must stay within --repo".
  */
 function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
-	const resolvedPath = isAbsolute(artifactPath)
-		? artifactPath
-		: resolve(repoRoot, artifactPath);
+	if (isAbsolute(artifactPath)) {
+		throw new Error("--evidence must stay within --repo");
+	}
 	const canonicalRepo = realpathSync(repoRoot);
+	const resolvedPath = resolve(canonicalRepo, artifactPath);
+	if (isOutsideRepo(canonicalRepo, resolvedPath)) {
+		throw new Error("--evidence must stay within --repo");
+	}
 	const canonicalEvidence = realpathSync(resolvedPath);
-	const rel = relative(canonicalRepo, canonicalEvidence);
-	if (isAbsolute(artifactPath) || rel.startsWith("..") || rel === "..") {
+	if (isOutsideRepo(canonicalRepo, canonicalEvidence)) {
 		throw new Error("--evidence must stay within --repo");
 	}
 	return JSON.parse(readFileSync(canonicalEvidence, "utf8"));
+}
+
+function writeJsonArtifact(
+	repoRoot: string,
+	artifactPath: string,
+	flagName: string,
+	value: unknown,
+): void {
+	if (isAbsolute(artifactPath)) {
+		throw new Error(`${flagName} must stay within --repo`);
+	}
+	const canonicalRepo = realpathSync(repoRoot);
+	const outputPath = resolve(canonicalRepo, artifactPath);
+	if (isOutsideRepo(canonicalRepo, outputPath)) {
+		throw new Error(`${flagName} must stay within --repo`);
+	}
+	mkdirSync(dirname(outputPath), { recursive: true });
+	const canonicalDir = realpathSync(dirname(outputPath));
+	const canonicalOutput = join(canonicalDir, basename(outputPath));
+	if (isOutsideRepo(canonicalRepo, canonicalOutput)) {
+		throw new Error(`${flagName} must stay within --repo`);
+	}
+	writeFileSync(canonicalOutput, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
 /**
@@ -174,10 +225,10 @@ function renderRuntimeCardHuman(card: RuntimeCard): void {
 /**
  * Execute the `harness runtime-card` CLI: parse flags, build a `runtime-card/v1`, and emit or persist its output.
  *
- * Performs argument parsing and validation, optionally loads an evidence bundle constrained to `--repo`, builds the card using local or live providers based on flags, writes the JSON artifact to `--out` when specified, and prints either pretty JSON or a human-readable view. On failure, prints a sanitized error in the selected output format.
+ * Performs argument parsing and validation, optionally loads an evidence bundle constrained to `--repo`, builds the card using local or live providers based on flags, writes JSON artifacts to `--out` and `--evidence-out` when specified, and prints either pretty JSON or a human-readable view. On failure, prints a sanitized error in the selected output format.
  *
  * @param args - Command-line arguments (typically `process.argv.slice(2)`)
- * @returns Exit code: `0` on success, `1` on runtime error, or another code returned by the argument parser (e.g., help or invalid arguments)
+ * @returns Exit code: `0` on success, `1` on runtime error, or another code returned by the argument parser (for example, help or invalid arguments)
  */
 export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 	const parsed = parseRuntimeCardArgs(args);
@@ -197,24 +248,28 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 		const card = parsed.options.live
 			? await buildLiveRuntimeCard(buildOptions)
 			: buildLocalRuntimeCard(buildOptions);
-		const json = JSON.stringify(card, null, 2);
 		if (parsed.options.outPath) {
-			const outputPath = resolve(
+			writeJsonArtifact(
 				parsed.options.repoRoot,
 				parsed.options.outPath,
+				"--out",
+				card,
 			);
-			mkdirSync(dirname(outputPath), { recursive: true });
-			const canonicalRepo = realpathSync(parsed.options.repoRoot);
-			const canonicalDir = realpathSync(dirname(outputPath));
-			const canonicalOutput = join(canonicalDir, basename(outputPath));
-			const rel = relative(canonicalRepo, canonicalOutput);
-			if (isAbsolute(parsed.options.outPath) || rel.startsWith("..") || rel === "..") {
-				throw new Error("--out must stay within --repo");
-			}
-			writeFileSync(canonicalOutput, `${json}\n`, "utf8");
+		}
+		if (parsed.options.evidenceOutPath) {
+			const evidence = buildRuntimeEvidenceBundleFromCard(card, {
+				provenanceRef: `artifact:${parsed.options.evidenceOutPath}`,
+				generatedAt: card.generatedAt,
+			});
+			writeJsonArtifact(
+				parsed.options.repoRoot,
+				parsed.options.evidenceOutPath,
+				"--evidence-out",
+				evidence,
+			);
 		}
 		if (parsed.options.json) {
-			console.info(json);
+			console.info(JSON.stringify(card, null, 2));
 		} else {
 			renderRuntimeCardHuman(card);
 		}
