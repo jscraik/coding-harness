@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-13
+last_validated: 2026-05-16
 ---
 
 # Security and governance
@@ -74,7 +74,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - If sensitive material appears in a file, sanitize and rotate as soon as practical.
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
-- CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
+- CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. The workflow includes the repo-run Semgrep lane and an explicit report-only Snyk dependency lane; Snyk CLI install, auth, and findings must not fail CircleCI PRs that the external GitHub Snyk delta check has cleared. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
 - `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
 
 ## Execution-input governance
@@ -107,7 +107,7 @@ post-change markdown/docs validation.
 - If the exact touched path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, record that blocker explicitly and run the nearest meaningful validation instead.
 - Do not replace `bash scripts/validate-codestyle.sh` with an informal list of roughly equivalent commands when documenting or attesting verification; the wrapper is the governed proof surface.
 - Treat hook-exported repository git environment (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*` variables) as untrusted input for nested validation scripts; `scripts/validate-codestyle.sh` should sanitize those values before invoking `pnpm run` so fixture-local git checks are isolated from hook context.
-- CircleCI test reliability guardrail: use `pnpm test:ci` so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation (`--dangerouslyIgnoreUnhandledErrors`) while all functional assertions remain enforced.
+- CircleCI test reliability guardrail: use `pnpm test:ci` (which invokes `scripts/test-ci.sh`) so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation configured in `vitest.config.ts` (timeout settings and `onUnhandledError` handler) while all functional assertions remain enforced.
 - Source-checkout harness-gate fallback is narrow by design: `scripts/run-harness-gate.sh` may fall back from the source CLI command to `node dist/cli.js` only when the actual command emits the known runner IPC `EPERM` temp-pipe signature. Missing `pnpm`, missing source files, or non-matching runner failures must remain fail-closed.
 
 ## Governance escalation
@@ -214,12 +214,12 @@ Port-free usage should remain scoped to app-style run actions that map to `dev`/
 
 ## Plan traceability
 
-- Pull requests must declare `Plan IDs` in the PR template summary.
+- Pull requests must declare `Plan IDs` in the PR template `## Work performed` ledger.
 - Each declared ID must resolve to a `docs/plans/*` document with matching `plan_id` frontmatter.
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.
 
-`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD` to the upstream merge-base (or the nearest main/master fallback), filters to changed implementation files under `src/**`, and runs only the local `scripts/semgrep-pre-push.yml` ruleset. That keeps the local lane useful without duplicating the full CI security scan. Keep the script pinned to the same Semgrep version used by the CircleCI `security-scan` lane in `.circleci/config.yml` (`semgrep==1.153.1`) so local and CI findings stay aligned. Keep Semgrep Cloud's `semgrep-cloud-platform/scan` branch-protection check as an independent external app gate.
+`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD` to the upstream merge-base (or the nearest main/master fallback), filters to changed implementation files under `src/**`, and runs only the local `scripts/semgrep-pre-push.yml` ruleset. That keeps the local lane useful without duplicating the full CI security scan. Keep the script pinned to the same Semgrep version used by the CircleCI `security-scan` lane in `.circleci/config.yml` (`semgrep==1.153.1`) so local and CI findings stay aligned. The same workflow also runs Snyk through an explicit report-only CLI step with `SNYK_TOKEN` supplied by CircleCI project environment variables; install failures, auth failures, and issue findings are reported without failing the workflow because the external GitHub Snyk PR check remains the blocking dependency-delta signal. Keep Semgrep Cloud's `semgrep-cloud-platform/scan` branch-protection check as an independent external app gate.
 
 ### Setup
 
@@ -255,7 +255,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
 
 - ## Summary (1-3 bullet points)
-- Plan IDs
+- ## Work performed (plan IDs, phase/slice, session IDs, trace IDs, completed work, acceptance trace, validation evidence, review artifacts, learning/reinforcement, deferred work)
 - ## Checklist (all items checked)
 - ## Testing (test commands and evidence)
 - ## Review artifacts (links to review outputs)

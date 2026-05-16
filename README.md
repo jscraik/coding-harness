@@ -234,12 +234,13 @@ artifacts that are versioned alongside code.
 - Regression evaluator:
   `scripts/check-scorecard-regressions.mjs`
 - Continuous CI security gate:
-  `.circleci/config.yml` (`security-scan` in `pr-pipeline`)
+  `.circleci/config.yml` (`security-scan` workflow with Semgrep and Snyk)
 - External Semgrep Cloud gate:
   GitHub required check `semgrep-cloud-platform/scan`
 
-Security scanning now runs in CircleCI as part of `pr-pipeline`. GitHub Actions
-in this repository is reserved for release publishing only
+Security scanning now runs in CircleCI through the `security-scan` workflow,
+which runs the repo-owned Semgrep scan and a Snyk dependency scan. GitHub
+Actions in this repository is reserved for release publishing only
 (`.github/workflows/release-private-npm.yml`).
 Semgrep Cloud is enforced separately as an external GitHub App required check.
 The machine-readable `harness.contract.json` `ciOwnership` block keeps that split

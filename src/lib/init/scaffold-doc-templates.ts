@@ -259,11 +259,13 @@ For repositories that use Harness, recommend installing these scanners as projec
 - Gitleaks
 - Trivy
 - Semgrep
+- Snyk in CircleCI through the pinned Snyk orb and \`SNYK_TOKEN\` environment variable
 
 Recommended policy:
 
 - Keep scanner binaries available in local development environments and CI runners.
 - Run scanner checks in CI on pull requests and pushes to protected branches.
+- Keep Snyk monitoring disabled unless the repository explicitly approves external snapshot writes.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
 ${
 	options.isCircleCI
@@ -353,6 +355,19 @@ export function renderPullRequestTemplate(
 - What changed (brief):
 - Why this change was needed:
 - Risk and rollback plan:
+
+## Work performed
+
+- Plan IDs: list Linear keys, spec paths, plan paths, or \`n.a.\` with reason
+- Phase / slice: list completed phase, implementation slice, or \`n.a.\` with reason
+- Session IDs: list Codex/session-collector/harness session IDs, or \`n.a.\` with reason
+- Trace IDs: list CI, harness, eval, review, or runtime trace IDs, or \`n.a.\` with reason
+- Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR
+- Acceptance trace: map completed acceptance items to evidence refs, or \`n.a.\` with reason
+- Validation evidence: list command outcomes, CI jobs, artifact paths, or \`n.a.\` with reason
+- Review artifacts: list CodeRabbit, Codex, reviewer, or harness review artifacts, or \`n.a.\` with reason
+- Learning / reinforcement: list promoted learnings, memory updates, or \`none\` with reason
+- Deferred work: list follow-up work intentionally left out, or \`none\`
 
 ## Checklist
 

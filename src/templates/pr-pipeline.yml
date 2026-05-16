@@ -27,6 +27,7 @@ jobs:
 
             const requiredSections = [
               '## Summary',
+              '## Work performed',
               '## Checklist',
               '## Testing',
               '## Review artifacts',
@@ -38,6 +39,83 @@ jobs:
               }
             }
 
+            const extractSectionBody = (heading) => {
+              const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const match = body.match(new RegExp(`(?:^|\\n)${escapedHeading}[ \\t]*(?:\\r?\\n)([\\s\\S]*?)(?=\\r?\\n## |\\r?\\n# |$)`, 'i'));
+              return match ? (match[1] ?? '') : null;
+            };
+            const normalizeFieldValue = (value) => {
+              let normalized = value.trim();
+              const fencedMatch = normalized.match(/^```[\\w-]*\\s*([\\s\\S]*?)\\s*```$/);
+              if (fencedMatch) {
+                normalized = fencedMatch[1] ?? '';
+              }
+              const inlineCodeMatch = normalized.match(/^`([^`]+)`$/);
+              if (inlineCodeMatch) {
+                normalized = inlineCodeMatch[1] ?? '';
+              }
+              return normalized.replace(/\\s+/g, ' ').trim();
+            };
+
+            const workPerformedBody = extractSectionBody('## Work performed');
+            if (!workPerformedBody) {
+              errors.push('Missing work performed block.');
+            } else {
+              const requiredWorkFields = [
+                { label: 'Plan IDs', placeholder: 'list Linear keys, spec paths, plan paths, or `n.a.` with reason' },
+                { label: 'Phase / slice', placeholder: 'list completed phase, implementation slice, or `n.a.` with reason' },
+                { label: 'Session IDs', placeholder: 'list Codex/session-collector/harness session IDs, or `n.a.` with reason' },
+                { label: 'Trace IDs', placeholder: 'list CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason' },
+                { label: 'Completed work', placeholder: 'list implementation units, docs/config changes, or evidence-only work completed in this PR' },
+                { label: 'Acceptance trace', placeholder: 'map completed acceptance items to evidence refs, or `n.a.` with reason' },
+                { label: 'Validation evidence', placeholder: 'list command outcomes, CI jobs, artifact paths, or `n.a.` with reason' },
+                { label: 'Review artifacts', placeholder: 'list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason' },
+                { label: 'Learning / reinforcement', placeholder: 'list promoted learnings, memory updates, or `none` with reason' },
+                { label: 'Deferred work', placeholder: 'list follow-up work intentionally left out, or `none`' },
+              ];
+              for (const field of requiredWorkFields) {
+                const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const match = workPerformedBody.match(
+                  new RegExp(
+                    `^-\\s*${escapedLabel}:\\s*([\\s\\S]*?)(?=\\n-\\s*[A-Za-z][^:\\n]*:\\s*|$)`,
+                    'im',
+                  ),
+                );
+                if (!match) {
+                  errors.push('Missing required work performed field: ' + field.label);
+                  continue;
+                }
+                const value = normalizeFieldValue(match[1] ?? '');
+                const placeholder = normalizeFieldValue(field.placeholder);
+                if (value.length === 0 || value === placeholder) {
+                  errors.push('Replace work performed field placeholder: ' + field.label);
+                }
+              }
+            }
+
+            const requiredTestingFields = [
+              { label: 'verification_commands' },
+              { label: 'verification_outcomes' },
+              { label: 'blocked_steps_reason' },
+            ];
+            const testingBody = extractSectionBody('## Testing');
+            if (!testingBody) {
+              errors.push('Missing testing block.');
+            } else {
+              for (const field of requiredTestingFields) {
+                const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const match = testingBody.match(new RegExp('^-\\s*' + escapedLabel + ':\\s*(.+)$', 'im'));
+                if (!match) {
+                  errors.push('Missing required testing field: ' + field.label);
+                } else {
+                  const value = normalizeFieldValue(match[1]);
+                  const placeholder = normalizeFieldValue('');
+                  if (value.length === 0 || value === placeholder) {
+                    errors.push('Replace testing field placeholder: ' + field.label);
+                  }
+                }
+              }
+            }
 
             const checklistMatch = body.match(/## Checklist([\s\S]*?)(?:\n## |\n# |$)/i);
 

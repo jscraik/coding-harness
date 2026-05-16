@@ -63,6 +63,7 @@ CircleCI uses the `cimg/node:24.13` Docker convenience image on GitHub-hosted in
 | --- | --- | --- |
 | `NPM_TOKEN` | optional token fallback for npm publish (release workflow only) | npm registry |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub API interactions | Repository-scoped |
+| `SNYK_TOKEN` | Snyk CircleCI orb authentication for dependency scanning | Snyk project/org scope |
 
 ### Hardening measures
 

@@ -84,6 +84,8 @@ The harness safety floor is:
 - Favor systems that reduce synchronous human coordination instead of adding new
   policy surface for its own sake.
 - If the same failure happens twice, the repo should gain a durable guardrail.
+- Prefer Codex runtime contracts when they exist, but wrap them in
+  harness-stable interfaces before exposing them to repo workflows.
 
 ## Non-Goals
 

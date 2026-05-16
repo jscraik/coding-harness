@@ -1,0 +1,6 @@
+---
+name: ci tests
+discover: pnpm exec vitest list --filesOnly
+run: pnpm exec vitest run --maxWorkers=1 --reporter=default --reporter=junit --outputFile.junit="<< outputs.junit >>" << test.atoms >>
+outputs:
+  junit: artifacts/test-results/smarter-testing-comparison/smarter/junit.xml
