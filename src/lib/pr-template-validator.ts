@@ -45,17 +45,37 @@ const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Session IDs",
 		placeholder:
-			"list Codex/session-collector/harness session IDs, or `n.a.` with reason",
+			"list Codex thread/session IDs, session-collector artifact IDs or paths, harness run IDs, or `n.a.` with reason. For AI-assisted work, include at least one session reference or explain why no session artifact was captured.",
 	},
 	{
 		label: "Trace IDs",
 		placeholder:
-			"list CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason",
+			"list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.",
+	},
+	{
+		label: "AI session / traceability",
+		placeholder:
+			"map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body.",
 	},
 	{
 		label: "Completed work",
 		placeholder:
 			"list implementation units, docs/config changes, or evidence-only work completed in this PR",
+	},
+	{
+		label: "Affected surfaces",
+		placeholder:
+			"list code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or `n.a.` with reason",
+	},
+	{
+		label: "Expected outcome alignment",
+		placeholder:
+			"state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason",
+	},
+	{
+		label: "Pattern scope inventory",
+		placeholder:
+			"for any steering feedback, review comment, or line-level correction that implies a broader design principle, name the principle, list sibling implementations searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence",
 	},
 	{
 		label: "Acceptance trace",
@@ -71,6 +91,21 @@ const REQUIRED_WORK_FIELDS = [
 		label: "Review artifacts",
 		placeholder:
 			"list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason",
+	},
+	{
+		label: "Runtime impact",
+		placeholder:
+			"state direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason",
+	},
+	{
+		label: "CodeRabbit mode coverage",
+		placeholder:
+			"list analysis, validation, gate, closeout, promotion, or `n.a.` with reason",
+	},
+	{
+		label: "Closeout state",
+		placeholder:
+			"classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner",
 	},
 	{
 		label: "Learning / reinforcement",
@@ -195,12 +230,17 @@ function collectFieldErrors(
 }
 
 function collectTestingFieldErrors(body: string): string[] {
-	return collectFieldErrors(
+	const errors = collectFieldErrors(
 		body,
 		"## Testing",
 		REQUIRED_TESTING_FIELDS,
 		"testing",
 	);
+	const testingBody = extractSectionBody(body, "## Testing");
+	if (testingBody !== null) {
+		errors.push(...collectCommandEvidenceErrors(testingBody));
+	}
+	return errors;
 }
 
 function collectWorkPerformedFieldErrors(body: string): string[] {
@@ -210,6 +250,30 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 		REQUIRED_WORK_FIELDS,
 		"work performed",
 	);
+}
+
+function collectCommandEvidenceErrors(testingBody: string): string[] {
+	const commandLines = testingBody
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter((line) => /^-\s*Command:\s*/i.test(line));
+	const errors: string[] = [];
+
+	if (commandLines.length === 0) {
+		return ["Testing section must include at least one Command evidence line."];
+	}
+
+	const commandEvidencePattern =
+		/^-\s*Command:\s*(?:`[^\n`]+`|[^\n`]+?)\s*->\s*(?:`?(?:pass|fail)`?|(?:`?blocked`?|`?n\.a\.`?|`?n\/a`?)\s*\([^)]+\))\s*$/i;
+	for (const line of commandLines) {
+		if (!commandEvidencePattern.test(line)) {
+			errors.push(
+				`Command evidence must use \`Command: <exact command> -> pass|fail|blocked (<reason>)\` format: ${line}`,
+			);
+		}
+	}
+
+	return errors;
 }
 
 /**

@@ -14,11 +14,14 @@
 - Trace IDs: list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.
 - AI session / traceability: map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body.
 - Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR
+- Affected surfaces: list code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or `n.a.` with reason
 - Expected outcome alignment: state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason
 - Pattern scope inventory: for any steering feedback, review comment, or line-level correction that implies a broader design principle, name the principle, list sibling implementations searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence
 - Acceptance trace: map completed acceptance items to evidence refs, or `n.a.` with reason
 - Validation evidence: list command outcomes, CI jobs, artifact paths, or `n.a.` with reason
 - Review artifacts: list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason
+- Runtime impact: state direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason
+- CodeRabbit mode coverage: list analysis, validation, gate, closeout, promotion, or `n.a.` with reason
 - Closeout state: classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner
 - Learning / reinforcement: list promoted learnings, memory updates, or `none` with reason
 - Deferred work: list follow-up work intentionally left out, or `none`
@@ -42,7 +45,7 @@
 - Command: `bash scripts/validate-codestyle.sh` -> pass/fail
 - Command: `pnpm check` -> pass/fail
 - Command: `bash scripts/run-harness-gate.sh tooling-audit --path . --json` -> pass/fail
-- Command: `CHANGED_FILES="<comma-separated-changed-files>"` (set before running file-scoped gates)
+- Setup: `CHANGED_FILES="<comma-separated-changed-files>"` (set before running file-scoped gates)
 - Command: `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files "$CHANGED_FILES" --json` -> pass/fail/n.a.
 - Command: `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files "$CHANGED_FILES" --json` -> pass/fail/n.a.
 - Command: `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json` -> pass/fail/n.a.
