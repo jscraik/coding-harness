@@ -199,6 +199,7 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 | North-star feedback            | `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json`              | Measure learning-loop hits, promoted learnings, high-usage unenforced items, and review feedback reduction signals for closeout evidence                      |
 | Artifact provenance gate       | `harness artifact-gate --files <files> --json`                                                      | Check generated artifact changes against `.harness/artifact-provenance.json` so source/template changes accompany runtime mirrors                             |
 | CI ownership gate              | `harness ci-ownership-gate --json`                                                                  | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                     |
+| PR closeout evidence           | `harness pr-closeout --pr <number> --json`                                                          | Build read-only handoff evidence from GitHub PR state, required checks, CLI availability, dirty worktree state, and AI session/traceability completeness      |
 | Existing-repo upgrade matrix   | `pnpm test:harness-upgrade-matrix -- <repo>...`                                                     | Run the built CLI package `init --update --dry-run --json` path across existing repos and fail if any target git status changes or omits update-mode evidence |
 | Fleet remediation plan         | `harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json`                        | Convert the upgrade matrix artifact into agent-native next commands with safe dry-run boundaries and approval-required mutation steps                         |
 | Current-repo upgrade preview   | `harness upgrade --dry-run --json`                                                                  | Preview tracked updates or existing-repo adoption with structured `updateMode`, `trackedManifest`, and `updateDetails` evidence                               |
@@ -212,6 +213,8 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 **Phase 3** supports `harness review-context` plus `harness validation-plan` output.
 
 **Phase 4** starts artifact provenance checks with `harness artifact-gate` plus CI ownership checks with `harness ci-ownership-gate`.
+
+**Phase 4d** starts PR closeout evidence with `harness pr-closeout`. The command is read-only and may load `~/.codex/.env` for CLI credentials, but its report must describe tool availability rather than printing secrets. Missing optional CLIs stay visible as tool evidence; blocked required evidence must prevent a ready-to-merge recommendation.
 
 **Phase 4c** promotes the highest-signal scaffold-default learnings into generated-repo regression coverage for auth-free `.npmrc`, repo-local `scripts/harness-cli.sh`, real `CODESTYLE.md` templates, wrapper-first environment checks, first-class `toolingPolicy`, and Codex environment action sync.
 

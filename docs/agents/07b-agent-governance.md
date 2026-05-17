@@ -86,6 +86,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - PR-template contract changes should keep local validation, GitHub PR body
   structure, and reviewer handoff evidence synchronized so the work-performed
   ledger remains enforceable before closeout
+- PR closeout evidence changes that add or alter `pr-closeout/v1`,
+  `harness pr-closeout`, required PR metadata, or AI session/traceability
+  evidence should stay read-only, tool-evidence-backed, secret-redacting, and
+  synchronized with the PR template, validation docs, CLI docs, and AGENTS
 - AI-assisted PRs should cite a concrete Codex/session-collector/harness run
   reference and, when available, CI, eval, runtime-card, evidence-bundle, or
   review trace references. Use `n.a.` only with a concrete reason, and keep raw

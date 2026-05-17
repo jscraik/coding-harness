@@ -130,8 +130,8 @@ For Coding Harness, that means:
 - a trace is one end-to-end harness run, PR loop, install attempt, review loop,
   or canary upgrade
 - spans are named units of work such as `doctor`, `init-dry-run`,
-  `runtime-card`, `linear-gate`, `ci-state`, `review-context`, `validator`,
-  `tool-call`, and `human-feedback`
+  `runtime-card`, `pr-closeout`, `linear-gate`, `ci-state`,
+  `review-context`, `validator`, `tool-call`, and `human-feedback`
 - scores measure operational quality: install safety, next-action correctness,
   evidence freshness, rollback completeness, PR metadata readiness, stack
   health, and review-rework reduction
@@ -139,6 +139,10 @@ For Coding Harness, that means:
   session collector evidence, and Project Brain solutions
 - release-grade claims require trusted-live evidence, not only structural
   shape checks
+
+The portable harness rule is deliberately narrow: install the smallest surface
+that helps the repo under inspection, not every capability the harness knows
+how to create.
 
 The `agent-skills` eval pattern is the reference model: structural mode is for
 fast local iteration, trusted-live mode proves behavior against the real runner,
@@ -158,6 +162,10 @@ and release-ready mode requires retaining current-run evidence.
 - If the same failure happens twice, the repo should gain a durable guardrail.
 - Prefer Codex runtime contracts when they exist, but wrap them in
   harness-stable interfaces before exposing them to repo workflows.
+- Adopt Codex signals, not Codex sprawl. Stable ideas such as workspace
+  identity, permission scope, trace IDs, lifecycle evidence, memory provenance,
+  and diagnostics are useful only when they reduce PR lead time, review or
+  rework cost, closeout ambiguity, or brownfield install risk.
 - Prefer live canary evidence before broadening installer behavior, then convert
   stable canary lessons into deterministic fixtures.
 - Keep observability outputs structured, small, and searchable; raw event volume

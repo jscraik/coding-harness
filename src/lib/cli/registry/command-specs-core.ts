@@ -56,6 +56,7 @@ import {
 } from "../../../commands/pilot-rollback.js";
 import { runPlanGateCLI } from "../../../commands/plan-gate.js";
 import { runPolicyGateCLI } from "../../../commands/policy-gate.js";
+import { runPrCloseoutCLI } from "../../../commands/pr-closeout.js";
 import { runPrTemplateGateCLI } from "../../../commands/pr-template-gate.js";
 import { runPreflightGateCLI } from "../../../commands/preflight-gate.js";
 import { runPresetCLI } from "../../../commands/preset.js";
@@ -315,6 +316,14 @@ export const COMMAND_SPECS: CommandSpec[] = [
 
 			return runLinearGateCLI(options);
 		},
+	},
+	{
+		name: "pr-closeout",
+		summary:
+			"Build a read-only PR closeout evidence report from GitHub, CircleCI, CodeRabbit, Snyk, and normalized handoff state",
+		example: "pr-closeout --pr 258 --json",
+		errorLabel: "PR Closeout Error",
+		execute: (args) => runPrCloseoutCLI(args),
 	},
 	{
 		name: "pr-template-gate",

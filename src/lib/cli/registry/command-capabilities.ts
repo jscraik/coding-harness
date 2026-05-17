@@ -124,6 +124,7 @@ const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	"plan-gate": "review-policy",
 	"brainstorm-gate": "review-policy",
 	"prompt-gate": "review-policy",
+	"pr-closeout": "review-policy",
 	"pr-template-gate": "review-policy",
 	"rule-lifecycle-gate": "review-policy",
 	"license-gate": "review-policy",
@@ -203,12 +204,14 @@ const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 	"artifact-gate": [".harness/artifact-provenance.json"],
 	"ci-ownership-gate": ["harness.contract.json"],
 	"review-context": ["artifacts/review-context/pr-context.json"],
+	"pr-closeout": ["artifacts/pr-closeout/pr-closeout.json"],
 };
 
 const RETRYABILITY_BY_NAME: Partial<Record<string, CommandRetryability>> = {
 	commands: "safe",
 	check: "safe",
 	next: "safe",
+	"pr-closeout": "safe",
 	"runtime-card": "safe",
 	"fleet-plan": "safe",
 	doctor: "safe",
@@ -249,6 +252,7 @@ const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	init: "domain",
 	contract: "domain",
 	"review-gate": "domain",
+	"pr-closeout": "domain",
 	"docs-gate": "domain",
 	"ci-migrate": "domain",
 	linear: "domain",
@@ -292,6 +296,7 @@ const PRIMARY_AUDIENCE_BY_NAME: Partial<
 	doctor: "both",
 	health: "both",
 	"review-gate": "agent",
+	"pr-closeout": "agent",
 	"docs-gate": "agent",
 	"validation-plan": "agent",
 	"review-context": "agent",
@@ -311,6 +316,7 @@ const ORCHESTRATED_BY_BY_NAME: Partial<Record<string, CommandOrchestrator[]>> =
 		doctor: ["next"],
 		health: ["next"],
 		"review-gate": ["next", "pr-ready"],
+		"pr-closeout": ["next", "pr-ready"],
 		"docs-gate": ["next", "pr-ready"],
 		"validation-plan": ["next", "pr-ready"],
 		"review-context": ["next", "pr-ready"],
@@ -332,6 +338,7 @@ const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	"verify-work": "verify",
 	"verify-coderabbit": "review",
 	"review-gate": "review",
+	"pr-closeout": "handoff",
 	"docs-gate": "verify",
 	"validation-plan": "verify",
 	"review-context": "review",
@@ -356,6 +363,7 @@ const COMMAND_VISIBILITY_BY_NAME: Partial<Record<string, CommandVisibility>> = {
 	contract: "advanced",
 	linear: "advanced",
 	"review-gate": "plumbing",
+	"pr-closeout": "advanced",
 	"docs-gate": "plumbing",
 };
 
