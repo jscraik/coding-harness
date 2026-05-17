@@ -497,6 +497,14 @@ admitted, and record Repeated-error research when the same error happens twice.
 This keeps high-signal review and user steering in the repo operating system
 instead of leaving it in a chat transcript.
 
+```bash
+harness pr-template-gate --json
+```
+
+A pass means the PR body satisfies the required session/traceability,
+meta-behavior, pattern-scope, and repeated-error evidence fields. A fail means
+the PR owner must correct the missing or malformed fields before handoff.
+
 ### Learning-loop closeout
 
 When a repository has imported CodeRabbit learning evidence, use the learning

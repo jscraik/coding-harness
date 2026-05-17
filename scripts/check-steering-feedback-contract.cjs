@@ -29,7 +29,7 @@ const PATTERN_SCOPE_INVENTORY_PATTERN =
 const PATTERN_SCOPE_VALIDATOR_PATTERN =
 	/(PATTERN_SCOPE_SIGNAL_PATTERN|collectPatternScopeInventoryErrors|Pattern scope inventory must name the inferred principle)/i;
 const PRINCIPLE_SIGNAL_PATTERN =
-	/(Principle Signal|example-based feedback|named-function feedback|single-line corrections|generally|across everything|design model)/i;
+	/(\bPrinciple Signal\b|example-based feedback|named-function feedback|single-line corrections|generally speaking|API design generally|across everything|design model)/i;
 const META_BEHAVIOR_PROOF_PATTERN =
 	/(Meta-behavior proof|durable repo\/system change.*concrete repo path|prevents recurrence|same feedback twice)/i;
 const OODA_HORIZON_PATTERN =
