@@ -72,6 +72,53 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("fails when validatePrTemplateBody detects missing Command evidence lines", () => {
+		const body = VALID_BODY.replace(
+			/- Command: .*\n/g,
+			"",
+		).replace(
+			"- verification_commands: `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm audit`; `pnpm check`",
+			"- verification_commands: `pnpm lint`",
+		);
+
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain(
+			"Testing section must include at least one Command evidence line.",
+		);
+	});
+
+	it("fails when validatePrTemplateBody detects malformed Command evidence lines missing backticks", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: pnpm lint -> pass",
+		);
+
+		const errors = validatePrTemplateBody(body);
+		expect(
+			errors.some((error) =>
+				error.includes(
+					"Command evidence must use `Command: <exact command> -> pass|fail|n.a.|blocked (<reason>)` format:",
+				) && error.includes("- Command: pnpm lint -> pass"),
+			),
+		).toBe(true);
+	});
+
+	it("fails when validatePrTemplateBody detects malformed Command evidence lines with wrong outcome format", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm test` -> `pass`",
+			"- Command: `pnpm test` => success",
+		);
+
+		const errors = validatePrTemplateBody(body);
+		expect(
+			errors.some((error) =>
+				error.includes(
+					"Command evidence must use `Command: <exact command> -> pass|fail|n.a.|blocked (<reason>)` format:",
+				) && error.includes("- Command: `pnpm test` => success"),
+			),
+		).toBe(true);
+	});
+
 	it("does not treat heading names in prose as section starts", () => {
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",
