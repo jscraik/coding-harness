@@ -216,6 +216,36 @@ describe("runPrCloseoutCLI", () => {
 		});
 	});
 
+	it("fails closed when input embeds malformed phase-exit evidence", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+				phaseExit: {},
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+
+		expect(result.exitCode).toBe(1);
+		expect(result.error).toBe("");
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"phaseExit must be a valid HePhaseExit/v1 artifact",
+			),
+		});
+	});
+
 	it("returns usage errors for missing input", async () => {
 		const result = await capture(["--json"]);
 

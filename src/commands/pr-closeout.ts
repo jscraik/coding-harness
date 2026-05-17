@@ -266,6 +266,16 @@ function parseInput(value: string, source: string): PrCloseoutInput {
 	) {
 		throw new Error(`${source} pullRequest.number must be a positive integer`);
 	}
+	if (parsed.phaseExit !== undefined) {
+		const validation = validateHePhaseExit(parsed.phaseExit);
+		if (!validation.valid) {
+			throw new Error(
+				source +
+					" phaseExit must be a valid HePhaseExit/v1 artifact: " +
+					validation.errors.map((error) => error.code).join(", "),
+			);
+		}
+	}
 	return parsed as unknown as PrCloseoutInput;
 }
 
