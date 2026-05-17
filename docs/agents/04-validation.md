@@ -150,8 +150,8 @@ closeout lane is complete, stops a heartbeat, or moves to the next slice, it
 must classify:
 
 - PR state: open, draft, ready, merged, closed, or missing.
-- Merge state: ready to merge, blocked, auto-merge enabled, manual approval needed,
-  or not applicable.
+- Merge or auto-merge state: ready to merge, blocked, auto-merge enabled,
+  manual approval needed, or not applicable.
 - Branch and worktree state: clean, dirty, pushed, behind, merged, deleted, or
   intentionally retained.
 - Linear state: referenced issue resolves, PR is attached or linked, status is

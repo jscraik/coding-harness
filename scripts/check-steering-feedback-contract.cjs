@@ -34,8 +34,13 @@ const WORKFLOW_SKILL_PROOF_PATTERN =
 	/(workflow skill|capture-the-flag|capture the flag|win condition|flag is captured|skill workout|self-reflection|reflect on failures)/i;
 const CLOSEOUT_COMPLETION_PATTERN =
 	/(closeout completion|green checks.*not.*complete|green checks.*validation evidence|not equivalent to green checks|PR state.*merge.*Linear.*next-lane|heartbeat.*lane.*complete)/i;
-const CLOSEOUT_STATE_FIELDS_PATTERN =
-	/(PR state[\s\S]*merge[\s\S]*(branch\/worktree|branch and worktree)[\s\S]*Linear[\s\S]*next-lane|merge or auto-merge state[\s\S]*(branch\/worktree|branch and worktree) state[\s\S]*Linear state[\s\S]*next-lane routing)/i;
+const CLOSEOUT_STATE_FIELD_PATTERNS = [
+	[/PR state/i, "PR state"],
+	[/merge or auto-merge state/i, "merge or auto-merge state"],
+	[/(branch\/worktree|branch and worktree) state/i, "branch/worktree state"],
+	[/Linear state/i, "Linear state"],
+	[/next-lane routing/i, "next-lane routing"],
+];
 const AGENT_ENGINEERING_LOOP_PATTERN = /agent engineering proof loop/i;
 const LOOP_MOVE_PATTERNS = [
 	/observe/i,
@@ -296,13 +301,15 @@ function validateValidationDoc(content) {
 		CLOSEOUT_COMPLETION_PATTERN,
 		"closeout completion is not validation-only requirement",
 	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		CLOSEOUT_STATE_FIELDS_PATTERN,
-		"closeout state classification fields",
-	);
+	for (const [pattern, fieldName] of CLOSEOUT_STATE_FIELD_PATTERNS) {
+		requirePattern(
+			errors,
+			REQUIRED_FILES.validation,
+			content,
+			pattern,
+			`closeout state classification field: ${fieldName}`,
+		);
+	}
 	return errors;
 }
 
@@ -609,13 +616,15 @@ function validatePrTemplate(content) {
 		/Closeout state:/,
 		"closeout state field",
 	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.prTemplate,
-		content,
-		CLOSEOUT_STATE_FIELDS_PATTERN,
-		"closeout state evidence requirements",
-	);
+	for (const [pattern, fieldName] of CLOSEOUT_STATE_FIELD_PATTERNS) {
+		requirePattern(
+			errors,
+			REQUIRED_FILES.prTemplate,
+			content,
+			pattern,
+			`closeout state evidence requirement: ${fieldName}`,
+		);
+	}
 	return errors;
 }
 
