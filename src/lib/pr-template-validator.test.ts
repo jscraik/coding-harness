@@ -283,15 +283,10 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",
 			trigger,
-		)
-			.replace(
-				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
-				"- Meta-behavior proof: n.a. (not needed)",
-			)
-			.replace(
-				"- Learning / reinforcement: none; no durable learning promoted.",
-				"- Learning / reinforcement: none; no durable learning promoted.",
-			);
+		).replace(
+			"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+			"- Meta-behavior proof: n.a. (not needed)",
+		);
 
 		expect(validatePrTemplateBody(body)).toContain(
 			"Meta-behavior proof must name a durable destination and concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
@@ -299,7 +294,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 	});
 
 	it.each([
-		"The test failed twice before the fix.",
+		"The same failure twice blocked the fix.",
 		"The command failed again with the same stack trace.",
 		"The same exception appeared twice in a row.",
 	])("fails repeated troubleshooting trigger '%s' without research evidence", (trigger) => {
@@ -320,6 +315,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"This change reduces repeated failures in CI without changing policy.",
 		"This PR compares possible ways to fix validation ergonomics.",
 		"The team researched fixes for the broader workflow.",
+		"Tests failed twice while iterating on unrelated docs.",
 	])("does not require repeated-error research for broad phrase '%s'", (phrase) => {
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",
@@ -333,6 +329,15 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",
 			"This generally improves docs without admitting a line-level correction.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("does not require pattern inventory for ordinary one-function prose", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"Refactored one function to reduce duplication without admitting design feedback.",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual([]);
