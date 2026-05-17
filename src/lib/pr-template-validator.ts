@@ -264,11 +264,11 @@ function collectCommandEvidenceErrors(testingBody: string): string[] {
 	}
 
 	const commandEvidencePattern =
-		/^-\s*Command:\s*(?:`[^\n`]+`|[^\n`]+?)\s*->\s*(?:`?(?:pass|fail)`?|(?:`?blocked`?|`?n\.a\.`?|`?n\/a`?)\s*\([^)]+\))\s*$/i;
+		/^-\s*Command:\s*(?:`[^\n`]+`|[^\n`]+?)\s*->\s*(?:`?(?:pass|fail)`?|`?(?:n\.a\.|n\/a)`?(?:\s*\([^)]+\))?|`?blocked`?\s*\([^)]+\))\s*$/i;
 	for (const line of commandLines) {
 		if (!commandEvidencePattern.test(line)) {
 			errors.push(
-				`Command evidence must use \`Command: <exact command> -> pass|fail|blocked (<reason>)\` format: ${line}`,
+				`Command evidence must use \`Command: <exact command> -> pass|fail|n.a.|blocked (<reason>)\` format: ${line}`,
 			);
 		}
 	}

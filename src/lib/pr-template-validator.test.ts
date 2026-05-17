@@ -63,6 +63,15 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
 	});
 
+	it("accepts template-documented n.a. command outcomes without a reason", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `harness docs-gate --mode advisory` -> `n.a.` (advisory docs gate not required for this fixture)",
+			"- Command: `harness docs-gate --mode advisory` -> `n.a.`",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
 	it("does not treat heading names in prose as section starts", () => {
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",

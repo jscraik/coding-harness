@@ -511,7 +511,8 @@ function buildHarnessGateSummary(
 		gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => {
 			const gate = gatesById.get(gateId);
 			const required =
-				HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default";
+				HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default" ||
+				gate?.required === true;
 			if (!gate) {
 				return {
 					gateId,

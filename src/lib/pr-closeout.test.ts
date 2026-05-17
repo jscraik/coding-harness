@@ -414,6 +414,49 @@ describe("buildPrCloseoutReport", () => {
 		expect(report.blockers).toEqual([]);
 	});
 
+	it("honors required conditional gates from phase-exit evidence", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.commitAllowed = false;
+		phaseExit.exitAllowed = false;
+		phaseExit.recommendation = "commit_blocked";
+		phaseExit.phaseContext.reviewFeedbackPresent = true;
+		phaseExit.gates = phaseExit.gates.map((gate) =>
+			gate.gateId === "autofix"
+				? {
+						...gate,
+						required: true,
+						status: "not_run",
+						executionMode: "not_run",
+						safeToContinue: false,
+						reason: "autofix required by unresolved review feedback",
+					}
+				: gate,
+		);
+
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.harnessGates.gates).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					gateId: "autofix",
+					required: true,
+					status: "not_run",
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					reason: "autofix required by unresolved review feedback",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
 	it("does not route blocked harness gates to Codex by default", () => {
 		const phaseExit = passingPhaseExit();
 		phaseExit.commitAllowed = false;
