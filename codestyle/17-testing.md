@@ -29,6 +29,7 @@
 - Tests SHOULD use Arrange-Act-Assert structure when practical.
 - Test names SHOULD describe behavior and expected outcome.
 - If behavior is wrong, implementations MUST be fixed; tests SHOULD be rewritten only when assertions are invalid.
+- Tests MUST NOT use the implementation under test as its own oracle, such as `expect(fn(input)).toBe(fn(input))` or comparing two variables initialized from the same implementation call. Use a requirement-derived expected value, fixture, schema, snapshot, or explicit property test instead. Legitimate determinism, idempotency, or defensive-copy assertions MUST carry a local `self-affirming-ok:` comment that explains the property being tested and SHOULD have adjacent assertions that pin externally visible behavior.
 - Changed production `src/**` files MUST have a related Vitest path via `pnpm run test:related`; the gate must not pass silently when no test covers the changed source.
 
 ## Exact behavior checks
@@ -42,9 +43,10 @@
 - Default target is >= 80% coverage unless a repository contract defines a different threshold.
 - Generated artifacts, init scaffolds, and runtime/output contracts require artifact or deep validation when their emitted behavior changes.
 - Repository-defined baseline gates are mandatory:
-  - `pnpm lint`
-  - `pnpm typecheck`
-  - `pnpm run test:related`
+	- `pnpm lint`
+	- `pnpm typecheck`
+	- `pnpm run quality:self-affirming`
+	- `pnpm run test:related`
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`

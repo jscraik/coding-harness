@@ -157,9 +157,9 @@ terms.
 | Safety floor          | Preserve evidence quality, current-head SHA discipline, bounded remediation, rollback paths, and independent review.                                                                                              |
 | Durable learning rule | Turn repeated failures into guardrails, tests, prompts, policy checks, or explicit exceptions instead of repeated review comments or chat reminders.                                                              |
 | Product bar           | Zero customer integration ceremony: dropped-in agents diagnose, bootstrap, validate, and explain blockers themselves instead of requiring the customer to wire the harness by hand.                               |
-| Leverage model        | Encode scarce expert knowledge into agents that deliver point-to-point outcomes just in time, rather than making users adapt generic dashboards, docs, or workflows.                                                |
-| Workflow proof        | High-level skills prove reliability through explicit win conditions, retained trace evidence, self-reflection, and iterative refinement, not instruction prose alone.                                                |
-| Failure signal        | If Jamie gives the same steering twice, or a user must manually translate expert judgment into repeated one-off instructions, the harness has failed to encode the principle.                                      |
+| Leverage model        | Encode scarce expert knowledge into agents that deliver point-to-point outcomes just in time, rather than making users adapt generic dashboards, docs, or workflows.                                              |
+| Workflow proof        | High-level skills prove reliability through explicit win conditions, retained trace evidence, self-reflection, and iterative refinement, not instruction prose alone.                                             |
+| Failure signal        | If Jamie gives the same steering twice, or a user must manually translate expert judgment into repeated one-off instructions, the harness has failed to encode the principle.                                     |
 
 That means a feature, document, policy, or artifact is north-star aligned only
 when it reduces PR lead time directly, lowers review or rework cost, removes
@@ -365,10 +365,11 @@ script remains the authority for execution order; the typed mirror exists so
 CLI dispatch, tests, and automation can fail closed on unknown checkpoint names.
 
 The fast lane now includes changed-file enforcement for public API docstrings,
-function/file size, and related tests through `pnpm run quality:docstrings`,
-`pnpm run quality:size`, and `pnpm run test:related`. Related tests must find
-and run a real Vitest related path; the gate no longer passes silently when no
-test covers changed production source.
+function/file size, self-affirming test assertions, and related tests through
+`pnpm run quality:docstrings`, `pnpm run quality:size`,
+`pnpm run quality:self-affirming`, and `pnpm run test:related`. Related tests
+must find and run a real Vitest related path; the gate no longer passes
+silently when no test covers changed production source.
 
 For downstream repos, this is one of the most practical parts of harness. It
 turns "what do I need to run before handoff?" into a single local command.
@@ -605,63 +606,63 @@ harness commands --json | jq '
 
 ### Bootstrap And Governance
 
-| Command             | Purpose                                                                                                                                                                                                                                                                     |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                                                                                                                   |
-| `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                   |
-| `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                          |
-| `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                  |
-| `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                          |
-| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`) |
+| Command             | Purpose                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                                                                                                                                                                                                           |
+| `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                                                                                                           |
+| `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                                                                                                                  |
+| `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                                                                                                          |
+| `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                                                                                                                  |
+| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`)                                                                      |
 | `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including PR metadata, check state, coding-harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--phase-exit`, optional `--env-file`) |
-| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                          |
-| `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                                                                                                                          |
-| `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                                                                                                                     |
-| `health`            | Unified gate status scorecard across all gates                                                                                                                                                                                                                              |
-| `brain`             | Query and update Project Brain context artifacts                                                                                                                                                                                                                            |
-| `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                                                                                                                    |
-| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                                                                                                                        |
-| `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                                                                                                                    |
-| `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                                                                                                                                 |
-| `verify-work`       | Run canonical repo-local verification (fresh or resume mode, with `--resume-from` checked against typed validation gate specs)                                                                                                                                              |
-| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                                                                                                                           |
-| `preset`            | List and inspect bundled presets                                                                                                                                                                                                                                            |
-| `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                                                                                                                       |
+| `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                                                                                                                  |
+| `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                                                                                                                                                                                                                  |
+| `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                                                                                                                                                                                                             |
+| `health`            | Unified gate status scorecard across all gates                                                                                                                                                                                                                                                                                                                      |
+| `brain`             | Query and update Project Brain context artifacts                                                                                                                                                                                                                                                                                                                    |
+| `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                                                                                                                                                                                                            |
+| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run`, `--json` preview supported)                                                                                                                                                                                                                                                                                |
+| `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                                                                                                                                                                                                            |
+| `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                                                                                                                                                                                                                         |
+| `verify-work`       | Run canonical repo-local verification (fresh or resume mode, with `--resume-from` checked against typed validation gate specs)                                                                                                                                                                                                                                      |
+| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                                                                                                                                                                                                                   |
+| `preset`            | List and inspect bundled presets                                                                                                                                                                                                                                                                                                                                    |
+| `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                                                                                                                                                                                                               |
 
 ### Review And Policy Gates
 
-| Command                  | Purpose                                                                             |
-| ------------------------ | ----------------------------------------------------------------------------------- |
-| `policy-gate`            | Validate policy expectations from changed files                                     |
-| `preflight-gate`         | Run fast policy checks before expensive work                                        |
-| `review-gate`            | Validate SHA-linked review readiness (review check + review-policy required checks) |
-| `docs-gate`              | Enforce documentation parity for governed changes                                   |
-| `plan-gate`              | Validate plan IDs, traceability, and acceptance evidence                            |
-| `brainstorm-gate`        | Validate brainstorm artifacts                                                       |
-| `prompt-gate`            | Validate prompt template usage                                                      |
-| `pr-template-gate`       | Validate PR template completion and placeholder replacement                         |
+| Command                  | Purpose                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `policy-gate`            | Validate policy expectations from changed files                                                 |
+| `preflight-gate`         | Run fast policy checks before expensive work                                                    |
+| `review-gate`            | Validate SHA-linked review readiness (review check + review-policy required checks)             |
+| `docs-gate`              | Enforce documentation parity for governed changes                                               |
+| `plan-gate`              | Validate plan IDs, traceability, and acceptance evidence                                        |
+| `brainstorm-gate`        | Validate brainstorm artifacts                                                                   |
+| `prompt-gate`            | Validate prompt template usage                                                                  |
+| `pr-template-gate`       | Validate PR template completion and placeholder replacement                                     |
 | `rule-lifecycle-gate`    | Validate governance rules have owner, evidence, enforcement, freshness, and retirement metadata |
-| `license-gate`           | Validate open-source license expectations                                           |
-| `check-authz`            | Validate authorization policy for mutative operations                               |
-| `check-environment`      | Validate pilot environment governance checks                                        |
-| `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                              |
-| `artifact-gate`          | Check generated artifact changes against the artifact provenance registry           |
-| `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks     |
-| `blast-radius`           | Determine required checks from changed files                                        |
-| `risk-tier`              | Classify changed files by risk tier                                                 |
-| `diff-budget`            | Enforce diff budget constraints                                                     |
-| `observability-gate`     | Check metrics cardinality limits                                                    |
-| `silent-error`           | Detect silent error-handling anti-patterns                                          |
-| `memory-gate`            | Validate local-memory workflow compliance                                           |
+| `license-gate`           | Validate open-source license expectations                                                       |
+| `check-authz`            | Validate authorization policy for mutative operations                                           |
+| `check-environment`      | Validate pilot environment governance checks                                                    |
+| `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                                          |
+| `artifact-gate`          | Check generated artifact changes against the artifact provenance registry                       |
+| `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks                 |
+| `blast-radius`           | Determine required checks from changed files                                                    |
+| `risk-tier`              | Classify changed files by risk tier                                                             |
+| `diff-budget`            | Enforce diff budget constraints                                                                 |
+| `observability-gate`     | Check metrics cardinality limits                                                                |
+| `silent-error`           | Detect silent error-handling anti-patterns                                                      |
+| `memory-gate`            | Validate local-memory workflow compliance                                                       |
 
 ### Linear And Workflow Operations
 
-| Command             | Purpose                                                                      |
-| ------------------- | ---------------------------------------------------------------------------- |
-| `linear`            | Claim, hand off, close, prepare, or sync Linear work from one command family |
-| `linear-gate`       | Enforce Linear-first intake, branch naming, and PR linkage                   |
+| Command             | Purpose                                                                                                                                                                                        |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `linear`            | Claim, hand off, close, prepare, or sync Linear work from one command family                                                                                                                   |
+| `linear-gate`       | Enforce Linear-first intake, branch naming, and PR linkage                                                                                                                                     |
 | `pr-closeout`       | Classify pull-request closeout state before handoff or merge, including required metadata, checks, coding-harness closeout gates, review state, tool evidence, and AI session/trace references |
-| `workflow:generate` | Generate compact workflow specs from annotated markdown                      |
+| `workflow:generate` | Generate compact workflow specs from annotated markdown                                                                                                                                        |
 
 ### Pilot, Remediation, And Automation
 

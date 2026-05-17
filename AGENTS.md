@@ -120,7 +120,7 @@ Notes:
 ## Quality Checks
 
 - During iteration, run the narrowest check first, then `bash scripts/validate-codestyle.sh --fast`.
-- Changed production source must satisfy `pnpm run quality:docstrings`, `pnpm run quality:size`, and `pnpm run test:related`; these are wired into `pnpm check`, `bash scripts/validate-codestyle.sh --fast`, and local pre-commit hooks.
+- Changed production source must satisfy `pnpm run quality:docstrings`, `pnpm run quality:size`, and `pnpm run test:related`; changed tests must satisfy `pnpm run quality:self-affirming` so assertions do not use the implementation under test as their own expected oracle. These are wired into `pnpm check`, `bash scripts/validate-codestyle.sh --fast`, and local pre-commit hooks.
 - When executable behavior changes, run the smallest real code path that exercises the exact production code touched before claiming the change is verified.
 - Prefer invoking the production function, class, CLI command, shell script, validator, or route directly. If no existing test covers the path, create a temporary reproduction harness under `codex-scripts/` and keep that directory gitignored.
 - If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, state the blocker clearly, run the nearest meaningful validation, and do not describe production behavior as verified unless the touched path actually ran.
