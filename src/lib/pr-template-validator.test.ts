@@ -15,10 +15,17 @@ const VALID_BODY = `## Summary
 - Phase / slice: PU-001 PR evidence ledger
 - Session IDs: codex-session-019c-example
 - Trace IDs: circleci-workflow-123; harness-gate-pr-template
+- AI session / traceability: codex-session-019c-example supports the validator and PR-template-gate implementation changes.
 - Completed work: Added pr-template-gate command and docs update with evidence refs.
+- Affected surfaces: code, tests, and PR template.
+- Expected outcome alignment: Keeps PR evidence portable and machine-checkable for greenfield and brownfield repos.
+- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated.
 - Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.
 - Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass.
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
+- Runtime impact: CI-only.
+- CodeRabbit mode coverage: validation.
+- Closeout state: local branch clean, checks passed, Linear linked, no remaining blocker.
 - Learning / reinforcement: none; no durable learning promoted.
 - Deferred work: none
 
@@ -36,7 +43,7 @@ const VALID_BODY = `## Summary
 - Command: \`pnpm test\` -> \`pass\`
 - Command: \`pnpm audit\` -> \`pass\`
 - Command: \`pnpm check\` -> \`pass\`
-- Command: \`harness docs-gate --mode advisory\` -> \`n/a\`
+- Command: \`harness docs-gate --mode advisory\` -> \`n.a.\` (advisory docs gate not required for this fixture)
 - Any other command(s): none
 
 ## Review artifacts
@@ -54,6 +61,62 @@ This change adds local PR-template validation so template failures are caught be
 describe("validatePrTemplateBody", () => {
 	it("passes a complete PR body", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
+	});
+
+	it("accepts template-documented n.a. command outcomes without a reason", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `harness docs-gate --mode advisory` -> `n.a.` (advisory docs gate not required for this fixture)",
+			"- Command: `harness docs-gate --mode advisory` -> `n.a.`",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("fails when Testing has no Command evidence lines", () => {
+		const body = VALID_BODY.replace(/^- Command: .*\n/gm, "");
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain(
+			"Testing section must include at least one Command evidence line.",
+		);
+	});
+
+	it("fails malformed Command evidence format", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` => ok",
+		);
+
+		expect(
+			validatePrTemplateBody(body).some((error) =>
+				error.includes(
+					"Command evidence must use `Command: <exact command> -> pass|fail`, `-> n.a.|n/a` (optional reason), or `-> blocked (<required reason>)` format",
+				),
+			),
+		).toBe(true);
+	});
+
+	it("fails blocked Command evidence without a reason", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> blocked",
+		);
+		const errors = validatePrTemplateBody(body);
+
+		expect(
+			errors.some((error) => error.includes("Command evidence must use")),
+		).toBe(true);
+	});
+
+	it("fails invalid Command evidence outcomes", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> skipped",
+		);
+		const errors = validatePrTemplateBody(body);
+
+		expect(
+			errors.some((error) => error.includes("Command evidence must use")),
+		).toBe(true);
 	});
 
 	it("does not treat heading names in prose as section starts", () => {
@@ -93,7 +156,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		)
 			.replace(
 				"- Trace IDs: circleci-workflow-123; harness-gate-pr-template",
-				"- Trace IDs: list CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason",
+				"- Trace IDs: list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.",
 			)
 			.replace("- Session IDs: codex-session-019c-example\n", "")
 			.replace("- Deferred work: none\n", "");

@@ -12,8 +12,11 @@ import {
 	type HeGateResult,
 	type HeGateStatus,
 	type HeGateValidation,
+	type HeImproveCodebaseArchitecturePayload,
 	type HeSimplifyPayload,
 	type HeTestingReviewerPayload,
+	type HeUnslopifyPayload,
+	type HeUbiquitousLanguagePayload,
 } from "./he-phase-exit-core.js";
 
 /** Common structured evidence accepted by phase-exit gate adapters. */
@@ -53,6 +56,45 @@ export interface HeSimplifyEvidenceAdapterInput
 	readonly qualityReviewed: boolean;
 	/** Whether the simplify review accounted for implementation efficiency. */
 	readonly efficiencyReviewed: boolean;
+}
+
+/** Structured architecture-review evidence for HeGateResult/v1. */
+export interface HeImproveCodebaseArchitectureEvidenceAdapterInput
+	extends HeGateEvidenceAdapterInput {
+	/** Whether architecture pressure was named from live evidence. */
+	readonly complexitySymptomsNamed: boolean;
+	/** Whether patch-vs-interface tradeoffs were compared. */
+	readonly patchVsInterfaceCompared: boolean;
+	/** Whether a tracer proof path was recorded. */
+	readonly tracerProofRecorded: boolean;
+	/** Whether the durable decision surface was identified. */
+	readonly decisionSurfaceRecorded: boolean;
+}
+
+/** Structured unslopify evidence for HeGateResult/v1. */
+export interface HeUnslopifyEvidenceAdapterInput
+	extends HeGateEvidenceAdapterInput {
+	/** Whether a scoped cleanup ledger was recorded before edits. */
+	readonly cleanupLedgerRecorded: boolean;
+	/** Whether each cleanup action has import, reference, or usage evidence. */
+	readonly removalEvidenceRecorded: boolean;
+	/** Whether repo-native validation outcomes were recorded. */
+	readonly validationRecorded: boolean;
+	/** Whether rollback notes, skipped work, and residual risk were recorded. */
+	readonly rollbackAndResidualRiskRecorded: boolean;
+}
+
+/** Structured ubiquitous-language evidence for HeGateResult/v1. */
+export interface HeUbiquitousLanguageEvidenceAdapterInput
+	extends HeGateEvidenceAdapterInput {
+	/** Whether the existing project glossary was reviewed. */
+	readonly glossaryReviewed: boolean;
+	/** Whether changed wording uses canonical project terms or records aliases. */
+	readonly canonicalTermsApplied: boolean;
+	/** Whether prompt translations were updated when informal user phrases drove the change. */
+	readonly promptTranslationsUpdated: boolean;
+	/** Whether the nearest agent instruction pointer to UBIQUITOUS_LANGUAGE.md was checked. */
+	readonly instructionPointerChecked: boolean;
 }
 
 /** Structured testing-reviewer artifact evidence for HeGateResult/v1. */
@@ -124,6 +166,75 @@ export function createSimplifyGateResult(
 			qualityReviewed: input.qualityReviewed,
 			efficiencyReviewed: input.efficiencyReviewed,
 		} satisfies HeSimplifyPayload,
+	});
+}
+
+/**
+ * Build an improve-codebase-architecture HeGateResult/v1 from structured architecture evidence.
+ *
+ * @param input - Architecture-review evidence extracted into normalized adapter fields
+ * @returns A normalized HeGateResult for the "improve_codebase_architecture" gate
+ */
+export function createImproveCodebaseArchitectureGateResult(
+	input: HeImproveCodebaseArchitectureEvidenceAdapterInput,
+): HeGateResult {
+	return buildGateResult({
+		...input,
+		gateId: "improve_codebase_architecture",
+		defaultExecutionMode: "direct_skill",
+		payload: {
+			scopeEvidence: [...input.scopeEvidence],
+			complexitySymptomsNamed: input.complexitySymptomsNamed,
+			patchVsInterfaceCompared: input.patchVsInterfaceCompared,
+			tracerProofRecorded: input.tracerProofRecorded,
+			decisionSurfaceRecorded: input.decisionSurfaceRecorded,
+		} satisfies HeImproveCodebaseArchitecturePayload,
+	});
+}
+
+/**
+ * Build an unslopify HeGateResult/v1 from structured slop-control evidence.
+ *
+ * @param input - Unslopify evidence extracted into normalized adapter fields
+ * @returns A normalized HeGateResult for the "unslopify" gate
+ */
+export function createUnslopifyGateResult(
+	input: HeUnslopifyEvidenceAdapterInput,
+): HeGateResult {
+	return buildGateResult({
+		...input,
+		gateId: "unslopify",
+		defaultExecutionMode: "direct_skill",
+		payload: {
+			scopeEvidence: [...input.scopeEvidence],
+			cleanupLedgerRecorded: input.cleanupLedgerRecorded,
+			removalEvidenceRecorded: input.removalEvidenceRecorded,
+			validationRecorded: input.validationRecorded,
+			rollbackAndResidualRiskRecorded: input.rollbackAndResidualRiskRecorded,
+		} satisfies HeUnslopifyPayload,
+	});
+}
+
+/**
+ * Build a ubiquitous-language HeGateResult/v1 from structured vocabulary evidence.
+ *
+ * @param input - Ubiquitous-language evidence extracted into normalized adapter fields
+ * @returns A normalized HeGateResult for the "ubiquitous_language" gate
+ */
+export function createUbiquitousLanguageGateResult(
+	input: HeUbiquitousLanguageEvidenceAdapterInput,
+): HeGateResult {
+	return buildGateResult({
+		...input,
+		gateId: "ubiquitous_language",
+		defaultExecutionMode: "direct_skill",
+		payload: {
+			scopeEvidence: [...input.scopeEvidence],
+			glossaryReviewed: input.glossaryReviewed,
+			canonicalTermsApplied: input.canonicalTermsApplied,
+			promptTranslationsUpdated: input.promptTranslationsUpdated,
+			instructionPointerChecked: input.instructionPointerChecked,
+		} satisfies HeUbiquitousLanguagePayload,
 	});
 }
 

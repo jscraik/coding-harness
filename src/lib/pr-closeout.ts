@@ -1,3 +1,11 @@
+import {
+	HARNESS_CLOSEOUT_GATE_CONTRACTS,
+	HARNESS_CLOSEOUT_GATE_IDS,
+	type HeGateId,
+	type HeGateStatus,
+	type HePhaseExit,
+} from "./decision/he-phase-exit.js";
+
 /** Schema version for the first read-only pull request closeout evidence report. */
 export const PR_CLOSEOUT_SCHEMA_VERSION = "pr-closeout/v1" as const;
 
@@ -74,6 +82,25 @@ export interface PrCloseoutTraceabilityInput {
 	aiSessionTraceability?: string | null;
 }
 
+/** Closeout posture for one coding-harness gate inside HePhaseExit/v1. */
+export interface PrCloseoutHarnessGateEvidence {
+	gateId: HeGateId;
+	required: boolean;
+	status: HeGateStatus | "missing";
+	evidenceRefs: string[];
+	requiresHuman: boolean;
+	blocker: string | null;
+}
+
+/** Coding-harness closeout gates consumed from a HePhaseExit/v1 artifact. */
+export interface PrCloseoutHarnessGateSummary {
+	phaseExitPresent: boolean;
+	recommendation: HePhaseExit["recommendation"] | "missing";
+	commitAllowed: boolean;
+	exitAllowed: boolean;
+	gates: PrCloseoutHarnessGateEvidence[];
+}
+
 /** Dirty path classification supplied by a caller that has inspected the worktree. */
 export interface PrCloseoutDirtyPathInput {
 	path: string;
@@ -106,6 +133,7 @@ export interface PrCloseoutInput {
 	checks?: PrCloseoutCheckInput[];
 	reviewThreads?: PrCloseoutReviewThreadsInput;
 	traceability?: PrCloseoutTraceabilityInput;
+	phaseExit?: HePhaseExit;
 	dirtyPaths?: PrCloseoutDirtyPathInput[];
 	tools?: PrCloseoutToolInput[];
 }
@@ -120,6 +148,7 @@ export interface PrCloseoutBlocker {
 		| "linear"
 		| "traceability"
 		| "worktree"
+		| "harness_gates"
 		| "tool";
 	classification: PrCloseoutBlockerClassification;
 	reason: string;
@@ -155,6 +184,7 @@ export interface PrCloseoutReport {
 		aiSessionTraceability: string | null;
 		complete: boolean;
 	};
+	harnessGates: PrCloseoutHarnessGateSummary;
 	tools: PrCloseoutToolInput[];
 	dirtyPathsExcluded: PrCloseoutDirtyPathInput[];
 }
@@ -246,9 +276,7 @@ function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 	}
 	if (
 		blockers.some(
-			(blocker) =>
-				blocker.surface === "pr" &&
-				blocker.classification === "needs_jamie_decision",
+			(blocker) => blocker.classification === "needs_jamie_decision",
 		)
 	) {
 		return {
@@ -454,6 +482,112 @@ function collectTraceabilityBlocker(
 	});
 }
 
+function buildHarnessGateSummary(
+	phaseExit: HePhaseExit | undefined,
+): PrCloseoutHarnessGateSummary {
+	if (!phaseExit) {
+		return {
+			phaseExitPresent: false,
+			recommendation: "missing",
+			commitAllowed: false,
+			exitAllowed: false,
+			gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => ({
+				gateId,
+				required:
+					HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default",
+				status: "missing",
+				evidenceRefs: [],
+				requiresHuman: false,
+				blocker: "HePhaseExit/v1 closeout gate evidence was not supplied.",
+			})),
+		};
+	}
+	const gatesById = new Map(phaseExit.gates.map((gate) => [gate.gateId, gate]));
+	return {
+		phaseExitPresent: true,
+		recommendation: phaseExit.recommendation,
+		commitAllowed: phaseExit.commitAllowed,
+		exitAllowed: phaseExit.exitAllowed,
+		gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => {
+			const gate = gatesById.get(gateId);
+			const required =
+				HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default" ||
+				gate?.required === true;
+			if (!gate) {
+				return {
+					gateId,
+					required,
+					status: "missing",
+					evidenceRefs: [],
+					requiresHuman: false,
+					blocker: required
+						? `${gateId} gate is missing from HePhaseExit/v1 evidence.`
+						: null,
+				};
+			}
+			return {
+				gateId: gate.gateId,
+				required,
+				status: gate.status,
+				evidenceRefs: gate.evidenceRefs.map((ref) => ref.ref),
+				requiresHuman: gate.requiresHuman,
+				blocker: gate.blockedReason ?? gate.reason,
+			};
+		}),
+	};
+}
+
+function collectHarnessGateBlockers(
+	harnessGates: PrCloseoutHarnessGateSummary,
+	blockers: PrCloseoutBlocker[],
+): void {
+	if (!harnessGates.phaseExitPresent) {
+		pushBlocker(blockers, {
+			surface: "harness_gates",
+			classification: "introduced",
+			reason:
+				"Coding-harness closeout gates are missing HePhaseExit/v1 evidence.",
+			fixableByCodex: true,
+			ref: "schema:he-phase-exit/v1",
+		});
+		return;
+	}
+	for (const gate of harnessGates.gates) {
+		if (
+			!gate.required ||
+			gate.status === "pass" ||
+			gate.status === "not_applicable"
+		) {
+			continue;
+		}
+		const requiresJamie =
+			gate.requiresHuman ||
+			harnessGates.recommendation === "human_review_required";
+		pushBlocker(blockers, {
+			surface: "harness_gates",
+			classification: requiresJamie
+				? "needs_jamie_decision"
+				: gate.status === "blocked"
+					? "unknown"
+					: "introduced",
+			reason: gate.blocker ?? `${gate.gateId} closeout gate is ${gate.status}.`,
+			fixableByCodex: !requiresJamie && gate.status !== "blocked",
+			ref: gate.evidenceRefs[0] ?? gate.gateId,
+		});
+	}
+	if (!harnessGates.commitAllowed || !harnessGates.exitAllowed) {
+		const requiresJamie =
+			harnessGates.recommendation === "human_review_required";
+		pushBlocker(blockers, {
+			surface: "harness_gates",
+			classification: requiresJamie ? "needs_jamie_decision" : "unknown",
+			reason: `HePhaseExit/v1 denies closeout (recommendation=${harnessGates.recommendation}, commitAllowed=${String(harnessGates.commitAllowed)}, exitAllowed=${String(harnessGates.exitAllowed)}).`,
+			fixableByCodex: false,
+			ref: "schema:he-phase-exit/v1",
+		});
+	}
+}
+
 function collectToolBlockers(
 	tools: readonly PrCloseoutToolInput[],
 	blockers: PrCloseoutBlocker[],
@@ -480,6 +614,7 @@ export function buildPrCloseoutReport(
 	const checks = input.checks ?? [];
 	const reviewThreads = input.reviewThreads ?? { unresolved: null };
 	const traceability = input.traceability ?? {};
+	const harnessGates = buildHarnessGateSummary(input.phaseExit);
 	const dirtyPaths = input.dirtyPaths ?? [];
 	const tools = input.tools ?? [];
 	const dirtyPathsExcluded = dirtyPaths.filter(
@@ -498,6 +633,7 @@ export function buildPrCloseoutReport(
 	collectCheckBlockers(checks, blockers);
 	collectReviewBlockers(pr, reviewThreads, blockers);
 	collectTraceabilityBlocker(traceabilityComplete, blockers);
+	collectHarnessGateBlockers(harnessGates, blockers);
 	collectToolBlockers(tools, blockers);
 
 	const decision = deriveNextAction(blockers);
@@ -522,6 +658,7 @@ export function buildPrCloseoutReport(
 			aiSessionTraceability,
 			complete: traceabilityComplete,
 		},
+		harnessGates,
 		tools,
 		dirtyPathsExcluded,
 	};

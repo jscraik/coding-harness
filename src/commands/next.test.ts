@@ -58,6 +58,22 @@ function hePayloadFor(gateId: HeGateId): HeGatePayload {
 				qualityReviewed: true,
 				efficiencyReviewed: true,
 			};
+		case "improve_codebase_architecture":
+			return {
+				scopeEvidence: ["architecture review artifact"],
+				complexitySymptomsNamed: true,
+				patchVsInterfaceCompared: true,
+				tracerProofRecorded: true,
+				decisionSurfaceRecorded: true,
+			};
+		case "unslopify":
+			return {
+				scopeEvidence: ["unslopify review artifact"],
+				cleanupLedgerRecorded: true,
+				removalEvidenceRecorded: true,
+				validationRecorded: true,
+				rollbackAndResidualRiskRecorded: true,
+			};
 		case "testing_reviewer":
 			return {
 				scopeEvidence: ["artifacts/reviews/testing-reviewer.md"],
@@ -85,6 +101,14 @@ function hePayloadFor(gateId: HeGateId): HeGatePayload {
 				scopeEvidence: ["no review feedback"],
 				feedbackInventory: [],
 				accountedItems: 0,
+			};
+		case "ubiquitous_language":
+			return {
+				scopeEvidence: ["UBIQUITOUS_LANGUAGE.md"],
+				glossaryReviewed: true,
+				canonicalTermsApplied: true,
+				promptTranslationsUpdated: true,
+				instructionPointerChecked: true,
 			};
 	}
 }
@@ -125,13 +149,17 @@ function passingPhaseExit() {
 		},
 		requiredGates: [
 			"simplify",
+			"improve_codebase_architecture",
+			"unslopify",
 			"testing_reviewer",
 			"he_fix_bugs",
 			"he_code_review",
 		],
-		optionalGates: [],
+		optionalGates: ["ubiquitous_language"],
 		gates: [
 			heGate("simplify"),
+			heGate("improve_codebase_architecture"),
+			heGate("unslopify"),
 			heGate("testing_reviewer"),
 			{
 				...heGate("he_fix_bugs"),
@@ -140,6 +168,10 @@ function passingPhaseExit() {
 				reason: "No failing validation evidence is present.",
 			},
 			heGate("he_code_review"),
+			{
+				...heGate("ubiquitous_language"),
+				required: false,
+			},
 		],
 	});
 }

@@ -11,9 +11,7 @@ import {
 
 describe("hashString", () => {
 	it("returns consistent hash for same input", () => {
-		const hash1 = hashString("test");
-		const hash2 = hashString("test");
-		expect(hash1).toBe(hash2);
+		expect(hashString("test")).toBe("hash_00364492");
 	});
 
 	it("returns different hashes for different inputs", () => {

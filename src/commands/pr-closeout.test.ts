@@ -2,9 +2,128 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+	HARNESS_CLOSEOUT_GATE_IDS,
+	HE_GATE_RESULT_SCHEMA_VERSION,
+	HE_PHASE_EXIT_SCHEMA_VERSION,
+	type HeGateId,
+	type HeGatePayload,
+} from "../lib/decision/he-phase-exit.js";
 import { runPrCloseoutCLI } from "./pr-closeout.js";
 
 type TestRunner = NonNullable<Parameters<typeof runPrCloseoutCLI>[1]>["runner"];
+
+function gatePayload(gateId: HeGateId): HeGatePayload {
+	switch (gateId) {
+		case "simplify":
+			return {
+				scopeEvidence: ["artifacts/reviews/simplify.md"],
+				reuseReviewed: true,
+				qualityReviewed: true,
+				efficiencyReviewed: true,
+			};
+		case "improve_codebase_architecture":
+			return {
+				scopeEvidence: ["artifacts/reviews/architecture.md"],
+				complexitySymptomsNamed: true,
+				patchVsInterfaceCompared: true,
+				tracerProofRecorded: true,
+				decisionSurfaceRecorded: true,
+			};
+		case "unslopify":
+			return {
+				scopeEvidence: ["artifacts/reviews/unslopify.md"],
+				cleanupLedgerRecorded: true,
+				removalEvidenceRecorded: true,
+				validationRecorded: true,
+				rollbackAndResidualRiskRecorded: true,
+			};
+		case "ubiquitous_language":
+			return {
+				scopeEvidence: ["UBIQUITOUS_LANGUAGE.md"],
+				glossaryReviewed: true,
+				canonicalTermsApplied: true,
+				promptTranslationsUpdated: true,
+				instructionPointerChecked: true,
+			};
+		case "testing_reviewer":
+			return {
+				scopeEvidence: ["artifacts/reviews/testing-reviewer.md"],
+				testAdequacyReviewed: true,
+				missingEdgeCases: [],
+			};
+		case "he_fix_bugs":
+			return {
+				scopeEvidence: ["validation passed"],
+				reproductionEvidence: [],
+				rootCause: null,
+				regressionProtection: [],
+				rollbackNote: null,
+			};
+		case "he_code_review":
+			return {
+				scopeEvidence: ["artifacts/reviews/he-code-review.md"],
+				findingsFirst: true,
+				traceabilityReviewed: true,
+				blockerClassification: true,
+				safeToContinueReviewed: true,
+			};
+		case "autofix":
+			return {
+				scopeEvidence: ["no review feedback"],
+				feedbackInventory: [],
+				accountedItems: 0,
+			};
+	}
+}
+
+const PASSING_PHASE_EXIT = {
+	schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
+	phaseContext: {
+		phase: "closeout",
+		failingEvidencePresent: false,
+		reviewFeedbackPresent: false,
+	},
+	recommendation: "continue",
+	commitAllowed: true,
+	exitAllowed: true,
+	blockers: [],
+	warnings: [],
+	gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => {
+		const notApplicable = gateId === "he_fix_bugs" || gateId === "autofix";
+		return {
+			schemaVersion: HE_GATE_RESULT_SCHEMA_VERSION,
+			gateId,
+			required: gateId !== "autofix" && gateId !== "ubiquitous_language",
+			executionMode: notApplicable ? "not_applicable" : "direct_skill",
+			status: notApplicable ? "not_applicable" : "pass",
+			payload: gatePayload(gateId),
+			evidenceRefs: [
+				{
+					id: `${gateId}-evidence`,
+					kind: "artifact",
+					ref: `artifact:${gateId}`,
+					gateLocal: true,
+				},
+			],
+			findings: [],
+			actions: [],
+			validation: [],
+			requiresHuman: false,
+			safeToContinue: true,
+			reason: notApplicable
+				? `${gateId} not applicable to this closeout.`
+				: null,
+			blockedReason: null,
+		};
+	}),
+};
+
+function writePhaseExit(dir: string): string {
+	const path = join(dir, "phase-exit.json");
+	writeFileSync(path, JSON.stringify(PASSING_PHASE_EXIT));
+	return path;
+}
 
 const PR_BODY_WITH_TRACEABILITY = `
 Refs JSC-327
@@ -81,6 +200,7 @@ describe("runPrCloseoutCLI", () => {
 					aiSessionTraceability:
 						"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
 				},
+				phaseExit: PASSING_PHASE_EXIT,
 			}),
 		);
 
@@ -93,6 +213,36 @@ describe("runPrCloseoutCLI", () => {
 			pr: 258,
 			status: "ready",
 			nextAction: "ready_to_merge",
+		});
+	});
+
+	it("fails closed when input embeds malformed phase-exit evidence", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+				phaseExit: {},
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+
+		expect(result.exitCode).toBe(1);
+		expect(result.error).toBe("");
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"phaseExit must be a valid HePhaseExit/v1 artifact",
+			),
 		});
 	});
 
@@ -111,6 +261,8 @@ describe("runPrCloseoutCLI", () => {
 	});
 
 	it("collects live GitHub, CircleCI, CodeRabbit, and Snyk tool evidence", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const phaseExitPath = writePhaseExit(dir);
 		const calls: string[] = [];
 		const runner = (
 			command: string,
@@ -136,7 +288,15 @@ describe("runPrCloseoutCLI", () => {
 			return "ok";
 		};
 		const result = await capture(
-			["--json", "--repo", process.cwd(), "--pr", "258"],
+			[
+				"--json",
+				"--repo",
+				process.cwd(),
+				"--pr",
+				"258",
+				"--phase-exit",
+				phaseExitPath,
+			],
 			runner,
 		);
 

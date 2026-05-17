@@ -8,6 +8,15 @@ reviews:
       enabled: true
     eslint:
       enabled: false
+    github-checks:
+      enabled: true
+      timeout_ms: 300000
+    markdownlint:
+      enabled: true
+    ruff:
+      enabled: true
+    shellcheck:
+      enabled: true
   request_changes_workflow: false
   high_level_summary_in_walkthrough: true
   review_details: true
@@ -20,21 +29,48 @@ reviews:
     enabled: true
     auto_incremental_review: true
     auto_pause_after_reviewed_commits: 0
-    drafts: true
+    # Draft PRs are intentionally skipped; convert to ready-for-review or run
+    # `coderabbit review --agent` manually when early analysis is needed.
+    drafts: false
     ignore_usernames:
       - "dependabot[bot]"
       - "renovate[bot]"
       - "github-actions[bot]"
   path_filters:
     - "!artifacts/**"
+    - "!build/**"
     - "!coverage/**"
     - "!dist/**"
+    - "!node_modules/**"
+    - "!**/*.min.js"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.jpeg"
+    - "!**/*.gif"
   path_instructions:
     - path: "**"
       instructions: |
         Use repository evidence first: package scripts, tracked docs, harness contracts, and validation wrappers over assumptions.
         Treat contradictions between code, docs, and workflow policy as review-worthy even when code changes look reasonable.
         Prioritize behavioral risk, missing validation, and governance drift over style-only feedback.
+    - path: "src/**/*.ts"
+      instructions: |
+        Check schema boundaries, public command contracts, exit-code compatibility, and whether tests cover malformed inputs and operational failure states.
+    - path: "scripts/**"
+      instructions: |
+        Check shell portability, explicit failure handling, dry-run or read-only modes where practical, and whether command output remains parseable for agents.
+    - path: "**/tests/**"
+      instructions: |
+        Check that tests cover negative paths, contract boundaries, and realistic reviewer-visible failure modes, not only happy-path assertions.
+    - path: "**/*.test.ts"
+      instructions: |
+        Check that tests exercise behavior through public contracts where practical and include failure fixtures for changed validators or workflow gates.
+    - path: "**/*.md"
+      instructions: |
+        Check operational docs for exact commands, expected outcomes, ownership, failure handling, and alignment with current scripts or templates.
+    - path: ".github/**"
+      instructions: |
+        Treat workflow, PR template, and required-check changes as merge-contract changes. Check validation evidence, permissions, and contract parity.
   pre_merge_checks:
     override_requested_reviewers_only: true
     title:
@@ -44,6 +80,25 @@ reviews:
       mode: "warning"
     issue_assessment:
       mode: "warning"
+    # Keep these warning-only during the initial tuning period; promote after
+    # false positives are measured and the team agrees they should block merges.
+    custom_checks:
+      - mode: "warning"
+        name: "Validation evidence"
+        instructions: |
+          Pass only when the PR description or comments list validation commands run, their pass/fail/blocked result, and any skipped checks with reasons.
+      - mode: "warning"
+        name: "Generated provenance"
+        instructions: |
+          If generated files changed, pass only when the PR identifies the source file, generator command, or template responsible for the generated output.
+      - mode: "warning"
+        name: "Contract safety"
+        instructions: |
+          If public APIs, schemas, workflow contracts, required checks, or persisted formats changed, pass only when compatibility and rollback risk are addressed.
+      - mode: "warning"
+        name: "CodeRabbit decision artifact"
+        instructions: |
+          Pass only when non-trivial PRs include blocker-first review status, missing evidence, residual risk, and next action rather than broad commentary alone.
 
 chat:
   auto_reply: true
@@ -59,6 +114,8 @@ knowledge_base:
   code_guidelines:
     enabled: true
     filePatterns:
+      - ".coderabbit.yaml"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
       - "**/AGENTS.md"
 
       - "**/CODESTYLE.md"

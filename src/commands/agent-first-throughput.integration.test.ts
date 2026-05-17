@@ -275,6 +275,7 @@ describe("agent-first throughput integration", () => {
 			headSha,
 			dryRun: false,
 		});
+		// self-affirming-ok: this assertion verifies deterministic replay for identical remediation input; adjacent checks cover the required output shape.
 		expect(runA).toEqual(runB);
 
 		const checkRuns: CheckRun[] = [
@@ -327,6 +328,7 @@ describe("agent-first throughput integration", () => {
 			headSha,
 			checkName: "review-check",
 		});
+		// self-affirming-ok: this assertion verifies deterministic replay for identical review-gate input; surrounding setup fixes the expected policy state.
 		expect(gateA).toEqual(gateB);
 	});
 

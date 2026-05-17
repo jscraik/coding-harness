@@ -1,10 +1,10 @@
 ---
-last_validated: 2026-05-16
+last_validated: 2026-05-17
 ---
 
 # Agent-First Status Matrix
 
-> Last updated: 2026-05-16
+> Last updated: 2026-05-17
 > Owner: Jamie Craik
 > Review cadence: Weekly
 
@@ -41,6 +41,13 @@ The canonical north-star contract lives in
   human-mediated.
 - Safety floor: deterministic evidence, current-head SHA discipline, and clear
   rollback paths.
+- Expected outcome: portable agent operating system. Coding Harness should make
+  Codex behave like a software engineer, not merely a code generator, across
+  greenfield and brownfield projects.
+- Product bar: zero customer integration ceremony. Dropped-in agents should
+  diagnose, bootstrap, validate, and explain blockers themselves.
+- Leverage model: encode domain expertise into point-to-point agent outcomes,
+  not generic artifacts that customers must adapt by hand.
 
 This matrix should be read through that lens:
 
@@ -266,12 +273,18 @@ greenfield and brownfield repos while preserving local project truth.
 Portability means adapting to each repo with the smallest useful surface, not
 installing every harness capability everywhere.
 
+The portability bar is no longer merely that `harness init` can be run by a
+human. Agents dropped into a greenfield or brownfield workspace must be able to
+self-orient, detect the local stack, run dry-run setup, identify credentials or
+permission blockers, and select validation lanes without the customer wiring the
+repo by hand first.
+
 ### Adoption Levels
 
 | Level                          | Status     | Purpose                                                              | Proof Needed                                                                                                                      |
 | ------------------------------ | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | Level 0: Diagnose only         | 📋 Planned | Inspect repo state with no writes.                                   | `harness init --dry-run --json` reports stack, existing surfaces, conflicts, proposed writes, and rollback plan.                  |
-| Level 1: Thin operator surface | 📋 Planned | Install compact Codex orientation and validation mapping.            | Existing `AGENTS.md`, scripts, CI, and PR templates are patched or skipped without overwrite.                                     |
+| Level 1: Thin operator surface | 📋 Planned | Let dropped-in agents self-bootstrap the minimum Codex orientation and validation mapping. | Existing `AGENTS.md`, scripts, CI, and PR templates are patched or skipped without overwrite; missing setup becomes named blockers. |
 | Level 2: Guardrails            | 🔶 Partial | Add executable checks for repeated PR/review failures.               | Metadata gates, rule lifecycle, review-context, and PR closeout evidence catch known failure classes before remote CI or merge.    |
 | Level 3: Runtime evidence      | 🔶 Partial | Feed current repo truth into `runtime-card`, `pr-closeout`, and `harness next`. | Missing integrations degrade to `unknown`; available git/PR/CI/Linear/session evidence changes recommendations deterministically. |
 | Level 4: Compounding memory    | 🔶 Partial | Convert failures into Project Brain, solutions, evals, and fixtures. | `he-reinforce` outputs map to durable rules only when evidence proves recurrence or resolution.                                   |
@@ -328,6 +341,14 @@ structural mode for fast local iteration, trusted-live mode for real runner proo
 and release-ready mode for retained current-run evidence. Coding Harness should
 reuse that shape instead of inventing a separate proof culture.
 
+For high-level workflow skills, add a capture-the-flag-style win condition:
+plant an observable flag in the UI, repository, product state, or tool surface,
+run the skill, retain the session or trace evidence, let Codex reflect on each
+failed attempt, commit targeted skill or harness improvements, and rerun until
+the flag is captured or the blocker is named. This is the proof pattern for
+workflows like logging in, uploading attachments and starting a chat, or
+granting a group access to a workplace agent.
+
 External AI workflow material reinforces the same loop: instrument real
 executions, capture nested spans, curate production failures into datasets, add
 human labels or expected outputs, then score future runs. Coding Harness should
@@ -349,6 +370,7 @@ use that vocabulary where it helps, while keeping data repo-local and portable.
 | Span          | A named operation such as `doctor`, `init-dry-run`, `runtime-card`, `linear-gate`, `ci-state`, `review-context`, `validator`, `tool-call`, or `human-feedback`.  |
 | Score         | Operational quality signal such as install safety, evidence freshness, next-action correctness, rollback completeness, stack health, or review-rework reduction. |
 | Dataset       | Curated cases from canaries, CI failures, review failures, session collector evidence, and Project Brain solutions.                                              |
+| Flag          | An observable workflow win condition that proves a skill closed the loop against live or canary product state.                                                   |
 
 ### Trace Execution Contract
 
@@ -377,6 +399,7 @@ scores, and residual risk.
 | Brownfield old-harness fixture     | 📋 Planned | Regression proof for managed and locally owned surface detection and rollback.                    |
 | Runtime-card partial-adoption eval | 🔶 Partial | `harness next` remains useful when Linear, CI, Project Brain, or session evidence is unavailable. |
 | PR stack-health eval               | 📋 Planned | Upper PR work pauses when lower stack layers are red, behind, or conflicted.                      |
+| Workflow skill flag eval           | 📋 Planned | High-level skills prove login, upload/chat, access-grant, and closeout flows by capturing explicit flags with retained trace evidence. |
 
 ## Codex Alignment Assessment
 
@@ -435,8 +458,8 @@ Scope for that slice:
 
 Definition of done:
 
-- A stacked PR with a red, conflicted, or unmerged lower PR produces a
-  pause_above_unstable_stack or equivalent non-ready recommendation.
+- A stacked PR with a red, conflicted, or not-merged lower PR produces a
+  `pause_above_unstable_stack` or equivalent non-ready recommendation.
 - Unresolved review threads prevent a ready-to-merge recommendation unless the
   evidence explicitly marks them non-blocking.
 - harness next --json can consume or discover current PR closeout evidence and
@@ -444,11 +467,11 @@ Definition of done:
 - Unknown optional providers remain visible as unknown; required providers
   block only when the repo contract or active phase requires them.
 - The pr-green-sweep skill consumes the harness report shape rather than
-  reimplementing GitHub, CircleCI, CodeRabbit, or Snyk classification logic.
+  rebuilding GitHub, CircleCI, CodeRabbit, or Snyk classification logic.
 
 Rejected alternatives:
 
-- Do not add a broad profile system next. Existing local, pr, and ci
+- Do not add a broad profile system next. Existing local, pr, and CI
   next-action modes are enough until evidence proves another profile removes
   operator load.
 - Do not start remote executor or daemon work next. The local PR closeout loop

@@ -44,6 +44,30 @@ function payloadFor(gateId: HeGateId): HeGatePayload {
 				qualityReviewed: true,
 				efficiencyReviewed: true,
 			};
+		case "improve_codebase_architecture":
+			return {
+				scopeEvidence: ["architecture review artifact"],
+				complexitySymptomsNamed: true,
+				patchVsInterfaceCompared: true,
+				tracerProofRecorded: true,
+				decisionSurfaceRecorded: true,
+			};
+		case "unslopify":
+			return {
+				scopeEvidence: ["unslopify review artifact"],
+				cleanupLedgerRecorded: true,
+				removalEvidenceRecorded: true,
+				validationRecorded: true,
+				rollbackAndResidualRiskRecorded: true,
+			};
+		case "ubiquitous_language":
+			return {
+				scopeEvidence: ["UBIQUITOUS_LANGUAGE.md"],
+				glossaryReviewed: true,
+				canonicalTermsApplied: true,
+				promptTranslationsUpdated: true,
+				instructionPointerChecked: true,
+			};
 		case "testing_reviewer":
 			return {
 				scopeEvidence: ["test file"],
@@ -145,6 +169,8 @@ function input(overrides: Partial<HePhaseExitInput> = {}): HePhaseExitInput {
 		phaseContext: closeoutContext,
 		requiredGates: [
 			"simplify",
+			"improve_codebase_architecture",
+			"unslopify",
 			"testing_reviewer",
 			"he_fix_bugs",
 			"he_code_review",
@@ -152,6 +178,8 @@ function input(overrides: Partial<HePhaseExitInput> = {}): HePhaseExitInput {
 		optionalGates: ["autofix"],
 		gates: [
 			passingGate("simplify"),
+			passingGate("improve_codebase_architecture"),
+			passingGate("unslopify"),
 			passingGate("testing_reviewer"),
 			notApplicableGate("he_fix_bugs"),
 			passingGate("he_code_review"),
@@ -201,6 +229,48 @@ describe("validateHeGateResult", () => {
 				}),
 			),
 		).toContain("simplify must account for reuse, quality, and efficiency");
+	});
+
+	it("rejects incomplete improve_codebase_architecture accounting", () => {
+		const gate = passingGate("improve_codebase_architecture");
+		expect(
+			errorCodes(
+				validateHeGateResult({
+					...gate,
+					payload: { ...gate.payload, tracerProofRecorded: false },
+				}),
+			),
+		).toContain(
+			"improve_codebase_architecture must name symptoms, compare patch-vs-interface tradeoffs, record tracer proof, and identify the decision surface",
+		);
+	});
+
+	it("rejects incomplete unslopify accounting", () => {
+		const gate = passingGate("unslopify");
+		expect(
+			errorCodes(
+				validateHeGateResult({
+					...gate,
+					payload: { ...gate.payload, cleanupLedgerRecorded: false },
+				}),
+			),
+		).toContain(
+			"unslopify must record a cleanup ledger, removal evidence, validation, rollback notes, skipped work, and residual risk",
+		);
+	});
+
+	it("rejects incomplete ubiquitous_language accounting", () => {
+		const gate = passingGate("ubiquitous_language");
+		expect(
+			errorCodes(
+				validateHeGateResult({
+					...gate,
+					payload: { ...gate.payload, glossaryReviewed: false },
+				}),
+			),
+		).toContain(
+			"ubiquitous_language must review the glossary, apply canonical terms, update prompt translations when needed, and check the instruction pointer",
+		);
 	});
 
 	it("rejects incomplete he_code_review accounting", () => {
@@ -576,6 +646,8 @@ describe("validateHePhaseExitInput", () => {
 			input({
 				gates: [
 					passingGate("simplify"),
+					passingGate("improve_codebase_architecture"),
+					passingGate("unslopify"),
 					passingGate("testing_reviewer"),
 					notApplicableGate("he_fix_bugs"),
 					{ ...gate, executionMode: "manual_review" },
@@ -616,6 +688,8 @@ describe("validateHePhaseExitInput", () => {
 			input({
 				gates: [
 					{ ...gate, executionMode: "validation_only" },
+					passingGate("improve_codebase_architecture"),
+					passingGate("unslopify"),
 					passingGate("testing_reviewer"),
 					notApplicableGate("he_fix_bugs"),
 					passingGate("he_code_review"),
@@ -797,6 +871,8 @@ describe("aggregateHePhaseExit", () => {
 			input({
 				gates: [
 					passingGate("simplify"),
+					passingGate("improve_codebase_architecture"),
+					passingGate("unslopify"),
 					passingGate("testing_reviewer"),
 					notApplicableGate("he_fix_bugs"),
 					{ ...gate, executionMode: "manual_review" },
@@ -840,6 +916,8 @@ describe("aggregateHePhaseExit", () => {
 						safeToContinue: false,
 						blockedReason: null,
 					},
+					passingGate("improve_codebase_architecture"),
+					passingGate("unslopify"),
 					passingGate("testing_reviewer"),
 					notApplicableGate("he_fix_bugs"),
 					passingGate("he_code_review"),
@@ -862,7 +940,7 @@ describe("validateHePhaseExit", () => {
 		});
 
 		expect(result.valid).toBe(false);
-		expect(errorCodes(result)).toContain("gates[5].gateId must be unique");
+		expect(errorCodes(result)).toContain("gates[7].gateId must be unique");
 	});
 
 	it("rejects commit-ready decisions with blocking required gate evidence", () => {
