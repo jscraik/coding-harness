@@ -72,6 +72,29 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("fails when Testing has no Command evidence lines", () => {
+		const body = VALID_BODY.replace(/^- Command: .*\n/gm, "");
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Testing section must include at least one Command evidence line.",
+		);
+	});
+
+	it("fails malformed Command evidence format", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` => ok",
+		);
+
+		expect(
+			validatePrTemplateBody(body).some((error) =>
+				error.includes(
+					"Command evidence must use `Command: <exact command> -> pass|fail|n.a.|blocked (<reason>)` format",
+				),
+			),
+		).toBe(true);
+	});
+
 	it("does not treat heading names in prose as section starts", () => {
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",
