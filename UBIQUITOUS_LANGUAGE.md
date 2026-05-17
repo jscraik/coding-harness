@@ -40,6 +40,7 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | Tracer Proof | The smallest production-like command, test, or executable path that proves an architecture-sensitive change without over-running unrelated validation. |
 | Operation Profile | A bounded operating mode, such as `triage`, `fix`, `review`, `ci-babysit`, `linear-mutate`, or `release`, that names intent, allowed evidence, stop conditions, and required validation. |
 | Harness Run Context | The `harness-run-context/v1` packet that records local runtime evidence such as repo identity, worktree roots, session IDs, trace IDs, workspace roots, permissions, targets, blockers, and lifecycle status. |
+| PR Closeout Evidence | The `pr-closeout/v1` report that classifies PR readiness from PR metadata, check state, review blockers, dirty worktree state, CLI/tool availability, and AI session/traceability references. |
 | Run Record | Durable run evidence under `artifacts/agent-runs/<runId>/`, including terminal manifests, event streams, and additive companion artifacts. |
 | Runtime Evidence | Structured evidence about what actually happened during a run, including profile, roots, permissions, sessions, traces, validation, review artifacts, blockers, and lifecycle state. |
 | Workspace Root Evidence | The explicit repository, worktree, selected cwd, readable root, and writable root evidence used to prove an operation is acting in the intended workspace. |

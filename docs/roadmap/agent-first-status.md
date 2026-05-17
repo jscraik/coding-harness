@@ -272,8 +272,8 @@ installing every harness capability everywhere.
 | ------------------------------ | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | Level 0: Diagnose only         | 📋 Planned | Inspect repo state with no writes.                                   | `harness init --dry-run --json` reports stack, existing surfaces, conflicts, proposed writes, and rollback plan.                  |
 | Level 1: Thin operator surface | 📋 Planned | Install compact Codex orientation and validation mapping.            | Existing `AGENTS.md`, scripts, CI, and PR templates are patched or skipped without overwrite.                                     |
-| Level 2: Guardrails            | 📋 Planned | Add executable checks for repeated PR/review failures.               | Metadata gates, rule lifecycle, and review-context checks catch known failure classes before remote CI.                           |
-| Level 3: Runtime evidence      | 🔶 Partial | Feed current repo truth into `runtime-card` and `harness next`.      | Missing integrations degrade to `unknown`; available git/PR/CI/Linear/session evidence changes recommendations deterministically. |
+| Level 2: Guardrails            | 🔶 Partial | Add executable checks for repeated PR/review failures.               | Metadata gates, rule lifecycle, review-context, and PR closeout evidence catch known failure classes before remote CI or merge.    |
+| Level 3: Runtime evidence      | 🔶 Partial | Feed current repo truth into `runtime-card`, `pr-closeout`, and `harness next`. | Missing integrations degrade to `unknown`; available git/PR/CI/Linear/session evidence changes recommendations deterministically. |
 | Level 4: Compounding memory    | 🔶 Partial | Convert failures into Project Brain, solutions, evals, and fixtures. | `he-reinforce` outputs map to durable rules only when evidence proves recurrence or resolution.                                   |
 
 Unknown-provider semantics:
@@ -359,6 +359,7 @@ use that vocabulary where it helps, while keeping data repo-local and portable.
 | `runtime-card`  | `harness runtime-card --json` or current runtime-card artifact  | `runtime-card/v1` evidence.                                               | Pass when current evidence is fresh; fail on stale or contradictory evidence; unknown when optional providers are unavailable.                       |
 | `next`          | `harness next --json`                                           | `HarnessDecision` JSON.                                                   | Pass when a safe next command and stop conditions are explicit; fail when required sources are blocked; unknown sources must stay visible in `meta`. |
 | `linear-gate`   | `harness linear-gate --json`                                    | Gate JSON with issue key and PR metadata result.                          | Pass when metadata is current; fail before PR handoff if required references are missing; unknown if Linear is not part of the repo contract.        |
+| `pr-closeout`   | `harness pr-closeout --pr <number> --json` or normalized input   | `pr-closeout/v1` evidence with PR state, check state, tool state, dirty worktree state, and AI session/traceability refs. | Pass when closeout evidence is complete; fail on red checks, missing PR metadata, missing traceability, unresolved review blockers, or blocked required tools. |
 | `ci-state`      | CI provider adapter or required-check mapping                   | CI/check evidence tied to branch and SHA.                                 | Pass when required checks match current head; fail on red, stale, or missing required checks; unknown for optional providers.                        |
 | `reinforcement` | `he-reinforce` output, solution record, or Project Brain update | Solution, rule, fixture, or explicit skip reason.                         | Pass when lesson has evidence and scope; fail when it would create stale doctrine; unknown remains a hypothesis.                                     |
 
@@ -376,6 +377,84 @@ scores, and residual risk.
 | Brownfield old-harness fixture     | 📋 Planned | Regression proof for managed and locally owned surface detection and rollback.                    |
 | Runtime-card partial-adoption eval | 🔶 Partial | `harness next` remains useful when Linear, CI, Project Brain, or session evidence is unavailable. |
 | PR stack-health eval               | 📋 Planned | Upper PR work pauses when lower stack layers are red, behind, or conflicted.                      |
+
+## Codex Alignment Assessment
+
+Codex upstream is moving toward a runtime control plane with profiles,
+workspace roots, permissions, diagnostics, memory extensions, lifecycle events,
+trace IDs, and remote execution patterns. Coding Harness should align to the
+stable concepts, not mirror every upstream feature as a harness feature.
+
+Roadmap admission rule:
+
+```text
+Adopt Codex signals, not Codex sprawl.
+```
+
+The signals worth admitting now are workspace identity, permission scope,
+trace IDs, lifecycle evidence, memory provenance, diagnostics, strict parsing,
+and effective-root reporting. They directly support the north-star contract by
+reducing PR closeout ambiguity, review or rework cost, and brownfield install
+risk.
+
+The concepts to defer are broad profile catalogs, remote executor registration,
+daemon-style remote control, marketplace or share APIs, and app-server extension
+surface area. They may become useful later, but adopting them before local PR
+closeout, stack health, doctor, and runtime evidence are mature would increase
+the visible operating surface without proven PR-lead-time benefit.
+
+Current implication: deepen the existing cockpit and evidence commands before
+adding new operator-facing modes.
+
+### Re-Evaluated Next Slice
+
+The next implementation slice remains the JSC-328 follow-up:
+
+```text
+Make PR closeout evidence stack-aware and review-thread-aware,
+then let harness next consume pr-closeout/v1 as pre-handoff evidence.
+```
+
+This is still the highest-value next step because it directly targets the
+primary bottleneck: review and rework coordination during PR closeout. It also
+builds on current shipped surfaces instead of introducing a new command family.
+
+Scope for that slice:
+
+- Add a GitHub review-thread adapter so unresolved GitHub and CodeRabbit review
+  threads become live pr-closeout/v1 evidence instead of chat memory.
+- Add parent or base PR stack-state evidence so upper PR work pauses when lower
+  stack layers are red, behind, conflicted, or not merged.
+- Interpret CodeRabbit and required-check state where available through the
+  existing PR/check evidence path, without making CodeRabbit self-approval.
+- Feed pr-closeout/v1 into harness next so pre-handoff readiness becomes a
+  cockpit recommendation rather than a separate checklist.
+- Define the small contract for pr-green-sweep to call
+  harness pr-closeout --json instead of duplicating closeout classification
+  inside agent-skills.
+
+Definition of done:
+
+- A stacked PR with a red, conflicted, or unmerged lower PR produces a
+  pause_above_unstable_stack or equivalent non-ready recommendation.
+- Unresolved review threads prevent a ready-to-merge recommendation unless the
+  evidence explicitly marks them non-blocking.
+- harness next --json can consume or discover current PR closeout evidence and
+  surface the same readiness blocker.
+- Unknown optional providers remain visible as unknown; required providers
+  block only when the repo contract or active phase requires them.
+- The pr-green-sweep skill consumes the harness report shape rather than
+  reimplementing GitHub, CircleCI, CodeRabbit, or Snyk classification logic.
+
+Rejected alternatives:
+
+- Do not add a broad profile system next. Existing local, pr, and ci
+  next-action modes are enough until evidence proves another profile removes
+  operator load.
+- Do not start remote executor or daemon work next. The local PR closeout loop
+  still contains higher-frequency coordination failures.
+- Do not deepen Project Brain provider behavior before PR closeout consumption
+  lands. Durable memory helps most after the live closeout truth is structured.
 
 ## Outstanding Items
 

@@ -602,6 +602,7 @@ harness commands --json | jq '
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                  |
 | `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                          |
 | `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`) |
+| `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including PR metadata, check state, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--env-file`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                          |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                                                                                                                          |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                                                                                                                     |
@@ -648,6 +649,7 @@ harness commands --json | jq '
 | ------------------- | ---------------------------------------------------------------------------- |
 | `linear`            | Claim, hand off, close, prepare, or sync Linear work from one command family |
 | `linear-gate`       | Enforce Linear-first intake, branch naming, and PR linkage                   |
+| `pr-closeout`       | Classify pull-request closeout state before handoff or merge, including required metadata, checks, review state, tool evidence, and AI session/trace references |
 | `workflow:generate` | Generate compact workflow specs from annotated markdown                      |
 
 ### Pilot, Remediation, And Automation
