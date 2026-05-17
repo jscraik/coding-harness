@@ -493,7 +493,8 @@ function buildHarnessGateSummary(
 			exitAllowed: false,
 			gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => ({
 				gateId,
-				required: true,
+				required:
+					HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default",
 				status: "missing",
 				evidenceRefs: [],
 				requiresHuman: false,
@@ -509,9 +510,9 @@ function buildHarnessGateSummary(
 		exitAllowed: phaseExit.exitAllowed,
 		gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => {
 			const gate = gatesById.get(gateId);
+			const required =
+				HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default";
 			if (!gate) {
-				const required =
-					HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default";
 				return {
 					gateId,
 					required,
@@ -523,9 +524,6 @@ function buildHarnessGateSummary(
 						: null,
 				};
 			}
-			const required =
-				HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default" ||
-				gate.required;
 			return {
 				gateId: gate.gateId,
 				required,

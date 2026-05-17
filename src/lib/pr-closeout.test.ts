@@ -255,6 +255,20 @@ describe("buildPrCloseoutReport", () => {
 			commitAllowed: false,
 			exitAllowed: false,
 		});
+		expect(report.harnessGates.gates).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					gateId: "autofix",
+					required: false,
+					status: "missing",
+				}),
+				expect.objectContaining({
+					gateId: "unslopify",
+					required: true,
+					status: "missing",
+				}),
+			]),
+		);
 		expect(report.blockers).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
