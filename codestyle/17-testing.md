@@ -43,10 +43,10 @@
 - Default target is >= 80% coverage unless a repository contract defines a different threshold.
 - Generated artifacts, init scaffolds, and runtime/output contracts require artifact or deep validation when their emitted behavior changes.
 - Repository-defined baseline gates are mandatory:
-	- `pnpm lint`
-	- `pnpm typecheck`
-	- `pnpm run quality:self-affirming`
-	- `pnpm run test:related`
+  - `pnpm lint`
+  - `pnpm typecheck`
+  - `pnpm run quality:self-affirming`
+  - `pnpm run test:related`
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`

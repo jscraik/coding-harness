@@ -75,7 +75,6 @@ describe("validatePrTemplateBody", () => {
 	it("fails when Testing has no Command evidence lines", () => {
 		const body = VALID_BODY.replace(/^- Command: .*\n/gm, "");
 		const errors = validatePrTemplateBody(body);
-
 		expect(errors).toContain(
 			"Testing section must include at least one Command evidence line.",
 		);
