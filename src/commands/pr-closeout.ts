@@ -5,6 +5,10 @@ import { resolve } from "node:path";
 import { cwd } from "node:process";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import {
+	type HePhaseExit,
+	validateHePhaseExit,
+} from "../lib/decision/he-phase-exit.js";
+import {
 	buildPrCloseoutReport,
 	type PrCloseoutCheckInput,
 	type PrCloseoutInput,
@@ -19,6 +23,7 @@ interface PrCloseoutCLIOptions {
 	inputPath?: string;
 	prNumber?: number;
 	envFilePath?: string;
+	phaseExitPath?: string;
 }
 
 type PrCloseoutParseResult =
@@ -35,7 +40,7 @@ const DEFAULT_ENV_FILE = resolve(homedir(), ".codex/.env");
 
 function printUsage(): void {
 	console.info(
-		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--env-file <path>]",
+		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--phase-exit <path>] [--env-file <path>]",
 	);
 	console.info("");
 	console.info(
@@ -109,6 +114,16 @@ function parseArgs(args: readonly string[]): PrCloseoutParseResult {
 				return { exitCode: 2 };
 			}
 			options.envFilePath = resolve(value);
+			index += 1;
+			continue;
+		}
+		if (arg === "--phase-exit") {
+			const value = readFlagValue(args, index);
+			if (!value) {
+				console.error("pr-closeout: --phase-exit requires a path");
+				return { exitCode: 2 };
+			}
+			options.phaseExitPath = value;
 			index += 1;
 			continue;
 		}
@@ -344,6 +359,20 @@ function loadInput(path: string): PrCloseoutInput {
 	return parseInput(readFileSync(path, "utf8"), path);
 }
 
+function loadPhaseExit(path: string, repoRoot: string): HePhaseExit {
+	const resolvedPath = resolve(repoRoot, path);
+	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
+	const validation = validateHePhaseExit(parsed);
+	if (!validation.valid) {
+		throw new Error(
+			path +
+				" must be a valid HePhaseExit/v1 artifact: " +
+				validation.errors.map((error) => error.code).join(", "),
+		);
+	}
+	return parsed as HePhaseExit;
+}
+
 function isPlaceholderBodyField(value: string): boolean {
 	return /^(?:list\b|map\b|pending\b|<[^>]+>\s*$)/iu.test(value.trim());
 }
@@ -496,7 +525,16 @@ export async function runPrCloseoutCLI(
 		const input = parsed.options.inputPath
 			? loadInput(parsed.options.inputPath)
 			: buildLiveInput(parsed.options, options.runner ?? defaultRunner);
-		const report = buildPrCloseoutReport(input);
+		const inputWithPhaseExit = parsed.options.phaseExitPath
+			? {
+					...input,
+					phaseExit: loadPhaseExit(
+						parsed.options.phaseExitPath,
+						parsed.options.repoRoot,
+					),
+				}
+			: input;
+		const report = buildPrCloseoutReport(inputWithPhaseExit);
 		if (parsed.options.json) {
 			console.info(JSON.stringify(report, null, 2));
 		} else {

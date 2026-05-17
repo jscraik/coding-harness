@@ -14,6 +14,8 @@
 - Trace IDs: list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.
 - AI session / traceability: map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body.
 - Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR
+- Expected outcome alignment: state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason
+- Pattern scope inventory: for any steering feedback, review comment, or line-level correction that implies a broader design principle, name the principle, list sibling implementations searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence
 - Acceptance trace: map completed acceptance items to evidence refs, or `n.a.` with reason
 - Validation evidence: list command outcomes, CI jobs, artifact paths, or `n.a.` with reason
 - Review artifacts: list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason

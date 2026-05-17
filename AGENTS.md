@@ -31,6 +31,12 @@ standards through compact orientation, executable guardrails, durable memory,
 and evidence-based handoff. Short form: Thin surface. Strong guardrails.
 Durable memory. Professional output.
 
+Expected outcome: Coding Harness is a portable agent operating system that
+makes Codex behave like a software engineer, not merely a code generator, across
+greenfield and brownfield projects with zero customer integration ceremony. If a
+customer must repeatedly translate expert judgment, wire setup by hand, or give
+the same steering twice, the harness has failed to encode the operating system.
+
 ## Mandatory Workflow Snippet
 
 1. Explore project first, then invoke a task-relevant skill.
@@ -41,7 +47,8 @@ Durable memory. Professional output.
 ## Required Essentials
 
 - Runtime/toolchain: `pnpm@10.33.0` and Node `>=24.0.0` (see `package.json`).
-- Baseline gates: `pnpm codestyle:parity`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`.
+- Agent engineering proof: treat steering feedback, PR comments, failing checks, benchmark-style success, workflow-skill misses, and line-level corrections as evidence about the system, not isolated patch requests. Repeated steering is a stop-the-line environment defect: do not resume ordinary feature work until the correction is admitted into the repo operating system or explicitly rejected with a tracked reason. Before closeout, convert the signal into a design principle, search for sibling patterns, check horizontal/vertical/reflected OODA horizons, choose the narrowest durable destination, and prove repo orientation, validation, maintainability, traceability, and handoff quality. Line-level design feedback requires a pattern scope inventory: principle, sibling search, siblings changed, siblings left unchanged with reason, and deferred follow-ups. High-level workflow skills need a capture-the-flag style win condition, self-reflection evidence, and iterative refinement before they are trusted. If the wider horizon cannot be observed, mark it `Unobserved Horizon` and create a follow-up instead of pretending the local fix is complete.
+- Baseline gates: `pnpm codestyle:parity`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`; `pnpm run docs:steering:guard` is included in `pnpm check` so repeated-steering rules cannot drift silently.
 - Branch-protection defaults include the external Semgrep Cloud GitHub App check `semgrep-cloud-platform/scan`; keep it aligned across generated contracts, `.harness/ci-required-checks.json`, and required-check docs.
 - CircleCI owns repo-run PR governance and security checks, including the repo-run Semgrep and Snyk lanes; GitHub Actions is reserved for release publishing, and Semgrep Cloud remains an independent external required check.
 - `harness.contract.json` records this split in `ciOwnership`: CircleCI is the primary PR gate, CodeRabbit is the independent review check, Semgrep Cloud is the independent external security check, and GitHub Actions fallback/release workflows must not become automatic PR gates without an intentional contract migration.

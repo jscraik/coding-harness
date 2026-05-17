@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-16
+last_validated: 2026-05-17
 ---
 
 # North Star
@@ -29,6 +29,13 @@ orientation, executable guardrails, durable memory, and evidence-based handoff.
 
 Short form: Thin surface. Strong guardrails. Durable memory. Professional
 output.
+
+Expected outcome: Coding Harness becomes a portable agent operating system that
+makes Codex behave like a software engineer, not merely a code generator, across
+greenfield and brownfield projects with zero customer integration ceremony. The
+harness is successful when a dropped-in agent can orient, act, validate, learn,
+and close out professionally without the user repeatedly translating expert
+judgment into one-off instructions.
 
 PR lead time remains the primary north-star metric; the mission defines who the
 system serves and how it should feel to operate.
@@ -82,11 +89,22 @@ projects without turning those projects into copies of this repo.
 Portability means adapting to each repo with the smallest useful surface, not
 installing every harness capability everywhere.
 
+The product bar is zero customer integration ceremony. A user should be able to
+drop agents into a workspace and expect them to diagnose the repo, bootstrap the
+missing local contract, select the right validation lane, and explain any
+blocked setup themselves. If the customer must manually integrate tools,
+translate setup steps, or remember harness wiring before agents can work, the
+harness has pushed product labor back onto the wrong person.
+
 The portable product promise is:
 
 - `harness init --dry-run --json` can inspect a repo, classify current harness
   maturity, propose the smallest useful install, identify conflicts, and show
   rollback before writing.
+- agents can start from an unfamiliar workspace and run the diagnose or dry-run
+  path without prior project-specific ceremony; missing tools, credentials, or
+  permissions become named blockers with next actions rather than silent setup
+  assumptions.
 - `harness init` can install or upgrade a thin Codex-facing operating contract
   without overwriting local project truth, existing `AGENTS.md` guidance,
   validation scripts, CI ownership, or PR templates.
@@ -137,6 +155,21 @@ For Coding Harness, that means:
   health, and review-rework reduction
 - curated datasets come from live repo canaries, CI failures, review failures,
   session collector evidence, and Project Brain solutions
+- ablation runs remove prompts, tools, context, rules, or gates in controlled
+  evals to prove whether a harness surface actually improves behavior or only
+  adds ceremony
+- distillation compresses large evidence sets such as labels, rollout records, tool
+  calls, review threads, and session traces into smaller rules, fixtures,
+  prompts, or gates while preserving the behavior that made the source useful
+- organizational RLHF captures expert feedback from onboarding, code review,
+  apprenticeship, incidents, and repeated work into durable evals, rules,
+  memory, and gates so the machine improves through the same correction loops
+  people use to become competent
+- workflow skills should be proven with capture-the-flag style evals: plant an
+  observable win condition in the UI, repository, or tool surface; run the
+  skill; keep session and trace evidence; let Codex reflect on failures; commit
+  targeted refinements; and rerun until the flag is captured or the blocker is
+  named
 - release-grade claims require trusted-live evidence, not only structural
   shape checks
 
@@ -148,9 +181,18 @@ The `agent-skills` eval pattern is the reference model: structural mode is for
 fast local iteration, trusted-live mode proves behavior against the real runner,
 and release-ready mode requires retaining current-run evidence.
 
+For high-level workflows, the eval must name the user-visible win condition:
+login completed, attachment uploaded and chat started, access granted, review
+thread resolved, or flag captured. Optimizing the skill means improving
+reliability, wall-clock time, and drift tolerance against that outcome, not
+polishing instructions in isolation.
+
 ## Operating Principles
 
 - Treat code as abundant and human attention as scarce.
+- Practice systems thinking: spot recurring blockers, design ways for people or
+  agents to overcome them systematically, and explain how code carries that
+  leverage instead of leaving the fix as advice.
 - Move repeated review feedback into durable guardrails, tests, prompts, or
   policy checks.
 - Keep repo structures legible to agents by making patterns uniform and local to
@@ -170,6 +212,11 @@ and release-ready mode requires retaining current-run evidence.
   stable canary lessons into deterministic fixtures.
 - Keep observability outputs structured, small, and searchable; raw event volume
   is not useful unless it improves decisions or evals.
+- Encode expert leverage into agents that can produce the needed software,
+  tool call, report, dashboard, or workflow just in time for the user. Do not
+  treat shared dashboards, static artifacts, or one-size-fits-most workflows as
+  the default product endpoint when a point-to-point agent service can deliver
+  the expert outcome directly.
 
 ## Non-Goals
 
@@ -182,6 +229,9 @@ Coding Harness should not optimize for:
   cheaper
 - docs, artifacts, or dashboards that do not reduce ambiguity, shorten
   decision-making time, or remove manual glue work
+- fan-in/fan-out artifacts that preserve domain-expert scarcity as the product
+  model when an agent can carry the ontology, context, and tool authority needed
+  to deliver bespoke point-to-point help
 
 ## What This Means For Product Decisions
 
@@ -195,7 +245,11 @@ questions clearly:
 4. Does this preserve strict evidence, SHA discipline, and rollback safety?
 5. Does this improve portability across greenfield and brownfield repos without
    increasing the visible operating surface?
-6. Can this claim be proven through structural and trusted-live evidence?
+6. Does this identify a recurring blocker and show how code helps people or
+   agents overcome it systematically?
+7. Does this encode expert leverage into an agent-delivered outcome instead of
+   forcing users to adapt a generic artifact to their own question?
+8. Can this claim be proven through structural and trusted-live evidence?
 
 If the answer is no, the work is either out of scope or needs a stronger
 justification before it becomes part of the control plane.

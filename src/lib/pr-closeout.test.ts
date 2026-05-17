@@ -1,5 +1,140 @@
 import { describe, expect, it } from "vitest";
+import {
+	HE_GATE_RESULT_SCHEMA_VERSION,
+	HE_PHASE_EXIT_SCHEMA_VERSION,
+	type HeGateId,
+	type HeGatePayload,
+	type HeGateResult,
+	type HePhaseExit,
+} from "./decision/he-phase-exit.js";
 import { buildPrCloseoutReport, type PrCloseoutInput } from "./pr-closeout.js";
+
+function gatePayload(gateId: HeGateId): HeGatePayload {
+	switch (gateId) {
+		case "simplify":
+			return {
+				scopeEvidence: ["artifacts/reviews/simplify.md"],
+				reuseReviewed: true,
+				qualityReviewed: true,
+				efficiencyReviewed: true,
+			};
+		case "improve_codebase_architecture":
+			return {
+				scopeEvidence: ["artifacts/reviews/architecture.md"],
+				complexitySymptomsNamed: true,
+				patchVsInterfaceCompared: true,
+				tracerProofRecorded: true,
+				decisionSurfaceRecorded: true,
+			};
+		case "unslopify":
+			return {
+				scopeEvidence: ["artifacts/reviews/unslopify.md"],
+				cleanupLedgerRecorded: true,
+				removalEvidenceRecorded: true,
+				validationRecorded: true,
+				rollbackAndResidualRiskRecorded: true,
+			};
+		case "ubiquitous_language":
+			return {
+				scopeEvidence: ["UBIQUITOUS_LANGUAGE.md"],
+				glossaryReviewed: true,
+				canonicalTermsApplied: true,
+				promptTranslationsUpdated: true,
+				instructionPointerChecked: true,
+			};
+		case "testing_reviewer":
+			return {
+				scopeEvidence: ["artifacts/reviews/testing-reviewer.md"],
+				testAdequacyReviewed: true,
+				missingEdgeCases: [],
+			};
+		case "he_fix_bugs":
+			return {
+				scopeEvidence: ["validation passed"],
+				reproductionEvidence: [],
+				rootCause: null,
+				regressionProtection: [],
+				rollbackNote: null,
+			};
+		case "he_code_review":
+			return {
+				scopeEvidence: ["artifacts/reviews/he-code-review.md"],
+				findingsFirst: true,
+				traceabilityReviewed: true,
+				blockerClassification: true,
+				safeToContinueReviewed: true,
+			};
+		case "autofix":
+			return {
+				scopeEvidence: ["no review feedback"],
+				feedbackInventory: [],
+				accountedItems: 0,
+			};
+	}
+}
+
+function passingGate(gateId: HeGateId, required = true): HeGateResult {
+	return {
+		schemaVersion: HE_GATE_RESULT_SCHEMA_VERSION,
+		gateId,
+		required,
+		executionMode:
+			gateId === "testing_reviewer"
+				? "subagent_proxy"
+				: gateId === "he_fix_bugs" || gateId === "autofix"
+					? "not_applicable"
+					: "direct_skill",
+		status:
+			gateId === "he_fix_bugs" || gateId === "autofix"
+				? "not_applicable"
+				: "pass",
+		payload: gatePayload(gateId),
+		evidenceRefs: [
+			{
+				id: `${gateId}-evidence`,
+				kind: "artifact",
+				ref: `artifact:${gateId}`,
+				gateLocal: true,
+			},
+		],
+		findings: [],
+		actions: [],
+		validation: [],
+		requiresHuman: false,
+		safeToContinue: true,
+		reason:
+			gateId === "he_fix_bugs" || gateId === "autofix"
+				? `${gateId} not applicable to this closeout.`
+				: null,
+		blockedReason: null,
+	};
+}
+
+function passingPhaseExit(): HePhaseExit {
+	return {
+		schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
+		phaseContext: {
+			phase: "closeout",
+			failingEvidencePresent: false,
+			reviewFeedbackPresent: false,
+		},
+		recommendation: "continue",
+		commitAllowed: true,
+		exitAllowed: true,
+		blockers: [],
+		warnings: [],
+		gates: [
+			passingGate("simplify"),
+			passingGate("improve_codebase_architecture"),
+			passingGate("unslopify"),
+			passingGate("testing_reviewer"),
+			passingGate("he_fix_bugs"),
+			passingGate("he_code_review"),
+			passingGate("autofix", false),
+			passingGate("ubiquitous_language", false),
+		],
+	};
+}
 
 function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 	return {
@@ -36,6 +171,7 @@ function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 			aiSessionTraceability:
 				"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
 		},
+		phaseExit: passingPhaseExit(),
 		tools: [
 			{
 				name: "github_cli",
@@ -101,6 +237,70 @@ describe("buildPrCloseoutReport", () => {
 				expect.objectContaining({
 					surface: "traceability",
 					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
+	it("blocks closeout when coding-harness gate evidence is missing", () => {
+		const input = baseInput();
+		delete input.phaseExit;
+		const report = buildPrCloseoutReport(input);
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.harnessGates).toMatchObject({
+			phaseExitPresent: false,
+			recommendation: "missing",
+			commitAllowed: false,
+			exitAllowed: false,
+		});
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					reason:
+						"Coding-harness closeout gates are missing HePhaseExit/v1 evidence.",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
+	it("blocks closeout when required coding-harness gates are not run", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.commitAllowed = false;
+		phaseExit.exitAllowed = false;
+		phaseExit.recommendation = "commit_blocked";
+		phaseExit.blockers = ["unslopify gate has no gate-local evidence source"];
+		phaseExit.gates = phaseExit.gates.map((gate) =>
+			gate.gateId === "unslopify"
+				? {
+						...gate,
+						status: "not_run",
+						executionMode: "not_run",
+						safeToContinue: false,
+						reason: "unslopify gate has no gate-local evidence source",
+					}
+				: gate,
+		);
+
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
+
+		expect(report.status).toBe("fixable");
+		expect(report.harnessGates.gates).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					gateId: "unslopify",
+					status: "not_run",
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					reason: "unslopify closeout gate is not_run.",
 				}),
 			]),
 		);

@@ -10,6 +10,10 @@ handoff.
 
 Thin surface. Strong guardrails. Durable memory. Professional output.
 
+Expected outcome: Coding Harness becomes a portable agent operating system that
+makes Codex behave like a software engineer, not merely a code generator, across
+greenfield and brownfield projects with zero customer integration ceremony.
+
 Its primary metric is PR lead time: reducing time from open to merge by
 shrinking the review and rework loop while keeping humans in the steering role
 and preserving strict evidence, SHA, and rollback discipline.
@@ -152,6 +156,10 @@ terms.
 | Autonomy boundary     | Automate low and medium-risk work only when evidence is deterministic and rollback is clear; keep high-risk changes human-mediated.                                                                               |
 | Safety floor          | Preserve evidence quality, current-head SHA discipline, bounded remediation, rollback paths, and independent review.                                                                                              |
 | Durable learning rule | Turn repeated failures into guardrails, tests, prompts, policy checks, or explicit exceptions instead of repeated review comments or chat reminders.                                                              |
+| Product bar           | Zero customer integration ceremony: dropped-in agents diagnose, bootstrap, validate, and explain blockers themselves instead of requiring the customer to wire the harness by hand.                               |
+| Leverage model        | Encode scarce expert knowledge into agents that deliver point-to-point outcomes just in time, rather than making users adapt generic dashboards, docs, or workflows.                                                |
+| Workflow proof        | High-level skills prove reliability through explicit win conditions, retained trace evidence, self-reflection, and iterative refinement, not instruction prose alone.                                                |
+| Failure signal        | If Jamie gives the same steering twice, or a user must manually translate expert judgment into repeated one-off instructions, the harness has failed to encode the principle.                                      |
 
 That means a feature, document, policy, or artifact is north-star aligned only
 when it reduces PR lead time directly, lowers review or rework cost, removes
@@ -164,8 +172,8 @@ The weekly status surface is
 [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md),
 and its review cadence is mirrored in `harness.contract.json` so
 `drift-gate --mode health` can fail closed on stale north-star evidence.
-The roadmap and status metadata were last synchronized on 2026-05-16 as part
-of the portability and eval-trace roadmap refresh.
+The roadmap and status metadata were last synchronized on 2026-05-17 as part
+of the zero-integration portability refresh.
 
 North-star command outputs also use canonical artifact contracts so agents can
 carry evidence between tools without guessing path or schema names. Current
@@ -184,6 +192,9 @@ Teams usually adopt Coding Harness for one of four jobs:
   repo-local verification scripts, and rollback metadata instead of leaving
   each repo to invent its own setup. Generated downstream PR, workflow, and
   worktree surfaces use `jscraik/feature/*` for agent-created branches.
+  The customer-facing bar is that an agent dropped into the workspace can run
+  the diagnosis and dry-run setup path itself, then report named blockers when
+  credentials, permissions, or local tools are missing.
 - **Put policy in code instead of chat reminders.** Commands like
   `docs-gate`, `plan-gate`, `review-gate`, `linear-gate`, `check-authz`, and
   `local-memory-preflight` make governance expectations runnable.
@@ -602,7 +613,7 @@ harness commands --json | jq '
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                  |
 | `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                          |
 | `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`) |
-| `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including PR metadata, check state, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--env-file`) |
+| `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including PR metadata, check state, coding-harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--phase-exit`, optional `--env-file`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                          |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                                                                                                                          |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                                                                                                                     |
@@ -649,7 +660,7 @@ harness commands --json | jq '
 | ------------------- | ---------------------------------------------------------------------------- |
 | `linear`            | Claim, hand off, close, prepare, or sync Linear work from one command family |
 | `linear-gate`       | Enforce Linear-first intake, branch naming, and PR linkage                   |
-| `pr-closeout`       | Classify pull-request closeout state before handoff or merge, including required metadata, checks, review state, tool evidence, and AI session/trace references |
+| `pr-closeout`       | Classify pull-request closeout state before handoff or merge, including required metadata, checks, coding-harness closeout gates, review state, tool evidence, and AI session/trace references |
 | `workflow:generate` | Generate compact workflow specs from annotated markdown                      |
 
 ### Pilot, Remediation, And Automation

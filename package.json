@@ -46,7 +46,7 @@
 		"harness": "dist/cli.js"
 	},
 	"scripts": {
-		"check": "pnpm lint && pnpm docs:lint && pnpm docs:ubiquitous:guard && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm test:related && pnpm test:ci && pnpm audit",
+		"check": "pnpm lint && pnpm docs:lint && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm test:related && pnpm test:ci && pnpm audit",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && biome check .",
 		"lint:fix": "biome check . --write",
@@ -68,6 +68,7 @@
 		"audit:strict": "pnpm audit --audit-level=high",
 		"docs:lint": "pnpm markdownlint",
 		"docs:ubiquitous:guard": "bash scripts/check-ubiquitous-language-link.sh",
+		"docs:steering:guard": "node scripts/check-steering-feedback-contract.cjs",
 		"docs:style:changed": "bash scripts/check-doc-style.sh",
 		"skill:validate": "node scripts/validate-packaged-skill.cjs",
 		"workflow:normalize": "node scripts/normalize-workflow-contracts.cjs",

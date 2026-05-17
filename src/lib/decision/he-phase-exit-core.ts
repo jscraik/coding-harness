@@ -18,17 +18,148 @@ export const HE_GATE_RESULT_SCHEMA_VERSION = "he-gate-result/v1" as const;
 /** Schema version for aggregated Harness Engineering phase-exit decisions. */
 export const HE_PHASE_EXIT_SCHEMA_VERSION = "he-phase-exit/v1" as const;
 
-/** Stable gate identifiers modelled from HE closeout skills and reviewers. */
-export const HE_GATE_IDS = [
+/** Stable coding-harness closeout gate identifiers used by HE and PR closeout workflows. */
+export const HARNESS_CLOSEOUT_GATE_IDS = [
 	"simplify",
+	"improve_codebase_architecture",
+	"unslopify",
 	"testing_reviewer",
 	"he_fix_bugs",
 	"he_code_review",
 	"autofix",
+	"ubiquitous_language",
 ] as const;
 
-/** Stable gate identifier for HE closeout evidence. */
-export type HeGateId = (typeof HE_GATE_IDS)[number];
+/** Backwards-compatible gate id export for the HePhaseExit/v1 compatibility contract. */
+export const HE_GATE_IDS = HARNESS_CLOSEOUT_GATE_IDS;
+
+/** Stable coding-harness closeout gate identifier. */
+export type HarnessCloseoutGateId = (typeof HARNESS_CLOSEOUT_GATE_IDS)[number];
+
+/** Backwards-compatible gate identifier for HE closeout evidence. */
+export type HeGateId = HarnessCloseoutGateId;
+
+/** Durable source contract for a coding-harness closeout gate. */
+export interface HarnessCloseoutGateContract {
+	/** Gate identifier used by HeGateResult/v1 and pr-closeout evidence. */
+	gateId: HarnessCloseoutGateId;
+	/** Canonical skill, role, or reviewer contract summarized by the gate. */
+	source: string;
+	/** Stable source path or role name for contract refresh reviews. */
+	sourceRef: string;
+	/** Fields that must be proven by a passing gate payload, excluding scopeEvidence. */
+	payloadFields: readonly string[];
+	/** Whether the gate is expected on every closeout or only when the surface demands it. */
+	applicability: "default" | "conditional";
+	/** Short reason the gate exists in the closeout path. */
+	closeoutPurpose: string;
+}
+
+/** Current source contracts for coding-harness closeout gates. */
+export const HARNESS_CLOSEOUT_GATE_CONTRACTS: Readonly<
+	Record<HarnessCloseoutGateId, HarnessCloseoutGateContract>
+> = {
+	simplify: {
+		gateId: "simplify",
+		source: "$simplify",
+		sourceRef: "agent-skills/Skills/agent-ops/simplify/SKILL.md",
+		payloadFields: ["reuseReviewed", "qualityReviewed", "efficiencyReviewed"],
+		applicability: "default",
+		closeoutPurpose:
+			"Proves a behavior-preserving simplification pass accounted for reuse, quality, and efficiency on the scoped diff.",
+	},
+	improve_codebase_architecture: {
+		gateId: "improve_codebase_architecture",
+		source: "$improve-codebase-architecture",
+		sourceRef:
+			"agent-skills/Skills/agent-ops/improve-codebase-architecture/SKILL.md",
+		payloadFields: [
+			"complexitySymptomsNamed",
+			"patchVsInterfaceCompared",
+			"tracerProofRecorded",
+			"decisionSurfaceRecorded",
+		],
+		applicability: "default",
+		closeoutPurpose:
+			"Proves architecture pressure was named from evidence before choosing a patch or interface move.",
+	},
+	unslopify: {
+		gateId: "unslopify",
+		source: "$unslopify",
+		sourceRef: "agent-skills/Skills/agent-ops/unslopify/SKILL.md",
+		payloadFields: [
+			"cleanupLedgerRecorded",
+			"removalEvidenceRecorded",
+			"validationRecorded",
+			"rollbackAndResidualRiskRecorded",
+		],
+		applicability: "default",
+		closeoutPurpose:
+			"Proves cleanup stayed scoped, evidence-backed, validated, reversible, and honest about skipped work and residual risk.",
+	},
+	testing_reviewer: {
+		gateId: "testing_reviewer",
+		source: "@testing-reviewer",
+		sourceRef: "codex reviewer role: testing-reviewer",
+		payloadFields: ["testAdequacyReviewed", "missingEdgeCases"],
+		applicability: "default",
+		closeoutPurpose:
+			"Proves test adequacy was considered independently from implementation and bug repair.",
+	},
+	he_fix_bugs: {
+		gateId: "he_fix_bugs",
+		source: "$he-fix-bugs",
+		sourceRef:
+			"agent-skills/Plugins/harness-engineering/skills/he-fix-bugs/SKILL.md",
+		payloadFields: [
+			"reproductionEvidence",
+			"rootCause",
+			"regressionProtection",
+			"rollbackNote",
+		],
+		applicability: "conditional",
+		closeoutPurpose:
+			"Proves concrete failing evidence was reproduced, root-caused, protected, and given a rollback note before closeout.",
+	},
+	he_code_review: {
+		gateId: "he_code_review",
+		source: "$he-code-review",
+		sourceRef:
+			"agent-skills/Plugins/harness-engineering/skills/he-code-review/SKILL.md",
+		payloadFields: [
+			"findingsFirst",
+			"traceabilityReviewed",
+			"blockerClassification",
+			"safeToContinueReviewed",
+		],
+		applicability: "default",
+		closeoutPurpose:
+			"Proves review findings, traceability, blockers, and safe-to-continue state were explicit before handoff.",
+	},
+	autofix: {
+		gateId: "autofix",
+		source: "$autofix",
+		sourceRef: "agent-skills/Skills/agent-ops/autofix/SKILL.md",
+		payloadFields: ["feedbackInventory", "accountedItems"],
+		applicability: "conditional",
+		closeoutPurpose:
+			"Proves every current review-feedback item in scope was inventoried and accounted for before merge.",
+	},
+	ubiquitous_language: {
+		gateId: "ubiquitous_language",
+		source: "$ubiquitous-language",
+		sourceRef: "agent-skills/Skills/agent-ops/ubiquitous-language/SKILL.md",
+		payloadFields: [
+			"glossaryReviewed",
+			"canonicalTermsApplied",
+			"promptTranslationsUpdated",
+			"instructionPointerChecked",
+		],
+		applicability: "conditional",
+		closeoutPurpose:
+			"Proves terminology-sensitive changes used the project glossary instead of drifting into ambiguous language.",
+	},
+};
 
 /** Gate execution mode. */
 export type HeGateExecutionMode =
@@ -121,6 +252,43 @@ export interface HeSimplifyPayload extends HeGatePayloadBase {
 	efficiencyReviewed: boolean;
 }
 
+/** Architecture-review payload modelled from the improve-codebase-architecture skill. */
+export interface HeImproveCodebaseArchitecturePayload
+	extends HeGatePayloadBase {
+	/** Whether architecture pressure was named from live evidence. */
+	complexitySymptomsNamed: boolean;
+	/** Whether patch-vs-interface tradeoffs were compared. */
+	patchVsInterfaceCompared: boolean;
+	/** Whether a tracer proof path was recorded. */
+	tracerProofRecorded: boolean;
+	/** Whether the durable decision surface was identified. */
+	decisionSurfaceRecorded: boolean;
+}
+
+/** Cleanup-discipline payload modelled from the unslopify skill. */
+export interface HeUnslopifyPayload extends HeGatePayloadBase {
+	/** Whether a scoped cleanup ledger was recorded before edits. */
+	cleanupLedgerRecorded: boolean;
+	/** Whether each cleanup action has import, reference, or usage evidence. */
+	removalEvidenceRecorded: boolean;
+	/** Whether repo-native validation outcomes were recorded. */
+	validationRecorded: boolean;
+	/** Whether rollback notes, skipped work, and residual risk were recorded. */
+	rollbackAndResidualRiskRecorded: boolean;
+}
+
+/** Vocabulary payload modelled from the ubiquitous-language skill. */
+export interface HeUbiquitousLanguagePayload extends HeGatePayloadBase {
+	/** Whether the existing project glossary was reviewed. */
+	glossaryReviewed: boolean;
+	/** Whether changed wording uses canonical project terms or records aliases. */
+	canonicalTermsApplied: boolean;
+	/** Whether prompt translations were updated when informal user phrases drove the change. */
+	promptTranslationsUpdated: boolean;
+	/** Whether the nearest agent instruction pointer to UBIQUITOUS_LANGUAGE.md was checked. */
+	instructionPointerChecked: boolean;
+}
+
 /** Testing reviewer payload modelled from the testing-reviewer subagent. */
 export interface HeTestingReviewerPayload extends HeGatePayloadBase {
 	/** Whether test adequacy was evaluated independently from bug repair. */
@@ -164,6 +332,9 @@ export interface HeAutofixPayload extends HeGatePayloadBase {
 /** Gate-specific payload union. */
 export type HeGatePayload =
 	| HeSimplifyPayload
+	| HeImproveCodebaseArchitecturePayload
+	| HeUnslopifyPayload
+	| HeUbiquitousLanguagePayload
 	| HeTestingReviewerPayload
 	| HeFixBugsPayload
 	| HeCodeReviewPayload
@@ -327,6 +498,159 @@ const GATE_SPECS: Record<HeGateId, GateSpec> = {
 			reuseReviewed: false,
 			qualityReviewed: false,
 			efficiencyReviewed: false,
+		}),
+	},
+	improve_codebase_architecture: {
+		validatePayload(payload, _result, _context, errors) {
+			validateStringArray(
+				payload.scopeEvidence,
+				"payload.scopeEvidence",
+				errors,
+			);
+			validateBoolean(
+				payload.complexitySymptomsNamed,
+				"payload.complexitySymptomsNamed",
+				errors,
+			);
+			validateBoolean(
+				payload.patchVsInterfaceCompared,
+				"payload.patchVsInterfaceCompared",
+				errors,
+			);
+			validateBoolean(
+				payload.tracerProofRecorded,
+				"payload.tracerProofRecorded",
+				errors,
+			);
+			validateBoolean(
+				payload.decisionSurfaceRecorded,
+				"payload.decisionSurfaceRecorded",
+				errors,
+			);
+			if (
+				_result.status === "pass" &&
+				(payload.complexitySymptomsNamed !== true ||
+					payload.patchVsInterfaceCompared !== true ||
+					payload.tracerProofRecorded !== true ||
+					payload.decisionSurfaceRecorded !== true)
+			) {
+				errors.push(
+					toValidationError(
+						"improve_codebase_architecture must name symptoms, compare patch-vs-interface tradeoffs, record tracer proof, and identify the decision surface",
+						"payload",
+						"improve_codebase_architecture",
+					),
+				);
+			}
+		},
+		missingPayload: () => ({
+			scopeEvidence: [],
+			complexitySymptomsNamed: false,
+			patchVsInterfaceCompared: false,
+			tracerProofRecorded: false,
+			decisionSurfaceRecorded: false,
+		}),
+	},
+	unslopify: {
+		validatePayload(payload, _result, _context, errors) {
+			validateStringArray(
+				payload.scopeEvidence,
+				"payload.scopeEvidence",
+				errors,
+			);
+			validateBoolean(
+				payload.cleanupLedgerRecorded,
+				"payload.cleanupLedgerRecorded",
+				errors,
+			);
+			validateBoolean(
+				payload.removalEvidenceRecorded,
+				"payload.removalEvidenceRecorded",
+				errors,
+			);
+			validateBoolean(
+				payload.validationRecorded,
+				"payload.validationRecorded",
+				errors,
+			);
+			validateBoolean(
+				payload.rollbackAndResidualRiskRecorded,
+				"payload.rollbackAndResidualRiskRecorded",
+				errors,
+			);
+			if (
+				_result.status === "pass" &&
+				(payload.cleanupLedgerRecorded !== true ||
+					payload.removalEvidenceRecorded !== true ||
+					payload.validationRecorded !== true ||
+					payload.rollbackAndResidualRiskRecorded !== true)
+			) {
+				errors.push(
+					toValidationError(
+						"unslopify must record a cleanup ledger, removal evidence, validation, rollback notes, skipped work, and residual risk",
+						"payload",
+						"unslopify",
+					),
+				);
+			}
+		},
+		missingPayload: () => ({
+			scopeEvidence: [],
+			cleanupLedgerRecorded: false,
+			removalEvidenceRecorded: false,
+			validationRecorded: false,
+			rollbackAndResidualRiskRecorded: false,
+		}),
+	},
+	ubiquitous_language: {
+		validatePayload(payload, _result, _context, errors) {
+			validateStringArray(
+				payload.scopeEvidence,
+				"payload.scopeEvidence",
+				errors,
+			);
+			validateBoolean(
+				payload.glossaryReviewed,
+				"payload.glossaryReviewed",
+				errors,
+			);
+			validateBoolean(
+				payload.canonicalTermsApplied,
+				"payload.canonicalTermsApplied",
+				errors,
+			);
+			validateBoolean(
+				payload.promptTranslationsUpdated,
+				"payload.promptTranslationsUpdated",
+				errors,
+			);
+			validateBoolean(
+				payload.instructionPointerChecked,
+				"payload.instructionPointerChecked",
+				errors,
+			);
+			if (
+				_result.status === "pass" &&
+				(payload.glossaryReviewed !== true ||
+					payload.canonicalTermsApplied !== true ||
+					payload.promptTranslationsUpdated !== true ||
+					payload.instructionPointerChecked !== true)
+			) {
+				errors.push(
+					toValidationError(
+						"ubiquitous_language must review the glossary, apply canonical terms, update prompt translations when needed, and check the instruction pointer",
+						"payload",
+						"ubiquitous_language",
+					),
+				);
+			}
+		},
+		missingPayload: () => ({
+			scopeEvidence: [],
+			glossaryReviewed: false,
+			canonicalTermsApplied: false,
+			promptTranslationsUpdated: false,
+			instructionPointerChecked: false,
 		}),
 	},
 	testing_reviewer: {

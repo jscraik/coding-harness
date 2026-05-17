@@ -18,6 +18,22 @@ function payloadFor(gateId: HeGateId): HeGatePayload {
 				qualityReviewed: true,
 				efficiencyReviewed: true,
 			};
+		case "improve_codebase_architecture":
+			return {
+				scopeEvidence: ["architecture review artifact"],
+				complexitySymptomsNamed: true,
+				patchVsInterfaceCompared: true,
+				tracerProofRecorded: true,
+				decisionSurfaceRecorded: true,
+			};
+		case "unslopify":
+			return {
+				scopeEvidence: ["unslopify review artifact"],
+				cleanupLedgerRecorded: true,
+				removalEvidenceRecorded: true,
+				validationRecorded: true,
+				rollbackAndResidualRiskRecorded: true,
+			};
 		case "testing_reviewer":
 			return {
 				scopeEvidence: ["review artifact"],
@@ -45,6 +61,14 @@ function payloadFor(gateId: HeGateId): HeGatePayload {
 				scopeEvidence: ["no review feedback"],
 				feedbackInventory: [],
 				accountedItems: 0,
+			};
+		case "ubiquitous_language":
+			return {
+				scopeEvidence: ["UBIQUITOUS_LANGUAGE.md"],
+				glossaryReviewed: true,
+				canonicalTermsApplied: true,
+				promptTranslationsUpdated: true,
+				instructionPointerChecked: true,
 			};
 	}
 }
@@ -103,17 +127,22 @@ function phaseExit(
 		},
 		requiredGates: [
 			"simplify",
+			"improve_codebase_architecture",
+			"unslopify",
 			"testing_reviewer",
 			"he_fix_bugs",
 			"he_code_review",
 		],
-		optionalGates: ["autofix"],
+		optionalGates: ["autofix", "ubiquitous_language"],
 		gates: [
 			passingGate("simplify"),
+			passingGate("improve_codebase_architecture"),
+			passingGate("unslopify"),
 			passingGate("testing_reviewer"),
 			notApplicableGate("he_fix_bugs"),
 			passingGate("he_code_review"),
 			notApplicableGate("autofix", false),
+			{ ...passingGate("ubiquitous_language", false), required: false },
 		],
 		...overrides,
 	});
@@ -185,15 +214,25 @@ describe("normaliseHePhaseExitResult", () => {
 			expect.objectContaining({
 				id: "he-phase-exit.blocker.0",
 				severity: "error",
-				message: "testing_reviewer gate has not run",
+				message: "improve_codebase_architecture gate has not run",
 			}),
 			expect.objectContaining({
 				id: "he-phase-exit.blocker.1",
 				severity: "error",
-				message: "he_fix_bugs gate has not run",
+				message: "unslopify gate has not run",
 			}),
 			expect.objectContaining({
 				id: "he-phase-exit.blocker.2",
+				severity: "error",
+				message: "testing_reviewer gate has not run",
+			}),
+			expect.objectContaining({
+				id: "he-phase-exit.blocker.3",
+				severity: "error",
+				message: "he_fix_bugs gate has not run",
+			}),
+			expect.objectContaining({
+				id: "he-phase-exit.blocker.4",
 				severity: "error",
 				message: "he_code_review gate has not run",
 			}),
@@ -207,6 +246,8 @@ describe("normaliseHePhaseExitResult", () => {
 		const decision = phaseExit({
 			gates: [
 				passingGate("simplify"),
+				passingGate("improve_codebase_architecture"),
+				passingGate("unslopify"),
 				passingGate("testing_reviewer"),
 				notApplicableGate("he_fix_bugs"),
 				{

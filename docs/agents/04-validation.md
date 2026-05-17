@@ -15,6 +15,7 @@ last_validated: 2026-04-30
 - [Docs-only edits](#docs-only-edits)
 - [Code + command behavior edits](#code--command-behavior-edits)
 - [North-star learning loop closeout](#north-star-learning-loop-closeout)
+- [Steering feedback closeout](#steering-feedback-closeout)
 - [Process/agent instruction edits](#processagent-instruction-edits)
 - [Verify-work lifecycle](#verify-work-lifecycle)
 - [Execution order and restart policy](#execution-order-and-restart-policy)
@@ -116,6 +117,44 @@ The `--files` value accepts comma-separated paths or multiple following path tok
 Use plain `harness ...` for downstream or installed-package contexts, not for source-checkout PR closeout evidence.
 
 The purpose is to keep repeated review learning load-bearing. A PR should not claim north-star alignment only because it added policy prose; it should show which learning evidence was checked, enforced, measured, or consciously excluded.
+
+### Steering feedback closeout
+
+Use the agent engineering proof loop when feedback, PR comments, failed checks, benchmark-style success, workflow-skill misses, or line-level corrections point beyond one local edit. The loop exists because code production can pass a narrow task while still failing software engineering.
+
+The expected outcome contract is the default acceptance frame: Coding Harness is
+a portable agent operating system that makes Codex behave like a software
+engineer, not merely a code generator, across greenfield and brownfield projects
+with zero customer integration ceremony. Before closing meta work, verify the
+changed surfaces still preserve that outcome rather than only preserving a local
+rule or phrase.
+
+If the user has to give the same steering twice, stop ordinary feature work and run repeat-feedback admission. The admission is complete only when the agent can show:
+
+- the repeated feedback and the principle it implies
+- related repo surfaces searched, including sibling code, docs, skills, gates, PR templates, and roadmap/status surfaces when relevant
+- the durable destination chosen, or the tracked exception explaining why no durable destination exists yet
+- the executable guard, template field, schema, test, Project Brain entry, or Linear follow-up that will prevent silent recurrence
+- the focused validation command that proves the admission path still exists
+- the pattern scope inventory when the feedback came from a line-level design correction
+
+1. Observe: capture the concrete signal and recover relevant context, including reflected context from resumed windows, session collector evidence, runtime evidence, or agent reflection when the signal crosses compaction, harness, repo, machine, or environment boundaries.
+2. Orient: translate the signal into the design principle it implies, then search sibling implementations, tests, docs, skills, PRs, issues, automations, and stacked trajectories that share or consume that principle.
+3. Decide: classify the scope as local, pattern-wide, stack-aware, organization-aware, reflected-context-backed, or `Unobserved Horizon`; choose the narrowest durable destination that can carry the principle.
+4. Act: update the shared abstraction, executable gate, schema, scaffold, documented validation rule, Project Brain decision, Linear follow-up, or explicit exception. Do not add standalone doctrine when no enforcement or follow-up destination exists.
+5. Close out: report the principle, searched scope, chosen destination, validation surface, maintainability impact, traceability, handoff evidence, and review or deletion condition.
+
+For line-level design feedback, closeout must include a pattern scope inventory. The inventory names the inferred principle, lists the sibling implementations searched, states which siblings changed, states which siblings were intentionally left unchanged with reasons, and links any deferred follow-up. A local-only patch is valid only when the inventory explains why the principle does not apply elsewhere.
+
+Example: "return a named sentinel error instead of a success/failure boolean" is not only a request to edit one function. It is API design feedback: search sibling boolean-result APIs in the same command core, adapter family, and tests, then either update the shared pattern or explain why the named function is intentionally different.
+
+Example: a PR closeout fix for one branch is not done until the loop checks sibling stacked PRs, `pr-green-sweep`, CodeRabbit/CircleCI interpretation, Linear references, roadmap status surfaces, and any reflected context needed to observe those lanes.
+
+Example: a high-level workflow skill such as "log in", "upload attachments and start a chat", or "grant this group access to a workplace agent" is not proven because its instructions look plausible. Define a capture-the-flag eval with an observable win condition in the UI or tool surface, run the skill, retain session or trace evidence, let Codex reflect on failed attempts, commit the minimal skill or harness improvement, and rerun until the flag is captured or the blocker is named.
+
+Do not satisfy this by adding standalone prose only. If the destination is documentation, tie it to an existing docs-gate, glossary guard, PR template field, command contract, or tracked follow-up.
+
+Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps the steering-feedback rule connected across `AGENTS.md`, this validation guide, `UBIQUITOUS_LANGUAGE.md`, and the current solution record.
 
 ### Process/agent instruction edits
 

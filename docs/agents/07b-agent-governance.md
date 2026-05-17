@@ -90,6 +90,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `harness pr-closeout`, required PR metadata, or AI session/traceability
   evidence should stay read-only, tool-evidence-backed, secret-redacting, and
   synchronized with the PR template, validation docs, CLI docs, and AGENTS
+- repeated steering feedback is an agent-governance signal, not a one-line
+  patch request. PRs that encode steering feedback should record the broader
+  design principle, search sibling implementations, update every required
+  governance surface or durable destination, and list unchanged or deferred
+  siblings in the PR template pattern scope inventory
 - AI-assisted PRs should cite a concrete Codex/session-collector/harness run
   reference and, when available, CI, eval, runtime-card, evidence-bundle, or
   review trace references. Use `n.a.` only with a concrete reason, and keep raw

@@ -2,9 +2,63 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+	HE_GATE_RESULT_SCHEMA_VERSION,
+	HE_PHASE_EXIT_SCHEMA_VERSION,
+} from "../lib/decision/he-phase-exit.js";
 import { runPrCloseoutCLI } from "./pr-closeout.js";
 
 type TestRunner = NonNullable<Parameters<typeof runPrCloseoutCLI>[1]>["runner"];
+
+const PASSING_PHASE_EXIT = {
+	schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
+	phaseContext: {
+		phase: "closeout",
+		failingEvidencePresent: false,
+		reviewFeedbackPresent: false,
+	},
+	recommendation: "continue",
+	commitAllowed: true,
+	exitAllowed: true,
+	blockers: [],
+	warnings: [],
+	gates: [
+		{
+			schemaVersion: HE_GATE_RESULT_SCHEMA_VERSION,
+			gateId: "simplify",
+			required: true,
+			executionMode: "direct_skill",
+			status: "pass",
+			payload: {
+				scopeEvidence: ["artifacts/reviews/simplify.md"],
+				reuseReviewed: true,
+				qualityReviewed: true,
+				efficiencyReviewed: true,
+			},
+			evidenceRefs: [
+				{
+					id: "simplify-evidence",
+					kind: "artifact",
+					ref: "artifact:simplify",
+					gateLocal: true,
+				},
+			],
+			findings: [],
+			actions: [],
+			validation: [],
+			requiresHuman: false,
+			safeToContinue: true,
+			reason: null,
+			blockedReason: null,
+		},
+	],
+};
+
+function writePhaseExit(dir: string): string {
+	const path = join(dir, "phase-exit.json");
+	writeFileSync(path, JSON.stringify(PASSING_PHASE_EXIT));
+	return path;
+}
 
 const PR_BODY_WITH_TRACEABILITY = `
 Refs JSC-327
@@ -81,6 +135,7 @@ describe("runPrCloseoutCLI", () => {
 					aiSessionTraceability:
 						"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
 				},
+				phaseExit: PASSING_PHASE_EXIT,
 			}),
 		);
 
@@ -111,6 +166,8 @@ describe("runPrCloseoutCLI", () => {
 	});
 
 	it("collects live GitHub, CircleCI, CodeRabbit, and Snyk tool evidence", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const phaseExitPath = writePhaseExit(dir);
 		const calls: string[] = [];
 		const runner = (
 			command: string,
@@ -136,7 +193,15 @@ describe("runPrCloseoutCLI", () => {
 			return "ok";
 		};
 		const result = await capture(
-			["--json", "--repo", process.cwd(), "--pr", "258"],
+			[
+				"--json",
+				"--repo",
+				process.cwd(),
+				"--pr",
+				"258",
+				"--phase-exit",
+				phaseExitPath,
+			],
 			runner,
 		);
 
