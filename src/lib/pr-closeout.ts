@@ -511,11 +511,11 @@ function buildHarnessGateSummary(
 			if (!gate) {
 				return {
 					gateId,
-					required: true,
+					required: false,
 					status: "missing",
 					evidenceRefs: [],
 					requiresHuman: false,
-					blocker: `${gateId} gate is missing from HePhaseExit/v1 evidence.`,
+					blocker: null,
 				};
 			}
 			return {

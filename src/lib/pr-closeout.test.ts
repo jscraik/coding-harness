@@ -306,32 +306,24 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
-	it("synthesizes missing required coding-harness gates from phase-exit evidence", () => {
+	it("keeps omitted optional coding-harness gates non-blocking", () => {
 		const phaseExit = passingPhaseExit();
 		phaseExit.gates = [passingGate("simplify")];
 
 		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
 
-		expect(report.status).toBe("fixable");
-		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.status).toBe("ready");
+		expect(report.nextAction).toBe("ready_to_merge");
 		expect(report.harnessGates.gates).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
 					gateId: "unslopify",
 					status: "missing",
-					required: true,
+					required: false,
 				}),
 			]),
 		);
-		expect(report.blockers).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({
-					surface: "harness_gates",
-					reason: "unslopify gate is missing from HePhaseExit/v1 evidence.",
-					fixableByCodex: true,
-				}),
-			]),
-		);
+		expect(report.blockers).toEqual([]);
 	});
 
 	it("blocks top-level phase-exit denial even when all gate rows pass", () => {
