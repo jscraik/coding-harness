@@ -41,6 +41,8 @@ const CLOSEOUT_STATE_FIELD_PATTERNS = [
 	[/Linear state/i, "Linear state"],
 	[/next-lane routing/i, "next-lane routing"],
 ];
+const REVIEW_THREAD_TRUTH_PATTERN =
+	/(GitHub GraphQL[\s\S]*reviewThreads[\s\S]*isResolved[\s\S]*isOutdated|reviewThreads[\s\S]*flat comments[\s\S]*not sufficient)/i;
 const AGENT_ENGINEERING_LOOP_PATTERN = /agent engineering proof loop/i;
 const LOOP_MOVE_PATTERNS = [
 	/observe/i,
@@ -310,6 +312,13 @@ function validateValidationDoc(content) {
 			`closeout state classification field: ${fieldName}`,
 		);
 	}
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		REVIEW_THREAD_TRUTH_PATTERN,
+		"GraphQL reviewThreads source-of-truth requirement",
+	);
 	return errors;
 }
 
