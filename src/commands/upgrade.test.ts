@@ -72,7 +72,9 @@ describe("fingerprintContent", () => {
 	});
 
 	it("is deterministic for the same input", () => {
-		expect(fingerprintContent("abc")).toBe(fingerprintContent("abc"));
+		expect(fingerprintContent("abc")).toBe(
+			"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+		);
 	});
 
 	it("differs for different inputs", () => {

@@ -28,10 +28,7 @@ describe("tracer", () => {
 
 	describe("generateTraceId", () => {
 		it("generates stable IDs", () => {
-			const seed = "test-seed-123";
-			const id1 = generateTraceId(seed);
-			const id2 = generateTraceId(seed);
-			expect(id1).toBe(id2);
+			expect(generateTraceId("test-seed-123")).toBe("trace-936c279b9350150f");
 		});
 
 		it("generates unique IDs for different seeds", () => {
