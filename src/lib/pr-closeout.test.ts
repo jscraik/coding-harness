@@ -306,9 +306,40 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
-	it("keeps omitted optional coding-harness gates non-blocking", () => {
+	it("blocks omitted default coding-harness gates", () => {
 		const phaseExit = passingPhaseExit();
 		phaseExit.gates = [passingGate("simplify")];
+
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.harnessGates.gates).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					gateId: "unslopify",
+					status: "missing",
+					required: true,
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					reason: "unslopify gate is missing from HePhaseExit/v1 evidence.",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
+	it("keeps omitted conditional coding-harness gates non-blocking", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.gates = phaseExit.gates.filter(
+			(gate) =>
+				gate.gateId !== "autofix" && gate.gateId !== "ubiquitous_language",
+		);
 
 		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
 
@@ -317,9 +348,10 @@ describe("buildPrCloseoutReport", () => {
 		expect(report.harnessGates.gates).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
-					gateId: "unslopify",
+					gateId: "ubiquitous_language",
 					status: "missing",
 					required: false,
+					blocker: null,
 				}),
 			]),
 		);

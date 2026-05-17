@@ -1,4 +1,5 @@
 import {
+	HARNESS_CLOSEOUT_GATE_CONTRACTS,
 	HARNESS_CLOSEOUT_GATE_IDS,
 	type HeGateId,
 	type HeGateStatus,
@@ -509,13 +510,17 @@ function buildHarnessGateSummary(
 		gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => {
 			const gate = gatesById.get(gateId);
 			if (!gate) {
+				const required =
+					HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default";
 				return {
 					gateId,
-					required: false,
+					required,
 					status: "missing",
 					evidenceRefs: [],
 					requiresHuman: false,
-					blocker: null,
+					blocker: required
+						? `${gateId} gate is missing from HePhaseExit/v1 evidence.`
+						: null,
 				};
 			}
 			return {
