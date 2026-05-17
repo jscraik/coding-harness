@@ -82,6 +82,12 @@ function requirePattern(errors, label, content, pattern, description) {
 	}
 }
 
+/**
+ * Validate that AGENTS.md contains all required steering-feedback contract patterns.
+ *
+ * @param {string} content - The full text of AGENTS.md to be checked.
+ * @returns {string[]} An array of error messages for each missing required pattern; empty if all checks pass.
+ */
 function validateAgents(content) {
 	const errors = [];
 	requirePattern(
@@ -192,6 +198,14 @@ function validateAgents(content) {
 	return errors;
 }
 
+/**
+ * Validate that the validation document includes required steering-feedback closeout headings, signals, and contract evidence.
+ *
+ * Checks for the steering feedback closeout section, agent engineering proof loop and loop moves, expected-outcome framing, admission and research signals (repeat-feedback, current-session admission, repeated-error research), durable destination and meta-behavior proof, validation-surface and review/deletion conditions, rejection of standalone prose, pattern-generalization and pattern-scope inventory requirements, principle-signal and OODA horizon classifications, reflected-context evidence, engineering and workflow-skill proofs, closeout completion expectations, required closeout state classification fields, and a GraphQL reviewThreads source-of-truth pattern.
+ *
+ * @param {string} content - The markdown content of the validation document to validate.
+ * @returns {string[]} An array of error messages describing missing required headings or patterns; empty if all checks pass.
+ */
 function validateValidationDoc(content) {
 	const errors = [];
 	requirePattern(
@@ -383,6 +397,12 @@ function validateValidationDoc(content) {
 	return errors;
 }
 
+/**
+ * Validates that the glossary content contains required steering-feedback contract terms and patterns.
+ *
+ * @param {string} content - The full text of the glossary file to validate.
+ * @returns {string[]} An array of error messages describing missing terms or patterns; empty if all checks pass.
+ */
 function validateGlossary(content) {
 	const errors = [];
 	requirePattern(
@@ -544,6 +564,12 @@ function validateGlossary(content) {
 	return errors;
 }
 
+/**
+ * Validates a dated solution markdown file for required steering-feedback contract sections and evidence.
+ *
+ * @param {string} content - The markdown file contents to validate.
+ * @returns {string[]} An array of error messages describing missing required sections or patterns; empty if the document satisfies all checks.
+ */
 function validateSolution(content) {
 	const errors = [];
 	requirePattern(
@@ -719,6 +745,16 @@ function validateSolution(content) {
 	return errors;
 }
 
+/**
+ * Validate that a pull request template contains the required steering-feedback contract fields and evidence.
+ *
+ * Checks for presence and required evidence for expected outcome alignment, pattern scope inventory,
+ * meta-behavior proof, repeated-error research, the closeout state field, and each required closeout-state
+ * classification field.
+ *
+ * @param {string} content - The full text content of the pull request template file.
+ * @returns {string[]} Array of error messages describing missing fields or evidence; empty if all checks pass.
+ */
 function validatePrTemplate(content) {
 	const errors = [];
 	requirePattern(
@@ -796,6 +832,14 @@ function validatePrTemplate(content) {
 	return errors;
 }
 
+/**
+ * Validate a PR-validator source file for required steering-feedback contract symbols, validator rules, and specific validation messages.
+ *
+ * Checks the provided file content for required identifiers (e.g., steering signal detection, meta-behavior and repeated-error validator rules),
+ * pattern-scope validator presence, semantic trigger coverage, and specific validation error/message strings.
+ * @param {string} content - The text content of the PR-validator source file to validate.
+ * @returns {string[]} An array of error messages describing each missing required pattern; empty if all checks pass.
+ */
 function validatePrValidator(content) {
 	const errors = [];
 	requirePattern(
@@ -864,6 +908,11 @@ function validatePrValidator(content) {
 	return errors;
 }
 
+/**
+ * Validate the memory learnings document for presence of required steering-feedback learning signals.
+ * @param {string} content - Contents of the memory learnings file to check.
+ * @returns {string[]} Array of error messages for each missing learning signal; empty if all required patterns are present.
+ */
 function validateMemory(content) {
 	const errors = [];
 	requirePattern(
