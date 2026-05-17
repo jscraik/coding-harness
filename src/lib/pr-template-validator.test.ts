@@ -74,8 +74,9 @@ describe("validatePrTemplateBody", () => {
 
 	it("fails when Testing has no Command evidence lines", () => {
 		const body = VALID_BODY.replace(/^- Command: .*\n/gm, "");
+		const errors = validatePrTemplateBody(body);
 
-		expect(validatePrTemplateBody(body)).toContain(
+		expect(errors).toContain(
 			"Testing section must include at least one Command evidence line.",
 		);
 	});
@@ -89,9 +90,33 @@ describe("validatePrTemplateBody", () => {
 		expect(
 			validatePrTemplateBody(body).some((error) =>
 				error.includes(
-					"Command evidence must use `Command: <exact command> -> pass|fail|n.a.|blocked (<reason>)` format",
+					"Command evidence must use `Command: <exact command> -> pass|fail`, `-> n.a.|n/a` (optional reason), or `-> blocked (<required reason>)` format",
 				),
 			),
+		).toBe(true);
+	});
+
+	it("fails blocked Command evidence without a reason", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> blocked",
+		);
+		const errors = validatePrTemplateBody(body);
+
+		expect(
+			errors.some((error) => error.includes("Command evidence must use")),
+		).toBe(true);
+	});
+
+	it("fails invalid Command evidence outcomes", () => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> skipped",
+		);
+		const errors = validatePrTemplateBody(body);
+
+		expect(
+			errors.some((error) => error.includes("Command evidence must use")),
 		).toBe(true);
 	});
 

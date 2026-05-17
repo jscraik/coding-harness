@@ -489,6 +489,46 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("routes failed harness gates to Codex when they are safe to continue", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.commitAllowed = false;
+		phaseExit.exitAllowed = false;
+		phaseExit.recommendation = "commit_blocked";
+		phaseExit.gates = phaseExit.gates.map((gate) =>
+			gate.gateId === "he_code_review"
+				? {
+						...gate,
+						status: "fail",
+						safeToContinue: true,
+						reason: "review findings need a targeted fix",
+					}
+				: gate,
+		);
+
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.harnessGates.gates).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					gateId: "he_code_review",
+					status: "fail",
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					classification: "introduced",
+					reason: "review findings need a targeted fix",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
 	it("blocks top-level phase-exit denial even when all gate rows pass", () => {
 		const phaseExit = passingPhaseExit();
 		phaseExit.commitAllowed = false;

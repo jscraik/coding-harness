@@ -268,7 +268,7 @@ function collectCommandEvidenceErrors(testingBody: string): string[] {
 	for (const line of commandLines) {
 		if (!commandEvidencePattern.test(line)) {
 			errors.push(
-				`Command evidence must use \`Command: <exact command> -> pass|fail|n.a.|blocked (<reason>)\` format: ${line}`,
+				`Command evidence must use \`Command: <exact command> -> pass|fail\`, \`-> n.a.|n/a\` (optional reason), or \`-> blocked (<required reason>)\` format: ${line}`,
 			);
 		}
 	}
