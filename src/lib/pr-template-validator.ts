@@ -277,6 +277,12 @@ function collectTestingFieldErrors(body: string): string[] {
 	return errors;
 }
 
+/**
+ * Validate required fields inside the "Work performed" section and collect any related errors.
+ *
+ * @param body - The full pull request body text to inspect
+ * @returns An array of error messages describing missing or invalid required fields in the "Work performed" section; empty if no errors
+ */
 function collectWorkPerformedFieldErrors(body: string): string[] {
 	return collectFieldErrors(
 		body,
@@ -286,6 +292,14 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 	);
 }
 
+/**
+ * Retrieves the normalized value of a labeled field from a specific markdown section.
+ *
+ * @param body - The full PR body markdown to search
+ * @param sectionHeading - The section heading to extract (e.g., `## Work performed`)
+ * @param label - The field label to find (e.g., `Meta-behavior proof`)
+ * @returns The field's normalized text value if present, `null` if the section or labeled field is missing
+ */
 function extractFieldValue(
 	body: string,
 	sectionHeading: string,
@@ -302,6 +316,12 @@ function extractFieldValue(
 	return match ? normalizeFieldValue(match[1] ?? "") : null;
 }
 
+/**
+ * Checks whether a string contains a durable evidence reference composed of a durable meta destination and a concrete durable reference.
+ *
+ * @param value - The string to validate; may be `null`.
+ * @returns `true` if `value` contains both a durable meta destination and a concrete durable reference, `false` otherwise.
+ */
 function hasDurableEvidenceReference(value: string | null): boolean {
 	return (
 		value !== null &&
@@ -310,10 +330,22 @@ function hasDurableEvidenceReference(value: string | null): boolean {
 	);
 }
 
+/**
+ * Counts candidate/fix/option-style entries in the provided text.
+ *
+ * @param value - Text to scan for candidate/fix/option entries
+ * @returns The number of candidate/fix/option-style entries found in `value`
+ */
 function countCandidateFixes(value: string): number {
 	return Array.from(value.matchAll(CANDIDATE_FIX_PATTERN)).length;
 }
 
+/**
+ * Validate meta-behavior fields when the PR text admits steering feedback or repeated user correction.
+ *
+ * @param body - The full PR markdown body to inspect
+ * @returns An array of error messages for missing or invalid durable evidence references in `Meta-behavior proof` and `Learning / reinforcement`; returns an empty array if the steering signal is absent or both fields are valid.
+ */
 function collectMetaBehaviorErrors(body: string): string[] {
 	const bodyWithoutMetaFields = body
 		.split(/\r?\n/)
@@ -353,6 +385,13 @@ function collectMetaBehaviorErrors(body: string): string[] {
 	return errors;
 }
 
+/**
+ * Validates the "Pattern scope inventory" field when the PR text admits line-level or design-pattern scope correction.
+ *
+ * Checks that, when a pattern-scope admission is present, the `Pattern scope inventory` value names the inferred principle, sibling patterns searched, siblings changed, and siblings left unchanged or deferred with reasons; otherwise returns an explanatory error.
+ *
+ * @returns An array of error messages; empty if the check passes or if the pattern-scope admission is not present.
+ */
 function collectPatternScopeInventoryErrors(body: string): string[] {
 	const bodyWithoutInventoryField = body
 		.split(/\r?\n/)
@@ -380,6 +419,16 @@ function collectPatternScopeInventoryErrors(body: string): string[] {
 	return [];
 }
 
+/**
+ * Validates the "Repeated-error research" field when the PR body admits that the same error occurred more than once.
+ *
+ * When the PR contains a repeated-error admission signal, ensures the `Repeated-error research` field in `## Work performed`
+ * is present, matches all required evidence patterns (including Source, Chosen, and Implemented evidence), and lists between
+ * three and five numbered candidate/fix/option entries.
+ *
+ * @param body - The full pull request body to validate
+ * @returns An array of validation error messages; empty if no repeated-error admission is present or the field satisfies requirements
+ */
 function collectRepeatedErrorResearchErrors(body: string): string[] {
 	const bodyWithoutResearchField = body
 		.split(/\r?\n/)
@@ -411,6 +460,12 @@ function collectRepeatedErrorResearchErrors(body: string): string[] {
 	return [];
 }
 
+/**
+ * Validates the `- Command:` evidence lines within a Testing section.
+ *
+ * @param testingBody - The markdown content of the `## Testing` section to inspect
+ * @returns An array of error messages describing formatting violations; empty if all command evidence lines conform to the required patterns
+ */
 function collectCommandEvidenceErrors(testingBody: string): string[] {
 	const commandLines = testingBody
 		.split(/\r?\n/)
@@ -436,7 +491,13 @@ function collectCommandEvidenceErrors(testingBody: string): string[] {
 }
 
 /**
- * Validate a pull request body against the repository PR template contract.
+ * Validate a pull request body against the repository's PR template and formatting rules.
+ *
+ * Performs high-level checks including required section presence, required fields in
+ * "Work performed" and "Testing", checklist validation, placeholder detection, and
+ * evidence-format rules for meta-behavior, pattern scope, and repeated-error research.
+ *
+ * @returns An array of error messages describing template or formatting violations; an empty array if no issues are found.
  */
 export function validatePrTemplateBody(body: string): string[] {
 	const errors: string[] = [];
