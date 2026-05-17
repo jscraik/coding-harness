@@ -35,6 +35,13 @@ Line-level design feedback requires a pattern scope inventory before closeout. T
 
 For high-level workflow skills, the proof loop must define a capture-the-flag style win condition and retain the session or trace evidence that proves the agent closed the loop. A skill workout is complete only when Codex has attempted the workflow, reflected on failures, committed targeted skill or harness improvements, and rerun against the flag or named a concrete blocker.
 
+For PR and automation work, green checks are validation evidence, not closeout
+completion. A lane is complete only after PR state, merge or auto-merge state,
+branch/worktree state, Linear state, next-lane routing, and continuation or
+heartbeat state are classified. If the PR is open but blocked on merge,
+approval, review, or waiting owner, the lane is waiting; deleting the heartbeat
+without that classification repeats the failure this solution records.
+
 Standalone prose is not enough. If the loop produces only advice, record the missing enforcement destination as a follow-up instead of treating the rule as admitted.
 
 Minimum repeat-feedback admission evidence:
@@ -53,6 +60,8 @@ Minimum repeat-feedback admission evidence:
 - docs/agents/04-validation.md defines the agent engineering proof loop and its closeout evidence.
 - UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
 - .github/PULL_REQUEST_TEMPLATE.md requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.
+- .github/PULL_REQUEST_TEMPLATE.md requires explicit closeout state so PR
+  evidence cannot collapse green checks into workflow completion.
 
 ## Review Condition
 

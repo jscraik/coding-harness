@@ -95,6 +95,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   design principle, search sibling implementations, update every required
   governance surface or durable destination, and list unchanged or deferred
   siblings in the PR template pattern scope inventory
+- green required checks are not enough to declare closeout complete. Before an
+  agent deletes a heartbeat, closes a lane, or starts the next slice, it should
+  classify PR state, merge or auto-merge state, branch/worktree state, Linear
+  state, next-lane routing, and any waiting owner or blocker. If the PR is open
+  but blocked on review, merge, or approval, the correct status is waiting, not
+  complete
 - AI-assisted PRs should cite a concrete Codex/session-collector/harness run
   reference and, when available, CI, eval, runtime-card, evidence-bundle, or
   review trace references. Use `n.a.` only with a concrete reason, and keep raw

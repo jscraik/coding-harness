@@ -144,6 +144,27 @@ If the user has to give the same steering twice, stop ordinary feature work and 
 4. Act: update the shared abstraction, executable gate, schema, scaffold, documented validation rule, Project Brain decision, Linear follow-up, or explicit exception. Do not add standalone doctrine when no enforcement or follow-up destination exists.
 5. Close out: report the principle, searched scope, chosen destination, validation surface, maintainability impact, traceability, handoff evidence, and review or deletion condition.
 
+PR, automation, or heartbeat closeout completion is not the same thing as green
+checks. Green checks prove the validation sub-state only. Before an agent says a
+closeout lane is complete, stops a heartbeat, or moves to the next slice, it
+must classify:
+
+- PR state: open, draft, ready, merged, closed, or missing.
+- Merge state: ready to merge, blocked, auto-merge enabled, manual approval needed,
+  or not applicable.
+- Branch and worktree state: clean, dirty, pushed, behind, merged, deleted, or
+  intentionally retained.
+- Linear state: referenced issue resolves, PR is attached or linked, status is
+  correct, or the tracker check is blocked with a concrete reason.
+- Next-lane routing: the next roadmap/live-truth slice is named, deferred, or
+  blocked with evidence.
+- Continuation state: heartbeat, automation, or follow-up remains active when
+  work is waiting; delete it only when the lane is merged/closed or explicitly
+  handed off as ready with a waiting owner and reason.
+
+If any of those states are unknown, closeout is `waiting` or `blocked`, not
+`complete`.
+
 For line-level design feedback, closeout must include a pattern scope inventory. The inventory names the inferred principle, lists the sibling implementations searched, states which siblings changed, states which siblings were intentionally left unchanged with reasons, and links any deferred follow-up. A local-only patch is valid only when the inventory explains why the principle does not apply elsewhere.
 
 Example: "return a named sentinel error instead of a success/failure boolean" is not only a request to edit one function. It is API design feedback: search sibling boolean-result APIs in the same command core, adapter family, and tests, then either update the shared pattern or explain why the named function is intentionally different.

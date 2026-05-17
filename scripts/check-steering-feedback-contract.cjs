@@ -30,6 +30,10 @@ const ENGINEERING_PROOF_PATTERN =
 	/(software engineering proof|code production|benchmark-style|swe bench|program bench|terminal bench|maintainability|traceability|handoff quality)/i;
 const WORKFLOW_SKILL_PROOF_PATTERN =
 	/(workflow skill|capture-the-flag|capture the flag|win condition|flag is captured|skill workout|self-reflection|reflect on failures)/i;
+const CLOSEOUT_COMPLETION_PATTERN =
+	/(closeout completion|green checks.*not.*complete|green checks.*validation evidence|not equivalent to green checks|PR state.*merge.*Linear.*next-lane|heartbeat.*lane.*complete)/i;
+const CLOSEOUT_STATE_FIELDS_PATTERN =
+	/(PR state[\s\S]*merge[\s\S]*(branch\/worktree|branch and worktree)[\s\S]*Linear[\s\S]*next-lane|merge or auto-merge state[\s\S]*(branch\/worktree|branch and worktree) state[\s\S]*Linear state[\s\S]*next-lane routing)/i;
 const AGENT_ENGINEERING_LOOP_PATTERN = /agent engineering proof loop/i;
 const LOOP_MOVE_PATTERNS = [
 	/observe/i,
@@ -135,6 +139,13 @@ function validateAgents(content) {
 		content,
 		WORKFLOW_SKILL_PROOF_PATTERN,
 		"workflow skill capture-the-flag proof rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
+		CLOSEOUT_COMPLETION_PATTERN,
+		"closeout completion is not green checks rule",
 	);
 	return errors;
 }
@@ -276,6 +287,20 @@ function validateValidationDoc(content) {
 		WORKFLOW_SKILL_PROOF_PATTERN,
 		"workflow skill capture-the-flag proof requirement",
 	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		CLOSEOUT_COMPLETION_PATTERN,
+		"closeout completion is not validation-only requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		CLOSEOUT_STATE_FIELDS_PATTERN,
+		"closeout state classification fields",
+	);
 	return errors;
 }
 
@@ -402,6 +427,20 @@ function validateGlossary(content) {
 		WORKFLOW_SKILL_PROOF_PATTERN,
 		"workflow skill capture-the-flag proof language",
 	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		/^\| Closeout Completion \|/m,
+		"canonical Closeout Completion term",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		CLOSEOUT_COMPLETION_PATTERN,
+		"closeout completion language",
+	);
 	return errors;
 }
 
@@ -521,6 +560,13 @@ function validateSolution(content) {
 		WORKFLOW_SKILL_PROOF_PATTERN,
 		"workflow skill capture-the-flag proof evidence",
 	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		CLOSEOUT_COMPLETION_PATTERN,
+		"closeout completion evidence",
+	);
 	return errors;
 }
 
@@ -553,6 +599,20 @@ function validatePrTemplate(content) {
 		content,
 		PATTERN_SCOPE_INVENTORY_PATTERN,
 		"pattern scope inventory evidence requirements",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prTemplate,
+		content,
+		/Closeout state:/,
+		"closeout state field",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prTemplate,
+		content,
+		CLOSEOUT_STATE_FIELDS_PATTERN,
+		"closeout state evidence requirements",
 	);
 	return errors;
 }

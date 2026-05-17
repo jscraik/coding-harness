@@ -19,6 +19,7 @@
 - Acceptance trace: map completed acceptance items to evidence refs, or `n.a.` with reason
 - Validation evidence: list command outcomes, CI jobs, artifact paths, or `n.a.` with reason
 - Review artifacts: list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason
+- Closeout state: classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner
 - Learning / reinforcement: list promoted learnings, memory updates, or `none` with reason
 - Deferred work: list follow-up work intentionally left out, or `none`
 
