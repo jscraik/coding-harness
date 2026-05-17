@@ -3,6 +3,8 @@
 const { existsSync, readFileSync } = require("node:fs");
 const { resolve } = require("node:path");
 
+const REPO_ROOT = resolve(__dirname, "..");
+
 const REQUIRED_FILES = {
 	agents: "AGENTS.md",
 	validation: "docs/agents/04-validation.md",
@@ -44,7 +46,7 @@ const LOOP_MOVE_PATTERNS = [
 ];
 
 function readRequiredFile(label, path) {
-	const absPath = resolve(path);
+	const absPath = resolve(REPO_ROOT, path);
 	if (!existsSync(absPath)) {
 		return {
 			content: "",

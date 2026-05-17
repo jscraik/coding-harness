@@ -33,7 +33,7 @@ This is the distinction between code production and software engineering proof. 
 
 Line-level design feedback requires a pattern scope inventory before closeout. The agent must name the inferred design principle, list the sibling implementations searched, state which siblings changed, state which siblings were intentionally left unchanged with reasons, and record deferred follow-ups. Otherwise the harness has only optimized the example line, not the class of misbehavior the feedback exposed.
 
-For high-level workflow skills, the proof loop must define a capture-the-flag style win condition and retain the session or trace evidence that proves the agent closed the loop. A skill workout is complete only when Codex has attempted the workflow, reflected on failures, committed targeted skill or harness improvements, and rerun against the flag or named a concrete blocker.
+For high-level workflow skills, the proof loop must define a capture-the-flag-style win condition and retain the session or trace evidence that proves the agent closed the loop. A skill workout is complete only when Codex has attempted the workflow, reflected on failures, committed targeted skill or harness improvements, and rerun against the flag or named a concrete blocker.
 
 For PR and automation work, green checks are validation evidence, not closeout
 completion. A lane is complete only after PR state, merge or auto-merge state,
@@ -59,8 +59,8 @@ Minimum repeat-feedback admission evidence:
 - AGENTS.md defines agent engineering proof as the compact operating rule for steering feedback, line-level corrections, OODA horizons, reflected context, and benchmark-vs-engineering proof.
 - docs/agents/04-validation.md defines the agent engineering proof loop and its closeout evidence.
 - UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
-- .github/PULL_REQUEST_TEMPLATE.md requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.
-- .github/PULL_REQUEST_TEMPLATE.md requires explicit closeout state so PR
+- The GitHub pull request template requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.
+- The GitHub pull request template requires explicit closeout state so PR
   evidence cannot collapse green checks into workflow completion.
 
 ## Review Condition

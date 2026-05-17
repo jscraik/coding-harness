@@ -300,7 +300,92 @@ describe("buildPrCloseoutReport", () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					surface: "harness_gates",
-					reason: "unslopify closeout gate is not_run.",
+					reason: "unslopify gate has no gate-local evidence source",
+				}),
+			]),
+		);
+	});
+
+	it("synthesizes missing required coding-harness gates from phase-exit evidence", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.gates = [passingGate("simplify")];
+
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.harnessGates.gates).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					gateId: "unslopify",
+					status: "missing",
+					required: true,
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					reason: "unslopify gate is missing from HePhaseExit/v1 evidence.",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
+	it("blocks top-level phase-exit denial even when all gate rows pass", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.commitAllowed = false;
+		phaseExit.exitAllowed = false;
+		phaseExit.recommendation = "commit_blocked";
+		phaseExit.blockers = ["phase exit denied by policy"];
+
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
+
+		expect(report.status).toBe("blocked");
+		expect(report.nextAction).toBe("needs_jamie_decision");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					classification: "unknown",
+					reason:
+						"HePhaseExit/v1 denies closeout (recommendation=commit_blocked, commitAllowed=false, exitAllowed=false).",
+					fixableByCodex: false,
+				}),
+			]),
+		);
+	});
+
+	it("routes human-required harness gate blockers to Jamie", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.commitAllowed = false;
+		phaseExit.exitAllowed = false;
+		phaseExit.recommendation = "human_review_required";
+		phaseExit.gates = phaseExit.gates.map((gate) =>
+			gate.gateId === "he_code_review"
+				? {
+						...gate,
+						status: "blocked",
+						requiresHuman: true,
+						safeToContinue: false,
+						blockedReason: "human review required before closeout",
+					}
+				: gate,
+		);
+
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
+
+		expect(report.status).toBe("needs_jamie");
+		expect(report.nextAction).toBe("needs_jamie_decision");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					classification: "needs_jamie_decision",
+					reason: "human review required before closeout",
+					fixableByCodex: false,
 				}),
 			]),
 		);

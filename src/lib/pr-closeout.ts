@@ -87,6 +87,7 @@ export interface PrCloseoutHarnessGateEvidence {
 	required: boolean;
 	status: HeGateStatus | "missing";
 	evidenceRefs: string[];
+	requiresHuman: boolean;
 	blocker: string | null;
 }
 
@@ -274,9 +275,7 @@ function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 	}
 	if (
 		blockers.some(
-			(blocker) =>
-				blocker.surface === "pr" &&
-				blocker.classification === "needs_jamie_decision",
+			(blocker) => blocker.classification === "needs_jamie_decision",
 		)
 	) {
 		return {
@@ -496,22 +495,38 @@ function buildHarnessGateSummary(
 				required: true,
 				status: "missing",
 				evidenceRefs: [],
+				requiresHuman: false,
 				blocker: "HePhaseExit/v1 closeout gate evidence was not supplied.",
 			})),
 		};
 	}
+	const gatesById = new Map(phaseExit.gates.map((gate) => [gate.gateId, gate]));
 	return {
 		phaseExitPresent: true,
 		recommendation: phaseExit.recommendation,
 		commitAllowed: phaseExit.commitAllowed,
 		exitAllowed: phaseExit.exitAllowed,
-		gates: phaseExit.gates.map((gate) => ({
-			gateId: gate.gateId,
-			required: gate.required,
-			status: gate.status,
-			evidenceRefs: gate.evidenceRefs.map((ref) => ref.ref),
-			blocker: gate.blockedReason ?? gate.reason,
-		})),
+		gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => {
+			const gate = gatesById.get(gateId);
+			if (!gate) {
+				return {
+					gateId,
+					required: true,
+					status: "missing",
+					evidenceRefs: [],
+					requiresHuman: false,
+					blocker: `${gateId} gate is missing from HePhaseExit/v1 evidence.`,
+				};
+			}
+			return {
+				gateId: gate.gateId,
+				required: gate.required,
+				status: gate.status,
+				evidenceRefs: gate.evidenceRefs.map((ref) => ref.ref),
+				requiresHuman: gate.requiresHuman,
+				blocker: gate.blockedReason ?? gate.reason,
+			};
+		}),
 	};
 }
 
@@ -530,7 +545,6 @@ function collectHarnessGateBlockers(
 		});
 		return;
 	}
-	if (harnessGates.commitAllowed && harnessGates.exitAllowed) return;
 	for (const gate of harnessGates.gates) {
 		if (
 			!gate.required ||
@@ -539,12 +553,30 @@ function collectHarnessGateBlockers(
 		) {
 			continue;
 		}
+		const requiresJamie =
+			gate.requiresHuman ||
+			harnessGates.recommendation === "human_review_required";
 		pushBlocker(blockers, {
 			surface: "harness_gates",
-			classification: gate.status === "blocked" ? "unknown" : "introduced",
-			reason: `${gate.gateId} closeout gate is ${gate.status}.`,
-			fixableByCodex: true,
+			classification: requiresJamie
+				? "needs_jamie_decision"
+				: gate.status === "blocked"
+					? "unknown"
+					: "introduced",
+			reason: gate.blocker ?? `${gate.gateId} closeout gate is ${gate.status}.`,
+			fixableByCodex: !requiresJamie,
 			ref: gate.evidenceRefs[0] ?? gate.gateId,
+		});
+	}
+	if (!harnessGates.commitAllowed || !harnessGates.exitAllowed) {
+		const requiresJamie =
+			harnessGates.recommendation === "human_review_required";
+		pushBlocker(blockers, {
+			surface: "harness_gates",
+			classification: requiresJamie ? "needs_jamie_decision" : "unknown",
+			reason: `HePhaseExit/v1 denies closeout (recommendation=${harnessGates.recommendation}, commitAllowed=${String(harnessGates.commitAllowed)}, exitAllowed=${String(harnessGates.exitAllowed)}).`,
+			fixableByCodex: false,
+			ref: "schema:he-phase-exit/v1",
 		});
 	}
 }

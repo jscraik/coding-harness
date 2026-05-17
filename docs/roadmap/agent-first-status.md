@@ -341,7 +341,7 @@ structural mode for fast local iteration, trusted-live mode for real runner proo
 and release-ready mode for retained current-run evidence. Coding Harness should
 reuse that shape instead of inventing a separate proof culture.
 
-For high-level workflow skills, add a capture-the-flag style win condition:
+For high-level workflow skills, add a capture-the-flag-style win condition:
 plant an observable flag in the UI, repository, product state, or tool surface,
 run the skill, retain the session or trace evidence, let Codex reflect on each
 failed attempt, commit targeted skill or harness improvements, and rerun until
