@@ -523,9 +523,12 @@ function buildHarnessGateSummary(
 						: null,
 				};
 			}
+			const required =
+				HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default" ||
+				gate.required;
 			return {
 				gateId: gate.gateId,
-				required: gate.required,
+				required,
 				status: gate.status,
 				evidenceRefs: gate.evidenceRefs.map((ref) => ref.ref),
 				requiresHuman: gate.requiresHuman,
@@ -569,7 +572,7 @@ function collectHarnessGateBlockers(
 					? "unknown"
 					: "introduced",
 			reason: gate.blocker ?? `${gate.gateId} closeout gate is ${gate.status}.`,
-			fixableByCodex: !requiresJamie,
+			fixableByCodex: !requiresJamie && gate.status !== "blocked",
 			ref: gate.evidenceRefs[0] ?? gate.gateId,
 		});
 	}

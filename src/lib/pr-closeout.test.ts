@@ -334,6 +334,48 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("derives default gate requiredness from the canonical contract", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.commitAllowed = false;
+		phaseExit.exitAllowed = false;
+		phaseExit.recommendation = "commit_blocked";
+		phaseExit.gates = phaseExit.gates.map((gate) =>
+			gate.gateId === "unslopify"
+				? {
+						...gate,
+						required: false,
+						status: "not_run",
+						executionMode: "not_run",
+						safeToContinue: false,
+						reason: "unslopify gate was malformed as optional",
+					}
+				: gate,
+		);
+
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.harnessGates.gates).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					gateId: "unslopify",
+					required: true,
+					status: "not_run",
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					reason: "unslopify gate was malformed as optional",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
 	it("keeps omitted conditional coding-harness gates non-blocking", () => {
 		const phaseExit = passingPhaseExit();
 		phaseExit.gates = phaseExit.gates.filter(
@@ -356,6 +398,38 @@ describe("buildPrCloseoutReport", () => {
 			]),
 		);
 		expect(report.blockers).toEqual([]);
+	});
+
+	it("does not route blocked harness gates to Codex by default", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.commitAllowed = false;
+		phaseExit.exitAllowed = false;
+		phaseExit.recommendation = "commit_blocked";
+		phaseExit.gates = phaseExit.gates.map((gate) =>
+			gate.gateId === "he_code_review"
+				? {
+						...gate,
+						status: "blocked",
+						safeToContinue: false,
+						blockedReason: "review dependency unavailable",
+					}
+				: gate,
+		);
+
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }));
+
+		expect(report.status).toBe("blocked");
+		expect(report.nextAction).toBe("needs_jamie_decision");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "harness_gates",
+					classification: "unknown",
+					reason: "review dependency unavailable",
+					fixableByCodex: false,
+				}),
+			]),
+		);
 	});
 
 	it("blocks top-level phase-exit denial even when all gate rows pass", () => {
