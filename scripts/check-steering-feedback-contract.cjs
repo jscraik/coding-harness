@@ -9,21 +9,29 @@ const REQUIRED_FILES = {
 	agents: "AGENTS.md",
 	validation: "docs/agents/04-validation.md",
 	glossary: "UBIQUITOUS_LANGUAGE.md",
+	memory: ".harness/memory/LEARNINGS.md",
 	prTemplate: ".github/PULL_REQUEST_TEMPLATE.md",
+	prValidator: "src/lib/pr-template-validator.ts",
 	solution:
 		"docs/solutions/integration-issues/2026-05-17-steering-feedback-admission.md",
 };
 
 const DURABLE_DESTINATION_PATTERN =
-	/(gate|validator|schema|scaffold|validation rule|project brain|linear|tracked issue|explicit exception)/i;
+	/(gate|validator|schema|scaffold|template field|validation rule|project brain|linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
 const EXPECTED_OUTCOME_PATTERN =
 	/(expected outcome|portable agent operating system|software engineer|code generator|zero customer integration ceremony|greenfield and brownfield)/i;
 const REPEAT_FEEDBACK_ADMISSION_PATTERN =
 	/(repeat-feedback admission|repeated steering|same steering twice|same feedback twice|stop-the-line environment defect|ordinary feature work)/i;
 const PATTERN_GENERALIZATION_PATTERN =
-	/(pattern-generalization|pattern generalization|sibling implementations|shared abstraction|intentionally local|design principle)/i;
+	/(pattern-generalization|pattern generalization|sibling implementations|similar classes of misbehavior|shared abstraction|intentionally local|design principle|design\/API principle)/i;
 const PATTERN_SCOPE_INVENTORY_PATTERN =
-	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|deferred follow-ups|deferred followup)/i;
+	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|similar misbehavior classes searched|deferred follow-ups|deferred followup)/i;
+const PATTERN_SCOPE_VALIDATOR_PATTERN =
+	/(PATTERN_SCOPE_SIGNAL_PATTERN|collectPatternScopeInventoryErrors|Pattern scope inventory must name the inferred principle)/i;
+const PRINCIPLE_SIGNAL_PATTERN =
+	/(Principle Signal|example-based feedback|named-function feedback|single-line corrections|generally|across everything|design model)/i;
+const META_BEHAVIOR_PROOF_PATTERN =
+	/(Meta-behavior proof|durable repo\/system change.*concrete repo path|prevents recurrence|same feedback twice)/i;
 const OODA_HORIZON_PATTERN =
 	/(ooda horizon|horizontal horizon|vertical horizon|single-turn|stacked trajectories|adjacent pr|adjacent organizational activity)/i;
 const REFLECTED_CONTEXT_PATTERN =
@@ -32,6 +40,10 @@ const ENGINEERING_PROOF_PATTERN =
 	/(software engineering proof|code production|benchmark-style|swe bench|program bench|terminal bench|maintainability|traceability|handoff quality)/i;
 const WORKFLOW_SKILL_PROOF_PATTERN =
 	/(workflow skill|capture-the-flag|capture the flag|win condition|flag is captured|skill workout|self-reflection|reflect on failures)/i;
+const CURRENT_SESSION_ADMISSION_PATTERN =
+	/(current-session steering admission record|not permitted to proceed|feedback class.*inferred principle.*searched surfaces.*durable destination|forbidden recurrence behavior)/i;
+const REPEATED_ERROR_RESEARCH_PATTERN =
+	/(Repeated-error research|Repeated-Error Research Pass|same-error-twice|same error happens twice|same error happened twice|same command.*test.*runtime error happens twice|Source:.*Candidate 1:.*Candidate 2:.*Candidate 3:.*Chosen:.*Implemented:|3-5 numbered Candidate\/Fix\/Option|don.t fight errors)/i;
 const CLOSEOUT_COMPLETION_PATTERN =
 	/(closeout completion|green checks.*not.*complete|green checks.*validation evidence|not equivalent to green checks|PR state.*merge.*Linear.*next-lane|heartbeat.*lane.*complete)/i;
 const CLOSEOUT_STATE_FIELD_PATTERNS = [
@@ -97,6 +109,20 @@ function validateAgents(content) {
 		errors,
 		REQUIRED_FILES.agents,
 		content,
+		CURRENT_SESSION_ADMISSION_PATTERN,
+		"current-session steering admission record stop condition",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
+		REPEATED_ERROR_RESEARCH_PATTERN,
+		"repeated-error research stop condition",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
 		DURABLE_DESTINATION_PATTERN,
 		"durable destination list",
 	);
@@ -120,6 +146,13 @@ function validateAgents(content) {
 		content,
 		PATTERN_SCOPE_INVENTORY_PATTERN,
 		"pattern scope inventory requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
+		PRINCIPLE_SIGNAL_PATTERN,
+		"semantic principle signal trigger requirement",
 	);
 	requirePattern(
 		errors,
@@ -209,8 +242,29 @@ function validateValidationDoc(content) {
 		errors,
 		REQUIRED_FILES.validation,
 		content,
+		CURRENT_SESSION_ADMISSION_PATTERN,
+		"current-session steering admission record requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		REPEATED_ERROR_RESEARCH_PATTERN,
+		"repeated-error research requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
 		/Durable destination/i,
 		"durable destination evidence requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		/Meta-behavior proof/i,
+		"meta-behavior proof closeout requirement",
 	);
 	requirePattern(
 		errors,
@@ -246,6 +300,13 @@ function validateValidationDoc(content) {
 		content,
 		PATTERN_SCOPE_INVENTORY_PATTERN,
 		"pattern scope inventory closeout requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		PRINCIPLE_SIGNAL_PATTERN,
+		"semantic principle signal trigger requirement",
 	);
 	requirePattern(
 		errors,
@@ -380,6 +441,13 @@ function validateGlossary(content) {
 		PATTERN_SCOPE_INVENTORY_PATTERN,
 		"pattern scope inventory language",
 	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		PRINCIPLE_SIGNAL_PATTERN,
+		"principle signal language",
+	);
 	for (const term of [
 		"Repeat-Feedback Admission",
 		"Workflow Skill",
@@ -416,6 +484,20 @@ function validateGlossary(content) {
 		content,
 		REPEAT_FEEDBACK_ADMISSION_PATTERN,
 		"repeat-feedback admission language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		CURRENT_SESSION_ADMISSION_PATTERN,
+		"current-session steering admission record language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		REPEATED_ERROR_RESEARCH_PATTERN,
+		"repeated-error research language",
 	);
 	requirePattern(
 		errors,
@@ -526,6 +608,13 @@ function validateSolution(content) {
 		errors,
 		REQUIRED_FILES.solution,
 		content,
+		CURRENT_SESSION_ADMISSION_PATTERN,
+		"current-session steering admission evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
 		DURABLE_DESTINATION_PATTERN,
 		"durable destination language",
 	);
@@ -549,6 +638,34 @@ function validateSolution(content) {
 		content,
 		PATTERN_SCOPE_INVENTORY_PATTERN,
 		"pattern scope inventory evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		PRINCIPLE_SIGNAL_PATTERN,
+		"semantic principle signal trigger evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		/Meta-behavior proof/i,
+		"meta-behavior proof evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		/`?pr-template-gate`? rejects PR bodies/i,
+		"pr-template-gate repeated-steering rejection evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		/pr-template-gate rejects line-level or design-pattern correction admissions/i,
+		"pr-template-gate pattern-scope rejection evidence",
 	);
 	requirePattern(
 		errors,
@@ -584,6 +701,20 @@ function validateSolution(content) {
 		content,
 		CLOSEOUT_COMPLETION_PATTERN,
 		"closeout completion evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		META_BEHAVIOR_PROOF_PATTERN,
+		"meta-behavior proof evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		REPEATED_ERROR_RESEARCH_PATTERN,
+		"repeated-error research evidence",
 	);
 	return errors;
 }
@@ -622,6 +753,34 @@ function validatePrTemplate(content) {
 		errors,
 		REQUIRED_FILES.prTemplate,
 		content,
+		/Meta-behavior proof:/,
+		"meta-behavior proof field",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prTemplate,
+		content,
+		META_BEHAVIOR_PROOF_PATTERN,
+		"meta-behavior proof requirements",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prTemplate,
+		content,
+		/Repeated-error research:/,
+		"repeated-error research field",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prTemplate,
+		content,
+		REPEATED_ERROR_RESEARCH_PATTERN,
+		"repeated-error research requirements",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prTemplate,
+		content,
 		/Closeout state:/,
 		"closeout state field",
 	);
@@ -637,11 +796,135 @@ function validatePrTemplate(content) {
 	return errors;
 }
 
+function validatePrValidator(content) {
+	const errors = [];
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
+		/STEERING_SIGNAL_PATTERN/,
+		"steering signal detection",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
+		/collectMetaBehaviorErrors/,
+		"meta-behavior validator rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
+		PATTERN_SCOPE_VALIDATOR_PATTERN,
+		"pattern scope inventory validator rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
+		/(example-based feedback|concrete correction|single function|not just that line|across everything we do)/i,
+		"semantic pattern-scope trigger coverage",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
+		/REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN/,
+		"repeated-error research signal detection",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
+		/collectRepeatedErrorResearchErrors/,
+		"repeated-error research validator rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
+		/Repeated-error research must include Source, 3-5 numbered Candidate\/Fix\/Option entries, Chosen, and Implemented evidence/,
+		"repeated-error research validation error",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
+		/Meta-behavior proof must name a durable destination/,
+		"meta-behavior durable destination error",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
+		/Learning \/ reinforcement must name the promoted learning/,
+		"learning reinforcement durable destination error",
+	);
+	return errors;
+}
+
+function validateMemory(content) {
+	const errors = [];
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		/current-session steering admission/i,
+		"current-session steering admission learning",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		/not permitted to proceed/i,
+		"not permitted to proceed trigger learning",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		/docs:steering:guard/i,
+		"steering guard validation learning",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		/repeated-error research/i,
+		"repeated-error research learning",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		/3-5 candidate fixes/i,
+		"candidate fix inventory learning",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		/similar misbehavior classes/i,
+		"pattern-generalization similar-misbehavior learning",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		PRINCIPLE_SIGNAL_PATTERN,
+		"principle signal learning",
+	);
+	return errors;
+}
+
 const validations = [
 	["agents", validateAgents],
 	["validation", validateValidationDoc],
 	["glossary", validateGlossary],
+	["memory", validateMemory],
 	["prTemplate", validatePrTemplate],
+	["prValidator", validatePrValidator],
 	["solution", validateSolution],
 ];
 

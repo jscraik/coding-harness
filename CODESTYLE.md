@@ -60,6 +60,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 ## Enforcement model
 - Rules in this pack use RFC2119 language (`MUST`, `MUST NOT`, `SHOULD`) and are normative unless an explicit waiver exists.
 - Waivers MUST include: rule ID or section, reason, tracking ticket, and expiry or ADR reference.
+- Design corrections MUST be generalized before closeout when they imply a broader principle. If feedback says one boolean success/failure API should instead return a named sentinel error, the agent MUST search sibling APIs and tests in the same command core, adapter family, and affected docs/templates; then either update the shared pattern or record why each sibling is intentionally different.
 - Validation evidence MUST use exact command text and explicit outcomes:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`
 - Commands are expected from the active instruction scope and the repository root.
@@ -76,5 +77,6 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 ## How to use this pack
 1. Start at this file.
 2. Open only the module that matches the task surface.
-3. Keep project-specific override content in `06-appendices-and-project-overrides.md`.
-4. When changing standards, update the module first, then confirm this index still matches.
+3. If user/review feedback corrects one line but implies a codebase rule, run the pattern-generalization pass before editing or claiming done.
+4. Keep project-specific override content in `06-appendices-and-project-overrides.md`.
+5. When changing standards, update the module first, then confirm this index still matches.

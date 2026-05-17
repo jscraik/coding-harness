@@ -16,6 +16,30 @@ const PLACEHOLDERS = [
 	"Add one-paragraph merge rationale here.",
 ] as const;
 
+const STEERING_SIGNAL_PATTERN =
+	/(admitted repeated steering|repeated steering (showed|exposed|drove|required|was)|same steering twice|same feedback twice|same correction across sessions|same feedback again|user had to restate correction|never give the same feedback twice|not permitted to proceed|current-session steering admission|stop-the-line|high-signal (user )?(steering|feedback|correction)|every bit of steering|failing to operate effectively|steering feedback (showed|exposed|drove|required|was|into))/i;
+const REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN =
+	/(same error (happened|occurred)?\s*twice|same failure twice|same command failed twice|failed twice|failed again with the same|twice in a row|same stack trace|same exception|same error repeated|repeated error|repeated failure|don\u2019t fight errors|don't fight errors|researched fixes|possible ways to fix)/i;
+const PATTERN_SCOPE_SIGNAL_PATTERN =
+	/(line-level correction|line-level design feedback|example-based feedback|concrete correction|single line|single function|one function|single class|just fix that line|do not just fix that line|not just that line|similar classes of misbehavior|similar misbehavior|class of misbehavior|same pattern|sibling implementations|sibling pattern|broader design principle|design model|API design generally|generally|across everything we do|named sentinel error|success and failure as a bool|success\/failure boolean|boolean result)/i;
+const DURABLE_META_DESTINATION_PATTERN =
+	/(gate|validator|schema|scaffold|template field|validation rule|Project Brain|Linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
+const CONCRETE_DURABLE_REFERENCE_PATTERN =
+	/(\b[A-Z]+-\d+\b|(?:^|[\s`])(?:\.?[\w-]+\/)+[\w.-]+|scripts\/[\w./-]+|src\/[\w./-]+|docs\/[\w./-]+|\.harness\/[\w./-]+|\.github\/[\w./-]+|AGENTS\.md|UBIQUITOUS_LANGUAGE\.md|CODESTYLE\.md|harness\.contract\.json|pnpm\s+[\w:-]+|bash\s+scripts\/[\w./-]+)/i;
+const PATTERN_SCOPE_EVIDENCE_PATTERNS = [
+	/(principle|design principle|API design|contract)/i,
+	/(sibling|similar|related|pattern|inventory|searched|misbehavior class)/i,
+	/(changed|updated|applied|propagated)/i,
+	/(left unchanged|unchanged|deferred|not applicable|n\.a\.|tracked issue|exception).*(reason|because|tracked issue|exception|not applicable)|reason.*(left unchanged|unchanged|deferred|not applicable|n\.a\.|tracked issue|exception)/i,
+] as const;
+const REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS = [
+	/(source|research|official docs|web research|upstream docs|research checked|source checked):\s*\S.{8,}/i,
+	/(chosen|selected|most efficient)\s*(fix|option|candidate|way)?:\s*\S.{8,}/i,
+	/(implemented|applied)\s*(fix|change|remediation|patch)?:\s*\S.{8,}/i,
+] as const;
+const CANDIDATE_FIX_PATTERN =
+	/(?:^|[;|]\s*|\s)(?:candidate|option|fix)\s*(?:#?\d+|\d+[).:]|\b(?:one|two|three|four|five)\b)\s*[:=-]\s*[^;|]{8,}/gi;
+
 const REQUIRED_TESTING_FIELDS = [
 	{
 		label: "verification_commands",
@@ -75,7 +99,17 @@ const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Pattern scope inventory",
 		placeholder:
-			"for any steering feedback, review comment, or line-level correction that implies a broader design principle, name the principle, list sibling implementations searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence",
+			"for any steering feedback, review comment, or line-level correction that implies a broader design/API principle, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence",
+	},
+	{
+		label: "Meta-behavior proof",
+		placeholder:
+			"for repeated steering or high-signal corrections, name the durable repo/system change plus concrete repo path, command, or issue ID that prevents recurrence, or `n.a.` with tracked exception reason",
+	},
+	{
+		label: "Repeated-error research",
+		placeholder:
+			"when the same error occurs twice, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason",
 	},
 	{
 		label: "Acceptance trace",
@@ -252,6 +286,131 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 	);
 }
 
+function extractFieldValue(
+	body: string,
+	sectionHeading: string,
+	label: string,
+): string | null {
+	const sectionBody = extractSectionBody(body, sectionHeading);
+	if (sectionBody === null) {
+		return null;
+	}
+
+	const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const pattern = new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im");
+	const match = sectionBody.match(pattern);
+	return match ? normalizeFieldValue(match[1] ?? "") : null;
+}
+
+function hasDurableEvidenceReference(value: string | null): boolean {
+	return (
+		value !== null &&
+		DURABLE_META_DESTINATION_PATTERN.test(value) &&
+		CONCRETE_DURABLE_REFERENCE_PATTERN.test(value)
+	);
+}
+
+function countCandidateFixes(value: string): number {
+	return Array.from(value.matchAll(CANDIDATE_FIX_PATTERN)).length;
+}
+
+function collectMetaBehaviorErrors(body: string): string[] {
+	const bodyWithoutMetaFields = body
+		.split(/\r?\n/)
+		.filter(
+			(line) =>
+				!/^\s*-\s*(Meta-behavior proof|Learning \/ reinforcement):/i.test(line),
+		)
+		.join("\n");
+
+	if (!STEERING_SIGNAL_PATTERN.test(bodyWithoutMetaFields)) {
+		return [];
+	}
+
+	const errors: string[] = [];
+	const metaProof = extractFieldValue(
+		body,
+		"## Work performed",
+		"Meta-behavior proof",
+	);
+	const learning = extractFieldValue(
+		body,
+		"## Work performed",
+		"Learning / reinforcement",
+	);
+
+	if (!hasDurableEvidenceReference(metaProof)) {
+		errors.push(
+			"Meta-behavior proof must name a durable destination and concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+	}
+	if (!hasDurableEvidenceReference(learning)) {
+		errors.push(
+			"Learning / reinforcement must name the promoted learning, memory update, guard, or tracked exception with a concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+	}
+
+	return errors;
+}
+
+function collectPatternScopeInventoryErrors(body: string): string[] {
+	const bodyWithoutInventoryField = body
+		.split(/\r?\n/)
+		.filter((line) => !/^-\s*Pattern scope inventory:/i.test(line))
+		.join("\n");
+
+	if (!PATTERN_SCOPE_SIGNAL_PATTERN.test(bodyWithoutInventoryField)) {
+		return [];
+	}
+
+	const inventory = extractFieldValue(
+		body,
+		"## Work performed",
+		"Pattern scope inventory",
+	);
+	if (
+		inventory === null ||
+		!PATTERN_SCOPE_EVIDENCE_PATTERNS.every((pattern) => pattern.test(inventory))
+	) {
+		return [
+			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings left unchanged or deferred with reasons when PR text admits line-level or design-pattern correction.",
+		];
+	}
+
+	return [];
+}
+
+function collectRepeatedErrorResearchErrors(body: string): string[] {
+	const bodyWithoutResearchField = body
+		.split(/\r?\n/)
+		.filter((line) => !/^-\s*Repeated-error research:/i.test(line))
+		.join("\n");
+
+	if (!REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(bodyWithoutResearchField)) {
+		return [];
+	}
+
+	const research = extractFieldValue(
+		body,
+		"## Work performed",
+		"Repeated-error research",
+	);
+	if (
+		research === null ||
+		!REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS.every((pattern) =>
+			pattern.test(research),
+		) ||
+		countCandidateFixes(research) < 3 ||
+		countCandidateFixes(research) > 5
+	) {
+		return [
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits the same error happened twice.",
+		];
+	}
+
+	return [];
+}
+
 function collectCommandEvidenceErrors(testingBody: string): string[] {
 	const commandLines = testingBody
 		.split(/\r?\n/)
@@ -299,6 +458,9 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectWorkPerformedFieldErrors(body));
+	errors.push(...collectMetaBehaviorErrors(body));
+	errors.push(...collectPatternScopeInventoryErrors(body));
+	errors.push(...collectRepeatedErrorResearchErrors(body));
 	errors.push(...collectChecklistErrors(body));
 	errors.push(...collectTestingFieldErrors(body));
 	errors.push(...collectPlaceholderErrors(body));
