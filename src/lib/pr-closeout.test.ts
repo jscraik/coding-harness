@@ -143,6 +143,34 @@ describe("buildPrCloseoutReport", () => {
 		});
 	});
 
+	it("prioritizes failed checks over pending checks", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{ name: "security-scan", state: "PENDING", source: "circleci" },
+					{ name: "lint", state: "FAILURE", source: "circleci" },
+				],
+			}),
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					reason: "Check failed: lint.",
+					fixableByCodex: true,
+				}),
+				expect.objectContaining({
+					surface: "checks",
+					reason: "Check is still pending: security-scan.",
+					fixableByCodex: false,
+				}),
+			]),
+		);
+	});
+
 	it("requires pushed branch evidence before closeout", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

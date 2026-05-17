@@ -216,18 +216,28 @@ function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 	nextAction: PrCloseoutNextAction;
 	mergeable: boolean;
 } {
-	const [first] = blockers;
-	if (!first) {
+	if (blockers.length === 0) {
 		return { status: "ready", nextAction: "ready_to_merge", mergeable: true };
 	}
-	if (first.surface === "worktree" || first.surface === "branch") {
-		if (first.reason.toLowerCase().includes("conflict")) {
-			return {
-				status: "blocked",
-				nextAction: "resolve_conflicts",
-				mergeable: false,
-			};
-		}
+	if (
+		blockers.some(
+			(blocker) =>
+				(blocker.surface === "worktree" || blocker.surface === "branch") &&
+				blocker.reason.toLowerCase().includes("conflict"),
+		)
+	) {
+		return {
+			status: "blocked",
+			nextAction: "resolve_conflicts",
+			mergeable: false,
+		};
+	}
+	if (
+		blockers.some(
+			(blocker) =>
+				blocker.surface === "worktree" || blocker.surface === "branch",
+		)
+	) {
 		return {
 			status: "cleanup_required",
 			nextAction: "cleanup_before_continue",
@@ -235,19 +245,15 @@ function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 		};
 	}
 	if (
-		first.surface === "pr" &&
-		first.classification === "needs_jamie_decision"
+		blockers.some(
+			(blocker) =>
+				blocker.surface === "pr" &&
+				blocker.classification === "needs_jamie_decision",
+		)
 	) {
 		return {
 			status: "needs_jamie",
 			nextAction: "needs_jamie_decision",
-			mergeable: false,
-		};
-	}
-	if (first.surface === "checks" && !first.fixableByCodex) {
-		return {
-			status: "waiting",
-			nextAction: "wait_for_external_check",
 			mergeable: false,
 		};
 	}
@@ -266,6 +272,17 @@ function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 		return {
 			status: "fixable",
 			nextAction: "codex_can_fix_now",
+			mergeable: false,
+		};
+	}
+	if (
+		blockers.some(
+			(blocker) => blocker.surface === "checks" && !blocker.fixableByCodex,
+		)
+	) {
+		return {
+			status: "waiting",
+			nextAction: "wait_for_external_check",
 			mergeable: false,
 		};
 	}
