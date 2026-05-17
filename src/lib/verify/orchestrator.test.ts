@@ -468,6 +468,7 @@ describe("verify orchestrator", () => {
 			runner: createRunner(sequences),
 		});
 
+		// self-affirming-ok: this assertion verifies deterministic lifecycle replay; following assertions pin the required attempts and final state.
 		expect(first).toEqual(second);
 		expect(
 			first.gateResults.find((gate) => gate.gateId === "lint")?.attempts,
