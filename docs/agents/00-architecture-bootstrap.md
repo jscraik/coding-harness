@@ -88,11 +88,9 @@ For CI ownership architecture changes, keep `harness.contract.json` `ciOwnership
 For PR evidence-template changes, keep the local PR-template validator aligned
 with the GitHub PR body contract so agent closeout, CI validation, and reviewer
 handoff parse the same required ledger headings and fields.
-For PR closeout evidence changes, treat `pr-closeout/v1` and
-`harness pr-closeout` as read-only architecture-adjacent handoff surfaces.
-Refresh `AI/context/diagram-context.md` and keep this guide synchronized with
-`AGENTS.md` and `docs/agents/07b-agent-governance.md` when docs-gate reports
-the architecture-context surface.
+---
+last_validated: 2026-05-17
+---
 
 ## Exact behavior evidence
 
