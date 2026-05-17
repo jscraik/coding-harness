@@ -34,6 +34,8 @@ const VALID_BODY = `## Summary
 - Affected surfaces: code, tests, docs, PR template.
 - Expected outcome alignment: Keeps PR evidence reviewable for downstream harness operators.
 - Pattern scope inventory: validation evidence format checked in PR template gate; no sibling validators needed.
+- Meta-behavior proof: n.a. because this fixture is not driven by steering admission.
+- Repeated-error research: n.a. because this fixture does not admit the same error twice.
 - Acceptance trace: SA-999-001 -> src/commands/pr-template-gate.test.ts.
 - Validation evidence: Command: \`pnpm vitest run src/commands/pr-template-gate.test.ts\` -> pass.
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.

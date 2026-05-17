@@ -362,10 +362,19 @@ export function renderPullRequestTemplate(
 - Phase / slice: list completed phase, implementation slice, or \`n.a.\` with reason
 - Session IDs: list Codex/session-collector/harness session IDs, or \`n.a.\` with reason
 - Trace IDs: list CI, harness, eval, review, or runtime trace IDs, or \`n.a.\` with reason
+- AI session / traceability: map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body
 - Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR
+- Affected surfaces: list code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or \`n.a.\` with reason
+- Expected outcome alignment: state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark \`n.a.\` with reason
+- Pattern scope inventory: for any steering feedback, review comment, or line-level correction that implies a broader design/API principle, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence
+- Meta-behavior proof: for repeated steering or high-signal corrections, name the durable repo/system change plus concrete repo path, command, or issue ID that prevents recurrence, or \`n.a.\` with tracked exception reason
+- Repeated-error research: when the same error occurs twice, use \`Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...\`; otherwise \`n.a.\` with reason
 - Acceptance trace: map completed acceptance items to evidence refs, or \`n.a.\` with reason
 - Validation evidence: list command outcomes, CI jobs, artifact paths, or \`n.a.\` with reason
 - Review artifacts: list CodeRabbit, Codex, reviewer, or harness review artifacts, or \`n.a.\` with reason
+- Runtime impact: state direct, transitive, dev-only, CI-only, runtime-facing, or \`n.a.\` with reason
+- CodeRabbit mode coverage: list analysis, validation, gate, closeout, promotion, or \`n.a.\` with reason
+- Closeout state: classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner
 - Learning / reinforcement: list promoted learnings, memory updates, or \`none\` with reason
 - Deferred work: list follow-up work intentionally left out, or \`none\`
 

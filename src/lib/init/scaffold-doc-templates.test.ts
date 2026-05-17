@@ -1,9 +1,130 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { validatePrTemplateBody } from "../pr-template-validator.js";
 import {
 	renderContributingTemplate,
 	renderPrekConfigTemplate,
 	renderPullRequestTemplate,
 } from "./scaffold-doc-templates.js";
+
+const requiredWorkPerformedLabels = [
+	"Plan IDs",
+	"Phase / slice",
+	"Session IDs",
+	"Trace IDs",
+	"AI session / traceability",
+	"Completed work",
+	"Affected surfaces",
+	"Expected outcome alignment",
+	"Pattern scope inventory",
+	"Meta-behavior proof",
+	"Repeated-error research",
+	"Acceptance trace",
+	"Validation evidence",
+	"Review artifacts",
+	"Runtime impact",
+	"CodeRabbit mode coverage",
+	"Closeout state",
+	"Learning / reinforcement",
+	"Deferred work",
+] as const;
+
+const completedWorkPerformedValues = new Map<string, string>([
+	["Plan IDs", "JSC-999; .harness/plan/generated-template.md"],
+	["Phase / slice", "Generated template parity"],
+	["Session IDs", "codex-session-generated-template-test"],
+	["Trace IDs", "harness-run-generated-template-test"],
+	[
+		"AI session / traceability",
+		"codex-session-generated-template-test supports the generated template invariant.",
+	],
+	["Completed work", "Rendered scaffolded PR template and validated it."],
+	["Affected surfaces", "docs, PR template, workflow config, and tests."],
+	[
+		"Expected outcome alignment",
+		"Keeps PR evidence portable and machine-checkable for greenfield and brownfield repos.",
+	],
+	[
+		"Pattern scope inventory",
+		"Principle: generated governance templates must match validator contracts; scaffold and workflow template checked; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+	],
+	[
+		"Meta-behavior proof",
+		"n.a. (no repeated steering or high-signal correction admitted in this fixture).",
+	],
+	[
+		"Repeated-error research",
+		"n.a. (no same-error-twice troubleshooting trigger in this fixture).",
+	],
+	["Acceptance trace", "SA-999-001 -> scaffold-doc-templates.test.ts."],
+	[
+		"Validation evidence",
+		"Command: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts -> pass.",
+	],
+	["Review artifacts", "Codex review artifact captured in test fixture."],
+	["Runtime impact", "CI-only."],
+	["CodeRabbit mode coverage", "validation."],
+	[
+		"Closeout state",
+		"PR state n.a.; merge or auto-merge state n.a.; branch/worktree state test fixture; Linear state n.a.; next-lane routing n.a.; no remaining blocker.",
+	],
+	["Learning / reinforcement", "none; no durable learning promoted."],
+	["Deferred work", "none."],
+]);
+
+function fillRenderedPullRequestTemplate(template: string): string {
+	let body = template
+		.replace(
+			"- What changed (brief):",
+			"- What changed (brief): Validated generated PR template parity.",
+		)
+		.replace(
+			"- Why this change was needed:",
+			"- Why this change was needed: Prevent scaffold drift from bypassing PR-template validation.",
+		)
+		.replace(
+			"- Risk and rollback plan:",
+			"- Risk and rollback plan: Revert the template change and invariant test.",
+		)
+		.replaceAll("- [ ]", "- [x]")
+		.replaceAll("pass/fail", "pass")
+		.replaceAll(
+			"<link / artifact path / comment ID>",
+			"https://example.com/review-artifact",
+		)
+		.replaceAll(
+			"<reviewer + link>",
+			"Codex https://example.com/independent-review",
+		)
+		.replace(
+			"Add one-paragraph merge rationale here.",
+			"Generated PR templates must remain compatible with the validator they ask downstream users to satisfy.",
+		);
+
+	for (const [label, value] of completedWorkPerformedValues) {
+		body = body.replace(
+			new RegExp(`^- ${label}: .*$`, "m"),
+			`- ${label}: ${value}`,
+		);
+	}
+
+	body = body
+		.replace(
+			"- verification_commands: list exact commands run here",
+			"- verification_commands: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts",
+		)
+		.replace(
+			"- verification_outcomes: record pass/blocked for each command here",
+			"- verification_outcomes: pass",
+		)
+		.replace(
+			"- blocked_steps_reason: none if all planned steps ran",
+			"- blocked_steps_reason: none",
+		)
+		.replace("- Any other command(s):", "- Any other command(s): none");
+
+	return body;
+}
 
 const baseContributingOptions = {
 	addCommand: "pnpm add -D @brainwav/coding-harness",
@@ -70,6 +191,33 @@ describe("document scaffold templates", () => {
 		expect(template).toContain("Codex review completed");
 		expect(template).toContain("verification_commands");
 		expect(template).toContain("blocked_steps_reason");
+		for (const label of requiredWorkPerformedLabels) {
+			expect(template).toContain(`- ${label}:`);
+		}
+	});
+
+	it("renders a pull request template that can satisfy the validator contract", () => {
+		const template = renderPullRequestTemplate({
+			agentBranchPrefix: "jscraik/feature",
+			checkCommand: "pnpm check",
+			codestyleCommand: "bash scripts/validate-codestyle.sh",
+			memoryValidateCommand: "test -f memory.json",
+		});
+
+		expect(
+			validatePrTemplateBody(fillRenderedPullRequestTemplate(template)),
+		).toEqual([]);
+	});
+
+	it("keeps the generated PR pipeline field checks aligned with the PR template contract", () => {
+		const pipelineTemplate = readFileSync(
+			"src/templates/pr-pipeline.yml",
+			"utf8",
+		);
+
+		for (const label of requiredWorkPerformedLabels) {
+			expect(pipelineTemplate).toContain(`label: '${label}'`);
+		}
 	});
 
 	it("renders prek hook config from the required tooling baseline", () => {

@@ -94,7 +94,8 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - Keep validation evidence explicit that `scripts/validate-codestyle.sh` sanitizes hook-exported `GIT_*` values before nested `pnpm run` calls, rather than assuming inherited hook env is safe.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
 - When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
-- For this repository, keep `## Work performed` in the PR body structured with `Plan IDs`, `Phase / slice`, `Session IDs`, `Trace IDs`, `AI session / traceability`, `Completed work`, `Acceptance trace`, `Validation evidence`, `Review artifacts`, `Learning / reinforcement`, and `Deferred work` so implementation progress, provenance, evidence refs, durable learning, and intentionally deferred scope remain reviewable after handoff.
+- For this repository, keep `## Work performed` in the PR body structured with `Plan IDs`, `Phase / slice`, `Session IDs`, `Trace IDs`, `AI session / traceability`, `Completed work`, `Affected surfaces`, `Expected outcome alignment`, `Pattern scope inventory`, `Meta-behavior proof`, `Repeated-error research`, `Acceptance trace`, `Validation evidence`, `Review artifacts`, `Runtime impact`, `CodeRabbit mode coverage`, `Closeout state`, `Learning / reinforcement`, and `Deferred work` so implementation progress, provenance, evidence refs, durable learning, and intentionally deferred scope remain reviewable after handoff.
+- `Meta-behavior proof` must cite the durable destination and a concrete repo path, command, or issue ID when a PR admits repeated steering, high-signal correction, or current-session stop language. `Repeated-error research` must use the structured form `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...` when the same error or command failure repeats.
 - For AI-assisted work, `Session IDs` should cite a Codex thread/session, session-collector artifact, or harness run reference; `Trace IDs` should cite CI, harness, eval, runtime-card, evidence-bundle, or review trace references when those artifacts exist. Use `n.a.` only with a concrete reason, and do not paste raw transcripts, prompts, secrets, or bulky telemetry into PR bodies.
 - Before PR handoff, prefer `harness pr-closeout --pr <number> --json` when a PR exists, or `harness pr-closeout --input <path> --json` when evidence is assembled by another workflow. Treat `pr-closeout/v1` as read-only closeout evidence: it may use GitHub CLI, CircleCI CLI, CodeRabbit CLI, Snyk CLI, and `~/.codex/.env` credential discovery, but it must never print secrets or replace independent review approval.
 - For PR closeout thread truth, use the GitHub GraphQL `reviewThreads` connection or an adapter that preserves `isResolved`, `isOutdated`, path, line, author, and comment URL. Flat comments, check summaries, CodeRabbit summaries, and review decision fields are not sufficient proof that all Codex, CodeRabbit, or human review threads are resolved.
@@ -137,14 +138,31 @@ If the user has to give the same steering twice, stop ordinary feature work and 
 - related repo surfaces searched, including sibling code, docs, skills, gates, PR templates, and roadmap/status surfaces when relevant
 - the durable destination chosen, or the tracked exception explaining why no durable destination exists yet
 - the executable guard, template field, schema, test, Project Brain entry, or Linear follow-up that will prevent silent recurrence
+- the meta-behavior proof that will appear in PR closeout, naming the durable destination and review or deletion condition
 - the focused validation command that proves the admission path still exists
 - the pattern scope inventory when the feedback came from a line-level design correction
+
+When the steering says the agent is not permitted to proceed, create a
+current-session steering admission record before any feature continuation. The
+record must quote the feedback class, infer the operating principle, list
+searched surfaces, choose the durable destination, name the executable guard or
+tracked exception, record the validation command, and state what behavior is now
+forbidden. Chat-only acknowledgement is not an admission.
+
+When the same error, command failure, or test failure happens twice, stop the
+local retry loop before another attempt. Research trusted web or upstream
+documentation, list 3-5 plausible fixes, choose the most efficient fix for the
+current repo context, implement that fix, and record the research options plus
+chosen implementation in PR closeout. This prevents agents from fighting the
+same error with repeated local guesses.
 
 1. Observe: capture the concrete signal and recover relevant context, including reflected context from resumed windows, session collector evidence, runtime evidence, or agent reflection when the signal crosses compaction, harness, repo, machine, or environment boundaries.
 2. Orient: translate the signal into the design principle it implies, then search sibling implementations, tests, docs, skills, PRs, issues, automations, and stacked trajectories that share or consume that principle.
 3. Decide: classify the scope as local, pattern-wide, stack-aware, organization-aware, reflected-context-backed, or `Unobserved Horizon`; choose the narrowest durable destination that can carry the principle.
 4. Act: update the shared abstraction, executable gate, schema, scaffold, documented validation rule, Project Brain decision, Linear follow-up, or explicit exception. Do not add standalone doctrine when no enforcement or follow-up destination exists.
 5. Close out: report the principle, searched scope, chosen destination, validation surface, maintainability impact, traceability, handoff evidence, and review or deletion condition.
+
+The PR template and `pr-template-gate` reject repeated-steering admissions that do not name both a durable meta-behavior proof and a learning or reinforcement destination. They reject line-level or design-pattern correction admissions that do not include a pattern scope inventory with the inferred principle, sibling search, siblings changed, and siblings intentionally unchanged or deferred with reasons. They also reject same-error-twice admissions that do not record web/upstream research, 3-5 candidate fixes, the chosen efficient fix, and what was implemented. `n.a.` is valid only when the PR body does not admit steering feedback, repeated user correction, pattern-bearing line feedback, or repeated troubleshooting failure, or when it names a tracked exception.
 
 PR, automation, or heartbeat closeout completion is not the same thing as green
 checks. Green checks prove the validation sub-state only. Before an agent says a
@@ -167,7 +185,19 @@ must classify:
 If any of those states are unknown, closeout is `waiting` or `blocked`, not
 `complete`.
 
-For line-level design feedback, closeout must include a pattern scope inventory. The inventory names the inferred principle, lists the sibling implementations searched, states which siblings changed, states which siblings were intentionally left unchanged with reasons, and links any deferred follow-up. A local-only patch is valid only when the inventory explains why the principle does not apply elsewhere.
+For line-level design feedback, the pattern-generalization pass is a pre-closeout
+requirement for every work surface, not a PR-template-only ceremony. The agent
+must do it before claiming the correction is fixed. The inventory names the
+inferred principle, lists the sibling implementations searched, states which
+siblings changed, states which siblings were intentionally left unchanged with
+reasons, and links any deferred follow-up. A local-only patch is valid only when
+the inventory explains why the principle does not apply elsewhere.
+
+Do not wait for exact trigger words. Example-based feedback, named-function
+feedback, review comments, single-line corrections, and wording such as
+"generally", "same pattern", "similar class", or "across everything" are
+pattern signals until the inventory proves the correction is intentionally
+local.
 
 Example: "return a named sentinel error instead of a success/failure boolean" is not only a request to edit one function. It is API design feedback: search sibling boolean-result APIs in the same command core, adapter family, and tests, then either update the shared pattern or explain why the named function is intentionally different.
 

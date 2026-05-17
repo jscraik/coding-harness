@@ -19,7 +19,9 @@ const VALID_BODY = `## Summary
 - Completed work: Added pr-template-gate command and docs update with evidence refs.
 - Affected surfaces: code, tests, and PR template.
 - Expected outcome alignment: Keeps PR evidence portable and machine-checkable for greenfield and brownfield repos.
-- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated.
+- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.
+- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).
+- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).
 - Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.
 - Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass.
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
@@ -159,6 +161,14 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 				"- Trace IDs: list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.",
 			)
 			.replace("- Session IDs: codex-session-019c-example\n", "")
+			.replace(
+				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).\n",
+				"",
+			)
+			.replace(
+				"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).\n",
+				"",
+			)
 			.replace("- Deferred work: none\n", "");
 
 		const errors = validatePrTemplateBody(body);
@@ -172,8 +182,287 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 			"Replace work performed field placeholder: Completed work",
 		);
 		expect(errors).toContain(
+			"Missing required work performed field: Meta-behavior proof",
+		);
+		expect(errors).toContain(
+			"Missing required work performed field: Repeated-error research",
+		);
+		expect(errors).toContain(
 			"Missing required work performed field: Deferred work",
 		);
+	});
+
+	it("fails repeated error admission without research options and chosen fix", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"The same error happened twice while fixing CI.",
+		).replace(
+			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
+			"- Repeated-error research: n.a. (fixed locally)",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits the same error happened twice.",
+		);
+	});
+
+	it("accepts repeated error admission with researched options and implementation evidence", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"The same error happened twice while fixing CI.",
+		).replace(
+			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
+			"- Repeated-error research: Source: upstream docs and local validator contract checked; Candidate 1: tighten regex terms only; Candidate 2: require structured PR body subsections; Candidate 3: require countable evidence entries in the field; Chosen: Candidate 3 as the smallest validator-compatible fix; Implemented: updated src/lib/pr-template-validator.ts and regression tests.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("fails repeated error admission with keyword-only research evidence", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"The same error happened twice while fixing CI.",
+		).replace(
+			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
+			"- Repeated-error research: candidate implemented.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits the same error happened twice.",
+		);
+	});
+
+	it("fails line-level design correction without pattern scope evidence", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"A line-level correction changed one success/failure boolean to a named sentinel error, exposing API design generally.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: fixed the requested line.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings left unchanged or deferred with reasons when PR text admits line-level or design-pattern correction.",
+		);
+	});
+
+	it("accepts line-level design correction with generalized pattern inventory", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"A line-level correction changed one success/failure boolean to a named sentinel error, exposing API design generally.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: Principle: API design should use named sentinel errors instead of ambiguous boolean success/failure contracts; sibling command-result patterns searched; changed matching command-core helpers; left unrelated UI booleans unchanged with reason and deferred adapter cleanup to tracked issue JSC-999.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it.each([
+		"This was example-based feedback about similar classes of misbehavior across everything we do.",
+		"A concrete correction in one function exposed the user's design model generally.",
+		"Do not just fix that line; search the same pattern across related adapters.",
+	])("fails generalized pattern trigger '%s' without full inventory", (trigger) => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			trigger,
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: Principle named; sibling search mentioned; changed one file; unchanged n.a.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings left unchanged or deferred with reasons when PR text admits line-level or design-pattern correction.",
+		);
+	});
+
+	it.each([
+		"Every bit of steering showed the agent was failing to operate effectively.",
+		"This is high signal feedback and the user should never give the same feedback twice.",
+	])("fails broad steering trigger '%s' without meta proof", (trigger) => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			trigger,
+		)
+			.replace(
+				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+				"- Meta-behavior proof: n.a. (not needed)",
+			)
+			.replace(
+				"- Learning / reinforcement: none; no durable learning promoted.",
+				"- Learning / reinforcement: none; no durable learning promoted.",
+			);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Meta-behavior proof must name a durable destination and concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+	});
+
+	it.each([
+		"The test failed twice before the fix.",
+		"The command failed again with the same stack trace.",
+		"The same exception appeared twice in a row.",
+	])("fails repeated troubleshooting trigger '%s' without research evidence", (trigger) => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			trigger,
+		).replace(
+			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
+			"- Repeated-error research: fixed locally.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits the same error happened twice.",
+		);
+	});
+
+	it.each([
+		"This change reduces repeated failures in CI without changing policy.",
+		"This PR compares possible ways to fix validation ergonomics.",
+		"The team researched fixes for the broader workflow.",
+	])("does not require repeated-error research for broad phrase '%s'", (phrase) => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			phrase,
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("does not require pattern inventory for ordinary generally prose", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"This generally improves docs without admitting a line-level correction.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("rejects generic slash phrases as durable meta references", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"Admitted repeated steering feedback into PR metadata.",
+		)
+			.replace(
+				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+				"- Meta-behavior proof: Added guard for design/API consistency.",
+			)
+			.replace(
+				"- Learning / reinforcement: none; no durable learning promoted.",
+				"- Learning / reinforcement: Added memory update for api/v1 workflow.",
+			);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Meta-behavior proof must name a durable destination and concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+	});
+
+	it.each([
+		"not permitted to proceed",
+		"current-session steering admission",
+		"same correction across sessions",
+		"user had to restate correction",
+	])("fails steering trigger '%s' without durable meta-behavior proof", (trigger) => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			`Jamie reported ${trigger} before the agent updated its operating system.`,
+		)
+			.replace(
+				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+				"- Meta-behavior proof: n.a. (not needed)",
+			)
+			.replace(
+				"- Learning / reinforcement: none; no durable learning promoted.",
+				"- Learning / reinforcement: none; no durable learning promoted.",
+			);
+
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain(
+			"Meta-behavior proof must name a durable destination and concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+		expect(errors).toContain(
+			"Learning / reinforcement must name the promoted learning, memory update, guard, or tracked exception with a concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+	});
+
+	it("fails steering feedback admission without durable meta-behavior proof", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"Admitted repeated steering feedback into PR metadata.",
+		)
+			.replace(
+				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+				"- Meta-behavior proof: n.a. (not needed)",
+			)
+			.replace(
+				"- Learning / reinforcement: none; no durable learning promoted.",
+				"- Learning / reinforcement: none; no durable learning promoted.",
+			);
+
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain(
+			"Meta-behavior proof must name a durable destination and concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+		expect(errors).toContain(
+			"Learning / reinforcement must name the promoted learning, memory update, guard, or tracked exception with a concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+	});
+
+	it("fails current-session stop language without durable meta-behavior proof", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"Jamie said the agent is not permitted to proceed until this becomes a durable control.",
+		)
+			.replace(
+				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+				"- Meta-behavior proof: n.a. (not needed)",
+			)
+			.replace(
+				"- Learning / reinforcement: none; no durable learning promoted.",
+				"- Learning / reinforcement: none; no durable learning promoted.",
+			);
+
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain(
+			"Meta-behavior proof must name a durable destination and concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+		expect(errors).toContain(
+			"Learning / reinforcement must name the promoted learning, memory update, guard, or tracked exception with a concrete repo path, command, or issue ID when PR text admits steering feedback or repeated user correction.",
+		);
+	});
+
+	it("accepts steering admission n.a. only when it names a tracked exception", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"Admitted repeated steering feedback into PR metadata.",
+		)
+			.replace(
+				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+				"- Meta-behavior proof: n.a.; tracked issue JSC-999 carries the durable exception.",
+			)
+			.replace(
+				"- Learning / reinforcement: none; no durable learning promoted.",
+				"- Learning / reinforcement: n.a.; tracked issue JSC-999 records the explicit exception.",
+			);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("accepts steering feedback admission with durable guard evidence", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"Admitted repeated steering feedback into PR metadata.",
+		)
+			.replace(
+				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+				"- Meta-behavior proof: Added validator guard in src/lib/pr-template-validator.ts and PR template field in .github/PULL_REQUEST_TEMPLATE.md for repeated steering admission.",
+			)
+			.replace(
+				"- Learning / reinforcement: none; no durable learning promoted.",
+				"- Learning / reinforcement: Promoted solution record docs/solutions/integration-issues/2026-05-17-steering-feedback-admission.md and guard scripts/check-steering-feedback-contract.cjs.",
+			);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
 	it("fails unchecked checklist items without explicit Pending or N/A marker", () => {
