@@ -159,15 +159,33 @@ export interface PrCloseoutReport {
 	dirtyPathsExcluded: PrCloseoutDirtyPathInput[];
 }
 
+/**
+ * Normalizes a status string by trimming surrounding whitespace and converting it to upper case.
+ *
+ * @param value - The input status; `null` or `undefined` are treated as an empty string.
+ * @returns The trimmed, uppercased status string.
+ */
 function normalizeStatus(value: string | null | undefined): string {
 	return (value ?? "").trim().toUpperCase();
 }
 
+/**
+ * Determines whether a check should be considered passing based on its conclusion or state.
+ *
+ * @param check - The check object whose `conclusion` or `state` will be evaluated
+ * @returns `true` if the check's normalized status is one of `SUCCESS`, `PASSED`, `PASS`, `NEUTRAL`, or `SKIPPED`, `false` otherwise.
+ */
 function isPassingCheck(check: PrCloseoutCheckInput): boolean {
 	const status = normalizeStatus(check.conclusion ?? check.state);
 	return ["SUCCESS", "PASSED", "PASS", "NEUTRAL", "SKIPPED"].includes(status);
 }
 
+/**
+ * Determines whether a check's status represents a failure.
+ *
+ * @param check - The check/run input whose conclusion or state will be evaluated
+ * @returns `true` if the check's status denotes a failure (e.g., `FAILURE`, `FAILED`, `FAIL`, `ERROR`, `CANCELLED`, or `TIMED_OUT`), `false` otherwise.
+ */
 function isFailedCheck(check: PrCloseoutCheckInput): boolean {
 	const status = normalizeStatus(check.conclusion ?? check.state);
 	return [
@@ -180,6 +198,12 @@ function isFailedCheck(check: PrCloseoutCheckInput): boolean {
 	].includes(status);
 }
 
+/**
+ * Determine whether a given check is in a pending state.
+ *
+ * @param check - The check input whose status or conclusion will be evaluated
+ * @returns `true` if the check's status indicates it is pending (queued, in progress, expected, or waiting), `false` otherwise.
+ */
 function isPendingCheck(check: PrCloseoutCheckInput): boolean {
 	const status = normalizeStatus(check.conclusion ?? check.state);
 	return ["PENDING", "QUEUED", "IN_PROGRESS", "EXPECTED", "WAITING"].includes(
@@ -187,6 +211,14 @@ function isPendingCheck(check: PrCloseoutCheckInput): boolean {
 	);
 }
 
+/**
+ * Summarizes an array of check results into counts grouped by outcome.
+ *
+ * @param checks - The list of checks to classify
+ * @returns An object with the total number of checks and counts for each outcome:
+ * `failed` for checks classified as failures, `pending` for checks in progress or queued,
+ * `passed` for checks considered successful or neutral, and `unknown` for checks that don't match the other categories.
+ */
 function summarizeChecks(checks: readonly PrCloseoutCheckInput[]): {
 	total: number;
 	failed: number;
@@ -207,10 +239,25 @@ function summarizeChecks(checks: readonly PrCloseoutCheckInput[]): {
 	return { total: checks.length, failed, pending, passed, unknown };
 }
 
+/**
+ * Detects a Linear-style issue reference in PR body text.
+ *
+ * @param body - PR body text (may be `null` or `undefined`)
+ * @returns `true` if the text contains `Refs` or `Closes` followed by an uppercase project key and a dash-number (e.g., `ABC-123`), `false` otherwise
+ */
 function hasLinearReference(body: string | null | undefined): boolean {
 	return /\b(?:Refs|Closes)\s+[A-Z][A-Z0-9]+-\d+\b/u.test(body ?? "");
 }
 
+/**
+ * Determine the overall closeout status, recommended next action, and mergeability from collected blockers.
+ *
+ * @param blockers - Ordered array of collected `PrCloseoutBlocker` entries; the first element is treated as the highest-priority blocker.
+ * @returns An object containing:
+ *  - `status`: the summarized closeout status.
+ *  - `nextAction`: the recommended next action for the PR.
+ *  - `mergeable`: `true` if the PR is considered mergeable, `false` otherwise.
+ */
 function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 	status: PrCloseoutStatus;
 	nextAction: PrCloseoutNextAction;
@@ -276,6 +323,12 @@ function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 	};
 }
 
+/**
+ * Append a PR closeout blocker to an array of blockers.
+ *
+ * @param blockers - The array that will receive the blocker
+ * @param blocker - The blocker to append
+ */
 function pushBlocker(
 	blockers: PrCloseoutBlocker[],
 	blocker: PrCloseoutBlocker,
@@ -283,6 +336,13 @@ function pushBlocker(
 	blockers.push(blocker);
 }
 
+/**
+ * Collects worktree- and branch-related closeout blockers and appends them to `blockers`.
+ *
+ * @param input - Normalized PR closeout input containing branch and worktree state
+ * @param dirtyPathsExcluded - Dirty paths that were excluded as unrelated local noise; when non-empty a worktree blocker referencing these paths is added
+ * @param blockers - Mutable array to receive any generated `PrCloseoutBlocker` entries
+ */
 function collectWorktreeBlockers(
 	input: PrCloseoutInput,
 	dirtyPathsExcluded: readonly PrCloseoutDirtyPathInput[],
@@ -332,6 +392,15 @@ function collectWorktreeBlockers(
 	}
 }
 
+/**
+ * Adds pull-request-related blockers to the provided blockers array.
+ *
+ * Inspects the PR input and appends blockers for non-open PR state, draft status,
+ * merge-state conflicts, and missing Linear (Refs/Closes) issue references.
+ *
+ * @param pr - The pull request input to inspect for potential closeout blockers
+ * @param blockers - Array to which discovered blockers will be appended (mutated)
+ */
 function collectPullRequestBlockers(
 	pr: PrCloseoutPullRequestInput,
 	blockers: PrCloseoutBlocker[],
@@ -374,6 +443,16 @@ function collectPullRequestBlockers(
 	}
 }
 
+/**
+ * Appends blockers for failed or still-pending checks to the provided blockers array.
+ *
+ * For each check in `checks`, a blocker is added when the check has failed (classification `"introduced"`, fixable by Codex)
+ * or when the check is pending (classification `"external_service"`, not fixable by Codex). The blocker `ref` is populated
+ * from the check's `url` if present, otherwise from the check's `name`.
+ *
+ * @param checks - Array of normalized check inputs to evaluate for failure or pending status
+ * @param blockers - Mutable array that will receive new `PrCloseoutBlocker` entries
+ */
 function collectCheckBlockers(
 	checks: readonly PrCloseoutCheckInput[],
 	blockers: PrCloseoutBlocker[],
@@ -399,6 +478,13 @@ function collectCheckBlockers(
 	}
 }
 
+/**
+ * Adds review-related closeout blockers to `blockers` based on unresolved review threads and the PR review decision.
+ *
+ * @param pr - Pull request input used to evaluate the review decision
+ * @param reviewThreads - Review thread counts; if `unresolved` > 0 a blocker is added, and `needsHuman` determines its classification
+ * @param blockers - Mutable array to which any discovered review blockers will be appended
+ */
 function collectReviewBlockers(
 	pr: PrCloseoutPullRequestInput,
 	reviewThreads: PrCloseoutReviewThreadsInput,
@@ -423,6 +509,12 @@ function collectReviewBlockers(
 	}
 }
 
+/**
+ * Adds a traceability blocker to `blockers` when traceability is incomplete.
+ *
+ * @param traceabilityComplete - Whether required traceability (session IDs, trace IDs, and AI session traceability) is present
+ * @param blockers - Array to which the traceability blocker will be appended when incomplete
+ */
 function collectTraceabilityBlocker(
 	traceabilityComplete: boolean,
 	blockers: PrCloseoutBlocker[],
@@ -437,6 +529,16 @@ function collectTraceabilityBlocker(
 	});
 }
 
+/**
+ * Append a blocker for each tool whose status is "blocked".
+ *
+ * Each appended blocker has surface `"tool"`, classification `"external_service"`,
+ * a reason that includes the tool name and failure class, `fixableByCodex: false`,
+ * and `ref` set to the tool's `ref`.
+ *
+ * @param tools - List of tool inputs to inspect for blocked status
+ * @param blockers - Mutable array that will receive any created blockers
+ */
 function collectToolBlockers(
 	tools: readonly PrCloseoutToolInput[],
 	blockers: PrCloseoutBlocker[],
@@ -453,7 +555,13 @@ function collectToolBlockers(
 	}
 }
 
-/** Build a read-only PR closeout evidence report from normalized PR closeout inputs. */
+/**
+ * Generate a read-only PR closeout evidence report from normalized closeout inputs.
+ *
+ * @param input - Normalized inputs describing the pull request, branch/worktree state, checks, review threads, traceability data, dirty paths, and tools.
+ * @param options.now - Optional timestamp to use for the report's `generatedAt` field; defaults to the current time.
+ * @returns A `PrCloseoutReport` containing the report `schemaVersion`, `generatedAt`, PR identifier and URL, computed `status`, `mergeable` flag, recommended `nextAction`, collected `blockers`, a summary of checks, review thread summary, traceability details (including a `complete` flag), `tools`, and any `dirtyPathsExcluded`.
+ */
 export function buildPrCloseoutReport(
 	input: PrCloseoutInput,
 	options: { now?: Date } = {},
