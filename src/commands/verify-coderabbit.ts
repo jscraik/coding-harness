@@ -53,6 +53,7 @@ export interface CodeRabbitCheck {
 
 const CODERABBIT_CHECK_NAME = "CodeRabbit";
 const CODERABBIT_CONFIG_FILE = ".coderabbit.yaml";
+const CODERABBIT_TEMPLATE_FILE = "src/templates/coderabbit.yaml";
 
 /**
  * Normalize a potential token string into a trimmed token or `undefined`.
@@ -148,6 +149,64 @@ function verifyCodeRabbitConfig(repoPath: string): CodeRabbitCheck {
 			status: "fail",
 			message: `Failed to read ${CODERABBIT_CONFIG_FILE}: ${e instanceof Error ? e.message : "Unknown error"}`,
 			details: { path: configPath },
+		};
+	}
+}
+
+function verifyCodeRabbitTemplateParity(repoPath: string): CodeRabbitCheck {
+	const configPath = resolve(repoPath, CODERABBIT_CONFIG_FILE);
+	const templatePath = resolve(repoPath, CODERABBIT_TEMPLATE_FILE);
+
+	if (!existsSync(templatePath)) {
+		return {
+			name: "CodeRabbit template parity",
+			status: "warn",
+			message:
+				CODERABBIT_TEMPLATE_FILE +
+				" not found; skipping harness template parity check.",
+			details: { path: templatePath },
+		};
+	}
+	if (!existsSync(configPath)) {
+		return {
+			name: "CodeRabbit template parity",
+			status: "fail",
+			message:
+				CODERABBIT_CONFIG_FILE +
+				" not found, so template parity cannot be verified.",
+			details: { configPath, templatePath },
+		};
+	}
+
+	try {
+		const configContent = readFileSync(configPath, "utf-8");
+		const templateContent = readFileSync(templatePath, "utf-8");
+		if (configContent !== templateContent) {
+			return {
+				name: "CodeRabbit template parity",
+				status: "fail",
+				message:
+					CODERABBIT_CONFIG_FILE +
+					" and " +
+					CODERABBIT_TEMPLATE_FILE +
+					" differ; update both or regenerate the template.",
+				details: { configPath, templatePath },
+			};
+		}
+		return {
+			name: "CodeRabbit template parity",
+			status: "pass",
+			message: `${CODERABBIT_CONFIG_FILE} matches ${CODERABBIT_TEMPLATE_FILE}.`,
+			details: { configPath, templatePath },
+		};
+	} catch (e) {
+		return {
+			name: "CodeRabbit template parity",
+			status: "fail",
+			message:
+				"Failed to compare CodeRabbit config/template parity: " +
+				(e instanceof Error ? e.message : "Unknown error"),
+			details: { configPath, templatePath },
 		};
 	}
 }
@@ -414,6 +473,7 @@ export async function runVerifyCodeRabbit(
 
 	const localChecks: CodeRabbitCheck[] = [
 		verifyCodeRabbitConfig(repoPath),
+		verifyCodeRabbitTemplateParity(repoPath),
 		verifyNpmrc(repoPath),
 	];
 

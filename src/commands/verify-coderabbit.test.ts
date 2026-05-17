@@ -3,7 +3,7 @@
  * Tests for verify-coderabbit command
  */
 
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
@@ -54,6 +54,8 @@ function createRepoFixture(
 	opts: {
 		withCodeRabbitYaml?: boolean;
 		codeRabbitContent?: string;
+		withCodeRabbitTemplate?: boolean;
+		codeRabbitTemplateContent?: string;
 		withNpmrc?: boolean;
 		npmrcContent?: string;
 	} = {},
@@ -65,6 +67,18 @@ function createRepoFixture(
 			opts.codeRabbitContent ??
 			"reviews:\n  commit_status: true\n  auto_review:\n    enabled: true\n";
 		writeFileSync(join(repoPath, ".coderabbit.yaml"), content);
+	}
+
+	if (opts.withCodeRabbitTemplate) {
+		const content =
+			opts.codeRabbitTemplateContent ??
+			opts.codeRabbitContent ??
+			"reviews:\n  commit_status: true\n  auto_review:\n    enabled: true\n";
+		mkdirSync(join(repoPath, "src", "templates"), { recursive: true });
+		writeFileSync(
+			join(repoPath, "src", "templates", "coderabbit.yaml"),
+			content,
+		);
 	}
 
 	if (opts.withNpmrc) {
@@ -232,6 +246,38 @@ describe("runVerifyCodeRabbit - .coderabbit.yaml config", () => {
 		expect(configCheck?.status).toBe("pass");
 		expect(configCheck?.message).toContain("Valid .coderabbit.yaml");
 		expect(configCheck?.message).not.toContain("commit_status: false");
+	});
+
+	it("passes when the harness template matches .coderabbit.yaml", async () => {
+		repoPath = createRepoFixture({
+			withCodeRabbitYaml: true,
+			withCodeRabbitTemplate: true,
+			codeRabbitContent: "reviews:\n  commit_status: true\n",
+		});
+		const result = await runVerifyCodeRabbit({ repoPath });
+
+		const parityCheck = result.checks.find(
+			(c) => c.name === "CodeRabbit template parity",
+		);
+		expect(parityCheck?.status).toBe("pass");
+		expect(parityCheck?.message).toContain("matches");
+	});
+
+	it("fails when the harness template drifts from .coderabbit.yaml", async () => {
+		repoPath = createRepoFixture({
+			withCodeRabbitYaml: true,
+			withCodeRabbitTemplate: true,
+			codeRabbitContent: "reviews:\n  commit_status: true\n",
+			codeRabbitTemplateContent: "reviews:\n  commit_status: false\n",
+		});
+		const result = await runVerifyCodeRabbit({ repoPath });
+
+		const parityCheck = result.checks.find(
+			(c) => c.name === "CodeRabbit template parity",
+		);
+		expect(parityCheck?.status).toBe("fail");
+		expect(parityCheck?.message).toContain("differ");
+		expect(result.ok).toBe(false);
 	});
 });
 
@@ -911,13 +957,14 @@ describe("runVerifyCodeRabbit - summary and ok flag", () => {
 	it("summary counts are accurate across pass, fail, and warn", async () => {
 		// .coderabbit.yaml missing → fail
 		// .npmrc present with secure defaults → pass
+		// harness template absent in a downstream fixture → warn
 		// no owner/repo → warn (remote checks skipped)
 		repoPath = createRepoFixture({ withNpmrc: true });
 		const result = await runVerifyCodeRabbit({ repoPath });
 
 		expect(result.summary.failed).toBe(1);
 		expect(result.summary.passed).toBe(1);
-		expect(result.summary.warnings).toBe(1);
+		expect(result.summary.warnings).toBe(2);
 		expect(
 			result.summary.passed + result.summary.failed + result.summary.warnings,
 		).toBe(result.checks.length);
