@@ -333,8 +333,23 @@ export function buildPatternScopeArtifact(
 			};
 		}
 		artifact.outputPath = outputRepoPath;
-		mkdirSync(dirname(outputPath), { recursive: true });
-		writeFileSync(outputPath, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
+		try {
+			mkdirSync(dirname(outputPath), { recursive: true });
+			writeFileSync(
+				outputPath,
+				`${JSON.stringify(artifact, null, 2)}\n`,
+				"utf8",
+			);
+		} catch (err) {
+			return {
+				schemaVersion: "pattern-scope/v1",
+				status: "error",
+				error: {
+					code: "pattern-scope.output_write_failed",
+					message: `Failed to write output file: ${err instanceof Error ? err.message : String(err)}`,
+				},
+			};
+		}
 	}
 
 	return artifact;
