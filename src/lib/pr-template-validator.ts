@@ -25,7 +25,7 @@ const PATTERN_SCOPE_SIGNAL_PATTERN =
 const DURABLE_META_DESTINATION_PATTERN =
 	/(gate|validator|schema|scaffold|template field|validation rule|Project Brain|Linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
 const CONCRETE_DURABLE_REFERENCE_PATTERN =
-	/(\b[A-Z]+-\d+\b|(?:^|[\s`])(?:\.\/)?(?:AI|artifacts|codestyle|fixtures|scripts|src|test|tests|docs|\.harness|\.github)\/[\w./-]+|(?:^|[\s`])(?:\.\/)?(?:AGENTS\.md|README\.md|CONTRIBUTING\.md|UBIQUITOUS_LANGUAGE\.md|CODESTYLE\.md|harness\.contract\.json)|pnpm\s+[\w:-]+|bash\s+(?:\.\/)?scripts\/[\w./-]+)/i;
+	/(\b[A-Z]+-\d+\b|(?:^|[\s`"'([<])(?:\.\/)?(?:AI|artifacts|codestyle|fixtures|scripts|src|test|tests|docs|\.harness|\.github)\/[\w./-]+|(?:^|[\s`"'([<])(?:\.\/)?(?:AGENTS\.md|README\.md|CONTRIBUTING\.md|UBIQUITOUS_LANGUAGE\.md|CODESTYLE\.md|harness\.contract\.json)|pnpm\s+[\w:-]+|bash\s+(?:\.\/)?scripts\/[\w./-]+)/i;
 const PATTERN_SCOPE_EVIDENCE_PATTERNS = [
 	/(principle|design principle|API design|contract)/i,
 	/(sibling|similar|related|pattern|inventory|searched|misbehavior class)/i,
@@ -38,7 +38,7 @@ const REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS = [
 	/(implemented|applied)\s*(fix|change|remediation|patch)?:\s*\S.{8,}/i,
 ] as const;
 const CANDIDATE_FIX_PATTERN =
-	/(?:^|[;|]\s*|\s)(?:candidate|option|fix)\s*(?:#?\d+|\d+[).:]|\b(?:one|two|three|four|five)\b)\s*[:=-]\s*[^;|]{8,}/gi;
+	/(?:^|[;|]\s*|\s)(?:candidate|option|fix)\s*(?:#?\d+|\d+[).:]|\b(?:one|two|three|four|five)\b)\s*[:=-]\s*\S.{7,}?(?=\s+(?:candidate|option|fix)\s*(?:#?\d+|\d+[).:]|\b(?:one|two|three|four|five)\b)\s*[:=-]|\s+(?:chosen|selected|implemented|applied)\b|[;|]|$)/gi;
 
 const REQUIRED_TESTING_FIELDS = [
 	{
@@ -311,7 +311,10 @@ function extractFieldValue(
 	}
 
 	const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-	const pattern = new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im");
+	const pattern = new RegExp(
+		`^-\\s*${escapedLabel}:\\s*([\\s\\S]*?)(?=\\r?\\n-\\s*[A-Za-z][^\\n:]{0,80}:|\\r?\\n##\\s|(?![\\s\\S]))`,
+		"im",
+	);
 	const match = sectionBody.match(pattern);
 	return match ? normalizeFieldValue(match[1] ?? "") : null;
 }

@@ -375,6 +375,18 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("accepts punctuated repo paths as durable meta references", () => {
+		const body = VALID_BODY.replace(
+			"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+			"- Meta-behavior proof: Added validator guard in (src/lib/pr-template-validator.ts).",
+		).replace(
+			"- Learning / reinforcement: none; no durable learning promoted.",
+			"- Learning / reinforcement: Promoted guard coverage in 'docs/agents/04-validation.md'.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
 	it("accepts root-level docs as durable meta references", () => {
 		const body = VALID_BODY.replace(
 			"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
@@ -382,6 +394,18 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		).replace(
 			"- Learning / reinforcement: none; no durable learning promoted.",
 			"- Learning / reinforcement: Promoted handoff guidance in CONTRIBUTING.md.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("counts newline-separated repeated-error candidates independently", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"The same failure twice exposed a validator edge case.",
+		).replace(
+			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
+			"- Repeated-error research: Source: docs/agents/04-validation.md reviewed the same-error evidence.\n\tCandidate 1: tighten the parser boundary around candidate entries.\n\tCandidate 2: split candidate evidence by newline boundaries.\n\tCandidate 3: require authors to use semicolons only.\n\tChosen: split newline-separated candidate entries in the regex.\n\tImplemented: updated CANDIDATE_FIX_PATTERN and regression coverage.",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual([]);
