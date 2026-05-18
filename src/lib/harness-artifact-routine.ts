@@ -320,7 +320,7 @@ function validateHistoricalRows(
 	fail: (finding: ArtifactHandlingFinding) => void,
 ): void {
 	const rows = artifactIndexText
-		.split("\n")
+		.split(/\r?\n/)
 		.filter((line) => line.startsWith("|") && !line.includes("---"));
 	const header = rows[0];
 	if (header === undefined) {
