@@ -1,156 +1,18 @@
-const REQUIRED_SECTIONS = [
-	"## Summary",
-	"## Work performed",
-	"## Checklist",
-	"## Testing",
-	"## Review artifacts",
-	"## Notes",
-] as const;
-
-const MAX_BODY_LENGTH = 100_000; // 100KB limit to prevent ReDoS
-
-const PLACEHOLDERS = [
-	"pass/fail",
-	"<link / artifact path / comment ID>",
-	"<reviewer + link>",
-	"Add one-paragraph merge rationale here.",
-] as const;
-
-const STEERING_SIGNAL_PATTERN =
-	/(admitted repeated steering|repeated steering (showed|exposed|drove|required|was)|same steering twice|same feedback twice|same correction across sessions|same feedback again|user had to restate correction|never give the same feedback twice|not permitted to proceed|current-session steering admission|stop-the-line|high-signal (user )?(steering|feedback|correction)|every bit of steering|failing to operate effectively|steering feedback (showed|exposed|drove|required|was|into))/i;
-const REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN =
-	/(same error (happened|occurred)?\s*twice|same failure twice|same command failed twice|failed again with the same (error|failure|command|stack trace|exception)|same (stack trace|exception) (appeared|happened|occurred|recurred|repeated).*twice|same error repeated|don\u2019t fight (?:the )?(same )?error|don't fight (?:the )?(same )?error)/i;
-const PATTERN_SCOPE_SIGNAL_PATTERN =
-	/(line-level correction|line-level design feedback|example-based feedback|concrete correction|single line|single function|single class|just fix that line|do not just fix that line|not just that line|similar classes of misbehavior|similar misbehavior|class of misbehavior|same pattern|same things in multiple places|larger perspective|larger-system judgment|broader perspective|apply this everywhere relevant|sibling implementations|sibling pattern|broader design principle|design model|API design generally|across everything we do|named sentinel error|success and failure as a bool|success\/failure boolean|boolean result)/i;
-const DURABLE_META_DESTINATION_PATTERN =
-	/(gate|validator|schema|scaffold|template field|validation rule|Project Brain|Linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
-const CONCRETE_DURABLE_REFERENCE_PATTERN =
-	/(\b[A-Z]+-\d+\b|(?:^|[\s`"'([<])(?:\.\/)?(?:AI|artifacts|codestyle|fixtures|scripts|src|test|tests|docs|\.harness|\.github)\/[\w./-]+|(?:^|[\s`"'([<])(?:\.\/)?(?:AGENTS\.md|README\.md|CONTRIBUTING\.md|UBIQUITOUS_LANGUAGE\.md|CODESTYLE\.md|harness\.contract\.json)|pnpm\s+[\w:-]+|bash\s+(?:\.\/)?scripts\/[\w./-]+)/i;
-const PATTERN_SCOPE_EVIDENCE_PATTERNS = [
-	/(principle|design principle|API design|contract)/i,
-	/(sibling|similar|related|pattern|inventory|searched|misbehavior class)/i,
-	/\b(changed|updated|applied|propagated)\b/i,
-	/(left unchanged|unchanged|deferred|not applicable|n\.a\.|tracked issue|exception).*(reason|because|tracked issue|exception|not applicable)|reason.*(left unchanged|unchanged|deferred|not applicable|n\.a\.|tracked issue|exception)/i,
-] as const;
-const REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS = [
-	/(source|research|official docs|web research|upstream docs|research checked|source checked):\s*\S.{8,}/i,
-	/(chosen|selected|most efficient)\s*(fix|option|candidate|way)?:\s*\S.{8,}/i,
-	/(implemented|applied)\s*(fix|change|remediation|patch)?:\s*\S.{8,}/i,
-] as const;
-const CANDIDATE_FIX_PATTERN =
-	/(?:^|[;|]\s*|\s)(?:candidate|option|fix)\s*(?:#?\d+|\d+[).:]|\b(?:one|two|three|four|five)\b)\s*[:=-]\s*\S.{7,}?(?=\s+(?:candidate|option|fix)\s*(?:#?\d+|\d+[).:]|\b(?:one|two|three|four|five)\b)\s*[:=-]|\s+(?:chosen|selected|implemented|applied)\b|[;|]|$)/gi;
-
-const REQUIRED_TESTING_FIELDS = [
-	{
-		label: "verification_commands",
-		placeholder: "list exact commands run here",
-	},
-	{
-		label: "verification_outcomes",
-		placeholder: "record pass/fail/blocked for each command here",
-	},
-	{
-		label: "blocked_steps_reason",
-		placeholder: "none if all planned steps ran",
-	},
-] as const;
-
-const REQUIRED_WORK_FIELDS = [
-	{
-		label: "Plan IDs",
-		placeholder:
-			"list Linear keys, spec paths, plan paths, or `n.a.` with reason",
-	},
-	{
-		label: "Phase / slice",
-		placeholder:
-			"list completed phase, implementation slice, or `n.a.` with reason",
-	},
-	{
-		label: "Session IDs",
-		placeholder:
-			"list Codex thread/session IDs, session-collector artifact IDs or paths, harness run IDs, or `n.a.` with reason. For AI-assisted work, include at least one session reference or explain why no session artifact was captured.",
-	},
-	{
-		label: "Trace IDs",
-		placeholder:
-			"list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.",
-	},
-	{
-		label: "AI session / traceability",
-		placeholder:
-			"map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body.",
-	},
-	{
-		label: "Completed work",
-		placeholder:
-			"list implementation units, docs/config changes, or evidence-only work completed in this PR",
-	},
-	{
-		label: "Affected surfaces",
-		placeholder:
-			"list code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or `n.a.` with reason",
-	},
-	{
-		label: "Expected outcome alignment",
-		placeholder:
-			"state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason",
-	},
-	{
-		label: "Pattern scope inventory",
-		placeholder:
-			"for any steering feedback, review comment, or line-level correction that implies a broader design/API principle, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence",
-	},
-	{
-		label: "Meta-behavior proof",
-		placeholder:
-			"for repeated steering or high-signal corrections, name the durable repo/system change plus concrete repo path, command, or issue ID that prevents recurrence, or `n.a.` with tracked exception reason",
-	},
-	{
-		label: "Repeated-error research",
-		placeholder:
-			"when the same error occurs twice, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason",
-	},
-	{
-		label: "Acceptance trace",
-		placeholder:
-			"map completed acceptance items to evidence refs, or `n.a.` with reason",
-	},
-	{
-		label: "Validation evidence",
-		placeholder:
-			"list command outcomes, CI jobs, artifact paths, or `n.a.` with reason",
-	},
-	{
-		label: "Review artifacts",
-		placeholder:
-			"list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason",
-	},
-	{
-		label: "Runtime impact",
-		placeholder:
-			"state direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason",
-	},
-	{
-		label: "CodeRabbit mode coverage",
-		placeholder:
-			"list analysis, validation, gate, closeout, promotion, or `n.a.` with reason",
-	},
-	{
-		label: "Closeout state",
-		placeholder:
-			"classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner",
-	},
-	{
-		label: "Learning / reinforcement",
-		placeholder:
-			"list promoted learnings, memory updates, or `none` with reason",
-	},
-	{
-		label: "Deferred work",
-		placeholder: "list follow-up work intentionally left out, or `none`",
-	},
-] as const;
+import {
+	CANDIDATE_FIX_PATTERN,
+	CONCRETE_DURABLE_REFERENCE_PATTERN,
+	DURABLE_META_DESTINATION_PATTERN,
+	MAX_BODY_LENGTH,
+	PATTERN_SCOPE_EVIDENCE_PATTERNS,
+	PATTERN_SCOPE_SIGNAL_PATTERN,
+	PLACEHOLDERS,
+	REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS,
+	REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN,
+	REQUIRED_SECTIONS,
+	REQUIRED_TESTING_FIELDS,
+	REQUIRED_WORK_FIELDS,
+	STEERING_SIGNAL_PATTERN,
+} from "./pr-template-validator-rules.js";
 
 function normalizeFieldValue(value: string): string {
 	let normalized = value.trim();
