@@ -277,6 +277,7 @@ function validatePlanOrSpecOwnership(
 
 	for (const referencedPath of referencedPaths) {
 		const normalizedPath = normalizeRepoPath(repoRoot, referencedPath);
+		const absoluteReferencedPath = resolve(repoRoot, normalizedPath);
 		if (!isPathInsideRepo(normalizedPath)) {
 			fail({
 				check: "reference_integrity",
@@ -286,11 +287,20 @@ function validatePlanOrSpecOwnership(
 			});
 			continue;
 		}
-		if (!existsSync(resolve(repoRoot, normalizedPath))) {
+		if (!existsSync(absoluteReferencedPath)) {
 			fail({
 				check: "reference_integrity",
 				code: "referenced_path_missing",
 				message: `Referenced path is missing: ${referencedPath}`,
+				path: artifactPath,
+			});
+			continue;
+		}
+		if (!statSync(absoluteReferencedPath).isFile()) {
+			fail({
+				check: "reference_integrity",
+				code: "referenced_path_not_file",
+				message: `Referenced path must be a file: ${referencedPath}`,
 				path: artifactPath,
 			});
 		}

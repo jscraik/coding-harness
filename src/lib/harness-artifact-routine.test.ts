@@ -115,6 +115,28 @@ describe("validateHarnessArtifactRoutine", () => {
 		);
 	});
 
+	it("fails when a referenced source artifact is a directory", () => {
+		const repoRoot = makeRepo({
+			plan: activePlanText().replace(
+				"source_spec: docs/spec.md",
+				"source_spec: docs",
+			),
+		});
+
+		const result = validateHarnessArtifactRoutine({
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "reference_integrity",
+				code: "referenced_path_not_file",
+				path: ".harness/plan/current.md",
+			}),
+		);
+	});
+
 	it("returns a structured failure when an active artifact path is a directory", () => {
 		const repoRoot = makeRepo();
 		rmSync(join(repoRoot, ".harness/plan/current.md"));
