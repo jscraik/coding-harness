@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
 export const ARTIFACT_HANDLING_ROUTINE_SCHEMA_VERSION =
@@ -110,12 +110,27 @@ export function validateHarnessArtifactRoutine(
 			new Set(["active_index"]),
 		);
 	}
+	if (!statSync(absoluteIndexPath).isFile()) {
+		fail({
+			check: "active_index",
+			code: "active_index_not_file",
+			message: `Active artifact index must be a file: ${activeIndexPath}`,
+			path: activeIndexPath,
+		});
+		return buildResult(
+			repoRoot,
+			[],
+			findings,
+			checkFailures,
+			new Set(["active_index"]),
+		);
+	}
 
 	const indexText = readFileSync(absoluteIndexPath, "utf8");
 	const activeRouteText = section(indexText, "Current Active Route");
 	const artifactIndexText = section(indexText, "Artifact Index");
 	const activeArtifacts = extractBacktickPaths(activeRouteText);
-	const today = options.today ?? new Date().toISOString().slice(0, 10);
+	const today = options.today ?? formatLocalDate(new Date());
 	const reconciledDate = indexText.match(
 		/Last reconciled:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/,
 	)?.[1];
@@ -156,15 +171,16 @@ function validateActiveArtifacts(
 	activeArtifacts: string[],
 	fail: (finding: ArtifactHandlingFinding) => void,
 ): void {
-	for (const artifactPath of activeArtifacts) {
+	for (const rawArtifactPath of activeArtifacts) {
+		const artifactPath = normalizeRepoPath(repoRoot, rawArtifactPath);
 		if (!isPathInsideRepo(artifactPath)) {
 			fail({
 				check: "reference_integrity",
 				code: "artifact_path_outside_repo",
 				message:
 					"Route-driving artifact path must stay inside repo root: " +
-					artifactPath,
-				path: artifactPath,
+					rawArtifactPath,
+				path: rawArtifactPath,
 			});
 			continue;
 		}
@@ -261,7 +277,16 @@ function validateHistoricalRows(
 		.split("\n")
 		.filter((line) => line.startsWith("|") && !line.includes("---"));
 	const header = rows[0];
-	if (header === undefined) return;
+	if (header === undefined) {
+		fail({
+			check: "stale_frontmatter_guard",
+			code: "artifact_index_missing",
+			message:
+				"Active artifact index must include an Artifact Index table for stale artifact classification.",
+			path: activeIndexPath,
+		});
+		return;
+	}
 	const headerCells = parseMarkdownTableCells(header);
 	const localStatusIndex = headerCells.findIndex(
 		(cell) => cell.toLowerCase() === "local status",
@@ -329,10 +354,10 @@ function buildResult(
 }
 
 function parseFrontMatter(text: string): FrontMatter {
-	const match = text.match(/^---\n([\s\S]*?)\n---/);
+	const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
 	const raw = match?.[1] ?? "";
 	const fields: Record<string, string> = {};
-	for (const line of raw.split("\n")) {
+	for (const line of raw.split(/\r?\n/)) {
 		const fieldMatch = line.match(/^([A-Za-z0-9_-]+):\s*(.*?)\s*$/);
 		if (!fieldMatch) continue;
 		const [, key, value] = fieldMatch;
@@ -385,4 +410,11 @@ function isPathInsideRepo(repoRelativePath: string): boolean {
 
 function isBlank(value: string | undefined): boolean {
 	return value === undefined || value.trim().length === 0 || value === "n.a.";
+}
+
+function formatLocalDate(date: Date): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
 }

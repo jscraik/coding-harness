@@ -73,6 +73,26 @@ describe("validateHarnessArtifactRoutine", () => {
 		);
 	});
 
+	it("returns a structured failure when active index path is a directory", () => {
+		const repoRoot = makeRepo();
+
+		const result = validateHarnessArtifactRoutine({
+			activeIndexPath: ".harness",
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "active_index",
+				code: "active_index_not_file",
+				path: ".harness",
+			}),
+		);
+		expect(result.checks.linear_owner).toBe("not_run");
+	});
+
 	it("fails when a referenced source artifact is missing", () => {
 		const repoRoot = makeRepo({
 			plan: activePlanText().replace(
@@ -150,6 +170,25 @@ describe("validateHarnessArtifactRoutine", () => {
 		);
 	});
 
+	it("rejects traversal artifact references after path normalization", () => {
+		const repoRoot = makeRepo({
+			activeIndex: activeIndexText("docs/../../outside.md"),
+		});
+
+		const result = validateHarnessArtifactRoutine({
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "reference_integrity",
+				code: "artifact_path_outside_repo",
+				path: "docs/../../outside.md",
+			}),
+		);
+	});
+
 	it("flags unclassified artifact-index rows", () => {
 		const repoRoot = makeRepo({
 			activeIndex: activeIndexText(".harness/plan/current.md").replace(
@@ -169,6 +208,46 @@ describe("validateHarnessArtifactRoutine", () => {
 				code: "artifact_status_unclassified",
 			}),
 		);
+	});
+
+	it("fails when the Artifact Index table is missing", () => {
+		const repoRoot = makeRepo({
+			activeIndex: activeIndexText(".harness/plan/current.md").replace(
+				/\n## Artifact Index[\s\S]*$/,
+				"\n",
+			),
+		});
+
+		const result = validateHarnessArtifactRoutine({
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "stale_frontmatter_guard",
+				code: "artifact_index_missing",
+			}),
+		);
+	});
+
+	it("parses CRLF front matter in active plans", () => {
+		const repoRoot = makeRepo({
+			plan: activePlanText().replace(/\n/g, "\r\n"),
+		});
+
+		const result = validateHarnessArtifactRoutine({
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.findings).not.toContainEqual(
+			expect.objectContaining({
+				check: "linear_owner",
+				code: "linear_owner_missing",
+			}),
+		);
+		expect(result.status).toBe("pass");
 	});
 
 	it("does not report unexecuted checks as pass on early active-index failures", () => {

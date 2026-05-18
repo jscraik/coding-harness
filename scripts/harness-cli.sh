@@ -75,8 +75,7 @@ print_npm_auth_hint() {
 }
 
 if is_harness_source_repo; then
-	if command -v pnpm >/dev/null 2>&1 \
-		&& (cd "$REPO_ROOT" && node --import tsx --eval "" >/dev/null 2>&1); then
+	if (cd "$REPO_ROOT" && node --import tsx --eval "" >/dev/null 2>&1); then
 		exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"
 	fi
 	if [[ -f "$REPO_ROOT/dist/cli.js" ]]; then

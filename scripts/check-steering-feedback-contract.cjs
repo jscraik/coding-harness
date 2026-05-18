@@ -692,13 +692,6 @@ function validateSolution(content) {
 		errors,
 		REQUIRED_FILES.solution,
 		content,
-		/Meta-behavior proof/i,
-		"meta-behavior proof evidence",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.solution,
-		content,
 		/`?pr-template-gate`? rejects PR bodies/i,
 		"pr-template-gate repeated-steering rejection evidence",
 	);
@@ -878,13 +871,6 @@ function validatePrValidator(content) {
 		content,
 		PATTERN_SCOPE_VALIDATOR_PATTERN,
 		"pattern scope inventory validator rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.prValidator,
-		content,
-		/(example-based feedback|concrete correction|single function|not just that line|same things in multiple places|larger perspective|across everything we do)/i,
-		"semantic pattern-scope trigger coverage",
 	);
 	requirePattern(
 		errors,

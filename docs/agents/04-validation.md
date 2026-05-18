@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-17
+last_validated: 2026-05-18
 ---
 
 # Validation and checks
@@ -234,10 +234,13 @@ Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps
 
 ## Artifact routine gate
 
-Run `harness artifact-routine --active-index .harness/active-artifacts.md --json`
-before using a `.harness` spec or plan as implementation input. The gate is
-read-only and validates active-index freshness, Linear or local-only owner,
-referenced-path integrity, runtime-output boundary, and stale artifact
+For source-checkout command evidence, run
+`node --import tsx src/cli.ts artifact-routine --active-index .harness/active-artifacts.md --json`
+before using a `.harness` spec or plan as implementation input. In installed
+downstream repositories, use
+`harness artifact-routine --active-index .harness/active-artifacts.md --json`.
+The gate is read-only and validates active-index freshness, Linear or local-only
+owner, referenced-path integrity, runtime-output boundary, and stale artifact
 classification.
 
 ## Verify-work lifecycle

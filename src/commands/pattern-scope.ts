@@ -236,6 +236,16 @@ export function buildPatternScopeArtifact(
 			},
 		};
 	}
+	if (!statSync(repoRoot).isDirectory()) {
+		return {
+			schemaVersion: "pattern-scope/v1",
+			status: "error",
+			error: {
+				code: "pattern-scope.repo_not_directory",
+				message: `Repo root must be a directory: ${repoRoot}`,
+			},
+		};
+	}
 
 	const normalizedFiles = options.files.map((file) =>
 		normalizeRepoPath(repoRoot, file),

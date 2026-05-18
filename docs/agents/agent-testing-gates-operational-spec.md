@@ -9,6 +9,22 @@ last_validated: 2026-05-18
 
 # Agent Testing Gates — Compact Operational Spec
 
+## Table of Contents
+
+- [1. Metadata](#1-metadata)
+- [2. Errors](#2-errors)
+- [3. States](#3-states)
+- [4. Transition Table (Canonical) — S | E | G | A | N](#4-transition-table-canonical--s--e--g--a--n)
+- [5. Invariants](#5-invariants)
+- [6. Idempotency](#6-idempotency)
+- [7. Mermaid State Diagram (Derived Strictly from Table)](#7-mermaid-state-diagram-derived-strictly-from-table)
+- [8. Pseudocode (Executor)](#8-pseudocode-executor)
+- [9. Log Schema](#9-log-schema)
+- [10. Modes: STRICT | ADVISORY](#10-modes-strict--advisory)
+- [11. Dry-Run Simulation](#11-dry-run-simulation)
+- [12. Harness Assurance Acceptance Contract](#12-harness-assurance-acceptance-contract)
+- [13. Enforcement Contract](#13-enforcement-contract)
+
 ## 1. Metadata
 
 | Field          | Value                                             |

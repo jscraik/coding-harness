@@ -115,7 +115,10 @@ implementation:
 
 Command:
 
-- `harness artifact-routine --active-index .harness/active-artifacts.md --json`
+- Source checkout:
+  `node --import tsx src/cli.ts artifact-routine --active-index .harness/active-artifacts.md --json`
+- Installed package:
+  `harness artifact-routine --active-index .harness/active-artifacts.md --json`
 
 - linear_owner: every active spec or plan has a live `linear_issue`, or an
   explicit `linear_status: local_only` exception with owner and reason.
@@ -179,14 +182,17 @@ Goal continuation must follow `$goal-governor` and `$he-phase-work`:
 For this documentation/spec pass:
 
 - `rg -n "AC-HAG|FR-|SA-|VAC-|essential_decisions|refusal_triggers" docs/agents/agent-testing-gates-operational-spec.md .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md`
-- `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py docs/agents/agent-testing-gates-operational-spec.md --kind spec --json`
-- `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md --kind plan --json`
+- `python3 "$HARNESS_ENGINEERING_SKILL_DIR/scripts/check_generated_artifact_shape.py" docs/agents/agent-testing-gates-operational-spec.md --kind spec --json`
+- `python3 "$HARNESS_ENGINEERING_SKILL_DIR/scripts/check_generated_artifact_shape.py" .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md --kind plan --json`
 - `pnpm run docs:lint`
 - `pnpm run docs:steering:guard`
 - `bash scripts/validate-codestyle.sh --fast`
 
 For future code work, run the PU-specific validation and widen to `pnpm check`
 or `pnpm test:deep` when runtime, artifact, or security behavior changes.
+Set `HARNESS_ENGINEERING_SKILL_DIR` to the local harness-engineering skill root
+before running the external shape checker; if the skill is unavailable, record
+the checker as blocked and run the repo-local gates that still apply.
 
 ## Review Plan
 
@@ -221,9 +227,10 @@ artifact-handling behavior changed:
      proving test/gate.
    - The artifact must end with
      `WROTE: artifacts/reviews/testing-reviewer.md`.
-   - The coordinator must verify the artifact exists and is non-empty. If it is
-     missing, retry once with a direct artifact-write request; if still missing,
-     mark `testing-reviewer` as failed and record the coverage gap.
+   - The coordinator, per `UBIQUITOUS_LANGUAGE.md`, must verify
+     `artifacts/reviews/testing-reviewer.md` exists and is non-empty, retry once
+     via automated artifact-write request, else mark `testing-reviewer` failed
+     and record the coverage gap.
 3. `$simplify`
    - Scope: current diff only.
    - Purpose: behavior-preserving cleanup, dedupe, naming clarity, helper reuse,

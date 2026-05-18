@@ -283,6 +283,26 @@ describe("pattern-scope command", () => {
 		});
 	});
 
+	it("returns a structured error when repo root is a file", () => {
+		const repoRoot = makeRepo();
+		const filePath = join(repoRoot, "src/commands/widget.ts");
+
+		const artifact = buildPatternScopeArtifact({
+			repoRoot: filePath,
+			files: ["src/commands/widget.ts"],
+			feedback: "apply this everywhere relevant",
+		});
+
+		expect(artifact).toEqual({
+			schemaVersion: "pattern-scope/v1",
+			status: "error",
+			error: {
+				code: "pattern-scope.repo_not_directory",
+				message: `Repo root must be a directory: ${filePath}`,
+			},
+		});
+	});
+
 	it("returns usage error when files are missing", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 

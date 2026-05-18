@@ -157,7 +157,7 @@ In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --fro
 | `check-environment`      | Validate pilot environment governance checks                                                                              |
 | `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                                                                    |
 | `artifact-gate`          | Check generated artifact changes against the artifact provenance registry                                                 |
-| `artifact-routine`       | Validate route-driving `.harness` artifacts before implementation                                                        |
+| `artifact-routine`       | Validate `.harness/active-artifacts.md` route-driving specs and plans for owner, freshness, reference integrity, runtime-output boundaries, and stale artifact classification before implementation |
 | `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks                                           |
 | `blast-radius`           | Determine required checks from changed files                                                                              |
 | `risk-tier`              | Classify changed files by risk tier                                                                                       |
