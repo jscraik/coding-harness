@@ -222,8 +222,10 @@ export function runPatternScopeCLI(args: string[]): number {
  * @param options - Inputs: `files` (changed repo paths), optional `feedback` text to detect broader-scope triggers, optional `output` file path (written inside the repo when provided), and optional `repoRoot` to resolve paths against.
  * @returns A `PatternScopeArtifact` on success; otherwise a `PatternScopeError` with one of:
  * - `pattern-scope.repo_missing` when the resolved repo root does not exist,
+ * - `pattern-scope.repo_not_directory` when the resolved repo root is not a directory,
  * - `pattern-scope.file_outside_repo` when any changed file resolves outside the repo root,
- * - `pattern-scope.output_outside_repo` when a requested output path resolves outside the repo root.
+ * - `pattern-scope.output_outside_repo` when a requested output path resolves outside the repo root,
+ * - `pattern-scope.output_not_file` when a requested output path already exists as a directory.
  */
 export function buildPatternScopeArtifact(
 	options: PatternScopeOptions,
@@ -317,6 +319,16 @@ export function buildPatternScopeArtifact(
 				error: {
 					code: "pattern-scope.output_outside_repo",
 					message: `Output path must stay inside repo root: ${options.output}`,
+				},
+			};
+		}
+		if (existsSync(outputPath) && !statSync(outputPath).isFile()) {
+			return {
+				schemaVersion: "pattern-scope/v1",
+				status: "error",
+				error: {
+					code: "pattern-scope.output_not_file",
+					message: `Output path must be a file: ${options.output}`,
 				},
 			};
 		}

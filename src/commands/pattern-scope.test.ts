@@ -199,6 +199,27 @@ describe("pattern-scope command", () => {
 		});
 	});
 
+	it("returns a structured error when output path is a directory", () => {
+		const repoRoot = makeRepo();
+		mkdirSync(join(repoRoot, "artifacts/pattern-scope"), { recursive: true });
+
+		const artifact = buildPatternScopeArtifact({
+			repoRoot,
+			files: ["src/commands/widget.ts"],
+			feedback: "apply this everywhere relevant",
+			output: "artifacts/pattern-scope",
+		});
+
+		expect(artifact).toEqual({
+			schemaVersion: "pattern-scope/v1",
+			status: "error",
+			error: {
+				code: "pattern-scope.output_not_file",
+				message: "Output path must be a file: artifacts/pattern-scope",
+			},
+		});
+	});
+
 	it("returns usage errors when optional flags are missing values", () => {
 		const flagCases = ["--feedback", "--output", "--repo-root"];
 
