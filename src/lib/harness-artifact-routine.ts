@@ -164,7 +164,11 @@ function validateActiveArtifacts(
 	fail: (finding: ArtifactHandlingFinding) => void,
 ): void {
 	for (const artifactPath of activeArtifacts) {
-		if (!isPathInsideRepo(artifactPath)) {
+		// Compute canonical path for all validations
+		const absoluteArtifactPath = resolve(repoRoot, artifactPath);
+		const canonicalPath = relative(repoRoot, absoluteArtifactPath);
+
+		if (!isPathInsideRepo(canonicalPath)) {
 			fail({
 				check: "reference_integrity",
 				code: "artifact_path_outside_repo",
@@ -175,7 +179,7 @@ function validateActiveArtifacts(
 			});
 			continue;
 		}
-		if (artifactPath.startsWith("artifacts/")) {
+		if (canonicalPath.startsWith("artifacts/")) {
 			fail({
 				check: "runtime_boundary",
 				code: "runtime_artifact_is_route_driving",
@@ -183,7 +187,6 @@ function validateActiveArtifacts(
 				path: artifactPath,
 			});
 		}
-		const absoluteArtifactPath = resolve(repoRoot, artifactPath);
 		if (!existsSync(absoluteArtifactPath)) {
 			fail({
 				check: "reference_integrity",
@@ -193,7 +196,7 @@ function validateActiveArtifacts(
 			});
 			continue;
 		}
-		if (/^\.harness\/(plan|specs)\//.test(artifactPath)) {
+		if (/^\.harness\/(plan|specs)\//.test(canonicalPath)) {
 			validatePlanOrSpecOwnership(
 				repoRoot,
 				artifactPath,
@@ -385,10 +388,10 @@ function buildResult(
  * @returns An object with a `fields` map where each front-matter key maps to its unquoted string value. Missing or non-matching lines are omitted from the map.
  */
 function parseFrontMatter(text: string): FrontMatter {
-	const match = text.match(/^---\n([\s\S]*?)\n---/);
+	const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
 	const raw = match?.[1] ?? "";
 	const fields: Record<string, string> = {};
-	for (const line of raw.split("\n")) {
+	for (const line of raw.split(/\r?\n/)) {
 		const fieldMatch = line.match(/^([A-Za-z0-9_-]+):\s*(.*?)\s*$/);
 		if (!fieldMatch) continue;
 		const [, key, value] = fieldMatch;

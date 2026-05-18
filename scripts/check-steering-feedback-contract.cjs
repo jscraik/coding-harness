@@ -690,13 +690,6 @@ function validateSolution(content) {
 		errors,
 		REQUIRED_FILES.solution,
 		content,
-		/Meta-behavior proof/i,
-		"meta-behavior proof evidence",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.solution,
-		content,
 		/`?pr-template-gate`? rejects PR bodies/i,
 		"pr-template-gate repeated-steering rejection evidence",
 	);

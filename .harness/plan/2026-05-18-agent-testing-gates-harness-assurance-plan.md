@@ -176,11 +176,13 @@ Goal continuation must follow `$goal-governor` and `$he-phase-work`:
 
 ## Validation Gates
 
+**Prerequisite**: Set `HARNESS_TOOLS_PATH` to point to the harness-engineering plugin root (e.g., `/path/to/agent-skills/Plugins/harness-engineering`).
+
 For this documentation/spec pass:
 
 - `rg -n "AC-HAG|FR-|SA-|VAC-|essential_decisions|refusal_triggers" docs/agents/agent-testing-gates-operational-spec.md .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md`
-- `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py docs/agents/agent-testing-gates-operational-spec.md --kind spec --json`
-- `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md --kind plan --json`
+- `python3 $HARNESS_TOOLS_PATH/scripts/check_generated_artifact_shape.py docs/agents/agent-testing-gates-operational-spec.md --kind spec --json`
+- `python3 $HARNESS_TOOLS_PATH/scripts/check_generated_artifact_shape.py .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md --kind plan --json`
 - `pnpm run docs:lint`
 - `pnpm run docs:steering:guard`
 - `bash scripts/validate-codestyle.sh --fast`
@@ -221,9 +223,10 @@ artifact-handling behavior changed:
      proving test/gate.
    - The artifact must end with
      `WROTE: artifacts/reviews/testing-reviewer.md`.
-   - The coordinator must verify the artifact exists and is non-empty. If it is
-     missing, retry once with a direct artifact-write request; if still missing,
-     mark `testing-reviewer` as failed and record the coverage gap.
+   - Coordinator (per UBIQUITOUS_LANGUAGE.md) must verify
+     `artifacts/reviews/testing-reviewer.md` exists and is non-empty, retry
+     once via automated artifact-write request, else mark testing-reviewer
+     failed and record coverage gap.
 3. `$simplify`
    - Scope: current diff only.
    - Purpose: behavior-preserving cleanup, dedupe, naming clarity, helper reuse,
