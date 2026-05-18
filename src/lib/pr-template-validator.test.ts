@@ -375,6 +375,18 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("accepts root-level docs as durable meta references", () => {
+		const body = VALID_BODY.replace(
+			"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+			"- Meta-behavior proof: Added guard guidance in README.md.",
+		).replace(
+			"- Learning / reinforcement: none; no durable learning promoted.",
+			"- Learning / reinforcement: Promoted handoff guidance in CONTRIBUTING.md.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
 	it("requires explicit changed-sibling evidence for pattern scope inventory", () => {
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",
