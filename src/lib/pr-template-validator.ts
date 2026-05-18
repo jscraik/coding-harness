@@ -25,11 +25,11 @@ const PATTERN_SCOPE_SIGNAL_PATTERN =
 const DURABLE_META_DESTINATION_PATTERN =
 	/(gate|validator|schema|scaffold|template field|validation rule|Project Brain|Linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
 const CONCRETE_DURABLE_REFERENCE_PATTERN =
-	/(\b[A-Z]+-\d+\b|(?:^|[\s`])(?:AI|artifacts|codestyle|fixtures|scripts|src|test|tests)\/[\w./-]+|docs\/[\w./-]+|\.harness\/[\w./-]+|\.github\/[\w./-]+|AGENTS\.md|UBIQUITOUS_LANGUAGE\.md|CODESTYLE\.md|harness\.contract\.json|pnpm\s+[\w:-]+|bash\s+scripts\/[\w./-]+)/i;
+	/(\b[A-Z]+-\d+\b|(?:^|[\s`])(?:\.\/)?(?:AI|artifacts|codestyle|fixtures|scripts|src|test|tests|docs|\.harness|\.github)\/[\w./-]+|(?:^|[\s`])(?:\.\/)?(?:AGENTS\.md|UBIQUITOUS_LANGUAGE\.md|CODESTYLE\.md|harness\.contract\.json)|pnpm\s+[\w:-]+|bash\s+(?:\.\/)?scripts\/[\w./-]+)/i;
 const PATTERN_SCOPE_EVIDENCE_PATTERNS = [
 	/(principle|design principle|API design|contract)/i,
 	/(sibling|similar|related|pattern|inventory|searched|misbehavior class)/i,
-	/(changed|updated|applied|propagated)/i,
+	/\b(changed|updated|applied|propagated)\b/i,
 	/(left unchanged|unchanged|deferred|not applicable|n\.a\.|tracked issue|exception).*(reason|because|tracked issue|exception|not applicable)|reason.*(left unchanged|unchanged|deferred|not applicable|n\.a\.|tracked issue|exception)/i,
 ] as const;
 const REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS = [

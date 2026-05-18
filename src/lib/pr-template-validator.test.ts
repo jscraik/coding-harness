@@ -362,6 +362,32 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 	});
 
+	it("accepts dot-prefixed repo paths as durable meta references", () => {
+		const body = VALID_BODY.replace(
+			"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+			"- Meta-behavior proof: Added guard at ./src/lib/pr-template-validator.ts.",
+		).replace(
+			"- Learning / reinforcement: none; no durable learning promoted.",
+			"- Learning / reinforcement: Promoted repo learning in ./.harness/memory/LEARNINGS.md.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("requires explicit changed-sibling evidence for pattern scope inventory", () => {
+		const body = VALID_BODY.replace(
+			"Added local PR-template gate command.",
+			"Do not just fix that line; search the same pattern across related adapters.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling patterns searched; siblings left unchanged because no matching production adapters exist.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings left unchanged or deferred with reasons when PR text admits line-level or design-pattern correction.",
+		);
+	});
+
 	it.each([
 		"not permitted to proceed",
 		"current-session steering admission",
