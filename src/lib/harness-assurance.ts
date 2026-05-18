@@ -86,7 +86,17 @@ const thresholdOperators = new Set<HarnessAssuranceThreshold["operator"]>([
 	">=",
 ]);
 
-/** Validate assurance entries so handoff artifacts cannot silently overclaim test coverage. */
+/**
+ * Validate a set of HarnessAssuranceEntry objects against the harness assurance rules.
+ *
+ * Performs checks for duplicate layers, presence of non-blank evidence, required reason for
+ * non-pass statuses, required follow-up for blocked statuses, numeric threshold requirement for
+ * load_stress when marked pass, lifecycle closeout requirements when marked pass, and presence of
+ * all seven canonical layers.
+ *
+ * @param entries - The assurance entries to validate
+ * @returns The validation outcome containing any findings and `valid` set to `true` when no findings were produced
+ */
 export function validateHarnessAssuranceEntries(
 	entries: readonly HarnessAssuranceEntry[],
 ): HarnessAssuranceValidationResult {
@@ -161,10 +171,21 @@ export function validateHarnessAssuranceEntries(
 	};
 }
 
+/**
+ * Check whether an assurance entry includes at least one non-blank evidence reference.
+ *
+ * @returns `true` if `entry.evidence` contains at least one non-empty, non-whitespace string, `false` otherwise.
+ */
 function hasEvidence(entry: HarnessAssuranceEntry): boolean {
 	return (entry.evidence ?? []).some((item) => !isBlank(item));
 }
 
+/**
+ * Determine whether a threshold object represents a valid numeric threshold requirement.
+ *
+ * @param threshold - The threshold object to validate; may be `null` or `undefined`.
+ * @returns `true` if `threshold` is present and has a non-blank `metric` and `unit`, an allowed operator (`"<="` or `">="`), and a finite numeric `value`; `false` otherwise.
+ */
 function hasNumericThreshold(
 	threshold: HarnessAssuranceThreshold | null | undefined,
 ): boolean {
@@ -178,10 +199,26 @@ function hasNumericThreshold(
 	);
 }
 
+/**
+ * Determine whether a string is null, undefined, or consists only of whitespace.
+ *
+ * @param value - The string to test; may be `null` or `undefined`
+ * @returns `true` if `value` is `null`, `undefined`, or contains only whitespace after trimming; `false` otherwise.
+ */
 function isBlank(value: string | null | undefined): boolean {
 	return value === null || value === undefined || value.trim().length === 0;
 }
 
+/**
+ * Validate lifecycle_closeout requirements for an assurance entry and append any findings.
+ *
+ * Checks that all required lifecycle-state fields are present and non-blank, and that
+ * `unobservedHorizon` is not set. For each violated requirement, a corresponding finding
+ * is pushed to `findings`.
+ *
+ * @param entry - The `HarnessAssuranceEntry` whose `lifecycleState` is being validated.
+ * @param findings - Mutable array to append `HarnessAssuranceFinding` objects describing violations.
+ */
 function validateLifecycleCloseout(
 	entry: HarnessAssuranceEntry,
 	findings: HarnessAssuranceFinding[],

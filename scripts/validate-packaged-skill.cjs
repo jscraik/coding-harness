@@ -50,6 +50,11 @@ const FORBIDDEN_PATTERNS = [
 	},
 ];
 
+/**
+ * Print an error message to stderr and terminate the process with exit code 1.
+ *
+ * @param {string} message - The error message to write to stderr before exiting.
+ */
 function fail(message) {
 	console.error(message);
 	process.exit(1);
@@ -113,6 +118,13 @@ function validateLintSurfaces() {
 	runCommand("pnpm", ["exec", "biome", "check", REQUIRED_FILES.installJson]);
 }
 
+/**
+ * Validate SKILL.md, agent-install-guide.md, and setup-and-commands.md contain required commands and setup markers.
+ *
+ * Ensures bootstrap commands appear in both SKILL.md and agent-install-guide.md; migration command entries appear in agent-install-guide.md
+ * and in SKILL.md either with or without a leading "harness ". Verifies setup-and-commands.md documents CircleCI environment variable setup and
+ * mentions `NPM_TOKEN`. Also verifies each of the three files documents the sandbox-safe source-repo runner `node --import tsx src/cli.ts`.
+ */
 function validateSkillMarkdown() {
 	const skillContent = readRepoFile(REQUIRED_FILES.skill);
 	const installGuideContent = readRepoFile(REQUIRED_FILES.installGuide);
@@ -159,6 +171,11 @@ function validateSkillMarkdown() {
 	}
 }
 
+/**
+ * Validate that agent-install.json contains required fields and exact command strings for CI, init, and migrations.
+ *
+ * Asserts that `ci_provider`, `init_command`, and `verify_command` match expected values; that an `init` phase with `steps` exists and includes the required init steps (`harness init --dry-run`, `harness init`, `harness init --check-updates`); and that `migration_commands` defines exact commands for `preview`, `apply`, `verify`, `commit`, and `abort`. Fails the process when any expectation is not met.
+ */
 function validateInstallJson() {
 	const content = readRepoFile(REQUIRED_FILES.installJson);
 	const parsed = JSON.parse(content);
