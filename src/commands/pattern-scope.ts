@@ -143,6 +143,67 @@ interface PatternScopeError {
 	};
 }
 
+function patternScopeError(
+	code: PatternScopeError["error"]["code"],
+	message: string,
+): PatternScopeError {
+	return {
+		schemaVersion: "pattern-scope/v1",
+		status: "error",
+		error: { code, message },
+	};
+}
+
+function validatePatternScopeRepoRoot(
+	repoRoot: string,
+): PatternScopeError | null {
+	if (!existsSync(repoRoot)) {
+		return patternScopeError(
+			"pattern-scope.repo_missing",
+			`Repo root does not exist: ${repoRoot}`,
+		);
+	}
+	if (!statSync(repoRoot).isDirectory()) {
+		return patternScopeError(
+			"pattern-scope.repo_not_directory",
+			`Repo root must be a directory: ${repoRoot}`,
+		);
+	}
+	return null;
+}
+
+function writePatternScopeOutput(
+	repoRoot: string,
+	output: string,
+	artifact: PatternScopeArtifact,
+): PatternScopeError | null {
+	const outputPath = resolve(repoRoot, output);
+	const outputRepoPath = relative(repoRoot, outputPath);
+	if (!isPathInsideRepo(outputRepoPath)) {
+		return patternScopeError(
+			"pattern-scope.output_outside_repo",
+			`Output path must stay inside repo root: ${output}`,
+		);
+	}
+	if (existsSync(outputPath) && !statSync(outputPath).isFile()) {
+		return patternScopeError(
+			"pattern-scope.output_not_file",
+			`Output path must be a file: ${output}`,
+		);
+	}
+	artifact.outputPath = outputRepoPath;
+	try {
+		mkdirSync(dirname(outputPath), { recursive: true });
+		writeFileSync(outputPath, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
+	} catch (err) {
+		return patternScopeError(
+			"pattern-scope.output_write_failed",
+			`Failed to write output file: ${err instanceof Error ? err.message : String(err)}`,
+		);
+	}
+	return null;
+}
+
 /**
  * Execute the pattern-scope command.
  *
@@ -231,40 +292,18 @@ export function buildPatternScopeArtifact(
 	options: PatternScopeOptions,
 ): PatternScopeArtifact | PatternScopeError {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
-	if (!existsSync(repoRoot)) {
-		return {
-			schemaVersion: "pattern-scope/v1",
-			status: "error",
-			error: {
-				code: "pattern-scope.repo_missing",
-				message: `Repo root does not exist: ${repoRoot}`,
-			},
-		};
-	}
-	if (!statSync(repoRoot).isDirectory()) {
-		return {
-			schemaVersion: "pattern-scope/v1",
-			status: "error",
-			error: {
-				code: "pattern-scope.repo_not_directory",
-				message: `Repo root must be a directory: ${repoRoot}`,
-			},
-		};
-	}
+	const repoRootError = validatePatternScopeRepoRoot(repoRoot);
+	if (repoRootError) return repoRootError;
 
 	const normalizedFiles = options.files.map((file) =>
 		normalizeRepoPath(repoRoot, file),
 	);
 	const outsideFile = normalizedFiles.find((file) => !isPathInsideRepo(file));
 	if (outsideFile !== undefined) {
-		return {
-			schemaVersion: "pattern-scope/v1",
-			status: "error",
-			error: {
-				code: "pattern-scope.file_outside_repo",
-				message: `Changed files must stay inside repo root: ${outsideFile}`,
-			},
-		};
+		return patternScopeError(
+			"pattern-scope.file_outside_repo",
+			`Changed files must stay inside repo root: ${outsideFile}`,
+		);
 	}
 
 	const changedFiles = Array.from(new Set(normalizedFiles)).sort();
@@ -310,46 +349,12 @@ export function buildPatternScopeArtifact(
 	};
 
 	if (options.output) {
-		const outputPath = resolve(repoRoot, options.output);
-		const outputRepoPath = relative(repoRoot, outputPath);
-		if (!isPathInsideRepo(outputRepoPath)) {
-			return {
-				schemaVersion: "pattern-scope/v1",
-				status: "error",
-				error: {
-					code: "pattern-scope.output_outside_repo",
-					message: `Output path must stay inside repo root: ${options.output}`,
-				},
-			};
-		}
-		if (existsSync(outputPath) && !statSync(outputPath).isFile()) {
-			return {
-				schemaVersion: "pattern-scope/v1",
-				status: "error",
-				error: {
-					code: "pattern-scope.output_not_file",
-					message: `Output path must be a file: ${options.output}`,
-				},
-			};
-		}
-		artifact.outputPath = outputRepoPath;
-		try {
-			mkdirSync(dirname(outputPath), { recursive: true });
-			writeFileSync(
-				outputPath,
-				`${JSON.stringify(artifact, null, 2)}\n`,
-				"utf8",
-			);
-		} catch (err) {
-			return {
-				schemaVersion: "pattern-scope/v1",
-				status: "error",
-				error: {
-					code: "pattern-scope.output_write_failed",
-					message: `Failed to write output file: ${err instanceof Error ? err.message : String(err)}`,
-				},
-			};
-		}
+		const outputError = writePatternScopeOutput(
+			repoRoot,
+			options.output,
+			artifact,
+		);
+		if (outputError) return outputError;
 	}
 
 	return artifact;
