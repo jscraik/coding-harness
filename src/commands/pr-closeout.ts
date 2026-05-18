@@ -710,6 +710,14 @@ export async function runPrCloseoutCLI(
 			: buildLiveInput(parsed.options, options.runner ?? defaultRunner);
 		const closeoutGatesPath =
 			parsed.options.closeoutGatesPath ?? parsed.options.phaseExitPath;
+		if (
+			closeoutGatesPath &&
+			("closeoutGates" in input || "phaseExit" in input)
+		) {
+			throw new Error(
+				"Closeout evidence must come from either --input or --gates/--phase-exit, not both",
+			);
+		}
 		const inputWithCloseoutGates = closeoutGatesPath
 			? {
 					...input,

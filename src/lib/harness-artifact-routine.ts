@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
 export const ARTIFACT_HANDLING_ROUTINE_SCHEMA_VERSION =
@@ -210,6 +210,15 @@ function validateActiveArtifacts(
 			});
 			continue;
 		}
+		if (!resolvedPathStaysInsideRepo(repoRoot, absoluteArtifactPath)) {
+			fail({
+				check: "reference_integrity",
+				code: "artifact_path_resolves_outside_repo",
+				message: `Route-driving artifact must resolve inside repo root: ${artifactPath}`,
+				path: artifactPath,
+			});
+			continue;
+		}
 		if (!statSync(absoluteArtifactPath).isFile()) {
 			fail({
 				check: "reference_integrity",
@@ -292,6 +301,15 @@ function validatePlanOrSpecOwnership(
 				check: "reference_integrity",
 				code: "referenced_path_missing",
 				message: `Referenced path is missing: ${referencedPath}`,
+				path: artifactPath,
+			});
+			continue;
+		}
+		if (!resolvedPathStaysInsideRepo(repoRoot, absoluteReferencedPath)) {
+			fail({
+				check: "reference_integrity",
+				code: "referenced_path_resolves_outside_repo",
+				message: `Referenced path must resolve inside repo root: ${referencedPath}`,
 				path: artifactPath,
 			});
 			continue;
@@ -515,6 +533,22 @@ function isPathInsideRepo(repoRelativePath: string): boolean {
 		!repoRelativePath.startsWith("..") &&
 		!isAbsolute(repoRelativePath)
 	);
+}
+
+function resolvedPathStaysInsideRepo(
+	repoRoot: string,
+	absolutePath: string,
+): boolean {
+	try {
+		const resolvedRepoRoot = realpathSync(repoRoot);
+		const resolvedPath = realpathSync(absolutePath);
+		const repoRelativePath = relative(resolvedRepoRoot, resolvedPath)
+			.split(/[/\\]+/)
+			.join("/");
+		return isPathInsideRepo(repoRelativePath) || repoRelativePath.length === 0;
+	} catch {
+		return false;
+	}
 }
 
 /**

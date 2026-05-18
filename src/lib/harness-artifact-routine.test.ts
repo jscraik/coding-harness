@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -152,6 +158,32 @@ describe("validateHarnessArtifactRoutine", () => {
 			expect.objectContaining({
 				check: "reference_integrity",
 				code: "artifact_not_file",
+				path: ".harness/plan/current.md",
+			}),
+		);
+	});
+
+	it("rejects active artifact symlinks that resolve outside the repo", () => {
+		const repoRoot = makeRepo();
+		const externalRoot = mkdtempSync(join(tmpdir(), "artifact-external-"));
+		tempDirs.push(externalRoot);
+		writeFileSync(join(externalRoot, "current.md"), activePlanText(), "utf8");
+		rmSync(join(repoRoot, ".harness/plan/current.md"));
+		symlinkSync(
+			join(externalRoot, "current.md"),
+			join(repoRoot, ".harness/plan/current.md"),
+		);
+
+		const result = validateHarnessArtifactRoutine({
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "reference_integrity",
+				code: "artifact_path_resolves_outside_repo",
 				path: ".harness/plan/current.md",
 			}),
 		);

@@ -344,6 +344,42 @@ describe("runPrCloseoutCLI", () => {
 		});
 	});
 
+	it("rejects mixed input and CLI closeout gate sources", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+				phaseExit: PASSING_PHASE_EXIT,
+			}),
+		);
+
+		const result = await capture([
+			"--json",
+			"--input",
+			inputPath,
+			"--gates",
+			closeoutGatesPath,
+		]);
+
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"Closeout evidence must come from either --input or --gates/--phase-exit, not both",
+			),
+		});
+	});
+
 	it("returns usage errors for missing input", async () => {
 		const result = await capture(["--json"]);
 
