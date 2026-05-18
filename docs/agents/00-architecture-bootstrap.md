@@ -101,6 +101,10 @@ When PR closeout starts consuming coding-harness gate evidence, keep those gates
 harness-owned and HE-compatible rather than HE-owned, refresh the architecture
 context pack, and require the PR template pattern scope inventory to show which
 sibling gate and evidence surfaces were checked.
+When artifact-routine or pattern-scope commands become part of closeout
+evidence, treat them as architecture-adjacent assurance surfaces: refresh the
+context pack, keep command registry/capability metadata aligned, and prove that
+Project Brain inputs are fresh before they route implementation.
 
 ## Exact behavior evidence
 

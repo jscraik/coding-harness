@@ -918,6 +918,13 @@ function validatePrValidator(content) {
 		errors,
 		REQUIRED_FILES.prValidator,
 		content,
+		/(example-based feedback|concrete correction|single function|not just that line|same things in multiple places|larger perspective|across everything we do)/i,
+		"semantic pattern-scope trigger coverage",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.prValidator,
+		content,
 		/Learning \/ reinforcement must name the promoted learning/,
 		"learning reinforcement durable destination error",
 	);

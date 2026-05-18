@@ -93,38 +93,31 @@ It is not enough to say the agent will remember.
 ## Stale Heartbeat Admission
 
 The PR #261 closeout heartbeat exposed a second-order failure in the agent
-engineering proof loop. The PR lane was complete, but the continuation
-automation kept firing and the agent repeatedly returned quiet status instead
-of repairing the scheduling surface. That wasted tokens and forced Jamie to
-steer the same systems point again.
+operating loop: after the PR was merged, the continuation monitor kept replying
+`DONT_NOTIFY` instead of deleting or updating the matching automation. A stale
+heartbeat is not harmless background noise; it consumes user attention and proves
+that "green checks" were confused with lifecycle completion.
 
-Findings:
+Durable rule: when a heartbeat stop condition is true, the agent must remove or
+redirect the continuation before resuming ordinary work. The closeout proof must
+name the automation ID, PR state, merge state, branch or worktree state, Linear
+state, next-lane route, and deletion or retention reason. If the app automation
+API is unavailable, the fallback is to find the exact repo-owned
+`automation.toml`, remove only that matching automation directory, remove the
+empty parent directory when safe, and verify that the automation ID no longer
+appears in the repo-owned automation tree.
 
-| Finding | Root cause | Durable change |
-|---|---|---|
-| Quiet heartbeat replies repeated after the stop condition was true | The closeout loop treated `DONT_NOTIFY` as an acceptable terminal response even when the automation itself was obsolete | Automation runbooks now require deletion or update of stale continuations when the lane is done or superseded |
-| App automation deletion failed with `No handler registered for tool: automation_update` | The tool path was unavailable from the active session, so the intended cleanup control did not execute | The runbook now defines a fallback to the repo-owned automation file after exact-ID discovery |
-| The stale automation lived outside the active repo at `dev/configs/codex/automations/continue-pr-260-closeout` | The active coding-harness lane depended on a control-plane file in the configs repo | Closeout evidence must classify automation state explicitly and name the cleanup surface when it is outside the working tree |
-| Repeated checking risked increasing open process pressure | The session already had repeated unified-exec warnings, so more live PR polling was lower value than deleting the stale trigger | Stale-heartbeat cleanup should use bounded exact-ID searches and one focused mutation, not repeated PR revalidation |
+This is intentionally recorded in the same steering admission solution because
+the failure mode is the same class: an observed workflow blocker was reported as
+status instead of being fixed in the same pass. Treat stale instructions,
+stale heartbeats, stale generated artifacts, and stale validation blockers as
+fix-first defects unless the fix is out of authority, credential-blocked, or
+tracked as an explicit exception with owner and reason.
 
-Operating rule: once a heartbeat's stop condition is satisfied, the next agent
-action is automation cleanup, not another quiet status. If the primary
-automation API is blocked, classify the API failure and use the narrowest
-repo-owned fallback that removes only the matching automation record.
-
-Closeout proof for this incident:
-
-- PR lane: PR #261 had already merged, with CodeRabbit and required CircleCI
-  checks previously verified green.
-- Stale automation ID: `continue-pr-260-closeout`.
-- Primary cleanup failure: app automation delete returned `No handler
-  registered for tool: automation_update`.
-- Fallback cleanup: removed
-  `/Users/jamiecraik/dev/configs/codex/automations/continue-pr-260-closeout/automation.toml`
-  and then removed the empty automation directory with `rmdir`.
-- Verification: exact-ID search for `continue-pr-260-closeout` across
-  `/Users/jamiecraik/dev/configs/codex` and `/Users/jamiecraik/.codex`
-  returned no matches.
+Evidence: PR #261 had already merged, the stop condition in the heartbeat was
+true, and searches of the repo-owned automation surfaces under
+`/Users/jamiecraik/dev/configs/codex` and `/Users/jamiecraik/.codex`
+returned no matches.
 
 ## Enforcement Surface
 

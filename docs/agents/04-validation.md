@@ -211,14 +211,7 @@ perspective", "similar class", or "across everything" are
 pattern signals until the inventory proves the correction is intentionally
 local.
 
-For current-session steering, generate a pattern-scope artifact before claiming
-the wider pass is complete:
-
-```bash
-harness pattern-scope --files <changed-files> --feedback "<feedback>" --output artifacts/pattern-scope/pattern-scope.json --json
-```
-
-The artifact is not a substitute for judgment. It is the required inventory
+If pattern scope is hard to judge, `harness pattern-scope` is the required
 starter: review candidate siblings, run the listed searches or stronger
 repo-specific equivalents, update the shared owner or matching siblings, and
 record unchanged siblings with reasons.

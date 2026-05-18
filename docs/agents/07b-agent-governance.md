@@ -95,6 +95,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   design principle, search sibling implementations, update every required
   governance surface or durable destination, and list unchanged or deferred
   siblings in the PR template pattern scope inventory
+- observed fixable blockers are also agent-governance evidence. When an agent
+  notices a stale artifact, stale instruction, failing hook, flaky repeated
+  command, or validation weakness in the active surface, it should fix the
+  blocker in the same pass unless authority, credentials, destructive scope, or
+  an explicitly tracked exception prevents the fix
+- artifact-routine and pattern-scope command output should be treated as
+  closeout evidence only when it is produced from the current repo state and the
+  active Project Brain artifact still points at current Linear/spec/plan input
 - same-error-twice troubleshooting is also an agent-governance signal. When
   the same command, test, or runtime error happens twice, the PR should record
   Repeated-error research: trusted web or upstream research, 3-5 candidate
