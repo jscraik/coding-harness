@@ -95,6 +95,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   design principle, search sibling implementations, update every required
   governance surface or durable destination, and list unchanged or deferred
   siblings in the PR template pattern scope inventory
+- same-error-twice troubleshooting is also an agent-governance signal. When
+  the same command, test, or runtime error happens twice, the PR should record
+  Repeated-error research: trusted web or upstream research, 3-5 candidate
+  fixes, the chosen efficient fix, and the implementation that made the error
+  class less likely to recur
 - green required checks are not enough to declare closeout complete. Before an
   agent deletes a heartbeat, closes a lane, or starts the next slice, it should
   classify PR state, merge or auto-merge state, branch/worktree state, Linear

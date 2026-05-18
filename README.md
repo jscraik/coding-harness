@@ -489,6 +489,22 @@ harness verify-coderabbit --json
 That gives you a concrete local answer for "is the repo-side review wiring
 correct?" before you debug GitHub-side behavior.
 
+For AI-assisted PRs, `pr-template-gate` also protects the meta-behavior layer:
+PR bodies must name session or traceability evidence, record a pattern scope
+inventory when line-level feedback implies a broader design rule, name
+Meta-behavior proof and learning/reinforcement when steering feedback is
+admitted, and record Repeated-error research when the same error happens twice.
+This keeps high-signal review and user steering in the repo operating system
+instead of leaving it in a chat transcript.
+
+```bash
+harness pr-template-gate --json
+```
+
+A pass means the PR body satisfies the required session/traceability,
+meta-behavior, pattern-scope, and repeated-error evidence fields. A fail means
+the PR owner must correct the missing or malformed fields before handoff.
+
 ### Learning-loop closeout
 
 When a repository has imported CodeRabbit learning evidence, use the learning

@@ -4,6 +4,7 @@
 
 - [Problem](#problem)
 - [Durable Rule](#durable-rule)
+- [Current-Session Admission](#current-session-admission)
 - [Enforcement Surface](#enforcement-surface)
 - [Review Condition](#review-condition)
 - [Evidence](#evidence)
@@ -31,7 +32,13 @@ When a correction, PR comment, failing check, benchmark-style success, workflow-
 
 This is the distinction between code production and software engineering proof. A patch can pass a constrained task while still failing the engineering loop.
 
-Line-level design feedback requires a pattern scope inventory before closeout. The agent must name the inferred design principle, list the sibling implementations searched, state which siblings changed, state which siblings were intentionally left unchanged with reasons, and record deferred follow-ups. Otherwise the harness has only optimized the example line, not the class of misbehavior the feedback exposed.
+Line-level design feedback requires a pattern scope inventory before closeout. The agent must name the inferred design principle, list the sibling implementations searched, state which siblings changed, state which siblings were intentionally left unchanged with reasons, and record deferred follow-ups. Otherwise the harness has only optimized the example line, not the class of misbehavior the feedback exposed. This is the general rule: a concrete example is evidence of the user's design model, not proof that the correction is local. For example, "return a named sentinel error instead of a success/failure boolean" must trigger an API-pattern search for sibling boolean result contracts before closeout.
+
+The trigger set is intentionally semantic, not phrase-bound. Example-based
+feedback, named-function feedback, review comments, single-line corrections,
+and language such as "generally", "same pattern", "similar class", or
+"across everything" all require a pattern-generalization pass unless the
+inventory proves the correction is intentionally local.
 
 For high-level workflow skills, the proof loop must define a capture-the-flag-style win condition and retain the session or trace evidence that proves the agent closed the loop. A skill workout is complete only when Codex has attempted the workflow, reflected on failures, committed targeted skill or harness improvements, and rerun against the flag or named a concrete blocker.
 
@@ -42,6 +49,12 @@ heartbeat state are classified. If the PR is open but blocked on merge,
 approval, review, or waiting owner, the lane is waiting; deleting the heartbeat
 without that classification repeats the failure this solution records.
 
+For repeated troubleshooting failures, do not fight errors. When the same
+command, test, or runtime error happens twice, stop local retries, research
+trusted web or upstream sources, list 3-5 candidate fixes, choose the most
+efficient repo-fit fix, implement it, and record the repeated-error research
+evidence in PR closeout.
+
 Standalone prose is not enough. If the loop produces only advice, record the missing enforcement destination as a follow-up instead of treating the rule as admitted.
 
 Minimum repeat-feedback admission evidence:
@@ -51,17 +64,45 @@ Minimum repeat-feedback admission evidence:
 - related surfaces searched
 - durable destination or tracked exception
 - executable guard or required evidence field
+- meta-behavior proof field naming the durable repo/system change
+- pattern scope inventory field when a correction reveals a broader design principle
+- repeated-error research field when the same error happened twice
 - focused validation command
 - pattern scope inventory when the correction implies a broader code pattern
+
+## Current-Session Admission
+
+If Jamie says the agent is not permitted to proceed, the next action is a
+current-session steering admission record. The record must make the active
+correction load-bearing before the agent resumes feature work:
+
+- feedback class and the exact repeated behavior it describes
+- inferred operating principle
+- repo, docs, skill, gate, memory, and tracker surfaces searched
+- durable destination chosen, or tracked exception with owner and reason
+- executable guard, required evidence field, template field, or validation
+  command that prevents silent recurrence
+- behavior now forbidden for the agent in this repo
+- validation command and outcome
+
+The record can live in Project Brain, .harness/memory/LEARNINGS.md, a solution
+record, a gate, a schema, a PR template field, or a tracked Linear follow-up.
+It is not enough to say the agent will remember.
 
 ## Enforcement Surface
 
 - AGENTS.md defines agent engineering proof as the compact operating rule for steering feedback, line-level corrections, OODA horizons, reflected context, and benchmark-vs-engineering proof.
 - docs/agents/04-validation.md defines the agent engineering proof loop and its closeout evidence.
 - UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
+- .harness/memory/LEARNINGS.md records current-session steering admission when a run exposes an operating failure that must not recur.
 - The GitHub pull request template requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.
+- pr-template-gate rejects line-level or design-pattern correction admissions that lack a pattern scope inventory with the inferred principle, sibling search, siblings changed, and siblings intentionally unchanged or deferred with reasons.
+- The GitHub pull request template requires meta-behavior proof when repeated steering or high-signal correction is admitted, so the PR names the durable repo/system change instead of leaving the learning in chat.
+- The GitHub pull request template requires repeated-error research when the same error happens twice, so the PR names web/upstream research, 3-5 candidate fixes, the chosen efficient fix, and what was implemented.
 - The GitHub pull request template requires explicit closeout state so PR
   evidence cannot collapse green checks into workflow completion.
+- `pr-template-gate` rejects PR bodies that mention repeated steering or steering feedback but leave `Meta-behavior proof` or `Learning / reinforcement` as `none`, `n.a.`, or another non-durable answer.
+- `pr-template-gate` rejects PR bodies that mention the same error twice or repeated failure but leave `Repeated-error research` without research options and a chosen implemented fix.
 
 ## Review Condition
 

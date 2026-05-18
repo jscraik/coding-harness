@@ -16,7 +16,9 @@
 - Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR
 - Affected surfaces: list code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or `n.a.` with reason
 - Expected outcome alignment: state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason
-- Pattern scope inventory: for any steering feedback, review comment, or line-level correction that implies a broader design principle, name the principle, list sibling implementations searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence
+- Pattern scope inventory: for any steering feedback, review comment, or line-level correction that implies a broader design/API principle, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence
+- Meta-behavior proof: for repeated steering or high-signal corrections, name the durable repo/system change plus concrete repo path, command, or issue ID that prevents recurrence, or `n.a.` with tracked exception reason
+- Repeated-error research: when the same error occurs twice, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason
 - Acceptance trace: map completed acceptance items to evidence refs, or `n.a.` with reason
 - Validation evidence: list command outcomes, CI jobs, artifact paths, or `n.a.` with reason
 - Review artifacts: list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason
