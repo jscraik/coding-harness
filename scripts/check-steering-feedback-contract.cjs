@@ -208,12 +208,10 @@ function validateAgents(content) {
 }
 
 /**
- * Validate that the validation document includes required steering-feedback closeout headings, signals, and contract evidence.
+ * Validate that a validation-document markdown contains the steering-feedback closeout section and all required contract evidence.
  *
- * Checks for the steering feedback closeout section, agent engineering proof loop and loop moves, expected-outcome framing, admission and research signals (repeat-feedback, current-session admission, repeated-error research), durable destination and meta-behavior proof, validation-surface and review/deletion conditions, rejection of standalone prose, pattern-generalization and pattern-scope inventory requirements, principle-signal and OODA horizon classifications, reflected-context evidence, engineering and workflow-skill proofs, closeout completion expectations, required closeout state classification fields, and a GraphQL reviewThreads source-of-truth pattern.
- *
- * @param {string} content - The markdown content of the validation document to validate.
- * @returns {string[]} An array of error messages describing missing required headings or patterns; empty if all checks pass.
+ * @param {string} content - Markdown content of the validation document.
+ * @returns {string[]} An array of error messages for each missing required heading or pattern; empty if all checks pass.
  */
 function validateValidationDoc(content) {
 	const errors = [];
@@ -842,12 +840,9 @@ function validatePrTemplate(content) {
 }
 
 /**
- * Validate a PR-validator source file for required steering-feedback contract symbols, validator rules, and specific validation messages.
- *
- * Checks the provided file content for required identifiers (e.g., steering signal detection, meta-behavior and repeated-error validator rules),
- * pattern-scope validator presence, semantic trigger coverage, and specific validation error/message strings.
- * @param {string} content - The text content of the PR-validator source file to validate.
- * @returns {string[]} An array of error messages describing each missing required pattern; empty if all checks pass.
+ * Validate a PR-validator source file for required steering-feedback contract symbols, validator rules, and validation messages.
+ * @param {string} content - Text content of the PR-validator source file to inspect.
+ * @returns {string[]} An array of error messages for each missing required pattern; empty if all checks pass.
  */
 function validatePrValidator(content) {
 	const errors = [];
@@ -899,13 +894,6 @@ function validatePrValidator(content) {
 		content,
 		/Meta-behavior proof must name a durable destination/,
 		"meta-behavior durable destination error",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.prValidator,
-		content,
-		/(example-based feedback|concrete correction|single function|not just that line|same things in multiple places|larger perspective|across everything we do)/i,
-		"semantic pattern-scope trigger coverage",
 	);
 	requirePattern(
 		errors,

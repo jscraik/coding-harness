@@ -166,6 +166,13 @@ export function validateHarnessArtifactRoutine(
 	return buildResult(repoRoot, activeArtifacts, findings, checkFailures);
 }
 
+/**
+ * Validates each artifact path from the active route for repo containment, existence, runtime-vs-route boundary violations, and ownership/metadata checks for `.harness/plan` and `.harness/specs` artifacts.
+ *
+ * @param repoRoot - Absolute filesystem path to the repository root used to resolve and normalize artifact paths
+ * @param activeArtifacts - Array of repo-relative artifact paths extracted from the active route
+ * @param fail - Callback invoked with an `ArtifactHandlingFinding` when a validation rule fails
+ */
 function validateActiveArtifacts(
 	repoRoot: string,
 	activeArtifacts: string[],
@@ -173,6 +180,8 @@ function validateActiveArtifacts(
 ): void {
 	for (const rawArtifactPath of activeArtifacts) {
 		const artifactPath = normalizeRepoPath(repoRoot, rawArtifactPath);
+		const absoluteArtifactPath = resolve(repoRoot, artifactPath);
+		const canonicalPath = artifactPath;
 		if (!isPathInsideRepo(artifactPath)) {
 			fail({
 				check: "reference_integrity",
@@ -184,7 +193,7 @@ function validateActiveArtifacts(
 			});
 			continue;
 		}
-		if (artifactPath.startsWith("artifacts/")) {
+		if (canonicalPath.startsWith("artifacts/")) {
 			fail({
 				check: "runtime_boundary",
 				code: "runtime_artifact_is_route_driving",
@@ -192,7 +201,6 @@ function validateActiveArtifacts(
 				path: artifactPath,
 			});
 		}
-		const absoluteArtifactPath = resolve(repoRoot, artifactPath);
 		if (!existsSync(absoluteArtifactPath)) {
 			fail({
 				check: "reference_integrity",
@@ -202,7 +210,7 @@ function validateActiveArtifacts(
 			});
 			continue;
 		}
-		if (/^\.harness\/(plan|specs)\//.test(artifactPath)) {
+		if (/^\.harness\/(plan|specs)\//.test(canonicalPath)) {
 			validatePlanOrSpecOwnership(
 				repoRoot,
 				artifactPath,
@@ -213,6 +221,18 @@ function validateActiveArtifacts(
 	}
 }
 
+/**
+ * Validate front-matter ownership requirements and referenced repo paths for a `.harness/plan/*` or `.harness/specs/*` artifact, emitting findings via `fail`.
+ *
+ * Performs these checks:
+ * - Ensures `linear_issue` is present unless `linear_status` is `"local_only"`, and ensures `owner` is present when `linear_status` is `"local_only"`.
+ * - Collects referenced paths from front matter (`source_spec`) and backtick-quoted paths (limited to `.harness/*` and `docs/*`, excluding globbed entries), then ensures each referenced path is inside the repository and exists on disk.
+ *
+ * @param repoRoot - Absolute filesystem path to the repository root used to normalize and resolve referenced paths.
+ * @param artifactPath - Repo-relative path to the artifact being validated (used in emitted findings).
+ * @param text - Full file contents of the artifact.
+ * @param fail - Callback to record an `ArtifactHandlingFinding` when a validation rule fails.
+ */
 function validatePlanOrSpecOwnership(
 	repoRoot: string,
 	artifactPath: string,
@@ -268,6 +288,13 @@ function validatePlanOrSpecOwnership(
 	}
 }
 
+/**
+ * Validate the "Artifact Index" markdown table for a "Local Status" column and report rows that use draft/unknown/maybe.
+ *
+ * @param activeIndexPath - Repository-relative path to the active index file (used as the finding `path`)
+ * @param artifactIndexText - The markdown text of the "Artifact Index" section
+ * @param fail - Callback to record an ArtifactHandlingFinding when the Local Status column is missing or a row is unclassified
+ */
 function validateHistoricalRows(
 	activeIndexPath: string,
 	artifactIndexText: string,
@@ -320,6 +347,12 @@ function validateHistoricalRows(
 	}
 }
 
+/**
+ * Split a markdown table row into its constituent cells and trim surrounding whitespace.
+ *
+ * @param row - A markdown table row string (for example, `"| col1 | col2 |"`)
+ * @returns The trimmed cell values in order
+ */
 function parseMarkdownTableCells(row: string): string[] {
 	return row
 		.split("|")
@@ -327,6 +360,21 @@ function parseMarkdownTableCells(row: string): string[] {
 		.map((cell) => cell.trim());
 }
 
+/**
+ * Builds the final ArtifactHandlingRoutineResult summarizing check outcomes, findings, and referenced artifacts.
+ *
+ * @param repoRoot - The repository root path used to normalize referenced artifact paths
+ * @param referencedArtifacts - The list of repo-relative artifact paths referenced by the active index
+ * @param findings - Collected findings produced during validation
+ * @param checkFailures - Set of checks that failed during validation
+ * @param executedChecks - Set of checks that were executed; checks not in this set are reported as `not_run` (defaults to all checks)
+ * @returns The assembled ArtifactHandlingRoutineResult containing:
+ *  - `checks`: a mapping of each check to `"pass" | "fail" | "not_run"`,
+ *  - `findings`: the provided findings,
+ *  - `referencedArtifacts`: the provided artifact paths,
+ *  - `repoRoot` and `schemaVersion`,
+ *  - `status`: `"pass"` when there are no findings, otherwise `"fail"`.
+ */
 function buildResult(
 	repoRoot: string,
 	referencedArtifacts: string[],
@@ -353,6 +401,15 @@ function buildResult(
 	};
 }
 
+/**
+ * Extracts top-of-file YAML-like front matter into a flat fields map.
+ *
+ * Parses the first `--- ... ---` block at the start of `text` and returns its
+ * key/value pairs as plain strings. Only lines matching `key: value` are
+ * captured; surrounding single or double quotes around values are removed.
+ *
+ * @returns An object with a `fields` map where each front-matter key maps to its unquoted string value. Missing or non-matching lines are omitted from the map.
+ */
 function parseFrontMatter(text: string): FrontMatter {
 	const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
 	const raw = match?.[1] ?? "";
@@ -367,6 +424,13 @@ function parseFrontMatter(text: string): FrontMatter {
 	return { fields };
 }
 
+/**
+ * Extracts the content under the markdown "## <heading>" section.
+ *
+ * @param text - The full markdown text to search.
+ * @param heading - The section heading text (without leading `## `).
+ * @returns The lines between the matching `## <heading>` and the next `## ` heading joined by newlines, or an empty string if the heading is not present.
+ */
 function section(text: string, heading: string): string {
 	const lines = text.split("\n");
 	const headingLine = `## ${heading}`;
@@ -380,6 +444,12 @@ function section(text: string, heading: string): string {
 		.join("\n");
 }
 
+/**
+ * Extract backtick-quoted paths from `text` and keep only likely repo-relative locations.
+ *
+ * @param text - The input content to scan for backtick-quoted paths
+ * @returns An array of extracted paths that start with `.harness/`, `docs/`, `src/`, `scripts/`, `e2e/`, or `artifacts/`
+ */
 function extractBacktickPaths(text: string): string[] {
 	return Array.from(text.matchAll(/`([^`]+)`/g))
 		.map((match) => match[1])
@@ -389,10 +459,23 @@ function extractBacktickPaths(text: string): string[] {
 		);
 }
 
+/**
+ * Determines whether a path pattern contains glob tokens.
+ *
+ * @param path - The path or pattern to inspect
+ * @returns `true` if `path` contains any of the glob tokens `*`, `?`, or `[`, `false` otherwise.
+ */
 function containsGlobToken(path: string): boolean {
 	return path.includes("*") || path.includes("?") || path.includes("[");
 }
 
+/**
+ * Converts an input path into a normalized repo-relative POSIX-style path.
+ *
+ * @param repoRoot - The repository root directory used as the base for resolution.
+ * @param path - The input path to normalize; may be absolute or relative.
+ * @returns The repo-relative path with forward slashes (`/`); may be an empty string when the input resolves to `repoRoot`.
+ */
 function normalizeRepoPath(repoRoot: string, path: string): string {
 	const absolute = resolve(repoRoot, path);
 	return relative(repoRoot, absolute)
@@ -400,6 +483,12 @@ function normalizeRepoPath(repoRoot: string, path: string): string {
 		.join("/");
 }
 
+/**
+ * Determines if a repo-relative path refers to a location inside the repository.
+ *
+ * @param repoRelativePath - Path expressed relative to the repository root
+ * @returns `true` if the path is non-empty, does not start with `..`, and is not absolute; `false` otherwise.
+ */
 function isPathInsideRepo(repoRelativePath: string): boolean {
 	return (
 		repoRelativePath.length > 0 &&
@@ -408,6 +497,12 @@ function isPathInsideRepo(repoRelativePath: string): boolean {
 	);
 }
 
+/**
+ * Determine whether a string value should be treated as blank for validation.
+ *
+ * @param value - The string to test; may be `undefined`
+ * @returns `true` if `value` is `undefined`, an empty string, contains only whitespace, or is exactly `"n.a."`, `false` otherwise
+ */
 function isBlank(value: string | undefined): boolean {
 	return value === undefined || value.trim().length === 0 || value === "n.a.";
 }

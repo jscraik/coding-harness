@@ -179,20 +179,24 @@ Goal continuation must follow `$goal-governor` and `$he-phase-work`:
 
 ## Validation Gates
 
+**Prerequisite**: Set `HARNESS_ENGINEERING_SKILL_DIR` to the local
+harness-engineering skill root. Legacy runners may set `HARNESS_TOOLS_PATH`
+instead.
+
 For this documentation/spec pass:
 
 - `rg -n "AC-HAG|FR-|SA-|VAC-|essential_decisions|refusal_triggers" docs/agents/agent-testing-gates-operational-spec.md .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md`
-- `python3 "$HARNESS_ENGINEERING_SKILL_DIR/scripts/check_generated_artifact_shape.py" docs/agents/agent-testing-gates-operational-spec.md --kind spec --json`
-- `python3 "$HARNESS_ENGINEERING_SKILL_DIR/scripts/check_generated_artifact_shape.py" .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md --kind plan --json`
+- `python3 "${HARNESS_ENGINEERING_SKILL_DIR:-$HARNESS_TOOLS_PATH}/scripts/check_generated_artifact_shape.py" docs/agents/agent-testing-gates-operational-spec.md --kind spec --json`
+- `python3 "${HARNESS_ENGINEERING_SKILL_DIR:-$HARNESS_TOOLS_PATH}/scripts/check_generated_artifact_shape.py" .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md --kind plan --json`
 - `pnpm run docs:lint`
 - `pnpm run docs:steering:guard`
 - `bash scripts/validate-codestyle.sh --fast`
 
 For future code work, run the PU-specific validation and widen to `pnpm check`
 or `pnpm test:deep` when runtime, artifact, or security behavior changes.
-Set `HARNESS_ENGINEERING_SKILL_DIR` to the local harness-engineering skill root
-before running the external shape checker; if the skill is unavailable, record
-the checker as blocked and run the repo-local gates that still apply.
+Set `HARNESS_ENGINEERING_SKILL_DIR` or legacy `HARNESS_TOOLS_PATH` before
+running the external shape checker; if the skill is unavailable, record the
+checker as blocked and run the repo-local gates that still apply.
 
 ## Review Plan
 
