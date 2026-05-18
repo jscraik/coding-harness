@@ -5,6 +5,7 @@
 - [Problem](#problem)
 - [Durable Rule](#durable-rule)
 - [Current-Session Admission](#current-session-admission)
+- [Stale Heartbeat Admission](#stale-heartbeat-admission)
 - [Enforcement Surface](#enforcement-surface)
 - [Review Condition](#review-condition)
 - [Evidence](#evidence)
@@ -89,10 +90,47 @@ The record can live in Project Brain, .harness/memory/LEARNINGS.md, a solution
 record, a gate, a schema, a PR template field, or a tracked Linear follow-up.
 It is not enough to say the agent will remember.
 
+## Stale Heartbeat Admission
+
+The PR #261 closeout heartbeat exposed a second-order failure in the agent
+engineering proof loop. The PR lane was complete, but the continuation
+automation kept firing and the agent repeatedly returned quiet status instead
+of repairing the scheduling surface. That wasted tokens and forced Jamie to
+steer the same systems point again.
+
+Findings:
+
+| Finding | Root cause | Durable change |
+|---|---|---|
+| Quiet heartbeat replies repeated after the stop condition was true | The closeout loop treated `DONT_NOTIFY` as an acceptable terminal response even when the automation itself was obsolete | Automation runbooks now require deletion or update of stale continuations when the lane is done or superseded |
+| App automation deletion failed with `No handler registered for tool: automation_update` | The tool path was unavailable from the active session, so the intended cleanup control did not execute | The runbook now defines a fallback to the repo-owned automation file after exact-ID discovery |
+| The stale automation lived outside the active repo at `dev/configs/codex/automations/continue-pr-260-closeout` | The active coding-harness lane depended on a control-plane file in the configs repo | Closeout evidence must classify automation state explicitly and name the cleanup surface when it is outside the working tree |
+| Repeated checking risked increasing open process pressure | The session already had repeated unified-exec warnings, so more live PR polling was lower value than deleting the stale trigger | Stale-heartbeat cleanup should use bounded exact-ID searches and one focused mutation, not repeated PR revalidation |
+
+Operating rule: once a heartbeat's stop condition is satisfied, the next agent
+action is automation cleanup, not another quiet status. If the primary
+automation API is blocked, classify the API failure and use the narrowest
+repo-owned fallback that removes only the matching automation record.
+
+Closeout proof for this incident:
+
+- PR lane: PR #261 had already merged, with CodeRabbit and required CircleCI
+  checks previously verified green.
+- Stale automation ID: `continue-pr-260-closeout`.
+- Primary cleanup failure: app automation delete returned `No handler
+  registered for tool: automation_update`.
+- Fallback cleanup: removed
+  `/Users/jamiecraik/dev/configs/codex/automations/continue-pr-260-closeout/automation.toml`
+  and then removed the empty automation directory with `rmdir`.
+- Verification: exact-ID search for `continue-pr-260-closeout` across
+  `/Users/jamiecraik/dev/configs/codex` and `/Users/jamiecraik/.codex`
+  returned no matches.
+
 ## Enforcement Surface
 
 - AGENTS.md defines agent engineering proof as the compact operating rule for steering feedback, line-level corrections, OODA horizons, reflected context, and benchmark-vs-engineering proof.
 - docs/agents/04-validation.md defines the agent engineering proof loop and its closeout evidence.
+- docs/automations/README.md defines the heartbeat closeout and deletion contract, including the exact-ID fallback when the app automation API is unavailable.
 - UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
 - .harness/memory/LEARNINGS.md records current-session steering admission when a run exposes an operating failure that must not recur.
 - The GitHub pull request template requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.

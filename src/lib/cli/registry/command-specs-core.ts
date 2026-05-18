@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { runArtifactGateCLI } from "../../../commands/artifact-gate.js";
+import { runArtifactRoutineCLI } from "../../../commands/artifact-routine.js";
 import { runAuditCLI } from "../../../commands/audit.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
@@ -49,6 +50,7 @@ import { runNextCLI } from "../../../commands/next.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
 import { runOrgAuditCLI } from "../../../commands/org-audit.js";
+import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
 import { runPilotEvaluateCLI } from "../../../commands/pilot-evaluate.js";
 import {
 	type PilotRollbackOptions,
@@ -1167,6 +1169,23 @@ export const COMMAND_SPECS: CommandSpec[] = [
 
 			return runRiskTierCLI({ contractPath, files, json: jsonFlag });
 		},
+	},
+	{
+		name: "pattern-scope",
+		summary:
+			"Build a pattern-scope artifact from steering feedback and changed files",
+		example:
+			"pattern-scope --files src/auth.ts --feedback 'same things in multiple places' --json",
+		errorLabel: "Pattern Scope Error",
+		execute: (args) => runPatternScopeCLI(args),
+	},
+	{
+		name: "artifact-routine",
+		summary: "Validate route-driving .harness artifacts before implementation",
+		example:
+			"artifact-routine --active-index .harness/active-artifacts.md --json",
+		errorLabel: "Artifact Routine Error",
+		execute: (args) => runArtifactRoutineCLI(args),
 	},
 	{
 		name: "replay",

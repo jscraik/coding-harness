@@ -242,11 +242,11 @@ Use repo scripts as the source of truth and do not assume global shortcuts. If a
 Exception for harness readiness:
 
 - Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner using the following lookup order:
-  1. `pnpm exec tsx src/cli.ts` (when repo-local TS source exists)
+  1. `node --import tsx src/cli.ts` (when repo-local TS source exists)
   2. `bash scripts/harness-cli.sh`
   3. `mise which harness`
   4. global `harness` binary
-- `scripts/run-harness-gate.sh` should treat the real source CLI command as the source-checkout probe. Do not gate fallback on a separate runner version probe; in sandboxed runners, that probe can hit the same IPC `EPERM` startup failure that the fallback is meant to handle. Fallback to `node dist/cli.js` is allowed only for the explicit `listen EPERM: operation not permitted` runner temp-pipe signature.
+- `scripts/run-harness-gate.sh` should treat the real source CLI command as the source-checkout probe. Use `node --import tsx`, not `pnpm exec tsx`, for source-checkout probes because the `tsx` CLI can fail before harness code runs with a temp-pipe `listen EPERM: operation not permitted` startup error in sandboxed runners. Fallback to `node dist/cli.js` is allowed only for the explicit runner temp-pipe signature.
 - This lookup order avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - Keep `scripts/check-environment.sh` validation-only for `mise`: it may assert that `mise` exists, is trusted, and can activate the repo, but CI/bootstrap flows must install `mise` and run `mise trust --yes .mise.toml` before invoking the gate.
 - The global fallback install path is `npm i -g @brainwav/coding-harness`.

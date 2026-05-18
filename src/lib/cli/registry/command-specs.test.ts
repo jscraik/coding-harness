@@ -136,6 +136,8 @@ describe("COMMAND_SPECS structural integrity", () => {
 			"init",
 			"learnings",
 			"review-context",
+			"pattern-scope",
+			"artifact-routine",
 			"validation-plan",
 			"north-star-feedback",
 			"upgrade",

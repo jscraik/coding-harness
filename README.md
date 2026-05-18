@@ -663,9 +663,11 @@ harness commands --json | jq '
 | `check-environment`      | Validate pilot environment governance checks                                                    |
 | `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                                          |
 | `artifact-gate`          | Check generated artifact changes against the artifact provenance registry                       |
+| `artifact-routine`       | Validate route-driving `.harness` artifacts before implementation                              |
 | `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks                 |
 | `blast-radius`           | Determine required checks from changed files                                                    |
 | `risk-tier`              | Classify changed files by risk tier                                                             |
+| `pattern-scope`          | Build a pattern-scope artifact from steering feedback and changed files                         |
 | `diff-budget`            | Enforce diff budget constraints                                                                 |
 | `observability-gate`     | Check metrics cardinality limits                                                                |
 | `silent-error`           | Detect silent error-handling anti-patterns                                                      |
@@ -706,6 +708,7 @@ harness commands --json | jq '
 | `validation-plan`     | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated                                                                              |
 | `north-star-feedback` | Measure learning hits, gate blocks/warnings, promotion candidates, promoted learnings, high-usage unenforced learnings, review-thread count, and validation reruns from imported learning evidence and optional run artifacts     |
 | `artifact-gate`       | Check changed generated artifacts against `.harness/artifact-provenance.json` so template/source edits accompany runtime mirrors                                                                                                  |
+| `artifact-routine`    | Validate `.harness/active-artifacts.md` route-driving specs and plans for owner, freshness, reference integrity, runtime-output boundaries, and stale artifact classification before implementation |
 | `ci-ownership-gate`   | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                                                                         |
 | `search`              | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
 | `context`             | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
@@ -776,7 +779,7 @@ If you are developing this repository itself:
 mise trust            # activate pinned toolchain from .mise.toml
 make setup            # installs deps + configures git hooks
 pnpm build
-pnpm exec tsx src/cli.ts --help
+node --import tsx src/cli.ts --help
 pnpm check
 ```
 

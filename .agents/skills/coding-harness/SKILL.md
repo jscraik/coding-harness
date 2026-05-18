@@ -32,7 +32,7 @@ Do not use for unrelated feature delivery, generic cloud deployment, or security
 - Focused first-contact help: `harness --help`.
 - Public agent rail catalog: `harness commands --json --for-agent`.
 - Full expert catalog: `harness commands --json` and `harness --help --all-commands`.
-- Source-repo probes: `pnpm exec tsx src/cli.ts ...` so command evidence matches the current tree.
+- Source-repo probes: `node --import tsx src/cli.ts ...` so command evidence matches the current tree without the `pnpm exec tsx` IPC runner.
 - Consumer-repo installs: use the installed `harness` binary, preferably via `mise install -g npm:@brainwav/coding-harness`.
 - Existing-repo updates: preview with `harness upgrade --dry-run`, then apply with `harness upgrade`.
 - Scaffold transitions only: `harness init --update`, `--interactive`, `--migrate`, or `--rollback`.
@@ -42,7 +42,7 @@ Do not use for unrelated feature delivery, generic cloud deployment, or security
 ## Workflow
 1. Confirm the mode: explanation-only or execution.
 2. Confirm repo root, dirty worktree, package manager, and available auth before mutations.
-3. Discover live truth with `harness next --json`; in this source repo use `pnpm exec tsx src/cli.ts next --json`.
+3. Discover live truth with `harness next --json`; in this source repo use `node --import tsx src/cli.ts next --json`.
 4. For first-time bootstrap, run `harness init --dry-run`, review planned writes, then run `harness init`.
 5. For update checks, run `harness init --check-updates`; use `harness upgrade --dry-run` and `harness upgrade` for routine existing-repo updates.
 6. For CI migration, run the snapshot commands in order and preserve rollback evidence.
@@ -58,11 +58,11 @@ Command discovery:
 - `harness --help --all-commands`
 
 Source-repo equivalents:
-- `pnpm exec tsx src/cli.ts next --json`
-- `pnpm exec tsx src/cli.ts --help`
-- `pnpm exec tsx src/cli.ts commands --json --for-agent`
-- `pnpm exec tsx src/cli.ts commands --json`
-- `pnpm exec tsx src/cli.ts --help --all-commands`
+- `node --import tsx src/cli.ts next --json`
+- `node --import tsx src/cli.ts --help`
+- `node --import tsx src/cli.ts commands --json --for-agent`
+- `node --import tsx src/cli.ts commands --json`
+- `node --import tsx src/cli.ts --help --all-commands`
 
 Setup and governance:
 - `harness init --dry-run`
@@ -118,7 +118,7 @@ Cannot create credentials, install GitHub Apps, bypass branch protection, turn m
 
 ## Gotchas
 - `harness --help` is focused first-contact help, not proof of the full command catalog.
-- In this source repo, global `harness` may be stale; prefer `pnpm exec tsx src/cli.ts ...`.
+- In this source repo, global `harness` may be stale; prefer `node --import tsx src/cli.ts ...`.
 - `harness init --update` is a deliberate re-scaffold lane, not the routine upgrade path.
 - CI migration must preserve snapshot rollback evidence; manual workflow deletion is a drift risk.
 - A packaged-skill validation pass does not prove runtime visibility, auth-bound checks, or downstream install health.

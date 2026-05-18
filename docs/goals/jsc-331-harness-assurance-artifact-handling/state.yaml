@@ -1,0 +1,183 @@
+version: 2
+goal:
+  slug: jsc-331-harness-assurance-artifact-handling
+  status: done
+  objective: "Complete the JSC-331 Coding Harness artifact-handling and assurance plan using he-phase-work, mandatory review stack including ubiquitous-language, durable plan/index updates, focused validation, and no Linear or git mutation without explicit approval."
+  native_goal_id: "019e3a77-3214-7013-993a-66af6f600053"
+  native_objective: "Complete the JSC-331 Coding Harness artifact-handling and assurance plan using he-phase-work, with the mandatory review stack ($he-code-review, @testing-reviewer, $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language), durable plan/index updates, focused validation, and no Linear or git mutation without explicit approval."
+  native_status: complete
+  token_budget: null
+  tokens_used: 35936
+  time_used_seconds: 167
+  native_created_at: "2026-05-18T14:54:41Z"
+  native_updated_at: "2026-05-18T15:41:08Z"
+rules:
+  one_active_task: true
+  require_fresh_verification: true
+  require_final_audit: true
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    command: "bash scripts/validate-codestyle.sh --fast"
+    outcome: pass
+    checked_at: "2026-05-18T16:00:04Z"
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Reconcile native goal, JSC-331 plan, active artifact index, dirty worktree state, and live tracker read state before any Worker continuation."
+    inputs:
+      - ".harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md"
+      - ".harness/active-artifacts.md"
+      - "JSC-331"
+      - "JSC-308"
+    constraints:
+      - "Read-only."
+      - "Do not mutate Linear, git, heartbeat automation, or unrelated files."
+    expected_output: "Reconciliation receipt with next safe Worker or Judge task."
+    allowed_files: []
+    verify:
+      - "git status --short"
+      - "git branch --show-current"
+      - "test -f .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md"
+      - "rg -n \"Goal Governance Contract|Review Plan|review_stack|pattern_generalization|blocked_review_stack_incomplete\" .harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md .harness/active-artifacts.md"
+    stop_if:
+      - "Native goal and board state conflict."
+      - "Approved plan path is missing."
+      - "Review stack evidence is required but missing."
+      - "Linear write is needed before local evidence can continue."
+    receipt_id: R001
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Run the mandatory review stack over the JSC-331 active slice, fix in-scope findings, and record artifact evidence."
+    inputs:
+      - ".harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md"
+      - ".harness/active-artifacts.md"
+      - "docs/goals/jsc-331-harness-assurance-artifact-handling"
+      - "src/commands/pattern-scope.ts"
+      - "src/commands/pattern-scope.test.ts"
+      - "src/lib/harness-assurance.ts"
+      - "src/lib/harness-assurance.test.ts"
+    constraints:
+      - "Do not mutate Linear, git, heartbeat automation, or unrelated files."
+      - "Fix touched-surface blockers found by the review stack in the same pass."
+    expected_output: "Review artifacts, fixed findings, validation evidence, and next Judge task."
+    allowed_files:
+      - "artifacts/reviews/**"
+      - "src/commands/pattern-scope.ts"
+      - "src/commands/pattern-scope.test.ts"
+      - "docs/goals/jsc-331-harness-assurance-artifact-handling/state.yaml"
+      - "docs/goals/jsc-331-harness-assurance-artifact-handling/receipts.jsonl"
+    verify:
+      - "test -s artifacts/reviews/testing-reviewer.md"
+      - "test -s artifacts/reviews/he-code-review.md"
+      - "test -s artifacts/reviews/simplify.md"
+      - "test -s artifacts/reviews/unslopify.md"
+      - "test -s artifacts/reviews/improve-codebase-architecture.md"
+      - "pnpm vitest run src/commands/pattern-scope.test.ts"
+    stop_if:
+      - "Review artifact verification fails without a fallback record."
+      - "Focused tests fail."
+      - "A review finding requires broader architecture or external mutation."
+    receipt_id: R002
+  - id: T003
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit whether JSC-331 can be declared complete after review-stack fixes and validation, or identify the next Worker slice."
+    inputs:
+      - ".harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md"
+      - ".harness/active-artifacts.md"
+      - "docs/goals/jsc-331-harness-assurance-artifact-handling/receipts.jsonl"
+      - "artifacts/reviews"
+    constraints:
+      - "Read-only."
+      - "Do not mark the native goal complete unless every objective requirement is proven."
+    expected_output: "Completion audit receipt or next Worker task."
+    allowed_files: []
+    verify:
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-harness-assurance-artifact-handling"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "Confirm whether failed testing-reviewer artifact verification is acceptable as blocked/tracked review evidence."
+      - "Confirm whether the artifact-handling routine is complete enough or needs a dedicated executable gate Worker."
+    stop_if:
+      - "Linear/PR/heartbeat closure requires mutation approval."
+      - "Mandatory review evidence remains incomplete."
+      - "Validation is red or stale."
+    receipt_id: R004
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Implement the missing executable artifact-handling routine and wire it through CLI, registry, docs, glossary, tests, and the active artifact index."
+    inputs:
+      - ".harness/active-artifacts.md"
+      - ".harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md"
+      - "UBIQUITOUS_LANGUAGE.md"
+      - "src/lib/harness-artifact-routine.ts"
+      - "src/commands/artifact-routine.ts"
+    constraints:
+      - "Do not mutate Linear, git, heartbeat automation, or unrelated files."
+      - "Fix touched-surface blockers found during validation in the same pass."
+    expected_output: "Executable artifact-routine command with focused tests, docs/glossary coverage, and validation evidence."
+    allowed_files:
+      - ".harness/active-artifacts.md"
+      - ".harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md"
+      - "UBIQUITOUS_LANGUAGE.md"
+      - "README.md"
+      - "docs/agents/04-validation.md"
+      - "docs/agents/10-agent-testing-gates.md"
+      - "docs/cli-reference.md"
+      - "src/commands/artifact-routine.ts"
+      - "src/commands/artifact-routine.test.ts"
+      - "src/lib/harness-artifact-routine.ts"
+      - "src/lib/harness-artifact-routine.test.ts"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/command-capabilities.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/cli-dispatch.test.ts"
+      - "artifacts/reviews/**"
+    verify:
+      - "pnpm vitest run src/lib/harness-artifact-routine.test.ts src/commands/artifact-routine.test.ts src/commands/pattern-scope.test.ts src/lib/harness-assurance.test.ts src/cli-dispatch.test.ts src/lib/cli/registry/command-specs.test.ts --reporter=dot"
+      - "node --import tsx src/cli.ts artifact-routine --active-index .harness/active-artifacts.md --today 2026-05-18 --json"
+      - "pnpm run docs:ubiquitous:guard"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "Artifact routine fails on the active index."
+      - "Focused tests fail."
+      - "Fast validation fails."
+      - "A fix requires external credentials or Linear/git mutation."
+    receipt_id: R005
+  - id: T005
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Run the requested 3-agent review, remediate actionable findings, classify review artifact gaps, and complete local implementation audit."
+    inputs:
+      - "artifacts/reviews/coderabbit.md"
+      - "artifacts/reviews/adversarial-reviewer.md"
+      - "artifacts/reviews/agent-native-reviewer.md"
+      - "artifacts/reviews/ubiquitous-language.md"
+      - "src/lib/harness-artifact-routine.ts"
+      - "src/lib/harness-artifact-routine.test.ts"
+    constraints:
+      - "Do not mutate Linear, git, heartbeat automation, staging, commit, push, or PR."
+      - "Record CodeRabbit auth and reviewer artifact failures as explicit coverage gaps."
+    expected_output: "Final completion audit with validation evidence and residual external review gap."
+    allowed_files:
+      - "artifacts/reviews/**"
+      - "docs/goals/jsc-331-harness-assurance-artifact-handling/state.yaml"
+      - "docs/goals/jsc-331-harness-assurance-artifact-handling/receipts.jsonl"
+    verify:
+      - "test -s artifacts/reviews/coderabbit.md"
+      - "test -s artifacts/reviews/adversarial-reviewer.md"
+      - "test -s artifacts/reviews/agent-native-reviewer.md"
+      - "test -s artifacts/reviews/ubiquitous-language.md"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "Actionable review findings remain unfixed."
+      - "Validation is red or stale."
+    receipt_id: R006

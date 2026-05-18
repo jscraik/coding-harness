@@ -43,6 +43,11 @@ const FORBIDDEN_PATTERNS = [
 		message:
 			"stale CI secret guidance found; packaged skill should point to CircleCI environment variables",
 	},
+	{
+		pattern: "pnpm exec tsx src/cli.ts",
+		message:
+			"stale source-repo runner found; use node --import tsx src/cli.ts to avoid tsx CLI IPC startup failures",
+	},
 ];
 
 function fail(message) {
@@ -146,6 +151,12 @@ function validateSkillMarkdown() {
 		setupContent.includes("NPM_TOKEN"),
 		"setup-and-commands.md must mention NPM_TOKEN",
 	);
+	for (const content of [skillContent, installGuideContent, setupContent]) {
+		assert(
+			content.includes("node --import tsx src/cli.ts"),
+			"packaged skill docs must use the sandbox-safe source-repo runner: node --import tsx src/cli.ts",
+		);
+	}
 }
 
 function validateInstallJson() {

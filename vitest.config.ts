@@ -25,7 +25,7 @@ export default defineConfig({
 			include: ["src/**/*.ts"],
 			exclude: ["src/**/*.test.ts", "src/cli.ts"],
 		},
-		onUnhandledError(error, type) {
+		onUnhandledError(error, _type) {
 			// Log unhandled errors and fail unless they are known worker timeouts
 			const isWorkerTimeout =
 				error instanceof Error &&

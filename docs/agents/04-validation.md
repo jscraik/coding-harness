@@ -17,6 +17,7 @@ last_validated: 2026-05-17
 - [North-star learning loop closeout](#north-star-learning-loop-closeout)
 - [Steering feedback closeout](#steering-feedback-closeout)
 - [Process/agent instruction edits](#processagent-instruction-edits)
+- [Artifact routine gate](#artifact-routine-gate)
 - [Verify-work lifecycle](#verify-work-lifecycle)
 - [Execution order and restart policy](#execution-order-and-restart-policy)
 - [Governance failure classes](#governance-failure-classes)
@@ -28,6 +29,16 @@ last_validated: 2026-05-17
 ## Core principle
 
 Every change must be checked by the smallest gate needed for risk, then by the fail-closed code-style gate, then by any deeper aggregate gate required by the behavior change.
+
+When validation, review, or local execution exposes a fixable blocker, warning,
+risk, stale instruction, flaky command, or weak guard in a touched file,
+required validation surface, generated template, or active agent-facing
+instruction, fix it in the same pass and rerun the narrowest proving command.
+Do not carry it as residual risk merely because it was not part of the initial
+request. A residual-risk note is valid only when the fix is outside current
+authority, requires unavailable credentials or destructive action, crosses
+unrelated ownership boundaries, or is recorded as a tracked exception with the
+exact reason and next owner.
 
 ## Required baseline gates
 
@@ -195,9 +206,22 @@ the inventory explains why the principle does not apply elsewhere.
 
 Do not wait for exact trigger words. Example-based feedback, named-function
 feedback, review comments, single-line corrections, and wording such as
-"generally", "same pattern", "similar class", or "across everything" are
+"generally", "same pattern", "same things in multiple places", "larger
+perspective", "similar class", or "across everything" are
 pattern signals until the inventory proves the correction is intentionally
 local.
+
+For current-session steering, generate a pattern-scope artifact before claiming
+the wider pass is complete:
+
+```bash
+harness pattern-scope --files <changed-files> --feedback "<feedback>" --output artifacts/pattern-scope/pattern-scope.json --json
+```
+
+The artifact is not a substitute for judgment. It is the required inventory
+starter: review candidate siblings, run the listed searches or stronger
+repo-specific equivalents, update the shared owner or matching siblings, and
+record unchanged siblings with reasons.
 
 Example: "return a named sentinel error instead of a success/failure boolean" is not only a request to edit one function. It is API design feedback: search sibling boolean-result APIs in the same command core, adapter family, and tests, then either update the shared pattern or explain why the named function is intentionally different.
 
@@ -214,6 +238,14 @@ Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps
 - Run validation gates before finalizing if they alter execution behavior.
 - Explicitly verify command contract docs against `package.json`/`pnpm-lock.yaml`.
 - When the change introduces or updates a validation wrapper, prove the wrapper itself was executed from the current repo state instead of claiming equivalent underlying commands ran.
+
+## Artifact routine gate
+
+Run `harness artifact-routine --active-index .harness/active-artifacts.md --json`
+before using a `.harness` spec or plan as implementation input. The gate is
+read-only and validates active-index freshness, Linear or local-only owner,
+referenced-path integrity, runtime-output boundary, and stale artifact
+classification.
 
 ## Verify-work lifecycle
 

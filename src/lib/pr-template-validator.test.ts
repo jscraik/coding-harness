@@ -262,6 +262,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"This was example-based feedback about similar classes of misbehavior across everything we do.",
 		"A concrete correction in one function exposed the user's design model generally.",
 		"Do not just fix that line; search the same pattern across related adapters.",
+		"Codex should apply the same things in multiple places and consider the larger perspective.",
 	])("fails generalized pattern trigger '%s' without full inventory", (trigger) => {
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",

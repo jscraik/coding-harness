@@ -26,6 +26,8 @@ const PATTERN_GENERALIZATION_PATTERN =
 	/(pattern-generalization|pattern generalization|sibling implementations|similar classes of misbehavior|shared abstraction|intentionally local|design principle|design\/API principle)/i;
 const PATTERN_SCOPE_INVENTORY_PATTERN =
 	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|similar misbehavior classes searched|deferred follow-ups|deferred followup)/i;
+const OBSERVED_FIXABLE_BLOCKER_PATTERN =
+	/(observed fixable blockers|fixable blocker|fix it in the same pass|rerun the narrowest proving command|tracked exception with the exact reason)/i;
 const PATTERN_SCOPE_VALIDATOR_PATTERN =
 	/(PATTERN_SCOPE_SIGNAL_PATTERN|collectPatternScopeInventoryErrors|Pattern scope inventory must name the inferred principle)/i;
 const PRINCIPLE_SIGNAL_PATTERN =
@@ -152,6 +154,13 @@ function validateAgents(content) {
 		content,
 		PATTERN_SCOPE_INVENTORY_PATTERN,
 		"pattern scope inventory requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
+		OBSERVED_FIXABLE_BLOCKER_PATTERN,
+		"observed fixable blocker fix-first rule",
 	);
 	requirePattern(
 		errors,
@@ -314,6 +323,13 @@ function validateValidationDoc(content) {
 		content,
 		PATTERN_SCOPE_INVENTORY_PATTERN,
 		"pattern scope inventory closeout requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		OBSERVED_FIXABLE_BLOCKER_PATTERN,
+		"observed fixable blocker validation rule",
 	);
 	requirePattern(
 		errors,
@@ -867,7 +883,7 @@ function validatePrValidator(content) {
 		errors,
 		REQUIRED_FILES.prValidator,
 		content,
-		/(example-based feedback|concrete correction|single function|not just that line|across everything we do)/i,
+		/(example-based feedback|concrete correction|single function|not just that line|same things in multiple places|larger perspective|across everything we do)/i,
 		"semantic pattern-scope trigger coverage",
 	);
 	requirePattern(

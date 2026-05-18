@@ -34,7 +34,7 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 
 		expect(workflow).not.toContain("\t");
 		expect(workflow).toContain("linear-gate:");
-		expect(workflow).toContain("pnpm exec tsx src/cli.ts linear-gate");
+		expect(workflow).toContain("node --import tsx src/cli.ts linear-gate");
 		expect(workflow).toContain("needs: [pr-template, linear-gate]");
 		expect(workflow).toContain("needs.linear-gate.result == 'success'");
 		expect(workflow).toContain("run: pnpm lint");
@@ -43,11 +43,15 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 		expect(workflow).toContain("run: pnpm audit");
 		expect(workflow).toContain("run: pnpm check");
 		expect(workflow).toContain("run: pnpm memory:validate");
-		expect(workflow).toContain("pnpm exec tsx src/cli.ts linear-gate \\");
-		expect(workflow).not.toContain("pnpm exec tsx src/cli.ts linear-gate \\\\");
-		expect(workflow).toContain("pnpm exec tsx src/cli.ts preflight-gate \\");
+		expect(workflow).toContain("node --import tsx src/cli.ts linear-gate \\");
 		expect(workflow).not.toContain(
-			"pnpm exec tsx src/cli.ts preflight-gate \\\\",
+			"node --import tsx src/cli.ts linear-gate \\\\",
+		);
+		expect(workflow).toContain(
+			"node --import tsx src/cli.ts preflight-gate \\",
+		);
+		expect(workflow).not.toContain(
+			"node --import tsx src/cli.ts preflight-gate \\\\",
 		);
 		expect(workflow).not.toMatch(/(?<!\$){{[A-Za-z0-9_]+}}/);
 		expect(workflow).toContain(
@@ -66,7 +70,7 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 		});
 
 		expect(workflow).not.toContain("linear-gate:");
-		expect(workflow).not.toContain("pnpm exec tsx src/cli.ts linear-gate");
+		expect(workflow).not.toContain("node --import tsx src/cli.ts linear-gate");
 		expect(workflow).toContain("needs: [pr-template]");
 		expect(workflow).toContain("needs.pr-template.result == 'success'");
 		expect(workflow).not.toContain("needs.linear-gate");

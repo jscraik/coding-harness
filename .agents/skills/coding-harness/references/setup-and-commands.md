@@ -48,8 +48,8 @@ harness --help --all-commands
 When maintaining this source repo, avoid stale globals:
 
 ```bash
-pnpm exec tsx src/cli.ts next --json
-pnpm exec tsx src/cli.ts commands --json
+node --import tsx src/cli.ts next --json
+node --import tsx src/cli.ts commands --json
 ```
 
 ## Install

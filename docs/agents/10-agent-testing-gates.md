@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-25
+last_validated: 2026-05-18
 ---
 
 # Agent testing gates
@@ -9,6 +9,9 @@ last_validated: 2026-04-25
 - [Primary required gates](#primary-required-gates)
 - [Optional gates](#optional-gates)
 - [Exact behavior checks](#exact-behavior-checks)
+- [Changed-code ratchets](#changed-code-ratchets)
+- [Harness assurance layers](#harness-assurance-layers)
+- [Route-driving artifact routine](#route-driving-artifact-routine)
 - [Verify-work orchestration and resume](#verify-work-orchestration-and-resume)
 - [Review-gate north-star evidence](#review-gate-north-star-evidence)
 - [Gate-by-gate intent](#gate-by-gate-intent)
@@ -56,6 +59,43 @@ path actually ran.
 - `pnpm run quality:size` enforces changed-file size limits for production `src/**` files and reports explicit legacy allowlist skips.
 - `pnpm run test:related` runs Vitest related mode for changed production `src/**` files without `--passWithNoTests`; missing related tests are a blocker, not a green signal.
 - `bash scripts/validate-codestyle.sh --fast`, `pnpm check`, and `make hooks-pre-commit` include these gates so the contract is enforced locally and in downstream harness-managed repos.
+
+## Harness assurance layers
+
+Use this matrix when reviewing the harness itself. The question is not "does
+the repository have tests"; it is whether the changed harness behavior has the
+right proof at the right layer.
+
+| Layer | What it proves | Current repo posture | Required proof when touched |
+|-------|----------------|----------------------|-----------------------------|
+| Unit | Command logic, registry metadata, validators, and pure helpers behave as expected in isolation. | Strong: broad `src/**/*.test.ts` and command-level Vitest coverage. | Targeted Vitest for the changed files, plus `pnpm run test:related` when production `src/**` changes. |
+| Boundary | Inputs at limits fail closed with named blocker classes. | Medium-strong: many failure paths exist, but the taxonomy is spread across tests and solution docs. | Assert the specific blocker or policy class, not just that an error occurred. |
+| Mock integration | GitHub, Linear, CircleCI, CodeRabbit, Snyk, filesystem, and automation boundaries can be exercised without mutating real systems. | Strong for many command and adapter paths; new adapters must prove this explicitly. | Fixture-backed adapter or command tests with mocked outbound calls and machine-readable output assertions. |
+| End to end | Full harness scenarios cross command, artifact, and external-system boundaries. | Strong but credential-gated: `e2e/**` and artifact runners classify blockers. | `pnpm run test:e2e` for the runner-owned `artifacts/e2e/result.json`; `pnpm run test:artifacts:e2e` for wrapper-owned `artifacts/test/summary-e2e.json` and `artifacts/test/test-output-e2e.log`; or a recorded blocked reason when credentials are unavailable. |
+| Security | Unsafe commands, path traversal, secret exposure, branch protection, and policy refusal fail closed. | Strong baseline through audit, secrets, Semgrep/Snyk/CircleCI, and security tests; misuse taxonomy should stay explicit. | Targeted security tests or security gate evidence proving the unsafe sample is refused with a named policy reason. |
+| Load and stress | High-volume command discovery, artifact writes, preflight overload, and agent-first throughput degrade predictably. | Partial: performance, overload, and throughput tests exist, but this is the weakest harness layer. | A bounded-duration, bounded-output, throughput-floor, or controlled-degradation test with an explicit numeric threshold; use `pnpm test:deep` when runtime or artifact behavior changes. |
+| Lifecycle closeout | Green checks are not completion; PR, branch, Linear, review-thread, automation, and next-lane state are observed or classified. | Partial but now governed by the repeated-steering and heartbeat closeout contract. | Targeted closeout proof plus `pnpm run docs:steering:guard` when meta-behavior or automation rules change. |
+
+Use `validateHarnessAssuranceEntries` in `src/lib/harness-assurance.ts` when a
+handoff, PR body, or closeout artifact needs machine-checkable evidence for
+this matrix. It rejects incomplete seven-layer matrices, entries without
+evidence, load/stress pass claims without a finite numeric threshold, and
+lifecycle closeout pass claims that omit PR, merge, branch/worktree, Linear,
+review-thread, automation, or next-lane state.
+
+Every layer needs an evidence reference. When a layer is not applicable, mark
+it `n.a.` with evidence and the reason. When a layer is needed but cannot run,
+mark it `blocked` with evidence plus the missing credential, external service,
+runtime state, or waiting owner. When a layer is only partially covered, mark
+it `partial` with both evidence and the remaining gap. Do not convert a missing
+layer into a generic green summary.
+
+## Route-driving artifact routine
+
+Before a harness assurance plan, spec, or artifact index drives implementation,
+run `harness artifact-routine --active-index .harness/active-artifacts.md --json`.
+Treat any failed finding as a route blocker unless it is explicitly recorded as
+a tracked exception with owner and next action in the active artifact index.
 
 ## Verify-work orchestration and resume
 

@@ -14,8 +14,10 @@ interface LocalRunnerProbe {
 	remediationCommand: string;
 }
 
+/** Status reported by the harness version-coherence check. */
 export type HarnessVersionCoherenceStatus = "ok" | "drift" | "skip" | "error";
 
+/** Result payload for comparing repo-local and global harness runners. */
 export interface HarnessVersionCoherenceResult {
 	status: HarnessVersionCoherenceStatus;
 	message: string;
@@ -119,7 +121,7 @@ function detectRepoLocalRunner(cwd: string): LocalRunnerProbe | undefined {
 		return {
 			description: "repo source CLI",
 			originPath: sourceCliPath,
-			remediationCommand: "pnpm exec tsx src/cli.ts <command>",
+			remediationCommand: "node --import tsx src/cli.ts <command>",
 		};
 	}
 

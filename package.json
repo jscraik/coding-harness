@@ -94,7 +94,7 @@
 		"e2e:linear": "tsx e2e/run-e2e.ts linear-integration",
 		"e2e:pipeline": "tsx e2e/run-e2e.ts command-pipeline",
 		"e2e:ci": "tsx e2e/run-e2e.ts --reporter json --parallel 2",
-		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
+		"harness:ui:capture-browser-evidence": "node --import tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
 		"vale": "vale --config .vale.ini AGENTS.md docs",
 		"codex-preflight:check": "node scripts/sync-codex-preflight.cjs --check",
 		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write"
