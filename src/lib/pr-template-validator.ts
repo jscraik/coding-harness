@@ -19,7 +19,7 @@ const PLACEHOLDERS = [
 const STEERING_SIGNAL_PATTERN =
 	/(admitted repeated steering|repeated steering (showed|exposed|drove|required|was)|same steering twice|same feedback twice|same correction across sessions|same feedback again|user had to restate correction|never give the same feedback twice|not permitted to proceed|current-session steering admission|stop-the-line|high-signal (user )?(steering|feedback|correction)|every bit of steering|failing to operate effectively|steering feedback (showed|exposed|drove|required|was|into))/i;
 const REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN =
-	/(same error (happened|occurred)?\s*twice|same failure twice|same command failed twice|failed again with the same|twice in a row|same stack trace|same exception|same error repeated|don\u2019t fight (?:the )?(same )?error|don't fight (?:the )?(same )?error)/i;
+	/(same error (happened|occurred)?\s*twice|same failure twice|same command failed twice|failed again with the same (error|failure|command|stack trace|exception)|same (stack trace|exception) (appeared|happened|occurred|recurred|repeated).*twice|same error repeated|don\u2019t fight (?:the )?(same )?error|don't fight (?:the )?(same )?error)/i;
 const PATTERN_SCOPE_SIGNAL_PATTERN =
 	/(line-level correction|line-level design feedback|example-based feedback|concrete correction|single line|single function|single class|just fix that line|do not just fix that line|not just that line|similar classes of misbehavior|similar misbehavior|class of misbehavior|same pattern|sibling implementations|sibling pattern|broader design principle|design model|API design generally|across everything we do|named sentinel error|success and failure as a bool|success\/failure boolean|boolean result)/i;
 const DURABLE_META_DESTINATION_PATTERN =

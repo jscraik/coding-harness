@@ -316,6 +316,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"This PR compares possible ways to fix validation ergonomics.",
 		"The team researched fixes for the broader workflow.",
 		"Tests failed twice while iterating on unrelated docs.",
+		"Reran checks twice in a row to confirm a flaky test.",
 	])("does not require repeated-error research for broad phrase '%s'", (phrase) => {
 		const body = VALID_BODY.replace(
 			"Added local PR-template gate command.",
