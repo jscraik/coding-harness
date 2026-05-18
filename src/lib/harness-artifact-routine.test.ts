@@ -115,6 +115,26 @@ describe("validateHarnessArtifactRoutine", () => {
 		);
 	});
 
+	it("returns a structured failure when an active artifact path is a directory", () => {
+		const repoRoot = makeRepo();
+		rmSync(join(repoRoot, ".harness/plan/current.md"));
+		mkdirSync(join(repoRoot, ".harness/plan/current.md"));
+
+		const result = validateHarnessArtifactRoutine({
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "reference_integrity",
+				code: "artifact_not_file",
+				path: ".harness/plan/current.md",
+			}),
+		);
+	});
+
 	it("ignores glob-style implementation scopes in plan prose", () => {
 		const repoRoot = makeRepo({
 			plan:

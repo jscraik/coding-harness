@@ -210,6 +210,15 @@ function validateActiveArtifacts(
 			});
 			continue;
 		}
+		if (!statSync(absoluteArtifactPath).isFile()) {
+			fail({
+				check: "reference_integrity",
+				code: "artifact_not_file",
+				message: `Route-driving artifact must be a file: ${artifactPath}`,
+				path: artifactPath,
+			});
+			continue;
+		}
 		if (/^\.harness\/(plan|specs)\//.test(canonicalPath)) {
 			validatePlanOrSpecOwnership(
 				repoRoot,
