@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+	HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION,
 	HARNESS_CLOSEOUT_GATE_IDS,
 	HE_GATE_RESULT_SCHEMA_VERSION,
 	HE_PHASE_EXIT_SCHEMA_VERSION,
@@ -119,9 +120,17 @@ const PASSING_PHASE_EXIT = {
 	}),
 };
 
-function writePhaseExit(dir: string): string {
-	const path = join(dir, "phase-exit.json");
-	writeFileSync(path, JSON.stringify(PASSING_PHASE_EXIT));
+const PASSING_CLOSEOUT_GATES = {
+	...PASSING_PHASE_EXIT,
+	schemaVersion: HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION,
+};
+
+function writeCloseoutGates(
+	dir: string,
+	artifact: unknown = PASSING_CLOSEOUT_GATES,
+): string {
+	const path = join(dir, "closeout-gates.json");
+	writeFileSync(path, JSON.stringify(artifact));
 	return path;
 }
 
@@ -135,6 +144,23 @@ Refs JSC-327
 - AI session / traceability: Codex session validates PR closeout evidence.
 - Completed work: command and tests
 `.trim();
+
+function reviewThreadsGraphql(unresolved = 0): string {
+	return JSON.stringify({
+		data: {
+			repository: {
+				pullRequest: {
+					reviewThreads: {
+						pageInfo: { hasNextPage: false },
+						nodes: Array.from({ length: unresolved }, () => ({
+							isResolved: false,
+						})),
+					},
+				},
+			},
+		},
+	});
+}
 
 async function capture(
 	args: string[],
@@ -200,7 +226,7 @@ describe("runPrCloseoutCLI", () => {
 					aiSessionTraceability:
 						"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
 				},
-				phaseExit: PASSING_PHASE_EXIT,
+				closeoutGates: PASSING_PHASE_EXIT,
 			}),
 		);
 
@@ -216,7 +242,7 @@ describe("runPrCloseoutCLI", () => {
 		});
 	});
 
-	it("fails closed when input embeds malformed phase-exit evidence", async () => {
+	it("accepts first-class Coding Harness closeout-gates schema in normalized input", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const inputPath = join(dir, "input.json");
 		writeFileSync(
@@ -229,7 +255,49 @@ describe("runPrCloseoutCLI", () => {
 					mergeStateStatus: "CLEAN",
 					body: "Refs JSC-327\n",
 				},
-				phaseExit: {},
+				branch: {
+					clean: true,
+				},
+				checks: [{ name: "pr-pipeline", state: "SUCCESS" }],
+				reviewThreads: {
+					unresolved: 0,
+				},
+				traceability: {
+					sessionIds: ["codex-session:2026-05-16"],
+					traceIds: ["circleci:workflow-123"],
+					aiSessionTraceability:
+						"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
+				},
+				closeoutGates: PASSING_CLOSEOUT_GATES,
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+
+		expect(result.exitCode).toBe(0);
+		expect(JSON.parse(result.output)).toMatchObject({
+			status: "ready",
+			harnessGates: {
+				evidenceSource: "closeout_gates",
+				closeoutGatesPresent: true,
+			},
+		});
+	});
+
+	it("fails closed when input embeds malformed closeout-gates evidence", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+				closeoutGates: {},
 			}),
 		);
 
@@ -241,7 +309,37 @@ describe("runPrCloseoutCLI", () => {
 			schemaVersion: "pr-closeout-error/v1",
 			status: "fail",
 			error: expect.stringContaining(
-				"phaseExit must be a valid HePhaseExit/v1 artifact",
+				"closeoutGates must be a valid Coding Harness closeout-gates artifact",
+			),
+		});
+	});
+
+	it("fails closed when input supplies both closeout-gates and phase-exit evidence", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+				closeoutGates: PASSING_PHASE_EXIT,
+				phaseExit: PASSING_PHASE_EXIT,
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"must include either closeoutGates or phaseExit, not both",
 			),
 		});
 	});
@@ -262,7 +360,7 @@ describe("runPrCloseoutCLI", () => {
 
 	it("collects live GitHub, CircleCI, CodeRabbit, and Snyk tool evidence", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
-		const phaseExitPath = writePhaseExit(dir);
+		const closeoutGatesPath = writeCloseoutGates(dir);
 		const calls: string[] = [];
 		const runner = (
 			command: string,
@@ -282,6 +380,15 @@ describe("runPrCloseoutCLI", () => {
 			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
 				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
 			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
 			if (command === "git") {
 				return "";
 			}
@@ -294,8 +401,8 @@ describe("runPrCloseoutCLI", () => {
 				process.cwd(),
 				"--pr",
 				"258",
-				"--phase-exit",
-				phaseExitPath,
+				"--gates",
+				closeoutGatesPath,
 			],
 			runner,
 		);
@@ -303,6 +410,11 @@ describe("runPrCloseoutCLI", () => {
 		expect(result.exitCode).toBe(0);
 		expect(JSON.parse(result.output)).toMatchObject({
 			status: "ready",
+			harnessGates: {
+				evidenceSource: "closeout_gates",
+				closeoutGatesPresent: true,
+				phaseExitPresent: false,
+			},
 			traceability: {
 				complete: true,
 				sessionIds: ["codex-session:2026-05-16"],
@@ -320,6 +432,113 @@ describe("runPrCloseoutCLI", () => {
 				"snyk --version",
 				"gh pr view 258 --json number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body",
 				"gh pr checks 258 --json name,state,link",
+				"gh repo view --json owner,name",
+			]),
+		);
+		expect(calls.some((call) => call.startsWith("gh api graphql"))).toBe(true);
+	});
+
+	it("keeps --phase-exit as a compatibility alias for closeout gates", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir, PASSING_PHASE_EXIT);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--phase-exit", closeoutGatesPath],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(JSON.parse(result.output)).toMatchObject({
+			status: "ready",
+			harnessGates: {
+				evidenceSource: "closeout_gates",
+				closeoutGatesPresent: true,
+				phaseExitPresent: false,
+			},
+		});
+	});
+
+	it("fails closed when live GitHub review threads cannot be observed", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				throw new Error("repo metadata unavailable");
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output);
+
+		expect(result.exitCode).toBe(0);
+		expect(report).toMatchObject({
+			status: "blocked",
+			nextAction: "needs_jamie_decision",
+			reviewThreads: {
+				unresolved: null,
+			},
+		});
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review",
+					reason:
+						"Review thread state is unobserved; live GitHub reviewThreads evidence is required before PR closeout.",
+				}),
 			]),
 		);
 	});
@@ -349,6 +568,15 @@ Refs JSC-328
 			}
 			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
 				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
 			}
 			if (command === "git") {
 				return "";

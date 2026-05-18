@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-17
+last_validated: 2026-05-18
 ---
 
 # North Star
@@ -172,6 +172,12 @@ For Coding Harness, that means:
   named
 - release-grade claims require trusted-live evidence, not only structural
   shape checks
+- the verifier, not the model, owns completion truth; model success claims must
+  be checked against trace, environment, PR, CI, or runtime evidence before
+  closeout
+- repeated setup, auth, environment, CI, or review blockers should become
+  deterministic recovery handlers only when authority, secret handling, trace
+  redaction, rollback, and retirement conditions are explicit
 
 The portable harness rule is deliberately narrow: install the smallest surface
 that helps the repo under inspection, not every capability the harness knows
@@ -212,6 +218,11 @@ polishing instructions in isolation.
   stable canary lessons into deterministic fixtures.
 - Keep observability outputs structured, small, and searchable; raw event volume
   is not useful unless it improves decisions or evals.
+- Treat claim-vs-evidence verification, missing-context classification, and
+  recovery-handler traces as the preferred way to turn agent failure into
+  durable learning.
+- Keep source research as evidence, not hot-path doctrine; promote only
+  compressed invariants, fixtures, gates, or tracked exceptions.
 - Encode expert leverage into agents that can produce the needed software,
   tool call, report, dashboard, or workflow just in time for the user. Do not
   treat shared dashboards, static artifacts, or one-size-fits-most workflows as

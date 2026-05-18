@@ -212,6 +212,55 @@ describe("buildPrCloseoutReport", () => {
 		expect(report.blockers).toEqual([]);
 	});
 
+	it("marks first-class closeout-gates input without phase-exit presence", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				closeoutGates: passingPhaseExit(),
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.harnessGates).toMatchObject({
+			evidenceSource: "closeout_gates",
+			closeoutGatesPresent: true,
+			phaseExitPresent: false,
+		});
+	});
+
+	it("keeps phase-exit normalized input as compatibility evidence", () => {
+		const report = buildPrCloseoutReport(baseInput());
+
+		expect(report.status).toBe("ready");
+		expect(report.harnessGates).toMatchObject({
+			evidenceSource: "phase_exit",
+			closeoutGatesPresent: false,
+			phaseExitPresent: true,
+		});
+	});
+
+	it("fails closed when review thread state is unobserved", () => {
+		const input = baseInput();
+		delete input.reviewThreads;
+
+		const report = buildPrCloseoutReport(input);
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.reviewThreads.unresolved).toBeNull();
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review",
+					classification: "unknown",
+					reason:
+						"Review thread state is unobserved; live GitHub reviewThreads evidence is required before PR closeout.",
+					fixableByCodex: true,
+					ref: "github:reviewThreads",
+				}),
+			]),
+		);
+	});
+
 	it("classifies failed checks and missing traceability as Codex-fixable", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({
@@ -250,6 +299,7 @@ describe("buildPrCloseoutReport", () => {
 		expect(report.status).toBe("fixable");
 		expect(report.nextAction).toBe("codex_can_fix_now");
 		expect(report.harnessGates).toMatchObject({
+			closeoutGatesPresent: false,
 			phaseExitPresent: false,
 			recommendation: "missing",
 			commitAllowed: false,
@@ -274,7 +324,7 @@ describe("buildPrCloseoutReport", () => {
 				expect.objectContaining({
 					surface: "harness_gates",
 					reason:
-						"Coding-harness closeout gates are missing HePhaseExit/v1 evidence.",
+						"Coding Harness closeout gates are missing closeout-gates evidence.",
 					fixableByCodex: true,
 				}),
 			]),
@@ -341,7 +391,8 @@ describe("buildPrCloseoutReport", () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					surface: "harness_gates",
-					reason: "unslopify gate is missing from HePhaseExit/v1 evidence.",
+					reason:
+						"unslopify gate is missing from Coding Harness closeout-gates evidence.",
 					fixableByCodex: true,
 				}),
 			]),
@@ -546,7 +597,7 @@ describe("buildPrCloseoutReport", () => {
 					surface: "harness_gates",
 					classification: "unknown",
 					reason:
-						"HePhaseExit/v1 denies closeout (recommendation=commit_blocked, commitAllowed=false, exitAllowed=false).",
+						"Coding Harness closeout gates deny closeout (recommendation=commit_blocked, commitAllowed=false, exitAllowed=false).",
 					fixableByCodex: false,
 				}),
 			]),

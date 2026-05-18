@@ -172,8 +172,8 @@ The weekly status surface is
 [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md),
 and its review cadence is mirrored in `harness.contract.json` so
 `drift-gate --mode health` can fail closed on stale north-star evidence.
-The roadmap and status metadata were last synchronized on 2026-05-17 as part
-of the zero-integration portability refresh.
+The roadmap and status metadata were last synchronized on 2026-05-18 as part
+of the Coding Harness evidence alignment refresh.
 
 North-star command outputs also use canonical artifact contracts so agents can
 carry evidence between tools without guessing path or schema names. Current
@@ -630,7 +630,7 @@ harness commands --json | jq '
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                                                                                                          |
 | `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                                                                                                                  |
 | `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`)                                                                      |
-| `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including PR metadata, check state, coding-harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--phase-exit`, optional `--env-file`) |
+| `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including PR metadata, check state, Coding Harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--gates`, compatibility `--phase-exit`, optional `--env-file`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                                                                                                                  |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                                                                                                                                                                                                                  |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                                                                                                                                                                                                             |
@@ -679,7 +679,7 @@ harness commands --json | jq '
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `linear`            | Claim, hand off, close, prepare, or sync Linear work from one command family                                                                                                                   |
 | `linear-gate`       | Enforce Linear-first intake, branch naming, and PR linkage                                                                                                                                     |
-| `pr-closeout`       | Classify pull-request closeout state before handoff or merge, including required metadata, checks, coding-harness closeout gates, review state, tool evidence, and AI session/trace references |
+| `pr-closeout`       | Classify pull-request closeout state before handoff or merge, including required metadata, checks, Coding Harness closeout gates, review state, tool evidence, and AI session/trace references |
 | `workflow:generate` | Generate compact workflow specs from annotated markdown                                                                                                                                        |
 
 ### Pilot, Remediation, And Automation

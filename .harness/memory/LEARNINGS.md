@@ -42,3 +42,5 @@ Repo-specific agent knowledge base. Append-only.
 **2026-05-18 [Codex]:** Heartbeat became stale after PR merged, repeated DONT_NOTIFY wasted tokens -> once stop condition is true, delete or update automation in same turn; if app API unavailable, identify repo-owned automation.toml, remove file, rmdir empty directory, verify ID gone.
 
 **2026-05-18 [Codex]:** Current-session steering admission can drift if the learning surface only implies the rule -> write the exact current-session steering admission trigger, preserve not permitted to proceed wording, record repeated-error research with 3-5 candidate fixes, and search similar misbehavior classes before claiming a pattern-generalization fix.
+
+**2026-05-18 [Codex]:** PR closeout gates can be technically wired but invisible if agents must know to supply HE phase-exit evidence -> expose them as first-class Coding Harness closeout gates in command help, command catalog examples, PR closeout JSON, and docs; keep HE phase-exit only as a compatibility alias.

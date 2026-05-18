@@ -51,7 +51,7 @@
 - Command: `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files "$CHANGED_FILES" --json` -> pass/fail/n.a.
 - Command: `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files "$CHANGED_FILES" --json` -> pass/fail/n.a.
 - Command: `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json` -> pass/fail/n.a.
-- Command: `harness pr-closeout --pr <number> --json` -> pass/fail/n.a.
+- Command: `harness pr-closeout --pr <number> --gates artifacts/pr-closeout/closeout-gates.json --json` -> pass/fail/n.a.
 - Any other command(s):
 
 ## Review artifacts
