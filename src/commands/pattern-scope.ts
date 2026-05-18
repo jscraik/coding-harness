@@ -479,6 +479,7 @@ function findCandidateSiblings(
 ): CandidateSibling[] {
 	const candidates = new Map<string, Set<string>>();
 	const changedSet = new Set(changedFiles);
+	const textFileCache = new Map<string, string | null>();
 	for (const changedFile of changedFiles) {
 		const changedBase = basename(changedFile);
 		const changedExt = extname(changedFile);
@@ -502,7 +503,7 @@ function findCandidateSiblings(
 			if (isTestCounterpart(repoFile, changedStem, changedExt)) {
 				reasons.add(`test counterpart for ${changedFile}`);
 			}
-			if (mentionsChangedStem(repoRoot, repoFile, changedStem)) {
+			if (mentionsChangedStem(repoRoot, repoFile, changedStem, textFileCache)) {
 				reasons.add(`mentions ${changedStem}`);
 			}
 			if (reasons.size > 0) {
@@ -554,6 +555,7 @@ function mentionsChangedStem(
 	repoRoot: string,
 	repoFile: string,
 	changedStem: string,
+	textFileCache: Map<string, string | null>,
 ): boolean {
 	if (!/\.(md|mdx|txt|json|ya?ml|ts|tsx|js|jsx)$/.test(repoFile)) {
 		return false;
@@ -561,15 +563,23 @@ function mentionsChangedStem(
 	if (changedStem.length < 4) {
 		return false;
 	}
+	if (!textFileCache.has(repoFile)) {
+		textFileCache.set(repoFile, readTextFileForStemSearch(repoRoot, repoFile));
+	}
+	return textFileCache.get(repoFile)?.includes(changedStem) ?? false;
+}
+
+function readTextFileForStemSearch(
+	repoRoot: string,
+	repoFile: string,
+): string | null {
 	try {
 		if (statSync(resolve(repoRoot, repoFile)).size > MAX_TEXT_FILE_BYTES) {
-			return false;
+			return null;
 		}
-		return readFileSync(resolve(repoRoot, repoFile), "utf8").includes(
-			changedStem,
-		);
+		return readFileSync(resolve(repoRoot, repoFile), "utf8");
 	} catch {
-		return false;
+		return null;
 	}
 }
 
