@@ -35,7 +35,6 @@ last_validated: 2026-05-18
 - [Requirements](#requirements)
 - [Interfaces](#interfaces)
 - [Data / Domain Contract](#data--domain-contract)
-- [Enforcement Contract](#enforcement-contract)
 - [Security, Privacy, and Safety](#security-privacy-and-safety)
 - [Failure and Recovery](#failure-and-recovery)
 - [Validation Plan](#validation-plan)
@@ -457,7 +456,7 @@ credential or service blocker without exposing secret material.
 ## Validation Plan
 
 - `rg -n "AC-HAG|FR-|SA-|essential_decisions|refusal_triggers" docs/agents/agent-testing-gates-operational-spec.md`
-- `python3 {agent_skills}/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py docs/agents/agent-testing-gates-operational-spec.md --kind spec --json`
+- `python3 "${AGENT_SKILLS}/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py" docs/agents/agent-testing-gates-operational-spec.md --kind spec --json`
 - `pnpm run docs:lint`
 - `pnpm run docs:steering:guard`
 - `bash scripts/validate-codestyle.sh --fast`

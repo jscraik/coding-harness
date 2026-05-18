@@ -607,8 +607,11 @@ function buildSearchCommands(
 		.map((file) => basename(file, extname(file)))
 		.filter((name) => name.length >= 4);
 	const uniqueNames = Array.from(new Set(basenames)).slice(0, 5);
+	const escapedNames = uniqueNames.map((name) =>
+		escapeForDoubleQuotedRg(escapeRegex(name)),
+	);
 	return [
-		`rg -n "${uniqueNames.join("|") || "TODO_REPLACE_WITH_PATTERN"}" src tests docs .harness`,
+		`rg -n "${escapedNames.join("|") || "TODO_REPLACE_WITH_PATTERN"}" src tests docs .harness`,
 		"git diff --name-only",
 		...(feedback.trim()
 			? [`rg -F -n "${escapeForDoubleQuotedRg(feedback.slice(0, 80))}" .`]
@@ -623,7 +626,7 @@ function buildSearchCommands(
  * @returns The input with `"` and `\` prefixed by a backslash
  */
 function escapeForDoubleQuotedRg(value: string): string {
-	return value.replace(/["\\]/g, "\\$&");
+	return value.replace(/["\\$`]/g, "\\$&");
 }
 
 /**

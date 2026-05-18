@@ -145,6 +145,31 @@ describe("pattern-scope command", () => {
 		).toBe(true);
 	});
 
+	it("escapes generated rg search commands for shell-safe patterns", () => {
+		const repoRoot = makeRepo();
+		writeFileSync(
+			join(repoRoot, "src/commands/widget$(danger).ts"),
+			"export const dangerous = true;\n",
+			"utf8",
+		);
+		const tick = String.fromCharCode(96);
+
+		const artifact = buildPatternScopeArtifact({
+			repoRoot,
+			files: ["src/commands/widget$(danger).ts"],
+			feedback: `review says ${tick}echo nope${tick} and $(echo nope)`,
+		});
+
+		expect(artifact.status).toBe("success");
+		if (artifact.status !== "success") throw new Error("expected success");
+		expect(artifact.searchCommands[0]).toContain(
+			"widget\\\\\\$\\\\(danger\\\\)",
+		);
+		expect(artifact.searchCommands.join("\n")).toContain(
+			"review says \\`echo nope\\` and \\$(echo nope)",
+		);
+	});
+
 	it("writes the artifact when --output is provided", () => {
 		const repoRoot = makeRepo();
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});

@@ -252,6 +252,27 @@ describe("validateHarnessArtifactRoutine", () => {
 		);
 	});
 
+	it("flags blank artifact-index Local Status values", () => {
+		const repoRoot = makeRepo({
+			activeIndex: activeIndexText(".harness/plan/current.md").replace(
+				"Active assurance",
+				"",
+			),
+		});
+
+		const result = validateHarnessArtifactRoutine({
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "stale_frontmatter_guard",
+				code: "artifact_status_unclassified",
+			}),
+		);
+	});
+
 	it("fails when the Artifact Index table is missing", () => {
 		const repoRoot = makeRepo({
 			activeIndex: activeIndexText(".harness/plan/current.md").replace(

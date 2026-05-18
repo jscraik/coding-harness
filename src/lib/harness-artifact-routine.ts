@@ -349,8 +349,9 @@ function validateHistoricalRows(
 	}
 	for (const row of rows.slice(1)) {
 		const cells = parseMarkdownTableCells(row);
-		const localStatus = cells[localStatusIndex]?.toLowerCase() ?? "";
+		const localStatus = cells[localStatusIndex]?.trim().toLowerCase() ?? "";
 		if (
+			localStatus.length === 0 ||
 			localStatus.includes("draft") ||
 			localStatus.includes("unknown") ||
 			localStatus.includes("maybe")
@@ -359,7 +360,7 @@ function validateHistoricalRows(
 				check: "stale_frontmatter_guard",
 				code: "artifact_status_unclassified",
 				message:
-					"Artifact Index rows must classify route-driving status instead of leaving draft/unknown/maybe state.",
+					"Artifact Index rows must classify route-driving status instead of leaving blank/draft/unknown/maybe state.",
 				path: activeIndexPath,
 			});
 		}
