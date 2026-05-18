@@ -1,10 +1,10 @@
 ---
-last_validated: 2026-05-17
+last_validated: 2026-05-18
 ---
 
 # Agent-First Status Matrix
 
-> Last updated: 2026-05-17
+> Last updated: 2026-05-18
 > Owner: Jamie Craik
 > Review cadence: Weekly
 
@@ -354,6 +354,12 @@ executions, capture nested spans, curate production failures into datasets, add
 human labels or expected outputs, then score future runs. Coding Harness should
 use that vocabulary where it helps, while keeping data repo-local and portable.
 
+The 2026-05-18 Coding Harness evidence consolidation keeps this roadmap pointed
+at the same north star: trace-backed claim verification, missing-context
+classification, deterministic recovery handlers, and no-secret trace hygiene are
+roadmap refinements only when they reduce review or rework cost. They do not
+justify a broader command surface or a new governance lane.
+
 ### Proof Modes
 
 | Mode          | Purpose                | Required Evidence                                                                                            |
@@ -384,6 +390,9 @@ use that vocabulary where it helps, while keeping data repo-local and portable.
 | `pr-closeout`   | `harness pr-closeout --pr <number> --json` or normalized input   | `pr-closeout/v1` evidence with PR state, check state, tool state, dirty worktree state, and AI session/traceability refs. | Pass when closeout evidence is complete; fail on red checks, missing PR metadata, missing traceability, unresolved review blockers, or blocked required tools. |
 | `ci-state`      | CI provider adapter or required-check mapping                   | CI/check evidence tied to branch and SHA.                                 | Pass when required checks match current head; fail on red, stale, or missing required checks; unknown for optional providers.                        |
 | `reinforcement` | `he-reinforce` output, solution record, or Project Brain update | Solution, rule, fixture, or explicit skip reason.                         | Pass when lesson has evidence and scope; fail when it would create stale doctrine; unknown remains a hypothesis.                                     |
+| `claim-verifier` | Trace, environment, PR, CI, or runtime evidence                 | Claim-vs-evidence result with checked facts and blocker class.            | Pass when the claimed outcome matches independent evidence; fail on false success, missing verifier, or contradictory state.                         |
+| `recovery-handler` | Deterministic setup, auth, environment, CI, or review recovery path | Redacted recovery event with authority, action, resume state, and verifier impact. | Pass when recovery is scoped, trace-visible, and verified; fail when it hides a real failure, leaks secrets, or lacks rollback.                       |
+| `missing-context` | PR comment, failed gate, discarded run, page, or user correction | Classified missing-context record with durable destination or explicit rejection. | Pass when the lesson has scope, owner, validation, and retirement condition; fail when it would become unbounded doctrine.                           |
 
 Canary audit artifacts should include resolved path, git remote, branch, commit
 SHA, detected harness version, existing managed or locally owned surfaces, dry-run
@@ -400,6 +409,9 @@ scores, and residual risk.
 | Runtime-card partial-adoption eval | 🔶 Partial | `harness next` remains useful when Linear, CI, Project Brain, or session evidence is unavailable. |
 | PR stack-health eval               | 📋 Planned | Upper PR work pauses when lower stack layers are red, behind, or conflicted.                      |
 | Workflow skill flag eval           | 📋 Planned | High-level skills prove login, upload/chat, access-grant, and closeout flows by capturing explicit flags with retained trace evidence. |
+| Claim-vs-evidence closeout eval    | 📋 Planned | Agent completion claims fail when PR, CI, runtime, or trace evidence contradicts them.             |
+| Recovery-handler safety eval       | 📋 Planned | Repeated setup/auth/environment blockers recover only with scoped authority, redacted traces, rollback, and verifier proof. |
+| Missing-context promotion eval     | 📋 Planned | Repeated failures become durable rules only with evidence, scope, owner, validation, and retirement condition. |
 
 ## Codex Alignment Assessment
 
@@ -441,6 +453,9 @@ then let harness next consume pr-closeout/v1 as pre-handoff evidence.
 This is still the highest-value next step because it directly targets the
 primary bottleneck: review and rework coordination during PR closeout. It also
 builds on current shipped surfaces instead of introducing a new command family.
+The 2026-05-18 evidence consolidation strengthens this priority: the next slice
+should make PR closeout a claim-vs-evidence verifier, not a checklist that can
+trust an agent's final statement.
 
 Scope for that slice:
 
@@ -452,6 +467,9 @@ Scope for that slice:
   existing PR/check evidence path, without making CodeRabbit self-approval.
 - Feed pr-closeout/v1 into harness next so pre-handoff readiness becomes a
   cockpit recommendation rather than a separate checklist.
+- Add claim-vs-evidence classification so an agent's ready/complete claim is
+  rejected when PR, CI, review-thread, stack, runtime, or trace evidence
+  disagrees.
 - Define the small contract for pr-green-sweep to call
   harness pr-closeout --json instead of duplicating closeout classification
   inside agent-skills.
@@ -464,6 +482,8 @@ Definition of done:
   evidence explicitly marks them non-blocking.
 - harness next --json can consume or discover current PR closeout evidence and
   surface the same readiness blocker.
+- Ready/complete claims are accepted only when current evidence agrees, and
+  false-success cases produce a named blocker rather than a successful closeout.
 - Unknown optional providers remain visible as unknown; required providers
   block only when the repo contract or active phase requires them.
 - The pr-green-sweep skill consumes the harness report shape rather than

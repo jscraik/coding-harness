@@ -94,7 +94,7 @@
 		"e2e:linear": "tsx e2e/run-e2e.ts linear-integration",
 		"e2e:pipeline": "tsx e2e/run-e2e.ts command-pipeline",
 		"e2e:ci": "tsx e2e/run-e2e.ts --reporter json --parallel 2",
-		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
+		"harness:ui:capture-browser-evidence": "node --import tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
 		"vale": "vale --config .vale.ini AGENTS.md docs",
 		"codex-preflight:check": "node scripts/sync-codex-preflight.cjs --check",
 		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write"
@@ -138,7 +138,7 @@
 		"overrides": {
 			"axios": "^1.16.0",
 			"@vvago/vale>axios": "^1.16.0",
-			"brace-expansion": "^5.0.5",
+			"brace-expansion": "^5.0.6",
 			"follow-redirects": "^1.16.0",
 			"handlebars": "^4.7.9",
 			"lodash": "^4.18.1",
@@ -151,7 +151,7 @@
 			"vite": ">=7.3.2 <8",
 			"handlebars@>=4.0.0 <=4.7.8": ">=4.7.9",
 			"axios@<1.15.2": ">=1.16.0",
-			"brace-expansion@>=4.0.0 <5.0.5": ">=5.0.5",
+			"brace-expansion@>=4.0.0 <5.0.6": ">=5.0.6",
 			"handlebars@>=4.0.0 <4.7.9": ">=4.7.9",
 			"picomatch@<2.3.2": ">=2.3.2",
 			"picomatch@>=4.0.0 <4.0.4": ">=4.0.4",

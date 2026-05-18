@@ -73,4 +73,4 @@ Use the repo-local wrappers/gates:
 3. `pnpm typecheck`
 4. `bash scripts/verify-work.sh --fast`
 
-If a repository is being migrated gradually, run `harness tooling-audit --path <repo-root>` first and land policy + scaffold updates together. In this source repository, use `pnpm exec tsx src/cli.ts tooling-audit --path . --json` when proving the current checkout before package-build parity.
+If a repository is being migrated gradually, run `harness tooling-audit --path <repo-root>` first and land policy + scaffold updates together. In this source repository, use `node --import tsx src/cli.ts tooling-audit --path . --json` when proving the current checkout before package-build parity.

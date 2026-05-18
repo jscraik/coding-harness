@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-15.
+Last reconciled: 2026-05-18.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Phase-exit evidence visibility and adapter follow-up | JSC-311 | `.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`; `.harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | Implemented in current checkout; validation/PR closeout pending | Validate the `harness next --phase-exit <artifact>` cockpit path, then reconcile Linear and PR evidence before closing JSC-311. |
+| Harness assurance and artifact handling routine | JSC-331 | `.harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md` | Active local plan selected to live Linear issue; artifact routine and review stack added | Validate the mapped assurance plan, run the mandatory review stack before closeout, keep JSC-308 as related broader artifact-policy context, and refresh this index before any handoff that relies on route-driving artifacts. |
 
 ## Artifact Index
 
@@ -35,6 +35,7 @@ unless a live refresh is recorded in the referenced artifact.
 | JSC-290 | validation-typed-gate-specs | `.harness/specs/2026-05-09-validation-typed-gate-specs-spec.md` | `.harness/plan/2026-05-09-JSC-290-validation-typed-gate-specs-plan.md` | Resolved historical context | Local queue records this work as done. Keep these artifacts as historical references only; do not route new work from their older front matter. |
 | JSC-301 | route-decision-contract | `.harness/specs/2026-05-11-jsc-301-route-decision-contract-spec.md` | `.harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` | Archived PR closeout context | Not the next active implementation slice. Keep as dependency context for JSC-311 control-plane work. |
 | JSC-311 | he-phase-exit-evidence-gates | `.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | `.harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | Implemented in current checkout; validation/PR closeout pending | PR #247 merged the internal `HeGateResult/v1` / `HePhaseExit/v1` contract and worktree baseline. The current checkout adds the operator-visible `harness next --phase-exit <artifact>` path. |
+| JSC-331 | harness-assurance-artifact-handling | n.a. | `.harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md` | Active assurance and artifact-routine slice | Selected instead of creating a duplicate issue because live Linear already has a coding-harness apparatus/assurance lane. JSC-308 remains related HE artifact-policy context. |
 
 ## Duplicate Resolution
 
@@ -42,6 +43,7 @@ unless a live refresh is recorded in the referenced artifact.
 | --- | --- | --- | --- |
 | JSC-282 | Two command-truth cockpit plans looked active: 2026-05-07 and 2026-05-08. | Marked `.harness/plan/2026-05-07-architecture-JSC-282-command-truth-cockpit-plan.md` as `superseded` by the 2026-05-08 plan. | None for local routing; live Linear was not refreshed in this pass. |
 | JSC-311 | 2026-05-11 and 2026-05-13 spec/plan pairs exist for phase-exit evidence gates. | 2026-05-11 artifacts were already marked `superseded`; 2026-05-13 artifacts remain canonical for the merged internal contract and follow-up routing. | After this checkout is delivered, remaining risk moves to live Linear/PR closeout and future session-evidence ingestion. |
+| JSC-331 | The 2026-05-18 assurance plan was active but had no Linear owner and was not indexed. | Selected live issue JSC-331 and added artifact handling routine to the plan. | Linear mutation endpoints were unavailable in this session, so the local index records the selection but no Linear comment was added. |
 
 ## Closeout Reconcile Items
 
@@ -55,3 +57,13 @@ unless a live refresh is recorded in the referenced artifact.
   Remaining JSC-311 closeout work is validation, PR #250 CI recovery, live
   Linear reconciliation, and a future session-collector evidence adapter slice
   if admitted separately.
+- JSC-331 now owns the current harness assurance and route-driving artifact
+  handling routine. Before any `.harness` artifact drives implementation, confirm
+  live Linear ownership, tracked state, referenced-path existence, stale
+  frontmatter disposition, active-index freshness, and completion-blocking
+  review evidence from `$he-code-review`, `@testing-reviewer`, `$simplify`,
+  `$unslopify`, `$improve-codebase-architecture`, and
+  `$ubiquitous-language` when implementation changed.
+- JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
+  not use it as the coding-harness tracker for the 2026-05-18 assurance plan
+  unless Linear is explicitly reparented or updated later.

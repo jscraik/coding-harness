@@ -28,13 +28,13 @@ ${{ github.event.pull_request.body }}
 EOF
 )"
 
-            pnpm exec tsx src/cli.ts linear-gate \
+            node --import tsx src/cli.ts linear-gate \
               --branch "$BRANCH" \
               --pr-title "$PR_TITLE" \
               --pr-body "$PR_BODY" \
               --json
           else
-            pnpm exec tsx src/cli.ts linear-gate \
+            node --import tsx src/cli.ts linear-gate \
               --allow-missing-branch \
               --allow-missing-pr \
               --json

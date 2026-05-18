@@ -82,7 +82,7 @@ export interface PrCloseoutTraceabilityInput {
 	aiSessionTraceability?: string | null;
 }
 
-/** Closeout posture for one coding-harness gate inside HePhaseExit/v1. */
+/** Closeout posture for one Coding Harness gate. */
 export interface PrCloseoutHarnessGateEvidence {
 	gateId: HeGateId;
 	required: boolean;
@@ -92,8 +92,18 @@ export interface PrCloseoutHarnessGateEvidence {
 	blocker: string | null;
 }
 
-/** Coding-harness closeout gates consumed from a HePhaseExit/v1 artifact. */
+/** Origin of the closeout gate evidence consumed by PR closeout. */
+export type PrCloseoutHarnessGateEvidenceSource =
+	| "closeout_gates"
+	| "phase_exit"
+	| "missing";
+
+/** Coding Harness closeout gates consumed by PR closeout. */
 export interface PrCloseoutHarnessGateSummary {
+	evidenceSource: PrCloseoutHarnessGateEvidenceSource;
+	/** Whether first-class Coding Harness closeout gate evidence was supplied. */
+	closeoutGatesPresent: boolean;
+	/** Backwards-compatible visibility for older phase-exit consumers. */
 	phaseExitPresent: boolean;
 	recommendation: HePhaseExit["recommendation"] | "missing";
 	commitAllowed: boolean;
@@ -133,6 +143,9 @@ export interface PrCloseoutInput {
 	checks?: PrCloseoutCheckInput[];
 	reviewThreads?: PrCloseoutReviewThreadsInput;
 	traceability?: PrCloseoutTraceabilityInput;
+	/** First-class Coding Harness closeout-gates evidence. Preferred for PR closeout. */
+	closeoutGates?: HePhaseExit;
+	/** Backwards-compatible HE phase-exit evidence accepted from older workflows. */
 	phaseExit?: HePhaseExit;
 	dirtyPaths?: PrCloseoutDirtyPathInput[];
 	tools?: PrCloseoutToolInput[];
@@ -449,6 +462,17 @@ function collectReviewBlockers(
 	reviewThreads: PrCloseoutReviewThreadsInput,
 	blockers: PrCloseoutBlocker[],
 ): void {
+	if (reviewThreads.unresolved === null) {
+		pushBlocker(blockers, {
+			surface: "review",
+			classification: "unknown",
+			reason:
+				"Review thread state is unobserved; live GitHub reviewThreads evidence is required before PR closeout.",
+			fixableByCodex: true,
+			ref: "github:reviewThreads",
+		});
+		return;
+	}
 	if (reviewThreads.unresolved !== null && reviewThreads.unresolved > 0) {
 		const needsHuman = (reviewThreads.needsHuman ?? 0) > 0;
 		pushBlocker(blockers, {
@@ -483,10 +507,13 @@ function collectTraceabilityBlocker(
 }
 
 function buildHarnessGateSummary(
-	phaseExit: HePhaseExit | undefined,
+	closeoutGates: HePhaseExit | undefined,
+	evidenceSource: PrCloseoutHarnessGateEvidenceSource,
 ): PrCloseoutHarnessGateSummary {
-	if (!phaseExit) {
+	if (!closeoutGates) {
 		return {
+			evidenceSource: "missing",
+			closeoutGatesPresent: false,
 			phaseExitPresent: false,
 			recommendation: "missing",
 			commitAllowed: false,
@@ -498,16 +525,20 @@ function buildHarnessGateSummary(
 				status: "missing",
 				evidenceRefs: [],
 				requiresHuman: false,
-				blocker: "HePhaseExit/v1 closeout gate evidence was not supplied.",
+				blocker: "Coding Harness closeout-gates evidence was not supplied.",
 			})),
 		};
 	}
-	const gatesById = new Map(phaseExit.gates.map((gate) => [gate.gateId, gate]));
+	const gatesById = new Map(
+		closeoutGates.gates.map((gate) => [gate.gateId, gate]),
+	);
 	return {
-		phaseExitPresent: true,
-		recommendation: phaseExit.recommendation,
-		commitAllowed: phaseExit.commitAllowed,
-		exitAllowed: phaseExit.exitAllowed,
+		evidenceSource,
+		closeoutGatesPresent: evidenceSource === "closeout_gates",
+		phaseExitPresent: evidenceSource === "phase_exit",
+		recommendation: closeoutGates.recommendation,
+		commitAllowed: closeoutGates.commitAllowed,
+		exitAllowed: closeoutGates.exitAllowed,
 		gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => {
 			const gate = gatesById.get(gateId);
 			const required =
@@ -521,7 +552,7 @@ function buildHarnessGateSummary(
 					evidenceRefs: [],
 					requiresHuman: false,
 					blocker: required
-						? `${gateId} gate is missing from HePhaseExit/v1 evidence.`
+						? `${gateId} gate is missing from Coding Harness closeout-gates evidence.`
 						: null,
 				};
 			}
@@ -541,14 +572,14 @@ function collectHarnessGateBlockers(
 	harnessGates: PrCloseoutHarnessGateSummary,
 	blockers: PrCloseoutBlocker[],
 ): void {
-	if (!harnessGates.phaseExitPresent) {
+	if (harnessGates.evidenceSource === "missing") {
 		pushBlocker(blockers, {
 			surface: "harness_gates",
 			classification: "introduced",
 			reason:
-				"Coding-harness closeout gates are missing HePhaseExit/v1 evidence.",
+				"Coding Harness closeout gates are missing closeout-gates evidence.",
 			fixableByCodex: true,
-			ref: "schema:he-phase-exit/v1",
+			ref: "schema:coding-harness-closeout-gates/v1",
 		});
 		return;
 	}
@@ -581,9 +612,9 @@ function collectHarnessGateBlockers(
 		pushBlocker(blockers, {
 			surface: "harness_gates",
 			classification: requiresJamie ? "needs_jamie_decision" : "unknown",
-			reason: `HePhaseExit/v1 denies closeout (recommendation=${harnessGates.recommendation}, commitAllowed=${String(harnessGates.commitAllowed)}, exitAllowed=${String(harnessGates.exitAllowed)}).`,
+			reason: `Coding Harness closeout gates deny closeout (recommendation=${harnessGates.recommendation}, commitAllowed=${String(harnessGates.commitAllowed)}, exitAllowed=${String(harnessGates.exitAllowed)}).`,
 			fixableByCodex: false,
-			ref: "schema:he-phase-exit/v1",
+			ref: "schema:coding-harness-closeout-gates/v1",
 		});
 	}
 }
@@ -614,7 +645,16 @@ export function buildPrCloseoutReport(
 	const checks = input.checks ?? [];
 	const reviewThreads = input.reviewThreads ?? { unresolved: null };
 	const traceability = input.traceability ?? {};
-	const harnessGates = buildHarnessGateSummary(input.phaseExit);
+	const harnessGateEvidenceSource: PrCloseoutHarnessGateEvidenceSource =
+		input.closeoutGates !== undefined
+			? "closeout_gates"
+			: input.phaseExit !== undefined
+				? "phase_exit"
+				: "missing";
+	const harnessGates = buildHarnessGateSummary(
+		input.closeoutGates ?? input.phaseExit,
+		harnessGateEvidenceSource,
+	);
 	const dirtyPaths = input.dirtyPaths ?? [];
 	const tools = input.tools ?? [];
 	const dirtyPathsExcluded = dirtyPaths.filter(

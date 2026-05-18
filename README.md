@@ -172,8 +172,8 @@ The weekly status surface is
 [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md),
 and its review cadence is mirrored in `harness.contract.json` so
 `drift-gate --mode health` can fail closed on stale north-star evidence.
-The roadmap and status metadata were last synchronized on 2026-05-17 as part
-of the zero-integration portability refresh.
+The roadmap and status metadata were last synchronized on 2026-05-18 as part
+of the Coding Harness evidence alignment refresh.
 
 North-star command outputs also use canonical artifact contracts so agents can
 carry evidence between tools without guessing path or schema names. Current
@@ -630,7 +630,7 @@ harness commands --json | jq '
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                                                                                                          |
 | `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                                                                                                                  |
 | `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`)                                                                      |
-| `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including PR metadata, check state, coding-harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--phase-exit`, optional `--env-file`) |
+| `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including PR metadata, check state, Coding Harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--gates`, compatibility `--phase-exit`, optional `--env-file`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                                                                                                                  |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                                                                                                                                                                                                                  |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                                                                                                                                                                                                             |
@@ -663,9 +663,11 @@ harness commands --json | jq '
 | `check-environment`      | Validate pilot environment governance checks                                                    |
 | `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                                          |
 | `artifact-gate`          | Check generated artifact changes against the artifact provenance registry                       |
+| `artifact-routine`       | Validate route-driving `.harness` artifacts before implementation                              |
 | `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks                 |
 | `blast-radius`           | Determine required checks from changed files                                                    |
 | `risk-tier`              | Classify changed files by risk tier                                                             |
+| `pattern-scope`          | Build a pattern-scope artifact from steering feedback and changed files                         |
 | `diff-budget`            | Enforce diff budget constraints                                                                 |
 | `observability-gate`     | Check metrics cardinality limits                                                                |
 | `silent-error`           | Detect silent error-handling anti-patterns                                                      |
@@ -677,7 +679,7 @@ harness commands --json | jq '
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `linear`            | Claim, hand off, close, prepare, or sync Linear work from one command family                                                                                                                   |
 | `linear-gate`       | Enforce Linear-first intake, branch naming, and PR linkage                                                                                                                                     |
-| `pr-closeout`       | Classify pull-request closeout state before handoff or merge, including required metadata, checks, coding-harness closeout gates, review state, tool evidence, and AI session/trace references |
+| `pr-closeout`       | Classify pull-request closeout state before handoff or merge, including required metadata, checks, Coding Harness closeout gates, review state, tool evidence, and AI session/trace references |
 | `workflow:generate` | Generate compact workflow specs from annotated markdown                                                                                                                                        |
 
 ### Pilot, Remediation, And Automation
@@ -706,6 +708,7 @@ harness commands --json | jq '
 | `validation-plan`     | Recommend repo-canonical validation commands from changed files and imported validation-contract learnings, with network-required commands separated                                                                              |
 | `north-star-feedback` | Measure learning hits, gate blocks/warnings, promotion candidates, promoted learnings, high-usage unenforced learnings, review-thread count, and validation reruns from imported learning evidence and optional run artifacts     |
 | `artifact-gate`       | Check changed generated artifacts against `.harness/artifact-provenance.json` so template/source edits accompany runtime mirrors                                                                                                  |
+| `artifact-routine`    | Validate `.harness/active-artifacts.md` route-driving specs and plans for owner, freshness, reference integrity, runtime-output boundaries, and stale artifact classification before implementation |
 | `ci-ownership-gate`   | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                                                                         |
 | `search`              | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
 | `context`             | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
@@ -776,7 +779,7 @@ If you are developing this repository itself:
 mise trust            # activate pinned toolchain from .mise.toml
 make setup            # installs deps + configures git hooks
 pnpm build
-pnpm exec tsx src/cli.ts --help
+node --import tsx src/cli.ts --help
 pnpm check
 ```
 

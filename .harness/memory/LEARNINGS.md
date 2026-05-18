@@ -27,14 +27,20 @@ Repo-specific agent knowledge base. Append-only.
 
 **2026-05-16 [Codex]:** Bash command 'zsh' failed with exit code 3 -> summarize the failure and change approach before rerunning the same command (auto-key:1476607300)
 
-**2026-05-17 [Codex]:** `High-signal user steering can be acknowledged in chat while still failing to change future agent behavior -> require PR closeout to name Meta-behavior proof and Learning / reinforcement whenever the PR admits repeated steering or user correction, keep the PR template/scaffold/validator/steering guard synchronized, and run pnpm run docs:steering:guard plus the PR-template validator tests before resuming feature work.`
+**2026-05-17 [Codex]:** PR closeout acknowledged steering in chat instead of synchronizing PR template/validator/steering guard -> require Meta-behavior proof and Learning when PR admits repeated steering, keep validators synchronized, run pnpm run docs:steering:guard before resuming.
 
-**2026-05-17 [Codex]:** `Repeated high-signal steering can still stay in chat even when the generic steering-feedback rule exists -> treat "not permitted to proceed" as a current-session steering admission trigger: stop feature work, write the admission into repo memory/docs/gates, name the forbidden recurrence behavior, and run pnpm run docs:steering:guard before resuming.`
+**2026-05-17 [Codex]:** Repeated steering stayed in chat despite existing rules -> treat "not permitted to proceed" as steering admission trigger: stop work, write admission to repo memory/docs/gates, name forbidden behavior, run pnpm run docs:steering:guard.
 
-**2026-05-17 [Codex]:** `Repeating the same local retry after the same error happens twice wastes signal and hides missing research -> stop retries on the second identical error, research trusted web/upstream sources, list 3-5 candidate fixes, choose the most efficient repo-fit fix, implement it, and record Repeated-error research evidence in PR closeout before claiming the issue is resolved.`
+**2026-05-17 [Codex]:** Repeated local retry after identical error wastes signal and hides research -> stop on second identical error, research trusted sources, list 3-5 fixes, implement best fit, record Repeated-error research in PR closeout.
 
-**2026-05-17 [Codex]:** `Treating a concrete correction as local misses the user's design model -> every example-based or line-level correction that implies a broader principle must trigger a pattern-generalization pass: infer the design/API rule, search sibling implementations and similar misbehavior classes, update the shared pattern or matching siblings, and record unchanged or deferred siblings with reasons before claiming the fix is done.`
+**2026-05-17 [Codex]:** Concrete correction treated as local missed broader design model -> example-based or line-level corrections implying principles trigger pattern-generalization: infer rule, search siblings, update shared patterns, record unchanged siblings with reasons.
 
-**2026-05-17 [Codex]:** `Pattern-generalization rules can still miss feedback when they depend on exact trigger words -> treat examples, single-line requests, named-function feedback, review comments, and "generally" or "across everything" language as principle signals until a pattern scope inventory proves the correction is intentionally local.`
+**2026-05-17 [Codex]:** Pattern-generalization missed feedback when relying on exact trigger words -> treat examples, single-line requests, named-function feedback, review comments, "generally" or "across everything" as principle signals unless pattern scope inventory proves local intent.
 
-**2026-05-17 [Codex]:** `A line-level correction can encode a general API/design principle, not just a local edit -> before claiming the fix, infer the principle, search sibling code/tests/docs/templates/skills/gates for the same misbehavior, update the shared pattern or matching siblings, and record any intentionally unchanged siblings with reasons.`
+**2026-05-17 [Codex]:** Line-level correction encoded general API/design principle missed during fix -> before claiming done, infer principle, search sibling code/tests/docs/templates/skills/gates, update shared pattern or siblings, record intentionally unchanged with reasons.
+
+**2026-05-18 [Codex]:** Heartbeat became stale after PR merged, repeated DONT_NOTIFY wasted tokens -> once stop condition is true, delete or update automation in same turn; if app API unavailable, identify repo-owned automation.toml, remove file, rmdir empty directory, verify ID gone.
+
+**2026-05-18 [Codex]:** Current-session steering admission can drift if the learning surface only implies the rule -> write the exact current-session steering admission trigger, preserve not permitted to proceed wording, record repeated-error research with 3-5 candidate fixes, and search similar misbehavior classes before claiming a pattern-generalization fix.
+
+**2026-05-18 [Codex]:** PR closeout gates can be technically wired but invisible if agents must know to supply HE phase-exit evidence -> expose them as first-class Coding Harness closeout gates in command help, command catalog examples, PR closeout JSON, and docs; keep HE phase-exit only as a compatibility alias.

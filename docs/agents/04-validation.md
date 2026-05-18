@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-17
+last_validated: 2026-05-18
 ---
 
 # Validation and checks
@@ -17,6 +17,7 @@ last_validated: 2026-05-17
 - [North-star learning loop closeout](#north-star-learning-loop-closeout)
 - [Steering feedback closeout](#steering-feedback-closeout)
 - [Process/agent instruction edits](#processagent-instruction-edits)
+- [Artifact routine gate](#artifact-routine-gate)
 - [Verify-work lifecycle](#verify-work-lifecycle)
 - [Execution order and restart policy](#execution-order-and-restart-policy)
 - [Governance failure classes](#governance-failure-classes)
@@ -28,6 +29,16 @@ last_validated: 2026-05-17
 ## Core principle
 
 Every change must be checked by the smallest gate needed for risk, then by the fail-closed code-style gate, then by any deeper aggregate gate required by the behavior change.
+
+When validation, review, or local execution exposes a fixable blocker, warning,
+risk, stale instruction, flaky command, or weak guard in a touched file,
+required validation surface, generated template, or active agent-facing
+instruction, fix it in the same pass and rerun the narrowest proving command.
+Do not carry it as residual risk merely because it was not part of the initial
+request. A residual-risk note is valid only when the fix is outside current
+authority, requires unavailable credentials or destructive action, crosses
+unrelated ownership boundaries, or is recorded as a tracked exception with the
+exact reason and next owner.
 
 ## Required baseline gates
 
@@ -97,7 +108,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - For this repository, keep `## Work performed` in the PR body structured with `Plan IDs`, `Phase / slice`, `Session IDs`, `Trace IDs`, `AI session / traceability`, `Completed work`, `Affected surfaces`, `Expected outcome alignment`, `Pattern scope inventory`, `Meta-behavior proof`, `Repeated-error research`, `Acceptance trace`, `Validation evidence`, `Review artifacts`, `Runtime impact`, `CodeRabbit mode coverage`, `Closeout state`, `Learning / reinforcement`, and `Deferred work` so implementation progress, provenance, evidence refs, durable learning, and intentionally deferred scope remain reviewable after handoff.
 - `Meta-behavior proof` must cite the durable destination and a concrete repo path, command, or issue ID when a PR admits repeated steering, high-signal correction, or current-session stop language. `Repeated-error research` must use the structured form `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; [Candidate 4: ...; Candidate 5: ...;] Chosen: ...; Implemented: ...` when the same error or command failure repeats.
 - For AI-assisted work, `Session IDs` should cite a Codex thread/session, session-collector artifact, or harness run reference; `Trace IDs` should cite CI, harness, eval, runtime-card, evidence-bundle, or review trace references when those artifacts exist. Use `n.a.` only with a concrete reason, and do not paste raw transcripts, prompts, secrets, or bulky telemetry into PR bodies.
-- Before PR handoff, prefer `harness pr-closeout --pr <number> --json` when a PR exists, or `harness pr-closeout --input <path> --json` when evidence is assembled by another workflow. Treat `pr-closeout/v1` as read-only closeout evidence: it may use GitHub CLI, CircleCI CLI, CodeRabbit CLI, Snyk CLI, and `~/.codex/.env` credential discovery, but it must never print secrets or replace independent review approval.
+- Before PR handoff, prefer `harness pr-closeout --pr <number> --gates artifacts/pr-closeout/closeout-gates.json --json` when a PR exists, or `harness pr-closeout --input <path> --json` when evidence is assembled by another workflow. Treat `--phase-exit <path>` as a compatibility alias only. Treat `pr-closeout/v1` as read-only closeout evidence: it may use GitHub CLI, CircleCI CLI, CodeRabbit CLI, Snyk CLI, and `~/.codex/.env` credential discovery, but it must never print secrets or replace independent review approval.
 - For PR closeout thread truth, use the GitHub GraphQL `reviewThreads` connection or an adapter that preserves `isResolved`, `isOutdated`, path, line, author, and comment URL. Flat comments, check summaries, CodeRabbit summaries, and review decision fields are not sufficient proof that all Codex, CodeRabbit, or human review threads are resolved.
 - For this repository, keep `## Testing` in the PR body structured with `verification_commands`, `verification_outcomes`, and `blocked_steps_reason` so CodeRabbit can evaluate validation evidence deterministically.
 - For pull-requested source-checkout work with changed files that can be evaluated against imported CodeRabbit learning evidence, treat the north-star learning loop as a closeout check: run or explicitly mark `n.a.` for `bash scripts/run-harness-gate.sh learnings gate`, `bash scripts/run-harness-gate.sh review-context`, and `bash scripts/run-harness-gate.sh north-star-feedback` in the PR template evidence.
@@ -195,9 +206,15 @@ the inventory explains why the principle does not apply elsewhere.
 
 Do not wait for exact trigger words. Example-based feedback, named-function
 feedback, review comments, single-line corrections, and wording such as
-"generally", "same pattern", "similar class", or "across everything" are
+"generally", "same pattern", "same things in multiple places", "larger
+perspective", "similar class", or "across everything" are
 pattern signals until the inventory proves the correction is intentionally
 local.
+
+If pattern scope is hard to judge, `harness pattern-scope` is the required
+starter: review candidate siblings, run the listed searches or stronger
+repo-specific equivalents, update the shared owner or matching siblings, and
+record unchanged siblings with reasons.
 
 Example: "return a named sentinel error instead of a success/failure boolean" is not only a request to edit one function. It is API design feedback: search sibling boolean-result APIs in the same command core, adapter family, and tests, then either update the shared pattern or explain why the named function is intentionally different.
 
@@ -214,6 +231,18 @@ Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps
 - Run validation gates before finalizing if they alter execution behavior.
 - Explicitly verify command contract docs against `package.json`/`pnpm-lock.yaml`.
 - When the change introduces or updates a validation wrapper, prove the wrapper itself was executed from the current repo state instead of claiming equivalent underlying commands ran.
+
+## Artifact routine gate
+
+Run the `artifact-routine` command before using a `.harness` spec or plan as
+implementation input:
+
+- **Source-repo form:** `node --import tsx src/cli.ts artifact-routine --active-index .harness/active-artifacts.md --json`
+- **Installed-package form:** `harness artifact-routine --active-index .harness/active-artifacts.md --json`
+
+The gate is read-only and validates active-index freshness, Linear or local-only
+owner, referenced-path integrity, runtime-output boundary, and stale artifact
+classification.
 
 ## Verify-work lifecycle
 

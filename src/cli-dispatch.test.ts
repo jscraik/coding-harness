@@ -128,6 +128,14 @@ vi.mock("./commands/blast-radius.js", () => ({
 	runBlastRadiusCLI: vi.fn(() => 59),
 }));
 
+vi.mock("./commands/pattern-scope.js", () => ({
+	runPatternScopeCLI: vi.fn(() => 76),
+}));
+
+vi.mock("./commands/artifact-routine.js", () => ({
+	runArtifactRoutineCLI: vi.fn(() => 77),
+}));
+
 vi.mock("./commands/index-context.js", () => ({
 	runIndexContextCLI: vi.fn(async () => 60),
 }));
@@ -811,6 +819,66 @@ describe("cli command dispatch", () => {
 			"--json",
 		]);
 		expect(exitSpy).toHaveBeenCalledWith(75);
+	});
+
+	it("dispatches pattern-scope through the command registry", async () => {
+		const { run } = await import("./cli.js");
+		const { runPatternScopeCLI } = await import("./commands/pattern-scope.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"pattern-scope",
+				"--files",
+				"src/cli.ts",
+				"--feedback",
+				"same things in multiple places",
+				"--json",
+			]),
+		).toThrowError("EXIT_76");
+
+		expect(vi.mocked(runPatternScopeCLI)).toHaveBeenCalledWith([
+			"--files",
+			"src/cli.ts",
+			"--feedback",
+			"same things in multiple places",
+			"--json",
+		]);
+		expect(exitSpy).toHaveBeenCalledWith(76);
+	});
+
+	it("dispatches artifact-routine through the command registry", async () => {
+		const { run } = await import("./cli.js");
+		const { runArtifactRoutineCLI } = await import(
+			"./commands/artifact-routine.js"
+		);
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"artifact-routine",
+				"--active-index",
+				".harness/active-artifacts.md",
+				"--json",
+			]),
+		).toThrowError("EXIT_77");
+
+		expect(vi.mocked(runArtifactRoutineCLI)).toHaveBeenCalledWith([
+			"--active-index",
+			".harness/active-artifacts.md",
+			"--json",
+		]);
+		expect(exitSpy).toHaveBeenCalledWith(77);
 	});
 
 	it("dispatches ci-migrate with positional action and target directory", async () => {

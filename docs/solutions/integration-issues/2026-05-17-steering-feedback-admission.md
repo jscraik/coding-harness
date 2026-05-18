@@ -5,6 +5,7 @@
 - [Problem](#problem)
 - [Durable Rule](#durable-rule)
 - [Current-Session Admission](#current-session-admission)
+- [Stale Heartbeat Admission](#stale-heartbeat-admission)
 - [Enforcement Surface](#enforcement-surface)
 - [Review Condition](#review-condition)
 - [Evidence](#evidence)
@@ -89,10 +90,40 @@ The record can live in Project Brain, .harness/memory/LEARNINGS.md, a solution
 record, a gate, a schema, a PR template field, or a tracked Linear follow-up.
 It is not enough to say the agent will remember.
 
+## Stale Heartbeat Admission
+
+The PR #261 closeout heartbeat exposed a second-order failure in the agent
+operating loop: after the PR was merged, the continuation monitor kept replying
+`DONT_NOTIFY` instead of deleting or updating the matching automation. A stale
+heartbeat is not harmless background noise; it consumes user attention and proves
+that "green checks" were confused with lifecycle completion.
+
+Durable rule: when a heartbeat stop condition is true, the agent must remove or
+redirect the continuation before resuming ordinary work. The closeout proof must
+name the automation ID, PR state, merge state, branch or worktree state, Linear
+state, next-lane route, and deletion or retention reason. If the app automation
+API is unavailable, the fallback is to find the exact repo-owned
+`automation.toml`, remove only that matching automation directory, remove the
+empty parent directory when safe, and verify that the automation ID no longer
+appears in the repo-owned automation tree.
+
+This is intentionally recorded in the same steering admission solution because
+the failure mode is the same class: an observed workflow blocker was reported as
+status instead of being fixed in the same pass. Treat stale instructions,
+stale heartbeats, stale generated artifacts, and stale validation blockers as
+fix-first defects unless the fix is out of authority, credential-blocked, or
+tracked as an explicit exception with owner and reason.
+
+Evidence: PR #261 had already merged, the stop condition in the heartbeat was
+true, and searches of the repo-owned automation surfaces under
+`/Users/jamiecraik/dev/configs/codex` and `/Users/jamiecraik/.codex`
+returned no matches.
+
 ## Enforcement Surface
 
 - AGENTS.md defines agent engineering proof as the compact operating rule for steering feedback, line-level corrections, OODA horizons, reflected context, and benchmark-vs-engineering proof.
 - docs/agents/04-validation.md defines the agent engineering proof loop and its closeout evidence.
+- docs/automations/README.md defines the heartbeat closeout and deletion contract, including the exact-ID fallback when the app automation API is unavailable.
 - UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
 - .harness/memory/LEARNINGS.md records current-session steering admission when a run exposes an operating failure that must not recur.
 - The GitHub pull request template requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.

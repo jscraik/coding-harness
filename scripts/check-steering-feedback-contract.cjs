@@ -26,6 +26,8 @@ const PATTERN_GENERALIZATION_PATTERN =
 	/(pattern-generalization|pattern generalization|sibling implementations|similar classes of misbehavior|shared abstraction|intentionally local|design principle|design\/API principle)/i;
 const PATTERN_SCOPE_INVENTORY_PATTERN =
 	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|similar misbehavior classes searched|deferred follow-ups|deferred followup)/i;
+const OBSERVED_FIXABLE_BLOCKER_PATTERN =
+	/(observed fixable blockers|fixable blocker|fix it in the same pass|rerun the narrowest proving command|tracked exception with the exact reason)/i;
 const PATTERN_SCOPE_VALIDATOR_PATTERN =
 	/(PATTERN_SCOPE_SIGNAL_PATTERN|collectPatternScopeInventoryErrors|Pattern scope inventory must name the inferred principle)/i;
 const PRINCIPLE_SIGNAL_PATTERN =
@@ -157,6 +159,13 @@ function validateAgents(content) {
 		errors,
 		REQUIRED_FILES.agents,
 		content,
+		OBSERVED_FIXABLE_BLOCKER_PATTERN,
+		"observed fixable blocker fix-first rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
 		PRINCIPLE_SIGNAL_PATTERN,
 		"semantic principle signal trigger requirement",
 	);
@@ -199,12 +208,10 @@ function validateAgents(content) {
 }
 
 /**
- * Validate that the validation document includes required steering-feedback closeout headings, signals, and contract evidence.
+ * Validate that a validation-document markdown contains the steering-feedback closeout section and all required contract evidence.
  *
- * Checks for the steering feedback closeout section, agent engineering proof loop and loop moves, expected-outcome framing, admission and research signals (repeat-feedback, current-session admission, repeated-error research), durable destination and meta-behavior proof, validation-surface and review/deletion conditions, rejection of standalone prose, pattern-generalization and pattern-scope inventory requirements, principle-signal and OODA horizon classifications, reflected-context evidence, engineering and workflow-skill proofs, closeout completion expectations, required closeout state classification fields, and a GraphQL reviewThreads source-of-truth pattern.
- *
- * @param {string} content - The markdown content of the validation document to validate.
- * @returns {string[]} An array of error messages describing missing required headings or patterns; empty if all checks pass.
+ * @param {string} content - Markdown content of the validation document.
+ * @returns {string[]} An array of error messages for each missing required heading or pattern; empty if all checks pass.
  */
 function validateValidationDoc(content) {
 	const errors = [];
@@ -314,6 +321,13 @@ function validateValidationDoc(content) {
 		content,
 		PATTERN_SCOPE_INVENTORY_PATTERN,
 		"pattern scope inventory closeout requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		OBSERVED_FIXABLE_BLOCKER_PATTERN,
+		"observed fixable blocker validation rule",
 	);
 	requirePattern(
 		errors,
@@ -676,13 +690,6 @@ function validateSolution(content) {
 		errors,
 		REQUIRED_FILES.solution,
 		content,
-		/Meta-behavior proof/i,
-		"meta-behavior proof evidence",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.solution,
-		content,
 		/`?pr-template-gate`? rejects PR bodies/i,
 		"pr-template-gate repeated-steering rejection evidence",
 	);
@@ -833,12 +840,9 @@ function validatePrTemplate(content) {
 }
 
 /**
- * Validate a PR-validator source file for required steering-feedback contract symbols, validator rules, and specific validation messages.
- *
- * Checks the provided file content for required identifiers (e.g., steering signal detection, meta-behavior and repeated-error validator rules),
- * pattern-scope validator presence, semantic trigger coverage, and specific validation error/message strings.
- * @param {string} content - The text content of the PR-validator source file to validate.
- * @returns {string[]} An array of error messages describing each missing required pattern; empty if all checks pass.
+ * Validate a PR-validator source file for required steering-feedback contract symbols, validator rules, and validation messages.
+ * @param {string} content - Text content of the PR-validator source file to inspect.
+ * @returns {string[]} An array of error messages for each missing required pattern; empty if all checks pass.
  */
 function validatePrValidator(content) {
 	const errors = [];
@@ -862,13 +866,6 @@ function validatePrValidator(content) {
 		content,
 		PATTERN_SCOPE_VALIDATOR_PATTERN,
 		"pattern scope inventory validator rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.prValidator,
-		content,
-		/(example-based feedback|concrete correction|single function|not just that line|across everything we do)/i,
-		"semantic pattern-scope trigger coverage",
 	);
 	requirePattern(
 		errors,

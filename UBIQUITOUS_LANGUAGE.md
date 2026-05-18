@@ -87,6 +87,9 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | Config Drift | Any mismatch between canonical config/policy expectations and the current runtime or repository state. |
 | Review Swarm | A bounded multi-reviewer process with role-specific artifact outputs under `artifacts/reviews/`. |
 | Artifact-First Review | A review rule requiring each reviewer to write a concrete report file with severity-ranked findings and exact `file:line` evidence. |
+| Active Artifact Index | The route-selection file `.harness/active-artifacts.md`; it decides which `.harness` specs and plans may steer current work. |
+| Route-Driving Artifact | A durable tracked artifact that can steer implementation, usually an active `.harness` spec, plan, or index entry. Ignored runtime output under `artifacts/**` is not route-driving input. |
+| Artifact-Handling Routine | The read-only `harness artifact-routine` gate that checks route-driving artifacts for owner, freshness, reference integrity, runtime-output boundaries, and stale artifact classification before implementation. |
 | Coordinator | The orchestrator role that waits for reviewers, verifies artifact completeness, retries missing outputs once, and documents coverage gaps. |
 | Coverage Gap | A declared review blind spot created when an expected reviewer artifact is still missing after one retry. |
 | Prompt Translation | A mapping from the user's plain wording to a precise, execution-ready instruction that preserves original intent. |
@@ -101,6 +104,8 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | "Config issue" | `Config drift` or `startup blocker` | Narrower terms improve routing and remediation speed. |
 | "Do all the checks" | Name the exact lane (`focused config-drift` or `codex-subtree workflow`) | Lane naming reduces ambiguity and missed gates. |
 | "Swarm done" | `Artifact-first review complete` | Completion requires files, not status text alone. |
+| "Artifact routine" | `Artifact-Handling Routine` | Name the executable gate and avoid treating artifact hygiene as prose-only guidance. |
+| "Use the plan" | `Route-Driving Artifact` verified by `Artifact-Handling Routine` | Active plans must pass owner, freshness, reference, and runtime-boundary checks before they steer implementation. |
 | "The check is red" | `Validation Failure Classifier` result | Red status alone does not distinguish current-patch regressions from pre-existing drift, tooling failures, fixture output, or unrelated worktree dirt. |
 | "API" for `HarnessDecision` output | `Decision Contract` | The decision output is a governed schema and operator contract, not just a callable programming API. |
 | "Evidence blob" | `Decision Source` | Naming the source keeps input evidence separate from the decision that consumes it. |
@@ -130,13 +135,14 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | "Do the preflight" | Execute bootstrap gate | "Run `bash scripts/codex-preflight.sh --stack auto --mode required` and report explicit pass/fail/blocker status." |
 | "Why did validation fail?" | Classify command failure ownership | "Use the validation failure classifier on the exact command observation and report whether the failure is an introduced regression, pre-existing drift, environment/tooling failure, unrelated dirty worktree, missing credential, expected fixture stderr, or unknown failure." |
 | "Close this out" | Build outcome closeout packet | "Emit an outcome closeout from structured PR readiness, artifact, and validation classifier events; include what changed, what proved it, what blocked, what was handed off, and what must not be claimed complete." |
+| "use this .harness plan" | Verify route-driving artifacts first | "Run `harness artifact-routine --active-index .harness/active-artifacts.md --json`; if it fails, repair or classify the active artifact before using it as implementation input." |
 | "Remove north-star ambiguity" | Align wording to canonical contract | "Update the README, glossary, and any touched governance docs so north-star language derives from `docs/roadmap/north-star.md` and `harness.contract.json` decision questions." |
 | "what outcome am I expecting?" | Expected outcome contract | "Restate the portable agent operating system outcome, then verify the required repo surfaces encode it instead of treating the answer as chat-only." |
 | "list broader arch ops" | Rank architecture opportunities by north-star leverage | "Rank architecture opportunities by review/rework-loop leverage, name the complexity symptom, and give the first reversible tracer-proof move." |
 | "make agents never forget" | Promote repeated failures into durable guardrails | "Promote repeated review failures into durable guardrails, Project Brain learnings, validation checks, or glossary prompt translations." |
 | "you are giving me the same feedback again" | Repeat-feedback admission | "Stop feature work, classify the repeated correction as an environment defect, update the narrowest durable repo surface or tracked exception, and run the guard that proves the admission did not stay in chat." |
 | "you are not permitted to proceed" | Current-session steering admission record | "Stop feature work, create the admission record, update the guard or tracked durable surface, run the focused validation command, and only then resume the narrow next action." |
-| "don\u2019t fight errors" | Repeated-error research pass | "When the same error happens twice, stop retrying locally, research web/upstream sources, list 3-5 possible fixes, choose the most efficient repo-fit fix, implement it, and record the research evidence." |
+| "don't fight errors" | Repeated-error research pass | "When the same error happens twice, stop retrying locally, research web/upstream sources, list 3-5 possible fixes, choose the most efficient repo-fit fix, implement it, and record the research evidence." |
 | "do not just fix that line" | Pattern scope inventory | "Infer the API/design principle, search sibling implementations and similar classes of misbehavior, update the shared pattern or all matching siblings, and record unchanged or deferred siblings with reasons." |
 | "this was an example" | Principle signal | "Treat the concrete correction as evidence of a broader design model, then run the pattern-generalization pass before claiming the fix is done." |
 | "make the skill reliable" | Workflow-skill eval loop | "Define the workflow skill win condition, run a capture-the-flag eval, capture self-reflection and trace evidence, then refine the skill or harness until the flag is captured reliably." |

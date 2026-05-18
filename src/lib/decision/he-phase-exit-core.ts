@@ -18,6 +18,10 @@ export const HE_GATE_RESULT_SCHEMA_VERSION = "he-gate-result/v1" as const;
 /** Schema version for aggregated Harness Engineering phase-exit decisions. */
 export const HE_PHASE_EXIT_SCHEMA_VERSION = "he-phase-exit/v1" as const;
 
+/** Schema version for first-class Coding Harness closeout gate evidence. */
+export const HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION =
+	"coding-harness-closeout-gates/v1" as const;
+
 /** Stable coding-harness closeout gate identifiers used by HE and PR closeout workflows. */
 export const HARNESS_CLOSEOUT_GATE_IDS = [
 	"simplify",
@@ -413,6 +417,12 @@ export interface HePhaseExit {
 	/** Normalized gate results, including synthesized missing required gates. */
 	gates: HeGateResult[];
 }
+
+/** First-class Coding Harness closeout gate artifact accepted by PR closeout. */
+export type HarnessCloseoutGates = Omit<HePhaseExit, "schemaVersion"> & {
+	/** Closeout-gates schema version. */
+	schemaVersion: typeof HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION;
+};
 
 /** Runtime validation result for HE gate and phase-exit contracts. */
 export interface HeValidationResult {

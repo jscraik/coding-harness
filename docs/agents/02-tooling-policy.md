@@ -199,7 +199,7 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 | North-star feedback            | `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json`              | Measure learning-loop hits, promoted learnings, high-usage unenforced items, and review feedback reduction signals for closeout evidence                      |
 | Artifact provenance gate       | `harness artifact-gate --files <files> --json`                                                      | Check generated artifact changes against `.harness/artifact-provenance.json` so source/template changes accompany runtime mirrors                             |
 | CI ownership gate              | `harness ci-ownership-gate --json`                                                                  | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                     |
-| PR closeout evidence           | `harness pr-closeout --pr <number> --json`                                                          | Build read-only handoff evidence from GitHub PR state, required checks, CLI availability, dirty worktree state, and AI session/traceability completeness      |
+| PR closeout evidence           | `harness pr-closeout --pr <number> --gates artifacts/pr-closeout/closeout-gates.json --json`         | Build read-only handoff evidence from GitHub PR state, required checks, Coding Harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness |
 | Existing-repo upgrade matrix   | `pnpm test:harness-upgrade-matrix -- <repo>...`                                                     | Run the built CLI package `init --update --dry-run --json` path across existing repos and fail if any target git status changes or omits update-mode evidence |
 | Fleet remediation plan         | `harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json`                        | Convert the upgrade matrix artifact into agent-native next commands with safe dry-run boundaries and approval-required mutation steps                         |
 | Current-repo upgrade preview   | `harness upgrade --dry-run --json`                                                                  | Preview tracked updates or existing-repo adoption with structured `updateMode`, `trackedManifest`, and `updateDetails` evidence                               |
@@ -214,7 +214,7 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 
 **Phase 4** starts artifact provenance checks with `harness artifact-gate` plus CI ownership checks with `harness ci-ownership-gate`.
 
-**Phase 4d** starts PR closeout evidence with `harness pr-closeout`. The command is read-only and may load `~/.codex/.env` for CLI credentials, but its report must describe tool availability rather than printing secrets. Missing optional CLIs stay visible as tool evidence; blocked required evidence must prevent a ready-to-merge recommendation.
+**Phase 4d** starts PR closeout evidence with `harness pr-closeout`. Supply first-class Coding Harness closeout gate evidence with `--gates <path>`; `--phase-exit <path>` remains a compatibility alias for older workflows. The command is read-only and may load `~/.codex/.env` for CLI credentials, but its report must describe tool availability rather than printing secrets. Missing optional CLIs stay visible as tool evidence; blocked required evidence must prevent a ready-to-merge recommendation.
 
 **Phase 4c** promotes the highest-signal scaffold-default learnings into generated-repo regression coverage for auth-free `.npmrc`, repo-local `scripts/harness-cli.sh`, real `CODESTYLE.md` templates, wrapper-first environment checks, first-class `toolingPolicy`, and Codex environment action sync.
 
@@ -242,11 +242,11 @@ Use repo scripts as the source of truth and do not assume global shortcuts. If a
 Exception for harness readiness:
 
 - Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner using the following lookup order:
-  1. `pnpm exec tsx src/cli.ts` (when repo-local TS source exists)
+  1. `node --import tsx src/cli.ts` (when repo-local TS source exists)
   2. `bash scripts/harness-cli.sh`
   3. `mise which harness`
   4. global `harness` binary
-- `scripts/run-harness-gate.sh` should treat the real source CLI command as the source-checkout probe. Do not gate fallback on a separate runner version probe; in sandboxed runners, that probe can hit the same IPC `EPERM` startup failure that the fallback is meant to handle. Fallback to `node dist/cli.js` is allowed only for the explicit `listen EPERM: operation not permitted` runner temp-pipe signature.
+- `scripts/run-harness-gate.sh` should treat the real source CLI command as the source-checkout probe. Use `node --import tsx`, not `pnpm exec tsx`, for source-checkout probes because the `tsx` CLI can fail before harness code runs with a temp-pipe `listen EPERM: operation not permitted` startup error in sandboxed runners. Fallback to `node dist/cli.js` is allowed only for the explicit runner temp-pipe signature.
 - This lookup order avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - Keep `scripts/check-environment.sh` validation-only for `mise`: it may assert that `mise` exists, is trusted, and can activate the repo, but CI/bootstrap flows must install `mise` and run `mise trust --yes .mise.toml` before invoking the gate.
 - The global fallback install path is `npm i -g @brainwav/coding-harness`.

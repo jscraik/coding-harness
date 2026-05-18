@@ -5,6 +5,8 @@ import { resolve } from "node:path";
 import { cwd } from "node:process";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import {
+	HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION,
+	HE_PHASE_EXIT_SCHEMA_VERSION,
 	type HePhaseExit,
 	validateHePhaseExit,
 } from "../lib/decision/he-phase-exit.js";
@@ -13,6 +15,7 @@ import {
 	type PrCloseoutCheckInput,
 	type PrCloseoutInput,
 	type PrCloseoutPullRequestInput,
+	type PrCloseoutReviewThreadsInput,
 	type PrCloseoutTraceabilityInput,
 	type PrCloseoutToolInput,
 } from "../lib/pr-closeout.js";
@@ -23,6 +26,7 @@ interface PrCloseoutCLIOptions {
 	inputPath?: string;
 	prNumber?: number;
 	envFilePath?: string;
+	closeoutGatesPath?: string;
 	phaseExitPath?: string;
 }
 
@@ -37,14 +41,18 @@ type CommandRunner = (
 ) => string;
 
 const DEFAULT_ENV_FILE = resolve(homedir(), ".codex/.env");
+const ACCEPTED_CLOSEOUT_GATES_SCHEMA_VERSIONS = [
+	HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION,
+	HE_PHASE_EXIT_SCHEMA_VERSION,
+] as const;
 
 function printUsage(): void {
 	console.info(
-		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--phase-exit <path>] [--env-file <path>]",
+		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--gates <path>] [--phase-exit <path>] [--env-file <path>]",
 	);
 	console.info("");
 	console.info(
-		"Build a read-only pr-closeout/v1 report from normalized evidence or live GitHub CLI state.",
+		"Build a read-only pr-closeout/v1 report from normalized evidence or live GitHub CLI state, including Coding Harness closeout gates.",
 	);
 }
 
@@ -127,7 +135,21 @@ function parseArgs(args: readonly string[]): PrCloseoutParseResult {
 			index += 1;
 			continue;
 		}
+		if (arg === "--gates") {
+			const value = readFlagValue(args, index);
+			if (!value) {
+				console.error("pr-closeout: --gates requires a path");
+				return { exitCode: 2 };
+			}
+			options.closeoutGatesPath = value;
+			index += 1;
+			continue;
+		}
 		console.error(`pr-closeout: unknown argument ${String(arg)}`);
+		return { exitCode: 2 };
+	}
+	if (options.closeoutGatesPath && options.phaseExitPath) {
+		console.error("pr-closeout: use either --gates or --phase-exit, not both");
 		return { exitCode: 2 };
 	}
 	if (options.inputPath && options.prNumber !== undefined) {
@@ -266,17 +288,49 @@ function parseInput(value: string, source: string): PrCloseoutInput {
 	) {
 		throw new Error(`${source} pullRequest.number must be a positive integer`);
 	}
+	if (parsed.closeoutGates !== undefined && parsed.phaseExit !== undefined) {
+		throw new Error(
+			`${source} must include either closeoutGates or phaseExit, not both`,
+		);
+	}
+	if (parsed.closeoutGates !== undefined) {
+		parsed.closeoutGates = normalizeCloseoutGatesArtifact(
+			parsed.closeoutGates,
+			`${source} closeoutGates`,
+		);
+	}
 	if (parsed.phaseExit !== undefined) {
-		const validation = validateHePhaseExit(parsed.phaseExit);
-		if (!validation.valid) {
-			throw new Error(
-				source +
-					" phaseExit must be a valid HePhaseExit/v1 artifact: " +
-					validation.errors.map((error) => error.code).join(", "),
-			);
-		}
+		parsed.phaseExit = normalizeCloseoutGatesArtifact(
+			parsed.phaseExit,
+			`${source} phaseExit`,
+		);
 	}
 	return parsed as unknown as PrCloseoutInput;
+}
+
+function closeoutGatesSchemaList(): string {
+	return ACCEPTED_CLOSEOUT_GATES_SCHEMA_VERSIONS.join(" or ");
+}
+
+function normalizeCloseoutGatesArtifact(
+	value: unknown,
+	source: string,
+): HePhaseExit {
+	const record =
+		value && typeof value === "object" && !Array.isArray(value)
+			? (value as Record<string, unknown>)
+			: null;
+	const normalized =
+		record?.schemaVersion === HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION
+			? { ...record, schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION }
+			: value;
+	const validation = validateHePhaseExit(normalized);
+	if (!validation.valid) {
+		throw new Error(
+			`${source} must be a valid Coding Harness closeout-gates artifact (${closeoutGatesSchemaList()}): ${validation.errors.map((error) => error.code).join(", ")}`,
+		);
+	}
+	return normalized as HePhaseExit;
 }
 
 function asString(value: unknown): string | null {
@@ -324,6 +378,77 @@ function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
 		}));
 }
 
+function normalizeGhRepo(value: Record<string, unknown>): {
+	owner: string;
+	repo: string;
+} {
+	const ownerValue = value.owner;
+	const owner =
+		typeof ownerValue === "string"
+			? ownerValue
+			: ownerValue &&
+					typeof ownerValue === "object" &&
+					!Array.isArray(ownerValue)
+				? asString((ownerValue as Record<string, unknown>).login)
+				: null;
+	const repo = asString(value.name);
+	if (!owner || !repo) {
+		throw new Error("gh repo view must include owner.login and name");
+	}
+	return { owner, repo };
+}
+
+function normalizeReviewThreadsGraphql(
+	value: Record<string, unknown>,
+): PrCloseoutReviewThreadsInput {
+	const data = value.data;
+	if (!data || typeof data !== "object" || Array.isArray(data)) {
+		throw new Error("reviewThreads GraphQL response must include data");
+	}
+	const repository = (data as Record<string, unknown>).repository;
+	if (
+		!repository ||
+		typeof repository !== "object" ||
+		Array.isArray(repository)
+	) {
+		throw new Error("reviewThreads GraphQL response must include repository");
+	}
+	const pullRequest = (repository as Record<string, unknown>).pullRequest;
+	if (
+		!pullRequest ||
+		typeof pullRequest !== "object" ||
+		Array.isArray(pullRequest)
+	) {
+		throw new Error("reviewThreads GraphQL response must include pullRequest");
+	}
+	const reviewThreads = (pullRequest as Record<string, unknown>).reviewThreads;
+	if (
+		!reviewThreads ||
+		typeof reviewThreads !== "object" ||
+		Array.isArray(reviewThreads)
+	) {
+		throw new Error(
+			"reviewThreads GraphQL response must include reviewThreads",
+		);
+	}
+	const pageInfo = (reviewThreads as Record<string, unknown>).pageInfo;
+	if (pageInfo && typeof pageInfo === "object" && !Array.isArray(pageInfo)) {
+		const hasNextPage = (pageInfo as Record<string, unknown>).hasNextPage;
+		if (hasNextPage === true) {
+			return { unresolved: null, needsHuman: null, autofixable: null };
+		}
+	}
+	const nodes = (reviewThreads as Record<string, unknown>).nodes;
+	if (!Array.isArray(nodes)) {
+		throw new Error("reviewThreads GraphQL response must include nodes");
+	}
+	const unresolved = nodes.filter((node) => {
+		if (!node || typeof node !== "object" || Array.isArray(node)) return false;
+		return (node as Record<string, unknown>).isResolved === false;
+	}).length;
+	return { unresolved, needsHuman: null, autofixable: unresolved };
+}
+
 function inspectCommand(
 	name: PrCloseoutToolInput["name"],
 	command: string,
@@ -369,18 +494,10 @@ function loadInput(path: string): PrCloseoutInput {
 	return parseInput(readFileSync(path, "utf8"), path);
 }
 
-function loadPhaseExit(path: string, repoRoot: string): HePhaseExit {
+function loadCloseoutGates(path: string, repoRoot: string): HePhaseExit {
 	const resolvedPath = resolve(repoRoot, path);
 	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
-	const validation = validateHePhaseExit(parsed);
-	if (!validation.valid) {
-		throw new Error(
-			path +
-				" must be a valid HePhaseExit/v1 artifact: " +
-				validation.errors.map((error) => error.code).join(", "),
-		);
-	}
-	return parsed as HePhaseExit;
+	return normalizeCloseoutGatesArtifact(parsed, path);
 }
 
 function isPlaceholderBodyField(value: string): boolean {
@@ -419,6 +536,65 @@ function traceabilityFromBody(
 		traceIds: splitEvidenceRefs(bodyField(body, "Trace IDs")),
 		aiSessionTraceability: bodyField(body, "AI session / traceability"),
 	};
+}
+
+function fetchReviewThreads(
+	options: PrCloseoutCLIOptions,
+	env: NodeJS.ProcessEnv,
+	runner: CommandRunner,
+	tools: PrCloseoutToolInput[],
+): PrCloseoutReviewThreadsInput {
+	const query =
+		"query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100){pageInfo{hasNextPage}nodes{isResolved}}}}}";
+	try {
+		const repo = normalizeGhRepo(
+			parseJsonObject(
+				runner("gh", ["repo", "view", "--json", "owner,name"], {
+					cwd: options.repoRoot,
+					env,
+				}),
+				"gh repo view",
+			),
+		);
+		const raw = runner(
+			"gh",
+			[
+				"api",
+				"graphql",
+				"-f",
+				`query=${query}`,
+				"-f",
+				`owner=${repo.owner}`,
+				"-f",
+				`repo=${repo.repo}`,
+				"-F",
+				`number=${String(options.prNumber)}`,
+			],
+			{ cwd: options.repoRoot, env },
+		);
+		const reviewThreads = normalizeReviewThreadsGraphql(
+			parseJsonObject(raw, "gh api graphql reviewThreads"),
+		);
+		if (reviewThreads.unresolved === null) {
+			tools.push({
+				name: "github_cli",
+				available: true,
+				ref: "command:gh api graphql reviewThreads(first:100)",
+				status: "blocked",
+				failureClass: "review_threads_paginated",
+			});
+		}
+		return reviewThreads;
+	} catch (error) {
+		tools.push({
+			name: "github_cli",
+			available: true,
+			ref: "command:gh api graphql reviewThreads(first:100)",
+			status: "blocked",
+			failureClass: `pr_review_threads_unreadable:${sanitizeError(error)}`,
+		});
+		return { unresolved: null, needsHuman: null, autofixable: null };
+	}
 }
 
 function buildLiveInput(
@@ -508,17 +684,14 @@ function buildLiveInput(
 			failureClass: `pr_checks_unreadable:${sanitizeError(error)}`,
 		});
 	}
+	const reviewThreads = fetchReviewThreads(options, envLoad.env, runner, tools);
 	return {
 		pullRequest,
 		branch: {
 			clean: inspectGitClean(options.repoRoot, runner),
 		},
 		checks,
-		reviewThreads: {
-			unresolved: null,
-			needsHuman: null,
-			autofixable: null,
-		},
+		reviewThreads,
 		traceability: traceabilityFromBody(pullRequest.body),
 		tools,
 	};
@@ -535,16 +708,26 @@ export async function runPrCloseoutCLI(
 		const input = parsed.options.inputPath
 			? loadInput(parsed.options.inputPath)
 			: buildLiveInput(parsed.options, options.runner ?? defaultRunner);
-		const inputWithPhaseExit = parsed.options.phaseExitPath
+		const closeoutGatesPath =
+			parsed.options.closeoutGatesPath ?? parsed.options.phaseExitPath;
+		if (
+			closeoutGatesPath &&
+			("closeoutGates" in input || "phaseExit" in input)
+		) {
+			throw new Error(
+				"Closeout evidence must come from either --input or --gates/--phase-exit, not both",
+			);
+		}
+		const inputWithCloseoutGates = closeoutGatesPath
 			? {
 					...input,
-					phaseExit: loadPhaseExit(
-						parsed.options.phaseExitPath,
+					closeoutGates: loadCloseoutGates(
+						closeoutGatesPath,
 						parsed.options.repoRoot,
 					),
 				}
 			: input;
-		const report = buildPrCloseoutReport(inputWithPhaseExit);
+		const report = buildPrCloseoutReport(inputWithCloseoutGates);
 		if (parsed.options.json) {
 			console.info(JSON.stringify(report, null, 2));
 		} else {
