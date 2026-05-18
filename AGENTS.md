@@ -76,6 +76,8 @@ Common machine-readable invocations:
 ```bash
 harness blast-radius --files src/auth.ts --json
 harness policy-gate --contract harness.contract.json --json
+harness pattern-scope --files src/auth.ts --feedback "same things in multiple places" --json
+harness artifact-routine --active-index .harness/active-artifacts.md --json
 harness risk-tier --files src/payments.ts --json
 ```
 

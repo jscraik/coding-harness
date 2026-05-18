@@ -103,6 +103,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - artifact-routine and pattern-scope command output should be treated as
   closeout evidence only when it is produced from the current repo state and the
   active Project Brain artifact still points at current Linear/spec/plan input
+- artifact-routine and pattern-scope must stay visible in the command
+  capability catalog as advanced, agent-facing commands: `artifact-routine`
+  is verification evidence for route-driving Project Brain artifacts, while
+  `pattern-scope` is review evidence for sibling-pattern steering signals
 - same-error-twice troubleshooting is also an agent-governance signal. When
   the same command, test, or runtime error happens twice, the PR should record
   Repeated-error research: trusted web or upstream research, 3-5 candidate
