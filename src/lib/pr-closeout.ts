@@ -288,8 +288,7 @@ export function buildPrCloseoutReport(
 	const traceIds = traceability.traceIds ?? [];
 	const aiSessionTraceability = traceability.aiSessionTraceability ?? null;
 	const traceabilityComplete =
-		sessionIds.length > 0 &&
-		traceIds.length > 0 &&
+		(sessionIds.length > 0 || traceIds.length > 0) &&
 		Boolean(aiSessionTraceability?.trim());
 	const claims = buildCloseoutClaims(input, checks, reviewThreads, generatedAt);
 	collectWorktreeBlockers(input, dirtyPathsExcluded, blockers);

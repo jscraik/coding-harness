@@ -38,8 +38,8 @@ export function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
 		}));
 }
 
-function checkProofKey(name: string, url: string): string {
-	return `${name}\0${url}`;
+function checkProofKey(name: string, url: string | null): string {
+	return `${name}\0${url ?? ""}`;
 }
 
 function normalizeGhCheckRuns(value: unknown): Map<string, string> {
@@ -54,7 +54,7 @@ function normalizeGhCheckRuns(value: unknown): Map<string, string> {
 		if (!item || typeof item !== "object" || Array.isArray(item)) continue;
 		const record = item as Record<string, unknown>;
 		const name = asString(record.name);
-		const url = asString(record.html_url) ?? asString(record.details_url);
+		const url = asString(record.details_url) ?? asString(record.html_url);
 		const headSha = asString(record.head_sha) ?? asString(record.headSha);
 		if (name && url && headSha) proof.set(checkProofKey(name, url), headSha);
 	}
@@ -80,6 +80,8 @@ function normalizeGhStatuses(
 		const statusSha = asString(record.sha);
 		if (name && url && statusSha === headSha) {
 			proof.set(checkProofKey(name, url), headSha);
+		} else if (name && !url && statusSha === headSha) {
+			proof.set(checkProofKey(name, null), headSha);
 		}
 	}
 	return proof;
@@ -108,7 +110,9 @@ function hasUnprovenCheck(
 	proof: ReadonlyMap<string, string>,
 ): boolean {
 	return checks.some(
-		(check) => check.url && !proof.has(checkProofKey(check.name, check.url)),
+		(check) =>
+			!proof.has(checkProofKey(check.name, check.url ?? null)) &&
+			(Boolean(check.url) || !proof.has(checkProofKey(check.name, null))),
 	);
 }
 
@@ -122,6 +126,7 @@ export function applyCheckHeadProof(
 		headSha:
 			check.headSha ??
 			(check.url ? proof.get(checkProofKey(check.name, check.url)) : null) ??
+			(check.url ? null : proof.get(checkProofKey(check.name, null))) ??
 			null,
 	}));
 }

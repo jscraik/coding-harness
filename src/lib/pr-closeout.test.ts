@@ -237,6 +237,27 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("accepts a single concrete session reference as traceability evidence", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				traceability: {
+					sessionIds: ["codex-session:2026-05-16"],
+					traceIds: [],
+					aiSessionTraceability:
+						"Codex session validates PR closeout evidence.",
+				},
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.traceability.complete).toBe(true);
+		expect(report.blockers).not.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ surface: "traceability" }),
+			]),
+		);
+	});
+
 	it("blocks success when test evidence is missing", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

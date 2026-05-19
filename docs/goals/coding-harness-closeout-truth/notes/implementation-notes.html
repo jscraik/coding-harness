@@ -136,6 +136,7 @@
 	            <li><a href="#commit-status-proof-fix">Commit-Status Proof Fix</a></li>
 	            <li><a href="#template-rollback-and-symlink-recovery-fixes">Template Rollback And Symlink Recovery Fixes</a></li>
 	            <li><a href="#status-proof-hardening">Status Proof Hardening</a></li>
+	            <li><a href="#final-closeout-review-fixes">Final Closeout Review Fixes</a></li>
 	            <li><a href="#next-safe-action">Next Safe Action</a></li>
 	          </ul>
 	        </nav>
@@ -978,6 +979,30 @@
 	            passed 51 tests;
 	            <code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/recovery/contract.test.ts src/lib/recovery/generated-artifact-parent.test.ts src/lib/replay/eval-runner.test.ts src/lib/architecture/pr-closeout-truth-contract.test.ts</code>
 	            passed 65 tests;
+	            <code>node scripts/check-pr-closeout-truth-contract.cjs --json</code>
+	            passed; <code>bash scripts/validate-codestyle.sh --fast</code>
+	            passed with the known non-blocking <code>docs/QUALITY_SCORE.md</code>
+	            stale warning.
+	          </li>
+	        </ul>
+	      </section>
+
+	      <section id="final-closeout-review-fixes">
+	        <h2>Final Closeout Review Fixes</h2>
+	        <ul>
+	          <li>
+	            Accepted the final live review findings: check-run proof now
+	            prefers <code>details_url</code>, classic statuses can prove a
+	            no-link status row by current-head context, recovery re-checks
+	            symlink ancestry immediately before mutation, and closeout accepts
+	            one concrete session or trace reference with AI traceability text.
+	          </li>
+	          <li>
+	            Validation passed:
+	            <code>pnpm vitest run src/commands/pr-closeout.test.ts src/lib/pr-closeout.test.ts src/lib/recovery/generated-artifact-parent.test.ts</code>
+	            passed 54 tests;
+	            <code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/recovery/contract.test.ts src/lib/recovery/generated-artifact-parent.test.ts src/lib/replay/eval-runner.test.ts src/lib/architecture/pr-closeout-truth-contract.test.ts</code>
+	            passed 68 tests;
 	            <code>node scripts/check-pr-closeout-truth-contract.cjs --json</code>
 	            passed; <code>bash scripts/validate-codestyle.sh --fast</code>
 	            passed with the known non-blocking <code>docs/QUALITY_SCORE.md</code>

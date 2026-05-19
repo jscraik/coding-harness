@@ -125,6 +125,14 @@ async function recover(context: RecoveryContext): Promise<RecoveryResult> {
 			evidenceRefs: ["recovery:artifact-parent:path-denied"],
 		};
 	}
+	if (await hasSymlinkAncestor(context.repoRoot, resolved.parentDir)) {
+		return {
+			ok: false,
+			status: "denied",
+			reason: "artifact parent traverses a symlink",
+			evidenceRefs: ["recovery:artifact-parent:path-denied"],
+		};
+	}
 	await mkdir(resolved.parentDir, { recursive: true });
 	return {
 		ok: true,
