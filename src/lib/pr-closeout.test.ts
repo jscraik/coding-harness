@@ -526,6 +526,29 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("accepts Fixes as PR tracker alignment evidence", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					...baseInput().pullRequest,
+					body: "Fixes JSC-327\n",
+				},
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "linear_tracker_state_aligned",
+					status: "pass",
+					evidenceRef: "pr-body:linear-reference",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
 	it("treats passing checks without SHA metadata as a verifier evidence gap", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

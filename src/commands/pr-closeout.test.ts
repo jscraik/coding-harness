@@ -11,6 +11,7 @@ import {
 	type HeGatePayload,
 } from "../lib/decision/he-phase-exit.js";
 import { runPrCloseoutCLI } from "./pr-closeout.js";
+import { fetchReviewThreads } from "./pr-closeout-github.js";
 
 type TestRunner = NonNullable<Parameters<typeof runPrCloseoutCLI>[1]>["runner"];
 
@@ -146,13 +147,21 @@ Refs JSC-327
 - Completed work: command and tests
 `.trim();
 
-function reviewThreadsGraphql(unresolved = 0): string {
+function reviewThreadsGraphql(
+	unresolved = 0,
+	pageInfo: { hasNextPage: boolean; endCursor?: string | null } = {
+		hasNextPage: false,
+	},
+): string {
 	return JSON.stringify({
 		data: {
 			repository: {
 				pullRequest: {
 					reviewThreads: {
-						pageInfo: { hasNextPage: false },
+						pageInfo: {
+							hasNextPage: pageInfo.hasNextPage,
+							endCursor: pageInfo.endCursor ?? null,
+						},
 						nodes: Array.from({ length: unresolved }, () => ({
 							isResolved: false,
 						})),
@@ -1153,6 +1162,112 @@ describe("runPrCloseoutCLI", () => {
 				}),
 			]),
 		);
+	});
+
+	it("falls back to commit statuses when check-runs proof cannot be read", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/status",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				throw new Error("check-runs endpoint unavailable");
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				return commitStatuses([
+					{
+						context: "pr-pipeline",
+						target_url: "https://ci.example/status",
+						sha: "abc123",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") return "";
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+	});
+
+	it("paginates reviewThreads before classifying unresolved conversations", () => {
+		const tools: Parameters<typeof fetchReviewThreads>[3] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return args.some((arg) => arg === "after=cursor-1")
+					? reviewThreadsGraphql(1)
+					: reviewThreadsGraphql(0, {
+							hasNextPage: true,
+							endCursor: "cursor-1",
+						});
+			}
+			return "ok";
+		};
+
+		const reviewThreads = fetchReviewThreads(
+			{ json: true, repoRoot: process.cwd(), prNumber: 258 },
+			process.env,
+			runner,
+			tools,
+		);
+
+		expect(reviewThreads.unresolved).toBe(1);
+		expect(tools).toEqual([]);
 	});
 
 	it("does not count PR template placeholders as traceability evidence", async () => {

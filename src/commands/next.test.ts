@@ -1205,7 +1205,7 @@ describe("runNextCLI", () => {
 		expect(decision.nextAction).toContain("omit --files");
 	});
 
-	it("preserves comma-containing file paths passed as one --files value", () => {
+	it("splits comma-separated --files values into separate paths", () => {
 		const { exitCode, output } = captureNextCLI(
 			["--json", "--files", "src/a,b.ts"],
 			{},
@@ -1214,14 +1214,15 @@ describe("runNextCLI", () => {
 		expect(exitCode).toBe(0);
 		const decision = parseDecision(output);
 		expect(decision.nextCommand).toBe(
-			"harness validation-plan --files src/a,b.ts --json",
+			"harness validation-plan --files b.ts src/a --json",
 		);
 		expect(decision.meta).toMatchObject({
 			nextCommandArgv: [
 				"harness",
 				"validation-plan",
 				"--files",
-				"src/a,b.ts",
+				"b.ts",
+				"src/a",
 				"--json",
 			],
 		});

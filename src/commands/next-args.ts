@@ -68,18 +68,10 @@ function isHarnessNextEvidenceMode(
 }
 
 function splitFiles(raw: string): string[] {
-	const entries = raw
+	return raw
 		.split(",")
 		.map((entry) => entry.trim())
 		.filter((entry) => entry.length > 0);
-	if (
-		entries.length === 2 &&
-		entries[0]?.includes("/") &&
-		/^[^/]+\.[^/]+$/.test(entries[1] ?? "")
-	) {
-		return [raw.trim()];
-	}
-	return entries;
 }
 
 function parseFilesOption(args: string[], index: number): ParsedFilesOption {

@@ -183,22 +183,27 @@ export function fetchCheckHeadProof(
 		const repo = fetchRepoInfo(options, env, runner);
 		const proof = new Map<string, string>();
 		const perPage = 100;
-		for (let page = 1; ; page += 1) {
-			const raw = runner(
-				"gh",
-				[
-					"api",
-					`repos/${repo.owner}/${repo.repo}/commits/${headSha}/check-runs?per_page=${perPage}&page=${page}`,
-					"--jq",
-					".check_runs",
-				],
-				{ cwd: options.repoRoot, env },
-			);
-			const parsed = JSON.parse(raw) as unknown;
-			for (const [key, value] of normalizeGhCheckRuns(parsed)) {
-				proof.set(key, value);
+		let checkRunsError: unknown = null;
+		try {
+			for (let page = 1; ; page += 1) {
+				const raw = runner(
+					"gh",
+					[
+						"api",
+						`repos/${repo.owner}/${repo.repo}/commits/${headSha}/check-runs?per_page=${perPage}&page=${page}`,
+						"--jq",
+						".check_runs",
+					],
+					{ cwd: options.repoRoot, env },
+				);
+				const parsed = JSON.parse(raw) as unknown;
+				for (const [key, value] of normalizeGhCheckRuns(parsed)) {
+					proof.set(key, value);
+				}
+				if (checkRunCount(parsed) < perPage) break;
 			}
-			if (checkRunCount(parsed) < perPage) break;
+		} catch (error) {
+			checkRunsError = error;
 		}
 		if (!hasUnprovenCheck(checks, proof)) return proof;
 		for (let page = 1; ; page += 1) {
@@ -232,6 +237,15 @@ export function fetchCheckHeadProof(
 			}
 			if (statusCount(parsed) < perPage) break;
 		}
+		if (checkRunsError && hasUnprovenCheck(checks, proof)) {
+			tools.push({
+				name: "github_cli",
+				available: true,
+				ref: "command:gh api repos/:owner/:repo/commits/:head/check-runs",
+				status: "blocked",
+				failureClass: `pr_check_head_proof_unreadable:${sanitizeError(checkRunsError)}`,
+			});
+		}
 		return proof;
 	} catch (error) {
 		tools.push({
@@ -247,7 +261,10 @@ export function fetchCheckHeadProof(
 
 function normalizeReviewThreadsGraphql(
 	value: Record<string, unknown>,
-): PrCloseoutReviewThreadsInput {
+): PrCloseoutReviewThreadsInput & {
+	hasNextPage: boolean;
+	endCursor: string | null;
+} {
 	const data = value.data;
 	if (!data || typeof data !== "object" || Array.isArray(data)) {
 		throw new Error("reviewThreads GraphQL response must include data");
@@ -279,11 +296,11 @@ function normalizeReviewThreadsGraphql(
 		);
 	}
 	const pageInfo = (reviewThreads as Record<string, unknown>).pageInfo;
+	let hasNextPage = false;
+	let endCursor: string | null = null;
 	if (pageInfo && typeof pageInfo === "object" && !Array.isArray(pageInfo)) {
-		const hasNextPage = (pageInfo as Record<string, unknown>).hasNextPage;
-		if (hasNextPage === true) {
-			return { unresolved: null, needsHuman: null, autofixable: null };
-		}
+		hasNextPage = (pageInfo as Record<string, unknown>).hasNextPage === true;
+		endCursor = asString((pageInfo as Record<string, unknown>).endCursor);
 	}
 	const nodes = (reviewThreads as Record<string, unknown>).nodes;
 	if (!Array.isArray(nodes)) {
@@ -293,7 +310,13 @@ function normalizeReviewThreadsGraphql(
 		if (!node || typeof node !== "object" || Array.isArray(node)) return false;
 		return (node as Record<string, unknown>).isResolved === false;
 	}).length;
-	return { unresolved, needsHuman: null, autofixable: unresolved };
+	return {
+		unresolved,
+		needsHuman: null,
+		autofixable: unresolved,
+		hasNextPage,
+		endCursor,
+	};
 }
 
 /** Fetch live GitHub review-thread state for pr-closeout. */
@@ -304,12 +327,13 @@ export function fetchReviewThreads(
 	tools: PrCloseoutToolInput[],
 ): PrCloseoutReviewThreadsInput {
 	const query =
-		"query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100){pageInfo{hasNextPage}nodes{isResolved}}}}}";
+		"query($owner:String!,$repo:String!,$number:Int!,$after:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100,after:$after){pageInfo{hasNextPage endCursor}nodes{isResolved}}}}}";
 	try {
 		const repo = fetchRepoInfo(options, env, runner);
-		const raw = runner(
-			"gh",
-			[
+		let after: string | null = null;
+		let unresolved = 0;
+		for (;;) {
+			const args = [
 				"api",
 				"graphql",
 				"-f",
@@ -320,22 +344,28 @@ export function fetchReviewThreads(
 				`repo=${repo.repo}`,
 				"-F",
 				`number=${String(options.prNumber)}`,
-			],
-			{ cwd: options.repoRoot, env },
-		);
-		const reviewThreads = normalizeReviewThreadsGraphql(
-			parseJsonObject(raw, "gh api graphql reviewThreads"),
-		);
-		if (reviewThreads.unresolved === null) {
-			tools.push({
-				name: "github_cli",
-				available: true,
-				ref: "command:gh api graphql reviewThreads(first:100)",
-				status: "blocked",
-				failureClass: "review_threads_paginated",
-			});
+			];
+			if (after) args.push("-f", `after=${after}`);
+			const raw = runner("gh", args, { cwd: options.repoRoot, env });
+			const page = normalizeReviewThreadsGraphql(
+				parseJsonObject(raw, "gh api graphql reviewThreads"),
+			);
+			unresolved += page.unresolved ?? 0;
+			if (!page.hasNextPage) {
+				return { unresolved, needsHuman: null, autofixable: unresolved };
+			}
+			if (!page.endCursor) {
+				tools.push({
+					name: "github_cli",
+					available: true,
+					ref: "command:gh api graphql reviewThreads(first:100)",
+					status: "blocked",
+					failureClass: "review_threads_paginated_missing_cursor",
+				});
+				return { unresolved: null, needsHuman: null, autofixable: null };
+			}
+			after = page.endCursor;
 		}
-		return reviewThreads;
 	} catch (error) {
 		tools.push({
 			name: "github_cli",
