@@ -81,6 +81,8 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
   - Linear workflow action parsing and delegation to Linear command runners.
+- `src/lib/cli/registry/linear-command-options.ts`
+  - Linear workflow action and flag projection shared by the runner seam.
 - `src/lib/cli/registry/linear-gate-command-spec.ts`
   - Linear gate option projection and delegation to the Linear gate command.
 - `src/lib/cli/registry/pr-template-gate-command-spec.ts`
@@ -91,15 +93,20 @@ CLI registry modules are split into a loader plus focused policy modules:
     gate command.
 - `src/lib/cli/registry/policy-gate-command-spec.ts`
   - Policy gate option projection and delegation to the policy gate command.
+- `src/lib/cli/registry/evidence-verify-command-spec.ts`
+  - Evidence verify option projection and delegation to the evidence verify
+    command.
 
 The command registry should stay a catalog and dispatch surface. Agents can
-adjust Linear claim, handoff, close, prepare, sync, and triage parsing in
-`linear-command-runner.ts` while `linear-command-spec.ts` remains the registry
-seam. Agents can adjust Linear gate option projection in
+adjust Linear claim, handoff, close, prepare, sync, and triage delegation in
+`linear-command-runner.ts` and Linear action/flag projection in
+`linear-command-options.ts`, while `linear-command-spec.ts` remains the
+registry seam. Agents can adjust Linear gate option projection in
 `linear-gate-command-spec.ts`, PR template gate option projection in
 `pr-template-gate-command-spec.ts`, and rule lifecycle gate option projection in
 `rule-lifecycle-gate-command-spec.ts`, and policy gate option projection in
-`policy-gate-command-spec.ts`, while `command-specs-core.ts` remains an
+`policy-gate-command-spec.ts`, and evidence verify option projection in
+`evidence-verify-command-spec.ts`, while `command-specs-core.ts` remains an
 assembler for registered command specs.
 
 ## Output Normalisation Boundaries

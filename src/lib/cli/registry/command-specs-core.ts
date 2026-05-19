@@ -27,7 +27,6 @@ import { runDocsGateCLI } from "../../../commands/docs-gate.js";
 import { runDoctorCLI } from "../../../commands/doctor.js";
 import { runDriftGateCLI } from "../../../commands/drift-gate.js";
 import { runEjectCLI } from "../../../commands/eject.js";
-import { runEvidenceVerifyCLI } from "../../../commands/evidence-verify.js";
 import { runFleetPlanCLI } from "../../../commands/fleet-plan.js";
 import { runGapCaseCLI } from "../../../commands/gap-case.js";
 import { runGardenerCLI } from "../../../commands/gardener.js";
@@ -100,6 +99,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
@@ -132,34 +132,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createPrTemplateGateCommandSpec(),
 	createRuleLifecycleGateCommandSpec(),
 	createPolicyGateCommandSpec(),
-	{
-		name: "evidence-verify",
-		summary: "Verify evidence files (screenshots)",
-		errorLabel: "Evidence Verify Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const filesIndex = args.indexOf("--files");
-			const contractIndex = args.indexOf("--contract");
-			const changedIndex = args.indexOf("--changed");
-
-			const files: string[] = [];
-			const filesArg = getFlagValue(args, filesIndex);
-			files.push(...parseCsvList(filesArg));
-
-			const contractArg = getFlagValue(args, contractIndex);
-
-			const changedFiles: string[] = [];
-			const changedArg = getFlagValue(args, changedIndex);
-			changedFiles.push(...parseCsvList(changedArg));
-
-			return runEvidenceVerifyCLI({
-				files,
-				contract: contractArg,
-				json: jsonFlag,
-				changed: changedFiles.length > 0 ? changedFiles : undefined,
-			});
-		},
-	},
+	createEvidenceVerifyCommandSpec(),
 	{
 		name: "preflight-gate",
 		summary: "Fast policy checks before expensive operations",

@@ -3,88 +3,13 @@ import { runLinearSyncCLI } from "../../../commands/linear-sync.js";
 import { runLinearTriageCLI } from "../../../commands/linear-triage.js";
 import { runLinearWorkflowCLI } from "../../../commands/linear-workflow.js";
 import { getFlagValue, parseCsvList, parseIntegerArg } from "../parse-utils.js";
-
-type LinearAction =
-	| "claim"
-	| "handoff"
-	| "close"
-	| "prepare"
-	| "sync"
-	| "triage";
-
-interface LinearCommandFlags {
-	json: boolean;
-	noAssign: boolean;
-	dryRun: boolean;
-	confirm: boolean;
-	syncTypeLabels: boolean;
-	issue: number;
-	project: number;
-	token: number;
-	team: number;
-	findings: number;
-	state: number;
-	assignee: number;
-	comment: number;
-	branch: number;
-	workspace: number;
-	prUrl: number;
-	evidenceUrl: number;
-	links: number;
-	branchPrefix: number;
-	field: number;
-	limit: number;
-	metadataThreshold: number;
-	inProgressCap: number;
-	maxPromote: number;
-}
-
-function parseLinearAction(args: string[]): LinearAction | undefined {
-	const action = args[0];
-	if (
-		action === "claim" ||
-		action === "handoff" ||
-		action === "close" ||
-		action === "prepare" ||
-		action === "sync" ||
-		action === "triage"
-	) {
-		return action;
-	}
-	console.error(
-		"linear expects an action of claim, handoff, close, prepare, sync, or triage.",
-	);
-	return undefined;
-}
-
-function collectLinearCommandFlags(args: string[]): LinearCommandFlags {
-	return {
-		json: args.includes("--json"),
-		noAssign: args.includes("--no-assign"),
-		dryRun: args.includes("--dry-run"),
-		confirm: args.includes("--confirm"),
-		syncTypeLabels: !args.includes("--no-type-label-sync"),
-		issue: args.indexOf("--issue"),
-		project: args.indexOf("--project"),
-		token: args.indexOf("--token"),
-		team: args.indexOf("--team"),
-		findings: args.indexOf("--findings"),
-		state: args.indexOf("--state"),
-		assignee: args.indexOf("--assignee"),
-		comment: args.indexOf("--comment"),
-		branch: args.indexOf("--branch"),
-		workspace: args.indexOf("--workspace"),
-		prUrl: args.indexOf("--pr-url"),
-		evidenceUrl: args.indexOf("--evidence-url"),
-		links: args.indexOf("--links"),
-		branchPrefix: args.indexOf("--branch-prefix"),
-		field: args.indexOf("--field"),
-		limit: args.indexOf("--limit"),
-		metadataThreshold: args.indexOf("--metadata-threshold"),
-		inProgressCap: args.indexOf("--in-progress-cap"),
-		maxPromote: args.indexOf("--max-promote"),
-	};
-}
+import {
+	collectLinearCommandFlags,
+	parseLinearAction,
+	validateLinearValueFlags,
+	type LinearAction,
+	type LinearCommandFlags,
+} from "./linear-command-options.js";
 
 function runLinearSync(args: string[], flags: LinearCommandFlags) {
 	const options: Parameters<typeof runLinearSyncCLI>[0] = {};
@@ -204,6 +129,8 @@ function runLinearWorkflow(
 export function runLinearCommand(args: string[]) {
 	const action = parseLinearAction(args);
 	if (action === undefined) return 2;
+	const validationResult = validateLinearValueFlags(args);
+	if (validationResult !== undefined) return validationResult;
 	const flags = collectLinearCommandFlags(args);
 
 	if (action === "sync") return runLinearSync(args, flags);

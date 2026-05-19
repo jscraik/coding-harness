@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 2_198,
+		maxLines: 2_168,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/evidence-verify-command-spec.ts",
+		maxLines: 45,
+		reason:
+			"Evidence verify command spec must stay focused on evidence file option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/linear-gate-command-spec.ts",
@@ -103,6 +109,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 230,
 		reason:
 			"Linear command runner must stay focused on Linear workflow action parsing and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/linear-command-options.ts",
+		maxLines: 160,
+		reason:
+			"Linear command options must stay focused on action and flag projection for the Linear registry seam.",
 	},
 	{
 		path: "src/lib/cli/registry/pr-template-gate-command-spec.ts",
@@ -187,9 +199,9 @@ const NEXT_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/commands/next-args.ts",
-		maxLines: 190,
+		maxLines: 265,
 		reason:
-			"Harness next argument parsing must stay focused on CLI token parsing and usage-error shape.",
+			"Harness next argument parsing must stay focused on CLI token parsing, public parser docs, and usage-error shape.",
 	},
 	{
 		path: "src/commands/next-usage-errors.ts",
@@ -259,9 +271,9 @@ const REPLAY_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/commands/replay-run-record.ts",
-		maxLines: 230,
+		maxLines: 235,
 		reason:
-			"Replay run-record seam must stay focused on canonical run-record emission, attempt ledger, and recovery event metadata.",
+			"Replay run-record seam must stay focused on canonical run-record emission, public run-record docs, attempt ledger, and recovery event metadata.",
 	},
 ] as const;
 
@@ -445,6 +457,7 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
+	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
 	"src/lib/cli/registry/linear-command-spec.ts",
@@ -464,9 +477,9 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 ]);
 
 const COMMAND_IMPORT_PATTERN = /from\s+["'](?:\.\.\/)+commands\//;
-const EFFECT_IMPORT_PATTERN = /from\s+["']effect["']/;
+const EFFECT_IMPORT_PATTERN = /from\s+["']effect(?:\/[^"']+)?["']/;
 const PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN =
-	/from\s+["'][^"']*lib\/pr-closeout\/(?:blockers|claim-builders|claims|evidence|evaluator|status|types)\.js["']/;
+	/from\s+["'][^"']*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|evidence|evaluator|recovery|status|types)\.js["']/;
 const IMPORT_SPECIFIER_PATTERN =
 	/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["'](?<specifier>[^"']+)["']/g;
 const APPROVED_EFFECT_BOUNDARIES = new Set([
@@ -507,6 +520,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 	"./doctor-north-star-contract-checks.js",
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
+	"./evidence-verify-command-spec.js",
 	"./linear-command-spec.js",
 	"./linear-gate-command-spec.js",
 	"./policy-gate-command-spec.js",

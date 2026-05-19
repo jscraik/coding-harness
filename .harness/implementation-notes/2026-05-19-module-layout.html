@@ -408,7 +408,14 @@
                 <strong>linear-command-runner.ts</strong>
                 <span>
                   Linear claim, handoff, close, prepare, sync, and triage
-                  parsing delegates through one focused runner seam.
+                  delegation stays in one focused runner seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>linear-command-options.ts</strong>
+                <span>
+                  Linear action and flag projection stays in a separate
+                  options seam before command delegation.
                 </span>
               </div>
               <div class="module doctor">
@@ -437,6 +444,13 @@
                 <span>
                   Policy gate option projection delegates through a focused
                   command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>evidence-verify-command-spec.ts</strong>
+                <span>
+                  Evidence verify option projection delegates through a
+                  focused command-spec seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -1043,8 +1057,9 @@
               behind normalise-pr-template-gate.ts. Plan gate projection now
               lives behind normalise-plan-gate.ts. Docs gate projection now lives
               behind normalise-docs-gate.ts. Drift gate projection now lives
-              behind normalise-drift-gate.ts. Linear command workflow parsing
-              now lives behind linear-command-runner.ts, with
+              behind normalise-drift-gate.ts. Linear command workflow
+              delegation now lives behind linear-command-runner.ts, with action
+              and flag projection behind linear-command-options.ts and
               linear-command-spec.ts kept as the small registry seam. Linear
               gate option projection now lives behind
               linear-gate-command-spec.ts. PR template gate option projection
@@ -1052,6 +1067,8 @@
               gate option projection now lives behind
               rule-lifecycle-gate-command-spec.ts. Policy gate option
               projection now lives behind policy-gate-command-spec.ts.
+              Evidence verify option projection now lives behind
+              evidence-verify-command-spec.ts.
             </p>
           </article>
           <article class="note">
