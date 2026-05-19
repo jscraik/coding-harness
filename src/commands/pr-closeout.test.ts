@@ -10,6 +10,8 @@ import {
 	type HeGateId,
 	type HeGatePayload,
 } from "../lib/decision/he-phase-exit.js";
+import { loadEnvFile } from "./pr-closeout-env.js";
+import { parseInput } from "./pr-closeout-input.js";
 import { runPrCloseoutCLI } from "./pr-closeout.js";
 
 type TestRunner = NonNullable<Parameters<typeof runPrCloseoutCLI>[1]>["runner"];
@@ -200,6 +202,28 @@ afterEach(() => {
 });
 
 describe("runPrCloseoutCLI", () => {
+	it("loads GitHub CLI variables from an explicit env file", () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-env-"));
+		const envFilePath = join(dir, ".env");
+		writeFileSync(
+			envFilePath,
+			[
+				"GH_CONFIG_DIR=/tmp/pr-closeout-gh",
+				"GITHUB_ENTERPRISE_TOKEN=enterprise-token",
+				"CODERABBIT_API_KEY=rabbit-token",
+				"UNRELATED_HIJACK_KEY=blocked",
+			].join("\n"),
+		);
+
+		const { env, tool } = loadEnvFile(envFilePath);
+
+		expect(tool.status).toBe("usable");
+		expect(env.GH_CONFIG_DIR).toBe("/tmp/pr-closeout-gh");
+		expect(env.GITHUB_ENTERPRISE_TOKEN).toBe("enterprise-token");
+		expect(env.CODERABBIT_API_KEY).toBe("rabbit-token");
+		expect(env.UNRELATED_HIJACK_KEY).not.toBe("blocked");
+	});
+
 	it("builds a JSON report from a normalized input file", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const inputPath = join(dir, "input.json");
@@ -431,15 +455,7 @@ describe("runPrCloseoutCLI", () => {
 			return "ok";
 		};
 		const result = await capture(
-			[
-				"--json",
-				"--repo",
-				process.cwd(),
-				"--pr",
-				"258",
-				"--gates",
-				closeoutGatesPath,
-			],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 
@@ -510,7 +526,15 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--phase-exit", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--phase-exit",
+				closeoutGatesPath,
+			],
 			runner,
 		);
 
@@ -555,7 +579,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output);
@@ -673,7 +697,7 @@ Refs JSC-328
 			expect.arrayContaining([
 				expect.objectContaining({
 					surface: "tool",
-					reason: expect.stringContaining("pr_view_unreadable"),
+					reason: expect.stringContaining("pr_view_unavailable"),
 				}),
 			]),
 		);
@@ -715,9 +739,196 @@ Refs JSC-328
 			expect.arrayContaining([
 				expect.objectContaining({
 					surface: "tool",
-					reason: expect.stringContaining("github_cli is blocked"),
+					reason: expect.stringContaining("pr_checks_unavailable"),
 				}),
 			]),
 		);
+	});
+
+	it("classifies malformed live check output as unreadable instead of unavailable", async () => {
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify({ message: "unexpected checks payload" });
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(["--json", "--pr", "258"], runner);
+		const report = JSON.parse(result.output) as {
+			tools: Array<{
+				name: string;
+				available: boolean;
+				failureClass: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.tools).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "github_cli",
+					available: true,
+					failureClass: expect.stringContaining("pr_checks_unreadable"),
+				}),
+			]),
+		);
+	});
+
+	it("classifies wrong-shape live check output as unreadable", async () => {
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify({ checks: [] });
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(["--json", "--pr", "258"], runner);
+		const report = JSON.parse(result.output) as {
+			tools: Array<{
+				name: string;
+				available: boolean;
+				failureClass: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.tools).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "github_cli",
+					available: true,
+					failureClass: expect.stringContaining(
+						"gh pr checks must return an array",
+					),
+				}),
+			]),
+		);
+	});
+
+	it("classifies GitHub review-thread command failures separately from unreadable output", async () => {
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				throw new Error("graphql offline");
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(["--json", "--pr", "258"], runner);
+		const report = JSON.parse(result.output) as {
+			tools: Array<{
+				name: string;
+				available: boolean;
+				failureClass: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.tools).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "github_cli",
+					available: false,
+					failureClass: expect.stringContaining(
+						"pr_review_threads_unavailable",
+					),
+				}),
+			]),
+		);
+	});
+
+	it("rejects malformed optional closeout input sections before casting", () => {
+		expect(() =>
+			parseInput(
+				JSON.stringify({
+					pullRequest: { number: 258 },
+					checks: {},
+				}),
+				"inline input",
+			),
+		).toThrow("inline input checks must be an array when provided");
+		expect(() =>
+			parseInput(
+				JSON.stringify({
+					pullRequest: { number: 258 },
+					branch: [],
+				}),
+				"inline input",
+			),
+		).toThrow("inline input branch must be an object when provided");
 	});
 });

@@ -329,6 +329,25 @@ describe("pattern-scope command", () => {
 		});
 	});
 
+	it("rejects normalized traversal in changed files", () => {
+		const repoRoot = makeRepo();
+
+		const artifact = buildPatternScopeArtifact({
+			repoRoot,
+			files: ["src/commands/../../../outside.ts"],
+			feedback: "apply this everywhere relevant",
+		});
+
+		expect(artifact).toEqual({
+			schemaVersion: "pattern-scope/v1",
+			status: "error",
+			error: {
+				code: "pattern-scope.file_outside_repo",
+				message: "Changed files must stay inside repo root: ../outside.ts",
+			},
+		});
+	});
+
 	it("returns a structured error when repo root is a file", () => {
 		const repoRoot = makeRepo();
 		const filePath = join(repoRoot, "src/commands/widget.ts");

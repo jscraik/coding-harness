@@ -261,6 +261,34 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("blocks closeout when pull request state is missing", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					number: 258,
+					state: null,
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+			}),
+		);
+
+		expect(report.status).toBe("blocked");
+		expect(report.nextAction).toBe("needs_jamie_decision");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "pr",
+					classification: "unknown",
+					reason:
+						"Pull request state is missing; closeout cannot prove the PR is open.",
+					fixableByCodex: false,
+				}),
+			]),
+		);
+	});
+
 	it("classifies failed checks and missing traceability as Codex-fixable", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({
@@ -721,5 +749,50 @@ describe("buildPrCloseoutReport", () => {
 			reason: "Branch has not been pushed to the remote PR head.",
 			fixableByCodex: true,
 		});
+	});
+
+	it("uses structured conflict refs instead of blocker prose", () => {
+		const conflictReport = buildPrCloseoutReport(
+			baseInput({
+				branch: {
+					clean: true,
+					pushed: true,
+					behindBase: false,
+					hasConflicts: true,
+				},
+			}),
+		);
+		expect(conflictReport.status).toBe("blocked");
+		expect(conflictReport.nextAction).toBe("resolve_conflicts");
+		expect(conflictReport.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "branch",
+					ref: "branch.hasConflicts",
+				}),
+			]),
+		);
+
+		const dirtyMergeReport = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "DIRTY",
+					body: "Refs JSC-327\n",
+				},
+			}),
+		);
+		expect(dirtyMergeReport.status).toBe("blocked");
+		expect(dirtyMergeReport.nextAction).toBe("resolve_conflicts");
+		expect(dirtyMergeReport.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "branch",
+					ref: "mergeStateStatus:DIRTY",
+				}),
+			]),
+		);
 	});
 });

@@ -602,6 +602,11 @@ capability catalog:
 harness commands --json
 ```
 
+`pattern-scope` and `artifact-routine` are agent-facing advanced commands in
+the capability catalog: `pattern-scope` belongs in review lanes that need
+sibling-pattern evidence, while `artifact-routine` belongs in verification
+lanes before route-driving `.harness` artifacts guide implementation.
+
 Use the catalog directly to choose a safe command before execution:
 
 ```bash
