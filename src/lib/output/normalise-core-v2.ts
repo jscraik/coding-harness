@@ -12,7 +12,6 @@ import type {
 	DriftFinding,
 	DriftGateResult,
 } from "../../commands/drift-gate.js";
-import type { PlanGateResult } from "../plan-gate/types.js";
 import { buildGateResult, uniqueStrings } from "./normalise-core.js";
 import type { GateFinding, GateResult } from "./types.js";
 
@@ -23,6 +22,7 @@ export {
 	normaliseLinearGateResult,
 } from "./normalise-linear-gate.js";
 export { normaliseHePhaseExitResult } from "./normalise-he-phase-exit.js";
+export { normalisePlanGateResult } from "./normalise-plan-gate.js";
 export { normalisePrTemplateGateResult } from "./normalise-pr-template-gate.js";
 export { normalisePolicyGateResult } from "./normalise-policy-gate.js";
 export type { LinearGateFailureClassification } from "./normalise-linear-gate.js";
@@ -179,56 +179,6 @@ export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
 			base_ref: result.report.base_ref,
 			summary: result.report.summary,
 		},
-	});
-}
-
-// ─── P2b: plan-gate adapter (coded-error) ────────────────────────────────────
-
-/**
- * Normalise a PlanGateResult (coded-error class) to canonical GateResult.
- *
- * @param result - The PlanGateResult from runPlanGate()
- * @param recoveryHints - Caller-provided map of { code → hint string } to avoid
- *                        a lib→commands import violation. Build in runPlanGateCLI
- *                        by calling getRecoveryHint() per error code before invoking.
- */
-export function normalisePlanGateResult(
-	result: PlanGateResult,
-	recoveryHints: Record<string, string | undefined> = {},
-): GateResult {
-	const gate = "plan-gate";
-	const timestamp = new Date().toISOString();
-
-	if (result.passed) {
-		return buildGateResult({
-			gate,
-			timestamp,
-			status: "pass",
-			findings: [],
-		});
-	}
-
-	const findings: GateFinding[] = result.errors.map((e) => {
-		const hint = recoveryHints[e.code];
-		return {
-			id: `plan-gate.result.error.${e.code}`,
-			severity: "error" as const,
-			gate,
-			message: e.message,
-			...(e.path !== undefined ? { path: e.path } : {}),
-			baseline: false,
-			fix: {
-				...(hint !== undefined ? { manual: hint } : {}),
-				suppressible: false,
-			},
-		};
-	});
-
-	return buildGateResult({
-		gate,
-		timestamp,
-		status: "fail",
-		findings,
 	});
 }
 
