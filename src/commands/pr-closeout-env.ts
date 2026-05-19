@@ -23,6 +23,15 @@ const CLOSEOUT_ENV_KEYS = new Set([
 	"SNYK_TOKEN",
 ]);
 
+function isCloseoutEnvKey(key: string): boolean {
+	return (
+		/^[A-Z_][A-Z0-9_]*$/u.test(key) &&
+		(CLOSEOUT_ENV_KEYS.has(key) ||
+			key.startsWith("GH_") ||
+			key.startsWith("GITHUB_"))
+	);
+}
+
 /**
  * Create a PrCloseoutToolInput describing a Codex environment file at the given path.
  *
@@ -115,7 +124,7 @@ export function loadEnvFile(envFilePath: string | undefined): {
 				.slice(eqIndex + 1)
 				.trim()
 				.replace(/^["']|["']$/g, "");
-			if (CLOSEOUT_ENV_KEYS.has(key) && value.length > 0) {
+			if (isCloseoutEnvKey(key) && value.length > 0) {
 				env[key] = value;
 			}
 		}

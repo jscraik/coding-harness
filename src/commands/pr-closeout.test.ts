@@ -10,6 +10,7 @@ import {
 	type HeGateId,
 	type HeGatePayload,
 } from "../lib/decision/he-phase-exit.js";
+import { loadEnvFile } from "./pr-closeout-env.js";
 import { parseInput } from "./pr-closeout-input.js";
 import { runPrCloseoutCLI } from "./pr-closeout.js";
 
@@ -201,6 +202,28 @@ afterEach(() => {
 });
 
 describe("runPrCloseoutCLI", () => {
+	it("loads GitHub CLI variables from an explicit env file", () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-env-"));
+		const envFilePath = join(dir, ".env");
+		writeFileSync(
+			envFilePath,
+			[
+				"GH_CONFIG_DIR=/tmp/pr-closeout-gh",
+				"GITHUB_ENTERPRISE_TOKEN=enterprise-token",
+				"CODERABBIT_API_KEY=rabbit-token",
+				"UNRELATED_HIJACK_KEY=blocked",
+			].join("\n"),
+		);
+
+		const { env, tool } = loadEnvFile(envFilePath);
+
+		expect(tool.status).toBe("usable");
+		expect(env.GH_CONFIG_DIR).toBe("/tmp/pr-closeout-gh");
+		expect(env.GITHUB_ENTERPRISE_TOKEN).toBe("enterprise-token");
+		expect(env.CODERABBIT_API_KEY).toBe("rabbit-token");
+		expect(env.UNRELATED_HIJACK_KEY).not.toBe("blocked");
+	});
+
 	it("builds a JSON report from a normalized input file", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const inputPath = join(dir, "input.json");
