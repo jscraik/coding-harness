@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-19T23:20:08Z
+Generated: 2026-05-19T23:36:06Z
 
 ## Table of Contents
 
@@ -233,14 +233,14 @@ flowchart TD
     agent_first_throughput_integration_test_dc677cc4[("📚 agent-first-throughput.integration.test")]
     overload_guard_2748c559[("📚 overload-guard")]
     overload_guard_test_6ece9f86[("📚 overload-guard.test")]
-    types_4_822d0f88[("📚 types")]
+    types_3_9675d69b[("📚 types")]
+    suggestion_generator_0956f794[("📚 suggestion-generator")]
+    suggestion_generator_test_f68e9892[("📚 suggestion-generator.test")]
+    types_7_2f1ed65e[("📚 types")]
+    claim_helpers_20dc8387[("📚 claim-helpers")]
     performance_overload_c685bfcf[("📚 performance-overload")]
     local_memory_0db17ecc[("📚 local-memory")]
     local_memory_smoke_1175abfc[("📚 local-memory-smoke")]
-    types_8_f6283648[("📚 types")]
-    claim_helpers_20dc8387[("📚 claim-helpers")]
-    suggestion_generator_0956f794[("📚 suggestion-generator")]
-    suggestion_generator_test_f68e9892[("📚 suggestion-generator.test")]
     tooling_baseline_50ab2eeb[("📚 tooling-baseline")]
     classifier_fe1991a9[("📚 classifier")]
     classifier_test_3859cceb[("📚 classifier.test")]
@@ -301,6 +301,7 @@ flowchart TD
     branch_protect_sync_570adb18[("📚 branch-protect-sync")]
     module_boundaries_test_c0caf46b[("📚 module-boundaries.test")]
     review_gate_command_spec_3187376a[("📚 review-gate-command-spec")]
+    local_memory_preflight_command_spec_9e23f3ce[("📚 local-memory-preflight-command-spec")]
     command_specs_test_7f693e85[("📚 command-specs.test")]
     command_specs_core_1c0ffc99[("📚 command-specs-core")]
     command_capability_rules_ca3f496a[("📚 command-capability-rules")]
@@ -312,7 +313,7 @@ flowchart TD
   classDef toolNode fill:#555,color:#fff
   class collect_observed_eval_usage_1724425c,verify_work_test_0e12f6c5,review_gate_test_000e2ed6,review_gate_core_4c8001f9,remediate_test_6f59cafe,remediate_runner_helpers_929fedcc,remediate_cli_output_cc165396,pr_closeout_test_1_be1a0df1,policy_gate_213f7313,next_blocked_decisions_4140ad2b,learnings_test_e45e0253,init_test_cbba76a6,doctor_test_e032e8b5,doctor_tool_checks_4acac51a,doctor_github_tool_checks_a53b0382,doctor_checks_5a2eb2b9,docs_gate_test_a25e972f,ci_migrate_core_7005b5af,types_1_4ecdf56e,orchestrator_test_1_c291cde7,tooling_baseline_50ab2eeb,tooling_baseline_test_d272ddb6,evaluation_engine_core_e054fe49,normalise_test_73e8a615,normalise_renderer_85f2e563,normalise_he_phase_exit_test_1788efc4,validator_1_0c0621d8,metrics_tracker_98cec29c,metrics_tracker_test_3de156fa,client_1_914e1681,scaffold_shell_quality_test_79567d03,scaffold_release_private_npm_template_075499f8,scaffold_github_actions_pr_pipeline_template_e2b85f62,scaffold_github_actions_pr_pipeline_template_test_be464a7b,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,scaffold_github_actions_pr_pipeline_renderer_test_2cc38272,scaffold_environment_templates_c1ceba6a,scaffold_environment_templates_test_b31b6a0c,scaffold_config_templates_4b80ce53,scaffold_codex_environment_templates_334fbbed,scaffold_ci_templates_2afd6392,init_output_360dce91,pr_creator_dc6b1ea4,closure_evidence_aaa31467,observed_skill_usage_ed7d5930,observed_skill_usage_test_311c215a,ralph_runtime_73d63c0e,he_phase_exit_core_1148895b,harness_closeout_gate_contracts_test_db1c74a7,validator_helpers_7b927667,validator_core_1_1518647e,types_core_1_8bd0f8fd,policy_validators_core_714a3fe7,command_registry_test_0cf92cba,module_boundaries_test_c0caf46b,command_capability_rules_ca3f496a,command_capabilities_a4d5c71e toolNode
   classDef memNode fill:#555,color:#fff
-  class cli_dispatch_test_54c9f17b,run_local_memory_preflight_36e92808,run_local_memory_preflight_test_1d7c5aa0,pr_template_validator_test_569b1cef,tooling_audit_test_d2aee28c,tooling_audit_core_328d6a41,search_24193290,search_test_0c66bc11,review_gate_test_000e2ed6,review_gate_core_4c8001f9,review_context_ca6cf81d,review_context_test_89806d6c,refresh_diagram_context_test_03bf21c4,pattern_scope_61ff946d,memory_gate_a577a506,local_memory_preflight_dcc36c42,local_memory_preflight_test_5e323bbf,init_test_cbba76a6,index_context_de3ed39d,index_context_test_1949ea6f,docs_gate_test_a25e972f,docs_gate_core_eb9b6c18,context_ea7792a2,context_test_57aad306,context_integrity_acceptance_test_59f961b1,context_health_80bb7da9,context_health_test_3b5b87f3,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,check_diagram_freshness_test_c1dc40aa,branch_protect_core_a8feb0fd,brain_test_428d4d67,agent_first_throughput_integration_test_dc677cc4,overload_guard_2748c559,overload_guard_test_6ece9f86,types_4_822d0f88,performance_overload_c685bfcf,local_memory_0db17ecc,local_memory_smoke_1175abfc,types_8_f6283648,claim_helpers_20dc8387,suggestion_generator_0956f794,suggestion_generator_test_f68e9892,tooling_baseline_50ab2eeb,classifier_fe1991a9,classifier_test_3859cceb,validator_1_0c0621d8,validator_test_1_c5015ca0,types_12_2b09659a,metrics_tracker_98cec29c,metrics_tracker_test_3de156fa,branch_enforcer_acb749cd,review_context_1_e3afed15,index_2_10143590,eval_seed_5699fd3e,workflow_contract_scripts_test_681e2e3c,scaffold_workflow_template_92310587,scaffold_template_registry_b1cce2aa,scaffold_surfaces_12d6494e,scaffold_shell_templates_0ad0f915,scaffold_script_template_registry_69312d4e,scaffold_script_template_registry_test_6a8ebefe,scaffold_root_command_templates_404fed7f,scaffold_root_command_templates_test_14596939,scaffold_environment_templates_c1ceba6a,scaffold_doc_templates_f6152330,scaffold_diagram_templates_dd88e83c,scaffold_diagram_templates_test_f3774c28,project_brain_templates_7ef51530,project_brain_templates_test_0b6509f2,init_modes_c05ceb07,codex_preflight_symlink_test_037558db,harness_decision_test_7e5a4fe5,types_18_37582e2a,sync_contract_c79fa191,sync_contract_test_5dc3165c,store_824d80d7,sources_1_e133d97d,rollout_a4fa034c,ollama_76e3c7bf,ollama_test_71f9750e,lexical_fallback_723e2b3e,init_error_5c7dd49f,indexer_70fa78e5,indexer_test_d492f0aa,index_5_522f772a,context_compact_policy_3dcaf95d,context_compact_policy_test_da148267,constants_7517017f,constants_test_5492ae98,validator_test_5_2bb3219d,validator_core_1_1518647e,types_core_1_8bd0f8fd,policy_validators_core_714a3fe7,loader_test_03424671,json_schema_core_96d7e328,index_6_fc9e91e2,harness_run_context_ac7c77a9,harness_run_context_test_c6937fed,command_registry_test_0cf92cba,branch_protect_sync_570adb18,module_boundaries_test_c0caf46b,review_gate_command_spec_3187376a,command_specs_test_7f693e85,command_specs_core_1c0ffc99,command_capability_rules_ca3f496a memNode
+  class cli_dispatch_test_54c9f17b,run_local_memory_preflight_36e92808,run_local_memory_preflight_test_1d7c5aa0,pr_template_validator_test_569b1cef,tooling_audit_test_d2aee28c,tooling_audit_core_328d6a41,search_24193290,search_test_0c66bc11,review_gate_test_000e2ed6,review_gate_core_4c8001f9,review_context_ca6cf81d,review_context_test_89806d6c,refresh_diagram_context_test_03bf21c4,pattern_scope_61ff946d,memory_gate_a577a506,local_memory_preflight_dcc36c42,local_memory_preflight_test_5e323bbf,init_test_cbba76a6,index_context_de3ed39d,index_context_test_1949ea6f,docs_gate_test_a25e972f,docs_gate_core_eb9b6c18,context_ea7792a2,context_test_57aad306,context_integrity_acceptance_test_59f961b1,context_health_80bb7da9,context_health_test_3b5b87f3,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,check_diagram_freshness_test_c1dc40aa,branch_protect_core_a8feb0fd,brain_test_428d4d67,agent_first_throughput_integration_test_dc677cc4,overload_guard_2748c559,overload_guard_test_6ece9f86,types_3_9675d69b,suggestion_generator_0956f794,suggestion_generator_test_f68e9892,types_7_2f1ed65e,claim_helpers_20dc8387,performance_overload_c685bfcf,local_memory_0db17ecc,local_memory_smoke_1175abfc,tooling_baseline_50ab2eeb,classifier_fe1991a9,classifier_test_3859cceb,validator_1_0c0621d8,validator_test_1_c5015ca0,types_12_2b09659a,metrics_tracker_98cec29c,metrics_tracker_test_3de156fa,branch_enforcer_acb749cd,review_context_1_e3afed15,index_2_10143590,eval_seed_5699fd3e,workflow_contract_scripts_test_681e2e3c,scaffold_workflow_template_92310587,scaffold_template_registry_b1cce2aa,scaffold_surfaces_12d6494e,scaffold_shell_templates_0ad0f915,scaffold_script_template_registry_69312d4e,scaffold_script_template_registry_test_6a8ebefe,scaffold_root_command_templates_404fed7f,scaffold_root_command_templates_test_14596939,scaffold_environment_templates_c1ceba6a,scaffold_doc_templates_f6152330,scaffold_diagram_templates_dd88e83c,scaffold_diagram_templates_test_f3774c28,project_brain_templates_7ef51530,project_brain_templates_test_0b6509f2,init_modes_c05ceb07,codex_preflight_symlink_test_037558db,harness_decision_test_7e5a4fe5,types_18_37582e2a,sync_contract_c79fa191,sync_contract_test_5dc3165c,store_824d80d7,sources_1_e133d97d,rollout_a4fa034c,ollama_76e3c7bf,ollama_test_71f9750e,lexical_fallback_723e2b3e,init_error_5c7dd49f,indexer_70fa78e5,indexer_test_d492f0aa,index_5_522f772a,context_compact_policy_3dcaf95d,context_compact_policy_test_da148267,constants_7517017f,constants_test_5492ae98,validator_test_5_2bb3219d,validator_core_1_1518647e,types_core_1_8bd0f8fd,policy_validators_core_714a3fe7,loader_test_03424671,json_schema_core_96d7e328,index_6_fc9e91e2,harness_run_context_ac7c77a9,harness_run_context_test_c6937fed,command_registry_test_0cf92cba,branch_protect_sync_570adb18,module_boundaries_test_c0caf46b,review_gate_command_spec_3187376a,local_memory_preflight_command_spec_9e23f3ce,command_specs_test_7f693e85,command_specs_core_1c0ffc99,command_capability_rules_ca3f496a memNode
 
 ```
 
@@ -1721,13 +1722,13 @@ flowchart TD
     decision_packet_test_9ea0e97b{{"decision-packet.test"}}
     tracer_1e6243a2{{"tracer"}}
     trace_normalizer_cb1be1d2{{"trace-normalizer"}}
-    performance_overload_c685bfcf{{"performance-overload"}}
-    types_8_f6283648{{"types"}}
+    types_7_2f1ed65e{{"types"}}
     recovery_1_4d1804ab{{"recovery"}}
+    performance_overload_c685bfcf{{"performance-overload"}}
     types_core_e405ddca{{"types-core"}}
   end
   classDef eventNode fill:#db2777,color:#fff
-  class cli_dispatch_test_54c9f17b,pr_closeout_test_12a1ffdd,verify_work_test_0e12f6c5,runtime_card_e06b53e1,runtime_card_test_af812837,replay_ac203c98,replay_test_935f7436,replay_run_record_9a08cce2,pilot_rollback_00c1f82c,pilot_rollback_test_e61d5a2b,pilot_evaluate_test_a2ac06fc,context_health_80bb7da9,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,pilot_tracker_test_80398a66,pilot_tracker_core_80d8ac96,run_state_core_25a955bc,runtime_evidence_producer_ea388cb5,runtime_card_1_465a49d2,runtime_card_recovery_validation_e216d883,local_runtime_card_test_b508222b,local_runtime_card_attempts_28aa46ea,recovery_8c585378,decision_packet_test_9ea0e97b,tracer_1e6243a2,trace_normalizer_cb1be1d2,performance_overload_c685bfcf,types_8_f6283648,recovery_1_4d1804ab,types_core_e405ddca eventNode
+  class cli_dispatch_test_54c9f17b,pr_closeout_test_12a1ffdd,verify_work_test_0e12f6c5,runtime_card_e06b53e1,runtime_card_test_af812837,replay_ac203c98,replay_test_935f7436,replay_run_record_9a08cce2,pilot_rollback_00c1f82c,pilot_rollback_test_e61d5a2b,pilot_evaluate_test_a2ac06fc,context_health_80bb7da9,ci_migrate_test_2a015bb9,ci_migrate_core_7005b5af,pilot_tracker_test_80398a66,pilot_tracker_core_80d8ac96,run_state_core_25a955bc,runtime_evidence_producer_ea388cb5,runtime_card_1_465a49d2,runtime_card_recovery_validation_e216d883,local_runtime_card_test_b508222b,local_runtime_card_attempts_28aa46ea,recovery_8c585378,decision_packet_test_9ea0e97b,tracer_1e6243a2,trace_normalizer_cb1be1d2,types_7_2f1ed65e,recovery_1_4d1804ab,performance_overload_c685bfcf,types_core_e405ddca eventNode
 
 ```
 
@@ -1808,14 +1809,14 @@ flowchart LR
     det_detectedmemory_agent_first_throughput_integration_test_dc677cc4[("agent-first-throughput.integration.test")]
     det_detectedmemory_overload_guard_2748c559[("overload-guard")]
     det_detectedmemory_overload_guard_test_6ece9f86[("overload-guard.test")]
-    det_detectedmemory_types_4_822d0f88[("types")]
+    det_detectedmemory_types_3_9675d69b[("types")]
+    det_detectedmemory_suggestion_generator_0956f794[("suggestion-generator")]
+    det_detectedmemory_suggestion_generator_test_f68e9892[("suggestion-generator.test")]
+    det_detectedmemory_types_7_2f1ed65e[("types")]
+    det_detectedmemory_claim_helpers_20dc8387[("claim-helpers")]
     det_detectedmemory_performance_overload_c685bfcf[("performance-overload")]
     det_detectedmemory_local_memory_0db17ecc[("local-memory")]
     det_detectedmemory_local_memory_smoke_1175abfc[("local-memory-smoke")]
-    det_detectedmemory_types_8_f6283648[("types")]
-    det_detectedmemory_claim_helpers_20dc8387[("claim-helpers")]
-    det_detectedmemory_suggestion_generator_0956f794[("suggestion-generator")]
-    det_detectedmemory_suggestion_generator_test_f68e9892[("suggestion-generator.test")]
     det_detectedmemory_tooling_baseline_50ab2eeb[("tooling-baseline")]
     det_detectedmemory_classifier_fe1991a9[("classifier")]
     det_detectedmemory_classifier_test_3859cceb[("classifier.test")]
@@ -1876,6 +1877,7 @@ flowchart LR
     det_detectedmemory_branch_protect_sync_570adb18[("branch-protect-sync")]
     det_detectedmemory_module_boundaries_test_c0caf46b[("module-boundaries.test")]
     det_detectedmemory_review_gate_command_spec_3187376a[("review-gate-command-spec")]
+    det_detectedmemory_local_memory_preflight_command_spec_9e23f3ce[("local-memory-preflight-command-spec")]
     det_detectedmemory_command_specs_test_7f693e85[("command-specs.test")]
     det_detectedmemory_command_specs_core_1c0ffc99[("command-specs-core")]
     det_detectedmemory_command_capability_rules_ca3f496a[("command-capability-rules")]
