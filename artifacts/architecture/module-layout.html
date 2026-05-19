@@ -374,7 +374,39 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor is being split into smaller command seams. Effect is contained to approved files.
+            PR closeout is the main deep module. Doctor, command catalog, and review-gate seams are split into smaller work areas. Effect is contained to approved files.
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>1a. Command Catalog Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/lib/cli/registry/command-capabilities.ts</strong>
+              <span>
+                Public catalog builder: schema version, exported capability
+                types, capability derivation, agent rails, and JSON document
+                builders.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>command-capability-rules.ts</strong>
+                <span>
+                  Static policy tables for category, write/read mutability,
+                  retry behavior, safe-first alternatives, tiers, audience,
+                  orchestrators, agent modes, and visibility.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets both catalog files and verifies static rules stay
+                  behind the public command-capabilities seam.
+                </span>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -864,7 +896,9 @@
               Review-gate decision-packet recovery metadata and terminal
               run-record emission now live behind review-gate/recovery.ts and
               review-gate/run-record.ts, with decision-packet-types.ts as the
-              small internal type seam.
+              small internal type seam. Command capability static policy tables
+              now live behind command-capability-rules.ts while
+              command-capabilities.ts stays the public catalog builder.
             </p>
           </article>
           <article class="note">
@@ -877,10 +911,9 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-              Replay run-record emission is now under its local ratchet. The
-              next high-leverage slice is outside this module: the remaining
-              size warning points at command capabilities, which needs a more
-              deliberate catalog-data split than a quick module move.
+              The current deep-module size warnings are cleared. The next
+              high-leverage slice should be selected from behavior pressure, not
+              just file length.
             </p>
           </article>
         </section>

@@ -63,7 +63,11 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/command-registry.ts`
   - Thin orchestration layer for dispatch/index/help output.
 - `src/lib/cli/registry/command-capabilities.ts`
-  - Command catalog schema and capability metadata (category, mutability, retry behavior, guardrails).
+  - Public command catalog schema, capability derivation, and JSON document
+    builders.
+- `src/lib/cli/registry/command-capability-rules.ts`
+  - Static capability policy tables for category, mutability, retry behavior,
+    guardrails, tiers, audience, orchestrators, agent mode, and visibility.
 - `src/lib/cli/registry/fuzzy-resolution.ts`
   - Command normalization, fuzzy resolution, and suggestion scoring.
 - `src/lib/cli/registry/command-specs.ts`
@@ -304,6 +308,11 @@ Module boundaries and file-size thresholds are enforced by:
 Threshold policy:
 
 - `src/lib/cli/command-registry.ts` must remain a thin loader (`<= 220` lines).
+- `src/lib/cli/registry/command-capabilities.ts` must remain a command catalog
+  builder seam (`<= 360` lines); static policy tables move into
+  `command-capability-rules.ts`.
+- `src/lib/cli/registry/command-capability-rules.ts` must remain a static
+  capability policy-table seam (`<= 340` lines).
 - `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2600` lines).
 - `src/commands/doctor.ts` must remain a doctor command facade (`<= 210`
   lines) and import the explicit doctor seams enforced by the architecture test.

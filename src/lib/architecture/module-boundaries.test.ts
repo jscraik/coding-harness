@@ -21,6 +21,21 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 	},
 ] as const;
 
+const CLI_REGISTRY_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/cli/registry/command-capabilities.ts",
+		maxLines: 360,
+		reason:
+			"Command capabilities must stay the public catalog builder; catalog policy tables stay behind command-capability-rules.ts.",
+	},
+	{
+		path: "src/lib/cli/registry/command-capability-rules.ts",
+		maxLines: 340,
+		reason:
+			"Command capability rules must stay focused on static catalog classification tables.",
+	},
+] as const;
+
 const PR_CLOSEOUT_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/pr-closeout/evaluator.ts",
@@ -439,6 +454,9 @@ const LOCAL_RUNTIME_CARD_SUBMODULES = [
 const LOCAL_RUNTIME_CARD_ASSEMBLY_SUBMODULES = [
 	"./local-runtime-card-attempts.js",
 ] as const;
+const COMMAND_CAPABILITY_SUBMODULES = [
+	"./command-capability-rules.js",
+] as const;
 
 function countFileLines(path: string): number {
 	const content = readFileSync(join(process.cwd(), path), "utf-8");
@@ -501,6 +519,19 @@ describe("module boundaries", () => {
 		expect(content).toContain("./registry/command-capabilities.js");
 		expect(content).toContain("./registry/fuzzy-resolution.js");
 		expect(countFileLines(registryPath)).toBeLessThanOrEqual(220);
+	});
+
+	it("keeps command capability catalog split from static rules", () => {
+		expectRatchetsWithinBudget(CLI_REGISTRY_SURFACE_RATCHETS);
+
+		const capabilitiesContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/command-capabilities.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of COMMAND_CAPABILITY_SUBMODULES) {
+			expect(capabilitiesContent).toContain(submodule);
+		}
 	});
 
 	it("keeps validator entrypoint below monolith threshold and split by domain", () => {
