@@ -46,11 +46,22 @@ export function normalisePlanGateResult(
 			findings: [],
 		});
 	}
+	const findings = buildPlanGateFindings(result, recoveryHints, gate);
+	if (findings.length === 0) {
+		findings.push({
+			id: "plan-gate.result.error.unknown",
+			severity: "error",
+			gate,
+			message: "Plan gate reported failure without error details",
+			baseline: false,
+			fix: { suppressible: false },
+		});
+	}
 
 	return buildGateResult({
 		gate,
 		timestamp,
 		status: "fail",
-		findings: buildPlanGateFindings(result, recoveryHints, gate),
+		findings,
 	});
 }

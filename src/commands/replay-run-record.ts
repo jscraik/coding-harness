@@ -94,7 +94,10 @@ function replayNextAction(failureClass: string): string {
 	if (failureClass === "invalid_trace_directory") {
 		return "Provide a trace directory inside the current repository before retrying.";
 	}
-	if (failureClass === "validation_error" || failureClass === "validation_failed") {
+	if (
+		failureClass === "validation_error" ||
+		failureClass === "validation_failed"
+	) {
 		return "Fix replay command arguments before retrying.";
 	}
 	return "Inspect the replay failure, trace artifact, and run record before retrying.";

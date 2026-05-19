@@ -68,10 +68,10 @@ export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
 		timestamp: result.report.generated_at ?? new Date().toISOString(),
 		status: driftGateStatus(result),
 		findings,
+		decision: { evidenceRef },
 		...(artifactRefs.length > 0
 			? {
 					meta: { artifactRefs },
-					decision: { evidenceRef },
 				}
 			: {}),
 	});

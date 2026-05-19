@@ -1174,6 +1174,25 @@ describe("'commands' command execution", () => {
 		}
 	});
 
+	it("JSON --all ignores unrelated invalid --mode values outside the agent rail", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--all",
+				"--mode",
+				"anything",
+			]);
+			expect(dispatch?.result).toBe(0);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const parsed = JSON.parse(String(output));
+			expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
 	it("JSON --for-agent --plumbing keeps the full catalog available", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 		try {

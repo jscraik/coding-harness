@@ -32,7 +32,9 @@ export function collectClaimBlockers(
 	blockers: PrCloseoutBlocker[],
 ): void {
 	for (const claim of claims) {
-		if (claim.status === "pass" || claim.status === "not_applicable") continue;
+		if (claim.status === "pass" || claim.status === "not_applicable") {
+			continue;
+		}
 		blockers.push({
 			surface: claimSurface(claim),
 			classification: claim.blockerClass ?? "unknown",

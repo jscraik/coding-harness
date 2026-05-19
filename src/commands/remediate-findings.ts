@@ -158,7 +158,8 @@ export function normalizeFindingsOrFail(
 				},
 				{
 					stage: "normalize_findings",
-					error: parseErrors.length > 0 ? "all_findings_invalid" : "no_findings",
+					error:
+						parseErrors.length > 0 ? "all_findings_invalid" : "no_findings",
 					parseErrorCount: parseErrors.length,
 				},
 			),

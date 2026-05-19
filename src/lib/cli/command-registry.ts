@@ -62,7 +62,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const fullCatalogFlag =
 				args.includes("--all") || args.includes("--plumbing");
 			const agentMode = parseAgentCatalogMode(args);
-			if (agentMode === "invalid") {
+			if (forAgentFlag && !fullCatalogFlag && agentMode === "invalid") {
 				console.error(
 					"Error: --mode must be orient, verify, review, or handoff when used with commands --for-agent",
 				);
@@ -70,13 +70,14 @@ const COMMAND_SPECS: CommandSpec[] = [
 			}
 			const catalog =
 				forAgentFlag && !fullCatalogFlag
-					? getRegistryAgentCommandCatalogDocument(agentMode)
+					? getRegistryAgentCommandCatalogDocument(
+							agentMode !== "invalid" ? agentMode : undefined,
+						)
 					: getRegistryCommandCatalogDocument();
 			if (jsonFlag) {
 				console.info(JSON.stringify(catalog));
 				return 0;
 			}
-
 			console.info("Command capability catalog:");
 			for (const capability of catalog.commands) {
 				const category = capability.category.padEnd(22, " ");

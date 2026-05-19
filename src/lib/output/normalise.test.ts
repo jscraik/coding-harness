@@ -25,6 +25,7 @@ import {
 	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
 	getNorthStarDriftFindingsPath,
 } from "../contract/north-star-artifacts.js";
+import type { PlanGateResult } from "../plan-gate/types.js";
 import type { PreflightGateResult } from "../preflight/types.js";
 import type { ReviewGateResult } from "../review-gate/types.js";
 import {
@@ -32,6 +33,7 @@ import {
 	normaliseDocsGateResult,
 	normaliseDriftGateResult,
 	normaliseLinearGateResult,
+	normalisePlanGateResult,
 	normalisePolicyGateResult,
 	normalisePreflightGateResult,
 	normaliseReviewGateResult,
@@ -416,6 +418,19 @@ describe("normaliseDriftGateResult (SA2, SA10, SA11)", () => {
 		expect(result.meta).toEqual({ artifactRefs });
 		expect(result.evidence_ref).toContain(`artifact:${artifactPath}`);
 	});
+
+	it("keeps computed evidence refs even when no artifact refs are present", () => {
+		const result = normaliseDriftGateResult(
+			makeDriftResult([makeDriftFinding({ path: "src/cli.ts" })]),
+		);
+
+		expect(result.evidence_ref).toEqual(
+			expect.arrayContaining([
+				"path:src/cli.ts",
+				"finding:drift-gate.command.command.surface.readme.missing",
+			]),
+		);
+	});
 });
 
 // ─── docs-gate adapter tests (SA3, SA10, SA11) ───────────────────────────────
@@ -568,7 +583,12 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 	});
 
 	it("maps contract and validation errors to contract_policy", () => {
-		for (const code of ["CONTRACT_ERROR", "VALIDATION_ERROR"]) {
+		for (const code of [
+			"CONTRACT_ERROR",
+			"VALIDATION_ERROR",
+			" contract_error ",
+			"validation_error",
+		]) {
 			const classification = classifyLinearGateFailure({
 				ok: false,
 				error: { code, message: "contract error" },
@@ -960,6 +980,9 @@ describe("normalisePolicyGateResult (decision fields from PR)", () => {
 		);
 		expect(result.status).toBe("fail");
 		expect(result.findings[0]?.id).toBe("policy-gate.result.error.unknown");
+		expect(result.evidence_ref).toContain(
+			"finding:policy-gate.result.error.unknown",
+		);
 	});
 
 	it("ok:false → reason from error message, action from decision", () => {
@@ -1010,6 +1033,20 @@ describe("normalisePolicyGateResult (decision fields from PR)", () => {
 		);
 		expect(result.meta?.tier).toBe("high");
 		expect(result.meta?.maxAllowed).toBe("medium");
+	});
+});
+
+describe("normalisePlanGateResult", () => {
+	it("adds a fail-safe finding when a failed result has no errors", () => {
+		const result = normalisePlanGateResult({
+			passed: false,
+			artifacts: [],
+			errors: [],
+		} satisfies PlanGateResult);
+
+		expect(result.status).toBe("fail");
+		expect(result.findings).toHaveLength(1);
+		expect(result.findings[0]?.id).toBe("plan-gate.result.error.unknown");
 	});
 });
 

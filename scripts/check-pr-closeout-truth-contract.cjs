@@ -251,7 +251,7 @@ function checkClaimContract(findings) {
 		"claim-blockers-fail-closed",
 		blockerProjectionFile,
 		blockerContent,
-		/claim\.status\s*===\s*["']pass["'][\s\S]*claim\.status\s*===\s*["']not_applicable["'][\s\S]*continue/,
+		/if\s*\(\s*claim\.status\s*===\s*["']pass["']\s*\|\|\s*claim\.status\s*===\s*["']not_applicable["']\s*\)\s*\{\s*continue;\s*\}/,
 		"collectClaimBlockers must only skip pass and not_applicable claims",
 		"Ensure fail, blocked, unknown, and stale claims produce blockers.",
 	);
@@ -328,7 +328,7 @@ function checkReportContract(findings) {
 		"returns-claims",
 		evaluatorFile,
 		content,
-		/return\s*\{(?=[\s\S]*\bblockers\b)(?=[\s\S]*\bclaims\b)[\s\S]*\}/,
+		/function\s+buildPrCloseoutReportValue[\s\S]*?\):\s*PrCloseoutReport\s*\{[\s\S]*?return\s*\{(?=[\s\S]*?\bblockers\b)(?=[\s\S]*?\bclaims\b)[\s\S]*?\n\s*\};\s*\n\}/,
 		"buildPrCloseoutReport must return the claim ledger",
 		"Include claims in the returned pr-closeout/v1 report.",
 	);

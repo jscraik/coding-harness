@@ -2,8 +2,21 @@ import { spawnSync } from "node:child_process";
 import { commandExists } from "./doctor-check-utils.js";
 import type { DoctorCheckFn } from "./doctor-checks.js";
 
-const GITHUB_AUTH_TIMEOUT =
-	Number(process.env.GITHUB_AUTH_TIMEOUT) || 3000;
+const DEFAULT_GITHUB_AUTH_TIMEOUT = 3000;
+const MAX_GITHUB_AUTH_TIMEOUT = 120_000;
+
+/** Parse the GitHub auth probe timeout from env with finite positive bounds. */
+export function parseGithubAuthTimeout(value: string | undefined): number {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed) || parsed <= 0) {
+		return DEFAULT_GITHUB_AUTH_TIMEOUT;
+	}
+	return Math.min(Math.trunc(parsed), MAX_GITHUB_AUTH_TIMEOUT);
+}
+
+const GITHUB_AUTH_TIMEOUT = parseGithubAuthTimeout(
+	process.env.GITHUB_AUTH_TIMEOUT,
+);
 
 /** GitHub CLI prerequisite checks used by harness doctor. */
 export const DOCTOR_GITHUB_TOOL_CHECKS: DoctorCheckFn[] = [

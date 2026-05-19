@@ -86,6 +86,10 @@ export function normalisePolicyGateResult(
 	}
 
 	const findings = buildPolicyViolationFindings(result.output, gate);
+	const evidenceRef = uniqueStrings([
+		...(result.output.violatingFiles ?? []).map((file) => `path:${file}`),
+		...findings.map((finding) => `finding:${finding.id}`),
+	]);
 
 	return buildGateResult({
 		gate,
@@ -100,9 +104,7 @@ export function normalisePolicyGateResult(
 		},
 		decision: {
 			reason: `Tier '${result.output.tier}' exceeds allowed '${result.output.maxAllowed ?? "unset"}'.`,
-			evidenceRef: uniqueStrings(
-				(result.output.violatingFiles ?? []).map((file) => `path:${file}`),
-			),
+			evidenceRef,
 		},
 	});
 }

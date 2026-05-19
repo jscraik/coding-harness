@@ -28,10 +28,13 @@ const LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION =
  * @returns `contract_policy` for policy/contract validation failures, `transient_infra` for retryable infra/network classes, `internal_unknown` otherwise
  */
 function classifyLinearGateErrorCode(errorCode: string): GateFailureClass {
-	if (errorCode === "CONTRACT_ERROR" || errorCode === "VALIDATION_ERROR") {
+	const normalizedCode = errorCode.trim().toUpperCase();
+	if (
+		normalizedCode === "CONTRACT_ERROR" ||
+		normalizedCode === "VALIDATION_ERROR"
+	) {
 		return "contract_policy";
 	}
-	const normalizedCode = errorCode.trim().toUpperCase();
 	if (
 		normalizedCode.includes("TIMEOUT") ||
 		normalizedCode.includes("RATE_LIMIT") ||

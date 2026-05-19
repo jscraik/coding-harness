@@ -36,11 +36,22 @@ function resolveParent(
 	return { ok: true, artifactPath: resolvedArtifact, parentDir };
 }
 
-async function parentExists(parentDir: string): Promise<boolean> {
+type ParentInspection =
+	| { ok: true; exists: boolean }
+	| { ok: false; reason: string; evidenceRefs: string[] };
+
+async function inspectParent(parentDir: string): Promise<ParentInspection> {
 	try {
-		return (await stat(parentDir)).isDirectory();
-	} catch {
-		return false;
+		return { ok: true, exists: (await stat(parentDir)).isDirectory() };
+	} catch (error) {
+		if (errorCode(error) === "ENOENT") {
+			return { ok: true, exists: false };
+		}
+		return {
+			ok: false,
+			reason: `artifact parent could not be inspected: ${errorCode(error) ?? "unknown"}: ${errorMessage(error)}`,
+			evidenceRefs: ["recovery:artifact-parent:inspect-failed"],
+		};
 	}
 }
 
@@ -56,8 +67,9 @@ async function hasSymlinkAncestor(
 		try {
 			if ((await lstat(current)).isSymbolicLink()) return true;
 		} catch (error) {
-			if (errorCode(error) !== "ENOENT") return true;
-			break;
+			const code = errorCode(error);
+			if (code === "ENOENT" || code === "ENOTDIR") break;
+			return true;
 		}
 	}
 	return false;
@@ -94,7 +106,15 @@ async function verifyBefore(
 			evidenceRefs: ["recovery:artifact-parent:path-denied"],
 		};
 	}
-	if (await parentExists(resolved.parentDir)) {
+	const parent = await inspectParent(resolved.parentDir);
+	if (!parent.ok) {
+		return {
+			ok: false,
+			reason: parent.reason,
+			evidenceRefs: parent.evidenceRefs,
+		};
+	}
+	if (parent.exists) {
 		return {
 			ok: false,
 			reason: "artifact parent already exists",
@@ -134,7 +154,16 @@ async function recover(context: RecoveryContext): Promise<RecoveryResult> {
 			evidenceRefs: ["recovery:artifact-parent:path-denied"],
 		};
 	}
-	await mkdir(resolved.parentDir, { recursive: true });
+	try {
+		await mkdir(resolved.parentDir, { recursive: true });
+	} catch (error) {
+		return {
+			ok: false,
+			status: "failed",
+			reason: `artifact parent creation failed: ${errorCode(error) ?? "unknown"}: ${errorMessage(error)}`,
+			evidenceRefs: ["recovery:artifact-parent:create-failed"],
+		};
+	}
 	return {
 		ok: true,
 		status: "recovered",
@@ -160,8 +189,16 @@ async function verifyAfter(
 			evidenceRefs: ["recovery:artifact-parent:path-denied"],
 		};
 	}
+	const parent = await inspectParent(resolved.parentDir);
+	if (!parent.ok) {
+		return {
+			ok: false,
+			reason: parent.reason,
+			evidenceRefs: parent.evidenceRefs,
+		};
+	}
 	return {
-		ok: await parentExists(resolved.parentDir),
+		ok: parent.exists,
 		evidenceRefs: ["recovery:artifact-parent:verified"],
 	};
 }
