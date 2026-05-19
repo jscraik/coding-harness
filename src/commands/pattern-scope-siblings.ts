@@ -105,14 +105,15 @@ export function normalizeRepoPath(repoRoot: string, file: string): string {
 }
 
 /**
- * Scans a repository tree and returns repo-relative file paths found under the given root.
+ * Collects repo-relative file paths under the given repository root.
  *
- * Performs a depth-first traversal starting at `repoRoot`, skipping directories listed in `IGNORED_DIRS`
- * and paths that match `IGNORED_PATH_PATTERNS`. Collection stops when `MAX_SCANNED_FILES` is reached.
+ * Performs a depth-first traversal starting at `repoRoot`, skipping directories named in
+ * `IGNORED_DIRS` and paths that match `IGNORED_PATH_PATTERNS`. Collection stops once
+ * `MAX_SCANNED_FILES` entries have been gathered.
  *
  * @param repoRoot - Root directory of the repository to scan
- * @returns An object with:
- *  - `files`: sorted array of repo-relative file paths,
+ * @returns An object containing:
+ *  - `files`: a sorted array of repo-relative file paths,
  *  - `scanningTruncated`: `true` if the scan stopped because the max file limit was reached,
  *  - `totalFilesScanned`: the number of files returned
  */
@@ -248,14 +249,15 @@ function isTestCounterpart(
 }
 
 /**
- * Determines whether a repository file likely contains the given changed file stem.
+ * Checks whether a repository file's text contains the specified changed-file stem.
  *
- * Performs fast checks (allowed text file extensions, stem length, and file size) before reading the file; returns `true` only if the file content includes `changedStem`.
+ * Only text/code/markup files are considered and the `changedStem` must be at least 4 characters; file contents are read once and cached via `textFileCache`.
  *
  * @param repoRoot - Repository root directory used to resolve `repoFile`
  * @param repoFile - Repo-relative path to the file to inspect
  * @param changedStem - Basename (without extension) to search for; must be at least 4 characters
- * @returns `true` if `repoFile` passes quick checks and its contents include `changedStem`, `false` otherwise
+ * @param textFileCache - Cache mapping repo-relative file paths to their contents (`string`) or `null` (unreadable/oversized); used to avoid repeated reads
+ * @returns `true` if `repoFile` is a considered text file and its contents include `changedStem`, `false` otherwise
  */
 function mentionsChangedStem(
 	repoRoot: string,
@@ -319,11 +321,11 @@ export function detectTriggerPhrases(feedback: string): string[] {
 }
 
 /**
- * Build a small set of shell commands to help locate related files and changes.
+ * Constructs shell commands to help locate files related to the provided changed files and optional feedback.
  *
- * @param changedFiles - Paths of changed files; their basenames (without extensions) with length >= 4 are used (up to 5 unique names) to form a search pattern.
- * @param feedback - Optional feedback text; when non-empty, an additional fixed-string ripgrep command is added using the first 80 characters (escaped for double quotes).
- * @returns An array of shell commands: an `rg` command searching for the selected basenames (or a placeholder pattern), `git diff --name-only`, and optionally an `rg -F -n` command for the feedback snippet.
+ * @param changedFiles - File paths whose basenames (without extensions) are used to build up to five search terms (only names with length ≥ 4 are considered).
+ * @param feedback - Optional free-form text; when non-empty, a fixed-string ripgrep command is added using the first 80 characters.
+ * @returns An array of shell command strings: (1) a ripgrep (`rg -n`) command searching for the selected basenames or a placeholder pattern, (2) `git diff --name-only`, and (3) when `feedback` is non-empty, an `rg -F -n` command for the escaped feedback excerpt.
  */
 export function buildSearchCommands(
 	changedFiles: string[],

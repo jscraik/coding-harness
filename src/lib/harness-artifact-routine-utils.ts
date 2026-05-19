@@ -5,9 +5,9 @@ import type { FrontMatter } from "./harness-artifact-routine.js";
 import type { ArtifactHandlingFinding } from "./harness-artifact-routine.js";
 
 /**
- * Split a markdown table row into its constituent cells and trim surrounding whitespace.
+ * Splits a markdown table row into its constituent cells and trims surrounding whitespace.
  *
- * @param row - A markdown table row string (for example, `"| col1 | col2 |"`)
+ * @param row - A markdown table row (for example, `"| col1 | col2 |"`)
  * @returns The trimmed cell values in order
  */
 export function parseMarkdownTableCells(row: string): string[] {

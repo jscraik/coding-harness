@@ -22,10 +22,10 @@ function asString(value: unknown): string | null {
 }
 
 /**
- * Coerces an unknown value to an integer number when it is already an integer.
+ * Return the input value if it is an integer number, otherwise `null`.
  *
- * @param value - The value to check for an integer number
- * @returns The input value as an integer number if it is an integer, `null` otherwise
+ * @param value - The value to test for an integer number
+ * @returns `value` as an integer number if it is an integer, `null` otherwise
  */
 function asNumber(value: unknown): number | null {
 	return typeof value === "number" && Number.isInteger(value) ? value : null;
@@ -42,11 +42,11 @@ function asBoolean(value: unknown): boolean | null {
 }
 
 /**
- * Convert a GitHub CLI PR JSON object into a PrCloseoutPullRequestInput, coercing fields to expected types.
+ * Builds a PrCloseoutPullRequestInput from a raw GitHub CLI PR object by coercing fields to their expected types.
  *
  * @param value - Raw parsed object produced by `gh pr view --json ...`
  * @param prNumber - Fallback PR number used when `value.number` is missing or not an integer
- * @returns A `PrCloseoutPullRequestInput` whose fields are coerced: string/boolean fields are returned when valid or `null` when not, and `number` is the coerced `value.number` or `prNumber` when coercion fails
+ * @returns A `PrCloseoutPullRequestInput` whose `number` is the coerced `value.number` or `prNumber` when coercion fails; other fields are returned as strings/booleans when valid or `null` when not
  */
 function normalizeGhPr(
 	value: Record<string, unknown>,
@@ -181,17 +181,16 @@ function normalizeReviewThreadsGraphql(
 }
 
 /**
- * Checks whether an external CLI/tool is available by attempting to execute it and returns a tool status record.
+ * Determine availability and status of an external command by attempting to execute it.
  *
- * @param name - Identifier for the tool (used in the returned record)
- * @param command - Executable to run (e.g., "gh", "snyk")
+ * @param name - Tool identifier to record in the returned entry
+ * @param command - Executable to invoke (for example, `"gh"` or `"snyk"`)
  * @param args - Arguments to pass to the executable
- * @param options - Execution options:
- *   - repoRoot: working directory to run the command in
- *   - env: environment variables for the command
+ * @param options - Execution context:
+ *   - repoRoot: working directory for the invocation
+ *   - env: environment variables for the invocation
  *   - runner: function used to invoke the command
- * @returns A `PrCloseoutToolInput` describing the tool:
- *  `available` is `true` when the command ran without throwing and `false` otherwise; includes a `ref` for the invoked command, `status` indicating usability, and `failureClass` when unavailable.
+ * @returns A `PrCloseoutToolInput` describing the tool: `available` is `true` when the command ran without throwing and `false` otherwise; `ref` is the invoked command string; `status` indicates usability (`"usable"` or `"missing"`); `failureClass` contains a sanitized classification of any error or `null` when available.
  */
 function inspectCommand(
 	name: PrCloseoutToolInput["name"],
@@ -222,8 +221,7 @@ function inspectCommand(
 /**
  * Determine whether the git working tree at the given repository root is clean.
  *
- * @param repoRoot - Filesystem path to the repository root where `git status` should be run
- * @param runner - Function used to execute commands (invoked as `runner("git", ["status", "--porcelain"], { cwd: repoRoot })`)
+ * @param repoRoot - Filesystem path to the repository root where `git status --porcelain` will be executed
  * @returns `true` if the working tree has no changes, `false` if there are uncommitted changes, `null` if cleanliness could not be determined due to an error
  */
 function inspectGitClean(
@@ -314,15 +312,14 @@ function traceabilityFromBody(
 }
 
 /**
- * Fetches review thread resolution information for the configured pull request via the GitHub CLI.
+ * Retrieve a summary of review-thread resolutions for the configured pull request using the GitHub CLI.
  *
- * Attempts to query GitHub's GraphQL API (through `gh`) for review threads on the PR referenced by `options`.
- * On success returns counts derived from the GraphQL response. On pagination or any error, records a
- * `github_cli` tool entry in `tools` and returns an object with `unresolved`, `needsHuman`, and `autofixable`
- * set to `null`.
+ * If review-thread data is available and not paginated, returns counts derived from the GraphQL response.
+ * If the query is paginated or cannot be read, appends a `github_cli` blocked tool entry to `tools` and returns an object where `unresolved`, `needsHuman`, and `autofixable` are all `null`.
  *
- * @param tools - Mutable array to which this function may append a `github_cli` tool status entry when review-thread data is paginated or unreadable.
- * @returns A `PrCloseoutReviewThreadsInput` describing unresolved/needs-human/autofixable review-thread counts, or with those fields set to `null` when the data is unavailable.
+ * @param options - CLI options containing at least `repoRoot` and `prNumber` identifying the repository and PR to query
+ * @param tools - Mutable array that may receive a `github_cli` tool status entry when review-thread data is paginated or unreadable
+ * @returns A `PrCloseoutReviewThreadsInput` with resolved counts, or with `unresolved`, `needsHuman`, and `autofixable` set to `null` when the data is unavailable
  */
 function fetchReviewThreads(
 	options: PrCloseoutCLIOptions,
@@ -384,10 +381,14 @@ function fetchReviewThreads(
 }
 
 /**
- * Probes the local environment for required closeout CLI tools and returns their availability/status.
+ * Probe the local environment for the closeout CLI tools required by the closeout workflow.
  *
- * @param options - CLI options; `options.repoRoot` is used as the working directory when probing each tool
- * @returns An array of `PrCloseoutToolInput` entries for the tools `github_cli`, `circleci_cli`, `coderabbit_cli`, and `snyk_cli`, each describing availability, status, and any failure information
+ * Uses `options.repoRoot` as the working directory when executing each probe. Probes the
+ * following tools: `github_cli` (`gh --version`), `circleci_cli` (`circleci version`),
+ * `coderabbit_cli` (`coderabbit --version`), and `snyk_cli` (`snyk --version`).
+ *
+ * @param options - CLI options; `options.repoRoot` is used as the working directory when probing tools
+ * @returns An array of `PrCloseoutToolInput` entries for the probed tools, each describing `available`, `status`, and `failureClass` when applicable
  */
 function inspectCloseoutTools(
 	options: PrCloseoutCLIOptions,
@@ -419,16 +420,16 @@ function inspectCloseoutTools(
 }
 
 /**
- * Fetches a pull request via the GitHub CLI and returns a normalized `PrCloseoutPullRequestInput`.
+ * Retrieves the pull request data for `prNumber` using the GitHub CLI and returns it in the normalized closeout PR shape.
  *
- * Attempts to run `gh pr view <prNumber> --json ...` in `options.repoRoot`, parses and normalizes the JSON into the expected closeout PR shape. On failure, appends a `github_cli` tool entry to `tools` describing the failure and returns a fallback object with `number` set to `prNumber` and `state`, `isDraft`, `mergeStateStatus`, and `body` set to `null`.
+ * On error, appends a `github_cli` blocked tool entry to `tools` with a failure classification and returns a fallback object with `number` set to `prNumber` and `state`, `isDraft`, `mergeStateStatus`, and `body` set to `null`.
  *
- * @param options - CLI options (used for `repoRoot` when running the GitHub CLI)
+ * @param options - CLI options; `repoRoot` is used as the working directory for the CLI invocation
  * @param prNumber - The pull request number to fetch
- * @param env - Environment variables to use when invoking the GitHub CLI
+ * @param env - Environment variables to use when running the GitHub CLI
  * @param runner - Command runner used to execute the GitHub CLI
- * @param tools - Mutable list of tool inspection results; a `github_cli` failure entry is pushed here on error
- * @returns A `PrCloseoutPullRequestInput` representing the normalized PR data or a fallback with null fields when retrieval fails
+ * @param tools - Mutable list of tool inspection results; a `github_cli` failure entry is appended on error
+ * @returns The normalized pull request data, or a fallback with `number` set to `prNumber` and `state`, `isDraft`, `mergeStateStatus`, and `body` set to `null`
  */
 function fetchPullRequest(
 	options: PrCloseoutCLIOptions,
@@ -510,12 +511,12 @@ function fetchChecks(
 }
 
 /**
- * Build a normalized `PrCloseoutInput` by inspecting the local git checkout and GitHub CLI state.
+ * Builds a normalized live closeout input for a pull request by inspecting the local git checkout and GitHub CLI state.
  *
- * @param options - CLI options controlling which PR to inspect and repo/repo-root/env file locations
+ * @param options - CLI options specifying the PR number and repository/env file locations
  * @param runner - Command runner used to execute external tools (e.g., `gh`, `git`, `circleci`)
- * @returns A `PrCloseoutInput` containing the normalized pull request, branch cleanliness, checks, review thread summary, traceability info, and inspected tools
- * @throws Error if `options.prNumber` is not provided
+ * @returns An object containing the normalized pull request, branch cleanliness, checks, review-thread summary, traceability extracted from the PR body, and inspected tool metadata
+ * @throws Error when `options.prNumber` is not provided
  */
 export function buildLiveInput(
 	options: PrCloseoutCLIOptions,

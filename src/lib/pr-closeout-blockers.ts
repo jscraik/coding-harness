@@ -22,7 +22,20 @@ export function pushBlocker(
 	blockers.push(blocker);
 }
 
-/** Collect blockers caused by dirty, unpushed, conflicted, or stale branch state. */
+/**
+ * Collects PR closeout blockers related to local worktree and branch state.
+ *
+ * Adds blockers to `blockers` for:
+ * - excluded dirty paths,
+ * - a dirty local worktree,
+ * - an unpushed branch,
+ * - merge conflicts on the branch,
+ * - the branch being behind its base.
+ *
+ * @param input - PR closeout input containing optional branch state flags (`clean`, `pushed`, `hasConflicts`, `behindBase`)
+ * @param dirtyPathsExcluded - list of dirty paths that were explicitly excluded; when non-empty a worktree blocker is added and `ref` is set to the joined path list
+ * @param blockers - destination array that will be appended with any constructed `PrCloseoutBlocker` entries
+ */
 export function collectWorktreeBlockers(
 	input: PrCloseoutInput,
 	dirtyPathsExcluded: readonly PrCloseoutDirtyPathInput[],
@@ -154,14 +167,14 @@ export function collectCheckBlockers(
 }
 
 /**
- * Add review-related blockers based on review-thread observability, unresolved thread count, and the PR review decision.
+ * Add review-related blockers to `blockers` based on review-thread observability, unresolved thread count, and the PR's review decision.
  *
  * If `reviewThreads.unresolved` is `null`, adds an "unknown" review blocker and returns. If `reviewThreads.unresolved` is greater than zero,
- * adds a blocker indicating the number of unresolved threads; the classification is `needs_jamie_decision` when `reviewThreads.needsHuman` is greater than zero,
- * otherwise `introduced`. Also adds an `introduced` review blocker when the PR's `reviewDecision` normalizes to `CHANGES_REQUESTED`.
+ * adds a blocker describing the unresolved thread count; the blocker classification is `needs_jamie_decision` when `reviewThreads.needsHuman` is greater than zero,
+ * otherwise `introduced`. Additionally, if the PR's `reviewDecision` normalizes to `CHANGES_REQUESTED`, adds an `introduced` review blocker.
  *
  * @param pr - Pull request input whose `reviewDecision` is inspected
- * @param reviewThreads - Observed review-thread evidence; `unresolved` may be `null` or a number, and `needsHuman` signals threads requiring human attention
+ * @param reviewThreads - Observed review-thread evidence; `unresolved` may be `null` or a number, and `needsHuman` indicates threads requiring human attention
  * @param blockers - Array to append generated `PrCloseoutBlocker` entries to
  */
 export function collectReviewBlockers(
@@ -219,7 +232,17 @@ export function collectTraceabilityBlocker(
 	});
 }
 
-/** Collect blockers for required closeout tools that are missing or unusable. */
+/**
+ * Add blockers for tools whose status is "blocked".
+ *
+ * For each tool with `status === "blocked"`, appends a `PrCloseoutBlocker` to `blockers`
+ * with `surface: "tool"`, `classification: "external_service"`, `reason` formatted as
+ * "`<name> is blocked: <failureClass or \"unknown\">`", `fixableByCodex: false`, and `ref` set
+ * to the tool's `ref`.
+ *
+ * @param tools - Tool entries to evaluate; only entries with `status === "blocked"` produce blockers
+ * @param blockers - Array to which generated blockers will be appended
+ */
 export function collectToolBlockers(
 	tools: readonly PrCloseoutToolInput[],
 	blockers: PrCloseoutBlocker[],

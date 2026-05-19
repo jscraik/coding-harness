@@ -34,16 +34,16 @@ export function parseJsonObject(
 }
 
 /**
- * Parse and validate a PR closeout input JSON string into a normalized PrCloseoutInput object.
+ * Validate and normalize a PR closeout input JSON string.
  *
- * Ensures the root is a JSON object containing a `pullRequest` object with a `number` that is
- * a positive integer. Enforces that at most one of `closeoutGates` or `phaseExit` is present.
- * If present, the closeout-gates or phase-exit artifact is normalized to a HePhaseExit-compatible
- * structure and validated. Errors include the provided `source` string to identify the input.
+ * Ensures the parsed root is an object containing a `pullRequest` with a `number` greater than
+ * or equal to 1, enforces that at most one of `closeoutGates` or `phaseExit` is present, and
+ * normalizes/validates any provided closeout-gates/phase-exit artifact into the canonical shape.
+ * Error messages include the provided `source` to identify the input.
  *
  * @param value - JSON text containing the PR closeout input
  * @param source - Human-readable source label used in error messages (e.g., file path)
- * @returns The validated and normalized `PrCloseoutInput` object
+ * @returns The validated and normalized PR closeout input
  */
 export function parseInput(value: string, source: string): PrCloseoutInput {
 	const parsed = parseJsonObject(value, source);
@@ -116,12 +116,12 @@ function closeoutGatesSchemaList(): string {
 }
 
 /**
- * Convert a supported closeout-gates artifact variant to the canonical phase-exit shape and validate it.
+ * Normalize a closeout-gates artifact to the canonical phase-exit shape and validate it.
  *
- * @param value - The parsed artifact to normalize; may be any JSON value (object, array, etc.).
- * @param source - Human-readable source identifier used in validation error messages (e.g., file path or input name).
- * @returns The normalized and validated `HePhaseExit` artifact.
- * @throws Error if the value is not a valid Coding Harness closeout-gates artifact; the error message includes the `source`, accepted schema versions, and validation error codes.
+ * @param value - Parsed JSON value containing the artifact (may be any JSON type).
+ * @param source - Human-readable identifier used in validation error messages (for example a file path or input name).
+ * @returns The normalized `HePhaseExit` phase-exit artifact.
+ * @throws Error if the artifact is invalid; the message includes the `source`, accepted schema versions, and validation error codes.
  */
 export function normalizeCloseoutGatesArtifact(
 	value: unknown,

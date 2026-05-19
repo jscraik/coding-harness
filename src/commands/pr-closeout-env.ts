@@ -38,7 +38,7 @@ function codexEnvTool(
 }
 
 /**
- * Runs a short-lived external command and returns its trimmed stdout.
+ * Execute an external command and return its trimmed standard output.
  *
  * @param command - The executable to run
  * @param args - Arguments passed to the executable
@@ -62,13 +62,14 @@ export function defaultRunner(
 }
 
 /**
- * Load a Codex-format environment file (defaulting to the standard path) into a process-env object and produce evidence metadata about the file.
+ * Load variables from a Codex-format environment file into a copy of `process.env` and produce metadata about the file.
  *
- * Reads environment variables from the resolved file, applies valid key/value pairs onto a shallow copy of `process.env`, and returns that environment together with a `PrCloseoutToolInput` describing the file's availability and any failure classification.
+ * If `envFilePath` is omitted, the function resolves the standard Codex env file path and uses that. It applies valid `KEY=VALUE` pairs from the file onto a shallow copy of `process.env` and returns that environment together with a tool object describing the file's availability and any failure classification.
  *
+ * @param envFilePath - Optional path to the env file; when omitted the default Codex env file path is used
  * @returns An object with:
- *  - `env`: a shallow copy of `process.env` with variables from the env file applied when present and valid.
- *  - `tool`: a `PrCloseoutToolInput` that references the resolved file path and indicates the file status (`"usable"`, `"missing"`, or `"blocked"`) and, when blocked, a `failureClass` describing the reason.
+ *  - `env`: a shallow copy of `process.env` with variables from the env file applied when present and valid
+ *  - `tool`: a `PrCloseoutToolInput` referencing the resolved file path and indicating the file status (`"usable"`, `"missing"`, or `"blocked"`); when `"blocked"`, `failureClass` describes the reason
  */
 export function loadEnvFile(envFilePath: string | undefined): {
 	env: NodeJS.ProcessEnv;

@@ -15,7 +15,12 @@ export function normalizeStatus(value: string | null | undefined): string {
 	return (value ?? "").trim().toUpperCase();
 }
 
-/** Determine whether a check status should count as passing closeout evidence. */
+/**
+ * Determines whether a check's conclusion or state indicates it counts as passing closeout evidence.
+ *
+ * @param check - Check input whose `conclusion` or `state` will be normalized and evaluated.
+ * @returns `true` if the normalized status is one of `SUCCESS`, `PASSED`, `PASS`, `NEUTRAL`, or `SKIPPED`, `false` otherwise.
+ */
 export function isPassingCheck(check: PrCloseoutCheckInput): boolean {
 	const status = normalizeStatus(check.conclusion ?? check.state);
 	return ["SUCCESS", "PASSED", "PASS", "NEUTRAL", "SKIPPED"].includes(status);
@@ -40,10 +45,10 @@ export function isFailedCheck(check: PrCloseoutCheckInput): boolean {
 }
 
 /**
- * Determines if a check's conclusion or state represents pending evidence for PR closeout.
+ * Determines whether a check's conclusion or state indicates a pending status.
  *
- * @param check - The check input whose `conclusion` or `state` will be evaluated
- * @returns `true` if the check status is one of `PENDING`, `QUEUED`, `IN_PROGRESS`, `EXPECTED`, or `WAITING`, `false` otherwise
+ * @param check - The check whose `conclusion` or `state` will be evaluated
+ * @returns `true` if the check's status is one of `PENDING`, `QUEUED`, `IN_PROGRESS`, `EXPECTED`, or `WAITING`, `false` otherwise.
  */
 export function isPendingCheck(check: PrCloseoutCheckInput): boolean {
 	const status = normalizeStatus(check.conclusion ?? check.state);
@@ -92,15 +97,12 @@ export function hasLinearReference(body: string | null | undefined): boolean {
 }
 
 /**
- * Determine closeout status, next action, and mergeability from a list of PR blockers.
+ * Derives the PR closeout status, recommended next action, and whether the PR is mergeable from an ordered list of blockers.
  *
- * Evaluates blockers in a fixed priority order to decide whether the PR is ready, blocked,
- * requires cleanup, needs a human decision, is fixable by Codex, or is waiting for external checks.
- *
- * @param blockers - Array of blockers that influence the closeout decision; evaluated in priority order.
- * @returns An object containing:
- *  - `status` — the derived closeout status (`"ready" | "blocked" | "cleanup_required" | "needs_jamie" | "fixable" | "waiting"`).
- *  - `nextAction` — the recommended next action (`"ready_to_merge" | "resolve_conflicts" | "cleanup_before_continue" | "needs_jamie_decision" | "codex_can_fix_now" | "wait_for_external_check"`).
+ * @param blockers - Blockers evaluated in priority order to determine the closeout outcome.
+ * @returns An object with:
+ *  - `status` — one of `"ready"`, `"blocked"`, `"cleanup_required"`, `"needs_jamie"`, `"fixable"`, or `"waiting"`.
+ *  - `nextAction` — one of `"ready_to_merge"`, `"resolve_conflicts"`, `"cleanup_before_continue"`, `"needs_jamie_decision"`, `"codex_can_fix_now"`, or `"wait_for_external_check"`.
  *  - `mergeable` — `true` when the PR can be merged immediately, `false` otherwise.
  */
 export function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
