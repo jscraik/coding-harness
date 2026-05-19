@@ -258,6 +258,29 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("treats GitHub BEHIND merge state as stale branch evidence", () => {
+		const input = baseInput();
+		const report = buildPrCloseoutReport({
+			...input,
+			pullRequest: {
+				...input.pullRequest,
+				mergeStateStatus: "BEHIND",
+			},
+		});
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "branch_current_with_base",
+					status: "fail",
+					evidenceRef: "github:mergeStateStatus",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
 	it("blocks success when test evidence is missing", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

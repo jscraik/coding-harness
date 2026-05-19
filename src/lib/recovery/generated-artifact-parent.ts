@@ -1,5 +1,5 @@
 import { lstat, mkdir, rmdir, stat } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import type {
 	RecoveryContext,
 	RecoveryHandlerContract,
@@ -28,7 +28,7 @@ function resolveParent(
 	if (
 		parentRelative === "" ||
 		parentRelative.startsWith("..") ||
-		parentRelative.startsWith("/") ||
+		isAbsolute(parentRelative) ||
 		parentRelative.includes("../")
 	) {
 		return { ok: false, reason: "artifact parent is outside repo scope" };

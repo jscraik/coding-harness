@@ -331,14 +331,17 @@ function branchClaimState(
 	const stale =
 		branch?.behindBase === true ||
 		branch?.hasConflicts === true ||
-		mergeState === "DIRTY";
+		mergeState === "DIRTY" ||
+		mergeState === "BEHIND";
 	if (!current && !stale) {
 		return { status: "unknown", evidenceRef: null, freshness: "missing" };
 	}
 	return {
 		status: stale ? "fail" : "pass",
 		evidenceRef:
-			mergeState === "CLEAN" || mergeState === "DIRTY"
+			mergeState === "CLEAN" ||
+			mergeState === "DIRTY" ||
+			mergeState === "BEHIND"
 				? "github:mergeStateStatus"
 				: "git:branch-state",
 		freshness: "current",
