@@ -455,7 +455,7 @@
             </tr>
             <tr>
               <td><code>git status --short docs/goals/coding-harness-closeout-truth</code></td>
-              <td class="status">Pass with <code>--work-tree=/Users/jamiecraik/dev/coding-harness</code>.</td>
+              <td class="status">Pass with repo-root worktree targeting.</td>
             </tr>
             <tr>
               <td><code>$browser:browser</code> open notes file</td>
@@ -696,7 +696,7 @@
             <code>.git/config</code> currently points <code>core.worktree</code>
             at <code>/private/tmp/coding-harness-advisory-size-refactor</code>.
             Git inspection for the requested checkout used an explicit
-            <code>--work-tree=/Users/jamiecraik/dev/coding-harness</code>
+            <code>--work-tree=&lt;repo-root&gt;</code>
             override so unrelated temp-worktree state did not hide these files.
           </li>
           <li>
@@ -798,6 +798,47 @@
             passed; <code>bash scripts/validate-codestyle.sh --fast</code>
             passed with the known non-blocking <code>docs/QUALITY_SCORE.md</code>
             stale warning from drift-gate.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Latest CodeRabbit Cleanup</h2>
+        <ul>
+          <li>
+            Accepted the open PR tracker-alignment finding:
+            <code>pr-closeout</code> now treats <code>Refs JSC-N</code> as
+            the open-PR evidence form and does not count <code>Closes JSC-N</code>
+            before merge.
+          </li>
+          <li>
+            Accepted recovery contract feedback: every
+            <code>traceFields</code> entry must now be a non-empty string, and
+            invalid entries are denied rather than echoed as trace metadata.
+          </li>
+          <li>
+            Accepted replay fixture feedback: trace IDs no longer use
+            16-digit numeric strings, and fixture paths now use a synthetic
+            workspace path instead of Jamie's local absolute path.
+          </li>
+          <li>
+            Accepted goal-board evidence feedback: R012 and R013 now record
+            the intentionally staged files, and the board verifier command is
+            repo-relative to the checked-out sibling skill path.
+          </li>
+          <li>
+            Validation after this cleanup passed:
+            <code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/recovery/contract.test.ts src/lib/replay/eval-runner.test.ts</code>
+            passed 51 tests;
+            <code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/recovery/contract.test.ts src/lib/recovery/generated-artifact-parent.test.ts src/lib/replay/eval-runner.test.ts src/lib/architecture/pr-closeout-truth-contract.test.ts</code>
+            passed 59 tests;
+            <code>node scripts/check-pr-closeout-truth-contract.cjs --json</code>
+            passed;
+            <code>PYTHONDONTWRITEBYTECODE=1 python3 ../agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-closeout-truth</code>
+            passed;
+            <code>bash scripts/validate-codestyle.sh --fast</code> passed with
+            the known non-blocking <code>docs/QUALITY_SCORE.md</code> stale
+            warning.
           </li>
         </ul>
       </section>

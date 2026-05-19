@@ -148,6 +148,8 @@ export function validateRecoveryHandlerContract(
 		errors.push("stopCondition is required");
 	if (!Array.isArray(handler.traceFields) || handler.traceFields.length === 0) {
 		errors.push("traceFields are required");
+	} else if (!handler.traceFields.every(hasText)) {
+		errors.push("traceFields must be non-empty strings");
 	}
 	if (!hasText(handler.retirementCondition)) {
 		errors.push("retirementCondition is required");
@@ -155,7 +157,9 @@ export function validateRecoveryHandlerContract(
 	return {
 		ok: errors.length === 0,
 		errors,
-		traceFields: [...(handler.traceFields ?? [])],
+		traceFields: Array.isArray(handler.traceFields)
+			? handler.traceFields.filter(hasText)
+			: [],
 	};
 }
 

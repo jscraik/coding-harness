@@ -372,6 +372,28 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("does not treat Closes as open PR tracker alignment evidence", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					...baseInput().pullRequest,
+					body: "Closes JSC-327\n",
+				},
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "linear_tracker_state_aligned",
+					status: "unknown",
+					evidenceRef: null,
+				}),
+			]),
+		);
+	});
+
 	it("blocks success when rollback evidence is missing", () => {
 		const input = baseInput();
 		delete input.rollback;

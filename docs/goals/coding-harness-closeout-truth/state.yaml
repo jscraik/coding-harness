@@ -68,7 +68,7 @@ tasks:
       - "docs/goals/coding-harness-closeout-truth/notes/.gitkeep"
       - "docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html"
     verify:
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-closeout-truth"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 ../agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-closeout-truth"
       - "pnpm markdownlint docs/goals/coding-harness-closeout-truth/goal.md"
       - "git status --short docs/goals/coding-harness-closeout-truth"
     stop_if:

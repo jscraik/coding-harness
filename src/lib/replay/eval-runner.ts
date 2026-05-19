@@ -39,14 +39,14 @@ function makeTrace(
 	return {
 		traceId:
 			id === "false-success-closeout"
-				? "trace-1111111111111111"
-				: "trace-2222222222222222",
+				? "trace-false-success-alpha"
+				: "trace-recovery-denied-alpha",
 		createdAt: "2026-05-18T21:00:00.000Z",
-		workingDirectory: "/Users/jamiecraik/dev/coding-harness",
+		workingDirectory: "/workspace/coding-harness",
 		environment: {
 			NODE_ENV: "test",
 			GITHUB_TOKEN: "ghp_replay_eval_secret_token",
-			PWD: "/Users/jamiecraik/dev/coding-harness",
+			PWD: "/workspace/coding-harness",
 		},
 		command: "harness replay-eval",
 		args: [id],
@@ -86,7 +86,7 @@ function makeFalseSuccessInput(): PrCloseoutInput {
 		},
 		traceability: {
 			sessionIds: ["codex-session-fixture"],
-			traceIds: ["trace-1111111111111111"],
+			traceIds: ["trace-false-success-alpha"],
 			aiSessionTraceability: "fixture trace",
 		},
 	};

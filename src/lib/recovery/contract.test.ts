@@ -127,4 +127,19 @@ describe("recovery contract", () => {
 			]),
 		);
 	});
+
+	it("denies trace fields that are blank or non-string", () => {
+		const result = assessRecoverySafety(
+			handler({
+				traceFields: [
+					"handler.id",
+					"",
+					42 as unknown as RecoveryHandlerContract["traceFields"][number],
+				],
+			}),
+		);
+		expect(result.decision).toBe("denied");
+		expect(result.reasons).toContain("traceFields must be non-empty strings");
+		expect(result.traceFields).toEqual(["handler.id"]);
+	});
 });
