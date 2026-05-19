@@ -14,7 +14,6 @@ import {
 	resolve,
 	sep,
 } from "node:path";
-import { cwd } from "node:process";
 import {
 	buildLiveRuntimeCard,
 	buildLocalRuntimeCard,
@@ -22,138 +21,10 @@ import {
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { buildRuntimeEvidenceBundleFromCard } from "../lib/runtime/runtime-evidence-producer.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
-
-interface RuntimeCardCLIOptions {
-	json: boolean;
-	repoRoot: string;
-	issueKey?: string;
-	phaseExitPath?: string;
-	evidencePath?: string;
-	outPath?: string;
-	evidenceOutPath?: string;
-	live: boolean;
-}
-
-type RuntimeCardParseResult =
-	| { options: RuntimeCardCLIOptions }
-	| { exitCode: number };
-
-/**
- * Print usage syntax and a one-line description for the "harness runtime-card" command.
- *
- * Emits a usage line listing supported flags and a brief summary of the command's purpose.
- */
-function printRuntimeCardUsage(): void {
-	console.info(
-		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>] [--evidence-out <path>]",
-	);
-	console.info("");
-	console.info(
-		"Build a runtime-card/v1 artifact from git, .harness evidence, normalized evidence bundles, and optional live provider state.",
-	);
-}
-
-/**
- * Retrieves the next command-line token after a flag, if it is a valid value.
- *
- * @param args - The full argument list (typically process.argv slice)
- * @param index - The index of the flag within `args`
- * @returns The next argument after the flag if present and does not start with `--`, `undefined` otherwise
- */
-function readFlagValue(
-	args: readonly string[],
-	index: number,
-): string | undefined {
-	const value = args[index + 1];
-	if (value === undefined || value.startsWith("--")) return undefined;
-	return value;
-}
-
-/**
- * Parse CLI arguments for the `harness runtime-card` command and produce runtime options or an exit code.
- *
- * @param args - Command-line arguments to parse.
- * @returns An object with `options` containing parsed `RuntimeCardCLIOptions` on success, or an object with `exitCode` when parsing requests early exit or encounters invalid arguments. `exitCode` values: `0` for help/usage, `2` for missing flag values or unknown arguments.
- */
-function parseRuntimeCardArgs(args: readonly string[]): RuntimeCardParseResult {
-	if (args.includes("--help") || args.includes("-h")) {
-		printRuntimeCardUsage();
-		return { exitCode: 0 };
-	}
-	const options: RuntimeCardCLIOptions = {
-		json: args.includes("--json"),
-		repoRoot: cwd(),
-		live: args.includes("--live"),
-	};
-	for (let index = 0; index < args.length; index += 1) {
-		const arg = args[index];
-		if (arg === "--json") continue;
-		if (arg === "--live") continue;
-		if (arg === "--repo") {
-			const value = readFlagValue(args, index);
-			if (!value) {
-				console.error("runtime-card: --repo requires a path");
-				return { exitCode: 2 };
-			}
-			options.repoRoot = resolve(value);
-			index += 1;
-			continue;
-		}
-		if (arg === "--issue") {
-			const value = readFlagValue(args, index);
-			if (!value) {
-				console.error("runtime-card: --issue requires a tracker key");
-				return { exitCode: 2 };
-			}
-			options.issueKey = value;
-			index += 1;
-			continue;
-		}
-		if (arg === "--phase-exit") {
-			const value = readFlagValue(args, index);
-			if (!value) {
-				console.error("runtime-card: --phase-exit requires an artifact path");
-				return { exitCode: 2 };
-			}
-			options.phaseExitPath = value;
-			index += 1;
-			continue;
-		}
-		if (arg === "--evidence") {
-			const value = readFlagValue(args, index);
-			if (!value) {
-				console.error("runtime-card: --evidence requires an artifact path");
-				return { exitCode: 2 };
-			}
-			options.evidencePath = value;
-			index += 1;
-			continue;
-		}
-		if (arg === "--out") {
-			const value = readFlagValue(args, index);
-			if (!value) {
-				console.error("runtime-card: --out requires a file path");
-				return { exitCode: 2 };
-			}
-			options.outPath = value;
-			index += 1;
-			continue;
-		}
-		if (arg === "--evidence-out") {
-			const value = readFlagValue(args, index);
-			if (!value) {
-				console.error("runtime-card: --evidence-out requires a file path");
-				return { exitCode: 2 };
-			}
-			options.evidenceOutPath = value;
-			index += 1;
-			continue;
-		}
-		console.error(`runtime-card: unknown argument ${String(arg)}`);
-		return { exitCode: 2 };
-	}
-	return { options };
-}
+import {
+	type RuntimeCardCLIOptions,
+	parseRuntimeCardArgs,
+} from "./runtime-card-args.js";
 
 function isOutsideRepo(repoRoot: string, pathToCheck: string): boolean {
 	const rel = relative(repoRoot, pathToCheck);
@@ -337,6 +208,7 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 				? { phaseExitPath: parsed.options.phaseExitPath }
 				: {}),
 			...(evidenceBundle !== undefined ? { evidenceBundle } : {}),
+			requirePhaseExit: parsed.options.context !== "local",
 		};
 		const card = parsed.options.live
 			? await buildLiveRuntimeCard(buildOptions)

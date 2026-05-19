@@ -76,6 +76,8 @@ interface ReviewDecisionPacket {
 		errorCode?: ReviewGateErrorCode;
 		errorMessage?: string;
 	};
+	attemptLedger: ReviewGateAttemptLedger;
+	recoveryEvent: ReviewGateRecoveryEvent | null;
 }
 
 type NorthStarAlignmentDecisionArtifact = Omit<
@@ -98,6 +100,44 @@ type ReviewGateRunRecordArtifacts = {
 	alignmentDecisionPath: string;
 	alignmentDecisionChecksum: string;
 };
+
+type ReviewGateRecoveryOwner = "codex" | "external_service" | "operator";
+type ReviewGateRetryDecision = "none" | "retry" | "stop";
+
+interface ReviewGateAttemptLedger {
+	schemaVersion: "attempt-ledger/v1";
+	command: "review-gate";
+	attempt: number;
+	maxAttempts: number;
+	firstFailure: {
+		attempt: number;
+		failureClass: string;
+		exitCode: number;
+		observedAt: string;
+	} | null;
+	retryDecision: {
+		decision: ReviewGateRetryDecision;
+		reason: string;
+		nextAttempt: number | null;
+	};
+	owner: ReviewGateRecoveryOwner;
+	stopReason: string | null;
+	nextAction: string;
+	evidenceRefs: string[];
+}
+
+interface ReviewGateRecoveryEvent {
+	schemaVersion: "recovery-event/v1";
+	eventId: string;
+	command: "review-gate";
+	attempt: number;
+	owner: ReviewGateRecoveryOwner;
+	failureClass: string;
+	stopReason: string;
+	nextAction: string;
+	retryDecision: ReviewGateRetryDecision;
+	evidenceRefs: string[];
+}
 
 /**
  * Resolve the package's producer version from the workspace package.json.
@@ -222,6 +262,106 @@ function buildGuardrailCandidates(
 	);
 }
 
+function resolveReviewGateFailureClass(
+	result: ReviewGateArtifactInput["result"],
+): string {
+	if (result.ok) {
+		return result.output.verified ? "none" : "policy_blocked";
+	}
+	return result.error.code.toLowerCase();
+}
+
+function resolveReviewGateRecoveryOwner(
+	result: ReviewGateArtifactInput["result"],
+): ReviewGateRecoveryOwner {
+	if (result.ok) return "codex";
+	if (result.error.code === "PERMISSION_DENIED") return "operator";
+	if (result.error.code === "TIMEOUT" || result.error.code === "SYSTEM_ERROR") {
+		return "external_service";
+	}
+	return "codex";
+}
+
+function resolveReviewGateNextAction(
+	result: ReviewGateArtifactInput["result"],
+): string {
+	if (result.ok && result.output.verified) {
+		return "Continue PR closeout with the verified review-gate decision packet.";
+	}
+	if (result.ok) {
+		return (
+			result.output.blockers[0] ??
+			"Resolve review-gate blockers and rerun review-gate."
+		);
+	}
+	if (result.error.code === "PERMISSION_DENIED") {
+		return "Refresh review-gate credentials or ask the operator for an authenticated rerun.";
+	}
+	if (result.error.code === "TIMEOUT") {
+		return "Inspect service latency or reduce review-gate scope before rerunning.";
+	}
+	return result.error.message;
+}
+
+function buildReviewGateAttemptLedger(args: {
+	input: ReviewGateArtifactInput;
+	runId: string;
+	decisionPacketPath: string;
+}): ReviewGateAttemptLedger {
+	const verified = args.input.result.ok && args.input.result.output.verified;
+	const stopReason = verified
+		? null
+		: resolveReviewGateNextAction(args.input.result);
+	return {
+		schemaVersion: "attempt-ledger/v1",
+		command: "review-gate",
+		attempt: 1,
+		maxAttempts: 1,
+		firstFailure: verified
+			? null
+			: {
+					attempt: 1,
+					failureClass: resolveReviewGateFailureClass(args.input.result),
+					exitCode: args.input.exitCode,
+					observedAt: args.input.finishedAt,
+				},
+		retryDecision: {
+			decision: verified ? "none" : "stop",
+			reason: verified
+				? "review-gate completed successfully"
+				: "review-gate has no internal retry loop; rerun only after the recorded next action",
+			nextAttempt: null,
+		},
+		owner: resolveReviewGateRecoveryOwner(args.input.result),
+		stopReason,
+		nextAction: resolveReviewGateNextAction(args.input.result),
+		evidenceRefs: [
+			`review-gate:run:${args.runId}`,
+			`artifact:${args.decisionPacketPath}`,
+		],
+	};
+}
+
+function buildReviewGateRecoveryEvent(args: {
+	runId: string;
+	attemptLedger: ReviewGateAttemptLedger;
+}): ReviewGateRecoveryEvent | null {
+	const firstFailure = args.attemptLedger.firstFailure;
+	if (!firstFailure || !args.attemptLedger.stopReason) return null;
+	return {
+		schemaVersion: "recovery-event/v1",
+		eventId: `review-gate:${args.runId}:attempt-1`,
+		command: "review-gate",
+		attempt: 1,
+		owner: args.attemptLedger.owner,
+		failureClass: firstFailure.failureClass,
+		stopReason: args.attemptLedger.stopReason,
+		nextAction: args.attemptLedger.nextAction,
+		retryDecision: args.attemptLedger.retryDecision.decision,
+		evidenceRefs: args.attemptLedger.evidenceRefs,
+	};
+}
+
 /**
  * Write an object as pretty JSON to disk and return its path and content checksum.
  *
@@ -258,6 +398,8 @@ function buildReviewDecisionPacket(
 	decision: DecisionClassification,
 	compactionReasons: string[],
 	guardrailCandidates: string[],
+	attemptLedger: ReviewGateAttemptLedger,
+	recoveryEvent: ReviewGateRecoveryEvent | null,
 ): ReviewDecisionPacket {
 	return {
 		schemaVersion: "review-decision-packet/v1",
@@ -308,6 +450,8 @@ function buildReviewDecisionPacket(
 					errorCode: input.result.error.code,
 					errorMessage: input.result.error.message,
 				},
+		attemptLedger,
+		recoveryEvent,
 	};
 }
 
@@ -481,6 +625,8 @@ function emitReviewGateRunRecord(
 				guardrailPromotionRecommended: packet.guardrailPromotion.recommended,
 				decisionPacketPath: artifacts.decisionPacketPath,
 				alignmentDecisionPath: artifacts.alignmentDecisionPath,
+				attemptLedger: packet.attemptLedger,
+				recoveryEvent: packet.recoveryEvent,
 			},
 		},
 	});
@@ -514,12 +660,23 @@ export function emitReviewGateDecisionArtifacts(
 	const compactionReasons = buildCompactionReasons(input.result);
 	const guardrailCandidates = buildGuardrailCandidates(input.result);
 	const decisionPacketPath = join(runPaths.runDir, "decision-packet.json");
+	const attemptLedger = buildReviewGateAttemptLedger({
+		input,
+		runId,
+		decisionPacketPath,
+	});
+	const recoveryEvent = buildReviewGateRecoveryEvent({
+		runId,
+		attemptLedger,
+	});
 	const packet = buildReviewDecisionPacket(
 		input,
 		runId,
 		decision,
 		compactionReasons,
 		guardrailCandidates,
+		attemptLedger,
+		recoveryEvent,
 	);
 
 	const artifact = writeJsonArtifact(decisionPacketPath, packet);

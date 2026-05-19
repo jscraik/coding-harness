@@ -13,7 +13,7 @@ import type {
 	PrCloseoutPullRequestInput,
 	PrCloseoutReviewThreadsInput,
 	PrCloseoutToolInput,
-} from "../pr-closeout.js";
+} from "./types.js";
 import {
 	hasLinearReference,
 	isFailedCheck,

@@ -1,4 +1,4 @@
-import type { PrCloseoutCheckInput } from "../pr-closeout.js";
+import type { PrCloseoutCheckInput } from "./types.js";
 
 /** Normalize provider status strings before verifier comparisons. */
 export function normalizeStatus(value: string | null | undefined): string {
@@ -51,5 +51,5 @@ export function isPendingCheck(check: PrCloseoutCheckInput): boolean {
 
 /** Return whether PR prose contains the required Linear issue reference. */
 export function hasLinearReference(body: string | null | undefined): boolean {
-	return /\bRefs\s+[A-Z][A-Z0-9]+-\d+\b/u.test(body ?? "");
+	return /\b(?:Refs|Closes)\s+[A-Z][A-Z0-9]+-\d+\b/u.test(body ?? "");
 }

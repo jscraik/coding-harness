@@ -4,7 +4,8 @@ import type {
 	PrCloseoutReviewThreadsInput,
 	PrCloseoutToolInput,
 } from "../lib/pr-closeout.js";
-import type { CommandRunner, PrCloseoutCLIOptions } from "./pr-closeout.js";
+import type { PrCloseoutCLIOptions } from "./pr-closeout/args.js";
+import type { CommandRunner } from "./pr-closeout/types.js";
 
 function asString(value: unknown): string | null {
 	return typeof value === "string" ? value : null;

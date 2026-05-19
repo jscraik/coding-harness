@@ -289,7 +289,7 @@ export function gitInspectionBlockedDecision(
 export function phaseExitBlockedDecision(args: {
 	mode: HarnessNextMode;
 	phaseExit: HePhaseExit;
-	sourceErrors: DecisionSource[];
+	sourceErrors: readonly DecisionSource[];
 }): HarnessDecision {
 	const gateResult = normaliseHePhaseExitResult(args.phaseExit);
 	const requiresHuman = args.phaseExit.gates.some((gate) => gate.requiresHuman);
@@ -343,7 +343,7 @@ export function phaseExitBlockedDecision(args: {
 export function runtimeCardBlockedDecision(args: {
 	mode: HarnessNextMode;
 	runtimeCard: RuntimeCard;
-	sourceErrors: DecisionSource[];
+	sourceErrors: readonly DecisionSource[];
 }): HarnessDecision {
 	const runtimeBlocked = runtimeCardBlocksContinuation(args.runtimeCard);
 	const blockerSummary =
@@ -454,7 +454,7 @@ export function fleetMatrixArtifactDecision(args: {
 export function noChangedFilesDecision(args: {
 	mode: HarnessNextMode;
 	filesSource: "override" | "git";
-	sourceErrors: DecisionSource[];
+	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
 }): HarnessDecision {
@@ -538,7 +538,7 @@ export function changedFilesDecision(args: {
 	mode: HarnessNextMode;
 	files: string[];
 	filesSource: "override" | "git";
-	sourceErrors: DecisionSource[];
+	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
 }): HarnessDecision {

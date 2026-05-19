@@ -226,6 +226,19 @@ function runtimeCard(overrides: Partial<RuntimeCard> = {}): RuntimeCard {
 			},
 		],
 		blockers: [],
+		attemptLedger: {
+			schemaVersion: "attempt-ledger/v1",
+			command: "runtime-card",
+			attempt: 1,
+			maxAttempts: 1,
+			firstFailure: null,
+			retryDecision: "none",
+			owner: "codex",
+			stopReason: null,
+			nextAction: "Run harness next --json.",
+			evidenceRefs: ["git:status"],
+		},
+		recoveryEvent: null,
 		...overrides,
 	};
 }
@@ -621,10 +634,52 @@ describe("runHarnessNext", () => {
 		});
 	});
 
-	it("changes recommendation posture for pr mode", () => {
+	it("blocks pr mode without required runtime evidence", () => {
 		const decision = runHarnessNext({
 			files: ["docs/spec.md"],
 			mode: "pr",
+		});
+
+		expect(decision.status).toBe("blocked");
+		expect(decision.failureClass).toBe("required_evidence_missing");
+		expect(decision.safeToRun).toBe(false);
+		expect(decision.nextAction).toBe(
+			"Provide --phase-exit and --runtime-card artifacts, or rerun in --mode local for exploratory recommendations.",
+		);
+		expect(decision.evidenceRef).toEqual([
+			"input:phase-exit",
+			"input:runtime-card",
+		]);
+		expect(decision.meta).toMatchObject({
+			mode: "pr",
+			missingEvidence: ["phase-exit", "runtime-card"],
+		});
+	});
+
+	it("blocks ci mode without required runtime evidence", () => {
+		const decision = runHarnessNext({
+			files: ["docs/spec.md"],
+			mode: "ci",
+		});
+
+		expect(decision.status).toBe("blocked");
+		expect(decision.failureClass).toBe("required_evidence_missing");
+		expect(decision.safeToRun).toBe(false);
+		expect(decision.evidenceRef).toEqual([
+			"input:phase-exit",
+			"input:runtime-card",
+		]);
+		expect(decision.meta).toMatchObject({
+			mode: "ci",
+			missingEvidence: ["phase-exit", "runtime-card"],
+		});
+	});
+
+	it("changes recommendation posture for pr mode when evidence is explicitly optional", () => {
+		const decision = runHarnessNext({
+			files: ["docs/spec.md"],
+			mode: "pr",
+			evidenceMode: "optional",
 		});
 
 		expect(decision.status).toBe("action_required");
@@ -788,6 +843,7 @@ describe("runHarnessNext", () => {
 				mode: "ci",
 				repoRoot,
 				phaseExit: passingPhaseExit(),
+				runtimeCard: runtimeCard(),
 				inspectChangedFiles: () => {
 					throw new Error("git should not be inspected");
 				},
@@ -1098,6 +1154,27 @@ describe("runNextCLI", () => {
 		expect(decision.status).toBe("blocked");
 		expect(decision.failureClass).toBe("phase_exit_missing");
 		expect(decision.evidenceRef).toEqual(["input:phase-exit"]);
+	});
+
+	it("emits a usage decision when --evidence has no mode", () => {
+		const { exitCode, output } = captureNextCLI(["--json", "--evidence"], {});
+
+		expect(exitCode).toBe(2);
+		const decision = parseDecision(output);
+		expect(decision.status).toBe("blocked");
+		expect(decision.failureClass).toBe("evidence_missing");
+	});
+
+	it("emits a usage decision when --evidence mode is invalid", () => {
+		const { exitCode, output } = captureNextCLI(
+			["--json", "--evidence", "strict"],
+			{},
+		);
+
+		expect(exitCode).toBe(2);
+		const decision = parseDecision(output);
+		expect(decision.status).toBe("blocked");
+		expect(decision.failureClass).toBe("evidence_invalid");
 	});
 
 	it("emits a valid blocked decision for invalid --mode", () => {

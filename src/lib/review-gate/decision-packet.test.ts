@@ -93,6 +93,20 @@ describe("emitReviewGateDecisionArtifacts", () => {
 			recommended: false,
 			reasons: [],
 		});
+		expect(packet.attemptLedger).toMatchObject({
+			schemaVersion: "attempt-ledger/v1",
+			command: "review-gate",
+			attempt: 1,
+			maxAttempts: 1,
+			firstFailure: null,
+			retryDecision: {
+				decision: "none",
+				nextAttempt: null,
+			},
+			owner: "codex",
+			stopReason: null,
+		});
+		expect(packet.recoveryEvent).toBeNull();
 		expect(emitTerminalRunRecordMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				command: "review-gate",
@@ -105,6 +119,10 @@ describe("emitReviewGateDecisionArtifacts", () => {
 						compactionRecommended: false,
 						guardrailPromotionRecommended: false,
 						alignmentDecisionPath: result.alignmentDecisionPath,
+						attemptLedger: expect.objectContaining({
+							schemaVersion: "attempt-ledger/v1",
+						}),
+						recoveryEvent: null,
 					}),
 				}),
 			}),
@@ -172,6 +190,32 @@ describe("emitReviewGateDecisionArtifacts", () => {
 		expect(packet.compaction).toEqual({
 			recommended: true,
 			reasons: ["multiple actionable blockers suggest context compaction"],
+		});
+		expect(packet.attemptLedger).toMatchObject({
+			schemaVersion: "attempt-ledger/v1",
+			command: "review-gate",
+			attempt: 1,
+			maxAttempts: 1,
+			firstFailure: {
+				attempt: 1,
+				failureClass: "policy_blocked",
+				exitCode: 5,
+				observedAt: "2026-03-14T12:00:05.000Z",
+			},
+			retryDecision: {
+				decision: "stop",
+				nextAttempt: null,
+			},
+			owner: "codex",
+			stopReason: "risk-policy-gate check run not found for current HEAD SHA",
+		});
+		expect(packet.recoveryEvent).toMatchObject({
+			schemaVersion: "recovery-event/v1",
+			command: "review-gate",
+			attempt: 1,
+			owner: "codex",
+			failureClass: "policy_blocked",
+			retryDecision: "stop",
 		});
 		expect(emitTerminalRunRecordMock).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -308,12 +352,30 @@ describe("emitReviewGateDecisionArtifacts", () => {
 				};
 				compaction: { recommended: boolean };
 				reviewGate: { timedOut: boolean; errorCode?: string };
+				attemptLedger: {
+					firstFailure: { failureClass: string } | null;
+					owner: string;
+					retryDecision: { decision: string };
+				};
+				recoveryEvent: {
+					failureClass: string;
+					owner: string;
+					retryDecision: string;
+				} | null;
 			};
 
 			expect(packet.decision).toEqual(scenario.expectedDecision);
 			expect(packet.compaction.recommended).toBe(scenario.expectCompaction);
 			expect(packet.reviewGate.timedOut).toBe(scenario.expectTimedOut);
 			expect(packet.reviewGate.errorCode).toBe(scenario.code);
+			expect(packet.attemptLedger.firstFailure?.failureClass).toBe(
+				scenario.code.toLowerCase(),
+			);
+			expect(packet.attemptLedger.retryDecision.decision).toBe("stop");
+			expect(packet.recoveryEvent).toMatchObject({
+				failureClass: scenario.code.toLowerCase(),
+				retryDecision: "stop",
+			});
 			expect(emitTerminalRunRecordMock).toHaveBeenCalledWith(
 				expect.objectContaining({
 					outcome: scenario.expectedOutcome,

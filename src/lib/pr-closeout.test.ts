@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Effect } from "effect";
 import {
 	HE_GATE_RESULT_SCHEMA_VERSION,
 	HE_PHASE_EXIT_SCHEMA_VERSION,
@@ -7,7 +8,11 @@ import {
 	type HeGateResult,
 	type HePhaseExit,
 } from "./decision/he-phase-exit.js";
-import { buildPrCloseoutReport, type PrCloseoutInput } from "./pr-closeout.js";
+import {
+	buildPrCloseoutReport,
+	buildPrCloseoutReportEffect,
+	type PrCloseoutInput,
+} from "./pr-closeout.js";
 
 function gatePayload(gateId: HeGateId): HeGatePayload {
 	switch (gateId) {
@@ -217,6 +222,18 @@ describe("buildPrCloseoutReport", () => {
 			},
 		});
 		expect(report.blockers).toEqual([]);
+		expect(report.attemptLedger).toMatchObject({
+			schemaVersion: "attempt-ledger/v1",
+			command: "pr-closeout",
+			attempt: 1,
+			maxAttempts: 1,
+			firstFailure: null,
+			retryDecision: "none",
+			owner: "codex",
+			stopReason: null,
+			nextAction: "ready_to_merge",
+		});
+		expect(report.recoveryEvent).toBeNull();
 		expect(report.claims).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
@@ -235,6 +252,23 @@ describe("buildPrCloseoutReport", () => {
 				}),
 			]),
 		);
+	});
+
+	it("keeps the Effect API behind the same closeout evidence boundary", () => {
+		const input = baseInput();
+		const options = { now: new Date("2026-05-16T12:00:00.000Z") };
+		const effectReport = Effect.runSync(
+			buildPrCloseoutReportEffect(input, options),
+		);
+
+		// self-affirming-ok: pins sync/Effect boundary parity with adjacent
+		// externally visible schema, status, and action assertions.
+		expect(effectReport).toEqual(buildPrCloseoutReport(input, options));
+		expect(effectReport).toMatchObject({
+			schemaVersion: "pr-closeout/v1",
+			status: "ready",
+			nextAction: "ready_to_merge",
+		});
 	});
 
 	it("accepts a single concrete session reference as traceability evidence", () => {
@@ -387,6 +421,59 @@ describe("buildPrCloseoutReport", () => {
 				}),
 			]),
 		);
+		expect(report.attemptLedger).toMatchObject({
+			firstFailure: {
+				attempt: 1,
+				status: "fixable",
+				nextAction: "codex_can_fix_now",
+			},
+			retryDecision: "stop",
+			owner: "codex",
+			stopReason: "Closeout claim tests_passed is missing required evidence.",
+			nextAction: "codex_can_fix_now",
+		});
+		expect(report.recoveryEvent).toMatchObject({
+			schemaVersion: "recovery-event/v1",
+			command: "pr-closeout",
+			attempt: 1,
+			owner: "codex",
+			failureClass: "unknown",
+			stopReason: "Closeout claim tests_passed is missing required evidence.",
+			nextAction: "codex_can_fix_now",
+			retryDecision: "stop",
+		});
+	});
+
+	it("marks pending external checks as wait-owned recovery", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "PENDING",
+						headSha: "abc123",
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("waiting");
+		expect(report.nextAction).toBe("wait_for_external_check");
+		expect(report.attemptLedger).toMatchObject({
+			retryDecision: "wait",
+			owner: "external_service",
+			firstFailure: {
+				status: "waiting",
+				nextAction: "wait_for_external_check",
+			},
+		});
+		expect(report.recoveryEvent).toMatchObject({
+			owner: "external_service",
+			failureClass: "external_service",
+			nextAction: "wait_for_external_check",
+			retryDecision: "wait",
+		});
 	});
 
 	it("blocks success when Linear tracker state is missing", () => {
@@ -416,7 +503,7 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
-	it("does not treat Closes as open PR tracker alignment evidence", () => {
+	it("accepts Closes as PR tracker alignment evidence", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({
 				pullRequest: {
@@ -426,13 +513,58 @@ describe("buildPrCloseoutReport", () => {
 			}),
 		);
 
-		expect(report.status).not.toBe("ready");
+		expect(report.status).toBe("ready");
 		expect(report.claims).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
 					claim: "linear_tracker_state_aligned",
+					status: "pass",
+					evidenceRef: "pr-body:linear-reference",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
+	it("treats passing checks without SHA metadata as a verifier evidence gap", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.nextAction).not.toBe("wait_for_external_check");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "blocked",
+					freshness: "unknown",
+					blockerClass: "unknown",
+				}),
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
 					status: "unknown",
-					evidenceRef: null,
+					freshness: "unknown",
+					blockerClass: "unknown",
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					fixableByCodex: true,
+					reason:
+						"Closeout claim ci_green could not be proven from verifier evidence.",
 				}),
 			]),
 		);
