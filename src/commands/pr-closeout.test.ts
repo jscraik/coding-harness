@@ -862,6 +862,172 @@ describe("runPrCloseoutCLI", () => {
 		expect(report.status).toBe("ready");
 	});
 
+	it("does not attach status-backed proof when status sha is missing", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/status",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsPage([]);
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				return commitStatuses([
+					{
+						context: "pr-pipeline",
+						target_url: "https://ci.example/status",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			claims: Array<{ claim: string; freshness: string }>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
+					freshness: "unknown",
+				}),
+			]),
+		);
+	});
+
+	it("records tool evidence when status proof cannot be read", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/status",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsPage([]);
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				throw new Error("statuses endpoint unavailable");
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			tools: Array<{
+				ref: string;
+				status: string;
+				failureClass: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.tools).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					ref: expect.stringContaining("/statuses page=1"),
+					status: "blocked",
+					failureClass: expect.stringContaining(
+						"pr_check_status_proof_unreadable",
+					),
+				}),
+			]),
+		);
+	});
+
 	it("does not count PR template placeholders as traceability evidence", async () => {
 		const runner = (
 			command: string,

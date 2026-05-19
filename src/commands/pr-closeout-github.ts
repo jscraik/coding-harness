@@ -77,7 +77,7 @@ function normalizeGhStatuses(
 		const record = item as Record<string, unknown>;
 		const name = asString(record.context);
 		const url = asString(record.target_url) ?? asString(record.targetUrl);
-		const statusSha = asString(record.sha) ?? headSha;
+		const statusSha = asString(record.sha);
 		if (name && url && statusSha === headSha) {
 			proof.set(checkProofKey(name, url), headSha);
 		}
@@ -101,6 +101,15 @@ function statusCount(value: unknown): number {
 			? (value as Record<string, unknown>).statuses
 			: null;
 	return Array.isArray(statuses) ? statuses.length : 0;
+}
+
+function hasUnprovenCheck(
+	checks: readonly PrCloseoutCheckInput[],
+	proof: ReadonlyMap<string, string>,
+): boolean {
+	return checks.some(
+		(check) => check.url && !proof.has(checkProofKey(check.name, check.url)),
+	);
 }
 
 /** Attach observed current-head proof from GitHub's check-runs endpoint. */
@@ -159,6 +168,7 @@ export function fetchCheckHeadProof(
 	env: NodeJS.ProcessEnv,
 	runner: CommandRunner,
 	tools: PrCloseoutToolInput[],
+	checks: readonly PrCloseoutCheckInput[],
 	headSha: string | null | undefined,
 ): Map<string, string> {
 	if (!headSha) return new Map();
@@ -183,6 +193,7 @@ export function fetchCheckHeadProof(
 			}
 			if (checkRunCount(parsed) < perPage) break;
 		}
+		if (!hasUnprovenCheck(checks, proof)) return proof;
 		for (let page = 1; ; page += 1) {
 			let parsed: unknown;
 			try {
@@ -197,8 +208,17 @@ export function fetchCheckHeadProof(
 					{ cwd: options.repoRoot, env },
 				);
 				parsed = JSON.parse(raw) as unknown;
-			} catch {
-				break;
+			} catch (error) {
+				tools.push({
+					name: "github_cli",
+					available: true,
+					ref:
+						"command:gh api repos/:owner/:repo/commits/:head/statuses page=" +
+						String(page),
+					status: "blocked",
+					failureClass: `pr_check_status_proof_unreadable:${sanitizeError(error)}`,
+				});
+				return proof;
 			}
 			for (const [key, value] of normalizeGhStatuses(parsed, headSha)) {
 				proof.set(key, value);

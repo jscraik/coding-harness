@@ -96,12 +96,17 @@
         font-weight: 700;
       }
 
-      .warning {
-        color: var(--warn);
-        font-weight: 700;
-      }
-    </style>
-  </head>
+	      .warning {
+	        color: var(--warn);
+	        font-weight: 700;
+	      }
+
+	      nav ul {
+	        columns: 2;
+	        padding-left: 20px;
+	      }
+	    </style>
+	  </head>
   <body>
     <main>
       <header>
@@ -110,14 +115,34 @@
           Goal board:
           <code>docs/goals/coding-harness-closeout-truth/goal.md</code>
         </p>
-        <p>
-          Source strategy:
-          <code>.harness/strategy/2026-05-18-coding-harness-recommendation-evaluation.md</code>
-        </p>
-      </header>
+	        <p>
+	          Source strategy:
+	          <code>.harness/strategy/2026-05-18-coding-harness-recommendation-evaluation.md</code>
+	        </p>
+	        <nav aria-label="Table of contents">
+	          <h2>Table Of Contents</h2>
+	          <ul>
+	            <li><a href="#current-phase">Current Phase</a></li>
+	            <li><a href="#decisions-not-in-spec">Decisions Not In Spec</a></li>
+	            <li><a href="#tradeoffs">Tradeoffs</a></li>
+	            <li><a href="#files-changed">Files Changed</a></li>
+	            <li><a href="#validation-ledger">Validation Ledger</a></li>
+	            <li><a href="#review-gate-ledger">Review Gate Ledger</a></li>
+	            <li><a href="#staged-files">Staged Files</a></li>
+	            <li><a href="#blockers-and-residual-risk">Blockers And Residual Risk</a></li>
+	            <li><a href="#pr-review-fixes">PR Review Fixes</a></li>
+	            <li><a href="#latest-coderabbit-cleanup">Latest CodeRabbit Cleanup</a></li>
+	            <li><a href="#check-run-pagination-fix">Check-Run Pagination Fix</a></li>
+	            <li><a href="#commit-status-proof-fix">Commit-Status Proof Fix</a></li>
+	            <li><a href="#template-rollback-and-symlink-recovery-fixes">Template Rollback And Symlink Recovery Fixes</a></li>
+	            <li><a href="#status-proof-hardening">Status Proof Hardening</a></li>
+	            <li><a href="#next-safe-action">Next Safe Action</a></li>
+	          </ul>
+	        </nav>
+	      </header>
 
-      <section>
-        <h2>Current Phase</h2>
+	      <section id="current-phase">
+	        <h2>Current Phase</h2>
         <p>
           <span class="status">Goal complete:</span> Final Judge/PM audit
           passed after reviewer findings were accepted, fixed, validated, and
@@ -125,8 +150,8 @@
         </p>
       </section>
 
-      <section>
-        <h2>Decisions Not In Spec</h2>
+	      <section id="decisions-not-in-spec">
+	        <h2>Decisions Not In Spec</h2>
         <ul>
           <li>
             The notes file lives under
@@ -226,8 +251,8 @@
         </ul>
       </section>
 
-      <section>
-        <h2>Tradeoffs</h2>
+	      <section id="tradeoffs">
+	        <h2>Tradeoffs</h2>
         <ul>
           <li>
             The state file now records the completed phased task ledger while
@@ -317,8 +342,8 @@
         </ul>
       </section>
 
-      <section>
-        <h2>Files Changed</h2>
+	      <section id="files-changed">
+	        <h2>Files Changed</h2>
         <table>
           <thead>
             <tr>
@@ -435,8 +460,8 @@
         </table>
       </section>
 
-      <section>
-        <h2>Validation Ledger</h2>
+	      <section id="validation-ledger">
+	        <h2>Validation Ledger</h2>
         <table>
           <thead>
             <tr>
@@ -605,8 +630,8 @@
         </table>
       </section>
 
-      <section>
-        <h2>Review Gate Ledger</h2>
+	      <section id="review-gate-ledger">
+	        <h2>Review Gate Ledger</h2>
         <table>
           <thead>
             <tr>
@@ -650,8 +675,8 @@
         </table>
       </section>
 
-      <section>
-        <h2>Staged Files</h2>
+	      <section id="staged-files">
+	        <h2>Staged Files</h2>
         <ul>
           <li><code>docs/goals/coding-harness-closeout-truth/goal.md</code></li>
           <li><code>docs/goals/coding-harness-closeout-truth/notes/.gitkeep</code></li>
@@ -679,8 +704,8 @@
         </ul>
       </section>
 
-      <section>
-        <h2>Blockers And Residual Risk</h2>
+	      <section id="blockers-and-residual-risk">
+	        <h2>Blockers And Residual Risk</h2>
         <ul>
           <li>
             The current worktree already contains unrelated modified and
@@ -759,8 +784,8 @@
         </ul>
       </section>
 
-      <section>
-        <h2>PR Review Fixes</h2>
+	      <section id="pr-review-fixes">
+	        <h2>PR Review Fixes</h2>
         <ul>
           <li>
             Accepted the CodeRabbit finding that live check freshness must not
@@ -802,8 +827,8 @@
         </ul>
       </section>
 
-      <section>
-        <h2>Latest CodeRabbit Cleanup</h2>
+	      <section id="latest-coderabbit-cleanup">
+	        <h2>Latest CodeRabbit Cleanup</h2>
         <ul>
           <li>
             Accepted the open PR tracker-alignment finding:
@@ -843,8 +868,8 @@
         </ul>
       </section>
 
-      <section>
-        <h2>Check-Run Pagination Fix</h2>
+	      <section id="check-run-pagination-fix">
+	        <h2>Check-Run Pagination Fix</h2>
         <ul>
           <li>
             Accepted CodeRabbit's remaining live finding on
@@ -872,8 +897,8 @@
         </ul>
       </section>
 
-      <section>
-        <h2>Commit-Status Proof Fix</h2>
+	      <section id="commit-status-proof-fix">
+	        <h2>Commit-Status Proof Fix</h2>
         <ul>
           <li>
             Accepted CodeRabbit's commit-status finding:
@@ -901,8 +926,8 @@
         </ul>
       </section>
 
-      <section>
-        <h2>Template Rollback And Symlink Recovery Fixes</h2>
+	      <section id="template-rollback-and-symlink-recovery-fixes">
+	        <h2>Template Rollback And Symlink Recovery Fixes</h2>
         <ul>
           <li>
             Accepted CodeRabbit's repo-template rollback finding:
@@ -929,17 +954,47 @@
             stale warning.
           </li>
         </ul>
-      </section>
+	      </section>
 
-      <section>
-        <h2>Next Safe Action</h2>
-        <p>
-          PR closeout loop update: latest review-thread fixes are validated
-          locally. Next safe action is to stage, commit, push, wait for PR
-          checks and review threads to settle, rerun live
-          <code>pr-closeout</code>, then merge and update local
-          <code>main</code> only after remote evidence is current.
-        </p>
+	      <section id="status-proof-hardening">
+	        <h2>Status Proof Hardening</h2>
+	        <ul>
+	          <li>
+	            Accepted CodeRabbit's status-proof findings:
+	            <code>pr-closeout</code> no longer defaults a missing classic
+	            commit-status <code>sha</code> to the PR head SHA, and status API
+	            read failures are recorded as tool evidence when status-backed
+	            proof is needed.
+	          </li>
+	          <li>
+	            Kept the statuses endpoint narrow: closeout only queries classic
+	            statuses when check-run proof does not already prove every PR
+	            check row. This preserves ready closeout for fully proven
+	            check-run cases while still making status-backed proof auditable.
+	          </li>
+	          <li>
+	            Validation passed:
+	            <code>pnpm vitest run src/commands/pr-closeout.test.ts src/lib/recovery/generated-artifact-parent.test.ts src/lib/pr-closeout.test.ts</code>
+	            passed 51 tests;
+	            <code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/recovery/contract.test.ts src/lib/recovery/generated-artifact-parent.test.ts src/lib/replay/eval-runner.test.ts src/lib/architecture/pr-closeout-truth-contract.test.ts</code>
+	            passed 65 tests;
+	            <code>node scripts/check-pr-closeout-truth-contract.cjs --json</code>
+	            passed; <code>bash scripts/validate-codestyle.sh --fast</code>
+	            passed with the known non-blocking <code>docs/QUALITY_SCORE.md</code>
+	            stale warning.
+	          </li>
+	        </ul>
+	      </section>
+
+	      <section id="next-safe-action">
+	        <h2>Next Safe Action</h2>
+	        <p>
+	          PR closeout loop update: latest status-proof review findings are
+	          validated locally. Next safe action is to stage, commit, push, wait
+	          for PR checks and review threads to settle, rerun live
+	          <code>pr-closeout</code>, then merge and update local
+	          <code>main</code> only after remote evidence is current.
+	        </p>
         <p>
           Validation for this follow-up passed:
           <code>pnpm vitest run src/commands/pr-closeout.test.ts src/lib/pr-closeout.test.ts</code>

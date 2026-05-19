@@ -558,6 +558,7 @@ function buildLiveInput(
 				envLoad.env,
 				runner,
 				tools,
+				checks,
 				pullRequest.headSha,
 			),
 		);
