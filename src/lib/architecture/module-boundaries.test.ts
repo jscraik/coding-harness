@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 2_031,
+		maxLines: 1_948,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/preflight-gate-command-spec.ts",
+		maxLines: 100,
+		reason:
+			"Preflight gate command spec must stay focused on preflight option projection, admission parsing, and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/review-gate-command-spec.ts",
@@ -464,6 +470,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
+	"src/lib/cli/registry/preflight-gate-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
@@ -528,6 +535,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./evidence-verify-command-spec.js",
+	"./preflight-gate-command-spec.js",
 	"./review-gate-command-spec.js",
 	"./linear-command-spec.js",
 	"./linear-gate-command-spec.js",

@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { runArtifactGateCLI } from "../../../commands/artifact-gate.js";
 import { runArtifactRoutineCLI } from "../../../commands/artifact-routine.js";
 import { runAuditCLI } from "../../../commands/audit.js";
@@ -52,7 +51,6 @@ import {
 } from "../../../commands/pilot-rollback.js";
 import { runPlanGateCLI } from "../../../commands/plan-gate.js";
 import { runPrCloseoutCLI } from "../../../commands/pr-closeout.js";
-import { runPreflightGateCLI } from "../../../commands/preflight-gate.js";
 import { runPresetCLI } from "../../../commands/preset.js";
 import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
 import {
@@ -103,6 +101,7 @@ import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
+import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
@@ -133,89 +132,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createRuleLifecycleGateCommandSpec(),
 	createPolicyGateCommandSpec(),
 	createEvidenceVerifyCommandSpec(),
-	{
-		name: "preflight-gate",
-		summary: "Fast policy checks before expensive operations",
-		example: "preflight-gate --files src/auth.ts --json",
-		errorLabel: "Preflight Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const strictFlag = args.includes("--strict");
-			const contractIndex = args.indexOf("--contract");
-			const filesIndex = args.indexOf("--files");
-			const maxTierIndex = args.indexOf("--max-tier");
-			const skipIndex = args.indexOf("--skip");
-			const headShaIndex = args.indexOf("--head-sha");
-			const admissionFileInspection = inspectFlagValue(
-				args,
-				"--admission-file",
-			);
-			if (
-				admissionFileInspection.present &&
-				admissionFileInspection.missingValue
-			) {
-				console.error("Error: --admission-file requires a value");
-				return 2;
-			}
-
-			const options: Parameters<typeof runPreflightGateCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			if (strictFlag) options.strict = true;
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg !== undefined) {
-				options.contractPath = contractArg;
-			}
-			const filesArg = getFlagValue(args, filesIndex);
-			if (filesArg !== undefined) {
-				options.files = parseCsvList(filesArg);
-			}
-			const maxTierArg = getFlagValue(args, maxTierIndex);
-			if (
-				maxTierArg === "high" ||
-				maxTierArg === "medium" ||
-				maxTierArg === "low"
-			) {
-				options.maxTier = maxTierArg;
-			}
-			const skipArg = getFlagValue(args, skipIndex);
-			if (skipArg !== undefined) {
-				options.skip = parseCsvList(skipArg);
-			}
-			const headShaArg = getFlagValue(args, headShaIndex);
-			if (headShaArg) {
-				options.headSha = headShaArg;
-			}
-			if (admissionFileInspection.value !== undefined) {
-				const admissionFileArg = admissionFileInspection.value;
-				try {
-					const parsedAdmission = JSON.parse(
-						readFileSync(admissionFileArg, "utf-8"),
-					) as unknown;
-					if (
-						parsedAdmission === null ||
-						typeof parsedAdmission !== "object" ||
-						Array.isArray(parsedAdmission)
-					) {
-						console.error("Error: --admission-file must contain a JSON object");
-						return 2;
-					}
-					options.admission = parsedAdmission as NonNullable<
-						Parameters<typeof runPreflightGateCLI>[0]["admission"]
-					>;
-				} catch (error) {
-					const message =
-						error instanceof Error ? error.message : String(error);
-					console.error(
-						`Error: failed to parse --admission-file '${admissionFileArg}': ${message}`,
-					);
-					return 2;
-				}
-			}
-
-			return runPreflightGateCLI(options);
-		},
-	},
+	createPreflightGateCommandSpec(),
 	createReviewGateCommandSpec(),
 	{
 		name: "branch-protect",
