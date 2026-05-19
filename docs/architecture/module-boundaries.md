@@ -82,16 +82,19 @@ Output normalisation is a public facade plus focused gate adapter seams:
   - Public export facade for gate normalisation helpers and canonical result
     types.
 - `src/lib/output/normalise-core-v2.ts`
-  - Shared adapter seam for drift, docs, policy, PR template, plan, HE
-    phase-exit, and review/preflight re-exports.
+  - Shared adapter seam for drift, docs, policy, PR template, plan, focused
+    adapter re-exports, and review/preflight re-exports.
+- `src/lib/output/normalise-he-phase-exit.ts`
+  - HE phase-exit findings, evidence references, gate summary metadata, and
+    `GateResult` projection.
 - `src/lib/output/normalise-linear-gate.ts`
   - Linear gate failure classification and `GateResult` projection.
 
 The facade should stay tiny, and gate-specific classification should not grow
 inside `normalise-core-v2.ts`. Agents can adjust Linear gate retry/failure
-classification in `normalise-linear-gate.ts` while callers continue importing
-through `src/lib/output/normalise.ts` and seam tests preserve the public export
-contract.
+classification in `normalise-linear-gate.ts` or HE phase-exit projection in
+`normalise-he-phase-exit.ts` while callers continue importing through
+`src/lib/output/normalise.ts` and seam tests preserve the public export contract.
 
 ## Command Facade Boundaries
 
@@ -336,8 +339,11 @@ Threshold policy:
 - `src/lib/output/normalise.ts` must remain a public output normalisation facade
   (`<= 10` lines).
 - `src/lib/output/normalise-core-v2.ts` must remain a shared gate adapter seam
-  (`<= 760` lines); gate-specific failure classification moves into focused
+  (`<= 520` lines); gate-specific failure classification moves into focused
   normalisation modules.
+- `src/lib/output/normalise-he-phase-exit.ts` must remain a HE phase-exit
+  normalisation seam (`<= 230` lines) for finding projection, evidence
+  references, gate summary metadata, and canonical `GateResult` projection.
 - `src/lib/output/normalise-linear-gate.ts` must remain a Linear gate
   normalisation seam (`<= 240` lines) for failure classification and canonical
   `GateResult` projection.

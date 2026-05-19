@@ -426,7 +426,14 @@
                 <strong>normalise-core-v2.ts</strong>
                 <span>
                   Shared adapter seam for drift, docs, policy, PR template,
-                  plan, HE phase-exit, and review/preflight exports.
+                  plan, focused adapter re-exports, and review/preflight exports.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>normalise-he-phase-exit.ts</strong>
+                <span>
+                  HE phase-exit findings, evidence references, gate metadata,
+                  and GateResult projection live behind a focused adapter seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -938,7 +945,8 @@
               command-capabilities.ts stays the public catalog builder.
               Linear gate failure classification and GateResult projection now
               live behind normalise-linear-gate.ts while normalise.ts stays the
-              public output facade.
+              public output facade. HE phase-exit GateResult projection now lives
+              behind normalise-he-phase-exit.ts.
             </p>
           </article>
           <article class="note">
