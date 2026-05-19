@@ -127,7 +127,7 @@ export function buildPrCloseoutReportEffect(
 	input: PrCloseoutInput,
 	options: { now?: Date } = {},
 ): Effect.Effect<PrCloseoutReport> {
-	return Effect.succeed(buildPrCloseoutReportValue(input, options));
+	return Effect.sync(() => buildPrCloseoutReportValue(input, options));
 }
 
 /** Build a read-only PR closeout evidence report from normalized PR closeout inputs. */

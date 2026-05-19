@@ -135,6 +135,12 @@ function writeCloseoutGates(
 	return path;
 }
 
+function writeEnvFile(dir: string): string {
+	const path = join(dir, "codex.env");
+	writeFileSync(path, "# test env file\n");
+	return path;
+}
+
 const PR_BODY_WITH_TRACEABILITY = `
 Refs JSC-327
 
@@ -221,9 +227,17 @@ async function capture(
 			error.push(String(message));
 		});
 	try {
+		const runArgs =
+			args.includes("--pr") && !args.includes("--env-file")
+				? [
+						...args,
+						"--env-file",
+						writeEnvFile(mkdtempSync(join(tmpdir(), "pr-closeout-env-"))),
+					]
+				: args;
 		const runOptions = runner ? { runner } : {};
 		return {
-			exitCode: await runPrCloseoutCLI(args, runOptions),
+			exitCode: await runPrCloseoutCLI(runArgs, runOptions),
 			output: output.join("\n"),
 			error: error.join("\n"),
 		};

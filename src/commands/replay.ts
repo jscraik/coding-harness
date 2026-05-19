@@ -212,11 +212,12 @@ function resolveReplayConfig(
 				maxTraces: 100,
 			},
 		};
-	} catch {
+	} catch (err) {
+		const reason = err instanceof Error ? err.message : String(err);
 		logReplayError(
 			options,
 			"VALIDATION_ERROR",
-			`Invalid trace directory: ${options.traceDir}`,
+			`Invalid trace directory: ${options.traceDir} (${reason})`,
 		);
 		return {
 			ok: false,

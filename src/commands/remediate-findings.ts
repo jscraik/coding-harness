@@ -137,7 +137,11 @@ export function normalizeFindingsOrFail(
 		}
 	}
 
-	if (findings.length === 0 && parseErrors.length > 0) {
+	if (findings.length === 0) {
+		const message =
+			parseErrors.length > 0
+				? `All findings failed to parse. First error: ${parseErrors[0]?.error}`
+				: "No findings provided or all findings were filtered out.";
 		return {
 			ok: false,
 			result: finalize(
@@ -146,7 +150,7 @@ export function normalizeFindingsOrFail(
 						ok: false,
 						error: {
 							code: "E_VALIDATION",
-							message: `All findings failed to parse. First error: ${parseErrors[0]?.error}`,
+							message,
 							context: { parseErrors },
 						},
 					},
@@ -154,7 +158,7 @@ export function normalizeFindingsOrFail(
 				},
 				{
 					stage: "normalize_findings",
-					error: "all_findings_invalid",
+					error: parseErrors.length > 0 ? "all_findings_invalid" : "no_findings",
 					parseErrorCount: parseErrors.length,
 				},
 			),

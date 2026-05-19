@@ -2,6 +2,9 @@ import { spawnSync } from "node:child_process";
 import { commandExists } from "./doctor-check-utils.js";
 import type { DoctorCheckFn } from "./doctor-checks.js";
 
+const GITHUB_AUTH_TIMEOUT =
+	Number(process.env.GITHUB_AUTH_TIMEOUT) || 3000;
+
 /** GitHub CLI prerequisite checks used by harness doctor. */
 export const DOCTOR_GITHUB_TOOL_CHECKS: DoctorCheckFn[] = [
 	(_dir) => {
@@ -19,9 +22,20 @@ export const DOCTOR_GITHUB_TOOL_CHECKS: DoctorCheckFn[] = [
 		const authResult = spawnSync("gh", ["auth", "status"], {
 			stdio: "pipe",
 			encoding: "utf-8",
-			timeout: 5000,
+			timeout: GITHUB_AUTH_TIMEOUT,
 		});
 		if (authResult.error) {
+			const err = authResult.error as NodeJS.ErrnoException;
+			if (err.code === "ETIMEDOUT") {
+				return {
+					id: "tool:gh",
+					category: "tool",
+					label: "GitHub CLI (gh)",
+					status: "warn",
+					message: `gh auth check timed out after ${GITHUB_AUTH_TIMEOUT}ms — network or gh responsiveness issue`,
+					fix: "Check network connectivity and gh installation, then retry or increase GITHUB_AUTH_TIMEOUT",
+				};
+			}
 			return {
 				id: "tool:gh",
 				category: "tool",

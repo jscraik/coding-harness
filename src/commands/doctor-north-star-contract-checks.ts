@@ -29,7 +29,21 @@ function northStarContractCheck(
 	};
 }
 
-/** North-star contract readiness checks used by harness doctor. */
+/**
+ * North-star contract readiness checks used by harness doctor.
+ *
+ * This exported array contains {@link DoctorCheckFn} checks that validate
+ * the presence and completeness of the north-star runtime contract, including
+ * the `northStar`, `productSurface`, and `overrideReviewerRegistry` blocks
+ * in `harness.contract.json`.
+ *
+ * Each check runs independently and may return `ok`, `warn`, `fail`, or `skip`
+ * status values. The checks verify canonical north-star surfaces (README, roadmap)
+ * and trust registries required for override approval.
+ *
+ * @type {DoctorCheckFn[]}
+ * @public
+ */
 export const DOCTOR_NORTH_STAR_CONTRACT_CHECKS: DoctorCheckFn[] = [
 	(dir) => {
 		const contractPath = resolve(dir, "harness.contract.json");
@@ -52,10 +66,9 @@ export const DOCTOR_NORTH_STAR_CONTRACT_CHECKS: DoctorCheckFn[] = [
 
 		const contractData = validation.data;
 		if (!contractData) {
-			return northStarContractCheck(
-				"fail",
-				"harness.contract.json validated without returning contract data; north-star readiness cannot be verified",
-				"Re-run harness contract validate and repair the contract serialization path",
+			throw new Error(
+				"Internal validator bug: validateContract returned { success: true } without contract data. " +
+					`Validation result: ${JSON.stringify(validation)}`,
 			);
 		}
 

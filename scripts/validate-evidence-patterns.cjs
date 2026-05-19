@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const ROOT = process.cwd();
+const ROOT = path.resolve(__dirname, "..");
 const MANIFEST_PATH = path.join(
 	ROOT,
 	".harness",
@@ -54,7 +54,12 @@ function deepEvidenceFiles() {
 }
 
 function pathExists(repoRelativePath) {
-	return fs.existsSync(path.join(ROOT, repoRelativePath));
+	const resolved = path.resolve(ROOT, repoRelativePath);
+	const relative = path.relative(ROOT, resolved);
+	if (relative.startsWith("..") || path.isAbsolute(relative)) {
+		return false;
+	}
+	return fs.existsSync(resolved);
 }
 
 function validateTargetSurface(pattern, target, errors) {
