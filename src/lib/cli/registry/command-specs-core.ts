@@ -31,10 +31,6 @@ import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runLicenseGateCLI } from "../../../commands/license-gate.js";
-import {
-	EXIT_CODES as LOCAL_MEMORY_PREFLIGHT_EXIT_CODES,
-	runLocalMemoryPreflightCLI,
-} from "../../../commands/local-memory-preflight.js";
 import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
 import { runNextCLI } from "../../../commands/next.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
@@ -100,6 +96,7 @@ import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
+import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
@@ -137,34 +134,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createBranchProtectCommandSpec(),
 	createCheckAuthzCommandSpec(),
 	createCheckEnvironmentCommandSpec(),
-	{
-		name: "local-memory-preflight",
-		summary: "Run the structured Local Memory preflight smoke checks",
-		errorLabel: "Local Memory Preflight Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const configFlag = inspectFlagValue(args, "--config");
-			const daemonLogFlag = inspectFlagValue(args, "--daemon-log");
-
-			const options: Parameters<typeof runLocalMemoryPreflightCLI>[0] = {};
-
-			if (configFlag.missingValue) {
-				console.error("Error: --config requires a path");
-				return LOCAL_MEMORY_PREFLIGHT_EXIT_CODES.USAGE_ERROR;
-			}
-			if (daemonLogFlag.missingValue) {
-				console.error("Error: --daemon-log requires a path");
-				return LOCAL_MEMORY_PREFLIGHT_EXIT_CODES.USAGE_ERROR;
-			}
-			if (jsonFlag) options.json = true;
-			if (configFlag.value !== undefined) options.configPath = configFlag.value;
-			if (daemonLogFlag.value !== undefined) {
-				options.daemonLogPath = daemonLogFlag.value;
-			}
-
-			return runLocalMemoryPreflightCLI(options);
-		},
-	},
+	createLocalMemoryPreflightCommandSpec(),
 	{
 		name: "docs-gate",
 		summary: "Enforce documentation parity for governance changes",

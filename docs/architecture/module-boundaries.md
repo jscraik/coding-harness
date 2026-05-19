@@ -102,6 +102,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/check-environment-command-spec.ts`
   - Environment check option projection and delegation to the environment
     command.
+- `src/lib/cli/registry/local-memory-preflight-command-spec.ts`
+  - Local Memory preflight option projection, usage-error handling, and
+    delegation to the Local Memory preflight command.
 - `src/lib/cli/registry/evidence-verify-command-spec.ts`
   - Evidence verify option projection and delegation to the evidence verify
     command.
@@ -122,11 +125,12 @@ registry seam. Agents can adjust Linear gate option projection in
 `policy-gate-command-spec.ts`, branch protection option projection in
 `branch-protect-command-spec.ts`, authorization check option projection in
 `check-authz-command-spec.ts`, environment check option projection in
-`check-environment-command-spec.ts`, evidence verify option projection in
-`evidence-verify-command-spec.ts`, preflight gate option projection and
-admission parsing in `preflight-gate-command-spec.ts`, and review gate option
-projection in `review-gate-command-spec.ts`, while `command-specs-core.ts`
-remains an assembler for registered command specs.
+`check-environment-command-spec.ts`, Local Memory preflight option projection
+and usage-error handling in `local-memory-preflight-command-spec.ts`, evidence
+verify option projection in `evidence-verify-command-spec.ts`, preflight gate
+option projection and admission parsing in `preflight-gate-command-spec.ts`,
+and review gate option projection in `review-gate-command-spec.ts`, while
+`command-specs-core.ts` remains an assembler for registered command specs.
 
 ## Output Normalisation Boundaries
 
@@ -409,8 +413,11 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 1850` lines); workflow-specific parsing belongs in focused command spec
+  (`<= 1820` lines); workflow-specific parsing belongs in focused command spec
   seams.
+- `src/lib/cli/registry/local-memory-preflight-command-spec.ts` must stay
+  focused on Local Memory preflight option projection, usage-error handling, and
+  command delegation (`<= 60` lines).
 - `src/lib/cli/registry/check-environment-command-spec.ts` must stay focused on
   environment check option projection and command delegation (`<= 40` lines).
 - `src/lib/cli/registry/check-authz-command-spec.ts` must stay focused on

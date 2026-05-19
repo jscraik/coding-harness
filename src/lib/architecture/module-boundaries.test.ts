@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_850,
+		maxLines: 1_820,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/local-memory-preflight-command-spec.ts",
+		maxLines: 60,
+		reason:
+			"Local memory preflight command spec must stay focused on local-memory option projection and usage-error handling.",
 	},
 	{
 		path: "src/lib/cli/registry/check-environment-command-spec.ts",
@@ -491,6 +497,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/check-authz-command-spec.ts",
 	"src/lib/cli/registry/check-environment-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
+	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
@@ -559,6 +566,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./check-authz-command-spec.js",
 	"./check-environment-command-spec.js",
 	"./evidence-verify-command-spec.js",
+	"./local-memory-preflight-command-spec.js",
 	"./preflight-gate-command-spec.js",
 	"./review-gate-command-spec.js",
 	"./linear-command-spec.js",
