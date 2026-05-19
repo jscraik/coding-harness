@@ -30,7 +30,6 @@ import { runHealthCLI } from "../../../commands/health.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
-import { runLicenseGateCLI } from "../../../commands/license-gate.js";
 import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
 import { runNextCLI } from "../../../commands/next.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
@@ -96,6 +95,7 @@ import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
+import { createLicenseGateCommandSpec } from "./license-gate-command-spec.js";
 import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
@@ -198,33 +198,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runDocsGateCLI(options);
 		},
 	},
-	{
-		name: "license-gate",
-		aliases: ["license-check"],
-		summary: "Validate open-source license (MIT, Apache-2.0, etc.)",
-		errorLabel: "License Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const repoRootIndex = args.indexOf("--repo-root");
-			const allowedIndex = args.indexOf("--allowed");
-			const requireOsiFlag = args.includes("--require-osi");
-			const noCopyleftFlag = args.includes("--no-copyleft");
-
-			const options: Parameters<typeof runLicenseGateCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			if (requireOsiFlag) options.requireOsiApproved = true;
-			if (noCopyleftFlag) options.allowCopyleft = false;
-			const repoRootArg = getFlagValue(args, repoRootIndex);
-			if (repoRootArg) options.repoRoot = repoRootArg;
-			const allowedArg = getFlagValue(args, allowedIndex);
-			if (allowedArg !== undefined) {
-				options.allowedLicenses = parseCsvList(allowedArg);
-			}
-
-			return runLicenseGateCLI(options);
-		},
-	},
+	createLicenseGateCommandSpec(),
 	{
 		name: "symphony-check",
 		aliases: ["symphony:check"],
