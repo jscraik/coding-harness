@@ -25,9 +25,15 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/output/normalise-core-v2.ts",
-		maxLines: 150,
+		maxLines: 30,
 		reason:
-			"Output normalise core must stay a shared adapter seam; gate-specific failure classification moves behind focused modules.",
+			"Output normalise core must stay a compatibility export surface; gate-specific behavior lives behind focused modules.",
+	},
+	{
+		path: "src/lib/output/normalise-drift-gate.ts",
+		maxLines: 100,
+		reason:
+			"Drift gate normalisation must stay focused on drift findings, artifact evidence, and GateResult projection.",
 	},
 	{
 		path: "src/lib/output/normalise-docs-gate.ts",
@@ -401,6 +407,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/output/normalise.ts",
 	"src/lib/output/normalise-core-v2.ts",
 	"src/lib/output/normalise-docs-gate.ts",
+	"src/lib/output/normalise-drift-gate.ts",
 	"src/lib/output/normalise-he-phase-exit.ts",
 	"src/lib/output/normalise-linear-gate.ts",
 	"src/lib/output/normalise-plan-gate.ts",
@@ -517,6 +524,7 @@ const COMMAND_CAPABILITY_SUBMODULES = [
 ] as const;
 const OUTPUT_NORMALISE_SUBMODULES = [
 	"./normalise-docs-gate.js",
+	"./normalise-drift-gate.js",
 	"./normalise-he-phase-exit.js",
 	"./normalise-linear-gate.js",
 	"./normalise-plan-gate.js",

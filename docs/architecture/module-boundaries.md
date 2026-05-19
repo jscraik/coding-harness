@@ -82,8 +82,10 @@ Output normalisation is a public facade plus focused gate adapter seams:
   - Public export facade for gate normalisation helpers and canonical result
     types.
 - `src/lib/output/normalise-core-v2.ts`
-  - Shared adapter seam for drift, focused adapter re-exports, and
-    review/preflight re-exports.
+  - Compatibility export surface for focused adapter modules and canonical
+    normalisation helpers.
+- `src/lib/output/normalise-drift-gate.ts`
+  - Drift findings, artifact evidence references, and `GateResult` projection.
 - `src/lib/output/normalise-docs-gate.ts`
   - Docs findings, metadata, and `GateResult` projection.
 - `src/lib/output/normalise-plan-gate.ts`
@@ -101,7 +103,8 @@ Output normalisation is a public facade plus focused gate adapter seams:
   - Linear gate failure classification and `GateResult` projection.
 
 The facade should stay tiny, and gate-specific classification should not grow
-inside `normalise-core-v2.ts`. Agents can adjust Linear gate retry/failure
+inside `normalise-core-v2.ts`. Agents can adjust drift artifact projection in
+`normalise-drift-gate.ts`, Linear gate retry/failure
 classification in `normalise-linear-gate.ts`, policy tier projection in
 `normalise-policy-gate.ts`, docs metadata projection in
 `normalise-docs-gate.ts`, plan validation projection in
@@ -353,9 +356,12 @@ Threshold policy:
   capability policy-table seam (`<= 340` lines).
 - `src/lib/output/normalise.ts` must remain a public output normalisation facade
   (`<= 10` lines).
-- `src/lib/output/normalise-core-v2.ts` must remain a shared gate adapter seam
-  (`<= 150` lines); gate-specific failure classification moves into focused
+- `src/lib/output/normalise-core-v2.ts` must remain a compatibility export surface
+  (`<= 30` lines); gate-specific failure classification lives in focused
   normalisation modules.
+- `src/lib/output/normalise-drift-gate.ts` must remain a drift gate
+  normalisation seam (`<= 100` lines) for drift findings, artifact evidence, and
+  canonical `GateResult` projection.
 - `src/lib/output/normalise-docs-gate.ts` must remain a docs gate normalisation
   seam (`<= 80` lines) for docs findings, metadata, and canonical `GateResult`
   projection.
