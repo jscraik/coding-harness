@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_794,
+		maxLines: 1_770,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/symphony-check-command-spec.ts",
+		maxLines: 35,
+		reason:
+			"Symphony check command spec must stay focused on Symphony option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/license-gate-command-spec.ts",
@@ -513,6 +519,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/policy-gate-command-spec.ts",
 	"src/lib/cli/registry/pr-template-gate-command-spec.ts",
 	"src/lib/cli/registry/rule-lifecycle-gate-command-spec.ts",
+	"src/lib/cli/registry/symphony-check-command-spec.ts",
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
 	"src/lib/output/normalise-core-v2.ts",
@@ -582,6 +589,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./policy-gate-command-spec.js",
 	"./pr-template-gate-command-spec.js",
 	"./rule-lifecycle-gate-command-spec.js",
+	"./symphony-check-command-spec.js",
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [
 	"./next-args.js",

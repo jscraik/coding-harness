@@ -59,7 +59,6 @@ import {
 	printSimulateUsage,
 	runSimulateCLI,
 } from "../../../commands/simulate.js";
-import { runSymphonyCheckCLI } from "../../../commands/symphony-check.js";
 import { runToolingAuditCLI } from "../../../commands/tooling-audit.js";
 import {
 	runUIExploreCLI,
@@ -102,6 +101,7 @@ import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
+import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
@@ -199,31 +199,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		},
 	},
 	createLicenseGateCommandSpec(),
-	{
-		name: "symphony-check",
-		aliases: ["symphony:check"],
-		summary:
-			"Validate Symphony readiness (WORKFLOW.md, Linear config, transition table)",
-		errorLabel: "Symphony Check Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const repoRootIndex = args.indexOf("--repo-root");
-			const workflowIndex = args.indexOf("--workflow");
-			const envFileIndex = args.indexOf("--env-file");
-
-			const options: Parameters<typeof runSymphonyCheckCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			const repoRootArg = getFlagValue(args, repoRootIndex);
-			if (repoRootArg) options.repoRoot = repoRootArg;
-			const workflowArg = getFlagValue(args, workflowIndex);
-			if (workflowArg) options.workflowPath = workflowArg;
-			const envFileArg = getFlagValue(args, envFileIndex);
-			if (envFileArg) options.envFilePath = envFileArg;
-
-			return runSymphonyCheckCLI(options);
-		},
-	},
+	createSymphonyCheckCommandSpec(),
 	{
 		name: "workflow:generate",
 		aliases: ["workflow-generate"],
