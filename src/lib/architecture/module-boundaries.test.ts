@@ -46,6 +46,36 @@ const NEXT_SURFACE_RATCHETS = [
 		reason:
 			"Harness next runner must stay focused on decision production; CLI artifact loading and output stay in the command facade.",
 	},
+	{
+		path: "src/commands/next-decisions.ts",
+		maxLines: 80,
+		reason:
+			"Harness next decisions must stay a public decision seam; blocked, metadata, and recommendation internals stay behind focused modules.",
+	},
+	{
+		path: "src/commands/next-blocked-decisions.ts",
+		maxLines: 300,
+		reason:
+			"Harness next blocked decisions must stay focused on source, git, phase-exit, and runtime-card blockers.",
+	},
+	{
+		path: "src/commands/next-decision-meta.ts",
+		maxLines: 120,
+		reason:
+			"Harness next decision metadata must stay focused on normalized operational evidence.",
+	},
+	{
+		path: "src/commands/next-decision-types.ts",
+		maxLines: 40,
+		reason:
+			"Harness next shared types must stay small enough to remain a stable import seam.",
+	},
+	{
+		path: "src/commands/next-recommendation-decisions.ts",
+		maxLines: 260,
+		reason:
+			"Harness next recommendation decisions must stay focused on changed-file and fleet-matrix recommendations.",
+	},
 ] as const;
 
 const RUNTIME_CARD_SURFACE_RATCHETS = [
@@ -75,6 +105,27 @@ const REPLAY_SURFACE_RATCHETS = [
 		maxLines: 230,
 		reason:
 			"Replay run-record seam must stay focused on canonical run-record emission, attempt ledger, and recovery event metadata.",
+	},
+] as const;
+
+const REMEDIATE_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/remediate.ts",
+		maxLines: 360,
+		reason:
+			"Remediate command must stay a command facade; finding normalization and run-record emission stay behind focused seams.",
+	},
+	{
+		path: "src/commands/remediate-findings.ts",
+		maxLines: 210,
+		reason:
+			"Remediate finding normalization must stay focused on provider detection, JSON parsing, and canonical finding conversion.",
+	},
+	{
+		path: "src/commands/remediate-run-record.ts",
+		maxLines: 230,
+		reason:
+			"Remediate run-record seam must stay focused on canonical terminal run-record emission and classification.",
 	},
 ] as const;
 
@@ -287,10 +338,21 @@ const DOCTOR_CONFIG_SUBMODULES = [
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [
 	"./next-args.js",
+	"./next-decisions.js",
+	"./next-phase-exit.js",
 	"./next-runner.js",
+	"./next-runtime-card.js",
 	"./next-usage-errors.js",
 ] as const;
+const NEXT_DECISION_SUBMODULES = [
+	"./next-blocked-decisions.js",
+	"./next-recommendation-decisions.js",
+] as const;
 const REPLAY_COMMAND_SUBMODULES = ["./replay-run-record.js"] as const;
+const REMEDIATE_COMMAND_SUBMODULES = [
+	"./remediate-findings.js",
+	"./remediate-run-record.js",
+] as const;
 const RUNTIME_CARD_COMMAND_SUBMODULES = ["./runtime-card-args.js"] as const;
 const RUNTIME_CARD_CONTRACT_SUBMODULES = [
 	"./runtime-card-validation.js",
@@ -413,6 +475,18 @@ describe("module boundaries", () => {
 		}
 	});
 
+	it("keeps harness next decision internals behind the public decision seam", () => {
+		const decisionsPath = "src/commands/next-decisions.ts";
+		const decisionsContent = readFileSync(
+			join(process.cwd(), decisionsPath),
+			"utf-8",
+		);
+
+		for (const submodule of NEXT_DECISION_SUBMODULES) {
+			expect(decisionsContent).toContain(submodule);
+		}
+	});
+
 	it("keeps runtime-card surfaces split after decomposition", () => {
 		expectRatchetsWithinBudget(RUNTIME_CARD_SURFACE_RATCHETS);
 	});
@@ -429,6 +503,22 @@ describe("module boundaries", () => {
 		);
 
 		for (const submodule of REPLAY_COMMAND_SUBMODULES) {
+			expect(facadeContent).toContain(submodule);
+		}
+	});
+
+	it("keeps remediate surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(REMEDIATE_SURFACE_RATCHETS);
+	});
+
+	it("keeps remediate finding normalization and run-record emission behind the command facade", () => {
+		const facadePath = "src/commands/remediate.ts";
+		const facadeContent = readFileSync(
+			join(process.cwd(), facadePath),
+			"utf-8",
+		);
+
+		for (const submodule of REMEDIATE_COMMAND_SUBMODULES) {
 			expect(facadeContent).toContain(submodule);
 		}
 	});

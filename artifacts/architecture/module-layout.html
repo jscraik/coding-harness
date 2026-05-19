@@ -531,7 +531,35 @@
                 <strong>next-runner.ts</strong>
                 <span>
                   Decision producer seam for source checks, evidence blockers,
-                  changed-file resolution, and recommendation selection.
+                  changed-file resolution, and flow selection.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>next-decisions.ts</strong>
+                <span>
+                  Public decision seam; callers keep one stable import while
+                  internals move behind smaller decision modules.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>next-blocked-decisions.ts</strong>
+                <span>
+                  Blocked-state builders for invalid modes, source blockers,
+                  git failures, phase-exit evidence, and runtime cards.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>next-decision-meta.ts</strong>
+                <span>
+                  Normalizes source, phase-exit, and runtime-card metadata for
+                  every harness-next decision.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>next-recommendation-decisions.ts</strong>
+                <span>
+                  Builds no-change, changed-file, and fleet-matrix
+                  recommendation decisions.
                 </span>
               </div>
               <div class="module doctor">
@@ -544,8 +572,7 @@
               <div class="module guard">
                 <strong>module-boundaries.test.ts</strong>
                 <span>
-                  Ratchets next files and verifies parser plus usage-error seam
-                  imports.
+                  Ratchets next files and verifies command and decision seams.
                 </span>
               </div>
             </div>
@@ -607,7 +634,45 @@
         </section>
 
         <section class="panel">
-          <h2>7. Runtime Card Runtime Seams</h2>
+          <h2>7. Remediate Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/remediate.ts</strong>
+              <span>
+                Public remediate CLI facade. It keeps workspace safety, mode
+                resolution, orchestrator wiring, transaction application, and
+                output together.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>remediate-findings.ts</strong>
+                <span>
+                  Finding parser seam for JSON input, provider detection, and
+                  CodeQL/Codex canonical finding normalization.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>remediate-run-record.ts</strong>
+                <span>
+                  Canonical remediate run-record seam for classification,
+                  policy context, artifacts, and failure preservation.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets remediate files and verifies finding plus run-record
+                  seams stay behind the command facade.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>8. Runtime Card Runtime Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/lib/runtime/runtime-card.ts</strong>
@@ -691,7 +756,7 @@
         </section>
 
         <section class="panel">
-          <h2>8. Why These Splits Exist</h2>
+          <h2>9. Why These Splits Exist</h2>
           <div class="read-me">
             <div class="step">
               <strong>Deep module boundary</strong>
@@ -726,6 +791,10 @@
               readiness were split into named seams with file-size ratchets.
               Harness next CLI parsing now lives behind next-args.ts.
               Harness next decision production now lives behind next-runner.ts.
+              Harness next blocked decisions, decision metadata, and
+              recommendation decisions now live behind next-blocked-decisions.ts,
+              next-decision-meta.ts, and next-recommendation-decisions.ts while
+              next-decisions.ts remains the public import seam.
               Harness next usage-error decisions now live behind
               next-usage-errors.ts.
               Runtime-card CLI parsing now lives behind runtime-card-args.ts.
@@ -739,6 +808,9 @@
               validation now lives behind runtime-card-validation.ts and
               runtime-card-recovery-validation.ts. Replay canonical run-record
               emission now lives behind replay-run-record.ts.
+              Remediate finding normalization now lives behind
+              remediate-findings.ts, and remediate terminal run-record emission
+              now lives behind remediate-run-record.ts.
             </p>
           </article>
           <article class="note">
@@ -753,7 +825,7 @@
             <p>
               Replay run-record emission is now under its local ratchet. The
               next high-leverage slice is outside this module: the remaining
-              size warnings point at next-decisions, remediate, command capabilities, PR
+              size warnings point at command capabilities, PR
               closeout evaluator, and review-gate decision packet surfaces.
             </p>
           </article>

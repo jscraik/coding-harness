@@ -148,16 +148,31 @@ Harness next is a command facade plus decision producer:
 - `src/commands/next-runner.ts`
   - Decision producer seam for source checks, evidence blockers, changed-file
     resolution, fleet-matrix detection, and recommendation selection.
+- `src/commands/next-decisions.ts`
+  - Public decision seam re-exporting the stable harness-next decision interface
+    while keeping decision internals private to focused modules.
+- `src/commands/next-blocked-decisions.ts`
+  - Blocked-decision builders for invalid modes, source blockers, git
+    inspection failures, HE phase-exit blockers, and runtime-card blockers.
+- `src/commands/next-decision-meta.ts`
+  - Shared decision metadata assembly for normalized source, HE phase-exit, and
+    runtime-card evidence.
+- `src/commands/next-recommendation-decisions.ts`
+  - Recommendation builders for no-change, changed-file, and fleet-matrix
+    decisions.
 - `src/commands/next-usage-errors.ts`
   - Usage-error decision seam that translates parser failures into blocked
     `HarnessDecision` values.
 
 The `runHarnessNext` decision path should stay separate from token parsing.
-Agents can evolve CLI flags inside `next-args.ts`, recommendation logic inside
-`next-runner.ts`, and usage-error copy inside `next-usage-errors.ts` while the
-runtime decision surface remains locked through `runHarnessNext`, `runNextCLI`,
-and next tests. Future splits should prefer evidence-loading seams before
-adding more branches to `src/commands/next.ts`.
+Agents can evolve CLI flags inside `next-args.ts`, source orchestration inside
+`next-runner.ts`, decision metadata inside `next-decision-meta.ts`, blocked
+decision copy inside `next-blocked-decisions.ts`, recommendations inside
+`next-recommendation-decisions.ts`, and usage-error copy inside
+`next-usage-errors.ts` while the runtime decision surface remains locked
+through `runHarnessNext`, `runNextCLI`, and next tests. Future splits should
+prefer evidence-loading seams before adding more branches to
+`src/commands/next.ts`.
 
 ## Replay Command Boundaries
 
