@@ -422,7 +422,11 @@
                 </div>
                 <div class="module effect">
                   <strong>evaluator.ts</strong>
-                  <span>Approved Effect boundary.</span>
+                  <span>Approved Effect boundary and report assembly seam.</span>
+                </div>
+                <div class="module">
+                  <strong>recovery.ts</strong>
+                  <span>Attempt ledger and recovery-event seam.</span>
                 </div>
                 <div class="module">
                   <strong>claim-builders.ts</strong>
@@ -810,7 +814,9 @@
               emission now lives behind replay-run-record.ts.
               Remediate finding normalization now lives behind
               remediate-findings.ts, and remediate terminal run-record emission
-              now lives behind remediate-run-record.ts.
+              now lives behind remediate-run-record.ts. PR closeout recovery
+              metadata now lives behind pr-closeout/recovery.ts while
+              evaluator.ts stays the approved Effect report assembly seam.
             </p>
           </article>
           <article class="note">
@@ -825,8 +831,8 @@
             <p>
               Replay run-record emission is now under its local ratchet. The
               next high-leverage slice is outside this module: the remaining
-              size warnings point at command capabilities, PR
-              closeout evaluator, and review-gate decision packet surfaces.
+              size warnings point at command capabilities and review-gate
+              decision packet surfaces.
             </p>
           </article>
         </section>

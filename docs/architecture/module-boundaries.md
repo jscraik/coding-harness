@@ -47,6 +47,7 @@ The current PR closeout boundary is:
 - Public facade: `src/lib/pr-closeout.ts`
 - Contract: `src/lib/pr-closeout/types.ts`
 - Effect evaluator: `src/lib/pr-closeout/evaluator.ts`
+- Internal recovery metadata seam: `src/lib/pr-closeout/recovery.ts`
 - Internal gate blocker adapter: `src/lib/pr-closeout/blockers.ts`
 - Internal claim helpers: `src/lib/pr-closeout/claim-helpers.ts`
 - Internal claim builders: `src/lib/pr-closeout/claim-builders.ts`

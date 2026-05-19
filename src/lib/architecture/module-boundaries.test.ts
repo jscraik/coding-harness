@@ -21,6 +21,21 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 	},
 ] as const;
 
+const PR_CLOSEOUT_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/pr-closeout/evaluator.ts",
+		maxLines: 170,
+		reason:
+			"PR closeout evaluator must stay focused on report assembly; recovery metadata stays behind the recovery seam.",
+	},
+	{
+		path: "src/lib/pr-closeout/recovery.ts",
+		maxLines: 170,
+		reason:
+			"PR closeout recovery seam must stay focused on attempt-ledger and recovery-event construction.",
+	},
+] as const;
+
 const NEXT_SURFACE_RATCHETS = [
 	{
 		path: "src/commands/next.ts",
@@ -353,6 +368,7 @@ const REMEDIATE_COMMAND_SUBMODULES = [
 	"./remediate-findings.js",
 	"./remediate-run-record.js",
 ] as const;
+const PR_CLOSEOUT_EVALUATOR_SUBMODULES = ["./recovery.js"] as const;
 const RUNTIME_CARD_COMMAND_SUBMODULES = ["./runtime-card-args.js"] as const;
 const RUNTIME_CARD_CONTRACT_SUBMODULES = [
 	"./runtime-card-validation.js",
@@ -453,6 +469,22 @@ describe("module boundaries", () => {
 		expect(content).toContain("./policy-validators.js");
 		expect(content).toContain("./validator-helpers.js");
 		expect(countFileLines(validatorPath)).toBeLessThanOrEqual(2700);
+	});
+
+	it("keeps PR closeout evaluator split after decomposition", () => {
+		expectRatchetsWithinBudget(PR_CLOSEOUT_SURFACE_RATCHETS);
+	});
+
+	it("keeps PR closeout recovery metadata behind the evaluator seam", () => {
+		const evaluatorPath = "src/lib/pr-closeout/evaluator.ts";
+		const evaluatorContent = readFileSync(
+			join(process.cwd(), evaluatorPath),
+			"utf-8",
+		);
+
+		for (const submodule of PR_CLOSEOUT_EVALUATOR_SUBMODULES) {
+			expect(evaluatorContent).toContain(submodule);
+		}
 	});
 
 	it("ratchets seam decomposition while they are extracted", () => {

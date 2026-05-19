@@ -11,19 +11,15 @@ import {
 } from "./blockers.js";
 import { buildCloseoutClaims, collectClaimBlockers } from "./claims.js";
 import { isFailedCheck, isPassingCheck, isPendingCheck } from "./evidence.js";
+import { buildPrCloseoutRecoveryState } from "./recovery.js";
 import { deriveNextAction } from "./status.js";
 import {
 	PR_CLOSEOUT_SCHEMA_VERSION,
 	type PrCloseoutBlocker,
-	type PrCloseoutBlockerClassification,
 	type PrCloseoutCheckInput,
-	type PrCloseoutClaim,
 	type PrCloseoutHarnessGateEvidenceSource,
 	type PrCloseoutInput,
 	type PrCloseoutReport,
-	type PrCloseoutStatus,
-	type PrCloseoutRecoveryOwner,
-	type PrCloseoutRetryDecision,
 } from "./types.js";
 
 function summarizeChecks(checks: readonly PrCloseoutCheckInput[]): {
@@ -44,61 +40,6 @@ function summarizeChecks(checks: readonly PrCloseoutCheckInput[]): {
 		else unknown += 1;
 	}
 	return { total: checks.length, failed, pending, passed, unknown };
-}
-
-function blockerEvidenceRefs(
-	blockers: readonly PrCloseoutBlocker[],
-	claims: readonly PrCloseoutClaim[],
-): string[] {
-	const refs = new Set<string>();
-	for (const blocker of blockers) {
-		if (blocker.ref) refs.add(blocker.ref);
-	}
-	for (const claim of claims) {
-		if (claim.evidenceRef) refs.add(claim.evidenceRef);
-	}
-	return [...refs].sort();
-}
-
-function recoveryOwnerFor(
-	status: PrCloseoutStatus,
-	blockers: readonly PrCloseoutBlocker[],
-): PrCloseoutRecoveryOwner {
-	if (
-		status === "waiting" ||
-		blockers.some((blocker) => blocker.classification === "external_service")
-	) {
-		return "external_service";
-	}
-	if (
-		status === "needs_jamie" ||
-		blockers.some(
-			(blocker) => blocker.classification === "needs_jamie_decision",
-		)
-	) {
-		return "operator";
-	}
-	return "codex";
-}
-
-function retryDecisionFor(status: PrCloseoutStatus): PrCloseoutRetryDecision {
-	if (status === "ready") return "none";
-	if (status === "waiting") return "wait";
-	return "stop";
-}
-
-function failureClassFor(
-	blockers: readonly PrCloseoutBlocker[],
-): PrCloseoutBlockerClassification {
-	return blockers[0]?.classification ?? "unknown";
-}
-
-function stopReasonFor(blockers: readonly PrCloseoutBlocker[]): string | null {
-	return blockers[0]?.reason ?? null;
-}
-
-function recoveryEventId(prNumber: number, generatedAt: string): string {
-	return `pr-closeout:${String(prNumber)}:${generatedAt}`;
 }
 
 function buildPrCloseoutReportValue(
@@ -144,44 +85,13 @@ function buildPrCloseoutReportValue(
 	collectClaimBlockers(claims, blockers);
 
 	const decision = deriveNextAction(blockers);
-	const evidenceRefs = blockerEvidenceRefs(blockers, claims);
-	const retryDecision = retryDecisionFor(decision.status);
-	const owner = recoveryOwnerFor(decision.status, blockers);
-	const stopReason = stopReasonFor(blockers);
-	const attemptLedger = {
-		schemaVersion: "attempt-ledger/v1" as const,
-		command: "pr-closeout" as const,
-		attempt: 1,
-		maxAttempts: 1,
-		firstFailure:
-			decision.status === "ready"
-				? null
-				: {
-						attempt: 1,
-						status: decision.status,
-						nextAction: decision.nextAction,
-					},
-		retryDecision,
-		owner,
-		stopReason,
-		nextAction: decision.nextAction,
-		evidenceRefs,
-	};
-	const recoveryEvent =
-		decision.status === "ready" || stopReason === null
-			? null
-			: {
-					schemaVersion: "recovery-event/v1" as const,
-					eventId: recoveryEventId(pr.number, generatedAt),
-					command: "pr-closeout" as const,
-					attempt: 1,
-					owner,
-					failureClass: failureClassFor(blockers),
-					stopReason,
-					nextAction: decision.nextAction,
-					retryDecision,
-					evidenceRefs,
-				};
+	const { attemptLedger, recoveryEvent } = buildPrCloseoutRecoveryState(
+		decision,
+		blockers,
+		claims,
+		pr.number,
+		generatedAt,
+	);
 	return {
 		schemaVersion: PR_CLOSEOUT_SCHEMA_VERSION,
 		generatedAt,
