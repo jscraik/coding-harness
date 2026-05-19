@@ -73,7 +73,9 @@ function normalizeGhPr(
  * @returns An array of check objects where each entry has `name` (defaults to `"unknown"` if not a string), `state` (`string` or `null`), `url` (`string` or `null`), and `source` set to `"github"`.
  */
 function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
-	if (!Array.isArray(value)) return [];
+	if (!Array.isArray(value)) {
+		throw new Error("gh pr checks must return an array");
+	}
 	return value
 		.filter(
 			(item): item is Record<string, unknown> =>

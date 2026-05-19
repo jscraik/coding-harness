@@ -409,6 +409,23 @@ writeFileSync(
 NODE
 
 TMP_CONTEXT="$TMP_DIR/diagram-context.md"
+SOURCE_FOCUS_FILE="$TMP_DIR/source-focus.txt"
+
+{
+	base_ref="$(git -C "$ROOT_DIR" merge-base HEAD origin/main 2>/dev/null || true)"
+	if [[ -n "$base_ref" ]]; then
+		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR "$base_ref"...HEAD -- src scripts package.json tsconfig.json .diagramrc 2>/dev/null || true
+	else
+		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR HEAD -- src scripts package.json tsconfig.json .diagramrc 2>/dev/null || true
+	fi
+} | awk '
+	$0 ~ /^src\// && $0 !~ /\.(test|spec)\.(ts|js)$/ { print }
+	$0 ~ /^scripts\/refresh-diagram-context\.sh$/ { print }
+	$0 ~ /^scripts\/check-diagram-freshness\.sh$/ { print }
+	$0 ~ /^scripts\/lib\/normalize-mermaid-artifact\.cjs$/ { print }
+	$0 == "package.json" || $0 == "tsconfig.json" || $0 == ".diagramrc" { print }
+' | sort -u > "$SOURCE_FOCUS_FILE"
+
 {
 	echo "# Diagram Context Pack"
 	echo
@@ -428,6 +445,16 @@ TMP_CONTEXT="$TMP_DIR/diagram-context.md"
 	echo "- Use .diagram/manifest.json to choose a focused Mermaid file when this combined pack is too large."
 	echo '- For TypeScript implementation detail in this checkout, run `bash scripts/harness-cli.sh source-outline <path> --json` first, then unwrap one symbol with `--symbol <name>`. Downstream repositories can use `harness source-outline <path>`.'
 	echo
+	if [[ -s "$SOURCE_FOCUS_FILE" ]]; then
+		echo "## Changed source focus"
+		echo
+		echo "- These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams."
+		while IFS= read -r source_path; do
+			[[ -n "$source_path" ]] || continue
+			printf -- '- `%s`\n' "$source_path"
+		done < "$SOURCE_FOCUS_FILE"
+		echo
+	fi
 	for file in "$TMP_DIR"/diagrams/*.mmd; do
 		name="$(basename "$file" .mmd)"
 		echo "## ${name}"

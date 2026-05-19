@@ -761,7 +761,7 @@ Refs JSC-328
 				});
 			}
 			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
-				return "{not-json";
+				return JSON.stringify({ message: "unexpected checks payload" });
 			}
 			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
 				return JSON.stringify({
@@ -794,6 +794,62 @@ Refs JSC-328
 					name: "github_cli",
 					available: true,
 					failureClass: expect.stringContaining("pr_checks_unreadable"),
+				}),
+			]),
+		);
+	});
+
+	it("classifies wrong-shape live check output as unreadable", async () => {
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify({ checks: [] });
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(["--json", "--pr", "258"], runner);
+		const report = JSON.parse(result.output) as {
+			tools: Array<{
+				name: string;
+				available: boolean;
+				failureClass: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.tools).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "github_cli",
+					available: true,
+					failureClass: expect.stringContaining(
+						"gh pr checks must return an array",
+					),
 				}),
 			]),
 		);
