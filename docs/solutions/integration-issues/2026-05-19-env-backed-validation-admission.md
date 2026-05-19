@@ -1,13 +1,20 @@
+---
+schema_version: 1
+status: active
+applies_to:
+  - docs/solutions/integration-issues/**
+---
+
 # Env-Backed Validation Admission
 
 ## Table of Contents
 
-- [Problem](#problem)
-- [Current-Session Admission Record](#current-session-admission-record)
-- [Durable Rule](#durable-rule)
-- [Enforcement Surface](#enforcement-surface)
-- [Validation Evidence](#validation-evidence)
-- [Review Condition](#review-condition)
+- [Problem](`#problem`)
+- [Current-Session Admission Record](`#current-session-admission-record`)
+- [Durable Rule](`#durable-rule`)
+- [Enforcement Surface](`#enforcement-surface`)
+- [Validation Evidence](`#validation-evidence`)
+- [Review Condition](`#review-condition`)
 
 ## Problem
 
