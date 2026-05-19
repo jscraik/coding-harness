@@ -873,6 +873,35 @@
       </section>
 
       <section>
+        <h2>Commit-Status Proof Fix</h2>
+        <ul>
+          <li>
+            Accepted CodeRabbit's commit-status finding:
+            <code>pr-closeout</code> now supplements check-run proof with
+            classic commit statuses from the current head SHA, matched by
+            status context and target URL.
+          </li>
+          <li>
+            Added a regression where <code>gh pr checks</code> contains a
+            successful status-backed row and the check-runs endpoint returns no
+            matching proof; closeout reaches <code>ready</code> only after
+            reading the commit statuses endpoint.
+          </li>
+          <li>
+            Validation passed:
+            <code>pnpm vitest run src/commands/pr-closeout.test.ts src/lib/pr-closeout.test.ts</code>
+            passed 42 tests;
+            <code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/recovery/contract.test.ts src/lib/recovery/generated-artifact-parent.test.ts src/lib/replay/eval-runner.test.ts src/lib/architecture/pr-closeout-truth-contract.test.ts</code>
+            passed 61 tests;
+            <code>node scripts/check-pr-closeout-truth-contract.cjs --json</code>
+            passed; <code>bash scripts/validate-codestyle.sh --fast</code>
+            passed with the known non-blocking <code>docs/QUALITY_SCORE.md</code>
+            stale warning.
+          </li>
+        </ul>
+      </section>
+
+      <section>
         <h2>Next Safe Action</h2>
         <p>
           PR closeout loop update: live GitHub checks are green, but review

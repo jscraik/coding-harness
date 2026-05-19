@@ -61,6 +61,30 @@ function normalizeGhCheckRuns(value: unknown): Map<string, string> {
 	return proof;
 }
 
+function normalizeGhStatuses(
+	value: unknown,
+	headSha: string,
+): Map<string, string> {
+	const statuses = Array.isArray(value)
+		? value
+		: value && typeof value === "object"
+			? (value as Record<string, unknown>).statuses
+			: null;
+	if (!Array.isArray(statuses)) return new Map();
+	const proof = new Map<string, string>();
+	for (const item of statuses) {
+		if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+		const record = item as Record<string, unknown>;
+		const name = asString(record.context);
+		const url = asString(record.target_url) ?? asString(record.targetUrl);
+		const statusSha = asString(record.sha) ?? headSha;
+		if (name && url && statusSha === headSha) {
+			proof.set(checkProofKey(name, url), headSha);
+		}
+	}
+	return proof;
+}
+
 function checkRunCount(value: unknown): number {
 	if (Array.isArray(value)) return value.length;
 	const checkRuns =
@@ -68,6 +92,15 @@ function checkRunCount(value: unknown): number {
 			? (value as Record<string, unknown>).check_runs
 			: null;
 	return Array.isArray(checkRuns) ? checkRuns.length : 0;
+}
+
+function statusCount(value: unknown): number {
+	if (Array.isArray(value)) return value.length;
+	const statuses =
+		value && typeof value === "object"
+			? (value as Record<string, unknown>).statuses
+			: null;
+	return Array.isArray(statuses) ? statuses.length : 0;
 }
 
 /** Attach observed current-head proof from GitHub's check-runs endpoint. */
@@ -149,6 +182,28 @@ export function fetchCheckHeadProof(
 				proof.set(key, value);
 			}
 			if (checkRunCount(parsed) < perPage) break;
+		}
+		for (let page = 1; ; page += 1) {
+			let parsed: unknown;
+			try {
+				const raw = runner(
+					"gh",
+					[
+						"api",
+						`repos/${repo.owner}/${repo.repo}/commits/${headSha}/statuses?per_page=${perPage}&page=${page}`,
+						"--jq",
+						".",
+					],
+					{ cwd: options.repoRoot, env },
+				);
+				parsed = JSON.parse(raw) as unknown;
+			} catch {
+				break;
+			}
+			for (const [key, value] of normalizeGhStatuses(parsed, headSha)) {
+				proof.set(key, value);
+			}
+			if (statusCount(parsed) < perPage) break;
 		}
 		return proof;
 	} catch (error) {
