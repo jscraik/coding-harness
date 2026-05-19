@@ -373,10 +373,25 @@ function escapeRegex(value: string): string {
  * @param repoRelativePath - The path to evaluate, expressed relative to the repository root
  * @returns `true` if `repoRelativePath` is non-empty, does not start with `..`, and is not an absolute path; `false` otherwise
  */
+import {
+	basename,
+	dirname,
+	extname,
+	isAbsolute,
+	join,
+	normalize,
+	relative,
+	resolve,
+} from "node:path";
+
 export function isPathInsideRepo(repoRelativePath: string): boolean {
+	const normalized = normalize(repoRelativePath).replace(/\\/g, "/");
 	return (
-		repoRelativePath.length > 0 &&
-		!repoRelativePath.startsWith("..") &&
-		!isAbsolute(repoRelativePath)
+		normalized.length > 0 &&
+		normalized !== "." &&
+		normalized !== ".." &&
+		!normalized.startsWith("../") &&
+		!isAbsolute(normalized)
 	);
+}
 }
