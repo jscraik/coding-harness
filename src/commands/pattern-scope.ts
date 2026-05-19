@@ -275,13 +275,13 @@ export function buildPatternScopeArtifact(
 }
 
 /**
- * Emit a structured JSON error or a plain stderr message and return the usage exit code.
+ * Emit a structured JSON error to stdout or a plain error message to stderr.
  *
  * @param options - Error emission options
  * @param options.json - If `true`, print a structured `PatternScopeError` JSON to stdout; otherwise print a plain error to stderr
  * @param options.code - Machine-readable error code to include in the structured payload
  * @param options.message - Human-readable error message to display
- * @returns The usage exit code (`EXIT_CODES.USAGE`)
+ * @returns The usage exit code `EXIT_CODES.USAGE`
  */
 function emitError(options: {
 	json: boolean;

@@ -16,6 +16,13 @@ type PrCloseoutParseResult =
 	| { options: PrCloseoutCLIOptions }
 	| { exitCode: number };
 
+/**
+ * Print the usage synopsis and short description for the `harness pr-closeout` CLI command.
+ *
+ * Writes a usage line showing available flags and a brief explanation that the command
+ * builds a read-only pr-closeout/v1 report from normalized evidence or live GitHub CLI state,
+ * including Coding Harness closeout gates.
+ */
 function printUsage(): void {
 	console.info(
 		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--gates <path>] [--phase-exit <path>] [--env-file <path>]",
@@ -26,6 +33,13 @@ function printUsage(): void {
 	);
 }
 
+/**
+ * Retrieve the non-flag value immediately following a flag at the given index.
+ *
+ * @param args - The full argument list
+ * @param index - The index of a flag within `args`; the function checks `args[index + 1]`
+ * @returns The next argument if it exists and does not start with `--`, `undefined` otherwise
+ */
 function readFlagValue(
 	args: readonly string[],
 	index: number,
@@ -35,6 +49,12 @@ function readFlagValue(
 	return value;
 }
 
+/**
+ * Parse a string as a base-10 positive integer greater than zero.
+ *
+ * @param value - The input string to parse; may be `undefined`.
+ * @returns The parsed integer if `value` represents an integer greater than 0, `undefined` otherwise.
+ */
 function parsePositiveInteger(value: string | undefined): number | undefined {
 	if (!value) return undefined;
 	if (!/^\d+$/u.test(value)) return undefined;
@@ -43,7 +63,13 @@ function parsePositiveInteger(value: string | undefined): number | undefined {
 	return parsed;
 }
 
-/** Parse command-line arguments for the PR closeout evidence command. */
+/**
+ * Parse CLI arguments for the `pr-closeout` command and produce either parsed options or an exit code.
+ *
+ * @param args - The argv-style list of command-line tokens to parse (for example, `process.argv.slice(2)`).
+ * @returns `{ options: PrCloseoutCLIOptions }` on successful parsing; `{ exitCode: number }` when parsing should terminate early.
+ *          Common `exitCode` values: `0` when help was requested, `2` for invalid or incompatible arguments.
+ */
 export function parseArgs(args: readonly string[]): PrCloseoutParseResult {
 	if (args.includes("--help") || args.includes("-h")) {
 		printUsage();

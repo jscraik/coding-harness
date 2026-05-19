@@ -39,7 +39,13 @@ import {
 } from "./pr-closeout-harness-gates.js";
 import { deriveNextAction, summarizeChecks } from "./pr-closeout-status.js";
 
-/** Build a read-only PR closeout evidence report from normalized PR closeout inputs. */
+/**
+ * Build a read-only PR closeout evidence report from normalized PR closeout input.
+ *
+ * @param input - Normalized PR closeout input containing pull request data, checks, review threads, traceability, dirty paths, harness/phase exit evidence, and tools.
+ * @param options.now - Optional generation timestamp to use instead of the current time.
+ * @returns The generated `PrCloseoutReport` summarizing status, mergeability, next action, blockers, checks summary, review thread summary, traceability, harness gate summary, tools, and excluded dirty paths.
+ */
 export function buildPrCloseoutReport(
 	input: PrCloseoutInput,
 	options: { now?: Date } = {},

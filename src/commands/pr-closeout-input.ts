@@ -14,7 +14,14 @@ const ACCEPTED_CLOSEOUT_GATES_SCHEMA_VERSIONS = [
 	HE_PHASE_EXIT_SCHEMA_VERSION,
 ] as const;
 
-/** Parse JSON text and require an object at the document root. */
+/**
+ * Parse a JSON string and ensure the document root is a non-null plain object.
+ *
+ * @param value - The JSON text to parse.
+ * @param source - Identifier used in the thrown error message when validation fails.
+ * @returns The parsed value as a `Record<string, unknown>`.
+ * @throws Error - If the parsed value is `null`, not an object, or an array. The error message will be `${source} must contain a JSON object`.
+ */
 export function parseJsonObject(
 	value: string,
 	source: string,
@@ -26,7 +33,18 @@ export function parseJsonObject(
 	return parsed as Record<string, unknown>;
 }
 
-/** Parse normalized PR closeout evidence from JSON text. */
+/**
+ * Parse and validate a PR closeout input JSON string into a normalized PrCloseoutInput object.
+ *
+ * Ensures the root is a JSON object containing a `pullRequest` object with a `number` that is
+ * a positive integer. Enforces that at most one of `closeoutGates` or `phaseExit` is present.
+ * If present, the closeout-gates or phase-exit artifact is normalized to a HePhaseExit-compatible
+ * structure and validated. Errors include the provided `source` string to identify the input.
+ *
+ * @param value - JSON text containing the PR closeout input
+ * @param source - Human-readable source label used in error messages (e.g., file path)
+ * @returns The validated and normalized `PrCloseoutInput` object
+ */
 export function parseInput(value: string, source: string): PrCloseoutInput {
 	const parsed = parseJsonObject(value, source);
 	const pullRequest = parsed.pullRequest;
@@ -65,23 +83,46 @@ export function parseInput(value: string, source: string): PrCloseoutInput {
 	return parsed as unknown as PrCloseoutInput;
 }
 
-/** Read and parse a normalized PR closeout input file. */
+/**
+ * Read and parse a normalized PR closeout input file.
+ *
+ * @param path - Filesystem path to the input JSON file
+ * @returns The parsed and normalized `PrCloseoutInput` object
+ */
 export function loadInput(path: string): PrCloseoutInput {
 	return parseInput(readFileSync(path, "utf8"), path);
 }
 
-/** Read and normalize closeout-gate evidence from a repo-relative path. */
+/**
+ * Load a closeout-gates JSON file (resolved relative to the repository root) and normalize it into a `HePhaseExit` artifact.
+ *
+ * @param path - Repository-relative path to the closeout-gates JSON file
+ * @param repoRoot - Filesystem path of the repository root used to resolve `path`
+ * @returns The normalized `HePhaseExit` artifact
+ */
 export function loadCloseoutGates(path: string, repoRoot: string): HePhaseExit {
 	const resolvedPath = resolve(repoRoot, path);
 	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
 	return normalizeCloseoutGatesArtifact(parsed, path);
 }
 
+/**
+ * Produce a human-readable list of accepted closeout-gates schema versions.
+ *
+ * @returns A string listing accepted closeout-gates schema versions separated by " or "
+ */
 function closeoutGatesSchemaList(): string {
 	return ACCEPTED_CLOSEOUT_GATES_SCHEMA_VERSIONS.join(" or ");
 }
 
-/** Normalize supported closeout gate schema variants to the phase-exit shape. */
+/**
+ * Convert a supported closeout-gates artifact variant to the canonical phase-exit shape and validate it.
+ *
+ * @param value - The parsed artifact to normalize; may be any JSON value (object, array, etc.).
+ * @param source - Human-readable source identifier used in validation error messages (e.g., file path or input name).
+ * @returns The normalized and validated `HePhaseExit` artifact.
+ * @throws Error if the value is not a valid Coding Harness closeout-gates artifact; the error message includes the `source`, accepted schema versions, and validation error codes.
+ */
 export function normalizeCloseoutGatesArtifact(
 	value: unknown,
 	source: string,

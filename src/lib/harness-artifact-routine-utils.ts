@@ -113,7 +113,13 @@ export function isPathInsideRepo(repoRelativePath: string): boolean {
 	);
 }
 
-/** Check whether a resolved filesystem path remains inside the repository root. */
+/**
+ * Determine whether resolving `absolutePath` yields a location equal to or inside `repoRoot`.
+ *
+ * @param repoRoot - The repository root path to treat as the containment boundary.
+ * @param absolutePath - The filesystem path to resolve and test for containment.
+ * @returns `true` if the real path of `absolutePath` is the same as or is located inside the real path of `repoRoot`; `false` if it is outside or if path resolution fails.
+ */
 export function resolvedPathStaysInsideRepo(
 	repoRoot: string,
 	absolutePath: string,
@@ -191,16 +197,21 @@ export function validateHistoricalRows(
 }
 
 /**
- * Determine whether a string value should be treated as blank for validation.
+ * Determines whether a string value should be treated as blank for validation.
  *
  * @param value - The string to test; may be `undefined`
- * @returns `true` if `value` is `undefined`, an empty string, contains only whitespace, or is exactly `"n.a."`, `false` otherwise
+ * @returns `true` if `value` is `undefined`, empty after trimming, or exactly `"n.a."`, `false` otherwise
  */
 export function isBlank(value: string | undefined): boolean {
 	return value === undefined || value.trim().length === 0 || value === "n.a.";
 }
 
-/** Format a Date as a local YYYY-MM-DD string for active-index freshness checks. */
+/**
+ * Format a Date into a local YYYY-MM-DD string.
+ *
+ * @param date - Date whose local year, month, and day will be used
+ * @returns The formatted date string in `YYYY-MM-DD` using the date's local time
+ */
 export function formatLocalDate(date: Date): string {
 	const year = date.getFullYear();
 	const month = String(date.getMonth() + 1).padStart(2, "0");

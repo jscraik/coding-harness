@@ -14,6 +14,15 @@ import {
 	STEERING_SIGNAL_PATTERN,
 } from "./pr-template-validator-rules.js";
 
+/**
+ * Normalize a field value extracted from a PR template for reliable comparison.
+ *
+ * Strips surrounding fenced code blocks or single backtick inline code if present,
+ * collapses all consecutive whitespace to single spaces, and trims leading/trailing whitespace.
+ *
+ * @param value - The raw field value possibly containing code fences, inline code, or extra whitespace
+ * @returns The normalized field value suitable for comparison and placeholder checks
+ */
 function normalizeFieldValue(value: string): string {
 	let normalized = value.trim();
 

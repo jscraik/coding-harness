@@ -10,7 +10,21 @@ import type {
 } from "./pr-closeout-types.js";
 import { pushBlocker } from "./pr-closeout-blockers.js";
 
-/** Build the normalized PR closeout gate summary from supplied phase-exit evidence. */
+/**
+ * Produce a normalized summary of Coding Harness closeout gates from optional phase-exit evidence.
+ *
+ * When `closeoutGates` is undefined the returned summary is marked as missing evidence and every
+ * known harness gate is included with `status: "missing"`.
+ *
+ * @param closeoutGates - Phase-exit evidence to derive gate states from; when omitted the summary
+ *   will indicate missing evidence and mark all known gates as missing.
+ * @param evidenceSource - Identifier describing the evidence origin; used to set top-level flags
+ *   such as `closeoutGatesPresent` and `phaseExitPresent`.
+ * @returns A `PrCloseoutHarnessGateSummary` containing every known harness gate with normalized
+ *   fields (`required`, `status`, `evidenceRefs`, `requiresHuman`, `blocker`) and top-level
+ *   recommendation and allow/deny flags reflecting the provided evidence (or `"missing"` when
+ *   evidence is absent).
+ */
 export function buildHarnessGateSummary(
 	closeoutGates: HePhaseExit | undefined,
 	evidenceSource: PrCloseoutHarnessGateEvidenceSource,
@@ -73,7 +87,15 @@ export function buildHarnessGateSummary(
 	};
 }
 
-/** Collect closeout blockers from missing, failed, blocked, or denying harness gates. */
+/**
+ * Append closeout blockers for missing, failed, blocked, or denying harness gates to the provided blockers array.
+ *
+ * Adds a blocker when closeout-gates evidence is missing, for each required gate that is not `pass` or `not_applicable`,
+ * and a final blocker if commit or exit is denied by the harness recommendation flags.
+ *
+ * @param harnessGates - Normalized harness closeout-gate summary used to derive blocker entries
+ * @param blockers - Array to which new `PrCloseoutBlocker` entries will be appended
+ */
 export function collectHarnessGateBlockers(
 	harnessGates: PrCloseoutHarnessGateSummary,
 	blockers: PrCloseoutBlocker[],

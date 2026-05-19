@@ -66,6 +66,20 @@ const CHECKS: ArtifactHandlingCheck[] = [
 	"tracked_state",
 ];
 
+/**
+ * Assemble an ArtifactHandlingRoutineResult from collected findings and executed/failed checks.
+ *
+ * The `checks` map is built for every check in `CHECKS`: a check is `"fail"` if present in `checkFailures`,
+ * `"pass"` if present in `executedChecks`, otherwise `"not_run"`. The `status` is `"pass"` when `findings` is empty,
+ * otherwise `"fail"`. `schemaVersion` is set to `ARTIFACT_HANDLING_ROUTINE_SCHEMA_VERSION`.
+ *
+ * @param repoRoot - Resolved repository root path to include in the result
+ * @param referencedArtifacts - Array of artifact repo-relative paths referenced by the active route
+ * @param findings - Collected findings emitted during validation
+ * @param checkFailures - Set of checks that failed; any check in this set will be marked `"fail"` in `checks`
+ * @param executedChecks - Set of checks that were executed; any executed check not in `checkFailures` will be `"pass"`
+ * @returns The assembled ArtifactHandlingRoutineResult containing per-check statuses, findings, referenced artifacts, repo root, schema version, and overall status
+ */
 function buildResult(
 	repoRoot: string,
 	referencedArtifacts: string[],

@@ -15,6 +15,14 @@ export type CommandRunner = (
 
 const DEFAULT_ENV_FILE = resolve(homedir(), ".codex/.env");
 
+/**
+ * Create a PrCloseoutToolInput describing a Codex environment file at the given path.
+ *
+ * @param resolvedPath - The resolved filesystem path to the environment file; used in the tool `ref` as `env:<resolvedPath>`
+ * @param status - The tool status to record (`"usable" | "missing" | "blocked"`)
+ * @param failureClass - A failure classification string to record, or `null` when there is no failure
+ * @returns A `PrCloseoutToolInput` with `name` set to `"codex_env"`, `available` set to `true`, `ref` set to `env:<resolvedPath>`, and the provided `status` and `failureClass`
+ */
 function codexEnvTool(
 	resolvedPath: string,
 	status: PrCloseoutToolInput["status"],
@@ -29,7 +37,16 @@ function codexEnvTool(
 	};
 }
 
-/** Run a short-lived child process and return trimmed stdout. */
+/**
+ * Runs a short-lived external command and returns its trimmed stdout.
+ *
+ * @param command - The executable to run
+ * @param args - Arguments passed to the executable
+ * @param options - Execution options
+ * @param options.cwd - Working directory for the child process
+ * @param options.env - Optional environment variables for the child process
+ * @returns The child process stdout with surrounding whitespace removed
+ */
 export function defaultRunner(
 	command: string,
 	args: readonly string[],
@@ -44,7 +61,15 @@ export function defaultRunner(
 	}).trim();
 }
 
-/** Load a Codex environment file into a process environment and record tool evidence. */
+/**
+ * Load a Codex-format environment file (defaulting to the standard path) into a process-env object and produce evidence metadata about the file.
+ *
+ * Reads environment variables from the resolved file, applies valid key/value pairs onto a shallow copy of `process.env`, and returns that environment together with a `PrCloseoutToolInput` describing the file's availability and any failure classification.
+ *
+ * @returns An object with:
+ *  - `env`: a shallow copy of `process.env` with variables from the env file applied when present and valid.
+ *  - `tool`: a `PrCloseoutToolInput` that references the resolved file path and indicates the file status (`"usable"`, `"missing"`, or `"blocked"`) and, when blocked, a `failureClass` describing the reason.
+ */
 export function loadEnvFile(envFilePath: string | undefined): {
 	env: NodeJS.ProcessEnv;
 	tool: PrCloseoutToolInput;

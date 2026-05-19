@@ -5,7 +5,14 @@ import { defaultRunner, type CommandRunner } from "./pr-closeout-env.js";
 import { loadCloseoutGates, loadInput } from "./pr-closeout-input.js";
 import { buildLiveInput } from "./pr-closeout-live-input.js";
 
-/** Run the read-only PR closeout command. */
+/**
+ * Execute the read-only PR closeout CLI flow: parse CLI arguments, assemble input (optionally loading closeout gates), build the closeout report, and write either a JSON or human-readable summary to stdout/stderr.
+ *
+ * @param args - Raw CLI arguments (as received from the command line)
+ * @param options - Optional runtime options
+ * @param options.runner - Optional command runner used when building live input
+ * @returns `0` on success, `1` on failure
+ */
 export async function runPrCloseoutCLI(
 	args: readonly string[],
 	options: { runner?: CommandRunner } = {},

@@ -269,6 +269,13 @@ function mentionsChangedStem(
 	return textFileCache.get(repoFile)?.includes(changedStem) ?? false;
 }
 
+/**
+ * Reads the UTF-8 contents of a repository-relative file when it is present and not too large.
+ *
+ * @param repoRoot - Absolute path to the repository root
+ * @param repoFile - Path to the file relative to `repoRoot`
+ * @returns The file contents as a UTF-8 string, or `null` if the file is larger than `MAX_TEXT_FILE_BYTES` or cannot be accessed/read
+ */
 function readTextFileForStemSearch(
 	repoRoot: string,
 	repoFile: string,
@@ -284,7 +291,10 @@ function readTextFileForStemSearch(
 }
 
 /**
- * Detects configured broader-scope trigger phrases present in the provided feedback.
+ * Detects configured broader-scope trigger phrases within the provided feedback.
+ *
+ * Matching is case-insensitive; phrases are returned in their original form and
+ * in the order defined by the configured phrase list.
  *
  * @param feedback - Free-form feedback text to scan for trigger phrases
  * @returns The matched broader-scope phrases in their original form and in the order defined by the configured phrase list; empty array if none are found
@@ -330,10 +340,10 @@ export function buildSearchCommands(
 }
 
 /**
- * Escape double quotes and backslashes so a string can be safely placed inside a double-quoted ripgrep pattern.
+ * Escape characters so a string can be safely placed inside a double-quoted ripgrep pattern.
  *
  * @param value - The string to escape
- * @returns The input with `"` and `\` prefixed by a backslash
+ * @returns The input with `"`, `\`, `$`, and `` ` `` prefixed by a backslash
  */
 function escapeForDoubleQuotedRg(value: string): string {
 	return value.replace(/["\\$`]/g, "\\$&");

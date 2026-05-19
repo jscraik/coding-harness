@@ -72,7 +72,12 @@ export function collectWorktreeBlockers(
 	}
 }
 
-/** Collect blockers caused by pull request state, draft status, mergeability, or missing Linear references. */
+/**
+ * Add blockers for pull request state, draft status, merge conflicts, and missing Linear references.
+ *
+ * @param pr - Pull request metadata used to evaluate state, draft flag, merge state, and body content
+ * @param blockers - Array to append any detected `PrCloseoutBlocker` entries to
+ */
 export function collectPullRequestBlockers(
 	pr: PrCloseoutPullRequestInput,
 	blockers: PrCloseoutBlocker[],
@@ -115,7 +120,14 @@ export function collectPullRequestBlockers(
 	}
 }
 
-/** Collect blockers from failed or pending required check evidence. */
+/**
+ * Collects blockers for failed or pending required check evidence.
+ *
+ * Appends a blocker for each failed check (classification `introduced`, `fixableByCodex: true`) and for each pending check (classification `external_service`, `fixableByCodex: false`). Each blocker `ref` is set to `check.url` when available, otherwise `check.name`.
+ *
+ * @param checks - Array of check evidence to evaluate
+ * @param blockers - Array to which discovered blockers will be appended
+ */
 export function collectCheckBlockers(
 	checks: readonly PrCloseoutCheckInput[],
 	blockers: PrCloseoutBlocker[],
@@ -141,7 +153,17 @@ export function collectCheckBlockers(
 	}
 }
 
-/** Collect blockers from unresolved or unobserved pull request review-thread evidence. */
+/**
+ * Add review-related blockers based on review-thread observability, unresolved thread count, and the PR review decision.
+ *
+ * If `reviewThreads.unresolved` is `null`, adds an "unknown" review blocker and returns. If `reviewThreads.unresolved` is greater than zero,
+ * adds a blocker indicating the number of unresolved threads; the classification is `needs_jamie_decision` when `reviewThreads.needsHuman` is greater than zero,
+ * otherwise `introduced`. Also adds an `introduced` review blocker when the PR's `reviewDecision` normalizes to `CHANGES_REQUESTED`.
+ *
+ * @param pr - Pull request input whose `reviewDecision` is inspected
+ * @param reviewThreads - Observed review-thread evidence; `unresolved` may be `null` or a number, and `needsHuman` signals threads requiring human attention
+ * @param blockers - Array to append generated `PrCloseoutBlocker` entries to
+ */
 export function collectReviewBlockers(
 	pr: PrCloseoutPullRequestInput,
 	reviewThreads: PrCloseoutReviewThreadsInput,
@@ -177,7 +199,12 @@ export function collectReviewBlockers(
 	}
 }
 
-/** Collect blockers for missing AI session or traceability evidence. */
+/**
+ * Adds a traceability blocker when AI session or traceability evidence is incomplete.
+ *
+ * @param traceabilityComplete - Whether traceability evidence (AI session references) is complete.
+ * @param blockers - Array to which the blocker will be appended.
+ */
 export function collectTraceabilityBlocker(
 	traceabilityComplete: boolean,
 	blockers: PrCloseoutBlocker[],

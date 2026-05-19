@@ -11,18 +11,43 @@ import type { PrCloseoutCLIOptions } from "./pr-closeout-args.js";
 import { loadEnvFile, type CommandRunner } from "./pr-closeout-env.js";
 import { parseJsonObject } from "./pr-closeout-input.js";
 
+/**
+ * Coerces a value to a string when it is already a string, otherwise returns `null`.
+ *
+ * @param value - The value to coerce
+ * @returns `value` if it is a string, `null` otherwise.
+ */
 function asString(value: unknown): string | null {
 	return typeof value === "string" ? value : null;
 }
 
+/**
+ * Coerces an unknown value to an integer number when it is already an integer.
+ *
+ * @param value - The value to check for an integer number
+ * @returns The input value as an integer number if it is an integer, `null` otherwise
+ */
 function asNumber(value: unknown): number | null {
 	return typeof value === "number" && Number.isInteger(value) ? value : null;
 }
 
+/**
+ * Coerces an unknown value to a boolean, or returns `null` when it is not a boolean.
+ *
+ * @param value - The value to coerce
+ * @returns `value` if it is a boolean, `null` otherwise.
+ */
 function asBoolean(value: unknown): boolean | null {
 	return typeof value === "boolean" ? value : null;
 }
 
+/**
+ * Convert a GitHub CLI PR JSON object into a PrCloseoutPullRequestInput, coercing fields to expected types.
+ *
+ * @param value - Raw parsed object produced by `gh pr view --json ...`
+ * @param prNumber - Fallback PR number used when `value.number` is missing or not an integer
+ * @returns A `PrCloseoutPullRequestInput` whose fields are coerced: string/boolean fields are returned when valid or `null` when not, and `number` is the coerced `value.number` or `prNumber` when coercion fails
+ */
 function normalizeGhPr(
 	value: Record<string, unknown>,
 	prNumber: number,
@@ -41,6 +66,12 @@ function normalizeGhPr(
 	};
 }
 
+/**
+ * Converts a raw GitHub CLI checks value into an array of check input objects.
+ *
+ * @param value - The raw value returned by `gh pr checks ...`; may be any JSON value.
+ * @returns An array of check objects where each entry has `name` (defaults to `"unknown"` if not a string), `state` (`string` or `null`), `url` (`string` or `null`), and `source` set to `"github"`.
+ */
 function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
 	if (!Array.isArray(value)) return [];
 	return value
@@ -56,6 +87,13 @@ function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
 		}));
 }
 
+/**
+ * Extracts the repository owner and name from a GitHub CLI repo JSON object.
+ *
+ * @param value - The raw `gh repo view --json owner,name` object. `owner` may be a string or an object containing a `login` string; `name` is the repository name.
+ * @returns An object with `owner` and `repo` as strings.
+ * @throws Error if either the owner login or the repository name is missing or not a string.
+ */
 function normalizeGhRepo(value: Record<string, unknown>): {
 	owner: string;
 	repo: string;
@@ -76,6 +114,21 @@ function normalizeGhRepo(value: Record<string, unknown>): {
 	return { owner, repo };
 }
 
+/**
+ * Extracts review-thread resolution counts from a GitHub GraphQL response.
+ *
+ * Accepts the raw GraphQL JSON returned by the GitHub CLI and validates the
+ * presence of `data.repository.pullRequest.reviewThreads`. If `reviewThreads.pageInfo.hasNextPage`
+ * is `true`, returns all `null` fields to indicate pagination. Otherwise counts
+ * nodes with `isResolved === false` as `unresolved`.
+ *
+ * @param value - The GraphQL response object expected to include `data.repository.pullRequest.reviewThreads`
+ * @returns An object with:
+ *  - `unresolved`: the number of unresolved review thread nodes, or `null` when paginated
+ *  - `needsHuman`: always `null` (reserved for future use)
+ *  - `autofixable`: equal to `unresolved` when available, or `null` when paginated
+ * @throws Error if the response is missing or has an unexpected shape for any of `data`, `repository`, `pullRequest`, `reviewThreads`, or `nodes`
+ */
 function normalizeReviewThreadsGraphql(
 	value: Record<string, unknown>,
 ): PrCloseoutReviewThreadsInput {
@@ -127,6 +180,19 @@ function normalizeReviewThreadsGraphql(
 	return { unresolved, needsHuman: null, autofixable: unresolved };
 }
 
+/**
+ * Checks whether an external CLI/tool is available by attempting to execute it and returns a tool status record.
+ *
+ * @param name - Identifier for the tool (used in the returned record)
+ * @param command - Executable to run (e.g., "gh", "snyk")
+ * @param args - Arguments to pass to the executable
+ * @param options - Execution options:
+ *   - repoRoot: working directory to run the command in
+ *   - env: environment variables for the command
+ *   - runner: function used to invoke the command
+ * @returns A `PrCloseoutToolInput` describing the tool:
+ *  `available` is `true` when the command ran without throwing and `false` otherwise; includes a `ref` for the invoked command, `status` indicating usability, and `failureClass` when unavailable.
+ */
 function inspectCommand(
 	name: PrCloseoutToolInput["name"],
 	command: string,
@@ -153,6 +219,13 @@ function inspectCommand(
 	}
 }
 
+/**
+ * Determine whether the git working tree at the given repository root is clean.
+ *
+ * @param repoRoot - Filesystem path to the repository root where `git status` should be run
+ * @param runner - Function used to execute commands (invoked as `runner("git", ["status", "--porcelain"], { cwd: repoRoot })`)
+ * @returns `true` if the working tree has no changes, `false` if there are uncommitted changes, `null` if cleanliness could not be determined due to an error
+ */
 function inspectGitClean(
 	repoRoot: string,
 	runner: CommandRunner,
@@ -168,10 +241,25 @@ function inspectGitClean(
 	}
 }
 
+/**
+ * Detects whether a PR body field value looks like a placeholder.
+ *
+ * @param value - The field text to evaluate; surrounding whitespace is ignored.
+ * @returns `true` if the trimmed value is a placeholder (e.g. "list", "map", "pending", or a `<...>` token), `false` otherwise.
+ */
 function isPlaceholderBodyField(value: string): boolean {
 	return /^(?:list\b|map\b|pending\b|<[^>]+>\s*$)/iu.test(value.trim());
 }
 
+/**
+ * Extracts a labeled field value from a PR body written in markdown-style checklist lines.
+ *
+ * Searches the `body` for a line beginning with `- <label>:` and returns the captured content up to the next checklist field, a new section heading, or the end of the body. The returned value is trimmed; if no value is found, the captured value is empty, or it matches placeholder-like content, the function returns `null`.
+ *
+ * @param body - The pull request body text to search
+ * @param label - The label name to locate (matched literally)
+ * @returns The trimmed field value when present and not placeholder-like, `null` otherwise
+ */
 function bodyField(
 	body: string | null | undefined,
 	label: string,
@@ -188,6 +276,12 @@ function bodyField(
 	return value;
 }
 
+/**
+ * Parse an evidence reference string into an array of individual references.
+ *
+ * @param value - A possibly-null string containing evidence references separated by newlines or commas; entries may be prefixed with list markers (`- ` or `* `) or be the literal `n.a.` (case-insensitive).
+ * @returns An array of trimmed, non-empty evidence reference strings. Returns an empty array if `value` is null, empty, or begins with `n.a.`.
+ */
 function splitEvidenceRefs(value: string | null): string[] {
 	if (!value || /^n\.a\./iu.test(value)) return [];
 	return value
@@ -196,6 +290,19 @@ function splitEvidenceRefs(value: string | null): string[] {
 		.filter((item) => item.length > 0);
 }
 
+/**
+ * Extracts traceability information from a PR body.
+ *
+ * Scans the provided PR body for the labeled sections "Session IDs", "Trace IDs",
+ * and "AI session / traceability". The ID sections are parsed into arrays of evidence
+ * references; the AI session/traceability section is returned as a trimmed string or `null`.
+ *
+ * @param body - The full PR body text (or `null`/`undefined`) to read traceability fields from
+ * @returns An object with:
+ *   - `sessionIds`: an array of evidence references parsed from the "Session IDs" field
+ *   - `traceIds`: an array of evidence references parsed from the "Trace IDs" field
+ *   - `aiSessionTraceability`: the raw value of the "AI session / traceability" field, or `null`
+ */
 function traceabilityFromBody(
 	body: string | null | undefined,
 ): PrCloseoutTraceabilityInput {
@@ -206,6 +313,17 @@ function traceabilityFromBody(
 	};
 }
 
+/**
+ * Fetches review thread resolution information for the configured pull request via the GitHub CLI.
+ *
+ * Attempts to query GitHub's GraphQL API (through `gh`) for review threads on the PR referenced by `options`.
+ * On success returns counts derived from the GraphQL response. On pagination or any error, records a
+ * `github_cli` tool entry in `tools` and returns an object with `unresolved`, `needsHuman`, and `autofixable`
+ * set to `null`.
+ *
+ * @param tools - Mutable array to which this function may append a `github_cli` tool status entry when review-thread data is paginated or unreadable.
+ * @returns A `PrCloseoutReviewThreadsInput` describing unresolved/needs-human/autofixable review-thread counts, or with those fields set to `null` when the data is unavailable.
+ */
 function fetchReviewThreads(
 	options: PrCloseoutCLIOptions,
 	env: NodeJS.ProcessEnv,
@@ -265,6 +383,12 @@ function fetchReviewThreads(
 	}
 }
 
+/**
+ * Probes the local environment for required closeout CLI tools and returns their availability/status.
+ *
+ * @param options - CLI options; `options.repoRoot` is used as the working directory when probing each tool
+ * @returns An array of `PrCloseoutToolInput` entries for the tools `github_cli`, `circleci_cli`, `coderabbit_cli`, and `snyk_cli`, each describing availability, status, and any failure information
+ */
 function inspectCloseoutTools(
 	options: PrCloseoutCLIOptions,
 	env: NodeJS.ProcessEnv,
@@ -294,6 +418,18 @@ function inspectCloseoutTools(
 	];
 }
 
+/**
+ * Fetches a pull request via the GitHub CLI and returns a normalized `PrCloseoutPullRequestInput`.
+ *
+ * Attempts to run `gh pr view <prNumber> --json ...` in `options.repoRoot`, parses and normalizes the JSON into the expected closeout PR shape. On failure, appends a `github_cli` tool entry to `tools` describing the failure and returns a fallback object with `number` set to `prNumber` and `state`, `isDraft`, `mergeStateStatus`, and `body` set to `null`.
+ *
+ * @param options - CLI options (used for `repoRoot` when running the GitHub CLI)
+ * @param prNumber - The pull request number to fetch
+ * @param env - Environment variables to use when invoking the GitHub CLI
+ * @param runner - Command runner used to execute the GitHub CLI
+ * @param tools - Mutable list of tool inspection results; a `github_cli` failure entry is pushed here on error
+ * @returns A `PrCloseoutPullRequestInput` representing the normalized PR data or a fallback with null fields when retrieval fails
+ */
 function fetchPullRequest(
 	options: PrCloseoutCLIOptions,
 	prNumber: number,
@@ -332,6 +468,21 @@ function fetchPullRequest(
 	}
 }
 
+/**
+ * Fetches PR checks via the GitHub CLI and returns them normalized.
+ *
+ * Attempts to run `gh pr checks <prNumber> --json name,state,link` in the repository
+ * specified by `options.repoRoot`. On failure, appends a `github_cli` tool entry to
+ * `tools` with `status: "blocked"` and `failureClass` set to `pr_checks_unreadable:<sanitized>`,
+ * then returns an empty array.
+ *
+ * @param options - CLI options; `repoRoot` is used as the working directory for the command
+ * @param prNumber - Pull request number to query
+ * @param env - Environment variables to use when running the command
+ * @param runner - Function to execute shell commands
+ * @param tools - Mutable list of detected tools; a `github_cli` entry will be pushed on failure
+ * @returns An array of `PrCloseoutCheckInput` representing the PR checks; returns `[]` if unreadable
+ */
 function fetchChecks(
 	options: PrCloseoutCLIOptions,
 	prNumber: number,
@@ -358,7 +509,14 @@ function fetchChecks(
 	}
 }
 
-/** Build normalized PR closeout input by inspecting the local checkout and GitHub CLI state. */
+/**
+ * Build a normalized `PrCloseoutInput` by inspecting the local git checkout and GitHub CLI state.
+ *
+ * @param options - CLI options controlling which PR to inspect and repo/repo-root/env file locations
+ * @param runner - Command runner used to execute external tools (e.g., `gh`, `git`, `circleci`)
+ * @returns A `PrCloseoutInput` containing the normalized pull request, branch cleanliness, checks, review thread summary, traceability info, and inspected tools
+ * @throws Error if `options.prNumber` is not provided
+ */
 export function buildLiveInput(
 	options: PrCloseoutCLIOptions,
 	runner: CommandRunner,
