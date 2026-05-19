@@ -425,8 +425,8 @@
               <div class="module doctor">
                 <strong>normalise-core-v2.ts</strong>
                 <span>
-                  Shared adapter seam for drift, docs, PR template, plan,
-                  focused adapter re-exports, and review/preflight exports.
+                  Shared adapter seam for drift, docs, plan, focused adapter
+                  re-exports, and review/preflight exports.
                 </span>
               </div>
               <div class="module doctor">
@@ -434,6 +434,13 @@
                 <span>
                   Policy tier findings, decision metadata, and GateResult
                   projection live behind a focused adapter seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>normalise-pr-template-gate.ts</strong>
+                <span>
+                  PR template validation findings and GateResult projection live
+                  behind a focused adapter seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -460,8 +467,8 @@
               <div class="module guard">
                 <strong>module-boundaries.test.ts</strong>
                 <span>
-                  Ratchets the facade, shared core, policy, and Linear adapters
-                  while verifying focused seams remain wired.
+                  Ratchets the facade, shared core, policy, PR template, and
+                  Linear adapters while verifying focused seams remain wired.
                 </span>
               </div>
             </div>
@@ -962,7 +969,8 @@
               public output facade. HE phase-exit GateResult projection now lives
               behind normalise-he-phase-exit.ts. Terminal rendering now lives
               behind normalise-renderer.ts. Policy gate projection now lives
-              behind normalise-policy-gate.ts.
+              behind normalise-policy-gate.ts. PR template projection now lives
+              behind normalise-pr-template-gate.ts.
             </p>
           </article>
           <article class="note">
