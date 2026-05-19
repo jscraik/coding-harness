@@ -55,7 +55,8 @@ async function hasSymlinkAncestor(
 		current = resolve(current, part);
 		try {
 			if ((await lstat(current)).isSymbolicLink()) return true;
-		} catch {
+		} catch (error) {
+			if (errorCode(error) !== "ENOENT") return true;
 			break;
 		}
 	}

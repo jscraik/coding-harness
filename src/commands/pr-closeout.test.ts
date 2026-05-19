@@ -1000,7 +1000,7 @@ describe("runPrCloseoutCLI", () => {
 		expect(report.status).toBe("ready");
 	});
 
-	it("does not attach status-backed proof when status sha is missing", async () => {
+	it("attaches status-backed proof when status sha is omitted", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);
 		const runner = (
@@ -1066,21 +1066,10 @@ describe("runPrCloseoutCLI", () => {
 			["--json", "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
-		const report = JSON.parse(result.output) as {
-			status: string;
-			claims: Array<{ claim: string; freshness: string }>;
-		};
+		const report = JSON.parse(result.output) as { status: string };
 
 		expect(result.exitCode).toBe(0);
-		expect(report.status).not.toBe("ready");
-		expect(report.claims).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({
-					claim: "required_checks_match_current_head",
-					freshness: "unknown",
-				}),
-			]),
-		);
+		expect(report.status).toBe("ready");
 	});
 
 	it("records tool evidence when status proof cannot be read", async () => {

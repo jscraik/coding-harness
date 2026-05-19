@@ -137,6 +137,7 @@
 	            <li><a href="#template-rollback-and-symlink-recovery-fixes">Template Rollback And Symlink Recovery Fixes</a></li>
 	            <li><a href="#status-proof-hardening">Status Proof Hardening</a></li>
 	            <li><a href="#final-closeout-review-fixes">Final Closeout Review Fixes</a></li>
+	            <li><a href="#head-scoped-status-and-recovery-denial-fixes">Head-Scoped Status And Recovery Denial Fixes</a></li>
 	            <li><a href="#next-safe-action">Next Safe Action</a></li>
 	          </ul>
 	        </nav>
@@ -1007,6 +1008,30 @@
 	            passed; <code>bash scripts/validate-codestyle.sh --fast</code>
 	            passed with the known non-blocking <code>docs/QUALITY_SCORE.md</code>
 	            stale warning.
+	          </li>
+	        </ul>
+	      </section>
+
+	      <section id="head-scoped-status-and-recovery-denial-fixes">
+	        <h2>Head-Scoped Status And Recovery Denial Fixes</h2>
+	        <ul>
+	          <li>
+	            Accepted the latest current-head status finding:
+	            commit-status rows returned from the head-scoped GitHub statuses
+	            endpoint can prove a check even when GitHub omits
+	            <code>sha</code>, while rows with an explicit mismatched
+	            <code>sha</code> still fail closed.
+	          </li>
+	          <li>
+	            Accepted the latest recovery-safety finding:
+	            generated-artifact parent recovery now treats non-<code>ENOENT</code>
+	            symlink-ancestry inspection errors as denial evidence instead of
+	            continuing as though the path were merely missing.
+	          </li>
+	          <li>
+	            Validation passed:
+	            <code>pnpm vitest run src/commands/pr-closeout.test.ts src/lib/recovery/generated-artifact-parent.test.ts</code>
+	            passed 29 tests.
 	          </li>
 	        </ul>
 	      </section>

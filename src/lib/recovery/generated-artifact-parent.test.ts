@@ -1,4 +1,5 @@
 import {
+	chmodSync,
 	existsSync,
 	mkdtempSync,
 	mkdirSync,
@@ -112,6 +113,36 @@ describe("generated artifact parent recovery handler", () => {
 			reason: "artifact parent traverses a symlink",
 		});
 		expect(existsSync(join(outside, "reviews"))).toBe(false);
+	});
+
+	it("fails closed when artifact path ancestry cannot be inspected", async () => {
+		const repoRoot = makeRoot();
+		mkdirSync(join(repoRoot, "artifacts"), { mode: 0 });
+		const handler = createGeneratedArtifactParentHandler();
+		const context = {
+			failure: "ENOENT: missing generated artifact parent directory",
+			repoRoot,
+			details: { artifactPath: "artifacts/reviews/reviewer.md" },
+		};
+
+		try {
+			expect(await handler.verifyBefore(context)).toMatchObject({
+				ok: false,
+				reason: "artifact parent traverses a symlink",
+			});
+			expect(await handler.recover(context)).toMatchObject({
+				ok: false,
+				status: "denied",
+				reason: "artifact parent traverses a symlink",
+			});
+			expect(existsSync(join(repoRoot, "artifacts/reviews"))).toBe(false);
+		} finally {
+			chmodSync(join(repoRoot, "artifacts"), 0o700);
+			rmSync(join(repoRoot, "artifacts"), {
+				force: true,
+				recursive: true,
+			});
+		}
 	});
 
 	it("supports rollback for an empty recovered parent directory", async () => {

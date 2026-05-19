@@ -78,9 +78,10 @@ function normalizeGhStatuses(
 		const name = asString(record.context);
 		const url = asString(record.target_url) ?? asString(record.targetUrl);
 		const statusSha = asString(record.sha);
-		if (name && url && statusSha === headSha) {
+		const isCurrentHead = !statusSha || statusSha === headSha;
+		if (name && url && isCurrentHead) {
 			proof.set(checkProofKey(name, url), headSha);
-		} else if (name && !url && statusSha === headSha) {
+		} else if (name && !url && isCurrentHead) {
 			proof.set(checkProofKey(name, null), headSha);
 		}
 	}
