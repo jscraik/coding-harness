@@ -12,6 +12,7 @@ import type { ExecutionTrace, TraceEvent } from "./tracer.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+/** Options that control path, timestamp, and secret normalization. */
 export interface NormalizationOptions {
 	/** Base directory to relativize paths against */
 	baseDir: string;
@@ -21,6 +22,7 @@ export interface NormalizationOptions {
 	redactSecrets: boolean;
 }
 
+/** Replay trace after deterministic normalization and redaction. */
 export interface NormalizedTrace {
 	/** Stable trace ID */
 	traceId: string;
@@ -40,6 +42,7 @@ export interface NormalizedTrace {
 	metadata: ExecutionTrace["metadata"];
 }
 
+/** Normalized event entry suitable for replay fixtures and comparison. */
 export interface NormalizedTraceEvent {
 	/** Event type */
 	type: TraceEvent["type"];
@@ -59,6 +62,8 @@ const SECRET_PATTERNS = [
 	/token/i,
 	/secret/i,
 	/password/i,
+	/authorization/i,
+	/cookie/i,
 	/auth[_-]?token/i,
 	/bearer/i,
 	/credentials/i,
@@ -72,8 +77,12 @@ const REDACTED_KEYS = new Set([
 	"password",
 	"token",
 	"secret",
+	"authorization",
+	"cookie",
+	"set-cookie",
 	"apikey",
 	"api_key",
+	"x-api-key",
 	"accesstoken",
 	"access_token",
 	"authtoken",

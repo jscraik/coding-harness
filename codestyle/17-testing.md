@@ -6,6 +6,7 @@
 - [TDD default workflow](#tdd-default-workflow)
 - [Test quality standards](#test-quality-standards)
 - [Exact behavior checks](#exact-behavior-checks)
+- [Evidence-bearing tests](#evidence-bearing-tests)
 - [Coverage and gates](#coverage-and-gates)
 - [Enforcement](#enforcement)
 
@@ -38,6 +39,20 @@
 - If no existing test covers the path, agents MAY create a temporary local reproduction harness under `codex-scripts/`, but it MUST remain gitignored and MUST import or invoke production code directly instead of copying implementation into the harness.
 - If the exact path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, the blocker MUST be stated explicitly and the nearest meaningful validation SHOULD run instead.
 - Production behavior MUST NOT be described as verified unless the touched path actually ran.
+
+## Evidence-bearing tests
+- Tests for validators, generated scaffolds, runtime-card, pr-closeout, replay,
+  gate outputs, and workflow contracts SHOULD assert machine-readable evidence
+  references, blocked/unknown states, and current-head freshness where the
+  behavior depends on external proof.
+- Security-sensitive trace or browser-evidence tests MUST assert that sensitive
+  headers, environment values, metadata, and nested payloads are redacted before
+  artifacts are persisted.
+- Provider error, retry, and rate-limit tests SHOULD use mocks or fixtures unless
+  a live integration test is explicitly budgeted and isolated.
+- Long TDD arcs are a decomposition signal: if a behavior change needs many
+  red/green/refactor steps, split the scenario into smaller proof points before
+  widening validation.
 
 ## Coverage and gates
 - Default target is >= 80% coverage unless a repository contract defines a different threshold.

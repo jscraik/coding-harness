@@ -97,6 +97,10 @@ For PR closeout evidence changes, treat `pr-closeout/v1` and
 Refresh `AI/context/diagram-context.md` and keep this guide synchronized with
 `AGENTS.md` and `docs/agents/07b-agent-governance.md` when docs-gate reports
 the architecture-context surface.
+Structured closeout success must remain claim/evidence driven: model-written
+summaries may point at verifier output, but current required evidence status,
+source, freshness, head SHA, blocker class, and verification timestamp are the
+architecture contract that determines pass, blocked, or unknown outcomes.
 When PR closeout starts consuming coding-harness gate evidence, keep those gates
 harness-owned and HE-compatible rather than HE-owned, refresh the architecture
 context pack, and require the PR template pattern scope inventory to show which

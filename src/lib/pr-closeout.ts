@@ -1,10 +1,30 @@
-import {
-	HARNESS_CLOSEOUT_GATE_CONTRACTS,
-	HARNESS_CLOSEOUT_GATE_IDS,
-	type HeGateId,
-	type HeGateStatus,
-	type HePhaseExit,
+import type {
+	HeGateId,
+	HeGateStatus,
+	HePhaseExit,
 } from "./decision/he-phase-exit.js";
+import type { MissingContextClassification } from "./missing-context/classifier.js";
+import {
+	buildHarnessGateSummary,
+	collectCheckBlockers,
+	collectHarnessGateBlockers,
+	collectPullRequestBlockers,
+	collectReviewBlockers,
+	collectToolBlockers,
+	collectTraceabilityBlocker,
+	collectWorktreeBlockers,
+} from "./pr-closeout/blockers.js";
+import {
+	buildCloseoutClaims,
+	collectClaimBlockers,
+	type PrCloseoutClaim,
+} from "./pr-closeout/claims.js";
+import {
+	isFailedCheck,
+	isPassingCheck,
+	isPendingCheck,
+} from "./pr-closeout/evidence.js";
+import { deriveNextAction } from "./pr-closeout/status.js";
 
 /** Schema version for the first read-only pull request closeout evidence report. */
 export const PR_CLOSEOUT_SCHEMA_VERSION = "pr-closeout/v1" as const;
@@ -44,6 +64,7 @@ export interface PrCloseoutPullRequestInput {
 	isDraft?: boolean | null;
 	mergeStateStatus?: string | null;
 	url?: string | null;
+	headSha?: string | null;
 	headRefName?: string | null;
 	baseRefName?: string | null;
 	reviewDecision?: string | null;
@@ -57,6 +78,7 @@ export interface PrCloseoutCheckInput {
 	conclusion?: string | null;
 	required?: boolean | null;
 	url?: string | null;
+	headSha?: string | null;
 	source?: "github" | "circleci" | "coderabbit" | "other" | null;
 }
 
@@ -66,6 +88,7 @@ export interface PrCloseoutBranchInput {
 	pushed?: boolean | null;
 	behindBase?: boolean | null;
 	hasConflicts?: boolean | null;
+	headSha?: string | null;
 }
 
 /** Review-thread counts consumed by the closeout classifier. */
@@ -80,6 +103,13 @@ export interface PrCloseoutTraceabilityInput {
 	sessionIds?: string[];
 	traceIds?: string[];
 	aiSessionTraceability?: string | null;
+}
+
+/** Rollback evidence named by the PR closeout caller. */
+export interface PrCloseoutRollbackInput {
+	path?: string | null;
+	notApplicable?: boolean | null;
+	evidenceRef?: string | null;
 }
 
 /** Closeout posture for one Coding Harness gate. */
@@ -143,6 +173,7 @@ export interface PrCloseoutInput {
 	checks?: PrCloseoutCheckInput[];
 	reviewThreads?: PrCloseoutReviewThreadsInput;
 	traceability?: PrCloseoutTraceabilityInput;
+	rollback?: PrCloseoutRollbackInput;
 	/** First-class Coding Harness closeout-gates evidence. Preferred for PR closeout. */
 	closeoutGates?: HePhaseExit;
 	/** Backwards-compatible HE phase-exit evidence accepted from older workflows. */
@@ -167,6 +198,7 @@ export interface PrCloseoutBlocker {
 	reason: string;
 	fixableByCodex: boolean;
 	ref?: string;
+	missingContext?: MissingContextClassification;
 }
 
 /** Read-only closeout evidence report for one pull request. */
@@ -179,6 +211,7 @@ export interface PrCloseoutReport {
 	mergeable: boolean;
 	nextAction: PrCloseoutNextAction;
 	blockers: PrCloseoutBlocker[];
+	claims: PrCloseoutClaim[];
 	checks: {
 		total: number;
 		failed: number;
@@ -202,34 +235,6 @@ export interface PrCloseoutReport {
 	dirtyPathsExcluded: PrCloseoutDirtyPathInput[];
 }
 
-function normalizeStatus(value: string | null | undefined): string {
-	return (value ?? "").trim().toUpperCase();
-}
-
-function isPassingCheck(check: PrCloseoutCheckInput): boolean {
-	const status = normalizeStatus(check.conclusion ?? check.state);
-	return ["SUCCESS", "PASSED", "PASS", "NEUTRAL", "SKIPPED"].includes(status);
-}
-
-function isFailedCheck(check: PrCloseoutCheckInput): boolean {
-	const status = normalizeStatus(check.conclusion ?? check.state);
-	return [
-		"FAILURE",
-		"FAILED",
-		"FAIL",
-		"ERROR",
-		"CANCELLED",
-		"TIMED_OUT",
-	].includes(status);
-}
-
-function isPendingCheck(check: PrCloseoutCheckInput): boolean {
-	const status = normalizeStatus(check.conclusion ?? check.state);
-	return ["PENDING", "QUEUED", "IN_PROGRESS", "EXPECTED", "WAITING"].includes(
-		status,
-	);
-}
-
 function summarizeChecks(checks: readonly PrCloseoutCheckInput[]): {
 	total: number;
 	failed: number;
@@ -250,397 +255,13 @@ function summarizeChecks(checks: readonly PrCloseoutCheckInput[]): {
 	return { total: checks.length, failed, pending, passed, unknown };
 }
 
-function hasLinearReference(body: string | null | undefined): boolean {
-	return /\b(?:Refs|Closes)\s+[A-Z][A-Z0-9]+-\d+\b/u.test(body ?? "");
-}
-
-function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
-	status: PrCloseoutStatus;
-	nextAction: PrCloseoutNextAction;
-	mergeable: boolean;
-} {
-	if (blockers.length === 0) {
-		return { status: "ready", nextAction: "ready_to_merge", mergeable: true };
-	}
-	if (
-		blockers.some(
-			(blocker) =>
-				(blocker.surface === "worktree" || blocker.surface === "branch") &&
-				blocker.reason.toLowerCase().includes("conflict"),
-		)
-	) {
-		return {
-			status: "blocked",
-			nextAction: "resolve_conflicts",
-			mergeable: false,
-		};
-	}
-	if (
-		blockers.some(
-			(blocker) =>
-				blocker.surface === "worktree" || blocker.surface === "branch",
-		)
-	) {
-		return {
-			status: "cleanup_required",
-			nextAction: "cleanup_before_continue",
-			mergeable: false,
-		};
-	}
-	if (
-		blockers.some(
-			(blocker) => blocker.classification === "needs_jamie_decision",
-		)
-	) {
-		return {
-			status: "needs_jamie",
-			nextAction: "needs_jamie_decision",
-			mergeable: false,
-		};
-	}
-	if (
-		blockers.some(
-			(blocker) => blocker.surface === "tool" && !blocker.fixableByCodex,
-		)
-	) {
-		return {
-			status: "blocked",
-			nextAction: "needs_jamie_decision",
-			mergeable: false,
-		};
-	}
-	if (blockers.some((blocker) => blocker.fixableByCodex)) {
-		return {
-			status: "fixable",
-			nextAction: "codex_can_fix_now",
-			mergeable: false,
-		};
-	}
-	if (
-		blockers.some(
-			(blocker) => blocker.surface === "checks" && !blocker.fixableByCodex,
-		)
-	) {
-		return {
-			status: "waiting",
-			nextAction: "wait_for_external_check",
-			mergeable: false,
-		};
-	}
-	return {
-		status: "blocked",
-		nextAction: "needs_jamie_decision",
-		mergeable: false,
-	};
-}
-
-function pushBlocker(
-	blockers: PrCloseoutBlocker[],
-	blocker: PrCloseoutBlocker,
-): void {
-	blockers.push(blocker);
-}
-
-function collectWorktreeBlockers(
-	input: PrCloseoutInput,
-	dirtyPathsExcluded: readonly PrCloseoutDirtyPathInput[],
-	blockers: PrCloseoutBlocker[],
-): void {
-	if (dirtyPathsExcluded.length > 0) {
-		pushBlocker(blockers, {
-			surface: "worktree",
-			classification: "unrelated_dirty_worktree",
-			reason:
-				"Unrelated dirty worktree paths must be excluded before PR closeout.",
-			fixableByCodex: false,
-			ref: dirtyPathsExcluded.map((path) => path.path).join(","),
-		});
-	}
-	if (input.branch?.clean === false) {
-		pushBlocker(blockers, {
-			surface: "worktree",
-			classification: "unknown",
-			reason: "Local worktree is dirty; classify paths before PR closeout.",
-			fixableByCodex: true,
-		});
-	}
-	if (input.branch?.pushed === false) {
-		pushBlocker(blockers, {
-			surface: "branch",
-			classification: "introduced",
-			reason: "Branch has not been pushed to the remote PR head.",
-			fixableByCodex: true,
-		});
-	}
-	if (input.branch?.hasConflicts === true) {
-		pushBlocker(blockers, {
-			surface: "branch",
-			classification: "introduced",
-			reason: "Branch has merge conflicts.",
-			fixableByCodex: true,
-		});
-	}
-	if (input.branch?.behindBase === true) {
-		pushBlocker(blockers, {
-			surface: "branch",
-			classification: "introduced",
-			reason: "Branch is behind its base branch.",
-			fixableByCodex: true,
-		});
-	}
-}
-
-function collectPullRequestBlockers(
-	pr: PrCloseoutPullRequestInput,
-	blockers: PrCloseoutBlocker[],
-): void {
-	if (
-		normalizeStatus(pr.state) !== "" &&
-		normalizeStatus(pr.state) !== "OPEN"
-	) {
-		pushBlocker(blockers, {
-			surface: "pr",
-			classification: "needs_jamie_decision",
-			reason: `Pull request state is ${String(pr.state)}; closeout cannot proceed as an open PR.`,
-			fixableByCodex: false,
-		});
-	}
-	if (pr.isDraft === true) {
-		pushBlocker(blockers, {
-			surface: "pr",
-			classification: "needs_jamie_decision",
-			reason: "Pull request is still draft.",
-			fixableByCodex: false,
-		});
-	}
-	if (normalizeStatus(pr.mergeStateStatus) === "DIRTY") {
-		pushBlocker(blockers, {
-			surface: "branch",
-			classification: "introduced",
-			reason: "Pull request merge state reports conflicts.",
-			fixableByCodex: true,
-		});
-	}
-	if (!hasLinearReference(pr.body)) {
-		pushBlocker(blockers, {
-			surface: "linear",
-			classification: "introduced",
-			reason:
-				"Pull request body is missing a Refs/Closes Linear issue reference.",
-			fixableByCodex: true,
-		});
-	}
-}
-
-function collectCheckBlockers(
-	checks: readonly PrCloseoutCheckInput[],
-	blockers: PrCloseoutBlocker[],
-): void {
-	for (const check of checks) {
-		if (isFailedCheck(check)) {
-			pushBlocker(blockers, {
-				surface: "checks",
-				classification: "introduced",
-				reason: `Check failed: ${check.name}.`,
-				fixableByCodex: true,
-				ref: check.url ?? check.name,
-			});
-		} else if (isPendingCheck(check)) {
-			pushBlocker(blockers, {
-				surface: "checks",
-				classification: "external_service",
-				reason: `Check is still pending: ${check.name}.`,
-				fixableByCodex: false,
-				ref: check.url ?? check.name,
-			});
-		}
-	}
-}
-
-function collectReviewBlockers(
-	pr: PrCloseoutPullRequestInput,
-	reviewThreads: PrCloseoutReviewThreadsInput,
-	blockers: PrCloseoutBlocker[],
-): void {
-	if (reviewThreads.unresolved === null) {
-		pushBlocker(blockers, {
-			surface: "review",
-			classification: "unknown",
-			reason:
-				"Review thread state is unobserved; live GitHub reviewThreads evidence is required before PR closeout.",
-			fixableByCodex: true,
-			ref: "github:reviewThreads",
-		});
-		return;
-	}
-	if (reviewThreads.unresolved !== null && reviewThreads.unresolved > 0) {
-		const needsHuman = (reviewThreads.needsHuman ?? 0) > 0;
-		pushBlocker(blockers, {
-			surface: "review",
-			classification: needsHuman ? "needs_jamie_decision" : "introduced",
-			reason: `${String(reviewThreads.unresolved)} review thread(s) are unresolved.`,
-			fixableByCodex: !needsHuman,
-		});
-	}
-	if (normalizeStatus(pr.reviewDecision) === "CHANGES_REQUESTED") {
-		pushBlocker(blockers, {
-			surface: "review",
-			classification: "introduced",
-			reason: "Pull request review decision is CHANGES_REQUESTED.",
-			fixableByCodex: true,
-		});
-	}
-}
-
-function collectTraceabilityBlocker(
-	traceabilityComplete: boolean,
-	blockers: PrCloseoutBlocker[],
-): void {
-	if (traceabilityComplete) return;
-	pushBlocker(blockers, {
-		surface: "traceability",
-		classification: "introduced",
-		reason:
-			"PR evidence is missing complete AI session / traceability references.",
-		fixableByCodex: true,
-	});
-}
-
-function buildHarnessGateSummary(
-	closeoutGates: HePhaseExit | undefined,
-	evidenceSource: PrCloseoutHarnessGateEvidenceSource,
-): PrCloseoutHarnessGateSummary {
-	if (!closeoutGates) {
-		return {
-			evidenceSource: "missing",
-			closeoutGatesPresent: false,
-			phaseExitPresent: false,
-			recommendation: "missing",
-			commitAllowed: false,
-			exitAllowed: false,
-			gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => ({
-				gateId,
-				required:
-					HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default",
-				status: "missing",
-				evidenceRefs: [],
-				requiresHuman: false,
-				blocker: "Coding Harness closeout-gates evidence was not supplied.",
-			})),
-		};
-	}
-	const gatesById = new Map(
-		closeoutGates.gates.map((gate) => [gate.gateId, gate]),
-	);
-	return {
-		evidenceSource,
-		closeoutGatesPresent: evidenceSource === "closeout_gates",
-		phaseExitPresent: evidenceSource === "phase_exit",
-		recommendation: closeoutGates.recommendation,
-		commitAllowed: closeoutGates.commitAllowed,
-		exitAllowed: closeoutGates.exitAllowed,
-		gates: HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => {
-			const gate = gatesById.get(gateId);
-			const required =
-				HARNESS_CLOSEOUT_GATE_CONTRACTS[gateId].applicability === "default" ||
-				gate?.required === true;
-			if (!gate) {
-				return {
-					gateId,
-					required,
-					status: "missing",
-					evidenceRefs: [],
-					requiresHuman: false,
-					blocker: required
-						? `${gateId} gate is missing from Coding Harness closeout-gates evidence.`
-						: null,
-				};
-			}
-			return {
-				gateId: gate.gateId,
-				required,
-				status: gate.status,
-				evidenceRefs: gate.evidenceRefs.map((ref) => ref.ref),
-				requiresHuman: gate.requiresHuman,
-				blocker: gate.blockedReason ?? gate.reason,
-			};
-		}),
-	};
-}
-
-function collectHarnessGateBlockers(
-	harnessGates: PrCloseoutHarnessGateSummary,
-	blockers: PrCloseoutBlocker[],
-): void {
-	if (harnessGates.evidenceSource === "missing") {
-		pushBlocker(blockers, {
-			surface: "harness_gates",
-			classification: "introduced",
-			reason:
-				"Coding Harness closeout gates are missing closeout-gates evidence.",
-			fixableByCodex: true,
-			ref: "schema:coding-harness-closeout-gates/v1",
-		});
-		return;
-	}
-	for (const gate of harnessGates.gates) {
-		if (
-			!gate.required ||
-			gate.status === "pass" ||
-			gate.status === "not_applicable"
-		) {
-			continue;
-		}
-		const requiresJamie =
-			gate.requiresHuman ||
-			harnessGates.recommendation === "human_review_required";
-		pushBlocker(blockers, {
-			surface: "harness_gates",
-			classification: requiresJamie
-				? "needs_jamie_decision"
-				: gate.status === "blocked"
-					? "unknown"
-					: "introduced",
-			reason: gate.blocker ?? `${gate.gateId} closeout gate is ${gate.status}.`,
-			fixableByCodex: !requiresJamie && gate.status !== "blocked",
-			ref: gate.evidenceRefs[0] ?? gate.gateId,
-		});
-	}
-	if (!harnessGates.commitAllowed || !harnessGates.exitAllowed) {
-		const requiresJamie =
-			harnessGates.recommendation === "human_review_required";
-		pushBlocker(blockers, {
-			surface: "harness_gates",
-			classification: requiresJamie ? "needs_jamie_decision" : "unknown",
-			reason: `Coding Harness closeout gates deny closeout (recommendation=${harnessGates.recommendation}, commitAllowed=${String(harnessGates.commitAllowed)}, exitAllowed=${String(harnessGates.exitAllowed)}).`,
-			fixableByCodex: false,
-			ref: "schema:coding-harness-closeout-gates/v1",
-		});
-	}
-}
-
-function collectToolBlockers(
-	tools: readonly PrCloseoutToolInput[],
-	blockers: PrCloseoutBlocker[],
-): void {
-	for (const tool of tools) {
-		if (tool.status !== "blocked") continue;
-		pushBlocker(blockers, {
-			surface: "tool",
-			classification: "external_service",
-			reason: `${tool.name} is blocked: ${String(tool.failureClass ?? "unknown")}`,
-			fixableByCodex: false,
-			ref: tool.ref,
-		});
-	}
-}
-
 /** Build a read-only PR closeout evidence report from normalized PR closeout inputs. */
 export function buildPrCloseoutReport(
 	input: PrCloseoutInput,
 	options: { now?: Date } = {},
 ): PrCloseoutReport {
 	const blockers: PrCloseoutBlocker[] = [];
+	const generatedAt = (options.now ?? new Date()).toISOString();
 	const pr = input.pullRequest;
 	const checks = input.checks ?? [];
 	const reviewThreads = input.reviewThreads ?? { unresolved: null };
@@ -668,6 +289,7 @@ export function buildPrCloseoutReport(
 		sessionIds.length > 0 &&
 		traceIds.length > 0 &&
 		Boolean(aiSessionTraceability?.trim());
+	const claims = buildCloseoutClaims(input, checks, reviewThreads, generatedAt);
 	collectWorktreeBlockers(input, dirtyPathsExcluded, blockers);
 	collectPullRequestBlockers(pr, blockers);
 	collectCheckBlockers(checks, blockers);
@@ -675,17 +297,19 @@ export function buildPrCloseoutReport(
 	collectTraceabilityBlocker(traceabilityComplete, blockers);
 	collectHarnessGateBlockers(harnessGates, blockers);
 	collectToolBlockers(tools, blockers);
+	collectClaimBlockers(claims, blockers);
 
 	const decision = deriveNextAction(blockers);
 	return {
 		schemaVersion: PR_CLOSEOUT_SCHEMA_VERSION,
-		generatedAt: (options.now ?? new Date()).toISOString(),
+		generatedAt,
 		pr: pr.number,
 		url: pr.url ?? null,
 		status: decision.status,
 		mergeable: decision.mergeable,
 		nextAction: decision.nextAction,
 		blockers,
+		claims,
 		checks: summarizeChecks(checks),
 		reviewThreads: {
 			unresolved: reviewThreads.unresolved,

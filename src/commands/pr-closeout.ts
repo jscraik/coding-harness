@@ -15,6 +15,7 @@ import {
 	type PrCloseoutCheckInput,
 	type PrCloseoutInput,
 	type PrCloseoutPullRequestInput,
+	type PrCloseoutRollbackInput,
 	type PrCloseoutReviewThreadsInput,
 	type PrCloseoutTraceabilityInput,
 	type PrCloseoutToolInput,
@@ -356,6 +357,7 @@ function normalizeGhPr(
 		isDraft: asBoolean(value.isDraft),
 		mergeStateStatus: asString(value.mergeStateStatus),
 		url: asString(value.url),
+		headSha: asString(value.headRefOid) ?? asString(value.headSha),
 		headRefName: asString(value.headRefName),
 		baseRefName: asString(value.baseRefName),
 		reviewDecision: asString(value.reviewDecision),
@@ -363,7 +365,10 @@ function normalizeGhPr(
 	};
 }
 
-function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
+function normalizeGhChecks(
+	value: unknown,
+	headSha: string | null,
+): PrCloseoutCheckInput[] {
 	if (!Array.isArray(value)) return [];
 	return value
 		.filter(
@@ -374,6 +379,7 @@ function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
 			name: asString(item.name) ?? "unknown",
 			state: asString(item.state),
 			url: asString(item.link),
+			headSha: asString(item.headSha) ?? headSha,
 			source: "github",
 		}));
 }
@@ -538,6 +544,17 @@ function traceabilityFromBody(
 	};
 }
 
+function rollbackFromBody(
+	body: string | null | undefined,
+): PrCloseoutRollbackInput | undefined {
+	const rollback = bodyField(body, "Rollback");
+	if (!rollback) return undefined;
+	if (/^(?:n\.?a\.?|not applicable|none required)\b/iu.test(rollback)) {
+		return { notApplicable: true, evidenceRef: "pr-body:rollback" };
+	}
+	return { path: rollback, evidenceRef: "pr-body:rollback" };
+}
+
 function fetchReviewThreads(
 	options: PrCloseoutCLIOptions,
 	env: NodeJS.ProcessEnv,
@@ -643,7 +660,7 @@ function buildLiveInput(
 				"view",
 				String(options.prNumber),
 				"--json",
-				"number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body",
+				"number,title,state,isDraft,mergeStateStatus,url,headRefOid,headRefName,baseRefName,reviewDecision,body",
 			],
 			{ cwd: options.repoRoot, env: envLoad.env },
 		);
@@ -655,7 +672,7 @@ function buildLiveInput(
 		tools.push({
 			name: "github_cli",
 			available: false,
-			ref: `command:gh pr view ${String(options.prNumber)} --json number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body`,
+			ref: `command:gh pr view ${String(options.prNumber)} --json number,title,state,isDraft,mergeStateStatus,url,headRefOid,headRefName,baseRefName,reviewDecision,body`,
 			status: "blocked",
 			failureClass: `pr_view_unreadable:${sanitizeError(error)}`,
 		});
@@ -674,7 +691,10 @@ function buildLiveInput(
 			["pr", "checks", String(options.prNumber), "--json", "name,state,link"],
 			{ cwd: options.repoRoot, env: envLoad.env },
 		);
-		checks = normalizeGhChecks(JSON.parse(checksRaw) as unknown);
+		checks = normalizeGhChecks(
+			JSON.parse(checksRaw) as unknown,
+			pullRequest.headSha ?? null,
+		);
 	} catch (error) {
 		tools.push({
 			name: "github_cli",
@@ -685,6 +705,7 @@ function buildLiveInput(
 		});
 	}
 	const reviewThreads = fetchReviewThreads(options, envLoad.env, runner, tools);
+	const rollback = rollbackFromBody(pullRequest.body);
 	return {
 		pullRequest,
 		branch: {
@@ -693,6 +714,7 @@ function buildLiveInput(
 		checks,
 		reviewThreads,
 		traceability: traceabilityFromBody(pullRequest.body),
+		...(rollback ? { rollback } : {}),
 		tools,
 	};
 }

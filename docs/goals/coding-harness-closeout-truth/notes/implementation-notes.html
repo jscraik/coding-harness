@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="10">
+    <title>Coding Harness Closeout Truth Implementation Notes</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f7f4;
+        --panel: #ffffff;
+        --text: #1f2520;
+        --muted: #687064;
+        --line: #d8ddd2;
+        --accent: #2f6f5e;
+        --warn: #8a5a00;
+        --code: #eef2ec;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.5;
+      }
+
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 32px 20px 56px;
+      }
+
+      header {
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 24px;
+        padding-bottom: 18px;
+      }
+
+      h1,
+      h2 {
+        line-height: 1.2;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 30px;
+      }
+
+      h2 {
+        margin: 28px 0 10px;
+        font-size: 18px;
+      }
+
+      p,
+      li {
+        max-width: 86ch;
+      }
+
+      code {
+        background: var(--code);
+        border-radius: 4px;
+        padding: 1px 4px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border: 1px solid var(--line);
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 13px;
+        text-transform: uppercase;
+      }
+
+      .status {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .warning {
+        color: var(--warn);
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Closeout Truth Implementation Notes</h1>
+        <p>
+          Goal board:
+          <code>docs/goals/coding-harness-closeout-truth/goal.md</code>
+        </p>
+        <p>
+          Source strategy:
+          <code>.harness/strategy/2026-05-18-coding-harness-recommendation-evaluation.md</code>
+        </p>
+      </header>
+
+      <section>
+        <h2>Current Phase</h2>
+        <p>
+          <span class="status">Goal complete:</span> Final Judge/PM audit
+          passed after reviewer findings were accepted, fixed, validated, and
+          recorded in receipt <code>R011</code>.
+        </p>
+      </section>
+
+      <section>
+        <h2>Decisions Not In Spec</h2>
+        <ul>
+          <li>
+            The notes file lives under
+            <code>docs/goals/coding-harness-closeout-truth/notes/</code> because
+            the Goal Governor checker only allows <code>goal.md</code>,
+            <code>state.yaml</code>, <code>receipts.jsonl</code>, and
+            <code>notes/</code> at the board root.
+          </li>
+          <li>
+            Phase 0 is the only active task. Later phases are represented in
+            <code>goal.md</code> and should be activated one at a time after the
+            previous receipt is complete.
+          </li>
+          <li>
+            The native goal was absent when this follow prompt started, so it was
+            created from the board objective before Phase 0 proceeded.
+          </li>
+          <li>
+            <code>$codex-review</code> resolved to a handle file, but the
+            underlying module path was missing. The gate is recorded as
+            <code>skipped_with_reason</code> with a root fallback review.
+          </li>
+          <li>
+            Phase 1 needed one minimal boundary split before Phase 2 because the
+            first in-file implementation failed <code>pnpm run quality:size</code>.
+            The claim/evidence contract now lives in
+            <code>src/lib/pr-closeout/claims.ts</code>; deeper closeout
+            refactoring remains Phase 2 work.
+          </li>
+          <li>
+            Live GitHub check output is normalized with the PR
+            <code>headRefOid</code> because the current command path reads
+            <code>gh pr checks</code> without a per-check SHA field.
+          </li>
+          <li>
+            Phase 2 did not touch <code>src/commands/pr-closeout.ts</code>.
+            The smallest proven refactor was to split library policy into
+            blocker, evidence, and status modules while preserving command
+            orchestration exactly.
+          </li>
+          <li>
+            Initial blocker extraction duplicated evidence helpers across
+            modules. The <code>$simplify</code> gate accepted that finding, so
+            those helpers now live in <code>src/lib/pr-closeout/evidence.ts</code>.
+          </li>
+          <li>
+            Phase 3 did not touch <code>src/lib/decision/he-phase-exit-core.ts</code>
+            because closeout integration was enough to prove typed
+            missing-context routing and no shared phase-exit semantics were
+            needed yet.
+          </li>
+          <li>
+            The native goal objective still mentions Phase 0, but the durable
+            board state is the active state machine and now records Phase 4 as
+            active.
+          </li>
+          <li>
+            Phase 4 keeps fixtures in code instead of adding a fixture directory
+            because the first two evals are tiny and the current acceptance
+            needs operational proof, not a new eval platform.
+          </li>
+          <li>
+            The recovery-denied eval deliberately stops at fixture behavior.
+            The typed recovery contract remains Phase 5 work.
+          </li>
+          <li>
+            Phase 5 adds only the recovery contract and validation. It does not
+            register or execute handlers; the first concrete handler is Phase 6.
+          </li>
+          <li>
+            Phase 6 implements the missing generated artifact parent handler as
+            a proven handler candidate only. It is not automatically registered
+            or invoked yet.
+          </li>
+          <li>
+            Phase 7 protects the closeout truth layer with a custom
+            source-invariant gate instead of adding dependency-cruiser, madge,
+            or another broad graph tool.
+          </li>
+          <li>
+            The Phase 7 gate is intentionally not wired as a new package script
+            yet. It is covered by a focused architecture test and can be promoted
+            into a broader gate once the repo decides where invariant scripts
+            should live in the canonical command contract.
+          </li>
+          <li>
+            Phase 8 made no packaged skill edit. The existing
+            <code>.agents/skills/coding-harness</code> skill is already focused
+            on harness install, bootstrap, upgrade, governance, CI migration,
+            command discovery, and Codex environment action sync.
+          </li>
+          <li>
+            The audit found remaining skill-related gaps, but they are fixture
+            and command-truth gaps rather than a need for new skill prose or a
+            generic six-skill set.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Tradeoffs</h2>
+        <ul>
+          <li>
+            The state file contains detailed tasks for creation, Phase 0, and
+            Phase 1 only. The full phase queue remains in <code>goal.md</code>
+            so the active state stays small and easy to audit.
+          </li>
+          <li>
+            Existing dirty worktree changes are recorded as context, but not
+            staged or modified by board creation.
+          </li>
+          <li>
+            Phase 0 did not add more generic standards. Existing standards work
+            is treated as the baseline until the truth-layer implementation
+            exposes a concrete gap.
+          </li>
+          <li>
+            The claim ledger is intentionally verifier-owned. Model summaries
+            can point at <code>claims</code>, but report readiness is derived
+            from structured evidence, not prose.
+          </li>
+          <li>
+            <code>src/lib/pr-closeout.ts</code> still exceeds the advisory
+            ratchet target after Phase 1, so Phase 2 reduced it from 728 lines
+            to 327 lines by moving blocker and status policy into focused
+            modules.
+          </li>
+          <li>
+            <code>src/lib/pr-closeout/claims.ts</code> remains above the
+            advisory file ratchet at 483 lines, but the blocking oversized
+            function is gone. Further splitting waits for Phase 3 missing-context
+            integration to provide a concrete reason.
+          </li>
+          <li>
+            Missing-context classes are a typed routing table and one
+            deterministic classifier rather than prose or a broader policy
+            engine. Replay and recovery can reuse the shape later if they prove
+            that need.
+          </li>
+          <li>
+            Phase 4 uses the existing trace normalizer and the pre-existing
+            redaction baseline already present in the worktree. It adds replay
+            eval assertions without staging the unrelated trace-normalizer
+            baseline edits.
+          </li>
+          <li>
+            The recovery contract denies unsafe handlers before any recovery
+            hook can mutate state. That keeps recovery deterministic while the
+            concrete handler registry remains unbuilt.
+          </li>
+          <li>
+            The first handler keeps rollback conservative: it removes the parent
+            directory only when it is empty, otherwise records a stopped rollback
+            skip instead of deleting content it did not create.
+          </li>
+          <li>
+            Browser rejected the local <code>file://</code> notes URL under its
+            URL policy, so the notes are served through localhost instead:
+            <code>http://127.0.0.1:8791/docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html</code>.
+            The page now auto-refreshes every 10 seconds while the server is
+            running.
+          </li>
+          <li>
+            The invariant gate uses source-text checks plus negative fixtures
+            rather than AST parsing. That keeps Phase 7 dependency-free and
+            reversible while still failing closed when required claim fields or
+            false-success fixtures disappear.
+          </li>
+          <li>
+            Fixture presence is checked through stable test-title markers. This
+            is less semantic than a full fixture manifest, but it avoids creating
+            a second eval platform before Phase 8 decides whether skill or gate
+            surfaces need compression.
+          </li>
+          <li>
+            Phase 8 treats <code>JSC-283</code> packaged skill behavior
+            assurance as the strongest current evidence. It proves local
+            packaged skill behavior for the approved scope and explicitly
+            defers release-gate promotion until reusable fixture runners exist.
+          </li>
+          <li>
+            <code>pnpm observed:eval-usage</code> was useful audit evidence but
+            not a Phase 8 validation gate. It failed with the known
+            <code>tsx</code> IPC <code>EPERM</code> issue, matching the existing
+            command-truth gap in the alignment review. That should route to a
+            command/tooling follow-up, not a packaged skill rewrite.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Files Changed</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>goal.md</code></td>
+              <td>Durable roadmap, phase queue, constraints, and continuation prompt.</td>
+            </tr>
+            <tr>
+              <td><code>state.yaml</code></td>
+              <td>Machine-auditable board state with exactly one active phase.</td>
+            </tr>
+            <tr>
+              <td><code>receipts.jsonl</code></td>
+              <td>Initial creation receipt and discovery evidence.</td>
+            </tr>
+            <tr>
+              <td><code>notes/implementation-notes.html</code></td>
+              <td>Running browser-readable implementation ledger, updated for Phase 0.</td>
+            </tr>
+            <tr>
+              <td><code>notes/.gitkeep</code></td>
+              <td>Ensure the notes directory is tracked even before future artifacts.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/pr-closeout/claims.ts</code></td>
+              <td>New verifier-owned claim/evidence contract and claim blocker projection.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/pr-closeout.ts</code></td>
+              <td>Adds claim output to <code>pr-closeout/v1</code> and makes readiness depend on claim blockers.</td>
+            </tr>
+            <tr>
+              <td><code>src/commands/pr-closeout.ts</code></td>
+              <td>Normalizes PR <code>headRefOid</code> and rollback evidence for live closeout input.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/pr-closeout.test.ts</code></td>
+              <td>Adds fixtures for missing tests, stale SHA, unknown CI, missing Linear/tracker state, and missing rollback evidence.</td>
+            </tr>
+            <tr>
+              <td><code>src/commands/pr-closeout.test.ts</code></td>
+              <td>Updates CLI fixtures so ready reports include current-head, review, and rollback evidence.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/pr-closeout/blockers.ts</code></td>
+              <td>Holds blocker collection and closeout-gate normalization policy outside the report builder.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/pr-closeout/evidence.ts</code></td>
+              <td>Centralizes status normalization, check classification, and Linear reference detection shared by claims and blockers.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/pr-closeout/status.ts</code></td>
+              <td>Holds closeout status and next-action derivation from verifier blockers.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/missing-context/classifier.ts</code></td>
+              <td>Defines typed missing-context classes, durable destinations, and deterministic classification rules.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/missing-context/classifier.test.ts</code></td>
+              <td>Proves each initial missing-context class routes to one durable destination.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/replay/eval-runner.ts</code></td>
+              <td>Runs the first local replay eval fixtures and emits machine-readable results.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/replay/eval-runner.test.ts</code></td>
+              <td>Proves false-success closeout is blocked and unsafe recovery is denied with secret redaction.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/recovery/contract.ts</code></td>
+              <td>Defines the typed recovery handler contract and pre-execution safety assessment.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/recovery/contract.test.ts</code></td>
+              <td>Proves required hooks, authority, secret boundary, mutation authority, trace fields, and stop semantics.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/recovery/generated-artifact-parent.ts</code></td>
+              <td>Implements the local-filesystem-only handler for missing generated artifact parent directories.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/recovery/generated-artifact-parent.test.ts</code></td>
+              <td>Proves path safety, verify-before/after behavior, mkdir recovery, and rollback semantics.</td>
+            </tr>
+            <tr>
+              <td><code>scripts/check-pr-closeout-truth-contract.cjs</code></td>
+              <td>Adds a machine-readable invariant gate for the <code>pr-closeout/v1</code> claim/evidence contract and required false-success fixtures.</td>
+            </tr>
+            <tr>
+              <td><code>src/lib/architecture/pr-closeout-truth-contract.test.ts</code></td>
+              <td>Proves the invariant gate passes on the live repo and fails closed for missing claim fields or missing false-success fixture coverage.</td>
+            </tr>
+            <tr>
+              <td><code>docs/goals/coding-harness-closeout-truth/state.yaml</code></td>
+              <td>Marks the final Judge/PM audit done and the board goal complete.</td>
+            </tr>
+            <tr>
+              <td><code>docs/goals/coding-harness-closeout-truth/receipts.jsonl</code></td>
+              <td>Adds the final <code>R011</code> completion receipt with validation, review, false-success, recovery, and staged-file evidence.</td>
+            </tr>
+            <tr>
+              <td><code>docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html</code></td>
+              <td>Updates the live browser report with final audit findings, accepted fixes, validation outcomes, and residual risks.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Validation Ledger</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Command</th>
+              <th>Outcome</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Goal board checker</code></td>
+              <td class="status">Pass.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm markdownlint docs/goals/coding-harness-closeout-truth/goal.md</code></td>
+              <td class="status">Pass via <code>pnpm exec markdownlint-cli2 docs/goals/coding-harness-closeout-truth/goal.md</code>.</td>
+            </tr>
+            <tr>
+              <td><code>git status --short docs/goals/coding-harness-closeout-truth</code></td>
+              <td class="status">Pass with <code>--work-tree=/Users/jamiecraik/dev/coding-harness</code>.</td>
+            </tr>
+            <tr>
+              <td><code>$browser:browser</code> open notes file</td>
+              <td class="status">Pass via localhost. Direct <code>file://</code> was blocked by browser policy.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm run quality:size</code></td>
+              <td class="status">Pass with advisory ratchet warnings for known oversized files.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/validate-codestyle.sh --fast</code></td>
+              <td class="status">Pass for Phase 0 and Phase 1.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts</code></td>
+              <td class="status">Pass: 37 tests passed.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm run quality:size</code> after Phase 1</td>
+              <td class="status">Pass with advisory ratchet warnings; no hard size failure after extracting <code>claims.ts</code>.</td>
+            </tr>
+            <tr>
+              <td><code>git diff --check</code> for Phase 1 files</td>
+              <td class="status">Pass.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts</code> after Phase 2</td>
+              <td class="status">Pass: 37 tests passed.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm run quality:size</code> after Phase 2</td>
+              <td class="status">Pass with advisory ratchet warnings; no hard size failures.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm run test:related</code> after Phase 2</td>
+              <td class="status">Pass: 28 test files, 740 passed, 1 skipped.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/validate-codestyle.sh --fast</code> after Phase 2</td>
+              <td class="status">Pass: lint, docs lint, skill validation, workflow validation, typecheck, docstrings, size, and related tests.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm vitest run src/lib/missing-context/classifier.test.ts src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts</code></td>
+              <td class="status">Pass: 3 files, 46 tests passed.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm run test:related</code> after Phase 3</td>
+              <td class="status">Pass: 28 test files, 740 passed, 1 skipped.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/validate-codestyle.sh --fast</code> after Phase 3</td>
+              <td class="status">Pass: lint, docs lint, skill validation, workflow validation, typecheck, docstrings, size, and related tests.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm vitest run src/lib/replay/trace-normalizer.test.ts src/lib/replay/eval-runner.test.ts src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts</code></td>
+              <td class="status">Pass: 4 files, 63 tests passed.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm run test:related</code> after Phase 4</td>
+              <td class="status">Pass: 30 test files, 752 passed, 1 skipped.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/validate-codestyle.sh --fast</code> after Phase 4</td>
+              <td class="status">Pass: lint, docs lint, skill validation, workflow validation, typecheck, docstrings, size, and related tests.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm vitest run src/lib/recovery/contract.test.ts src/lib/replay/eval-runner.test.ts</code></td>
+              <td class="status">Pass: 2 files, 7 tests passed.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm run test:related</code> after Phase 5</td>
+              <td class="status">Pass: 30 test files, 752 passed, 1 skipped.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/validate-codestyle.sh --fast</code> after Phase 5</td>
+              <td class="status">Pass: lint, docs lint, skill validation, workflow validation, typecheck, docstrings, size, and related tests.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm vitest run src/lib/recovery/contract.test.ts src/lib/recovery/generated-artifact-parent.test.ts</code></td>
+              <td class="status">Pass: 2 files, 8 tests passed.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm run test:related</code> after Phase 6</td>
+              <td class="status">Pass: 32 test files, 760 passed, 1 skipped.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/validate-codestyle.sh --fast</code> after Phase 6</td>
+              <td class="status">Pass: lint, docs lint, skill validation, workflow validation, typecheck, docstrings, size, and related tests.</td>
+            </tr>
+            <tr>
+              <td><code>node scripts/check-pr-closeout-truth-contract.cjs --json</code></td>
+              <td class="status">Pass: emitted <code>architecture-invariant-gate/v1</code> with <code>status: pass</code> and no findings.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm vitest run src/lib/architecture/pr-closeout-truth-contract.test.ts</code></td>
+              <td class="status">Pass: 1 file, 3 tests passed.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/run-harness-gate.sh docs-gate --mode required --json</code></td>
+              <td class="status">Pass: 0 errors, 0 warnings.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/validate-codestyle.sh --fast</code> after Phase 7</td>
+              <td class="status">Pass after formatting the new invariant script and test.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm check</code> after Phase 7</td>
+              <td class="status">Pass with network permission for <code>pnpm audit</code>; standard Vitest passed 265 files and 4143 tests, CI migrate passed 106 tests, and audit found no known vulnerabilities.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm observed:eval-usage</code> during Phase 8 audit</td>
+              <td class="warning">Blocked: <code>tsx</code> IPC pipe failed with <code>listen EPERM</code>. This is recorded as a pre-existing command-truth/tooling gap, not a packaged skill edit trigger.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm skill:validate</code> after Phase 8</td>
+              <td class="status">Pass: packaged skill markdown, JSON, and reference contract checks passed.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/validate-codestyle.sh --fast</code> after Phase 8</td>
+              <td class="status">Pass: related tests passed 32 files, 760 passed, 1 skipped.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm check</code> after Phase 8</td>
+              <td class="status">Pass with network permission for <code>pnpm audit</code>; standard Vitest passed 265 files and 4143 tests, CI migrate passed 106 tests, and audit found no known vulnerabilities.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts</code> after final review fixes</td>
+              <td class="status">Pass: 2 files, 38 tests passed.</td>
+            </tr>
+            <tr>
+              <td><code>node scripts/check-pr-closeout-truth-contract.cjs --json</code> after final review fixes</td>
+              <td class="status">Pass: emitted <code>architecture-invariant-gate/v1</code> with <code>status: pass</code> and no findings.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/run-harness-gate.sh docs-gate --mode required --json</code> during final audit</td>
+              <td class="status">Pass: 0 errors, 0 warnings.</td>
+            </tr>
+            <tr>
+              <td><code>bash scripts/validate-codestyle.sh --fast</code> after final review fixes</td>
+              <td class="status">Pass: related tests passed 32 files, 761 passed, 1 skipped.</td>
+            </tr>
+            <tr>
+              <td><code>pnpm check</code> final audit</td>
+              <td class="status">Pass with network permission for <code>pnpm audit</code>; standard Vitest passed 265 files and 4144 tests, CI migrate passed 106 tests, and audit found no known vulnerabilities.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Review Gate Ledger</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Gate</th>
+              <th>Outcome</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>$simplify</code></td>
+              <td class="status">pass</td>
+              <td>Phase 8 no-op keeps the skill surface smaller; adding new skill prose would duplicate existing command/gate/eval surfaces without new capture-the-flag proof.</td>
+            </tr>
+            <tr>
+              <td><code>$unslopify</code></td>
+              <td class="warning">skipped_with_reason</td>
+              <td>The named <code>$unslopify</code> skill is unavailable in this session. Manual cleanup review found no stale skill artifact, duplicate generated skill, or placeholder introduced by Phase 8.</td>
+            </tr>
+            <tr>
+              <td><code>$improve-codebase-architecture</code></td>
+              <td class="status">pass</td>
+              <td>No new skill boundary is justified. Existing packaged skill behavior assurance and validator surfaces are the right architecture; remaining gaps belong to reusable fixtures and command-truth tooling.</td>
+            </tr>
+            <tr>
+              <td><code>$ubiquitous-language</code></td>
+              <td class="status">pass</td>
+              <td>Workflow Skill, Skill Workout, capture-the-flag, and repeated steering are already defined in <code>UBIQUITOUS_LANGUAGE.md</code>; no new term was needed.</td>
+            </tr>
+            <tr>
+              <td><code>$codex-review</code></td>
+              <td class="warning">skipped_with_reason</td>
+              <td>Named backing skill remains unavailable; fallback review found the no-op decision safer than adding unproven skill surfaces.</td>
+            </tr>
+            <tr>
+              <td><code>final correctness-reviewer fallback</code></td>
+              <td class="status">pass_after_fixes</td>
+              <td>Accepted and fixed both findings: live rollback evidence no longer defaults to success, and missing check evidence is Codex-fixable while pending external checks still wait.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Staged Files</h2>
+        <ul>
+          <li><code>docs/goals/coding-harness-closeout-truth/goal.md</code></li>
+          <li><code>docs/goals/coding-harness-closeout-truth/notes/.gitkeep</code></li>
+          <li><code>docs/goals/coding-harness-closeout-truth/state.yaml</code></li>
+          <li><code>docs/goals/coding-harness-closeout-truth/receipts.jsonl</code></li>
+          <li><code>docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html</code></li>
+          <li><code>src/lib/pr-closeout/claims.ts</code></li>
+          <li><code>src/lib/pr-closeout.ts</code></li>
+          <li><code>src/commands/pr-closeout.ts</code></li>
+          <li><code>src/lib/pr-closeout.test.ts</code></li>
+          <li><code>src/commands/pr-closeout.test.ts</code></li>
+          <li><code>src/lib/pr-closeout/blockers.ts</code></li>
+          <li><code>src/lib/pr-closeout/evidence.ts</code></li>
+          <li><code>src/lib/pr-closeout/status.ts</code></li>
+          <li><code>src/lib/missing-context/classifier.ts</code></li>
+          <li><code>src/lib/missing-context/classifier.test.ts</code></li>
+          <li><code>src/lib/replay/eval-runner.ts</code></li>
+          <li><code>src/lib/replay/eval-runner.test.ts</code></li>
+          <li><code>src/lib/recovery/contract.ts</code></li>
+          <li><code>src/lib/recovery/contract.test.ts</code></li>
+          <li><code>src/lib/recovery/generated-artifact-parent.ts</code></li>
+          <li><code>src/lib/recovery/generated-artifact-parent.test.ts</code></li>
+          <li><code>scripts/check-pr-closeout-truth-contract.cjs</code></li>
+          <li><code>src/lib/architecture/pr-closeout-truth-contract.test.ts</code></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Blockers And Residual Risk</h2>
+        <ul>
+          <li>
+            The current worktree already contains unrelated modified and
+            untracked implementation files. They must be preserved and excluded
+            from board staging.
+          </li>
+          <li>
+            Browser opening still needs verification through the available
+            browser connector after each update. Use the live localhost URL and
+            reload the tab after notes edits.
+          </li>
+          <li>
+            <code>.git/config</code> currently points <code>core.worktree</code>
+            at <code>/private/tmp/coding-harness-advisory-size-refactor</code>.
+            Git inspection for the requested checkout used an explicit
+            <code>--work-tree=/Users/jamiecraik/dev/coding-harness</code>
+            override so unrelated temp-worktree state did not hide these files.
+          </li>
+          <li>
+            Size ratchet warnings remain advisory for Phase 0. They identify
+            later work, especially <code>src/commands/pr-closeout.ts</code> and
+            <code>src/lib/pr-closeout.ts</code>, but do not block the baseline.
+          </li>
+          <li>
+            <code>src/commands/pr-closeout.ts</code> remains above advisory
+            size targets. It is intentionally deferred until a later phase has
+            a behavior reason to touch command orchestration.
+          </li>
+          <li>
+            <code>src/lib/pr-closeout/claims.ts</code> remains above the
+            advisory file target but has no hard size failure. Further splitting
+            should happen only when a later phase provides a behavior reason.
+          </li>
+          <li>
+            <code>$codex-review</code> remains unavailable as a named skill
+            because its backing source module is missing.
+          </li>
+          <li>
+            Native goal text still names the original Phase 0 prompt, but the
+            native goal status is now <code>complete</code> and the durable
+            board state is <code>done</code> with receipt <code>R011</code>.
+          </li>
+          <li>
+            <code>src/lib/replay/trace-normalizer.ts</code> and its test remain
+            dirty from the pre-existing baseline. Phase 4 validated against
+            that behavior but did not stage those files.
+          </li>
+          <li>
+            The Phase 7 invariant gate is not yet part of a named package
+            script. It is exercised by the architecture test and can be wired
+            into a canonical gate after the repo decides the permanent command
+            surface.
+          </li>
+          <li>
+            Phase 8 intentionally leaves <code>.agents/skills/coding-harness/**</code>
+            unchanged. The remaining packaged skill hardening direction is
+            reusable fixture promotion, not more skill wording.
+          </li>
+          <li>
+            <code>pnpm observed:eval-usage</code> remains blocked by the
+            pre-existing <code>tsx</code> IPC sandbox failure and should be
+            handled by a command-truth/tooling follow-up outside this phase.
+          </li>
+          <li>
+            Final fallback review found a real rollback false-success path in
+            the live <code>pr-closeout</code> command. The command now reads
+            rollback evidence only from the PR body <code>Rollback</code> field
+            and omits rollback input when that evidence is absent.
+          </li>
+          <li>
+            Final fallback review also found that missing check evidence was
+            routed like external waiting. Missing verifier evidence is now
+            Codex-fixable, while genuinely pending checks still route to
+            <code>wait_for_external_check</code>.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Next Safe Action</h2>
+        <p>
+          Goal board and native goal are ready for closeout. Next safe action:
+          review the staged diff and decide whether to split this into PRs or
+          keep it as the completed roadmap implementation batch.
+        </p>
+        <p>
+          Latest validation: <code>pnpm check</code> passed with network access
+          for <code>pnpm audit</code>; <code>docs-gate</code>, codestyle,
+          closeout tests, and the pr-closeout truth invariant gate also passed.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

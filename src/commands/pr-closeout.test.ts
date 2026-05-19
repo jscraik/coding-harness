@@ -142,6 +142,7 @@ Refs JSC-327
 - Session IDs: codex-session:2026-05-16
 - Trace IDs: circleci:workflow-123, artifacts/pr-closeout/pr-closeout.json
 - AI session / traceability: Codex session validates PR closeout evidence.
+- Rollback: not applicable; docs-only closeout.
 - Completed work: command and tests
 `.trim();
 
@@ -211,12 +212,15 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
 					body: "Refs JSC-327\n",
 				},
 				branch: {
 					clean: true,
+					headSha: "abc123",
 				},
-				checks: [{ name: "pr-pipeline", state: "SUCCESS" }],
+				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
 				reviewThreads: {
 					unresolved: 0,
 				},
@@ -225,6 +229,10 @@ describe("runPrCloseoutCLI", () => {
 					traceIds: ["circleci:workflow-123"],
 					aiSessionTraceability:
 						"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
+				},
+				rollback: {
+					notApplicable: true,
+					evidenceRef: "pr-body:rollback",
 				},
 				closeoutGates: PASSING_PHASE_EXIT,
 			}),
@@ -253,12 +261,15 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
 					body: "Refs JSC-327\n",
 				},
 				branch: {
 					clean: true,
+					headSha: "abc123",
 				},
-				checks: [{ name: "pr-pipeline", state: "SUCCESS" }],
+				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
 				reviewThreads: {
 					unresolved: 0,
 				},
@@ -267,6 +278,10 @@ describe("runPrCloseoutCLI", () => {
 					traceIds: ["circleci:workflow-123"],
 					aiSessionTraceability:
 						"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
+				},
+				rollback: {
+					notApplicable: true,
+					evidenceRef: "pr-body:rollback",
 				},
 				closeoutGates: PASSING_CLOSEOUT_GATES,
 			}),
@@ -410,6 +425,8 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
 			}
@@ -466,7 +483,7 @@ describe("runPrCloseoutCLI", () => {
 				"circleci version",
 				"coderabbit --version",
 				"snyk --version",
-				"gh pr view 258 --json number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body",
+				"gh pr view 258 --json number,title,state,isDraft,mergeStateStatus,url,headRefOid,headRefName,baseRefName,reviewDecision,body",
 				"gh pr checks 258 --json name,state,link",
 				"gh repo view --json owner,name",
 			]),
@@ -488,6 +505,8 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
 			}
@@ -539,6 +558,8 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
 			}
@@ -591,6 +612,8 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: `
 Refs JSC-328
 
@@ -633,6 +656,69 @@ Refs JSC-328
 		expect(report.blockers).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({ surface: "traceability" }),
+			]),
+		);
+	});
+
+	it("blocks live reports when rollback evidence is missing", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY.replace(/^- Rollback:.*\n/mu, ""),
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			claims: Array<{
+				claim: string;
+				status: string;
+				evidenceRef: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "rollback_path_named_or_not_applicable",
+					status: "unknown",
+					evidenceRef: null,
+				}),
 			]),
 		);
 	});
@@ -691,6 +777,8 @@ Refs JSC-328
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
 			}

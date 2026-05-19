@@ -144,6 +144,7 @@ function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 			isDraft: false,
 			mergeStateStatus: "CLEAN",
 			url: "https://github.com/jscraik/coding-harness/pull/258",
+			headSha: "abc123",
 			reviewDecision: "APPROVED",
 			body: "Refs JSC-327\n",
 		},
@@ -152,11 +153,13 @@ function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 			pushed: true,
 			behindBase: false,
 			hasConflicts: false,
+			headSha: "abc123",
 		},
 		checks: [
 			{
 				name: "pr-pipeline",
 				state: "SUCCESS",
+				headSha: "abc123",
 				source: "github",
 			},
 		],
@@ -170,6 +173,10 @@ function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 			traceIds: ["circleci:workflow-123"],
 			aiSessionTraceability:
 				"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
+		},
+		rollback: {
+			notApplicable: true,
+			evidenceRef: "pr-body:rollback",
 		},
 		phaseExit: passingPhaseExit(),
 		tools: [
@@ -210,6 +217,181 @@ describe("buildPrCloseoutReport", () => {
 			},
 		});
 		expect(report.blockers).toEqual([]);
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "pass",
+					evidenceRef: "check:pr-pipeline",
+					headSha: "abc123",
+					freshness: "current",
+					blockerClass: null,
+					verifiedAt: "2026-05-16T12:00:00.000Z",
+				}),
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
+					status: "pass",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
+	it("blocks success when test evidence is missing", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "semgrep-cloud-platform/scan",
+						state: "SUCCESS",
+						headSha: "abc123",
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "unknown",
+					evidenceRef: null,
+					freshness: "missing",
+					missingContext: expect.objectContaining({
+						class: "missing_verifier",
+						destination: "validator",
+					}),
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					reason: "Closeout claim tests_passed is missing required evidence.",
+				}),
+			]),
+		);
+	});
+
+	it("blocks success when required check evidence is stale", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						headSha: "old456",
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
+					status: "fail",
+					headSha: "abc123",
+					freshness: "stale",
+					missingContext: expect.objectContaining({
+						class: "unmodeled_current_state_dependency",
+						destination: "validator",
+					}),
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					reason:
+						"Closeout claim required_checks_match_current_head has stale evidence for the current head.",
+				}),
+			]),
+		);
+	});
+
+	it("blocks success when CI state is unknown", () => {
+		const report = buildPrCloseoutReport(baseInput({ checks: [] }));
+
+		expect(report.status).not.toBe("ready");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "unknown",
+					evidenceRef: null,
+					freshness: "missing",
+					missingContext: expect.objectContaining({
+						class: "missing_verifier",
+						destination: "validator",
+					}),
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
+	it("blocks success when Linear tracker state is missing", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					...baseInput().pullRequest,
+					body: "No tracker reference yet.\n",
+				},
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "linear_tracker_state_aligned",
+					status: "unknown",
+					evidenceRef: null,
+					freshness: "missing",
+					missingContext: expect.objectContaining({
+						class: "ambiguous_ownership_boundary",
+						destination: "project_brain_learning",
+					}),
+				}),
+			]),
+		);
+	});
+
+	it("blocks success when rollback evidence is missing", () => {
+		const input = baseInput();
+		delete input.rollback;
+		const report = buildPrCloseoutReport(input);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "rollback_path_named_or_not_applicable",
+					status: "unknown",
+					evidenceRef: null,
+					freshness: "missing",
+					missingContext: expect.objectContaining({
+						class: "missing_recovery_handler",
+						destination: "roadmap_exception",
+					}),
+				}),
+			]),
+		);
 	});
 
 	it("marks first-class closeout-gates input without phase-exit presence", () => {
