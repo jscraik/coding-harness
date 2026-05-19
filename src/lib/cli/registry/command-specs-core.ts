@@ -8,7 +8,6 @@ import {
 } from "../../../commands/blast-radius.js";
 import { runBrainCLI } from "../../../commands/brain.js";
 import { runBrainstormGateCLI } from "../../../commands/brainstorm-gate.js";
-import { runCheckEnvironmentCLI } from "../../../commands/check-environment.js";
 import { runCheckCLI } from "../../../commands/check.js";
 import {
 	runCIMigrateCLI,
@@ -96,6 +95,7 @@ import {
 } from "../parse-utils.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
+import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
@@ -136,33 +136,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createReviewGateCommandSpec(),
 	createBranchProtectCommandSpec(),
 	createCheckAuthzCommandSpec(),
-	{
-		name: "check-environment",
-		summary: "Validate pilot environment governance checks",
-		errorLabel: "Check Environment Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const checkSecretsFlag = args.includes("--check-secrets");
-			const contractIndex = args.indexOf("--contract");
-			const attestationIndex = args.indexOf("--attestation");
-			const allowedSandboxIndex = args.indexOf("--allowed-sandbox");
-
-			const options: Parameters<typeof runCheckEnvironmentCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			if (checkSecretsFlag) options.checkSecrets = true;
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg !== undefined) options.contractPath = contractArg;
-			const attestationArg = getFlagValue(args, attestationIndex);
-			if (attestationArg) options.attestationPath = attestationArg;
-			const allowedSandboxArg = getFlagValue(args, allowedSandboxIndex);
-			if (allowedSandboxArg) {
-				options.allowedSandboxModes = parseCsvList(allowedSandboxArg);
-			}
-
-			return runCheckEnvironmentCLI(options);
-		},
-	},
+	createCheckEnvironmentCommandSpec(),
 	{
 		name: "local-memory-preflight",
 		summary: "Run the structured Local Memory preflight smoke checks",
