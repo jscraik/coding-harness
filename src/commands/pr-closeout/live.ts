@@ -226,6 +226,20 @@ function fetchChecks(
 	tools: PrCloseoutToolInput[],
 	pullRequest: PrCloseoutPullRequestInput,
 ): PrCloseoutCheckInput[] {
+	const applyHeadProof = (checksRaw: string): PrCloseoutCheckInput[] => {
+		const checks = normalizeGhChecks(JSON.parse(checksRaw) as unknown);
+		return applyCheckHeadProof(
+			checks,
+			fetchCheckHeadProof(
+				options,
+				env,
+				runner,
+				tools,
+				checks,
+				pullRequest.headSha,
+			),
+		);
+	};
 	try {
 		const checksRaw = runner(
 			"gh",
@@ -239,19 +253,16 @@ function fetchChecks(
 			],
 			{ cwd: options.repoRoot, env },
 		);
-		const checks = normalizeGhChecks(JSON.parse(checksRaw) as unknown);
-		return applyCheckHeadProof(
-			checks,
-			fetchCheckHeadProof(
-				options,
-				env,
-				runner,
-				tools,
-				checks,
-				pullRequest.headSha,
-			),
-		);
+		return applyHeadProof(checksRaw);
 	} catch (error) {
+		const checksRaw = commandErrorStdout(error);
+		if (checksRaw) {
+			try {
+				return applyHeadProof(checksRaw);
+			} catch {
+				// Preserve the original command failure below when stdout is not valid check evidence.
+			}
+		}
 		tools.push({
 			name: "github_cli",
 			available: true,
@@ -261,6 +272,18 @@ function fetchChecks(
 		});
 		return [];
 	}
+}
+
+function commandErrorStdout(error: unknown): string | null {
+	if (!error || typeof error !== "object") return null;
+	const stdout = (error as { stdout?: unknown }).stdout;
+	if (typeof stdout === "string" && stdout.trim().length > 0) {
+		return stdout.trim();
+	}
+	if (stdout instanceof Buffer && stdout.length > 0) {
+		return stdout.toString("utf8").trim();
+	}
+	return null;
 }
 
 /** Builds live PR closeout input from local command and GitHub evidence. */

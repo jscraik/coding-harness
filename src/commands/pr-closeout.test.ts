@@ -671,6 +671,74 @@ describe("runPrCloseoutCLI", () => {
 		);
 	});
 
+	it("uses check evidence from non-zero gh pr checks stdout", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				const error = new Error(
+					"gh pr checks exited with status 8",
+				) as Error & {
+					stdout: string;
+				};
+				error.stdout = prChecksForHead();
+				throw error;
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			tools: Array<{ failureClass: string | null }>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+		expect(
+			report.tools.some((tool) =>
+				tool.failureClass?.startsWith("pr_checks_unreadable"),
+			),
+		).toBe(false);
+	});
+
 	it("does not attach current-head proof by check name alone", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);
