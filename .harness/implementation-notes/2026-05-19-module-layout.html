@@ -676,7 +676,51 @@
         </section>
 
         <section class="panel">
-          <h2>8. Runtime Card Runtime Seams</h2>
+          <h2>8. Review Gate Decision Packet Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/lib/review-gate/decision-packet.ts</strong>
+              <span>
+                Public artifact emitter for review decision packets, North Star
+                alignment artifacts, and terminal run-record handoff.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>decision-packet-types.ts</strong>
+                <span>
+                  Internal type seam for artifact input, decision
+                  classification, and emitted artifact references.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>recovery.ts</strong>
+                <span>
+                  Review-gate attempt ledger, failure class, stop reason,
+                  retry decision, owner, and recovery-event projection.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>run-record.ts</strong>
+                <span>
+                  Terminal run-record outcome, classification, severity,
+                  policy context, and decision payload projection.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets review-gate decision files and verifies recovery
+                  plus run-record seams stay behind the artifact emitter.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>9. Runtime Card Runtime Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/lib/runtime/runtime-card.ts</strong>
@@ -760,7 +804,7 @@
         </section>
 
         <section class="panel">
-          <h2>9. Why These Splits Exist</h2>
+          <h2>10. Why These Splits Exist</h2>
           <div class="read-me">
             <div class="step">
               <strong>Deep module boundary</strong>
@@ -817,6 +861,10 @@
               now lives behind remediate-run-record.ts. PR closeout recovery
               metadata now lives behind pr-closeout/recovery.ts while
               evaluator.ts stays the approved Effect report assembly seam.
+              Review-gate decision-packet recovery metadata and terminal
+              run-record emission now live behind review-gate/recovery.ts and
+              review-gate/run-record.ts, with decision-packet-types.ts as the
+              small internal type seam.
             </p>
           </article>
           <article class="note">
@@ -831,8 +879,8 @@
             <p>
               Replay run-record emission is now under its local ratchet. The
               next high-leverage slice is outside this module: the remaining
-              size warnings point at command capabilities and review-gate
-              decision packet surfaces.
+              size warning points at command capabilities, which needs a more
+              deliberate catalog-data split than a quick module move.
             </p>
           </article>
         </section>

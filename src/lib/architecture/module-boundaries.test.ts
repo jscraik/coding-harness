@@ -36,6 +36,33 @@ const PR_CLOSEOUT_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const REVIEW_GATE_DECISION_PACKET_RATCHETS = [
+	{
+		path: "src/lib/review-gate/decision-packet.ts",
+		maxLines: 390,
+		reason:
+			"Review-gate decision packet must stay an artifact assembly seam; recovery and run-record metadata stay behind focused modules.",
+	},
+	{
+		path: "src/lib/review-gate/recovery.ts",
+		maxLines: 170,
+		reason:
+			"Review-gate recovery seam must stay focused on attempt-ledger and recovery-event construction.",
+	},
+	{
+		path: "src/lib/review-gate/run-record.ts",
+		maxLines: 180,
+		reason:
+			"Review-gate run-record seam must stay focused on terminal run-record emission and classification.",
+	},
+	{
+		path: "src/lib/review-gate/decision-packet-types.ts",
+		maxLines: 50,
+		reason:
+			"Review-gate shared decision-packet types must stay small enough to remain an internal import seam.",
+	},
+] as const;
+
 const NEXT_SURFACE_RATCHETS = [
 	{
 		path: "src/commands/next.ts",
@@ -369,6 +396,19 @@ const REMEDIATE_COMMAND_SUBMODULES = [
 	"./remediate-run-record.js",
 ] as const;
 const PR_CLOSEOUT_EVALUATOR_SUBMODULES = ["./recovery.js"] as const;
+const REVIEW_GATE_DECISION_PACKET_SUBMODULES = [
+	"./recovery.js",
+	"./run-record.js",
+] as const;
+const REVIEW_GATE_DECISION_PACKET_FORBIDDEN_SYMBOLS = [
+	"function resolveReviewGateFailureClass",
+	"function resolveReviewGateRecoveryOwner",
+	"function resolveReviewGateNextAction",
+	"function resolveRunRecordOutcome",
+	"function resolveRunRecordClassification",
+	"function resolveRunRecordEventStatus",
+	"function resolveRunRecordEventSeverity",
+] as const;
 const RUNTIME_CARD_COMMAND_SUBMODULES = ["./runtime-card-args.js"] as const;
 const RUNTIME_CARD_CONTRACT_SUBMODULES = [
 	"./runtime-card-validation.js",
@@ -484,6 +524,27 @@ describe("module boundaries", () => {
 
 		for (const submodule of PR_CLOSEOUT_EVALUATOR_SUBMODULES) {
 			expect(evaluatorContent).toContain(submodule);
+		}
+	});
+
+	it("keeps review-gate decision packet seams split after decomposition", () => {
+		expectRatchetsWithinBudget(REVIEW_GATE_DECISION_PACKET_RATCHETS);
+	});
+
+	it("keeps review-gate recovery and run-record metadata behind the decision packet seam", () => {
+		const decisionPacketPath = "src/lib/review-gate/decision-packet.ts";
+		const decisionPacketContent = readFileSync(
+			join(process.cwd(), decisionPacketPath),
+			"utf-8",
+		);
+		const decisionPacketImports = importSpecifiers(decisionPacketContent);
+
+		for (const submodule of REVIEW_GATE_DECISION_PACKET_SUBMODULES) {
+			expect(decisionPacketImports).toContain(submodule);
+		}
+
+		for (const extractedSymbol of REVIEW_GATE_DECISION_PACKET_FORBIDDEN_SYMBOLS) {
+			expect(decisionPacketContent).not.toContain(extractedSymbol);
 		}
 	});
 

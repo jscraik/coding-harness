@@ -13,6 +13,7 @@ last_validated: 2026-05-19
 - [Doctor Command Boundaries](#doctor-command-boundaries)
 - [Harness Next Command Boundaries](#harness-next-command-boundaries)
 - [Replay Command Boundaries](#replay-command-boundaries)
+- [Review Gate Decision Packet Boundaries](#review-gate-decision-packet-boundaries)
 - [Runtime Card Command Boundaries](#runtime-card-command-boundaries)
 - [Runtime Card Runtime Boundaries](#runtime-card-runtime-boundaries)
 - [Contract Validator Boundaries](#contract-validator-boundaries)
@@ -192,6 +193,30 @@ execution. Recovery ownership, retry-stop reasoning, and run-record payload
 construction should stay in `replay-run-record.ts` so agents can adjust
 operational metadata without changing trace replay behavior.
 
+## Review Gate Decision Packet Boundaries
+
+Review-gate decision artifacts are split into an artifact assembly seam plus
+focused operational metadata seams:
+
+- `src/lib/review-gate/decision-packet.ts`
+  - Public artifact emitter for `emitReviewGateDecisionArtifacts`; assembles
+    the review decision packet, North Star alignment artifact, and run-record
+    handoff.
+- `src/lib/review-gate/decision-packet-types.ts`
+  - Internal shared type seam for artifact input, decision classification, and
+    emitted artifact references.
+- `src/lib/review-gate/recovery.ts`
+  - Attempt-ledger and recovery-event seam for review-gate retry ownership,
+    failure class, stop reason, and next action.
+- `src/lib/review-gate/run-record.ts`
+  - Terminal run-record seam for outcome classification, event status,
+    severity, policy context, and decision payload projection.
+
+The decision-packet emitter should stay about artifact construction and durable
+handoff. Agents can adjust retry ownership in `recovery.ts` or terminal
+run-record semantics in `run-record.ts` without changing the artifact assembly
+interface.
+
 ## Runtime Card Command Boundaries
 
 Runtime card is a command facade plus artifact/evidence safety surface:
@@ -306,6 +331,15 @@ Threshold policy:
 - `src/commands/replay-run-record.ts` must remain a replay run-record seam
   (`<= 230` lines) for attempt ledger, recovery event, and policy context
   emission.
+- `src/lib/review-gate/decision-packet.ts` must remain a review-gate decision
+  artifact assembly seam (`<= 390` lines); recovery and run-record metadata
+  move into named seams.
+- `src/lib/review-gate/recovery.ts` must remain a review-gate recovery seam
+  (`<= 170` lines) for attempt-ledger and recovery-event construction.
+- `src/lib/review-gate/run-record.ts` must remain a review-gate run-record seam
+  (`<= 180` lines) for terminal run-record emission and classification.
+- `src/lib/review-gate/decision-packet-types.ts` must remain a small internal
+  type seam (`<= 50` lines).
 - `src/commands/runtime-card.ts` must remain a runtime-card command facade
   (`<= 300` lines); CLI token parsing moves into `runtime-card-args.ts`.
 - `src/lib/runtime/runtime-card.ts` must remain a runtime-card public contract

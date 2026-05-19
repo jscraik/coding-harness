@@ -6,35 +6,25 @@ import {
 	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
 	getNorthStarAlignmentDecisionPath,
 } from "../contract/north-star-artifacts.js";
+import { hashRunRecordValue } from "../contract/run-record-emitter.js";
+import { resolveRunRecordPaths } from "../contract/run-records.js";
+import type {
+	DecisionClassification,
+	ReviewGateArtifactInput,
+} from "./decision-packet-types.js";
 import {
-	emitTerminalRunRecord,
-	hashRunRecordValue,
-} from "../contract/run-record-emitter.js";
-import {
-	type ExitClassification,
-	type RunEventSeverity,
-	type RunEventStatus,
-	type RunOutcome,
-	resolveRunRecordPaths,
-} from "../contract/run-records.js";
+	buildReviewGateAttemptLedger,
+	buildReviewGateRecoveryEvent,
+	type ReviewGateAttemptLedger,
+	type ReviewGateRecoveryEvent,
+} from "./recovery.js";
+import { emitReviewGateRunRecord } from "./run-record.js";
 import type {
 	ReviewDecisionState,
 	ReviewGateErrorCode,
-	ReviewGateOptions,
 	ReviewGateOutput,
 	ReviewPRClosureStatus,
 } from "./types.js";
-
-type ReviewGateArtifactInput = {
-	options: ReviewGateOptions;
-	effectiveCheckName?: string;
-	startedAt: string;
-	finishedAt: string;
-	exitCode: number;
-	result:
-		| { ok: true; output: ReviewGateOutput }
-		| { ok: false; error: { code: ReviewGateErrorCode; message: string } };
-};
 
 interface ReviewDecisionPacket {
 	schemaVersion: "review-decision-packet/v1";
@@ -87,57 +77,6 @@ type NorthStarAlignmentDecisionArtifact = Omit<
 	schemaVersion: typeof NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.alignmentDecision;
 	sourceSchemaVersion: ReviewDecisionPacket["schemaVersion"];
 };
-
-type DecisionClassification = {
-	state: ReviewDecisionState;
-	prClosureStatus: ReviewPRClosureStatus;
-	requiresHumanDecision: boolean;
-};
-
-type ReviewGateRunRecordArtifacts = {
-	decisionPacketPath: string;
-	decisionPacketChecksum: string;
-	alignmentDecisionPath: string;
-	alignmentDecisionChecksum: string;
-};
-
-type ReviewGateRecoveryOwner = "codex" | "external_service" | "operator";
-type ReviewGateRetryDecision = "none" | "retry" | "stop";
-
-interface ReviewGateAttemptLedger {
-	schemaVersion: "attempt-ledger/v1";
-	command: "review-gate";
-	attempt: number;
-	maxAttempts: number;
-	firstFailure: {
-		attempt: number;
-		failureClass: string;
-		exitCode: number;
-		observedAt: string;
-	} | null;
-	retryDecision: {
-		decision: ReviewGateRetryDecision;
-		reason: string;
-		nextAttempt: number | null;
-	};
-	owner: ReviewGateRecoveryOwner;
-	stopReason: string | null;
-	nextAction: string;
-	evidenceRefs: string[];
-}
-
-interface ReviewGateRecoveryEvent {
-	schemaVersion: "recovery-event/v1";
-	eventId: string;
-	command: "review-gate";
-	attempt: number;
-	owner: ReviewGateRecoveryOwner;
-	failureClass: string;
-	stopReason: string;
-	nextAction: string;
-	retryDecision: ReviewGateRetryDecision;
-	evidenceRefs: string[];
-}
 
 /**
  * Resolve the package's producer version from the workspace package.json.
@@ -262,106 +201,6 @@ function buildGuardrailCandidates(
 	);
 }
 
-function resolveReviewGateFailureClass(
-	result: ReviewGateArtifactInput["result"],
-): string {
-	if (result.ok) {
-		return result.output.verified ? "none" : "policy_blocked";
-	}
-	return result.error.code.toLowerCase();
-}
-
-function resolveReviewGateRecoveryOwner(
-	result: ReviewGateArtifactInput["result"],
-): ReviewGateRecoveryOwner {
-	if (result.ok) return "codex";
-	if (result.error.code === "PERMISSION_DENIED") return "operator";
-	if (result.error.code === "TIMEOUT" || result.error.code === "SYSTEM_ERROR") {
-		return "external_service";
-	}
-	return "codex";
-}
-
-function resolveReviewGateNextAction(
-	result: ReviewGateArtifactInput["result"],
-): string {
-	if (result.ok && result.output.verified) {
-		return "Continue PR closeout with the verified review-gate decision packet.";
-	}
-	if (result.ok) {
-		return (
-			result.output.blockers[0] ??
-			"Resolve review-gate blockers and rerun review-gate."
-		);
-	}
-	if (result.error.code === "PERMISSION_DENIED") {
-		return "Refresh review-gate credentials or ask the operator for an authenticated rerun.";
-	}
-	if (result.error.code === "TIMEOUT") {
-		return "Inspect service latency or reduce review-gate scope before rerunning.";
-	}
-	return result.error.message;
-}
-
-function buildReviewGateAttemptLedger(args: {
-	input: ReviewGateArtifactInput;
-	runId: string;
-	decisionPacketPath: string;
-}): ReviewGateAttemptLedger {
-	const verified = args.input.result.ok && args.input.result.output.verified;
-	const stopReason = verified
-		? null
-		: resolveReviewGateNextAction(args.input.result);
-	return {
-		schemaVersion: "attempt-ledger/v1",
-		command: "review-gate",
-		attempt: 1,
-		maxAttempts: 1,
-		firstFailure: verified
-			? null
-			: {
-					attempt: 1,
-					failureClass: resolveReviewGateFailureClass(args.input.result),
-					exitCode: args.input.exitCode,
-					observedAt: args.input.finishedAt,
-				},
-		retryDecision: {
-			decision: verified ? "none" : "stop",
-			reason: verified
-				? "review-gate completed successfully"
-				: "review-gate has no internal retry loop; rerun only after the recorded next action",
-			nextAttempt: null,
-		},
-		owner: resolveReviewGateRecoveryOwner(args.input.result),
-		stopReason,
-		nextAction: resolveReviewGateNextAction(args.input.result),
-		evidenceRefs: [
-			`review-gate:run:${args.runId}`,
-			`artifact:${args.decisionPacketPath}`,
-		],
-	};
-}
-
-function buildReviewGateRecoveryEvent(args: {
-	runId: string;
-	attemptLedger: ReviewGateAttemptLedger;
-}): ReviewGateRecoveryEvent | null {
-	const firstFailure = args.attemptLedger.firstFailure;
-	if (!firstFailure || !args.attemptLedger.stopReason) return null;
-	return {
-		schemaVersion: "recovery-event/v1",
-		eventId: `review-gate:${args.runId}:attempt-1`,
-		command: "review-gate",
-		attempt: 1,
-		owner: args.attemptLedger.owner,
-		failureClass: firstFailure.failureClass,
-		stopReason: args.attemptLedger.stopReason,
-		nextAction: args.attemptLedger.nextAction,
-		retryDecision: args.attemptLedger.retryDecision.decision,
-		evidenceRefs: args.attemptLedger.evidenceRefs,
-	};
-}
-
 /**
  * Write an object as pretty JSON to disk and return its path and content checksum.
  *
@@ -472,167 +311,6 @@ function buildAlignmentDecisionArtifact(
 }
 
 /**
- * Map a review-gate result into the canonical run record outcome.
- *
- * @param result - The review-gate invocation result to classify.
- * @returns `success` when the review was verified; `blocked` when verification failed or resources were missing; `hold` for timeouts or permission-related issues; `failed` for validation, system, or other terminal errors.
- */
-function resolveRunRecordOutcome(
-	result: ReviewGateArtifactInput["result"],
-): RunOutcome {
-	if (result.ok) {
-		return result.output.verified ? "success" : "blocked";
-	}
-	switch (result.error.code) {
-		case "VALIDATION_ERROR":
-		case "SYSTEM_ERROR":
-			return "failed";
-		case "NOT_FOUND":
-			return "blocked";
-		case "TIMEOUT":
-		case "PERMISSION_DENIED":
-			return "hold";
-		default:
-			return "failed";
-	}
-}
-
-/**
- * Map a review-gate result to its normalized exit classification.
- *
- * @param result - The review-gate run result to classify
- * @returns The `ExitClassification` corresponding to `result`: `ok` when verified; `policy_blocked` when the run completed but is not verified; `validation_failed` for validation errors; `precondition_failed` when a referenced resource was not found; `manual_intervention_required` for timeouts or permission errors; `runtime_failed` for other failures
- */
-function resolveRunRecordClassification(
-	result: ReviewGateArtifactInput["result"],
-): ExitClassification {
-	if (result.ok) {
-		return result.output.verified ? "ok" : "policy_blocked";
-	}
-	switch (result.error.code) {
-		case "VALIDATION_ERROR":
-			return "validation_failed";
-		case "NOT_FOUND":
-			return "precondition_failed";
-		case "TIMEOUT":
-		case "PERMISSION_DENIED":
-			return "manual_intervention_required";
-		default:
-			return "runtime_failed";
-	}
-}
-
-/**
- * Map a review-gate result to the run record event status.
- *
- * @param result - The review-gate invocation result used to determine event status
- * @returns `completed` when the run verified successfully, `blocked` when verification failed or the resource was not found, `failed` otherwise
- */
-function resolveRunRecordEventStatus(
-	result: ReviewGateArtifactInput["result"],
-): RunEventStatus {
-	if (result.ok) {
-		return result.output.verified ? "completed" : "blocked";
-	}
-	return result.error.code === "NOT_FOUND" ? "blocked" : "failed";
-}
-
-/**
- * Determine the run event severity for a given review-gate result.
- *
- * @param result - The review-gate invocation result to evaluate
- * @returns `"info"` when the run completed and verification succeeded, `"warn"` when completed but not verified or for most failures, and `"error"` when the run failed due to a system error
- */
-function resolveRunRecordEventSeverity(
-	result: ReviewGateArtifactInput["result"],
-): RunEventSeverity {
-	if (result.ok) {
-		return result.output.verified ? "info" : "warn";
-	}
-	return result.error.code === "SYSTEM_ERROR" ? "error" : "warn";
-}
-
-/**
- * Emit a terminal run record describing a completed review-gate run to the run-record system.
- *
- * @param input - Invocation metadata, timing, options, and the review-gate result used to derive outcome, event status, and context
- * @param runId - Unique identifier for this review-gate run
- * @param decision - Normalized decision classification (state, PR closure status, and whether human decision is required)
- * @param packet - The constructed review-decision-packet included in the event payload
- * @param artifacts - Paths and checksums for the emitted decision and alignment artifacts to be recorded as run artifacts
- */
-function emitReviewGateRunRecord(
-	input: ReviewGateArtifactInput,
-	runId: string,
-	decision: DecisionClassification,
-	packet: ReviewDecisionPacket,
-	artifacts: ReviewGateRunRecordArtifacts,
-): void {
-	emitTerminalRunRecord({
-		command: "review-gate",
-		runId,
-		startedAt: input.startedAt,
-		finishedAt: input.finishedAt,
-		outcome: resolveRunRecordOutcome(input.result),
-		classification: resolveRunRecordClassification(input.result),
-		exitCode: input.exitCode,
-		...(input.options.runRecordsDir
-			? { baseDir: input.options.runRecordsDir }
-			: {}),
-		artifacts: [
-			{
-				type: "decision-packet",
-				path: artifacts.decisionPacketPath,
-				checksum: artifacts.decisionPacketChecksum,
-			},
-			{
-				type: "alignment-decision",
-				path: artifacts.alignmentDecisionPath,
-				checksum: artifacts.alignmentDecisionChecksum,
-			},
-		],
-		contract: {
-			path: input.options.contractPath,
-		},
-		policyContext: {
-			mode: input.options.json ? "json" : "interactive",
-			safetyPosture: "strict",
-			effectivePolicySource: input.options.contractPath,
-			hash: hashRunRecordValue({
-				command: "review-gate",
-				checkName: input.options.checkName,
-				autoResolveBotThreads: Boolean(input.options.autoResolveBotThreads),
-			}),
-		},
-		repo: {
-			repository: `${input.options.owner}/${input.options.repo}`,
-			branch: "pull-request",
-			headSha: input.options.headSha,
-		},
-		preconditions: {
-			prNumber: input.options.prNumber,
-			autoResolveBotThreads: Boolean(input.options.autoResolveBotThreads),
-			jsonMode: Boolean(input.options.json),
-		},
-		event: {
-			eventType: "decision",
-			status: resolveRunRecordEventStatus(input.result),
-			severity: resolveRunRecordEventSeverity(input.result),
-			payload: {
-				decisionState: decision.state,
-				prClosureStatus: decision.prClosureStatus,
-				compactionRecommended: packet.compaction.recommended,
-				guardrailPromotionRecommended: packet.guardrailPromotion.recommended,
-				decisionPacketPath: artifacts.decisionPacketPath,
-				alignmentDecisionPath: artifacts.alignmentDecisionPath,
-				attemptLedger: packet.attemptLedger,
-				recoveryEvent: packet.recoveryEvent,
-			},
-		},
-	});
-}
-
-/**
  * Emit review-gate decision artifacts and the terminal run record.
  *
  * @param input - Invocation metadata, options, timing, and result of the review-gate run
@@ -689,11 +367,17 @@ export function emitReviewGateDecisionArtifacts(
 		buildAlignmentDecisionArtifact(packet),
 	);
 
-	emitReviewGateRunRecord(input, runId, decision, packet, {
-		decisionPacketPath,
-		decisionPacketChecksum: artifact.checksum,
-		alignmentDecisionPath,
-		alignmentDecisionChecksum: alignmentArtifact.checksum,
+	emitReviewGateRunRecord({
+		input,
+		runId,
+		decision,
+		packet,
+		artifacts: {
+			decisionPacketPath,
+			decisionPacketChecksum: artifact.checksum,
+			alignmentDecisionPath,
+			alignmentDecisionChecksum: alignmentArtifact.checksum,
+		},
 	});
 
 	return { runId, decisionPacketPath, alignmentDecisionPath };
