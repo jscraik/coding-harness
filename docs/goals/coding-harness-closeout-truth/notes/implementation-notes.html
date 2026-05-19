@@ -136,9 +136,9 @@
             <code>notes/</code> at the board root.
           </li>
           <li>
-            Phase 0 is the only active task. Later phases are represented in
-            <code>goal.md</code> and should be activated one at a time after the
-            previous receipt is complete.
+            The board was executed one phase at a time. It is now complete, and
+            the receipt ledger records each phase handoff and final audit
+            decision.
           </li>
           <li>
             The native goal was absent when this follow prompt started, so it was
@@ -153,8 +153,8 @@
             Phase 1 needed one minimal boundary split before Phase 2 because the
             first in-file implementation failed <code>pnpm run quality:size</code>.
             The claim/evidence contract now lives in
-            <code>src/lib/pr-closeout/claims.ts</code>; deeper closeout
-            refactoring remains Phase 2 work.
+            <code>src/lib/pr-closeout/claims.ts</code>; the deeper closeout
+            refactor continued in Phase 2.
           </li>
           <li>
             Live GitHub check output is normalized with the PR
@@ -179,9 +179,9 @@
             needed yet.
           </li>
           <li>
-            The native goal objective still mentions Phase 0, but the durable
-            board state is the active state machine and now records Phase 4 as
-            active.
+            The native goal objective was created from the original Phase 0
+            prompt, but the durable board is the active state machine and now
+            records the goal as complete after the final Judge/PM audit.
           </li>
           <li>
             Phase 4 keeps fixtures in code instead of adding a fixture directory
@@ -189,8 +189,8 @@
             needs operational proof, not a new eval platform.
           </li>
           <li>
-            The recovery-denied eval deliberately stops at fixture behavior.
-            The typed recovery contract remains Phase 5 work.
+            The recovery-denied eval deliberately stopped at fixture behavior.
+            The typed recovery contract was added in Phase 5.
           </li>
           <li>
             Phase 5 adds only the recovery contract and validation. It does not
@@ -230,9 +230,9 @@
         <h2>Tradeoffs</h2>
         <ul>
           <li>
-            The state file contains detailed tasks for creation, Phase 0, and
-            Phase 1 only. The full phase queue remains in <code>goal.md</code>
-            so the active state stays small and easy to audit.
+            The state file now records the completed phased task ledger while
+            <code>goal.md</code> remains the durable roadmap narrative and
+            continuation prompt.
           </li>
           <li>
             Existing dirty worktree changes are recorded as context, but not
@@ -333,15 +333,15 @@
             </tr>
             <tr>
               <td><code>state.yaml</code></td>
-              <td>Machine-auditable board state with exactly one active phase.</td>
+              <td>Machine-auditable board state with completed phase receipts.</td>
             </tr>
             <tr>
               <td><code>receipts.jsonl</code></td>
-              <td>Initial creation receipt and discovery evidence.</td>
+              <td>Append-only creation, phase, review, and closeout evidence.</td>
             </tr>
             <tr>
               <td><code>notes/implementation-notes.html</code></td>
-              <td>Running browser-readable implementation ledger, updated for Phase 0.</td>
+              <td>Running browser-readable implementation ledger, updated through closeout.</td>
             </tr>
             <tr>
               <td><code>notes/.gitkeep</code></td>
