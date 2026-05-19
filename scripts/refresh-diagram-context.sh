@@ -457,6 +457,23 @@ if [[ -f "$CONTEXT_FILE" ]] && \
 	fi
 fi
 
+if [[ -f "$CONTEXT_FILE" ]] && node - "$TMP_CONTEXT" "$CONTEXT_FILE" "$ROOT_DIR" <<'NODE'
+const fs = require("node:fs");
+const path = require("node:path");
+const { normalizeDiagramContextLines } = require(path.join(
+	process.argv[4],
+	"scripts/lib/normalize-mermaid-artifact.cjs",
+));
+
+const readNormalized = (filePath) =>
+	normalizeDiagramContextLines(fs.readFileSync(filePath, "utf8").split(/\r?\n/));
+
+process.exit(readNormalized(process.argv[2]) === readNormalized(process.argv[3]) ? 0 : 1);
+NODE
+then
+	cp "$CONTEXT_FILE" "$TMP_CONTEXT"
+fi
+
 CONTEXT_SHA="$(shasum -a 256 "$TMP_CONTEXT" | awk '{print $1}')"
 GIT_HEAD="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
 DIAGRAM_COUNT="$(find "$TMP_DIR/diagrams" -maxdepth 1 -type f -name '*.mmd' | wc -l | tr -d ' ')"

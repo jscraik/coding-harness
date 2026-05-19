@@ -18,6 +18,12 @@ const SCRIPT_SOURCE = join(
 	"scripts",
 	"refresh-diagram-context.sh",
 );
+const NORMALIZE_HELPER_SOURCE = join(
+	process.cwd(),
+	"scripts",
+	"lib",
+	"normalize-mermaid-artifact.cjs",
+);
 const STABLE_PATH = [
 	...(process.platform === "darwin" ? ["/opt/homebrew/bin"] : []),
 
@@ -41,6 +47,7 @@ function createRepo(): { root: string; binDir: string } {
 	const root = mkdtempSync(join(tmpdir(), "diagram-context-refresh-"));
 	const binDir = join(root, "bin");
 	mkdirSync(join(root, "scripts"), { recursive: true });
+	mkdirSync(join(root, "scripts", "lib"), { recursive: true });
 	writeFileSync(
 		join(root, "package.json"),
 		`${JSON.stringify({ name: "@brainwav/coding-harness" }, null, 2)}\n`,
@@ -48,6 +55,10 @@ function createRepo(): { root: string; binDir: string } {
 	copyFileSync(
 		SCRIPT_SOURCE,
 		join(root, "scripts", "refresh-diagram-context.sh"),
+	);
+	copyFileSync(
+		NORMALIZE_HELPER_SOURCE,
+		join(root, "scripts", "lib", "normalize-mermaid-artifact.cjs"),
 	);
 	chmodSync(join(root, "scripts", "refresh-diagram-context.sh"), 0o755);
 
@@ -188,5 +199,105 @@ describe("refresh-diagram-context.sh", () => {
 		);
 		expect(context).not.toContain("diagram context refresh random checkout");
 		expect(context.match(/\["api"\]/g)).toHaveLength(2);
+	});
+
+	it("preserves context when refresh only changes volatile Mermaid output", {
+		timeout: 30000,
+	}, () => {
+		const { root, binDir } = createRepo();
+		roots.push(root);
+
+		writeExecutable(
+			join(binDir, "pnpm"),
+			`#!/usr/bin/env bash
+set -euo pipefail
+out_dir=""
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--output-dir)
+			out_dir="$2"
+			shift 2
+			;;
+		*)
+			shift
+			;;
+	esac
+done
+mkdir -p "$out_dir"
+cat > "$out_dir/architecture.mmd" <<'MMD'
+graph TD
+  node_sources_11111111["sources"]
+  node_types_22222222["types"]
+MMD
+cat > "$out_dir/manifest.json" <<'JSON'
+{
+  "generatedAt": "1970-01-01T00:00:00.000Z",
+  "diagrams": []
+}
+JSON
+`,
+		);
+
+		const firstResult = spawnSync(
+			"bash",
+			["scripts/refresh-diagram-context.sh", "--force", "--quiet"],
+			{
+				cwd: root,
+				encoding: "utf-8",
+				env: {
+					...sanitizeGitEnv(),
+					PATH: [binDir, STABLE_PATH].join(delimiter),
+				},
+			},
+		);
+		expect(firstResult.status).toBe(0);
+		const contextPath = join(root, "AI", "context", "diagram-context.md");
+		const firstContext = readFileSync(contextPath, "utf-8");
+
+		writeExecutable(
+			join(binDir, "pnpm"),
+			`#!/usr/bin/env bash
+set -euo pipefail
+out_dir=""
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--output-dir)
+			out_dir="$2"
+			shift 2
+			;;
+		*)
+			shift
+			;;
+	esac
+done
+mkdir -p "$out_dir"
+cat > "$out_dir/architecture.mmd" <<'MMD'
+graph TD
+  node_types_88888888["types"]
+  node_sources_99999999["sources"]
+MMD
+cat > "$out_dir/manifest.json" <<'JSON'
+{
+  "generatedAt": "1970-01-01T00:00:00.000Z",
+  "diagrams": []
+}
+JSON
+`,
+		);
+		const secondResult = spawnSync(
+			"bash",
+			["scripts/refresh-diagram-context.sh", "--force", "--quiet"],
+			{
+				cwd: root,
+				encoding: "utf-8",
+				env: {
+					...sanitizeGitEnv(),
+					PATH: [binDir, STABLE_PATH].join(delimiter),
+				},
+			},
+		);
+
+		expect(secondResult.status).toBe(0);
+		expect(readFileSync(contextPath, "utf-8")).toBe(firstContext);
 	});
 });
