@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, and PR template gate parsing now live behind focused command-spec seams.
+            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, and rule lifecycle gate parsing now live behind focused command-spec seams.
           </div>
         </section>
 
@@ -422,6 +422,13 @@
                 <strong>pr-template-gate-command-spec.ts</strong>
                 <span>
                   PR template gate option projection delegates through a
+                  focused command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>rule-lifecycle-gate-command-spec.ts</strong>
+                <span>
+                  Rule lifecycle gate option projection delegates through a
                   focused command-spec seam.
                 </span>
               </div>
@@ -1034,7 +1041,9 @@
               linear-command-spec.ts kept as the small registry seam. Linear
               gate option projection now lives behind
               linear-gate-command-spec.ts. PR template gate option projection
-              now lives behind pr-template-gate-command-spec.ts.
+              now lives behind pr-template-gate-command-spec.ts. Rule lifecycle
+              gate option projection now lives behind
+              rule-lifecycle-gate-command-spec.ts.
             </p>
           </article>
           <article class="note">
