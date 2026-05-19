@@ -142,26 +142,55 @@ function requirePattern(
 }
 
 function checkClaimContract(findings) {
-	const file = "src/lib/pr-closeout/claims.ts";
-	const { content, missing } = read(file);
-	if (missing) {
+	const contractFile = "src/lib/pr-closeout/types.ts";
+	const implementationFile = "src/lib/pr-closeout/claim-builders.ts";
+	const helperFile = "src/lib/pr-closeout/claim-helpers.ts";
+	const contractSource = read(contractFile);
+	const implementationSource = read(implementationFile);
+	const helperSource = read(helperFile);
+	if (contractSource.missing) {
 		findings.push(
 			finding(
-				"missing-claims-module",
-				file,
+				"missing-claim-contract-module",
+				contractFile,
 				"claim contract module is missing",
-				"Restore src/lib/pr-closeout/claims.ts with the PrCloseoutClaim contract.",
+				"Restore src/lib/pr-closeout/types.ts with the PrCloseoutClaim contract.",
 			),
 		);
 		return;
 	}
+	if (implementationSource.missing) {
+		findings.push(
+			finding(
+				"missing-claim-builders-module",
+				implementationFile,
+				"claim builder module is missing",
+				"Restore src/lib/pr-closeout/claim-builders.ts with the required closeout claim builders.",
+			),
+		);
+		return;
+	}
+	if (helperSource.missing) {
+		findings.push(
+			finding(
+				"missing-claim-helpers-module",
+				helperFile,
+				"claim helper module is missing",
+				"Restore src/lib/pr-closeout/claim-helpers.ts with claim factory and evidence helpers.",
+			),
+		);
+		return;
+	}
+	const content = implementationSource.content;
+	const helperContent = helperSource.content;
+	const contractContent = contractSource.content;
 
-	const claimBody = interfaceBody(content, "PrCloseoutClaim");
+	const claimBody = interfaceBody(contractContent, "PrCloseoutClaim");
 	for (const field of REQUIRED_CLAIM_FIELDS) {
 		requirePattern(
 			findings,
 			`claim-field-${field}`,
-			file,
+			contractFile,
 			claimBody,
 			new RegExp(`\\b${field}\\b`),
 			`PrCloseoutClaim is missing required field: ${field}`,
@@ -173,8 +202,8 @@ function checkClaimContract(findings) {
 		requirePattern(
 			findings,
 			`claim-status-${status}`,
-			file,
-			content,
+			contractFile,
+			contractContent,
 			new RegExp(`["']${status}["']`),
 			`PrCloseoutClaimStatus is missing status: ${status}`,
 			"Keep claim status vocabulary aligned with pr-closeout/v1.",
@@ -185,7 +214,7 @@ function checkClaimContract(findings) {
 		requirePattern(
 			findings,
 			`required-claim-${claim}`,
-			file,
+			implementationFile,
 			content,
 			new RegExp(`["']${claim}["']`),
 			`required closeout claim is missing: ${claim}`,
@@ -195,9 +224,33 @@ function checkClaimContract(findings) {
 
 	requirePattern(
 		findings,
+		"claim-builders-classify-missing-context",
+		helperFile,
+		helperContent,
+		/classifyMissingContext[\s\S]*problem:/,
+		"claim builders must classify missing context when evidence is absent, stale, blocked, or unknown",
+		"Route non-passing claim evidence through classifyMissingContext before blockers are projected.",
+	);
+
+	const blockerProjectionFile = "src/lib/pr-closeout/claims.ts";
+	const blockerProjectionSource = read(blockerProjectionFile);
+	if (blockerProjectionSource.missing) {
+		findings.push(
+			finding(
+				"missing-claims-module",
+				blockerProjectionFile,
+				"claim blocker projection module is missing",
+				"Restore src/lib/pr-closeout/claims.ts with claim blocker projection.",
+			),
+		);
+		return;
+	}
+	const blockerContent = blockerProjectionSource.content;
+	requirePattern(
+		findings,
 		"claim-blockers-fail-closed",
-		file,
-		content,
+		blockerProjectionFile,
+		blockerContent,
 		/claim\.status\s*===\s*["']pass["'][\s\S]*claim\.status\s*===\s*["']not_applicable["'][\s\S]*continue/,
 		"collectClaimBlockers must only skip pass and not_applicable claims",
 		"Ensure fail, blocked, unknown, and stale claims produce blockers.",
@@ -205,8 +258,8 @@ function checkClaimContract(findings) {
 	requirePattern(
 		findings,
 		"claim-blockers-carry-missing-context",
-		file,
-		content,
+		blockerProjectionFile,
+		blockerContent,
 		/missingContext[\s\S]*claim\.missingContext/,
 		"claim blockers must carry missing-context classification when present",
 		"Spread claim.missingContext onto emitted PrCloseoutBlocker records.",
@@ -214,25 +267,39 @@ function checkClaimContract(findings) {
 }
 
 function checkReportContract(findings) {
-	const file = "src/lib/pr-closeout.ts";
-	const { content, missing } = read(file);
-	if (missing) {
+	const contractFile = "src/lib/pr-closeout/types.ts";
+	const evaluatorFile = "src/lib/pr-closeout/evaluator.ts";
+	const contractSource = read(contractFile);
+	const evaluatorSource = read(evaluatorFile);
+	if (contractSource.missing) {
 		findings.push(
 			finding(
-				"missing-closeout-module",
-				file,
-				"pr-closeout report module is missing",
-				"Restore src/lib/pr-closeout.ts with PrCloseoutReport and buildPrCloseoutReport.",
+				"missing-closeout-contract-module",
+				contractFile,
+				"pr-closeout report contract module is missing",
+				"Restore src/lib/pr-closeout/types.ts with PrCloseoutReport and the schema version.",
 			),
 		);
 		return;
 	}
-
-	const reportBody = interfaceBody(content, "PrCloseoutReport");
+	if (evaluatorSource.missing) {
+		findings.push(
+			finding(
+				"missing-closeout-evaluator-module",
+				evaluatorFile,
+				"pr-closeout report evaluator module is missing",
+				"Restore src/lib/pr-closeout/evaluator.ts with buildPrCloseoutReport.",
+			),
+		);
+		return;
+	}
+	const content = evaluatorSource.content;
+	const contractContent = contractSource.content;
+	const reportBody = interfaceBody(contractContent, "PrCloseoutReport");
 	requirePattern(
 		findings,
 		"report-exposes-claims",
-		file,
+		contractFile,
 		reportBody,
 		/claims\s*:\s*PrCloseoutClaim\[\]/,
 		"PrCloseoutReport must expose verifier-backed claims",
@@ -240,8 +307,17 @@ function checkReportContract(findings) {
 	);
 	requirePattern(
 		findings,
+		"schema-version-v1",
+		contractFile,
+		contractContent,
+		/PR_CLOSEOUT_SCHEMA_VERSION\s*=\s*["']pr-closeout\/v1["']/,
+		"pr-closeout schema version must remain pr-closeout/v1",
+		"Preserve pr-closeout/v1 unless a deliberate migration updates consumers and docs.",
+	);
+	requirePattern(
+		findings,
 		"builds-claims-before-decision",
-		file,
+		evaluatorFile,
 		content,
 		/const claims\s*=\s*buildCloseoutClaims[\s\S]*collectClaimBlockers\(claims, blockers\)[\s\S]*const decision\s*=\s*deriveNextAction\(blockers\)/,
 		"buildPrCloseoutReport must derive status after claim blockers are collected",
@@ -250,20 +326,43 @@ function checkReportContract(findings) {
 	requirePattern(
 		findings,
 		"returns-claims",
-		file,
+		evaluatorFile,
 		content,
 		/return\s*\{(?=[\s\S]*\bblockers\b)(?=[\s\S]*\bclaims\b)[\s\S]*\}/,
 		"buildPrCloseoutReport must return the claim ledger",
 		"Include claims in the returned pr-closeout/v1 report.",
 	);
+
+	const facadeFile = "src/lib/pr-closeout.ts";
+	const facadeSource = read(facadeFile);
+	if (facadeSource.missing) {
+		findings.push(
+			finding(
+				"missing-closeout-module",
+				facadeFile,
+				"pr-closeout public facade is missing",
+				"Restore src/lib/pr-closeout.ts as the public closeout interface.",
+			),
+		);
+		return;
+	}
 	requirePattern(
 		findings,
-		"schema-version-v1",
-		file,
-		content,
-		/PR_CLOSEOUT_SCHEMA_VERSION\s*=\s*["']pr-closeout\/v1["']/,
-		"pr-closeout schema version must remain pr-closeout/v1",
-		"Preserve pr-closeout/v1 unless a deliberate migration updates consumers and docs.",
+		"facade-exports-report-contract",
+		facadeFile,
+		facadeSource.content,
+		/type PrCloseoutReport/,
+		"pr-closeout public facade must export PrCloseoutReport",
+		"Export PrCloseoutReport from src/lib/pr-closeout.ts so callers stay on the public boundary.",
+	);
+	requirePattern(
+		findings,
+		"facade-exports-report-builder",
+		facadeFile,
+		facadeSource.content,
+		/buildPrCloseoutReport/,
+		"pr-closeout public facade must export buildPrCloseoutReport",
+		"Export buildPrCloseoutReport from src/lib/pr-closeout.ts so callers stay on the public boundary.",
 	);
 }
 

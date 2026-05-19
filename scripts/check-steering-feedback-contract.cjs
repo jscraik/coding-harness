@@ -14,6 +14,8 @@ const REQUIRED_FILES = {
 	prValidator: "src/lib/pr-template-validator.ts",
 	solution:
 		"docs/solutions/integration-issues/2026-05-17-steering-feedback-admission.md",
+	envSolution:
+		"docs/solutions/integration-issues/2026-05-19-env-backed-validation-admission.md",
 };
 
 const DURABLE_DESTINATION_PATTERN =
@@ -48,6 +50,8 @@ const REPEATED_ERROR_RESEARCH_PATTERN =
 	/(Repeated-error research|Repeated-Error Research Pass|same-error-twice|same error happens twice|same error happened twice|same command.*test.*runtime error happens twice|Source:.*Candidate 1:.*Candidate 2:.*Candidate 3:.*Chosen:.*Implemented:|3-5 numbered Candidate\/Fix\/Option|don.t fight errors)/i;
 const CLOSEOUT_COMPLETION_PATTERN =
 	/(closeout completion|green checks.*not.*complete|green checks.*validation evidence|not equivalent to green checks|PR state.*merge.*Linear.*next-lane|heartbeat.*lane.*complete)/i;
+const ENV_BACKED_VALIDATION_PATTERN =
+	/(Env-Backed Validation Recovery|env-backed validation recovery|~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|inspect.*required.*variable names.*without printing values|missing credential.*env-loaded rerun)/i;
 const CLOSEOUT_STATE_FIELD_PATTERNS = [
 	[/PR state/i, "PR state"],
 	[/merge or auto-merge state/i, "merge or auto-merge state"],
@@ -161,6 +165,13 @@ function validateAgents(content) {
 		content,
 		OBSERVED_FIXABLE_BLOCKER_PATTERN,
 		"observed fixable blocker fix-first rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
+		ENV_BACKED_VALIDATION_PATTERN,
+		"env-backed validation recovery before missing-credential blockers",
 	);
 	requirePattern(
 		errors,
@@ -333,6 +344,13 @@ function validateValidationDoc(content) {
 		errors,
 		REQUIRED_FILES.validation,
 		content,
+		ENV_BACKED_VALIDATION_PATTERN,
+		"env-backed validation recovery rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
 		PRINCIPLE_SIGNAL_PATTERN,
 		"semantic principle signal trigger requirement",
 	);
@@ -484,6 +502,7 @@ function validateGlossary(content) {
 	);
 	for (const term of [
 		"Repeat-Feedback Admission",
+		"Env-Backed Validation Recovery",
 		"Workflow Skill",
 		"Capture-The-Flag Eval",
 		"Skill Workout",
@@ -532,6 +551,13 @@ function validateGlossary(content) {
 		content,
 		REPEATED_ERROR_RESEARCH_PATTERN,
 		"repeated-error research language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		ENV_BACKED_VALIDATION_PATTERN,
+		"env-backed validation recovery language",
 	);
 	requirePattern(
 		errors,
@@ -961,6 +987,66 @@ function validateMemory(content) {
 		PRINCIPLE_SIGNAL_PATTERN,
 		"principle signal learning",
 	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		ENV_BACKED_VALIDATION_PATTERN,
+		"env-backed validation recovery learning",
+	);
+	return errors;
+}
+
+/**
+ * Validate the current-session env-backed validation admission record.
+ *
+ * @param {string} content - The env-backed validation admission markdown.
+ * @returns {string[]} Array of missing-contract errors; empty if all required patterns are present.
+ */
+function validateEnvSolution(content) {
+	const errors = [];
+	requirePattern(
+		errors,
+		REQUIRED_FILES.envSolution,
+		content,
+		/# Env-Backed Validation Admission/,
+		"env-backed validation admission title",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.envSolution,
+		content,
+		CURRENT_SESSION_ADMISSION_PATTERN,
+		"current-session admission evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.envSolution,
+		content,
+		ENV_BACKED_VALIDATION_PATTERN,
+		"env-backed validation recovery evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.envSolution,
+		content,
+		DURABLE_DESTINATION_PATTERN,
+		"durable destination evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.envSolution,
+		content,
+		/forbidden recurrence behavior/i,
+		"forbidden recurrence behavior",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.envSolution,
+		content,
+		/pnpm run docs:steering:guard/i,
+		"focused validation command",
+	);
 	return errors;
 }
 
@@ -972,6 +1058,7 @@ const validations = [
 	["prTemplate", validatePrTemplate],
 	["prValidator", validatePrValidator],
 	["solution", validateSolution],
+	["envSolution", validateEnvSolution],
 ];
 
 const errors = [];

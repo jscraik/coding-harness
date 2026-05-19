@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+
 /** Stable system-gap classes for evidence that cannot prove a closeout claim. */
 export type MissingContextClass =
 	| "missing_repo_instruction"
@@ -74,8 +76,7 @@ function classification(
 	};
 }
 
-/** Route one unproven evidence gap to a durable missing-context destination. */
-export function classifyMissingContext(
+function classifyMissingContextValue(
 	input: MissingContextInput,
 ): MissingContextClassification {
 	if (input.problem === "stale") {
@@ -132,4 +133,18 @@ export function classifyMissingContext(
 		"missing_verifier",
 		`${input.surface} evidence is absent or unknown for ${input.claim ?? "closeout"}.`,
 	);
+}
+
+/** Route one unproven evidence gap to a durable missing-context destination as an Effect boundary. */
+export function classifyMissingContextEffect(
+	input: MissingContextInput,
+): Effect.Effect<MissingContextClassification> {
+	return Effect.succeed(classifyMissingContextValue(input));
+}
+
+/** Route one unproven evidence gap to a durable missing-context destination. */
+export function classifyMissingContext(
+	input: MissingContextInput,
+): MissingContextClassification {
+	return Effect.runSync(classifyMissingContextEffect(input));
 }

@@ -1,7 +1,7 @@
 # Architecture rules baselines — pre-existing violations excluded from blocking CI.
 # Updated: 2026-03-15
 #
-# Format: "<rule-id>|<relative-file-path>"
+# Format: "<rule-id>|<relative-file-path>|owner=<owner>|reason=<reason>|date=YYYY-MM-DD"
 # All 4 original violations have been fixed:
 #   - commands-no-cross-import: review-gate → check-authz (via lib/review-gate/authz.ts)
 #   - commands-no-cross-import: ci-migrate → init (via lib/ci-migrate/init-bridge.ts)

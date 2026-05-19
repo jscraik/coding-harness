@@ -21,12 +21,135 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 	},
 ] as const;
 
+const NEXT_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/next.ts",
+		maxLines: 160,
+		reason:
+			"Harness next must stay a decision producer; keep CLI parsing behind focused seams before raising this limit.",
+	},
+	{
+		path: "src/commands/next-args.ts",
+		maxLines: 190,
+		reason:
+			"Harness next argument parsing must stay focused on CLI token parsing and usage-error shape.",
+	},
+	{
+		path: "src/commands/next-usage-errors.ts",
+		maxLines: 160,
+		reason:
+			"Harness next usage-error decisions must stay focused on translating parser errors into blocked decisions.",
+	},
+	{
+		path: "src/commands/next-runner.ts",
+		maxLines: 250,
+		reason:
+			"Harness next runner must stay focused on decision production; CLI artifact loading and output stay in the command facade.",
+	},
+] as const;
+
+const RUNTIME_CARD_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/runtime-card.ts",
+		maxLines: 300,
+		reason:
+			"Runtime-card command must stay focused on artifact safety, card building, and output rendering; keep CLI parsing behind focused seams before raising this limit.",
+	},
+	{
+		path: "src/commands/runtime-card-args.ts",
+		maxLines: 170,
+		reason:
+			"Runtime-card argument parsing must stay focused on CLI token parsing and runtime-card option shape.",
+	},
+] as const;
+
+const REPLAY_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/replay.ts",
+		maxLines: 330,
+		reason:
+			"Replay command must stay a command facade; run-record and recovery metadata stay behind the replay run-record seam.",
+	},
+	{
+		path: "src/commands/replay-run-record.ts",
+		maxLines: 230,
+		reason:
+			"Replay run-record seam must stay focused on canonical run-record emission, attempt ledger, and recovery event metadata.",
+	},
+] as const;
+
+const RUNTIME_CARD_RUNTIME_RATCHETS = [
+	{
+		path: "src/lib/runtime/runtime-card.ts",
+		maxLines: 260,
+		reason:
+			"Runtime-card contract must stay focused on public types, schema version, blocker predicate, and metadata normalization.",
+	},
+	{
+		path: "src/lib/runtime/runtime-card-validation.ts",
+		maxLines: 300,
+		reason:
+			"Runtime-card validation must stay focused on shape validation orchestration; recovery metadata checks stay behind their own seam.",
+	},
+	{
+		path: "src/lib/runtime/runtime-card-recovery-validation.ts",
+		maxLines: 220,
+		reason:
+			"Runtime-card recovery validation must stay focused on attempt ledger and recovery event checks.",
+	},
+] as const;
+
+const LOCAL_RUNTIME_CARD_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/runtime/local-runtime-card.ts",
+		maxLines: 180,
+		reason:
+			"Local runtime-card builder must stay focused on local evidence collection; assembly, live providers, artifact seams, and phase-exit seams should not grow back into the facade.",
+	},
+	{
+		path: "src/lib/runtime/local-runtime-card-assembly.ts",
+		maxLines: 175,
+		reason:
+			"Runtime-card assembly must stay focused on lifecycle, blocker/source merging, fallback tracker state, and schema validation.",
+	},
+	{
+		path: "src/lib/runtime/local-runtime-card-attempts.ts",
+		maxLines: 120,
+		reason:
+			"Runtime-card attempt metadata must stay focused on retry ownership, recovery event shape, and evidence references.",
+	},
+	{
+		path: "src/lib/runtime/local-runtime-card-artifacts.ts",
+		maxLines: 160,
+		reason:
+			"Runtime-card artifact inspection must stay focused on active-artifact index parsing and stale reference classification.",
+	},
+	{
+		path: "src/lib/runtime/local-runtime-card-phase-exit.ts",
+		maxLines: 150,
+		reason:
+			"Runtime-card phase-exit seam must stay focused on HePhaseExit/v1 reading, validation, and status collapse.",
+	},
+	{
+		path: "src/lib/runtime/local-runtime-card-live.ts",
+		maxLines: 270,
+		reason:
+			"Runtime-card live provider seam must stay focused on bounded GitHub and Linear refresh behavior.",
+	},
+] as const;
+
 const DOCTOR_SURFACE_RATCHETS = [
 	{
 		path: "src/commands/doctor.ts",
-		maxLines: 260,
+		maxLines: 210,
 		reason:
-			"Doctor runner must stay thin; move prerequisite checks and artifacts behind focused command seams before raising this limit.",
+			"Doctor runner must stay thin; keep rendering, prerequisite checks, and artifacts behind focused command seams before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-renderer.ts",
+		maxLines: 90,
+		reason:
+			"Doctor renderer must stay presentation-only; keep checks and report construction in doctor modules.",
 	},
 	{
 		path: "src/commands/doctor-checks.ts",
@@ -42,27 +165,51 @@ const DOCTOR_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/commands/doctor-tool-checks.ts",
-		maxLines: 200,
+		maxLines: 170,
 		reason:
-			"Doctor tool checks must stay focused; split larger tool groups before raising this limit.",
+			"Doctor tool checks must stay focused; keep provider-specific checks behind focused seams before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-github-tool-checks.ts",
+		maxLines: 80,
+		reason:
+			"Doctor GitHub tool checks must stay focused on gh availability and authentication.",
 	},
 	{
 		path: "src/commands/doctor-file-checks.ts",
-		maxLines: 260,
+		maxLines: 200,
 		reason:
-			"Doctor file checks must stay focused; split baseline checks before raising this limit.",
+			"Doctor file checks must stay focused; keep governance document checks behind focused seams before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-roadmap-file-checks.ts",
+		maxLines: 80,
+		reason:
+			"Doctor roadmap file checks must stay focused on roadmap governance documents.",
 	},
 	{
 		path: "src/commands/doctor-config-checks.ts",
-		maxLines: 220,
+		maxLines: 90,
 		reason:
-			"Doctor config checks must stay focused; split contract policy families before raising this limit.",
+			"Doctor config checks must stay focused; keep north-star contract readiness behind focused seams before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-north-star-contract-checks.ts",
+		maxLines: 130,
+		reason:
+			"Doctor north-star contract checks must stay focused on contract readiness and governed surface ownership.",
 	},
 	{
 		path: "src/commands/doctor-ci-checks.ts",
-		maxLines: 200,
+		maxLines: 80,
 		reason:
-			"Doctor CI checks must stay focused; split provider-specific checks before raising this limit.",
+			"Doctor CI checks must stay focused; keep required-check identity behind focused seams before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-ci-check-alignment.ts",
+		maxLines: 130,
+		reason:
+			"Doctor CI check alignment must stay focused on required-check identity and branch-protection naming.",
 	},
 ] as const;
 
@@ -96,6 +243,84 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 ]);
 
 const COMMAND_IMPORT_PATTERN = /from\s+["'](?:\.\.\/)+commands\//;
+const EFFECT_IMPORT_PATTERN = /from\s+["']effect["']/;
+const PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN =
+	/from\s+["'][^"']*lib\/pr-closeout\/(?:blockers|claim-builders|claims|evidence|evaluator|status|types)\.js["']/;
+const IMPORT_SPECIFIER_PATTERN =
+	/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["'](?<specifier>[^"']+)["']/g;
+const APPROVED_EFFECT_BOUNDARIES = new Set([
+	"src/lib/missing-context/classifier.ts",
+	"src/lib/pr-closeout/evaluator.ts",
+]);
+const APPROVED_PR_CLOSEOUT_INTERNAL_IMPORTERS = new Set([
+	"src/lib/pr-closeout.ts",
+]);
+const APPROVED_PR_CLOSEOUT_PARENT_IMPORTS = new Map<string, readonly string[]>([
+	[
+		"src/lib/pr-closeout/types.ts",
+		["../decision/he-phase-exit.js", "../missing-context/classifier.js"],
+	],
+	["src/lib/pr-closeout/blockers.ts", ["../decision/he-phase-exit.js"]],
+	[
+		"src/lib/pr-closeout/claim-helpers.ts",
+		["../missing-context/classifier.js"],
+	],
+]);
+const PR_CLOSEOUT_COMMAND_SUBMODULES = [
+	"./pr-closeout/args.js",
+	"./pr-closeout/live.js",
+	"./pr-closeout/types.js",
+] as const;
+
+const DOCTOR_COMMAND_SUBMODULES = [
+	"./doctor-artifacts.js",
+	"./doctor-checks.js",
+	"./doctor-recovery.js",
+	"./doctor-renderer.js",
+] as const;
+
+const DOCTOR_TOOL_SUBMODULES = ["./doctor-github-tool-checks.js"] as const;
+const DOCTOR_FILE_SUBMODULES = ["./doctor-roadmap-file-checks.js"] as const;
+const DOCTOR_CI_SUBMODULES = ["./doctor-ci-check-alignment.js"] as const;
+const DOCTOR_CONFIG_SUBMODULES = [
+	"./doctor-north-star-contract-checks.js",
+] as const;
+const NEXT_COMMAND_SUBMODULES = [
+	"./next-args.js",
+	"./next-runner.js",
+	"./next-usage-errors.js",
+] as const;
+const REPLAY_COMMAND_SUBMODULES = ["./replay-run-record.js"] as const;
+const RUNTIME_CARD_COMMAND_SUBMODULES = ["./runtime-card-args.js"] as const;
+const RUNTIME_CARD_CONTRACT_SUBMODULES = [
+	"./runtime-card-validation.js",
+] as const;
+const RUNTIME_CARD_VALIDATION_SUBMODULES = [
+	"./runtime-card-recovery-validation.js",
+] as const;
+const RUNTIME_CARD_INTERNAL_VALIDATION_IMPORTS = new Set([
+	"./runtime-card-validation.js",
+	"./runtime-card-recovery-validation.js",
+]);
+const APPROVED_RUNTIME_CARD_INTERNAL_VALIDATION_IMPORTERS = new Map<
+	string,
+	readonly string[]
+>([
+	["src/lib/runtime/runtime-card.ts", ["./runtime-card-validation.js"]],
+	[
+		"src/lib/runtime/runtime-card-validation.ts",
+		["./runtime-card-recovery-validation.js"],
+	],
+]);
+const LOCAL_RUNTIME_CARD_SUBMODULES = [
+	"./local-runtime-card-assembly.js",
+	"./local-runtime-card-artifacts.js",
+	"./local-runtime-card-live.js",
+	"./local-runtime-card-phase-exit.js",
+] as const;
+const LOCAL_RUNTIME_CARD_ASSEMBLY_SUBMODULES = [
+	"./local-runtime-card-attempts.js",
+] as const;
 
 function countFileLines(path: string): number {
 	const content = readFileSync(join(process.cwd(), path), "utf-8");
@@ -141,6 +366,16 @@ function collectTypeScriptFiles(directory: string): string[] {
 	return files;
 }
 
+function importSpecifiers(content: string): string[] {
+	return [...content.matchAll(IMPORT_SPECIFIER_PATTERN)].map((match) => {
+		const specifier = match.groups?.specifier;
+		if (!specifier) {
+			throw new Error("Import specifier regex did not capture a specifier.");
+		}
+		return specifier;
+	});
+}
+
 describe("module boundaries", () => {
 	it("keeps command registry as a thin loader module", () => {
 		const registryPath = "src/lib/cli/command-registry.ts";
@@ -162,8 +397,177 @@ describe("module boundaries", () => {
 		expectRatchetsWithinBudget(COMMAND_SURFACE_DECOMPOSITION_RATCHETS);
 	});
 
+	it("keeps harness next surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(NEXT_SURFACE_RATCHETS);
+	});
+
+	it("keeps harness next parsing behind the command facade", () => {
+		const facadePath = "src/commands/next.ts";
+		const facadeContent = readFileSync(
+			join(process.cwd(), facadePath),
+			"utf-8",
+		);
+
+		for (const submodule of NEXT_COMMAND_SUBMODULES) {
+			expect(facadeContent).toContain(submodule);
+		}
+	});
+
+	it("keeps runtime-card surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(RUNTIME_CARD_SURFACE_RATCHETS);
+	});
+
+	it("keeps replay surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(REPLAY_SURFACE_RATCHETS);
+	});
+
+	it("keeps replay run-record emission behind the command facade", () => {
+		const facadePath = "src/commands/replay.ts";
+		const facadeContent = readFileSync(
+			join(process.cwd(), facadePath),
+			"utf-8",
+		);
+
+		for (const submodule of REPLAY_COMMAND_SUBMODULES) {
+			expect(facadeContent).toContain(submodule);
+		}
+	});
+
+	it("keeps runtime-card contract and validation seams split after decomposition", () => {
+		expectRatchetsWithinBudget(RUNTIME_CARD_RUNTIME_RATCHETS);
+	});
+
+	it("keeps runtime-card validation behind the public contract seam", () => {
+		const contractContent = readFileSync(
+			join(process.cwd(), "src/lib/runtime/runtime-card.ts"),
+			"utf-8",
+		);
+		const validationContent = readFileSync(
+			join(process.cwd(), "src/lib/runtime/runtime-card-validation.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of RUNTIME_CARD_CONTRACT_SUBMODULES) {
+			expect(contractContent).toContain(submodule);
+		}
+		for (const submodule of RUNTIME_CARD_VALIDATION_SUBMODULES) {
+			expect(validationContent).toContain(submodule);
+		}
+	});
+
+	it("keeps runtime-card validation internals behind the public contract seam", () => {
+		const violations = collectTypeScriptFiles("src").flatMap((path) => {
+			const approvedImports =
+				APPROVED_RUNTIME_CARD_INTERNAL_VALIDATION_IMPORTERS.get(path) ?? [];
+			const content = readFileSync(join(process.cwd(), path), "utf-8");
+			return importSpecifiers(content)
+				.filter((specifier) =>
+					RUNTIME_CARD_INTERNAL_VALIDATION_IMPORTS.has(specifier),
+				)
+				.filter((specifier) => !approvedImports.includes(specifier))
+				.map((specifier) => `${path} -> ${specifier}`);
+		});
+
+		expect(violations).toEqual([]);
+	});
+
+	it("keeps runtime-card parsing behind the command facade", () => {
+		const facadePath = "src/commands/runtime-card.ts";
+		const facadeContent = readFileSync(
+			join(process.cwd(), facadePath),
+			"utf-8",
+		);
+
+		for (const submodule of RUNTIME_CARD_COMMAND_SUBMODULES) {
+			expect(facadeContent).toContain(submodule);
+		}
+	});
+
+	it("keeps local runtime-card surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(LOCAL_RUNTIME_CARD_SURFACE_RATCHETS);
+	});
+
+	it("keeps assembly, attempt, artifact, phase-exit, and live refresh behind the local runtime-card seam", () => {
+		const facadePath = "src/lib/runtime/local-runtime-card.ts";
+		const facadeContent = readFileSync(
+			join(process.cwd(), facadePath),
+			"utf-8",
+		);
+		const assemblyContent = readFileSync(
+			join(process.cwd(), "src/lib/runtime/local-runtime-card-assembly.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of LOCAL_RUNTIME_CARD_SUBMODULES) {
+			expect(facadeContent).toContain(submodule);
+		}
+		for (const submodule of LOCAL_RUNTIME_CARD_ASSEMBLY_SUBMODULES) {
+			expect(assemblyContent).toContain(submodule);
+		}
+	});
+
 	it("keeps doctor surfaces split after decomposition", () => {
 		expectRatchetsWithinBudget(DOCTOR_SURFACE_RATCHETS);
+	});
+
+	it("keeps doctor command seams behind the command facade", () => {
+		const facadePath = "src/commands/doctor.ts";
+		const facadeContent = readFileSync(
+			join(process.cwd(), facadePath),
+			"utf-8",
+		);
+
+		for (const submodule of DOCTOR_COMMAND_SUBMODULES) {
+			expect(facadeContent).toContain(submodule);
+		}
+	});
+
+	it("keeps provider-specific doctor tool checks behind tool seams", () => {
+		const toolChecksPath = "src/commands/doctor-tool-checks.ts";
+		const toolChecksContent = readFileSync(
+			join(process.cwd(), toolChecksPath),
+			"utf-8",
+		);
+
+		for (const submodule of DOCTOR_TOOL_SUBMODULES) {
+			expect(toolChecksContent).toContain(submodule);
+		}
+	});
+
+	it("keeps roadmap doctor file checks behind file seams", () => {
+		const fileChecksPath = "src/commands/doctor-file-checks.ts";
+		const fileChecksContent = readFileSync(
+			join(process.cwd(), fileChecksPath),
+			"utf-8",
+		);
+
+		for (const submodule of DOCTOR_FILE_SUBMODULES) {
+			expect(fileChecksContent).toContain(submodule);
+		}
+	});
+
+	it("keeps required-check identity behind CI seams", () => {
+		const ciChecksPath = "src/commands/doctor-ci-checks.ts";
+		const ciChecksContent = readFileSync(
+			join(process.cwd(), ciChecksPath),
+			"utf-8",
+		);
+
+		for (const submodule of DOCTOR_CI_SUBMODULES) {
+			expect(ciChecksContent).toContain(submodule);
+		}
+	});
+
+	it("keeps north-star contract readiness behind config seams", () => {
+		const configChecksPath = "src/commands/doctor-config-checks.ts";
+		const configChecksContent = readFileSync(
+			join(process.cwd(), configChecksPath),
+			"utf-8",
+		);
+
+		for (const submodule of DOCTOR_CONFIG_SUBMODULES) {
+			expect(configChecksContent).toContain(submodule);
+		}
 	});
 
 	it("keeps scaffold surfaces split after decomposition", () => {
@@ -178,6 +582,75 @@ describe("module boundaries", () => {
 					readFileSync(join(process.cwd(), path), "utf-8"),
 				),
 			);
+
+		expect(violations).toEqual([]);
+	});
+
+	it("keeps Effect adoption inside approved deep module boundaries", () => {
+		const violations = collectTypeScriptFiles("src")
+			.filter((path) => !APPROVED_EFFECT_BOUNDARIES.has(path))
+			.filter((path) =>
+				EFFECT_IMPORT_PATTERN.test(
+					readFileSync(join(process.cwd(), path), "utf-8"),
+				),
+			);
+
+		expect(violations).toEqual([]);
+	});
+
+	it("keeps PR closeout callers on the public boundary", () => {
+		const violations = collectTypeScriptFiles("src")
+			.filter((path) => !path.startsWith("src/lib/pr-closeout/"))
+			.filter((path) => !APPROVED_PR_CLOSEOUT_INTERNAL_IMPORTERS.has(path))
+			.filter((path) =>
+				PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN.test(
+					readFileSync(join(process.cwd(), path), "utf-8"),
+				),
+			);
+
+		expect(violations).toEqual([]);
+	});
+
+	it("keeps PR closeout command seams behind the command facade", () => {
+		const facadePath = "src/commands/pr-closeout.ts";
+		const facadeContent = readFileSync(
+			join(process.cwd(), facadePath),
+			"utf-8",
+		);
+
+		for (const submodule of PR_CLOSEOUT_COMMAND_SUBMODULES) {
+			expect(facadeContent).toContain(submodule);
+		}
+
+		const liveContent = readFileSync(
+			join(process.cwd(), "src/commands/pr-closeout/live.ts"),
+			"utf-8",
+		);
+		expect(liveContent).toContain("./env.js");
+
+		const backImports = collectTypeScriptFiles(
+			"src/commands/pr-closeout",
+		).flatMap((path) =>
+			importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8"))
+				.filter((specifier) => specifier === "../pr-closeout.js")
+				.map((specifier) => `${path} -> ${specifier}`),
+		);
+
+		expect(backImports).toEqual([]);
+	});
+
+	it("keeps PR closeout internals inside the declared agent boundary", () => {
+		const violations = collectTypeScriptFiles("src/lib/pr-closeout").flatMap(
+			(path) => {
+				const allowedParentImports =
+					APPROVED_PR_CLOSEOUT_PARENT_IMPORTS.get(path) ?? [];
+				const content = readFileSync(join(process.cwd(), path), "utf-8");
+				return importSpecifiers(content)
+					.filter((specifier) => specifier.startsWith(".."))
+					.filter((specifier) => !allowedParentImports.includes(specifier))
+					.map((specifier) => `${path} -> ${specifier}`);
+			},
+		);
 
 		expect(violations).toEqual([]);
 	});

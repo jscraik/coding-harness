@@ -293,6 +293,23 @@ For check-identity diagnostics, keep terminology aligned across surfaces:
 3. Resume with `bash scripts/verify-work.sh --resume-from <gate-id>` when compatibility checks pass.
 4. If resume is rejected (`contract/provider/root/fingerprint must match`), run a fresh lane from the start.
 
+### Env-backed credential recovery
+
+Before classifying a local validation lane as blocked by missing GitHub, Linear,
+or other live-service credentials, inspect the approved private env surface
+`~/.codex/.env` for the required variable names without printing values. If
+the values are present, rerun the exact failing command in a shell that loads
+that env file:
+
+```bash
+zsh -lc 'set -a; source ~/.codex/.env; set +a; pnpm test:deep'
+```
+
+Only report `missing credential` or `unavailable credential` after the env
+probe is missing, unreadable, incomplete, or the env-loaded rerun still fails.
+The forbidden recurrence behavior is stopping at a credential blocker when the
+repo-local or user-private credential surface can prove the lane.
+
 ## Evidence reporting
 
 For each gate run, include:

@@ -18,7 +18,11 @@ const SCRIPT_PATH = join(
 );
 const REQUIRED_FILES = [
 	"src/lib/pr-closeout.ts",
+	"src/lib/pr-closeout/claim-builders.ts",
+	"src/lib/pr-closeout/claim-helpers.ts",
 	"src/lib/pr-closeout/claims.ts",
+	"src/lib/pr-closeout/evaluator.ts",
+	"src/lib/pr-closeout/types.ts",
 	"src/lib/pr-closeout.test.ts",
 	"src/commands/pr-closeout.test.ts",
 ];
@@ -93,12 +97,12 @@ describe("pr-closeout truth contract invariant gate", () => {
 		tempDirs.push(tempDir);
 		copyFixtureWorkspace(tempDir);
 
-		const claimsPath = join(tempDir, "src/lib/pr-closeout/claims.ts");
-		const claimsSource = readFileSync(claimsPath, "utf-8").replace(
+		const contractPath = join(tempDir, "src/lib/pr-closeout/types.ts");
+		const contractSource = readFileSync(contractPath, "utf-8").replace(
 			/\n\s*verifiedAt:\s*string;\n/u,
 			"\n",
 		);
-		writeFileSync(claimsPath, claimsSource, "utf-8");
+		writeFileSync(contractPath, contractSource, "utf-8");
 
 		const result = spawnSync(
 			"node",
@@ -115,7 +119,7 @@ describe("pr-closeout truth contract invariant gate", () => {
 		expect(report.findings).toContainEqual(
 			expect.objectContaining({
 				id: "claim-field-verifiedAt",
-				file: "src/lib/pr-closeout/claims.ts",
+				file: "src/lib/pr-closeout/types.ts",
 				message: "PrCloseoutClaim is missing required field: verifiedAt",
 				remediation: expect.stringContaining("Add verifiedAt"),
 			}),

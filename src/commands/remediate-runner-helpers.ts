@@ -7,13 +7,20 @@ import type {
 	RemediationOutcome,
 } from "../lib/remediation/types.js";
 import type { RemediateOptions, RemediateResult } from "./remediate.js";
-import { EXIT_CODES } from "./remediate.js";
 
 type RemediateFinalize = (
 	result: RemediateResult,
 	payload: Record<string, unknown>,
 	options?: { emitRunRecord?: boolean },
 ) => RemediateResult;
+
+export const EXIT_CODES = {
+	SUCCESS: 0,
+	USAGE: 2,
+	POLICY: 3,
+	PARTIAL: 4,
+	INTERNAL: 10,
+} as const;
 
 /**
  * Resolve and validate a findings path before file access.

@@ -33,19 +33,14 @@ import { applyRemediationTransactions } from "./remediate-apply-transactions.js"
 import { renderRemediationOutput } from "./remediate-cli-output.js";
 import {
 	determineRemediateExitCode,
+	EXIT_CODES,
 	readFindingsInput,
 	resolveEffectiveMode,
 	resolveValidatedFindingsPath,
 	validateApplyWorkspace,
 } from "./remediate-runner-helpers.js";
 
-export const EXIT_CODES = {
-	SUCCESS: 0,
-	USAGE: 2,
-	POLICY: 3,
-	PARTIAL: 4,
-	INTERNAL: 10,
-} as const;
+export { EXIT_CODES };
 
 /**
  * CLI options for `harness remediate`.

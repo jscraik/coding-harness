@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { validateContract } from "../lib/contract/validator.js";
 import { hasJsonKey, readJsonFile } from "./doctor-check-utils.js";
 import type { DoctorCheckFn } from "./doctor-checks.js";
+import { DOCTOR_ROADMAP_FILE_CHECKS } from "./doctor-roadmap-file-checks.js";
 
 /** Required file and baseline checks used by harness doctor. */
 export const DOCTOR_FILE_CHECKS: DoctorCheckFn[] = [
@@ -177,49 +178,5 @@ export const DOCTOR_FILE_CHECKS: DoctorCheckFn[] = [
 		};
 	},
 
-	// ── File: agent-first-status.md ───────────────────────────────────────────
-	(dir) => {
-		const statusPath = resolve(dir, "docs/roadmap/agent-first-status.md");
-		if (!existsSync(statusPath)) {
-			return {
-				id: "file:agent-first-status",
-				category: "file",
-				label: "docs/roadmap/agent-first-status.md",
-				status: "warn",
-				message:
-					"missing — drift-gate advisory warns; drift-gate health mode blocks",
-				fix: "harness init --update  (seeds this file with a template)",
-			};
-		}
-		return {
-			id: "file:agent-first-status",
-			category: "file",
-			label: "docs/roadmap/agent-first-status.md",
-			status: "ok",
-			message: "present",
-		};
-	},
-
-	// ── File: north-star.md ───────────────────────────────────────────────────
-	(dir) => {
-		const northStarPath = resolve(dir, "docs/roadmap/north-star.md");
-		if (!existsSync(northStarPath)) {
-			return {
-				id: "file:north-star-doc",
-				category: "file",
-				label: "docs/roadmap/north-star.md",
-				status: "fail",
-				message:
-					"missing — drift-gate health mode cannot verify canonical north-star parity without this file",
-				fix: "Restore docs/roadmap/north-star.md from the canonical north-star contract slice",
-			};
-		}
-		return {
-			id: "file:north-star-doc",
-			category: "file",
-			label: "docs/roadmap/north-star.md",
-			status: "ok",
-			message: "present",
-		};
-	},
+	...DOCTOR_ROADMAP_FILE_CHECKS,
 ];

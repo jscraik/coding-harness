@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { classifyMissingContext } from "./classifier.js";
+import { Effect } from "effect";
+import {
+	classifyMissingContext,
+	classifyMissingContextEffect,
+} from "./classifier.js";
 
 describe("classifyMissingContext", () => {
 	it.each([
@@ -68,5 +72,27 @@ describe("classifyMissingContext", () => {
 		],
 	] as const)("routes %s to one durable destination", (_name, input, expected) => {
 		expect(classifyMissingContext(input)).toMatchObject(expected);
+	});
+
+	it("keeps the Effect API behind the same module boundary", () => {
+		const result = Effect.runSync(
+			classifyMissingContextEffect({
+				surface: "review",
+				problem: "unknown",
+				claim: "review_threads",
+			}),
+		);
+
+		expect(result).toMatchObject({
+			class: "hidden_provider_behavior",
+			destination: "cold_research_reference",
+		});
+		expect(
+			classifyMissingContext({
+				surface: "review",
+				problem: "unknown",
+				claim: "review_threads",
+			}),
+		).toEqual(result);
 	});
 });
