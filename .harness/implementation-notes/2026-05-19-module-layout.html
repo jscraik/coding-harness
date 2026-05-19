@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Coding Harness Module Layout</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #18212f;
+        --muted: #657286;
+        --paper: #f8fafc;
+        --panel: #ffffff;
+        --line: #c9d4e3;
+        --public: #2563eb;
+        --effect: #7c3aed;
+        --internal: #0891b2;
+        --guard: #b45309;
+        --doctor: #16a34a;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      main {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+        gap: 18px;
+        align-items: start;
+        margin-bottom: 18px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 44px;
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        margin-top: 10px;
+        max-width: 760px;
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      .panel,
+      .legend,
+      .note {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+      }
+
+      .legend {
+        padding: 14px;
+      }
+
+      .legend h2,
+      .panel h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+
+      .legend-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .legend-item {
+        display: grid;
+        grid-template-columns: 14px 1fr;
+        gap: 8px;
+        align-items: start;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .swatch {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        margin-top: 2px;
+      }
+
+      .swatch.public {
+        background: var(--public);
+      }
+
+      .swatch.effect {
+        background: var(--effect);
+      }
+
+      .swatch.internal {
+        background: var(--internal);
+      }
+
+      .swatch.guard {
+        background: var(--guard);
+      }
+
+      .swatch.doctor {
+        background: var(--doctor);
+      }
+
+      .map {
+        display: grid;
+        gap: 18px;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      .read-me {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .step {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        min-height: 128px;
+        background: #fbfdff;
+      }
+
+      .step strong {
+        display: block;
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+
+      .step p {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .module-grid {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr) 260px;
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .lane {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: #fbfdff;
+      }
+
+      .lane h3 {
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 8px;
+      }
+
+      .module {
+        border: 2px solid var(--internal);
+        border-radius: 8px;
+        background: #fff;
+        padding: 10px;
+        min-height: 74px;
+      }
+
+      .module.public {
+        border-color: var(--public);
+        background: #eff6ff;
+      }
+
+      .module.effect {
+        border-color: var(--effect);
+        background: #f5f3ff;
+      }
+
+      .module.guard {
+        border-color: var(--guard);
+        background: #fffbeb;
+      }
+
+      .module.doctor {
+        border-color: var(--doctor);
+        background: #f0fdf4;
+      }
+
+      .module strong {
+        display: block;
+        font-size: 14px;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .module span {
+        display: block;
+        color: var(--muted);
+        margin-top: 4px;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .boundary {
+        border: 2px dashed var(--internal);
+        border-radius: 8px;
+        background: #ecfeff;
+        padding: 14px;
+      }
+
+      .boundary-header {
+        margin-bottom: 12px;
+      }
+
+      .boundary-header h3 {
+        color: #155e75;
+        font-size: 20px;
+        margin-bottom: 4px;
+      }
+
+      .boundary-header p {
+        color: #3b7180;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .internal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .doctor-grid {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+
+      .doctor-seams {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .note {
+        padding: 14px;
+        min-height: 124px;
+      }
+
+      .note h3 {
+        font-size: 15px;
+        margin-bottom: 8px;
+      }
+
+      .note p {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .callout {
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        border-radius: 8px;
+        padding: 14px;
+        color: #1e3a8a;
+        line-height: 1.45;
+      }
+
+      .callout strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      @media (max-width: 980px) {
+        main {
+          padding: 18px;
+        }
+
+        header,
+        .read-me,
+        .module-grid,
+        .doctor-grid,
+        .doctor-seams,
+        .internal-grid,
+        .notes {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 34px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <section>
+          <h1>Module Layout</h1>
+          <p class="subtitle">
+            Read this as a control map, not a wiring diagram. Blue boxes are the
+            public places callers use. Green and teal boxes are safe work areas
+            for agents. Purple is where Effect is allowed. Amber is what keeps
+            the boundaries honest.
+          </p>
+        </section>
+
+        <aside class="legend" aria-label="Legend">
+          <h2>How To Read It</h2>
+          <div class="legend-list">
+            <div class="legend-item">
+              <span class="swatch public"></span>
+              <span><strong>Public facade:</strong> the small interface callers should use.</span>
+            </div>
+            <div class="legend-item">
+              <span class="swatch internal"></span>
+              <span><strong>Internal module:</strong> implementation hidden behind the facade.</span>
+            </div>
+            <div class="legend-item">
+              <span class="swatch effect"></span>
+              <span><strong>Effect boundary:</strong> Effect is allowed here, not everywhere.</span>
+            </div>
+            <div class="legend-item">
+              <span class="swatch doctor"></span>
+              <span><strong>Doctor seam:</strong> a focused doctor command work area.</span>
+            </div>
+            <div class="legend-item">
+              <span class="swatch guard"></span>
+              <span><strong>Executable guard:</strong> tests that fail if the boundary drifts.</span>
+            </div>
+          </div>
+        </aside>
+      </header>
+
+      <section class="map">
+        <section class="panel">
+          <h2>1. The Architecture In One Sentence</h2>
+          <div class="callout">
+            <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
+            PR closeout is the main deep module. Doctor is being split into smaller command seams. Effect is contained to approved files.
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>2. PR Closeout Deep Module</h2>
+          <div class="module-grid">
+            <div class="lane">
+              <h3>Caller Surface</h3>
+              <div class="stack">
+                <div class="module public">
+                  <strong>src/commands/pr-closeout.ts</strong>
+                  <span>CLI entrypoint. Keeps command behavior stable.</span>
+                </div>
+                <div class="module">
+                  <strong>pr-closeout/args.ts</strong>
+                  <span>Argument parsing seam.</span>
+                </div>
+                <div class="module">
+                  <strong>pr-closeout/env.ts</strong>
+                  <span>Env-file credential seam.</span>
+                </div>
+                <div class="module">
+                  <strong>pr-closeout/live.ts</strong>
+                  <span>Live evidence collection seam.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="boundary">
+              <div class="boundary-header">
+                <h3>Agent Work Area: PR Closeout</h3>
+                <p>
+                  Agents can change these internals while callers keep using
+                  src/lib/pr-closeout.ts. Seam tests lock the behavior.
+                </p>
+              </div>
+              <div class="internal-grid">
+                <div class="module public">
+                  <strong>src/lib/pr-closeout.ts</strong>
+                  <span>Public facade and exported contract.</span>
+                </div>
+                <div class="module public">
+                  <strong>types.ts</strong>
+                  <span>Schema and public types.</span>
+                </div>
+                <div class="module effect">
+                  <strong>evaluator.ts</strong>
+                  <span>Approved Effect boundary.</span>
+                </div>
+                <div class="module">
+                  <strong>claim-builders.ts</strong>
+                  <span>Claim ledger composition.</span>
+                </div>
+                <div class="module">
+                  <strong>claim-helpers.ts</strong>
+                  <span>Claim factory helpers.</span>
+                </div>
+                <div class="module">
+                  <strong>claims.ts</strong>
+                  <span>Blocker projection seam.</span>
+                </div>
+                <div class="module">
+                  <strong>blockers.ts</strong>
+                  <span>Gate evidence adapters.</span>
+                </div>
+                <div class="module">
+                  <strong>evidence.ts</strong>
+                  <span>Evidence normalization.</span>
+                </div>
+                <div class="module">
+                  <strong>status.ts</strong>
+                  <span>Private decision predicates.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="lane">
+              <h3>Boundary Proof</h3>
+              <div class="stack">
+                <div class="module effect">
+                  <strong>missing-context/classifier.ts</strong>
+                  <span>Second approved Effect boundary.</span>
+                </div>
+                <div class="module guard">
+                  <strong>module-boundaries.test.ts</strong>
+                  <span>Guards Effect imports, facade usage, and parent imports.</span>
+                </div>
+                <div class="module guard">
+                  <strong>truth-contract script</strong>
+                  <span>Guards required closeout claims.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>3. Doctor Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/doctor.ts</strong>
+              <span>
+                The doctor command facade. It builds reports and dispatches JSON
+                or terminal output.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>doctor-renderer.ts</strong>
+                <span>Terminal presentation. Moved out so the facade stays small.</span>
+              </div>
+              <div class="module doctor">
+                <strong>doctor-github-tool-checks.ts</strong>
+                <span>GitHub CLI availability and auth checks.</span>
+              </div>
+              <div class="module doctor">
+                <strong>doctor-roadmap-file-checks.ts</strong>
+                <span>North-star and agent-first status file checks.</span>
+              </div>
+              <div class="module doctor">
+                <strong>doctor-ci-check-alignment.ts</strong>
+                <span>Required-check identity seam for branch protection.</span>
+              </div>
+              <div class="module doctor">
+                <strong>doctor-north-star-contract-checks.ts</strong>
+                <span>North-star contract readiness and surface ownership.</span>
+              </div>
+              <div class="module doctor">
+                <strong>doctor-checks.ts</strong>
+                <span>Thin catalogue that composes check families.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>4. Harness Next Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/next.ts</strong>
+              <span>
+                Public decision producer and CLI entrypoint. It stays focused
+                on runtime recommendations and output.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>next-args.ts</strong>
+                <span>CLI token parser for mode, files, and evidence inputs.</span>
+              </div>
+              <div class="module doctor">
+                <strong>next-runner.ts</strong>
+                <span>
+                  Decision producer seam for source checks, evidence blockers,
+                  changed-file resolution, and flow selection.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>next-decisions.ts</strong>
+                <span>
+                  Public decision seam; callers keep one stable import while
+                  internals move behind smaller decision modules.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>next-blocked-decisions.ts</strong>
+                <span>
+                  Blocked-state builders for invalid modes, source blockers,
+                  git failures, phase-exit evidence, and runtime cards.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>next-decision-meta.ts</strong>
+                <span>
+                  Normalizes source, phase-exit, and runtime-card metadata for
+                  every harness-next decision.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>next-recommendation-decisions.ts</strong>
+                <span>
+                  Builds no-change, changed-file, and fleet-matrix
+                  recommendation decisions.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>next-usage-errors.ts</strong>
+                <span>
+                  Usage-error decision seam for translating parser failures into
+                  blocked HarnessDecision output.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets next files and verifies command and decision seams.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>5. Runtime Card Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/runtime-card.ts</strong>
+              <span>
+                Public runtime evidence CLI. It builds cards, confines
+                artifacts to the repo, and renders output.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>runtime-card-args.ts</strong>
+                <span>CLI token parser and RuntimeCardCLIOptions contract.</span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>Ratchets runtime-card files and verifies parser seam import.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>6. Replay Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/replay.ts</strong>
+              <span>
+                Public replay CLI facade. It validates trace input, lists or
+                loads traces, dispatches replay execution, and renders output.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>replay-run-record.ts</strong>
+                <span>
+                  Canonical replay run-record seam for attempt ledger,
+                  recovery-event, policy context, and precondition metadata.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets replay files and verifies run-record emission stays
+                  behind the command facade.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>7. Remediate Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/remediate.ts</strong>
+              <span>
+                Public remediate CLI facade. It keeps workspace safety, mode
+                resolution, orchestrator wiring, transaction application, and
+                output together.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>remediate-findings.ts</strong>
+                <span>
+                  Finding parser seam for JSON input, provider detection, and
+                  CodeQL/Codex canonical finding normalization.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>remediate-run-record.ts</strong>
+                <span>
+                  Canonical remediate run-record seam for classification,
+                  policy context, artifacts, and failure preservation.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets remediate files and verifies finding plus run-record
+                  seams stay behind the command facade.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>8. Runtime Card Runtime Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/lib/runtime/runtime-card.ts</strong>
+              <span>
+                Public runtime-card/v1 contract: types, schema version, blocker
+                predicate, and normalized metadata projection.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>runtime-card-validation.ts</strong>
+                <span>
+                  Core runtime-card shape validation for branch, PR, tracker,
+                  artifact, phase-exit, source, and blocker fields.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>runtime-card-recovery-validation.ts</strong>
+                <span>
+                  Attempt-ledger and recovery-event validation behind the public
+                  runtime-card contract.
+                </span>
+              </div>
+            </div>
+
+            <div class="module public">
+              <strong>src/lib/runtime/local-runtime-card.ts</strong>
+              <span>
+                Public builder interface for local and live runtime-card
+                generation. It composes local evidence into lifecycle state.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>local-runtime-card-assembly.ts</strong>
+                <span>
+                  Lifecycle, blocker/source merging, fallback tracker state,
+                  next-safe-action text, and schema validation.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>local-runtime-card-attempts.ts</strong>
+                <span>
+                  Retry ownership, recovery-event shape, and source evidence
+                  references for runtime-card stop/retry metadata.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>local-runtime-card-artifacts.ts</strong>
+                <span>
+                  Active artifact index seam for spec, plan, issue key, and
+                  stale reference classification.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>local-runtime-card-phase-exit.ts</strong>
+                <span>
+                  HePhaseExit/v1 reading, required-evidence blockers, and
+                  runtime-card status collapse.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>local-runtime-card-live.ts</strong>
+                <span>
+                  Live GitHub PR and Linear provider seam with timeout and
+                  credential-blocker classification.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets local runtime-card surfaces and verifies the live
+                  provider, assembly, attempt, artifact, and phase-exit seam
+                  imports.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>9. Why These Splits Exist</h2>
+          <div class="read-me">
+            <div class="step">
+              <strong>Deep module boundary</strong>
+              <p>
+                A small public interface hides richer internals. That lowers the
+                context an agent needs and gives the human a clean review point.
+              </p>
+            </div>
+            <div class="step">
+              <strong>Effect boundary</strong>
+              <p>
+                Effect is useful for typed failure and sequencing, but only
+                inside approved modules so it does not leak through the whole app.
+              </p>
+            </div>
+            <div class="step">
+              <strong>Executable guard</strong>
+              <p>
+                The boundary is real only when tests fail on drift. The ratchets
+                and import guards stop the files quietly growing back together.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="notes" aria-label="Implementation notes">
+          <article class="note">
+            <h3>Latest Changes</h3>
+            <p>
+              Doctor terminal rendering, GitHub CLI checks, roadmap document
+              checks, required-check identity alignment, and north-star contract
+              readiness were split into named seams with file-size ratchets.
+              Harness next CLI parsing now lives behind next-args.ts.
+              Harness next decision production now lives behind next-runner.ts.
+              Harness next blocked decisions, decision metadata, and
+              recommendation decisions now live behind next-blocked-decisions.ts,
+              next-decision-meta.ts, and next-recommendation-decisions.ts while
+              next-decisions.ts remains the public import seam.
+              Harness next usage-error decisions now live behind
+              next-usage-errors.ts.
+              Runtime-card CLI parsing now lives behind runtime-card-args.ts.
+              Runtime-card live GitHub and Linear refresh now lives behind
+              local-runtime-card-live.ts. Active artifact index parsing now
+              lives behind local-runtime-card-artifacts.ts. HePhaseExit/v1
+              collapse now lives behind local-runtime-card-phase-exit.ts.
+              Runtime-card construction now lives behind
+              local-runtime-card-assembly.ts, and retry/recovery metadata now
+              lives behind local-runtime-card-attempts.ts. Runtime-card schema
+              validation now lives behind runtime-card-validation.ts and
+              runtime-card-recovery-validation.ts. Replay canonical run-record
+              emission now lives behind replay-run-record.ts.
+              Remediate finding normalization now lives behind
+              remediate-findings.ts, and remediate terminal run-record emission
+              now lives behind remediate-run-record.ts.
+            </p>
+          </article>
+          <article class="note">
+            <h3>What To Review</h3>
+            <p>
+              Review public facades and tests first. Only inspect internals when
+              tests fail, behavior changes, or a seam becomes too generic.
+            </p>
+          </article>
+          <article class="note">
+            <h3>Next Pressure Point</h3>
+            <p>
+              Replay run-record emission is now under its local ratchet. The
+              next high-leverage slice is outside this module: the remaining
+              size warnings point at command capabilities, PR
+              closeout evaluator, and review-gate decision packet surfaces.
+            </p>
+          </article>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
