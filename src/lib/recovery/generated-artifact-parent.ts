@@ -1,4 +1,4 @@
-import { mkdir, rmdir, stat } from "node:fs/promises";
+import { lstat, mkdir, rmdir, stat } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import type {
 	RecoveryContext,
@@ -44,6 +44,24 @@ async function parentExists(parentDir: string): Promise<boolean> {
 	}
 }
 
+async function hasSymlinkAncestor(
+	repoRoot: string,
+	parentDir: string,
+): Promise<boolean> {
+	const parentRelative = relative(repoRoot, parentDir);
+	let current = repoRoot;
+	for (const part of parentRelative.split(/[\\/]+/u)) {
+		if (!part) continue;
+		current = resolve(current, part);
+		try {
+			if ((await lstat(current)).isSymbolicLink()) return true;
+		} catch {
+			break;
+		}
+	}
+	return false;
+}
+
 function errorCode(error: unknown): string | null {
 	return typeof error === "object" &&
 		error !== null &&
@@ -65,6 +83,13 @@ async function verifyBefore(
 		return {
 			ok: false,
 			reason: resolved.reason,
+			evidenceRefs: ["recovery:artifact-parent:path-denied"],
+		};
+	}
+	if (await hasSymlinkAncestor(context.repoRoot, resolved.parentDir)) {
+		return {
+			ok: false,
+			reason: "artifact parent traverses a symlink",
 			evidenceRefs: ["recovery:artifact-parent:path-denied"],
 		};
 	}
@@ -119,6 +144,13 @@ async function verifyAfter(
 			evidenceRefs: ["recovery:artifact-parent:path-denied"],
 		};
 	}
+	if (await hasSymlinkAncestor(context.repoRoot, resolved.parentDir)) {
+		return {
+			ok: false,
+			reason: "artifact parent traverses a symlink",
+			evidenceRefs: ["recovery:artifact-parent:path-denied"],
+		};
+	}
 	return {
 		ok: await parentExists(resolved.parentDir),
 		evidenceRefs: ["recovery:artifact-parent:verified"],
@@ -132,6 +164,14 @@ async function rollback(context: RecoveryContext): Promise<RecoveryResult> {
 			ok: false,
 			status: "denied",
 			reason: resolved.reason,
+			evidenceRefs: ["recovery:artifact-parent:path-denied"],
+		};
+	}
+	if (await hasSymlinkAncestor(context.repoRoot, resolved.parentDir)) {
+		return {
+			ok: false,
+			status: "denied",
+			reason: "artifact parent traverses a symlink",
 			evidenceRefs: ["recovery:artifact-parent:path-denied"],
 		};
 	}

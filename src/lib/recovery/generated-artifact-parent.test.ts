@@ -1,4 +1,11 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdtempSync,
+	mkdirSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -78,6 +85,33 @@ describe("generated artifact parent recovery handler", () => {
 			reason: "artifact parent is outside repo scope",
 		});
 		expect(existsSync(join(outside, "reviewer.md"))).toBe(false);
+	});
+
+	it("refuses symlinked artifact parents that escape the repo", async () => {
+		const repoRoot = makeRoot();
+		const outside = mkdtempSync(join(tmpdir(), "artifact-parent-outside-"));
+		tempDirs.push(outside);
+		mkdirSync(join(repoRoot, "artifacts"));
+		symlinkSync(outside, join(repoRoot, "artifacts/outside-link"));
+		const handler = createGeneratedArtifactParentHandler();
+		const context = {
+			failure: "ENOENT: missing generated artifact parent directory",
+			repoRoot,
+			details: {
+				artifactPath: "artifacts/outside-link/reviews/reviewer.md",
+			},
+		};
+
+		expect(await handler.verifyBefore(context)).toMatchObject({
+			ok: false,
+			reason: "artifact parent traverses a symlink",
+		});
+		expect(await handler.recover(context)).toMatchObject({
+			ok: false,
+			status: "denied",
+			reason: "artifact parent traverses a symlink",
+		});
+		expect(existsSync(join(outside, "reviews"))).toBe(false);
 	});
 
 	it("supports rollback for an empty recovered parent directory", async () => {

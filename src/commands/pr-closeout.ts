@@ -464,7 +464,8 @@ function traceabilityFromBody(
 function rollbackFromBody(
 	body: string | null | undefined,
 ): PrCloseoutRollbackInput | undefined {
-	const rollback = bodyField(body, "Rollback");
+	const rollback =
+		bodyField(body, "Rollback") ?? bodyField(body, "Risk and rollback plan");
 	if (!rollback) return undefined;
 	if (/^(?:n\.?a\.?|not applicable|none required)\b/iu.test(rollback)) {
 		return { notApplicable: true, evidenceRef: "pr-body:rollback" };
