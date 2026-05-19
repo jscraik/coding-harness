@@ -81,6 +81,24 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
+		path: "src/lib/cli/registry/command-specs-core.ts",
+		maxLines: 2_350,
+		reason:
+			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/linear-command-spec.ts",
+		maxLines: 30,
+		reason:
+			"Linear command spec must stay a small public registry seam; parsing and delegation live behind the runner seam.",
+	},
+	{
+		path: "src/lib/cli/registry/linear-command-runner.ts",
+		maxLines: 230,
+		reason:
+			"Linear command runner must stay focused on Linear workflow action parsing and command delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/command-capabilities.ts",
 		maxLines: 360,
 		reason:
@@ -403,6 +421,8 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
+	"src/lib/cli/registry/linear-command-runner.ts",
+	"src/lib/cli/registry/linear-command-spec.ts",
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
 	"src/lib/output/normalise-core-v2.ts",
@@ -458,6 +478,7 @@ const DOCTOR_CI_SUBMODULES = ["./doctor-ci-check-alignment.js"] as const;
 const DOCTOR_CONFIG_SUBMODULES = [
 	"./doctor-north-star-contract-checks.js",
 ] as const;
+const CLI_REGISTRY_SPEC_SUBMODULES = ["./linear-command-spec.js"] as const;
 const NEXT_COMMAND_SUBMODULES = [
 	"./next-args.js",
 	"./next-decisions.js",
@@ -656,6 +677,19 @@ describe("module boundaries", () => {
 
 	it("ratchets seam decomposition while they are extracted", () => {
 		expectRatchetsWithinBudget(COMMAND_SURFACE_DECOMPOSITION_RATCHETS);
+	});
+
+	it("keeps CLI registry workflow parsing behind focused command spec seams", () => {
+		expectRatchetsWithinBudget(CLI_REGISTRY_SURFACE_RATCHETS);
+
+		const commandSpecsCoreContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/command-specs-core.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of CLI_REGISTRY_SPEC_SUBMODULES) {
+			expect(commandSpecsCoreContent).toContain(submodule);
+		}
 	});
 
 	it("keeps output normalisation split behind focused gate adapter seams", () => {

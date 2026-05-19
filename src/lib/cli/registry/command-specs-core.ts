@@ -37,10 +37,6 @@ import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runLicenseGateCLI } from "../../../commands/license-gate.js";
 import { runLinearGateCLI } from "../../../commands/linear-gate.js";
-import { runLinearPrepareCLI } from "../../../commands/linear-prepare.js";
-import { runLinearSyncCLI } from "../../../commands/linear-sync.js";
-import { runLinearTriageCLI } from "../../../commands/linear-triage.js";
-import { runLinearWorkflowCLI } from "../../../commands/linear-workflow.js";
 import {
 	EXIT_CODES as LOCAL_MEMORY_PREFLIGHT_EXIT_CODES,
 	runLocalMemoryPreflightCLI,
@@ -108,6 +104,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
 import type { CommandSpec } from "./types.js";
 
@@ -121,170 +118,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Fleet Plan Error",
 		execute: (args) => runFleetPlanCLI(args),
 	},
-	{
-		name: "linear",
-		summary:
-			"Prepare Linear branch/PR metadata, manage workflow transitions, and sync findings",
-		example: "linear claim --issue JSC-123 --json",
-		errorLabel: "Linear Workflow Error",
-		execute: (args) => {
-			const action = args[0];
-			if (
-				action !== "claim" &&
-				action !== "handoff" &&
-				action !== "close" &&
-				action !== "prepare" &&
-				action !== "sync" &&
-				action !== "triage"
-			) {
-				console.error(
-					"linear expects an action of claim, handoff, close, prepare, sync, or triage.",
-				);
-				return 2;
-			}
-
-			const jsonFlag = args.includes("--json");
-			const noAssignFlag = args.includes("--no-assign");
-			const dryRunFlag = args.includes("--dry-run");
-			const issueIndex = args.indexOf("--issue");
-			const projectIndex = args.indexOf("--project");
-			const tokenIndex = args.indexOf("--token");
-			const teamIndex = args.indexOf("--team");
-			const findingsIndex = args.indexOf("--findings");
-			const stateIndex = args.indexOf("--state");
-			const assigneeIndex = args.indexOf("--assignee");
-			const commentIndex = args.indexOf("--comment");
-			const branchIndex = args.indexOf("--branch");
-			const workspaceIndex = args.indexOf("--workspace");
-			const prUrlIndex = args.indexOf("--pr-url");
-			const evidenceUrlIndex = args.indexOf("--evidence-url");
-			const linksIndex = args.indexOf("--links");
-			const branchPrefixIndex = args.indexOf("--branch-prefix");
-			const fieldIndex = args.indexOf("--field");
-			const limitIndex = args.indexOf("--limit");
-			const metadataThresholdIndex = args.indexOf("--metadata-threshold");
-			const inProgressCapIndex = args.indexOf("--in-progress-cap");
-			const maxPromoteIndex = args.indexOf("--max-promote");
-			const confirmFlag = args.includes("--confirm");
-			const syncTypeLabelsFlag = !args.includes("--no-type-label-sync");
-
-			if (action === "sync") {
-				const syncOptions: Parameters<typeof runLinearSyncCLI>[0] = {};
-				if (jsonFlag) syncOptions.json = true;
-				if (dryRunFlag) syncOptions.dryRun = true;
-				const tokenArg = getFlagValue(args, tokenIndex);
-				if (tokenArg) syncOptions.token = tokenArg;
-				const teamArg = getFlagValue(args, teamIndex);
-				if (teamArg) syncOptions.team = teamArg;
-				const findingsArg = getFlagValue(args, findingsIndex);
-				if (findingsArg) syncOptions.findings = findingsArg;
-				return runLinearSyncCLI(syncOptions);
-			}
-
-			if (action === "prepare") {
-				const options: Parameters<typeof runLinearPrepareCLI>[0] = {};
-				if (jsonFlag) options.json = true;
-				const issueArg = getFlagValue(args, issueIndex);
-				if (issueArg) options.issue = issueArg;
-				const tokenArg = getFlagValue(args, tokenIndex);
-				if (tokenArg) options.token = tokenArg;
-				const teamArg = getFlagValue(args, teamIndex);
-				if (teamArg) options.team = teamArg;
-				const branchPrefixArg = getFlagValue(args, branchPrefixIndex);
-				if (branchPrefixArg) options.branchPrefix = branchPrefixArg;
-				const fieldArg = getFlagValue(args, fieldIndex);
-				if (
-					fieldArg === "branch" ||
-					fieldArg === "pr-title" ||
-					fieldArg === "pr-body" ||
-					fieldArg === "link-line" ||
-					fieldArg === "closing-line" ||
-					fieldArg === "issue-url"
-				) {
-					options.field = fieldArg;
-				}
-				return runLinearPrepareCLI(options);
-			}
-
-			if (action === "triage") {
-				const options: Parameters<typeof runLinearTriageCLI>[0] = {};
-				if (jsonFlag) options.json = true;
-				if (dryRunFlag) options.dryRun = true;
-				if (args.includes("--apply")) options.apply = true;
-				if (confirmFlag) options.confirm = true;
-				if (!syncTypeLabelsFlag) options.syncTypeLabels = false;
-
-				const tokenArg = getFlagValue(args, tokenIndex);
-				if (tokenArg) options.token = tokenArg;
-				const teamArg = getFlagValue(args, teamIndex);
-				if (teamArg) options.team = teamArg;
-				const projectArg = getFlagValue(args, projectIndex);
-				if (projectArg) options.project = projectArg;
-				const issueArg = getFlagValue(args, issueIndex);
-				if (issueArg) options.issue = issueArg;
-
-				const limitArg = parseIntegerArg(getFlagValue(args, limitIndex), 1);
-				if (limitArg !== undefined) options.limit = limitArg;
-				const inProgressCapArg = parseIntegerArg(
-					getFlagValue(args, inProgressCapIndex),
-					1,
-				);
-				if (inProgressCapArg !== undefined) {
-					options.inProgressCap = inProgressCapArg;
-				}
-				const maxPromoteArg = parseIntegerArg(
-					getFlagValue(args, maxPromoteIndex),
-					0,
-				);
-				if (maxPromoteArg !== undefined) options.maxPromote = maxPromoteArg;
-
-				const metadataThresholdArg = getFlagValue(args, metadataThresholdIndex);
-				if (metadataThresholdArg !== undefined) {
-					const parsed = Number.parseFloat(metadataThresholdArg);
-					if (Number.isFinite(parsed)) {
-						options.metadataThreshold = parsed;
-					}
-				}
-
-				return runLinearTriageCLI(options);
-			}
-
-			const options: Parameters<typeof runLinearWorkflowCLI>[0] = {
-				action,
-			};
-
-			if (jsonFlag) options.json = true;
-			if (noAssignFlag) options.noAssign = true;
-			const issueArg = getFlagValue(args, issueIndex);
-			if (issueArg) options.issue = issueArg;
-			const tokenArg = getFlagValue(args, tokenIndex);
-			if (tokenArg) options.token = tokenArg;
-			const teamArg = getFlagValue(args, teamIndex);
-			if (teamArg) options.team = teamArg;
-			const stateArg = getFlagValue(args, stateIndex);
-			if (stateArg) options.state = stateArg;
-			const assigneeArg = getFlagValue(args, assigneeIndex);
-			if (assigneeArg) options.assignee = assigneeArg;
-			const commentArg = getFlagValue(args, commentIndex);
-			if (commentArg) options.comment = commentArg;
-			const branchArg = getFlagValue(args, branchIndex);
-			if (branchArg !== undefined) options.branch = branchArg;
-			const workspaceArg = getFlagValue(args, workspaceIndex);
-			if (workspaceArg) options.workspace = workspaceArg;
-			const prUrlArg = getFlagValue(args, prUrlIndex);
-			if (prUrlArg) options.prUrl = prUrlArg;
-			const evidenceUrlArg = getFlagValue(args, evidenceUrlIndex);
-			if (evidenceUrlArg !== undefined) {
-				options.evidenceUrls = parseCsvList(evidenceUrlArg);
-			}
-			const linksArg = getFlagValue(args, linksIndex);
-			if (linksArg !== undefined) {
-				options.links = parseCsvList(linksArg);
-			}
-
-			return runLinearWorkflowCLI(options);
-		},
-	},
+	createLinearCommandSpec(),
 	{
 		name: "linear-gate",
 		summary: "Enforce Linear-first intake, branch, and PR linkage policy",

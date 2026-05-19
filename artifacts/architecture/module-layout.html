@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files.
+            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files. Linear command workflow parsing now lives behind its own command-spec seam.
           </div>
         </section>
 
@@ -391,6 +391,26 @@
             </div>
 
             <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>command-specs-core.ts</strong>
+                <span>
+                  Manifest assembler for command specs; workflow-specific
+                  parsing stays behind focused command-spec seams.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>linear-command-spec.ts</strong>
+                <span>
+                  Small public registry seam for the Linear command metadata.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>linear-command-runner.ts</strong>
+                <span>
+                  Linear claim, handoff, close, prepare, sync, and triage
+                  parsing delegates through one focused runner seam.
+                </span>
+              </div>
               <div class="module doctor">
                 <strong>command-capability-rules.ts</strong>
                 <span>
@@ -995,7 +1015,9 @@
               behind normalise-pr-template-gate.ts. Plan gate projection now
               lives behind normalise-plan-gate.ts. Docs gate projection now lives
               behind normalise-docs-gate.ts. Drift gate projection now lives
-              behind normalise-drift-gate.ts.
+              behind normalise-drift-gate.ts. Linear command workflow parsing
+              now lives behind linear-command-runner.ts, with
+              linear-command-spec.ts kept as the small registry seam.
             </p>
           </article>
           <article class="note">
