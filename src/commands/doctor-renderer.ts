@@ -13,7 +13,7 @@ export function renderDoctorReport(report: DoctorReport): string {
 	const lines: string[] = [];
 
 	lines.push(`\nHarness Doctor — ${report.dir}`);
-	lines.push(`Checked at ${new Date(report.timestamp).toLocaleString()}\n`);
+	lines.push(`Checked at ${new Date(report.timestamp).toISOString()}\n`);
 
 	const categories: Array<["tool" | "file" | "config" | "ci", string]> = [
 		["tool", "Tools"],
