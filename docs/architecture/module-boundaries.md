@@ -89,6 +89,8 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/rule-lifecycle-gate-command-spec.ts`
   - Rule lifecycle gate option projection and delegation to the rule lifecycle
     gate command.
+- `src/lib/cli/registry/policy-gate-command-spec.ts`
+  - Policy gate option projection and delegation to the policy gate command.
 
 The command registry should stay a catalog and dispatch surface. Agents can
 adjust Linear claim, handoff, close, prepare, sync, and triage parsing in
@@ -96,7 +98,8 @@ adjust Linear claim, handoff, close, prepare, sync, and triage parsing in
 seam. Agents can adjust Linear gate option projection in
 `linear-gate-command-spec.ts`, PR template gate option projection in
 `pr-template-gate-command-spec.ts`, and rule lifecycle gate option projection in
-`rule-lifecycle-gate-command-spec.ts`, while `command-specs-core.ts` remains an
+`rule-lifecycle-gate-command-spec.ts`, and policy gate option projection in
+`policy-gate-command-spec.ts`, while `command-specs-core.ts` remains an
 assembler for registered command specs.
 
 ## Output Normalisation Boundaries
