@@ -229,7 +229,14 @@ function fetchChecks(
 	try {
 		const checksRaw = runner(
 			"gh",
-			["pr", "checks", String(options.prNumber), "--json", "name,state,link"],
+			[
+				"pr",
+				"checks",
+				String(options.prNumber),
+				"--required",
+				"--json",
+				"name,state,link",
+			],
 			{ cwd: options.repoRoot, env },
 		);
 		const checks = normalizeGhChecks(JSON.parse(checksRaw) as unknown);
@@ -248,7 +255,7 @@ function fetchChecks(
 		tools.push({
 			name: "github_cli",
 			available: true,
-			ref: `command:gh pr checks ${String(options.prNumber)} --json name,state,link`,
+			ref: `command:gh pr checks ${String(options.prNumber)} --required --json name,state,link`,
 			status: "blocked",
 			failureClass: `pr_checks_unreadable:${sanitizeError(error)}`,
 		});

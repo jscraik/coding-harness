@@ -548,7 +548,7 @@ describe("runPrCloseoutCLI", () => {
 				"coderabbit --version",
 				"snyk --version",
 				"gh pr view 258 --json number,title,state,isDraft,mergeStateStatus,url,headRefOid,headRefName,baseRefName,reviewDecision,body",
-				"gh pr checks 258 --json name,state,link",
+				"gh pr checks 258 --required --json name,state,link",
 				"gh repo view --json owner,name",
 			]),
 		);
@@ -929,6 +929,79 @@ describe("runPrCloseoutCLI", () => {
 					{
 						context: "pr-pipeline",
 						target_url: "https://ci.example/status",
+						sha: "abc123",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+	});
+
+	it("falls back to status context proof when the status URL differs", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://checks.example/pr-pipeline",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsPage([]);
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				return commitStatuses([
+					{
+						context: "pr-pipeline",
+						target_url: "https://status.example/legacy-context",
 						sha: "abc123",
 					},
 				]);

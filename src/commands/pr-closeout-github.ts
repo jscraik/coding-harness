@@ -80,10 +80,11 @@ function normalizeGhStatuses(
 		const url = asString(record.target_url) ?? asString(record.targetUrl);
 		const statusSha = asString(record.sha);
 		const isCurrentHead = !statusSha || statusSha === headSha;
-		if (name && url && isCurrentHead) {
-			proof.set(checkProofKey(name, url), headSha);
-		} else if (name && !url && isCurrentHead) {
+		if (name && isCurrentHead) {
 			proof.set(checkProofKey(name, null), headSha);
+			if (url) {
+				proof.set(checkProofKey(name, url), headSha);
+			}
 		}
 	}
 	return proof;
@@ -114,7 +115,7 @@ function hasUnprovenCheck(
 	return checks.some(
 		(check) =>
 			!proof.has(checkProofKey(check.name, check.url ?? null)) &&
-			(Boolean(check.url) || !proof.has(checkProofKey(check.name, null))),
+			!proof.has(checkProofKey(check.name, null)),
 	);
 }
 
@@ -128,7 +129,7 @@ export function applyCheckHeadProof(
 		headSha:
 			check.headSha ??
 			(check.url ? proof.get(checkProofKey(check.name, check.url)) : null) ??
-			(check.url ? null : proof.get(checkProofKey(check.name, null))) ??
+			proof.get(checkProofKey(check.name, null)) ??
 			null,
 	}));
 }
