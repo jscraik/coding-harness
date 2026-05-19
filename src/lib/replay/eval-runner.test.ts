@@ -18,7 +18,7 @@ describe("runLocalReplayEvals", () => {
 	it("stops recovery when authority or secret boundaries are missing", () => {
 		const report = runLocalReplayEvals(["recovery-denied"]);
 		const result = report.results[0];
-		const payload = result?.normalizedTrace.events[0]?.payload as
+		const payload = result?.normalizedTrace?.events[0]?.payload as
 			| Record<string, unknown>
 			| undefined;
 		const recovery = payload?.recovery as Record<string, unknown> | undefined;
@@ -40,7 +40,34 @@ describe("runLocalReplayEvals", () => {
 			"recovery-denied",
 		]);
 		expect(
-			report.results.every((result) => result.normalizedTrace.traceId),
+			report.results.every((result) => result.normalizedTrace?.traceId),
 		).toBe(true);
+	});
+
+	it("fails explicit empty input instead of silently passing", () => {
+		const report = runLocalReplayEvals([]);
+		expect(report.status).toBe("fail");
+		expect(report.results).toEqual([
+			expect.objectContaining({
+				id: "__empty_input__",
+				status: "fail",
+				reason: "at least one replay eval id is required",
+			}),
+		]);
+		expect(report.results[0]?.normalizedTrace).toBeUndefined();
+	});
+
+	it("fails unknown eval ids instead of mapping them to another fixture", () => {
+		const report = runLocalReplayEvals(["unknown-eval"]);
+		expect(report.status).toBe("fail");
+		expect(report.results).toEqual([
+			expect.objectContaining({
+				id: "unknown-eval",
+				status: "fail",
+				reason: "unknown local replay eval id: unknown-eval",
+				evidenceRefs: ["local-replay-eval:unknown-id"],
+			}),
+		]);
+		expect(report.results[0]?.normalizedTrace).toBeUndefined();
 	});
 });

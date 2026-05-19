@@ -5,6 +5,13 @@ export type RecoveryAuthorityScope =
 	| "workspace_write"
 	| "external_service";
 
+const RECOVERY_AUTHORITY_SCOPES = new Set<string>([
+	"none",
+	"local_filesystem",
+	"workspace_write",
+	"external_service",
+]);
+
 /** Recovery contract authority classification. */
 export interface RecoveryAuthority {
 	/** The highest boundary the handler may touch. */
@@ -107,6 +114,8 @@ function validateAuthority(
 	}
 	if (!hasText(authority.scope)) {
 		errors.push("authority.scope is required");
+	} else if (!RECOVERY_AUTHORITY_SCOPES.has(authority.scope)) {
+		errors.push(`authority.scope is unsupported: ${authority.scope}`);
 	}
 	if (typeof authority.mutatesState !== "boolean") {
 		errors.push("authority.mutatesState is required");

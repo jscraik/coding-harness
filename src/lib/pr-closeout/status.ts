@@ -17,8 +17,8 @@ export function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 		blockers.some(
 			(blocker) =>
 				(blocker.surface === "worktree" || blocker.surface === "branch") &&
-				!blocker.reason.startsWith("Closeout claim ") &&
-				blocker.reason.toLowerCase().includes("conflict"),
+				blocker.kind !== "closeout_claim" &&
+				blocker.conflict === true,
 		)
 	) {
 		return {
@@ -31,7 +31,7 @@ export function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 		blockers.some(
 			(blocker) =>
 				(blocker.surface === "worktree" || blocker.surface === "branch") &&
-				!blocker.reason.startsWith("Closeout claim "),
+				blocker.kind !== "closeout_claim",
 		)
 	) {
 		return {

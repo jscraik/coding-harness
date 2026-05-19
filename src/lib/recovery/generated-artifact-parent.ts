@@ -44,6 +44,19 @@ async function parentExists(parentDir: string): Promise<boolean> {
 	}
 }
 
+function errorCode(error: unknown): string | null {
+	return typeof error === "object" &&
+		error !== null &&
+		"code" in error &&
+		typeof error.code === "string"
+		? error.code
+		: null;
+}
+
+function errorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
 async function verifyBefore(
 	context: RecoveryContext,
 ): Promise<RecoveryHookResult> {
@@ -129,7 +142,16 @@ async function rollback(context: RecoveryContext): Promise<RecoveryResult> {
 			status: "stopped",
 			evidenceRefs: ["recovery:artifact-parent:rollback-removed"],
 		};
-	} catch {
+	} catch (error) {
+		const code = errorCode(error);
+		if (code !== "ENOTEMPTY" && code !== "EEXIST") {
+			return {
+				ok: false,
+				status: "failed",
+				reason: `artifact parent rollback failed: ${code ?? "unknown"}: ${errorMessage(error)}`,
+				evidenceRefs: ["recovery:artifact-parent:rollback-failed"],
+			};
+		}
 		return {
 			ok: false,
 			status: "stopped",

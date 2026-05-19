@@ -38,6 +38,7 @@ export function collectWorktreeBlockers(
 		pushBlocker(blockers, {
 			surface: "worktree",
 			classification: "unrelated_dirty_worktree",
+			kind: "state",
 			reason:
 				"Unrelated dirty worktree paths must be excluded before PR closeout.",
 			fixableByCodex: false,
@@ -48,6 +49,7 @@ export function collectWorktreeBlockers(
 		pushBlocker(blockers, {
 			surface: "worktree",
 			classification: "unknown",
+			kind: "state",
 			reason: "Local worktree is dirty; classify paths before PR closeout.",
 			fixableByCodex: true,
 		});
@@ -56,6 +58,7 @@ export function collectWorktreeBlockers(
 		pushBlocker(blockers, {
 			surface: "branch",
 			classification: "introduced",
+			kind: "state",
 			reason: "Branch has not been pushed to the remote PR head.",
 			fixableByCodex: true,
 		});
@@ -64,6 +67,8 @@ export function collectWorktreeBlockers(
 		pushBlocker(blockers, {
 			surface: "branch",
 			classification: "introduced",
+			kind: "state",
+			conflict: true,
 			reason: "Branch has merge conflicts.",
 			fixableByCodex: true,
 		});
@@ -72,6 +77,7 @@ export function collectWorktreeBlockers(
 		pushBlocker(blockers, {
 			surface: "branch",
 			classification: "introduced",
+			kind: "state",
 			reason: "Branch is behind its base branch.",
 			fixableByCodex: true,
 		});
@@ -106,6 +112,8 @@ export function collectPullRequestBlockers(
 		pushBlocker(blockers, {
 			surface: "branch",
 			classification: "introduced",
+			kind: "state",
+			conflict: true,
 			reason: "Pull request merge state reports conflicts.",
 			fixableByCodex: true,
 		});
@@ -162,7 +170,6 @@ export function collectReviewBlockers(
 			fixableByCodex: true,
 			ref: "github:reviewThreads",
 		});
-		return;
 	}
 	if (reviewThreads.unresolved !== null && reviewThreads.unresolved > 0) {
 		const needsHuman = (reviewThreads.needsHuman ?? 0) > 0;
@@ -269,7 +276,7 @@ export function collectHarnessGateBlockers(
 	if (harnessGates.evidenceSource === "missing") {
 		pushBlocker(blockers, {
 			surface: "harness_gates",
-			classification: "introduced",
+			classification: "unknown",
 			reason:
 				"Coding Harness closeout gates are missing closeout-gates evidence.",
 			fixableByCodex: true,

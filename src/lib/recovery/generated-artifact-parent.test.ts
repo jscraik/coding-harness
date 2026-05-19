@@ -1,6 +1,6 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { validateRecoveryHandlerContract } from "./contract.js";
 import { createGeneratedArtifactParentHandler } from "./generated-artifact-parent.js";
@@ -66,7 +66,7 @@ describe("generated artifact parent recovery handler", () => {
 		const context = {
 			failure: "ENOENT: missing generated artifact parent directory",
 			repoRoot,
-			details: { artifactPath: "../outside/reviewer.md" },
+			details: { artifactPath: `../${basename(outside)}/reviewer.md` },
 		};
 		expect(await handler.verifyBefore(context)).toMatchObject({
 			ok: false,
@@ -95,5 +95,27 @@ describe("generated artifact parent recovery handler", () => {
 			evidenceRefs: ["recovery:artifact-parent:rollback-removed"],
 		});
 		expect(existsSync(join(repoRoot, "artifacts/reviews"))).toBe(false);
+	});
+
+	it("stops rollback without deleting non-empty recovered parents", async () => {
+		const repoRoot = makeRoot();
+		const handler = createGeneratedArtifactParentHandler();
+		const context = {
+			failure: "ENOENT: missing generated artifact parent directory",
+			repoRoot,
+			details: { artifactPath: "artifacts/reviews/reviewer.md" },
+		};
+		await handler.recover(context);
+		writeFileSync(join(repoRoot, "artifacts/reviews/reviewer.md"), "review");
+
+		expect(await handler.rollback(context)).toMatchObject({
+			ok: false,
+			status: "stopped",
+			evidenceRefs: ["recovery:artifact-parent:rollback-skipped"],
+		});
+		expect(existsSync(join(repoRoot, "artifacts/reviews"))).toBe(true);
+		expect(existsSync(join(repoRoot, "artifacts/reviews/reviewer.md"))).toBe(
+			true,
+		);
 	});
 });

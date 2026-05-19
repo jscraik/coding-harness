@@ -84,6 +84,22 @@ describe("recovery contract", () => {
 		);
 	});
 
+	it("denies unsupported authority scopes", () => {
+		const result = assessRecoverySafety(
+			handler({
+				authority: {
+					scope: "workspace-admin" as never,
+					mutatesState: false,
+					requiresSecret: false,
+				},
+			}),
+		);
+		expect(result.decision).toBe("denied");
+		expect(result.reasons).toContain(
+			"authority.scope is unsupported: workspace-admin",
+		);
+	});
+
 	it("denies contracts that omit verification hooks and trace fields", () => {
 		const result = assessRecoverySafety({
 			id: "unsafe",

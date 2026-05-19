@@ -163,6 +163,10 @@ function reviewThreadsGraphql(unresolved = 0): string {
 	});
 }
 
+function checkRunsForHead(headSha = "abc123"): string {
+	return JSON.stringify([{ name: "pr-pipeline", head_sha: headSha }]);
+}
+
 async function capture(
 	args: string[],
 	runner?: TestRunner,
@@ -439,6 +443,13 @@ describe("runPrCloseoutCLI", () => {
 					name: "coding-harness",
 				});
 			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
 			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
 				return reviewThreadsGraphql();
 			}
@@ -518,6 +529,13 @@ describe("runPrCloseoutCLI", () => {
 					owner: { login: "jscraik" },
 					name: "coding-harness",
 				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
 			}
 			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
 				return reviewThreadsGraphql();
@@ -634,6 +652,13 @@ Refs JSC-328
 					name: "coding-harness",
 				});
 			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
 			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
 				return reviewThreadsGraphql();
 			}
@@ -687,6 +712,13 @@ Refs JSC-328
 					owner: { login: "jscraik" },
 					name: "coding-harness",
 				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
 			}
 			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
 				return reviewThreadsGraphql();

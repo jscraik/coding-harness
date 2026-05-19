@@ -497,7 +497,7 @@ function claimSurface(claim: PrCloseoutClaim): PrCloseoutBlocker["surface"] {
 
 function claimFixableByCodex(claim: PrCloseoutClaim): boolean {
 	if (claim.blockerClass === "needs_jamie_decision") return false;
-	if (claim.source !== "checks") return true;
+	if (claim.source !== "checks") return false;
 	return claim.freshness === "missing";
 }
 
@@ -511,6 +511,7 @@ export function collectClaimBlockers(
 		blockers.push({
 			surface: claimSurface(claim),
 			classification: claim.blockerClass ?? "unknown",
+			kind: "closeout_claim",
 			reason: claimBlockerReason(claim),
 			fixableByCodex: claimFixableByCodex(claim),
 			ref: claim.evidenceRef ?? claim.claim,

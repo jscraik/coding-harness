@@ -42,7 +42,7 @@ closeout ambiguity, brownfield install risk, or repeated human steering.
 
 ## Repository Constraints
 
-- Target repo: `/Users/jamiecraik/dev/coding-harness`
+- Target repo: `coding-harness` source checkout
 - Use repo-native command contracts.
 - Preserve unrelated dirty worktree changes and do not revert user work.
 - Use `apply_patch` for manual edits.
@@ -480,6 +480,8 @@ Stop and ask Jamie or record a blocked receipt if:
 Before marking the goal complete:
 
 - Run `pnpm check` with required network access for `pnpm audit` if needed.
+- Run `bash scripts/validate-codestyle.sh`.
+- Run `bash scripts/verify-work.sh`.
 - Run `bash scripts/run-harness-gate.sh docs-gate --mode required --json`.
 - Confirm all phase receipts exist.
 - Confirm implementation notes are current.

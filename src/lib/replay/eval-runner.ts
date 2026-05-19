@@ -11,13 +11,13 @@ export type LocalReplayEvalStatus = "pass" | "fail";
 /** Result emitted by the local replay eval runner. */
 export interface LocalReplayEvalResult {
 	/** Stable eval identifier. */
-	id: LocalReplayEvalId;
+	id: string;
 	/** Whether the fixture proved the expected operational behavior. */
 	status: LocalReplayEvalStatus;
 	/** Short machine-readable reason for pass or fail. */
 	reason: string;
 	/** Normalized replay trace used by the eval. */
-	normalizedTrace: NormalizedTrace;
+	normalizedTrace?: NormalizedTrace;
 	/** Artifact-style references checked by the eval. */
 	evidenceRefs: string[];
 }
@@ -178,16 +178,31 @@ function evaluateRecoveryDenied(): LocalReplayEvalResult {
 
 /** Run the first local replay eval fixtures and return machine-readable output. */
 export function runLocalReplayEvals(
-	ids: readonly LocalReplayEvalId[] = [
-		"false-success-closeout",
-		"recovery-denied",
-	],
+	ids: readonly string[] = ["false-success-closeout", "recovery-denied"],
 ): LocalReplayEvalReport {
-	const results = ids.map((id) =>
-		id === "false-success-closeout"
-			? evaluateFalseSuccessCloseout()
-			: evaluateRecoveryDenied(),
-	);
+	const requestedIds = ids.length > 0 ? ids : (["__empty_input__"] as const);
+	const results = requestedIds.map((id) => {
+		switch (id) {
+			case "false-success-closeout":
+				return evaluateFalseSuccessCloseout();
+			case "recovery-denied":
+				return evaluateRecoveryDenied();
+			case "__empty_input__":
+				return {
+					id: "__empty_input__",
+					status: "fail" as const,
+					reason: "at least one replay eval id is required",
+					evidenceRefs: ["local-replay-eval:input"],
+				};
+			default:
+				return {
+					id,
+					status: "fail" as const,
+					reason: `unknown local replay eval id: ${id}`,
+					evidenceRefs: ["local-replay-eval:unknown-id"],
+				};
+		}
+	});
 	return {
 		schemaVersion: "local-replay-eval/v1",
 		status: results.every((result) => result.status === "pass")

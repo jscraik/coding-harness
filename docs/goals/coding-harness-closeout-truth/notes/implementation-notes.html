@@ -760,6 +760,49 @@
       </section>
 
       <section>
+        <h2>PR Review Fixes</h2>
+        <ul>
+          <li>
+            Accepted the CodeRabbit finding that live check freshness must not
+            be synthesized from the PR head SHA. <code>pr-closeout</code> now
+            keeps <code>gh pr checks</code> evidence untrusted for freshness
+            until GitHub's commit check-runs endpoint proves the check name is
+            attached to the current head.
+          </li>
+          <li>
+            Moved GitHub live evidence helpers into
+            <code>src/commands/pr-closeout-github.ts</code> so the command file
+            stays below the hard size limit while keeping orchestration readable.
+          </li>
+          <li>
+            Accepted blocker-routing feedback. Closeout blockers now carry
+            structured <code>kind</code> and <code>conflict</code> fields, so
+            next-action routing no longer depends on English reason strings.
+          </li>
+          <li>
+            Accepted recovery and replay findings: unsupported recovery
+            authority scopes are rejected at runtime, non-empty rollback stops
+            without deleting user content, and empty or unknown replay eval ids
+            fail closed.
+          </li>
+          <li>
+            Updated the goal board text so it no longer hardcodes Jamie's local
+            absolute repository path and so the final audit requires
+            <code>bash scripts/validate-codestyle.sh</code> and
+            <code>bash scripts/verify-work.sh</code>.
+          </li>
+          <li>
+            Validation after the review-fix pass:
+            <code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/recovery/contract.test.ts src/lib/recovery/generated-artifact-parent.test.ts src/lib/replay/eval-runner.test.ts src/lib/architecture/pr-closeout-truth-contract.test.ts</code>
+            passed 56 tests; <code>node scripts/check-pr-closeout-truth-contract.cjs --json</code>
+            passed; <code>bash scripts/validate-codestyle.sh --fast</code>
+            passed with the known non-blocking <code>docs/QUALITY_SCORE.md</code>
+            stale warning from drift-gate.
+          </li>
+        </ul>
+      </section>
+
+      <section>
         <h2>Next Safe Action</h2>
         <p>
           Goal board and native goal are ready for closeout. Next safe action:

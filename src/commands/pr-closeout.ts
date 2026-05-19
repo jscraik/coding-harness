@@ -16,12 +16,18 @@ import {
 	type PrCloseoutInput,
 	type PrCloseoutPullRequestInput,
 	type PrCloseoutRollbackInput,
-	type PrCloseoutReviewThreadsInput,
 	type PrCloseoutTraceabilityInput,
 	type PrCloseoutToolInput,
 } from "../lib/pr-closeout.js";
+import {
+	applyCheckHeadProof,
+	fetchCheckHeadProof,
+	fetchReviewThreads,
+	normalizeGhChecks,
+} from "./pr-closeout-github.js";
 
-interface PrCloseoutCLIOptions {
+/** Parsed command-line options for building a pr-closeout report. */
+export interface PrCloseoutCLIOptions {
 	json: boolean;
 	repoRoot: string;
 	inputPath?: string;
@@ -35,7 +41,8 @@ type PrCloseoutParseResult =
 	| { options: PrCloseoutCLIOptions }
 	| { exitCode: number };
 
-type CommandRunner = (
+/** Synchronous command runner used by live pr-closeout evidence collectors. */
+export type CommandRunner = (
 	command: string,
 	args: readonly string[],
 	options: { cwd: string; env?: NodeJS.ProcessEnv },
@@ -365,96 +372,6 @@ function normalizeGhPr(
 	};
 }
 
-function normalizeGhChecks(
-	value: unknown,
-	headSha: string | null,
-): PrCloseoutCheckInput[] {
-	if (!Array.isArray(value)) return [];
-	return value
-		.filter(
-			(item): item is Record<string, unknown> =>
-				Boolean(item) && typeof item === "object" && !Array.isArray(item),
-		)
-		.map((item) => ({
-			name: asString(item.name) ?? "unknown",
-			state: asString(item.state),
-			url: asString(item.link),
-			headSha: asString(item.headSha) ?? headSha,
-			source: "github",
-		}));
-}
-
-function normalizeGhRepo(value: Record<string, unknown>): {
-	owner: string;
-	repo: string;
-} {
-	const ownerValue = value.owner;
-	const owner =
-		typeof ownerValue === "string"
-			? ownerValue
-			: ownerValue &&
-					typeof ownerValue === "object" &&
-					!Array.isArray(ownerValue)
-				? asString((ownerValue as Record<string, unknown>).login)
-				: null;
-	const repo = asString(value.name);
-	if (!owner || !repo) {
-		throw new Error("gh repo view must include owner.login and name");
-	}
-	return { owner, repo };
-}
-
-function normalizeReviewThreadsGraphql(
-	value: Record<string, unknown>,
-): PrCloseoutReviewThreadsInput {
-	const data = value.data;
-	if (!data || typeof data !== "object" || Array.isArray(data)) {
-		throw new Error("reviewThreads GraphQL response must include data");
-	}
-	const repository = (data as Record<string, unknown>).repository;
-	if (
-		!repository ||
-		typeof repository !== "object" ||
-		Array.isArray(repository)
-	) {
-		throw new Error("reviewThreads GraphQL response must include repository");
-	}
-	const pullRequest = (repository as Record<string, unknown>).pullRequest;
-	if (
-		!pullRequest ||
-		typeof pullRequest !== "object" ||
-		Array.isArray(pullRequest)
-	) {
-		throw new Error("reviewThreads GraphQL response must include pullRequest");
-	}
-	const reviewThreads = (pullRequest as Record<string, unknown>).reviewThreads;
-	if (
-		!reviewThreads ||
-		typeof reviewThreads !== "object" ||
-		Array.isArray(reviewThreads)
-	) {
-		throw new Error(
-			"reviewThreads GraphQL response must include reviewThreads",
-		);
-	}
-	const pageInfo = (reviewThreads as Record<string, unknown>).pageInfo;
-	if (pageInfo && typeof pageInfo === "object" && !Array.isArray(pageInfo)) {
-		const hasNextPage = (pageInfo as Record<string, unknown>).hasNextPage;
-		if (hasNextPage === true) {
-			return { unresolved: null, needsHuman: null, autofixable: null };
-		}
-	}
-	const nodes = (reviewThreads as Record<string, unknown>).nodes;
-	if (!Array.isArray(nodes)) {
-		throw new Error("reviewThreads GraphQL response must include nodes");
-	}
-	const unresolved = nodes.filter((node) => {
-		if (!node || typeof node !== "object" || Array.isArray(node)) return false;
-		return (node as Record<string, unknown>).isResolved === false;
-	}).length;
-	return { unresolved, needsHuman: null, autofixable: unresolved };
-}
-
 function inspectCommand(
 	name: PrCloseoutToolInput["name"],
 	command: string,
@@ -555,65 +472,6 @@ function rollbackFromBody(
 	return { path: rollback, evidenceRef: "pr-body:rollback" };
 }
 
-function fetchReviewThreads(
-	options: PrCloseoutCLIOptions,
-	env: NodeJS.ProcessEnv,
-	runner: CommandRunner,
-	tools: PrCloseoutToolInput[],
-): PrCloseoutReviewThreadsInput {
-	const query =
-		"query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100){pageInfo{hasNextPage}nodes{isResolved}}}}}";
-	try {
-		const repo = normalizeGhRepo(
-			parseJsonObject(
-				runner("gh", ["repo", "view", "--json", "owner,name"], {
-					cwd: options.repoRoot,
-					env,
-				}),
-				"gh repo view",
-			),
-		);
-		const raw = runner(
-			"gh",
-			[
-				"api",
-				"graphql",
-				"-f",
-				`query=${query}`,
-				"-f",
-				`owner=${repo.owner}`,
-				"-f",
-				`repo=${repo.repo}`,
-				"-F",
-				`number=${String(options.prNumber)}`,
-			],
-			{ cwd: options.repoRoot, env },
-		);
-		const reviewThreads = normalizeReviewThreadsGraphql(
-			parseJsonObject(raw, "gh api graphql reviewThreads"),
-		);
-		if (reviewThreads.unresolved === null) {
-			tools.push({
-				name: "github_cli",
-				available: true,
-				ref: "command:gh api graphql reviewThreads(first:100)",
-				status: "blocked",
-				failureClass: "review_threads_paginated",
-			});
-		}
-		return reviewThreads;
-	} catch (error) {
-		tools.push({
-			name: "github_cli",
-			available: true,
-			ref: "command:gh api graphql reviewThreads(first:100)",
-			status: "blocked",
-			failureClass: `pr_review_threads_unreadable:${sanitizeError(error)}`,
-		});
-		return { unresolved: null, needsHuman: null, autofixable: null };
-	}
-}
-
 function buildLiveInput(
 	options: PrCloseoutCLIOptions,
 	runner: CommandRunner,
@@ -691,9 +549,16 @@ function buildLiveInput(
 			["pr", "checks", String(options.prNumber), "--json", "name,state,link"],
 			{ cwd: options.repoRoot, env: envLoad.env },
 		);
-		checks = normalizeGhChecks(
-			JSON.parse(checksRaw) as unknown,
-			pullRequest.headSha ?? null,
+		checks = normalizeGhChecks(JSON.parse(checksRaw) as unknown);
+		checks = applyCheckHeadProof(
+			checks,
+			fetchCheckHeadProof(
+				options,
+				envLoad.env,
+				runner,
+				tools,
+				pullRequest.headSha,
+			),
 		);
 	} catch (error) {
 		tools.push({

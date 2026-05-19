@@ -195,6 +195,8 @@ export interface PrCloseoutBlocker {
 		| "harness_gates"
 		| "tool";
 	classification: PrCloseoutBlockerClassification;
+	kind?: "state" | "closeout_claim";
+	conflict?: boolean;
 	reason: string;
 	fixableByCodex: boolean;
 	ref?: string;

@@ -18,8 +18,15 @@ const GATE_ID = "pr-closeout-truth-contract";
 const args = process.argv.slice(2);
 const jsonOutput = args.includes("--json") || !args.includes("--format");
 const rootArgIndex = args.indexOf("--root");
+if (
+	rootArgIndex !== -1 &&
+	(!args[rootArgIndex + 1] || args[rootArgIndex + 1].startsWith("-"))
+) {
+	console.error("--root requires a repository path argument");
+	process.exit(2);
+}
 const repoRoot =
-	rootArgIndex === -1 ? process.cwd() : resolve(args[rootArgIndex + 1] ?? ".");
+	rootArgIndex === -1 ? process.cwd() : resolve(args[rootArgIndex + 1]);
 
 const REQUIRED_CLAIM_FIELDS = [
 	"claim",
@@ -245,7 +252,7 @@ function checkReportContract(findings) {
 		"returns-claims",
 		file,
 		content,
-		/return\s*\{[\s\S]*blockers,\s*\n\s*claims,/,
+		/return\s*\{(?=[\s\S]*\bblockers\b)(?=[\s\S]*\bclaims\b)[\s\S]*\}/,
 		"buildPrCloseoutReport must return the claim ledger",
 		"Include claims in the returned pr-closeout/v1 report.",
 	);

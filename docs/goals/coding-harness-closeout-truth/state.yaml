@@ -4,7 +4,7 @@ goal:
   status: done
   objective: "Implement the recommendation-evaluation roadmap as small, provable PR-ready phases that make false-success mechanically impossible in pr-closeout before adding missing-context, replay-eval, recovery, invariant, and skill layers."
   native_goal_id: "019e3bd8-6c6d-7f42-8db7-df6556745d60"
-  native_objective: "Follow docs/goals/coding-harness-closeout-truth/goal.md to make Coding Harness closeout truth deterministic before adding autonomy, executing one small provable phase at a time. Current phase: Phase 0 standards baseline confirmation."
+  native_objective: "Follow docs/goals/coding-harness-closeout-truth/goal.md to make Coding Harness closeout truth deterministic before adding autonomy, executing one small provable phase at a time. Roadmap phases are complete; current work is final PR closeout, review resolution, merge, and main-branch update."
   native_status: complete
   token_budget: null
   tokens_used: 1484470
