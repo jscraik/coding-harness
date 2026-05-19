@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_948,
+		maxLines: 1_900,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/branch-protect-command-spec.ts",
+		maxLines: 70,
+		reason:
+			"Branch protect command spec must stay focused on branch protection option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/preflight-gate-command-spec.ts",
@@ -469,6 +475,7 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
+	"src/lib/cli/registry/branch-protect-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
@@ -534,6 +541,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 	"./doctor-north-star-contract-checks.js",
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
+	"./branch-protect-command-spec.js",
 	"./evidence-verify-command-spec.js",
 	"./preflight-gate-command-spec.js",
 	"./review-gate-command-spec.js",

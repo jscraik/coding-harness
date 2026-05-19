@@ -8,7 +8,6 @@ import {
 } from "../../../commands/blast-radius.js";
 import { runBrainCLI } from "../../../commands/brain.js";
 import { runBrainstormGateCLI } from "../../../commands/brainstorm-gate.js";
-import { runBranchProtectCLI } from "../../../commands/branch-protect.js";
 import { runCheckAuthzCLI } from "../../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../../commands/check-environment.js";
 import { runCheckCLI } from "../../../commands/check.js";
@@ -96,6 +95,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
@@ -134,55 +134,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createEvidenceVerifyCommandSpec(),
 	createPreflightGateCommandSpec(),
 	createReviewGateCommandSpec(),
-	{
-		name: "branch-protect",
-		summary: "Configure GitHub branch protection ruleset",
-		errorLabel: "Branch Protect Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const dryRunFlag = args.includes("--dry-run");
-			const tokenIndex = args.indexOf("--token");
-			const ownerIndex = args.indexOf("--owner");
-			const repoIndex = args.indexOf("--repo");
-			const branchIndex = args.indexOf("--branch");
-			const rulesetIndex = args.indexOf("--ruleset");
-			const checksIndex = args.indexOf("--checks");
-			const ecosystemIndex = args.indexOf("--ecosystem");
-			const approvalsIndex = args.indexOf("--required-approvals");
-			const checksArg = getFlagValue(args, checksIndex);
-			const approvalsArg = getFlagValue(args, approvalsIndex);
-
-			const options: Parameters<typeof runBranchProtectCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			if (dryRunFlag) options.dryRun = true;
-			const tokenArg = getFlagValue(args, tokenIndex);
-			if (tokenArg) options.token = tokenArg;
-			const ownerArg = getFlagValue(args, ownerIndex);
-			if (ownerArg) options.owner = ownerArg;
-			const repoArg = getFlagValue(args, repoIndex);
-			if (repoArg) options.repo = repoArg;
-			const branchArg = getFlagValue(args, branchIndex);
-			if (branchArg) options.branch = branchArg;
-			const rulesetArg = getFlagValue(args, rulesetIndex);
-			if (rulesetArg) options.rulesetName = rulesetArg;
-			const ecosystemArg = getFlagValue(args, ecosystemIndex);
-			if (ecosystemArg) options.ecosystem = ecosystemArg;
-			if (checksArg !== undefined) {
-				options.requiredChecks = parseCsvList(checksArg);
-			}
-			if (approvalsIndex !== -1) {
-				const parsedApprovals = parseIntegerArg(approvalsArg, 0);
-				if (parsedApprovals === undefined) {
-					console.error("--required-approvals expects a non-negative integer.");
-					return 2;
-				}
-				options.requiredApprovingReviewCount = parsedApprovals;
-			}
-
-			return runBranchProtectCLI(options);
-		},
-	},
+	createBranchProtectCommandSpec(),
 	{
 		name: "check-authz",
 		summary: "Validate authorization policy for mutative operations",
