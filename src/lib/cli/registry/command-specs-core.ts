@@ -8,7 +8,6 @@ import {
 } from "../../../commands/blast-radius.js";
 import { runBrainCLI } from "../../../commands/brain.js";
 import { runBrainstormGateCLI } from "../../../commands/brainstorm-gate.js";
-import { runCheckAuthzCLI } from "../../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../../commands/check-environment.js";
 import { runCheckCLI } from "../../../commands/check.js";
 import {
@@ -96,6 +95,7 @@ import {
 	parseIntegerArg,
 } from "../parse-utils.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
+import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
@@ -135,31 +135,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createPreflightGateCommandSpec(),
 	createReviewGateCommandSpec(),
 	createBranchProtectCommandSpec(),
-	{
-		name: "check-authz",
-		summary: "Validate authorization policy for mutative operations",
-		errorLabel: "Check Authz Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const checkScopesFlag = args.includes("--check-scopes");
-			const contractIndex = args.indexOf("--contract");
-			const repoIndex = args.indexOf("--repo");
-			const branchIndex = args.indexOf("--branch");
-
-			const options: Parameters<typeof runCheckAuthzCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			if (checkScopesFlag) options.checkScopes = true;
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg !== undefined) options.contractPath = contractArg;
-			const repoArg = getFlagValue(args, repoIndex);
-			if (repoArg) options.repo = repoArg;
-			const branchArg = getFlagValue(args, branchIndex);
-			if (branchArg) options.branch = branchArg;
-
-			return runCheckAuthzCLI(options);
-		},
-	},
+	createCheckAuthzCommandSpec(),
 	{
 		name: "check-environment",
 		summary: "Validate pilot environment governance checks",

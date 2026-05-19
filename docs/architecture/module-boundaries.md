@@ -96,6 +96,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/branch-protect-command-spec.ts`
   - Branch protection option projection, required approval parsing, and
     delegation to the branch protection command.
+- `src/lib/cli/registry/check-authz-command-spec.ts`
+  - Authorization check option projection and delegation to the authorization
+    command.
 - `src/lib/cli/registry/evidence-verify-command-spec.ts`
   - Evidence verify option projection and delegation to the evidence verify
     command.
@@ -114,7 +117,8 @@ registry seam. Agents can adjust Linear gate option projection in
 `pr-template-gate-command-spec.ts`, and rule lifecycle gate option projection in
 `rule-lifecycle-gate-command-spec.ts`, and policy gate option projection in
 `policy-gate-command-spec.ts`, branch protection option projection in
-`branch-protect-command-spec.ts`, evidence verify option projection in
+`branch-protect-command-spec.ts`, authorization check option projection in
+`check-authz-command-spec.ts`, evidence verify option projection in
 `evidence-verify-command-spec.ts`, preflight gate option projection and
 admission parsing in `preflight-gate-command-spec.ts`, and review gate option
 projection in `review-gate-command-spec.ts`, while `command-specs-core.ts`
@@ -401,8 +405,11 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 1900` lines); workflow-specific parsing belongs in focused command spec
+  (`<= 1876` lines); workflow-specific parsing belongs in focused command spec
   seams.
+- `src/lib/cli/registry/check-authz-command-spec.ts` must stay focused on
+  authorization check option projection and command delegation (`<= 35`
+  lines).
 - `src/lib/cli/registry/branch-protect-command-spec.ts` must stay focused on
   branch protection option projection, required approval parsing, and command
   delegation (`<= 70` lines).
