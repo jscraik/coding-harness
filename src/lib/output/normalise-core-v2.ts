@@ -12,7 +12,6 @@ import type {
 	DriftFinding,
 	DriftGateResult,
 } from "../../commands/drift-gate.js";
-import type { PolicyGateResult } from "../../commands/policy-gate.js";
 import type { PrTemplateGateResult } from "../../commands/pr-template-gate.js";
 import type { PlanGateResult } from "../plan-gate/types.js";
 import { buildGateResult, uniqueStrings } from "./normalise-core.js";
@@ -25,6 +24,7 @@ export {
 	normaliseLinearGateResult,
 } from "./normalise-linear-gate.js";
 export { normaliseHePhaseExitResult } from "./normalise-he-phase-exit.js";
+export { normalisePolicyGateResult } from "./normalise-policy-gate.js";
 export type { LinearGateFailureClassification } from "./normalise-linear-gate.js";
 export { renderGateDecision } from "./normalise-renderer.js";
 
@@ -178,112 +178,6 @@ export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
 			repo_root: result.report.repo_root,
 			base_ref: result.report.base_ref,
 			summary: result.report.summary,
-		},
-	});
-}
-
-// ─── P2: policy-gate adapter (binary-result) ─────────────────────────────────
-
-/**
- * Normalise a PolicyGateResult (binary-result class) to canonical GateResult.
- *
- * Synthesis rules (spec §4.2):
- *   ok:false           → one internal finding, status=fail
- *   ok:true, passed    → findings=[], status=pass
- *   ok:true, !passed   → one finding per violating file, status=fail
- *                        (guard: if violatingFiles empty → synthetic unknown finding)
- */
-export function normalisePolicyGateResult(
-	result: PolicyGateResult,
-): GateResult {
-	const gate = "policy-gate";
-	const timestamp = new Date().toISOString();
-
-	// ok:false — internal error before gate logic ran
-	if (!result.ok) {
-		const finding: GateFinding = {
-			id: "policy-gate.result.internal",
-			severity: "error",
-			gate,
-			message: result.error.message,
-			baseline: false,
-			fix: { suppressible: false },
-		};
-		return buildGateResult({
-			gate,
-			timestamp,
-			status: "fail",
-			findings: [finding],
-			decision: {
-				reason: result.error.message,
-				actionNow: ["Investigate policy-gate internal error and rerun."],
-				evidenceRef: ["error:policy-gate.result.internal"],
-			},
-		});
-	}
-
-	// ok:true, passed — clean run
-	if (result.output.passed) {
-		return buildGateResult({
-			gate,
-			timestamp,
-			status: "pass",
-			findings: [],
-			meta: {
-				tier: result.output.tier,
-				verdict: result.output.verdict,
-				action: result.output.action,
-			},
-			decision: {
-				reason: `Policy gate passed for tier '${result.output.tier}'.`,
-				evidenceRef: [`tier:${result.output.tier}`],
-			},
-		});
-	}
-
-	// ok:true, !passed — synthesise one finding per violating file
-	// Guard: never emit empty findings when status=fail (spec §7 edge cases)
-	const violatingFiles = result.output.violatingFiles;
-	const findings: GateFinding[] =
-		violatingFiles.length > 0
-			? violatingFiles.map(
-					(file, index): GateFinding => ({
-						id: `policy-gate.result.error.${index}`,
-						severity: "error",
-						gate,
-						message: `File '${file}' exceeds policy tier (actual: ${result.output.tier}, max: ${result.output.maxAllowed ?? "unset"})`,
-						...(file ? { path: file } : {}),
-						baseline: false,
-						fix: { suppressible: false },
-					}),
-				)
-			: [
-					{
-						id: "policy-gate.result.error.unknown",
-						severity: "error" as const,
-						gate,
-						message: "Gate reported failure without file details",
-						baseline: false,
-						fix: { suppressible: false },
-					},
-				];
-
-	return buildGateResult({
-		gate,
-		timestamp,
-		status: "fail",
-		findings,
-		meta: {
-			tier: result.output.tier,
-			maxAllowed: result.output.maxAllowed,
-			verdict: result.output.verdict,
-			action: result.output.action,
-		},
-		decision: {
-			reason: `Tier '${result.output.tier}' exceeds allowed '${result.output.maxAllowed ?? "unset"}'.`,
-			evidenceRef: uniqueStrings(
-				(result.output.violatingFiles ?? []).map((file) => `path:${file}`),
-			),
 		},
 	});
 }
