@@ -20,7 +20,7 @@ export function requiredChecks(
 
 /** Detect whether a check contributes test or quality evidence to closeout claims. */
 export function isTestCheck(check: PrCloseoutCheckInput): boolean {
-	return /\b(?:test|tests|vitest|jest|playwright|check|quality|pipeline)\b/iu.test(
+	return /\b(?:test|tests|vitest|jest|playwright|unit|e2e|integration|ci|pipeline|smoke|coverage)\b/iu.test(
 		check.name,
 	);
 }

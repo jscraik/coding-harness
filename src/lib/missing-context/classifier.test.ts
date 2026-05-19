@@ -74,6 +74,29 @@ describe("classifyMissingContext", () => {
 		expect(classifyMissingContext(input)).toMatchObject(expected);
 	});
 
+	it.each([
+		[
+			"unknown surface value",
+			{ surface: "unknown_surface", problem: "missing", claim: "ci_green" },
+			{ class: "unclassified", destination: "validator" },
+		],
+		[
+			"unknown problem value",
+			{ surface: "checks", problem: "unknown_problem", claim: "ci_green" },
+			{ class: "unclassified", destination: "validator" },
+		],
+		[
+			"unknown claim value",
+			{ surface: "checks", problem: "missing", claim: "unknown_claim" },
+			{ class: "unclassified", destination: "validator" },
+		],
+	] as const)(
+		"handles invalid input: %s",
+		(_name, input, expected) => {
+			expect(classifyMissingContext(input as any)).toMatchObject(expected);
+		},
+	);
+
 	it("keeps the Effect API behind the same module boundary", () => {
 		const result = Effect.runSync(
 			classifyMissingContextEffect({

@@ -121,7 +121,7 @@ function finding(id, file, message, remediation) {
 function interfaceBody(source, name) {
 	const match = source.match(
 		new RegExp(
-			`export\\s+interface\\s+${name}\\s*\\{(?<body>[\\s\\S]*?)\\n\\}`,
+			`export\\s+interface\\s+${name}\\s*\\{(?<body>[\\s\\S]*?)\\n\\s*\\}`,
 		),
 	);
 	return match?.groups?.body ?? "";

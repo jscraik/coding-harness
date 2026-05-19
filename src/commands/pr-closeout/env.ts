@@ -58,7 +58,7 @@ export function loadPrCloseoutEnvFile(
 		if (stat.isFIFO()) {
 			return {
 				env,
-				tool: buildEnvTool(resolvedPath, "usable", null),
+				tool: buildEnvTool(resolvedPath, "blocked", "fifo-path-no-content"),
 			};
 		}
 		if (!stat.isFile()) {

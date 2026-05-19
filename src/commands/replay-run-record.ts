@@ -75,6 +75,7 @@ function replayFailureClass(params: ReplayRunRecordParams): string {
 function replayRecoveryOwner(failureClass: string): ReplayRecoveryOwner {
 	if (
 		failureClass === "validation_error" ||
+		failureClass === "validation_failed" ||
 		failureClass === "trace_not_found" ||
 		failureClass === "invalid_trace_directory"
 	) {
@@ -93,7 +94,7 @@ function replayNextAction(failureClass: string): string {
 	if (failureClass === "invalid_trace_directory") {
 		return "Provide a trace directory inside the current repository before retrying.";
 	}
-	if (failureClass === "validation_error") {
+	if (failureClass === "validation_error" || failureClass === "validation_failed") {
 		return "Fix replay command arguments before retrying.";
 	}
 	return "Inspect the replay failure, trace artifact, and run record before retrying.";
