@@ -173,6 +173,10 @@ function checkRunsForHead(headSha = "abc123"): string {
 	]);
 }
 
+function checkRunsPage(runs: Array<Record<string, unknown>>): string {
+	return JSON.stringify(runs);
+}
+
 function prChecksForHead(): string {
 	return JSON.stringify([
 		{
@@ -709,6 +713,76 @@ describe("runPrCloseoutCLI", () => {
 				}),
 			]),
 		);
+	});
+
+	it("paginates current-head check proof", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const checkRunPages: string[] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				const path = String(args[1]);
+				checkRunPages.push(path);
+				if (path.includes("&page=1")) {
+					return checkRunsPage(
+						Array.from({ length: 100 }, (_, index) => ({
+							name: `other-check-${index}`,
+							head_sha: "abc123",
+							html_url: `https://ci.example/other-${index}`,
+						})),
+					);
+				}
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+		expect(checkRunPages).toEqual([
+			expect.stringContaining("page=1"),
+			expect.stringContaining("page=2"),
+		]);
 	});
 
 	it("does not count PR template placeholders as traceability evidence", async () => {

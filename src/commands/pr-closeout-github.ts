@@ -61,6 +61,15 @@ function normalizeGhCheckRuns(value: unknown): Map<string, string> {
 	return proof;
 }
 
+function checkRunCount(value: unknown): number {
+	if (Array.isArray(value)) return value.length;
+	const checkRuns =
+		value && typeof value === "object"
+			? (value as Record<string, unknown>).check_runs
+			: null;
+	return Array.isArray(checkRuns) ? checkRuns.length : 0;
+}
+
 /** Attach observed current-head proof from GitHub's check-runs endpoint. */
 export function applyCheckHeadProof(
 	checks: readonly PrCloseoutCheckInput[],
@@ -122,17 +131,26 @@ export function fetchCheckHeadProof(
 	if (!headSha) return new Map();
 	try {
 		const repo = fetchRepoInfo(options, env, runner);
-		const raw = runner(
-			"gh",
-			[
-				"api",
-				`repos/${repo.owner}/${repo.repo}/commits/${headSha}/check-runs`,
-				"--jq",
-				".check_runs",
-			],
-			{ cwd: options.repoRoot, env },
-		);
-		return normalizeGhCheckRuns(JSON.parse(raw) as unknown);
+		const proof = new Map<string, string>();
+		const perPage = 100;
+		for (let page = 1; ; page += 1) {
+			const raw = runner(
+				"gh",
+				[
+					"api",
+					`repos/${repo.owner}/${repo.repo}/commits/${headSha}/check-runs?per_page=${perPage}&page=${page}`,
+					"--jq",
+					".check_runs",
+				],
+				{ cwd: options.repoRoot, env },
+			);
+			const parsed = JSON.parse(raw) as unknown;
+			for (const [key, value] of normalizeGhCheckRuns(parsed)) {
+				proof.set(key, value);
+			}
+			if (checkRunCount(parsed) < perPage) break;
+		}
+		return proof;
 	} catch (error) {
 		tools.push({
 			name: "github_cli",
