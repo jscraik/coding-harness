@@ -100,10 +100,19 @@ export function loadInput(path: string): PrCloseoutInput {
  * @param repoRoot - Filesystem path of the repository root used to resolve `path`
  * @returns The normalized `HePhaseExit` artifact
  */
+import { relative, resolve } from "node:path";
+
 export function loadCloseoutGates(path: string, repoRoot: string): HePhaseExit {
 	const resolvedPath = resolve(repoRoot, path);
+	const rel = relative(repoRoot, resolvedPath).split(/[/\\]+/).join("/");
+	if (rel.length === 0 || rel.startsWith("..")) {
+		throw new Error(
+			`${path} must resolve to a file inside the repository root`,
+		);
+	}
 	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
 	return normalizeCloseoutGatesArtifact(parsed, path);
+}
 }
 
 /**
