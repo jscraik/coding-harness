@@ -1,5 +1,5 @@
 import { realpathSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, normalize, relative, resolve } from "node:path";
 
 import type { FrontMatter } from "./harness-artifact-routine.js";
 import type { ArtifactHandlingFinding } from "./harness-artifact-routine.js";
@@ -106,10 +106,13 @@ export function normalizeRepoPath(repoRoot: string, path: string): string {
  * @returns `true` if the path is non-empty, does not start with `..`, and is not absolute; `false` otherwise.
  */
 export function isPathInsideRepo(repoRelativePath: string): boolean {
+	const normalizedPath = normalize(repoRelativePath).replace(/\\/g, "/");
 	return (
-		repoRelativePath.length > 0 &&
-		!repoRelativePath.startsWith("..") &&
-		!isAbsolute(repoRelativePath)
+		normalizedPath.length > 0 &&
+		normalizedPath !== "." &&
+		normalizedPath !== ".." &&
+		!normalizedPath.startsWith("../") &&
+		!isAbsolute(normalizedPath)
 	);
 }
 
@@ -203,7 +206,13 @@ export function validateHistoricalRows(
  * @returns `true` if `value` is `undefined`, empty after trimming, or exactly `"n.a."`, `false` otherwise
  */
 export function isBlank(value: string | undefined): boolean {
-	return value === undefined || value.trim().length === 0 || value === "n.a.";
+	const normalized = value?.trim().toLowerCase().replace(/\s+/g, "");
+	return (
+		normalized === undefined ||
+		normalized.length === 0 ||
+		normalized === "n.a." ||
+		normalized === "n/a"
+	);
 }
 
 /**

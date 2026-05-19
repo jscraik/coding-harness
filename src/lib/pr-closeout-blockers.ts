@@ -73,6 +73,7 @@ export function collectWorktreeBlockers(
 			classification: "introduced",
 			reason: "Branch has merge conflicts.",
 			fixableByCodex: true,
+			ref: "branch.hasConflicts",
 		});
 	}
 	if (input.branch?.behindBase === true) {
@@ -95,10 +96,16 @@ export function collectPullRequestBlockers(
 	pr: PrCloseoutPullRequestInput,
 	blockers: PrCloseoutBlocker[],
 ): void {
-	if (
-		normalizeStatus(pr.state) !== "" &&
-		normalizeStatus(pr.state) !== "OPEN"
-	) {
+	const normalizedState = normalizeStatus(pr.state);
+	if (normalizedState === "") {
+		pushBlocker(blockers, {
+			surface: "pr",
+			classification: "unknown",
+			reason:
+				"Pull request state is missing; closeout cannot prove the PR is open.",
+			fixableByCodex: false,
+		});
+	} else if (normalizedState !== "OPEN") {
 		pushBlocker(blockers, {
 			surface: "pr",
 			classification: "needs_jamie_decision",
@@ -120,6 +127,7 @@ export function collectPullRequestBlockers(
 			classification: "introduced",
 			reason: "Pull request merge state reports conflicts.",
 			fixableByCodex: true,
+			ref: "mergeStateStatus:DIRTY",
 		});
 	}
 	if (!hasLinearReference(pr.body)) {

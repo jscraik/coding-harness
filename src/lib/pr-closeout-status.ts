@@ -117,7 +117,8 @@ export function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 		blockers.some(
 			(blocker) =>
 				(blocker.surface === "worktree" || blocker.surface === "branch") &&
-				blocker.reason.toLowerCase().includes("conflict"),
+				(blocker.ref === "branch.hasConflicts" ||
+					blocker.ref === "mergeStateStatus:DIRTY"),
 		)
 	) {
 		return {

@@ -329,17 +329,39 @@ function fetchReviewThreads(
 ): PrCloseoutReviewThreadsInput {
 	const query =
 		"query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100){pageInfo{hasNextPage}nodes{isResolved}}}}}";
+	const ref = "command:gh api graphql reviewThreads(first:100)";
+	let repoRaw: string;
 	try {
-		const repo = normalizeGhRepo(
-			parseJsonObject(
-				runner("gh", ["repo", "view", "--json", "owner,name"], {
-					cwd: options.repoRoot,
-					env,
-				}),
-				"gh repo view",
-			),
-		);
-		const raw = runner(
+		repoRaw = runner("gh", ["repo", "view", "--json", "owner,name"], {
+			cwd: options.repoRoot,
+			env,
+		});
+	} catch (error) {
+		tools.push({
+			name: "github_cli",
+			available: false,
+			ref: "command:gh repo view --json owner,name",
+			status: "blocked",
+			failureClass: `pr_review_threads_unavailable:${sanitizeError(error)}`,
+		});
+		return { unresolved: null, needsHuman: null, autofixable: null };
+	}
+	let repo: { owner: string; repo: string };
+	try {
+		repo = normalizeGhRepo(parseJsonObject(repoRaw, "gh repo view"));
+	} catch (error) {
+		tools.push({
+			name: "github_cli",
+			available: true,
+			ref: "command:gh repo view --json owner,name",
+			status: "blocked",
+			failureClass: `pr_review_threads_unreadable:${sanitizeError(error)}`,
+		});
+		return { unresolved: null, needsHuman: null, autofixable: null };
+	}
+	let raw: string;
+	try {
+		raw = runner(
 			"gh",
 			[
 				"api",
@@ -355,6 +377,17 @@ function fetchReviewThreads(
 			],
 			{ cwd: options.repoRoot, env },
 		);
+	} catch (error) {
+		tools.push({
+			name: "github_cli",
+			available: false,
+			ref,
+			status: "blocked",
+			failureClass: `pr_review_threads_unavailable:${sanitizeError(error)}`,
+		});
+		return { unresolved: null, needsHuman: null, autofixable: null };
+	}
+	try {
 		const reviewThreads = normalizeReviewThreadsGraphql(
 			parseJsonObject(raw, "gh api graphql reviewThreads"),
 		);
@@ -362,7 +395,7 @@ function fetchReviewThreads(
 			tools.push({
 				name: "github_cli",
 				available: true,
-				ref: "command:gh api graphql reviewThreads(first:100)",
+				ref,
 				status: "blocked",
 				failureClass: "review_threads_paginated",
 			});
@@ -372,7 +405,7 @@ function fetchReviewThreads(
 		tools.push({
 			name: "github_cli",
 			available: true,
-			ref: "command:gh api graphql reviewThreads(first:100)",
+			ref,
 			status: "blocked",
 			failureClass: `pr_review_threads_unreadable:${sanitizeError(error)}`,
 		});
@@ -438,8 +471,10 @@ function fetchPullRequest(
 	runner: CommandRunner,
 	tools: PrCloseoutToolInput[],
 ): PrCloseoutPullRequestInput {
+	const ref = `command:gh pr view ${String(prNumber)} --json number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body`;
+	let prRaw: string;
 	try {
-		const prRaw = runner(
+		prRaw = runner(
 			"gh",
 			[
 				"pr",
@@ -450,12 +485,29 @@ function fetchPullRequest(
 			],
 			{ cwd: options.repoRoot, env },
 		);
-		return normalizeGhPr(parseJsonObject(prRaw, "gh pr view"), prNumber);
 	} catch (error) {
 		tools.push({
 			name: "github_cli",
 			available: false,
-			ref: `command:gh pr view ${String(prNumber)} --json number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body`,
+			ref,
+			status: "blocked",
+			failureClass: `pr_view_unavailable:${sanitizeError(error)}`,
+		});
+		return {
+			number: prNumber,
+			state: null,
+			isDraft: null,
+			mergeStateStatus: null,
+			body: null,
+		};
+	}
+	try {
+		return normalizeGhPr(parseJsonObject(prRaw, "gh pr view"), prNumber);
+	} catch (error) {
+		tools.push({
+			name: "github_cli",
+			available: true,
+			ref,
 			status: "blocked",
 			failureClass: `pr_view_unreadable:${sanitizeError(error)}`,
 		});
@@ -473,9 +525,8 @@ function fetchPullRequest(
  * Fetches PR checks via the GitHub CLI and returns them normalized.
  *
  * Attempts to run `gh pr checks <prNumber> --json name,state,link` in the repository
- * specified by `options.repoRoot`. On failure, appends a `github_cli` tool entry to
- * `tools` with `status: "blocked"` and `failureClass` set to `pr_checks_unreadable:<sanitized>`,
- * then returns an empty array.
+ * specified by `options.repoRoot`. Command execution failures are classified as unavailable;
+ * malformed JSON output is classified as unreadable.
  *
  * @param options - CLI options; `repoRoot` is used as the working directory for the command
  * @param prNumber - Pull request number to query
@@ -491,18 +542,31 @@ function fetchChecks(
 	runner: CommandRunner,
 	tools: PrCloseoutToolInput[],
 ): PrCloseoutCheckInput[] {
+	const ref = `command:gh pr checks ${String(prNumber)} --json name,state,link`;
+	let checksRaw: string;
 	try {
-		const checksRaw = runner(
+		checksRaw = runner(
 			"gh",
 			["pr", "checks", String(prNumber), "--json", "name,state,link"],
 			{ cwd: options.repoRoot, env },
 		);
+	} catch (error) {
+		tools.push({
+			name: "github_cli",
+			available: false,
+			ref,
+			status: "blocked",
+			failureClass: `pr_checks_unavailable:${sanitizeError(error)}`,
+		});
+		return [];
+	}
+	try {
 		return normalizeGhChecks(JSON.parse(checksRaw) as unknown);
 	} catch (error) {
 		tools.push({
 			name: "github_cli",
 			available: true,
-			ref: `command:gh pr checks ${String(prNumber)} --json name,state,link`,
+			ref,
 			status: "blocked",
 			failureClass: `pr_checks_unreadable:${sanitizeError(error)}`,
 		});

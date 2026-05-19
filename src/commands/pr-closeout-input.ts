@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 
 import {
 	HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION,
@@ -80,6 +80,12 @@ export function parseInput(value: string, source: string): PrCloseoutInput {
 			`${source} phaseExit`,
 		);
 	}
+	assertOptionalObject(parsed.branch, `${source} branch`);
+	assertOptionalArray(parsed.checks, `${source} checks`);
+	assertOptionalObject(parsed.reviewThreads, `${source} reviewThreads`);
+	assertOptionalObject(parsed.traceability, `${source} traceability`);
+	assertOptionalArray(parsed.dirtyPaths, `${source} dirtyPaths`);
+	assertOptionalArray(parsed.tools, `${source} tools`);
 	return parsed as unknown as PrCloseoutInput;
 }
 
@@ -100,11 +106,11 @@ export function loadInput(path: string): PrCloseoutInput {
  * @param repoRoot - Filesystem path of the repository root used to resolve `path`
  * @returns The normalized `HePhaseExit` artifact
  */
-import { relative, resolve } from "node:path";
-
 export function loadCloseoutGates(path: string, repoRoot: string): HePhaseExit {
 	const resolvedPath = resolve(repoRoot, path);
-	const rel = relative(repoRoot, resolvedPath).split(/[/\\]+/).join("/");
+	const rel = relative(repoRoot, resolvedPath)
+		.split(/[/\\]+/)
+		.join("/");
 	if (rel.length === 0 || rel.startsWith("..")) {
 		throw new Error(
 			`${path} must resolve to a file inside the repository root`,
@@ -113,6 +119,19 @@ export function loadCloseoutGates(path: string, repoRoot: string): HePhaseExit {
 	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
 	return normalizeCloseoutGatesArtifact(parsed, path);
 }
+
+function assertOptionalObject(value: unknown, source: string): void {
+	if (value === undefined) return;
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new Error(`${source} must be an object when provided`);
+	}
+}
+
+function assertOptionalArray(value: unknown, source: string): void {
+	if (value === undefined) return;
+	if (!Array.isArray(value)) {
+		throw new Error(`${source} must be an array when provided`);
+	}
 }
 
 /**

@@ -1,10 +1,11 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { type Dirent, readdirSync, readFileSync, statSync } from "node:fs";
 import {
 	basename,
 	dirname,
 	extname,
 	isAbsolute,
 	join,
+	normalize,
 	relative,
 	resolve,
 } from "node:path";
@@ -124,7 +125,7 @@ export function listRepoFiles(repoRoot: string): RepoFileScan {
 	while (stack.length > 0 && files.length < MAX_SCANNED_FILES) {
 		const current = stack.pop();
 		if (!current) continue;
-		let entries;
+		let entries: Dirent[];
 		try {
 			entries = readdirSync(current, { withFileTypes: true });
 		} catch {
@@ -373,17 +374,6 @@ function escapeRegex(value: string): string {
  * @param repoRelativePath - The path to evaluate, expressed relative to the repository root
  * @returns `true` if `repoRelativePath` is non-empty, does not start with `..`, and is not an absolute path; `false` otherwise
  */
-import {
-	basename,
-	dirname,
-	extname,
-	isAbsolute,
-	join,
-	normalize,
-	relative,
-	resolve,
-} from "node:path";
-
 export function isPathInsideRepo(repoRelativePath: string): boolean {
 	const normalized = normalize(repoRelativePath).replace(/\\/g, "/");
 	return (
@@ -393,5 +383,4 @@ export function isPathInsideRepo(repoRelativePath: string): boolean {
 		!normalized.startsWith("../") &&
 		!isAbsolute(normalized)
 	);
-}
 }

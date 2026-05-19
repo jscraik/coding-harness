@@ -14,6 +14,14 @@ export type CommandRunner = (
 ) => string;
 
 const DEFAULT_ENV_FILE = resolve(homedir(), ".codex/.env");
+const CLOSEOUT_ENV_KEYS = new Set([
+	"GH_TOKEN",
+	"GITHUB_TOKEN",
+	"CIRCLECI_TOKEN",
+	"CIRCLE_TOKEN",
+	"CODERABBIT_API_KEY",
+	"SNYK_TOKEN",
+]);
 
 /**
  * Create a PrCloseoutToolInput describing a Codex environment file at the given path.
@@ -107,7 +115,7 @@ export function loadEnvFile(envFilePath: string | undefined): {
 				.slice(eqIndex + 1)
 				.trim()
 				.replace(/^["']|["']$/g, "");
-			if (/^[A-Z_][A-Z0-9_]*$/u.test(key) && value.length > 0) {
+			if (CLOSEOUT_ENV_KEYS.has(key) && value.length > 0) {
 				env[key] = value;
 			}
 		}
