@@ -805,9 +805,29 @@
       <section>
         <h2>Next Safe Action</h2>
         <p>
+          PR closeout loop update: live GitHub checks are green, but review
+          thread inspection found a remaining P1 closeout-truth issue. The fix
+          now requires a <code>gh pr checks</code> row URL to match GitHub's
+          commit check-run URL before <code>pr-closeout</code> attaches
+          current-head proof. Same-name checks with different URLs remain
+          unproven and keep closeout out of <code>ready</code>.
+        </p>
+        <p>
+          Validation for this follow-up passed:
+          <code>pnpm vitest run src/commands/pr-closeout.test.ts src/lib/pr-closeout.test.ts</code>
+          passed 39 tests;
+          <code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/recovery/contract.test.ts src/lib/recovery/generated-artifact-parent.test.ts src/lib/replay/eval-runner.test.ts src/lib/architecture/pr-closeout-truth-contract.test.ts</code>
+          passed 57 tests;
+          <code>node scripts/check-pr-closeout-truth-contract.cjs --json</code>
+          passed; <code>bash scripts/validate-codestyle.sh --fast</code>
+          passed with the known non-blocking
+          <code>docs/QUALITY_SCORE.md</code> stale warning.
+        </p>
+        <p>
           Goal board and native goal are ready for closeout. Next safe action:
-          review the staged diff and decide whether to split this into PRs or
-          keep it as the completed roadmap implementation batch.
+          stage, commit, push the URL-matched check-proof fix, rerun live
+          <code>pr-closeout</code>, then merge once review threads and checks
+          are current.
         </p>
         <p>
           Latest validation: <code>pnpm check</code> passed with network access

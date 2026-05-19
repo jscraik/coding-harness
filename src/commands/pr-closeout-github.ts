@@ -38,6 +38,10 @@ export function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
 		}));
 }
 
+function checkProofKey(name: string, url: string): string {
+	return `${name}\0${url}`;
+}
+
 function normalizeGhCheckRuns(value: unknown): Map<string, string> {
 	const checkRuns = Array.isArray(value)
 		? value
@@ -50,8 +54,9 @@ function normalizeGhCheckRuns(value: unknown): Map<string, string> {
 		if (!item || typeof item !== "object" || Array.isArray(item)) continue;
 		const record = item as Record<string, unknown>;
 		const name = asString(record.name);
+		const url = asString(record.html_url) ?? asString(record.details_url);
 		const headSha = asString(record.head_sha) ?? asString(record.headSha);
-		if (name && headSha) proof.set(name, headSha);
+		if (name && url && headSha) proof.set(checkProofKey(name, url), headSha);
 	}
 	return proof;
 }
@@ -63,7 +68,10 @@ export function applyCheckHeadProof(
 ): PrCloseoutCheckInput[] {
 	return checks.map((check) => ({
 		...check,
-		headSha: check.headSha ?? proof.get(check.name) ?? null,
+		headSha:
+			check.headSha ??
+			(check.url ? proof.get(checkProofKey(check.name, check.url)) : null) ??
+			null,
 	}));
 }
 
