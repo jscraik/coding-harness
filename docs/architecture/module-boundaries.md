@@ -82,8 +82,10 @@ Output normalisation is a public facade plus focused gate adapter seams:
   - Public export facade for gate normalisation helpers and canonical result
     types.
 - `src/lib/output/normalise-core-v2.ts`
-  - Shared adapter seam for drift, docs, focused adapter re-exports, and
+  - Shared adapter seam for drift, focused adapter re-exports, and
     review/preflight re-exports.
+- `src/lib/output/normalise-docs-gate.ts`
+  - Docs findings, metadata, and `GateResult` projection.
 - `src/lib/output/normalise-plan-gate.ts`
   - Plan validation findings, recovery hints, and `GateResult` projection.
 - `src/lib/output/normalise-policy-gate.ts`
@@ -101,7 +103,8 @@ Output normalisation is a public facade plus focused gate adapter seams:
 The facade should stay tiny, and gate-specific classification should not grow
 inside `normalise-core-v2.ts`. Agents can adjust Linear gate retry/failure
 classification in `normalise-linear-gate.ts`, policy tier projection in
-`normalise-policy-gate.ts`, plan validation projection in
+`normalise-policy-gate.ts`, docs metadata projection in
+`normalise-docs-gate.ts`, plan validation projection in
 `normalise-plan-gate.ts`, PR template projection in
 `normalise-pr-template-gate.ts`, or HE phase-exit projection in
 `normalise-he-phase-exit.ts`. Terminal rendering changes stay in
@@ -351,8 +354,11 @@ Threshold policy:
 - `src/lib/output/normalise.ts` must remain a public output normalisation facade
   (`<= 10` lines).
 - `src/lib/output/normalise-core-v2.ts` must remain a shared gate adapter seam
-  (`<= 240` lines); gate-specific failure classification moves into focused
+  (`<= 150` lines); gate-specific failure classification moves into focused
   normalisation modules.
+- `src/lib/output/normalise-docs-gate.ts` must remain a docs gate normalisation
+  seam (`<= 80` lines) for docs findings, metadata, and canonical `GateResult`
+  projection.
 - `src/lib/output/normalise-plan-gate.ts` must remain a plan gate normalisation
   seam (`<= 80` lines) for plan validation findings, recovery hints, and
   canonical `GateResult` projection.

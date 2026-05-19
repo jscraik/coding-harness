@@ -25,9 +25,15 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/output/normalise-core-v2.ts",
-		maxLines: 240,
+		maxLines: 150,
 		reason:
 			"Output normalise core must stay a shared adapter seam; gate-specific failure classification moves behind focused modules.",
+	},
+	{
+		path: "src/lib/output/normalise-docs-gate.ts",
+		maxLines: 80,
+		reason:
+			"Docs gate normalisation must stay focused on docs findings, metadata, and GateResult projection.",
 	},
 	{
 		path: "src/lib/output/normalise-he-phase-exit.ts",
@@ -394,6 +400,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
 	"src/lib/output/normalise-core-v2.ts",
+	"src/lib/output/normalise-docs-gate.ts",
 	"src/lib/output/normalise-he-phase-exit.ts",
 	"src/lib/output/normalise-linear-gate.ts",
 	"src/lib/output/normalise-plan-gate.ts",
@@ -509,6 +516,7 @@ const COMMAND_CAPABILITY_SUBMODULES = [
 	"./command-capability-rules.js",
 ] as const;
 const OUTPUT_NORMALISE_SUBMODULES = [
+	"./normalise-docs-gate.js",
 	"./normalise-he-phase-exit.js",
 	"./normalise-linear-gate.js",
 	"./normalise-plan-gate.js",

@@ -425,8 +425,15 @@
               <div class="module doctor">
                 <strong>normalise-core-v2.ts</strong>
                 <span>
-                  Shared adapter seam for drift, docs, focused adapter
+                  Shared adapter seam for drift, focused adapter
                   re-exports, and review/preflight exports.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>normalise-docs-gate.ts</strong>
+                <span>
+                  Docs findings, metadata, and GateResult projection live behind
+                  a focused adapter seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -474,8 +481,9 @@
               <div class="module guard">
                 <strong>module-boundaries.test.ts</strong>
                 <span>
-                  Ratchets the facade, shared core, plan, policy, PR template,
-                  and Linear adapters while verifying focused seams remain wired.
+                  Ratchets the facade, shared core, docs, plan, policy,
+                  PR template, and Linear adapters while verifying focused seams
+                  remain wired.
                 </span>
               </div>
             </div>
@@ -978,7 +986,8 @@
               behind normalise-renderer.ts. Policy gate projection now lives
               behind normalise-policy-gate.ts. PR template projection now lives
               behind normalise-pr-template-gate.ts. Plan gate projection now
-              lives behind normalise-plan-gate.ts.
+              lives behind normalise-plan-gate.ts. Docs gate projection now lives
+              behind normalise-docs-gate.ts.
             </p>
           </article>
           <article class="note">

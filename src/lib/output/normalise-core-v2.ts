@@ -7,7 +7,6 @@
  * @see docs/plans/2026-03-24-feature-structured-output-auto-fix-plan.md
  */
 
-import type { DocsFinding, DocsGateResult } from "../../commands/docs-gate.js";
 import type {
 	DriftFinding,
 	DriftGateResult,
@@ -21,6 +20,7 @@ export {
 	classifyLinearGateFailure,
 	normaliseLinearGateResult,
 } from "./normalise-linear-gate.js";
+export { normaliseDocsGateResult } from "./normalise-docs-gate.js";
 export { normaliseHePhaseExitResult } from "./normalise-he-phase-exit.js";
 export { normalisePlanGateResult } from "./normalise-plan-gate.js";
 export { normalisePrTemplateGateResult } from "./normalise-pr-template-gate.js";
@@ -114,71 +114,6 @@ export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
 					decision: { evidenceRef },
 				}
 			: {}),
-	});
-}
-
-// ─── P1: docs-gate adapter ────────────────────────────────────────────────────
-
-/** Map a DocsFinding to canonical GateFinding. Pure. */
-function adaptDocsFinding(f: DocsFinding): GateFinding {
-	const id = `docs-gate.${f.surface}.${f.rule_id}`;
-
-	// DocsSeverity vocab already matches canonical: error | warning | info
-	const severity = f.severity as GateFinding["severity"];
-
-	return {
-		id,
-		severity,
-		gate: "docs-gate",
-		message: f.message,
-		...(f.path !== undefined ? { path: f.path } : {}),
-		// docs-gate has no baseline concept
-		baseline: false,
-		// docs-gate findings have no fix.command — no automatable remediation
-		fix: { suppressible: false },
-	};
-}
-
-/**
- * Normalise a DocsGateResult to canonical GateResult.
- * Status mapping:
- *   report.outcome === "ok" → "pass"
- *   report.status  === "partial" → "warn"
- *   otherwise → "fail"
- */
-export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
-	const gate = "docs-gate";
-	const timestamp = result.report.generated_at ?? new Date().toISOString();
-
-	const findings = result.report.findings.map(adaptDocsFinding);
-
-	let status: GateResult["status"];
-	if (result.report.outcome === "ok") {
-		status = "pass";
-	} else if (result.report.status === "partial") {
-		status = "warn";
-	} else {
-		status = "fail";
-	}
-
-	return buildGateResult({
-		gate,
-		timestamp,
-		status,
-		findings,
-		meta: {
-			version: "v1-legacy",
-			mode: result.report.mode,
-			outcome: result.report.outcome,
-			reportStatus: result.report.status,
-			error_class: result.report.error_class,
-			execution_context: result.report.execution_context,
-			changed_files: result.report.changed_files,
-			categories: result.report.categories,
-			repo_root: result.report.repo_root,
-			base_ref: result.report.base_ref,
-			summary: result.report.summary,
-		},
 	});
 }
 
