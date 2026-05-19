@@ -54,7 +54,6 @@ import {
 import { runPlanGateCLI } from "../../../commands/plan-gate.js";
 import { runPolicyGateCLI } from "../../../commands/policy-gate.js";
 import { runPrCloseoutCLI } from "../../../commands/pr-closeout.js";
-import { runPrTemplateGateCLI } from "../../../commands/pr-template-gate.js";
 import { runPreflightGateCLI } from "../../../commands/preflight-gate.js";
 import { runPresetCLI } from "../../../commands/preset.js";
 import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
@@ -106,6 +105,7 @@ import {
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
+import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import type { CommandSpec } from "./types.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
@@ -129,28 +129,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "PR Closeout Error",
 		execute: (args) => runPrCloseoutCLI(args),
 	},
-	{
-		name: "pr-template-gate",
-		aliases: ["pr-template-check"],
-		summary:
-			"Validate PR template completion and placeholder replacement before merge",
-		errorLabel: "PR Template Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const prBodyIndex = args.indexOf("--pr-body");
-			const prBodyFileIndex = args.indexOf("--pr-body-file");
-
-			const options: Parameters<typeof runPrTemplateGateCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			const prBodyArg = getFlagValue(args, prBodyIndex);
-			if (prBodyArg !== undefined) options.prBody = prBodyArg;
-			const prBodyFileArg = getFlagValue(args, prBodyFileIndex);
-			if (prBodyFileArg !== undefined) options.prBodyFile = prBodyFileArg;
-
-			return runPrTemplateGateCLI(options);
-		},
-	},
+	createPrTemplateGateCommandSpec(),
 	{
 		name: "rule-lifecycle-gate",
 		summary:

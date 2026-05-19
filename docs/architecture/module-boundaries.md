@@ -83,13 +83,17 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Linear workflow action parsing and delegation to Linear command runners.
 - `src/lib/cli/registry/linear-gate-command-spec.ts`
   - Linear gate option projection and delegation to the Linear gate command.
+- `src/lib/cli/registry/pr-template-gate-command-spec.ts`
+  - PR template gate option projection and delegation to the PR template gate
+    command.
 
 The command registry should stay a catalog and dispatch surface. Agents can
 adjust Linear claim, handoff, close, prepare, sync, and triage parsing in
 `linear-command-runner.ts` while `linear-command-spec.ts` remains the registry
 seam. Agents can adjust Linear gate option projection in
-`linear-gate-command-spec.ts`, and `command-specs-core.ts` remains an assembler
-for registered command specs.
+`linear-gate-command-spec.ts` and PR template gate option projection in
+`pr-template-gate-command-spec.ts`, while `command-specs-core.ts` remains an
+assembler for registered command specs.
 
 ## Output Normalisation Boundaries
 
@@ -372,7 +376,7 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 2310` lines); workflow-specific parsing belongs in focused command spec
+  (`<= 2286` lines); workflow-specific parsing belongs in focused command spec
   seams.
 - `src/lib/cli/registry/linear-command-spec.ts` must stay focused on Linear
   command spec metadata (`<= 30` lines).
@@ -380,6 +384,8 @@ Threshold policy:
   workflow parsing and delegation (`<= 230` lines).
 - `src/lib/cli/registry/linear-gate-command-spec.ts` must stay focused on Linear
   gate option projection and delegation (`<= 70` lines).
+- `src/lib/cli/registry/pr-template-gate-command-spec.ts` must stay focused on
+  PR template gate option projection and delegation (`<= 50` lines).
 - `src/lib/output/normalise.ts` must remain a public output normalisation facade
   (`<= 10` lines).
 - `src/lib/output/normalise-core-v2.ts` must remain a compatibility export surface
