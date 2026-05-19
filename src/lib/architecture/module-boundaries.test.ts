@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 2_350,
+		maxLines: 2_310,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/linear-gate-command-spec.ts",
+		maxLines: 70,
+		reason:
+			"Linear gate command spec must stay focused on Linear gate option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/linear-command-spec.ts",
@@ -421,6 +427,7 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
+	"src/lib/cli/registry/linear-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
 	"src/lib/cli/registry/linear-command-spec.ts",
 	"src/lib/init/index.ts",
@@ -478,7 +485,10 @@ const DOCTOR_CI_SUBMODULES = ["./doctor-ci-check-alignment.js"] as const;
 const DOCTOR_CONFIG_SUBMODULES = [
 	"./doctor-north-star-contract-checks.js",
 ] as const;
-const CLI_REGISTRY_SPEC_SUBMODULES = ["./linear-command-spec.js"] as const;
+const CLI_REGISTRY_SPEC_SUBMODULES = [
+	"./linear-command-spec.js",
+	"./linear-gate-command-spec.js",
+] as const;
 const NEXT_COMMAND_SUBMODULES = [
 	"./next-args.js",
 	"./next-decisions.js",

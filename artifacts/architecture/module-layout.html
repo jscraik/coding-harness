@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files. Linear command workflow parsing now lives behind its own command-spec seam.
+            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files. Linear workflow and Linear gate parsing now live behind focused command-spec seams.
           </div>
         </section>
 
@@ -409,6 +409,13 @@
                 <span>
                   Linear claim, handoff, close, prepare, sync, and triage
                   parsing delegates through one focused runner seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>linear-gate-command-spec.ts</strong>
+                <span>
+                  Linear gate option projection delegates through a focused
+                  command-spec seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -1017,7 +1024,9 @@
               behind normalise-docs-gate.ts. Drift gate projection now lives
               behind normalise-drift-gate.ts. Linear command workflow parsing
               now lives behind linear-command-runner.ts, with
-              linear-command-spec.ts kept as the small registry seam.
+              linear-command-spec.ts kept as the small registry seam. Linear
+              gate option projection now lives behind
+              linear-gate-command-spec.ts.
             </p>
           </article>
           <article class="note">
