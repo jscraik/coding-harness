@@ -25,7 +25,7 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/output/normalise-core-v2.ts",
-		maxLines: 520,
+		maxLines: 470,
 		reason:
 			"Output normalise core must stay a shared adapter seam; gate-specific failure classification moves behind focused modules.",
 	},
@@ -40,6 +40,12 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 		maxLines: 240,
 		reason:
 			"Linear gate normalisation must stay focused on Linear gate failure classification and GateResult projection.",
+	},
+	{
+		path: "src/lib/output/normalise-renderer.ts",
+		maxLines: 70,
+		reason:
+			"Output rendering must stay focused on terminal presentation for normalized gate results.",
 	},
 ] as const;
 
@@ -484,6 +490,7 @@ const COMMAND_CAPABILITY_SUBMODULES = [
 const OUTPUT_NORMALISE_SUBMODULES = [
 	"./normalise-he-phase-exit.js",
 	"./normalise-linear-gate.js",
+	"./normalise-renderer.js",
 ] as const;
 
 function countFileLines(path: string): number {

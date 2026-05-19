@@ -430,6 +430,13 @@
                 </span>
               </div>
               <div class="module doctor">
+                <strong>normalise-renderer.ts</strong>
+                <span>
+                  Terminal presentation for normalized gate results lives outside
+                  the data adapter core.
+                </span>
+              </div>
+              <div class="module doctor">
                 <strong>normalise-he-phase-exit.ts</strong>
                 <span>
                   HE phase-exit findings, evidence references, gate metadata,
@@ -946,7 +953,8 @@
               Linear gate failure classification and GateResult projection now
               live behind normalise-linear-gate.ts while normalise.ts stays the
               public output facade. HE phase-exit GateResult projection now lives
-              behind normalise-he-phase-exit.ts.
+              behind normalise-he-phase-exit.ts. Terminal rendering now lives
+              behind normalise-renderer.ts.
             </p>
           </article>
           <article class="note">

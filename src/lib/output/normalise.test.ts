@@ -7,7 +7,7 @@
  * DocsGateResult objects. They do NOT invoke the actual gate runners.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { DocsFinding, DocsGateResult } from "../../commands/docs-gate.js";
 import type {
 	DriftFinding,
@@ -35,6 +35,7 @@ import {
 	normalisePolicyGateResult,
 	normalisePreflightGateResult,
 	normaliseReviewGateResult,
+	renderGateDecision,
 } from "./normalise.js";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -256,6 +257,43 @@ function makeReviewResult(
 }
 
 // ─── drift-gate adapter tests (SA2, SA10, SA11) ──────────────────────────────
+
+describe("renderGateDecision", () => {
+	it("renders action, summary, and risk tier from a normalized gate result", () => {
+		const info = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			renderGateDecision(
+				{
+					gate: "policy-gate",
+					version: "1.0.0",
+					timestamp: "2026-05-19T00:00:00.000Z",
+					status: "fail",
+					findings: [],
+					summary: { errors: 0, warnings: 0, info: 0, total: 0 },
+					reason: "Policy gate failed.",
+					action_now: ["Fix policy."],
+					action_later: ["Rerun policy-gate."],
+					evidence_ref: ["gate:policy-gate"],
+				},
+				{ passed: 1, total: 2, durationMs: 12 },
+				"high",
+			);
+
+			expect(info.mock.calls.map(([line]) => line)).toEqual([
+				"✗ policy-gate fail",
+				"Reason: Policy gate failed.",
+				"Action now:",
+				"- Fix policy.",
+				"Action later:",
+				"- Rerun policy-gate.",
+				"Summary: 1/2 checks passed (12ms)",
+				"Risk tier: high",
+			]);
+		} finally {
+			info.mockRestore();
+		}
+	});
+});
 
 describe("normaliseDriftGateResult (SA2, SA10, SA11)", () => {
 	it("SA2-a: clean run → status=pass, findings=[], summary zeros", () => {
