@@ -123,7 +123,13 @@ export function listRepoFiles(repoRoot: string): RepoFileScan {
 	while (stack.length > 0 && files.length < MAX_SCANNED_FILES) {
 		const current = stack.pop();
 		if (!current) continue;
-		for (const entry of readdirSync(current, { withFileTypes: true })) {
+		let entries;
+		try {
+			entries = readdirSync(current, { withFileTypes: true });
+		} catch {
+			continue;
+		}
+		for (const entry of entries) {
 			const absolute = join(current, entry.name);
 			const repoPath = relative(repoRoot, absolute)
 				.split(/[/\\]+/)
