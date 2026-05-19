@@ -9,6 +9,7 @@ last_validated: 2026-05-19
 - [Deep Module And Effect Boundaries](#deep-module-and-effect-boundaries)
 - [Agent Boundary Enforcement](#agent-boundary-enforcement)
 - [CLI Registry Boundaries](#cli-registry-boundaries)
+- [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
 - [Doctor Command Boundaries](#doctor-command-boundaries)
 - [Harness Next Command Boundaries](#harness-next-command-boundaries)
@@ -72,6 +73,25 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Command normalization, fuzzy resolution, and suggestion scoring.
 - `src/lib/cli/registry/command-specs.ts`
   - Canonical command manifest bindings to command implementations.
+
+## Output Normalisation Boundaries
+
+Output normalisation is a public facade plus focused gate adapter seams:
+
+- `src/lib/output/normalise.ts`
+  - Public export facade for gate normalisation helpers and canonical result
+    types.
+- `src/lib/output/normalise-core-v2.ts`
+  - Shared adapter seam for drift, docs, policy, PR template, plan, HE
+    phase-exit, and review/preflight re-exports.
+- `src/lib/output/normalise-linear-gate.ts`
+  - Linear gate failure classification and `GateResult` projection.
+
+The facade should stay tiny, and gate-specific classification should not grow
+inside `normalise-core-v2.ts`. Agents can adjust Linear gate retry/failure
+classification in `normalise-linear-gate.ts` while callers continue importing
+through `src/lib/output/normalise.ts` and seam tests preserve the public export
+contract.
 
 ## Command Facade Boundaries
 
@@ -313,6 +333,14 @@ Threshold policy:
   `command-capability-rules.ts`.
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
+- `src/lib/output/normalise.ts` must remain a public output normalisation facade
+  (`<= 10` lines).
+- `src/lib/output/normalise-core-v2.ts` must remain a shared gate adapter seam
+  (`<= 760` lines); gate-specific failure classification moves into focused
+  normalisation modules.
+- `src/lib/output/normalise-linear-gate.ts` must remain a Linear gate
+  normalisation seam (`<= 240` lines) for failure classification and canonical
+  `GateResult` projection.
 - `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2600` lines).
 - `src/commands/doctor.ts` must remain a doctor command facade (`<= 210`
   lines) and import the explicit doctor seams enforced by the architecture test.

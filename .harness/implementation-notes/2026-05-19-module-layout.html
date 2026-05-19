@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, and review-gate seams are split into smaller work areas. Effect is contained to approved files.
+            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files.
           </div>
         </section>
 
@@ -404,6 +404,43 @@
                 <span>
                   Ratchets both catalog files and verifies static rules stay
                   behind the public command-capabilities seam.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>1b. Output Normalisation Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/lib/output/normalise.ts</strong>
+              <span>
+                Public export facade. Callers keep one stable import for gate
+                normalisation helpers and canonical GateResult types.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>normalise-core-v2.ts</strong>
+                <span>
+                  Shared adapter seam for drift, docs, policy, PR template,
+                  plan, HE phase-exit, and review/preflight exports.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>normalise-linear-gate.ts</strong>
+                <span>
+                  Linear gate failure classification and GateResult projection
+                  live behind a focused adapter seam.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the facade, shared core, and Linear adapter while
+                  verifying the focused seam remains wired.
                 </span>
               </div>
             </div>
@@ -899,6 +936,9 @@
               small internal type seam. Command capability static policy tables
               now live behind command-capability-rules.ts while
               command-capabilities.ts stays the public catalog builder.
+              Linear gate failure classification and GateResult projection now
+              live behind normalise-linear-gate.ts while normalise.ts stays the
+              public output facade.
             </p>
           </article>
           <article class="note">

@@ -16,8 +16,24 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 	},
 	{
 		path: "src/lib/output/normalise.ts",
-		maxLines: 1_100,
-		reason: "Output normalisation should not keep absorbing command types.",
+		maxLines: 10,
+		reason:
+			"Output normalisation facade must stay a public export surface, not an implementation sink.",
+	},
+] as const;
+
+const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/output/normalise-core-v2.ts",
+		maxLines: 760,
+		reason:
+			"Output normalise core must stay a shared adapter seam; gate-specific failure classification moves behind focused modules.",
+	},
+	{
+		path: "src/lib/output/normalise-linear-gate.ts",
+		maxLines: 240,
+		reason:
+			"Linear gate normalisation must stay focused on Linear gate failure classification and GateResult projection.",
 	},
 ] as const;
 
@@ -348,6 +364,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
 	"src/lib/output/normalise-core-v2.ts",
+	"src/lib/output/normalise-linear-gate.ts",
 ]);
 
 const COMMAND_IMPORT_PATTERN = /from\s+["'](?:\.\.\/)+commands\//;
@@ -457,6 +474,7 @@ const LOCAL_RUNTIME_CARD_ASSEMBLY_SUBMODULES = [
 const COMMAND_CAPABILITY_SUBMODULES = [
 	"./command-capability-rules.js",
 ] as const;
+const OUTPUT_NORMALISE_SUBMODULES = ["./normalise-linear-gate.js"] as const;
 
 function countFileLines(path: string): number {
 	const content = readFileSync(join(process.cwd(), path), "utf-8");
@@ -581,6 +599,19 @@ describe("module boundaries", () => {
 
 	it("ratchets seam decomposition while they are extracted", () => {
 		expectRatchetsWithinBudget(COMMAND_SURFACE_DECOMPOSITION_RATCHETS);
+	});
+
+	it("keeps output normalisation split behind focused gate adapter seams", () => {
+		expectRatchetsWithinBudget(OUTPUT_NORMALISE_SURFACE_RATCHETS);
+
+		const normaliseCoreContent = readFileSync(
+			join(process.cwd(), "src/lib/output/normalise-core-v2.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of OUTPUT_NORMALISE_SUBMODULES) {
+			expect(normaliseCoreContent).toContain(submodule);
+		}
 	});
 
 	it("keeps harness next surfaces split after decomposition", () => {
