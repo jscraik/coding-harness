@@ -106,7 +106,7 @@ export const WRITE_COMMANDS = new Set<string>([
 export const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
 	"blast-radius": ["--files"],
 	"artifact-gate": ["--files"],
-	"review-gate": ["--token", "--owner", "--repo", "--pr", "--sha"],
+	"review-gate": ["--owner", "--repo", "--pr", "--sha"],
 	"workflow:generate": ["--source"],
 	"linear-gate": ["--branch", "--pr-title", "--pr-body"],
 	"review-context": ["--files"],

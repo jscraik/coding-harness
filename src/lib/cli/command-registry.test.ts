@@ -667,7 +667,6 @@ describe("getRegistryCommandCapabilities", () => {
 				(c) => c.name === "review-gate",
 			);
 			expect(cap?.requiredFlags).toEqual([
-				"--token",
 				"--owner",
 				"--repo",
 				"--pr",
