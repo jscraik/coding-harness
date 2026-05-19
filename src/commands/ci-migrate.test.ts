@@ -2758,6 +2758,64 @@ describe("runCIMigrateCLI", () => {
 		);
 	});
 
+	it("rejects merge-queue provider API file URLs that escape repository root", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		writeMergeQueueProviderAPIFixture(tempDir);
+		const outsideResponsePath = join(
+			externalFixtureDir,
+			"merge-queue-provider-api.paused.json",
+		);
+		writeFileSync(
+			outsideResponsePath,
+			JSON.stringify(
+				{
+					pausedAt: "2026-03-14T00:00:00.000Z",
+					queueDepth: 3,
+				},
+				null,
+				2,
+			),
+		);
+		const providerConfigPath = join(tempDir, MERGE_QUEUE_PROVIDER_API_PATH);
+		const providerConfig = JSON.parse(
+			readFileSync(providerConfigPath, "utf-8"),
+		) as { paused: { url: string } };
+		providerConfig.paused.url = pathToFileURL(outsideResponsePath).toString();
+		writeFileSync(providerConfigPath, JSON.stringify(providerConfig, null, 2));
+		const snapshotId = "cutover-required-commit-provider-api-escape";
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueProviderAPIPath: MERGE_QUEUE_PROVIDER_API_PATH,
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(runInitCLIMock).not.toHaveBeenCalled();
+	});
+
 	it("fails required-mode commit when provider API orchestration omits drained/revalidated lifecycle", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");

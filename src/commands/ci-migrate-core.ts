@@ -2033,6 +2033,7 @@ function buildProviderAPIHeaders(
 function runProviderAPIRequest(
 	request: MergeQueueProviderAPIRequestConfig,
 	context: string,
+	targetDir: string,
 ): { ok: true; body: string; json: unknown } | { ok: false; error: string } {
 	const method = (request.method ?? "GET").toUpperCase();
 	const supportedMethods = new Set(["GET", "POST", "PUT", "PATCH"]);
@@ -2053,14 +2054,18 @@ function runProviderAPIRequest(
 	}
 	if (request.url.startsWith("file://")) {
 		try {
-			const filePath = fileURLToPath(request.url);
-			if (!existsSync(filePath)) {
+			const filePathResult = resolveRepoBoundFileUrl(
+				targetDir,
+				request.url,
+				`${context} file URL source`,
+			);
+			if (!filePathResult.ok) {
 				return {
 					ok: false,
-					error: `${context} file URL source does not exist: ${request.url}`,
+					error: filePathResult.error,
 				};
 			}
-			const fileContent = readFileSync(filePath, "utf-8");
+			const fileContent = readFileSync(filePathResult.absolutePath, "utf-8");
 			const parsedJson =
 				fileContent.trim().length === 0 ? {} : JSON.parse(fileContent);
 			return { ok: true, body: fileContent, json: parsedJson };
@@ -2390,6 +2395,7 @@ function runMergeQueueProviderAPIOrchestrator(
 	const pausedRequestResult = runProviderAPIRequest(
 		config.paused,
 		"merge-queue pause operation",
+		targetDir,
 	);
 	if (!pausedRequestResult.ok) {
 		return { ok: false, error: pausedRequestResult.error };
@@ -2432,6 +2438,7 @@ function runMergeQueueProviderAPIOrchestrator(
 		const drainedResult = runProviderAPIRequest(
 			config.drained,
 			"merge-queue drain operation",
+			targetDir,
 		);
 		if (!drainedResult.ok) {
 			return { ok: false, error: drainedResult.error };
@@ -2461,6 +2468,7 @@ function runMergeQueueProviderAPIOrchestrator(
 		const revalidatedResult = runProviderAPIRequest(
 			config.revalidated,
 			"merge-queue revalidate operation",
+			targetDir,
 		);
 		if (!revalidatedResult.ok) {
 			return { ok: false, error: revalidatedResult.error };
@@ -2606,6 +2614,53 @@ function resolveRepoBoundPath(
 		return {
 			ok: false,
 			error: `${label} path escapes repository root: ${configuredPath}`,
+		};
+	}
+	return { ok: true, absolutePath };
+}
+
+function resolveRepoBoundFileUrl(
+	targetDir: string,
+	url: string,
+	label: string,
+): { ok: true; absolutePath: string } | { ok: false; error: string } {
+	let filePath: string;
+	try {
+		filePath = fileURLToPath(url);
+	} catch (error) {
+		return {
+			ok: false,
+			error: `${label} is not a valid file URL: ${sanitizeError(error)}`,
+		};
+	}
+	const rootPath = realpathSync(targetDir);
+	const absolutePath = resolve(filePath);
+	const isWithinRoot = (path: string): boolean =>
+		path === rootPath || path.startsWith(`${rootPath}${sep}`);
+
+	if (!existsSync(absolutePath)) {
+		return {
+			ok: false,
+			error: `${label} not found: ${url}`,
+		};
+	}
+	const stat = lstatSync(absolutePath);
+	if (stat.isSymbolicLink()) {
+		return {
+			ok: false,
+			error: `${label} cannot be a symbolic link: ${url}`,
+		};
+	}
+	if (!stat.isFile()) {
+		return {
+			ok: false,
+			error: `${label} must be a file: ${url}`,
+		};
+	}
+	if (!isWithinRoot(realpathSync(absolutePath))) {
+		return {
+			ok: false,
+			error: `${label} escapes repository root: ${url}`,
 		};
 	}
 	return { ok: true, absolutePath };
@@ -5408,6 +5463,7 @@ function parseParityProofHarvestManifest(
 }
 
 function downloadProofArtifactFromSource(
+	targetDir: string,
 	artifactId: string,
 	url: string,
 	destinationPath: string,
@@ -5417,14 +5473,18 @@ function downloadProofArtifactFromSource(
 ): { ok: true } | { ok: false; error: string } {
 	if (url.startsWith("file://")) {
 		try {
-			const sourcePath = fileURLToPath(url);
-			if (!existsSync(sourcePath)) {
+			const sourcePathResult = resolveRepoBoundFileUrl(
+				targetDir,
+				url,
+				`Harvest source file URL for ${artifactId}`,
+			);
+			if (!sourcePathResult.ok) {
 				return {
 					ok: false,
-					error: `Harvest source file URL not found for ${artifactId}: ${url}`,
+					error: sourcePathResult.error,
 				};
 			}
-			copyFileSync(sourcePath, destinationPath);
+			copyFileSync(sourcePathResult.absolutePath, destinationPath);
 			return { ok: true };
 		} catch (error) {
 			return {
@@ -5544,6 +5604,7 @@ function materializeProvenanceInputFromHarvestManifest(
 						body: discovery.schedule.body,
 					},
 					`parity harvest schedule (${artifact.artifactId})`,
+					targetDir,
 				);
 				if (!scheduleResult.ok) {
 					return { ok: false, error: scheduleResult.error };
@@ -5559,6 +5620,7 @@ function materializeProvenanceInputFromHarvestManifest(
 					body: discovery.body,
 				},
 				`parity harvest discovery (${artifact.artifactId})`,
+				targetDir,
 			);
 			if (!discoveryResult.ok) {
 				return { ok: false, error: discoveryResult.error };
@@ -5656,6 +5718,7 @@ function materializeProvenanceInputFromHarvestManifest(
 			copyFileSync(sourcePath, destinationPath);
 		} else if (sourceUrl) {
 			const downloadResult = downloadProofArtifactFromSource(
+				targetDir,
 				artifact.artifactId,
 				sourceUrl,
 				destinationPath,
