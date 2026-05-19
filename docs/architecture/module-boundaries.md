@@ -96,6 +96,8 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/evidence-verify-command-spec.ts`
   - Evidence verify option projection and delegation to the evidence verify
     command.
+- `src/lib/cli/registry/review-gate-command-spec.ts`
+  - Review gate option projection and delegation to the review gate command.
 
 The command registry should stay a catalog and dispatch surface. Agents can
 adjust Linear claim, handoff, close, prepare, sync, and triage delegation in
@@ -105,8 +107,9 @@ registry seam. Agents can adjust Linear gate option projection in
 `linear-gate-command-spec.ts`, PR template gate option projection in
 `pr-template-gate-command-spec.ts`, and rule lifecycle gate option projection in
 `rule-lifecycle-gate-command-spec.ts`, and policy gate option projection in
-`policy-gate-command-spec.ts`, and evidence verify option projection in
-`evidence-verify-command-spec.ts`, while `command-specs-core.ts` remains an
+`policy-gate-command-spec.ts`, evidence verify option projection in
+`evidence-verify-command-spec.ts`, and review gate option projection in
+`review-gate-command-spec.ts`, while `command-specs-core.ts` remains an
 assembler for registered command specs.
 
 ## Output Normalisation Boundaries
@@ -390,8 +393,10 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 2286` lines); workflow-specific parsing belongs in focused command spec
+  (`<= 2031` lines); workflow-specific parsing belongs in focused command spec
   seams.
+- `src/lib/cli/registry/review-gate-command-spec.ts` must stay focused on review
+  gate option projection and command delegation (`<= 220` lines).
 - `src/lib/cli/registry/linear-command-spec.ts` must stay focused on Linear
   command spec metadata (`<= 30` lines).
 - `src/lib/cli/registry/linear-command-runner.ts` must stay focused on Linear

@@ -61,7 +61,6 @@ import {
 } from "../../../commands/remediate.js";
 import { runReplayCLI } from "../../../commands/replay.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
-import type { runReviewGateCLI } from "../../../commands/review-gate.js";
 import { runRiskTierCLI } from "../../../commands/risk-tier.js";
 import { runRuntimeCardCLI } from "../../../commands/runtime-card.js";
 import { runSearchCLI } from "../../../commands/search.js";
@@ -105,6 +104,7 @@ import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
+import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import type { CommandSpec } from "./types.js";
 
@@ -216,144 +216,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runPreflightGateCLI(options);
 		},
 	},
-	{
-		name: "review-gate",
-		summary: "Review gate with SHA enforcement",
-		example:
-			"review-gate --token $GH_TOKEN --owner org --repo repo --pr 42 --sha 0123456789abcdef0123456789abcdef01234567 --json",
-		errorLabel: "Review Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const envToken =
-				process.env.GH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim();
-			const ownerIndex = args.indexOf("--owner");
-			const repoIndex = args.indexOf("--repo");
-			const prIndex = args.indexOf("--pr");
-			const shaIndex = args.indexOf("--sha");
-			const autoResolveBotThreadsFlag = args.includes(
-				"--auto-resolve-bot-threads",
-			);
-			const requiredFlagSpecs = [
-				{ flag: "--owner", label: "owner" },
-				{ flag: "--repo", label: "repo" },
-				{ flag: "--pr", label: "pr" },
-				{ flag: "--sha", label: "sha" },
-			] as const;
-			const missingRequiredFlags: string[] = [];
-			const tokenInspection = inspectFlagValue(args, "--token");
-			const checkInspection = inspectFlagValue(args, "--check");
-			const botLoginInspection = inspectFlagValue(args, "--bot-login");
-			const contractInspection = inspectFlagValue(args, "--contract");
-			const reviewContextInspection = inspectFlagValue(
-				args,
-				"--review-context",
-			);
-			const reviewContextMaxAgeInspection = inspectFlagValue(
-				args,
-				"--review-context-max-age-minutes",
-			);
-			if (tokenInspection.present && tokenInspection.missingValue) {
-				console.error("Error: --token requires a value");
-				return 2;
-			}
-			for (const { flag, inspected } of [
-				{ flag: "--check", inspected: checkInspection },
-				{ flag: "--bot-login", inspected: botLoginInspection },
-				{ flag: "--contract", inspected: contractInspection },
-				{ flag: "--review-context", inspected: reviewContextInspection },
-				{
-					flag: "--review-context-max-age-minutes",
-					inspected: reviewContextMaxAgeInspection,
-				},
-			]) {
-				if (inspected.present && inspected.missingValue) {
-					console.error(`Error: ${flag} requires a value`);
-					return 2;
-				}
-			}
-			const resolvedToken = tokenInspection.value ?? envToken;
-			if (!resolvedToken) {
-				missingRequiredFlags.push("--token");
-			}
-			for (const { flag, label } of requiredFlagSpecs) {
-				const inspected = inspectFlagValue(args, flag);
-				if (inspected.present && inspected.missingValue) {
-					console.error(`Error: ${flag} requires a value`);
-					return 2;
-				}
-				if (!inspected.value) {
-					missingRequiredFlags.push(`--${label}`);
-				}
-			}
-			if (missingRequiredFlags.length > 0) {
-				console.error(
-					`Error: missing required flags for review-gate: ${missingRequiredFlags.join(", ")}`,
-				);
-				return 2;
-			}
-
-			const options: Parameters<typeof runReviewGateCLI>[0] = {
-				token: "",
-				owner: "",
-				repo: "",
-				prNumber: 0,
-				headSha: "",
-				checkName: "",
-				contractPath: "harness.contract.json",
-			};
-
-			if (jsonFlag) options.json = true;
-			if (resolvedToken) options.token = resolvedToken;
-			const ownerArg = getFlagValue(args, ownerIndex);
-			if (ownerArg) options.owner = ownerArg;
-			const repoArg = getFlagValue(args, repoIndex);
-			if (repoArg) options.repo = repoArg;
-			const prArg = getFlagValue(args, prIndex);
-			if (prArg) {
-				const parsedPr = parseIntegerArg(prArg, 1);
-				if (parsedPr === undefined) {
-					console.error("Error: --pr expects a positive integer");
-					return 2;
-				}
-				options.prNumber = parsedPr;
-			}
-			const shaArg = getFlagValue(args, shaIndex);
-			if (shaArg) options.headSha = shaArg;
-			if (checkInspection.value !== undefined) {
-				options.checkName = checkInspection.value;
-			}
-			if (botLoginInspection.value !== undefined) {
-				options.botLogin = botLoginInspection.value;
-			}
-			if (autoResolveBotThreadsFlag) options.autoResolveBotThreads = true;
-			if (contractInspection.value !== undefined) {
-				options.contractPath = contractInspection.value;
-			}
-			if (reviewContextInspection.value !== undefined) {
-				options.reviewContextPath = reviewContextInspection.value;
-			}
-			if (args.includes("--require-review-context")) {
-				options.requireReviewContext = true;
-			}
-			if (reviewContextMaxAgeInspection.value !== undefined) {
-				const parsedMaxAge = parseIntegerArg(
-					reviewContextMaxAgeInspection.value,
-					1,
-				);
-				if (parsedMaxAge === undefined) {
-					console.error(
-						"Error: --review-context-max-age-minutes expects a positive integer",
-					);
-					return 2;
-				}
-				options.reviewContextMaxAgeMinutes = parsedMaxAge;
-			}
-
-			return import("../../../commands/review-gate.js").then(
-				({ runReviewGateCLI }) => runReviewGateCLI(options),
-			);
-		},
-	},
+	createReviewGateCommandSpec(),
 	{
 		name: "branch-protect",
 		summary: "Configure GitHub branch protection ruleset",

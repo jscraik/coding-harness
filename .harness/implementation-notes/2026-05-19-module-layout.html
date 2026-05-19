@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, and policy gate parsing now live behind focused command-spec seams.
+            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, evidence verify, and review gate parsing now live behind focused command-spec seams.
           </div>
         </section>
 
@@ -451,6 +451,13 @@
                 <span>
                   Evidence verify option projection delegates through a
                   focused command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>review-gate-command-spec.ts</strong>
+                <span>
+                  Review gate option projection delegates through a focused
+                  command-spec seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -1068,7 +1075,8 @@
               rule-lifecycle-gate-command-spec.ts. Policy gate option
               projection now lives behind policy-gate-command-spec.ts.
               Evidence verify option projection now lives behind
-              evidence-verify-command-spec.ts.
+              evidence-verify-command-spec.ts. Review gate option projection now
+              lives behind review-gate-command-spec.ts.
             </p>
           </article>
           <article class="note">
