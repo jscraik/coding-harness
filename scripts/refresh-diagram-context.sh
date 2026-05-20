@@ -35,6 +35,10 @@ META_FILE="$DIAGRAM_CONTEXT_DIR/diagram-context.meta.json"
 LOG_FILE="$DIAGRAM_CONTEXT_DIR/refresh.log"
 MIN_SECONDS="${DIAGRAM_REFRESH_MIN_SECONDS:-1800}"
 MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"
+DEFAULT_DIAGRAM_PATTERNS="src/**/*.ts,scripts/**/*.js,scripts/**/*.cjs,scripts/**/*.mjs,e2e/**/*.ts"
+DEFAULT_EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/**,.tmp-diagram-refresh-*/**,.diagram/**,**/*.test.*,**/*.spec.*"
+DIAGRAM_PATTERNS="${DIAGRAM_REFRESH_PATTERNS:-$DEFAULT_DIAGRAM_PATTERNS}"
+EXCLUDE_PATTERNS="${DIAGRAM_REFRESH_EXCLUDE_PATTERNS:-$DEFAULT_EXCLUDE_PATTERNS}"
 NOW_EPOCH="$(date +%s)"
 
 mkdir -p "$DIAGRAM_DIR" "$DIAGRAM_CONTEXT_DIR" "$CONTEXT_DIR"
@@ -70,14 +74,22 @@ fi
 
 TMP_DIR="$(mktemp -d "$DIAGRAM_CONTEXT_DIR/tmp-refresh-XXXXXX")"
 TMP_OUTPUT_DIR=".diagram/context/$(basename "$TMP_DIR")/diagrams"
-EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,.tmp-diagram-refresh-*/**,.diagram/context/tmp-refresh-*/**"
+DIAGRAM_GENERATE_ARGS=(
+	generate-all
+	.
+	--output-dir "$TMP_OUTPUT_DIR"
+	--patterns "$DIAGRAM_PATTERNS"
+	--exclude "$EXCLUDE_PATTERNS"
+	--max-files "$MAX_FILES"
+	--deterministic
+)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 pushd "$ROOT_DIR" >/dev/null
 if [[ "$QUIET" -eq 1 ]]; then
 	diagram_stderr="$TMP_DIR/diagram-generate.stderr"
 	set +e
-	pnpm exec diagram generate-all . --output-dir "$TMP_OUTPUT_DIR" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>"$diagram_stderr"
+	pnpm exec diagram "${DIAGRAM_GENERATE_ARGS[@]}" >/dev/null 2>"$diagram_stderr"
 	status=$?
 	set -e
 	if [[ "$status" -ne 0 ]]; then
@@ -90,7 +102,7 @@ if [[ "$QUIET" -eq 1 ]]; then
 		exit "$status"
 	fi
 else
-	pnpm exec diagram generate-all . --output-dir "$TMP_OUTPUT_DIR" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
+	pnpm exec diagram "${DIAGRAM_GENERATE_ARGS[@]}"
 fi
 popd >/dev/null
 
@@ -449,8 +461,9 @@ if (diagramFiles.includes("c4context.mmd")) {
   );
   c4ContextContent = replaceRequired(
     c4ContextContent,
-    /System_Ext\(ext_1, "Version Control", "[^"]+"\)/,
-    'System_Ext(ext_1, "Version Control", "@octokit/rest, @octokit/request-error, @octokit/plugin-retry, @octokit/plugin-throttling")',
+    /System_Ext\((ext_\d+), "Version Control", "[^"]+"\)/,
+    (_match, extId) =>
+      `System_Ext(${extId}, "Version Control", "@octokit/rest, @octokit/request-error, @octokit/plugin-retry, @octokit/plugin-throttling")`,
     "version control dependency list",
   );
   writeFileSync(c4ContextPath, ensureTrailingNewline(c4ContextContent.trimEnd()));
