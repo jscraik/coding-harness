@@ -1,6 +1,7 @@
 import {
 	EXIT_CODES,
 	runVerifyWork,
+	runVerifyWorkFromCliArgs,
 	type VerifyWorkCliOptions,
 	verifyWorkRuntime,
 } from "../lib/verify-work.js";
@@ -12,4 +13,11 @@ export { EXIT_CODES, type VerifyWorkCliOptions, verifyWorkRuntime };
  */
 export function runVerifyWorkCLI(options: VerifyWorkCliOptions): number {
 	return runVerifyWork(options);
+}
+
+/**
+ * Execute the repository's verify-work wrapper script from raw CLI arguments.
+ */
+export function runVerifyWorkArgsCLI(args: string[]): number {
+	return runVerifyWorkFromCliArgs(args);
 }

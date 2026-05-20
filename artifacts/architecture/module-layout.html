@@ -699,9 +699,17 @@
             <div class="doctor-seams">
               <div class="module public">
                 <strong>src/lib/verify-work.ts</strong>
+                  <span>
+                  Public facade for raw CLI argument parsing, runVerifyWork,
+                  the runtime adapter, exit codes, and CLI option types.
+                  </span>
+                </div>
+                <div class="module doctor">
+                <strong>verify-work/cli-args.ts</strong>
                 <span>
-                  Public facade for runVerifyWork, the runtime adapter, exit
-                  codes, and CLI option types.
+                  Internal raw CLI argument validation and typed option
+                  projection. Command catalog adapters do not own
+                  verify-work-specific flag rules.
                 </span>
               </div>
               <div class="module doctor">
@@ -727,7 +735,7 @@
               <div class="module guard">
                 <strong>module-boundaries.test.ts</strong>
                 <span>
-                  Ratchets the command facade and fails if callers import
+                  Ratchets the command adapter and fails if callers import
                   verify-work internals instead of the public facade.
                 </span>
               </div>
@@ -1500,7 +1508,11 @@
         <section class="notes" aria-label="Implementation notes">
           <article class="note">
             <h3>Latest Changes</h3>
-            <p>
+              <p>
+              Verify-work raw CLI parsing now lives behind
+              verify-work/cli-args.ts, keeping the command catalog adapter as a
+              small dispatch surface with boundary tests proving the parser does
+              not grow back into registry code.
               HE phase-exit gate trust policy now lives behind
               he-gate-trust-policy.ts with direct seam tests for summary-only
               evidence, validation_only, skipped modes, blocker proof, and

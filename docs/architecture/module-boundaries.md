@@ -240,16 +240,18 @@ command orchestration file.
 
 ## Verify Work Command Boundary
 
-Verify-work is the closeout trust surface for repo-local validation. Its public
-command facade stays small while wrapper execution and option-to-flag mapping
-live behind a deep module seam:
+Verify-work is the closeout trust surface for repo-local validation. Its command
+catalog adapter stays small while raw CLI parsing, wrapper execution, and
+option-to-flag mapping live behind a deep module seam:
 
 - `src/commands/verify-work.ts`
   - Command facade that preserves the existing CLI export contract and imports
     only `src/lib/verify-work.ts`.
 - `src/lib/verify-work.ts`
-  - Public facade for verify-work execution, runtime adapter, exit codes, and
-    CLI option types.
+  - Public facade for verify-work raw-argument parsing, execution, runtime
+    adapter, exit codes, and CLI option types.
+- `src/lib/verify-work/cli-args.ts`
+  - Internal raw CLI argument validation and typed option projection seam.
 - `src/lib/verify-work/args.ts`
   - Internal wrapper flag construction seam.
 - `src/lib/verify-work/runner.ts`
@@ -259,8 +261,8 @@ live behind a deep module seam:
   - Public command option and exit-code contract.
 
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` keep the
-command facade thin, ratchet the internal modules, and fail if callers bypass the
-public facade to import `src/lib/verify-work/*` internals.
+command adapter thin, ratchet the internal modules, and fail if callers bypass
+the public facade to import `src/lib/verify-work/*` internals.
 
 ## Memory Gate Command Boundary
 

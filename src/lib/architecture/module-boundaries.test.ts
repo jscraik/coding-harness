@@ -165,9 +165,9 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/lib/cli/registry/verify-work-command-spec.ts",
-		maxLines: 70,
+		maxLines: 25,
 		reason:
-			"Verify-work command adapter must keep resume, repository, and governance option projection local.",
+			"Verify-work command adapter must stay focused on command dispatch; raw option projection lives behind the verify-work module seam.",
 	},
 	{
 		path: "src/lib/cli/registry/docs-gate-command-spec.ts",
@@ -539,6 +539,12 @@ const VERIFY_WORK_SURFACE_RATCHETS = [
 		maxLines: 10,
 		reason:
 			"Verify-work public facade must stay an export surface, not an implementation sink.",
+	},
+	{
+		path: "src/lib/verify-work/cli-args.ts",
+		maxLines: 95,
+		reason:
+			"Verify-work CLI args seam must stay focused on raw flag validation and typed option projection.",
 	},
 	{
 		path: "src/lib/verify-work/args.ts",
@@ -996,11 +1002,12 @@ const OUTPUT_NORMALISE_SUBMODULES = [
 	"./normalise-renderer.js",
 ] as const;
 const VERIFY_WORK_PUBLIC_FACADE_SUBMODULES = [
+	"./verify-work/cli-args.js",
 	"./verify-work/runner.js",
 	"./verify-work/types.js",
 ] as const;
 const VERIFY_WORK_INTERNAL_IMPORT_PATTERN =
-	/^(?:\.\.?\/)*(?:lib\/)?verify-work\/(?:args|runner|types)\.js$/;
+	/^(?:\.\.?\/)*(?:lib\/)?verify-work\/(?:args|cli-args|runner|types)\.js$/;
 const APPROVED_VERIFY_WORK_INTERNAL_IMPORTERS = new Set([
 	"src/lib/verify-work.ts",
 ]);
@@ -1289,6 +1296,14 @@ describe("module boundaries", () => {
 			expect(publicFacadeContent).toContain(submodule);
 		}
 		expect(commandFacadeContent).toContain("../lib/verify-work.js");
+		const commandSpecContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/verify-work-command-spec.ts"),
+			"utf-8",
+		);
+		expect(commandSpecContent).not.toContain("inspectFlagValue");
+		expect(commandSpecContent).not.toContain("getValidationGateSpec");
+		expect(commandSpecContent).not.toContain("missingValue");
+		expect(commandSpecContent).not.toContain("projectGovernanceFlag");
 
 		const violations = collectTypeScriptFiles("src")
 			.filter((path) => !path.startsWith("src/lib/verify-work/"))
