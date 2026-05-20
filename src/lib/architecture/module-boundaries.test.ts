@@ -82,7 +82,7 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_580,
+		maxLines: 1_572,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
 	},
@@ -102,6 +102,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 25,
 		reason:
 			"Runtime-card command spec must stay focused on runtime-card command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/pr-closeout-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"PR closeout command spec must stay focused on PR closeout command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/docs-gate-command-spec.ts",
@@ -604,6 +610,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/linear-command-spec.ts",
 	"src/lib/cli/registry/policy-gate-command-spec.ts",
 	"src/lib/cli/registry/preset-command-spec.ts",
+	"src/lib/cli/registry/pr-closeout-command-spec.ts",
 	"src/lib/cli/registry/pr-template-gate-command-spec.ts",
 	"src/lib/cli/registry/rule-lifecycle-gate-command-spec.ts",
 	"src/lib/cli/registry/symphony-check-command-spec.ts",
@@ -687,6 +694,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./linear-gate-command-spec.js",
 	"./policy-gate-command-spec.js",
 	"./preset-command-spec.js",
+	"./pr-closeout-command-spec.js",
 	"./pr-template-gate-command-spec.js",
 	"./rule-lifecycle-gate-command-spec.js",
 	"./symphony-check-command-spec.js",

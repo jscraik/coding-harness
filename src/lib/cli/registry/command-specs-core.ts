@@ -34,7 +34,6 @@ import {
 	runPilotRollbackCLI,
 } from "../../../commands/pilot-rollback.js";
 import { runPlanGateCLI } from "../../../commands/plan-gate.js";
-import { runPrCloseoutCLI } from "../../../commands/pr-closeout.js";
 import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
 import {
 	type RemediateOptions,
@@ -93,6 +92,7 @@ import { createNextCommandSpec } from "./next-command-spec.js";
 import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPresetCommandSpec } from "./preset-command-spec.js";
+import { createPrCloseoutCommandSpec } from "./pr-closeout-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
@@ -108,15 +108,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createFleetPlanCommandSpec(),
 	createLinearCommandSpec(),
 	createLinearGateCommandSpec(),
-	{
-		name: "pr-closeout",
-		summary:
-			"Build a read-only PR closeout evidence report from GitHub, CircleCI, CodeRabbit, Snyk, Coding Harness closeout gates, and normalized handoff state",
-		example:
-			"pr-closeout --pr 258 --gates artifacts/pr-closeout/closeout-gates.json --json",
-		errorLabel: "PR Closeout Error",
-		execute: (args) => runPrCloseoutCLI(args),
-	},
+	createPrCloseoutCommandSpec(),
 	createPrTemplateGateCommandSpec(),
 	createRuleLifecycleGateCommandSpec(),
 	createPolicyGateCommandSpec(),
