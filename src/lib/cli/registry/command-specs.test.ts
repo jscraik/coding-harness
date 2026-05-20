@@ -826,7 +826,7 @@ describe("drift-gate execute validation", () => {
 
 		expect(result).toBe(2);
 		expect(errorSpy).toHaveBeenCalledWith(
-			"Error: --seed-baseline and --no-seed are mutually exclusive",
+			"Error: --seed-baseline conflicts with --no-seed",
 		);
 		expect(driftGateModule.runDriftGateCLI).not.toHaveBeenCalled();
 	});

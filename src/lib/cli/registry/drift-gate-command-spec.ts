@@ -26,9 +26,7 @@ function runDriftGateCommand(args: string[]): number {
 	const repoRootFlag = inspectFlagValue(args, "--repo-root");
 
 	if (seedBaselineFlag && noSeedFlag) {
-		console.error(
-			"Error: --seed-baseline and --no-seed are mutually exclusive",
-		);
+		console.error("Error: --seed-baseline conflicts with --no-seed");
 		return 2;
 	}
 
