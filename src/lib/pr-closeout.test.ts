@@ -1200,7 +1200,7 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
-	it("recognizes passing live CodeRabbit checks as independent review evidence", () => {
+	it("recognizes failed live CodeRabbit checks as known independent review evidence", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({
 				pullRequest: {
@@ -1216,7 +1216,7 @@ describe("buildPrCloseoutReport", () => {
 				checks: [
 					{
 						name: "CodeRabbit",
-						state: "SUCCESS",
+						state: "FAILURE",
 						headSha: "abc123",
 						source: "github",
 					},

@@ -31,9 +31,7 @@ function hasKnownIndependentReview(
 ): boolean {
 	if (normalizeStatus(pr.reviewDecision) !== "") return true;
 	return checks.some(
-		(check) =>
-			check.source === "coderabbit" ||
-			(/coderabbit/iu.test(check.name) && isPassingCheck(check)),
+		(check) => check.source === "coderabbit" || /coderabbit/iu.test(check.name),
 	);
 }
 

@@ -109,6 +109,15 @@ C4Context
   title "System Context — diagram context refresh random checkout"
   System(mainSystem, "diagram context refresh random checkout", "The system being documented")
 MMD
+cat > "$out_dir/agent.mmd" <<'MMD'
+flowchart TD
+  subgraph Orchestration["Orchestration"]
+    shared_node_11111111["shared"]
+  end
+  subgraph ToolLayer["Tool Layer"]
+    shared_node_11111111[("shared")]
+  end
+MMD
 cat > "$out_dir/manifest.json" <<'JSON'
 {
   "generatedAt": "1970-01-01T00:00:00.000Z",
@@ -199,6 +208,16 @@ describe("refresh-diagram-context.sh", () => {
 		);
 		expect(context).not.toContain("diagram context refresh random checkout");
 		expect(context.match(/\["api"\]/g)).toHaveLength(2);
+
+		const agentDiagram = readFileSync(
+			join(root, ".diagram", "agent.mmd"),
+			"utf-8",
+		);
+		const sharedIds = [
+			...agentDiagram.matchAll(/^\s*(\S+)\[.*"shared".*\]/gm),
+		].map((match) => match[1]);
+		expect(sharedIds).toHaveLength(2);
+		expect(new Set(sharedIds).size).toBe(2);
 	});
 
 	it("preserves context when refresh only changes volatile Mermaid output", {
