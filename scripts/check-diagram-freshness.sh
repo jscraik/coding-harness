@@ -173,6 +173,14 @@ NODE
 				del(.generatedAt) |
 				if (.diagrams | type) == "array" then
 					.diagrams |= map(del(.lines, .bytes))
+				elif (.diagrams | type) == "object" then
+					.diagrams |= with_entries(
+						if (.value | type) == "object" then
+							.value |= del(.lines, .bytes)
+						else
+							.
+						end
+					)
 				else
 					with_entries(
 						if (.value | type) == "object" then

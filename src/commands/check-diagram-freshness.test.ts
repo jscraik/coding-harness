@@ -382,6 +382,53 @@ JSON
 		expect(result.stdout).toContain("Diagram freshness check passed.");
 	});
 
+	it("passes when diagrams object entries only change volatile metadata", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/manifest.json <<'JSON'
+{
+  "generatedAt": "2026-03-12T00:00:00Z",
+  "diagrams": {
+    "architecture": {
+      "type": "architecture",
+      "file": "architecture.mmd",
+      "lines": 1,
+      "bytes": 2
+    }
+  }
+}
+JSON
+`);
+		roots.push(root);
+
+		write(
+			root,
+			".diagram/manifest.json",
+			JSON.stringify(
+				{
+					generatedAt: "2026-03-11T00:00:00Z",
+					diagrams: {
+						architecture: {
+							type: "architecture",
+							file: "architecture.mmd",
+							lines: 99,
+							bytes: 999,
+						},
+					},
+				},
+				null,
+				2,
+			),
+		);
+		git(root, "add", ".");
+		git(root, "commit", "-m", "baseline diagrams object manifest");
+		write(root, "src/example.ts", "export const example = 47;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+	});
+
 	it("passes when refresh only changes volatile Mermaid artifact identifiers", () => {
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail

@@ -1,10 +1,20 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { constants as osConstants } from "node:os";
 import { join, resolve } from "node:path";
 import { sanitizeError } from "../input/sanitize.js";
 import { buildVerifyWorkArgs } from "./args.js";
 import { EXIT_CODES, type VerifyWorkCliOptions } from "./types.js";
+
+function buildVerifyWorkWrapperEnv(
+	environment: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+	return {
+		...Object.fromEntries(
+			Object.entries(environment).filter(([key]) => !key.startsWith("GIT_")),
+		),
+		HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
+	};
+}
 
 /** Runtime adapter for invoking the repository-local verify-work wrapper. */
 export const verifyWorkRuntime = {
@@ -16,10 +26,7 @@ export const verifyWorkRuntime = {
 		return spawnSync("bash", [scriptPath, ...commandArgs], {
 			cwd: repoRoot,
 			stdio: "inherit",
-			env: {
-				...process.env,
-				HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
-			},
+			env: buildVerifyWorkWrapperEnv(),
 		});
 	},
 };
@@ -68,12 +75,6 @@ export function runVerifyWork(options: VerifyWorkCliOptions): number {
 
 	if (result.signal) {
 		console.error(`verify-work terminated by signal: ${result.signal}`);
-		const signalNumber =
-			osConstants.signals[result.signal as keyof typeof osConstants.signals];
-		if (typeof signalNumber === "number") {
-			return EXIT_CODES.SIGNAL_TERMINATED + signalNumber;
-		}
-		console.error(`Error: failed to map signal exit code for ${result.signal}`);
 		return EXIT_CODES.SIGNAL_TERMINATED;
 	}
 

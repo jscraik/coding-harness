@@ -25,6 +25,13 @@ function runDriftGateCommand(args: string[]): number {
 	const suppressFlag = inspectFlagValue(args, "--suppress");
 	const repoRootFlag = inspectFlagValue(args, "--repo-root");
 
+	if (seedBaselineFlag && noSeedFlag) {
+		console.error(
+			"Error: --seed-baseline and --no-seed are mutually exclusive",
+		);
+		return 2;
+	}
+
 	const validationStatus = validateDriftGateFlags({
 		modeFlag,
 		outFlag,

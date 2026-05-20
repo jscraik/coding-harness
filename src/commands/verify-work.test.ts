@@ -33,7 +33,7 @@ describe("verify-work command", () => {
 		expect(exitCode).toBe(EXIT_CODES.PRECONDITION_FAILED);
 	});
 
-	it("executes wrapper with passthrough flags and no-delegate env", () => {
+	it("executes wrapper with passthrough flags and sanitized no-delegate env", () => {
 		const scriptsDir = join(repoRoot, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
 
@@ -46,24 +46,45 @@ describe("verify-work command", () => {
 			`#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\\n' "$@" > "${argsLogPath}"
-printf '%s\\n' "$HARNESS_VERIFY_WORK_NO_DELEGATE" > "${envLogPath}"
+env | sort > "${envLogPath}"
 `,
 			"utf-8",
 		);
 		chmodSync(wrapperPath, 0o755);
 
-		const exitCode = runVerifyWorkCLI({
-			repoRoot,
-			fast: true,
-			strict: true,
-			changedOnly: true,
-			projectGovernance: true,
-			resumeFrom: "validate-codestyle-fast",
-			json: true,
-		});
+		const previousGitDir = process.env.GIT_DIR;
+		const previousGitIndexFile = process.env.GIT_INDEX_FILE;
+		try {
+			process.env.GIT_DIR = join(repoRoot, ".git");
+			process.env.GIT_INDEX_FILE = join(repoRoot, ".git", "index");
+			const exitCode = runVerifyWorkCLI({
+				repoRoot,
+				fast: true,
+				strict: true,
+				changedOnly: true,
+				projectGovernance: true,
+				resumeFrom: "validate-codestyle-fast",
+				json: true,
+			});
 
-		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(readFileSync(envLogPath, "utf-8").trim()).toBe("1");
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		} finally {
+			if (previousGitDir === undefined) {
+				delete process.env.GIT_DIR;
+			} else {
+				process.env.GIT_DIR = previousGitDir;
+			}
+			if (previousGitIndexFile === undefined) {
+				delete process.env.GIT_INDEX_FILE;
+			} else {
+				process.env.GIT_INDEX_FILE = previousGitIndexFile;
+			}
+		}
+
+		const envLog = readFileSync(envLogPath, "utf-8");
+		expect(envLog).toContain("HARNESS_VERIFY_WORK_NO_DELEGATE=1");
+		expect(envLog).not.toContain("GIT_DIR=");
+		expect(envLog).not.toContain("GIT_INDEX_FILE=");
 		const args = readFileSync(argsLogPath, "utf-8").trim().split("\n");
 		expect(args).toContain("--changed-only");
 		expect(args).toContain("--fast");
@@ -107,7 +128,7 @@ printf '%s\\n' "$@" > "${argsLogPath}"
 		expect(args).not.toContain("--project-governance");
 	});
 
-	it("maps SIGTERM termination to the conventional signal exit code", () => {
+	it("maps SIGTERM termination to the standard failure exit code", () => {
 		const scriptsDir = join(repoRoot, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
 		const wrapperPath = join(scriptsDir, "verify-work.sh");
@@ -122,10 +143,10 @@ kill -TERM $$
 		chmodSync(wrapperPath, 0o755);
 
 		const exitCode = runVerifyWorkCLI({ repoRoot });
-		expect(exitCode).toBe(143);
+		expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED);
 	});
 
-	it("maps SIGKILL termination to the conventional signal exit code", () => {
+	it("maps SIGKILL termination to the standard failure exit code", () => {
 		const scriptsDir = join(repoRoot, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
 		const wrapperPath = join(scriptsDir, "verify-work.sh");
@@ -140,7 +161,7 @@ kill -KILL $$
 		chmodSync(wrapperPath, 0o755);
 
 		const exitCode = runVerifyWorkCLI({ repoRoot });
-		expect(exitCode).toBe(137);
+		expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED);
 	});
 
 	it("returns USAGE_ERROR and does not execute wrapper when both --all and --changed-only are set", () => {
