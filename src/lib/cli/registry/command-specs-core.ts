@@ -8,7 +8,6 @@ import {
 } from "../../../commands/blast-radius.js";
 import { runBrainCLI } from "../../../commands/brain.js";
 import { runBrainstormGateCLI } from "../../../commands/brainstorm-gate.js";
-import { runCheckCLI } from "../../../commands/check.js";
 import {
 	runCIMigrateCLI,
 	runPromoteModeCLI,
@@ -83,6 +82,7 @@ import {
 } from "../parse-utils.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
+import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
@@ -142,17 +142,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createOrgAuditCommandSpec(),
 	createToolingAuditCommandSpec(),
 	createPresetCommandSpec(),
-	{
-		name: "check",
-		summary: "Zero-config repo health snapshot — works before full setup",
-		example: "check [path] [--json]",
-		errorLabel: "Check Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const targetDir = args.find((a) => !a.startsWith("-"));
-			return runCheckCLI(targetDir, { json: jsonFlag });
-		},
-	},
+	createCheckCommandSpec(),
 	{
 		name: "next",
 		summary:

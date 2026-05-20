@@ -82,7 +82,7 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_640,
+		maxLines: 1_628,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
 	},
@@ -91,6 +91,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 80,
 		reason:
 			"Docs gate command spec must stay focused on docs-gate option projection and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/check-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Check command spec must stay focused on check option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/org-audit-command-spec.ts",
@@ -543,6 +549,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs-core.ts",
 	"src/lib/cli/registry/branch-protect-command-spec.ts",
 	"src/lib/cli/registry/check-authz-command-spec.ts",
+	"src/lib/cli/registry/check-command-spec.ts",
 	"src/lib/cli/registry/check-environment-command-spec.ts",
 	"src/lib/cli/registry/docs-gate-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
@@ -620,6 +627,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./branch-protect-command-spec.js",
 	"./check-authz-command-spec.js",
+	"./check-command-spec.js",
 	"./check-environment-command-spec.js",
 	"./docs-gate-command-spec.js",
 	"./evidence-verify-command-spec.js",
