@@ -12,6 +12,7 @@ describe("loadPrCloseoutEnvFile", () => {
 			envPath,
 			[
 				"# local credentials",
+				"export GITHUB_TOKEN=exported-token",
 				"GITHUB_PERSONAL_ACCESS_TOKEN=github-token",
 				'LINEAR_API_KEY="linear-token"',
 				"lowercase_ignored=nope",
@@ -21,6 +22,7 @@ describe("loadPrCloseoutEnvFile", () => {
 
 		const result = loadPrCloseoutEnvFile(envPath);
 
+		expect(result.env.GITHUB_TOKEN).toBe("exported-token");
 		expect(result.env.GITHUB_PERSONAL_ACCESS_TOKEN).toBe("github-token");
 		expect(result.env.LINEAR_API_KEY).toBe("linear-token");
 		expect(result.env.lowercase_ignored).toBeUndefined();

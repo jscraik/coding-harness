@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import {
 	HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION,
@@ -116,8 +116,23 @@ function loadInput(path: string): PrCloseoutInput {
 	return parseInput(readFileSync(path, "utf8"), path);
 }
 
+function resolveRepoScopedPath(path: string, repoRoot: string): string {
+	const resolvedRoot = resolve(repoRoot);
+	const resolvedPath = resolve(resolvedRoot, path);
+	const relativePath = relative(resolvedRoot, resolvedPath);
+	const isInsideRepo =
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !isAbsolute(relativePath));
+	if (!isInsideRepo) {
+		throw new Error(
+			`Closeout gates path must stay within the repository root: ${path}`,
+		);
+	}
+	return resolvedPath;
+}
+
 function loadCloseoutGates(path: string, repoRoot: string): HePhaseExit {
-	const resolvedPath = resolve(repoRoot, path);
+	const resolvedPath = resolveRepoScopedPath(path, repoRoot);
 	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
 	return normalizeCloseoutGatesArtifact(parsed, path);
 }

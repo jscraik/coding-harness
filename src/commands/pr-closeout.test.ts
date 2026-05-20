@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -127,10 +127,15 @@ const PASSING_CLOSEOUT_GATES = {
 };
 
 function writeCloseoutGates(
-	dir: string,
+	_dir: string,
 	artifact: unknown = PASSING_CLOSEOUT_GATES,
 ): string {
-	const path = join(dir, "closeout-gates.json");
+	const baseDir = join(process.cwd(), "codex-scripts", "pr-closeout-tests");
+	mkdirSync(baseDir, { recursive: true });
+	const path = join(
+		mkdtempSync(join(baseDir, "closeout-gates-")),
+		"closeout-gates.json",
+	);
 	writeFileSync(path, JSON.stringify(artifact));
 	return path;
 }
@@ -442,6 +447,75 @@ describe("runPrCloseoutCLI", () => {
 			status: "fail",
 			error: expect.stringContaining(
 				"Closeout evidence must come from either --input or --gates/--phase-exit, not both",
+			),
+		});
+	});
+
+	it("rejects closeout gate paths that escape the repo root", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const repoRoot = join(dir, "repo");
+		mkdirSync(repoRoot);
+		writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			[
+				"--json",
+				"--repo",
+				repoRoot,
+				"--pr",
+				"258",
+				"--gates",
+				"../closeout-gates.json",
+			],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"Closeout gates path must stay within the repository root",
 			),
 		});
 	});
