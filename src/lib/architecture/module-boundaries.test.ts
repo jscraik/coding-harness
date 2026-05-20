@@ -476,6 +476,39 @@ const REMEDIATE_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const VERIFY_WORK_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/verify-work.ts",
+		maxLines: 25,
+		reason:
+			"Verify-work command must stay a command facade; wrapper execution and argument construction live behind the verify-work module seam.",
+	},
+	{
+		path: "src/lib/verify-work.ts",
+		maxLines: 10,
+		reason:
+			"Verify-work public facade must stay an export surface, not an implementation sink.",
+	},
+	{
+		path: "src/lib/verify-work/args.ts",
+		maxLines: 60,
+		reason:
+			"Verify-work args seam must stay focused on wrapper flag construction.",
+	},
+	{
+		path: "src/lib/verify-work/runner.ts",
+		maxLines: 115,
+		reason:
+			"Verify-work runner seam must stay focused on wrapper execution and exit-code mapping.",
+	},
+	{
+		path: "src/lib/verify-work/types.ts",
+		maxLines: 25,
+		reason:
+			"Verify-work types seam must stay focused on the public command contract.",
+	},
+] as const;
+
 const RUNTIME_CARD_RUNTIME_RATCHETS = [
 	{
 		path: "src/lib/runtime/runtime-card.ts",
@@ -839,6 +872,15 @@ const OUTPUT_NORMALISE_SUBMODULES = [
 	"./normalise-pr-template-gate.js",
 	"./normalise-renderer.js",
 ] as const;
+const VERIFY_WORK_PUBLIC_FACADE_SUBMODULES = [
+	"./verify-work/runner.js",
+	"./verify-work/types.js",
+] as const;
+const VERIFY_WORK_INTERNAL_IMPORT_PATTERN =
+	/^.*lib\/verify-work\/(?:args|runner|types)\.js$/;
+const APPROVED_VERIFY_WORK_INTERNAL_IMPORTERS = new Set([
+	"src/lib/verify-work.ts",
+]);
 
 function countFileLines(path: string): number {
 	const content = readFileSync(join(process.cwd(), path), "utf-8");
@@ -1053,6 +1095,40 @@ describe("module boundaries", () => {
 		for (const submodule of REMEDIATE_COMMAND_SUBMODULES) {
 			expect(facadeContent).toContain(submodule);
 		}
+	});
+
+	it("keeps verify-work surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(VERIFY_WORK_SURFACE_RATCHETS);
+	});
+
+	it("keeps verify-work internals behind the public facade", () => {
+		const publicFacadePath = "src/lib/verify-work.ts";
+		const publicFacadeContent = readFileSync(
+			join(process.cwd(), publicFacadePath),
+			"utf-8",
+		);
+		const commandFacadeContent = readFileSync(
+			join(process.cwd(), "src/commands/verify-work.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of VERIFY_WORK_PUBLIC_FACADE_SUBMODULES) {
+			expect(publicFacadeContent).toContain(submodule);
+		}
+		expect(commandFacadeContent).toContain("../lib/verify-work.js");
+
+		const violations = collectTypeScriptFiles("src")
+			.filter((path) => !path.startsWith("src/lib/verify-work/"))
+			.filter((path) => !APPROVED_VERIFY_WORK_INTERNAL_IMPORTERS.has(path))
+			.flatMap((path) =>
+				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8"))
+					.filter((specifier) =>
+						VERIFY_WORK_INTERNAL_IMPORT_PATTERN.test(specifier),
+					)
+					.map((specifier) => `${path} -> ${specifier}`),
+			);
+
+		expect(violations).toEqual([]);
 	});
 
 	it("keeps runtime-card contract and validation seams split after decomposition", () => {

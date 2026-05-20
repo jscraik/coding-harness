@@ -10,6 +10,7 @@ last_validated: 2026-05-20
 - [Deep Module And Effect Boundaries](#deep-module-and-effect-boundaries)
 - [Agent Boundary Enforcement](#agent-boundary-enforcement)
 - [CLI Registry Boundaries](#cli-registry-boundaries)
+- [Verify Work Command Boundary](#verify-work-command-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
 - [Doctor Command Boundaries](#doctor-command-boundaries)
@@ -202,6 +203,30 @@ parsing and delegation belong in named adapters:
   `doctor-command-spec.ts`, `audit-command-spec.ts`,
   `org-audit-command-spec.ts`, `tooling-audit-command-spec.ts`, and
   `preset-command-spec.ts`.
+
+## Verify Work Command Boundary
+
+Verify-work is the closeout trust surface for repo-local validation. Its public
+command facade stays small while wrapper execution and option-to-flag mapping
+live behind a deep module seam:
+
+- `src/commands/verify-work.ts`
+  - Command facade that preserves the existing CLI export contract and imports
+    only `src/lib/verify-work.ts`.
+- `src/lib/verify-work.ts`
+  - Public facade for verify-work execution, runtime adapter, exit codes, and
+    CLI option types.
+- `src/lib/verify-work/args.ts`
+  - Internal wrapper flag construction seam.
+- `src/lib/verify-work/runner.ts`
+  - Internal wrapper execution, precondition, spawn-error, signal, and exit-code
+    mapping seam.
+- `src/lib/verify-work/types.ts`
+  - Public command option and exit-code contract.
+
+Executable guards in `src/lib/architecture/module-boundaries.test.ts` keep the
+command facade thin, ratchet the internal modules, and fail if callers bypass the
+public facade to import `src/lib/verify-work/*` internals.
 
 ## Output Normalisation Boundaries
 

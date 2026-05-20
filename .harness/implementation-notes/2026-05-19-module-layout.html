@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, verify-work, replay, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+            PR closeout is the main deep module. Doctor, command catalog, verify-work, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -679,7 +679,57 @@
         </section>
 
         <section class="panel">
-          <h2>1b. Output Normalisation Seams</h2>
+          <h2>1b. Verify-Work Closeout Trust Surface</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/verify-work.ts</strong>
+              <span>
+                Command facade. Callers keep the existing CLI export contract
+                and enter the deep module through src/lib/verify-work.ts.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module public">
+                <strong>src/lib/verify-work.ts</strong>
+                <span>
+                  Public facade for runVerifyWork, the runtime adapter, exit
+                  codes, and CLI option types.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>verify-work/args.ts</strong>
+                <span>
+                  Internal wrapper flag construction. Agents can edit this
+                  seam without changing caller imports.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>verify-work/runner.ts</strong>
+                <span>
+                  Internal wrapper execution, precondition, spawn-error,
+                  signal, and exit-code mapping seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>verify-work/types.ts</strong>
+                <span>
+                  Small option and exit-code contract for the command surface.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facade and fails if callers import
+                  verify-work internals instead of the public facade.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>1c. Output Normalisation Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/lib/output/normalise.ts</strong>
@@ -1291,8 +1341,11 @@
               runtime-card-command-spec.ts.
               PR closeout delegation now lives behind
               pr-closeout-command-spec.ts.
-              Verify-work resume, repository-root, and governance option
-              projection now lives behind verify-work-command-spec.ts.
+              Verify-work command execution is now split behind
+              src/lib/verify-work.ts with args, runner, and types as internal
+              module seams. The registry adapter still owns resume,
+              repository-root, and governance option projection in
+              verify-work-command-spec.ts.
               Replay trace selection, listing, dry-run, JSON, and trace-dir
               projection now lives behind replay-command-spec.ts.
               Gardener docs path, stale-days, dry-run, and JSON projection now
