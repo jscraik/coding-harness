@@ -143,7 +143,7 @@ process.stdout.write(normalizeDiagramContextLines(lines));
 NODE
 			;;
 		*/diagram-context.meta.json)
-			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'
+			jq -c 'del(.generated_at, .generatedAt, .last_generated_epoch, .min_interval_seconds, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/manifest.json)
 			jq -c 'del(.generatedAt) | (.diagrams // []) |= map(del(.lines, .bytes))' "$file" | shasum -a 256 | awk '{print $1}'

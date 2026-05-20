@@ -135,7 +135,7 @@ printf '%s\n' "$*" > .refresh-invoked
 		write(root, "src/example.test.ts", "export const exampleTest = 2;\n");
 
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
-		expect(result.status).toBe(0);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
 		expect(result.stdout).toContain(
 			"Diagram freshness check skipped: no architecture-sensitive implementation paths changed.",
 		);
@@ -226,12 +226,16 @@ printf '%s\n' "$*" > .refresh-invoked
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
 fence="$(printf '\\x60\\x60\\x60')"
-printf '%s\\n' \
-	"# Diagram Context Pack" \
-	"" \
-	"Generated: 2026-03-12T10:00:00Z" \
-	"" \
-	"## system" \
+		printf '%s\\n' \
+		"# Diagram Context Pack" \
+		"" \
+		"Generated: 2026-03-12T10:00:00Z" \
+		"" \
+		"## Changed source focus" \
+		"" \
+		"- src/commands/pr-closeout.ts" \
+		"" \
+		"## system" \
 	"" \
 	"\${fence}mermaid" \
 	"graph TD" \
@@ -252,10 +256,31 @@ jq -n --tab \
 `);
 		roots.push(root);
 
+		write(
+			root,
+			"AI/context/diagram-context.md",
+			[
+				"# Diagram Context Pack",
+				"",
+				"Generated: 2026-03-12T09:00:00Z",
+				"",
+				"## Changed source focus",
+				"",
+				"- src/lib/runtime/local-runtime-card.ts",
+				"",
+				"## system",
+				"",
+				"```mermaid",
+				"graph TD",
+				"  A[Start] --> B[Finish]",
+				"```",
+				"",
+			].join("\n"),
+		);
 		write(root, "src/example.ts", "export const example = 4;\n");
 
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
-		expect(result.status).toBe(0);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
 		expect(result.stdout).toContain("Diagram freshness check passed.");
 	});
 
