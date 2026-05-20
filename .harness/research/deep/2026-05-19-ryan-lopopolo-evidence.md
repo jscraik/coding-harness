@@ -1,6 +1,11 @@
 # Ryan Lopopolo Harness Engineering Evidence Extraction
 
 Generated: 2026-05-19
+Source snapshot commit: <git-sha>
+Extraction tool/version: <tool>@<version>
+Primary-source digest set:
+- <path>: sha256:<digest>
+- <path>: sha256:<digest>
 
 Primary sources:
 
@@ -18,7 +23,6 @@ Supporting sources:
 - .harness/research/2026-05-16-harness-engineering-source-intake/chatgpt-notes/risks-critiques-and-programmable-organizations-008.md
 - .harness/research/2026-05-16-harness-engineering-source-intake/chatgpt-notes/missing-routes-and-governance-questions-007.md
 - .harness/research/2026-05-16-harness-engineering-source-intake/chatgpt-notes/multi-agent-review-fuzzy-compiler-005.md
-
 Evidence posture:
 
 - This is cold research, not an instruction surface.
