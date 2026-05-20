@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { existsSync, readFileSync, readdirSync } = require("node:fs");
-const { join, resolve } = require("node:path");
+const { join, resolve, sep } = require("node:path");
 
 const REPO_ROOT = resolve(__dirname, "..");
 
@@ -102,6 +102,7 @@ function collectAdmissionRecordPaths() {
 	return readdirSync(admissionDir)
 		.filter((name) => /steering-admission.*\.md$/i.test(name))
 		.map((name) => join(ADMISSION_RECORD_DIR, name))
+		.map((admissionPath) => admissionPath.split(sep).join("/"))
 		.sort();
 }
 

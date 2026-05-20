@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -127,10 +127,10 @@ const PASSING_CLOSEOUT_GATES = {
 };
 
 function writeCloseoutGates(
-	_dir: string,
+	dir: string,
 	artifact: unknown = PASSING_CLOSEOUT_GATES,
 ): string {
-	const baseDir = join(process.cwd(), "codex-scripts", "pr-closeout-tests");
+	const baseDir = join(dir, "pr-closeout-tests");
 	mkdirSync(baseDir, { recursive: true });
 	const path = join(
 		mkdtempSync(join(baseDir, "closeout-gates-")),
@@ -520,6 +520,61 @@ describe("runPrCloseoutCLI", () => {
 		});
 	});
 
+	it("fails closed when closeout gates resolve through a symlink outside repo", async () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-pr-closeout-repo-"));
+		const outsideRoot = mkdtempSync(
+			join(tmpdir(), "harness-pr-closeout-outside-"),
+		);
+		const outsideGatesPath = writeCloseoutGates(outsideRoot);
+		const linkPath = join(repoRoot, "safe-link");
+		symlinkSync(outsideGatesPath, linkPath);
+		const runner: TestRunner = (command, args) => {
+			if (command === "git" && args[0] === "rev-parse") {
+				return repoRoot;
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					isDraft: false,
+					mergeable: "MERGEABLE",
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					baseRefName: "main",
+					headRefName: "codex/test",
+					url: "https://github.com/jscraik/coding-harness/pull/258",
+					repository: {
+						owner: { login: "jscraik" },
+						name: "coding-harness",
+					},
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			return "";
+		};
+
+		const result = await capture(
+			["--json", "--repo", repoRoot, "--pr", "258", "--gates", "safe-link"],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"Closeout gates path must stay within the repository root",
+			),
+		});
+	});
+
 	it("returns usage errors for missing input", async () => {
 		const result = await capture(["--json"]);
 
@@ -586,15 +641,7 @@ describe("runPrCloseoutCLI", () => {
 			return "ok";
 		};
 		const result = await capture(
-			[
-				"--json",
-				"--repo",
-				process.cwd(),
-				"--pr",
-				"258",
-				"--gates",
-				closeoutGatesPath,
-			],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 
@@ -674,7 +721,15 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--phase-exit", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--phase-exit",
+				closeoutGatesPath,
+			],
 			runner,
 		);
 
@@ -721,7 +776,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output);
@@ -796,7 +851,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -860,7 +915,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 
@@ -932,7 +987,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -1009,7 +1064,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1080,7 +1135,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1153,7 +1208,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1226,7 +1281,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1297,7 +1352,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1369,7 +1424,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1436,7 +1491,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -1523,7 +1578,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1758,7 +1813,7 @@ Refs JSC-328
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -1837,7 +1892,7 @@ Refs JSC-328
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -1910,7 +1965,7 @@ Refs JSC-328
 		};
 
 		const result = await capture(
-			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import {
@@ -117,9 +117,20 @@ function loadInput(path: string): PrCloseoutInput {
 }
 
 function resolveRepoScopedPath(path: string, repoRoot: string): string {
-	const resolvedRoot = resolve(repoRoot);
-	const resolvedPath = resolve(resolvedRoot, path);
-	const relativePath = relative(resolvedRoot, resolvedPath);
+	const lexicalRoot = resolve(repoRoot);
+	const resolvedPath = resolve(lexicalRoot, path);
+	const lexicalRelativePath = relative(lexicalRoot, resolvedPath);
+	const lexicallyInsideRepo =
+		lexicalRelativePath === "" ||
+		(!lexicalRelativePath.startsWith("..") && !isAbsolute(lexicalRelativePath));
+	if (!lexicallyInsideRepo) {
+		throw new Error(
+			`Closeout gates path must stay within the repository root: ${path}`,
+		);
+	}
+	const resolvedRoot = realpathSync(lexicalRoot);
+	const canonicalPath = realpathSync(resolvedPath);
+	const relativePath = relative(resolvedRoot, canonicalPath);
 	const isInsideRepo =
 		relativePath === "" ||
 		(!relativePath.startsWith("..") && !isAbsolute(relativePath));
@@ -128,7 +139,7 @@ function resolveRepoScopedPath(path: string, repoRoot: string): string {
 			`Closeout gates path must stay within the repository root: ${path}`,
 		);
 	}
-	return resolvedPath;
+	return canonicalPath;
 }
 
 function loadCloseoutGates(path: string, repoRoot: string): HePhaseExit {

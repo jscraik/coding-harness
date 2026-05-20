@@ -102,13 +102,6 @@ normalized_checksum() {
 	local rel_path="$2"
 
 	case "$rel_path" in
-		.diagram/agent.mmd|.diagram/c4context.mmd|.diagram/class.mmd|.diagram/events.mmd|.diagram/flow.mmd|.diagram/rag.mmd|.diagram/security.mmd|.diagram/sequence.mmd|.diagram/user.mmd)
-			# The upstream diagram generator can reorder or reselect compacted
-			# advisory diagrams between runs. The freshness gate still refreshes
-			# and restores these artifacts, but does not treat their volatile
-			# presentation churn as stale architecture context.
-			printf '%s\n' "$rel_path" | shasum -a 256 | awk '{print $1}'
-			;;
 		*.mmd)
 			# Mermaid generators can emit volatile node identifiers. Compare
 			# generated diagram artifacts by normalized graph content while
