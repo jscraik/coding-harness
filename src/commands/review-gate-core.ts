@@ -8,11 +8,10 @@ import {
 } from "../lib/contract/types.js";
 import { requiresCanonicalNorthStarSurfaces } from "../lib/contract/validator-helpers.js";
 import {
-	findReviewCheckRun,
 	isCheckRunInProgress,
 	isCheckRunPassing,
 } from "../lib/github/check-run.js";
-import type { CheckRun, PullRequestReview } from "../lib/github/client.js";
+import type { PullRequestReview } from "../lib/github/client.js";
 import { GitHubClient } from "../lib/github/client.js";
 import {
 	formatRerunComment,
@@ -26,14 +25,20 @@ import {
 	renderGateDecision,
 } from "../lib/output/normalise.js";
 import { runPlanGate } from "../lib/plan-gate/detector.js";
-import {
-	type NormalizedRequiredChecksManifest,
-	normalizeRequiredChecksManifest,
-} from "../lib/policy/required-checks.js";
 // Use the lib-layer bridge instead of importing directly from another command.
 import { runCheckAuthz } from "../lib/review-gate/authz.js";
 import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-packet.js";
 import { evaluateNorthStarDecisionQuestions } from "../lib/review-gate/north-star-questions.js";
+import { RequiredChecksManifestError } from "../lib/review-gate/required-check-manifest.js";
+import {
+	DEFAULT_REVIEW_CHECK_NAME,
+	LEGACY_REVIEW_CHECK_NAME_FALLBACKS,
+	evaluateRequiredChecks,
+	resolveRequestedReviewCheckName,
+	resolveRequiredCheckAliases,
+	resolveRequiredCheckSources,
+	resolveReviewCheckResult,
+} from "../lib/review-gate/required-checks.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -67,22 +72,6 @@ import type {
 
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 const DEFAULT_REVIEW_GATE_AUTHZ_CONTRACT = "harness.contract.json";
-const DEFAULT_REVIEW_CHECK_NAME = "pr-pipeline";
-const DEFAULT_REQUIRED_CHECK_MANIFEST_PATH = ".harness/ci-required-checks.json";
-const LEGACY_REVIEW_CHECK_NAME_FALLBACKS = [
-	"risk-policy-gate",
-	"code-review",
-] as const;
-
-class RequiredChecksManifestError extends Error {
-	readonly manifestPath: string;
-
-	constructor(manifestPath: string, reason: string) {
-		super(`Invalid required-check manifest '${manifestPath}': ${reason}`);
-		this.name = "RequiredChecksManifestError";
-		this.manifestPath = manifestPath;
-	}
-}
 
 type BaseReviewGateOutput = Omit<
 	ReviewGateOutput,
@@ -117,87 +106,6 @@ function getReadinessCheckLabel(checkName?: string): string {
 		return DEFAULT_REVIEW_CHECK_NAME;
 	}
 	return normalizedCheckName;
-}
-
-function normalizeConstraintSourceToken(value: string): string {
-	return value
-		.trim()
-		.toLowerCase()
-		.replace(/[\s_]+/g, "-")
-		.replace(/-+/g, "-")
-		.replace(/^-+|-+$/g, "");
-}
-
-function resolveReviewCheckResult(
-	checkRuns: CheckRun[],
-	requestedCheckName: string,
-	pullRequestHeadSha: string,
-	requiredCheckSources?: Map<string, RequiredCheckSourceConstraint>,
-): {
-	checkResult: ReturnType<typeof findReviewCheckRun>;
-	resolvedCheckName: string;
-} {
-	const candidates = [requestedCheckName];
-	const canonicalFallbackCandidates = new Set<string>([
-		DEFAULT_REVIEW_CHECK_NAME,
-		...LEGACY_REVIEW_CHECK_NAME_FALLBACKS,
-	]);
-	if (canonicalFallbackCandidates.has(requestedCheckName)) {
-		for (const fallbackCheckName of canonicalFallbackCandidates) {
-			if (fallbackCheckName === requestedCheckName) {
-				continue;
-			}
-			if (!candidates.includes(fallbackCheckName)) {
-				candidates.push(fallbackCheckName);
-			}
-		}
-	}
-
-	for (const candidateCheckName of candidates) {
-		const sourceConstraint = requiredCheckSources?.get(candidateCheckName);
-		let checkResult = findReviewCheckRun(checkRuns, candidateCheckName, {
-			headSha: pullRequestHeadSha,
-			...(sourceConstraint?.providerSlugs
-				? { providerSlugs: sourceConstraint.providerSlugs }
-				: {}),
-			...(sourceConstraint?.sourceAppIds
-				? { sourceAppIds: sourceConstraint.sourceAppIds }
-				: {}),
-		});
-		if (!checkResult.found && sourceConstraint) {
-			checkResult = findReviewCheckRun(checkRuns, candidateCheckName, {
-				headSha: pullRequestHeadSha,
-			});
-		}
-		if (checkResult.found) {
-			return {
-				checkResult,
-				resolvedCheckName: candidateCheckName,
-			};
-		}
-	}
-
-	const fallbackSourceConstraint =
-		requiredCheckSources?.get(requestedCheckName);
-	let fallbackCheckResult = findReviewCheckRun(checkRuns, requestedCheckName, {
-		headSha: pullRequestHeadSha,
-		...(fallbackSourceConstraint?.providerSlugs
-			? { providerSlugs: fallbackSourceConstraint.providerSlugs }
-			: {}),
-		...(fallbackSourceConstraint?.sourceAppIds
-			? { sourceAppIds: fallbackSourceConstraint.sourceAppIds }
-			: {}),
-	});
-	if (!fallbackCheckResult.found && fallbackSourceConstraint) {
-		fallbackCheckResult = findReviewCheckRun(checkRuns, requestedCheckName, {
-			headSha: pullRequestHeadSha,
-		});
-	}
-
-	return {
-		checkResult: fallbackCheckResult,
-		resolvedCheckName: requestedCheckName,
-	};
 }
 
 /**
@@ -339,11 +247,6 @@ interface PlanTraceabilityResult {
 	status: ReviewGateOutput["plan_traceability_status"];
 	planIds: string[];
 	blockers: string[];
-}
-
-interface RequiredCheckSourceConstraint {
-	providerSlugs: Set<string>;
-	sourceAppIds: Set<string>;
 }
 
 /**
@@ -527,318 +430,6 @@ function evaluateReviewerIndependence({
 	}
 
 	return { passed: true, blockers: [] };
-}
-
-function evaluateRequiredChecks(
-	checkRuns: CheckRun[],
-	requiredChecks: string[],
-	requiredCheckAliases: Map<string, string[]>,
-	requiredCheckSources: Map<string, RequiredCheckSourceConstraint>,
-): string[] {
-	const blockers: string[] = [];
-	const latestByCheckName = new Map<string, CheckRun[]>();
-
-	for (const run of checkRuns) {
-		const existing = latestByCheckName.get(run.name) ?? [];
-		existing.push(run);
-		latestByCheckName.set(run.name, existing);
-	}
-
-	const normalizeSourceToken = (
-		value: string | number | undefined,
-	): string | undefined => {
-		if (typeof value === "number") {
-			return String(value);
-		}
-		if (typeof value !== "string") {
-			return undefined;
-		}
-		const normalized = value
-			.trim()
-			.toLowerCase()
-			.replace(/[\s_]+/g, "-")
-			.replace(/-+/g, "-")
-			.replace(/^-+|-+$/g, "");
-		return normalized.length > 0 ? normalized : undefined;
-	};
-
-	const matchesExpectedSource = (
-		run: CheckRun,
-		constraint: RequiredCheckSourceConstraint | undefined,
-	): boolean => {
-		if (!constraint) {
-			return true;
-		}
-
-		const appSlug = normalizeSourceToken(run.app?.slug);
-		const appId = normalizeSourceToken(run.app?.id);
-		const appName = normalizeSourceToken(run.app?.name);
-
-		if (!appSlug && !appId && !appName) {
-			return false;
-		}
-		if (
-			(appSlug && constraint.providerSlugs.has(appSlug)) ||
-			(appSlug && constraint.sourceAppIds.has(appSlug)) ||
-			(appId && constraint.sourceAppIds.has(appId)) ||
-			(appName && constraint.providerSlugs.has(appName)) ||
-			(appName && constraint.sourceAppIds.has(appName))
-		) {
-			return true;
-		}
-		return false;
-	};
-
-	const describeExpectedSource = (
-		constraint: RequiredCheckSourceConstraint | undefined,
-	): string | undefined => {
-		if (!constraint) {
-			return undefined;
-		}
-		const expected = [
-			...constraint.providerSlugs.values(),
-			...constraint.sourceAppIds.values(),
-		].filter((value, index, values) => values.indexOf(value) === index);
-		return expected.length > 0 ? expected.join(", ") : undefined;
-	};
-
-	for (const checkName of requiredChecks) {
-		const candidateNames = [
-			checkName,
-			...(requiredCheckAliases.get(checkName) ?? []),
-		].filter((value, index, values) => values.indexOf(value) === index);
-		const sourceConstraint = requiredCheckSources.get(checkName);
-		const candidateRuns = candidateNames
-			.flatMap((candidateName) => latestByCheckName.get(candidateName) ?? [])
-			.filter((run, index, runs) => runs.indexOf(run) === index);
-		const sourceMatchedRuns = candidateRuns
-			.filter((run) => matchesExpectedSource(run, sourceConstraint))
-			.sort((left, right) => right.id - left.id);
-		const checkRun = sourceMatchedRuns[0];
-		if (!checkRun) {
-			if (candidateRuns.length > 0 && sourceConstraint) {
-				const expectedSource = describeExpectedSource(sourceConstraint);
-				blockers.push(
-					expectedSource
-						? `Required check '${checkName}' was found, but only from non-authoritative providers (expected source: ${expectedSource})`
-						: `Required check '${checkName}' was found, but only from non-authoritative providers`,
-				);
-				continue;
-			}
-			blockers.push(
-				`Required check '${checkName}' was not found for current HEAD SHA`,
-			);
-			continue;
-		}
-		if (checkRun.status !== "completed") {
-			blockers.push(
-				`Required check '${checkName}' is not complete (status: ${checkRun.status})`,
-			);
-			continue;
-		}
-		if (checkRun.conclusion !== "success") {
-			blockers.push(
-				`Required check '${checkName}' did not pass (conclusion: ${checkRun.conclusion ?? "unknown"})`,
-			);
-		}
-	}
-
-	return blockers;
-}
-
-function resolveRequiredChecksManifestPath(
-	contract: HarnessContract,
-	contractPath?: string,
-): string {
-	const manifestPath =
-		contract.ciProviderPolicy?.requiredCheckManifestPath ??
-		DEFAULT_REQUIRED_CHECK_MANIFEST_PATH;
-	const resolvedContractPath =
-		typeof contractPath === "string" && contractPath.trim().length > 0
-			? resolvePath(contractPath)
-			: undefined;
-	const contractDir = resolvedContractPath
-		? dirname(resolvedContractPath)
-		: process.cwd();
-	if (isAbsolute(manifestPath)) {
-		return manifestPath;
-	}
-	const manifestFromContractDir = resolvePath(contractDir, manifestPath);
-	if (existsSync(manifestFromContractDir)) {
-		return manifestFromContractDir;
-	}
-	const usesDefaultManifestPath =
-		manifestPath === DEFAULT_REQUIRED_CHECK_MANIFEST_PATH;
-	if (!usesDefaultManifestPath) {
-		return manifestFromContractDir;
-	}
-	let cursor = contractDir;
-	while (true) {
-		if (existsSync(resolvePath(cursor, ".git"))) {
-			const manifestFromRepoRoot = resolvePath(cursor, manifestPath);
-			if (existsSync(manifestFromRepoRoot)) {
-				return manifestFromRepoRoot;
-			}
-		}
-		const parent = dirname(cursor);
-		if (parent === cursor) {
-			return manifestFromContractDir;
-		}
-		cursor = parent;
-	}
-}
-
-function loadNormalizedRequiredChecksManifest(
-	contract: HarnessContract,
-	contractPath?: string,
-): NormalizedRequiredChecksManifest | undefined {
-	const resolvedManifestPath = resolveRequiredChecksManifestPath(
-		contract,
-		contractPath,
-	);
-	if (!existsSync(resolvedManifestPath)) {
-		return undefined;
-	}
-	let parsedManifest: unknown;
-	try {
-		parsedManifest = JSON.parse(readFileSync(resolvedManifestPath, "utf-8"));
-	} catch (error) {
-		throw new RequiredChecksManifestError(
-			resolvedManifestPath,
-			`malformed JSON (${sanitizeError(error)})`,
-		);
-	}
-	const normalized = normalizeRequiredChecksManifest(parsedManifest);
-	if (!normalized.ok) {
-		throw new RequiredChecksManifestError(
-			resolvedManifestPath,
-			normalized.error,
-		);
-	}
-	return normalized.value;
-}
-
-function resolveDefaultReviewCheckName(
-	contract: HarnessContract,
-	contractPath?: string,
-): string {
-	const policyPrimaryCheck =
-		contract.ciProviderPolicy?.primaryCheckName?.trim() ?? "";
-	if (policyPrimaryCheck.length > 0) {
-		return policyPrimaryCheck;
-	}
-
-	const normalizedManifest = loadNormalizedRequiredChecksManifest(
-		contract,
-		contractPath,
-	);
-	if (!normalizedManifest) {
-		return DEFAULT_REVIEW_CHECK_NAME;
-	}
-
-	const activeProviderGate = normalizedManifest.gates.find(
-		(gate) =>
-			gate.enabled !== false &&
-			gate.class === "required" &&
-			gate.provider === normalizedManifest.activeProvider &&
-			typeof gate.githubCheckName === "string" &&
-			gate.githubCheckName.trim().length > 0,
-	);
-	return activeProviderGate?.githubCheckName ?? DEFAULT_REVIEW_CHECK_NAME;
-}
-
-function resolveRequestedReviewCheckName(
-	checkName: string,
-	contract: HarnessContract,
-	contractPath?: string,
-): string {
-	const explicitCheckName = checkName.trim();
-	if (explicitCheckName.length > 0) {
-		return explicitCheckName;
-	}
-	return resolveDefaultReviewCheckName(contract, contractPath);
-}
-
-function resolveRequiredCheckAliases(
-	contract: HarnessContract,
-	contractPath?: string,
-): Map<string, string[]> {
-	const aliases = new Map<string, string[]>();
-	const normalizedManifest = loadNormalizedRequiredChecksManifest(
-		contract,
-		contractPath,
-	);
-	if (!normalizedManifest) {
-		return aliases;
-	}
-	for (const gate of normalizedManifest.gates) {
-		if (
-			gate.enabled === false ||
-			gate.class !== "required" ||
-			gate.provider !== normalizedManifest.activeProvider
-		) {
-			continue;
-		}
-		if (!gate.githubCheckName || gate.githubCheckName === gate.displayName) {
-			continue;
-		}
-		const existing = aliases.get(gate.displayName) ?? [];
-		if (!existing.includes(gate.githubCheckName)) {
-			existing.push(gate.githubCheckName);
-		}
-		aliases.set(gate.displayName, existing);
-	}
-	return aliases;
-}
-
-function resolveRequiredCheckSources(
-	contract: HarnessContract,
-	contractPath?: string,
-): Map<string, RequiredCheckSourceConstraint> {
-	const sources = new Map<string, RequiredCheckSourceConstraint>();
-	const normalizedManifest = loadNormalizedRequiredChecksManifest(
-		contract,
-		contractPath,
-	);
-	if (!normalizedManifest) {
-		return sources;
-	}
-
-	for (const gate of normalizedManifest.gates) {
-		if (
-			gate.enabled === false ||
-			gate.class !== "required" ||
-			gate.provider !== normalizedManifest.activeProvider
-		) {
-			continue;
-		}
-
-		const normalizedSourceAppSlug = normalizeConstraintSourceToken(
-			gate.sourceAppSlug,
-		);
-		const normalizedSourceAppId = normalizeConstraintSourceToken(
-			gate.sourceAppId,
-		);
-		const keys = [
-			gate.displayName,
-			...(gate.githubCheckName ? [gate.githubCheckName] : []),
-		];
-		for (const key of keys) {
-			const existing = sources.get(key) ?? {
-				providerSlugs: new Set<string>(),
-				sourceAppIds: new Set<string>(),
-			};
-			if (normalizedSourceAppSlug.length > 0) {
-				existing.providerSlugs.add(normalizedSourceAppSlug);
-			}
-			if (normalizedSourceAppId.length > 0) {
-				existing.sourceAppIds.add(normalizedSourceAppId);
-			}
-			sources.set(key, existing);
-		}
-	}
-
-	return sources;
 }
 
 /**

@@ -1298,7 +1298,8 @@
               Gardener docs path, stale-days, dry-run, and JSON projection now
               lives behind gardener-command-spec.ts.
               Memory-gate memory, FORJAMIE, metrics, and JSON projection now
-              lives behind memory-gate-command-spec.ts.
+              lives behind memory-gate-command-spec.ts, while CLI output, trend
+              reporting, and metrics persistence now live inside memory/cli.ts.
               Silent-error files, directories, strictness, suggestions, and
               JSON projection now lives behind silent-error-command-spec.ts.
               Brainstorm path, topic, age, strictness, and JSON projection now
@@ -1342,9 +1343,10 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-              The current deep-module size warnings are cleared. The next
-              high-leverage slice should be selected from behavior pressure, not
-              just file length.
+              Current slice complete: memory-gate CLI output and metrics
+              persistence moved into memory/cli.ts. Next pressure point remains
+              behavior-led: drift-gate or replay should move only when the
+              runtime path and tests identify a concrete seam.
             </p>
           </article>
         </section>

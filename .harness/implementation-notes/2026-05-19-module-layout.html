@@ -757,8 +757,15 @@
               <div class="module doctor">
                 <strong>memory/validator.ts</strong>
                 <span>
-                  Internal schema, read-first, closeout, branch, metrics, and
-                  terminal or JSON validation behavior.
+                  Internal schema, read-first, closeout, branch, and validation
+                  result construction.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>memory/cli.ts</strong>
+                <span>
+                  Latest slice: CLI presentation, metrics persistence, trend
+                  reporting, and Codex branch display live behind this seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -778,8 +785,8 @@
               <div class="module guard">
                 <strong>module-boundaries.test.ts</strong>
                 <span>
-                  Ratchets the facade and fails if callers import memory/*
-                  internals instead of src/lib/memory-gate.ts.
+                  Ratchets validator, CLI, facade, and types; fails if callers
+                  import memory/* internals instead of src/lib/memory-gate.ts.
                 </span>
               </div>
             </div>
@@ -1456,8 +1463,8 @@
               Memory-gate memory, FORJAMIE, metrics, and JSON projection now
               lives behind memory-gate-command-spec.ts. Memory-gate execution
               now has a public facade in src/lib/memory-gate.ts, with the
-              validator and type contract kept behind an executable import
-              guard.
+              validator, CLI presentation seam, and type contract kept behind
+              an executable import guard.
               Silent-error files, directories, strictness, suggestions, and
               JSON projection now lives behind silent-error-command-spec.ts.
               Brainstorm path, topic, age, strictness, and JSON projection now
@@ -1501,9 +1508,10 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-              The current deep-module size warnings are cleared. The next
-              high-leverage slice should be selected from behavior pressure, not
-              just file length.
+              Current slice complete: memory-gate CLI output and metrics
+              persistence moved into memory/cli.ts. Next pressure point remains
+              behavior-led: drift-gate or replay should move only when the
+              runtime path and tests identify a concrete seam.
             </p>
           </article>
         </section>

@@ -88,6 +88,11 @@ they add durable evidence artifacts consumed by the agent cockpit. Refresh
 producer and adapter wiring changes.
 
 For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
+When required-check or CI migration logic is split into deep modules, keep the
+public command facade as orchestration only, add or update executable module
+ratchets in `src/lib/architecture/module-boundaries.test.ts`, and document the
+new seam in `docs/architecture/module-boundaries.md` so future agents can work
+inside the module without bypassing the boundary.
 For CI ownership architecture changes, keep `harness.contract.json` `ciOwnership` aligned with those required-check identities: CircleCI remains the primary PR gate, CodeRabbit remains independent review evidence, Semgrep Cloud remains independent external security evidence, and GitHub Actions workflows must not become automatic PR gates without a deliberate contract migration.
 For PR evidence-template changes, keep the local PR-template validator aligned
 with the GitHub PR body contract so agent closeout, CI validation, and reviewer

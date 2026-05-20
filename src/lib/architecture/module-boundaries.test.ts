@@ -4,9 +4,15 @@ import { describe, expect, it } from "vitest";
 
 const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 	{
-		path: "src/commands/ci-migrate.ts",
+		path: "src/commands/ci-migrate-core.ts",
 		maxLines: 10_400,
 		reason: "CI migration must move toward a control-plane service seam.",
+	},
+	{
+		path: "src/lib/ci/ci-migrate-merge-queue-window.ts",
+		maxLines: 380,
+		reason:
+			"CI migration merge-queue window state must stay focused on signed lifecycle state and replay-safety checks.",
 	},
 	{
 		path: "src/commands/drift-gate.ts",
@@ -349,6 +355,18 @@ const PR_CLOSEOUT_SURFACE_RATCHETS = [
 
 const REVIEW_GATE_DECISION_PACKET_RATCHETS = [
 	{
+		path: "src/lib/review-gate/required-check-manifest.ts",
+		maxLines: 95,
+		reason:
+			"Review-gate required-check manifest seam must stay focused on manifest path resolution, loading, and normalization errors.",
+	},
+	{
+		path: "src/lib/review-gate/required-checks.ts",
+		maxLines: 350,
+		reason:
+			"Review-gate required-check seam must stay focused on check-name, alias, manifest, and source-authority resolution.",
+	},
+	{
 		path: "src/lib/review-gate/decision-packet.ts",
 		maxLines: 390,
 		reason:
@@ -536,9 +554,15 @@ const MEMORY_GATE_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/lib/memory/validator.ts",
-		maxLines: 525,
+		maxLines: 430,
 		reason:
-			"Memory validator may stay deep, but callers must enter through the memory-gate public facade.",
+			"Memory validator may stay deep, but CLI presentation and metrics persistence must stay behind their own seam.",
+	},
+	{
+		path: "src/lib/memory/cli.ts",
+		maxLines: 130,
+		reason:
+			"Memory gate CLI seam must stay focused on presentation, metrics persistence, and facade result rendering.",
 	},
 	{
 		path: "src/lib/memory/types.ts",
@@ -878,6 +902,16 @@ const REMEDIATE_COMMAND_SUBMODULES = [
 	"./remediate-run-record.js",
 ] as const;
 const PR_CLOSEOUT_EVALUATOR_SUBMODULES = ["./recovery.js"] as const;
+const REVIEW_GATE_CORE_SUBMODULES = [
+	"../lib/review-gate/required-check-manifest.js",
+	"../lib/review-gate/required-checks.js",
+] as const;
+const REVIEW_GATE_CORE_FORBIDDEN_SYMBOLS = [
+	"class RequiredChecksManifestError",
+	"function evaluateRequiredChecks",
+	"function resolveReviewCheckResult",
+	"function resolveRequiredCheckSources",
+] as const;
 const REVIEW_GATE_DECISION_PACKET_SUBMODULES = [
 	"./recovery.js",
 	"./run-record.js",
@@ -944,11 +978,12 @@ const APPROVED_VERIFY_WORK_INTERNAL_IMPORTERS = new Set([
 	"src/lib/verify-work.ts",
 ]);
 const MEMORY_GATE_PUBLIC_FACADE_SUBMODULES = [
+	"./memory/cli.js",
 	"./memory/validator.js",
 	"./memory/types.js",
 ] as const;
 const MEMORY_GATE_INTERNAL_IMPORT_PATTERN =
-	/^.*memory\/(?:branch-enforcer|metrics-tracker|types|validator)\.js$/;
+	/^.*memory\/(?:branch-enforcer|cli|metrics-tracker|types|validator)\.js$/;
 const APPROVED_MEMORY_GATE_INTERNAL_IMPORTERS = new Set([
 	"src/lib/memory-gate.ts",
 ]);
@@ -1059,6 +1094,20 @@ describe("module boundaries", () => {
 
 	it("keeps review-gate decision packet seams split after decomposition", () => {
 		expectRatchetsWithinBudget(REVIEW_GATE_DECISION_PACKET_RATCHETS);
+	});
+
+	it("keeps review-gate required-check logic behind the command seam", () => {
+		const corePath = "src/commands/review-gate-core.ts";
+		const coreContent = readFileSync(join(process.cwd(), corePath), "utf-8");
+		const coreImports = importSpecifiers(coreContent);
+
+		for (const submodule of REVIEW_GATE_CORE_SUBMODULES) {
+			expect(coreImports).toContain(submodule);
+		}
+
+		for (const extractedSymbol of REVIEW_GATE_CORE_FORBIDDEN_SYMBOLS) {
+			expect(coreContent).not.toContain(extractedSymbol);
+		}
 	});
 
 	it("keeps review-gate recovery and run-record metadata behind the decision packet seam", () => {

@@ -10,6 +10,7 @@ last_validated: 2026-05-20
 - [Deep Module And Effect Boundaries](#deep-module-and-effect-boundaries)
 - [Agent Boundary Enforcement](#agent-boundary-enforcement)
 - [CLI Registry Boundaries](#cli-registry-boundaries)
+- [CI Migration Command Boundary](#ci-migration-command-boundary)
 - [Verify Work Command Boundary](#verify-work-command-boundary)
 - [Memory Gate Command Boundary](#memory-gate-command-boundary)
 - [Drift Gate Command Boundary](#drift-gate-command-boundary)
@@ -18,6 +19,7 @@ last_validated: 2026-05-20
 - [Doctor Command Boundaries](#doctor-command-boundaries)
 - [Harness Next Command Boundaries](#harness-next-command-boundaries)
 - [Replay Command Boundaries](#replay-command-boundaries)
+- [Review Gate Command Boundaries](#review-gate-command-boundaries)
 - [Review Gate Decision Packet Boundaries](#review-gate-decision-packet-boundaries)
 - [Runtime Card Command Boundaries](#runtime-card-command-boundaries)
 - [Runtime Card Runtime Boundaries](#runtime-card-runtime-boundaries)
@@ -212,6 +214,25 @@ parsing and delegation belong in named adapters:
   `org-audit-command-spec.ts`, `tooling-audit-command-spec.ts`, and
   `preset-command-spec.ts`.
 
+## CI Migration Command Boundary
+
+CI migration remains a transitional command core, but snapshot-owned control
+plane state should move behind focused CI modules before the command facade
+absorbs more safety policy.
+
+- `src/commands/ci-migrate-core.ts`
+  - Transitional command orchestration, action dispatch, and migration report
+    assembly. It must keep moving policy-specific clusters into named CI
+    modules.
+- `src/lib/ci/ci-migrate-merge-queue-window.ts`
+  - Signed merge-queue cutover window state, replay-binding shape validation,
+    signature verification, terminal-window admission, and lifecycle-state
+    writes for prepare/apply/commit flows.
+
+Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
+the command core and merge-queue window module so signed lifecycle-state policy
+does not grow back into the command orchestration file.
+
 ## Verify Work Command Boundary
 
 Verify-work is the closeout trust surface for repo-local validation. Its public
@@ -249,7 +270,10 @@ terminal or JSON presentation. The public seam is deliberately small:
 - `src/lib/memory-gate.ts`
   - Public facade for memory-gate execution and command option types.
 - `src/lib/memory/validator.ts`
-  - Internal Local Memory compliance validator and CLI presenter.
+  - Internal Local Memory compliance validator.
+- `src/lib/memory/cli.ts`
+  - Internal CLI presentation, metrics persistence, trend reporting, and Codex
+    branch display seam.
 - `src/lib/memory/types.ts`
   - Internal schema, result, metrics, and option contract exported through the
     public facade.
@@ -258,9 +282,9 @@ terminal or JSON presentation. The public seam is deliberately small:
     delegates through the public facade rather than the command module.
 
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
-the command, facade, registry adapter, validator, and type contract, and fail if
-callers bypass `src/lib/memory-gate.ts` to import `src/lib/memory/*`
-internals.
+the command, facade, registry adapter, validator, CLI presentation seam, and
+type contract, and fail if callers bypass `src/lib/memory-gate.ts` to import
+`src/lib/memory/*` internals.
 
 ## Drift Gate Command Boundary
 
@@ -446,6 +470,30 @@ The replay facade should stay about operator input, trace selection, and replay
 execution. Recovery ownership, retry-stop reasoning, and run-record payload
 construction should stay in `replay-run-record.ts` so agents can adjust
 operational metadata without changing trace replay behavior.
+
+## Review Gate Command Boundaries
+
+Review gate is a command facade plus focused validation and artifact seams:
+
+- `src/commands/review-gate.ts`
+  - Public compatibility facade for `review-gate-core.ts`.
+- `src/commands/review-gate-core.ts`
+  - Runtime orchestration for PR loading, review policy evaluation, polling,
+    reviewer independence, review-context readiness, authz preflight, and
+    terminal output.
+- `src/lib/review-gate/required-checks.ts`
+  - Required-check name resolution, required-check manifest loading,
+    provider-source authority matching, alias resolution, and check-run blocker
+    projection.
+- `src/lib/review-gate/required-check-manifest.ts`
+  - Required-check manifest path resolution, JSON loading, normalization, and
+    manifest-specific validation errors.
+
+The command core should stay about orchestration and policy composition.
+Required-check identity, aliases, and source-authority constraints stay in
+`required-checks.ts`; manifest parsing stays in `required-check-manifest.ts`
+so agents can adjust CI provider mapping without changing the main review-gate
+control flow.
 
 ## Review Gate Decision Packet Boundaries
 
@@ -691,6 +739,12 @@ Threshold policy:
   decision seam (`<= 160` lines).
 - `src/commands/next-runner.ts` must remain a harness-next decision producer
   seam (`<= 250` lines).
+- `src/lib/review-gate/required-checks.ts` must remain a review-gate
+  required-check resolution seam (`<= 350` lines) for check-name, alias,
+  manifest, and source-authority logic.
+- `src/lib/review-gate/required-check-manifest.ts` must remain a review-gate
+  manifest seam (`<= 95` lines) for path resolution, loading, and validation
+  errors.
 - `src/commands/replay.ts` must remain a replay command facade (`<= 330`
   lines); canonical run-record and recovery metadata moves into
   `replay-run-record.ts`.
