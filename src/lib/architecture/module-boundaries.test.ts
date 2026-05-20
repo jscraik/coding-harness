@@ -82,7 +82,7 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_572,
+		maxLines: 1_545,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
 	},
@@ -108,6 +108,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 25,
 		reason:
 			"PR closeout command spec must stay focused on PR closeout command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/verify-coderabbit-command-spec.ts",
+		maxLines: 40,
+		reason:
+			"CodeRabbit review evidence adapter must keep CLI option mapping and command dispatch local.",
 	},
 	{
 		path: "src/lib/cli/registry/docs-gate-command-spec.ts",
@@ -615,6 +621,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/rule-lifecycle-gate-command-spec.ts",
 	"src/lib/cli/registry/symphony-check-command-spec.ts",
 	"src/lib/cli/registry/tooling-audit-command-spec.ts",
+	"src/lib/cli/registry/verify-coderabbit-command-spec.ts",
 	"src/lib/cli/registry/workflow-generate-command-spec.ts",
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
@@ -699,6 +706,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./rule-lifecycle-gate-command-spec.js",
 	"./symphony-check-command-spec.js",
 	"./tooling-audit-command-spec.js",
+	"./verify-coderabbit-command-spec.js",
 	"./workflow-generate-command-spec.js",
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [

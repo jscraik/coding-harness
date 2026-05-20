@@ -359,7 +359,7 @@
             </div>
             <div class="legend-item">
               <span class="swatch doctor"></span>
-              <span><strong>Doctor seam:</strong> a focused doctor command work area.</span>
+              <span><strong>Agent-safe work area:</strong> a focused internal box with a guarded public surface.</span>
             </div>
             <div class="legend-item">
               <span class="swatch guard"></span>
@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, evidence verify, and review gate parsing now live behind focused command-spec seams.
+            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -394,8 +394,8 @@
               <div class="module doctor">
                 <strong>command-specs-core.ts</strong>
                 <span>
-                  Manifest assembler for command specs; workflow-specific
-                  parsing stays behind focused command-spec seams.
+                  Command catalog assembler; workflow-specific parsing stays
+                  behind focused command adapters.
                 </span>
               </div>
               <div class="module doctor">
@@ -517,6 +517,13 @@
                 <span>
                   PR closeout delegation stays behind a focused command-spec
                   seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>review evidence adapter: CodeRabbit</strong>
+                <span>
+                  CodeRabbit CLI options and command dispatch stay inside the
+                  provider-specific command adapter.
                 </span>
               </div>
               <div class="module doctor">
@@ -1234,6 +1241,8 @@
               runtime-card-command-spec.ts.
               PR closeout delegation now lives behind
               pr-closeout-command-spec.ts.
+              CodeRabbit review evidence CLI option mapping now lives behind
+              verify-coderabbit-command-spec.ts.
               Docs gate option projection now lives behind
               docs-gate-command-spec.ts.
               Org audit delegation now lives behind
