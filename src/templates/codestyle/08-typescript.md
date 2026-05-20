@@ -6,6 +6,7 @@
 - [Banned patterns](#banned-patterns)
 - [Linting and module rules](#linting-and-module-rules)
 - [Async and cancellation](#async-and-cancellation)
+- [Size and decomposition](#size-and-decomposition)
 - [Testing](#testing)
 - [Enforcement](#enforcement)
 
@@ -26,6 +27,7 @@
 
 ## Linting and module rules
 - Biome handles formatting and style-level lint in this repository and MUST pass where enabled.
+- Biome configuration lives in `biome.json`; when the Biome package version changes, keep the schema URL and lockfile in sync.
 - TypeScript type safety MUST be enforced with `tsc --noEmit`.
 - Downstream projects MAY use ESLint for additional policy checks when an `eslint.config.*` file exists; do not claim ESLint coverage where it is not configured.
 - Prefer ESM and explicit module syntax for Node/TS packages.
@@ -39,6 +41,18 @@
 - Prefer `async/await` over nested Promise chains.
 - Exported async APIs that do I/O or long work SHOULD accept `AbortSignal`.
 - Surface cancellation as expected behavior, not as opaque failures.
+
+## Size and decomposition
+- `pnpm run quality:size` is the executable size gate for changed production
+  source. Treat its hard failures as blockers.
+- New and materially changed production modules SHOULD stay below 400 logical
+  lines and functions SHOULD stay below 80 logical lines unless the file is a
+  generated artifact, schema table, or explicitly documented exception.
+- Current hard limits are enforced by `scripts/check-code-size.mjs`; ratchet
+  warnings are decomposition pressure, not permission to grow the file further.
+- Size exceptions MUST name the architectural reason, owner or tracking issue,
+  and retirement condition. Prefer extracting pure helpers, schema tables, or
+  adapter-specific logic before raising a limit.
 
 ## Testing
 - Co-locate tests (`*.test.ts` / `__tests__`) and assert user-visible behavior where applicable.

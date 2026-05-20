@@ -129,6 +129,11 @@ const stableId = (prefix, value) => {
   const digest = createHash("sha1").update(value).digest("hex").slice(0, 8);
   return `${prefix}_${slug}_${digest}`;
 };
+const stableRawIdentity = (rawId) =>
+  rawId
+    .replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,})){1,2}$/i, "")
+    .replace(/(?:[_-][0-9]+)+$/i, "")
+    .toLowerCase();
 const projectDisplayName = (() => {
   try {
     const packageJson = JSON.parse(readFileSync(join(rootDir, "package.json"), "utf8"));
@@ -153,6 +158,81 @@ const normalizeProjectReferences = (content) =>
       /^\s*System\(mainSystem,\s*".+?",\s*"The system being documented"\)$/m,
       `  System(mainSystem, "${projectDisplayName}", "The system being documented")`,
     );
+
+const dedupeSubgraphNodeIds = (content, diagramName) => {
+  const lines = content.trimEnd().split(/\r?\n/);
+  const nodes = [];
+  let currentSubgraph = null;
+  let subgraphIndex = 0;
+
+  for (const [lineIndex, line] of lines.entries()) {
+    const subgraphMatch = line.match(/^  subgraph (\S+)\["(.+)"\]$/);
+    if (subgraphMatch) {
+      currentSubgraph = {
+        rawId: subgraphMatch[1],
+        label: subgraphMatch[2],
+        index: subgraphIndex,
+      };
+      subgraphIndex += 1;
+      continue;
+    }
+
+    if (line === "  end") {
+      currentSubgraph = null;
+      continue;
+    }
+
+    const nodeMatch = line.match(/^(\s{4})([A-Za-z_][A-Za-z0-9_]*)(\[.+\])$/);
+    if (nodeMatch && currentSubgraph) {
+      nodes.push({
+        lineIndex,
+        indent: nodeMatch[1],
+        rawId: nodeMatch[2],
+        suffix: nodeMatch[3],
+        label: nodeMatch[3].match(/"([^"]+)"/)?.[1] ?? nodeMatch[2],
+        subgraph: currentSubgraph,
+      });
+    }
+  }
+
+  const counts = new Map();
+  for (const node of nodes) {
+    counts.set(node.rawId, (counts.get(node.rawId) ?? 0) + 1);
+  }
+
+  const duplicateIds = new Set(
+    [...counts.entries()]
+      .filter(([, count]) => count > 1)
+      .map(([rawId]) => rawId),
+  );
+  if (duplicateIds.size === 0) {
+    return ensureTrailingNewline(lines.join("\n"));
+  }
+
+  const seen = new Map();
+  for (const node of nodes) {
+    if (!duplicateIds.has(node.rawId)) {
+      continue;
+    }
+    const occurrence = (seen.get(node.rawId) ?? 0) + 1;
+    seen.set(node.rawId, occurrence);
+    const scopedId = stableId(
+      "node",
+      [
+        diagramName,
+        node.subgraph.label,
+        stableRawIdentity(node.subgraph.rawId),
+        node.label,
+        stableRawIdentity(node.rawId),
+        String(node.subgraph.index),
+        String(occurrence),
+      ].join("/"),
+    );
+    lines[node.lineIndex] = `${node.indent}${scopedId}${node.suffix}`;
+  }
+
+  return ensureTrailingNewline(lines.join("\n"));
+};
 
 const parseArchitecture = (content) => {
   const lines = content.trimEnd().split(/\r?\n/);
@@ -191,11 +271,6 @@ const parseArchitecture = (content) => {
 const buildArchitecture = (subgraphs) => {
   const nodeMap = new Map();
   const lines = ["graph TD"];
-  const stableRawIdentity = (rawId) =>
-    rawId
-      .replace(/(?:[_-](?:[a-f0-9]{6,}|[0-9]{4,})){1,2}$/i, "")
-      .replace(/(?:[_-][0-9]+)+$/i, "")
-      .toLowerCase();
   const sortedSubgraphs = [...subgraphs].sort((left, right) =>
     left.label.localeCompare(right.label) ||
     stableRawIdentity(left.rawId).localeCompare(stableRawIdentity(right.rawId)),
@@ -368,8 +443,9 @@ for (const file of diagramFiles) {
   const filePath = join(diagramsDir, file);
   writeFileSync(
     filePath,
-    ensureTrailingNewline(
+    dedupeSubgraphNodeIds(
       normalizeProjectReferences(readFileSync(filePath, "utf8").trimEnd()),
+      file,
     ),
   );
 }
@@ -398,12 +474,12 @@ writeFileSync(
 		{
 			...sourceManifest,
 			generatedAt: new Date().toISOString(),
-			rootPath: rootDir,
+			rootPath: ".",
 			diagramDir: ".diagram",
 			diagrams,
 		},
 		null,
-		2,
+		"\t",
 	)}\n`,
 );
 NODE
@@ -481,6 +557,31 @@ if [[ -f "$CONTEXT_FILE" ]] && \
 			{ print }
 		' "$TMP_CONTEXT" > "$TMP_CONTEXT.preserve-generated"
 		mv "$TMP_CONTEXT.preserve-generated" "$TMP_CONTEXT"
+	fi
+fi
+
+if [[ -f "$CONTEXT_FILE" ]]; then
+	set +e
+	node - "$TMP_CONTEXT" "$CONTEXT_FILE" "$ROOT_DIR" <<'NODE'
+const fs = require("node:fs");
+const path = require("node:path");
+const { normalizeDiagramContextLines } = require(path.join(
+	process.argv[4],
+	"scripts/lib/normalize-mermaid-artifact.cjs",
+));
+
+const readNormalized = (filePath) =>
+	normalizeDiagramContextLines(fs.readFileSync(filePath, "utf8").split(/\r?\n/));
+
+process.exit(readNormalized(process.argv[2]) === readNormalized(process.argv[3]) ? 0 : 1);
+NODE
+	normalize_status=$?
+	set -e
+	if [[ "$normalize_status" -eq 0 ]]; then
+		cp "$CONTEXT_FILE" "$TMP_CONTEXT"
+	elif [[ "$normalize_status" -ne 1 ]]; then
+		log "error: diagram context normalize comparison failed"
+		exit "$normalize_status"
 	fi
 fi
 

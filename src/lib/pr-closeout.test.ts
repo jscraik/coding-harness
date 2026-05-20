@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Effect } from "effect";
 import {
 	HE_GATE_RESULT_SCHEMA_VERSION,
 	HE_PHASE_EXIT_SCHEMA_VERSION,
@@ -7,7 +8,11 @@ import {
 	type HeGateResult,
 	type HePhaseExit,
 } from "./decision/he-phase-exit.js";
-import { buildPrCloseoutReport, type PrCloseoutInput } from "./pr-closeout.js";
+import {
+	buildPrCloseoutReport,
+	buildPrCloseoutReportEffect,
+	type PrCloseoutInput,
+} from "./pr-closeout.js";
 
 function gatePayload(gateId: HeGateId): HeGatePayload {
 	switch (gateId) {
@@ -144,6 +149,7 @@ function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 			isDraft: false,
 			mergeStateStatus: "CLEAN",
 			url: "https://github.com/jscraik/coding-harness/pull/258",
+			headSha: "abc123",
 			reviewDecision: "APPROVED",
 			body: "Refs JSC-327\n",
 		},
@@ -152,11 +158,13 @@ function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 			pushed: true,
 			behindBase: false,
 			hasConflicts: false,
+			headSha: "abc123",
 		},
 		checks: [
 			{
 				name: "pr-pipeline",
 				state: "SUCCESS",
+				headSha: "abc123",
 				source: "github",
 			},
 		],
@@ -170,6 +178,10 @@ function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 			traceIds: ["circleci:workflow-123"],
 			aiSessionTraceability:
 				"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
+		},
+		rollback: {
+			notApplicable: true,
+			evidenceRef: "pr-body:rollback",
 		},
 		phaseExit: passingPhaseExit(),
 		tools: [
@@ -210,6 +222,487 @@ describe("buildPrCloseoutReport", () => {
 			},
 		});
 		expect(report.blockers).toEqual([]);
+		expect(report.attemptLedger).toMatchObject({
+			schemaVersion: "attempt-ledger/v1",
+			command: "pr-closeout",
+			attempt: 1,
+			maxAttempts: 1,
+			firstFailure: null,
+			retryDecision: "none",
+			owner: "codex",
+			stopReason: null,
+			nextAction: "ready_to_merge",
+		});
+		expect(report.recoveryEvent).toBeNull();
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "pass",
+					evidenceRef: "check:pr-pipeline",
+					headSha: "abc123",
+					freshness: "current",
+					blockerClass: null,
+					verifiedAt: "2026-05-16T12:00:00.000Z",
+				}),
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
+					status: "pass",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
+	it("keeps the Effect API behind the same closeout evidence boundary", () => {
+		const input = baseInput();
+		const options = { now: new Date("2026-05-16T12:00:00.000Z") };
+		const effectReport = Effect.runSync(
+			buildPrCloseoutReportEffect(input, options),
+		);
+
+		// self-affirming-ok: pins sync/Effect boundary parity with adjacent
+		// externally visible schema, status, and action assertions.
+		expect(effectReport).toEqual(buildPrCloseoutReport(input, options));
+		expect(effectReport).toMatchObject({
+			schemaVersion: "pr-closeout/v1",
+			status: "ready",
+			nextAction: "ready_to_merge",
+		});
+	});
+
+	it("accepts a single concrete session reference as traceability evidence", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				traceability: {
+					sessionIds: ["codex-session:2026-05-16"],
+					traceIds: [],
+					aiSessionTraceability:
+						"n.a. with reason: session ID is the concrete traceability reference.",
+				},
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.traceability.complete).toBe(true);
+		expect(report.blockers).not.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ surface: "traceability" }),
+			]),
+		);
+	});
+
+	it("accepts a single concrete AI traceability reference", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				traceability: {
+					sessionIds: [],
+					traceIds: [],
+					aiSessionTraceability:
+						"Codex session validates PR closeout evidence.",
+				},
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.traceability.complete).toBe(true);
+		expect(report.blockers).not.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ surface: "traceability" }),
+			]),
+		);
+	});
+
+	it("treats GitHub BEHIND merge state as stale branch evidence", () => {
+		const input = baseInput();
+		const report = buildPrCloseoutReport({
+			...input,
+			pullRequest: {
+				...input.pullRequest,
+				mergeStateStatus: "BEHIND",
+			},
+		});
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "branch_current_with_base",
+					status: "fail",
+					evidenceRef: "github:mergeStateStatus",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
+	it("treats GitHub HAS_HOOKS merge state as current branch evidence", () => {
+		const input = baseInput({
+			branch: {
+				clean: true,
+				pushed: true,
+				behindBase: null,
+				hasConflicts: null,
+				headSha: "abc123",
+			},
+		});
+		const report = buildPrCloseoutReport({
+			...input,
+			pullRequest: {
+				...input.pullRequest,
+				mergeStateStatus: "HAS_HOOKS",
+			},
+		});
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "branch_current_with_base",
+					status: "pass",
+					evidenceRef: "github:mergeStateStatus",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
+	it("blocks success when test evidence is missing", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "semgrep-cloud-platform/scan",
+						state: "SUCCESS",
+						headSha: "abc123",
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "unknown",
+					evidenceRef: null,
+					freshness: "missing",
+					missingContext: expect.objectContaining({
+						class: "missing_verifier",
+						destination: "validator",
+					}),
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					reason: "Closeout claim tests_passed is missing required evidence.",
+				}),
+			]),
+		);
+	});
+
+	it("blocks success when required check evidence is stale", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						headSha: "old456",
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
+					status: "fail",
+					headSha: "abc123",
+					freshness: "stale",
+					missingContext: expect.objectContaining({
+						class: "unmodeled_current_state_dependency",
+						destination: "validator",
+					}),
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					reason:
+						"Closeout claim required_checks_match_current_head has stale evidence for the current head.",
+				}),
+			]),
+		);
+	});
+
+	it("blocks success when CI state is unknown", () => {
+		const report = buildPrCloseoutReport(baseInput({ checks: [] }));
+
+		expect(report.status).not.toBe("ready");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "unknown",
+					evidenceRef: null,
+					freshness: "missing",
+					missingContext: expect.objectContaining({
+						class: "missing_verifier",
+						destination: "validator",
+					}),
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+		expect(report.attemptLedger).toMatchObject({
+			firstFailure: {
+				attempt: 1,
+				status: "fixable",
+				nextAction: "codex_can_fix_now",
+			},
+			retryDecision: "stop",
+			owner: "codex",
+			stopReason: "Closeout claim tests_passed is missing required evidence.",
+			nextAction: "codex_can_fix_now",
+		});
+		expect(report.recoveryEvent).toMatchObject({
+			schemaVersion: "recovery-event/v1",
+			command: "pr-closeout",
+			attempt: 1,
+			owner: "codex",
+			failureClass: "unknown",
+			stopReason: "Closeout claim tests_passed is missing required evidence.",
+			nextAction: "codex_can_fix_now",
+			retryDecision: "stop",
+		});
+	});
+
+	it("marks pending external checks as wait-owned recovery", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "PENDING",
+						headSha: "abc123",
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("waiting");
+		expect(report.nextAction).toBe("wait_for_external_check");
+		expect(report.attemptLedger).toMatchObject({
+			retryDecision: "wait",
+			owner: "external_service",
+			firstFailure: {
+				status: "waiting",
+				nextAction: "wait_for_external_check",
+			},
+		});
+		expect(report.recoveryEvent).toMatchObject({
+			owner: "external_service",
+			failureClass: "external_service",
+			nextAction: "wait_for_external_check",
+			retryDecision: "wait",
+		});
+	});
+
+	it("blocks success when Linear tracker state is missing", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					...baseInput().pullRequest,
+					body: "No tracker reference yet.\n",
+				},
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "linear_tracker_state_aligned",
+					status: "unknown",
+					evidenceRef: null,
+					freshness: "missing",
+					missingContext: expect.objectContaining({
+						class: "ambiguous_ownership_boundary",
+						destination: "project_brain_learning",
+					}),
+				}),
+			]),
+		);
+	});
+
+	it("accepts Closes as PR tracker alignment evidence", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					...baseInput().pullRequest,
+					body: "Closes JSC-327\n",
+				},
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "linear_tracker_state_aligned",
+					status: "pass",
+					evidenceRef: "pr-body:linear-reference",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
+	it("accepts Fixes as PR tracker alignment evidence", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					...baseInput().pullRequest,
+					body: "Fixes JSC-327\n",
+				},
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "linear_tracker_state_aligned",
+					status: "pass",
+					evidenceRef: "pr-body:linear-reference",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
+	it("treats passing checks without SHA metadata as a verifier evidence gap", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.nextAction).not.toBe("wait_for_external_check");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "blocked",
+					freshness: "unknown",
+					blockerClass: "unknown",
+				}),
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
+					status: "unknown",
+					freshness: "unknown",
+					blockerClass: "unknown",
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					fixableByCodex: true,
+					reason:
+						"Closeout claim ci_green could not be proven from verifier evidence.",
+				}),
+			]),
+		);
+	});
+
+	it("blocks success when rollback evidence is missing", () => {
+		const input = baseInput();
+		delete input.rollback;
+		const report = buildPrCloseoutReport(input);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "rollback_path_named_or_not_applicable",
+					status: "unknown",
+					evidenceRef: null,
+					freshness: "missing",
+					missingContext: expect.objectContaining({
+						class: "missing_recovery_handler",
+						destination: "roadmap_exception",
+					}),
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					ref: "rollback_path_named_or_not_applicable",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
+	it("derives passed test evidence from current required checks", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "build",
+						state: "SUCCESS",
+						headSha: "abc123",
+						required: true,
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "pass",
+					evidenceRef: "check:build",
+					freshness: "current",
+				}),
+			]),
+		);
 	});
 
 	it("marks first-class closeout-gates input without phase-exit presence", () => {
@@ -256,34 +749,6 @@ describe("buildPrCloseoutReport", () => {
 						"Review thread state is unobserved; live GitHub reviewThreads evidence is required before PR closeout.",
 					fixableByCodex: true,
 					ref: "github:reviewThreads",
-				}),
-			]),
-		);
-	});
-
-	it("blocks closeout when pull request state is missing", () => {
-		const report = buildPrCloseoutReport(
-			baseInput({
-				pullRequest: {
-					number: 258,
-					state: null,
-					isDraft: false,
-					mergeStateStatus: "CLEAN",
-					body: "Refs JSC-327\n",
-				},
-			}),
-		);
-
-		expect(report.status).toBe("blocked");
-		expect(report.nextAction).toBe("needs_jamie_decision");
-		expect(report.blockers).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({
-					surface: "pr",
-					classification: "unknown",
-					reason:
-						"Pull request state is missing; closeout cannot prove the PR is open.",
-					fixableByCodex: false,
 				}),
 			]),
 		);
@@ -751,48 +1216,73 @@ describe("buildPrCloseoutReport", () => {
 		});
 	});
 
-	it("uses structured conflict refs instead of blocker prose", () => {
-		const conflictReport = buildPrCloseoutReport(
-			baseInput({
-				branch: {
-					clean: true,
-					pushed: true,
-					behindBase: false,
-					hasConflicts: true,
-				},
-			}),
-		);
-		expect(conflictReport.status).toBe("blocked");
-		expect(conflictReport.nextAction).toBe("resolve_conflicts");
-		expect(conflictReport.blockers).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({
-					surface: "branch",
-					ref: "branch.hasConflicts",
-				}),
-			]),
-		);
-
-		const dirtyMergeReport = buildPrCloseoutReport(
+	it("routes BEHIND merge state to branch cleanup", () => {
+		const report = buildPrCloseoutReport(
 			baseInput({
 				pullRequest: {
 					number: 258,
 					state: "OPEN",
 					isDraft: false,
-					mergeStateStatus: "DIRTY",
+					mergeStateStatus: "BEHIND",
+					url: "https://github.com/jscraik/coding-harness/pull/258",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
 					body: "Refs JSC-327\n",
+				},
+				branch: {
+					clean: true,
+					pushed: true,
+					behindBase: null,
+					hasConflicts: false,
+					headSha: "abc123",
 				},
 			}),
 		);
-		expect(dirtyMergeReport.status).toBe("blocked");
-		expect(dirtyMergeReport.nextAction).toBe("resolve_conflicts");
-		expect(dirtyMergeReport.blockers).toEqual(
+
+		expect(report.status).toBe("cleanup_required");
+		expect(report.nextAction).toBe("cleanup_before_continue");
+		expect(report.blockers).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
 					surface: "branch",
-					ref: "mergeStateStatus:DIRTY",
+					reason: "Pull request merge state reports branch is behind base.",
+					fixableByCodex: true,
 				}),
 			]),
 		);
+	});
+
+	it("recognizes failed live CodeRabbit checks as known independent review evidence", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					url: "https://github.com/jscraik/coding-harness/pull/258",
+					headSha: "abc123",
+					reviewDecision: null,
+					body: "Refs JSC-327\n",
+				},
+				checks: [
+					{
+						name: "CodeRabbit",
+						state: "FAILURE",
+						headSha: "abc123",
+						source: "github",
+					},
+				],
+			}),
+		);
+		const reviewClaim = report.claims.find(
+			(claim) => claim.claim === "independent_review_status_known",
+		);
+
+		expect(reviewClaim).toMatchObject({
+			status: "pass",
+			evidenceRef: "check:coderabbit",
+			freshness: "current",
+		});
 	});
 });

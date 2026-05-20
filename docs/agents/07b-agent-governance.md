@@ -90,6 +90,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `harness pr-closeout`, required PR metadata, or AI session/traceability
   evidence should stay read-only, tool-evidence-backed, secret-redacting, and
   synchronized with the PR template, validation docs, CLI docs, and AGENTS
+- `pr-closeout/v1` success must come from current structured
+  claim/evidence status rather than model-written summary text. Missing or
+  stale required evidence should resolve to blocked or unknown with source,
+  freshness, head SHA, blocker class, and verification timestamp retained for
+  review.
 - repeated steering feedback is an agent-governance signal, not a one-line
   patch request. PRs that encode steering feedback should record the broader
   design principle, search sibling implementations, update every required

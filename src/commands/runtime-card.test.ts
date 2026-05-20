@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runRuntimeCardCLI } from "./runtime-card.js";
+import { HE_PHASE_EXIT_SCHEMA_VERSION } from "../lib/decision/he-phase-exit.js";
 import { validateRuntimeEvidenceBundle } from "../lib/runtime/runtime-evidence-bundle.js";
 
 const CODE = String.fromCharCode(96);
@@ -109,6 +110,34 @@ function writeRuntimeEvidenceBundle(repoRoot: string): string {
 	return evidencePath;
 }
 
+function writePassingPhaseExit(repoRoot: string): string {
+	const phaseExitPath = ".harness/runtime/phase-exit.json";
+	mkdirSync(join(repoRoot, ".harness/runtime"), { recursive: true });
+	writeFileSync(
+		join(repoRoot, phaseExitPath),
+		JSON.stringify(
+			{
+				schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
+				phaseContext: {
+					phase: "closeout",
+					failingEvidencePresent: false,
+					reviewFeedbackPresent: false,
+				},
+				recommendation: "continue",
+				commitAllowed: true,
+				exitAllowed: true,
+				blockers: [],
+				warnings: [],
+				gates: [],
+			},
+			null,
+			2,
+		),
+		"utf8",
+	);
+	return phaseExitPath;
+}
+
 afterEach(() => {
 	vi.restoreAllMocks();
 });
@@ -184,9 +213,45 @@ describe("runRuntimeCardCLI", () => {
 			},
 		});
 		expect(evidence.phaseExit).toBeUndefined();
+		expect(evidence.phaseExitSourceCompleteness).toBeUndefined();
 		expect(
 			evidence.sources.map((source: { kind: string }) => source.kind),
 		).toEqual(["git", "artifact"]);
+	});
+
+	it("marks runtime-card-derived phase-exit evidence as summary-only", async () => {
+		const repoRoot = setupRepo();
+		const phaseExitPath = writePassingPhaseExit(repoRoot);
+		const evidenceOutPath = ".harness/runtime/JSC-311-evidence.json";
+		const { exitCode, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--phase-exit",
+			phaseExitPath,
+			"--evidence-out",
+			evidenceOutPath,
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		const evidence = JSON.parse(
+			readFileSync(join(repoRoot, evidenceOutPath), "utf8"),
+		);
+		expect(validateRuntimeEvidenceBundle(evidence)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(evidence.phaseExit).toMatchObject({
+			schemaVersion: HE_PHASE_EXIT_SCHEMA_VERSION,
+			recommendation: "continue",
+			commitAllowed: true,
+			exitAllowed: true,
+			gates: [],
+		});
+		expect(evidence.phaseExitSourceCompleteness).toBe("summary_only");
 	});
 
 	it("can consume runtime evidence produced by --evidence-out", async () => {
@@ -255,6 +320,60 @@ describe("runRuntimeCardCLI", () => {
 					source.ref === "session-collector:run-123",
 			),
 		).toHaveLength(1);
+	});
+
+	it("blocks missing phase-exit evidence in closeout context", async () => {
+		const repoRoot = setupRepo();
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--context",
+			"closeout",
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		const card = JSON.parse(output);
+		expect(card.lifecycle).toBe("blocked");
+		expect(card.phaseExit.status).toBe("not_run");
+		expect(card.blockers).toEqual([
+			"Phase-exit artifact is required for this runtime-card context.",
+		]);
+		expect(card.attemptLedger).toMatchObject({
+			schemaVersion: "attempt-ledger/v1",
+			command: "runtime-card",
+			retryDecision: "stop",
+			owner: "codex",
+			stopReason:
+				"Phase-exit artifact is required for this runtime-card context.",
+		});
+		expect(card.recoveryEvent).toMatchObject({
+			schemaVersion: "recovery-event/v1",
+			command: "runtime-card",
+			failureClass: "phase_exit_missing",
+			retryDecision: "stop",
+		});
+		expect(card.sources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "phase_exit",
+					failureClass: "phase_exit_missing",
+				}),
+			]),
+		);
+	});
+
+	it("returns usage errors for invalid runtime-card context", async () => {
+		const { exitCode, error } = await captureRuntimeCardCLI([
+			"--context",
+			"review",
+		]);
+
+		expect(exitCode).toBe(2);
+		expect(error).toContain("invalid context review");
 	});
 
 	it("returns usage errors for missing flag values", async () => {

@@ -10,6 +10,8 @@ const TEST_OR_TYPE_DECLARATION =
 const PROD_SOURCE_PREFIX = "src/";
 const MAX_FILE_LINES = 800;
 const MAX_FUNCTION_LINES = 120;
+const TARGET_FILE_LINES = 400;
+const TARGET_FUNCTION_LINES = 80;
 
 const LEGACY_OVERSIZED_FILES = new Set([]);
 
@@ -97,6 +99,7 @@ function checkFile(path) {
 		return {
 			skippedLegacy: !SPLIT_LEGACY_CORE_RE.test(path),
 			findings: [],
+			warnings: [],
 		};
 	}
 
@@ -110,6 +113,7 @@ function checkFile(path) {
 		getScriptKind(path),
 	);
 	const findings = [];
+	const warnings = [];
 
 	const fileLines = countLogicalLines(sourceText);
 
@@ -118,6 +122,13 @@ function checkFile(path) {
 			path,
 			line: 1,
 			message: `file has ${fileLines} lines; max is ${MAX_FILE_LINES}`,
+		});
+	}
+	if (fileLines > TARGET_FILE_LINES) {
+		warnings.push({
+			path,
+			line: 1,
+			message: `file has ${fileLines} lines; ratchet target is ${TARGET_FILE_LINES}`,
 		});
 	}
 
@@ -133,6 +144,13 @@ function checkFile(path) {
 					message: `${functionName(node)} has ${span} lines; max is ${MAX_FUNCTION_LINES}`,
 				});
 			}
+			if (span > TARGET_FUNCTION_LINES) {
+				warnings.push({
+					path,
+					line: startLine,
+					message: `${functionName(node)} has ${span} lines; ratchet target is ${TARGET_FUNCTION_LINES}`,
+				});
+			}
 		}
 		ts.forEachChild(node, visit);
 	}
@@ -141,6 +159,7 @@ function checkFile(path) {
 	return {
 		skippedLegacy: false,
 		findings,
+		warnings,
 	};
 }
 
@@ -154,6 +173,7 @@ if (files.length === 0) {
 }
 
 const findings = [];
+const warnings = [];
 const skippedLegacy = [];
 for (const path of files) {
 	const result = checkFile(path);
@@ -161,6 +181,7 @@ for (const path of files) {
 		skippedLegacy.push(path);
 	}
 	findings.push(...result.findings);
+	warnings.push(...result.warnings);
 }
 
 if (skippedLegacy.length > 0) {
@@ -177,6 +198,15 @@ if (findings.length > 0) {
 		);
 	}
 	process.exit(1);
+}
+
+if (warnings.length > 0) {
+	console.warn("[check-code-size] size ratchet warnings:");
+	for (const warning of warnings) {
+		console.warn(
+			`  ${relative(repoRoot, resolve(repoRoot, warning.path))}:${warning.line} ${warning.message}`,
+		);
+	}
 }
 
 console.info(

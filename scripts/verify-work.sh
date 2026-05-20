@@ -751,6 +751,42 @@ write_run_header() {
 				fastMode: $laneFastMode,
 				changedOnly: $laneChangedOnly,
 				strictMode: $laneStrictMode
+			},
+			safetyCoverage: {
+				local: [
+					{
+						name: "secrets:staged",
+						command: "pnpm run secrets:staged",
+						status: "available_not_run_by_verify_work",
+						scope: "staged_content"
+					},
+					{
+						name: "semgrep:changed",
+						command: "pnpm run semgrep:changed",
+						status: "available_not_run_by_verify_work",
+						scope: "changed_src_files"
+					}
+				],
+				aggregate: {
+					name: "safety:local",
+					command: "pnpm run safety:local",
+					status: "available_not_run_by_verify_work"
+				},
+				ciOwned: [
+					{
+						name: "security-scan",
+						provider: "circleci",
+						command: "bash scripts/check-semgrep-full.sh",
+						status: "ci_owned"
+					}
+				],
+				externalRequired: [
+					{
+						name: "semgrep-cloud-platform/scan",
+						provider: "semgrep-cloud",
+						status: "external_required_check"
+					}
+				]
 			}
 		}' > "$run_dir/run.json"
 }
@@ -765,18 +801,38 @@ record_gate_result() {
 	local finished_at="$7"
 	local next_action="$8"
 	local exit_code="$9"
+	local max_attempts="${10}"
+	local first_failure_attempt="${11}"
+	local first_failure_class="${12}"
+	local first_failure_exit_code="${13}"
+	local first_failure_at="${14}"
+	local retry_decision="${15}"
+	local retry_reason="${16}"
+	local next_attempt="${17}"
+	local owner="${18}"
+	local stop_reason="${19}"
 	local gate_file="$run_dir/gates/$gate_id.json"
 
 	jq -n \
 		--arg gateId "$gate_id" \
 		--arg executionClass "$execution_class" \
 		--argjson attempt "$attempt" \
+		--argjson maxAttempts "$max_attempts" \
 		--arg status "$status" \
 		--arg failureClass "$failure_class" \
 		--arg startedAt "$started_at" \
 		--arg finishedAt "$finished_at" \
 		--arg nextAction "$next_action" \
 		--argjson exitCode "$exit_code" \
+		--arg firstFailureAttempt "$first_failure_attempt" \
+		--arg firstFailureClass "$first_failure_class" \
+		--argjson firstFailureExitCode "$first_failure_exit_code" \
+		--arg firstFailureAt "$first_failure_at" \
+		--arg retryDecision "$retry_decision" \
+		--arg retryReason "$retry_reason" \
+		--arg nextAttempt "$next_attempt" \
+		--arg owner "$owner" \
+		--arg stopReason "$stop_reason" \
 		'{
 			gateId: $gateId,
 			executionClass: $executionClass,
@@ -786,8 +842,54 @@ record_gate_result() {
 			startedAt: $startedAt,
 			finishedAt: $finishedAt,
 			nextAction: $nextAction,
-			exitCode: $exitCode
+			exitCode: $exitCode,
+			attemptLedger: {
+				schemaVersion: "attempt-ledger/v1",
+				command: ("verify-work:" + $gateId),
+				attempt: $attempt,
+				maxAttempts: $maxAttempts,
+				firstFailure: (
+					if $firstFailureAt == "" then null else {
+						attempt: ($firstFailureAttempt | tonumber),
+						failureClass: $firstFailureClass,
+						exitCode: $firstFailureExitCode,
+						observedAt: $firstFailureAt
+					} end
+				),
+				retryDecision: {
+					decision: $retryDecision,
+					reason: $retryReason,
+					nextAttempt: (if $nextAttempt == "" then null else ($nextAttempt | tonumber) end)
+				},
+				owner: $owner,
+				stopReason: (if $stopReason == "" then null else $stopReason end),
+				nextAction: $nextAction,
+				evidenceRefs: [("verify-work:gate:" + $gateId)]
+			},
+			recoveryEvent: (
+				if $status == "passed" then null else {
+					schemaVersion: "recovery-event/v1",
+					eventId: ("verify-work:" + $gateId + ":attempt-" + ($attempt | tostring)),
+					command: ("verify-work:" + $gateId),
+					attempt: $attempt,
+					owner: $owner,
+					failureClass: $failureClass,
+					stopReason: $stopReason,
+					nextAction: $nextAction,
+					retryDecision: $retryDecision,
+					evidenceRefs: [("verify-work:gate:" + $gateId)]
+				} end
+			)
 		}' > "$gate_file"
+}
+
+recovery_owner_for_failure() {
+	local failure_class="$1"
+	case "$failure_class" in
+		transient_infra) echo "external_service" ;;
+		contract_policy) echo "codex" ;;
+		*) echo "codex" ;;
+	esac
 }
 
 record_reused_gate_result() {
@@ -807,10 +909,15 @@ run_gate_with_retry() {
 	local max_retries=0
 	local attempt=1
 	local next_action=""
+	local first_failure_attempt=""
+	local first_failure_class=""
+	local first_failure_exit_code=0
+	local first_failure_at=""
 
 	if [[ "$execution_class" == "read_only_parallel" && "$failure_default" == "transient_infra" ]]; then
 		max_retries="$(retry_budget)"
 	fi
+	local max_attempts=$((max_retries + 1))
 
 	while true; do
 		local started_at
@@ -840,7 +947,17 @@ run_gate_with_retry() {
 				"$started_at" \
 				"$(iso_now)" \
 				"none" \
-				0
+				0 \
+				"$max_attempts" \
+				"$first_failure_attempt" \
+				"$first_failure_class" \
+				"$first_failure_exit_code" \
+				"$first_failure_at" \
+				"none" \
+				"gate_passed" \
+				"" \
+				"codex" \
+				""
 			rm -f "$output_file"
 			return 0
 		fi
@@ -848,6 +965,12 @@ run_gate_with_retry() {
 		local failure_class="$failure_default"
 		if [[ "$failure_default" == "transient_infra" ]] && ! is_transient_failure_output "$output_file"; then
 			failure_class="internal_unknown"
+		fi
+		if [[ -z "$first_failure_at" ]]; then
+			first_failure_attempt="$attempt"
+			first_failure_class="$failure_class"
+			first_failure_exit_code="$exit_code"
+			first_failure_at="$started_at"
 		fi
 
 		if [[ "$failure_class" == "transient_infra" && "$attempt" -le "$max_retries" ]]; then
@@ -864,7 +987,17 @@ run_gate_with_retry() {
 				"$started_at" \
 				"$(iso_now)" \
 				"$next_action" \
-				"$exit_code"
+				"$exit_code" \
+				"$max_attempts" \
+				"$first_failure_attempt" \
+				"$first_failure_class" \
+				"$first_failure_exit_code" \
+				"$first_failure_at" \
+				"retry" \
+				"retry_transient_read_only_failure" \
+				"$((attempt + 1))" \
+				"$(recovery_owner_for_failure "$failure_class")" \
+				"transient failure remains within retry budget"
 			rm -f "$output_file"
 			sleep "$delay_seconds"
 			attempt=$((attempt + 1))
@@ -885,10 +1018,20 @@ run_gate_with_retry() {
 			"$attempt" \
 			"failed" \
 			"$failure_class" \
-			"$started_at" \
-			"$(iso_now)" \
-			"$next_action" \
-			"$exit_code"
+				"$started_at" \
+				"$(iso_now)" \
+				"$next_action" \
+				"$exit_code" \
+				"$max_attempts" \
+				"$first_failure_attempt" \
+				"$first_failure_class" \
+				"$first_failure_exit_code" \
+				"$first_failure_at" \
+				"stop" \
+				"$next_action" \
+				"" \
+				"$(recovery_owner_for_failure "$failure_class")" \
+				"$next_action"
 		rm -f "$output_file"
 		return 1
 	done

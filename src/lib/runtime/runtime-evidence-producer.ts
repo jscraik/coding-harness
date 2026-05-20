@@ -86,7 +86,10 @@ export function buildRuntimeEvidenceBundleFromCard(
 		...(hasKnownLinearState(card) ? { linear: card.linear } : {}),
 		...(card.phaseExit.status === "not_run"
 			? {}
-			: { phaseExit: phaseExitFromRuntimeCard(card) }),
+			: {
+					phaseExit: phaseExitFromRuntimeCard(card),
+					phaseExitSourceCompleteness: "summary_only",
+				}),
 		sources: uniqueSources(card.sources),
 		blockers: [...card.blockers],
 	};

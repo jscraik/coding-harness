@@ -1,5 +1,6 @@
 import {
 	COMMAND_CATALOG_SCHEMA_VERSION,
+	type CommandAgentCatalogMode,
 	type CommandAgentMode,
 	type CommandCapability,
 	type CommandCapabilityCatalogDocument,
@@ -14,6 +15,7 @@ import {
 	getAgentCommandCapabilityCatalogDocument,
 	getCommandCapabilityCatalogDocument,
 	isFirstContactCommandName,
+	parseAgentCatalogMode,
 } from "./registry/command-capabilities.js";
 import { suggestCommandCapabilities as suggestCatalogCapabilities } from "./registry/command-fuzzy.js";
 import { COMMAND_SPECS as EXTRACTED_COMMAND_SPECS } from "./registry/command-specs.js";
@@ -30,6 +32,7 @@ import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 export type {
 	CommandCapability,
 	CommandCapabilityCatalogDocument,
+	CommandAgentCatalogMode,
 	CommandAgentMode,
 	CommandCategory,
 	CommandMutability,
@@ -58,15 +61,23 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const forAgentFlag = args.includes("--for-agent");
 			const fullCatalogFlag =
 				args.includes("--all") || args.includes("--plumbing");
+			const agentMode = parseAgentCatalogMode(args);
+			if (forAgentFlag && !fullCatalogFlag && agentMode === "invalid") {
+				console.error(
+					"Error: --mode must be orient, verify, review, or handoff when used with commands --for-agent",
+				);
+				return 2;
+			}
 			const catalog =
 				forAgentFlag && !fullCatalogFlag
-					? getRegistryAgentCommandCatalogDocument()
+					? getRegistryAgentCommandCatalogDocument(
+							agentMode !== "invalid" ? agentMode : undefined,
+						)
 					: getRegistryCommandCatalogDocument();
 			if (jsonFlag) {
 				console.info(JSON.stringify(catalog));
 				return 0;
 			}
-
 			console.info("Command capability catalog:");
 			for (const capability of catalog.commands) {
 				const category = capability.category.padEnd(22, " ");
@@ -111,8 +122,10 @@ export function getRegistryCommandCatalogDocument(): CommandCapabilityCatalogDoc
 }
 
 /** Build the public agent rail catalog for `harness commands --json --for-agent`. */
-export function getRegistryAgentCommandCatalogDocument(): CommandCapabilityCatalogDocument {
-	return getAgentCommandCapabilityCatalogDocument(COMMAND_SPECS);
+export function getRegistryAgentCommandCatalogDocument(
+	mode?: CommandAgentCatalogMode,
+): CommandCapabilityCatalogDocument {
+	return getAgentCommandCapabilityCatalogDocument(COMMAND_SPECS, mode);
 }
 
 /**

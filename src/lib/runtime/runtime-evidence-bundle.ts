@@ -48,6 +48,15 @@ const VALID_SOURCE_KINDS: readonly RuntimeCardSourceKind[] = [
 	"phase_exit",
 ];
 
+const VALID_PHASE_EXIT_SOURCE_COMPLETENESS = [
+	"gate_backed",
+	"summary_only",
+] as const;
+
+/** Completeness of phase-exit evidence carried by a runtime evidence bundle. */
+export type RuntimeEvidencePhaseExitSourceCompleteness =
+	(typeof VALID_PHASE_EXIT_SOURCE_COMPLETENESS)[number];
+
 /** Provenance for a normalized runtime evidence bundle. */
 export interface RuntimeEvidenceBundleProvenance {
 	/** Producer family, for example session_collector, manual, or ci. */
@@ -74,6 +83,8 @@ export interface RuntimeEvidenceBundle {
 	linear?: RuntimeCard["linear"];
 	/** Optional full phase-exit artifact to collapse into runtime-card status. */
 	phaseExit?: HePhaseExit;
+	/** Whether phase-exit evidence is original gate evidence or a runtime-card summary projection. */
+	phaseExitSourceCompleteness?: RuntimeEvidencePhaseExitSourceCompleteness;
 	/** Normalized source refs inspected by the upstream collector or adapter. */
 	sources: RuntimeCardSource[];
 	/** Blocking conditions reported by the upstream collector or adapter. */
@@ -289,6 +300,19 @@ function validateProvenance(value: unknown, errors: HeValidationError[]): void {
 	validateNullableString(value.collectedAt, "provenance.collectedAt", errors);
 }
 
+function validatePhaseExitSourceCompleteness(
+	value: unknown,
+	errors: HeValidationError[],
+): void {
+	if (value === undefined) return;
+	validateEnum(
+		value,
+		"phaseExitSourceCompleteness",
+		VALID_PHASE_EXIT_SOURCE_COMPLETENESS,
+		errors,
+	);
+}
+
 /**
  * Validate a value against the `runtime-evidence-bundle/v1` schema.
  *
@@ -327,6 +351,10 @@ export function validateRuntimeEvidenceBundle(
 			});
 		}
 	}
+	validatePhaseExitSourceCompleteness(
+		value.phaseExitSourceCompleteness,
+		errors,
+	);
 	validateSources(value.sources, errors);
 	validateStringArray(value.blockers, "blockers", errors);
 	return { valid: errors.length === 0, errors };

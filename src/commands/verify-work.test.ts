@@ -1418,8 +1418,27 @@ exit 127
 				join(repoRoot, ".harness/runs", summary.runId, "run.json"),
 				"utf-8",
 			),
-		) as { contractFingerprint?: string };
+		) as {
+			contractFingerprint?: string;
+			safetyCoverage?: {
+				aggregate?: { name?: string; command?: string; status?: string };
+				ciOwned?: Array<{ name?: string; status?: string }>;
+			};
+		};
 		expect(runJson.contractFingerprint).toBe("unknown");
+		expect(runJson.safetyCoverage?.aggregate).toEqual({
+			name: "safety:local",
+			command: "pnpm run safety:local",
+			status: "available_not_run_by_verify_work",
+		});
+		expect(runJson.safetyCoverage?.ciOwned).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "security-scan",
+					status: "ci_owned",
+				}),
+			]),
+		);
 		rmSync(binDir, { recursive: true, force: true });
 	});
 
@@ -1989,9 +2008,36 @@ exit 0
 				),
 				"utf-8",
 			),
-		) as { attempt: number; status: string };
+		) as {
+			attempt: number;
+			status: string;
+			attemptLedger: {
+				schemaVersion: string;
+				attempt: number;
+				maxAttempts: number;
+				firstFailure: { failureClass: string; attempt: number } | null;
+				retryDecision: { decision: string; reason: string };
+				owner: string;
+			};
+			recoveryEvent: unknown;
+		};
 		expect(gate.attempt).toBe(2);
 		expect(gate.status).toBe("passed");
+		expect(gate.attemptLedger).toMatchObject({
+			schemaVersion: "attempt-ledger/v1",
+			attempt: 2,
+			maxAttempts: expectedRetryAttempts,
+			firstFailure: {
+				attempt: 1,
+				failureClass: "transient_infra",
+			},
+			retryDecision: {
+				decision: "none",
+				reason: "gate_passed",
+			},
+			owner: "codex",
+		});
+		expect(gate.recoveryEvent).toBeNull();
 	});
 
 	it("writes contract_policy failure taxonomy for ci-check-alignment gate artifacts", () => {
@@ -2014,13 +2060,49 @@ exit 0
 				),
 				"utf-8",
 			),
-		) as { status: string; failureClass: string; nextAction: string };
+		) as {
+			status: string;
+			failureClass: string;
+			nextAction: string;
+			attemptLedger: {
+				schemaVersion: string;
+				firstFailure: { failureClass: string; attempt: number };
+				retryDecision: { decision: string; reason: string };
+				owner: string;
+				stopReason: string;
+			};
+			recoveryEvent: {
+				schemaVersion: string;
+				owner: string;
+				stopReason: string;
+				retryDecision: string;
+			};
+		};
 
 		expect(gate.status).toBe("failed");
 		expect(gate.failureClass).toBe("contract_policy");
 		expect(gate.nextAction).toBe(
 			"fix contract/policy mismatch, then rerun from this gate",
 		);
+		expect(gate.attemptLedger).toMatchObject({
+			schemaVersion: "attempt-ledger/v1",
+			firstFailure: {
+				attempt: 1,
+				failureClass: "contract_policy",
+			},
+			retryDecision: {
+				decision: "stop",
+				reason: "fix contract/policy mismatch, then rerun from this gate",
+			},
+			owner: "codex",
+			stopReason: "fix contract/policy mismatch, then rerun from this gate",
+		});
+		expect(gate.recoveryEvent).toMatchObject({
+			schemaVersion: "recovery-event/v1",
+			owner: "codex",
+			stopReason: "fix contract/policy mismatch, then rerun from this gate",
+			retryDecision: "stop",
+		});
 	});
 
 	it("writes transient_infra failure taxonomy when retry budget is exhausted", () => {
@@ -2061,6 +2143,22 @@ exit 1
 			status: string;
 			failureClass: string;
 			nextAction: string;
+			attemptLedger: {
+				schemaVersion: string;
+				attempt: number;
+				maxAttempts: number;
+				firstFailure: { failureClass: string; attempt: number };
+				retryDecision: { decision: string; reason: string };
+				owner: string;
+				stopReason: string;
+			};
+			recoveryEvent: {
+				schemaVersion: string;
+				owner: string;
+				failureClass: string;
+				stopReason: string;
+				retryDecision: string;
+			};
 		};
 
 		const expectedRetryAttempts = process.env.CI ? 4 : 3;
@@ -2070,6 +2168,30 @@ exit 1
 		expect(gate.nextAction).toBe(
 			"retry budget exhausted; fix infrastructure blocker and resume",
 		);
+		expect(gate.attemptLedger).toMatchObject({
+			schemaVersion: "attempt-ledger/v1",
+			attempt: expectedRetryAttempts,
+			maxAttempts: expectedRetryAttempts,
+			firstFailure: {
+				attempt: 1,
+				failureClass: "transient_infra",
+			},
+			retryDecision: {
+				decision: "stop",
+				reason: "retry budget exhausted; fix infrastructure blocker and resume",
+			},
+			owner: "external_service",
+			stopReason:
+				"retry budget exhausted; fix infrastructure blocker and resume",
+		});
+		expect(gate.recoveryEvent).toMatchObject({
+			schemaVersion: "recovery-event/v1",
+			owner: "external_service",
+			failureClass: "transient_infra",
+			stopReason:
+				"retry budget exhausted; fix infrastructure blocker and resume",
+			retryDecision: "stop",
+		});
 	});
 
 	it("writes internal_unknown failure taxonomy for non-transient codestyle failures", () => {

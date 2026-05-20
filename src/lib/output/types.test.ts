@@ -224,6 +224,7 @@ describe("normalise.ts stub exports (SA1)", () => {
 			"normalisePrTemplateGateResult",
 			"normalisePlanGateResult",
 			"normaliseLinearGateResult",
+			"renderGateDecision",
 		] as const;
 
 		for (const name of exports) {

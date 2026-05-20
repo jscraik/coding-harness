@@ -80,6 +80,15 @@ gardener-report.json
 !.harness/ideate/**/*.md
 !.harness/brainstorm/
 !.harness/brainstorm/**/*.md
+!.harness/research/
+.harness/research/*
+!.harness/research/evidence-patterns.json
+!.harness/research/audits/
+.harness/research/audits/*
+!.harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md
+!.harness/research/deep/
+.harness/research/deep/*
+!.harness/research/deep/**/*.md
 !.harness/specs/
 !.harness/specs/**/*.md
 !.harness/plan/
@@ -122,8 +131,10 @@ artifacts/context-integrity/
 # UI explore output
 ui-explore-output/
 
-# Local generated diagram artifacts
-.diagram/
+# Generated diagram artifacts required by architecture:check
+.diagram/*
+!.diagram/*.mmd
+!.diagram/manifest.json
 AI/context/refresh.log
 
 # Generated test artifacts (embed local machine paths/hostnames — never commit)

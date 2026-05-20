@@ -7,7 +7,7 @@
  * DocsGateResult objects. They do NOT invoke the actual gate runners.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { DocsFinding, DocsGateResult } from "../../commands/docs-gate.js";
 import type {
 	DriftFinding,
@@ -25,6 +25,7 @@ import {
 	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
 	getNorthStarDriftFindingsPath,
 } from "../contract/north-star-artifacts.js";
+import type { PlanGateResult } from "../plan-gate/types.js";
 import type { PreflightGateResult } from "../preflight/types.js";
 import type { ReviewGateResult } from "../review-gate/types.js";
 import {
@@ -32,9 +33,11 @@ import {
 	normaliseDocsGateResult,
 	normaliseDriftGateResult,
 	normaliseLinearGateResult,
+	normalisePlanGateResult,
 	normalisePolicyGateResult,
 	normalisePreflightGateResult,
 	normaliseReviewGateResult,
+	renderGateDecision,
 } from "./normalise.js";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -257,6 +260,43 @@ function makeReviewResult(
 
 // ─── drift-gate adapter tests (SA2, SA10, SA11) ──────────────────────────────
 
+describe("renderGateDecision", () => {
+	it("renders action, summary, and risk tier from a normalized gate result", () => {
+		const info = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			renderGateDecision(
+				{
+					gate: "policy-gate",
+					version: "1.0.0",
+					timestamp: "2026-05-19T00:00:00.000Z",
+					status: "fail",
+					findings: [],
+					summary: { errors: 0, warnings: 0, info: 0, total: 0 },
+					reason: "Policy gate failed.",
+					action_now: ["Fix policy."],
+					action_later: ["Rerun policy-gate."],
+					evidence_ref: ["gate:policy-gate"],
+				},
+				{ passed: 1, total: 2, durationMs: 12 },
+				"high",
+			);
+
+			expect(info.mock.calls.map(([line]) => line)).toEqual([
+				"✗ policy-gate fail",
+				"Reason: Policy gate failed.",
+				"Action now:",
+				"- Fix policy.",
+				"Action later:",
+				"- Rerun policy-gate.",
+				"Summary: 1/2 checks passed (12ms)",
+				"Risk tier: high",
+			]);
+		} finally {
+			info.mockRestore();
+		}
+	});
+});
+
 describe("normaliseDriftGateResult (SA2, SA10, SA11)", () => {
 	it("SA2-a: clean run → status=pass, findings=[], summary zeros", () => {
 		const result = normaliseDriftGateResult(makeDriftResult([]));
@@ -377,6 +417,19 @@ describe("normaliseDriftGateResult (SA2, SA10, SA11)", () => {
 
 		expect(result.meta).toEqual({ artifactRefs });
 		expect(result.evidence_ref).toContain(`artifact:${artifactPath}`);
+	});
+
+	it("keeps computed evidence refs even when no artifact refs are present", () => {
+		const result = normaliseDriftGateResult(
+			makeDriftResult([makeDriftFinding({ path: "src/cli.ts" })]),
+		);
+
+		expect(result.evidence_ref).toEqual(
+			expect.arrayContaining([
+				"path:src/cli.ts",
+				"finding:drift-gate.command.command.surface.readme.missing",
+			]),
+		);
 	});
 });
 
@@ -530,7 +583,12 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 	});
 
 	it("maps contract and validation errors to contract_policy", () => {
-		for (const code of ["CONTRACT_ERROR", "VALIDATION_ERROR"]) {
+		for (const code of [
+			"CONTRACT_ERROR",
+			"VALIDATION_ERROR",
+			" contract_error ",
+			"validation_error",
+		]) {
 			const classification = classifyLinearGateFailure({
 				ok: false,
 				error: { code, message: "contract error" },
@@ -922,6 +980,9 @@ describe("normalisePolicyGateResult (decision fields from PR)", () => {
 		);
 		expect(result.status).toBe("fail");
 		expect(result.findings[0]?.id).toBe("policy-gate.result.error.unknown");
+		expect(result.evidence_ref).toContain(
+			"finding:policy-gate.result.error.unknown",
+		);
 	});
 
 	it("ok:false → reason from error message, action from decision", () => {
@@ -972,6 +1033,20 @@ describe("normalisePolicyGateResult (decision fields from PR)", () => {
 		);
 		expect(result.meta?.tier).toBe("high");
 		expect(result.meta?.maxAllowed).toBe("medium");
+	});
+});
+
+describe("normalisePlanGateResult", () => {
+	it("adds a fail-safe finding when a failed result has no errors", () => {
+		const result = normalisePlanGateResult({
+			passed: false,
+			artifacts: [],
+			errors: [],
+		} satisfies PlanGateResult);
+
+		expect(result.status).toBe("fail");
+		expect(result.findings).toHaveLength(1);
+		expect(result.findings[0]?.id).toBe("plan-gate.result.error.unknown");
 	});
 });
 

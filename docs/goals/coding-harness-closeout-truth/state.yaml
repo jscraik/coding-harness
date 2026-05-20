@@ -1,0 +1,448 @@
+version: 2
+goal:
+  slug: coding-harness-closeout-truth
+  status: done
+  objective: "Implement the recommendation-evaluation roadmap as small, provable PR-ready phases that make false-success mechanically impossible in pr-closeout before adding missing-context, replay-eval, recovery, invariant, and skill layers."
+  native_goal_id: "019e3bd8-6c6d-7f42-8db7-df6556745d60"
+  native_objective: "Follow docs/goals/coding-harness-closeout-truth/goal.md to make Coding Harness closeout truth deterministic before adding autonomy, executing one small provable phase at a time. Roadmap phases are complete; current work is final PR closeout, review resolution, merge, and main-branch update."
+  native_status: complete
+  token_budget: null
+  tokens_used: 1484470
+  time_used_seconds: 6106
+  native_created_at: "2026-05-18T21:12:02Z"
+  native_updated_at: "2026-05-18T22:53:49Z"
+rules:
+  one_active_task: true
+  parallel_workers: false
+  require_fresh_verification: true
+  require_final_audit: true
+  require_review_gates_per_phase: true
+  require_browser_notes: true
+checks:
+  dirty_fingerprint: "pre-existing dirty worktree recorded in R001; preserve unrelated changes"
+  source_strategy: ".harness/strategy/2026-05-18-coding-harness-recommendation-evaluation.md"
+  implementation_notes: "docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html"
+  last_verification:
+    command: "pnpm check"
+    outcome: "pass"
+    checked_at: "2026-05-18T22:51:00Z"
+completion_contract:
+  outcome: "Coding Harness closeout truth is deterministic enough to block false-success before additional autonomy layers."
+  verification_surface:
+    - "docs/goals/coding-harness-closeout-truth/receipts.jsonl"
+    - "docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html"
+    - "src/lib/pr-closeout.test.ts"
+    - "src/commands/pr-closeout.test.ts"
+    - "src/lib/recovery/generated-artifact-parent.test.ts"
+    - "scripts/check-pr-closeout-truth-contract.cjs"
+  constraints:
+    - "Every phase requires validation, review-gate evidence, receipt evidence, and intentional staging."
+    - "False-success closeout paths must fail closed when evidence is missing, stale, or unknown."
+    - "Recovery handlers must classify authority and verify before and after mutation."
+  boundaries:
+    - "Do not add broad autonomy, external eval platforms, or generic skill surfaces before deterministic truth layers are proven."
+    - "Preserve unrelated dirty worktree changes and stage only the current goal files."
+  iteration_policy: "One PR-sized phase at a time; later work must start from a new active board task or follow-up goal."
+  blocked_stop_condition: "Stop if validation, review, false-success fixtures, recovery authority checks, or staged-file boundaries no longer match the receipts."
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Create the durable goal board, record the roadmap state machine, and identify the first active implementation phase without editing implementation files."
+    inputs:
+      - ".harness/strategy/2026-05-18-coding-harness-recommendation-evaluation.md"
+      - "AGENTS.md"
+      - "CODESTYLE.md"
+      - "docs/goals/jsc-331-harness-assurance-artifact-handling"
+    constraints:
+      - "Create only the goal board and notes scaffold."
+      - "Do not edit implementation files."
+      - "Preserve unrelated dirty worktree changes."
+      - "Record browser capability or blocker for implementation-notes.html."
+    expected_output: "Valid goal board, initial notes artifact, and next active Worker phase."
+    allowed_files:
+      - "docs/goals/coding-harness-closeout-truth/goal.md"
+      - "docs/goals/coding-harness-closeout-truth/state.yaml"
+      - "docs/goals/coding-harness-closeout-truth/receipts.jsonl"
+      - "docs/goals/coding-harness-closeout-truth/notes/.gitkeep"
+      - "docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html"
+    verify:
+      - "PYTHONDONTWRITEBYTECODE=1 python3 ../agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-closeout-truth"
+      - "pnpm markdownlint docs/goals/coding-harness-closeout-truth/goal.md"
+      - "git status --short docs/goals/coding-harness-closeout-truth"
+    stop_if:
+      - "Board checker fails."
+      - "Goal board root contains files outside the allowed checker shape."
+      - "Creation would require editing implementation files."
+      - "Existing dirty worktree changes need to be reverted."
+    receipt_id: R001
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Phase 0: confirm the standards baseline, classify remaining size warnings as advisory when appropriate, and avoid adding generic standards without implementation evidence."
+    inputs:
+      - "AGENTS.md"
+      - "CODESTYLE.md"
+      - ".harness/strategy/2026-05-18-coding-harness-recommendation-evaluation.md"
+      - "docs/goals/coding-harness-closeout-truth/goal.md"
+      - "docs/goals/coding-harness-closeout-truth/state.yaml"
+      - "docs/goals/coding-harness-closeout-truth/receipts.jsonl"
+      - "docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html"
+    constraints:
+      - "Read-only by default."
+      - "Do not add more generic standards unless truth-layer implementation exposes a concrete gap."
+      - "Keep this phase limited to baseline confirmation or the listed correction files."
+      - "Run and record all review gates before marking done."
+      - "Stage only intentionally changed files after validation and receipt updates."
+    expected_output: "Phase 0 baseline receipt, review gate ledger, notes update, and staged-file evidence if any file changed."
+    allowed_files:
+      - "docs/goals/coding-harness-closeout-truth/goal.md"
+      - "docs/goals/coding-harness-closeout-truth/state.yaml"
+      - "docs/goals/coding-harness-closeout-truth/receipts.jsonl"
+      - "docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html"
+      - "codestyle/**"
+      - "src/templates/codestyle/**"
+      - "scripts/check-code-size.mjs"
+      - "src/lib/replay/trace-normalizer.ts"
+      - "src/lib/replay/trace-normalizer.test.ts"
+    verify:
+      - "pnpm run quality:size"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "pnpm check if any baseline correction is made"
+      - "Run $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language, and $codex-review review gates."
+    stop_if:
+      - "Baseline correction needs files outside the allowed list."
+      - "Validation is red and not caused by Phase 0."
+      - "A review gate finds a correctness or safety issue requiring scope expansion."
+      - "Required named skill cannot be resolved and no approved fallback exists."
+      - "Native goal state and board state disagree."
+    receipt_id: R002
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Phase 1: implement the pr-closeout claim-vs-evidence contract and fixtures that block missing, stale, or unknown required evidence from reporting success."
+    inputs:
+      - "src/commands/pr-closeout.ts"
+      - "src/lib/pr-closeout.ts"
+      - "src/lib/pr-closeout.test.ts"
+      - "src/commands/pr-closeout.test.ts"
+    constraints:
+      - "Do not start until T002 is done."
+      - "Do not let model-written summaries override verifier output."
+      - "Missing required evidence must be blocked or unknown, never success."
+      - "Run all required review gates before marking done."
+    expected_output: "Claim/evidence model, acceptance fixtures, validation evidence, review gate receipt, and staged files."
+    allowed_files:
+      - "src/commands/pr-closeout.ts"
+      - "src/lib/pr-closeout.ts"
+      - "src/lib/pr-closeout/**"
+      - "src/lib/pr-closeout.test.ts"
+      - "src/commands/pr-closeout.test.ts"
+      - "docs/goals/coding-harness-closeout-truth/**"
+    verify:
+      - "pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts"
+      - "pnpm run quality:size"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "Run $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language, and $codex-review review gates."
+    stop_if:
+      - "Closeout can still emit success for missing or stale required evidence."
+      - "Needed schema/docs surface is outside the allowed list and not added to the task first."
+      - "Validation is red for an unexplained or unrelated reason."
+    receipt_id: R003
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Phase 2: refactor PR closeout along real boundaries only where it reduces local reasoning cost after the claim/evidence contract."
+    inputs:
+      - "src/commands/pr-closeout.ts"
+      - "src/lib/pr-closeout.ts"
+      - "src/lib/pr-closeout/**"
+      - "src/lib/pr-closeout.test.ts"
+      - "src/commands/pr-closeout.test.ts"
+    constraints:
+      - "Do not start until T003 is done."
+      - "Keep the command file mostly orchestration."
+      - "Keep library modules pure enough to fixture-test."
+      - "Preserve public behavior except for claim/evidence correctness already introduced in T003."
+      - "Avoid broad unrelated cleanup."
+      - "Run all required review gates before marking done."
+    expected_output: "Smaller PR closeout boundaries, passing behavior-equivalence tests, size-ratchet explanation, notes update, receipt, and staged files."
+    allowed_files:
+      - "src/commands/pr-closeout.ts"
+      - "src/lib/pr-closeout.ts"
+      - "src/lib/pr-closeout/**"
+      - "src/lib/pr-closeout.test.ts"
+      - "src/commands/pr-closeout.test.ts"
+      - "docs/goals/coding-harness-closeout-truth/**"
+    verify:
+      - "pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts"
+      - "pnpm run quality:size"
+      - "pnpm run test:related"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "Run $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language, and $codex-review review gates."
+    stop_if:
+      - "Refactor moves complexity sideways into the command layer."
+      - "Behavior-equivalence tests fail."
+      - "New module boundaries increase local reasoning cost."
+      - "Validation is red for an unexplained or unrelated reason."
+    receipt_id: R004
+  - id: T005
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Phase 3: add a typed missing-context classifier and connect absent, stale, or unknowable closeout evidence to stable missing-context classes."
+    inputs:
+      - "src/lib/missing-context/classifier.ts"
+      - "src/lib/missing-context/classifier.test.ts"
+      - "src/lib/pr-closeout/**"
+      - "src/lib/pr-closeout.test.ts"
+      - "src/commands/pr-closeout.test.ts"
+    constraints:
+      - "Do not start until T004 is done."
+      - "Implement a typed classifier, not prose-only classification."
+      - "Each class must route to one durable destination."
+      - "Touch src/lib/decision/he-phase-exit-core.ts only if closeout and phase-exit share blocked/unknown semantics."
+      - "Run all required review gates before marking done."
+    expected_output: "Typed missing-context classifier, closeout integration for absent/stale/unknowable evidence, tests, notes update, receipt, and staged files."
+    allowed_files:
+      - "src/lib/missing-context/classifier.ts"
+      - "src/lib/missing-context/classifier.test.ts"
+      - "src/lib/missing-context/**"
+      - "src/lib/pr-closeout.ts"
+      - "src/lib/pr-closeout/**"
+      - "src/lib/pr-closeout.test.ts"
+      - "src/commands/pr-closeout.test.ts"
+      - "src/lib/decision/he-phase-exit-core.ts"
+      - "docs/goals/coding-harness-closeout-truth/**"
+    verify:
+      - "pnpm vitest run src/lib/missing-context/classifier.test.ts src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts"
+      - "pnpm run test:related"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "Run $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language, and $codex-review review gates."
+    stop_if:
+      - "Classifier becomes prose-only or duplicates existing closeout blocker text without typed routing."
+      - "Closeout missing evidence no longer blocks or becomes unknown."
+      - "A durable destination is ambiguous or not represented in the typed model."
+      - "Validation is red for an unexplained or unrelated reason."
+    receipt_id: R005
+  - id: T006
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Phase 4: add the first local replay eval runner fixtures for false-success closeout and recovery-denied behavior."
+    inputs:
+      - "src/lib/replay/trace-normalizer.ts"
+      - "src/lib/replay/trace-normalizer.test.ts"
+      - "src/lib/replay/**"
+      - "src/commands/replay*.test.ts"
+    constraints:
+      - "Do not start until T005 is done."
+      - "Measure operational behavior, not prose quality."
+      - "Keep fixtures small enough for agents to read."
+      - "Assert secret redaction."
+      - "Use existing replay/trace primitives before inventing a new platform."
+      - "Run all required review gates before marking done."
+    expected_output: "Two local replay evals, machine-readable outputs, redaction assertions, notes update, receipt, and staged files."
+    allowed_files:
+      - "src/lib/replay/trace-normalizer.ts"
+      - "src/lib/replay/trace-normalizer.test.ts"
+      - "src/lib/replay/**"
+      - "src/commands/replay*.test.ts"
+      - "docs/goals/coding-harness-closeout-truth/**"
+    verify:
+      - "pnpm vitest run src/lib/replay/trace-normalizer.test.ts"
+      - "Replay runner tests added for new fixtures."
+      - "pnpm run test:related"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "Run $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language, and $codex-review review gates."
+    stop_if:
+      - "Replay eval work needs external eval platforms or new broad tooling."
+      - "Fixtures become too large for agent-readable local evidence."
+      - "Secret redaction cannot be asserted."
+      - "Unsafe recovery proceeds instead of stopping safely."
+      - "Validation is red for an unexplained or unrelated reason."
+    receipt_id: R006
+  - id: T007
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Phase 5: define the deterministic recovery handler contract before implementing broad recovery behavior."
+    inputs:
+      - "src/lib/recovery/**"
+      - "src/lib/recovery/*.test.ts"
+      - "src/lib/replay/**"
+    constraints:
+      - "Do not start until T006 is done."
+      - "No broad recovery engine yet."
+      - "No open-ended retry loops."
+      - "No recovery without verify-before and verify-after."
+      - "No secret-dependent recovery without explicit secret boundary."
+      - "No state mutation without authority classification."
+      - "No handler that hides original failure text."
+      - "No handler without trace emission."
+      - "No handler without a retirement rule."
+      - "Recovery is allowed to stop."
+      - "Run all required review gates before marking done."
+    expected_output: "Typed recovery handler contract, stop/deny tests, notes update, receipt, and staged files."
+    allowed_files:
+      - "src/lib/recovery/**"
+      - "src/lib/recovery/*.test.ts"
+      - "src/lib/replay/**"
+      - "docs/goals/coding-harness-closeout-truth/**"
+    verify:
+      - "Recovery unit tests."
+      - "pnpm run test:related"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "Run $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language, and $codex-review review gates."
+    stop_if:
+      - "The contract grows into a broad recovery engine."
+      - "Recovery can mutate state without authority classification."
+      - "Recovery can proceed without verify-before and verify-after."
+      - "Recovery hides original failure text or emits no trace fields."
+      - "Validation is red for an unexplained or unrelated reason."
+    receipt_id: R007
+  - id: T008
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Phase 6: implement the first safe deterministic recovery handler for missing generated artifact parent directories."
+    inputs:
+      - "src/lib/recovery/**"
+      - "src/lib/recovery/*.test.ts"
+    constraints:
+      - "Do not start until T007 is done."
+      - "Only implement the missing generated artifact parent directory handler."
+      - "Do not implement browser login recovery, GitHub auth mutation, merge conflict resolution, credential-dependent recovery, or external service mutation."
+      - "Create only expected parent directories inside allowed repo paths."
+      - "Refuse path traversal or out-of-scope writes."
+      - "Emit trace/recovery evidence."
+      - "Run all required review gates before marking done."
+    expected_output: "One safe recovery handler with path-safety tests, verify-before/after behavior, trace evidence, notes update, receipt, and staged files."
+    allowed_files:
+      - "src/lib/recovery/**"
+      - "src/lib/recovery/*.test.ts"
+      - "docs/goals/coding-harness-closeout-truth/**"
+    verify:
+      - "Recovery handler tests."
+      - "Path-safety tests."
+      - "pnpm run test:related"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "Run $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language, and $codex-review review gates."
+    stop_if:
+      - "Handler needs credentials, browser login, GitHub mutation, or merge-conflict resolution."
+      - "Handler writes outside the repository or follows traversal out of scope."
+      - "Handler cannot verify before and after recovery."
+      - "Validation is red for an unexplained or unrelated reason."
+    receipt_id: R008
+  - id: T009
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Phase 7: add the first architecture invariant gate that mechanically protects the new truth layer or existing authority boundaries."
+    inputs:
+      - "scripts/**"
+      - "src/lib/**"
+      - "src/commands/**"
+      - "docs/**"
+      - "harness.contract.json"
+      - ".harness/**"
+    constraints:
+      - "Do not start until T008 is done."
+      - "Prefer custom validators or existing scripts first."
+      - "Do not add dependency-cruiser, madge, orchestration, observability, build graph, or external eval platform tooling."
+      - "Implement at least one actionable machine-readable invariant gate with fixture coverage."
+      - "Run docs-gate if governed docs surfaces change."
+      - "Run all required review gates before marking done."
+    expected_output: "At least one invariant gate, fixture coverage, machine-readable output, notes update, receipt, and staged files."
+    allowed_files:
+      - "scripts/**"
+      - "src/lib/**"
+      - "src/commands/**"
+      - "docs/**"
+      - "harness.contract.json"
+      - ".harness/**"
+      - "docs/goals/coding-harness-closeout-truth/**"
+    verify:
+      - "Targeted gate tests."
+      - "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "pnpm check"
+      - "Run $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language, and $codex-review review gates."
+    stop_if:
+      - "Invariant requires a new broad dependency graph tool."
+      - "Gate output is not machine-readable or actionable."
+      - "Docs-gate reports required surfaces that cannot be updated in scope."
+      - "Validation is red for an unexplained or unrelated reason."
+    receipt_id: R009
+  - id: T010
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Phase 8: audit and compress skill work only after the deterministic truth, missing-context, replay, recovery, and invariant layers show what repeated steering remains."
+    inputs:
+      - ".agents/skills/coding-harness/**"
+      - "docs/goals/coding-harness-closeout-truth/**"
+      - "skill eval fixtures if existing"
+      - "docs only if required by docs-gate"
+    constraints:
+      - "Do not start until T009 is done."
+      - "Do not create the generic six-skill set by default."
+      - "A skill earns hot-path status only if it reduces repeated steering or improves a capture-the-flag outcome."
+      - "Prefer improving existing Coding Harness skill surfaces over creating new named skills."
+      - "If no skill change is justified, record an explicit no-op decision with evidence."
+      - "Run all required review gates before marking done."
+    expected_output: "Skill changes implemented and validated, or an intentional no-op decision with evidence, notes update, receipt, and staged files."
+    allowed_files:
+      - ".agents/skills/coding-harness/**"
+      - "docs/goals/coding-harness-closeout-truth/**"
+      - "docs/**"
+      - "skill eval fixtures if existing"
+    verify:
+      - "pnpm skill:validate"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "pnpm check"
+      - "Run $simplify, $unslopify, $improve-codebase-architecture, $ubiquitous-language, and $codex-review review gates."
+    stop_if:
+      - "Skill work is not justified by repeated steering or capture-the-flag evidence."
+      - "A proposed skill overlaps with an existing command, gate, or skill without reducing repeated steering."
+      - "Validation is red for an unexplained or unrelated reason."
+      - "Docs-gate reports required surfaces that cannot be updated in scope."
+    receipt_id: R010
+  - id: T011
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Final completion audit: verify every phase receipt, validation result, staged-file boundary, false-success closeout fixture, recovery authority rule, and implementation note before deciding whether the overall goal is complete or blocked."
+    inputs:
+      - "docs/goals/coding-harness-closeout-truth/goal.md"
+      - "docs/goals/coding-harness-closeout-truth/state.yaml"
+      - "docs/goals/coding-harness-closeout-truth/receipts.jsonl"
+      - "docs/goals/coding-harness-closeout-truth/notes/implementation-notes.html"
+      - "current staged diff"
+    constraints:
+      - "Do not mark the native or board goal complete unless every explicit roadmap phase is proven by current evidence."
+      - "Run the final audit commands from goal.md."
+      - "Use final $codex-review or the recorded fallback path if the named skill remains unavailable."
+      - "Produce a final Judge/PM receipt with decision complete or blocked."
+    expected_output: "Final audit receipt, implementation notes update, intentional staged state, and either goal completion or a blocked decision with the next owner."
+    allowed_files:
+      - "docs/goals/coding-harness-closeout-truth/**"
+    verify:
+      - "pnpm check with network access for pnpm audit if needed"
+      - "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
+      - "Confirm all phase receipts exist."
+      - "Confirm implementation notes are current."
+      - "Confirm staged/committed state is intentional."
+      - "Confirm no false-success path remains in closeout fixtures."
+      - "Confirm no recovery handler mutates state without authority and verification."
+      - "Run final $codex-review or available code-review fallback."
+    stop_if:
+      - "Any phase receipt is missing or contradicted by current state."
+      - "Any required validation is red or missing."
+      - "Staged files include unintended unrelated dirty worktree changes."
+      - "A false-success or unauthorized recovery path remains."
+    receipt_id: R011

@@ -168,6 +168,45 @@ describe("normalizeTrace", () => {
 		expect(payload.keep).toBe("ok");
 	});
 
+	it("redacts sensitive request and response headers", () => {
+		const trace = makeTrace({
+			events: [
+				{
+					type: "tool_use",
+					timestamp: "2026-04-16T10:00:00.000Z",
+					payload: {
+						request: {
+							headers: {
+								authorization: "Bearer token-value",
+								cookie: "session=value",
+								"x-api-key": "sk-test-value",
+								"x-trace-id": "trace-123",
+							},
+						},
+						response: {
+							headers: {
+								"set-cookie": "session=next",
+								"content-type": "application/json",
+							},
+						},
+					},
+				},
+			],
+		});
+		const result = normalizeTrace(trace);
+		const payload = result.events[0]!.payload as Record<string, unknown>;
+		const request = payload.request as Record<string, unknown>;
+		const requestHeaders = request.headers as Record<string, unknown>;
+		const response = payload.response as Record<string, unknown>;
+		const responseHeaders = response.headers as Record<string, unknown>;
+		expect(requestHeaders.authorization).toBe("[REDACTED]");
+		expect(requestHeaders.cookie).toBe("[REDACTED]");
+		expect(requestHeaders["x-api-key"]).toBe("[REDACTED]");
+		expect(requestHeaders["x-trace-id"]).toBe("trace-123");
+		expect(responseHeaders["set-cookie"]).toBe("[REDACTED]");
+		expect(responseHeaders["content-type"]).toBe("application/json");
+	});
+
 	it("preserves non-secret payload values", () => {
 		const trace = makeTrace();
 		const result = normalizeTrace(trace);

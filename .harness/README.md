@@ -54,6 +54,9 @@ move with the repository. Local run state should stay local.
 | `.harness/ci-provider-transition-status.json` | `policy` | Track |
 | `.harness/artifact-provenance.json` | `policy` | Track |
 | `.harness/rule-lifecycle-manifest.json` | `policy` | Track |
+| `.harness/research/evidence-patterns.json` | `policy` | Track |
+| `.harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md` | `secondary-context` | Track when referenced by adopted evidence patterns |
+| `.harness/research/deep/**.md` | `secondary-context` | Track when listed by `.harness/research/evidence-patterns.json` |
 | `.harness/*-manifest.json` | `policy` | Track with care when validators consume it |
 | `.harness/backups/**` | `backup/scratch` | Do not track |
 | `.harness/*.db` | `generated-runtime` | Do not track unless promoted to a fixture |
@@ -69,3 +72,8 @@ Secondary context is not execution authority on its own. Files under
 `.harness/ideate`, and `.harness/brainstorm` can inform work, but they only
 drive implementation after an admitted `.harness/linear`, `.harness/refactors`,
 `.harness/specs`, or `.harness/plan` slice references them.
+
+Deep research evidence becomes implementation authority only when it is listed
+in `.harness/research/evidence-patterns.json` with an `adopted` status,
+target surfaces, a disposition reason, and a validation command. Deferred or
+unlisted research remains secondary context.

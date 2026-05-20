@@ -1,0 +1,31 @@
+flowchart TD
+  UserRequest["User request"]
+  Decision{Record exists?}
+  fleet_plan_repo_ecdc6499["fleet-plan-repo"]
+  UserRequest --> fleet_plan_repo_ecdc6499
+  fleet_plan_repo_ecdc6499 --> fleet_plan_repo_ecdc6499_result["result"]
+  repo_scanner_a8b2579e["repo-scanner"]
+  UserRequest --> repo_scanner_a8b2579e
+  repo_scanner_a8b2579e --> repo_scanner_a8b2579e_result["result"]
+  repo_scanner_test_cb7e9d00["repo-scanner.test"]
+  UserRequest --> repo_scanner_test_cb7e9d00
+  repo_scanner_test_cb7e9d00 --> repo_scanner_test_cb7e9d00_result["result"]
+  repo_scanner_core_8e9f7646["repo-scanner-core"]
+  UserRequest --> repo_scanner_core_8e9f7646
+  repo_scanner_core_8e9f7646 --> repo_scanner_core_8e9f7646_result["result"]
+  schema_migrate_c0646635["schema-migrate"]
+  UserRequest --> schema_migrate_c0646635
+  schema_migrate_c0646635 --> schema_migrate_c0646635_result["result"]
+  migration_8a6cead4["migration"]
+  UserRequest --> migration_8a6cead4
+  migration_8a6cead4 --> migration_8a6cead4_result["result"]
+  json_schema_74a768d7["json-schema"]
+  UserRequest --> json_schema_74a768d7
+  json_schema_74a768d7 --> json_schema_74a768d7_result["result"]
+  json_schema_core_96d7e328["json-schema-core"]
+  UserRequest --> json_schema_core_96d7e328
+  json_schema_core_96d7e328 --> json_schema_core_96d7e328_result["result"]
+  classDef dbNode fill:#0ea5e9,color:#fff
+  class fleet_plan_repo_ecdc6499,repo_scanner_a8b2579e,repo_scanner_test_cb7e9d00,repo_scanner_core_8e9f7646,schema_migrate_c0646635,migration_8a6cead4,json_schema_74a768d7,json_schema_core_96d7e328 dbNode
+  classDef decisionNode fill:#0284c7,color:#fff
+  class Decision decisionNode

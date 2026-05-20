@@ -9,10 +9,11 @@
  *
  * Rules enforced:
  *   - no-circular-deps       : no import cycles in src/
- *   - commands-no-cross-import: src/commands/* must not import other commands
+ *   - commands-no-cross-import: command facade files must not import other
+ *                              command facades
  *   - auth-commands-use-crypto: auth-boundary commands must import node:crypto
  *   - github-lib-no-fs       : src/lib/github/* must not import node:fs/fs
- *   - diagram-freshness      : AI/diagrams/manifest.json must contain required
+ *   - diagram-freshness      : .diagram/manifest.json must contain required
  *                              types with no placeholders
  *
  * Exit codes:
@@ -40,16 +41,39 @@ const ROOT = process.cwd();
 const SRC_DIR = path.join(ROOT, "src");
 const COMMANDS_DIR = path.join(SRC_DIR, "commands");
 const GITHUB_LIB_DIR = path.join(SRC_DIR, "lib", "github");
-const MANIFEST_PATH = path.join(ROOT, "AI", "diagrams", "manifest.json");
+const DIAGRAM_DIR = path.join(ROOT, ".diagram");
+const MANIFEST_PATH = path.join(DIAGRAM_DIR, "manifest.json");
 const BASELINE_PATH = path.join(ROOT, ".architecture-baseline.txt");
+const COMMAND_SPECS_CORE_PATH = path.join(
+	ROOT,
+	"src",
+	"lib",
+	"cli",
+	"registry",
+	"command-specs-core.ts",
+);
 
 // Load baseline: pre-existing violations that are advisory-only (not CI-blocking)
 const baselineKeys = new Set();
+const baselineMetadataViolations = [];
 if (fs.existsSync(BASELINE_PATH)) {
 	for (const line of fs.readFileSync(BASELINE_PATH, "utf-8").split("\n")) {
 		const trimmed = line.trim();
 		if (trimmed && !trimmed.startsWith("#")) {
-			baselineKeys.add(trimmed); // format: "<rule-id>|<relative-file>"
+			const [rule, relFile, ...metadata] = trimmed.split("|");
+			const metadataText = metadata.join("|");
+			const hasOwner = /\bowner=[^|]+/.test(metadataText);
+			const hasReason = /\breason=[^|]+/.test(metadataText);
+			const hasDate = /\bdate=\d{4}-\d{2}-\d{2}\b/.test(metadataText);
+			if (!rule || !relFile || !hasOwner || !hasReason || !hasDate) {
+				baselineMetadataViolations.push({
+					line: trimmed,
+					reason:
+						"baseline entries must use <rule-id>|<relative-file-path>|owner=<owner>|reason=<reason>|date=YYYY-MM-DD",
+				});
+				continue;
+			}
+			baselineKeys.add(`${rule}|${relFile}`);
 		}
 	}
 }
@@ -88,27 +112,40 @@ function collectTsFiles(dir, excludeTests = false) {
 	return results;
 }
 
-/** Parse static import/require paths from a TypeScript source file */
-function extractImports(filePath) {
-	const content = fs.readFileSync(filePath, "utf-8");
+function stripTypeScriptComments(content) {
+	return content
+		.replace(/\/\*[\s\S]*?\*\//g, "")
+		.replace(/(^|[^:])\/\/.*$/gm, "$1");
+}
+
+/** Parse static import/require paths from TypeScript source text. */
+function extractImportsFromContent(content, options = {}) {
+	const source = stripTypeScriptComments(content);
 	const imports = [];
 	// ESM static imports/exports: handle multiline, 'export type', etc.
 	// Match `import|export ... from '...'`
 	const esmRe =
-		/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?from\s+)?['"]([^'"]+)['"]/g;
-	let m = esmRe.exec(content);
+		/(?<kind>import|export)\s+(?<typeOnly>type\s+)?(?:[\s\S]*?from\s+)?['"](?<specifier>[^'"]+)['"]/g;
+	let m = esmRe.exec(source);
 	while (m !== null) {
-		imports.push(m[1]);
-		m = esmRe.exec(content);
+		if (!options.runtimeOnly || !m.groups?.typeOnly) {
+			imports.push(m.groups?.specifier);
+		}
+		m = esmRe.exec(source);
 	}
 	// CommonJS and Dynamic Import: require('.') or import('.')
 	const cjsRe = /(?:require|import)\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-	m = cjsRe.exec(content);
+	m = cjsRe.exec(source);
 	while (m !== null) {
 		imports.push(m[1]);
-		m = cjsRe.exec(content);
+		m = cjsRe.exec(source);
 	}
-	return imports;
+	return imports.filter((specifier) => typeof specifier === "string");
+}
+
+/** Parse static import/require paths from a TypeScript source file. */
+function extractImports(filePath, options = {}) {
+	return extractImportsFromContent(fs.readFileSync(filePath, "utf-8"), options);
 }
 
 /** Resolve a relative import path to an absolute file path */
@@ -131,6 +168,20 @@ function resolveImport(fromFile, importPath) {
 	return null;
 }
 
+function getRegisteredCommandFacadeFiles() {
+	if (!fs.existsSync(COMMAND_SPECS_CORE_PATH)) return new Set();
+	const content = fs.readFileSync(COMMAND_SPECS_CORE_PATH, "utf-8");
+	const commandImportRe =
+		/from\s+['"]\.\.\/\.\.\/\.\.\/commands\/([^'"]+)\.js['"]/g;
+	const facades = new Set();
+	let match = commandImportRe.exec(content);
+	while (match !== null) {
+		facades.add(path.join(COMMANDS_DIR, `${match[1]}.ts`));
+		match = commandImportRe.exec(content);
+	}
+	return facades;
+}
+
 // ── Results collector ────────────────────────────────────────────────────────
 
 const violations = []; // { rule, severity, file, message }
@@ -150,6 +201,15 @@ function fail(rule, severity, file, message) {
 	});
 }
 
+for (const violation of baselineMetadataViolations) {
+	fail(
+		"architecture-baseline-metadata",
+		"error",
+		BASELINE_PATH,
+		`${violation.reason}: ${violation.line}`,
+	);
+}
+
 // ── Rule: no-circular-deps ───────────────────────────────────────────────────
 
 function checkNoCyclicDeps() {
@@ -158,7 +218,7 @@ function checkNoCyclicDeps() {
 	const graph = new Map();
 	for (const file of files) {
 		const deps = [];
-		for (const imp of extractImports(file)) {
+		for (const imp of extractImports(file, { runtimeOnly: true })) {
 			const resolved = resolveImport(file, imp);
 			if (resolved && files.includes(resolved)) {
 				deps.push(resolved);
@@ -204,15 +264,21 @@ function checkNoCyclicDeps() {
 function checkCommandsNoCrossImport() {
 	if (!fs.existsSync(COMMANDS_DIR)) return;
 	const commandFiles = collectTsFiles(COMMANDS_DIR, true);
+	const commandFacadeFiles = getRegisteredCommandFacadeFiles();
 	for (const file of commandFiles) {
+		if (!commandFacadeFiles.has(file)) continue;
 		for (const imp of extractImports(file)) {
 			const resolved = resolveImport(file, imp);
-			if (resolved?.startsWith(COMMANDS_DIR) && resolved !== file) {
+			if (
+				resolved !== null &&
+				resolved !== file &&
+				commandFacadeFiles.has(resolved)
+			) {
 				fail(
 					"commands-no-cross-import",
 					"error",
 					file,
-					`Command imports another command: ${path.relative(ROOT, resolved)}. Move shared logic to src/lib/.`,
+					`Command facade imports another command facade: ${path.relative(ROOT, resolved)}. Move shared logic to src/lib/ or a focused command seam.`,
 				);
 			}
 		}
@@ -263,18 +329,18 @@ function checkGithubLibNoFs() {
 }
 
 /**
- * Validates the AI/diagrams manifest and its diagram files for presence and freshness.
+ * Validates the .diagram manifest and its diagram files for presence and freshness.
  *
- * Checks that AI/diagrams/manifest.json exists and is valid JSON (supports either
+ * Checks that .diagram/manifest.json exists and is valid JSON (supports either
  * a `diagrams` array or an object shape), ensures all REQUIRED_DIAGRAM_TYPES are
  * present in the manifest, verifies each referenced diagram file exists under
- * AI/diagrams, and flags diagrams that appear to be placeholders (contains the
+ * .diagram, and flags diagrams that appear to be placeholders (contains the
  * substring "PLACEHOLDER", is empty/whitespace, or matches a placeholder node pattern).
  *
  * When a problem is detected this function records a violation via `fail(...)`
  * (for example: missing manifest, invalid JSON, missing diagram type/file, or
  * placeholder content). The suggested regeneration command in violation messages
- * is: `diagram generate-all . --output-dir AI/diagrams`.
+ * is: `pnpm run diagrams:refresh`.
  */
 
 function checkDiagramFreshness() {
@@ -283,7 +349,7 @@ function checkDiagramFreshness() {
 			"diagram-freshness",
 			"error",
 			MANIFEST_PATH,
-			`Manifest not found: ${path.relative(ROOT, MANIFEST_PATH)}. Run: diagram generate-all . --output-dir AI/diagrams`,
+			`Manifest not found: ${path.relative(ROOT, MANIFEST_PATH)}. Run: pnpm run diagrams:refresh`,
 		);
 		return;
 	}
@@ -323,12 +389,7 @@ function checkDiagramFreshness() {
 			continue;
 		}
 		const diag = found.get(type);
-		const diagPath = path.join(
-			ROOT,
-			"AI",
-			"diagrams",
-			diag.path ?? `${type}.mmd`,
-		);
+		const diagPath = path.join(DIAGRAM_DIR, diag.path ?? `${type}.mmd`);
 		if (!fs.existsSync(diagPath)) {
 			fail(
 				"diagram-freshness",
@@ -348,7 +409,7 @@ function checkDiagramFreshness() {
 				"diagram-freshness",
 				"error",
 				diagPath,
-				`Diagram type ${type} is a placeholder. Regenerate: diagram generate-all . --output-dir AI/diagrams`,
+				`Diagram type ${type} is a placeholder. Regenerate: pnpm run diagrams:refresh`,
 			);
 		}
 	}

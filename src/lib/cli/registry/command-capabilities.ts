@@ -1,10 +1,12 @@
 import type { CommandSpec } from "./types.js";
 import {
+	AGENT_CATALOG_COMMAND_NAMES,
 	AGENT_MODE_BY_NAME,
 	COMMAND_CATEGORY_BY_NAME,
 	COMMAND_TIER_BY_NAME,
 	COMMAND_VISIBILITY_BY_NAME,
 	EXPECTED_ARTIFACTS_BY_NAME,
+	FIRST_CONTACT_COMMAND_NAMES,
 	ORCHESTRATED_BY_BY_NAME,
 	PRIMARY_AUDIENCE_BY_NAME,
 	REQUIRED_FLAGS_BY_NAME,
@@ -73,6 +75,13 @@ export type CommandAgentMode =
 	| "learn"
 	| "admin";
 
+/** Bounded catalog modes exposed by `harness commands --json --for-agent --mode`. */
+export type CommandAgentCatalogMode =
+	| "orient"
+	| "verify"
+	| "review"
+	| "handoff";
+
 /** Discovery layer where a command should appear by default. */
 export type CommandVisibility =
 	| "default"
@@ -109,7 +118,29 @@ export interface CommandCapabilityCatalogDocument {
 	commands: CommandCapability[];
 }
 
-const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(["next"]);
+function getAgentCatalogCommandNames(
+	mode: CommandAgentCatalogMode | undefined,
+): ReadonlySet<string> {
+	return new Set(AGENT_CATALOG_COMMAND_NAMES[mode ?? "default"]);
+}
+
+/** Parse the optional agent catalog phase mode from command arguments. */
+export function parseAgentCatalogMode(
+	args: readonly string[],
+): CommandAgentCatalogMode | undefined | "invalid" {
+	const modeIndex = args.indexOf("--mode");
+	if (modeIndex === -1) return undefined;
+	const mode = args[modeIndex + 1];
+	if (
+		mode === "orient" ||
+		mode === "verify" ||
+		mode === "review" ||
+		mode === "handoff"
+	) {
+		return mode;
+	}
+	return "invalid";
+}
 
 /**
  * Determine if a command belongs on first-contact agent surfaces.
@@ -259,9 +290,11 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
  */
 export function filterAgentCommandCapabilities(
 	commands: readonly CommandCapability[],
+	mode?: CommandAgentCatalogMode,
 ): CommandCapability[] {
+	const commandNames = getAgentCatalogCommandNames(mode);
 	return commands
-		.filter((command) => isFirstContactCommandName(command.name))
+		.filter((command) => commandNames.has(command.name))
 		.toSorted((left, right) => {
 			const visibilityDelta =
 				AGENT_CATALOG_VISIBILITY_ORDER[left.visibility] -
@@ -303,8 +336,9 @@ export function getCommandCapabilityCatalogDocument(
 /** Build the agent-facing capability catalog document from command specs. */
 export function getAgentCommandCapabilityCatalogDocument(
 	specs: CommandSpec[],
+	mode?: CommandAgentCatalogMode,
 ): CommandCapabilityCatalogDocument {
 	return buildCommandCapabilityCatalogDocument(
-		filterAgentCommandCapabilities(getCommandCapabilities(specs)),
+		filterAgentCommandCapabilities(getCommandCapabilities(specs), mode),
 	);
 }

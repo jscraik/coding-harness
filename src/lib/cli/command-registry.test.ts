@@ -23,6 +23,29 @@ import {
 } from "./doc-parity.js";
 
 const AGENT_COMMAND_RAIL_NAMES = ["next"] as const;
+const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
+	"next",
+	"commands",
+	"runtime-card",
+] as const;
+const AGENT_VERIFY_COMMAND_RAIL_NAMES = [
+	"next",
+	"runtime-card",
+	"validation-plan",
+	"evidence-verify",
+] as const;
+const AGENT_REVIEW_COMMAND_RAIL_NAMES = [
+	"next",
+	"runtime-card",
+	"review-context",
+	"review-gate",
+] as const;
+const AGENT_HANDOFF_COMMAND_RAIL_NAMES = [
+	"next",
+	"runtime-card",
+	"pr-closeout",
+	"evidence-verify",
+] as const;
 
 describe("command registry", () => {
 	it("exposes migrated command names", () => {
@@ -47,6 +70,71 @@ describe("command registry", () => {
 		const invoke = () => dispatchRegistryCommand(inherited.repo, ["repo"]);
 		expect(invoke).not.toThrow();
 		expect(invoke()).toBeUndefined();
+	});
+
+	it("rejects evidence-verify value flags without values", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		expect(
+			dispatchRegistryCommand("evidence-verify", ["evidence-verify", "--files"])
+				?.result,
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--files requires a value",
+		);
+		expect(
+			dispatchRegistryCommand("evidence-verify", [
+				"evidence-verify",
+				"--changed",
+			])?.result,
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--changed requires a value",
+		);
+		expect(
+			dispatchRegistryCommand("evidence-verify", [
+				"evidence-verify",
+				"--contract",
+			])?.result,
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--contract requires a value",
+		);
+
+		errorSpy.mockRestore();
+	});
+
+	it("rejects malformed preflight-gate scalar flags", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		expect(
+			dispatchRegistryCommand("preflight-gate", [
+				"preflight-gate",
+				"--contract",
+			])?.result,
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--contract requires a value",
+		);
+		expect(
+			dispatchRegistryCommand("preflight-gate", ["preflight-gate", "--files"])
+				?.result,
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--files requires a value",
+		);
+		expect(
+			dispatchRegistryCommand("preflight-gate", [
+				"preflight-gate",
+				"--max-tier",
+				"urgent",
+			])?.result,
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--max-tier must be one of high, medium, low",
+		);
+
+		errorSpy.mockRestore();
 	});
 
 	it("resolves alias to policy-gate spec", () => {
@@ -644,7 +732,6 @@ describe("getRegistryCommandCapabilities", () => {
 				(c) => c.name === "review-gate",
 			);
 			expect(cap?.requiredFlags).toEqual([
-				"--token",
 				"--owner",
 				"--repo",
 				"--pr",
@@ -1076,6 +1163,56 @@ describe("'commands' command execution", () => {
 		}
 	});
 
+	it.each([
+		["orient", AGENT_ORIENT_COMMAND_RAIL_NAMES],
+		["verify", AGENT_VERIFY_COMMAND_RAIL_NAMES],
+		["review", AGENT_REVIEW_COMMAND_RAIL_NAMES],
+		["handoff", AGENT_HANDOFF_COMMAND_RAIL_NAMES],
+	] as const)("JSON --for-agent --mode %s emits a compact phase rail", (mode, expectedNames) => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--for-agent",
+				"--mode",
+				mode,
+			]);
+			expect(dispatch?.result).toBe(0);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const parsed = JSON.parse(String(output));
+			const commandNames = parsed.commands.map(
+				(command: CommandCapability) => command.name,
+			);
+
+			expect(commandNames).toEqual(expectedNames);
+			expect(parsed.commandCount).toBe(expectedNames.length);
+			expect(parsed.commandCount).toBeLessThan(8);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("JSON --for-agent rejects unknown phase rail modes", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--for-agent",
+				"--mode",
+				"everything",
+			]);
+
+			expect(dispatch?.result).toBe(2);
+			expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+				"--mode must be orient, verify, review, or handoff",
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
+
 	it("JSON --for-agent --all keeps the full catalog available", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 		try {
@@ -1096,6 +1233,25 @@ describe("'commands' command execution", () => {
 			expect(commandNames).toEqual(
 				expect.arrayContaining(["policy-gate", "review-gate"]),
 			);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("JSON --all ignores unrelated invalid --mode values outside the agent rail", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+				"--all",
+				"--mode",
+				"anything",
+			]);
+			expect(dispatch?.result).toBe(0);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const parsed = JSON.parse(String(output));
+			expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
 		} finally {
 			infoSpy.mockRestore();
 		}
@@ -1141,6 +1297,19 @@ describe("getRegistryAgentCommandCatalogDocument", () => {
 		expect(agentCatalog.commands.map((command) => command.name)).toEqual(
 			AGENT_COMMAND_RAIL_NAMES,
 		);
+	});
+
+	it("supports compact phase-specific agent catalog modes", () => {
+		expect(
+			getRegistryAgentCommandCatalogDocument("verify").commands.map(
+				(command) => command.name,
+			),
+		).toEqual(AGENT_VERIFY_COMMAND_RAIL_NAMES);
+		expect(
+			getRegistryAgentCommandCatalogDocument("handoff").commands.map(
+				(command) => command.name,
+			),
+		).toEqual(AGENT_HANDOFF_COMMAND_RAIL_NAMES);
 	});
 });
 

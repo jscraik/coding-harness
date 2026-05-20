@@ -1,0 +1,11 @@
+C4Context
+  title "System Context — coding harness"
+  System(mainSystem, "Coding Harness", "Control plane for agentic development")
+  Person(developer, "Developer / User", "Uses the system")
+  Rel(developer, mainSystem, "Uses")
+  System_Ext(ext_0, "External Service", "vitest, node:fs, node:path")
+  Rel(mainSystem, ext_0, "uses")
+  System_Ext(ext_1, "Version Control", "@octokit/rest, @octokit/request-error, @octokit/plugin-retry, @octokit/plugin-throttling")
+  Rel(mainSystem, ext_1, "uses")
+  System_Ext(ext_2, "Database", "better-sqlite3, sqlite-vec")
+  Rel(mainSystem, ext_2, "uses")

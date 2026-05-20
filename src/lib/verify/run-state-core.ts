@@ -27,10 +27,78 @@ export type VerifyGateFailureClass =
 export type VerifyGateStatus = "passed" | "failed" | "blocked";
 
 /** Public API export. */
+export type VerifyRecoveryOwner = "codex" | "external_service";
+/** Public API export. */
+export type VerifyRetryDecisionKind = "none" | "retry" | "stop";
+
+/** Public API export. */
+export interface VerifyAttemptLedgerFirstFailure {
+	attempt: number;
+	failureClass: VerifyGateFailureClass;
+	exitCode: number;
+	observedAt: string;
+}
+
+/** Public API export. */
+export interface VerifyAttemptLedger {
+	schemaVersion: "attempt-ledger/v1";
+	command: string;
+	attempt: number;
+	maxAttempts: number;
+	firstFailure: VerifyAttemptLedgerFirstFailure | null;
+	retryDecision: {
+		decision: VerifyRetryDecisionKind;
+		reason: string;
+		nextAttempt: number | null;
+	};
+	owner: VerifyRecoveryOwner;
+	stopReason: string | null;
+	nextAction: string;
+	evidenceRefs: string[];
+}
+
+/** Public API export. */
+export interface VerifyRecoveryEvent {
+	schemaVersion: "recovery-event/v1";
+	eventId: string;
+	command: string;
+	attempt: number;
+	owner: VerifyRecoveryOwner;
+	failureClass: VerifyGateFailureClass;
+	stopReason: string;
+	nextAction: string;
+	retryDecision: VerifyRetryDecisionKind;
+	evidenceRefs: string[];
+}
+
+/** Public API export. */
 export interface VerifyLaneConfig {
 	fastMode: boolean;
 	changedOnly: boolean;
 	strictMode: boolean;
+}
+
+/** Public API export. */
+export type VerifySafetyCoverageStatus =
+	| "available_not_run_by_verify_work"
+	| "ci_owned"
+	| "external_required_check";
+
+/** Public API export. */
+export interface VerifySafetyCoverageEntry {
+	name: string;
+	provider?: string;
+	command?: string;
+	status: VerifySafetyCoverageStatus;
+	scope?: string;
+}
+
+/** Public API export. */
+export interface VerifySafetyCoverage {
+	local: VerifySafetyCoverageEntry[];
+	aggregate: VerifySafetyCoverageEntry;
+	ciOwned: VerifySafetyCoverageEntry[];
+	externalRequired: VerifySafetyCoverageEntry[];
 }
 
 /** Public API export. */
@@ -55,6 +123,7 @@ export interface VerifyRunMetadata {
 	schemaVersion: string;
 	contractVersion: string;
 	lane: VerifyLaneConfig;
+	safetyCoverage?: VerifySafetyCoverage;
 	identityTupleHash?: string;
 }
 
@@ -79,6 +148,8 @@ export interface VerifyGateResult {
 	finishedAt: string;
 	nextAction: string;
 	exitCode: number;
+	attemptLedger?: VerifyAttemptLedger;
+	recoveryEvent?: VerifyRecoveryEvent | null;
 	reused?: boolean;
 	sourceRunId?: string;
 	idempotencyKey?: string;
@@ -162,6 +233,93 @@ function asString(value: unknown, field: string): string {
  */
 function asOptionalString(value: unknown): string | undefined {
 	return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function asObjectArray(
+	value: unknown,
+	field: string,
+): Record<string, unknown>[] {
+	if (!Array.isArray(value)) {
+		throw new RunStateError(`Expected array for ${field}`, "E_PARSE");
+	}
+	return value.map((entry, index) =>
+		toObjectWithField(entry, `${field}[${index}]`),
+	);
+}
+
+function toObjectWithField(
+	value: unknown,
+	field: string,
+): Record<string, unknown> {
+	try {
+		return toObject(value);
+	} catch (error) {
+		if (error instanceof RunStateError) {
+			throw new RunStateError(`Expected object for ${field}`, error.code);
+		}
+		throw error;
+	}
+}
+
+function parseSafetyCoverageStatus(
+	value: unknown,
+	field: string,
+): VerifySafetyCoverageStatus {
+	const status = asString(value, field);
+	if (
+		status === "available_not_run_by_verify_work" ||
+		status === "ci_owned" ||
+		status === "external_required_check"
+	) {
+		return status;
+	}
+	throw new RunStateError(
+		`Invalid safety coverage status: ${status}`,
+		"E_PARSE",
+	);
+}
+
+function parseSafetyCoverageEntry(
+	value: Record<string, unknown>,
+	field: string,
+): VerifySafetyCoverageEntry {
+	const provider = asOptionalString(value.provider);
+	const command = asOptionalString(value.command);
+	const scope = asOptionalString(value.scope);
+	return {
+		name: asString(value.name, `${field}.name`),
+		...(provider !== undefined ? { provider } : {}),
+		...(command !== undefined ? { command } : {}),
+		status: parseSafetyCoverageStatus(value.status, `${field}.status`),
+		...(scope !== undefined ? { scope } : {}),
+	};
+}
+
+function parseSafetyCoverage(value: unknown): VerifySafetyCoverage {
+	const coverage = toObjectWithField(value, "safetyCoverage");
+	return {
+		local: asObjectArray(coverage.local, "safetyCoverage.local").map(
+			(entry, index) =>
+				parseSafetyCoverageEntry(entry, `safetyCoverage.local[${index}]`),
+		),
+		aggregate: parseSafetyCoverageEntry(
+			toObjectWithField(coverage.aggregate, "safetyCoverage.aggregate"),
+			"safetyCoverage.aggregate",
+		),
+		ciOwned: asObjectArray(coverage.ciOwned, "safetyCoverage.ciOwned").map(
+			(entry, index) =>
+				parseSafetyCoverageEntry(entry, `safetyCoverage.ciOwned[${index}]`),
+		),
+		externalRequired: asObjectArray(
+			coverage.externalRequired,
+			"safetyCoverage.externalRequired",
+		).map((entry, index) =>
+			parseSafetyCoverageEntry(
+				entry,
+				`safetyCoverage.externalRequired[${index}]`,
+			),
+		),
+	};
 }
 
 /**
@@ -578,9 +736,15 @@ export function loadVerifyRunMetadata(
 	const lane = toObject(parsed.lane);
 	const finishedAt = asOptionalString(parsed.finishedAt);
 	const identityTupleHash = asOptionalString(parsed.identityTupleHash);
+	const safetyCoverage =
+		parsed.safetyCoverage === undefined
+			? undefined
+			: parseSafetyCoverage(parsed.safetyCoverage);
 	const finishedAtEntry = finishedAt !== undefined ? { finishedAt } : {};
 	const identityTupleHashEntry =
 		identityTupleHash !== undefined ? { identityTupleHash } : {};
+	const safetyCoverageEntry =
+		safetyCoverage !== undefined ? { safetyCoverage } : {};
 
 	return {
 		runId: parsedRunId,
@@ -622,6 +786,7 @@ export function loadVerifyRunMetadata(
 			changedOnly: asBoolean(lane.changedOnly, "lane.changedOnly"),
 			strictMode: asBoolean(lane.strictMode, "lane.strictMode"),
 		},
+		...safetyCoverageEntry,
 		...identityTupleHashEntry,
 	};
 }

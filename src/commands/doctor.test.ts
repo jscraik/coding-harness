@@ -17,6 +17,7 @@ import {
 	getNorthStarSurfaceClassificationSnapshotPath,
 } from "../lib/contract/north-star-artifacts.js";
 import { runDoctor, runDoctorCLI } from "./doctor.js";
+import { parseGithubAuthTimeout } from "./doctor-github-tool-checks.js";
 
 // Mock spawnSync for tool checks (node, pnpm, git, gh)
 vi.mock("node:child_process", async (importOriginal) => {
@@ -259,6 +260,18 @@ describe("runDoctor — tool checks", () => {
 		);
 		expect(coherenceCheck?.status).toBe("ok");
 		expect(coherenceCheck?.fix).toBeUndefined();
+	});
+});
+
+describe("parseGithubAuthTimeout", () => {
+	it("falls back for invalid timeout input and clamps high values", () => {
+		expect(parseGithubAuthTimeout(undefined)).toBe(3000);
+		expect(parseGithubAuthTimeout("NaN")).toBe(3000);
+		expect(parseGithubAuthTimeout("-1")).toBe(3000);
+		expect(parseGithubAuthTimeout("0.5")).toBe(3000);
+		expect(parseGithubAuthTimeout("Infinity")).toBe(3000);
+		expect(parseGithubAuthTimeout("2500.9")).toBe(2500);
+		expect(parseGithubAuthTimeout("999999")).toBe(120_000);
 	});
 });
 

@@ -10,9 +10,8 @@ import {
 	type HeGateId,
 	type HeGatePayload,
 } from "../lib/decision/he-phase-exit.js";
-import { loadEnvFile } from "./pr-closeout-env.js";
-import { parseInput } from "./pr-closeout-input.js";
 import { runPrCloseoutCLI } from "./pr-closeout.js";
+import { fetchReviewThreads, normalizeGhChecks } from "./pr-closeout-github.js";
 
 type TestRunner = NonNullable<Parameters<typeof runPrCloseoutCLI>[1]>["runner"];
 
@@ -136,6 +135,12 @@ function writeCloseoutGates(
 	return path;
 }
 
+function writeEnvFile(dir: string): string {
+	const path = join(dir, "codex.env");
+	writeFileSync(path, "# test env file\n");
+	return path;
+}
+
 const PR_BODY_WITH_TRACEABILITY = `
 Refs JSC-327
 
@@ -144,16 +149,25 @@ Refs JSC-327
 - Session IDs: codex-session:2026-05-16
 - Trace IDs: circleci:workflow-123, artifacts/pr-closeout/pr-closeout.json
 - AI session / traceability: Codex session validates PR closeout evidence.
+- Rollback: not applicable; docs-only closeout.
 - Completed work: command and tests
 `.trim();
 
-function reviewThreadsGraphql(unresolved = 0): string {
+function reviewThreadsGraphql(
+	unresolved = 0,
+	pageInfo: { hasNextPage: boolean; endCursor?: string | null } = {
+		hasNextPage: false,
+	},
+): string {
 	return JSON.stringify({
 		data: {
 			repository: {
 				pullRequest: {
 					reviewThreads: {
-						pageInfo: { hasNextPage: false },
+						pageInfo: {
+							hasNextPage: pageInfo.hasNextPage,
+							endCursor: pageInfo.endCursor ?? null,
+						},
 						nodes: Array.from({ length: unresolved }, () => ({
 							isResolved: false,
 						})),
@@ -162,6 +176,34 @@ function reviewThreadsGraphql(unresolved = 0): string {
 			},
 		},
 	});
+}
+
+function checkRunsForHead(headSha = "abc123"): string {
+	return JSON.stringify([
+		{
+			name: "pr-pipeline",
+			head_sha: headSha,
+			html_url: "https://ci.example/pr-pipeline",
+		},
+	]);
+}
+
+function checkRunsPage(runs: Array<Record<string, unknown>>): string {
+	return JSON.stringify(runs);
+}
+
+function commitStatuses(statuses: Array<Record<string, unknown>>): string {
+	return JSON.stringify(statuses);
+}
+
+function prChecksForHead(): string {
+	return JSON.stringify([
+		{
+			name: "pr-pipeline",
+			state: "SUCCESS",
+			link: "https://ci.example/pr-pipeline",
+		},
+	]);
 }
 
 async function capture(
@@ -185,9 +227,17 @@ async function capture(
 			error.push(String(message));
 		});
 	try {
+		const runArgs =
+			args.includes("--pr") && !args.includes("--env-file")
+				? [
+						...args,
+						"--env-file",
+						writeEnvFile(mkdtempSync(join(tmpdir(), "pr-closeout-env-"))),
+					]
+				: args;
 		const runOptions = runner ? { runner } : {};
 		return {
-			exitCode: await runPrCloseoutCLI(args, runOptions),
+			exitCode: await runPrCloseoutCLI(runArgs, runOptions),
 			output: output.join("\n"),
 			error: error.join("\n"),
 		};
@@ -202,28 +252,6 @@ afterEach(() => {
 });
 
 describe("runPrCloseoutCLI", () => {
-	it("loads GitHub CLI variables from an explicit env file", () => {
-		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-env-"));
-		const envFilePath = join(dir, ".env");
-		writeFileSync(
-			envFilePath,
-			[
-				"GH_CONFIG_DIR=/tmp/pr-closeout-gh",
-				"GITHUB_ENTERPRISE_TOKEN=enterprise-token",
-				"CODERABBIT_API_KEY=rabbit-token",
-				"UNRELATED_HIJACK_KEY=blocked",
-			].join("\n"),
-		);
-
-		const { env, tool } = loadEnvFile(envFilePath);
-
-		expect(tool.status).toBe("usable");
-		expect(env.GH_CONFIG_DIR).toBe("/tmp/pr-closeout-gh");
-		expect(env.GITHUB_ENTERPRISE_TOKEN).toBe("enterprise-token");
-		expect(env.CODERABBIT_API_KEY).toBe("rabbit-token");
-		expect(env.UNRELATED_HIJACK_KEY).not.toBe("blocked");
-	});
-
 	it("builds a JSON report from a normalized input file", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const inputPath = join(dir, "input.json");
@@ -235,12 +263,15 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
 					body: "Refs JSC-327\n",
 				},
 				branch: {
 					clean: true,
+					headSha: "abc123",
 				},
-				checks: [{ name: "pr-pipeline", state: "SUCCESS" }],
+				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
 				reviewThreads: {
 					unresolved: 0,
 				},
@@ -249,6 +280,10 @@ describe("runPrCloseoutCLI", () => {
 					traceIds: ["circleci:workflow-123"],
 					aiSessionTraceability:
 						"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
+				},
+				rollback: {
+					notApplicable: true,
+					evidenceRef: "pr-body:rollback",
 				},
 				closeoutGates: PASSING_PHASE_EXIT,
 			}),
@@ -277,12 +312,15 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
 					body: "Refs JSC-327\n",
 				},
 				branch: {
 					clean: true,
+					headSha: "abc123",
 				},
-				checks: [{ name: "pr-pipeline", state: "SUCCESS" }],
+				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
 				reviewThreads: {
 					unresolved: 0,
 				},
@@ -291,6 +329,10 @@ describe("runPrCloseoutCLI", () => {
 					traceIds: ["circleci:workflow-123"],
 					aiSessionTraceability:
 						"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
+				},
+				rollback: {
+					notApplicable: true,
+					evidenceRef: "pr-body:rollback",
 				},
 				closeoutGates: PASSING_CLOSEOUT_GATES,
 			}),
@@ -434,17 +476,32 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
 			}
 			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
-				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/pr-pipeline",
+					},
+				]);
 			}
 			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
 				return JSON.stringify({
 					owner: { login: "jscraik" },
 					name: "coding-harness",
 				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
 			}
 			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
 				return reviewThreadsGraphql();
@@ -455,7 +512,15 @@ describe("runPrCloseoutCLI", () => {
 			return "ok";
 		};
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				process.cwd(),
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+			],
 			runner,
 		);
 
@@ -482,8 +547,8 @@ describe("runPrCloseoutCLI", () => {
 				"circleci version",
 				"coderabbit --version",
 				"snyk --version",
-				"gh pr view 258 --json number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body",
-				"gh pr checks 258 --json name,state,link",
+				"gh pr view 258 --json number,title,state,isDraft,mergeStateStatus,url,headRefOid,headRefName,baseRefName,reviewDecision,body",
+				"gh pr checks 258 --required --json name,state,link",
 				"gh repo view --json owner,name",
 			]),
 		);
@@ -504,17 +569,26 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
 			}
 			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
-				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
+				return prChecksForHead();
 			}
 			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
 				return JSON.stringify({
 					owner: { login: "jscraik" },
 					name: "coding-harness",
 				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
 			}
 			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
 				return reviewThreadsGraphql();
@@ -526,15 +600,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			[
-				"--json",
-				"--repo",
-				dir,
-				"--pr",
-				"258",
-				"--phase-exit",
-				closeoutGatesPath,
-			],
+			["--json", "--pr", "258", "--phase-exit", closeoutGatesPath],
 			runner,
 		);
 
@@ -563,11 +629,13 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
 			}
 			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
-				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
+				return prChecksForHead();
 			}
 			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
 				throw new Error("repo metadata unavailable");
@@ -579,7 +647,7 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
 			runner,
 		);
 		const report = JSON.parse(result.output);
@@ -603,6 +671,829 @@ describe("runPrCloseoutCLI", () => {
 		);
 	});
 
+	it("uses check evidence from non-zero gh pr checks stdout", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				const error = new Error(
+					"gh pr checks exited with status 8",
+				) as Error & {
+					stdout: string;
+				};
+				error.stdout = prChecksForHead();
+				throw error;
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			tools: Array<{ failureClass: string | null }>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+		expect(
+			report.tools.some((tool) =>
+				tool.failureClass?.startsWith("pr_checks_unreadable"),
+			),
+		).toBe(false);
+	});
+
+	it("asks GitHub for required PR checks only", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const checkArgs: string[][] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				checkArgs.push([...args]);
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(checkArgs).toEqual([
+			["pr", "checks", "258", "--required", "--json", "name,state,link"],
+		]);
+	});
+
+	it("marks normalized gh pr checks as required", () => {
+		expect(normalizeGhChecks(JSON.parse(prChecksForHead()) as unknown)).toEqual(
+			[
+				expect.objectContaining({
+					name: "pr-pipeline",
+					required: true,
+				}),
+			],
+		);
+	});
+
+	it("does not attach current-head proof by check name alone", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/stale-or-different-check",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			claims: Array<{ claim: string; freshness: string }>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
+					freshness: "unknown",
+				}),
+			]),
+		);
+	});
+
+	it("paginates current-head check proof", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const checkRunPages: string[] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				const path = String(args[1]);
+				checkRunPages.push(path);
+				if (path.includes("&page=1")) {
+					return checkRunsPage(
+						Array.from({ length: 100 }, (_, index) => ({
+							name: `other-check-${index}`,
+							head_sha: "abc123",
+							html_url: `https://ci.example/other-${index}`,
+						})),
+					);
+				}
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+		expect(checkRunPages).toEqual([
+			expect.stringContaining("page=1"),
+			expect.stringContaining("page=2"),
+		]);
+	});
+
+	it("matches check-run proof by details URL before HTML URL", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/details",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsPage([
+					{
+						name: "pr-pipeline",
+						head_sha: "abc123",
+						details_url: "https://ci.example/details",
+						html_url: "https://ci.example/html",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+	});
+
+	it("attaches current-head proof from classic commit statuses", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/status",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsPage([]);
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				return commitStatuses([
+					{
+						context: "pr-pipeline",
+						target_url: "https://ci.example/status",
+						sha: "abc123",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+	});
+
+	it("falls back to status context proof when the status URL differs", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://checks.example/pr-pipeline",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsPage([]);
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				return commitStatuses([
+					{
+						context: "pr-pipeline",
+						target_url: "https://status.example/legacy-context",
+						sha: "abc123",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+	});
+
+	it("attaches current-head proof from classic statuses without target URLs", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsPage([]);
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				return commitStatuses([
+					{
+						context: "pr-pipeline",
+						sha: "abc123",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+	});
+
+	it("attaches status-backed proof when status sha is omitted", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/status",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsPage([]);
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				return commitStatuses([
+					{
+						context: "pr-pipeline",
+						target_url: "https://ci.example/status",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+	});
+
+	it("records tool evidence when status proof cannot be read", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/status",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsPage([]);
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				throw new Error("statuses endpoint unavailable");
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			tools: Array<{
+				ref: string;
+				status: string;
+				failureClass: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.tools).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					ref: expect.stringContaining("/statuses page=1"),
+					status: "blocked",
+					failureClass: expect.stringContaining(
+						"pr_check_status_proof_unreadable",
+					),
+				}),
+			]),
+		);
+	});
+
+	it("falls back to commit statuses when check-runs proof cannot be read", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return JSON.stringify([
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						link: "https://ci.example/status",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				throw new Error("check-runs endpoint unavailable");
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/statuses")
+			) {
+				return commitStatuses([
+					{
+						context: "pr-pipeline",
+						target_url: "https://ci.example/status",
+						sha: "abc123",
+					},
+				]);
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") return "";
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+	});
+
+	it("paginates reviewThreads before classifying unresolved conversations", () => {
+		const tools: Parameters<typeof fetchReviewThreads>[3] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return args.some((arg) => arg === "after=cursor-1")
+					? reviewThreadsGraphql(1)
+					: reviewThreadsGraphql(0, {
+							hasNextPage: true,
+							endCursor: "cursor-1",
+						});
+			}
+			return "ok";
+		};
+
+		const reviewThreads = fetchReviewThreads(
+			{ json: true, repoRoot: process.cwd(), prNumber: 258 },
+			process.env,
+			runner,
+			tools,
+		);
+
+		expect(reviewThreads.unresolved).toBe(1);
+		expect(reviewThreads.autofixable).toBeNull();
+		expect(tools).toEqual([]);
+	});
+
 	it("does not count PR template placeholders as traceability evidence", async () => {
 		const runner = (
 			command: string,
@@ -615,6 +1506,8 @@ describe("runPrCloseoutCLI", () => {
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: `
 Refs JSC-328
 
@@ -627,13 +1520,20 @@ Refs JSC-328
 				});
 			}
 			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
-				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
+				return prChecksForHead();
 			}
 			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
 				return JSON.stringify({
 					owner: { login: "jscraik" },
 					name: "coding-harness",
 				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
 			}
 			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
 				return reviewThreadsGraphql();
@@ -659,6 +1559,290 @@ Refs JSC-328
 				expect.objectContaining({ surface: "traceability" }),
 			]),
 		);
+	});
+
+	it("keeps concrete map-prefixed traceability text from PR body fields", async () => {
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: `
+Refs JSC-328
+
+## Work performed
+
+- Session IDs: n.a. with reason: AI traceability field carries the concrete evidence.
+- Trace IDs: n.a. with reason: no external trace was produced.
+- AI session / traceability: map codex-session:2026-05-20 to the closeout parser fix.
+`.trim(),
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(["--json", "--pr", "258"], runner);
+		const report = JSON.parse(result.output) as {
+			traceability: { complete: boolean; aiSessionTraceability: string | null };
+			blockers: Array<{ surface: string }>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.traceability).toMatchObject({
+			complete: true,
+			aiSessionTraceability:
+				"map codex-session:2026-05-20 to the closeout parser fix.",
+		});
+		expect(report.blockers).not.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ surface: "traceability" }),
+			]),
+		);
+	});
+
+	it("accepts angle-bracketed evidence URLs from PR body fields", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: `
+Refs JSC-328
+
+## Work performed
+
+- Session IDs: <https://codex.example/sessions/abc>
+- Trace IDs: <https://circleci.com/workflow/123>
+- AI session / traceability: <https://trace.example/run/456>
+- Rollback: <https://github.com/jscraik/coding-harness/pull/265>
+`.trim(),
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			traceability: {
+				complete: boolean;
+				sessionIds: string[];
+				traceIds: string[];
+			};
+			claims: Array<{
+				claim: string;
+				status: string;
+				evidenceRef: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+		expect(report.traceability).toMatchObject({
+			complete: true,
+			sessionIds: ["<https://codex.example/sessions/abc>"],
+			traceIds: ["<https://circleci.com/workflow/123>"],
+		});
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "rollback_path_named_or_not_applicable",
+					status: "pass",
+				}),
+			]),
+		);
+	});
+
+	it("blocks live reports when rollback evidence is missing", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY.replace(/^- Rollback:.*\n/mu, ""),
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			claims: Array<{
+				claim: string;
+				status: string;
+				evidenceRef: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "rollback_path_named_or_not_applicable",
+					status: "unknown",
+					evidenceRef: null,
+				}),
+			]),
+		);
+	});
+
+	it("accepts the repo template risk and rollback plan field", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY.replace(
+						/^- Rollback:.*\n/mu,
+						"- Risk and rollback plan: not applicable; docs-only closeout.\n",
+					),
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as { status: string };
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
 	});
 
 	it("emits blocker evidence when live PR metadata cannot be read", async () => {
@@ -697,7 +1881,7 @@ Refs JSC-328
 			expect.arrayContaining([
 				expect.objectContaining({
 					surface: "tool",
-					reason: expect.stringContaining("pr_view_unavailable"),
+					reason: expect.stringContaining("pr_view_unreadable"),
 				}),
 			]),
 		);
@@ -715,6 +1899,8 @@ Refs JSC-328
 					state: "OPEN",
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
 			}
@@ -739,196 +1925,9 @@ Refs JSC-328
 			expect.arrayContaining([
 				expect.objectContaining({
 					surface: "tool",
-					reason: expect.stringContaining("pr_checks_unavailable"),
+					reason: expect.stringContaining("github_cli is blocked"),
 				}),
 			]),
 		);
-	});
-
-	it("classifies malformed live check output as unreadable instead of unavailable", async () => {
-		const runner = (
-			command: string,
-			args: readonly string[],
-			_options: { cwd: string; env?: NodeJS.ProcessEnv },
-		): string => {
-			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
-				return JSON.stringify({
-					number: 258,
-					state: "OPEN",
-					isDraft: false,
-					mergeStateStatus: "CLEAN",
-					body: PR_BODY_WITH_TRACEABILITY,
-				});
-			}
-			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
-				return JSON.stringify({ message: "unexpected checks payload" });
-			}
-			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
-				return JSON.stringify({
-					owner: { login: "jscraik" },
-					name: "coding-harness",
-				});
-			}
-			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
-				return reviewThreadsGraphql();
-			}
-			if (command === "git") {
-				return "";
-			}
-			return "ok";
-		};
-
-		const result = await capture(["--json", "--pr", "258"], runner);
-		const report = JSON.parse(result.output) as {
-			tools: Array<{
-				name: string;
-				available: boolean;
-				failureClass: string | null;
-			}>;
-		};
-
-		expect(result.exitCode).toBe(0);
-		expect(report.tools).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({
-					name: "github_cli",
-					available: true,
-					failureClass: expect.stringContaining("pr_checks_unreadable"),
-				}),
-			]),
-		);
-	});
-
-	it("classifies wrong-shape live check output as unreadable", async () => {
-		const runner = (
-			command: string,
-			args: readonly string[],
-			_options: { cwd: string; env?: NodeJS.ProcessEnv },
-		): string => {
-			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
-				return JSON.stringify({
-					number: 258,
-					state: "OPEN",
-					isDraft: false,
-					mergeStateStatus: "CLEAN",
-					body: PR_BODY_WITH_TRACEABILITY,
-				});
-			}
-			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
-				return JSON.stringify({ checks: [] });
-			}
-			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
-				return JSON.stringify({
-					owner: { login: "jscraik" },
-					name: "coding-harness",
-				});
-			}
-			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
-				return reviewThreadsGraphql();
-			}
-			if (command === "git") {
-				return "";
-			}
-			return "ok";
-		};
-
-		const result = await capture(["--json", "--pr", "258"], runner);
-		const report = JSON.parse(result.output) as {
-			tools: Array<{
-				name: string;
-				available: boolean;
-				failureClass: string | null;
-			}>;
-		};
-
-		expect(result.exitCode).toBe(0);
-		expect(report.tools).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({
-					name: "github_cli",
-					available: true,
-					failureClass: expect.stringContaining(
-						"gh pr checks must return an array",
-					),
-				}),
-			]),
-		);
-	});
-
-	it("classifies GitHub review-thread command failures separately from unreadable output", async () => {
-		const runner = (
-			command: string,
-			args: readonly string[],
-			_options: { cwd: string; env?: NodeJS.ProcessEnv },
-		): string => {
-			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
-				return JSON.stringify({
-					number: 258,
-					state: "OPEN",
-					isDraft: false,
-					mergeStateStatus: "CLEAN",
-					body: PR_BODY_WITH_TRACEABILITY,
-				});
-			}
-			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
-				return JSON.stringify([{ name: "pr-pipeline", state: "SUCCESS" }]);
-			}
-			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
-				return JSON.stringify({
-					owner: { login: "jscraik" },
-					name: "coding-harness",
-				});
-			}
-			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
-				throw new Error("graphql offline");
-			}
-			if (command === "git") {
-				return "";
-			}
-			return "ok";
-		};
-
-		const result = await capture(["--json", "--pr", "258"], runner);
-		const report = JSON.parse(result.output) as {
-			tools: Array<{
-				name: string;
-				available: boolean;
-				failureClass: string | null;
-			}>;
-		};
-
-		expect(result.exitCode).toBe(0);
-		expect(report.tools).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({
-					name: "github_cli",
-					available: false,
-					failureClass: expect.stringContaining(
-						"pr_review_threads_unavailable",
-					),
-				}),
-			]),
-		);
-	});
-
-	it("rejects malformed optional closeout input sections before casting", () => {
-		expect(() =>
-			parseInput(
-				JSON.stringify({
-					pullRequest: { number: 258 },
-					checks: {},
-				}),
-				"inline input",
-			),
-		).toThrow("inline input checks must be an array when provided");
-		expect(() =>
-			parseInput(
-				JSON.stringify({
-					pullRequest: { number: 258 },
-					branch: [],
-				}),
-				"inline input",
-			),
-		).toThrow("inline input branch must be an object when provided");
 	});
 });

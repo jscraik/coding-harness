@@ -187,10 +187,79 @@ describe("buildLocalRuntimeCard", () => {
 			staleRefs: [],
 		});
 		expect(card.phaseExit.status).toBe("not_run");
+		expect(card.attemptLedger).toMatchObject({
+			schemaVersion: "attempt-ledger/v1",
+			command: "runtime-card",
+			attempt: 1,
+			maxAttempts: 1,
+			firstFailure: null,
+			retryDecision: "none",
+			owner: "codex",
+			stopReason: null,
+			nextAction:
+				"Run focused validation and supply a HePhaseExit/v1 artifact before closeout.",
+		});
+		expect(card.recoveryEvent).toBeNull();
 		expect(card.sources.map((source) => source.kind)).toEqual([
 			"git",
 			"artifact",
 		]);
+	});
+
+	it("blocks missing phase-exit evidence when the runtime-card context requires it", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+			requirePhaseExit: true,
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.lifecycle).toBe("blocked");
+		expect(card.phaseExit.status).toBe("not_run");
+		expect(card.blockers).toEqual([
+			"Phase-exit artifact is required for this runtime-card context.",
+		]);
+		expect(card.attemptLedger).toMatchObject({
+			firstFailure: {
+				attempt: 1,
+				lifecycle: "blocked",
+				nextSafeAction:
+					"Phase-exit artifact is required for this runtime-card context.",
+			},
+			retryDecision: "stop",
+			owner: "codex",
+			stopReason:
+				"Phase-exit artifact is required for this runtime-card context.",
+			nextAction:
+				"Phase-exit artifact is required for this runtime-card context.",
+		});
+		expect(card.recoveryEvent).toMatchObject({
+			schemaVersion: "recovery-event/v1",
+			command: "runtime-card",
+			attempt: 1,
+			owner: "codex",
+			failureClass: "phase_exit_missing",
+			stopReason:
+				"Phase-exit artifact is required for this runtime-card context.",
+			nextAction:
+				"Phase-exit artifact is required for this runtime-card context.",
+			retryDecision: "stop",
+		});
+		expect(card.sources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "phase_exit",
+					ref: "input:phase-exit",
+					freshness: "missing",
+					status: "empty",
+					failureClass: "phase_exit_missing",
+				}),
+			]),
+		);
 	});
 
 	it("keeps runtime-card/v1 validation compatible with older linear snapshots", () => {

@@ -1,8 +1,9 @@
 import { join } from "node:path";
 import {
-	emitTerminalRunRecord,
-	hashRunRecordValue,
-} from "../lib/contract/run-record-emitter.js";
+	EXIT_CODES,
+	emitInvalidTraceDirectoryRunRecord,
+	emitReplayRunRecord,
+} from "./replay-run-record.js";
 import { validatePath } from "../lib/input/validator.js";
 import {
 	type ExecutionTrace,
@@ -12,14 +13,7 @@ import {
 	replayTrace,
 } from "../lib/replay/tracer.js";
 
-// Exit codes for programmatic consumption
-export const EXIT_CODES = {
-	SUCCESS: 0,
-	TRACE_NOT_FOUND: 1,
-	VALIDATION_ERROR: 2,
-	REPLAY_ERROR: 3,
-	SYSTEM_ERROR: 10,
-} as const;
+export { EXIT_CODES } from "./replay-run-record.js";
 
 /**
  * CLI options for `harness replay`.
@@ -37,69 +31,6 @@ export interface ReplayOptions {
 	traceDir?: string;
 	/** Optional override for canonical run-record base dir */
 	runRecordsDir?: string;
-}
-
-/**
- * Emit a canonical run record for a replay command and return the exit code.
- */
-function emitReplayRunRecord(
-	startedAt: string,
-	options: ReplayOptions,
-	params: {
-		outcome: "success" | "failed" | "blocked";
-		classification:
-			| "ok"
-			| "validation_failed"
-			| "precondition_failed"
-			| "runtime_failed";
-		exitCode: number;
-		payload: Record<string, unknown>;
-		artifacts?: Array<{ type: string; path: string; checksum?: string }>;
-	},
-): number {
-	try {
-		emitTerminalRunRecord({
-			command: "replay",
-			startedAt,
-			outcome: params.outcome,
-			classification: params.classification,
-			exitCode: params.exitCode,
-			...(options.runRecordsDir ? { baseDir: options.runRecordsDir } : {}),
-			policyContext: {
-				mode: options.dryRun ? "dry-run" : "default",
-				safetyPosture: "strict",
-				effectivePolicySource: "replay-trace-policy",
-				hash: hashRunRecordValue({
-					policy: "replay-trace-policy",
-					mode: options.dryRun ? "dry-run" : "default",
-					list: Boolean(options.list),
-					traceId: options.traceId ?? null,
-				}),
-			},
-			preconditions: {
-				traceIdProvided: Boolean(options.traceId),
-				listMode: Boolean(options.list),
-			},
-			...(params.artifacts ? { artifacts: params.artifacts } : {}),
-			event: {
-				eventType: "decision",
-				status:
-					params.classification === "ok"
-						? "completed"
-						: params.classification === "precondition_failed"
-							? "blocked"
-							: "failed",
-				severity: params.classification === "ok" ? "info" : "error",
-				payload: params.payload,
-			},
-		});
-	} catch (error) {
-		console.error(
-			`Failed to emit canonical run record for replay: ${String(error)}`,
-		);
-		return EXIT_CODES.SYSTEM_ERROR;
-	}
-	return params.exitCode;
 }
 
 /**
@@ -204,7 +135,7 @@ async function resolveTrace(
 	options: ReplayOptions,
 	config?: { baseDir: string; maxTraces: number },
 ): Promise<
-	| { ok: true; trace: ExecutionTrace }
+	| { ok: true; trace: ExecutionTrace; traceId: string }
 	| { ok: false; code: string; message: string; hint?: string }
 > {
 	if (!options.traceId) {
@@ -230,7 +161,7 @@ async function resolveTrace(
 			hint: "Use --list to see available traces.",
 		};
 	}
-	return { ok: true, trace };
+	return { ok: true, trace, traceId: options.traceId };
 }
 
 /**
@@ -262,6 +193,82 @@ function emitReplayResult(
 	});
 }
 
+type ReplayTraceConfig = { baseDir: string; maxTraces: number };
+type ReplayTraceResolutionFailure = {
+	code: string;
+	message: string;
+	hint?: string;
+};
+
+function resolveReplayConfig(
+	options: ReplayOptions,
+): { ok: true; config?: ReplayTraceConfig } | { ok: false; exitCode: number } {
+	if (!options.traceDir) return { ok: true };
+	try {
+		return {
+			ok: true,
+			config: {
+				baseDir: validatePath(process.cwd(), options.traceDir),
+				maxTraces: 100,
+			},
+		};
+	} catch (err) {
+		const reason = err instanceof Error ? err.message : String(err);
+		logReplayError(
+			options,
+			"VALIDATION_ERROR",
+			`Invalid trace directory: ${options.traceDir} (${reason})`,
+		);
+		return {
+			ok: false,
+			exitCode: EXIT_CODES.VALIDATION_ERROR,
+		};
+	}
+}
+
+async function runTraceList(
+	startedAt: string,
+	options: ReplayOptions,
+	config: ReplayTraceConfig | undefined,
+): Promise<number> {
+	const traces = await listTraces(config);
+	printTraceList(options, traces);
+	return emitReplayRunRecord(startedAt, options, {
+		outcome: "success",
+		classification: "ok",
+		exitCode: EXIT_CODES.SUCCESS,
+		payload: {
+			mode: "list",
+			traceCount: traces.length,
+		},
+	});
+}
+
+function emitTraceResolutionFailure(
+	startedAt: string,
+	options: ReplayOptions,
+	traceResult: ReplayTraceResolutionFailure,
+): number {
+	const traceNotFound = traceResult.code === "TRACE_NOT_FOUND";
+	logReplayError(
+		options,
+		traceResult.code,
+		traceResult.message,
+		traceResult.hint,
+	);
+	return emitReplayRunRecord(startedAt, options, {
+		outcome: traceNotFound ? "blocked" : "failed",
+		classification: traceNotFound ? "precondition_failed" : "validation_failed",
+		exitCode: traceNotFound
+			? EXIT_CODES.TRACE_NOT_FOUND
+			: EXIT_CODES.VALIDATION_ERROR,
+		payload: {
+			error: traceNotFound ? "trace_not_found" : traceResult.code.toLowerCase(),
+			traceId: options.traceId,
+		},
+	});
+}
+
 /**
  * Execute the replay command and return a process-style exit code.
  */
@@ -269,82 +276,24 @@ export async function runReplayCLI(options: ReplayOptions): Promise<number> {
 	const startedAt = new Date().toISOString();
 
 	try {
-		let config:
-			| {
-					baseDir: string;
-					maxTraces: number;
-			  }
-			| undefined;
-		if (options.traceDir) {
-			try {
-				config = {
-					baseDir: validatePath(process.cwd(), options.traceDir),
-					maxTraces: 100,
-				};
-			} catch {
-				logReplayError(
-					options,
-					"VALIDATION_ERROR",
-					`Invalid trace directory: ${options.traceDir}`,
-				);
-				return emitReplayRunRecord(startedAt, options, {
-					outcome: "failed",
-					classification: "validation_failed",
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					payload: {
-						error: "invalid_trace_directory",
-						traceDir: options.traceDir,
-					},
-				});
-			}
+		const configResult = resolveReplayConfig(options);
+		if (!configResult.ok) {
+			return emitInvalidTraceDirectoryRunRecord(
+				startedAt,
+				options,
+				configResult.exitCode,
+			);
 		}
+		const config = configResult.config;
 
 		if (options.list) {
-			const traces = await listTraces(config);
-			printTraceList(options, traces);
-			return emitReplayRunRecord(startedAt, options, {
-				outcome: "success",
-				classification: "ok",
-				exitCode: EXIT_CODES.SUCCESS,
-				payload: {
-					mode: "list",
-					traceCount: traces.length,
-				},
-			});
+			return runTraceList(startedAt, options, config);
 		}
 
 		const traceResult = await resolveTrace(options, config);
 		if (!traceResult.ok) {
-			logReplayError(
-				options,
-				traceResult.code,
-				traceResult.message,
-				traceResult.hint,
-			);
-			return emitReplayRunRecord(startedAt, options, {
-				outcome: traceResult.code === "TRACE_NOT_FOUND" ? "blocked" : "failed",
-				classification:
-					traceResult.code === "TRACE_NOT_FOUND"
-						? "precondition_failed"
-						: "validation_failed",
-				exitCode:
-					traceResult.code === "TRACE_NOT_FOUND"
-						? EXIT_CODES.TRACE_NOT_FOUND
-						: EXIT_CODES.VALIDATION_ERROR,
-				payload: {
-					error:
-						traceResult.code === "TRACE_NOT_FOUND"
-							? "trace_not_found"
-							: traceResult.code.toLowerCase(),
-					traceId: options.traceId,
-				},
-			});
+			return emitTraceResolutionFailure(startedAt, options, traceResult);
 		}
-		const traceId = options.traceId;
-		if (!traceId) {
-			throw new Error("Trace ID missing after validation");
-		}
-
 		const replayOptions: {
 			dryRun?: boolean;
 			config?: { baseDir: string; maxTraces: number };
@@ -352,10 +301,16 @@ export async function runReplayCLI(options: ReplayOptions): Promise<number> {
 			...(options.dryRun !== undefined ? { dryRun: options.dryRun } : {}),
 			...(config !== undefined ? { config } : {}),
 		};
-		const result = await replayTrace(traceId, replayOptions);
-		printReplayResult(options, traceId, traceResult.trace, result);
+		const result = await replayTrace(traceResult.traceId, replayOptions);
+		printReplayResult(options, traceResult.traceId, traceResult.trace, result);
 
-		return emitReplayResult(startedAt, options, traceId, config, result);
+		return emitReplayResult(
+			startedAt,
+			options,
+			traceResult.traceId,
+			config,
+			result,
+		);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
 		logReplayError(options, "SYSTEM_ERROR", message);

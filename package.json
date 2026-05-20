@@ -47,7 +47,7 @@
 		"harness": "dist/cli.js"
 	},
 	"scripts": {
-		"check": "pnpm lint && pnpm docs:lint && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm quality:self-affirming && pnpm test:related && pnpm test:ci && pnpm audit",
+		"check": "pnpm lint && pnpm docs:lint && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm research:evidence:validate && pnpm architecture:check && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm quality:self-affirming && pnpm test:related && pnpm test:ci && pnpm audit",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && biome check .",
 		"lint:fix": "biome check . --write",
@@ -74,6 +74,8 @@
 		"skill:validate": "node scripts/validate-packaged-skill.cjs",
 		"workflow:normalize": "node scripts/normalize-workflow-contracts.cjs",
 		"workflow:validate": "node scripts/validate-workflow-contracts.cjs",
+		"research:evidence:validate": "node scripts/validate-evidence-patterns.cjs",
+		"architecture:check": "node scripts/check-architecture-rules.cjs --format json",
 		"observed:eval-usage": "tsx scripts/collect-observed-eval-usage.ts",
 		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
 		"codestyle:parity": "bash scripts/check-codestyle-parity.sh",
@@ -81,6 +83,7 @@
 		"quality:docstrings": "node scripts/check-public-api-docs.mjs",
 		"quality:size": "node scripts/check-code-size.mjs",
 		"quality:self-affirming": "node scripts/check-self-affirming-tests.mjs --all",
+		"safety:local": "pnpm run secrets:staged && pnpm run semgrep:changed",
 		"secrets:staged": "bash scripts/check-staged-secrets.sh",
 		"semgrep:changed": "bash scripts/check-semgrep-changed.sh",
 		"test:artifacts": "bash scripts/test-with-artifacts.sh all",
@@ -128,6 +131,7 @@
 		"@octokit/rest": "^22.0.1",
 		"better-sqlite3": "^12.6.2",
 		"diff": "^8.0.3",
+		"effect": "3.21.2",
 		"lodash": "^4.18.1",
 		"picomatch": "^4.0.4",
 		"semver": "^7.7.4",

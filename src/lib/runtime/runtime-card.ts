@@ -1,12 +1,5 @@
-import {
-	type HeValidationError,
-	isRecord,
-	toValidationError,
-	validateEnum,
-	validateNullableString,
-	validateString,
-	validateStringArray,
-} from "../decision/validators.js";
+export { validateRuntimeCard } from "./runtime-card-validation.js";
+import type { HeValidationError } from "../decision/validators.js";
 
 /** Schema version for the first local harness runtime state card. */
 export const RUNTIME_CARD_SCHEMA_VERSION = "runtime-card/v1" as const;
@@ -65,6 +58,15 @@ export type RuntimeCardPhaseExitStatus =
 	| "blocked"
 	| "not_run"
 	| "unknown";
+
+/** Owner expected to unblock a non-ready runtime-card attempt. */
+export type RuntimeCardRecoveryOwner =
+	| "codex"
+	| "external_service"
+	| "operator";
+
+/** Retry posture for the current runtime-card attempt. */
+export type RuntimeCardRetryDecision = "none" | "wait" | "stop";
 
 /** Validation result for a runtime-card candidate. */
 export interface RuntimeCardValidationResult {
@@ -148,6 +150,38 @@ export interface RuntimeCardSource {
 	failureClass: string | null;
 }
 
+/** Replayable attempt metadata for runtime-card generation. */
+export interface RuntimeCardAttemptLedger {
+	schemaVersion: "attempt-ledger/v1";
+	command: "runtime-card";
+	attempt: number;
+	maxAttempts: number;
+	firstFailure: {
+		attempt: number;
+		lifecycle: RuntimeCardLifecycleState;
+		nextSafeAction: string;
+	} | null;
+	retryDecision: RuntimeCardRetryDecision;
+	owner: RuntimeCardRecoveryOwner;
+	stopReason: string | null;
+	nextAction: string;
+	evidenceRefs: string[];
+}
+
+/** Failure/recovery event emitted when runtime-card evidence blocks continuation. */
+export interface RuntimeCardRecoveryEvent {
+	schemaVersion: "recovery-event/v1";
+	eventId: string;
+	command: "runtime-card";
+	attempt: number;
+	owner: RuntimeCardRecoveryOwner;
+	failureClass: string;
+	stopReason: string;
+	nextAction: string;
+	retryDecision: RuntimeCardRetryDecision;
+	evidenceRefs: string[];
+}
+
 /** Local runtime state card consumed by agent cockpit commands. */
 export interface RuntimeCard {
 	/** Schema version for this runtime state contract. */
@@ -176,264 +210,17 @@ export interface RuntimeCard {
 	sources: RuntimeCardSource[];
 	/** Blocking conditions that must be resolved before moving on. */
 	blockers: string[];
+	/** Attempt/retry metadata for the runtime-card generation pass. */
+	attemptLedger: RuntimeCardAttemptLedger;
+	/** Recovery event for blocked runtime-card output, or null when ready. */
+	recoveryEvent: RuntimeCardRecoveryEvent | null;
 }
-
-const VALID_LIFECYCLES: readonly RuntimeCardLifecycleState[] = [
-	"planned",
-	"active",
-	"implemented",
-	"locally_validated",
-	"review_pending",
-	"ci_blocked",
-	"merge_ready",
-	"merged",
-	"closeout_pending",
-	"reconciled",
-	"closed",
-	"stale",
-	"superseded",
-	"blocked",
-	"unknown",
-];
-
-const VALID_FRESHNESS: readonly RuntimeCardFreshness[] = [
-	"current",
-	"stale",
-	"missing",
-	"unknown",
-];
-
-const VALID_SOURCE_STATUSES: readonly RuntimeCardSourceStatus[] = [
-	"usable",
-	"empty",
-	"invalid",
-	"blocked",
-];
-
-const VALID_SOURCE_KINDS: readonly RuntimeCardSourceKind[] = [
-	"git",
-	"pr",
-	"linear",
-	"artifact",
-	"validation",
-	"review",
-	"session",
-	"phase_exit",
-];
-
-const VALID_ARTIFACT_STATUSES: readonly RuntimeCardArtifactStatus[] = [
-	"current",
-	"stale",
-	"missing",
-	"superseded",
-	"unknown",
-];
-
-const VALID_PHASE_EXIT_STATUSES: readonly RuntimeCardPhaseExitStatus[] = [
-	"pass",
-	"fail",
-	"blocked",
-	"not_run",
-	"unknown",
-];
 
 const BLOCKING_LIFECYCLES = new Set<RuntimeCardLifecycleState>([
 	"ci_blocked",
 	"blocked",
 	"stale",
 ]);
-
-function validateNullableBoolean(
-	value: unknown,
-	field: string,
-	errors: HeValidationError[],
-): void {
-	if (value !== null && typeof value !== "boolean") {
-		errors.push(toValidationError(`${field} must be a boolean or null`, field));
-	}
-}
-
-function validateNullableNumber(
-	value: unknown,
-	field: string,
-	errors: HeValidationError[],
-): void {
-	if (
-		value !== null &&
-		(typeof value !== "number" || !Number.isInteger(value) || value < 0)
-	) {
-		errors.push(
-			toValidationError(
-				`${field} must be a non-negative integer or null`,
-				field,
-			),
-		);
-	}
-}
-
-function validateOptionalNullableString(
-	value: unknown,
-	field: string,
-	errors: HeValidationError[],
-): void {
-	if (value === undefined) return;
-	validateNullableString(value, field, errors);
-}
-
-function validateBranchState(
-	value: unknown,
-	errors: HeValidationError[],
-): void {
-	if (!isRecord(value)) {
-		errors.push(toValidationError("branch must be an object", "branch"));
-		return;
-	}
-	validateNullableString(value.name, "branch.name", errors);
-	validateNullableBoolean(value.clean, "branch.clean", errors);
-	validateNullableString(value.ref, "branch.ref", errors);
-}
-
-function validatePullRequestState(
-	value: unknown,
-	errors: HeValidationError[],
-): void {
-	if (!isRecord(value)) {
-		errors.push(
-			toValidationError("pullRequest must be an object", "pullRequest"),
-		);
-		return;
-	}
-	validateNullableNumber(value.number, "pullRequest.number", errors);
-	validateNullableString(value.state, "pullRequest.state", errors);
-	validateNullableBoolean(value.isDraft, "pullRequest.isDraft", errors);
-	validateNullableString(
-		value.mergeStateStatus,
-		"pullRequest.mergeStateStatus",
-		errors,
-	);
-	validateNullableString(value.url, "pullRequest.url", errors);
-}
-
-function validateArtifactsState(
-	value: unknown,
-	errors: HeValidationError[],
-): void {
-	if (!isRecord(value)) {
-		errors.push(toValidationError("artifacts must be an object", "artifacts"));
-		return;
-	}
-	validateNullableString(value.activeSpec, "artifacts.activeSpec", errors);
-	validateNullableString(value.activePlan, "artifacts.activePlan", errors);
-	validateEnum(
-		value.status,
-		"artifacts.status",
-		VALID_ARTIFACT_STATUSES,
-		errors,
-	);
-	validateStringArray(value.staleRefs, "artifacts.staleRefs", errors);
-}
-
-function validateLinearState(
-	value: unknown,
-	errors: HeValidationError[],
-): void {
-	if (!isRecord(value)) {
-		errors.push(toValidationError("linear must be an object", "linear"));
-		return;
-	}
-	validateNullableString(value.issueKey, "linear.issueKey", errors);
-	validateEnum(value.freshness, "linear.freshness", VALID_FRESHNESS, errors);
-	validateOptionalNullableString(value.status, "linear.status", errors);
-	validateOptionalNullableString(value.statusType, "linear.statusType", errors);
-	validateOptionalNullableString(value.url, "linear.url", errors);
-	validateNullableString(value.actionRequired, "linear.actionRequired", errors);
-}
-
-function validatePhaseExitState(
-	value: unknown,
-	errors: HeValidationError[],
-): void {
-	if (!isRecord(value)) {
-		errors.push(toValidationError("phaseExit must be an object", "phaseExit"));
-		return;
-	}
-	validateEnum(
-		value.status,
-		"phaseExit.status",
-		VALID_PHASE_EXIT_STATUSES,
-		errors,
-	);
-	validateNullableString(value.reason, "phaseExit.reason", errors);
-}
-
-function validateSources(value: unknown, errors: HeValidationError[]): void {
-	if (!Array.isArray(value)) {
-		errors.push(toValidationError("sources must be an array", "sources"));
-		return;
-	}
-	for (const [index, source] of value.entries()) {
-		const field = `sources.${String(index)}`;
-		if (!isRecord(source)) {
-			errors.push(toValidationError(`${field} must be an object`, field));
-			continue;
-		}
-		validateEnum(source.kind, `${field}.kind`, VALID_SOURCE_KINDS, errors);
-		validateString(source.ref, `${field}.ref`, errors);
-		validateEnum(
-			source.freshness,
-			`${field}.freshness`,
-			VALID_FRESHNESS,
-			errors,
-		);
-		validateEnum(
-			source.status,
-			`${field}.status`,
-			VALID_SOURCE_STATUSES,
-			errors,
-		);
-		validateNullableString(
-			source.failureClass,
-			`${field}.failureClass`,
-			errors,
-		);
-	}
-}
-
-/** Validate an unknown value as a runtime-card/v1 artifact. */
-export function validateRuntimeCard(
-	value: unknown,
-): RuntimeCardValidationResult {
-	const errors: HeValidationError[] = [];
-	if (!isRecord(value)) {
-		return {
-			valid: false,
-			errors: [toValidationError("runtime card must be an object")],
-		};
-	}
-
-	if (value.schemaVersion !== RUNTIME_CARD_SCHEMA_VERSION) {
-		errors.push(
-			toValidationError(
-				`schemaVersion must be ${RUNTIME_CARD_SCHEMA_VERSION}`,
-				"schemaVersion",
-			),
-		);
-	}
-	validateString(value.generatedAt, "generatedAt", errors);
-	validateNullableString(value.issueKey, "issueKey", errors);
-	validateEnum(value.lifecycle, "lifecycle", VALID_LIFECYCLES, errors);
-	validateString(value.summary, "summary", errors);
-	validateString(value.nextSafeAction, "nextSafeAction", errors);
-	validateBranchState(value.branch, errors);
-	validatePullRequestState(value.pullRequest, errors);
-	validateArtifactsState(value.artifacts, errors);
-	validateLinearState(value.linear, errors);
-	validatePhaseExitState(value.phaseExit, errors);
-	validateSources(value.sources, errors);
-	validateStringArray(value.blockers, "blockers", errors);
-
-	return { valid: errors.length === 0, errors };
-}
 
 /** Return true when runtime card evidence says the caller must stop first. */
 export function runtimeCardBlocksContinuation(card: RuntimeCard): boolean {
@@ -456,6 +243,8 @@ export function normaliseRuntimeCard(
 		linear: card.linear,
 		phaseExit: card.phaseExit,
 		blockers: card.blockers,
+		attemptLedger: card.attemptLedger,
+		recoveryEvent: card.recoveryEvent,
 		sourceCount: card.sources.length,
 		sources: card.sources,
 	};

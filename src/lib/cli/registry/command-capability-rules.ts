@@ -1,4 +1,5 @@
 import type {
+	CommandAgentCatalogMode,
 	CommandAgentMode,
 	CommandCategory,
 	CommandOrchestrator,
@@ -105,7 +106,7 @@ export const WRITE_COMMANDS = new Set<string>([
 export const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
 	"blast-radius": ["--files"],
 	"artifact-gate": ["--files"],
-	"review-gate": ["--token", "--owner", "--repo", "--pr", "--sha"],
+	"review-gate": ["--owner", "--repo", "--pr", "--sha"],
 	"workflow:generate": ["--source"],
 	"linear-gate": ["--branch", "--pr-title", "--pr-body"],
 	"review-context": ["--files"],
@@ -302,3 +303,17 @@ export const COMMAND_VISIBILITY_BY_NAME: Partial<
 	"pr-closeout": "advanced",
 	"docs-gate": "plumbing",
 };
+
+export const AGENT_CATALOG_COMMAND_NAMES: Readonly<
+	Record<"default" | CommandAgentCatalogMode, readonly string[]>
+> = {
+	default: ["next"],
+	orient: ["next", "runtime-card", "commands"],
+	verify: ["next", "runtime-card", "validation-plan", "evidence-verify"],
+	review: ["next", "runtime-card", "review-gate", "review-context"],
+	handoff: ["next", "runtime-card", "pr-closeout", "evidence-verify"],
+};
+
+export const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(
+	AGENT_CATALOG_COMMAND_NAMES.default,
+);
