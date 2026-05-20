@@ -49,6 +49,35 @@ function writeActiveArtifacts(repoRoot: string): void {
 	);
 }
 
+function writeActiveArtifactsForIssues(repoRoot: string): void {
+	const staleSpecPath =
+		".harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md";
+	const stalePlanPath =
+		".harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md";
+	const evidenceSpecPath =
+		".harness/specs/2026-05-20-jsc-999-runtime-evidence-spec.md";
+	const evidencePlanPath =
+		".harness/plan/2026-05-20-JSC-999-runtime-evidence-plan.md";
+	mkdirSync(join(repoRoot, ".harness/specs"), { recursive: true });
+	mkdirSync(join(repoRoot, ".harness/plan"), { recursive: true });
+	writeFileSync(join(repoRoot, staleSpecPath), "# Spec\n");
+	writeFileSync(join(repoRoot, stalePlanPath), "# Plan\n");
+	writeFileSync(join(repoRoot, evidenceSpecPath), "# Evidence Spec\n");
+	writeFileSync(join(repoRoot, evidencePlanPath), "# Evidence Plan\n");
+	writeFileSync(
+		join(repoRoot, ".harness/active-artifacts.md"),
+		[
+			"# Active Harness Specs And Plans",
+			"",
+			"| Linear Key | Active Spec | Active Plan |",
+			"| --- | --- | --- |",
+			`| JSC-311 | ${codePath(staleSpecPath)} | ${codePath(stalePlanPath)} |`,
+			`| JSC-999 | ${codePath(evidenceSpecPath)} | ${codePath(evidencePlanPath)} |`,
+			"",
+		].join("\n"),
+	);
+}
+
 function gitRunner(status = ""): RuntimeCardGitRunner {
 	return (args) => {
 		if (args.join(" ") === "branch --show-current") {
@@ -475,6 +504,40 @@ describe("buildLocalRuntimeCard", () => {
 		expect(card.linear.freshness).toBe("unknown");
 		expect(card.linear.status).toBeNull();
 		expect(card.artifacts.status).toBe("current");
+	});
+
+	it("uses imported evidence issue keys for artifact lookup when no local issue is available", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifactsForIssues(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: runtimeEvidenceBundle({
+				issueKey: "JSC-999",
+				linear: {
+					issueKey: "JSC-999",
+					freshness: "current",
+					status: "In Progress",
+					statusType: "started",
+					url: "https://linear.app/jscraik/issue/JSC-999/runtime-evidence",
+					actionRequired: null,
+				},
+			}),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: (args) => {
+				if (args.join(" ") === "branch --show-current")
+					return "feature/runtime-card";
+				if (args.join(" ") === "rev-parse HEAD") return "b".repeat(40);
+				if (args.join(" ") === "status --porcelain") return "";
+				return undefined;
+			},
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.issueKey).toBe("JSC-999");
+		expect(card.artifacts.activeSpec).toContain("jsc-999");
+		expect(card.artifacts.activePlan).toContain("JSC-999");
+		expect(card.linear.issueKey).toBe("JSC-999");
 	});
 
 	it("drops only stale phase-exit blockers when explicit phase-exit evidence is supplied", () => {

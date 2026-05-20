@@ -120,7 +120,11 @@ export function buildLocalRuntimeCard(
 	);
 	const evidenceIssueKey =
 		options.issueKey === undefined ? evidence.issueKey : null;
-	const localIssueKey = detectIssueKey(options.issueKey, git.branchName);
+	const localIssueKey = detectIssueKey(
+		options.issueKey,
+		git.branchName,
+		evidenceIssueKey,
+	);
 	const artifacts = inspectRuntimeCardArtifacts(
 		options.repoRoot,
 		localIssueKey,
