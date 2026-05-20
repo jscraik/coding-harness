@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, verify-work, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -517,6 +517,13 @@
                 <span>
                   PR closeout delegation stays behind a focused command-spec
                   seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>verify-work-command-spec.ts</strong>
+                <span>
+                  Verify-work resume, repository-root, and governance option
+                  projection stays behind a focused command-spec seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -1241,6 +1248,8 @@
               runtime-card-command-spec.ts.
               PR closeout delegation now lives behind
               pr-closeout-command-spec.ts.
+              Verify-work resume, repository-root, and governance option
+              projection now lives behind verify-work-command-spec.ts.
               CodeRabbit review evidence CLI option mapping now lives behind
               verify-coderabbit-command-spec.ts.
               Docs gate option projection now lives behind

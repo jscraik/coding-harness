@@ -234,6 +234,39 @@ describe("linear execute validation", () => {
 	});
 });
 
+describe("verify-work execute validation", () => {
+	const spec = findSpec("verify-work");
+	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+	beforeEach(() => {
+		consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+	});
+
+	afterEach(() => {
+		consoleErrorSpy.mockRestore();
+	});
+
+	it("returns 2 when --resume-from is missing a gate id", () => {
+		expect(spec.execute(["--resume-from"])).toBe(2);
+	});
+
+	it("returns 2 when --repo-root is missing a path", () => {
+		expect(spec.execute(["--repo-root"])).toBe(2);
+	});
+
+	it("returns 2 when --resume-from names an unknown gate", () => {
+		expect(spec.execute(["--resume-from", "missing-gate"])).toBe(2);
+	});
+
+	it("returns 2 when both governance scopes are requested", () => {
+		expect(
+			spec.execute(["--project-governance", "--workspace-governance"]),
+		).toBe(2);
+	});
+});
+
 describe("linear-gate execute parsing", () => {
 	const spec = findSpec("linear-gate");
 

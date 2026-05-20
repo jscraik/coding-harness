@@ -116,6 +116,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"CodeRabbit review evidence adapter must keep CLI option mapping and command dispatch local.",
 	},
 	{
+		path: "src/lib/cli/registry/verify-work-command-spec.ts",
+		maxLines: 70,
+		reason:
+			"Verify-work command adapter must keep resume, repository, and governance option projection local.",
+	},
+	{
 		path: "src/lib/cli/registry/docs-gate-command-spec.ts",
 		maxLines: 80,
 		reason:
@@ -622,6 +628,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/symphony-check-command-spec.ts",
 	"src/lib/cli/registry/tooling-audit-command-spec.ts",
 	"src/lib/cli/registry/verify-coderabbit-command-spec.ts",
+	"src/lib/cli/registry/verify-work-command-spec.ts",
 	"src/lib/cli/registry/workflow-generate-command-spec.ts",
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
@@ -707,6 +714,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./symphony-check-command-spec.js",
 	"./tooling-audit-command-spec.js",
 	"./verify-coderabbit-command-spec.js",
+	"./verify-work-command-spec.js",
 	"./workflow-generate-command-spec.js",
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [

@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-19
+last_validated: 2026-05-20
 ---
 
 # Module Boundaries
@@ -88,6 +88,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/verify-coderabbit-command-spec.ts`
   - CodeRabbit review evidence adapter; CLI option mapping and command dispatch
     stay local to the provider-specific command adapter.
+- `src/lib/cli/registry/verify-work-command-spec.ts`
+  - Verify-work resume, repository-root, and governance option projection stay
+    local to the canonical verification adapter.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -159,8 +162,9 @@ registry seam. Agents can adjust Linear gate option projection in
 `linear-gate-command-spec.ts`, fleet-plan command dispatch in
 `fleet-plan-command-spec.ts`, next delegation in `next-command-spec.ts`,
 runtime-card delegation in `runtime-card-command-spec.ts`, PR closeout
-delegation in `pr-closeout-command-spec.ts`, CodeRabbit review evidence CLI
-option mapping in `verify-coderabbit-command-spec.ts`, PR template gate option
+delegation in `pr-closeout-command-spec.ts`, verify-work resume/repository
+option projection in `verify-work-command-spec.ts`, CodeRabbit review evidence
+CLI option mapping in `verify-coderabbit-command-spec.ts`, PR template gate option
 projection in
 `pr-template-gate-command-spec.ts`, and rule lifecycle gate option projection in
 `rule-lifecycle-gate-command-spec.ts`, and policy gate option projection in

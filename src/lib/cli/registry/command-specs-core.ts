@@ -57,13 +57,8 @@ import {
 	runUpgradeCLI,
 } from "../../../commands/upgrade.js";
 import { runValidationPlanCLI } from "../../../commands/validation-plan.js";
-import {
-	EXIT_CODES as VERIFY_WORK_EXIT_CODES,
-	runVerifyWorkCLI,
-} from "../../../commands/verify-work.js";
 import type { IssueTracker } from "../../init/types.js";
 import type { PilotEvaluateOptions } from "../../pilot-evaluation/types.js";
-import { getValidationGateSpec } from "../../validation/gate-specs.js";
 import type { ProjectType } from "../../project-type/types.js";
 import { getVersion } from "../../version.js";
 import {
@@ -102,6 +97,7 @@ import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js
 import type { CommandSpec } from "./types.js";
 import { createToolingAuditCommandSpec } from "./tooling-audit-command-spec.js";
 import { createVerifyCodeRabbitCommandSpec } from "./verify-coderabbit-command-spec.js";
+import { createVerifyWorkCommandSpec } from "./verify-work-command-spec.js";
 import { createWorkflowGenerateCommandSpec } from "./workflow-generate-command-spec.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
@@ -150,53 +146,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runEjectCLI(targetDir, options);
 		},
 	},
-	{
-		name: "verify-work",
-		summary:
-			"Run canonical verification with fresh/resume modes via harness command",
-		example: "verify-work --fast --resume-from validate-codestyle-fast",
-		errorLabel: "Verify Work Error",
-		execute: (args) => {
-			const resumeFromFlag = inspectFlagValue(args, "--resume-from");
-			const repoRootFlag = inspectFlagValue(args, "--repo-root");
-			const projectGovernanceFlag = args.includes("--project-governance");
-			const workspaceGovernanceFlag = args.includes("--workspace-governance");
-			if (resumeFromFlag.missingValue) {
-				console.error("Error: --resume-from requires a gate id");
-				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
-			}
-			if (repoRootFlag.missingValue) {
-				console.error("Error: --repo-root requires a path");
-				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
-			}
-			if (
-				resumeFromFlag.value &&
-				getValidationGateSpec(resumeFromFlag.value) === undefined
-			) {
-				console.error(
-					`[verify-work] unknown gate id for --resume-from: ${resumeFromFlag.value}`,
-				);
-				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
-			}
-			if (projectGovernanceFlag && workspaceGovernanceFlag) {
-				console.error(
-					"Error: --project-governance and --workspace-governance are mutually exclusive",
-				);
-				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
-			}
-			return runVerifyWorkCLI({
-				all: args.includes("--all"),
-				changedOnly: args.includes("--changed-only"),
-				strict: args.includes("--strict"),
-				fast: args.includes("--fast"),
-				projectGovernance: projectGovernanceFlag,
-				workspaceGovernance: workspaceGovernanceFlag,
-				json: args.includes("--json"),
-				...(resumeFromFlag.value ? { resumeFrom: resumeFromFlag.value } : {}),
-				...(repoRootFlag.value ? { repoRoot: repoRootFlag.value } : {}),
-			});
-		},
-	},
+	createVerifyWorkCommandSpec(),
 	createVerifyCodeRabbitCommandSpec(),
 	{
 		name: "contract",
