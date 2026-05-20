@@ -30,7 +30,11 @@ function hasKnownIndependentReview(
 	checks: readonly PrCloseoutCheckInput[],
 ): boolean {
 	if (normalizeStatus(pr.reviewDecision) !== "") return true;
-	return checks.some((check) => check.source === "coderabbit");
+	return checks.some(
+		(check) =>
+			check.source === "coderabbit" ||
+			(/coderabbit/iu.test(check.name) && isPassingCheck(check)),
+	);
 }
 
 interface CheckClaimOptions {
