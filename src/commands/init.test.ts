@@ -2292,6 +2292,7 @@ describe("runInit", () => {
 			expect(refreshDiagrams).toContain(
 				'TMP_OUTPUT_DIR=".diagram/context/$(basename "$TMP_DIR")/diagrams"',
 			);
+			expect(refreshDiagrams).toContain('DIAGRAM_BIN="$(command -v diagram)"');
 			expect(refreshDiagrams).toContain(
 				'DEFAULT_DIAGRAM_PATTERNS="src/**/*.ts,scripts/**/*.js,scripts/**/*.cjs,scripts/**/*.mjs,e2e/**/*.ts"',
 			);
@@ -2304,6 +2305,9 @@ describe("runInit", () => {
 			expect(refreshDiagrams).toContain('--patterns "$DIAGRAM_PATTERNS"');
 			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
 			expect(refreshDiagrams).toContain("--deterministic");
+			expect(refreshDiagrams).toContain(
+				'"$DIAGRAM_BIN" "${DIAGRAM_GENERATE_ARGS[@]}"',
+			);
 			expect(refreshDiagrams).toContain(
 				'/System_Ext\\((ext_\\d+), "Version Control", "[^"]+"\\)/',
 			);

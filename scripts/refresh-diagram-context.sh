@@ -72,6 +72,7 @@ if ! command -v diagram >/dev/null 2>&1; then
 	exit 1
 fi
 
+DIAGRAM_BIN="$(command -v diagram)"
 TMP_DIR="$(mktemp -d "$DIAGRAM_CONTEXT_DIR/tmp-refresh-XXXXXX")"
 TMP_OUTPUT_DIR=".diagram/context/$(basename "$TMP_DIR")/diagrams"
 DIAGRAM_GENERATE_ARGS=(
@@ -89,7 +90,7 @@ pushd "$ROOT_DIR" >/dev/null
 if [[ "$QUIET" -eq 1 ]]; then
 	diagram_stderr="$TMP_DIR/diagram-generate.stderr"
 	set +e
-	pnpm exec diagram "${DIAGRAM_GENERATE_ARGS[@]}" >/dev/null 2>"$diagram_stderr"
+	"$DIAGRAM_BIN" "${DIAGRAM_GENERATE_ARGS[@]}" >/dev/null 2>"$diagram_stderr"
 	status=$?
 	set -e
 	if [[ "$status" -ne 0 ]]; then
@@ -102,7 +103,7 @@ if [[ "$QUIET" -eq 1 ]]; then
 		exit "$status"
 	fi
 else
-	pnpm exec diagram "${DIAGRAM_GENERATE_ARGS[@]}"
+	"$DIAGRAM_BIN" "${DIAGRAM_GENERATE_ARGS[@]}"
 fi
 popd >/dev/null
 
