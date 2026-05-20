@@ -24,7 +24,6 @@ import { runEjectCLI } from "../../../commands/eject.js";
 import { runFleetPlanCLI } from "../../../commands/fleet-plan.js";
 import { runGapCaseCLI } from "../../../commands/gap-case.js";
 import { runGardenerCLI } from "../../../commands/gardener.js";
-import { runHealthCLI } from "../../../commands/health.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
@@ -86,6 +85,7 @@ import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
+import { createHealthCommandSpec } from "./health-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
@@ -179,15 +179,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runDoctorCLI(args, getVersion);
 		},
 	},
-	{
-		name: "health",
-		summary: "Quick health check for harness services and configuration",
-		example: "health --json",
-		errorLabel: "Health Error",
-		execute: (args) => {
-			return runHealthCLI(args, getVersion);
-		},
-	},
+	createHealthCommandSpec(getVersion),
 	{
 		name: "eject",
 		summary: "Eject harness files from the target repository",

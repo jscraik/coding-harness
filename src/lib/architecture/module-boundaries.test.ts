@@ -82,7 +82,7 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_628,
+		maxLines: 1_620,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
 	},
@@ -97,6 +97,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 25,
 		reason:
 			"Check command spec must stay focused on check option projection and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/health-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Health command spec must stay focused on health command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/org-audit-command-spec.ts",
@@ -553,6 +559,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/check-environment-command-spec.ts",
 	"src/lib/cli/registry/docs-gate-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
+	"src/lib/cli/registry/health-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
 	"src/lib/cli/registry/org-audit-command-spec.ts",
@@ -631,6 +638,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./check-environment-command-spec.js",
 	"./docs-gate-command-spec.js",
 	"./evidence-verify-command-spec.js",
+	"./health-command-spec.js",
 	"./license-gate-command-spec.js",
 	"./local-memory-preflight-command-spec.js",
 	"./org-audit-command-spec.js",
