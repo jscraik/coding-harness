@@ -217,7 +217,7 @@ restore_tracked_artifact_files() {
 
 	for rel_path in "$@"; do
 		abs_path="$REPO_ROOT/$rel_path"
-		if ! git -C "$REPO_ROOT" show "HEAD:$rel_path" > "$abs_path" 2>/dev/null; then
+		if ! git -C "$REPO_ROOT" show ":$rel_path" > "$abs_path" 2>/dev/null; then
 			restore_failed=1
 		fi
 	done
