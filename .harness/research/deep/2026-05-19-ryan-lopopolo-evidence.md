@@ -1,11 +1,11 @@
 # Ryan Lopopolo Harness Engineering Evidence Extraction
 
 Generated: 2026-05-19
-Source snapshot commit: <git-sha>
-Extraction tool/version: <tool>@<version>
+Source snapshot commit: placeholder-git-sha
+Extraction tool/version: placeholder-tool@placeholder-version
 Primary-source digest set:
-- <path>: sha256:<digest>
-- <path>: sha256:<digest>
+- placeholder-path: sha256:placeholder-digest
+- placeholder-path: sha256:placeholder-digest
 
 Primary sources:
 
