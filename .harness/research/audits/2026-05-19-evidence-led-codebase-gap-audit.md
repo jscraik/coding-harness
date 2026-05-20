@@ -22,6 +22,12 @@ The repository is already a real agent control plane, not a documentation-only e
 
 The main weakness is enforcement depth. Several truth mechanisms exist but are optional at the point an agent makes a decision. The cockpit command can recommend work without a supplied runtime card or phase-exit artifact. Runtime-card can report phase-exit not_run without blockers. The research files are explicitly cold research, but there is no promotion ledger that turns extracted patterns into adopted validators, skills, schemas, or explicit rejects. Some architecture and safety checks exist as scripts or hooks but are not clearly default CI gates.
 
+Effect-TS is also not complete in the strong migration sense. The repo has
+contained Effect seams and import guards, but it still needs a canonical
+service/layer pattern, real end-to-end exemplars, facade plus Effect-builder
+tests, and a migration guide before agents should treat Effect as an established
+module pattern.
+
 Top 5 gaps:
 
 1. Evidence artifacts are optional in the cockpit path: src/commands/next.ts defines optional phaseExit and runtimeCard inputs and only blocks when they are supplied.
@@ -66,6 +72,7 @@ Reviewer coverage:
 | Skills and Workflow Density | B | Medium | Packaged skill validation exists. | --for-agent exposes only next. | Add phased command catalog modes. |
 | Recovery and Failure Handling | C+ | Medium | CI retries, preflight recovery text, missing-context classifier, and replay fixtures exist. | No single recovery contract for attempts, stop reasons, and owners. | Add recovery schema and emit it from live commands. |
 | Governance and Safety | B | High | Branch protection contract, authz, Semgrep, secret scripts, PR traceability, and review independence exist. | Some safety checks are hook/manual rather than default local check. | Add safety:local and explicit coverage reporting. |
+| Effect Service and Layer Migration | C | Medium | Effect dependency, docs, two approved boundaries, and import containment tests exist. | No canonical service/layer exemplar or migration guide proves strong Effect adoption. | Convert one or two real modules end-to-end with sync facade, Effect builder, layers, and boundary tests. |
 
 ## 3. Evidence-to-Code Mapping
 
@@ -76,6 +83,7 @@ Reviewer coverage:
 | Ready-for-agent state machine | matt-pocock lines 59 and 391-393 | .harness/active-artifacts.md lines 20-38 plus Linear/gate commands | partial | C+ | Medium |
 | Context-window austerity and lazy tool loading | matt-pocock lines 61 and 474-491 | command catalog and skill routing | implemented_not_enforced | C+ | High |
 | Deep modules behind simple interfaces | matt-pocock lines 275-286 | docs/architecture/module-boundaries.md lines 26-49 and module-boundary tests | implemented_enforced | B | Medium |
+| Effect-backed deep modules | matt-pocock lines 542 and agent-rft lines 462 | docs/architecture/effect-deep-modules.md plus src/lib/architecture/module-boundaries.test.ts Effect import guard | scaffolded_contained | C | Medium |
 | Runtime cards/current state packets | Ryan evidence runtime-truth pattern | src/lib/runtime/runtime-card.ts lines 151-179 | implemented_not_enforced | B- | High |
 | Claim-vs-evidence closeout | Ryan/Eno verification packet pattern | src/lib/pr-closeout/claim-helpers.ts lines 101-120 and check-pr-closeout-truth-contract.cjs lines 31-61 | partial | B- | High |
 | Live PR and Linear state refresh | Ryan live-state proof pattern | src/lib/runtime/local-runtime-card.ts lines 150-214 and 245-310 | partial | B- | High |
@@ -106,6 +114,12 @@ rules, or closeout evidence. They should not remain standalone doctrine.
 | Portability | Codex can be the reference runtime, but durable repo contracts stay harness-owned and provider adapters remain explicit. | Schema naming rules, provider namespace checks, adapter-boundary tests, no provider-specific core contract names without exception. |
 | Default-no | Automatically loaded context is excluded by default and must earn inclusion by changing behavior for most work in that scope. | Always-loaded surface budget, AGENTS size and directive-density checks, default-no justification for broad instruction changes. |
 
+Internal evals and observability are first-class enforcement loops for these
+principles, not optional reporting layers. Evals prove the harness induces the
+desired agent behavior in controlled scenarios. Observability proves what
+actually happened in live sessions, closeout flows, validation runs, and
+recovery loops.
+
 ### 4.2 Context Architecture To Add
 
 Target architecture:
@@ -119,6 +133,8 @@ Target architecture:
 | 4 | Roles and reviewers | Risk/explicit scoped | Independent verification, standards, security, and design review. |
 | 5 | Connectors and runtime evidence | Task scoped | GitHub, Linear, CI, browser, logs, runtime-card, and live-state proof. |
 | 6 | Tests, hooks, gates, validators | Change scoped | Mechanical enforcement and completion evidence. |
+| 7 | Internal evals | Scenario/regression scoped | Prove agents choose the right authority, routing, validation, and recovery behavior. |
+| 8 | Observability | Always emitted for governed flows | Record live agent behavior, steering, claims, evidence, blockers, and recovery decisions. |
 
 Minimal human-facing docs should be limited to:
 
@@ -131,8 +147,52 @@ The primary source should be machine-readable:
 - .harness/authority-map.json
 - scripts/check-authority-map.cjs
 - eventual harness authority audit, classify, and explain JSON commands
+- internal eval fixtures for authority, routing, validation, closeout, and
+  repeated-steering behavior
+- runtime-card, PR-closeout, session-evidence, and context-health observability
+  events
 
-### 4.3 New Follow-On Gaps
+### 4.3 Agent-Native Flywheel To Add
+
+The flywheel is the compounding loop that turns real agent work into stronger
+future agent behavior. It should be a repo contract, not a metaphor:
+
+1. Capture the signal: steering feedback, failed checks, PR comments, stale
+   evidence, bad routing, weak validation, or recovery friction.
+2. Classify the operational failure: missing context, stale state, weak
+   validation, hidden assumption, retrieval failure, poor workflow design,
+   runtime ambiguity, architecture drift, lack of verification, weak
+   observability, missing guardrail, unclear authority boundary, excessive
+   context noise, poor task routing, or insufficient deterministic enforcement.
+3. Choose the durable destination: validator, schema, runtime check, trace
+   event, CLI guard, CI gate, skill route, AGENTS rule, authority-map entry,
+   closeout evidence requirement, recovery handler, internal eval,
+   context-health metric, implementation note, Project Brain learning, or
+   tracked exception.
+4. Prove the behavior changed: the guard fails the old case, the eval catches
+   the scenario, the trace emits the needed event, or closeout blocks the weak
+   claim.
+5. Observe recurrence: live runs show whether the same steering, stale
+   evidence, skipped routing, or bad claim reappeared after the guard landed.
+6. Maintain canon: scanner output and metrics feed cleanup, authority-map
+   updates, eval seeds, and pruning of always-loaded context.
+
+Useful flywheel states:
+
+| State | Meaning | Required Evidence |
+|---|---|---|
+| captured | A real signal was recorded. | steering-signal/v1 or equivalent trace event. |
+| classified | The root operational failure was named. | failure category and affected principle. |
+| encoded | A durable system surface was changed or selected. | path, command, schema, gate, eval, or tracked exception. |
+| proven | The old failure is now harder to repeat. | validator, runtime check, or eval result. |
+| observed | Live or replayed execution can show recurrence. | observability event, context-health metric, or run record. |
+| retired | The guard can be simplified or removed. | metric window with no recurrence plus owner decision. |
+
+This flywheel should prefer local file artifacts and harness-owned schemas
+first. External eval or observability platforms can export stable datasets
+later, but they should not become the source of truth.
+
+### 4.4 New Follow-On Gaps
 
 #### GAP-011: Authority Map Registry Is Missing
 
@@ -300,18 +360,282 @@ making raw token growth a north-star success proxy. Token growth only counts as
 positive when paired with lower manual intervention, lower rework, or lower PR
 lead time.
 
-### 4.4 Sequencing After Deep Module Work
+#### GAP-017: Internal Agent Behavior Evals Are Missing
+
+**Category:** internal evals / agent behavior / regression prevention
+
+**Current State:** The repo has harness eval infrastructure and validation
+gates, but the new principles are not yet represented as explicit behavioral
+evals. There are no scenario fixtures that prove agents distinguish canon from
+intent/history, stop after planning-only steering, choose the narrowest context
+scope, or refuse weak closeout evidence. package.json exposes test:evals and
+scripts/run-harness-evals.mjs writes eval and observability artifacts, but
+test:evals is not part of pnpm check and the current eval contract is still
+north-star delivery oriented rather than principle/flywheel oriented.
+
+**Expected State:** The harness has internal eval scenarios for the agent-native
+principles and architecture. Each high-signal correction can become a regression
+case when it represents repeatable agent behavior rather than a one-off task
+detail.
+
+**Risk:** Validators can pass while agents still behave poorly in realistic
+session conditions. Repeated human steering remains the first detector for
+workflow failure.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P2
+
+**Recommended Fix:** Add internal eval fixtures for authority-map use,
+default-no context loading, localisation, verification claims, planning versus
+implementation mode, repeated-steering admission, PR closeout evidence, skill
+routing, cleanup classification, and provider portability.
+
+**Acceptance Criteria:** Eval output includes scenario id, principle tested,
+expected behavior, observed behavior, pass/fail, and the durable surface that
+would need repair. At least one eval fixture is derived from a real repeated
+steering event. The default local gate either runs a bounded principle eval set
+or explains why the eval lane is advisory with an explicit promotion threshold.
+
+#### GAP-018: Agent-Native Observability Is Too Weak
+
+**Category:** observability / runtime truth / feedback loop
+
+**Current State:** Runtime-card, replay, PR-closeout, and traceability surfaces
+exist, but the repo does not yet emit a unified view of which instructions were
+read, which skills were routed, which authority class was cited, which claims
+lacked evidence, what blockers appeared, or which recovery path was chosen.
+src/commands/observability-gate.ts validates metric-label cardinality, and
+context-health reports context-integrity metrics, but neither is yet the
+agent-behavior event stream needed by the flywheel.
+
+**Expected State:** Governed agent flows emit structured observability events
+that make agent behavior inspectable without reconstructing the session from
+chat. The system can count repeated steering, stale evidence, skipped routing,
+not-canon citations, missing validation, and recovery-loop outcomes.
+
+**Risk:** The team cannot tell whether the harness is improving agent behavior
+or merely adding more instructions. Failure patterns stay invisible until Jamie
+notices and restates them.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P2
+
+**Recommended Fix:** Add an observability contract for governed flows that
+records instruction surfaces read, skill routing decisions, authority-class
+citations, validation commands and outcomes, blocker classes, steering
+admissions, recovery events, closeout evidence freshness, and context-load
+mode.
+
+**Acceptance Criteria:** Observability output can answer: what did the agent
+trust, what did it verify, what did it skip, what failed, who owns the next
+action, and whether repeated steering recurred after a guard was added.
+
+#### GAP-019: Flywheel Contract Is Missing
+
+**Category:** flywheel / governance / durable learning
+
+**Current State:** Repeated steering is covered by AGENTS.md,
+docs/agents/04-validation.md, scripts/check-steering-feedback-contract.cjs, and
+Project Brain memory, while eval, replay, context-health, runtime-card, and
+PR-closeout are separate surfaces. There is no single contract that links a
+signal to classification, durable destination, proof, eval seed, observability,
+metric, and retirement condition.
+
+**Expected State:** A high-signal correction or repeated failure has a
+machine-readable flywheel record. The record shows the full chain from signal
+to guardrail to proof to recurrence observation, or names a tracked exception.
+
+**Risk:** The repo accumulates docs, guards, evals, and traces without proving
+that any one correction made the same future steering unnecessary.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add steering-signal/v1 or flywheel-record/v1 plus a
+focused command such as harness flywheel status --json. The command should
+summarize open signals, durable fixes, missing evals, missing observability,
+proof commands, recurrence counters, and retirement candidates.
+
+**Acceptance Criteria:** Every admitted repeated-steering or high-signal
+correction is in one of these states: validator_added, runtime_check_added,
+eval_added, observability_added, authority_map_updated, skill_routing_updated,
+workflow_rule_updated, memory_learning_added, tracked_exception_created, or
+explicitly_rejected_with_reason.
+
+#### GAP-020: Evals Do Not Yet Feed The Flywheel
+
+**Category:** internal evals / replay / promotion
+
+**Current State:** scripts/run-harness-evals.mjs supports local scenarios,
+live fixtures, result output, and Braintrust-shaped observability output.
+src/lib/learnings/eval-seed.ts can turn repeated review learning into eval seed
+candidates. The audit does not yet require eval creation from flywheel signals
+or require eval failures to route back into authority, validation, skills, or
+runtime contracts.
+
+**Expected State:** Evals are both regression checks and intake sources. A
+failed eval creates or updates a flywheel record; a resolved flywheel record
+names the eval that prevents recurrence.
+
+**Risk:** Evals become a side benchmark lane rather than the behavior-regression
+backbone for agent-native reliability.
+
+**Severity:** Medium-high
+
+**Fix Grade:** Post-deep-module P2
+
+**Recommended Fix:** Add eval-to-flywheel linkage fields: sourceSignalId,
+principle, expectedBehavior, observedBehavior, durableDestination,
+recurrenceMetric, and promotionStatus. Keep local replay fixtures as the
+default before exporting stable datasets to external eval tools.
+
+**Acceptance Criteria:** New principle evals can be traced to either a real
+signal, a known risk in this audit, or an explicit speculative-risk owner.
+Failing principle evals cannot be ignored silently; they must create a blocker,
+tracked exception, or backlog item.
+
+#### GAP-021: Observability Can Leak Or Bloat Without An Agent Event Contract
+
+**Category:** observability / privacy / default-no
+
+**Current State:** Observability-gate checks metric label cardinality, and
+replay traces sanitize some environment data. The future agent-behavior event
+stream is not yet schema-bounded for secrets, prompt/raw-transcript exclusion,
+cardinality, retention, or stable labels.
+
+**Expected State:** agent-observability-event/v1 allows only bounded fields:
+event type, authority class, route decision, validation outcome, blocker class,
+recovery owner, evidence refs, redaction status, and correlation ids. It must
+exclude raw prompts, secrets, bulky telemetry, and unbounded user content by
+default.
+
+**Risk:** Observability becomes either too weak to explain behavior or too noisy
+and sensitive to keep enabled.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Extend observability-gate from label checks to event-shape
+checks. Add redaction assertions for steering, skill routing, authority
+citations, validation output, and recovery events before any broader
+observability rollout.
+
+**Acceptance Criteria:** Event validation rejects raw transcript fields,
+secret-like values, unbounded labels, missing redaction status, and authority
+citations without evidence refs.
+
+#### GAP-022: Authority Map Rollout Can Fail Open
+
+**Category:** authority / rollout / guardrail hardening
+
+**Current State:** The audit recommends warning-mode authority validation before
+promoting deterministic checks into pnpm check. It does not yet define the
+promotion threshold, expiry, exception model, or fail-closed behavior for
+unclassified high-risk artifacts.
+
+**Expected State:** Authority-map rollout has a bounded shadow period. Unknown
+authority is allowed only for low-risk cold context during shadow mode; hot-path
+instructions, validators, schemas, generated projections, runtime evidence, and
+closeout artifacts fail closed when unclassified after the promotion date.
+
+**Risk:** Warning mode becomes permanent and agents continue to infer authority
+from folder names or prose.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add rollout state fields to authority-map/v1:
+mode, shadowStartedAt, requiredAfter, unknownPolicyByGlob, exceptionOwner,
+exceptionExpiresAt, and promotionValidation. Tie hot-path unknowns to
+context-health and PR closeout blockers.
+
+**Acceptance Criteria:** The authority check reports unknown artifacts by risk
+tier, fails hot-path unknowns after the required date, and requires owner plus
+expiry for exceptions.
+
+#### GAP-023: Effect-TS Migration Is Scaffolded, Not Complete
+
+**Category:** architecture / Effect-TS / deep modules
+
+**Current State:** The repo has the Effect dependency, an Effect boundary doc,
+and module-boundary tests that constrain Effect imports to approved files.
+Current production Effect imports are limited to
+src/lib/missing-context/classifier.ts and src/lib/pr-closeout/evaluator.ts,
+with synchronous facades preserved for callers. This is useful containment, but
+it is not a strong Effect conversion.
+
+**Expected State:** Effect has a canonical service/layer pattern with one or
+two real modules converted end-to-end as exemplars. Callers keep plain
+synchronous or Promise-based facades while the module internals use Effect
+builders, services, layers, typed failures, and test providers where they reduce
+complexity.
+
+**Risk:** The codebase can overclaim Effect migration from two shallow seams, or
+future agents can scatter Effect imports through command, UI, and app-wiring
+code without a proven module pattern.
+
+**Severity:** Medium-high
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Document and enforce a canonical Effect service/layer
+pattern; convert one or two high-value modules end-to-end; add sync facade plus
+Effect builder tests; add module-boundary tests for allowed Effect imports; and
+write a migration guide for future modules.
+
+**Acceptance Criteria:** At least one exemplar module has public sync facade,
+Effect builder, service interface, live/test layers, typed failure contract, and
+boundary tests proving the facade and Effect path return the same
+caller-visible behavior. Effect imports remain restricted to approved boundary,
+runtime, provider, or test files.
+
+### 4.5 Sequencing After Deep Module Work
 
 1. Add authority registry and validator in warning mode.
 2. Add compact AGENTS and instruction-map routing only; avoid long human docs.
 3. Add AGENTS authoring audit and default-no budget checks.
 4. Run canon hygiene audit against P0/P1 surfaces.
-5. Promote deterministic authority checks into pnpm check.
-6. Add scheduled context scanner report.
-7. Add validation-expectations command or skill-backed structured output.
-8. Add context-health metrics to status/runtime evidence.
+5. Add flywheel-record or steering-signal schema and status command.
+6. Add observability event schema with redaction, retention, cardinality, and
+   evidence-ref rules.
+7. Add internal eval fixtures for authority, localisation, default-no,
+   verification, planning-mode, repeated-steering, and closeout behavior.
+8. Wire eval failures and repeated steering into flywheel records.
+9. Add scheduled context scanner report.
+10. Add validation-expectations command or skill-backed structured output.
+11. Add context-health metrics to status/runtime evidence.
+12. Add observability events for governed agent flows and wire them into
+    runtime-card, PR closeout, replay, and context-health summaries.
+13. Promote deterministic authority checks into pnpm check after shadow-mode
+    thresholds are met.
 
-### 4.5 Non-Goals
+### 4.6 Failure-Point Hardening Pass
+
+The deep pass found that the largest risk is not absence of concepts. The repo
+already has evals, context-health, replay, run records, observability-gate, and
+steering guard surfaces. The failure point is fragmentation: a future
+implementation could satisfy each surface locally while the behavior loop still
+does not compound.
+
+| Failure Point | How It Fails | Hardening Requirement |
+|---|---|---|
+| Static guard without behavior proof | docs:steering:guard can ensure wording exists while agents still mishandle the scenario. | Pair each high-signal steering rule with at least one internal eval or tracked reason why behavior eval is infeasible. |
+| Eval lane isolated from default work | test:evals exists but is not in pnpm check. | Define a bounded principle-eval subset for default or pre-closeout use, with promotion criteria for the full eval suite. |
+| Observability means labels, not behavior | observability-gate checks cardinality but not agent decisions. | Add agent-observability-event/v1 and validate event shape, redaction, authority refs, and blocker classification. |
+| Context-health misses authority semantics | context-health reports authoritative coverage but not canon/not-canon misuse. | Add authority_unknown_count, not_canon_cited_as_truth_count, and always_loaded_context_lines once authority-map exists. |
+| Warning-mode authority check never promotes | Authority rollout can stay advisory forever. | Require shadow start, required-after date, hot-path fail-closed globs, and owner-expiring exceptions. |
+| Flywheel has no retirement rule | Guards accumulate after the failure is no longer active. | Each flywheel record needs owner, recurrence window, and retire/simplify condition. |
+| Signal capture leaks raw content | Steering and trace events can accidentally preserve prompts, secrets, or bulky transcripts. | Store classifications, hashes, short quotes only when necessary, redaction status, and evidence refs instead of raw session text. |
+| Durable destination is too weak | A correction lands only as prose or memory. | Closeout must name why the chosen destination is strong enough, or track the missing validator/eval/runtime-check follow-up. |
+| Provider portability drifts | Codex-specific events become the only durable contract. | Schema names and event contracts stay harness-owned; Codex fields live under provider-specific adapters. |
+| Metrics reward activity | Token usage and eval count rise while manual steering stays high. | Outcome metrics must pair usage with manual intervention, recurrence, rework, stale evidence, and PR lead time. |
+
+### 4.7 Non-Goals
 
 - Do not classify all docs/ as canon. Authority is per artifact or governed
   glob, not per broad directory.
@@ -321,6 +645,9 @@ lead time.
   rank cleanup by agent visibility and fixability.
 - Do not treat raw token usage as success unless throughput and review quality
   improve with it.
+- Do not add a dashboard or external eval platform before local artifacts feed
+  replay, closeout, and context-health.
+- Do not store raw prompts, secrets, or bulky transcripts as flywheel evidence.
 
 ## 5. Gap Register
 
@@ -643,11 +970,16 @@ Architecture enforcement:
 
 - Baseline owner/reason/date requirement.
 - Source invariant checks integrated into CI.
+- Canonical Effect service/layer pattern plus allowed-import tests.
+- Effect migration guide with sync facade and Effect builder requirements.
 
 Traces:
 
 - Uniform run records for next, runtime-card, review-gate, pr-closeout, and validators.
 - Attempt ledger artifacts for retry and stop reasons.
+- Observability events for instruction surfaces read, skill routing decisions,
+  authority-class citations, validation outcomes, blocker classes, steering
+  admissions, and recovery decisions.
 
 Context:
 
@@ -662,6 +994,21 @@ Skills:
 
 - Research-to-validator promotion skill.
 - Smaller command-surface bundles by workflow phase.
+
+Internal evals:
+
+- Authority-map evals for canon versus intent, history, memory, reference, and
+  runtime evidence.
+- Default-no and localisation evals for context placement and loaded-context
+  discipline.
+- Verification evals for claim evidence, stale proof, blocked proof, and
+  not-canon proof rejection.
+- Planning-mode and repeated-steering evals derived from real correction
+  events.
+- Skill-routing and provider-portability evals that catch prompt-only or
+  Codex-specific shortcuts.
+- Effect boundary eval or fixture proving a migrated module hides Effect behind
+  a stable public facade.
 
 Recovery:
 
@@ -683,6 +1030,9 @@ Observability:
 - JSONL trace artifacts attached to validation and closeout.
 - Replay fixtures connected to actual command outputs.
 - Context-health counters for canon drift, stale canon, unknown authority, not-canon cited as truth, always-loaded context size, and token usage per merged PR.
+- Agent-behavior counters for repeated steering, skipped skill routing,
+  instructions read, claims without evidence, stale closeout evidence, recovery
+  attempts, and post-guard recurrence.
 
 ## 8. Fix Roadmap
 
@@ -749,23 +1099,49 @@ Expected risk reduction: medium.
 ### Phase 6 — Agent-Native Context Authority
 
 Objective: make canon/not-canon, instruction loading, cleanup, maintenance, and
-context-health metrics enforceable after the deep module work lands.
+context-health metrics enforceable after the deep module work lands, with
+internal evals and observability proving whether the system changes future
+agent behavior.
 
-Fixes included: GAP-011, GAP-012, GAP-013, GAP-014, GAP-015, GAP-016.
+Fixes included: GAP-011, GAP-012, GAP-013, GAP-014, GAP-015, GAP-016,
+GAP-017, GAP-018, GAP-019, GAP-020, GAP-021, GAP-022.
 
 Files likely affected: .harness/authority-map.json,
 scripts/check-authority-map.cjs, package.json, AGENTS.md,
 docs/agents/01-instruction-map.md, optional compact
 docs/agents/00-authority-map.md, context-health or authority CLI command files,
-and north-star/status metric surfaces.
+internal eval fixtures, replay/session evidence contracts, runtime-card and
+PR-closeout observability emitters, and north-star/status metric surfaces.
 
 Validation gates: pnpm run authority:check; pnpm docs:lint; pnpm run
 docs:ubiquitous:guard; pnpm run docs:steering:guard; focused CLI tests for
-authority or context-health commands once implemented.
+authority or context-health commands once implemented; focused internal eval
+run for authority, routing, validation, planning-mode, and repeated-steering
+fixtures.
 
 Expected risk reduction: medium-high. This prevents agents from trusting the
 wrong artifact class, bloating always-loaded context, or treating cleanup and
-maintenance as optional prose.
+maintenance as optional prose. It also makes behavior regressions and repeated
+steering visible before Jamie has to detect them manually.
+
+### Phase 7 — Effect Service Layer Migration
+
+Objective: move from contained Effect seams to an honest, repeatable Effect
+module pattern without letting Effect leak through the whole codebase.
+
+Fixes included: GAP-023.
+
+Files likely affected: docs/architecture/effect-deep-modules.md,
+docs/architecture/module-boundaries.md,
+src/lib/architecture/module-boundaries.test.ts, one or two exemplar modules,
+and their focused seam tests.
+
+Validation gates: pnpm vitest run
+src/lib/architecture/module-boundaries.test.ts; focused tests for each
+converted module; pnpm typecheck; pnpm run test:related; pnpm run quality:size.
+
+Expected risk reduction: medium. This gives agents a concrete migration pattern
+while preserving the thin public interfaces that make deep modules useful.
 
 ## 9. Highest-Leverage Fixes
 
@@ -786,6 +1162,10 @@ maintenance as optional prose.
 | 13 | Add canon hygiene audit and scanner | Medium-high | Medium-high | Stale canon and bad local examples | Makes cleanup and maintenance repeatable. |
 | 14 | Add validation-expectations command | Medium | Medium | Weak or over-broad validation | Gives agents structured test obligations. |
 | 15 | Add context-health metrics | Medium | Medium | Productivity gains hiding context rot | Pairs throughput with context quality. |
+| 16 | Add internal agent-behavior evals | High | Medium | Repeated behavior regressions | Proves the harness changes agent choices, not just repo text. |
+| 17 | Add governed-flow observability events | High | Medium-high | Invisible runtime failures | Shows what agents trusted, verified, skipped, and recovered from. |
+| 18 | Add flywheel record and status command | High | Medium | Disconnected learnings | Links signal, fix, proof, eval, observability, and retirement. |
+| 19 | Harden Effect service/layer exemplar | Medium-high | Medium | Effect leakage or shallow migration | Makes Effect adoption real and bounded. |
 
 ## 10. Implementation Advice
 
@@ -793,11 +1173,16 @@ Build first:
 
 - Start with harness next evidence requirements and runtime-card missing phase-exit blocking.
 - Patch the two concrete PR closeout verifier contradictions while the files are already active.
+- Treat Effect as scaffolded, not complete. Before expanding Effect, pick one
+  module that benefits from typed failures, provider substitution, or retry
+  semantics and convert it end-to-end behind a stable facade.
 
 Do not build yet:
 
 - Do not introduce a large orchestration framework or OpenTelemetry-first runtime before simple JSONL/run-record emission is uniform.
 - Do not add dependency-cruiser or madge until the existing architecture checker is wired and its gaps are proven.
+- Do not migrate broad command runners, CLI wiring, or simple pure helpers to
+  Effect before the exemplar service/layer pattern is proven.
 
 Remove or simplify:
 
@@ -810,13 +1195,38 @@ Should become a validator:
 - Architecture baseline metadata.
 - Runtime-card required-evidence mode.
 - PR closeout wording contract.
+- Effect approved-boundary, facade, builder, service, layer, and test-provider
+  requirements.
 
 Should become a schema:
 
 - evidence-pattern/v1.
 - attempt-ledger/v1.
 - recovery-event/v1.
+- agent-behavior-eval/v1.
+- agent-observability-event/v1.
 - runtime evidence sourceCompleteness.
+
+Should become internal evals:
+
+- Authority-map trust selection.
+- Default-no context loading and localisation.
+- Verification claim-vs-evidence behavior.
+- Planning-only stop behavior.
+- Repeated-steering admission and durable guard creation.
+- Skill-routing discipline.
+- Provider portability boundary checks.
+- Effect exemplar behavior parity between public facade and Effect builder.
+
+Should become observability:
+
+- Instruction surfaces read.
+- Skills routed or skipped.
+- Authority classes cited as evidence.
+- Validation commands, outcomes, and blockers.
+- Closeout evidence freshness.
+- Steering admissions and post-guard recurrence.
+- Recovery attempts, stop reasons, and next owner.
 
 Should become a skill:
 
