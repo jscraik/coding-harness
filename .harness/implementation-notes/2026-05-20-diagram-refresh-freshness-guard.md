@@ -23,6 +23,11 @@ look flaky instead of enforceable.
 
 Failure category: weak validation, stale state, weak observability.
 
+A later drift-gate boundary slice showed a second failure mode: if the refresh
+subprocess hangs, the freshness check can leave generated diagram artifacts
+dirty and keep an exec session alive instead of returning a crisp validation
+result.
+
 ## Durable Change
 
 - `.gitignore` now ignores `.tmp-diagram-refresh-*/` scratch directories.
@@ -30,6 +35,9 @@ Failure category: weak validation, stale state, weak observability.
   directories from generator input, not only the current run directory.
 - Quiet-mode diagram generation now reports a direct error when the generator
   exits before writing its stderr file.
+- `scripts/check-diagram-freshness.sh` now runs refresh with a bounded timeout,
+  refuses to refresh over pre-existing diagram artifact edits, and restores
+  generated diagram artifacts when refresh fails.
 
 ## Validation Contract
 

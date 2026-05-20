@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 CHANGED_FILES_PATH=""
+DIAGRAM_REFRESH_TIMEOUT_SECONDS="${DIAGRAM_REFRESH_TIMEOUT_SECONDS:-90}"
 
 TRACKED_ARTIFACT_PATHS=(
 	".diagram"
@@ -95,6 +96,35 @@ tracked_artifact_files() {
 	for artifact_path in "${TRACKED_ARTIFACT_PATHS[@]}"; do
 		git -C "$REPO_ROOT" ls-files -- "$artifact_path"
 	done | awk 'NF { print }' | sort -u
+}
+
+refresh_timeout_command() {
+	if command -v timeout >/dev/null 2>&1; then
+		command -v timeout
+		return 0
+	fi
+	if command -v gtimeout >/dev/null 2>&1; then
+		command -v gtimeout
+		return 0
+	fi
+	return 1
+}
+
+run_refresh_with_timeout() {
+	local timeout_bin
+	if timeout_bin="$(refresh_timeout_command)"; then
+		"$timeout_bin" "$DIAGRAM_REFRESH_TIMEOUT_SECONDS" bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
+		return $?
+	fi
+
+	bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
+}
+
+restore_generated_artifact_edits() {
+	if (( ${#tracked_files[@]} == 0 )); then
+		return 0
+	fi
+	git -C "$REPO_ROOT" restore --worktree -- "${tracked_files[@]}" >/dev/null 2>&1 || true
 }
 
 normalized_checksum() {
@@ -228,9 +258,28 @@ if (( ${#tracked_files[@]} > 0 )); then
 	done
 fi
 
+if (( ${#preexisting_worktree_artifact_edits[@]} > 0 )); then
+	echo "Error: diagram artifacts have pre-existing worktree edits."
+	echo "Clean, stage, or commit these files before running diagram freshness so refresh cannot overwrite them:"
+	printf '  - %s\n' "${preexisting_worktree_artifact_edits[@]}"
+	exit 1
+fi
+
 echo "Refreshing architecture diagrams for changed sensitive paths..."
 before_snapshot="$(snapshot_artifacts)"
-bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
+set +e
+run_refresh_with_timeout
+refresh_status=$?
+set -e
+if [[ "$refresh_status" -ne 0 ]]; then
+	restore_generated_artifact_edits
+	if [[ "$refresh_status" -eq 124 ]]; then
+		echo "Error: architecture diagram refresh timed out after ${DIAGRAM_REFRESH_TIMEOUT_SECONDS}s."
+	else
+		echo "Error: architecture diagram refresh failed with exit code ${refresh_status}."
+	fi
+	exit "$refresh_status"
+fi
 after_snapshot="$(snapshot_artifacts)"
 
 if [[ "$before_snapshot" != "$after_snapshot" ]]; then
