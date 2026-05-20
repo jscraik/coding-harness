@@ -77,6 +77,8 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/command-specs-core.ts`
   - Manifest assembler for command specs; workflow-specific parsing should stay
     behind focused command spec seams.
+- `src/lib/cli/registry/fleet-plan-command-spec.ts`
+  - Fleet-plan delegation to the fleet-plan command.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -145,7 +147,8 @@ adjust Linear claim, handoff, close, prepare, sync, and triage delegation in
 `linear-command-runner.ts` and Linear action/flag projection in
 `linear-command-options.ts`, while `linear-command-spec.ts` remains the
 registry seam. Agents can adjust Linear gate option projection in
-`linear-gate-command-spec.ts`, PR template gate option projection in
+`linear-gate-command-spec.ts`, fleet-plan delegation in
+`fleet-plan-command-spec.ts`, PR template gate option projection in
 `pr-template-gate-command-spec.ts`, and rule lifecycle gate option projection in
 `rule-lifecycle-gate-command-spec.ts`, and policy gate option projection in
 `policy-gate-command-spec.ts`, branch protection option projection in
@@ -451,8 +454,10 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 1603` lines); workflow-specific parsing belongs in focused command spec
+  (`<= 1595` lines); workflow-specific parsing belongs in focused command spec
   seams.
+- `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
+  fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/audit-command-spec.ts` must stay focused on audit
   command delegation (`<= 25` lines).
 - `src/lib/cli/registry/check-command-spec.ts` must stay focused on check

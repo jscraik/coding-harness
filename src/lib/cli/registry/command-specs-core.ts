@@ -19,7 +19,6 @@ import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
 import { runDriftGateCLI } from "../../../commands/drift-gate.js";
 import { runEjectCLI } from "../../../commands/eject.js";
-import { runFleetPlanCLI } from "../../../commands/fleet-plan.js";
 import { runGapCaseCLI } from "../../../commands/gap-case.js";
 import { runGardenerCLI } from "../../../commands/gardener.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
@@ -85,6 +84,7 @@ import { createCheckEnvironmentCommandSpec } from "./check-environment-command-s
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createDoctorCommandSpec } from "./doctor-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
+import { createFleetPlanCommandSpec } from "./fleet-plan-command-spec.js";
 import { createHealthCommandSpec } from "./health-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
@@ -105,15 +105,7 @@ import { createToolingAuditCommandSpec } from "./tooling-audit-command-spec.js";
 import { createWorkflowGenerateCommandSpec } from "./workflow-generate-command-spec.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
-	{
-		name: "fleet-plan",
-		summary:
-			"Build an agent-native remediation plan from a harness upgrade matrix artifact",
-		example:
-			"fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json",
-		errorLabel: "Fleet Plan Error",
-		execute: (args) => runFleetPlanCLI(args),
-	},
+	createFleetPlanCommandSpec(),
 	createLinearCommandSpec(),
 	createLinearGateCommandSpec(),
 	{
