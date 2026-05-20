@@ -77,6 +77,12 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/command-specs-core.ts`
   - Manifest assembler for command specs; workflow-specific parsing should stay
     behind focused command spec seams.
+- `src/lib/cli/registry/fleet-plan-command-spec.ts`
+  - Fleet-plan delegation to the fleet-plan command.
+- `src/lib/cli/registry/next-command-spec.ts`
+  - Next delegation to the next command.
+- `src/lib/cli/registry/runtime-card-command-spec.ts`
+  - Runtime-card delegation to the runtime-card command.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -102,6 +108,22 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/check-environment-command-spec.ts`
   - Environment check option projection and delegation to the environment
     command.
+- `src/lib/cli/registry/check-command-spec.ts`
+  - Check option projection and delegation to the check command.
+- `src/lib/cli/registry/health-command-spec.ts`
+  - Health delegation to the health command.
+- `src/lib/cli/registry/doctor-command-spec.ts`
+  - Doctor delegation to the doctor command.
+- `src/lib/cli/registry/audit-command-spec.ts`
+  - Audit delegation to the audit command.
+- `src/lib/cli/registry/docs-gate-command-spec.ts`
+  - Docs gate option projection and delegation to the docs gate command.
+- `src/lib/cli/registry/org-audit-command-spec.ts`
+  - Org audit delegation to the org audit command.
+- `src/lib/cli/registry/tooling-audit-command-spec.ts`
+  - Tooling audit delegation to the tooling audit command.
+- `src/lib/cli/registry/preset-command-spec.ts`
+  - Preset delegation to the preset command.
 - `src/lib/cli/registry/local-memory-preflight-command-spec.ts`
   - Local Memory preflight option projection, usage-error handling, and
     delegation to the Local Memory preflight command.
@@ -129,13 +151,24 @@ adjust Linear claim, handoff, close, prepare, sync, and triage delegation in
 `linear-command-runner.ts` and Linear action/flag projection in
 `linear-command-options.ts`, while `linear-command-spec.ts` remains the
 registry seam. Agents can adjust Linear gate option projection in
-`linear-gate-command-spec.ts`, PR template gate option projection in
+`linear-gate-command-spec.ts`, fleet-plan delegation in
+`fleet-plan-command-spec.ts`, next delegation in `next-command-spec.ts`,
+runtime-card delegation in `runtime-card-command-spec.ts`, PR template gate
+option projection in
 `pr-template-gate-command-spec.ts`, and rule lifecycle gate option projection in
 `rule-lifecycle-gate-command-spec.ts`, and policy gate option projection in
 `policy-gate-command-spec.ts`, branch protection option projection in
 `branch-protect-command-spec.ts`, authorization check option projection in
-`check-authz-command-spec.ts`, environment check option projection in
-`check-environment-command-spec.ts`, Local Memory preflight option projection
+`check-authz-command-spec.ts`, check option projection in
+`check-command-spec.ts`, environment check option projection in
+`check-environment-command-spec.ts`, health delegation in
+`health-command-spec.ts`, doctor delegation in
+`doctor-command-spec.ts`, audit delegation in
+`audit-command-spec.ts`, docs gate option projection in
+`docs-gate-command-spec.ts`, org audit delegation in
+`org-audit-command-spec.ts`, tooling audit delegation in
+`tooling-audit-command-spec.ts`, preset delegation in
+`preset-command-spec.ts`, Local Memory preflight option projection
 and usage-error handling in `local-memory-preflight-command-spec.ts`, license
 gate option projection in `license-gate-command-spec.ts`, Symphony readiness
 option projection in `symphony-check-command-spec.ts`, workflow generation
@@ -427,8 +460,30 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 1741` lines); workflow-specific parsing belongs in focused command spec
+  (`<= 1580` lines); workflow-specific parsing belongs in focused command spec
   seams.
+- `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
+  fleet-plan command delegation (`<= 25` lines).
+- `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
+  command delegation (`<= 25` lines).
+- `src/lib/cli/registry/runtime-card-command-spec.ts` must stay focused on
+  runtime-card command delegation (`<= 25` lines).
+- `src/lib/cli/registry/audit-command-spec.ts` must stay focused on audit
+  command delegation (`<= 25` lines).
+- `src/lib/cli/registry/check-command-spec.ts` must stay focused on check
+  option projection and command delegation (`<= 25` lines).
+- `src/lib/cli/registry/health-command-spec.ts` must stay focused on health
+  command delegation (`<= 25` lines).
+- `src/lib/cli/registry/doctor-command-spec.ts` must stay focused on doctor
+  command delegation (`<= 25` lines).
+- `src/lib/cli/registry/docs-gate-command-spec.ts` must stay focused on docs
+  gate option projection and command delegation (`<= 80` lines).
+- `src/lib/cli/registry/org-audit-command-spec.ts` must stay focused on org
+  audit command delegation (`<= 25` lines).
+- `src/lib/cli/registry/tooling-audit-command-spec.ts` must stay focused on
+  tooling audit command delegation (`<= 25` lines).
+- `src/lib/cli/registry/preset-command-spec.ts` must stay focused on preset
+  command delegation (`<= 25` lines).
 - `src/lib/cli/registry/workflow-generate-command-spec.ts` must stay focused on
   workflow generation option projection and command delegation (`<= 40`
   lines).

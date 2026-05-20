@@ -1,6 +1,5 @@
 import { runArtifactGateCLI } from "../../../commands/artifact-gate.js";
 import { runArtifactRoutineCLI } from "../../../commands/artifact-routine.js";
-import { runAuditCLI } from "../../../commands/audit.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
 	type BlastRadiusOptions,
@@ -8,7 +7,6 @@ import {
 } from "../../../commands/blast-radius.js";
 import { runBrainCLI } from "../../../commands/brain.js";
 import { runBrainstormGateCLI } from "../../../commands/brainstorm-gate.js";
-import { runCheckCLI } from "../../../commands/check.js";
 import {
 	runCIMigrateCLI,
 	runPromoteModeCLI,
@@ -19,22 +17,16 @@ import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
-import { runDocsGateCLI } from "../../../commands/docs-gate.js";
-import { runDoctorCLI } from "../../../commands/doctor.js";
 import { runDriftGateCLI } from "../../../commands/drift-gate.js";
 import { runEjectCLI } from "../../../commands/eject.js";
-import { runFleetPlanCLI } from "../../../commands/fleet-plan.js";
 import { runGapCaseCLI } from "../../../commands/gap-case.js";
 import { runGardenerCLI } from "../../../commands/gardener.js";
-import { runHealthCLI } from "../../../commands/health.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
-import { runNextCLI } from "../../../commands/next.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
-import { runOrgAuditCLI } from "../../../commands/org-audit.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
 import { runPilotEvaluateCLI } from "../../../commands/pilot-evaluate.js";
 import {
@@ -43,7 +35,6 @@ import {
 } from "../../../commands/pilot-rollback.js";
 import { runPlanGateCLI } from "../../../commands/plan-gate.js";
 import { runPrCloseoutCLI } from "../../../commands/pr-closeout.js";
-import { runPresetCLI } from "../../../commands/preset.js";
 import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
 import {
 	type RemediateOptions,
@@ -51,14 +42,12 @@ import {
 } from "../../../commands/remediate.js";
 import { runReplayCLI } from "../../../commands/replay.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
-import { runRuntimeCardCLI } from "../../../commands/runtime-card.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import { runSilentErrorDetectorCLI } from "../../../commands/silent-error.js";
 import {
 	printSimulateUsage,
 	runSimulateCLI,
 } from "../../../commands/simulate.js";
-import { runToolingAuditCLI } from "../../../commands/tooling-audit.js";
 import {
 	runUIExploreCLI,
 	runUIFastCLI,
@@ -85,35 +74,38 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createAuditCommandSpec } from "./audit-command-spec.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
+import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
+import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
+import { createDoctorCommandSpec } from "./doctor-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
+import { createFleetPlanCommandSpec } from "./fleet-plan-command-spec.js";
+import { createHealthCommandSpec } from "./health-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
 import { createLicenseGateCommandSpec } from "./license-gate-command-spec.js";
 import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
+import { createNextCommandSpec } from "./next-command-spec.js";
+import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
+import { createPresetCommandSpec } from "./preset-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
+import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
+import { createToolingAuditCommandSpec } from "./tooling-audit-command-spec.js";
 import { createWorkflowGenerateCommandSpec } from "./workflow-generate-command-spec.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
-	{
-		name: "fleet-plan",
-		summary:
-			"Build an agent-native remediation plan from a harness upgrade matrix artifact",
-		example:
-			"fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json",
-		errorLabel: "Fleet Plan Error",
-		execute: (args) => runFleetPlanCLI(args),
-	},
+	createFleetPlanCommandSpec(),
 	createLinearCommandSpec(),
 	createLinearGateCommandSpec(),
 	{
@@ -135,155 +127,19 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createCheckAuthzCommandSpec(),
 	createCheckEnvironmentCommandSpec(),
 	createLocalMemoryPreflightCommandSpec(),
-	{
-		name: "docs-gate",
-		summary: "Enforce documentation parity for governance changes",
-		errorLabel: "Docs Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const modeIndex = args.indexOf("--mode");
-			const triggerIndex = args.indexOf("--trigger");
-			const outIndex = args.indexOf("--out");
-			const filesIndex = args.indexOf("--files");
-			const repoRootIndex = args.indexOf("--repo-root");
-			const trustedBaseRefIndex = args.indexOf("--trusted-base-ref");
-			const trustedContractShaIndex = args.indexOf("--trusted-contract-sha");
-			const trustedWorkflowShaIndex = args.indexOf("--trusted-workflow-sha");
-			const mergeQueueTargetRefIndex = args.indexOf("--merge-queue-target-ref");
-			const mergeQueueBaseShaIndex = args.indexOf("--merge-queue-base-sha");
-
-			const options: Parameters<typeof runDocsGateCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			const modeArg = getFlagValue(args, modeIndex);
-			if (modeArg === "advisory" || modeArg === "required") {
-				options.mode = modeArg;
-			}
-			const triggerArg = getFlagValue(args, triggerIndex);
-			if (
-				triggerArg === "local" ||
-				triggerArg === "pull_request" ||
-				triggerArg === "merge_group" ||
-				triggerArg === "manual_ci"
-			) {
-				options.trigger = triggerArg;
-			}
-			const outArg = getFlagValue(args, outIndex);
-			if (outArg !== undefined) options.outPath = outArg;
-			const filesArg = getFlagValue(args, filesIndex);
-			if (filesArg !== undefined) {
-				options.changedFiles = parseCsvList(filesArg);
-			}
-			const repoRootArg = getFlagValue(args, repoRootIndex);
-			if (repoRootArg) options.repoRoot = repoRootArg;
-			const trustedBaseRefArg = getFlagValue(args, trustedBaseRefIndex);
-			if (trustedBaseRefArg !== undefined)
-				options.trustedBaseRef = trustedBaseRefArg;
-			const trustedContractShaArg = getFlagValue(args, trustedContractShaIndex);
-			if (trustedContractShaArg !== undefined)
-				options.trustedContractSha = trustedContractShaArg;
-			const trustedWorkflowShaArg = getFlagValue(args, trustedWorkflowShaIndex);
-			if (trustedWorkflowShaArg !== undefined)
-				options.trustedWorkflowSha = trustedWorkflowShaArg;
-			const mergeQueueTargetRefArg = getFlagValue(
-				args,
-				mergeQueueTargetRefIndex,
-			);
-			if (mergeQueueTargetRefArg !== undefined)
-				options.mergeQueueTargetRef = mergeQueueTargetRefArg;
-			const mergeQueueBaseShaArg = getFlagValue(args, mergeQueueBaseShaIndex);
-			if (mergeQueueBaseShaArg !== undefined)
-				options.mergeQueueBaseSha = mergeQueueBaseShaArg;
-
-			return runDocsGateCLI(options);
-		},
-	},
+	createDocsGateCommandSpec(),
 	createLicenseGateCommandSpec(),
 	createSymphonyCheckCommandSpec(),
 	createWorkflowGenerateCommandSpec(),
-	{
-		name: "org-audit",
-		summary: "Audit GitHub org settings and member permissions",
-		errorLabel: "Org Audit Error",
-		execute: async (args) => {
-			const { exitCode } = await runOrgAuditCLI(args);
-			return exitCode;
-		},
-	},
-	{
-		name: "tooling-audit",
-		summary: "Audit installed tooling versions and configuration health",
-		errorLabel: "Tooling Audit Error",
-		execute: async (args) => {
-			const { exitCode } = await runToolingAuditCLI(args);
-			return exitCode;
-		},
-	},
-	{
-		name: "preset",
-		summary: "List and show bundled harness presets",
-		errorLabel: "Preset Error",
-		execute: async (args) => {
-			const { exitCode } = await runPresetCLI(args);
-			return exitCode;
-		},
-	},
-	{
-		name: "check",
-		summary: "Zero-config repo health snapshot — works before full setup",
-		example: "check [path] [--json]",
-		errorLabel: "Check Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const targetDir = args.find((a) => !a.startsWith("-"));
-			return runCheckCLI(targetDir, { json: jsonFlag });
-		},
-	},
-	{
-		name: "next",
-		summary:
-			"Recommend the next safe harness command from current repo/runtime state",
-		example: "next --json --runtime-card .harness/runtime/JSC-311.json",
-		errorLabel: "Next Error",
-		execute: (args) => runNextCLI(args),
-	},
-	{
-		name: "runtime-card",
-		summary:
-			"Build runtime-card/v1 and optional normalized evidence artifacts from git, harness evidence, normalized evidence bundles, and optional live provider state",
-		example:
-			"runtime-card --json --evidence .harness/runtime/session-evidence.json --out .harness/runtime/JSC-311.json --evidence-out .harness/runtime/JSC-311-evidence.json",
-		errorLabel: "Runtime Card Error",
-		execute: (args) => runRuntimeCardCLI(args),
-	},
-	{
-		name: "audit",
-		summary:
-			"Comprehensive governance state check with actionable recommendations",
-		example: "audit [--dir <path>] [--json]",
-		errorLabel: "Audit Error",
-		execute: (args) => {
-			return runAuditCLI(args, getVersion);
-		},
-	},
-	{
-		name: "doctor",
-		summary: "Diagnose harness installation and environment issues",
-		example: "doctor --json",
-		errorLabel: "Doctor Error",
-		execute: (args) => {
-			return runDoctorCLI(args, getVersion);
-		},
-	},
-	{
-		name: "health",
-		summary: "Quick health check for harness services and configuration",
-		example: "health --json",
-		errorLabel: "Health Error",
-		execute: (args) => {
-			return runHealthCLI(args, getVersion);
-		},
-	},
+	createOrgAuditCommandSpec(),
+	createToolingAuditCommandSpec(),
+	createPresetCommandSpec(),
+	createCheckCommandSpec(),
+	createNextCommandSpec(),
+	createRuntimeCardCommandSpec(),
+	createAuditCommandSpec(getVersion),
+	createDoctorCommandSpec(getVersion),
+	createHealthCommandSpec(getVersion),
 	{
 		name: "eject",
 		summary: "Eject harness files from the target repository",
