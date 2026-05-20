@@ -11,6 +11,7 @@ last_validated: 2026-05-20
 - [Agent Boundary Enforcement](#agent-boundary-enforcement)
 - [CLI Registry Boundaries](#cli-registry-boundaries)
 - [Verify Work Command Boundary](#verify-work-command-boundary)
+- [Memory Gate Command Boundary](#memory-gate-command-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
 - [Doctor Command Boundaries](#doctor-command-boundaries)
@@ -227,6 +228,32 @@ live behind a deep module seam:
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` keep the
 command facade thin, ratchet the internal modules, and fail if callers bypass the
 public facade to import `src/lib/verify-work/*` internals.
+
+## Memory Gate Command Boundary
+
+Memory-gate is the Local Memory compliance control surface. Its callers should
+not reach into validator internals directly because the validator owns schema
+checks, read-first discipline, closeout checks, branch enforcement, metrics, and
+terminal or JSON presentation. The public seam is deliberately small:
+
+- `src/commands/memory-gate.ts`
+  - Command facade that preserves the existing CLI export contract and imports
+    only `src/lib/memory-gate.ts`.
+- `src/lib/memory-gate.ts`
+  - Public facade for memory-gate execution and command option types.
+- `src/lib/memory/validator.ts`
+  - Internal Local Memory compliance validator and CLI presenter.
+- `src/lib/memory/types.ts`
+  - Internal schema, result, metrics, and option contract exported through the
+    public facade.
+- `src/lib/cli/registry/memory-gate-command-spec.ts`
+  - Registry option adapter for memory, FORJAMIE, metrics, and JSON flags;
+    delegates through the public facade rather than the command module.
+
+Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
+the command, facade, registry adapter, validator, and type contract, and fail if
+callers bypass `src/lib/memory-gate.ts` to import `src/lib/memory/*`
+internals.
 
 ## Output Normalisation Boundaries
 

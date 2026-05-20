@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
 import * as driftGateCommand from "../../../commands/drift-gate.js";
 import * as gardenerCommand from "../../../commands/gardener.js";
-import * as memoryGateCommand from "../../../commands/memory-gate.js";
+import * as memoryGateModule from "../../memory-gate.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import * as silentErrorCommand from "../../../commands/silent-error.js";
@@ -456,7 +456,7 @@ describe("memory-gate execute parsing", () => {
 	const spec = findSpec("memory-gate");
 
 	beforeEach(() => {
-		vi.spyOn(memoryGateCommand, "runMemoryGateCLI").mockReturnValue(0);
+		vi.spyOn(memoryGateModule, "runMemoryGateCLI").mockReturnValue(0);
 	});
 
 	afterEach(() => {
@@ -475,7 +475,7 @@ describe("memory-gate execute parsing", () => {
 		]);
 
 		expect(result).toBe(0);
-		expect(memoryGateCommand.runMemoryGateCLI).toHaveBeenCalledWith({
+		expect(memoryGateModule.runMemoryGateCLI).toHaveBeenCalledWith({
 			memoryPath: ".harness/memory/LEARNINGS.md",
 			forjamiePath: "codex/FORJAMIE.md",
 			metricsPath: "artifacts/memory-metrics.json",
@@ -487,7 +487,7 @@ describe("memory-gate execute parsing", () => {
 		const result = spec.execute([]);
 
 		expect(result).toBe(0);
-		expect(memoryGateCommand.runMemoryGateCLI).toHaveBeenCalledWith({});
+		expect(memoryGateModule.runMemoryGateCLI).toHaveBeenCalledWith({});
 	});
 });
 

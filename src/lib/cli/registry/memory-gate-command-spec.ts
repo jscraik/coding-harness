@@ -1,4 +1,4 @@
-import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
+import { runMemoryGateCLI, type MemoryGateOptions } from "../../memory-gate.js";
 import { getFlagValue } from "../parse-utils.js";
 import type { CommandSpec } from "./types.js";
 
@@ -9,7 +9,7 @@ export function createMemoryGateCommandSpec(): CommandSpec {
 		summary: "Validate local-memory workflow compliance",
 		errorLabel: "Memory Gate Error",
 		execute: (args) => {
-			const options: Parameters<typeof runMemoryGateCLI>[0] = {};
+			const options: MemoryGateOptions = {};
 
 			if (args.includes("--json")) options.json = true;
 			const memoryArg = getFlagValue(args, args.indexOf("--memory"));

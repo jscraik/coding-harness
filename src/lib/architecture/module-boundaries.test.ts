@@ -509,6 +509,39 @@ const VERIFY_WORK_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const MEMORY_GATE_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/memory-gate.ts",
+		maxLines: 25,
+		reason:
+			"Memory gate command must stay a command facade; Local Memory compliance internals live behind the memory-gate module seam.",
+	},
+	{
+		path: "src/lib/memory-gate.ts",
+		maxLines: 10,
+		reason:
+			"Memory gate public facade must stay a small export surface for command and registry callers.",
+	},
+	{
+		path: "src/lib/cli/registry/memory-gate-command-spec.ts",
+		maxLines: 35,
+		reason:
+			"Memory gate command spec must stay focused on local-memory path option projection and facade delegation.",
+	},
+	{
+		path: "src/lib/memory/validator.ts",
+		maxLines: 525,
+		reason:
+			"Memory validator may stay deep, but callers must enter through the memory-gate public facade.",
+	},
+	{
+		path: "src/lib/memory/types.ts",
+		maxLines: 305,
+		reason:
+			"Memory gate types must stay the Local Memory compliance contract behind the public facade.",
+	},
+] as const;
+
 const RUNTIME_CARD_RUNTIME_RATCHETS = [
 	{
 		path: "src/lib/runtime/runtime-card.ts",
@@ -683,7 +716,6 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/health-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
-	"src/lib/cli/registry/memory-gate-command-spec.ts",
 	"src/lib/cli/registry/next-command-spec.ts",
 	"src/lib/cli/registry/org-audit-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
@@ -880,6 +912,15 @@ const VERIFY_WORK_INTERNAL_IMPORT_PATTERN =
 	/^.*lib\/verify-work\/(?:args|runner|types)\.js$/;
 const APPROVED_VERIFY_WORK_INTERNAL_IMPORTERS = new Set([
 	"src/lib/verify-work.ts",
+]);
+const MEMORY_GATE_PUBLIC_FACADE_SUBMODULES = [
+	"./memory/validator.js",
+	"./memory/types.js",
+] as const;
+const MEMORY_GATE_INTERNAL_IMPORT_PATTERN =
+	/^.*memory\/(?:branch-enforcer|metrics-tracker|types|validator)\.js$/;
+const APPROVED_MEMORY_GATE_INTERNAL_IMPORTERS = new Set([
+	"src/lib/memory-gate.ts",
 ]);
 
 function countFileLines(path: string): number {
@@ -1124,6 +1165,45 @@ describe("module boundaries", () => {
 				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8"))
 					.filter((specifier) =>
 						VERIFY_WORK_INTERNAL_IMPORT_PATTERN.test(specifier),
+					)
+					.map((specifier) => `${path} -> ${specifier}`),
+			);
+
+		expect(violations).toEqual([]);
+	});
+
+	it("keeps memory-gate surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(MEMORY_GATE_SURFACE_RATCHETS);
+	});
+
+	it("keeps memory-gate internals behind the public facade", () => {
+		const publicFacadePath = "src/lib/memory-gate.ts";
+		const publicFacadeContent = readFileSync(
+			join(process.cwd(), publicFacadePath),
+			"utf-8",
+		);
+		const commandFacadeContent = readFileSync(
+			join(process.cwd(), "src/commands/memory-gate.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/memory-gate-command-spec.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of MEMORY_GATE_PUBLIC_FACADE_SUBMODULES) {
+			expect(publicFacadeContent).toContain(submodule);
+		}
+		expect(commandFacadeContent).toContain("../lib/memory-gate.js");
+		expect(registryAdapterContent).toContain("../../memory-gate.js");
+
+		const violations = collectTypeScriptFiles("src")
+			.filter((path) => !path.startsWith("src/lib/memory/"))
+			.filter((path) => !APPROVED_MEMORY_GATE_INTERNAL_IMPORTERS.has(path))
+			.flatMap((path) =>
+				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8"))
+					.filter((specifier) =>
+						MEMORY_GATE_INTERNAL_IMPORT_PATTERN.test(specifier),
 					)
 					.map((specifier) => `${path} -> ${specifier}`),
 			);

@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, verify-work, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+            PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -729,7 +729,58 @@
         </section>
 
         <section class="panel">
-          <h2>1c. Output Normalisation Seams</h2>
+          <h2>1c. Memory-Gate Local Memory Control Surface</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/memory-gate.ts</strong>
+              <span>
+                Command facade. Callers keep the existing CLI export contract
+                and enter Local Memory compliance through src/lib/memory-gate.ts.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module public">
+                <strong>src/lib/memory-gate.ts</strong>
+                <span>
+                  Public facade for runMemoryGate, runMemoryGateCLI, and
+                  MemoryGateOptions.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>memory/validator.ts</strong>
+                <span>
+                  Internal schema, read-first, closeout, branch, metrics, and
+                  terminal or JSON validation behavior.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>memory/types.ts</strong>
+                <span>
+                  Local Memory compliance schema, result, metrics, and option
+                  contract exported through the facade.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>memory-gate-command-spec.ts</strong>
+                <span>
+                  Registry flag adapter for memory, FORJAMIE, metrics, and JSON;
+                  delegates through the public facade.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the facade and fails if callers import memory/*
+                  internals instead of src/lib/memory-gate.ts.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>1d. Output Normalisation Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/lib/output/normalise.ts</strong>
@@ -1351,7 +1402,10 @@
               Gardener docs path, stale-days, dry-run, and JSON projection now
               lives behind gardener-command-spec.ts.
               Memory-gate memory, FORJAMIE, metrics, and JSON projection now
-              lives behind memory-gate-command-spec.ts.
+              lives behind memory-gate-command-spec.ts. Memory-gate execution
+              now has a public facade in src/lib/memory-gate.ts, with the
+              validator and type contract kept behind an executable import
+              guard.
               Silent-error files, directories, strictness, suggestions, and
               JSON projection now lives behind silent-error-command-spec.ts.
               Brainstorm path, topic, age, strictness, and JSON projection now
