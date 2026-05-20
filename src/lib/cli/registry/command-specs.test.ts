@@ -456,15 +456,15 @@ describe("memory-gate execute parsing", () => {
 	const spec = findSpec("memory-gate");
 
 	beforeEach(() => {
-		vi.spyOn(memoryGateModule, "runMemoryGateCLI").mockReturnValue(0);
+		vi.spyOn(memoryGateModule, "runMemoryGateFromCliArgs").mockReturnValue(0);
 	});
 
 	afterEach(() => {
 		vi.restoreAllMocks();
 	});
 
-	it("projects memory, forjamie, metrics, and json flags into the memory-gate command", () => {
-		const result = spec.execute([
+	it("delegates raw memory-gate flags to the module argument adapter", () => {
+		const args = [
 			"--memory",
 			".harness/memory/LEARNINGS.md",
 			"--forjamie",
@@ -472,22 +472,20 @@ describe("memory-gate execute parsing", () => {
 			"--metrics",
 			"artifacts/memory-metrics.json",
 			"--json",
-		]);
+		];
+		const result = spec.execute([...args]);
 
 		expect(result).toBe(0);
-		expect(memoryGateModule.runMemoryGateCLI).toHaveBeenCalledWith({
-			memoryPath: ".harness/memory/LEARNINGS.md",
-			forjamiePath: "codex/FORJAMIE.md",
-			metricsPath: "artifacts/memory-metrics.json",
-			json: true,
-		});
+		expect(memoryGateModule.runMemoryGateFromCliArgs).toHaveBeenCalledWith(
+			args,
+		);
 	});
 
-	it("uses defaults when optional memory-gate paths are absent", () => {
+	it("delegates empty memory-gate args to the module argument adapter", () => {
 		const result = spec.execute([]);
 
 		expect(result).toBe(0);
-		expect(memoryGateModule.runMemoryGateCLI).toHaveBeenCalledWith({});
+		expect(memoryGateModule.runMemoryGateFromCliArgs).toHaveBeenCalledWith([]);
 	});
 });
 

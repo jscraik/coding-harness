@@ -118,9 +118,9 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/lib/cli/registry/memory-gate-command-spec.ts",
-		maxLines: 35,
+		maxLines: 20,
 		reason:
-			"Memory gate command spec must stay focused on local-memory path option projection and command delegation.",
+			"Memory gate command spec must stay focused on command metadata and facade delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/gardener-command-spec.ts",
@@ -575,15 +575,21 @@ const MEMORY_GATE_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/lib/memory-gate.ts",
-		maxLines: 10,
+		maxLines: 15,
 		reason:
 			"Memory gate public facade must stay a small export surface for command and registry callers.",
 	},
 	{
 		path: "src/lib/cli/registry/memory-gate-command-spec.ts",
-		maxLines: 35,
+		maxLines: 20,
 		reason:
-			"Memory gate command spec must stay focused on local-memory path option projection and facade delegation.",
+			"Memory gate command spec must stay focused on command metadata and facade delegation.",
+	},
+	{
+		path: "src/lib/memory/cli-args.ts",
+		maxLines: 50,
+		reason:
+			"Memory gate CLI argument adapter must stay focused on raw flag projection before command execution.",
 	},
 	{
 		path: "src/lib/memory/validator.ts",
@@ -1012,12 +1018,13 @@ const APPROVED_VERIFY_WORK_INTERNAL_IMPORTERS = new Set([
 	"src/lib/verify-work.ts",
 ]);
 const MEMORY_GATE_PUBLIC_FACADE_SUBMODULES = [
+	"./memory/cli-args.js",
 	"./memory/cli.js",
 	"./memory/validator.js",
 	"./memory/types.js",
 ] as const;
 const MEMORY_GATE_INTERNAL_IMPORT_PATTERN =
-	/^.*memory\/(?:branch-enforcer|cli|metrics-tracker|types|validator)\.js$/;
+	/^.*memory\/(?:branch-enforcer|cli|cli-args|metrics-tracker|types|validator)\.js$/;
 const APPROVED_MEMORY_GATE_INTERNAL_IMPORTERS = new Set([
 	"src/lib/memory-gate.ts",
 ]);
@@ -1343,6 +1350,9 @@ describe("module boundaries", () => {
 		}
 		expect(commandFacadeContent).toContain("../lib/memory-gate.js");
 		expect(registryAdapterContent).toContain("../../memory-gate.js");
+		expect(registryAdapterContent).not.toContain("getFlagValue");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(registryAdapterContent).not.toContain("MemoryGateOptions");
 
 		const violations = collectTypeScriptFiles("src")
 			.filter((path) => !path.startsWith("src/lib/memory/"))

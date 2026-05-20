@@ -25,6 +25,7 @@ vi.mock("./commands/risk-tier.js", () => ({
 
 vi.mock("./lib/memory-gate.js", () => ({
 	runMemoryGateCLI: vi.fn(() => 48),
+	runMemoryGateFromCliArgs: vi.fn(() => 48),
 }));
 
 vi.mock("./commands/gardener.js", () => ({
@@ -298,7 +299,7 @@ describe("cli command dispatch", () => {
 
 	it("dispatches memory-gate and ignores missing --memory value", async () => {
 		const { run } = await import("./cli.js");
-		const { runMemoryGateCLI } = await import("./lib/memory-gate.js");
+		const { runMemoryGateFromCliArgs } = await import("./lib/memory-gate.js");
 
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
 			code?: number,
@@ -310,10 +311,12 @@ describe("cli command dispatch", () => {
 			run(["memory-gate", "--memory", "--forjamie", "FORJAMIE.md", "--json"]),
 		).toThrowError("EXIT_48");
 
-		expect(vi.mocked(runMemoryGateCLI)).toHaveBeenCalledWith({
-			forjamiePath: "FORJAMIE.md",
-			json: true,
-		});
+		expect(vi.mocked(runMemoryGateFromCliArgs)).toHaveBeenCalledWith([
+			"--memory",
+			"--forjamie",
+			"FORJAMIE.md",
+			"--json",
+		]);
 		expect(exitSpy).toHaveBeenCalledWith(48);
 	});
 

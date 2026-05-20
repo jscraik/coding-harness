@@ -104,8 +104,9 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Gardener docs path, dry-run, JSON, and stale-days CLI option adapter stay
     local to the docs freshness command adapter.
 - `src/lib/cli/registry/memory-gate-command-spec.ts`
-  - Memory gate memory, FORJAMIE, metrics, and JSON CLI option adapter stay
-    local to the Local Memory compliance command adapter.
+  - Memory gate command metadata delegates raw args through the public facade;
+    memory, FORJAMIE, metrics, and JSON option projection lives behind the
+    Local Memory compliance seam.
 - `src/lib/cli/registry/silent-error-command-spec.ts`
   - Silent-error files, directories, strictness, suggestions, and JSON CLI
     option adapter stay local to the detector command adapter.
@@ -275,7 +276,11 @@ terminal or JSON presentation. The public seam is deliberately small:
   - Command facade that preserves the existing CLI export contract and imports
     only `src/lib/memory-gate.ts`.
 - `src/lib/memory-gate.ts`
-  - Public facade for memory-gate execution and command option types.
+  - Public facade for memory-gate execution, raw CLI argument adaptation, and
+    command option types.
+- `src/lib/memory/cli-args.ts`
+  - Internal raw CLI argument adapter for memory, FORJAMIE, metrics, and JSON
+    flags before command execution.
 - `src/lib/memory/validator.ts`
   - Internal Local Memory compliance validator.
 - `src/lib/memory/cli.ts`
@@ -285,13 +290,13 @@ terminal or JSON presentation. The public seam is deliberately small:
   - Internal schema, result, metrics, and option contract exported through the
     public facade.
 - `src/lib/cli/registry/memory-gate-command-spec.ts`
-  - Registry option adapter for memory, FORJAMIE, metrics, and JSON flags;
-    delegates through the public facade rather than the command module.
+  - Registry metadata adapter; delegates raw args through the public facade
+    rather than owning option projection or importing memory internals.
 
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
-the command, facade, registry adapter, validator, CLI presentation seam, and
-type contract, and fail if callers bypass `src/lib/memory-gate.ts` to import
-`src/lib/memory/*` internals.
+the command, facade, registry adapter, raw CLI argument adapter, validator, CLI
+presentation seam, and type contract, and fail if callers bypass
+`src/lib/memory-gate.ts` to import `src/lib/memory/*` internals.
 
 ## Drift Gate Command Boundary
 
@@ -645,8 +650,7 @@ Threshold policy:
 - `src/lib/cli/registry/drift-gate-command-spec.ts` must stay focused on
   consistency-drift CLI option adapter and command delegation (`<= 100` lines).
 - `src/lib/cli/registry/memory-gate-command-spec.ts` must stay focused on
-  Local Memory compliance CLI option adapter and command delegation (`<= 35`
-  lines).
+  command metadata and facade delegation (`<= 20` lines).
 - `src/lib/cli/registry/silent-error-command-spec.ts` must stay focused on
   silent-error detector CLI option adapter and command delegation (`<= 35`
   lines).

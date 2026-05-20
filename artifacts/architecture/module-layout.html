@@ -550,8 +550,8 @@
               <div class="module doctor">
                 <strong>memory-gate-command-spec.ts</strong>
                 <span>
-                  Memory, FORJAMIE, metrics, and JSON projection stays behind
-                  a focused command-spec seam.
+                  Thin registry metadata adapter; raw flags delegate through
+                  the memory-gate facade.
                 </span>
               </div>
               <div class="module doctor">
@@ -758,8 +758,16 @@
               <div class="module public">
                 <strong>src/lib/memory-gate.ts</strong>
                 <span>
-                  Public facade for runMemoryGate, runMemoryGateCLI, and
-                  MemoryGateOptions.
+                  Public facade for runMemoryGate, runMemoryGateCLI,
+                  runMemoryGateFromCliArgs, and MemoryGateOptions.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>memory/cli-args.ts</strong>
+                <span>
+                  Latest slice: raw memory, FORJAMIE, metrics, and JSON flags
+                  are projected into the typed command contract behind the
+                  facade.
                 </span>
               </div>
               <div class="module doctor">
@@ -769,11 +777,11 @@
                   result construction.
                 </span>
               </div>
-              <div class="module doctor current">
+              <div class="module doctor">
                 <strong>memory/cli.ts</strong>
                 <span>
-                  Latest slice: CLI presentation, metrics persistence, trend
-                  reporting, and Codex branch display live behind this seam.
+                  CLI presentation, metrics persistence, trend reporting, and
+                  Codex branch display live behind this seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -786,15 +794,16 @@
               <div class="module doctor">
                 <strong>memory-gate-command-spec.ts</strong>
                 <span>
-                  Registry flag adapter for memory, FORJAMIE, metrics, and JSON;
-                  delegates through the public facade.
+                  Thin registry metadata adapter; delegates raw args through
+                  the public facade instead of owning flag projection.
                 </span>
               </div>
               <div class="module guard">
                 <strong>module-boundaries.test.ts</strong>
                 <span>
-                  Ratchets validator, CLI, facade, and types; fails if callers
-                  import memory/* internals instead of src/lib/memory-gate.ts.
+                  Ratchets CLI args, validator, CLI, facade, and types; fails if
+                  callers import memory/* internals instead of
+                  src/lib/memory-gate.ts.
                 </span>
               </div>
             </div>
@@ -1588,17 +1597,16 @@
               pr-closeout-command-spec.ts.
               Verify-work command execution is now split behind
               src/lib/verify-work.ts with args, runner, and types as internal
-              module seams. The registry adapter still owns resume,
-              repository-root, and governance option projection in
-              verify-work-command-spec.ts.
+              module seams. Resume, repository-root, and governance option
+              projection now live behind verify-work/cli-args.ts.
               Replay trace selection, listing, dry-run, JSON, and trace-dir
               projection now lives behind replay-command-spec.ts.
               Gardener docs path, stale-days, dry-run, and JSON projection now
               lives behind gardener-command-spec.ts.
               Memory-gate memory, FORJAMIE, metrics, and JSON projection now
-              lives behind memory-gate-command-spec.ts. Memory-gate execution
-              now has a public facade in src/lib/memory-gate.ts, with the
-              validator, CLI presentation seam, and type contract kept behind
+              lives behind memory/cli-args.ts. Memory-gate execution has a
+              public facade in src/lib/memory-gate.ts, with the validator, CLI
+              presentation seam, raw CLI adapter, and type contract kept behind
               an executable import guard.
               Silent-error files, directories, strictness, suggestions, and
               JSON projection now lives behind silent-error-command-spec.ts.
@@ -1643,10 +1651,10 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-              Current slice complete: memory-gate CLI output and metrics
-              persistence moved into memory/cli.ts. Next pressure point remains
-              behavior-led: drift-gate or replay should move only when the
-              runtime path and tests identify a concrete seam.
+              Current slice complete: memory-gate raw CLI flag projection moved
+              into memory/cli-args.ts. Next pressure point remains behavior-led:
+              drift-gate should move only when the runtime path and tests
+              identify a concrete seam.
             </p>
           </article>
         </section>
