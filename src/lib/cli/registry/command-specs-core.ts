@@ -41,7 +41,6 @@ import {
 } from "../../../commands/pilot-rollback.js";
 import { runPlanGateCLI } from "../../../commands/plan-gate.js";
 import { runPrCloseoutCLI } from "../../../commands/pr-closeout.js";
-import { runPresetCLI } from "../../../commands/preset.js";
 import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
 import {
 	type RemediateOptions,
@@ -94,6 +93,7 @@ import { createLicenseGateCommandSpec } from "./license-gate-command-spec.js";
 import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
 import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
+import { createPresetCommandSpec } from "./preset-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
@@ -141,15 +141,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createWorkflowGenerateCommandSpec(),
 	createOrgAuditCommandSpec(),
 	createToolingAuditCommandSpec(),
-	{
-		name: "preset",
-		summary: "List and show bundled harness presets",
-		errorLabel: "Preset Error",
-		execute: async (args) => {
-			const { exitCode } = await runPresetCLI(args);
-			return exitCode;
-		},
-	},
+	createPresetCommandSpec(),
 	{
 		name: "check",
 		summary: "Zero-config repo health snapshot — works before full setup",
