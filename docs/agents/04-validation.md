@@ -48,18 +48,23 @@ exact reason and next owner.
 4. When `validate-codestyle.sh` runs via hooks, treat hook-exported git environment (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*`) as untrusted input and ensure the wrapper sanitizes those values before invoking `pnpm run`, so fixture-local git checks are isolated from hook context.
 
 `pnpm lint` includes `pnpm codex:agents:guard`, which validates the
-project-local Codex reviewer roles under `.codex/agents/<role>/<role>.toml`.
-That guard keeps the coding-harness-only role inventory tracked, read-only, on
+project-local Codex roles under `.codex/agents/<role>/<role>.toml`. That
+guard keeps the coding-harness-only role inventory tracked, model-pinned to
 `gpt-5.4-mini`, and distinct from unsupported `.agents/roles` runtime
-discovery assumptions.
+discovery assumptions. Reviewer roles stay read-only; `harness-toolsmith` is
+the workspace-write capability-building role for scoped harness tools. It also
+enforces trimmed, unique, ASCII-only harness-themed role nicknames. The guard is
+an inventory and documentation check; it does not prove the active session
+runtime registry. If `spawn_agent` reports `unknown agent_type`, classify the
+lane as a runtime-freshness blocker and restart from a fresh thread before
+depending on the project-local role boundary.
 
 The same guard enforces the harness roles first principle: use
 `spawn_agent(agent_type="<role>")` with a project-local harness reviewer
 before generic/default/global reviewers when the review work is specific to
-this repository.
-It also preserves the harness roles first principle: coding-harness review work
-uses `spawn_agent(agent_type="<role>")` with the project-local harness reviewer
-roles before generic/default/global reviewers for covered categories.
+this repository. It also verifies `harness-toolsmith` remains documented as
+the role to use when recurring friction should become a Codex-usable CLI
+command, validator, guard, eval fixture, generated action, or workflow tool.
 
 ## CI gates
 
@@ -255,10 +260,10 @@ Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps
 - When the change introduces or updates a validation wrapper, prove the wrapper itself was executed from the current repo state instead of claiming equivalent underlying commands ran.
 - When project-local Codex agent roles change, run `pnpm codex:agents:guard`
   and keep `.codex/agents/README.md` synchronized with the role inventory.
-- When review routing guidance changes, keep the root `AGENTS.md`,
-  `docs/agents/02-tooling-policy.md`, and `.codex/agents/README.md`
-  synchronized so agents see the same harness roles first principle from every
-  active surface.
+- When review or capability-builder routing guidance changes, keep the root
+  `AGENTS.md`, `docs/agents/02-tooling-policy.md`, and
+  `.codex/agents/README.md` synchronized so agents see the same harness roles
+  first and tool-builder routing principles from every active surface.
 
 ## Artifact routine gate
 

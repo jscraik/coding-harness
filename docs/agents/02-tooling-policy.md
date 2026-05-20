@@ -150,6 +150,12 @@ The coding-harness-owned reviewer roles live under
 trusted project-local config layer, so this repository does not need a local
 `.codex/config.toml` solely to expose the roles.
 
+Role discovery is runtime-freshness sensitive. `pnpm codex:agents:guard` proves
+the repository inventory and documentation contract, but it does not prove that
+an already-open Codex thread has hot-loaded new role files. If `spawn_agent`
+returns `unknown agent_type`, start a fresh thread rooted in this checkout
+before relying on the project-local role boundary.
+
 For coding-harness review work, these project-local harness reviewer roles are
 the first-choice subagents. Invoke them from this repository with
 `spawn_agent(agent_type="<role>")`, for example
@@ -161,11 +167,11 @@ back to generic/default/global reviewers for covered categories.
 project-local reviewers. Do not use `.agents/roles` as a runtime role surface
 until Codex source and runtime tests explicitly support it.
 
-For review work in this repository, project-local harness reviewer roles are
-the first-choice subagents before generic or global reviewers. Invoke them with
-`spawn_agent(agent_type="harness-product-code-reviewer")` or the matching
-role from `.codex/agents/<role>/<role>.toml` so coding-harness review work
-uses the repository-owned role contract.
+Use `harness-toolsmith` when a repeated agent struggle, reviewer finding, or
+validation gap should become a Codex-usable tool rather than another review
+note. Invoke it with `spawn_agent(agent_type="harness-toolsmith")` for scoped
+CLI, validator, guard-script, eval-fixture, generated-action, or workflow-tool
+implementation inside this repository.
 
 ### Worktree branch naming convention
 
