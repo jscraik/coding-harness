@@ -75,7 +75,6 @@ import {
 	EXIT_CODES as VERIFY_WORK_EXIT_CODES,
 	runVerifyWorkCLI,
 } from "../../../commands/verify-work.js";
-import { runWorkflowGenerateCLI } from "../../../commands/workflow-generate.js";
 import type { IssueTracker } from "../../init/types.js";
 import type { PilotEvaluateOptions } from "../../pilot-evaluation/types.js";
 import { getValidationGateSpec } from "../../validation/gate-specs.js";
@@ -103,6 +102,7 @@ import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
+import { createWorkflowGenerateCommandSpec } from "./workflow-generate-command-spec.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
 	{
@@ -200,36 +200,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	},
 	createLicenseGateCommandSpec(),
 	createSymphonyCheckCommandSpec(),
-	{
-		name: "workflow:generate",
-		aliases: ["workflow-generate"],
-		summary:
-			"Generate compact operational spec (S/E/G/A/P/R/N format) from annotated markdown",
-		errorLabel: "Workflow Generate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const dryRunFlag = args.includes("--dry-run");
-			const watchFlag = args.includes("--watch");
-			const sourceIndex = args.indexOf("--source");
-			const outputIndex = args.indexOf("--output");
-			const formatIndex = args.indexOf("--format");
-
-			const options: Parameters<typeof runWorkflowGenerateCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			if (dryRunFlag) options.dryRun = true;
-			if (watchFlag) options.watch = true;
-			const sourceArg = getFlagValue(args, sourceIndex);
-			if (sourceArg) options.source = sourceArg;
-			const outputArg = getFlagValue(args, outputIndex);
-			if (outputArg) options.output = outputArg;
-			const formatArg = getFlagValue(args, formatIndex);
-			if (formatArg === "segarn" || formatArg === "segaprn")
-				options.format = formatArg;
-
-			return runWorkflowGenerateCLI(options);
-		},
-	},
+	createWorkflowGenerateCommandSpec(),
 	{
 		name: "org-audit",
 		summary: "Audit GitHub org settings and member permissions",

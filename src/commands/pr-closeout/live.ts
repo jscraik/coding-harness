@@ -265,7 +265,7 @@ function fetchChecks(
 		}
 		tools.push({
 			name: "github_cli",
-			available: true,
+			available: false,
 			ref: `command:gh pr checks ${String(options.prNumber)} --required --json name,state,link`,
 			status: "blocked",
 			failureClass: `pr_checks_unreadable:${sanitizeError(error)}`,

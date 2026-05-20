@@ -268,6 +268,7 @@ describe("parseGithubAuthTimeout", () => {
 		expect(parseGithubAuthTimeout(undefined)).toBe(3000);
 		expect(parseGithubAuthTimeout("NaN")).toBe(3000);
 		expect(parseGithubAuthTimeout("-1")).toBe(3000);
+		expect(parseGithubAuthTimeout("0.5")).toBe(3000);
 		expect(parseGithubAuthTimeout("Infinity")).toBe(3000);
 		expect(parseGithubAuthTimeout("2500.9")).toBe(2500);
 		expect(parseGithubAuthTimeout("999999")).toBe(120_000);

@@ -21,6 +21,8 @@ import {
 	compareRegistryToReadme,
 	extractReadmeCommandNames,
 } from "./doc-parity.js";
+import { createEvidenceVerifyCommandSpec } from "./registry/evidence-verify-command-spec.js";
+import { createPreflightGateCommandSpec } from "./registry/preflight-gate-command-spec.js";
 
 const AGENT_COMMAND_RAIL_NAMES = ["next"] as const;
 const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
@@ -70,6 +72,46 @@ describe("command registry", () => {
 		const invoke = () => dispatchRegistryCommand(inherited.repo, ["repo"]);
 		expect(invoke).not.toThrow();
 		expect(invoke()).toBeUndefined();
+	});
+
+	it("rejects evidence-verify value flags without values", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const spec = createEvidenceVerifyCommandSpec();
+
+		expect(spec.execute(["--files"])).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--files requires a value",
+		);
+		expect(spec.execute(["--changed"])).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--changed requires a value",
+		);
+		expect(spec.execute(["--contract"])).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--contract requires a value",
+		);
+
+		errorSpy.mockRestore();
+	});
+
+	it("rejects malformed preflight-gate scalar flags", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const spec = createPreflightGateCommandSpec();
+
+		expect(spec.execute(["--contract"])).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--contract requires a value",
+		);
+		expect(spec.execute(["--files"])).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--files requires a value",
+		);
+		expect(spec.execute(["--max-tier", "urgent"])).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--max-tier must be one of high, medium, low",
+		);
+
+		errorSpy.mockRestore();
 	});
 
 	it("resolves alias to policy-gate spec", () => {

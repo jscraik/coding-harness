@@ -546,7 +546,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(51);
 	});
 
-	it("dispatches evidence-verify and ignores missing flag values", async () => {
+	it("rejects evidence-verify missing flag values before command dispatch", async () => {
 		const { run } = await import("./cli.js");
 		const { runEvidenceVerifyCLI } = await import(
 			"./commands/evidence-verify.js"
@@ -567,15 +567,10 @@ describe("cli command dispatch", () => {
 				"--contract",
 				"--json",
 			]),
-		).toThrowError("EXIT_52");
+		).toThrowError("EXIT_2");
 
-		expect(vi.mocked(runEvidenceVerifyCLI)).toHaveBeenCalledWith({
-			files: [],
-			contract: undefined,
-			json: true,
-			changed: ["src/a.ts"],
-		});
-		expect(exitSpy).toHaveBeenCalledWith(52);
+		expect(vi.mocked(runEvidenceVerifyCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("dispatches policy-gate command", async () => {
@@ -1309,7 +1304,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(43);
 	});
 
-	it("dispatches preflight-gate and ignores missing contract value", async () => {
+	it("rejects preflight-gate missing contract value before command dispatch", async () => {
 		const { run } = await import("./cli.js");
 		const { runPreflightGateCLI } = await import(
 			"./commands/preflight-gate.js"
@@ -1329,18 +1324,11 @@ describe("cli command dispatch", () => {
 			"--json",
 		]);
 
-		// Allow async CLI handler to resolve
-		await new Promise((resolve) => setTimeout(resolve, 0));
-
-		expect(vi.mocked(runPreflightGateCLI)).toHaveBeenCalledWith({
-			files: ["src/a.ts", "src/b.ts"],
-			maxTier: "medium",
-			json: true,
-		});
-		expect(exitSpy).toHaveBeenCalledWith(46);
+		expect(vi.mocked(runPreflightGateCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
-	it("dispatches preflight-gate and ignores missing --files and --skip values", async () => {
+	it("rejects preflight-gate missing --files and --skip values before dispatch", async () => {
 		const { run } = await import("./cli.js");
 		const { runPreflightGateCLI } = await import(
 			"./commands/preflight-gate.js"
@@ -1359,14 +1347,8 @@ describe("cli command dispatch", () => {
 			"--json",
 		]);
 
-		// Allow async CLI handler to resolve
-		await new Promise((resolve) => setTimeout(resolve, 0));
-
-		expect(vi.mocked(runPreflightGateCLI)).toHaveBeenCalledWith({
-			maxTier: "medium",
-			json: true,
-		});
-		expect(exitSpy).toHaveBeenCalledWith(46);
+		expect(vi.mocked(runPreflightGateCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("dispatches preflight-gate with --head-sha flag", async () => {

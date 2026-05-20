@@ -1,20 +1,16 @@
 import { readFileSync } from "node:fs";
 import { runPreflightGateCLI } from "../../../commands/preflight-gate.js";
-import {
-	getFlagValue,
-	inspectFlagValue,
-	parseCsvList,
-} from "../parse-utils.js";
+import { inspectFlagValue, parseCsvList } from "../parse-utils.js";
 import type { CommandSpec } from "./types.js";
 
 type PreflightGateOptions = Parameters<typeof runPreflightGateCLI>[0];
+type PreflightAdmission = NonNullable<PreflightGateOptions["admission"]>;
 
 /** Build the preflight-gate registry seam. */
 export function createPreflightGateCommandSpec(): CommandSpec {
 	return {
 		name: "preflight-gate",
 		summary: "Fast policy checks before expensive operations",
-		example: "preflight-gate --files src/auth.ts --json",
 		errorLabel: "Preflight Gate Error",
 		execute: runPreflightGateCommand,
 	};
@@ -28,7 +24,10 @@ function runPreflightGateCommand(args: string[]): number | Promise<number> {
 	}
 
 	const options: PreflightGateOptions = {};
-	applyPreflightGateScalarOptions(options, args);
+	const scalarStatus = applyPreflightGateScalarOptions(options, args);
+	if (scalarStatus !== undefined) return scalarStatus;
+	if (admissionFileInspection.value === undefined)
+		return runPreflightGateCLI(options);
 	const admissionStatus = applyPreflightGateAdmission(
 		options,
 		admissionFileInspection.value,
@@ -40,48 +39,52 @@ function runPreflightGateCommand(args: string[]): number | Promise<number> {
 function applyPreflightGateScalarOptions(
 	options: PreflightGateOptions,
 	args: string[],
-): void {
+): number | undefined {
 	if (args.includes("--json")) options.json = true;
 	if (args.includes("--strict")) options.strict = true;
-
-	const contractArg = getFlagValue(args, args.indexOf("--contract"));
-	if (contractArg !== undefined) options.contractPath = contractArg;
-	const filesArg = getFlagValue(args, args.indexOf("--files"));
-	if (filesArg !== undefined) options.files = parseCsvList(filesArg);
-	const maxTierArg = getFlagValue(args, args.indexOf("--max-tier"));
-	if (
-		maxTierArg === "high" ||
-		maxTierArg === "medium" ||
-		maxTierArg === "low"
-	) {
-		options.maxTier = maxTierArg;
+	const contract = readPreflightScalar(args, "--contract");
+	const files = readPreflightScalar(args, "--files");
+	const maxTier = readPreflightScalar(args, "--max-tier");
+	const skip = readPreflightScalar(args, "--skip");
+	const headSha = readPreflightScalar(args, "--head-sha");
+	if (contract === null || files === null || maxTier === null) return 2;
+	if (skip === null || headSha === null) return 2;
+	if (contract !== undefined) options.contractPath = contract;
+	if (files !== undefined) options.files = parseCsvList(files);
+	if (maxTier === "high" || maxTier === "medium" || maxTier === "low") {
+		options.maxTier = maxTier;
+	} else if (maxTier !== undefined) {
+		console.error("Error: --max-tier must be one of high, medium, low");
+		return 2;
 	}
-	const skipArg = getFlagValue(args, args.indexOf("--skip"));
-	if (skipArg !== undefined) options.skip = parseCsvList(skipArg);
-	const headShaArg = getFlagValue(args, args.indexOf("--head-sha"));
-	if (headShaArg) options.headSha = headShaArg;
+	if (skip !== undefined) options.skip = parseCsvList(skip);
+	if (headSha) options.headSha = headSha;
+	return undefined;
+}
+
+function readPreflightScalar(
+	args: string[],
+	flag: string,
+): string | undefined | null {
+	const inspection = inspectFlagValue(args, flag);
+	if (!inspection.missingValue) return inspection.value;
+	console.error(`Error: ${flag} requires a value`);
+	return null;
 }
 
 function applyPreflightGateAdmission(
 	options: PreflightGateOptions,
-	admissionFileArg: string | undefined,
+	admissionFileArg: string,
 ): number | undefined {
-	if (admissionFileArg === undefined) return undefined;
 	try {
 		const parsedAdmission = JSON.parse(
 			readFileSync(admissionFileArg, "utf-8"),
 		) as unknown;
-		if (
-			parsedAdmission === null ||
-			typeof parsedAdmission !== "object" ||
-			Array.isArray(parsedAdmission)
-		) {
+		if (!isAdmissionObject(parsedAdmission)) {
 			console.error("Error: --admission-file must contain a JSON object");
 			return 2;
 		}
-		options.admission = parsedAdmission as NonNullable<
-			PreflightGateOptions["admission"]
-		>;
+		options.admission = parsedAdmission as PreflightAdmission;
 		return undefined;
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
@@ -91,3 +94,6 @@ function applyPreflightGateAdmission(
 		return 2;
 	}
 }
+
+const isAdmissionObject = (value: unknown): value is PreflightAdmission =>
+	value !== null && typeof value === "object" && !Array.isArray(value);

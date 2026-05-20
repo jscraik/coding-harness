@@ -28,6 +28,12 @@ describe("validateLinearValueFlags", () => {
 		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
 			"linear --metadata-threshold must be a finite number",
 		);
+		expect(
+			validateLinearValueFlags(["triage", "--metadata-threshold", "0.8junk"]),
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"linear --metadata-threshold must be a finite number",
+		);
 	});
 
 	it("accepts valid Linear value flags", () => {

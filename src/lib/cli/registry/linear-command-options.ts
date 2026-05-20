@@ -83,7 +83,7 @@ export function validateLinearValueFlags(args: string[]): number | undefined {
 	}
 	const metadataThreshold = inspectFlagValue(args, "--metadata-threshold");
 	if (metadataThreshold.value !== undefined) {
-		const parsed = Number.parseFloat(metadataThreshold.value);
+		const parsed = Number(metadataThreshold.value);
 		if (!Number.isFinite(parsed)) {
 			console.error("linear --metadata-threshold must be a finite number.");
 			return 2;

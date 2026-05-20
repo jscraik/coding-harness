@@ -314,7 +314,7 @@ function normalizeReviewThreadsGraphql(
 	return {
 		unresolved,
 		needsHuman: null,
-		autofixable: unresolved,
+		autofixable: null,
 		hasNextPage,
 		endCursor,
 	};
@@ -353,7 +353,7 @@ export function fetchReviewThreads(
 			);
 			unresolved += page.unresolved ?? 0;
 			if (!page.hasNextPage) {
-				return { unresolved, needsHuman: null, autofixable: unresolved };
+				return { unresolved, needsHuman: null, autofixable: null };
 			}
 			if (!page.endCursor) {
 				tools.push({

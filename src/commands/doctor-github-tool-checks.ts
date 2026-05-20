@@ -8,7 +8,7 @@ const MAX_GITHUB_AUTH_TIMEOUT = 120_000;
 /** Parse the GitHub auth probe timeout from env with finite positive bounds. */
 export function parseGithubAuthTimeout(value: string | undefined): number {
 	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed <= 0) {
+	if (!Number.isFinite(parsed) || parsed < 1) {
 		return DEFAULT_GITHUB_AUTH_TIMEOUT;
 	}
 	return Math.min(Math.trunc(parsed), MAX_GITHUB_AUTH_TIMEOUT);

@@ -1422,6 +1422,7 @@ describe("runPrCloseoutCLI", () => {
 		);
 
 		expect(reviewThreads.unresolved).toBe(1);
+		expect(reviewThreads.autofixable).toBeNull();
 		expect(tools).toEqual([]);
 	});
 

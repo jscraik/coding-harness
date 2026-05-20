@@ -457,7 +457,9 @@ if [[ -f "$CONTEXT_FILE" ]] && \
 	fi
 fi
 
-if [[ -f "$CONTEXT_FILE" ]] && node - "$TMP_CONTEXT" "$CONTEXT_FILE" "$ROOT_DIR" <<'NODE'
+if [[ -f "$CONTEXT_FILE" ]]; then
+	set +e
+	node - "$TMP_CONTEXT" "$CONTEXT_FILE" "$ROOT_DIR" <<'NODE'
 const fs = require("node:fs");
 const path = require("node:path");
 const { normalizeDiagramContextLines } = require(path.join(
@@ -470,8 +472,14 @@ const readNormalized = (filePath) =>
 
 process.exit(readNormalized(process.argv[2]) === readNormalized(process.argv[3]) ? 0 : 1);
 NODE
-then
-	cp "$CONTEXT_FILE" "$TMP_CONTEXT"
+	normalize_status=$?
+	set -e
+	if [[ "$normalize_status" -eq 0 ]]; then
+		cp "$CONTEXT_FILE" "$TMP_CONTEXT"
+	elif [[ "$normalize_status" -ne 1 ]]; then
+		log "error: diagram context normalize comparison failed"
+		exit "$normalize_status"
+	fi
 fi
 
 CONTEXT_SHA="$(shasum -a 256 "$TMP_CONTEXT" | awk '{print $1}')"

@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_770,
+		maxLines: 1_741,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/workflow-generate-command-spec.ts",
+		maxLines: 40,
+		reason:
+			"Workflow generate command spec must stay focused on workflow generation option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/symphony-check-command-spec.ts",
@@ -520,6 +526,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/pr-template-gate-command-spec.ts",
 	"src/lib/cli/registry/rule-lifecycle-gate-command-spec.ts",
 	"src/lib/cli/registry/symphony-check-command-spec.ts",
+	"src/lib/cli/registry/workflow-generate-command-spec.ts",
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
 	"src/lib/output/normalise-core-v2.ts",
@@ -532,10 +539,10 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/output/normalise-pr-template-gate.ts",
 ]);
 
-const COMMAND_IMPORT_PATTERN = /from\s+["'](?:\.\.\/)+commands\//;
-const EFFECT_IMPORT_PATTERN = /from\s+["']effect(?:\/[^"']+)?["']/;
+const COMMAND_IMPORT_PATTERN = /^(?:\.\.\/)+commands\//;
+const EFFECT_IMPORT_PATTERN = /^effect(?:\/.*)?$/;
 const PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN =
-	/from\s+["'][^"']*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|evidence|evaluator|recovery|status|types)\.js["']/;
+	/^.*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|evidence|evaluator|recovery|status|types)\.js$/;
 const IMPORT_SPECIFIER_PATTERN =
 	/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["'](?<specifier>[^"']+)["']/g;
 const APPROVED_EFFECT_BOUNDARIES = new Set([
@@ -590,6 +597,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./pr-template-gate-command-spec.js",
 	"./rule-lifecycle-gate-command-spec.js",
 	"./symphony-check-command-spec.js",
+	"./workflow-generate-command-spec.js",
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [
 	"./next-args.js",
@@ -1026,8 +1034,8 @@ describe("module boundaries", () => {
 		const violations = collectTypeScriptFiles("src/lib")
 			.filter((path) => !TRANSITIONAL_LIB_TO_COMMAND_IMPORTS.has(path))
 			.filter((path) =>
-				COMMAND_IMPORT_PATTERN.test(
-					readFileSync(join(process.cwd(), path), "utf-8"),
+				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8")).some(
+					(specifier) => COMMAND_IMPORT_PATTERN.test(specifier),
 				),
 			);
 
@@ -1038,8 +1046,8 @@ describe("module boundaries", () => {
 		const violations = collectTypeScriptFiles("src")
 			.filter((path) => !APPROVED_EFFECT_BOUNDARIES.has(path))
 			.filter((path) =>
-				EFFECT_IMPORT_PATTERN.test(
-					readFileSync(join(process.cwd(), path), "utf-8"),
+				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8")).some(
+					(specifier) => EFFECT_IMPORT_PATTERN.test(specifier),
 				),
 			);
 
@@ -1051,8 +1059,8 @@ describe("module boundaries", () => {
 			.filter((path) => !path.startsWith("src/lib/pr-closeout/"))
 			.filter((path) => !APPROVED_PR_CLOSEOUT_INTERNAL_IMPORTERS.has(path))
 			.filter((path) =>
-				PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN.test(
-					readFileSync(join(process.cwd(), path), "utf-8"),
+				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8")).some(
+					(specifier) => PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN.test(specifier),
 				),
 			);
 

@@ -16,7 +16,17 @@ const SCHEMA_VERSION = "architecture-invariant-gate/v1";
 const GATE_ID = "pr-closeout-truth-contract";
 
 const args = process.argv.slice(2);
-const jsonOutput = args.includes("--json") || !args.includes("--format");
+const formatArgIndex = args.indexOf("--format");
+const formatArg = formatArgIndex === -1 ? undefined : args[formatArgIndex + 1];
+if (formatArgIndex !== -1 && (!formatArg || formatArg.startsWith("-"))) {
+	console.error("--format requires json or text");
+	process.exit(2);
+}
+if (formatArg !== undefined && formatArg !== "json" && formatArg !== "text") {
+	console.error("--format must be json or text");
+	process.exit(2);
+}
+const jsonOutput = args.includes("--json") || formatArg !== "text";
 const rootArgIndex = args.indexOf("--root");
 if (
 	rootArgIndex !== -1 &&

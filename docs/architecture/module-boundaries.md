@@ -110,6 +110,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/symphony-check-command-spec.ts`
   - Symphony readiness option projection and delegation to the Symphony check
     command.
+- `src/lib/cli/registry/workflow-generate-command-spec.ts`
+  - Workflow generation option projection and delegation to the workflow
+    generator command.
 - `src/lib/cli/registry/evidence-verify-command-spec.ts`
   - Evidence verify option projection and delegation to the evidence verify
     command.
@@ -133,8 +136,9 @@ registry seam. Agents can adjust Linear gate option projection in
 `check-environment-command-spec.ts`, Local Memory preflight option projection
 and usage-error handling in `local-memory-preflight-command-spec.ts`, license
 gate option projection in `license-gate-command-spec.ts`, Symphony readiness
-option projection in `symphony-check-command-spec.ts`, evidence verify option
-projection in `evidence-verify-command-spec.ts`, preflight gate option
+option projection in `symphony-check-command-spec.ts`, workflow generation
+option projection in `workflow-generate-command-spec.ts`, evidence verify
+option projection in `evidence-verify-command-spec.ts`, preflight gate option
 projection and admission parsing in `preflight-gate-command-spec.ts`, and
 review gate option projection in `review-gate-command-spec.ts`, while
 `command-specs-core.ts` remains an assembler for registered command specs.
@@ -420,8 +424,11 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 1770` lines); workflow-specific parsing belongs in focused command spec
+  (`<= 1741` lines); workflow-specific parsing belongs in focused command spec
   seams.
+- `src/lib/cli/registry/workflow-generate-command-spec.ts` must stay focused on
+  workflow generation option projection and command delegation (`<= 40`
+  lines).
 - `src/lib/cli/registry/symphony-check-command-spec.ts` must stay focused on
   Symphony readiness option projection and command delegation (`<= 35` lines).
 - `src/lib/cli/registry/license-gate-command-spec.ts` must stay focused on
