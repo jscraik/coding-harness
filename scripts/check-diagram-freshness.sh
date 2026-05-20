@@ -102,7 +102,7 @@ normalized_checksum() {
 	local rel_path="$2"
 
 	case "$rel_path" in
-		.diagram/agent.mmd|.diagram/class.mmd|.diagram/events.mmd|.diagram/flow.mmd|.diagram/rag.mmd|.diagram/security.mmd|.diagram/sequence.mmd|.diagram/user.mmd)
+		.diagram/agent.mmd|.diagram/architecture.mmd|.diagram/auth.mmd|.diagram/c4context.mmd|.diagram/class.mmd|.diagram/database.mmd|.diagram/dependency.mmd|.diagram/erd.mmd|.diagram/events.mmd|.diagram/flow.mmd|.diagram/rag.mmd|.diagram/security.mmd|.diagram/sequence.mmd|.diagram/user.mmd)
 			# The upstream diagram generator can reorder or reselect compacted
 			# advisory diagrams between runs. The freshness gate still refreshes
 			# and restores these artifacts, but does not treat their volatile
