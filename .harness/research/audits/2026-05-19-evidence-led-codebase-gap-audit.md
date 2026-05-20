@@ -1,5 +1,18 @@
 # 2026-05-19 Evidence-Led Codebase Gap Audit
 
+## Table of Contents
+
+- [1. Executive Summary](`#1-executive-summary`)
+- [2. Overall Gradecard](`#2-overall-gradecard`)
+- [3. Evidence-to-Code Mapping](`#3-evidence-to-code-mapping`)
+- [4. Gap Register](`#4-gap-register`)
+- [5. Contradictions](`#5-contradictions`)
+- [6. Missing Features](`#6-missing-features`)
+- [7. Fix Roadmap](`#7-fix-roadmap`)
+- [8. Highest-Leverage Fixes](`#8-highest-leverage-fixes`)
+- [9. Implementation Advice](`#9-implementation-advice`)
+- [10. Final Recommendation](`#10-final-recommendation`)
+
 ## 1. Executive Summary
 
 Overall maturity grade: **B- / C+**.
