@@ -2293,12 +2293,23 @@ describe("runInit", () => {
 				'TMP_OUTPUT_DIR=".diagram/context/$(basename "$TMP_DIR")/diagrams"',
 			);
 			expect(refreshDiagrams).toContain(
-				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,.tmp-diagram-refresh-*/**,.diagram/context/tmp-refresh-*/**"',
+				'DEFAULT_DIAGRAM_PATTERNS="src/**/*.ts,scripts/**/*.js,scripts/**/*.cjs,scripts/**/*.mjs,e2e/**/*.ts"',
+			);
+			expect(refreshDiagrams).toContain(
+				'DEFAULT_EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/**,.tmp-diagram-refresh-*/**,.diagram/**,**/*.test.*,**/*.spec.*"',
 			);
 			expect(refreshDiagrams).toContain(
 				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"',
 			);
+			expect(refreshDiagrams).toContain('--patterns "$DIAGRAM_PATTERNS"');
 			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
+			expect(refreshDiagrams).toContain("--deterministic");
+			expect(refreshDiagrams).toContain(
+				'pnpm exec diagram "${DIAGRAM_GENERATE_ARGS[@]}"',
+			);
+			expect(refreshDiagrams).toContain(
+				'/System_Ext\\((ext_\\d+), "Version Control", "[^"]+"\\)/',
+			);
 			expect(refreshDiagrams).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
 			expect(refreshDiagrams).toContain("const sourceManifest = (() => {");
 			expect(refreshDiagrams).toContain("...sourceManifest,");

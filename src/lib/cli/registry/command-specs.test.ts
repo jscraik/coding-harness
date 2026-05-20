@@ -10,8 +10,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
-import * as driftGateCommand from "../../../commands/drift-gate.js";
 import * as gardenerCommand from "../../../commands/gardener.js";
+import * as driftGateModule from "../../drift-gate.js";
 import * as memoryGateModule from "../../memory-gate.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
@@ -783,7 +783,7 @@ describe("drift-gate execute validation", () => {
 	const spec = findSpec("drift-gate");
 
 	beforeEach(() => {
-		vi.spyOn(driftGateCommand, "runDriftGateCLI").mockReturnValue(0);
+		vi.spyOn(driftGateModule, "runDriftGateCLI").mockReturnValue(0);
 	});
 
 	afterEach(() => {
@@ -807,7 +807,7 @@ describe("drift-gate execute validation", () => {
 		]);
 
 		expect(result).toBe(0);
-		expect(driftGateCommand.runDriftGateCLI).toHaveBeenCalledWith({
+		expect(driftGateModule.runDriftGateCLI).toHaveBeenCalledWith({
 			mode: "advisory",
 			outPath: "artifacts/drift.json",
 			baselinePath: ".harness/drift-baseline.json",
@@ -822,14 +822,14 @@ describe("drift-gate execute validation", () => {
 		const result = spec.execute(["--seed-baseline", "--no-seed"]);
 
 		expect(result).toBe(0);
-		expect(driftGateCommand.runDriftGateCLI).toHaveBeenCalledWith({
+		expect(driftGateModule.runDriftGateCLI).toHaveBeenCalledWith({
 			seedBaseline: false,
 		});
 	});
 
 	it("returns 2 when --mode is an invalid value", () => {
 		expect(spec.execute(["--mode", "strict"])).toBe(2);
-		expect(driftGateCommand.runDriftGateCLI).not.toHaveBeenCalled();
+		expect(driftGateModule.runDriftGateCLI).not.toHaveBeenCalled();
 	});
 
 	it("returns 2 when value-bearing flags are missing values", () => {
@@ -842,7 +842,7 @@ describe("drift-gate execute validation", () => {
 		]) {
 			expect(spec.execute([flag])).toBe(2);
 		}
-		expect(driftGateCommand.runDriftGateCLI).not.toHaveBeenCalled();
+		expect(driftGateModule.runDriftGateCLI).not.toHaveBeenCalled();
 	});
 
 	it("does not return 2 for --mode advisory", async () => {

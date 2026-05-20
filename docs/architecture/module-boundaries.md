@@ -12,6 +12,7 @@ last_validated: 2026-05-20
 - [CLI Registry Boundaries](#cli-registry-boundaries)
 - [Verify Work Command Boundary](#verify-work-command-boundary)
 - [Memory Gate Command Boundary](#memory-gate-command-boundary)
+- [Drift Gate Command Boundary](#drift-gate-command-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
 - [Doctor Command Boundaries](#doctor-command-boundaries)
@@ -111,7 +112,7 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/drift-gate-command-spec.ts`
   - Drift mode, baseline seeding, artifact output, suppression, repository
     root, and JSON CLI option adapter stay local to the consistency-drift
-    command adapter.
+    command adapter and delegate through `src/lib/drift-gate.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -254,6 +255,27 @@ Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
 the command, facade, registry adapter, validator, and type contract, and fail if
 callers bypass `src/lib/memory-gate.ts` to import `src/lib/memory/*`
 internals.
+
+## Drift Gate Command Boundary
+
+Drift-gate is the consistency-drift control surface for governance artifacts.
+Its current implementation still lives behind the command facade, but callers in
+`src/lib/**` must enter through a stable public interface:
+
+- `src/commands/drift-gate.ts`
+  - Existing command facade and CLI export contract.
+- `src/lib/drift-gate.ts`
+  - Public facade for `runDriftGate`, `runDriftGateCLI`, and drift-gate result
+    and option types.
+- `src/lib/cli/registry/drift-gate-command-spec.ts`
+  - Registry flag adapter for mode, baseline seeding, output, suppression,
+    repository root, and JSON; delegates through the public facade.
+- `src/lib/output/normalise-drift-gate.ts`
+  - GateResult projection for drift findings and artifact evidence; imports
+    drift-gate types through the public facade.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the facade and fails if new `src/lib/**` callers import
+    `src/commands/drift-gate.ts` directly.
 
 ## Output Normalisation Boundaries
 

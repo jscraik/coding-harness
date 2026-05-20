@@ -566,7 +566,7 @@
                 <span>
                   Drift mode, baseline seeding, output, suppression,
                   repository root, and JSON projection stay behind a focused
-                  command-spec seam.
+                  command-spec seam and enter through src/lib/drift-gate.ts.
                 </span>
               </div>
               <div class="module doctor">
@@ -780,7 +780,51 @@
         </section>
 
         <section class="panel">
-          <h2>1d. Output Normalisation Seams</h2>
+          <h2>1d. Drift-Gate Consistency Control Surface</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/drift-gate.ts</strong>
+              <span>
+                Existing command facade and CLI export contract for consistency
+                drift checks.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module public">
+                <strong>src/lib/drift-gate.ts</strong>
+                <span>
+                  Public facade for runDriftGate, runDriftGateCLI, drift-gate
+                  options, reports, findings, and status types.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>drift-gate-command-spec.ts</strong>
+                <span>
+                  Registry flag adapter for mode, seeding, output, suppression,
+                  repository root, and JSON; delegates through the facade.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>normalise-drift-gate.ts</strong>
+                <span>
+                  GateResult projection for drift findings and artifact
+                  evidence; imports drift types through the facade.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Fails if new src/lib callers bypass src/lib/drift-gate.ts and
+                  import the command module directly.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>1e. Output Normalisation Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/lib/output/normalise.ts</strong>
@@ -802,7 +846,8 @@
                 <strong>normalise-drift-gate.ts</strong>
                 <span>
                   Drift findings, artifact evidence, and GateResult projection
-                  live behind a focused adapter seam.
+                  live behind a focused adapter seam and import drift-gate
+                  types through src/lib/drift-gate.ts.
                 </span>
               </div>
               <div class="module doctor">
@@ -1412,7 +1457,7 @@
               lives behind brainstorm-gate-command-spec.ts.
               Drift-gate mode, baseline seeding, output, suppression,
               repository root, and JSON projection now lives behind
-              drift-gate-command-spec.ts.
+              drift-gate-command-spec.ts and enters through src/lib/drift-gate.ts.
               CodeRabbit review evidence CLI option mapping now lives behind
               verify-coderabbit-command-spec.ts.
               Docs gate option projection now lives behind

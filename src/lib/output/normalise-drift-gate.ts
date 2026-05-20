@@ -1,7 +1,4 @@
-import type {
-	DriftFinding,
-	DriftGateResult,
-} from "../../commands/drift-gate.js";
+import type { DriftFinding, DriftGateResult } from "../drift-gate.js";
 import { buildGateResult, uniqueStrings } from "./normalise-core.js";
 import type { GateFinding, GateResult } from "./types.js";
 

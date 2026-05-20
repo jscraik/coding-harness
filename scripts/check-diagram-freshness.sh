@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 CHANGED_FILES_PATH=""
+DIAGRAM_REFRESH_TIMEOUT_SECONDS="${DIAGRAM_REFRESH_TIMEOUT_SECONDS:-90}"
 
 TRACKED_ARTIFACT_PATHS=(
 	".diagram"
@@ -97,6 +98,35 @@ tracked_artifact_files() {
 	done | awk 'NF { print }' | sort -u
 }
 
+refresh_timeout_command() {
+	if command -v timeout >/dev/null 2>&1; then
+		command -v timeout
+		return 0
+	fi
+	if command -v gtimeout >/dev/null 2>&1; then
+		command -v gtimeout
+		return 0
+	fi
+	return 1
+}
+
+run_refresh_with_timeout() {
+	local timeout_bin
+	if timeout_bin="$(refresh_timeout_command)"; then
+		"$timeout_bin" "$DIAGRAM_REFRESH_TIMEOUT_SECONDS" bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
+		return $?
+	fi
+
+	bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
+}
+
+restore_generated_artifact_edits() {
+	if (( ${#tracked_files[@]} == 0 )); then
+		return 0
+	fi
+	restore_tracked_artifact_files "${tracked_files[@]}"
+}
+
 normalized_checksum() {
 	local file="$1"
 	local rel_path="$2"
@@ -158,6 +188,41 @@ NODE
 			shasum -a 256 "$file" | awk '{print $1}'
 			;;
 	esac
+}
+
+artifact_matches_head_semantically() {
+	local rel_path="$1"
+	local abs_path="$REPO_ROOT/$rel_path"
+	local head_tmp
+	local worktree_checksum
+	local head_checksum
+
+	[[ -f "$abs_path" ]] || return 1
+	head_tmp="$(mktemp)"
+	if ! git -C "$REPO_ROOT" show "HEAD:$rel_path" > "$head_tmp" 2>/dev/null; then
+		rm -f "$head_tmp"
+		return 1
+	fi
+
+	worktree_checksum="$(normalized_checksum "$abs_path" "$rel_path")"
+	head_checksum="$(normalized_checksum "$head_tmp" "$rel_path")"
+	rm -f "$head_tmp"
+	[[ "$worktree_checksum" == "$head_checksum" ]]
+}
+
+restore_tracked_artifact_files() {
+	local rel_path
+	local abs_path
+	local restore_failed=0
+
+	for rel_path in "$@"; do
+		abs_path="$REPO_ROOT/$rel_path"
+		if ! git -C "$REPO_ROOT" show "HEAD:$rel_path" > "$abs_path" 2>/dev/null; then
+			restore_failed=1
+		fi
+	done
+
+	return "$restore_failed"
 }
 
 resolve_diff_base() {
@@ -236,14 +301,36 @@ preexisting_worktree_artifact_edits=()
 if (( ${#tracked_files[@]} > 0 )); then
 	for tracked_file in "${tracked_files[@]}"; do
 		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file"; then
+			if artifact_matches_head_semantically "$tracked_file"; then
+				continue
+			fi
 			preexisting_worktree_artifact_edits+=("$tracked_file")
 		fi
 	done
 fi
 
+if (( ${#preexisting_worktree_artifact_edits[@]} > 0 )); then
+	echo "Error: diagram artifacts have pre-existing worktree edits."
+	echo "Clean, stage, or commit these files before running diagram freshness so refresh cannot overwrite them:"
+	printf '  - %s\n' "${preexisting_worktree_artifact_edits[@]}"
+	exit 1
+fi
+
 echo "Refreshing architecture diagrams for changed sensitive paths..."
 before_snapshot="$(snapshot_artifacts)"
-bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
+set +e
+run_refresh_with_timeout
+refresh_status=$?
+set -e
+if [[ "$refresh_status" -ne 0 ]]; then
+	restore_generated_artifact_edits
+	if [[ "$refresh_status" -eq 124 ]]; then
+		echo "Error: architecture diagram refresh timed out after ${DIAGRAM_REFRESH_TIMEOUT_SECONDS}s."
+	else
+		echo "Error: architecture diagram refresh failed with exit code ${refresh_status}."
+	fi
+	exit "$refresh_status"
+fi
 after_snapshot="$(snapshot_artifacts)"
 
 if [[ "$before_snapshot" != "$after_snapshot" ]]; then
@@ -276,7 +363,10 @@ if (( ${#tracked_files[@]} > 0 )); then
 fi
 
 if (( ${#files_to_restore[@]} > 0 )); then
-	git -C "$REPO_ROOT" restore --worktree -- "${files_to_restore[@]}" >/dev/null 2>&1 || true
+	if ! restore_tracked_artifact_files "${files_to_restore[@]}"; then
+		echo "Error: diagram freshness passed but could not restore generated artifact edits." >&2
+		exit 1
+	fi
 fi
 
 echo "Diagram freshness check passed."
