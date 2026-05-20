@@ -482,16 +482,19 @@ Review gate is a command facade plus focused validation and artifact seams:
     reviewer independence, review-context readiness, authz preflight, and
     terminal output.
 - `src/lib/review-gate/required-checks.ts`
-  - Required-check name resolution, required-check manifest loading,
-    provider-source authority matching, alias resolution, and check-run blocker
-    projection.
+  - Required-check name resolution, alias resolution, check-run source matching,
+    and check-run blocker projection.
+- `src/lib/review-gate/required-check-sources.ts`
+  - Provider identity normalization, explicit external-check source authority,
+    and active-provider source constraint assembly.
 - `src/lib/review-gate/required-check-manifest.ts`
   - Required-check manifest path resolution, JSON loading, normalization, and
     manifest-specific validation errors.
 
 The command core should stay about orchestration and policy composition.
 Required-check identity, aliases, and source-authority constraints stay in
-`required-checks.ts`; manifest parsing stays in `required-check-manifest.ts`
+`required-checks.ts` and `required-check-sources.ts`; manifest parsing stays in
+`required-check-manifest.ts`
 so agents can adjust CI provider mapping without changing the main review-gate
 control flow.
 
@@ -740,11 +743,14 @@ Threshold policy:
 - `src/commands/next-runner.ts` must remain a harness-next decision producer
   seam (`<= 250` lines).
 - `src/lib/review-gate/required-checks.ts` must remain a review-gate
-  required-check resolution seam (`<= 350` lines) for check-name, alias,
-  manifest, and source-authority logic.
+	  required-check resolution seam (`<= 350` lines) for check-name, alias,
+	  source matching, and blocker projection.
+- `src/lib/review-gate/required-check-sources.ts` must remain a review-gate
+	  source-authority seam (`<= 220` lines) for provider identity normalization
+	  and active/external source constraints.
 - `src/lib/review-gate/required-check-manifest.ts` must remain a review-gate
-  manifest seam (`<= 95` lines) for path resolution, loading, and validation
-  errors.
+	  manifest seam (`<= 95` lines) for path resolution, loading, and validation
+	  errors.
 - `src/commands/replay.ts` must remain a replay command facade (`<= 330`
   lines); canonical run-record and recovery metadata moves into
   `replay-run-record.ts`.

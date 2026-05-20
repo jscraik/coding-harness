@@ -237,7 +237,7 @@ export function writeMergeQueueWindow(
 		const signature = signContent(windowContent, signingKeyResult.key);
 		mkdirSync(dirname(windowPath), { recursive: true });
 		writeFileSync(windowPath, windowContent);
-		writeFileSync(signaturePath, `${signature}\\n`);
+		writeFileSync(signaturePath, `${signature}\n`);
 		return { ok: true };
 	} catch (error) {
 		return {

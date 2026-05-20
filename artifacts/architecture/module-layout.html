@@ -1063,6 +1063,43 @@
         </section>
 
         <section class="panel">
+          <h2>7A. Review Gate Required Check Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/lib/review-gate/required-checks.ts</strong>
+              <span>
+                Public required-check seam for check-name resolution, alias
+                fan-in, check-run lookup, and blocker projection.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>required-check-sources.ts</strong>
+                <span>
+                  Provider identity normalization and source-authority
+                  constraints for active-provider and explicit external checks.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>required-check-manifest.ts</strong>
+                <span>
+                  Manifest path resolution, JSON loading, normalization, and
+                  manifest-specific validation errors.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets required-check source authority and keeps callers on
+                  the public review-gate seam.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>8. Review Gate Decision Packet Seams</h2>
           <div class="doctor-grid">
             <div class="module public">

@@ -1,7 +1,16 @@
 import type { HarnessContract } from "../contract/types.js";
 import { findReviewCheckRun } from "../github/check-run.js";
+import type { ReviewCheckResult } from "../github/check-run.js";
 import type { CheckRun } from "../github/client.js";
+import {
+	describeExpectedSource,
+	hasCheckRunSourceMetadata,
+	matchesExpectedSource,
+} from "./required-check-sources.js";
+import type { RequiredCheckSourceConstraint } from "./required-check-sources.js";
 import { loadNormalizedRequiredChecksManifest } from "./required-check-manifest.js";
+export { resolveRequiredCheckSources } from "./required-check-sources.js";
+export type { RequiredCheckSourceConstraint } from "./required-check-sources.js";
 
 export const DEFAULT_REVIEW_CHECK_NAME = "pr-pipeline";
 export const LEGACY_REVIEW_CHECK_NAME_FALLBACKS = [
@@ -9,69 +18,58 @@ export const LEGACY_REVIEW_CHECK_NAME_FALLBACKS = [
 	"code-review",
 ] as const;
 
-/** Required-check provider identity constraints from the active CI manifest. */
-export interface RequiredCheckSourceConstraint {
-	providerSlugs: Set<string>;
-	sourceAppIds: Set<string>;
+/** Same-name check run found from a source that is not authoritative. */
+export interface ReviewCheckSourceMismatch {
+	checkName: string;
+	expectedSource?: string | undefined;
 }
 
-function normalizeConstraintSourceToken(value: string): string {
-	return value
-		.trim()
-		.toLowerCase()
-		.replace(/[\s_]+/g, "-")
-		.replace(/-+/g, "-")
-		.replace(/^-+|-+$/g, "");
+/** Review check resolution plus diagnostic details for source-authority failures. */
+export interface ReviewCheckResolution {
+	checkResult: ReviewCheckResult;
+	resolvedCheckName: string;
+	sourceMismatch?: ReviewCheckSourceMismatch | undefined;
 }
 
-function normalizeSourceToken(
-	value: string | number | undefined,
-): string | undefined {
-	if (typeof value === "number") {
-		return String(value);
+function resolveConstrainedCheckRun(
+	checkRuns: CheckRun[],
+	checkName: string,
+	pullRequestHeadSha: string,
+	sourceConstraint: RequiredCheckSourceConstraint | undefined,
+): {
+	checkResult: ReviewCheckResult;
+	sourceMismatch?: ReviewCheckSourceMismatch | undefined;
+} {
+	const checkResult = findReviewCheckRun(checkRuns, checkName, {
+		headSha: pullRequestHeadSha,
+		...(sourceConstraint?.providerSlugs
+			? { providerSlugs: sourceConstraint.providerSlugs }
+			: {}),
+		...(sourceConstraint?.sourceAppIds
+			? { sourceAppIds: sourceConstraint.sourceAppIds }
+			: {}),
+	});
+	if (checkResult.found || !sourceConstraint) {
+		return { checkResult };
 	}
-	if (typeof value !== "string") {
-		return undefined;
-	}
-	const normalized = normalizeConstraintSourceToken(value);
-	return normalized.length > 0 ? normalized : undefined;
-}
 
-function matchesExpectedSource(
-	run: CheckRun,
-	constraint: RequiredCheckSourceConstraint | undefined,
-): boolean {
-	if (!constraint) {
-		return true;
+	const unconstrainedCheckResult = findReviewCheckRun(checkRuns, checkName, {
+		headSha: pullRequestHeadSha,
+	});
+	if (!unconstrainedCheckResult.found) {
+		return { checkResult };
+	}
+	if (!hasCheckRunSourceMetadata(unconstrainedCheckResult.checkRun)) {
+		return { checkResult: unconstrainedCheckResult };
 	}
 
-	const appSlug = normalizeSourceToken(run.app?.slug);
-	const appId = normalizeSourceToken(run.app?.id);
-	const appName = normalizeSourceToken(run.app?.name);
-
-	if (!appSlug && !appId && !appName) {
-		return false;
-	}
-	return Boolean(
-		(appSlug && constraint.providerSlugs.has(appSlug)) ||
-			(appSlug && constraint.sourceAppIds.has(appSlug)) ||
-			(appId && constraint.sourceAppIds.has(appId)) ||
-			(appName && constraint.providerSlugs.has(appName)) ||
-			(appName && constraint.sourceAppIds.has(appName)),
-	);
-}
-
-function describeExpectedSource(
-	constraint: RequiredCheckSourceConstraint | undefined,
-): string | undefined {
-	if (!constraint) {
-		return undefined;
-	}
-	const expected = [
-		...constraint.providerSlugs.values(),
-		...constraint.sourceAppIds.values(),
-	].filter((value, index, values) => values.indexOf(value) === index);
-	return expected.length > 0 ? expected.join(", ") : undefined;
+	return {
+		checkResult,
+		sourceMismatch: {
+			checkName,
+			expectedSource: describeExpectedSource(sourceConstraint),
+		},
+	};
 }
 
 /** Resolve the most authoritative review-gate check run for the requested check. */
@@ -80,10 +78,7 @@ export function resolveReviewCheckResult(
 	requestedCheckName: string,
 	pullRequestHeadSha: string,
 	requiredCheckSources?: Map<string, RequiredCheckSourceConstraint>,
-): {
-	checkResult: ReturnType<typeof findReviewCheckRun>;
-	resolvedCheckName: string;
-} {
+): ReviewCheckResolution {
 	const candidates = [requestedCheckName];
 	const canonicalFallbackCandidates = new Set<string>([
 		DEFAULT_REVIEW_CHECK_NAME,
@@ -100,22 +95,16 @@ export function resolveReviewCheckResult(
 		}
 	}
 
+	let firstSourceMismatch: ReviewCheckSourceMismatch | undefined;
 	for (const candidateCheckName of candidates) {
 		const sourceConstraint = requiredCheckSources?.get(candidateCheckName);
-		let checkResult = findReviewCheckRun(checkRuns, candidateCheckName, {
-			headSha: pullRequestHeadSha,
-			...(sourceConstraint?.providerSlugs
-				? { providerSlugs: sourceConstraint.providerSlugs }
-				: {}),
-			...(sourceConstraint?.sourceAppIds
-				? { sourceAppIds: sourceConstraint.sourceAppIds }
-				: {}),
-		});
-		if (!checkResult.found && sourceConstraint) {
-			checkResult = findReviewCheckRun(checkRuns, candidateCheckName, {
-				headSha: pullRequestHeadSha,
-			});
-		}
+		const { checkResult, sourceMismatch } = resolveConstrainedCheckRun(
+			checkRuns,
+			candidateCheckName,
+			pullRequestHeadSha,
+			sourceConstraint,
+		);
+		firstSourceMismatch ??= sourceMismatch;
 		if (checkResult.found) {
 			return {
 				checkResult,
@@ -126,24 +115,20 @@ export function resolveReviewCheckResult(
 
 	const fallbackSourceConstraint =
 		requiredCheckSources?.get(requestedCheckName);
-	let fallbackCheckResult = findReviewCheckRun(checkRuns, requestedCheckName, {
-		headSha: pullRequestHeadSha,
-		...(fallbackSourceConstraint?.providerSlugs
-			? { providerSlugs: fallbackSourceConstraint.providerSlugs }
-			: {}),
-		...(fallbackSourceConstraint?.sourceAppIds
-			? { sourceAppIds: fallbackSourceConstraint.sourceAppIds }
-			: {}),
-	});
-	if (!fallbackCheckResult.found && fallbackSourceConstraint) {
-		fallbackCheckResult = findReviewCheckRun(checkRuns, requestedCheckName, {
-			headSha: pullRequestHeadSha,
-		});
-	}
+	const {
+		checkResult: fallbackCheckResult,
+		sourceMismatch: fallbackSourceMismatch,
+	} = resolveConstrainedCheckRun(
+		checkRuns,
+		requestedCheckName,
+		pullRequestHeadSha,
+		fallbackSourceConstraint,
+	);
 
 	return {
 		checkResult: fallbackCheckResult,
 		resolvedCheckName: requestedCheckName,
+		sourceMismatch: firstSourceMismatch ?? fallbackSourceMismatch,
 	};
 }
 
@@ -281,55 +266,4 @@ export function resolveRequiredCheckAliases(
 		aliases.set(gate.displayName, existing);
 	}
 	return aliases;
-}
-
-/** Resolve source-authority constraints for required checks from the active provider manifest. */
-export function resolveRequiredCheckSources(
-	contract: HarnessContract,
-	contractPath?: string,
-): Map<string, RequiredCheckSourceConstraint> {
-	const sources = new Map<string, RequiredCheckSourceConstraint>();
-	const normalizedManifest = loadNormalizedRequiredChecksManifest(
-		contract,
-		contractPath,
-	);
-	if (!normalizedManifest) {
-		return sources;
-	}
-
-	for (const gate of normalizedManifest.gates) {
-		if (
-			gate.enabled === false ||
-			gate.class !== "required" ||
-			gate.provider !== normalizedManifest.activeProvider
-		) {
-			continue;
-		}
-
-		const normalizedSourceAppSlug = normalizeConstraintSourceToken(
-			gate.sourceAppSlug,
-		);
-		const normalizedSourceAppId = normalizeConstraintSourceToken(
-			gate.sourceAppId,
-		);
-		const keys = [
-			gate.displayName,
-			...(gate.githubCheckName ? [gate.githubCheckName] : []),
-		];
-		for (const key of keys) {
-			const existing = sources.get(key) ?? {
-				providerSlugs: new Set<string>(),
-				sourceAppIds: new Set<string>(),
-			};
-			if (normalizedSourceAppSlug.length > 0) {
-				existing.providerSlugs.add(normalizedSourceAppSlug);
-			}
-			if (normalizedSourceAppId.length > 0) {
-				existing.sourceAppIds.add(normalizedSourceAppId);
-			}
-			sources.set(key, existing);
-		}
-	}
-
-	return sources;
 }

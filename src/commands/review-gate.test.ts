@@ -765,6 +765,7 @@ describe("runReviewGate", () => {
 				status: "completed",
 				conclusion: "success",
 				head_sha: validSha,
+				app: { id: 100, slug: "circleci", name: "CircleCI" },
 			},
 		];
 		mockGitHubClientImplementation(() =>
@@ -3745,6 +3746,7 @@ describe("runReviewGate", () => {
 					status: "completed",
 					conclusion: "success",
 					head_sha: validSha,
+					app: { id: 100, slug: "circleci", name: "CircleCI" },
 				},
 			];
 
@@ -4038,6 +4040,7 @@ describe("runReviewGate", () => {
 					status: "completed",
 					conclusion: "success",
 					head_sha: validSha,
+					app: { id: 100, slug: "circleci", name: "CircleCI" },
 				},
 			];
 
@@ -4428,6 +4431,210 @@ describe("runReviewGate", () => {
 			if (result.ok) {
 				expect(result.output.verified).toBe(true);
 				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks when the primary review check name exists only from a non-authoritative provider source", async () => {
+		const tempDir = mkdtempSync(
+			join(tmpdir(), "review-gate-primary-source-mismatch-"),
+		);
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "review-check",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^review-check$",
+							class: "required",
+							githubCheckName: "review-check",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "review-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: { id: 200, slug: "github-actions", name: "GitHub Actions" },
+				},
+			];
+
+			mockGitHubClientImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(false);
+				expect(result.output.blockers.join(" ")).toContain(
+					"Review check 'review-check' was found, but only from non-authoritative providers",
+				);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks explicitly required external checks from non-authoritative provider sources", async () => {
+		const tempDir = mkdtempSync(
+			join(tmpdir(), "review-gate-external-source-mismatch-"),
+		);
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "semgrep-cloud-platform/scan",
+							sourceAppSlug: "semgrep-cloud-platform",
+							sourceAppId: "semgrep-cloud-platform",
+							externalIdPattern: "^semgrep-cloud-platform/scan$",
+							class: "required",
+							githubCheckName: "semgrep-cloud-platform/scan",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["semgrep-cloud-platform/scan"],
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "review-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+				},
+				{
+					id: 20,
+					name: "semgrep-cloud-platform/scan",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: { id: 200, slug: "github-actions", name: "GitHub Actions" },
+				},
+			];
+
+			mockGitHubClientImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(false);
+				expect(result.output.blockers.join(" ")).toContain(
+					"Required check 'semgrep-cloud-platform/scan' was found, but only from non-authoritative providers",
+				);
 			}
 		} finally {
 			rmSync(tempDir, { recursive: true, force: true });

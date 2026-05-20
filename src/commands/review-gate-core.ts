@@ -219,6 +219,15 @@ function withReadinessFields(
 	};
 }
 
+function formatReviewCheckSourceMismatchBlocker(
+	checkName: string,
+	expectedSource?: string,
+): string {
+	return expectedSource
+		? `Review check '${checkName}' was found, but only from non-authoritative providers (expected source: ${expectedSource})`
+		: `Review check '${checkName}' was found, but only from non-authoritative providers`;
+}
+
 interface ApprovalResult {
 	passed: boolean;
 	blockers: string[];
@@ -910,6 +919,7 @@ export async function runReviewGate(
 		const requiredCheckSources = resolveRequiredCheckSources(
 			contract,
 			options.contractPath,
+			reviewPolicy.requiredChecks ?? [],
 		);
 
 		if (pullRequestHeadSha.toLowerCase() !== options.headSha.toLowerCase()) {
@@ -925,13 +935,44 @@ export async function runReviewGate(
 		// Poll for check run completion with timeout
 		while (Date.now() - startTime < timeoutMs) {
 			const checkRuns = await client.listCheckRunsForRef(pullRequestHeadSha);
-			const { checkResult, resolvedCheckName } = resolveReviewCheckResult(
-				checkRuns,
-				requestedCheckName,
-				pullRequestHeadSha,
-				requiredCheckSources,
-			);
+			const { checkResult, resolvedCheckName, sourceMismatch } =
+				resolveReviewCheckResult(
+					checkRuns,
+					requestedCheckName,
+					pullRequestHeadSha,
+					requiredCheckSources,
+				);
 			lastResolvedCheckName = resolvedCheckName;
+			if (sourceMismatch) {
+				return {
+					ok: true,
+					output: withReadinessFields(
+						{
+							verified: false,
+							headSha: pullRequestHeadSha,
+							checkStatus: "not_found",
+							needsRerun: true,
+						},
+						{
+							checkName: resolvedCheckName,
+							additionalBlockers: [
+								formatReviewCheckSourceMismatchBlocker(
+									sourceMismatch.checkName,
+									sourceMismatch.expectedSource,
+								),
+								...planTraceability.blockers,
+								...reviewContext.blockers,
+								...filteredDecisionQuestionBlockers,
+							],
+							planTraceability: {
+								status: planTraceability.status,
+								planIds: planTraceability.planIds,
+							},
+							reviewContext,
+						},
+					),
+				};
+			}
 
 			if (!checkResult.found) {
 				const elapsedMs = Date.now() - startTime;

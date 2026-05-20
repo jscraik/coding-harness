@@ -367,6 +367,12 @@ const REVIEW_GATE_DECISION_PACKET_RATCHETS = [
 			"Review-gate required-check seam must stay focused on check-name, alias, manifest, and source-authority resolution.",
 	},
 	{
+		path: "src/lib/review-gate/required-check-sources.ts",
+		maxLines: 220,
+		reason:
+			"Review-gate required-check source seam must stay focused on provider identity normalization and source-authority constraint resolution.",
+	},
+	{
 		path: "src/lib/review-gate/decision-packet.ts",
 		maxLines: 390,
 		reason:
