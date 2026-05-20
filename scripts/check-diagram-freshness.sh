@@ -177,6 +177,26 @@ NODE
 	esac
 }
 
+artifact_matches_head_semantically() {
+	local rel_path="$1"
+	local abs_path="$REPO_ROOT/$rel_path"
+	local head_tmp
+	local worktree_checksum
+	local head_checksum
+
+	[[ -f "$abs_path" ]] || return 1
+	head_tmp="$(mktemp)"
+	if ! git -C "$REPO_ROOT" show "HEAD:$rel_path" > "$head_tmp" 2>/dev/null; then
+		rm -f "$head_tmp"
+		return 1
+	fi
+
+	worktree_checksum="$(normalized_checksum "$abs_path" "$rel_path")"
+	head_checksum="$(normalized_checksum "$head_tmp" "$rel_path")"
+	rm -f "$head_tmp"
+	[[ "$worktree_checksum" == "$head_checksum" ]]
+}
+
 resolve_diff_base() {
 	if git -C "$REPO_ROOT" rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
 		git -C "$REPO_ROOT" merge-base HEAD '@{upstream}'
@@ -253,6 +273,9 @@ preexisting_worktree_artifact_edits=()
 if (( ${#tracked_files[@]} > 0 )); then
 	for tracked_file in "${tracked_files[@]}"; do
 		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file"; then
+			if artifact_matches_head_semantically "$tracked_file"; then
+				continue
+			fi
 			preexisting_worktree_artifact_edits+=("$tracked_file")
 		fi
 	done
