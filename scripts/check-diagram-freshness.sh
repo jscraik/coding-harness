@@ -124,7 +124,7 @@ restore_generated_artifact_edits() {
 	if (( ${#tracked_files[@]} == 0 )); then
 		return 0
 	fi
-	git -C "$REPO_ROOT" restore --worktree -- "${tracked_files[@]}" >/dev/null 2>&1 || true
+	restore_tracked_artifact_files "${tracked_files[@]}"
 }
 
 normalized_checksum() {
@@ -208,6 +208,21 @@ artifact_matches_head_semantically() {
 	head_checksum="$(normalized_checksum "$head_tmp" "$rel_path")"
 	rm -f "$head_tmp"
 	[[ "$worktree_checksum" == "$head_checksum" ]]
+}
+
+restore_tracked_artifact_files() {
+	local rel_path
+	local abs_path
+	local restore_failed=0
+
+	for rel_path in "$@"; do
+		abs_path="$REPO_ROOT/$rel_path"
+		if ! git -C "$REPO_ROOT" show "HEAD:$rel_path" > "$abs_path" 2>/dev/null; then
+			restore_failed=1
+		fi
+	done
+
+	return "$restore_failed"
 }
 
 resolve_diff_base() {
@@ -348,7 +363,10 @@ if (( ${#tracked_files[@]} > 0 )); then
 fi
 
 if (( ${#files_to_restore[@]} > 0 )); then
-	git -C "$REPO_ROOT" restore --worktree -- "${files_to_restore[@]}" >/dev/null 2>&1 || true
+	if ! restore_tracked_artifact_files "${files_to_restore[@]}"; then
+		echo "Error: diagram freshness passed but could not restore generated artifact edits." >&2
+		exit 1
+	fi
 fi
 
 echo "Diagram freshness check passed."

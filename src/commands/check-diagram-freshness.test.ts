@@ -282,6 +282,14 @@ jq -n --tab \
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
 		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
 		expect(result.stdout).toContain("Diagram freshness check passed.");
+		const status = run(root, "git", [
+			"status",
+			"--short",
+			"--",
+			".diagram/manifest.json",
+		]);
+		expect(status.status).toBe(0);
+		expect(status.stdout).toBe("");
 	});
 
 	it("passes when flat manifest entries only change volatile metadata", () => {
