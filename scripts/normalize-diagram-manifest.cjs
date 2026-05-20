@@ -118,6 +118,8 @@ const dedupeSubgraphNodeIds = (content, diagramName) => {
 		}
 		const classIds = classMatch[2]
 			.split(",")
+			.map((id) => id.trim())
+			.filter((id) => id.length > 0)
 			.flatMap((id) => rewrittenIds.get(id) ?? [id]);
 		lines[lineIndex] =
 			`${classMatch[1]}${[...new Set(classIds)].join(",")}${classMatch[3]}`;

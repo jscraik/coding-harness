@@ -153,6 +153,7 @@ The freshness gate compares the standalone `.diagram/*.mmd` artifacts for semant
 - If a suffix is present, the canonical key is the matched 8-hex fingerprint converted to lower case.
 - If no suffix is present, normalization falls back to `rawId.toLowerCase()`.
 - Deterministic ordering uses this canonical key, so output ordering can change when fingerprint suffixes or raw node IDs change.
+- Duplicate-node rewrites must carry a rename map through dependent Mermaid selectors such as `class old_id className`; generated diagrams are stale if class selectors reference node IDs that no longer appear after deduplication.
 
 ## Stop conditions
 

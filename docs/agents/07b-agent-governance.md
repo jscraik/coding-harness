@@ -37,6 +37,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
+- generated diagram identity rewrites should update every dependent Mermaid reference, including class selectors, and keep AGENTS, the architecture bootstrap guide, this guide, generated diagram artifacts, and regression coverage synchronized when docs-gate reports architecture-context or agent-governance surfaces
 - Flow Ops closure-evidence and outcome-closeout validation changes should keep
   the agent-governance handoff and closeout expectations in this guide
   synchronized with the implementation and required documentation surfaces so
