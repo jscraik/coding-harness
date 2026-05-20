@@ -18,7 +18,6 @@ import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
-import { runDoctorCLI } from "../../../commands/doctor.js";
 import { runDriftGateCLI } from "../../../commands/drift-gate.js";
 import { runEjectCLI } from "../../../commands/eject.js";
 import { runFleetPlanCLI } from "../../../commands/fleet-plan.js";
@@ -84,6 +83,7 @@ import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
+import { createDoctorCommandSpec } from "./doctor-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createHealthCommandSpec } from "./health-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
@@ -170,15 +170,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runAuditCLI(args, getVersion);
 		},
 	},
-	{
-		name: "doctor",
-		summary: "Diagnose harness installation and environment issues",
-		example: "doctor --json",
-		errorLabel: "Doctor Error",
-		execute: (args) => {
-			return runDoctorCLI(args, getVersion);
-		},
-	},
+	createDoctorCommandSpec(getVersion),
 	createHealthCommandSpec(getVersion),
 	{
 		name: "eject",
