@@ -31,6 +31,7 @@ describe("verify-work command", () => {
 	it("returns PRECONDITION_FAILED when scripts/verify-work.sh is missing", () => {
 		const exitCode = runVerifyWorkCLI({ repoRoot, fast: true });
 		expect(exitCode).toBe(EXIT_CODES.PRECONDITION_FAILED);
+		expect(exitCode).not.toBe(EXIT_CODES.FAILED);
 	});
 
 	it("executes wrapper with passthrough flags and sanitized no-delegate env", () => {
@@ -128,7 +129,7 @@ printf '%s\\n' "$@" > "${argsLogPath}"
 		expect(args).not.toContain("--project-governance");
 	});
 
-	it("maps SIGTERM termination to the standard failure exit code", () => {
+	it("maps SIGTERM termination to the conventional signal exit code", () => {
 		const scriptsDir = join(repoRoot, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
 		const wrapperPath = join(scriptsDir, "verify-work.sh");
@@ -143,10 +144,10 @@ kill -TERM $$
 		chmodSync(wrapperPath, 0o755);
 
 		const exitCode = runVerifyWorkCLI({ repoRoot });
-		expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED);
+		expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED + 15);
 	});
 
-	it("maps SIGKILL termination to the standard failure exit code", () => {
+	it("maps SIGKILL termination to the conventional signal exit code", () => {
 		const scriptsDir = join(repoRoot, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
 		const wrapperPath = join(scriptsDir, "verify-work.sh");
@@ -161,7 +162,7 @@ kill -KILL $$
 		chmodSync(wrapperPath, 0o755);
 
 		const exitCode = runVerifyWorkCLI({ repoRoot });
-		expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED);
+		expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED + 9);
 	});
 
 	it("returns USAGE_ERROR and does not execute wrapper when both --all and --changed-only are set", () => {
@@ -305,6 +306,9 @@ exit 42
 			expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED);
 			expect(errorSpy).toHaveBeenCalledWith(
 				"verify-work terminated by signal: NOT_A_REAL_SIGNAL",
+			);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: failed to map signal exit code for NOT_A_REAL_SIGNAL",
 			);
 		} finally {
 			spawnSpy.mockRestore();
