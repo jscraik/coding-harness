@@ -23,7 +23,6 @@ import { runGapCaseCLI } from "../../../commands/gap-case.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
-import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
@@ -81,6 +80,7 @@ import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
 import { createLicenseGateCommandSpec } from "./license-gate-command-spec.js";
 import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
+import { createMemoryGateCommandSpec } from "./memory-gate-command-spec.js";
 import { createNextCommandSpec } from "./next-command-spec.js";
 import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
@@ -179,29 +179,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	},
 	createReplayCommandSpec(),
 	createGardenerCommandSpec(),
-	{
-		name: "memory-gate",
-		summary: "Validate local-memory workflow compliance",
-		errorLabel: "Memory Gate Error",
-		execute: (args) => {
-			const options: {
-				memoryPath?: string;
-				forjamiePath?: string;
-				json?: boolean;
-				metricsPath?: string;
-			} = {};
-
-			if (args.includes("--json")) options.json = true;
-			const memoryArg = getFlagValue(args, args.indexOf("--memory"));
-			if (memoryArg) options.memoryPath = memoryArg;
-			const forjamieArg = getFlagValue(args, args.indexOf("--forjamie"));
-			if (forjamieArg) options.forjamiePath = forjamieArg;
-			const metricsArg = getFlagValue(args, args.indexOf("--metrics"));
-			if (metricsArg) options.metricsPath = metricsArg;
-
-			return runMemoryGateCLI(options);
-		},
-	},
+	createMemoryGateCommandSpec(),
 	{
 		name: "silent-error",
 		summary: "Detect silent error handling anti-patterns",

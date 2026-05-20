@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as gardenerCommand from "../../../commands/gardener.js";
+import * as memoryGateCommand from "../../../commands/memory-gate.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import { COMMAND_SPECS } from "./command-specs.js";
@@ -445,6 +446,45 @@ contact_links:
 				}
 			}
 		});
+	});
+});
+
+describe("memory-gate execute parsing", () => {
+	const spec = findSpec("memory-gate");
+
+	beforeEach(() => {
+		vi.spyOn(memoryGateCommand, "runMemoryGateCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects memory, forjamie, metrics, and json flags into the memory-gate command", () => {
+		const result = spec.execute([
+			"--memory",
+			".harness/memory/LEARNINGS.md",
+			"--forjamie",
+			"codex/FORJAMIE.md",
+			"--metrics",
+			"artifacts/memory-metrics.json",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(memoryGateCommand.runMemoryGateCLI).toHaveBeenCalledWith({
+			memoryPath: ".harness/memory/LEARNINGS.md",
+			forjamiePath: "codex/FORJAMIE.md",
+			metricsPath: "artifacts/memory-metrics.json",
+			json: true,
+		});
+	});
+
+	it("uses defaults when optional memory-gate paths are absent", () => {
+		const result = spec.execute([]);
+
+		expect(result).toBe(0);
+		expect(memoryGateCommand.runMemoryGateCLI).toHaveBeenCalledWith({});
 	});
 });
 

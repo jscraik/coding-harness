@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_440,
+		maxLines: 1_420,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/memory-gate-command-spec.ts",
+		maxLines: 35,
+		reason:
+			"Memory gate command spec must stay focused on local-memory path option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/gardener-command-spec.ts",
@@ -624,6 +630,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/health-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
+	"src/lib/cli/registry/memory-gate-command-spec.ts",
 	"src/lib/cli/registry/next-command-spec.ts",
 	"src/lib/cli/registry/org-audit-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
@@ -713,6 +720,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./health-command-spec.js",
 	"./license-gate-command-spec.js",
 	"./local-memory-preflight-command-spec.js",
+	"./memory-gate-command-spec.js",
 	"./next-command-spec.js",
 	"./org-audit-command-spec.js",
 	"./preflight-gate-command-spec.js",
