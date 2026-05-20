@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import { COMMAND_SPECS } from "./command-specs.js";
 import type { CommandSpec } from "./types.js";
@@ -264,6 +265,63 @@ describe("verify-work execute validation", () => {
 		expect(
 			spec.execute(["--project-governance", "--workspace-governance"]),
 		).toBe(2);
+	});
+});
+
+describe("replay execute parsing", () => {
+	const spec = findSpec("replay");
+
+	beforeEach(() => {
+		vi.spyOn(replayCommand, "runReplayCLI").mockResolvedValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects replay listing flags into the replay command", async () => {
+		const result = await Promise.resolve(
+			spec.execute(["--list", "--trace-dir", "artifacts/traces", "--json"]),
+		);
+
+		expect(result).toBe(0);
+		expect(replayCommand.runReplayCLI).toHaveBeenCalledWith({
+			json: true,
+			dryRun: false,
+			list: true,
+			traceDir: "artifacts/traces",
+		});
+	});
+
+	it("prefers --trace-id over a positional trace id", async () => {
+		const result = await Promise.resolve(
+			spec.execute([
+				"positional-trace",
+				"--trace-id",
+				"flag-trace",
+				"--dry-run",
+			]),
+		);
+
+		expect(result).toBe(0);
+		expect(replayCommand.runReplayCLI).toHaveBeenCalledWith({
+			json: false,
+			dryRun: true,
+			list: false,
+			traceId: "flag-trace",
+		});
+	});
+
+	it("uses the first positional token as trace id when --trace-id is absent", async () => {
+		const result = await Promise.resolve(spec.execute(["positional-trace"]));
+
+		expect(result).toBe(0);
+		expect(replayCommand.runReplayCLI).toHaveBeenCalledWith({
+			json: false,
+			dryRun: false,
+			list: false,
+			traceId: "positional-trace",
+		});
 	});
 });
 

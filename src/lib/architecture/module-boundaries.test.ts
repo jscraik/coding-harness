@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_545,
+		maxLines: 1_470,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/replay-command-spec.ts",
+		maxLines: 40,
+		reason:
+			"Replay command spec must stay focused on replay trace option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/fleet-plan-command-spec.ts",
@@ -614,6 +620,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/next-command-spec.ts",
 	"src/lib/cli/registry/org-audit-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
+	"src/lib/cli/registry/replay-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
 	"src/lib/cli/registry/risk-tier-command-spec.ts",
 	"src/lib/cli/registry/runtime-card-command-spec.ts",
@@ -701,6 +708,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./next-command-spec.js",
 	"./org-audit-command-spec.js",
 	"./preflight-gate-command-spec.js",
+	"./replay-command-spec.js",
 	"./review-gate-command-spec.js",
 	"./risk-tier-command-spec.js",
 	"./runtime-card-command-spec.js",

@@ -39,7 +39,6 @@ import {
 	type RemediateOptions,
 	runRemediateCLI,
 } from "../../../commands/remediate.js";
-import { runReplayCLI } from "../../../commands/replay.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import { runSilentErrorDetectorCLI } from "../../../commands/silent-error.js";
@@ -89,6 +88,7 @@ import { createPresetCommandSpec } from "./preset-command-spec.js";
 import { createPrCloseoutCommandSpec } from "./pr-closeout-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
+import { createReplayCommandSpec } from "./replay-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
 import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
@@ -177,38 +177,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Artifact Routine Error",
 		execute: (args) => runArtifactRoutineCLI(args),
 	},
-	{
-		name: "replay",
-		summary: "Replay or list captured agent automation traces",
-		errorLabel: "Replay Error",
-		execute: (args) => {
-			const options: {
-				traceId?: string;
-				list?: boolean;
-				dryRun?: boolean;
-				json?: boolean;
-				traceDir?: string;
-			} = {
-				json: args.includes("--json"),
-				dryRun: args.includes("--dry-run"),
-				list: args.includes("--list"),
-			};
-
-			const traceIdValue = getFlagValue(args, args.indexOf("--trace-id"));
-			if (traceIdValue) options.traceId = traceIdValue;
-
-			const traceDirValue = getFlagValue(args, args.indexOf("--trace-dir"));
-			if (traceDirValue) options.traceDir = traceDirValue;
-
-			// Positional trace ID: first non-flag arg when --trace-id is absent
-			// Command name already stripped by dispatcher, so positional is at args[0]
-			if (!options.traceId && args[0] && !args[0].startsWith("-")) {
-				options.traceId = args[0];
-			}
-
-			return runReplayCLI(options);
-		},
-	},
+	createReplayCommandSpec(),
 	{
 		name: "gardener",
 		summary: "Detect stale docs and broken links",
