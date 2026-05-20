@@ -909,7 +909,7 @@ const VERIFY_WORK_PUBLIC_FACADE_SUBMODULES = [
 	"./verify-work/types.js",
 ] as const;
 const VERIFY_WORK_INTERNAL_IMPORT_PATTERN =
-	/^.*lib\/verify-work\/(?:args|runner|types)\.js$/;
+	/^(?:\.\.?\/)*(?:lib\/)?verify-work\/(?:args|runner|types)\.js$/;
 const APPROVED_VERIFY_WORK_INTERNAL_IMPORTERS = new Set([
 	"src/lib/verify-work.ts",
 ]);

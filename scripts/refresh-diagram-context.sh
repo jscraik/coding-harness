@@ -70,7 +70,7 @@ fi
 
 TMP_DIR="$(mktemp -d "$DIAGRAM_CONTEXT_DIR/tmp-refresh-XXXXXX")"
 TMP_OUTPUT_DIR=".diagram/context/$(basename "$TMP_DIR")/diagrams"
-EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,.tmp-diagram-refresh-*/**"
+EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,.tmp-diagram-refresh-*/**,.diagram/context/tmp-refresh-*/**"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 pushd "$ROOT_DIR" >/dev/null
@@ -82,7 +82,7 @@ if [[ "$QUIET" -eq 1 ]]; then
 	set -e
 	if [[ "$status" -ne 0 ]]; then
 		popd >/dev/null
-		if [[ -f "$diagram_stderr" ]]; then
+		if [[ -s "$diagram_stderr" ]]; then
 			cat "$diagram_stderr" >&2
 		else
 			echo "error: diagram generate-all failed with exit $status before writing stderr to $diagram_stderr" >&2
