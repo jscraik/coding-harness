@@ -116,7 +116,11 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
-  - Linear workflow action parsing and delegation to Linear command runners.
+  - Linear workflow action parsing, value validation, and dispatch into Linear
+    action adapters.
+- `src/lib/cli/registry/linear-command-actions.ts`
+  - Linear claim, handoff, close, prepare, sync, and triage option builders and
+    command delegation.
 - `src/lib/cli/registry/linear-command-options.ts`
   - Linear workflow action and flag projection shared by the runner seam.
 - `src/lib/cli/registry/linear-gate-command-spec.ts`
@@ -180,9 +184,11 @@ The command registry should stay a catalog and dispatch surface.
 `command-specs-core.ts` remains the command catalog assembler; workflow
 parsing and delegation belong in named adapters:
 
-- Linear workflow delegation stays in `linear-command-runner.ts`; Linear action
-  and flag projection stays in `linear-command-options.ts`;
-  `linear-command-spec.ts` remains the registry seam.
+- Linear workflow parsing stays in `linear-command-runner.ts`; Linear
+  action-specific option builders and command delegation stay in
+  `linear-command-actions.ts`; Linear action and flag projection stays in
+  `linear-command-options.ts`; `linear-command-spec.ts` remains the registry
+  seam.
 - Gate CLI option adapters stay in their matching command-spec modules:
   `linear-gate-command-spec.ts`, `pr-template-gate-command-spec.ts`,
   `rule-lifecycle-gate-command-spec.ts`, `policy-gate-command-spec.ts`,
@@ -629,7 +635,9 @@ Threshold policy:
 - `src/lib/cli/registry/linear-command-spec.ts` must stay focused on Linear
   command spec metadata (`<= 30` lines).
 - `src/lib/cli/registry/linear-command-runner.ts` must stay focused on Linear
-  workflow parsing and delegation (`<= 230` lines).
+  workflow parsing and dispatch (`<= 40` lines).
+- `src/lib/cli/registry/linear-command-actions.ts` must stay focused on Linear
+  action-specific option builders and command delegation (`<= 145` lines).
 - `src/lib/cli/registry/linear-gate-command-spec.ts` must stay focused on Linear
   gate CLI option adapter and delegation (`<= 70` lines).
 - `src/lib/cli/registry/pr-template-gate-command-spec.ts` must stay focused on

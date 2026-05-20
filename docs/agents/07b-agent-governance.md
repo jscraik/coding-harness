@@ -43,6 +43,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   synchronized with the implementation and required documentation surfaces so
   docs-gate does not pass with stale operator guidance.
 - validation gate graph changes that add typed gate specs, phase-exit evidence gates, `harness next --phase-exit` visibility, parity tests, or resume-checkpoint guards should refresh `AI/context/diagram-context.md` and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
+- command-registry deep-module splits should preserve one small public command
+  facade while moving action-specific option builders and delegation behind
+  named internal adapter seams. Treat those seams as agent-governance surfaces:
+  update boundary tests, refresh architecture context, and keep docs-gate
+  required surfaces synchronized when the command family boundary changes.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to

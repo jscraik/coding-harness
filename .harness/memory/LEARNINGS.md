@@ -50,3 +50,5 @@ Repo-specific agent knowledge base. Append-only.
 **2026-05-20 [Codex]:** Planning-only steering was treated as an implementation cue -> stop file edits when Jamie says the thread is planning-only, says the agent is not making changes yet, or says this is the planning; admit the execution-mode failure through docs/gates/memory and run `pnpm run docs:steering:guard` before resuming implementation.
 
 **2026-05-20 [Codex]:** Current-session steering admission existed as prose but not as a validated artifact contract -> write .harness/implementation-notes/*steering-admission*.md before resuming feature work, validate required proof fields with `pnpm run docs:steering:guard`, and prefer deterministic guards over chat promises.
+
+**2026-05-20 [Codex]:** Coding-harness-specific reviewer agents were installed globally after project-scope intent -> keep project-owned Codex subagent roles under `.codex/agents/<role>/<role>.toml`, treat `.agents/skills/**/agents` as skill interface metadata only, and remove global registrations when a role is meant to be repo-scoped.

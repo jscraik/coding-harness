@@ -284,9 +284,15 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/lib/cli/registry/linear-command-runner.ts",
-		maxLines: 230,
+		maxLines: 40,
 		reason:
-			"Linear command runner must stay focused on Linear workflow action parsing and command delegation.",
+			"Linear command runner must stay focused on Linear workflow action parsing and dispatch; action option builders live behind their own seam.",
+	},
+	{
+		path: "src/lib/cli/registry/linear-command-actions.ts",
+		maxLines: 145,
+		reason:
+			"Linear command actions must stay focused on action-specific option builders and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/linear-command-options.ts",
@@ -745,6 +751,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/runtime-card-command-spec.ts",
 	"src/lib/cli/registry/silent-error-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
+	"src/lib/cli/registry/linear-command-actions.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
 	"src/lib/cli/registry/linear-command-spec.ts",
 	"src/lib/cli/registry/policy-gate-command-spec.ts",
@@ -849,6 +856,9 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./verify-coderabbit-command-spec.js",
 	"./verify-work-command-spec.js",
 	"./workflow-generate-command-spec.js",
+] as const;
+const LINEAR_COMMAND_RUNNER_SUBMODULES = [
+	"./linear-command-actions.js",
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [
 	"./next-args.js",
@@ -1082,6 +1092,17 @@ describe("module boundaries", () => {
 
 		for (const submodule of CLI_REGISTRY_SPEC_SUBMODULES) {
 			expect(commandSpecsCoreContent).toContain(submodule);
+		}
+	});
+
+	it("keeps Linear action option builders behind the runner seam", () => {
+		const runnerContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/linear-command-runner.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of LINEAR_COMMAND_RUNNER_SUBMODULES) {
+			expect(runnerContent).toContain(submodule);
 		}
 	});
 

@@ -687,6 +687,12 @@ harness commands --json | jq '
 | `pr-closeout`       | Classify pull-request closeout state before handoff or merge, including required claim/evidence status, required metadata, checks, Coding Harness closeout gates, review state, tool evidence, and AI session/trace references |
 | `workflow:generate` | Generate compact workflow specs from annotated markdown                                                                                                                                                                        |
 
+The `linear` command is intentionally one public command family. Internally,
+action parsing stays in the registry runner while action-specific option
+builders and command delegation live behind a separate Linear action adapter
+seam, so agents can change one workflow action without widening the CLI
+surface.
+
 ### Pilot, Remediation, And Automation
 
 | Command          | Purpose                                                  |

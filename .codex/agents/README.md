@@ -1,0 +1,67 @@
+# Coding Harness Agent Roles
+
+## Table of Contents
+- [Scope](#scope)
+- [Harness Roles First](#harness-roles-first)
+- [Runtime Discovery](#runtime-discovery)
+- [Role Inventory](#role-inventory)
+- [Validation](#validation)
+- [Non-Runtime Surfaces](#non-runtime-surfaces)
+
+## Scope
+These Codex subagent roles are owned by the coding-harness repository. They are
+not global user roles and should not be registered from `~/dev/configs/codex`
+unless an explicit cross-project promotion decision is made.
+
+## Harness Roles First
+For coding-harness review work, use these project-local harness roles before
+generic or global reviewers. They encode this repository's review categories,
+skill routes, and read-only posture, so they are the first-choice subagents for
+repo-local review coverage.
+
+Invoke them with `spawn_agent(agent_type="<role>")` from a thread rooted in
+this checkout, for example:
+
+```text
+spawn_agent(agent_type="harness-product-code-reviewer")
+```
+
+## Runtime Discovery
+Codex discovers trusted project-local role files from this directory:
+
+```text
+.codex/agents/<role>/<role>.toml
+```
+
+The repository is trusted in Jamie's Codex config, so a thread started in this
+checkout can use these roles through `spawn_agent(agent_type=...)`. Other
+projects should not see these roles unless they carry their own project-local
+copies or a deliberate global registration.
+
+A local `.codex/config.toml` is not required for this role inventory. Use one
+only when this repository needs explicit per-role config entries that cannot be
+represented by the discovered TOML files.
+
+## Role Inventory
+- `harness-product-code-reviewer`: product code and tests.
+- `harness-ci-release-reviewer`: CI configuration and release tooling.
+- `harness-dev-tools-reviewer`: internal developer tools.
+- `harness-doc-history-reviewer`: documentation and design history.
+- `harness-evaluation-reviewer`: evaluation harnesses.
+- `harness-review-response-auditor`: review comments and responses.
+- `harness-repository-automation-reviewer`: repository-management scripts.
+- `harness-dashboard-definition-reviewer`: production dashboard definitions.
+
+## Validation
+
+`pnpm codex:agents:guard` validates this inventory and is part of `pnpm lint`,
+so `bash scripts/validate-codestyle.sh --fast` also proves the role files are
+present, project-local, and on the expected read-only `gpt-5.4-mini` posture.
+
+## Non-Runtime Surfaces
+`.agents/skills/**/agents/openai.yaml` files describe skill or plugin
+interfaces. They do not register Codex `spawn_agent` roles.
+
+`.agents/roles` is not a validated Codex runtime discovery surface in the
+current checked source. Do not depend on it for these reviewers until Codex
+source and runtime tests explicitly support it.
