@@ -46,3 +46,5 @@ Repo-specific agent knowledge base. Append-only.
 **2026-05-18 [Codex]:** PR closeout gates can be technically wired but invisible if agents must know to supply HE phase-exit evidence -> expose them as first-class Coding Harness closeout gates in command help, command catalog examples, PR closeout JSON, and docs; keep HE phase-exit only as a compatibility alias.
 
 **2026-05-19 [Codex]:** Deep validation reported missing GitHub/Linear credentials even though they were available in `~/.codex/.env` -> before marking credentialed validation blocked, inspect required env names without printing values, load `~/.codex/.env`, rerun the exact command, and record env-backed validation recovery evidence.
+
+**2026-05-20 [Codex]:** Planning-only steering was treated as an implementation cue -> stop file edits when Jamie says the thread is planning-only, says the agent is not making changes yet, or says this is the planning; admit the execution-mode failure through docs/gates/memory and run `pnpm run docs:steering:guard` before resuming implementation.

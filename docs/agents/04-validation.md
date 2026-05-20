@@ -160,6 +160,14 @@ searched surfaces, choose the durable destination, name the executable guard or
 tracked exception, record the validation command, and state what behavior is now
 forbidden. Chat-only acknowledgement is not an admission.
 
+When the steering says the thread is planning-only, says the agent is not
+making changes yet, or rejects implementation as an implementation cue during a
+planning conversation, stop file edits immediately. Treat the mistake as an
+execution-mode failure: classify the feedback, identify why task routing or
+state reading allowed implementation to start, admit the failure through a
+durable destination, and run the guard that proves future agents still see the
+stop condition.
+
 When the same error, command failure, or test failure happens twice, stop the
 local retry loop before another attempt. Research trusted web or upstream
 documentation, list 3-5 plausible fixes, choose the most efficient fix for the

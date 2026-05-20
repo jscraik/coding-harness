@@ -1,6 +1,11 @@
 # Ryan Lopopolo Harness Engineering Evidence Extraction
 
 Generated: 2026-05-19
+Source snapshot commit: 411ca50a38c3dfa4e5c1c002389a789bd5184d8e
+Extraction tool/version: Codex evidence extraction pass, 2026-05-19
+Primary-source digest set:
+- .harness/research/2026-05-16-harness-engineering-youtube-transcripts/transcripts/ryan-lopopolo-extreme-harness-engineering.md: sha256:3da590c296eeffc19a59361c4a4fe4cc375a25251918e391bdb84f4e61c63004
+- .harness/research/2026-05-16-harness-engineering-youtube-transcripts/transcripts/ryan-lopopolo-transcript-source.txt: sha256:9fc89752deca210b7054621fd588fd38d09e00a3057b0977986654993a72f477
 
 Primary sources:
 
@@ -18,7 +23,6 @@ Supporting sources:
 - .harness/research/2026-05-16-harness-engineering-source-intake/chatgpt-notes/risks-critiques-and-programmable-organizations-008.md
 - .harness/research/2026-05-16-harness-engineering-source-intake/chatgpt-notes/missing-routes-and-governance-questions-007.md
 - .harness/research/2026-05-16-harness-engineering-source-intake/chatgpt-notes/multi-agent-review-fuzzy-compiler-005.md
-
 Evidence posture:
 
 - This is cold research, not an instruction surface.

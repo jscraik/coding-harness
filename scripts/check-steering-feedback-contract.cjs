@@ -46,6 +46,8 @@ const WORKFLOW_SKILL_PROOF_PATTERN =
 	/(workflow skill|capture-the-flag|capture the flag|win condition|flag is captured|skill workout|self-reflection|reflect on failures)/i;
 const CURRENT_SESSION_ADMISSION_PATTERN =
 	/(current-session steering admission record|not permitted to proceed|feedback class.*inferred principle.*searched surfaces.*durable destination|forbidden recurrence behavior)/i;
+const PLANNING_ONLY_STOP_PATTERN =
+	/(planning-only|planning conversation|not making (the )?changes yet|before implementation|implementation cue|do not implement|no file edits)/i;
 const REPEATED_ERROR_RESEARCH_PATTERN =
 	/(Repeated-error research|Repeated-Error Research Pass|same-error-twice|same error happens twice|same error happened twice|same command.*test.*runtime error happens twice|Source:.*Candidate 1:.*Candidate 2:.*Candidate 3:.*Chosen:.*Implemented:|3-5 numbered Candidate\/Fix\/Option|don.t fight errors)/i;
 const CLOSEOUT_COMPLETION_PATTERN =
@@ -123,6 +125,13 @@ function validateAgents(content) {
 		content,
 		CURRENT_SESSION_ADMISSION_PATTERN,
 		"current-session steering admission record stop condition",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
+		PLANNING_ONLY_STOP_PATTERN,
+		"planning-only stop condition",
 	);
 	requirePattern(
 		errors,
@@ -276,6 +285,13 @@ function validateValidationDoc(content) {
 		content,
 		CURRENT_SESSION_ADMISSION_PATTERN,
 		"current-session steering admission record requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		PLANNING_ONLY_STOP_PATTERN,
+		"planning-only stop requirement",
 	);
 	requirePattern(
 		errors,
@@ -681,6 +697,13 @@ function validateSolution(content) {
 		errors,
 		REQUIRED_FILES.solution,
 		content,
+		PLANNING_ONLY_STOP_PATTERN,
+		"planning-only stop evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
 		DURABLE_DESTINATION_PATTERN,
 		"durable destination language",
 	);
@@ -951,6 +974,13 @@ function validateMemory(content) {
 		content,
 		/not permitted to proceed/i,
 		"not permitted to proceed trigger learning",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		PLANNING_ONLY_STOP_PATTERN,
+		"planning-only stop learning",
 	);
 	requirePattern(
 		errors,
