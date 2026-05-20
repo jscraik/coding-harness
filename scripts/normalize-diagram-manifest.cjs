@@ -215,11 +215,11 @@ writeFileSync(
 	`${JSON.stringify(
 		{
 			generatedAt: new Date().toISOString(),
-			rootPath: rootDir,
+			rootPath: ".",
 			diagramDir: ".diagram",
 			diagrams,
 		},
 		null,
-		2,
+		"\t",
 	)}\n`,
 );

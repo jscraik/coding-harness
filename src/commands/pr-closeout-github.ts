@@ -22,7 +22,7 @@ function parseJsonObject(
 	return parsed as Record<string, unknown>;
 }
 
-/** Normalize gh pr checks output without inventing current-head proof. */
+/** Normalize required gh pr checks output without inventing current-head proof. */
 export function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
 	if (!Array.isArray(value)) return [];
 	return value
@@ -35,6 +35,7 @@ export function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
 			state: asString(item.state),
 			url: asString(item.link),
 			headSha: asString(item.headSha),
+			required: true,
 			source: "github",
 		}));
 }

@@ -1,0 +1,32 @@
+flowchart TD
+  Request["Authentication request"]
+  Boundary{"Auth Boundary"}
+  Request --> Boundary
+  overload_guard_2748c559["overload-guard"]
+  Boundary --> overload_guard_2748c559
+  overload_guard_test_6ece9f86["overload-guard.test"]
+  Boundary --> overload_guard_test_6ece9f86
+  session_closeout_f3efb270["session-closeout"]
+  Boundary --> session_closeout_f3efb270
+  session_closeout_test_aa1fd09d["session-closeout.test"]
+  Boundary --> session_closeout_test_aa1fd09d
+  scaffold_security_scan_template_55bc7465["scaffold-security-scan-template"]
+  Boundary --> scaffold_security_scan_template_55bc7465
+  scaffold_security_scan_template_test_3314b8b2["scaffold-security-scan-template.test"]
+  Boundary --> scaffold_security_scan_template_test_3314b8b2
+  legacy_dispatch_guard_test_4700087d["legacy-dispatch-guard.test"]
+  Boundary --> legacy_dispatch_guard_test_4700087d
+  ext_node_os_e9717731[("node:os")]
+  ext_vitest_a9127f3d[("vitest")]
+  ext_node_fs_df6b52af[("node:fs")]
+  ext_node_path_0e7d56ab[("node:path")]
+  overload_guard_2748c559 --> ext_node_os_e9717731
+  overload_guard_test_6ece9f86 --> ext_node_os_e9717731
+  overload_guard_test_6ece9f86 --> ext_vitest_a9127f3d
+  session_closeout_test_aa1fd09d --> ext_vitest_a9127f3d
+  scaffold_security_scan_template_test_3314b8b2 --> ext_vitest_a9127f3d
+  legacy_dispatch_guard_test_4700087d --> ext_node_fs_df6b52af
+  legacy_dispatch_guard_test_4700087d --> ext_node_path_0e7d56ab
+  legacy_dispatch_guard_test_4700087d --> ext_vitest_a9127f3d
+  classDef authNode fill:#7c3aed,color:#fff
+  class overload_guard_2748c559,overload_guard_test_6ece9f86,session_closeout_f3efb270,session_closeout_test_aa1fd09d,scaffold_security_scan_template_55bc7465,scaffold_security_scan_template_test_3314b8b2,legacy_dispatch_guard_test_4700087d authNode
