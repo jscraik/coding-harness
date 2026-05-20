@@ -49,7 +49,7 @@
 	"scripts": {
 		"check": "pnpm lint && pnpm docs:lint && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm research:evidence:validate && pnpm architecture:check && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm quality:self-affirming && pnpm test:related && pnpm test:ci && pnpm audit",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
-		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && biome check .",
+		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && pnpm codex:agents:guard && biome check .",
 		"lint:fix": "biome check . --write",
 		"fmt": "biome format . --write",
 		"typecheck": "tsc --noEmit",
@@ -78,6 +78,7 @@
 		"architecture:check": "node scripts/check-architecture-rules.cjs --format json",
 		"observed:eval-usage": "tsx scripts/collect-observed-eval-usage.ts",
 		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
+		"codex:agents:guard": "node scripts/check-codex-agent-roles.cjs",
 		"codestyle:parity": "bash scripts/check-codestyle-parity.sh",
 		"codestyle:validate": "bash scripts/validate-codestyle.sh",
 		"quality:docstrings": "node scripts/check-public-api-docs.mjs",

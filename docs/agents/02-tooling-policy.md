@@ -143,6 +143,18 @@ Generated Codex environment actions are part of Flow Ops closure-evidence readin
 Flow Ops closure-evidence changes that depend on generated setup, validation routing, or diagram-context refreshes must keep this tooling contract synchronized with the required governance and architecture docs.
 Port-free wrapping is expected only for app run actions backed by `dev`/`start` scripts; CLI-first repositories may not include a port-free run action.
 
+## Project-local Codex agent roles
+
+The coding-harness-owned reviewer roles live under
+`.codex/agents/<role>/<role>.toml`. Codex discovers those files from the
+trusted project-local config layer, so this repository does not need a local
+`.codex/config.toml` solely to expose the roles.
+
+`pnpm codex:agents:guard` validates the role inventory and is part of
+`pnpm lint`. Keep that guard green when adding, deleting, or renaming
+project-local reviewers. Do not use `.agents/roles` as a runtime role surface
+until Codex source and runtime tests explicitly support it.
+
 ### Worktree branch naming convention
 
 The `scripts/prepare-worktree.sh` script defines a canonical branch naming convention for worktree-readiness branches:

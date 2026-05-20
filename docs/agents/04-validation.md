@@ -47,6 +47,12 @@ exact reason and next owner.
 3. `pnpm test:deep` when artifact/runtime behavior changed beyond the baseline gate
 4. When `validate-codestyle.sh` runs via hooks, treat hook-exported git environment (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*`) as untrusted input and ensure the wrapper sanitizes those values before invoking `pnpm run`, so fixture-local git checks are isolated from hook context.
 
+`pnpm lint` includes `pnpm codex:agents:guard`, which validates the
+project-local Codex reviewer roles under `.codex/agents/<role>/<role>.toml`.
+That guard keeps the coding-harness-only role inventory tracked, read-only, on
+`gpt-5.4-mini`, and distinct from unsupported `.agents/roles` runtime
+discovery assumptions.
+
 ## CI gates
 
 ### docs-gate
@@ -239,6 +245,8 @@ Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps
 - Run validation gates before finalizing if they alter execution behavior.
 - Explicitly verify command contract docs against `package.json`/`pnpm-lock.yaml`.
 - When the change introduces or updates a validation wrapper, prove the wrapper itself was executed from the current repo state instead of claiming equivalent underlying commands ran.
+- When project-local Codex agent roles change, run `pnpm codex:agents:guard`
+  and keep `.codex/agents/README.md` synchronized with the role inventory.
 
 ## Artifact routine gate
 

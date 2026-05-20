@@ -4,6 +4,7 @@
 - [Scope](#scope)
 - [Runtime Discovery](#runtime-discovery)
 - [Role Inventory](#role-inventory)
+- [Validation](#validation)
 - [Non-Runtime Surfaces](#non-runtime-surfaces)
 
 ## Scope
@@ -23,6 +24,10 @@ checkout can use these roles through `spawn_agent(agent_type=...)`. Other
 projects should not see these roles unless they carry their own project-local
 copies or a deliberate global registration.
 
+A local `.codex/config.toml` is not required for this role inventory. Use one
+only when this repository needs explicit per-role config entries that cannot be
+represented by the discovered TOML files.
+
 ## Role Inventory
 - `harness-product-code-reviewer`: product code and tests.
 - `harness-ci-release-reviewer`: CI configuration and release tooling.
@@ -32,6 +37,12 @@ copies or a deliberate global registration.
 - `harness-review-response-auditor`: review comments and responses.
 - `harness-repository-automation-reviewer`: repository-management scripts.
 - `harness-dashboard-definition-reviewer`: production dashboard definitions.
+
+## Validation
+
+`pnpm codex:agents:guard` validates this inventory and is part of `pnpm lint`,
+so `bash scripts/validate-codestyle.sh --fast` also proves the role files are
+present, project-local, and on the expected read-only `gpt-5.4-mini` posture.
 
 ## Non-Runtime Surfaces
 `.agents/skills/**/agents/openai.yaml` files describe skill or plugin
