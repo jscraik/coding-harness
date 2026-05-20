@@ -83,6 +83,9 @@ gardener-report.json
 !.harness/research/
 .harness/research/*
 !.harness/research/evidence-patterns.json
+!.harness/research/audits/
+.harness/research/audits/*
+!.harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md
 !.harness/research/deep/
 .harness/research/deep/*
 !.harness/research/deep/**/*.md
