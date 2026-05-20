@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
+import * as driftGateCommand from "../../../commands/drift-gate.js";
 import * as gardenerCommand from "../../../commands/gardener.js";
 import * as memoryGateCommand from "../../../commands/memory-gate.js";
 import * as replayCommand from "../../../commands/replay.js";
@@ -781,8 +782,67 @@ describe("simulate execute validation", () => {
 describe("drift-gate execute validation", () => {
 	const spec = findSpec("drift-gate");
 
+	beforeEach(() => {
+		vi.spyOn(driftGateCommand, "runDriftGateCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects drift-gate flags into the drift gate command", () => {
+		const result = spec.execute([
+			"--mode",
+			"advisory",
+			"--out",
+			"artifacts/drift.json",
+			"--baseline",
+			".harness/drift-baseline.json",
+			"--suppress",
+			"readme,docs",
+			"--repo-root",
+			"/tmp/repo",
+			"--seed-baseline",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(driftGateCommand.runDriftGateCLI).toHaveBeenCalledWith({
+			mode: "advisory",
+			outPath: "artifacts/drift.json",
+			baselinePath: ".harness/drift-baseline.json",
+			suppressions: ["readme", "docs"],
+			repoRoot: "/tmp/repo",
+			seedBaseline: true,
+			json: true,
+		});
+	});
+
+	it("lets --no-seed override baseline seeding", () => {
+		const result = spec.execute(["--seed-baseline", "--no-seed"]);
+
+		expect(result).toBe(0);
+		expect(driftGateCommand.runDriftGateCLI).toHaveBeenCalledWith({
+			seedBaseline: false,
+		});
+	});
+
 	it("returns 2 when --mode is an invalid value", () => {
 		expect(spec.execute(["--mode", "strict"])).toBe(2);
+		expect(driftGateCommand.runDriftGateCLI).not.toHaveBeenCalled();
+	});
+
+	it("returns 2 when value-bearing flags are missing values", () => {
+		for (const flag of [
+			"--mode",
+			"--out",
+			"--baseline",
+			"--suppress",
+			"--repo-root",
+		]) {
+			expect(spec.execute([flag])).toBe(2);
+		}
+		expect(driftGateCommand.runDriftGateCLI).not.toHaveBeenCalled();
 	});
 
 	it("does not return 2 for --mode advisory", async () => {

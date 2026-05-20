@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_375,
+		maxLines: 1_300,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
+		maxLines: 100,
+		reason:
+			"Drift gate command spec must stay focused on consistency-drift option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/brainstorm-gate-command-spec.ts",
@@ -637,6 +643,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/check-environment-command-spec.ts",
 	"src/lib/cli/registry/docs-gate-command-spec.ts",
 	"src/lib/cli/registry/doctor-command-spec.ts",
+	"src/lib/cli/registry/drift-gate-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/fleet-plan-command-spec.ts",
 	"src/lib/cli/registry/gardener-command-spec.ts",
@@ -729,6 +736,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./check-environment-command-spec.js",
 	"./docs-gate-command-spec.js",
 	"./doctor-command-spec.js",
+	"./drift-gate-command-spec.js",
 	"./evidence-verify-command-spec.js",
 	"./fleet-plan-command-spec.js",
 	"./gardener-command-spec.js",

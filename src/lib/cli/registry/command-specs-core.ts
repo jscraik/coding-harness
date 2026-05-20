@@ -16,7 +16,6 @@ import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
-import { runDriftGateCLI } from "../../../commands/drift-gate.js";
 import { runEjectCLI } from "../../../commands/eject.js";
 import { runGapCaseCLI } from "../../../commands/gap-case.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
@@ -70,6 +69,7 @@ import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createDoctorCommandSpec } from "./doctor-command-spec.js";
+import { createDriftGateCommandSpec } from "./drift-gate-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createFleetPlanCommandSpec } from "./fleet-plan-command-spec.js";
 import { createGardenerCommandSpec } from "./gardener-command-spec.js";
@@ -279,75 +279,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			});
 		},
 	},
-	{
-		name: "drift-gate",
-		summary: "Evaluate consistency drift across governance surfaces",
-		example: "drift-gate --mode advisory --json",
-		errorLabel: "Drift Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const seedBaselineFlag = args.includes("--seed-baseline");
-			const noSeedFlag = args.includes("--no-seed");
-			const modeFlag = inspectFlagValue(args, "--mode");
-			const outFlag = inspectFlagValue(args, "--out");
-			const baselineFlag = inspectFlagValue(args, "--baseline");
-			const suppressFlag = inspectFlagValue(args, "--suppress");
-			const repoRootFlag = inspectFlagValue(args, "--repo-root");
-
-			if (modeFlag.missingValue) {
-				console.error("Error: --mode requires advisory or health");
-				return 2;
-			}
-			if (outFlag.missingValue) {
-				console.error("Error: --out requires a file path");
-				return 2;
-			}
-			if (baselineFlag.missingValue) {
-				console.error("Error: --baseline requires a file path");
-				return 2;
-			}
-			if (suppressFlag.missingValue) {
-				console.error("Error: --suppress requires a comma-separated list");
-				return 2;
-			}
-			if (repoRootFlag.missingValue) {
-				console.error("Error: --repo-root requires a path");
-				return 2;
-			}
-
-			const options: {
-				mode?: "advisory" | "health";
-				json?: boolean;
-				outPath?: string;
-				baselinePath?: string;
-				seedBaseline?: boolean;
-				suppressions?: string[];
-				repoRoot?: string;
-			} = {};
-
-			if (jsonFlag) options.json = true;
-			if (seedBaselineFlag) options.seedBaseline = true;
-			if (noSeedFlag) options.seedBaseline = false;
-			const modeArg = modeFlag.value;
-			if (modeArg) {
-				if (modeArg !== "advisory" && modeArg !== "health") {
-					console.error("Error: --mode must be advisory or health");
-					return 2;
-				}
-				options.mode = modeArg;
-			}
-			const outArg = outFlag.value;
-			if (outArg) options.outPath = outArg;
-			const baselineArg = baselineFlag.value;
-			if (baselineArg) options.baselinePath = baselineArg;
-			const suppressArg = suppressFlag.value;
-			if (suppressArg) options.suppressions = parseCsvList(suppressArg);
-			const repoRootArg = repoRootFlag.value;
-			if (repoRootArg) options.repoRoot = repoRootArg;
-
-			return runDriftGateCLI(options);
-		},
-	},
+	createDriftGateCommandSpec(),
 	{
 		name: "ui:fast",
 		aliases: ["ui-fast"],

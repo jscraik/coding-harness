@@ -106,6 +106,10 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/brainstorm-gate-command-spec.ts`
   - Brainstorm path, topic, age, strictness, and JSON option projection stay
     local to the brainstorm compliance command adapter.
+- `src/lib/cli/registry/drift-gate-command-spec.ts`
+  - Drift mode, baseline seeding, artifact output, suppression, repository
+    root, and JSON option projection stay local to the consistency-drift
+    command adapter.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -491,8 +495,10 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a command catalog
-  assembler (`<= 1375` lines); workflow-specific parsing belongs in focused
+  assembler (`<= 1300` lines); workflow-specific parsing belongs in focused
   command adapters.
+- `src/lib/cli/registry/drift-gate-command-spec.ts` must stay focused on
+  consistency-drift option projection and command delegation (`<= 100` lines).
 - `src/lib/cli/registry/memory-gate-command-spec.ts` must stay focused on
   Local Memory compliance option projection and command delegation (`<= 35`
   lines).
