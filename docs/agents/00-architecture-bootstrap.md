@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-18
+last_validated: 2026-05-20
 ---
 
 # Architecture bootstrap
@@ -109,6 +109,10 @@ When artifact-routine or pattern-scope commands become part of closeout
 evidence, treat them as architecture-adjacent assurance surfaces: refresh the
 context pack, keep command registry/capability metadata aligned, and prove that
 Project Brain inputs are fresh before they route implementation.
+When PR closeout live-input or blocker classification changes how GitHub state,
+review-thread evidence, or closeout-gate artifacts are trusted, refresh the
+context pack and keep this architecture bootstrap guide in the PR so agents can
+trace the fail-closed evidence boundary.
 
 ## Exact behavior evidence
 

@@ -51,7 +51,6 @@ import {
 } from "../../../commands/remediate.js";
 import { runReplayCLI } from "../../../commands/replay.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
-import { runRiskTierCLI } from "../../../commands/risk-tier.js";
 import { runRuntimeCardCLI } from "../../../commands/runtime-card.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import { runSilentErrorDetectorCLI } from "../../../commands/silent-error.js";
@@ -99,6 +98,7 @@ import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
+import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
@@ -388,24 +388,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runContractCLI(args, { json: jsonFlag || undefined });
 		},
 	},
-	{
-		name: "risk-tier",
-		summary: "Classify files by risk tier",
-		example: "risk-tier --files src/auth.ts,src/api.ts --json",
-		errorLabel: "Risk Tier Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const filesIndex = args.indexOf("--files");
-			const contractIndex = args.indexOf("--contract");
-
-			const filesArg = getFlagValue(args, filesIndex);
-			const files = parseCsvList(filesArg);
-			const contractArg = getFlagValue(args, contractIndex);
-			const contractPath = contractArg ?? "harness.contract.json";
-
-			return runRiskTierCLI({ contractPath, files, json: jsonFlag });
-		},
-	},
+	createRiskTierCommandSpec(),
 	{
 		name: "pattern-scope",
 		summary:

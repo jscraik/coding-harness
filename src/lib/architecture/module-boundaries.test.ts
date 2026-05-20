@@ -93,6 +93,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"Workflow generate command spec must stay focused on workflow generation option projection and command delegation.",
 	},
 	{
+		path: "src/lib/cli/registry/risk-tier-command-spec.ts",
+		maxLines: 30,
+		reason:
+			"Risk tier command spec must stay focused on risk-tier option projection and command delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/symphony-check-command-spec.ts",
 		maxLines: 35,
 		reason:
@@ -519,6 +525,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
+	"src/lib/cli/registry/risk-tier-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
 	"src/lib/cli/registry/linear-command-spec.ts",
@@ -591,6 +598,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./local-memory-preflight-command-spec.js",
 	"./preflight-gate-command-spec.js",
 	"./review-gate-command-spec.js",
+	"./risk-tier-command-spec.js",
 	"./linear-command-spec.js",
 	"./linear-gate-command-spec.js",
 	"./policy-gate-command-spec.js",

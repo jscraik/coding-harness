@@ -263,6 +263,27 @@ describe("validateHarnessArtifactRoutine", () => {
 		);
 	});
 
+	it("treats normalized n.a. variants as blank artifact references", () => {
+		const repoRoot = makeRepo({
+			plan: activePlanText().replace(
+				"source_spec: docs/spec.md",
+				"source_spec: N / A",
+			),
+		});
+
+		const result = validateHarnessArtifactRoutine({
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.findings).not.toContainEqual(
+			expect.objectContaining({
+				check: "reference_integrity",
+				path: ".harness/plan/current.md",
+			}),
+		);
+	});
+
 	it("flags unclassified artifact-index rows", () => {
 		const repoRoot = makeRepo({
 			activeIndex: activeIndexText(".harness/plan/current.md").replace(
