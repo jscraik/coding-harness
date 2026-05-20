@@ -599,6 +599,8 @@ describe("buildPrCloseoutReport", () => {
 		const report = buildPrCloseoutReport(input);
 
 		expect(report.status).not.toBe("ready");
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
 		expect(report.claims).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
@@ -610,6 +612,42 @@ describe("buildPrCloseoutReport", () => {
 						class: "missing_recovery_handler",
 						destination: "roadmap_exception",
 					}),
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					ref: "rollback_path_named_or_not_applicable",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
+	it("derives passed test evidence from current required checks", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "build",
+						state: "SUCCESS",
+						headSha: "abc123",
+						required: true,
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "pass",
+					evidenceRef: "check:build",
+					freshness: "current",
 				}),
 			]),
 		);

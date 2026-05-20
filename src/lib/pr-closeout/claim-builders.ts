@@ -39,6 +39,7 @@ function hasKnownIndependentReview(
 
 interface CheckClaimOptions {
 	required: readonly PrCloseoutCheckInput[];
+	explicitlyRequired: readonly PrCloseoutCheckInput[];
 	currentRequired: boolean;
 	freshness: PrCloseoutEvidenceFreshness;
 	hasPending: boolean;
@@ -48,12 +49,14 @@ function checkClaimOptions(
 	checks: readonly PrCloseoutCheckInput[],
 	headSha: string | null,
 ): CheckClaimOptions {
+	const explicitlyRequired = checks.filter((check) => check.required === true);
 	const required = requiredChecks(checks);
 	const staleRequired = required.some(
 		(check) => checkFreshness(check, headSha) === "stale",
 	);
 	return {
 		required,
+		explicitlyRequired,
 		currentRequired: requiredChecksAreCurrent(checks, headSha),
 		hasPending: checks.some((check) => isPendingCheck(check)),
 		freshness:
@@ -73,22 +76,27 @@ function buildTestsPassedClaim(
 	headSha: string | null,
 	verifiedAt: string,
 ): PrCloseoutClaim {
+	const evidenceChecks =
+		testChecks.length > 0 ? testChecks : checkOptions.explicitlyRequired;
 	return buildClaim(
 		"tests_passed",
-		testChecks.length === 0
+		evidenceChecks.length === 0
 			? "unknown"
-			: testChecks.every((check) => isPassingCheck(check)) &&
+			: evidenceChecks.every((check) => isPassingCheck(check)) &&
 					checkOptions.currentRequired
 				? "pass"
-				: testChecks.some((check) => isFailedCheck(check))
+				: evidenceChecks.some((check) => isFailedCheck(check))
 					? "fail"
 					: "blocked",
 		"checks",
 		verifiedAt,
 		{
-			evidenceRef: testChecks[0] ? evidenceRefFromCheck(testChecks[0]) : null,
+			evidenceRef: evidenceChecks[0]
+				? evidenceRefFromCheck(evidenceChecks[0])
+				: null,
 			headSha,
-			freshness: testChecks.length === 0 ? "missing" : checkOptions.freshness,
+			freshness:
+				evidenceChecks.length === 0 ? "missing" : checkOptions.freshness,
 			...(checkOptions.hasPending
 				? { blockerClass: "external_service" as const }
 				: {}),

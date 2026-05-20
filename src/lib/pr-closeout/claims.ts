@@ -22,7 +22,6 @@ function claimSurface(claim: PrCloseoutClaim): PrCloseoutBlocker["surface"] {
 function claimFixableByCodex(claim: PrCloseoutClaim): boolean {
 	if (claim.blockerClass === "needs_jamie_decision") return false;
 	if (claim.blockerClass === "external_service") return false;
-	if (claim.source !== "checks") return false;
 	return claim.freshness === "missing" || claim.freshness === "unknown";
 }
 
