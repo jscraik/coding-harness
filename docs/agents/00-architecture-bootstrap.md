@@ -46,6 +46,10 @@ harness docs-gate --mode advisory --json
 
 If either command fails, refresh artifacts before proceeding.
 When `docs-gate` reports required documentation surfaces for the same change category, update the listed operator guides in that PR before merge.
+For command-registry deep-module splits, keep the public command spec small,
+move action-specific option builders behind named internal adapter seams,
+refresh `AI/context/diagram-context.md`, and update README command-surface
+guidance when docs-gate reports a CLI-surface requirement.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
 Rule lifecycle governance updates are architecture-adjacent when they alter the manifest schema, `rule-lifecycle-gate`, or rule metadata validation. Keep this guide synchronized with `AGENTS.md` and `README.md` when docs-gate reports architecture-context or contract-policy surfaces, and ensure schema validation resolves from the target repo root rather than the caller's shell cwd.
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence.

@@ -144,6 +144,7 @@ Notes:
   - phase-exit logic must refuse commit when gates are fail/blocked/not_run
   - Keep `AI/context/diagram-context.md` architecture context and docs-gate-required governance surfaces synchronized in the same PR
 - Validation gate graph changes that add typed gate specs, phase-exit evidence gates, `harness next --phase-exit` visibility, parity tests, or resume-checkpoint guards are architecture-artifact changes; refresh `AI/context/diagram-context.md` and keep docs-gate-required governance surfaces synchronized in the same PR.
+- Command-registry deep-module splits are architecture-artifact and agent-governance changes when they alter a command family boundary: keep the public command spec small, move action-specific option builders or delegation behind named internal adapter seams, refresh `AI/context/diagram-context.md`, and synchronize docs-gate-required surfaces.
 - Runtime-card evidence adapter changes that add or alter `--evidence`,
   normalized session evidence, or runtime-card source/blocker projection are
   architecture-adjacent changes; keep `runtime-card/v1` and
