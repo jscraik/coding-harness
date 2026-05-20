@@ -14,6 +14,7 @@ last_validated: 2026-05-20
 - [Verify Work Command Boundary](#verify-work-command-boundary)
 - [Memory Gate Command Boundary](#memory-gate-command-boundary)
 - [Drift Gate Command Boundary](#drift-gate-command-boundary)
+- [HE Phase-Exit Trust Boundary](#he-phase-exit-trust-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
 - [Doctor Command Boundaries](#doctor-command-boundaries)
@@ -350,6 +351,24 @@ classification in `normalise-linear-gate.ts`, policy tier projection in
 `normalise-he-phase-exit.ts`. Terminal rendering changes stay in
 `normalise-renderer.ts` while callers continue importing through
 `src/lib/output/normalise.ts` and seam tests preserve the public export contract.
+
+## HE Phase-Exit Trust Boundary
+
+HE phase-exit validation remains a public facade plus focused trust-policy seam:
+
+- `src/lib/decision/he-phase-exit.ts`
+  - Public facade for HE phase-exit contracts, validators, adapters, and validation artifact helpers.
+- `src/lib/decision/he-phase-exit-core.ts`
+  - Gate schemas, payload validation, aggregation, and public `validateHeGateResult` / `validateHePhaseExit` entrypoints.
+- `src/lib/decision/he-gate-trust-policy.ts`
+  - Internal trust-policy seam for status, execution-mode, gate-local evidence, open-finding, blocker-reason, skipped-gate, and finding evidence-reference rules.
+- `src/lib/decision/he-gate-trust-policy.test.ts`
+  - Direct seam tests proving summary-only evidence, `validation_only`, skipped execution modes, and findings without evidence references cannot satisfy gate trust.
+
+The phase-exit core should stay the contract and aggregation surface. Trust rules
+that decide whether a gate result is real proof live in `he-gate-trust-policy.ts`,
+so agents can harden gate semantics without mixing payload schemas, aggregation,
+and trust classification in one file.
 
 ## Command Facade Boundaries
 
@@ -725,6 +744,10 @@ Threshold policy:
 - `src/lib/output/normalise-linear-gate.ts` must remain a Linear gate
   normalisation seam (`<= 240` lines) for failure classification and canonical
   `GateResult` projection.
+- `src/lib/decision/he-phase-exit-core.ts` must stay below the current trust-split
+  ratchet (`<= 1750` lines) while more artifact and adapter policy moves behind focused seams.
+- `src/lib/decision/he-gate-trust-policy.ts` must remain the HE gate trust-policy
+  seam (`<= 220` lines) for status, execution-mode, finding, blocker, and evidence-reference rules.
 - `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2600` lines).
 - `src/commands/doctor.ts` must remain a doctor command facade (`<= 210`
   lines) and import the explicit agent-safe work areas enforced by the architecture test.
@@ -747,14 +770,14 @@ Threshold policy:
 - `src/commands/next-runner.ts` must remain a harness-next decision producer
   seam (`<= 250` lines).
 - `src/lib/review-gate/required-checks.ts` must remain a review-gate
-	  required-check resolution seam (`<= 350` lines) for check-name, alias,
-	  source matching, and blocker projection.
+  required-check resolution seam (`<= 350` lines) for check-name, alias,
+  source matching, and blocker projection.
 - `src/lib/review-gate/required-check-sources.ts` must remain a review-gate
-	  source-authority seam (`<= 220` lines) for provider identity normalization
-	  and active/external source constraints.
+  source-authority seam (`<= 220` lines) for provider identity normalization
+  and active/external source constraints.
 - `src/lib/review-gate/required-check-manifest.ts` must remain a review-gate
-	  manifest seam (`<= 95` lines) for path resolution, loading, and validation
-	  errors.
+  manifest seam (`<= 95` lines) for path resolution, loading, and validation
+  errors.
 - `src/commands/replay.ts` must remain a replay command facade (`<= 330`
   lines); canonical run-record and recovery metadata moves into
   `replay-run-record.ts`.

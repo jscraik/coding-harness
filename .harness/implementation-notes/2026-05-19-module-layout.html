@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+            PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -926,6 +926,52 @@
         </section>
 
         <section class="panel">
+          <h2>1f. HE Phase-Exit Trust Seam</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/lib/decision/he-phase-exit.ts</strong>
+              <span>
+                Public facade for HeGateResult/v1, HePhaseExit/v1, validators,
+                adapters, and validation artifact helpers.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>he-phase-exit-core.ts</strong>
+                <span>
+                  Contract schemas, payload validation, aggregation, and public
+                  validateHeGateResult / validateHePhaseExit entrypoints.
+                </span>
+              </div>
+              <div class="module guard current">
+                <strong>he-gate-trust-policy.ts</strong>
+                <span>
+                  Latest slice: status, execution-mode, gate-local evidence,
+                  open-finding, blocker-reason, skipped-gate, and finding
+                  evidence-reference rules now live behind this trust seam.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>he-gate-trust-policy.test.ts</strong>
+                <span>
+                  Seam tests reject summary-only evidence, validation_only,
+                  skipped execution modes, missing blocker proof, and unknown
+                  finding evidence references.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the phase-exit core and trust-policy seam so trust
+                  rules do not drift back into the contract core.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>2. PR Closeout Deep Module</h2>
           <div class="module-grid">
             <div class="lane">
@@ -1455,7 +1501,10 @@
           <article class="note">
             <h3>Latest Changes</h3>
             <p>
-              Doctor terminal rendering, GitHub CLI checks, roadmap document
+              HE phase-exit gate trust policy now lives behind
+              he-gate-trust-policy.ts with direct seam tests for summary-only
+              evidence, validation_only, skipped modes, blocker proof, and
+              finding evidence references. Doctor terminal rendering, GitHub CLI checks, roadmap document
               checks, required-check identity alignment, and north-star contract
               readiness were split into named seams with file-size ratchets.
               Harness next CLI parsing now lives behind next-args.ts.

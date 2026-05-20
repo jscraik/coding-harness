@@ -359,6 +359,21 @@ const PR_CLOSEOUT_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const HE_PHASE_EXIT_TRUST_RATCHETS = [
+	{
+		path: "src/lib/decision/he-phase-exit-core.ts",
+		maxLines: 1_750,
+		reason:
+			"HE phase-exit core must keep moving trust, artifact, and adapter policy behind focused seams.",
+	},
+	{
+		path: "src/lib/decision/he-gate-trust-policy.ts",
+		maxLines: 220,
+		reason:
+			"HE gate trust policy must stay focused on status, execution-mode, finding, and evidence-reference trust rules.",
+	},
+] as const;
+
 const REVIEW_GATE_DECISION_PACKET_RATCHETS = [
 	{
 		path: "src/lib/review-gate/required-check-manifest.ts",
@@ -1102,6 +1117,17 @@ describe("module boundaries", () => {
 		for (const submodule of PR_CLOSEOUT_EVALUATOR_SUBMODULES) {
 			expect(evaluatorContent).toContain(submodule);
 		}
+	});
+
+	it("keeps HE phase-exit trust policy split after decomposition", () => {
+		expectRatchetsWithinBudget(HE_PHASE_EXIT_TRUST_RATCHETS);
+
+		const coreContent = readFileSync(
+			join(process.cwd(), "src/lib/decision/he-phase-exit-core.ts"),
+			"utf-8",
+		);
+		expect(coreContent).toContain("./he-gate-trust-policy.js");
+		expect(coreContent).not.toContain("function validateGateConsistency");
 	});
 
 	it("keeps review-gate decision packet seams split after decomposition", () => {

@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, verify-work, replay, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+            PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -407,8 +407,15 @@
               <div class="module doctor">
                 <strong>linear-command-runner.ts</strong>
                 <span>
-                  Linear claim, handoff, close, prepare, sync, and triage
-                  delegation stays in one focused runner seam.
+                  Linear action parsing, value validation, and dispatch stay
+                  in the runner seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>linear-command-actions.ts</strong>
+                <span>
+                  Linear action-specific option builders and command delegation
+                  stay behind an internal adapter seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -566,7 +573,7 @@
                 <span>
                   Drift mode, baseline seeding, output, suppression,
                   repository root, and JSON projection stay behind a focused
-                  command-spec seam.
+                  command-spec seam and enter through src/lib/drift-gate.ts.
                 </span>
               </div>
               <div class="module doctor">
@@ -679,7 +686,159 @@
         </section>
 
         <section class="panel">
-          <h2>1b. Output Normalisation Seams</h2>
+          <h2>1b. Verify-Work Closeout Trust Surface</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/verify-work.ts</strong>
+              <span>
+                Command facade. Callers keep the existing CLI export contract
+                and enter the deep module through src/lib/verify-work.ts.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module public">
+                <strong>src/lib/verify-work.ts</strong>
+                <span>
+                  Public facade for runVerifyWork, the runtime adapter, exit
+                  codes, and CLI option types.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>verify-work/args.ts</strong>
+                <span>
+                  Internal wrapper flag construction. Agents can edit this
+                  seam without changing caller imports.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>verify-work/runner.ts</strong>
+                <span>
+                  Internal wrapper execution, precondition, spawn-error,
+                  signal, and exit-code mapping seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>verify-work/types.ts</strong>
+                <span>
+                  Small option and exit-code contract for the command surface.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facade and fails if callers import
+                  verify-work internals instead of the public facade.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>1c. Memory-Gate Local Memory Control Surface</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/memory-gate.ts</strong>
+              <span>
+                Command facade. Callers keep the existing CLI export contract
+                and enter Local Memory compliance through src/lib/memory-gate.ts.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module public">
+                <strong>src/lib/memory-gate.ts</strong>
+                <span>
+                  Public facade for runMemoryGate, runMemoryGateCLI, and
+                  MemoryGateOptions.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>memory/validator.ts</strong>
+                <span>
+                  Internal schema, read-first, closeout, branch, and validation
+                  result construction.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>memory/cli.ts</strong>
+                <span>
+                  Latest slice: CLI presentation, metrics persistence, trend
+                  reporting, and Codex branch display live behind this seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>memory/types.ts</strong>
+                <span>
+                  Local Memory compliance schema, result, metrics, and option
+                  contract exported through the facade.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>memory-gate-command-spec.ts</strong>
+                <span>
+                  Registry flag adapter for memory, FORJAMIE, metrics, and JSON;
+                  delegates through the public facade.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets validator, CLI, facade, and types; fails if callers
+                  import memory/* internals instead of src/lib/memory-gate.ts.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>1d. Drift-Gate Consistency Control Surface</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/drift-gate.ts</strong>
+              <span>
+                Existing command facade and CLI export contract for consistency
+                drift checks.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module public">
+                <strong>src/lib/drift-gate.ts</strong>
+                <span>
+                  Public facade for runDriftGate, runDriftGateCLI, drift-gate
+                  options, reports, findings, and status types.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>drift-gate-command-spec.ts</strong>
+                <span>
+                  Registry flag adapter for mode, seeding, output, suppression,
+                  repository root, and JSON; delegates through the facade.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>normalise-drift-gate.ts</strong>
+                <span>
+                  GateResult projection for drift findings and artifact
+                  evidence; imports drift types through the facade.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Fails if new src/lib callers bypass src/lib/drift-gate.ts and
+                  import the command module directly.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>1e. Output Normalisation Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/lib/output/normalise.ts</strong>
@@ -701,7 +860,8 @@
                 <strong>normalise-drift-gate.ts</strong>
                 <span>
                   Drift findings, artifact evidence, and GateResult projection
-                  live behind a focused adapter seam.
+                  live behind a focused adapter seam and import drift-gate
+                  types through src/lib/drift-gate.ts.
                 </span>
               </div>
               <div class="module doctor">
@@ -759,6 +919,52 @@
                   Ratchets the facade, shared core, drift, docs, plan, policy,
                   PR template, and Linear adapters while verifying focused seams
                   remain wired.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>1f. HE Phase-Exit Trust Seam</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/lib/decision/he-phase-exit.ts</strong>
+              <span>
+                Public facade for HeGateResult/v1, HePhaseExit/v1, validators,
+                adapters, and validation artifact helpers.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor">
+                <strong>he-phase-exit-core.ts</strong>
+                <span>
+                  Contract schemas, payload validation, aggregation, and public
+                  validateHeGateResult / validateHePhaseExit entrypoints.
+                </span>
+              </div>
+              <div class="module guard current">
+                <strong>he-gate-trust-policy.ts</strong>
+                <span>
+                  Latest slice: status, execution-mode, gate-local evidence,
+                  open-finding, blocker-reason, skipped-gate, and finding
+                  evidence-reference rules now live behind this trust seam.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>he-gate-trust-policy.test.ts</strong>
+                <span>
+                  Seam tests reject summary-only evidence, validation_only,
+                  skipped execution modes, missing blocker proof, and unknown
+                  finding evidence references.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the phase-exit core and trust-policy seam so trust
+                  rules do not drift back into the contract core.
                 </span>
               </div>
             </div>
@@ -1295,7 +1501,10 @@
           <article class="note">
             <h3>Latest Changes</h3>
             <p>
-              Doctor terminal rendering, GitHub CLI checks, roadmap document
+              HE phase-exit gate trust policy now lives behind
+              he-gate-trust-policy.ts with direct seam tests for summary-only
+              evidence, validation_only, skipped modes, blocker proof, and
+              finding evidence references. Doctor terminal rendering, GitHub CLI checks, roadmap document
               checks, required-check identity alignment, and north-star contract
               readiness were split into named seams with file-size ratchets.
               Harness next CLI parsing now lives behind next-args.ts.
@@ -1365,22 +1574,27 @@
               runtime-card-command-spec.ts.
               PR closeout delegation now lives behind
               pr-closeout-command-spec.ts.
-              Verify-work resume, repository-root, and governance option
-              projection now lives behind verify-work-command-spec.ts.
+              Verify-work command execution is now split behind
+              src/lib/verify-work.ts with args, runner, and types as internal
+              module seams. The registry adapter still owns resume,
+              repository-root, and governance option projection in
+              verify-work-command-spec.ts.
               Replay trace selection, listing, dry-run, JSON, and trace-dir
               projection now lives behind replay-command-spec.ts.
               Gardener docs path, stale-days, dry-run, and JSON projection now
               lives behind gardener-command-spec.ts.
               Memory-gate memory, FORJAMIE, metrics, and JSON projection now
-              lives behind memory-gate-command-spec.ts, while CLI output, trend
-              reporting, and metrics persistence now live inside memory/cli.ts.
+              lives behind memory-gate-command-spec.ts. Memory-gate execution
+              now has a public facade in src/lib/memory-gate.ts, with the
+              validator, CLI presentation seam, and type contract kept behind
+              an executable import guard.
               Silent-error files, directories, strictness, suggestions, and
               JSON projection now lives behind silent-error-command-spec.ts.
               Brainstorm path, topic, age, strictness, and JSON projection now
               lives behind brainstorm-gate-command-spec.ts.
               Drift-gate mode, baseline seeding, output, suppression,
               repository root, and JSON projection now lives behind
-              drift-gate-command-spec.ts.
+              drift-gate-command-spec.ts and enters through src/lib/drift-gate.ts.
               CodeRabbit review evidence CLI option mapping now lives behind
               verify-coderabbit-command-spec.ts.
               Docs gate option projection now lives behind
