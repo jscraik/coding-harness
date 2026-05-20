@@ -2284,13 +2284,16 @@ describe("runInit", () => {
 				"const buildDependency = (content, nodeMap) => {",
 			);
 			expect(refreshDiagrams).toContain(
-				'TRUNC_DIR=".tmp-diagram-refresh-XXXXXX"',
+				'DIAGRAM_CONTEXT_DIR="$DIAGRAM_DIR/context"',
 			);
 			expect(refreshDiagrams).toContain(
-				'TMP_DIR="$(mktemp -d "$ROOT_DIR/${TRUNC_DIR}")"',
+				'TMP_DIR="$(mktemp -d "$DIAGRAM_CONTEXT_DIR/tmp-refresh-XXXXXX")"',
 			);
 			expect(refreshDiagrams).toContain(
-				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,${TMP_BASENAME}/**"',
+				'TMP_OUTPUT_DIR=".diagram/context/$(basename "$TMP_DIR")/diagrams"',
+			);
+			expect(refreshDiagrams).toContain(
+				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,.tmp-diagram-refresh-*/**,.diagram/context/tmp-refresh-*/**"',
 			);
 			expect(refreshDiagrams).toContain(
 				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"',
