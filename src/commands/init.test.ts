@@ -2304,7 +2304,9 @@ describe("runInit", () => {
 			expect(diagramFreshness).not.toContain(".diagram/*)");
 			expect(diagramFreshness).not.toContain("AI/context/*)");
 			expect(diagramFreshness).toContain("src/*.test.ts|src/*.spec.ts");
-			expect(diagramFreshness).toContain("jq -c 'del(.generatedAt)'");
+			expect(diagramFreshness).toContain(
+				"jq -c 'del(.generatedAt) | (.diagrams // []) |= map(del(.lines, .bytes))'",
+			);
 			expect(diagramFreshness).toContain(
 				'bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet',
 			);
