@@ -315,6 +315,37 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("treats GitHub HAS_HOOKS merge state as current branch evidence", () => {
+		const input = baseInput({
+			branch: {
+				clean: true,
+				pushed: true,
+				behindBase: null,
+				hasConflicts: null,
+				headSha: "abc123",
+			},
+		});
+		const report = buildPrCloseoutReport({
+			...input,
+			pullRequest: {
+				...input.pullRequest,
+				mergeStateStatus: "HAS_HOOKS",
+			},
+		});
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "branch_current_with_base",
+					status: "pass",
+					evidenceRef: "github:mergeStateStatus",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
 	it("blocks success when test evidence is missing", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

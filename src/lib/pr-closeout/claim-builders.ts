@@ -189,9 +189,11 @@ function branchClaimState(
 	freshness: PrCloseoutEvidenceFreshness;
 } {
 	const mergeState = normalizeStatus(pr.mergeStateStatus);
+	const mergeStateProvesCurrent =
+		mergeState === "CLEAN" || mergeState === "HAS_HOOKS";
 	const current =
 		(branch?.behindBase === false && branch?.hasConflicts === false) ||
-		mergeState === "CLEAN";
+		mergeStateProvesCurrent;
 	const stale =
 		branch?.behindBase === true ||
 		branch?.hasConflicts === true ||
@@ -203,7 +205,7 @@ function branchClaimState(
 	return {
 		status: stale ? "fail" : "pass",
 		evidenceRef:
-			mergeState === "CLEAN" ||
+			mergeStateProvesCurrent ||
 			mergeState === "DIRTY" ||
 			mergeState === "BEHIND"
 				? "github:mergeStateStatus"
