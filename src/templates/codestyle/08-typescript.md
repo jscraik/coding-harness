@@ -48,8 +48,10 @@
 - New and materially changed production modules SHOULD stay below 400 logical
   lines and functions SHOULD stay below 80 logical lines unless the file is a
   generated artifact, schema table, or explicitly documented exception.
-- Current hard limits are enforced by `scripts/check-code-size.mjs`; ratchet
-  warnings are decomposition pressure, not permission to grow the file further.
+- `scripts/check-code-size.mjs` enforces hard blockers at 800 logical lines per
+  production source file and 120 logical lines per function. The 400/80 numbers
+  above are ratchet targets; crossing them emits warnings and decomposition
+  pressure, not permission to keep growing the file.
 - Size exceptions MUST name the architectural reason, owner or tracking issue,
   and retirement condition. Prefer extracting pure helpers, schema tables, or
   adapter-specific logic before raising a limit.
