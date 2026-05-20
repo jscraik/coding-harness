@@ -82,7 +82,7 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_680,
+		maxLines: 1_650,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
 	},
@@ -97,6 +97,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 25,
 		reason:
 			"Org audit command spec must stay focused on org-audit command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/tooling-audit-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Tooling audit command spec must stay focused on tooling-audit command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/workflow-generate-command-spec.ts",
@@ -547,6 +553,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/pr-template-gate-command-spec.ts",
 	"src/lib/cli/registry/rule-lifecycle-gate-command-spec.ts",
 	"src/lib/cli/registry/symphony-check-command-spec.ts",
+	"src/lib/cli/registry/tooling-audit-command-spec.ts",
 	"src/lib/cli/registry/workflow-generate-command-spec.ts",
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
@@ -621,6 +628,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./pr-template-gate-command-spec.js",
 	"./rule-lifecycle-gate-command-spec.js",
 	"./symphony-check-command-spec.js",
+	"./tooling-audit-command-spec.js",
 	"./workflow-generate-command-spec.js",
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [

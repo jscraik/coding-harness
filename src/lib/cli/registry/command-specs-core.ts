@@ -56,7 +56,6 @@ import {
 	printSimulateUsage,
 	runSimulateCLI,
 } from "../../../commands/simulate.js";
-import { runToolingAuditCLI } from "../../../commands/tooling-audit.js";
 import {
 	runUIExploreCLI,
 	runUIFastCLI,
@@ -102,6 +101,7 @@ import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
+import { createToolingAuditCommandSpec } from "./tooling-audit-command-spec.js";
 import { createWorkflowGenerateCommandSpec } from "./workflow-generate-command-spec.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
@@ -140,15 +140,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createSymphonyCheckCommandSpec(),
 	createWorkflowGenerateCommandSpec(),
 	createOrgAuditCommandSpec(),
-	{
-		name: "tooling-audit",
-		summary: "Audit installed tooling versions and configuration health",
-		errorLabel: "Tooling Audit Error",
-		execute: async (args) => {
-			const { exitCode } = await runToolingAuditCLI(args);
-			return exitCode;
-		},
-	},
+	createToolingAuditCommandSpec(),
 	{
 		name: "preset",
 		summary: "List and show bundled harness presets",
