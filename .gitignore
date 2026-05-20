@@ -80,6 +80,12 @@ gardener-report.json
 !.harness/ideate/**/*.md
 !.harness/brainstorm/
 !.harness/brainstorm/**/*.md
+!.harness/research/
+.harness/research/*
+!.harness/research/evidence-patterns.json
+!.harness/research/deep/
+.harness/research/deep/*
+!.harness/research/deep/**/*.md
 !.harness/specs/
 !.harness/specs/**/*.md
 !.harness/plan/

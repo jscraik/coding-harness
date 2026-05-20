@@ -1,0 +1,116 @@
+{
+	"schemaVersion": "evidence-patterns/v1",
+	"lastReviewedAt": "2026-05-19",
+	"patterns": [
+		{
+			"id": "2026-05-18-coding-harness",
+			"source": ".harness/research/deep/2026-05-18-coding-harness-evidence.md",
+			"status": "adopted",
+			"owner": "codex",
+			"targetSurfaces": [
+				".harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md",
+				"src/commands/next.ts",
+				"src/lib/runtime/local-runtime-card.ts"
+			],
+			"validationCommand": "pnpm vitest run src/commands/next.test.ts src/commands/runtime-card.test.ts",
+			"dispositionReason": "Admitted through the evidence-led codebase gap audit and Phase 1 runtime-truth fixes."
+		},
+		{
+			"id": "2026-05-18-praveen-govindaraj",
+			"source": ".harness/research/deep/2026-05-18-praveen-govindaraj-evidence.md",
+			"status": "deferred",
+			"owner": "jamie",
+			"targetSurfaces": [],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Tracked as cold research; not admitted into the current audit implementation slice."
+		},
+		{
+			"id": "2026-05-18-ryan-lopopolo",
+			"source": ".harness/research/deep/2026-05-18-ryan-lopopolo-evidence.md",
+			"status": "adopted",
+			"owner": "codex",
+			"targetSurfaces": [
+				".harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md",
+				"scripts/verify-work.sh",
+				"src/lib/verify/run-state-core.ts"
+			],
+			"validationCommand": "pnpm vitest run src/commands/verify-work.test.ts -t retry",
+			"dispositionReason": "Admitted into runtime retry and recovery ledger work."
+		},
+		{
+			"id": "2026-05-18-sean-grove",
+			"source": ".harness/research/deep/2026-05-18-sean-grove-evidence.md",
+			"status": "deferred",
+			"owner": "jamie",
+			"targetSurfaces": [],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Tracked as cold research; requires a separate adoption decision before implementation authority."
+		},
+		{
+			"id": "2026-05-18-tejas",
+			"source": ".harness/research/deep/2026-05-18-tejas-evidence.md",
+			"status": "deferred",
+			"owner": "jamie",
+			"targetSurfaces": [],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Tracked as cold research; not part of the approved evidence-led audit implementation scope."
+		},
+		{
+			"id": "2026-05-19-agent-rft",
+			"source": ".harness/research/deep/2026-05-19-agent-rft-evidence.md",
+			"status": "deferred",
+			"owner": "jamie",
+			"targetSurfaces": [],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Tracked for future eval and training-loop work; not admitted into this hardening pass."
+		},
+		{
+			"id": "2026-05-19-agent-rft-patterns",
+			"source": ".harness/research/deep/2026-05-19-agent-rft-patterns-evidence.md",
+			"status": "deferred",
+			"owner": "jamie",
+			"targetSurfaces": [],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Tracked for future pattern-promotion work; not admitted into the current implementation slice."
+		},
+		{
+			"id": "2026-05-19-eno-reyes",
+			"source": ".harness/research/deep/2026-05-19-eno-reyes-evidence.md",
+			"status": "adopted",
+			"owner": "codex",
+			"targetSurfaces": [
+				".harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md",
+				"src/lib/runtime/runtime-evidence-bundle.ts",
+				"src/lib/runtime/runtime-evidence-producer.ts"
+			],
+			"validationCommand": "pnpm vitest run src/commands/runtime-card.test.ts src/lib/runtime/local-runtime-card.test.ts",
+			"dispositionReason": "Admitted into runtime evidence and traceability hardening."
+		},
+		{
+			"id": "2026-05-19-matt-pocock",
+			"source": ".harness/research/deep/2026-05-19-matt-pocock-evidence.md",
+			"status": "adopted",
+			"owner": "codex",
+			"targetSurfaces": [
+				".harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md",
+				".harness/research/evidence-patterns.json",
+				"scripts/validate-evidence-patterns.cjs"
+			],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Admitted into repository-as-control-plane and evidence promotion enforcement."
+		},
+		{
+			"id": "2026-05-19-ryan-lopopolo",
+			"source": ".harness/research/deep/2026-05-19-ryan-lopopolo-evidence.md",
+			"status": "adopted",
+			"owner": "codex",
+			"targetSurfaces": [
+				".harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md",
+				"src/commands/next.ts",
+				"scripts/verify-work.sh"
+			],
+			"validationCommand": "pnpm vitest run src/commands/next.test.ts src/commands/verify-work.test.ts",
+			"dispositionReason": "Admitted into required runtime evidence, bounded retry, and recovery ownership work."
+		}
+	]
+}

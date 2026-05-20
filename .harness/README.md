@@ -55,6 +55,7 @@ move with the repository. Local run state should stay local.
 | `.harness/artifact-provenance.json` | `policy` | Track |
 | `.harness/rule-lifecycle-manifest.json` | `policy` | Track |
 | `.harness/research/evidence-patterns.json` | `policy` | Track |
+| `.harness/research/deep/**.md` | `secondary-context` | Track when listed by `.harness/research/evidence-patterns.json` |
 | `.harness/*-manifest.json` | `policy` | Track with care when validators consume it |
 | `.harness/backups/**` | `backup/scratch` | Do not track |
 | `.harness/*.db` | `generated-runtime` | Do not track unless promoted to a fixture |
