@@ -33,6 +33,81 @@ const stableRawIdentity = (rawId) =>
 		.replace(/(?:[_-][0-9]+)+$/i, "")
 		.toLowerCase();
 
+const dedupeSubgraphNodeIds = (content, diagramName) => {
+	const lines = content.trimEnd().split(/\r?\n/);
+	const nodes = [];
+	let currentSubgraph = null;
+	let subgraphIndex = 0;
+
+	for (const [lineIndex, line] of lines.entries()) {
+		const subgraphMatch = line.match(/^ {2}subgraph (\S+)\["(.+)"\]$/);
+		if (subgraphMatch) {
+			currentSubgraph = {
+				rawId: subgraphMatch[1],
+				label: subgraphMatch[2],
+				index: subgraphIndex,
+			};
+			subgraphIndex += 1;
+			continue;
+		}
+
+		if (line === "  end") {
+			currentSubgraph = null;
+			continue;
+		}
+
+		const nodeMatch = line.match(/^(\s{4})([A-Za-z_][A-Za-z0-9_]*)(\[.+\])$/);
+		if (nodeMatch && currentSubgraph) {
+			nodes.push({
+				lineIndex,
+				indent: nodeMatch[1],
+				rawId: nodeMatch[2],
+				suffix: nodeMatch[3],
+				label: nodeMatch[3].match(/"([^"]+)"/)?.[1] ?? nodeMatch[2],
+				subgraph: currentSubgraph,
+			});
+		}
+	}
+
+	const counts = new Map();
+	for (const node of nodes) {
+		counts.set(node.rawId, (counts.get(node.rawId) ?? 0) + 1);
+	}
+
+	const duplicateIds = new Set(
+		[...counts.entries()]
+			.filter(([, count]) => count > 1)
+			.map(([rawId]) => rawId),
+	);
+	if (duplicateIds.size === 0) {
+		return ensureTrailingNewline(lines.join("\n"));
+	}
+
+	const seen = new Map();
+	for (const node of nodes) {
+		if (!duplicateIds.has(node.rawId)) {
+			continue;
+		}
+		const occurrence = (seen.get(node.rawId) ?? 0) + 1;
+		seen.set(node.rawId, occurrence);
+		const scopedId = stableId(
+			"node",
+			[
+				diagramName,
+				node.subgraph.label,
+				stableRawIdentity(node.subgraph.rawId),
+				node.label,
+				stableRawIdentity(node.rawId),
+				String(node.subgraph.index),
+				String(occurrence),
+			].join("/"),
+		);
+		lines[node.lineIndex] = `${node.indent}${scopedId}${node.suffix}`;
+	}
+
+	return ensureTrailingNewline(lines.join("\n"));
+};
+
 const parseArchitecture = (content) => {
 	const lines = content.trimEnd().split(/\r?\n/);
 	const subgraphs = [];
@@ -188,7 +263,7 @@ for (const file of diagramFiles) {
 	const filePath = join(diagramsDir, file);
 	writeFileSync(
 		filePath,
-		ensureTrailingNewline(readFileSync(filePath, "utf8").trimEnd()),
+		dedupeSubgraphNodeIds(readFileSync(filePath, "utf8").trimEnd(), file),
 	);
 }
 
@@ -215,11 +290,11 @@ writeFileSync(
 	`${JSON.stringify(
 		{
 			generatedAt: new Date().toISOString(),
-			rootPath: rootDir,
+			rootPath: ".",
 			diagramDir: ".diagram",
 			diagrams,
 		},
 		null,
-		2,
+		"\t",
 	)}\n`,
 );

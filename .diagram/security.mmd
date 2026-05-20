@@ -1,0 +1,84 @@
+flowchart TD
+  Untrusted["Untrusted input"]
+  verify_work_df70ecac["verify-work"]
+  Untrusted --> verify_work_df70ecac
+  verify_work_test_0e12f6c5["verify-work.test"]
+  Untrusted --> verify_work_test_0e12f6c5
+  verify_coderabbit_490b4e71["verify-coderabbit"]
+  Untrusted --> verify_coderabbit_490b4e71
+  verify_coderabbit_test_46cfcf29["verify-coderabbit.test"]
+  Untrusted --> verify_coderabbit_test_46cfcf29
+  tooling_audit_8a8239ff["tooling-audit"]
+  Untrusted --> tooling_audit_8a8239ff
+  tooling_audit_test_d2aee28c["tooling-audit.test"]
+  Untrusted --> tooling_audit_test_d2aee28c
+  tooling_audit_core_328d6a41["tooling-audit-core"]
+  Untrusted --> tooling_audit_core_328d6a41
+  policy_gate_213f7313["policy-gate"]
+  Untrusted --> policy_gate_213f7313
+  policy_gate_test_203a5261["policy-gate.test"]
+  Untrusted --> policy_gate_test_203a5261
+  org_audit_d739e44b["org-audit"]
+  Untrusted --> org_audit_d739e44b
+  org_audit_test_0fd9cae8["org-audit.test"]
+  Untrusted --> org_audit_test_0fd9cae8
+  evidence_verify_3b73c290["evidence-verify"]
+  Untrusted --> evidence_verify_3b73c290
+  evidence_verify_test_7373101d["evidence-verify.test"]
+  Untrusted --> evidence_verify_test_7373101d
+  audit_b81f37a0["audit"]
+  Untrusted --> audit_b81f37a0
+  audit_test_54ea1006["audit.test"]
+  Untrusted --> audit_test_54ea1006
+  run_state_94d814a7["run-state"]
+  Untrusted --> run_state_94d814a7
+  run_state_test_ee8298e8["run-state.test"]
+  Untrusted --> run_state_test_ee8298e8
+  run_state_core_25a955bc["run-state-core"]
+  Untrusted --> run_state_core_25a955bc
+  retry_policy_eebf8de9["retry-policy"]
+  Untrusted --> retry_policy_eebf8de9
+  retry_policy_test_fff144eb["retry-policy.test"]
+  Untrusted --> retry_policy_test_fff144eb
+  resume_admissibility_a59835da["resume-admissibility"]
+  Untrusted --> resume_admissibility_a59835da
+  resume_admissibility_test_eba58e3d["resume-admissibility.test"]
+  Untrusted --> resume_admissibility_test_eba58e3d
+  resume_admissibility_core_8ab84488["resume-admissibility-core"]
+  Untrusted --> resume_admissibility_core_8ab84488
+  orchestrator_11376b7e["orchestrator"]
+  Untrusted --> orchestrator_11376b7e
+  orchestrator_test_18d2fe26["orchestrator.test"]
+  Untrusted --> orchestrator_test_18d2fe26
+  orchestrator_core_d0678b53["orchestrator-core"]
+  Untrusted --> orchestrator_core_d0678b53
+  tooling_baseline_50ab2eeb["tooling-baseline"]
+  Untrusted --> tooling_baseline_50ab2eeb
+  tooling_baseline_test_d272ddb6["tooling-baseline.test"]
+  Untrusted --> tooling_baseline_test_d272ddb6
+  risk_tier_1_96b6ff91["risk-tier"]
+  Untrusted --> risk_tier_1_96b6ff91
+  risk_tier_test_1_6f021f87["risk-tier.test"]
+  Untrusted --> risk_tier_test_1_6f021f87
+  required_checks_46396214["required-checks"]
+  Untrusted --> required_checks_46396214
+  required_checks_test_e7da46e9["required-checks.test"]
+  Untrusted --> required_checks_test_e7da46e9
+  policy_chain_0c92e343["policy-chain"]
+  Untrusted --> policy_chain_0c92e343
+  policy_chain_test_bce92046["policy-chain.test"]
+  Untrusted --> policy_chain_test_bce92046
+  diff_budget_1_9f85eb1c["diff-budget"]
+  Untrusted --> diff_budget_1_9f85eb1c
+  command_policy_test_66e89e89["command-policy.test"]
+  Untrusted --> command_policy_test_66e89e89
+  cardinality_ebef8aff["cardinality"]
+  Untrusted --> cardinality_ebef8aff
+  cardinality_test_c00e7edb["cardinality.test"]
+  Untrusted --> cardinality_test_c00e7edb
+  normalise_policy_gate_90229693["normalise-policy-gate"]
+  Untrusted --> normalise_policy_gate_90229693
+  scaffold_security_scan_template_55bc7465["scaffold-security-scan-template"]
+  Untrusted --> scaffold_security_scan_template_55bc7465
+  classDef securityNode fill:#dc2626,color:#fff
+  class verify_work_df70ecac,verify_work_test_0e12f6c5,verify_coderabbit_490b4e71,verify_coderabbit_test_46cfcf29,tooling_audit_8a8239ff,tooling_audit_test_d2aee28c,tooling_audit_core_328d6a41,policy_gate_213f7313,policy_gate_test_203a5261,org_audit_d739e44b,org_audit_test_0fd9cae8,evidence_verify_3b73c290,evidence_verify_test_7373101d,audit_b81f37a0,audit_test_54ea1006,run_state_94d814a7,run_state_test_ee8298e8,run_state_core_25a955bc,retry_policy_eebf8de9,retry_policy_test_fff144eb,resume_admissibility_a59835da,resume_admissibility_test_eba58e3d,resume_admissibility_core_8ab84488,orchestrator_11376b7e,orchestrator_test_18d2fe26,orchestrator_core_d0678b53,tooling_baseline_50ab2eeb,tooling_baseline_test_d272ddb6,risk_tier_1_96b6ff91,risk_tier_test_1_6f021f87,required_checks_46396214,required_checks_test_e7da46e9,policy_chain_0c92e343,policy_chain_test_bce92046,diff_budget_1_9f85eb1c,command_policy_test_66e89e89,cardinality_ebef8aff,cardinality_test_c00e7edb,normalise_policy_gate_90229693,scaffold_security_scan_template_55bc7465 securityNode

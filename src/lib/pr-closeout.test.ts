@@ -315,6 +315,37 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("treats GitHub HAS_HOOKS merge state as current branch evidence", () => {
+		const input = baseInput({
+			branch: {
+				clean: true,
+				pushed: true,
+				behindBase: null,
+				hasConflicts: null,
+				headSha: "abc123",
+			},
+		});
+		const report = buildPrCloseoutReport({
+			...input,
+			pullRequest: {
+				...input.pullRequest,
+				mergeStateStatus: "HAS_HOOKS",
+			},
+		});
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "branch_current_with_base",
+					status: "pass",
+					evidenceRef: "github:mergeStateStatus",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
 	it("blocks success when test evidence is missing", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({
@@ -599,6 +630,8 @@ describe("buildPrCloseoutReport", () => {
 		const report = buildPrCloseoutReport(input);
 
 		expect(report.status).not.toBe("ready");
+		expect(report.status).toBe("fixable");
+		expect(report.nextAction).toBe("codex_can_fix_now");
 		expect(report.claims).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
@@ -610,6 +643,42 @@ describe("buildPrCloseoutReport", () => {
 						class: "missing_recovery_handler",
 						destination: "roadmap_exception",
 					}),
+				}),
+			]),
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					ref: "rollback_path_named_or_not_applicable",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
+	it("derives passed test evidence from current required checks", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "build",
+						state: "SUCCESS",
+						headSha: "abc123",
+						required: true,
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "pass",
+					evidenceRef: "check:build",
+					freshness: "current",
 				}),
 			]),
 		);
@@ -1162,7 +1231,7 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
-	it("recognizes passing live CodeRabbit checks as independent review evidence", () => {
+	it("recognizes failed live CodeRabbit checks as known independent review evidence", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({
 				pullRequest: {
@@ -1178,7 +1247,7 @@ describe("buildPrCloseoutReport", () => {
 				checks: [
 					{
 						name: "CodeRabbit",
-						state: "SUCCESS",
+						state: "FAILURE",
 						headSha: "abc123",
 						source: "github",
 					},

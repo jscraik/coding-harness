@@ -1,0 +1,20 @@
+flowchart TD
+  Start(["Start"])
+  vitest_config_a9f1245e["vitest.config"]
+  Start --> vitest_config_a9f1245e
+  cli_99bb8840["cli"]
+  vitest_config_a9f1245e --> cli_99bb8840
+  cli_test_4851f28b["cli.test"]
+  cli_99bb8840 --> cli_test_4851f28b
+  cli_dispatch_test_54c9f17b["cli-dispatch.test"]
+  cli_test_4851f28b --> cli_dispatch_test_54c9f17b
+  collect_observed_eval_usage_1724425c["collect-observed-eval-usage"]
+  cli_dispatch_test_54c9f17b --> collect_observed_eval_usage_1724425c
+  circleci_stale_management_664de1d9["circleci-stale-management"]
+  collect_observed_eval_usage_1724425c --> circleci_stale_management_664de1d9
+  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  circleci_stale_management_664de1d9 --> circleci_linear_sync_19c0d6da
+  vitest_e2e_config_4e2a61bc["vitest.e2e.config"]
+  circleci_linear_sync_19c0d6da --> vitest_e2e_config_4e2a61bc
+  End(["End"])
+  vitest_e2e_config_4e2a61bc --> End
