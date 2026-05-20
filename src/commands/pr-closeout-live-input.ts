@@ -245,10 +245,21 @@ function inspectGitClean(
  * Detects whether a PR body field value looks like a placeholder.
  *
  * @param value - The field text to evaluate; surrounding whitespace is ignored.
- * @returns `true` if the trimmed value is a placeholder (e.g. "list", "map", "pending", or a `<...>` token), `false` otherwise.
+ * @returns true if the trimmed value is one of the PR template prompt phrases or a non-URL angle-bracket token, false otherwise.
  */
 function isPlaceholderBodyField(value: string): boolean {
-	return /^(?:list\b|map\b|pending\b|<[^>]+>\s*$)/iu.test(value.trim());
+	const trimmed = value.trim();
+	const normalized = trimmed.replace(/\u0060/gu, "");
+	const templatePrompts = [
+		/^list Codex(?: thread\/session|-?session-collector\/harness session) IDs\b/iu,
+		/^list CI(?: workflow\/job URLs|, harness, eval,)\b/iu,
+		/^map the AI session or trace reference to the work it supports\b/iu,
+		/^pending (?:completion|confirmation)\b/iu,
+	];
+	if (templatePrompts.some((pattern) => pattern.test(normalized))) return true;
+	const angleMatch = /^<([^>]+)>\s*$/u.exec(trimmed);
+	if (!angleMatch) return false;
+	return !/^[a-z][a-z0-9+.-]*:/iu.test(angleMatch[1]?.trim() ?? "");
 }
 
 /**

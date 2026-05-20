@@ -1561,6 +1561,75 @@ Refs JSC-328
 		);
 	});
 
+	it("keeps concrete map-prefixed traceability text from PR body fields", async () => {
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: `
+Refs JSC-328
+
+## Work performed
+
+- Session IDs: n.a. with reason: AI traceability field carries the concrete evidence.
+- Trace IDs: n.a. with reason: no external trace was produced.
+- AI session / traceability: map codex-session:2026-05-20 to the closeout parser fix.
+`.trim(),
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(["--json", "--pr", "258"], runner);
+		const report = JSON.parse(result.output) as {
+			traceability: { complete: boolean; aiSessionTraceability: string | null };
+			blockers: Array<{ surface: string }>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.traceability).toMatchObject({
+			complete: true,
+			aiSessionTraceability:
+				"map codex-session:2026-05-20 to the closeout parser fix.",
+		});
+		expect(report.blockers).not.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ surface: "traceability" }),
+			]),
+		);
+	});
+
 	it("accepts angle-bracketed evidence URLs from PR body fields", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);
