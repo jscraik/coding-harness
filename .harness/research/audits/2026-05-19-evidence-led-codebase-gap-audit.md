@@ -90,7 +90,7 @@ Refresh status summary:
 | GAP-011 through GAP-022 | Open roadmap | These are post-deep-module agent-native context authority work. |
 | GAP-023 | Open follow-on | Effect migration remains scaffolded, not a closure prerequisite for agent-operability unless tied to a specific parity gap. |
 | GAP-024 through GAP-033 | Open roadmap | Verified upstream Codex primitives show packaging, environment profiles, lifecycle state, subagent hooks, permission profiles, output fidelity, turn lifecycle metadata, durable goal state, async approvals, remote compaction blockers, and runtime capability introspection should become harness-owned contracts after deep-module work. |
-| GAP-034 | Open roadmap | The single-prompt issue-to-merge outcome should become a harness-owned state machine with required artifacts, product-driver profiles, feedback/CI remediation, human-judgment escalation, and merge-decision separation. |
+| GAP-034 | Open roadmap | The single-prompt issue-to-merge outcome should become a harness-owned state machine with Linear bug trackers, required bug templates/labels, required artifacts, product-driver profiles, feedback/CI remediation, human-judgment escalation, and merge-decision separation. |
 
 ## 1. Executive Summary
 
@@ -1062,6 +1062,7 @@ Required state machine:
 | initialized | Run was created with repo, issue, environment, permissions, and goal refs. | run-lifecycle, goal-ref, environment profile, permission profile |
 | current_state_validated | Baseline repo state and blockers are known before edits. | validation summary, dirty-worktree classification, runtime-card |
 | issue_context_loaded | Bug report, Linear/GitHub issue, or prompt context is classified by authority. | issue context refs, authority classes, freshness |
+| tracker_created_or_linked | A required Linear bug tracker exists, or tracking is blocked/n.a. with reason. | Linear issue id, team/project, template id/version, required labels, status, duplicate check |
 | reproduction_attempted | The agent attempted the smallest credible reproduction. | reproduction steps, commands or product-driver trace |
 | failure_reproduced | The failure is observed, or non-reproduction is classified. | failing evidence, raw output refs, blocker or not_reproduced reason |
 | failure_evidence_recorded | Pre-fix behavior is captured in inspectable form. | screenshot or video artifact, evidence-envelope entry |
@@ -1085,6 +1086,7 @@ Required artifact contract:
 |---|---|
 | artifacts/issue-loop/{run-id}/baseline-validation.json | Current-state proof before edits. |
 | artifacts/issue-loop/{run-id}/issue-context.json | Authority-classed bug or task context. |
+| artifacts/issue-loop/{run-id}/linear-tracker.json | Linear bug tracker proof: issue id, required template, required labels, status, evidence links, duplicate-prevention result, or blocked/n.a. reason. |
 | artifacts/issue-loop/{run-id}/reproduction.md | Human-readable reproduction and non-reproduction notes. |
 | artifacts/issue-loop/{run-id}/failure-evidence.* | Pre-fix screenshot or video evidence. |
 | artifacts/issue-loop/{run-id}/fix-summary.md | Scoped implementation summary and risk. |
@@ -1095,6 +1097,18 @@ Required artifact contract:
 | artifacts/issue-loop/{run-id}/feedback-ledger.json | Agent, CodeRabbit, reviewer, and human feedback status. |
 | artifacts/issue-loop/{run-id}/ci-remediation.json | Build failure classification and remediation evidence. |
 | artifacts/issue-loop/{run-id}/merge-decision.json | Readiness versus authority decision. |
+
+Product code and tests:
+
+| Surface | Purpose | Minimum Tests |
+|---|---|---|
+| src/lib/issue-loop/bugfix-record.ts | Build and validate bugfix-record/v1 with authority-classed issue context, reproduction, fix, validation, product-driver, tracker, and closeout refs. | Accepts complete before/after evidence; rejects missing reproduction evidence; rejects product-driver success without trace refs; rejects tracker claims without tracker artifact refs. |
+| src/lib/issue-loop/linear-tracker.ts | Create, link, or classify the required Linear bug tracker using the configured bug template and labels. | Requires team/project/template/label evidence; rejects duplicate tracker creation; blocks on missing auth or required labels; records Linear as intent/tracker authority only. |
+| src/lib/product-driver/profile.ts | Resolve product-driver-profile/v1 for browser app, Electron app, macOS app, iOS app, CLI tool, MCP server, and backend service. | Rejects unsupported screenshot/video claims; requires n.a. reason for unavailable visual evidence; keeps Browser-specific fields under adapter metadata. |
+| src/lib/product-driver/trace.ts | Record the exact product-driving steps and produced artifacts. | Requires ordered actions and artifact refs; rejects summary-only product validation; supports browser, app, device, CLI, MCP, and service adapters. |
+| src/lib/evidence/visual-pair.ts | Validate comparable before/after screenshots or videos. | Requires same user flow or explicit comparison reason; rejects missing failure or resolution evidence; verifies required video is present or explicitly n.a. by profile. |
+| src/lib/evidence/video-policy.ts | Decide when video is required, optional, unavailable, or n.a. | Covers browser, Electron, macOS, iOS, CLI, MCP, and backend profiles; rejects treating Browser screenshot support as Browser video support. |
+| src/commands/issue-loop.ts | Agent-facing issue-loop command or shadow-mode status surface. | Produces a complete artifact directory for fixture bugs; exposes blockers and next required state; does not merge without merge-decision authority. |
 
 Human escalation must be explicit, not vibes-based. Judgment-bearing blockers
 include product taste, UX/design tradeoffs, security or privacy ambiguity,
@@ -1110,10 +1124,12 @@ bug and produce baseline validation, reproduction evidence, before/after video
 or screenshot evidence, fix validation, PR closeout, feedback ledger,
 CI-remediation classification, and merge-decision artifacts. Evals fail when
 the loop skips reproduction, omits pre-fix or post-fix evidence, treats
-ready_to_merge as merged, opens or merges without required authority, classifies
-pending approval as success, uses Browser as proof of video capture without a
-declared video adapter, marks required video n.a. without a product-profile
-reason, or escalates non-judgment work to a human.
+ready_to_merge as merged, opens or merges without required authority, creates
+duplicate Linear bug trackers, omits required Linear bug templates or labels,
+classifies pending approval as success, uses Browser as proof of video capture
+without a declared video adapter, marks required video n.a. without a
+product-profile reason, cites Linear as implementation proof, or escalates
+non-judgment work to a human.
 
 ### 4.5 Sequencing After Deep Module Work
 
@@ -1141,8 +1157,10 @@ reason, or escalates non-judgment work to a human.
     skill-lifecycle, subagent-artifact, output-fidelity, turn metadata, goal
     persistence, async approval, remote compaction timeout, and runtime
     capability mismatch eval fixtures.
-15. Add issue-to-merge, issue-loop-state, product-driver-profile, and
+15. Add issue-to-merge, issue-loop-state, bugfix-record, linear-bug-tracker,
+    product-driver-profile, product-driver-trace, visual-evidence-pair, and
     merge-decision contracts in shadow mode, with fixtures for reproduction,
+    required Linear bug templates and labels, duplicate tracker prevention,
     before/after evidence, product-driver validation, PR feedback, CI
     remediation, human escalation, and merge readiness versus merge authority.
 16. Promote deterministic authority checks into pnpm check after shadow-mode
@@ -1997,25 +2015,29 @@ authority.
 Fix included: GAP-034.
 
 Files likely affected: command catalog modes, issue-loop command or status
-surface, issue-to-merge schemas, bugfix-record builders, product-driver
-profiles and traces, visual-evidence-pair validation, video policy, evidence
-validation, UI loop adapters, Browser driver adapters, PR closeout adapters,
-review-gate, CI remediation adapters, merge-decision contracts, internal eval
-fixtures, and generated downstream harness skill guidance.
+surface, issue-to-merge schemas, bugfix-record builders, Linear bug tracker
+adapter and required-template/label validation, product-driver profiles and
+traces, visual-evidence-pair validation, video policy, evidence validation, UI
+loop adapters, Browser driver adapters, PR closeout adapters, review-gate, CI
+remediation adapters, merge-decision contracts, internal eval fixtures, and
+generated downstream harness skill guidance.
 
-Validation gates: issue-loop fixture eval; bugfix-record schema tests;
-product-driver profile fixture evals for browser app, Electron app, macOS app,
-iOS app, CLI tool, MCP server, and backend service; product-driver-trace tests;
-visual-evidence-pair tests; video-policy tests for required, optional, and n.a.
-states; evidence-verify before/after artifact tests; Browser screenshot
-adapter tests that do not imply video support; PR feedback ledger tests;
-CI-remediation classification tests; merge-decision tests; command catalog mode
-tests; pnpm docs:lint; and focused schema validation.
+Validation gates: issue-loop fixture eval; bugfix-record schema tests; Linear
+bug tracker tests for required template, required labels, duplicate prevention,
+unavailable auth, and tracker-versus-proof authority; product-driver profile
+fixture evals for browser app, Electron app, macOS app, iOS app, CLI tool, MCP
+server, and backend service; product-driver-trace tests; visual-evidence-pair
+tests; video-policy tests for required, optional, and n.a. states;
+evidence-verify before/after artifact tests; Browser screenshot adapter tests
+that do not imply video support; PR feedback ledger tests; CI-remediation
+classification tests; merge-decision tests; command catalog mode tests; pnpm
+docs:lint; and focused schema validation.
 
 Expected risk reduction: high. This hides the complex production workflow
 behind a thin, tested contract so agents can move from issue to merge readiness
-without skipping reproduction, evidence capture, product validation, feedback,
-CI remediation, or human-judgment escalation.
+without skipping Linear tracking, required bug templates/labels, reproduction,
+evidence capture, product validation, feedback, CI remediation, or
+human-judgment escalation.
 
 ### Adoption Modes — Greenfield And Brownfield
 
