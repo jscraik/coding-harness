@@ -37,6 +37,18 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 | Command Facade | The CLI/options adapter layer that parses user input, loads boundary artifacts, invokes command core behavior, and renders command output. |
 | Command Core | The pure behavior layer that owns command decisions and should be easiest to test without terminal or filesystem setup. |
 | Output Renderer | The layer that turns a command result into human output or a JSON contract without changing command behavior. |
+| Control Surface | A documented repo artifact, command, schema, or generated evidence pack that agents are expected to use when making or validating workflow decisions. |
+| Public Facade | The supported import or command entrypoint callers use for a deep module; implementation files stay hidden behind it. |
+| Agent-Safe Boundary | A narrow, tested work area where agents can change behavior without leaking implementation detail or weakening surrounding contracts. |
+| Manifest Assembler | The component that gathers focused specs, metadata, or command records into a governed manifest without owning each command's behavior. |
+| Command Catalog Assembler | The registry component that assembles command specs into the published command catalog while workflow-specific parsing stays in focused adapters. |
+| Command Adapter | A focused command layer that owns one command family's option parsing, delegation, and usage-error mapping. |
+| CLI Option Adapter | The command-adapter responsibility for translating CLI flags into the command core's typed options without moving business behavior into the registry. |
+| Runner Adapter | A focused adapter that delegates parsed command intent to runner functions and keeps execution plumbing out of registry catalogs. |
+| Review Evidence Adapter | A provider-specific adapter that converts review-system evidence, such as CodeRabbit findings, into harness-readable review context. |
+| Live Evidence Adapter | A boundary that reads current external or local state and turns it into a typed harness evidence snapshot. |
+| Gate Result Adapter | A normalisation boundary that converts one gate's native output into the canonical gate-result shape. |
+| Agent-Safe Work Area | A named doctor/runtime support boundary where agents can change checks or provider behavior without widening a command facade. |
 | Deep Module Boundary | A stable public interface that hides richer implementation, has seam tests for caller-visible behavior, and gives agents a safe local work area. |
 | Effect Boundary | An approved deep module entrypoint where `effect` may appear because typed failures, runtime sequencing, providers, retries, or resource handling would otherwise leak to callers. |
 | Architecture Context Pack | The generated architecture evidence set, including `.diagram/**` and `AI/context/diagram-context.md`; it is evidence, not hand-written narrative. |
