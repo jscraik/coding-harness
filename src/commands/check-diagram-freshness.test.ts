@@ -402,6 +402,53 @@ MMD
 		expect(result.stdout).toContain("Diagram freshness check passed.");
 	});
 
+	it("restores semantically equivalent generated artifacts from the index", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  subgraph sg_one_cccc3333["src/lib/one"]
+    node_alpha_33333333["alpha"]
+  end
+  ext_node_fs_cccc3333["node:fs"] --> node_alpha_33333333
+MMD
+`);
+		roots.push(root);
+
+		const stagedArtifact = [
+			"graph TD",
+			'  subgraph sg_one_bbbb2222["src/lib/one"]',
+			'    node_alpha_22222222["alpha"]',
+			"  end",
+			'  ext_node_fs_bbbb2222["node:fs"] --> node_alpha_22222222',
+			"",
+		].join("\n");
+		write(root, ".diagram/architecture.mmd", stagedArtifact);
+		git(root, "add", ".diagram/architecture.mmd");
+		write(root, "src/example.ts", "export const example = 46;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+
+		const unstagedStatus = run(root, "git", [
+			"diff",
+			"--quiet",
+			"--",
+			".diagram/architecture.mmd",
+		]);
+		expect(unstagedStatus.status).toBe(0);
+
+		const stagedStatus = run(root, "git", [
+			"diff",
+			"--cached",
+			"--quiet",
+			"--",
+			".diagram/architecture.mmd",
+		]);
+		expect(stagedStatus.status).toBe(1);
+	});
+
 	it("passes when refresh changes volatile suffixes for duplicate labels", () => {
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
