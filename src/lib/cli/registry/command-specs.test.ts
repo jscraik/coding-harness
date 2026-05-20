@@ -818,13 +818,18 @@ describe("drift-gate execute validation", () => {
 		});
 	});
 
-	it("lets --no-seed override baseline seeding", () => {
+	it("returns 2 when both --seed-baseline and --no-seed are provided", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
 		const result = spec.execute(["--seed-baseline", "--no-seed"]);
 
-		expect(result).toBe(0);
-		expect(driftGateModule.runDriftGateCLI).toHaveBeenCalledWith({
-			seedBaseline: false,
-		});
+		expect(result).toBe(2);
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error: --seed-baseline and --no-seed are mutually exclusive. Use only one.",
+		);
+		expect(driftGateModule.runDriftGateCLI).not.toHaveBeenCalled();
+
+		errorSpy.mockRestore();
 	});
 
 	it("returns 2 when --mode is an invalid value", () => {

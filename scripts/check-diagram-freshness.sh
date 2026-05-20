@@ -173,14 +173,10 @@ NODE
 				del(.generatedAt) |
 				if (.diagrams | type) == "array" then
 					.diagrams |= map(del(.lines, .bytes))
+				elif (.diagrams | type) == "object" then
+					.diagrams |= with_entries(del(.value.lines, .value.bytes))
 				else
-					with_entries(
-						if (.value | type) == "object" then
-							.value |= del(.lines, .bytes)
-						else
-							.
-						end
-					)
+					.
 				end
 			' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
