@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { existsSync, readFileSync } = require("node:fs");
-const { resolve } = require("node:path");
+const { existsSync, readFileSync, readdirSync } = require("node:fs");
+const { join, resolve } = require("node:path");
 
 const REPO_ROOT = resolve(__dirname, "..");
 
@@ -17,6 +17,9 @@ const REQUIRED_FILES = {
 	envSolution:
 		"docs/solutions/integration-issues/2026-05-19-env-backed-validation-admission.md",
 };
+const ADMISSION_RECORD_DIR = ".harness/implementation-notes";
+const REQUIRED_ADMISSION_RECORD =
+	".harness/implementation-notes/2026-05-20-steering-admission.md";
 
 const DURABLE_DESTINATION_PATTERN =
 	/(gate|validator|schema|scaffold|template field|validation rule|project brain|linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
@@ -88,6 +91,139 @@ function requirePattern(errors, label, content, pattern, description) {
 	if (!pattern.test(content)) {
 		errors.push(`${label}: missing ${description}`);
 	}
+}
+
+function collectAdmissionRecordPaths() {
+	const admissionDir = resolve(REPO_ROOT, ADMISSION_RECORD_DIR);
+	if (!existsSync(admissionDir)) {
+		return [];
+	}
+
+	return readdirSync(admissionDir)
+		.filter((name) => /steering-admission.*\.md$/i.test(name))
+		.map((name) => join(ADMISSION_RECORD_DIR, name))
+		.sort();
+}
+
+function validateAdmissionRecord(path, content) {
+	const errors = [];
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^# Current-Session Steering Admission$/m,
+		"current-session steering admission title",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		CURRENT_SESSION_ADMISSION_PATTERN,
+		"current-session steering admission record language",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Feedback Signal$/m,
+		"feedback signal section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Root Operational Failure$/m,
+		"root operational failure section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Failure Category$/m,
+		"failure category section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Searched Surfaces$/m,
+		"searched surfaces section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Durable System Improvement$/m,
+		"durable system improvement section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		DURABLE_DESTINATION_PATTERN,
+		"durable destination evidence",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Executable Guard$/m,
+		"executable guard section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/pnpm run docs:steering:guard/i,
+		"focused steering guard validation command",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Forbidden Recurrence Behavior$/m,
+		"forbidden recurrence behavior section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Validation$/m,
+		"validation section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/Command: .* -> (pending|pass|fail|blocked)/i,
+		"explicit validation command outcome",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Review Condition$/m,
+		"review condition section",
+	);
+	return errors;
+}
+
+function validateAdmissionRecords() {
+	const paths = collectAdmissionRecordPaths();
+	const errors = [];
+	if (!paths.includes(REQUIRED_ADMISSION_RECORD)) {
+		errors.push(
+			`admission records: missing required current-session record ${REQUIRED_ADMISSION_RECORD}`,
+		);
+	}
+	for (const path of paths) {
+		const result = readRequiredFile(path, path);
+		errors.push(...result.errors);
+		if (result.errors.length === 0) {
+			errors.push(...validateAdmissionRecord(path, result.content));
+		}
+	}
+	return errors;
 }
 
 /**
@@ -1100,6 +1236,7 @@ for (const [label, validate] of validations) {
 		errors.push(...validate(result.content));
 	}
 }
+errors.push(...validateAdmissionRecords());
 
 if (errors.length > 0) {
 	console.error("steering-feedback-contract: failed");

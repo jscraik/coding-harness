@@ -37,6 +37,7 @@ move with the repository. Local run state should stay local.
 | `.harness/active-artifacts.md` | `execution-input` | Track |
 | `.harness/refactors/**.md` | `execution-input` | Track |
 | `.harness/features/**.md` | `secondary-context` | Track |
+| `.harness/implementation-notes/**.md` | `secondary-context` | Track when they admit steering, capture implementation proof, or are referenced by a validator |
 | `.harness/strategy/**.md` | `secondary-context` | Track |
 | `.harness/triage/**.md` | `secondary-context` | Track |
 | `.harness/review/**.md` | `secondary-context` | Track when curated |

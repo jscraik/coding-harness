@@ -66,6 +66,9 @@ gardener-report.json
 !.harness/refactors/**/*.md
 !.harness/features/
 !.harness/features/**/*.md
+!.harness/implementation-notes/
+.harness/implementation-notes/*
+!.harness/implementation-notes/*.md
 !.harness/strategy/
 !.harness/strategy/**/*.md
 !.harness/triage/

@@ -48,3 +48,5 @@ Repo-specific agent knowledge base. Append-only.
 **2026-05-19 [Codex]:** Deep validation reported missing GitHub/Linear credentials even though they were available in `~/.codex/.env` -> before marking credentialed validation blocked, inspect required env names without printing values, load `~/.codex/.env`, rerun the exact command, and record env-backed validation recovery evidence.
 
 **2026-05-20 [Codex]:** Planning-only steering was treated as an implementation cue -> stop file edits when Jamie says the thread is planning-only, says the agent is not making changes yet, or says this is the planning; admit the execution-mode failure through docs/gates/memory and run `pnpm run docs:steering:guard` before resuming implementation.
+
+**2026-05-20 [Codex]:** Current-session steering admission existed as prose but not as a validated artifact contract -> write .harness/implementation-notes/*steering-admission*.md before resuming feature work, validate required proof fields with `pnpm run docs:steering:guard`, and prefer deterministic guards over chat promises.
