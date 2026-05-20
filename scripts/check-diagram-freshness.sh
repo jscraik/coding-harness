@@ -169,7 +169,20 @@ NODE
 			jq -c 'del(.generated_at, .generatedAt, .last_generated_epoch, .min_interval_seconds, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/manifest.json)
-			jq -c 'del(.generatedAt) | (.diagrams // []) |= map(del(.lines, .bytes))' "$file" | shasum -a 256 | awk '{print $1}'
+			jq -c '
+				del(.generatedAt) |
+				if (.diagrams | type) == "array" then
+					.diagrams |= map(del(.lines, .bytes))
+				else
+					with_entries(
+						if (.value | type) == "object" then
+							.value |= del(.lines, .bytes)
+						else
+							.
+						end
+					)
+				end
+			' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*)
 			shasum -a 256 "$file" | awk '{print $1}'
