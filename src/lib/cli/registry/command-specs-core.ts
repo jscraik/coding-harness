@@ -6,7 +6,6 @@ import {
 	runBlastRadiusCLI,
 } from "../../../commands/blast-radius.js";
 import { runBrainCLI } from "../../../commands/brain.js";
-import { runBrainstormGateCLI } from "../../../commands/brainstorm-gate.js";
 import {
 	runCIMigrateCLI,
 	runPromoteModeCLI,
@@ -64,6 +63,7 @@ import {
 	parseIntegerArg,
 } from "../parse-utils.js";
 import { createAuditCommandSpec } from "./audit-command-spec.js";
+import { createBrainstormGateCommandSpec } from "./brainstorm-gate-command-spec.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createCheckCommandSpec } from "./check-command-spec.js";
@@ -181,34 +181,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createGardenerCommandSpec(),
 	createMemoryGateCommandSpec(),
 	createSilentErrorCommandSpec(),
-	{
-		name: "brainstorm-gate",
-		summary: "Validate brainstorm artifacts",
-		errorLabel: "Brainstorm Gate Error",
-		execute: (args) => {
-			const options: {
-				brainstormsPath?: string;
-				topic?: string;
-				maxAgeDays?: number;
-				strict?: boolean;
-				json?: boolean;
-			} = {};
-
-			if (args.includes("--json")) options.json = true;
-			if (args.includes("--strict")) options.strict = true;
-			const brainstormsArg = getFlagValue(args, args.indexOf("--brainstorms"));
-			if (brainstormsArg) options.brainstormsPath = brainstormsArg;
-			const topicArg = getFlagValue(args, args.indexOf("--topic"));
-			if (topicArg) options.topic = topicArg;
-			const maxAgeArg = getFlagValue(args, args.indexOf("--max-age"));
-			if (maxAgeArg) {
-				const parsed = parseIntegerArg(maxAgeArg, 0);
-				if (parsed !== undefined) options.maxAgeDays = parsed;
-			}
-
-			return runBrainstormGateCLI(options);
-		},
-	},
+	createBrainstormGateCommandSpec(),
 	{
 		name: "brain",
 		summary: "Project Brain knowledge and quality management",

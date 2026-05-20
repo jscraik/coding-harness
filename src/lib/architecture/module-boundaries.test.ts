@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_400,
+		maxLines: 1_375,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/brainstorm-gate-command-spec.ts",
+		maxLines: 40,
+		reason:
+			"Brainstorm gate command spec must stay focused on brainstorm option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/silent-error-command-spec.ts",
@@ -624,6 +630,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
 	"src/lib/cli/registry/audit-command-spec.ts",
+	"src/lib/cli/registry/brainstorm-gate-command-spec.ts",
 	"src/lib/cli/registry/branch-protect-command-spec.ts",
 	"src/lib/cli/registry/check-authz-command-spec.ts",
 	"src/lib/cli/registry/check-command-spec.ts",
@@ -714,6 +721,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 	"./doctor-north-star-contract-checks.js",
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
+	"./brainstorm-gate-command-spec.js",
 	"./branch-protect-command-spec.js",
 	"./audit-command-spec.js",
 	"./check-authz-command-spec.js",

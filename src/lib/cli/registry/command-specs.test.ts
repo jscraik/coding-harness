@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
 import * as gardenerCommand from "../../../commands/gardener.js";
 import * as memoryGateCommand from "../../../commands/memory-gate.js";
 import * as replayCommand from "../../../commands/replay.js";
@@ -530,6 +531,56 @@ describe("silent-error execute parsing", () => {
 		expect(silentErrorCommand.runSilentErrorDetectorCLI).toHaveBeenCalledWith(
 			{},
 		);
+	});
+});
+
+describe("brainstorm-gate execute parsing", () => {
+	const spec = findSpec("brainstorm-gate");
+
+	beforeEach(() => {
+		vi.spyOn(brainstormGateCommand, "runBrainstormGateCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects brainstorms, topic, max-age, strict, and json flags into the brainstorm gate command", () => {
+		const result = spec.execute([
+			"--brainstorms",
+			".harness/brainstorm",
+			"--topic",
+			"deep modules",
+			"--max-age",
+			"7",
+			"--strict",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(brainstormGateCommand.runBrainstormGateCLI).toHaveBeenCalledWith({
+			brainstormsPath: ".harness/brainstorm",
+			topic: "deep modules",
+			maxAgeDays: 7,
+			strict: true,
+			json: true,
+		});
+	});
+
+	it("omits invalid max-age values while preserving other options", () => {
+		const result = spec.execute(["--max-age", "-1", "--topic", "module map"]);
+
+		expect(result).toBe(0);
+		expect(brainstormGateCommand.runBrainstormGateCLI).toHaveBeenCalledWith({
+			topic: "module map",
+		});
+	});
+
+	it("uses defaults when optional brainstorm-gate flags are absent", () => {
+		const result = spec.execute([]);
+
+		expect(result).toBe(0);
+		expect(brainstormGateCommand.runBrainstormGateCLI).toHaveBeenCalledWith({});
 	});
 });
 
