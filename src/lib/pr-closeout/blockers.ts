@@ -108,13 +108,23 @@ export function collectPullRequestBlockers(
 			fixableByCodex: false,
 		});
 	}
-	if (normalizeStatus(pr.mergeStateStatus) === "DIRTY") {
+	const mergeState = normalizeStatus(pr.mergeStateStatus);
+	if (mergeState === "DIRTY") {
 		pushBlocker(blockers, {
 			surface: "branch",
 			classification: "introduced",
 			kind: "state",
 			conflict: true,
 			reason: "Pull request merge state reports conflicts.",
+			fixableByCodex: true,
+		});
+	}
+	if (mergeState === "BEHIND") {
+		pushBlocker(blockers, {
+			surface: "branch",
+			classification: "introduced",
+			kind: "state",
+			reason: "Pull request merge state reports branch is behind base.",
 			fixableByCodex: true,
 		});
 	}

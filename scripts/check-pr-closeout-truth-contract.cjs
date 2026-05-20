@@ -104,7 +104,8 @@ const REQUIRED_FIXTURES = [
 	{
 		id: "current-head-command-fixture",
 		path: "src/commands/pr-closeout.test.ts",
-		pattern: /headRefOid/,
+		pattern:
+			/gh pr view 258 --json number,title,state,isDraft,mergeStateStatus,url,headRefOid,headRefName,baseRefName,reviewDecision,body/,
 		message:
 			"command fixture must preserve current-head evidence from gh pr view",
 	},

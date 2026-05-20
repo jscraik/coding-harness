@@ -1493,6 +1493,94 @@ Refs JSC-328
 		);
 	});
 
+	it("accepts angle-bracketed evidence URLs from PR body fields", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: `
+Refs JSC-328
+
+## Work performed
+
+- Session IDs: <https://codex.example/sessions/abc>
+- Trace IDs: <https://circleci.com/workflow/123>
+- AI session / traceability: <https://trace.example/run/456>
+- Rollback: <https://github.com/jscraik/coding-harness/pull/265>
+`.trim(),
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				return "";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			traceability: {
+				complete: boolean;
+				sessionIds: string[];
+				traceIds: string[];
+			};
+			claims: Array<{
+				claim: string;
+				status: string;
+				evidenceRef: string | null;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("ready");
+		expect(report.traceability).toMatchObject({
+			complete: true,
+			sessionIds: ["<https://codex.example/sessions/abc>"],
+			traceIds: ["<https://circleci.com/workflow/123>"],
+		});
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "rollback_path_named_or_not_applicable",
+					status: "pass",
+				}),
+			]),
+		);
+	});
+
 	it("blocks live reports when rollback evidence is missing", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);

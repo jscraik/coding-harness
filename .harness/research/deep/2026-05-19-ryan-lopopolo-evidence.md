@@ -1,11 +1,11 @@
 # Ryan Lopopolo Harness Engineering Evidence Extraction
 
 Generated: 2026-05-19
-Source snapshot commit: <git-sha>
-Extraction tool/version: <tool>@<version>
+Source snapshot commit: `git-sha`
+Extraction tool/version: `tool@version`
 Primary-source digest set:
-- <path>: sha256:<digest>
-- <path>: sha256:<digest>
+- `path`: `sha256:digest`
+- `path`: `sha256:digest`
 
 Primary sources:
 

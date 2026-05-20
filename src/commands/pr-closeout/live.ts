@@ -101,7 +101,11 @@ function inspectGitClean(
 }
 
 function isPlaceholderBodyField(value: string): boolean {
-	return /^(?:list\b|map\b|pending\b|<[^>]+>\s*$)/iu.test(value.trim());
+	const trimmed = value.trim();
+	if (/^(?:list\b|map\b|pending\b)/iu.test(trimmed)) return true;
+	const angleMatch = /^<([^>]+)>\s*$/u.exec(trimmed);
+	if (!angleMatch) return false;
+	return !/^[a-z][a-z0-9+.-]*:/iu.test(angleMatch[1]?.trim() ?? "");
 }
 
 function bodyField(

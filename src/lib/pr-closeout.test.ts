@@ -1125,4 +1125,74 @@ describe("buildPrCloseoutReport", () => {
 			fixableByCodex: true,
 		});
 	});
+
+	it("routes BEHIND merge state to branch cleanup", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "BEHIND",
+					url: "https://github.com/jscraik/coding-harness/pull/258",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
+					body: "Refs JSC-327\n",
+				},
+				branch: {
+					clean: true,
+					pushed: true,
+					behindBase: null,
+					hasConflicts: false,
+					headSha: "abc123",
+				},
+			}),
+		);
+
+		expect(report.status).toBe("cleanup_required");
+		expect(report.nextAction).toBe("cleanup_before_continue");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "branch",
+					reason: "Pull request merge state reports branch is behind base.",
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
+	it("recognizes passing live CodeRabbit checks as independent review evidence", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					url: "https://github.com/jscraik/coding-harness/pull/258",
+					headSha: "abc123",
+					reviewDecision: null,
+					body: "Refs JSC-327\n",
+				},
+				checks: [
+					{
+						name: "CodeRabbit",
+						state: "SUCCESS",
+						headSha: "abc123",
+						source: "github",
+					},
+				],
+			}),
+		);
+		const reviewClaim = report.claims.find(
+			(claim) => claim.claim === "independent_review_status_known",
+		);
+
+		expect(reviewClaim).toMatchObject({
+			status: "pass",
+			evidenceRef: "check:coderabbit",
+			freshness: "current",
+		});
+	});
 });
