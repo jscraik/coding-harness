@@ -1,4 +1,4 @@
-import { runDriftGateCLI } from "../../../commands/drift-gate.js";
+import { runDriftGateCLI } from "../../drift-gate.js";
 import { inspectFlagValue, parseCsvList } from "../parse-utils.js";
 import type { CommandSpec } from "./types.js";
 

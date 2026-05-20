@@ -542,6 +542,27 @@ const MEMORY_GATE_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const DRIFT_GATE_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/drift-gate.ts",
+		maxLines: 25,
+		reason:
+			"Drift gate public facade must stay a small export surface for registry and output callers.",
+	},
+	{
+		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
+		maxLines: 100,
+		reason:
+			"Drift gate command spec must stay focused on consistency-drift option projection and facade delegation.",
+	},
+	{
+		path: "src/lib/output/normalise-drift-gate.ts",
+		maxLines: 100,
+		reason:
+			"Drift gate normalisation must stay focused on drift findings, artifact evidence, and GateResult projection through the facade.",
+	},
+] as const;
+
 const RUNTIME_CARD_RUNTIME_RATCHETS = [
 	{
 		path: "src/lib/runtime/runtime-card.ts",
@@ -709,7 +730,6 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/check-environment-command-spec.ts",
 	"src/lib/cli/registry/docs-gate-command-spec.ts",
 	"src/lib/cli/registry/doctor-command-spec.ts",
-	"src/lib/cli/registry/drift-gate-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/fleet-plan-command-spec.ts",
 	"src/lib/cli/registry/gardener-command-spec.ts",
@@ -738,10 +758,10 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/verify-work-command-spec.ts",
 	"src/lib/cli/registry/workflow-generate-command-spec.ts",
 	"src/lib/init/index.ts",
+	"src/lib/drift-gate.ts",
 	"src/lib/output/normalise.ts",
 	"src/lib/output/normalise-core-v2.ts",
 	"src/lib/output/normalise-docs-gate.ts",
-	"src/lib/output/normalise-drift-gate.ts",
 	"src/lib/output/normalise-he-phase-exit.ts",
 	"src/lib/output/normalise-linear-gate.ts",
 	"src/lib/output/normalise-plan-gate.ts",
@@ -921,6 +941,10 @@ const MEMORY_GATE_INTERNAL_IMPORT_PATTERN =
 	/^.*memory\/(?:branch-enforcer|metrics-tracker|types|validator)\.js$/;
 const APPROVED_MEMORY_GATE_INTERNAL_IMPORTERS = new Set([
 	"src/lib/memory-gate.ts",
+]);
+const DRIFT_GATE_COMMAND_IMPORT_PATTERN = /^.*commands\/drift-gate\.js$/;
+const APPROVED_DRIFT_GATE_COMMAND_IMPORTERS = new Set([
+	"src/lib/drift-gate.ts",
 ]);
 
 function countFileLines(path: string): number {
@@ -1204,6 +1228,41 @@ describe("module boundaries", () => {
 				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8"))
 					.filter((specifier) =>
 						MEMORY_GATE_INTERNAL_IMPORT_PATTERN.test(specifier),
+					)
+					.map((specifier) => `${path} -> ${specifier}`),
+			);
+
+		expect(violations).toEqual([]);
+	});
+
+	it("keeps drift-gate surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(DRIFT_GATE_SURFACE_RATCHETS);
+	});
+
+	it("keeps drift-gate callers behind the public facade", () => {
+		const publicFacadeContent = readFileSync(
+			join(process.cwd(), "src/lib/drift-gate.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/drift-gate-command-spec.ts"),
+			"utf-8",
+		);
+		const outputAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/output/normalise-drift-gate.ts"),
+			"utf-8",
+		);
+
+		expect(publicFacadeContent).toContain("../commands/drift-gate.js");
+		expect(registryAdapterContent).toContain("../../drift-gate.js");
+		expect(outputAdapterContent).toContain("../drift-gate.js");
+
+		const violations = collectTypeScriptFiles("src/lib")
+			.filter((path) => !APPROVED_DRIFT_GATE_COMMAND_IMPORTERS.has(path))
+			.flatMap((path) =>
+				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8"))
+					.filter((specifier) =>
+						DRIFT_GATE_COMMAND_IMPORT_PATTERN.test(specifier),
 					)
 					.map((specifier) => `${path} -> ${specifier}`),
 			);
