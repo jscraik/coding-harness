@@ -89,7 +89,8 @@ Refresh status summary:
 | GAP-010 | Open | Safety coverage still needs one surfaced local/CI coverage map. |
 | GAP-011 through GAP-022 | Open roadmap | These are post-deep-module agent-native context authority work. |
 | GAP-023 | Open follow-on | Effect migration remains scaffolded, not a closure prerequisite for agent-operability unless tied to a specific parity gap. |
-| GAP-024 through GAP-028 | Open roadmap | Verified upstream Codex primitives show packaging, environment profiles, lifecycle state, subagent hooks, permission profiles, and output fidelity should become harness-owned contracts after deep-module work. |
+| GAP-024 through GAP-033 | Open roadmap | Verified upstream Codex primitives show packaging, environment profiles, lifecycle state, subagent hooks, permission profiles, output fidelity, turn lifecycle metadata, durable goal state, async approvals, remote compaction blockers, and runtime capability introspection should become harness-owned contracts after deep-module work. |
+| GAP-034 | Open roadmap | The single-prompt issue-to-merge outcome should become a harness-owned state machine with required artifacts, product-driver profiles, feedback/CI remediation, human-judgment escalation, and merge-decision separation. |
 
 ## 1. Executive Summary
 
@@ -842,6 +843,278 @@ each claim to raw evidence refs; public summaries omit sensitive raw content;
 and evals fail when important failure lines are lost or stale events are
 accepted as fresh evidence.
 
+#### GAP-029: Run Lifecycle And Turn Metadata Are Not Modeled
+
+**Category:** runtime / lifecycle / observability
+
+**Current State:** Upstream Codex exposes turn-start metadata, token usage
+baselines, empty turn/start requests, and async turn item processing. The
+harness models command outcomes and runtime-card state, but does not yet model
+the full lifecycle of a run as a typed event stream.
+
+**Expected State:** A provider-neutral run-lifecycle/v1 contract records thread
+start, turn start, metadata capture, context contributors, item processors,
+tool events, validation, closeout, and completion. Codex-specific fields live
+under an adapter namespace rather than becoming top-level harness authority.
+
+**Risk:** Final summaries can lack the runtime context, token baseline,
+contributor state, and lifecycle evidence needed to audit resumed, compacted,
+or extension-shaped turns.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add run-lifecycle/v1 and turn-start-metadata/v1. Capture
+turn id, thread id, runtime capability snapshot id, token usage baseline,
+contributors, processors, evidence refs, and missing-state classifications.
+Until runtime-capability-snapshot/v1 is promoted, every snapshot reference must
+carry snapshot_status: detected, unavailable, unsupported, not_collected, or
+n.a. Do not fabricate Codex capability placeholders.
+
+**Acceptance Criteria:** Runtime-card, replay, and PR closeout can show the
+run lifecycle for a claim. Evals fail when a command-backed claim lacks current
+turn metadata, or when a resumed or compacted turn is treated as uninterrupted.
+
+#### GAP-030: Durable Goal State Is Not A Separate Contract
+
+**Category:** memory / goals / execution authority
+
+**Current State:** Upstream Codex now has a dedicated goal store with goal
+extension tools and accounting tied to turn-start metadata. The harness
+distinguishes artifacts, Linear state, runtime-card state, and closeout state,
+but does not yet require an explicit goal_ref for goal-managed work.
+
+**Expected State:** goal-ref/v1 distinguishes user objective, active goal, run
+contract, task or subagent assignment, artifact contract, validation status,
+and closeout evidence. Linear issues, PRs, plans, and chat summaries may link
+to the goal but do not become the goal authority.
+
+**Risk:** A stale plan, stale ticket, chat summary, or runtime-card artifact can
+be mistaken for the current objective.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add goal-ref/v1 plus a goal-store bridge or adapter. Runs
+that claim goal-managed work must bind to a current durable goal ref or mark
+the goal as n.a. with a reason. Add persistence and stale-goal evals.
+
+**Acceptance Criteria:** Closeout can answer which goal was served, current
+goal state, evidence source, and why linked Linear or plan artifacts are
+context rather than authority.
+
+#### GAP-031: Async Approval And Deferred Contributor State Are Missing
+
+**Category:** approvals / runtime state / recovery
+
+**Current State:** Upstream Codex has async approval contributors and async
+turn item processing. The harness has blocker classes, but it does not yet
+model approval latency and deferred contribution as first-class runtime states.
+
+**Expected State:** async-approval-state/v1 uses explicit states:
+not_required, requested, pending, approved, denied, expired, resumed, deferred,
+blocked, and n.a.
+
+**Risk:** Pending approval can be reported as task failure, task success, or an
+ambiguous stall. Deferred contribution can be summarized away without a durable
+owner or recovery path.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add async approval state and recovery mappings. Evals
+cover pending, denied, resumed, expired, and deferred states. Professional
+output reports approval state without pretending validation ran.
+
+**Acceptance Criteria:** Pending approval blocks closeout. Approved or resumed
+work links to follow-on evidence. requested, pending, deferred, and expired
+force closeout blocked unless an approved or resumed state is followed by
+post-approval validation evidence.
+
+#### GAP-032: Remote Compaction Timeout Is Not A First-Class Blocker
+
+**Category:** compaction / remote runtime / blocker taxonomy
+
+**Current State:** Upstream Codex includes timeout handling for remote
+compaction requests. The audit covers compaction tail retention, but not remote
+compaction timeout as a distinct infrastructure blocker.
+
+**Expected State:** remote-compaction-blocker/v1 and context-baseline-ref/v1
+record remote_compaction_started, remote_compaction_timed_out, source turn,
+context baseline, timeout policy, raw error, and recovery decision. Local
+compaction, remote compaction, and context reload are distinct states.
+
+**Risk:** A runtime infrastructure timeout can be misclassified as a test
+failure, implementation failure, or agent failure. A continuation can also
+overclaim that it has the same context after compaction recovery.
+
+**Severity:** Medium-high
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add the blocker and baseline contracts. Evals require
+remote compaction timeout to classify as a runtime blocker unless explicit
+recovery evidence proves actionable context was restored.
+
+**Acceptance Criteria:** Closeout distinguishes validation_failure,
+implementation_failure, approval_blocked, environment_mismatch,
+tooling_unavailable, and remote_compaction_timeout. Recovery requires a
+machine-checkable context_baseline_diff proving required authority refs,
+evidence refs, goal binding, and blocker state are equivalent or intentionally
+reloaded before leaving blocked state.
+
+#### GAP-033: Runtime Capability Doctor Is Missing
+
+**Category:** runtime introspection / portability / guardrails
+
+**Current State:** Upstream Codex exposes or is moving toward app-server
+version reporting, permission profile listing, skill and plugin warmup, goal
+store tools, SubagentStart hooks, turn-start metadata, remote/environment
+execution, and raw or encrypted output handling. The harness does not require
+a capability snapshot before using those primitives in planning or validation.
+
+**Expected State:** runtime-capability-snapshot/v1 records provider,
+app-server or CLI version, permission profiles, goal store availability, skill
+and plugin lifecycle support, subagent lifecycle support, turn metadata support,
+remote environment support, raw/encrypted output support, and unsupported or
+unknown fields.
+
+**Risk:** The harness can design against unavailable, stale, or provider-specific
+runtime features and then overclaim portability or verification.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add a read-only Codex/runtime capability doctor that emits
+runtime-capability-snapshot/v1. Codex-derived gates depend on detected
+capabilities. Provider-specific fields remain namespaced. Unsupported providers
+report unknown, unsupported, unavailable, or n.a. rather than pretending Codex
+features exist.
+
+**Acceptance Criteria:** A run can explain which runtime capabilities were
+detected, unavailable, required, or blocking. Evals fail when a workflow claims
+permission profiles, durable goals, subagent lifecycle, turn metadata, or remote
+readiness without a current capability snapshot.
+
+#### GAP-034: Issue-To-Merge Contract Is Not Agent-Native
+
+**Category:** production loop / issue lifecycle / agent-operability
+
+**Current State:** The codebase has strong adjacent surfaces: pnpm check,
+verify-work, runtime-card, validation-plan, evidence-verify, UI loop commands,
+video-capable evidence validation, he_fix_bugs phase evidence, review-gate,
+remediate, CI ownership gates, and pr-closeout readiness. These pieces do not
+yet form a single harness-owned issue-to-merge state machine. The audit also
+does not yet make the single-prompt outcome explicit enough for agents to
+discover, execute, and validate without Jamie stitching the workflow together.
+
+**Expected State:** issue-to-merge/v1 is a provider-neutral contract for the
+full governed loop: validate current state, load bug or issue context,
+reproduce the failure, record pre-fix evidence, implement the fix, validate by
+tests and by driving the product, record post-fix evidence, open or update the
+pull request, resolve agent and human feedback, detect and remediate build
+failures, escalate only judgment-bearing decisions, and merge only when a
+separate merge decision contract is satisfied. It is a thin public control
+surface backed by deep, tested modules for reproduction, product driving,
+evidence, PR feedback, CI remediation, and merge readiness.
+
+**Risk:** The harness can sound like it supports single-prompt software
+delivery while agents still hop manually between commands, skip reproduction,
+omit before/after evidence, summarize CI failures without remediation, or treat
+merge readiness as merge authority. This creates a dangerous shallow
+architecture: many useful commands, but no tested boundary that hides the
+workflow complexity from future agents.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add issue-to-merge/v1, issue-loop-state/v1,
+bugfix-record/v1, linear-bug-tracker/v1, product-driver-profile/v1,
+product-driver-trace/v1, visual-evidence-pair/v1, and merge-decision/v1.
+Expose a bounded agent-facing command or catalog mode such as commands
+--for-agent --mode issue-loop before adding broad automation. The first
+implementation should be read-only or shadow-mode except for artifact
+collection, Linear tracker planning/linking, and state classification. Product
+profiles must cover browser app, Electron app, macOS app, iOS app, CLI tool,
+MCP server, and backend service without pretending they share the same launch,
+drive, capture, or validation path.
+
+Linear should become the default bug-tracker adapter when the target workspace
+is available. For bug work, the harness should create or link a Linear issue
+using the team's required bug template, required labels, project/cycle/status
+rules, and evidence refs. Linear is canonical for tracker state and intent, not
+for current implementation truth: a Linear bug description can start the issue
+loop, but reproduction evidence, product-driver traces, tests, PR state, and CI
+remain the proof surfaces for whether the bug exists, is fixed, and is ready to
+merge. If Linear auth, team, project, template, or labels are unavailable, the
+issue loop must record tracker_status=blocked_unavailable or n.a. with a reason
+instead of silently continuing as if the work is tracked.
+
+Required state machine:
+
+| State | Meaning | Required Evidence |
+|---|---|---|
+| initialized | Run was created with repo, issue, environment, permissions, and goal refs. | run-lifecycle, goal-ref, environment profile, permission profile |
+| current_state_validated | Baseline repo state and blockers are known before edits. | validation summary, dirty-worktree classification, runtime-card |
+| issue_context_loaded | Bug report, Linear/GitHub issue, or prompt context is classified by authority. | issue context refs, authority classes, freshness |
+| reproduction_attempted | The agent attempted the smallest credible reproduction. | reproduction steps, commands or product-driver trace |
+| failure_reproduced | The failure is observed, or non-reproduction is classified. | failing evidence, raw output refs, blocker or not_reproduced reason |
+| failure_evidence_recorded | Pre-fix behavior is captured in inspectable form. | screenshot or video artifact, evidence-envelope entry |
+| fix_applied | The implementation changed only the scoped surfaces. | changed files, risk tier, pattern-scope result |
+| fix_validated_by_tests | The relevant automated checks ran or are blocked with owner classification. | command outputs, parsed results, blocker classification |
+| fix_validated_by_product_driver | The product was driven through the affected workflow. | driver trace, app logs when available, evidence refs |
+| resolution_evidence_recorded | Post-fix behavior is captured in comparable form. | second screenshot or video artifact, comparison note |
+| pull_request_opened | A PR exists or PR creation is blocked with exact reason. | PR URL/state, head SHA, template evidence |
+| feedback_checked | Agent, CodeRabbit, reviewer, and human feedback surfaces were inspected. | feedback ledger, unresolved thread classification |
+| feedback_remediated | Actionable feedback was fixed, rejected with reason, or escalated. | remediation commits/actions, reviewer response refs |
+| ci_checked | Required checks and build failures were inspected against current head. | required-check matrix, CI logs or unavailable reason |
+| ci_remediated | Build failures were fixed, rerun, or classified as external/blocking. | remediation evidence, rerun refs, owner class |
+| ready_to_merge | PR is merge-ready but not automatically merged. | pr-closeout readiness, branch protection, review decision |
+| merge_decision_recorded | Merge authority is explicit and separate from readiness. | merge-decision/v1 with policy, actor, and blocker state |
+| merged | The change merged and closure surfaces were updated. | merged PR state, commit SHA, Linear/goal closeout evidence |
+| blocked_human_judgment | Automation stopped because judgment, credentials, policy, or safety required a human. | escalation class, question, minimum needed decision |
+
+Required artifact contract:
+
+| Artifact | Purpose |
+|---|---|
+| artifacts/issue-loop/{run-id}/baseline-validation.json | Current-state proof before edits. |
+| artifacts/issue-loop/{run-id}/issue-context.json | Authority-classed bug or task context. |
+| artifacts/issue-loop/{run-id}/reproduction.md | Human-readable reproduction and non-reproduction notes. |
+| artifacts/issue-loop/{run-id}/failure-evidence.* | Pre-fix screenshot or video evidence. |
+| artifacts/issue-loop/{run-id}/fix-summary.md | Scoped implementation summary and risk. |
+| artifacts/issue-loop/{run-id}/validation.json | Test and command validation results. |
+| artifacts/issue-loop/{run-id}/product-driver-trace.json | Browser, app, device, CLI, MCP, or service driver trace. |
+| artifacts/issue-loop/{run-id}/resolution-evidence.* | Post-fix screenshot or video evidence. |
+| artifacts/issue-loop/{run-id}/pull-request.json | PR identity, state, head SHA, and template evidence. |
+| artifacts/issue-loop/{run-id}/feedback-ledger.json | Agent, CodeRabbit, reviewer, and human feedback status. |
+| artifacts/issue-loop/{run-id}/ci-remediation.json | Build failure classification and remediation evidence. |
+| artifacts/issue-loop/{run-id}/merge-decision.json | Readiness versus authority decision. |
+
+Human escalation must be explicit, not vibes-based. Judgment-bearing blockers
+include product taste, UX/design tradeoffs, security or privacy ambiguity,
+destructive data migration, app store/signing/notarization authority,
+credential or account ownership, customer-impacting rollout risk, unclear
+issue intent, and conflicting canonical sources. Everything else should be
+classified as validation, implementation, environment, tooling, permission,
+external-service, or stale-state work before it reaches Jamie.
+
+**Acceptance Criteria:** commands --for-agent exposes an issue-loop mode or
+equivalent first-contact surface. The loop can run in shadow mode on a fixture
+bug and produce baseline validation, reproduction evidence, before/after video
+or screenshot evidence, fix validation, PR closeout, feedback ledger,
+CI-remediation classification, and merge-decision artifacts. Evals fail when
+the loop skips reproduction, omits pre-fix or post-fix evidence, treats
+ready_to_merge as merged, opens or merges without required authority, classifies
+pending approval as success, uses Browser as proof of video capture without a
+declared video adapter, marks required video n.a. without a product-profile
+reason, or escalates non-judgment work to a human.
+
 ### 4.5 Sequencing After Deep Module Work
 
 1. Add authority registry and validator in warning mode.
@@ -860,10 +1133,19 @@ accepted as fresh evidence.
 12. Add observability events for governed agent flows and wire them into
     runtime-card, PR closeout, replay, and context-health summaries.
 13. Add skill package, environment profile, permission profile, skill lifecycle,
-    subagent ledger, and evidence-envelope schemas in shadow mode.
+    subagent ledger, evidence-envelope, run-lifecycle, turn-start-metadata,
+    goal-ref, async-approval-state, remote-compaction-blocker,
+    context-baseline-ref, and runtime-capability-snapshot schemas in shadow
+    mode.
 14. Add package reproducibility, permission drift, environment mismatch,
-    skill-lifecycle, subagent-artifact, and output-fidelity eval fixtures.
-15. Promote deterministic authority checks into pnpm check after shadow-mode
+    skill-lifecycle, subagent-artifact, output-fidelity, turn metadata, goal
+    persistence, async approval, remote compaction timeout, and runtime
+    capability mismatch eval fixtures.
+15. Add issue-to-merge, issue-loop-state, product-driver-profile, and
+    merge-decision contracts in shadow mode, with fixtures for reproduction,
+    before/after evidence, product-driver validation, PR feedback, CI
+    remediation, human escalation, and merge readiness versus merge authority.
+16. Promote deterministic authority checks into pnpm check after shadow-mode
     thresholds are met.
 
 ### 4.6 Failure-Point Hardening Pass
@@ -913,16 +1195,21 @@ Verification sources:
   scripts/codex_package/layout.py, app-server remote transport, app-server
   ClientRequest, PermissionProfileListResponse, FunctionCallOutputContentItem,
   and AutoCompactTokenLimitScope.
-- Local /Users/jamiecraik/dev/codex origin/main log fetched on 2026-05-20,
-  with the checkout dirty and ahead of its branch. The audit uses origin/main
-  commit signal, not local worktree changes.
+- codex-repo MCP searches for TurnStartInput and turn-scoped state, GoalStore
+  and thread goal accounting, async approval request handling, remote
+  compaction timeout paths, and PermissionProfileListResponse.
+- Local /Users/jamiecraik/dev/codex origin/main at 59507b849, fetched on
+  2026-05-20, with the checkout dirty and ahead of its branch. The audit uses
+  origin/main commit signal, not local worktree changes.
 - Local file evidence under /Users/jamiecraik/dev/codex for package layout,
   remote app-server transport, ClientRequest methods, permission deny
   precedence, invalid AGENTS.md UTF-8 warnings, SubagentStart hooks,
   encrypted_content, body_after_prefix, raw exec output tests, stale terminal
-  tests, and thread-goal state.
+  tests, thread-goal state, turn-start lifecycle tests, async approval paths,
+  remote compaction feature and tests, and app-server/runtime capability
+  surfaces.
 
-Before any GAP-024 through GAP-028 implementation is promoted from shadow mode,
+Before any GAP-024 through GAP-034 implementation is promoted from shadow mode,
 the upstream-derived row must be backed by upstream-evidence-manifest/v1 with
 source type, commit or tag, path, symbol or line anchor, retrieval timestamp,
 retrieval command or MCP tool id, local cached artifact path, freshness status,
@@ -937,6 +1224,11 @@ window, the row downgrades from verified to stale-input until revalidated.
 | Subagent work is hookable and service-tier aware. | Local evidence shows HookEventName::SubagentStart, hook_config SubagentStart, hook_runtime SubagentStart handling, external-agent migration examples, and service_tier fields across analytics, app-server, config, and API code. Local origin/main includes d661ab70e, c53da029b, 05b8ce435, and 9289b7cea. | Add subagent-lifecycle-ledger/v1 with SubagentStart, ArtifactExpected, ArtifactWritten, ValidationRun, ReviewerClosed, MemoryUpdated, and owner classification. |
 | Permission profiles and deny semantics are explicit. | MCP and local app-server protocol evidence show permissionProfile/list and PermissionProfileListResponse. Local config schema states that deny beats write and write beats read. Local core code warns on invalid UTF-8 in AGENTS.md. Local origin/main includes c3faea0b0, 3c7608187, and 9dda71dba. | Add permission drift checks and AGENTS UTF-8 scanning. Compare requested profile, declared skill profile, repo policy, sandbox grants, and observed tool calls. |
 | Output, compaction, and goal state are more evidence-aware. | MCP and local protocol evidence show encrypted_content function output content and body_after_prefix compact scope. Local state/app-server evidence shows GoalStore and ThreadGoal surfaces. Local origin/main includes 34aad4368, 5a4202ad9, e43a2e297, 40be41763, and 80fdd4688. | Add evidence-envelope/v1 so raw output, parsed result, classification, sensitivity, synthesis, and handoff are separate. Add output-fidelity evals for raw output, sensitive output, compaction, goals, and stale events. |
+| Turn and session internals are structured extension points. | MCP and local evidence show TurnStartInput, turn-scoped state, token usage at turn start, empty turn/start request handling, and async turn item processing. Local origin/main includes 1a25d8b6e, 9e9a62dc2, a668379ab, ef24ef127, f0663fd4f, ccbf0137d, 1392a2a77, and 59507b849. | Add run-lifecycle/v1 and turn-start-metadata/v1 so runtime-card, replay, and closeout can prove which turn, metadata baseline, contributors, processors, and evidence refs shaped a claim. |
+| Goals are a durable runtime store, not only conversational intent. | MCP and local evidence show GoalStore, ThreadGoalAccountingOutcome, goal extension tools, and goal accounting connected to turn-start metadata. Local origin/main includes ba57aab13, 93456320e, 9483b09ea, 66d5edf82, 51d661643, b555dd5d1, and 59507b849. | Add goal-ref/v1 and a goal-store bridge that distinguishes objective, active goal, run contract, task assignment, artifact contract, validation, and closeout. |
+| Approval and item processing can be asynchronous. | MCP and local evidence show async approval contributors and async turn item processing. Local origin/main includes f64fce61b and 1392a2a77. | Add async-approval-state/v1 with pending, denied, expired, deferred, resumed, approved, blocked, and n.a. states so approval latency is not laundered as success or failure. |
+| Remote compaction timeout is a distinct runtime failure. | MCP and local evidence show remote compaction timeout handling and remote compaction feature/test paths. Local origin/main includes 18cefba92. | Add remote-compaction-blocker/v1 and context-baseline-ref/v1 so infrastructure timeout and context restoration are classified separately from implementation or validation failure. |
+| Runtime capability surfaces are becoming inspectable. | MCP and local evidence show app-server version surfaces, PermissionProfileListResponse, goal store tools, skill/plugin lifecycle requests, subagent hooks, turn-start metadata, and remote/environment execution paths. | Add runtime-capability-snapshot/v1 and a read-only runtime doctor. Gates that rely on Codex-derived capabilities must depend on detected capability state rather than assumed availability. |
 
 ### 4.9 Boundary Visual Mental Model
 
@@ -1429,17 +1721,27 @@ Runtime state:
 - Required evidence mode for harness next.
 - Mode-aware runtime-card blocking.
 - Canonical runtime-card artifact path and freshness gate.
+- Run lifecycle and turn-start metadata contracts.
+- Durable goal-ref binding for goal-managed work.
+- Async approval and deferred contributor state machine.
+- Remote compaction timeout blocker and context baseline ref.
+- Runtime capability snapshot or doctor for Codex-derived feature use.
 
 Command selection:
 
 - Agent-facing command catalog mode completeness and parity tests.
 - Safe verifier recommendation when runtime-card says evidence is missing.
+- Issue-loop command catalog mode that exposes the single-prompt path without
+  loading PR, UI, CI, and merge internals by default.
 
 Verification:
 
 - Regression proof for Refs, Closes, and Fixes PR body acceptance.
 - Tests for missing check SHA classification.
 - Promotion validator for research patterns.
+- Issue-to-merge fixture proving current-state validation, reproduction,
+  before/after evidence, product-driver validation, PR feedback handling,
+  CI-remediation classification, and merge-decision separation.
 
 Validation:
 
@@ -1489,6 +1791,12 @@ Internal evals:
   Codex-specific shortcuts.
 - Effect boundary eval or fixture proving a migrated module hides Effect behind
   a stable public facade.
+- Turn lifecycle, goal persistence, async approval, remote compaction timeout,
+  and runtime capability mismatch evals.
+- Issue-loop evals for skipped reproduction, missing failure evidence, missing
+  resolution evidence, product-driver mismatch, feedback left unresolved,
+  CI failure misclassification, non-judgment escalation, and ready_to_merge
+  being treated as merged.
 
 Recovery:
 
@@ -1644,24 +1952,124 @@ Priority note: this is post-deep-module work. The intent is to harvest useful
 runtime primitives into portable schemas, validators, evals, and observability
 events after the current module boundary work has stabilized.
 
-Fixes included: GAP-024, GAP-025, GAP-026, GAP-027, and GAP-028.
+Promotion note: GAP-033 is a prerequisite for required capability ids in
+GAP-029 through GAP-032. Before the runtime doctor is promoted, use explicit
+unknown, unavailable, unsupported, not_collected, or n.a. status enums rather
+than assumed Codex feature availability.
+
+Fixes included: GAP-024, GAP-025, GAP-026, GAP-027, GAP-028, GAP-029,
+GAP-030, GAP-031, GAP-032, and GAP-033.
 
 Files likely affected: skill package schemas and validators, package-doctor or
 artifact-doctor command surfaces, run-record/environment/permission schemas,
 skill lifecycle status surfaces, subagent ledger contracts, runtime-card and
-PR-closeout evidence-envelope adapters, internal eval fixtures, and
-observability event schemas.
+PR-closeout evidence-envelope adapters, run-lifecycle and goal-ref adapters,
+async approval state handling, remote compaction blocker handling, runtime
+capability doctor surfaces, internal eval fixtures, and observability event
+schemas.
 
 Validation gates: package reproducibility smoke eval; permission drift eval;
 environment mismatch eval; skill discovery/lifecycle eval; subagent artifact
-contract eval; output fidelity eval; upstream-evidence-manifest validation;
-provider-adapter boundary validation; focused schema validation; pnpm
-docs:lint; and the narrow CLI tests for any new doctor/status command.
+contract eval; output fidelity eval; turn metadata lifecycle eval; goal
+persistence eval; async approval pending, denied, expired, deferred, and resumed eval;
+remote compaction timeout classification eval; runtime capability mismatch
+eval; upstream-evidence-manifest validation; provider-adapter boundary
+validation; focused schema validation; pnpm docs:lint; and the narrow CLI tests
+for any new doctor/status command.
 
 Expected risk reduction: high. This turns current Codex runtime movement into
 portable harness control-plane contracts: packageable skills, environment-bound
-runs, explainable permissions, artifact-first subagents, and professional
-evidence envelopes.
+runs, explainable permissions, artifact-first subagents, professional evidence
+envelopes, lifecycle-aware turns, durable goals, async approvals, remote
+compaction blockers, and runtime capability snapshots.
+
+### Phase 9 — Issue-To-Merge Production Loop
+
+Objective: turn the single-prompt issue outcome into an agent-native control
+surface rather than a manual sequence of good commands.
+
+Priority note: this phase depends on the Phase 8 runtime contracts for
+environment, permissions, lifecycle, evidence, async approval, goal binding,
+and runtime capability detection. It should start in shadow mode so the harness
+can prove the state machine and artifacts before claiming autonomous merge
+authority.
+
+Fix included: GAP-034.
+
+Files likely affected: command catalog modes, issue-loop command or status
+surface, issue-to-merge schemas, bugfix-record builders, product-driver
+profiles and traces, visual-evidence-pair validation, video policy, evidence
+validation, UI loop adapters, Browser driver adapters, PR closeout adapters,
+review-gate, CI remediation adapters, merge-decision contracts, internal eval
+fixtures, and generated downstream harness skill guidance.
+
+Validation gates: issue-loop fixture eval; bugfix-record schema tests;
+product-driver profile fixture evals for browser app, Electron app, macOS app,
+iOS app, CLI tool, MCP server, and backend service; product-driver-trace tests;
+visual-evidence-pair tests; video-policy tests for required, optional, and n.a.
+states; evidence-verify before/after artifact tests; Browser screenshot
+adapter tests that do not imply video support; PR feedback ledger tests;
+CI-remediation classification tests; merge-decision tests; command catalog mode
+tests; pnpm docs:lint; and focused schema validation.
+
+Expected risk reduction: high. This hides the complex production workflow
+behind a thin, tested contract so agents can move from issue to merge readiness
+without skipping reproduction, evidence capture, product validation, feedback,
+CI remediation, or human-judgment escalation.
+
+### Adoption Modes — Greenfield And Brownfield
+
+The same harness contracts serve two different adoption modes. Agents must not
+treat a new empty project and a mature existing repo as the same installation
+problem.
+
+**Greenfield bootstrap:** start strict because there is no legacy context to
+preserve. `harness init` should install the operating system first: authority
+map, compact AGENTS.md, validation contract, project brain, command catalog,
+runtime capability snapshot, evidence-envelope path, closeout rules, CI/check
+ownership, and default artifact directories. A greenfield project is ready when
+an agent can discover the rules, bind a goal, select validation, run the work,
+and produce closeout evidence without asking the user to translate the workflow.
+
+**Brownfield adoption:** inspect before enforcing because legacy repos contain
+stale docs, implicit conventions, partial tests, and historical plans. The
+first lane should classify current truth: canonical surfaces, non-canonical
+plans/history, available commands, missing validation, risky modules,
+agent-safe edit zones, local-only assumptions, and existing CI ownership. New
+guards start in shadow mode until their false-positive rate, owner, and
+promotion criteria are known.
+
+| Mode | First Harness Job | Enforcement Posture | Output |
+|---|---|---|---|
+| Greenfield | Bootstrap the operating surface. | Required from day one where deterministic. | Ready-to-run repo contract with validation and closeout paths. |
+| Brownfield | Audit and classify the existing surface. | Shadow first, then promote by evidence. | Adoption report with authority map, risk zones, gate gaps, and next slice. |
+
+Minimum greenfield lane:
+
+1. `harness init` creates the thin instruction layer, authority map, project
+   brain, artifact directories, validation contract, and command catalog.
+2. Runtime capability doctor records available provider features before any
+   Codex-aligned gate depends on them.
+3. First run emits run-lifecycle, goal-ref, permission/environment profile,
+   evidence-envelope, and closeout artifacts.
+4. CI/check ownership is explicit before the first PR handoff.
+
+Minimum brownfield lane:
+
+1. `harness audit` or equivalent discovery command classifies canon,
+   not-canon, validation commands, CI ownership, stale docs, risky modules, and
+   local-only assumptions.
+2. Authority, validation, permission, lifecycle, and output checks run in
+   shadow mode with owner and promotion metadata.
+3. Cleanup is ranked by agent visibility, user impact, and fixability rather
+   than by raw line count.
+4. Gates promote only after the audit can show current evidence, bounded
+   false positives, and a rollback or exception path.
+
+Product requirement: the harness should detect or ask for the adoption mode
+early and route commands accordingly. Greenfield should feel like a compact
+starter operating system. Brownfield should feel like a disciplined migration
+control plane that never lies about the repo's current state.
 
 ## 9. Highest-Leverage Fixes
 
@@ -1691,6 +2099,12 @@ evidence envelopes.
 | 22 | Model skill lifecycle state | Medium-high | Medium | On-disk skills that cannot be discovered or warmed safely | Separates available from runnable and validated. |
 | 23 | Add subagent lifecycle ledger | High | Medium | Mailbox completion without artifact proof | Makes reviewer and worker fan-out artifact-first. |
 | 24 | Add output evidence envelope | High | Medium | Polished summaries losing raw proof | Preserves raw evidence while keeping summaries professional and safe. |
+| 25 | Add run lifecycle and turn metadata contracts | High | Medium | Summary-only runtime context and compaction confusion | Makes thread, turn, contributor, processor, token baseline, and evidence refs auditable. |
+| 26 | Add durable goal-ref bridge | High | Medium | Stale plan or chat summary treated as objective truth | Separates objective, active goal, run contract, task assignment, validation, and closeout. |
+| 27 | Add async approval state machine | High | Medium | Pending approval misreported as success or failure | Makes approval latency, denial, expiry, deferment, and resumption explicit. |
+| 28 | Add remote compaction timeout blocker | Medium-high | Medium | Runtime infrastructure failure misclassified as task failure | Keeps context recovery and baseline restoration evidence-bound. |
+| 29 | Add runtime capability doctor | High | Medium | Designing against unavailable runtime features | Makes Codex-derived and future-provider capabilities detected before gates rely on them. |
+| 30 | Add issue-to-merge contract and shadow loop | Very high | Medium-high | Manual orchestration and skipped production proof | Turns single-prompt issue delivery into a tested state machine with required artifacts. |
 
 ## 10. Implementation Advice
 
@@ -1709,6 +2123,10 @@ Build first:
   runtime/evidence contracts, and adapter/provider boundaries. Diagrams are
   useful when they point to enforced import rules, public facades, artifact
   contracts, and tests.
+- Treat issue-to-merge as a deep module boundary: expose one thin agent-facing
+  loop or catalog mode, then hide reproduction, product drivers, PR feedback,
+  CI remediation, evidence comparison, and merge-decision mechanics behind
+  tested contracts.
 
 Do not build yet:
 
@@ -1716,6 +2134,8 @@ Do not build yet:
 - Do not add dependency-cruiser or madge until the existing architecture checker is wired and its gaps are proven.
 - Do not migrate broad command runners, CLI wiring, or simple pure helpers to
   Effect before the exemplar service/layer pattern is proven.
+- Do not claim autonomous merge until merge-decision/v1 separates readiness
+  evidence from actual merge authority and human-judgment blockers.
 
 Remove or simplify:
 
@@ -1737,6 +2157,13 @@ Should become a validator:
 - AGENTS.md UTF-8 scan and canonical deny semantics.
 - Upstream evidence manifest freshness and source-ref completeness.
 - Provider-neutral schema and adapter-boundary checks.
+- Runtime capability snapshot validation.
+- Async approval state validation.
+- Goal-ref and goal-state freshness validation.
+- Remote compaction blocker and context-baseline validation.
+- Run lifecycle and turn metadata completeness validation.
+- Linear bug tracker template, required-label, duplicate-prevention, and
+  tracker-versus-proof authority validation.
 
 Should become a schema:
 
@@ -1753,6 +2180,21 @@ Should become a schema:
 - skill-lifecycle-state/v1.
 - subagent-lifecycle-ledger/v1.
 - evidence-envelope/v1.
+- run-lifecycle/v1.
+- turn-start-metadata/v1.
+- goal-ref/v1.
+- async-approval-state/v1.
+- remote-compaction-blocker/v1.
+- context-baseline-ref/v1.
+- runtime-capability-snapshot/v1.
+- issue-to-merge/v1.
+- issue-loop-state/v1.
+- bugfix-record/v1.
+- linear-bug-tracker/v1.
+- product-driver-profile/v1.
+- product-driver-trace/v1.
+- visual-evidence-pair/v1.
+- merge-decision/v1.
 
 Should become internal evals:
 
@@ -1774,6 +2216,14 @@ Should become internal evals:
 - Provider-neutral schema behavior: core contracts reject provider-specific
   top-level fields, while adapter fields are accepted only under a namespaced
   provider envelope.
+- Turn lifecycle and turn-start metadata behavior.
+- Goal persistence, stale goal rejection, and goal-ref linking.
+- Async approval pending, denied, expired, deferred, and resumed behavior.
+- Remote compaction timeout classification and context-baseline restoration.
+- Runtime capability mismatch behavior.
+- Linear bug tracker creation/linking behavior with required bug templates,
+  required labels, duplicate prevention, unavailable auth, and proof-authority
+  separation.
 
 Should become observability:
 
@@ -1790,6 +2240,15 @@ Should become observability:
   ReviewerClosed events.
 - Raw evidence refs, redaction status, and professional-summary claim refs.
 - Upstream evidence refresh status and stale-input downgrade events.
+- ThreadStarted, TurnStarted, TurnStartMetadataCaptured,
+  ContextContributorRan, ItemProcessorRan, and TurnCompleted events.
+- GoalCreated, GoalUpdated, GoalCompleted, GoalBlocked, and goal-ref link
+  events.
+- ApprovalRequested, ApprovalPending, ApprovalResolved, ApprovalDenied, and
+  ApprovalExpired events.
+- RemoteCompactionStarted, RemoteCompactionTimedOut, and
+  ContextBaselineRestored events.
+- RuntimeCapabilitiesDetected and RuntimeCapabilitiesMissing events.
 
 Should become a skill:
 
@@ -1799,6 +2258,9 @@ Should become a skill:
   compatibility, projection health, and smoke eval status.
 - Subagent review coordinator: verify ledger completeness, artifacts, blocker
   classes, and coverage gaps before synthesis.
+- Runtime capability doctor: inspect provider, app-server, permission profile,
+  goal, subagent, turn metadata, remote environment, and output evidence
+  capabilities before Codex-aligned gates rely on them.
 
 Should become documentation:
 
@@ -1867,6 +2329,11 @@ newer canonical artifact supersedes it.
 | Query skill lifecycle state | future skill lifecycle status command, skill-lifecycle-state/v1 | discovery/request/enable/warm/smoke fixtures | Open roadmap | Should |
 | Verify subagent work | subagent-lifecycle-ledger/v1 and review swarm artifact checks | missing-artifact and missing-event-chain fixtures | Open roadmap | Must |
 | Inspect output evidence envelope | evidence-envelope/v1 through runtime-card, closeout, and review artifacts | raw-output, redaction, compaction, goal, and stale-event evals | Open roadmap | Must |
+| Inspect run lifecycle and turn metadata | run-lifecycle/v1 and turn-start-metadata/v1 through runtime-card, replay, and closeout | turn metadata lifecycle and resumed/compacted-turn fixtures | Open roadmap | Must |
+| Bind work to durable goal state | goal-ref/v1 and future goal-store bridge | goal persistence, stale-goal rejection, and objective-context separation fixtures | Open roadmap | Must |
+| Classify approval latency | async-approval-state/v1 through run records and closeout | pending, denied, expired, deferred, and resumed approval fixtures | Open roadmap | Must |
+| Classify remote compaction failure | remote-compaction-blocker/v1 and context-baseline-ref/v1 | remote compaction timeout and context_baseline_diff fixtures | Open roadmap | Must |
+| Detect runtime capabilities | runtime-capability-snapshot/v1 and future runtime doctor | capability mismatch and unsupported-provider fixtures | Open roadmap | Must |
 
 ### 12.2 Per-Gap Ownership Binding
 
@@ -1900,6 +2367,12 @@ newer canonical artifact supersedes it.
 | GAP-026 | skill-lifecycle-state/v1 | skill README prose | skill discovery/lifecycle smoke evals | Skill/runtime owner |
 | GAP-027 | subagent-lifecycle-ledger/v1 | mailbox/status summaries | subagent artifact-contract evals and ledger checks | Review/runtime owner |
 | GAP-028 | evidence-envelope/v1 | polished summaries | raw-output fidelity, redaction, compaction, goal, and stale-event evals | Runtime/observability owner |
+| GAP-029 | run-lifecycle/v1 and turn-start-metadata/v1 | final summaries and ad hoc trace notes | turn metadata lifecycle and resumed/compacted-turn evals | Runtime/observability owner |
+| GAP-030 | goal-ref/v1 and goal-store bridge | Linear issue, PR, plan, and chat summary references | goal persistence and stale-goal rejection evals | Runtime/memory owner |
+| GAP-031 | async-approval-state/v1 | approval prose and blocked-status summaries | pending, denied, expired, deferred, and resumed approval evals | Runtime/governance owner |
+| GAP-032 | remote-compaction-blocker/v1 and context-baseline-ref/v1 | generic infrastructure blocker notes | remote compaction timeout and context_baseline_diff evals | Runtime/provider owner |
+| GAP-033 | runtime-capability-snapshot/v1 and runtime doctor | assumed provider capability prose | capability mismatch and unsupported-provider evals | Runtime/portability owner |
+| GAP-034 | issue-to-merge/v1, issue-loop-state/v1, bugfix-record/v1, linear-bug-tracker/v1, product-driver-profile/v1, product-driver-trace/v1, visual-evidence-pair/v1, and merge-decision/v1 | manual orchestration across validation, Linear tracking, reproduction, UI/product driving, PR, CI, and merge readiness commands | issue-loop fixture evals for required bug templates/labels, duplicate tracker prevention, reproduction, before/after evidence, product driving, feedback, CI remediation, escalation, and merge authority | Production-loop owner |
 
 Phase 8 execution-owner expansion:
 
@@ -1910,6 +2383,12 @@ Phase 8 execution-owner expansion:
 | GAP-026 | skill lifecycle status | `artifacts/skills/{skill-id}/lifecycle.json` | skill lifecycle schema plus discovery/warmup tests |
 | GAP-027 | subagent ledger verification | `artifacts/reviews/{run-id}/subagent-ledger.json` | review/runtime ledger schema plus artifact-contract tests |
 | GAP-028 | evidence-envelope inspection through runtime-card, closeout, and review artifacts | `artifacts/evidence/{run-id}/evidence-envelope.json` | runtime/observability schema plus output-fidelity tests |
+| GAP-029 | run lifecycle inspection through runtime-card, replay, and closeout | `artifacts/runs/{run-id}/run-lifecycle.json` | runtime/observability schema plus turn metadata tests |
+| GAP-030 | goal-ref inspection through run records and closeout | `artifacts/goals/{goal-id}/goal-ref.json` | runtime/memory schema plus goal persistence tests |
+| GAP-031 | async approval state inspection through run records and closeout | `artifacts/runs/{run-id}/approval-state.json` | runtime/governance schema plus approval state tests |
+| GAP-032 | remote compaction blocker inspection through run records and replay | `artifacts/runs/{run-id}/remote-compaction.json` | runtime/provider schema plus compaction timeout tests |
+| GAP-033 | runtime capability doctor | `artifacts/runtime/{run-id}/capabilities.json` | runtime/portability schema plus capability mismatch tests |
+| GAP-034 | issue-loop status or commands --for-agent --mode issue-loop | `artifacts/issue-loop/{run-id}/` including `linear-tracker.json` | issue-loop schemas plus Linear tracker, product-driver, feedback, CI, and merge-decision tests |
 
 ### 12.3 Phase Agent-Operability Acceptance
 
@@ -1925,7 +2404,8 @@ verify it from repo surfaces without human translation:
 | Phase 5 | local, CI-owned, release-owned, and closeout-owned safety gates are distinguishable in verifier output. |
 | Phase 6 | authority-map and context-health checks prevent canon/not-canon confusion and default-include context drift. |
 | Phase 7 | public facades remain synchronous where required, Effect builders stay behind approved boundaries, and allowed-import tests prove no leakage. |
-| Phase 8 | package, environment, permission, lifecycle, subagent, and evidence-envelope contracts are discoverable from harness command output and proven by focused evals. |
+| Phase 8 | package, environment, permission, lifecycle, subagent, evidence-envelope, run-lifecycle, turn-start-metadata, goal-ref, async-approval, remote-compaction, context-baseline-ref, and runtime-capability contracts are discoverable from harness command output and proven by focused evals. |
+| Phase 9 | issue-loop mode or equivalent first-contact surface can drive a fixture bug from baseline validation through reproduction, before/after evidence, fix validation, PR feedback, CI remediation, merge decision, and human-judgment escalation without conversation memory. |
 
 ### 12.4 Schema Governance For New Contracts
 
@@ -1936,7 +2416,14 @@ agent-behavior-eval/v1, agent-observability-event/v1, and
 runtime-evidence-bundle/v1. Codex-primitive-alignment contracts should use the
 same discipline for skill-package/v1, run-environment-profile/v1,
 run-permission-profile/v1, skill-lifecycle-state/v1,
-subagent-lifecycle-ledger/v1, and evidence-envelope/v1.
+subagent-lifecycle-ledger/v1, evidence-envelope/v1, run-lifecycle/v1,
+turn-start-metadata/v1, goal-ref/v1, async-approval-state/v1,
+remote-compaction-blocker/v1, context-baseline-ref/v1, and
+runtime-capability-snapshot/v1. Production-loop contracts should use
+issue-to-merge/v1, issue-loop-state/v1, bugfix-record/v1,
+linear-bug-tracker/v1, product-driver-profile/v1, product-driver-trace/v1,
+visual-evidence-pair/v1, and merge-decision/v1 with product-specific and
+provider-specific details under adapter namespaces.
 
 Compatibility rule: v1 additions must be additive unless the artifact is marked
 experimental. Any breaking field rename, enum narrowing, or authority semantics
