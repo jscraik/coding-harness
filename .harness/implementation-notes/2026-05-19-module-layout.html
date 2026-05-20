@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, verify-work, replay, gardener, memory-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, verify-work, replay, gardener, memory-gate, silent-error, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -545,6 +545,13 @@
                 <span>
                   Memory, FORJAMIE, metrics, and JSON projection stays behind
                   a focused command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>silent-error-command-spec.ts</strong>
+                <span>
+                  Files, directories, strictness, suggestions, and JSON
+                  projection stays behind a focused command-spec seam.
                 </span>
               </div>
               <div class="module doctor">
@@ -1277,6 +1284,8 @@
               lives behind gardener-command-spec.ts.
               Memory-gate memory, FORJAMIE, metrics, and JSON projection now
               lives behind memory-gate-command-spec.ts.
+              Silent-error files, directories, strictness, suggestions, and
+              JSON projection now lives behind silent-error-command-spec.ts.
               CodeRabbit review evidence CLI option mapping now lives behind
               verify-coderabbit-command-spec.ts.
               Docs gate option projection now lives behind

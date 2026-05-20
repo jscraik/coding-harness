@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_420,
+		maxLines: 1_400,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/silent-error-command-spec.ts",
+		maxLines: 35,
+		reason:
+			"Silent error command spec must stay focused on detector option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/memory-gate-command-spec.ts",
@@ -638,6 +644,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/review-gate-command-spec.ts",
 	"src/lib/cli/registry/risk-tier-command-spec.ts",
 	"src/lib/cli/registry/runtime-card-command-spec.ts",
+	"src/lib/cli/registry/silent-error-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
 	"src/lib/cli/registry/linear-command-spec.ts",
@@ -728,6 +735,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./review-gate-command-spec.js",
 	"./risk-tier-command-spec.js",
 	"./runtime-card-command-spec.js",
+	"./silent-error-command-spec.js",
 	"./linear-command-spec.js",
 	"./linear-gate-command-spec.js",
 	"./policy-gate-command-spec.js",

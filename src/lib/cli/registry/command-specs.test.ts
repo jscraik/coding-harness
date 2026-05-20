@@ -13,6 +13,7 @@ import * as gardenerCommand from "../../../commands/gardener.js";
 import * as memoryGateCommand from "../../../commands/memory-gate.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
+import * as silentErrorCommand from "../../../commands/silent-error.js";
 import { COMMAND_SPECS } from "./command-specs.js";
 import type { CommandSpec } from "./types.js";
 
@@ -485,6 +486,50 @@ describe("memory-gate execute parsing", () => {
 
 		expect(result).toBe(0);
 		expect(memoryGateCommand.runMemoryGateCLI).toHaveBeenCalledWith({});
+	});
+});
+
+describe("silent-error execute parsing", () => {
+	const spec = findSpec("silent-error");
+
+	beforeEach(() => {
+		vi.spyOn(silentErrorCommand, "runSilentErrorDetectorCLI").mockReturnValue(
+			0,
+		);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects files, dirs, strict, suggestions, and json flags into the detector command", () => {
+		const result = spec.execute([
+			"--files",
+			"src/a.ts,src/b.ts",
+			"--dirs",
+			"src/lib,src/commands",
+			"--strict",
+			"--suggestions",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(silentErrorCommand.runSilentErrorDetectorCLI).toHaveBeenCalledWith({
+			files: ["src/a.ts", "src/b.ts"],
+			dirs: ["src/lib", "src/commands"],
+			strict: true,
+			suggestions: true,
+			json: true,
+		});
+	});
+
+	it("uses defaults when optional detector flags are absent", () => {
+		const result = spec.execute([]);
+
+		expect(result).toBe(0);
+		expect(silentErrorCommand.runSilentErrorDetectorCLI).toHaveBeenCalledWith(
+			{},
+		);
 	});
 });
 

@@ -100,6 +100,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/memory-gate-command-spec.ts`
   - Memory gate memory, FORJAMIE, metrics, and JSON option projection stay
     local to the Local Memory compliance command adapter.
+- `src/lib/cli/registry/silent-error-command-spec.ts`
+  - Silent-error files, directories, strictness, suggestions, and JSON option
+    projection stay local to the detector command adapter.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -175,8 +178,9 @@ delegation in `pr-closeout-command-spec.ts`, verify-work resume/repository
 option projection in `verify-work-command-spec.ts`, replay trace option
 projection in `replay-command-spec.ts`, gardener docs freshness option
 projection in `gardener-command-spec.ts`, memory gate local-memory option
-projection in `memory-gate-command-spec.ts`, CodeRabbit review evidence
-CLI option mapping in `verify-coderabbit-command-spec.ts`, PR template gate option
+projection in `memory-gate-command-spec.ts`, silent-error detector option
+projection in `silent-error-command-spec.ts`, CodeRabbit review evidence CLI
+option mapping in `verify-coderabbit-command-spec.ts`, PR template gate option
 projection in
 `pr-template-gate-command-spec.ts`, and rule lifecycle gate option projection in
 `rule-lifecycle-gate-command-spec.ts`, and policy gate option projection in
@@ -483,10 +487,13 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a command catalog
-  assembler (`<= 1420` lines); workflow-specific parsing belongs in focused
+  assembler (`<= 1400` lines); workflow-specific parsing belongs in focused
   command adapters.
 - `src/lib/cli/registry/memory-gate-command-spec.ts` must stay focused on
   Local Memory compliance option projection and command delegation (`<= 35`
+  lines).
+- `src/lib/cli/registry/silent-error-command-spec.ts` must stay focused on
+  silent-error detector option projection and command delegation (`<= 35`
   lines).
 - `src/lib/cli/registry/gardener-command-spec.ts` must stay focused on docs
   freshness option projection and command delegation (`<= 35` lines).

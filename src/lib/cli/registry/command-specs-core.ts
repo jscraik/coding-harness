@@ -39,7 +39,6 @@ import {
 } from "../../../commands/remediate.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
 import { runSearchCLI } from "../../../commands/search.js";
-import { runSilentErrorDetectorCLI } from "../../../commands/silent-error.js";
 import {
 	printSimulateUsage,
 	runSimulateCLI,
@@ -93,6 +92,7 @@ import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
 import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
+import { createSilentErrorCommandSpec } from "./silent-error-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
 import { createToolingAuditCommandSpec } from "./tooling-audit-command-spec.js";
@@ -180,30 +180,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createReplayCommandSpec(),
 	createGardenerCommandSpec(),
 	createMemoryGateCommandSpec(),
-	{
-		name: "silent-error",
-		summary: "Detect silent error handling anti-patterns",
-		errorLabel: "Silent Error Detector Error",
-		execute: (args) => {
-			const options: {
-				files?: string[];
-				dirs?: string[];
-				json?: boolean;
-				strict?: boolean;
-				suggestions?: boolean;
-			} = {};
-
-			if (args.includes("--json")) options.json = true;
-			if (args.includes("--strict")) options.strict = true;
-			if (args.includes("--suggestions")) options.suggestions = true;
-			const filesArg = getFlagValue(args, args.indexOf("--files"));
-			if (filesArg !== undefined) options.files = parseCsvList(filesArg);
-			const dirsArg = getFlagValue(args, args.indexOf("--dirs"));
-			if (dirsArg !== undefined) options.dirs = parseCsvList(dirsArg);
-
-			return runSilentErrorDetectorCLI(options);
-		},
-	},
+	createSilentErrorCommandSpec(),
 	{
 		name: "brainstorm-gate",
 		summary: "Validate brainstorm artifacts",
