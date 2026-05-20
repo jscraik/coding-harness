@@ -2,6 +2,7 @@
 
 ## Table of Contents
 - [Scope](#scope)
+- [Harness Roles First](#harness-roles-first)
 - [Runtime Discovery](#runtime-discovery)
 - [Role Inventory](#role-inventory)
 - [Validation](#validation)
@@ -11,6 +12,19 @@
 These Codex subagent roles are owned by the coding-harness repository. They are
 not global user roles and should not be registered from `~/dev/configs/codex`
 unless an explicit cross-project promotion decision is made.
+
+## Harness Roles First
+For coding-harness review work, use these project-local harness roles before
+generic or global reviewers. They encode this repository's review categories,
+skill routes, and read-only posture, so they are the first-choice subagents for
+repo-local review coverage.
+
+Invoke them with `spawn_agent(agent_type="<role>")` from a thread rooted in
+this checkout, for example:
+
+```text
+spawn_agent(agent_type="harness-product-code-reviewer")
+```
 
 ## Runtime Discovery
 Codex discovers trusted project-local role files from this directory:

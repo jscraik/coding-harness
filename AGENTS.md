@@ -9,6 +9,7 @@ schema_version: 1
 - [Mandatory Workflow Snippet](#mandatory-workflow-snippet)
 - [Required Essentials](#required-essentials)
 - [Harness CLI for Agents](#harness-cli-for-agents)
+- [Harness Reviewer Roles First](#harness-reviewer-roles-first)
 - [Codex Discovery Order](#codex-discovery-order)
 - [Startup Workflow](#startup-workflow)
 - [Command Preflight](#command-preflight)
@@ -49,6 +50,7 @@ the same steering twice, the harness has failed to encode the operating system.
 - Runtime/toolchain: `pnpm@10.33.0` and Node `>=24.0.0` (see `package.json`).
 - Agent engineering proof: treat steering feedback, PR comments, failing checks, benchmark-style success, workflow-skill misses, and line-level corrections as evidence about the system, not isolated patch requests. Repeated steering is a stop-the-line environment defect: do not resume ordinary feature work until the correction is admitted into the repo operating system or explicitly rejected with a tracked reason. When Jamie says the agent is not permitted to proceed, create a current-session steering admission record first: quote the feedback class, infer the principle, list searched surfaces, choose the durable destination, name the guard or tracked exception, and run the focused validation command before any feature continuation. When Jamie says a thread is planning-only, says the agent is not making changes yet, or rejects implementation as a planning conversation, stop file edits immediately and admit the execution-mode failure before resuming implementation. When the same error or command/test failure happens twice, stop local retries, research trusted web or upstream sources, list 3-5 plausible fixes, choose the most efficient repo-fit fix, implement it, and record `Repeated-error research` in PR closeout. Every correction that implies a design principle triggers a pattern-generalization pass before the agent claims the fix: infer the rule, search sibling code/tests/docs/templates/skills/gates that could share the misbehavior, update the shared pattern or matching siblings, and record intentionally unchanged siblings with reasons. Do not wait for exact trigger words: examples, single-line requests, named-function feedback, review comments, and "generally" or "across everything" language are all principle signals until proven local. This applies across implementation, review, docs, planning, validation, and closeout, not only PR-template evidence. Before closeout, convert the signal into a design principle, search for sibling patterns, check horizontal/vertical/reflected OODA horizons, choose the narrowest durable destination, and prove repo orientation, validation, maintainability, traceability, and handoff quality. Line-level design feedback requires a pattern scope inventory: principle, sibling search, siblings changed, siblings left unchanged with reason, and deferred follow-ups. PR bodies that admit repeated steering or high-signal correction must include `Meta-behavior proof` naming the durable repo/system change and the matching learning or reinforcement destination. High-level workflow skills need a capture-the-flag-style win condition, self-reflection evidence, and iterative refinement before they are trusted. PR or heartbeat closeout completion is not equivalent to green checks: before declaring a lane complete or deleting a continuation heartbeat, prove PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting reason. If the wider horizon cannot be observed, mark it `Unobserved Horizon` and create a follow-up instead of pretending the local fix is complete.
 - Observed fixable blockers: when an agent notices a blocker, warning, risk, flaky command, stale instruction, or validation weakness in a touched file, required validation surface, generated template, or active agent-facing instruction, the default action is to fix it in the same pass and rerun the narrowest proving command. Reporting it as residual risk is allowed only when the fix is outside the current authority, needs credentials or destructive action, would expand scope across unrelated ownership boundaries, or is recorded as a tracked exception with the exact reason and next owner.
+- Harness Reviewer Roles First: for coding-harness review work, project-local harness roles are first-choice subagents before generic or global reviewers. Invoke them with `spawn_agent(agent_type="harness-product-code-reviewer")` or the matching role from `.codex/agents/<role>/<role>.toml` so repository-specific review categories, skill routes, and read-only posture stay enforced.
 - Env-backed validation recovery: before reporting `missing credential` or `unavailable credential` for local validation, inspect the approved private env surface `~/.codex/.env` for the required variable names without printing values. If required values are present, rerun the exact validation command in a shell that loads that env file, for example `zsh -lc 'set -a; source ~/.codex/.env; set +a; pnpm test:deep'`. Only classify the lane as blocked after that probe is missing, unreadable, incomplete, or the env-loaded rerun still fails.
 - Baseline gates: `pnpm codestyle:parity`, `pnpm codex:agents:guard`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`; `pnpm run docs:steering:guard` is included in `pnpm check` so repeated-steering rules cannot drift silently, and `pnpm codex:agents:guard` is included in `pnpm lint` so project-local Codex role inventory cannot silently disappear.
 - Branch-protection defaults include the external Semgrep Cloud GitHub App check `semgrep-cloud-platform/scan`; keep it aligned across generated contracts, `.harness/ci-required-checks.json`, and required-check docs.
@@ -82,6 +84,35 @@ harness pattern-scope --files src/auth.ts --feedback "same things in multiple pl
 harness artifact-routine --active-index .harness/active-artifacts.md --json
 harness risk-tier --files src/payments.ts --json
 ```
+
+## Harness Reviewer Roles First
+
+For coding-harness review work, project-local harness reviewer roles are the
+first-choice subagents. Use them before generic/default/global reviewers when
+the requested review matches one of their owned categories, because they encode
+this repository's review taxonomy, skill routes, and read-only posture.
+
+Invoke them from this repository with `spawn_agent(agent_type="<role>")`, for
+example:
+
+```text
+spawn_agent(agent_type="harness-product-code-reviewer")
+```
+
+Role routing:
+
+- `harness-product-code-reviewer`: product code and tests.
+- `harness-ci-release-reviewer`: CI configuration and release tooling.
+- `harness-dev-tools-reviewer`: internal developer tools.
+- `harness-doc-history-reviewer`: documentation and design history.
+- `harness-evaluation-reviewer`: evaluation harnesses.
+- `harness-review-response-auditor`: review comments and responses.
+- `harness-repository-automation-reviewer`: repository-management scripts.
+- `harness-dashboard-definition-reviewer`: production dashboard definitions.
+
+Use non-harness reviewer roles only when the review surface is outside those
+categories, or when the harness reviewer reports a coverage gap that needs a
+more specialized follow-up.
 
 ## Codex Discovery Order
 

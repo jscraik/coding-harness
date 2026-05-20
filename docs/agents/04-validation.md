@@ -53,6 +53,14 @@ That guard keeps the coding-harness-only role inventory tracked, read-only, on
 `gpt-5.4-mini`, and distinct from unsupported `.agents/roles` runtime
 discovery assumptions.
 
+The same guard enforces the harness roles first principle: use
+`spawn_agent(agent_type="<role>")` with a project-local harness reviewer
+before generic/default/global reviewers when the review work is specific to
+this repository.
+It also preserves the harness roles first principle: coding-harness review work
+uses `spawn_agent(agent_type="<role>")` with the project-local harness reviewer
+roles before generic/default/global reviewers for covered categories.
+
 ## CI gates
 
 ### docs-gate
@@ -247,6 +255,10 @@ Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps
 - When the change introduces or updates a validation wrapper, prove the wrapper itself was executed from the current repo state instead of claiming equivalent underlying commands ran.
 - When project-local Codex agent roles change, run `pnpm codex:agents:guard`
   and keep `.codex/agents/README.md` synchronized with the role inventory.
+- When review routing guidance changes, keep the root `AGENTS.md`,
+  `docs/agents/02-tooling-policy.md`, and `.codex/agents/README.md`
+  synchronized so agents see the same harness roles first principle from every
+  active surface.
 
 ## Artifact routine gate
 

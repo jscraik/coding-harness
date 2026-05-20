@@ -150,10 +150,22 @@ The coding-harness-owned reviewer roles live under
 trusted project-local config layer, so this repository does not need a local
 `.codex/config.toml` solely to expose the roles.
 
+For coding-harness review work, these project-local harness reviewer roles are
+the first-choice subagents. Invoke them from this repository with
+`spawn_agent(agent_type="<role>")`, for example
+`spawn_agent(agent_type="harness-product-code-reviewer")`, before falling
+back to generic/default/global reviewers for covered categories.
+
 `pnpm codex:agents:guard` validates the role inventory and is part of
 `pnpm lint`. Keep that guard green when adding, deleting, or renaming
 project-local reviewers. Do not use `.agents/roles` as a runtime role surface
 until Codex source and runtime tests explicitly support it.
+
+For review work in this repository, project-local harness reviewer roles are
+the first-choice subagents before generic or global reviewers. Invoke them with
+`spawn_agent(agent_type="harness-product-code-reviewer")` or the matching
+role from `.codex/agents/<role>/<role>.toml` so coding-harness review work
+uses the repository-owned role contract.
 
 ### Worktree branch naming convention
 

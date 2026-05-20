@@ -6,6 +6,15 @@ const { join, relative, resolve } = require("node:path");
 const REPO_ROOT = resolve(__dirname, "..");
 const AGENTS_ROOT = resolve(REPO_ROOT, ".codex/agents");
 const README_PATH = resolve(AGENTS_ROOT, "README.md");
+const ROOT_AGENTS_PATH = resolve(REPO_ROOT, "AGENTS.md");
+const TOOLING_POLICY_PATH = resolve(
+	REPO_ROOT,
+	"docs/agents/02-tooling-policy.md",
+);
+const VALIDATION_GUIDE_PATH = resolve(
+	REPO_ROOT,
+	"docs/agents/04-validation.md",
+);
 const UNSUPPORTED_ROLES_PATH = resolve(REPO_ROOT, ".agents/roles");
 
 const EXPECTED_ROLES = [
@@ -40,6 +49,45 @@ const EXPECTED_ROLES = [
 	{
 		name: "harness-dashboard-definition-reviewer",
 		category: "production_dashboard_definition_files",
+	},
+];
+
+const REQUIRED_PRINCIPLE_TEXT = [
+	{
+		path: README_PATH,
+		description: "Codex agent roles README",
+		snippets: [
+			"Harness Roles First",
+			"first-choice subagents",
+			'spawn_agent(agent_type="harness-product-code-reviewer")',
+		],
+	},
+	{
+		path: ROOT_AGENTS_PATH,
+		description: "root agent instructions",
+		snippets: [
+			"Harness Reviewer Roles First",
+			"first-choice subagents",
+			'spawn_agent(agent_type="harness-product-code-reviewer")',
+		],
+	},
+	{
+		path: TOOLING_POLICY_PATH,
+		description: "tooling policy",
+		snippets: [
+			"project-local harness reviewer roles are",
+			"the first-choice subagents",
+			'spawn_agent(agent_type="harness-product-code-reviewer")',
+		],
+	},
+	{
+		path: VALIDATION_GUIDE_PATH,
+		description: "validation guide",
+		snippets: [
+			"harness roles first principle",
+			'spawn_agent(agent_type="<role>")',
+			"before generic/default/global reviewers",
+		],
 	},
 ];
 
@@ -131,6 +179,20 @@ function validateReadme(errors) {
 			errors.push(
 				`${repoRelative(README_PATH)}: missing role inventory entry for ${name}`,
 			);
+		}
+	}
+}
+
+function validatePrincipleDocs(errors) {
+	for (const { path, description, snippets } of REQUIRED_PRINCIPLE_TEXT) {
+		const content = readText(errors, path, description);
+		if (!content) {
+			continue;
+		}
+		for (const snippet of snippets) {
+			if (!content.includes(snippet)) {
+				errors.push(`${repoRelative(path)}: missing \`${snippet}\``);
+			}
 		}
 	}
 }
@@ -231,6 +293,7 @@ function validateRoleFiles(errors) {
 function main() {
 	const errors = [];
 	validateNoUnsupportedRoleSurface(errors);
+	validatePrincipleDocs(errors);
 	validateReadme(errors);
 	validateRoleFiles(errors);
 
