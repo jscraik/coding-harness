@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as gardenerCommand from "../../../commands/gardener.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import { COMMAND_SPECS } from "./command-specs.js";
@@ -322,6 +323,44 @@ describe("replay execute parsing", () => {
 			list: false,
 			traceId: "positional-trace",
 		});
+	});
+});
+
+describe("gardener execute parsing", () => {
+	const spec = findSpec("gardener");
+
+	beforeEach(() => {
+		vi.spyOn(gardenerCommand, "runGardenerCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects docs, stale-days, dry-run, and json flags into the gardener command", () => {
+		const result = spec.execute([
+			"--docs",
+			"docs/agents",
+			"--stale-days",
+			"45",
+			"--dry-run",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(gardenerCommand.runGardenerCLI).toHaveBeenCalledWith({
+			docsPath: "docs/agents",
+			dryRun: true,
+			json: true,
+			staleDays: 45,
+		});
+	});
+
+	it("omits invalid stale-days values instead of passing NaN", () => {
+		const result = spec.execute(["--stale-days", "later"]);
+
+		expect(result).toBe(0);
+		expect(gardenerCommand.runGardenerCLI).toHaveBeenCalledWith({});
 	});
 });
 

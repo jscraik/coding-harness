@@ -20,7 +20,6 @@ import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
 import { runDriftGateCLI } from "../../../commands/drift-gate.js";
 import { runEjectCLI } from "../../../commands/eject.js";
 import { runGapCaseCLI } from "../../../commands/gap-case.js";
-import { runGardenerCLI } from "../../../commands/gardener.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
@@ -75,6 +74,7 @@ import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createDoctorCommandSpec } from "./doctor-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createFleetPlanCommandSpec } from "./fleet-plan-command-spec.js";
+import { createGardenerCommandSpec } from "./gardener-command-spec.js";
 import { createHealthCommandSpec } from "./health-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
@@ -178,31 +178,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		execute: (args) => runArtifactRoutineCLI(args),
 	},
 	createReplayCommandSpec(),
-	{
-		name: "gardener",
-		summary: "Detect stale docs and broken links",
-		errorLabel: "Gardener Error",
-		execute: (args) => {
-			const options: {
-				docsPath?: string;
-				dryRun?: boolean;
-				json?: boolean;
-				staleDays?: number;
-			} = {};
-
-			if (args.includes("--dry-run")) options.dryRun = true;
-			if (args.includes("--json")) options.json = true;
-			const docsArg = getFlagValue(args, args.indexOf("--docs"));
-			if (docsArg) options.docsPath = docsArg;
-			const staleDaysArg = getFlagValue(args, args.indexOf("--stale-days"));
-			if (staleDaysArg) {
-				const staleDays = parseIntegerArg(staleDaysArg, 0);
-				if (staleDays !== undefined) options.staleDays = staleDays;
-			}
-
-			return runGardenerCLI(options);
-		},
-	},
+	createGardenerCommandSpec(),
 	{
 		name: "memory-gate",
 		summary: "Validate local-memory workflow compliance",

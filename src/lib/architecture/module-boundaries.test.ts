@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_470,
+		maxLines: 1_440,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/gardener-command-spec.ts",
+		maxLines: 35,
+		reason:
+			"Gardener command spec must stay focused on docs freshness option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/replay-command-spec.ts",
@@ -614,6 +620,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/doctor-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/fleet-plan-command-spec.ts",
+	"src/lib/cli/registry/gardener-command-spec.ts",
 	"src/lib/cli/registry/health-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
@@ -702,6 +709,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./doctor-command-spec.js",
 	"./evidence-verify-command-spec.js",
 	"./fleet-plan-command-spec.js",
+	"./gardener-command-spec.js",
 	"./health-command-spec.js",
 	"./license-gate-command-spec.js",
 	"./local-memory-preflight-command-spec.js",
