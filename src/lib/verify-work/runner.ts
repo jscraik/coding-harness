@@ -17,7 +17,9 @@ export const verifyWorkRuntime = {
 			cwd: repoRoot,
 			stdio: "inherit",
 			env: {
-				...process.env,
+				...Object.fromEntries(
+					Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")),
+				),
 				HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
 			},
 		});
