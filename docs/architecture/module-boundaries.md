@@ -102,6 +102,8 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/check-environment-command-spec.ts`
   - Environment check option projection and delegation to the environment
     command.
+- `src/lib/cli/registry/docs-gate-command-spec.ts`
+  - Docs gate option projection and delegation to the docs gate command.
 - `src/lib/cli/registry/local-memory-preflight-command-spec.ts`
   - Local Memory preflight option projection, usage-error handling, and
     delegation to the Local Memory preflight command.
@@ -135,7 +137,8 @@ registry seam. Agents can adjust Linear gate option projection in
 `policy-gate-command-spec.ts`, branch protection option projection in
 `branch-protect-command-spec.ts`, authorization check option projection in
 `check-authz-command-spec.ts`, environment check option projection in
-`check-environment-command-spec.ts`, Local Memory preflight option projection
+`check-environment-command-spec.ts`, docs gate option projection in
+`docs-gate-command-spec.ts`, Local Memory preflight option projection
 and usage-error handling in `local-memory-preflight-command-spec.ts`, license
 gate option projection in `license-gate-command-spec.ts`, Symphony readiness
 option projection in `symphony-check-command-spec.ts`, workflow generation
@@ -427,8 +430,10 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 1741` lines); workflow-specific parsing belongs in focused command spec
+  (`<= 1680` lines); workflow-specific parsing belongs in focused command spec
   seams.
+- `src/lib/cli/registry/docs-gate-command-spec.ts` must stay focused on docs
+  gate option projection and command delegation (`<= 80` lines).
 - `src/lib/cli/registry/workflow-generate-command-spec.ts` must stay focused on
   workflow generation option projection and command delegation (`<= 40`
   lines).

@@ -82,9 +82,15 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_741,
+		maxLines: 1_680,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/docs-gate-command-spec.ts",
+		maxLines: 80,
+		reason:
+			"Docs gate command spec must stay focused on docs-gate option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/workflow-generate-command-spec.ts",
@@ -520,6 +526,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/branch-protect-command-spec.ts",
 	"src/lib/cli/registry/check-authz-command-spec.ts",
 	"src/lib/cli/registry/check-environment-command-spec.ts",
+	"src/lib/cli/registry/docs-gate-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
@@ -593,6 +600,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./branch-protect-command-spec.js",
 	"./check-authz-command-spec.js",
 	"./check-environment-command-spec.js",
+	"./docs-gate-command-spec.js",
 	"./evidence-verify-command-spec.js",
 	"./license-gate-command-spec.js",
 	"./local-memory-preflight-command-spec.js",

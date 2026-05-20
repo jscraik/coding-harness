@@ -19,7 +19,6 @@ import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
-import { runDocsGateCLI } from "../../../commands/docs-gate.js";
 import { runDoctorCLI } from "../../../commands/doctor.js";
 import { runDriftGateCLI } from "../../../commands/drift-gate.js";
 import { runEjectCLI } from "../../../commands/eject.js";
@@ -88,6 +87,7 @@ import {
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
+import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
@@ -135,69 +135,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createCheckAuthzCommandSpec(),
 	createCheckEnvironmentCommandSpec(),
 	createLocalMemoryPreflightCommandSpec(),
-	{
-		name: "docs-gate",
-		summary: "Enforce documentation parity for governance changes",
-		errorLabel: "Docs Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const modeIndex = args.indexOf("--mode");
-			const triggerIndex = args.indexOf("--trigger");
-			const outIndex = args.indexOf("--out");
-			const filesIndex = args.indexOf("--files");
-			const repoRootIndex = args.indexOf("--repo-root");
-			const trustedBaseRefIndex = args.indexOf("--trusted-base-ref");
-			const trustedContractShaIndex = args.indexOf("--trusted-contract-sha");
-			const trustedWorkflowShaIndex = args.indexOf("--trusted-workflow-sha");
-			const mergeQueueTargetRefIndex = args.indexOf("--merge-queue-target-ref");
-			const mergeQueueBaseShaIndex = args.indexOf("--merge-queue-base-sha");
-
-			const options: Parameters<typeof runDocsGateCLI>[0] = {};
-
-			if (jsonFlag) options.json = true;
-			const modeArg = getFlagValue(args, modeIndex);
-			if (modeArg === "advisory" || modeArg === "required") {
-				options.mode = modeArg;
-			}
-			const triggerArg = getFlagValue(args, triggerIndex);
-			if (
-				triggerArg === "local" ||
-				triggerArg === "pull_request" ||
-				triggerArg === "merge_group" ||
-				triggerArg === "manual_ci"
-			) {
-				options.trigger = triggerArg;
-			}
-			const outArg = getFlagValue(args, outIndex);
-			if (outArg !== undefined) options.outPath = outArg;
-			const filesArg = getFlagValue(args, filesIndex);
-			if (filesArg !== undefined) {
-				options.changedFiles = parseCsvList(filesArg);
-			}
-			const repoRootArg = getFlagValue(args, repoRootIndex);
-			if (repoRootArg) options.repoRoot = repoRootArg;
-			const trustedBaseRefArg = getFlagValue(args, trustedBaseRefIndex);
-			if (trustedBaseRefArg !== undefined)
-				options.trustedBaseRef = trustedBaseRefArg;
-			const trustedContractShaArg = getFlagValue(args, trustedContractShaIndex);
-			if (trustedContractShaArg !== undefined)
-				options.trustedContractSha = trustedContractShaArg;
-			const trustedWorkflowShaArg = getFlagValue(args, trustedWorkflowShaIndex);
-			if (trustedWorkflowShaArg !== undefined)
-				options.trustedWorkflowSha = trustedWorkflowShaArg;
-			const mergeQueueTargetRefArg = getFlagValue(
-				args,
-				mergeQueueTargetRefIndex,
-			);
-			if (mergeQueueTargetRefArg !== undefined)
-				options.mergeQueueTargetRef = mergeQueueTargetRefArg;
-			const mergeQueueBaseShaArg = getFlagValue(args, mergeQueueBaseShaIndex);
-			if (mergeQueueBaseShaArg !== undefined)
-				options.mergeQueueBaseSha = mergeQueueBaseShaArg;
-
-			return runDocsGateCLI(options);
-		},
-	},
+	createDocsGateCommandSpec(),
 	createLicenseGateCommandSpec(),
 	createSymphonyCheckCommandSpec(),
 	createWorkflowGenerateCommandSpec(),
