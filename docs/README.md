@@ -28,7 +28,7 @@ last_validated: 2026-04-18
 
 - [Linear production workflow](./agents/13-linear-production-workflow.md) — issue lifecycle, states, transitions
 - [Release and change control](./agents/08-release-and-change-control.md) — release process
-- [Local memory](./agents/03-local-memory.md) — LEARNINGS.md, observe() state machine
+- [Local memory](./agents/03-local-memory.md) — LEARNINGS.md, Local Memory CLI state machine
 - [Advanced workflows](./advanced-workflows.md)
 - [Linear sync](./linear-sync.md)
 

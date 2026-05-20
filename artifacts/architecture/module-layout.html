@@ -359,7 +359,7 @@
             </div>
             <div class="legend-item">
               <span class="swatch doctor"></span>
-              <span><strong>Doctor seam:</strong> a focused doctor command work area.</span>
+              <span><strong>Agent-safe work area:</strong> a focused internal box with a guarded public surface.</span>
             </div>
             <div class="legend-item">
               <span class="swatch guard"></span>
@@ -374,7 +374,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate seams are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, evidence verify, and review gate parsing now live behind focused command-spec seams.
+            PR closeout is the main deep module. Doctor, command catalog, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, verify-work, replay, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -394,8 +394,8 @@
               <div class="module doctor">
                 <strong>command-specs-core.ts</strong>
                 <span>
-                  Manifest assembler for command specs; workflow-specific
-                  parsing stays behind focused command-spec seams.
+                  Command catalog assembler; workflow-specific parsing stays
+                  behind focused command adapters.
                 </span>
               </div>
               <div class="module doctor">
@@ -510,6 +510,70 @@
                 <span>
                   Runtime-card delegation stays behind a focused command-spec
                   seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>pr-closeout-command-spec.ts</strong>
+                <span>
+                  PR closeout delegation stays behind a focused command-spec
+                  seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>verify-work-command-spec.ts</strong>
+                <span>
+                  Verify-work resume, repository-root, and governance option
+                  projection stays behind a focused command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>replay-command-spec.ts</strong>
+                <span>
+                  Replay trace selection, listing, dry-run, JSON, and trace-dir
+                  projection stays behind a focused command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>gardener-command-spec.ts</strong>
+                <span>
+                  Gardener docs path, stale-days, dry-run, and JSON projection
+                  stays behind a focused command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>memory-gate-command-spec.ts</strong>
+                <span>
+                  Memory, FORJAMIE, metrics, and JSON projection stays behind
+                  a focused command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>silent-error-command-spec.ts</strong>
+                <span>
+                  Files, directories, strictness, suggestions, and JSON
+                  projection stays behind a focused command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>brainstorm-gate-command-spec.ts</strong>
+                <span>
+                  Brainstorm path, topic, age, strictness, and JSON projection
+                  stays behind a focused command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>drift-gate-command-spec.ts</strong>
+                <span>
+                  Drift mode, baseline seeding, output, suppression,
+                  repository root, and JSON projection stay behind a focused
+                  command-spec seam.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>review evidence adapter: CodeRabbit</strong>
+                <span>
+                  CodeRabbit CLI options and command dispatch stay inside the
+                  provider-specific command adapter.
                 </span>
               </div>
               <div class="module doctor">
@@ -1225,6 +1289,25 @@
               Next delegation now lives behind next-command-spec.ts.
               Runtime-card delegation now lives behind
               runtime-card-command-spec.ts.
+              PR closeout delegation now lives behind
+              pr-closeout-command-spec.ts.
+              Verify-work resume, repository-root, and governance option
+              projection now lives behind verify-work-command-spec.ts.
+              Replay trace selection, listing, dry-run, JSON, and trace-dir
+              projection now lives behind replay-command-spec.ts.
+              Gardener docs path, stale-days, dry-run, and JSON projection now
+              lives behind gardener-command-spec.ts.
+              Memory-gate memory, FORJAMIE, metrics, and JSON projection now
+              lives behind memory-gate-command-spec.ts.
+              Silent-error files, directories, strictness, suggestions, and
+              JSON projection now lives behind silent-error-command-spec.ts.
+              Brainstorm path, topic, age, strictness, and JSON projection now
+              lives behind brainstorm-gate-command-spec.ts.
+              Drift-gate mode, baseline seeding, output, suppression,
+              repository root, and JSON projection now lives behind
+              drift-gate-command-spec.ts.
+              CodeRabbit review evidence CLI option mapping now lives behind
+              verify-coderabbit-command-spec.ts.
               Docs gate option projection now lives behind
               docs-gate-command-spec.ts.
               Org audit delegation now lives behind

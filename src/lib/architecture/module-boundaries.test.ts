@@ -82,9 +82,45 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_580,
+		maxLines: 1_300,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
+		maxLines: 100,
+		reason:
+			"Drift gate command spec must stay focused on consistency-drift option projection and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/brainstorm-gate-command-spec.ts",
+		maxLines: 40,
+		reason:
+			"Brainstorm gate command spec must stay focused on brainstorm option projection and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/silent-error-command-spec.ts",
+		maxLines: 35,
+		reason:
+			"Silent error command spec must stay focused on detector option projection and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/memory-gate-command-spec.ts",
+		maxLines: 35,
+		reason:
+			"Memory gate command spec must stay focused on local-memory path option projection and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/gardener-command-spec.ts",
+		maxLines: 35,
+		reason:
+			"Gardener command spec must stay focused on docs freshness option projection and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/replay-command-spec.ts",
+		maxLines: 40,
+		reason:
+			"Replay command spec must stay focused on replay trace option projection and command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/fleet-plan-command-spec.ts",
@@ -102,6 +138,24 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 25,
 		reason:
 			"Runtime-card command spec must stay focused on runtime-card command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/pr-closeout-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"PR closeout command spec must stay focused on PR closeout command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/verify-coderabbit-command-spec.ts",
+		maxLines: 40,
+		reason:
+			"CodeRabbit review evidence adapter must keep CLI option mapping and command dispatch local.",
+	},
+	{
+		path: "src/lib/cli/registry/verify-work-command-spec.ts",
+		maxLines: 70,
+		reason:
+			"Verify-work command adapter must keep resume, repository, and governance option projection local.",
 	},
 	{
 		path: "src/lib/cli/registry/docs-gate-command-spec.ts",
@@ -422,6 +476,93 @@ const REMEDIATE_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const VERIFY_WORK_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/verify-work.ts",
+		maxLines: 25,
+		reason:
+			"Verify-work command must stay a command facade; wrapper execution and argument construction live behind the verify-work module seam.",
+	},
+	{
+		path: "src/lib/verify-work.ts",
+		maxLines: 10,
+		reason:
+			"Verify-work public facade must stay an export surface, not an implementation sink.",
+	},
+	{
+		path: "src/lib/verify-work/args.ts",
+		maxLines: 60,
+		reason:
+			"Verify-work args seam must stay focused on wrapper flag construction.",
+	},
+	{
+		path: "src/lib/verify-work/runner.ts",
+		maxLines: 115,
+		reason:
+			"Verify-work runner seam must stay focused on wrapper execution and exit-code mapping.",
+	},
+	{
+		path: "src/lib/verify-work/types.ts",
+		maxLines: 25,
+		reason:
+			"Verify-work types seam must stay focused on the public command contract.",
+	},
+] as const;
+
+const MEMORY_GATE_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/memory-gate.ts",
+		maxLines: 25,
+		reason:
+			"Memory gate command must stay a command facade; Local Memory compliance internals live behind the memory-gate module seam.",
+	},
+	{
+		path: "src/lib/memory-gate.ts",
+		maxLines: 10,
+		reason:
+			"Memory gate public facade must stay a small export surface for command and registry callers.",
+	},
+	{
+		path: "src/lib/cli/registry/memory-gate-command-spec.ts",
+		maxLines: 35,
+		reason:
+			"Memory gate command spec must stay focused on local-memory path option projection and facade delegation.",
+	},
+	{
+		path: "src/lib/memory/validator.ts",
+		maxLines: 525,
+		reason:
+			"Memory validator may stay deep, but callers must enter through the memory-gate public facade.",
+	},
+	{
+		path: "src/lib/memory/types.ts",
+		maxLines: 305,
+		reason:
+			"Memory gate types must stay the Local Memory compliance contract behind the public facade.",
+	},
+] as const;
+
+const DRIFT_GATE_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/drift-gate.ts",
+		maxLines: 25,
+		reason:
+			"Drift gate public facade must stay a small export surface for registry and output callers.",
+	},
+	{
+		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
+		maxLines: 100,
+		reason:
+			"Drift gate command spec must stay focused on consistency-drift option projection and facade delegation.",
+	},
+	{
+		path: "src/lib/output/normalise-drift-gate.ts",
+		maxLines: 100,
+		reason:
+			"Drift gate normalisation must stay focused on drift findings, artifact evidence, and GateResult projection through the facade.",
+	},
+] as const;
+
 const RUNTIME_CARD_RUNTIME_RATCHETS = [
 	{
 		path: "src/lib/runtime/runtime-card.ts",
@@ -582,6 +723,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
 	"src/lib/cli/registry/audit-command-spec.ts",
+	"src/lib/cli/registry/brainstorm-gate-command-spec.ts",
 	"src/lib/cli/registry/branch-protect-command-spec.ts",
 	"src/lib/cli/registry/check-authz-command-spec.ts",
 	"src/lib/cli/registry/check-command-spec.ts",
@@ -590,30 +732,36 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/doctor-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/fleet-plan-command-spec.ts",
+	"src/lib/cli/registry/gardener-command-spec.ts",
 	"src/lib/cli/registry/health-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
 	"src/lib/cli/registry/next-command-spec.ts",
 	"src/lib/cli/registry/org-audit-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
+	"src/lib/cli/registry/replay-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
 	"src/lib/cli/registry/risk-tier-command-spec.ts",
 	"src/lib/cli/registry/runtime-card-command-spec.ts",
+	"src/lib/cli/registry/silent-error-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
 	"src/lib/cli/registry/linear-command-spec.ts",
 	"src/lib/cli/registry/policy-gate-command-spec.ts",
 	"src/lib/cli/registry/preset-command-spec.ts",
+	"src/lib/cli/registry/pr-closeout-command-spec.ts",
 	"src/lib/cli/registry/pr-template-gate-command-spec.ts",
 	"src/lib/cli/registry/rule-lifecycle-gate-command-spec.ts",
 	"src/lib/cli/registry/symphony-check-command-spec.ts",
 	"src/lib/cli/registry/tooling-audit-command-spec.ts",
+	"src/lib/cli/registry/verify-coderabbit-command-spec.ts",
+	"src/lib/cli/registry/verify-work-command-spec.ts",
 	"src/lib/cli/registry/workflow-generate-command-spec.ts",
 	"src/lib/init/index.ts",
+	"src/lib/drift-gate.ts",
 	"src/lib/output/normalise.ts",
 	"src/lib/output/normalise-core-v2.ts",
 	"src/lib/output/normalise-docs-gate.ts",
-	"src/lib/output/normalise-drift-gate.ts",
 	"src/lib/output/normalise-he-phase-exit.ts",
 	"src/lib/output/normalise-linear-gate.ts",
 	"src/lib/output/normalise-plan-gate.ts",
@@ -665,6 +813,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 	"./doctor-north-star-contract-checks.js",
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
+	"./brainstorm-gate-command-spec.js",
 	"./branch-protect-command-spec.js",
 	"./audit-command-spec.js",
 	"./check-authz-command-spec.js",
@@ -672,25 +821,33 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./check-environment-command-spec.js",
 	"./docs-gate-command-spec.js",
 	"./doctor-command-spec.js",
+	"./drift-gate-command-spec.js",
 	"./evidence-verify-command-spec.js",
 	"./fleet-plan-command-spec.js",
+	"./gardener-command-spec.js",
 	"./health-command-spec.js",
 	"./license-gate-command-spec.js",
 	"./local-memory-preflight-command-spec.js",
+	"./memory-gate-command-spec.js",
 	"./next-command-spec.js",
 	"./org-audit-command-spec.js",
 	"./preflight-gate-command-spec.js",
+	"./replay-command-spec.js",
 	"./review-gate-command-spec.js",
 	"./risk-tier-command-spec.js",
 	"./runtime-card-command-spec.js",
+	"./silent-error-command-spec.js",
 	"./linear-command-spec.js",
 	"./linear-gate-command-spec.js",
 	"./policy-gate-command-spec.js",
 	"./preset-command-spec.js",
+	"./pr-closeout-command-spec.js",
 	"./pr-template-gate-command-spec.js",
 	"./rule-lifecycle-gate-command-spec.js",
 	"./symphony-check-command-spec.js",
 	"./tooling-audit-command-spec.js",
+	"./verify-coderabbit-command-spec.js",
+	"./verify-work-command-spec.js",
 	"./workflow-generate-command-spec.js",
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [
@@ -767,6 +924,28 @@ const OUTPUT_NORMALISE_SUBMODULES = [
 	"./normalise-pr-template-gate.js",
 	"./normalise-renderer.js",
 ] as const;
+const VERIFY_WORK_PUBLIC_FACADE_SUBMODULES = [
+	"./verify-work/runner.js",
+	"./verify-work/types.js",
+] as const;
+const VERIFY_WORK_INTERNAL_IMPORT_PATTERN =
+	/^(?:\.\.?\/)*(?:lib\/)?verify-work\/(?:args|runner|types)\.js$/;
+const APPROVED_VERIFY_WORK_INTERNAL_IMPORTERS = new Set([
+	"src/lib/verify-work.ts",
+]);
+const MEMORY_GATE_PUBLIC_FACADE_SUBMODULES = [
+	"./memory/validator.js",
+	"./memory/types.js",
+] as const;
+const MEMORY_GATE_INTERNAL_IMPORT_PATTERN =
+	/^.*memory\/(?:branch-enforcer|metrics-tracker|types|validator)\.js$/;
+const APPROVED_MEMORY_GATE_INTERNAL_IMPORTERS = new Set([
+	"src/lib/memory-gate.ts",
+]);
+const DRIFT_GATE_COMMAND_IMPORT_PATTERN = /^.*commands\/drift-gate\.js$/;
+const APPROVED_DRIFT_GATE_COMMAND_IMPORTERS = new Set([
+	"src/lib/drift-gate.ts",
+]);
 
 function countFileLines(path: string): number {
 	const content = readFileSync(join(process.cwd(), path), "utf-8");
@@ -981,6 +1160,114 @@ describe("module boundaries", () => {
 		for (const submodule of REMEDIATE_COMMAND_SUBMODULES) {
 			expect(facadeContent).toContain(submodule);
 		}
+	});
+
+	it("keeps verify-work surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(VERIFY_WORK_SURFACE_RATCHETS);
+	});
+
+	it("keeps verify-work internals behind the public facade", () => {
+		const publicFacadePath = "src/lib/verify-work.ts";
+		const publicFacadeContent = readFileSync(
+			join(process.cwd(), publicFacadePath),
+			"utf-8",
+		);
+		const commandFacadeContent = readFileSync(
+			join(process.cwd(), "src/commands/verify-work.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of VERIFY_WORK_PUBLIC_FACADE_SUBMODULES) {
+			expect(publicFacadeContent).toContain(submodule);
+		}
+		expect(commandFacadeContent).toContain("../lib/verify-work.js");
+
+		const violations = collectTypeScriptFiles("src")
+			.filter((path) => !path.startsWith("src/lib/verify-work/"))
+			.filter((path) => !APPROVED_VERIFY_WORK_INTERNAL_IMPORTERS.has(path))
+			.flatMap((path) =>
+				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8"))
+					.filter((specifier) =>
+						VERIFY_WORK_INTERNAL_IMPORT_PATTERN.test(specifier),
+					)
+					.map((specifier) => `${path} -> ${specifier}`),
+			);
+
+		expect(violations).toEqual([]);
+	});
+
+	it("keeps memory-gate surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(MEMORY_GATE_SURFACE_RATCHETS);
+	});
+
+	it("keeps memory-gate internals behind the public facade", () => {
+		const publicFacadePath = "src/lib/memory-gate.ts";
+		const publicFacadeContent = readFileSync(
+			join(process.cwd(), publicFacadePath),
+			"utf-8",
+		);
+		const commandFacadeContent = readFileSync(
+			join(process.cwd(), "src/commands/memory-gate.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/memory-gate-command-spec.ts"),
+			"utf-8",
+		);
+
+		for (const submodule of MEMORY_GATE_PUBLIC_FACADE_SUBMODULES) {
+			expect(publicFacadeContent).toContain(submodule);
+		}
+		expect(commandFacadeContent).toContain("../lib/memory-gate.js");
+		expect(registryAdapterContent).toContain("../../memory-gate.js");
+
+		const violations = collectTypeScriptFiles("src")
+			.filter((path) => !path.startsWith("src/lib/memory/"))
+			.filter((path) => !APPROVED_MEMORY_GATE_INTERNAL_IMPORTERS.has(path))
+			.flatMap((path) =>
+				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8"))
+					.filter((specifier) =>
+						MEMORY_GATE_INTERNAL_IMPORT_PATTERN.test(specifier),
+					)
+					.map((specifier) => `${path} -> ${specifier}`),
+			);
+
+		expect(violations).toEqual([]);
+	});
+
+	it("keeps drift-gate surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(DRIFT_GATE_SURFACE_RATCHETS);
+	});
+
+	it("keeps drift-gate callers behind the public facade", () => {
+		const publicFacadeContent = readFileSync(
+			join(process.cwd(), "src/lib/drift-gate.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/drift-gate-command-spec.ts"),
+			"utf-8",
+		);
+		const outputAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/output/normalise-drift-gate.ts"),
+			"utf-8",
+		);
+
+		expect(publicFacadeContent).toContain("../commands/drift-gate.js");
+		expect(registryAdapterContent).toContain("../../drift-gate.js");
+		expect(outputAdapterContent).toContain("../drift-gate.js");
+
+		const violations = collectTypeScriptFiles("src/lib")
+			.filter((path) => !APPROVED_DRIFT_GATE_COMMAND_IMPORTERS.has(path))
+			.flatMap((path) =>
+				importSpecifiers(readFileSync(join(process.cwd(), path), "utf-8"))
+					.filter((specifier) =>
+						DRIFT_GATE_COMMAND_IMPORT_PATTERN.test(specifier),
+					)
+					.map((specifier) => `${path} -> ${specifier}`),
+			);
+
+		expect(violations).toEqual([]);
 	});
 
 	it("keeps runtime-card contract and validation seams split after decomposition", () => {

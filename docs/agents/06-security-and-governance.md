@@ -219,7 +219,42 @@ Port-free usage should remain scoped to app-style run actions that map to `dev`/
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.
 
-`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD` to the upstream merge-base (or the nearest main/master fallback), filters to changed implementation files under `src/**`, and runs only the local `scripts/semgrep-pre-push.yml` ruleset. `pnpm run safety:local` is the explicit local safety aggregate for agent handoff; it runs `secrets:staged` and `semgrep:changed`, while `scripts/verify-work.sh` records those local gates as available-but-not-run unless the operator runs the safety aggregate separately. That keeps the local lane useful without duplicating the full CI security scan. Keep the script pinned to the same Semgrep version used by the CircleCI `security-scan` lane in `.circleci/config.yml` (`semgrep==1.153.1`) so local and CI findings stay aligned. The same workflow also runs Snyk through an explicit report-only CLI step with `SNYK_TOKEN` supplied by CircleCI project environment variables; install failures, auth failures, and issue findings must not fail the workflow because the external GitHub Snyk PR check remains the blocking dependency-delta signal. Keep Semgrep Cloud's `semgrep-cloud-platform/scan` branch-protection check as an independent external app gate.
+### Local Semgrep Scope
+
+`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD`
+to the upstream merge-base, or the nearest main/master fallback, filters to
+changed implementation files under `src/**`, and runs only the local
+`scripts/semgrep-pre-push.yml` ruleset.
+
+### Safety Aggregate
+
+`pnpm run safety:local` is the explicit local safety aggregate for agent
+handoff. It runs `secrets:staged` and `semgrep:changed` so local handoff can
+catch focused security drift without duplicating the full CI security scan.
+
+### Verify-Work Recording
+
+`scripts/verify-work.sh` records the local safety gates as
+available-but-not-run unless the operator runs `pnpm run safety:local`
+separately.
+
+### Version Alignment
+
+Keep the local Semgrep script pinned to the same version used by the CircleCI
+`security-scan` lane in `.circleci/config.yml` (`semgrep==1.153.1`) so local
+and CI findings stay aligned.
+
+### Snyk Workflow
+
+CircleCI runs Snyk through an explicit report-only CLI step with `SNYK_TOKEN`
+supplied by CircleCI project environment variables. Install failures, auth
+failures, and issue findings must not fail the workflow because the external
+GitHub Snyk PR check remains the blocking dependency-delta signal.
+
+### Semgrep Cloud
+
+Keep Semgrep Cloud's `semgrep-cloud-platform/scan` branch-protection check as
+an independent external app gate.
 
 ### Setup
 

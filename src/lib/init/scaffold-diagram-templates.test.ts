@@ -12,14 +12,21 @@ describe("scaffold diagram templates", () => {
 		const script = renderRefreshDiagramContextScript();
 
 		expect(script).toContain("#!/usr/bin/env bash");
-		expect(script).toContain("pnpm exec diagram generate-all .");
+		expect(script).toContain(
+			'DEFAULT_DIAGRAM_PATTERNS="src/**/*.ts,scripts/**/*.js,scripts/**/*.cjs,scripts/**/*.mjs,e2e/**/*.ts"',
+		);
+		expect(script).toContain(
+			'DEFAULT_EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/**,.tmp-diagram-refresh-*/**,.diagram/**,**/*.test.*,**/*.spec.*"',
+		);
+		expect(script).toContain('pnpm exec diagram "${DIAGRAM_GENERATE_ARGS[@]}"');
+		expect(script).toContain('--patterns "$DIAGRAM_PATTERNS"');
 		expect(script).toContain('MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"');
 		expect(script).toContain("const sourceManifest = (() => {");
 		expect(script).toContain("...sourceManifest,");
 
 		expect(script).toContain("stableRawIdentity(node.rawId)");
 
-		expect(script).toContain("artifacts/tmp-*/**");
+		expect(script).toContain(".tmp-diagram-refresh-*/**");
 		expect(script).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
 	});
 

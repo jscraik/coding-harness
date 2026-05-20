@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-18
+last_validated: 2026-05-20
 ---
 
 # Agent governance
@@ -96,6 +96,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   stale required evidence should resolve to blocked or unknown with source,
   freshness, head SHA, blocker class, and verification timestamp retained for
   review.
+- `pr-closeout` live evidence inputs must stay evidence-bounded: shell-style
+  env files may populate local credentials, but closeout gate paths must remain
+  repo-scoped and outside-repo paths should block rather than expand the trust
+  boundary.
 - repeated steering feedback is an agent-governance signal, not a one-line
   patch request. PRs that encode steering feedback should record the broader
   design principle, search sibling implementations, update every required

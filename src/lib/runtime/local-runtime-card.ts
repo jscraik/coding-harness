@@ -118,10 +118,16 @@ export function buildLocalRuntimeCard(
 		options.evidenceBundle,
 		collapsePhaseExit,
 	);
-	const localIssueKey = detectIssueKey(options.issueKey, git.branchName);
+	const evidenceIssueKey =
+		options.issueKey === undefined ? evidence.issueKey : null;
+	const localIssueKey = detectIssueKey(
+		options.issueKey,
+		git.branchName,
+		evidenceIssueKey,
+	);
 	const artifacts = inspectRuntimeCardArtifacts(
 		options.repoRoot,
-		localIssueKey ?? evidence.issueKey,
+		localIssueKey,
 	);
 	const phaseExit =
 		options.phaseExitPath !== undefined
@@ -135,8 +141,8 @@ export function buildLocalRuntimeCard(
 	const issueKey = detectIssueKey(
 		options.issueKey,
 		artifacts.issueKey,
+		evidenceIssueKey,
 		git.branchName,
-		evidence.issueKey,
 	);
 	return assembleLocalRuntimeCard({
 		git,

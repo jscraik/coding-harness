@@ -9,10 +9,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import type { DocsFinding, DocsGateResult } from "../../commands/docs-gate.js";
-import type {
-	DriftFinding,
-	DriftGateResult,
-} from "../../commands/drift-gate.js";
+import type { DriftFinding, DriftGateResult } from "../drift-gate.js";
 import type {
 	LinearGateOutput,
 	LinearGateResult,

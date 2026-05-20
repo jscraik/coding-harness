@@ -5,6 +5,7 @@
 - [Problem](#problem)
 - [Durable Rule](#durable-rule)
 - [Current-Session Admission](#current-session-admission)
+- [Planning-Only Admission](#planning-only-admission)
 - [Stale Heartbeat Admission](#stale-heartbeat-admission)
 - [Enforcement Surface](#enforcement-surface)
 - [Review Condition](#review-condition)
@@ -90,6 +91,22 @@ The record can live in Project Brain, .harness/memory/LEARNINGS.md, a solution
 record, a gate, a schema, a PR template field, or a tracked Linear follow-up.
 It is not enough to say the agent will remember.
 
+## Planning-Only Admission
+
+If Jamie says the thread is planning-only, says the agent is not making the
+changes yet, says "this is the planning", or rejects implementation as an
+implementation cue during a planning conversation, the next action is to stop
+file edits and admit an execution-mode failure before implementation resumes.
+
+Durable rule: planning-only steering is not a softer version of approval. It is
+a stop condition. The agent must identify the feedback signal, classify the
+failure category, name the root operational failure, choose the durable
+destination, and run the focused guard that proves the stop condition remains
+load-bearing.
+
+Forbidden recurrence behavior: interpreting exploration, review, or planning
+language as permission to patch files before the user asks for implementation.
+
 ## Stale Heartbeat Admission
 
 The PR #261 closeout heartbeat exposed a second-order failure in the agent
@@ -126,6 +143,13 @@ returned no matches.
 - docs/automations/README.md defines the heartbeat closeout and deletion contract, including the exact-ID fallback when the app automation API is unavailable.
 - UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
 - .harness/memory/LEARNINGS.md records current-session steering admission when a run exposes an operating failure that must not recur.
+- .harness/implementation-notes/*steering-admission*.md records the
+  current-session feedback signal, root operational failure, failure category,
+  searched surfaces, durable system improvement, executable guard, forbidden
+  recurrence behavior, validation outcome, and review condition.
+- The steering guard checks planning-only stop language across AGENTS.md, the validation guide, this solution record, and repo memory so planning conversations do not silently become implementation cues.
+- The steering guard validates current-session steering admission records so
+  the proof fields cannot silently collapse back into chat-only acknowledgement.
 - The GitHub pull request template requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.
 - pr-template-gate rejects line-level or design-pattern correction admissions that lack a pattern scope inventory with the inferred principle, sibling search, siblings changed, and siblings intentionally unchanged or deferred with reasons.
 - The GitHub pull request template requires meta-behavior proof when repeated steering or high-signal correction is admitted, so the PR names the durable repo/system change instead of leaving the learning in chat.

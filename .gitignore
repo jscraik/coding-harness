@@ -66,6 +66,9 @@ gardener-report.json
 !.harness/refactors/**/*.md
 !.harness/features/
 !.harness/features/**/*.md
+!.harness/implementation-notes/
+.harness/implementation-notes/*
+!.harness/implementation-notes/*.md
 !.harness/strategy/
 !.harness/strategy/**/*.md
 !.harness/triage/
@@ -136,6 +139,7 @@ ui-explore-output/
 !.diagram/*.mmd
 !.diagram/manifest.json
 AI/context/refresh.log
+.tmp-diagram-refresh-*/
 
 # Generated test artifacts (embed local machine paths/hostnames — never commit)
 artifacts/test/junit-*.xml

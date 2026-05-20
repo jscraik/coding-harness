@@ -1,11 +1,11 @@
 # Ryan Lopopolo Harness Engineering Evidence Extraction
 
 Generated: 2026-05-19
-Source snapshot commit: placeholder-git-sha
-Extraction tool/version: placeholder-tool@placeholder-version
+Source snapshot commit: 411ca50a38c3dfa4e5c1c002389a789bd5184d8e
+Extraction tool/version: Codex evidence extraction pass, 2026-05-19
 Primary-source digest set:
-- placeholder-path: sha256:placeholder-digest
-- placeholder-path: sha256:placeholder-digest
+- .harness/research/2026-05-16-harness-engineering-youtube-transcripts/transcripts/ryan-lopopolo-extreme-harness-engineering.md: sha256:3da590c296eeffc19a59361c4a4fe4cc375a25251918e391bdb84f4e61c63004
+- .harness/research/2026-05-16-harness-engineering-youtube-transcripts/transcripts/ryan-lopopolo-transcript-source.txt: sha256:9fc89752deca210b7054621fd588fd38d09e00a3057b0977986654993a72f477
 
 Primary sources:
 

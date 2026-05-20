@@ -29,10 +29,11 @@ function buildEnvTool(
 function applyEnvLine(env: NodeJS.ProcessEnv, line: string): void {
 	const trimmed = line.trim();
 	if (trimmed.length === 0 || trimmed.startsWith("#")) return;
-	const eqIndex = trimmed.indexOf("=");
+	const assignment = trimmed.replace(/^export\s+/u, "");
+	const eqIndex = assignment.indexOf("=");
 	if (eqIndex < 1) return;
-	const key = trimmed.slice(0, eqIndex).trim();
-	const value = trimmed
+	const key = assignment.slice(0, eqIndex).trim();
+	const value = assignment
 		.slice(eqIndex + 1)
 		.trim()
 		.replace(/^["']|["']$/g, "");

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { existsSync, readFileSync } = require("node:fs");
-const { resolve } = require("node:path");
+const { existsSync, readFileSync, readdirSync } = require("node:fs");
+const { join, resolve, sep } = require("node:path");
 
 const REPO_ROOT = resolve(__dirname, "..");
 
@@ -17,6 +17,9 @@ const REQUIRED_FILES = {
 	envSolution:
 		"docs/solutions/integration-issues/2026-05-19-env-backed-validation-admission.md",
 };
+const ADMISSION_RECORD_DIR = ".harness/implementation-notes";
+const REQUIRED_ADMISSION_RECORD =
+	".harness/implementation-notes/2026-05-20-steering-admission.md";
 
 const DURABLE_DESTINATION_PATTERN =
 	/(gate|validator|schema|scaffold|template field|validation rule|project brain|linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
@@ -46,6 +49,8 @@ const WORKFLOW_SKILL_PROOF_PATTERN =
 	/(workflow skill|capture-the-flag|capture the flag|win condition|flag is captured|skill workout|self-reflection|reflect on failures)/i;
 const CURRENT_SESSION_ADMISSION_PATTERN =
 	/(current-session steering admission record|not permitted to proceed|feedback class.*inferred principle.*searched surfaces.*durable destination|forbidden recurrence behavior)/i;
+const PLANNING_ONLY_STOP_PATTERN =
+	/(planning-only|planning conversation|not making (the )?changes yet|before implementation|implementation cue|do not implement|no file edits)/i;
 const REPEATED_ERROR_RESEARCH_PATTERN =
 	/(Repeated-error research|Repeated-Error Research Pass|same-error-twice|same error happens twice|same error happened twice|same command.*test.*runtime error happens twice|Source:.*Candidate 1:.*Candidate 2:.*Candidate 3:.*Chosen:.*Implemented:|3-5 numbered Candidate\/Fix\/Option|don.t fight errors)/i;
 const CLOSEOUT_COMPLETION_PATTERN =
@@ -88,6 +93,140 @@ function requirePattern(errors, label, content, pattern, description) {
 	}
 }
 
+function collectAdmissionRecordPaths() {
+	const admissionDir = resolve(REPO_ROOT, ADMISSION_RECORD_DIR);
+	if (!existsSync(admissionDir)) {
+		return [];
+	}
+
+	return readdirSync(admissionDir)
+		.filter((name) => /steering-admission.*\.md$/i.test(name))
+		.map((name) => join(ADMISSION_RECORD_DIR, name))
+		.map((admissionPath) => admissionPath.split(sep).join("/"))
+		.sort();
+}
+
+function validateAdmissionRecord(path, content) {
+	const errors = [];
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^# Current-Session Steering Admission$/m,
+		"current-session steering admission title",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		CURRENT_SESSION_ADMISSION_PATTERN,
+		"current-session steering admission record language",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Feedback Signal$/m,
+		"feedback signal section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Root Operational Failure$/m,
+		"root operational failure section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Failure Category$/m,
+		"failure category section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Searched Surfaces$/m,
+		"searched surfaces section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Durable System Improvement$/m,
+		"durable system improvement section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		DURABLE_DESTINATION_PATTERN,
+		"durable destination evidence",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Executable Guard$/m,
+		"executable guard section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/pnpm run docs:steering:guard/i,
+		"focused steering guard validation command",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Forbidden Recurrence Behavior$/m,
+		"forbidden recurrence behavior section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Validation$/m,
+		"validation section",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/Command: .* -> (pending|pass|fail|blocked)/i,
+		"explicit validation command outcome",
+	);
+	requirePattern(
+		errors,
+		path,
+		content,
+		/^## Review Condition$/m,
+		"review condition section",
+	);
+	return errors;
+}
+
+function validateAdmissionRecords() {
+	const paths = collectAdmissionRecordPaths();
+	const errors = [];
+	if (!paths.includes(REQUIRED_ADMISSION_RECORD)) {
+		errors.push(
+			`admission records: missing required current-session record ${REQUIRED_ADMISSION_RECORD}`,
+		);
+	}
+	for (const path of paths) {
+		const result = readRequiredFile(path, path);
+		errors.push(...result.errors);
+		if (result.errors.length === 0) {
+			errors.push(...validateAdmissionRecord(path, result.content));
+		}
+	}
+	return errors;
+}
+
 /**
  * Validate that AGENTS.md contains all required steering-feedback contract patterns.
  *
@@ -123,6 +262,13 @@ function validateAgents(content) {
 		content,
 		CURRENT_SESSION_ADMISSION_PATTERN,
 		"current-session steering admission record stop condition",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
+		PLANNING_ONLY_STOP_PATTERN,
+		"planning-only stop condition",
 	);
 	requirePattern(
 		errors,
@@ -276,6 +422,13 @@ function validateValidationDoc(content) {
 		content,
 		CURRENT_SESSION_ADMISSION_PATTERN,
 		"current-session steering admission record requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		PLANNING_ONLY_STOP_PATTERN,
+		"planning-only stop requirement",
 	);
 	requirePattern(
 		errors,
@@ -681,6 +834,13 @@ function validateSolution(content) {
 		errors,
 		REQUIRED_FILES.solution,
 		content,
+		PLANNING_ONLY_STOP_PATTERN,
+		"planning-only stop evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
 		DURABLE_DESTINATION_PATTERN,
 		"durable destination language",
 	);
@@ -956,6 +1116,13 @@ function validateMemory(content) {
 		errors,
 		REQUIRED_FILES.memory,
 		content,
+		PLANNING_ONLY_STOP_PATTERN,
+		"planning-only stop learning",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
 		/docs:steering:guard/i,
 		"steering guard validation learning",
 	);
@@ -1070,6 +1237,7 @@ for (const [label, validate] of validations) {
 		errors.push(...validate(result.content));
 	}
 }
+errors.push(...validateAdmissionRecords());
 
 if (errors.length > 0) {
 	console.error("steering-feedback-contract: failed");

@@ -23,7 +23,7 @@ vi.mock("./commands/risk-tier.js", () => ({
 	runRiskTierCLI: vi.fn(() => 41),
 }));
 
-vi.mock("./commands/memory-gate.js", () => ({
+vi.mock("./lib/memory-gate.js", () => ({
 	runMemoryGateCLI: vi.fn(() => 48),
 }));
 
@@ -298,7 +298,7 @@ describe("cli command dispatch", () => {
 
 	it("dispatches memory-gate and ignores missing --memory value", async () => {
 		const { run } = await import("./cli.js");
-		const { runMemoryGateCLI } = await import("./commands/memory-gate.js");
+		const { runMemoryGateCLI } = await import("./lib/memory-gate.js");
 
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
 			code?: number,

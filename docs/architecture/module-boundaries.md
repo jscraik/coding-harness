@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-19
+last_validated: 2026-05-20
 ---
 
 # Module Boundaries
@@ -10,6 +10,9 @@ last_validated: 2026-05-19
 - [Deep Module And Effect Boundaries](#deep-module-and-effect-boundaries)
 - [Agent Boundary Enforcement](#agent-boundary-enforcement)
 - [CLI Registry Boundaries](#cli-registry-boundaries)
+- [Verify Work Command Boundary](#verify-work-command-boundary)
+- [Memory Gate Command Boundary](#memory-gate-command-boundary)
+- [Drift Gate Command Boundary](#drift-gate-command-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
 - [Doctor Command Boundaries](#doctor-command-boundaries)
@@ -75,14 +78,41 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/command-specs.ts`
   - Canonical command manifest bindings to command implementations.
 - `src/lib/cli/registry/command-specs-core.ts`
-  - Manifest assembler for command specs; workflow-specific parsing should stay
-    behind focused command spec seams.
+  - Command catalog assembler; workflow-specific parsing should stay behind
+    focused command adapters.
 - `src/lib/cli/registry/fleet-plan-command-spec.ts`
   - Fleet-plan delegation to the fleet-plan command.
 - `src/lib/cli/registry/next-command-spec.ts`
   - Next delegation to the next command.
 - `src/lib/cli/registry/runtime-card-command-spec.ts`
   - Runtime-card delegation to the runtime-card command.
+- `src/lib/cli/registry/pr-closeout-command-spec.ts`
+  - PR closeout delegation to the PR closeout command.
+- `src/lib/cli/registry/verify-coderabbit-command-spec.ts`
+  - CodeRabbit review evidence adapter; CLI option mapping and command dispatch
+    stay local to the provider-specific command adapter.
+- `src/lib/cli/registry/verify-work-command-spec.ts`
+  - Verify-work resume, repository-root, and governance CLI option adapter stay
+    local to the canonical verification adapter.
+- `src/lib/cli/registry/replay-command-spec.ts`
+  - Replay trace selection, listing, dry-run, JSON, and trace-dir CLI option
+    adapter stay local to the replay command adapter.
+- `src/lib/cli/registry/gardener-command-spec.ts`
+  - Gardener docs path, dry-run, JSON, and stale-days CLI option adapter stay
+    local to the docs freshness command adapter.
+- `src/lib/cli/registry/memory-gate-command-spec.ts`
+  - Memory gate memory, FORJAMIE, metrics, and JSON CLI option adapter stay
+    local to the Local Memory compliance command adapter.
+- `src/lib/cli/registry/silent-error-command-spec.ts`
+  - Silent-error files, directories, strictness, suggestions, and JSON CLI
+    option adapter stay local to the detector command adapter.
+- `src/lib/cli/registry/brainstorm-gate-command-spec.ts`
+  - Brainstorm path, topic, age, strictness, and JSON CLI option adapter stay
+    local to the brainstorm compliance command adapter.
+- `src/lib/cli/registry/drift-gate-command-spec.ts`
+  - Drift mode, baseline seeding, artifact output, suppression, repository
+    root, and JSON CLI option adapter stay local to the consistency-drift
+    command adapter and delegate through `src/lib/drift-gate.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -90,26 +120,26 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/linear-command-options.ts`
   - Linear workflow action and flag projection shared by the runner seam.
 - `src/lib/cli/registry/linear-gate-command-spec.ts`
-  - Linear gate option projection and delegation to the Linear gate command.
+  - Linear gate CLI option adapter and delegation to the Linear gate command.
 - `src/lib/cli/registry/pr-template-gate-command-spec.ts`
-  - PR template gate option projection and delegation to the PR template gate
+  - PR template gate CLI option adapter and delegation to the PR template gate
     command.
 - `src/lib/cli/registry/rule-lifecycle-gate-command-spec.ts`
-  - Rule lifecycle gate option projection and delegation to the rule lifecycle
+  - Rule lifecycle gate CLI option adapter and delegation to the rule lifecycle
     gate command.
 - `src/lib/cli/registry/policy-gate-command-spec.ts`
-  - Policy gate option projection and delegation to the policy gate command.
+  - Policy gate CLI option adapter and delegation to the policy gate command.
 - `src/lib/cli/registry/branch-protect-command-spec.ts`
-  - Branch protection option projection, required approval parsing, and
+  - Branch protection CLI option adapter, required approval parsing, and
     delegation to the branch protection command.
 - `src/lib/cli/registry/check-authz-command-spec.ts`
-  - Authorization check option projection and delegation to the authorization
+  - Authorization check CLI option adapter and delegation to the authorization
     command.
 - `src/lib/cli/registry/check-environment-command-spec.ts`
-  - Environment check option projection and delegation to the environment
+  - Environment check CLI option adapter and delegation to the environment
     command.
 - `src/lib/cli/registry/check-command-spec.ts`
-  - Check option projection and delegation to the check command.
+  - Check CLI option adapter and delegation to the check command.
 - `src/lib/cli/registry/health-command-spec.ts`
   - Health delegation to the health command.
 - `src/lib/cli/registry/doctor-command-spec.ts`
@@ -117,7 +147,7 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/audit-command-spec.ts`
   - Audit delegation to the audit command.
 - `src/lib/cli/registry/docs-gate-command-spec.ts`
-  - Docs gate option projection and delegation to the docs gate command.
+  - Docs gate CLI option adapter and delegation to the docs gate command.
 - `src/lib/cli/registry/org-audit-command-spec.ts`
   - Org audit delegation to the org audit command.
 - `src/lib/cli/registry/tooling-audit-command-spec.ts`
@@ -125,59 +155,127 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/preset-command-spec.ts`
   - Preset delegation to the preset command.
 - `src/lib/cli/registry/local-memory-preflight-command-spec.ts`
-  - Local Memory preflight option projection, usage-error handling, and
+  - Local Memory preflight CLI option adapter, usage-error handling, and
     delegation to the Local Memory preflight command.
 - `src/lib/cli/registry/license-gate-command-spec.ts`
-  - License gate option projection and delegation to the license gate command.
+  - License gate CLI option adapter and delegation to the license gate command.
 - `src/lib/cli/registry/symphony-check-command-spec.ts`
-  - Symphony readiness option projection and delegation to the Symphony check
+  - Symphony readiness CLI option adapter and delegation to the Symphony check
     command.
 - `src/lib/cli/registry/workflow-generate-command-spec.ts`
-  - Workflow generation option projection and delegation to the workflow
+  - Workflow generation CLI option adapter and delegation to the workflow
     generator command.
 - `src/lib/cli/registry/risk-tier-command-spec.ts`
-  - Risk tier option projection and delegation to the risk tier command.
+  - Risk tier CLI option adapter and delegation to the risk tier command.
 - `src/lib/cli/registry/evidence-verify-command-spec.ts`
-  - Evidence verify option projection and delegation to the evidence verify
+  - Evidence verify CLI option adapter and delegation to the evidence verify
     command.
 - `src/lib/cli/registry/preflight-gate-command-spec.ts`
-  - Preflight gate option projection, admission JSON parsing, and delegation to
+  - Preflight gate CLI option adapter, admission JSON parsing, and delegation to
     the preflight gate command.
 - `src/lib/cli/registry/review-gate-command-spec.ts`
-  - Review gate option projection and delegation to the review gate command.
+  - Review gate CLI option adapter and delegation to the review gate command.
 
-The command registry should stay a catalog and dispatch surface. Agents can
-adjust Linear claim, handoff, close, prepare, sync, and triage delegation in
-`linear-command-runner.ts` and Linear action/flag projection in
-`linear-command-options.ts`, while `linear-command-spec.ts` remains the
-registry seam. Agents can adjust Linear gate option projection in
-`linear-gate-command-spec.ts`, fleet-plan delegation in
-`fleet-plan-command-spec.ts`, next delegation in `next-command-spec.ts`,
-runtime-card delegation in `runtime-card-command-spec.ts`, PR template gate
-option projection in
-`pr-template-gate-command-spec.ts`, and rule lifecycle gate option projection in
-`rule-lifecycle-gate-command-spec.ts`, and policy gate option projection in
-`policy-gate-command-spec.ts`, branch protection option projection in
-`branch-protect-command-spec.ts`, authorization check option projection in
-`check-authz-command-spec.ts`, check option projection in
-`check-command-spec.ts`, environment check option projection in
-`check-environment-command-spec.ts`, health delegation in
-`health-command-spec.ts`, doctor delegation in
-`doctor-command-spec.ts`, audit delegation in
-`audit-command-spec.ts`, docs gate option projection in
-`docs-gate-command-spec.ts`, org audit delegation in
-`org-audit-command-spec.ts`, tooling audit delegation in
-`tooling-audit-command-spec.ts`, preset delegation in
-`preset-command-spec.ts`, Local Memory preflight option projection
-and usage-error handling in `local-memory-preflight-command-spec.ts`, license
-gate option projection in `license-gate-command-spec.ts`, Symphony readiness
-option projection in `symphony-check-command-spec.ts`, workflow generation
-option projection in `workflow-generate-command-spec.ts`, risk tier option
-projection in `risk-tier-command-spec.ts`, evidence verify option projection
-in `evidence-verify-command-spec.ts`, preflight gate option projection and
-admission parsing in `preflight-gate-command-spec.ts`, and review gate option
-projection in `review-gate-command-spec.ts`, while
-`command-specs-core.ts` remains an assembler for registered command specs.
+The command registry should stay a catalog and dispatch surface.
+`command-specs-core.ts` remains the command catalog assembler; workflow
+parsing and delegation belong in named adapters:
+
+- Linear workflow delegation stays in `linear-command-runner.ts`; Linear action
+  and flag projection stays in `linear-command-options.ts`;
+  `linear-command-spec.ts` remains the registry seam.
+- Gate CLI option adapters stay in their matching command-spec modules:
+  `linear-gate-command-spec.ts`, `pr-template-gate-command-spec.ts`,
+  `rule-lifecycle-gate-command-spec.ts`, `policy-gate-command-spec.ts`,
+  `branch-protect-command-spec.ts`, `check-authz-command-spec.ts`,
+  `check-command-spec.ts`, `check-environment-command-spec.ts`,
+  `docs-gate-command-spec.ts`, `license-gate-command-spec.ts`,
+  `risk-tier-command-spec.ts`, `evidence-verify-command-spec.ts`,
+  `preflight-gate-command-spec.ts`, and `review-gate-command-spec.ts`.
+- Workflow command adapters own their focused parsing and delegation:
+  `verify-work-command-spec.ts`, `replay-command-spec.ts`,
+  `gardener-command-spec.ts`, `memory-gate-command-spec.ts`,
+  `silent-error-command-spec.ts`, `brainstorm-gate-command-spec.ts`,
+  `verify-coderabbit-command-spec.ts`,
+  `local-memory-preflight-command-spec.ts`,
+  `symphony-check-command-spec.ts`, and
+  `workflow-generate-command-spec.ts`.
+- Pure delegation seams stay thin in `fleet-plan-command-spec.ts`,
+  `next-command-spec.ts`, `runtime-card-command-spec.ts`,
+  `pr-closeout-command-spec.ts`, `health-command-spec.ts`,
+  `doctor-command-spec.ts`, `audit-command-spec.ts`,
+  `org-audit-command-spec.ts`, `tooling-audit-command-spec.ts`, and
+  `preset-command-spec.ts`.
+
+## Verify Work Command Boundary
+
+Verify-work is the closeout trust surface for repo-local validation. Its public
+command facade stays small while wrapper execution and option-to-flag mapping
+live behind a deep module seam:
+
+- `src/commands/verify-work.ts`
+  - Command facade that preserves the existing CLI export contract and imports
+    only `src/lib/verify-work.ts`.
+- `src/lib/verify-work.ts`
+  - Public facade for verify-work execution, runtime adapter, exit codes, and
+    CLI option types.
+- `src/lib/verify-work/args.ts`
+  - Internal wrapper flag construction seam.
+- `src/lib/verify-work/runner.ts`
+  - Internal wrapper execution, precondition, spawn-error, signal, and exit-code
+    mapping seam.
+- `src/lib/verify-work/types.ts`
+  - Public command option and exit-code contract.
+
+Executable guards in `src/lib/architecture/module-boundaries.test.ts` keep the
+command facade thin, ratchet the internal modules, and fail if callers bypass the
+public facade to import `src/lib/verify-work/*` internals.
+
+## Memory Gate Command Boundary
+
+Memory-gate is the Local Memory compliance control surface. Its callers should
+not reach into validator internals directly because the validator owns schema
+checks, read-first discipline, closeout checks, branch enforcement, metrics, and
+terminal or JSON presentation. The public seam is deliberately small:
+
+- `src/commands/memory-gate.ts`
+  - Command facade that preserves the existing CLI export contract and imports
+    only `src/lib/memory-gate.ts`.
+- `src/lib/memory-gate.ts`
+  - Public facade for memory-gate execution and command option types.
+- `src/lib/memory/validator.ts`
+  - Internal Local Memory compliance validator and CLI presenter.
+- `src/lib/memory/types.ts`
+  - Internal schema, result, metrics, and option contract exported through the
+    public facade.
+- `src/lib/cli/registry/memory-gate-command-spec.ts`
+  - Registry option adapter for memory, FORJAMIE, metrics, and JSON flags;
+    delegates through the public facade rather than the command module.
+
+Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
+the command, facade, registry adapter, validator, and type contract, and fail if
+callers bypass `src/lib/memory-gate.ts` to import `src/lib/memory/*`
+internals.
+
+## Drift Gate Command Boundary
+
+Drift-gate is the consistency-drift control surface for governance artifacts.
+Its current implementation still lives behind the command facade, but callers in
+`src/lib/**` must enter through a stable public interface:
+
+- `src/commands/drift-gate.ts`
+  - Existing command facade and CLI export contract.
+- `src/lib/drift-gate.ts`
+  - Public facade for `runDriftGate`, `runDriftGateCLI`, and drift-gate result
+    and option types.
+- `src/lib/cli/registry/drift-gate-command-spec.ts`
+  - Registry flag adapter for mode, baseline seeding, output, suppression,
+    repository root, and JSON; delegates through the public facade.
+- `src/lib/output/normalise-drift-gate.ts`
+  - GateResult projection for drift findings and artifact evidence; imports
+    drift-gate types through the public facade.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the facade and fails if new `src/lib/**` callers import
+    `src/commands/drift-gate.ts` directly.
 
 ## Output Normalisation Boundaries
 
@@ -459,25 +557,44 @@ Threshold policy:
   `command-capability-rules.ts`.
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
-- `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 1580` lines); workflow-specific parsing belongs in focused command spec
-  seams.
+- `src/lib/cli/registry/command-specs-core.ts` must remain a command catalog
+  assembler (`<= 1300` lines); workflow-specific parsing belongs in focused
+  command adapters.
+- `src/lib/cli/registry/drift-gate-command-spec.ts` must stay focused on
+  consistency-drift CLI option adapter and command delegation (`<= 100` lines).
+- `src/lib/cli/registry/memory-gate-command-spec.ts` must stay focused on
+  Local Memory compliance CLI option adapter and command delegation (`<= 35`
+  lines).
+- `src/lib/cli/registry/silent-error-command-spec.ts` must stay focused on
+  silent-error detector CLI option adapter and command delegation (`<= 35`
+  lines).
+- `src/lib/cli/registry/brainstorm-gate-command-spec.ts` must stay focused on
+  brainstorm CLI option adapter and command delegation (`<= 40` lines).
+- `src/lib/cli/registry/gardener-command-spec.ts` must stay focused on docs
+  freshness CLI option adapter and command delegation (`<= 35` lines).
+- `src/lib/cli/registry/replay-command-spec.ts` must stay focused on replay
+  trace CLI option adapter and command delegation (`<= 40` lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
   command delegation (`<= 25` lines).
 - `src/lib/cli/registry/runtime-card-command-spec.ts` must stay focused on
   runtime-card command delegation (`<= 25` lines).
+- `src/lib/cli/registry/pr-closeout-command-spec.ts` must stay focused on PR
+  closeout command delegation (`<= 25` lines).
+- `src/lib/cli/registry/verify-coderabbit-command-spec.ts` must stay focused on
+  CodeRabbit review evidence CLI option mapping and command dispatch (`<= 40`
+  lines).
 - `src/lib/cli/registry/audit-command-spec.ts` must stay focused on audit
   command delegation (`<= 25` lines).
 - `src/lib/cli/registry/check-command-spec.ts` must stay focused on check
-  option projection and command delegation (`<= 25` lines).
+  CLI option adapter and command delegation (`<= 25` lines).
 - `src/lib/cli/registry/health-command-spec.ts` must stay focused on health
   command delegation (`<= 25` lines).
 - `src/lib/cli/registry/doctor-command-spec.ts` must stay focused on doctor
   command delegation (`<= 25` lines).
 - `src/lib/cli/registry/docs-gate-command-spec.ts` must stay focused on docs
-  gate option projection and command delegation (`<= 80` lines).
+  gate CLI option adapter and command delegation (`<= 80` lines).
 - `src/lib/cli/registry/org-audit-command-spec.ts` must stay focused on org
   audit command delegation (`<= 25` lines).
 - `src/lib/cli/registry/tooling-audit-command-spec.ts` must stay focused on
@@ -485,38 +602,38 @@ Threshold policy:
 - `src/lib/cli/registry/preset-command-spec.ts` must stay focused on preset
   command delegation (`<= 25` lines).
 - `src/lib/cli/registry/workflow-generate-command-spec.ts` must stay focused on
-  workflow generation option projection and command delegation (`<= 40`
+  workflow generation CLI option adapter and command delegation (`<= 40`
   lines).
 - `src/lib/cli/registry/risk-tier-command-spec.ts` must stay focused on risk
-  tier option projection and command delegation (`<= 30` lines).
+  tier CLI option adapter and command delegation (`<= 30` lines).
 - `src/lib/cli/registry/symphony-check-command-spec.ts` must stay focused on
-  Symphony readiness option projection and command delegation (`<= 35` lines).
+  Symphony readiness CLI option adapter and command delegation (`<= 35` lines).
 - `src/lib/cli/registry/license-gate-command-spec.ts` must stay focused on
-  license gate option projection and command delegation (`<= 35` lines).
+  license gate CLI option adapter and command delegation (`<= 35` lines).
 - `src/lib/cli/registry/local-memory-preflight-command-spec.ts` must stay
-  focused on Local Memory preflight option projection, usage-error handling, and
+  focused on Local Memory preflight CLI option adapter, usage-error handling, and
   command delegation (`<= 60` lines).
 - `src/lib/cli/registry/check-environment-command-spec.ts` must stay focused on
-  environment check option projection and command delegation (`<= 40` lines).
+  environment check CLI option adapter and command delegation (`<= 40` lines).
 - `src/lib/cli/registry/check-authz-command-spec.ts` must stay focused on
-  authorization check option projection and command delegation (`<= 35`
+  authorization check CLI option adapter and command delegation (`<= 35`
   lines).
 - `src/lib/cli/registry/branch-protect-command-spec.ts` must stay focused on
-  branch protection option projection, required approval parsing, and command
+  branch protection CLI option adapter, required approval parsing, and command
   delegation (`<= 70` lines).
 - `src/lib/cli/registry/preflight-gate-command-spec.ts` must stay focused on
-  preflight option projection, admission JSON parsing, and command delegation
+  preflight CLI option adapter, admission JSON parsing, and command delegation
   (`<= 100` lines).
 - `src/lib/cli/registry/review-gate-command-spec.ts` must stay focused on review
-  gate option projection and command delegation (`<= 220` lines).
+  gate CLI option adapter and command delegation (`<= 220` lines).
 - `src/lib/cli/registry/linear-command-spec.ts` must stay focused on Linear
   command spec metadata (`<= 30` lines).
 - `src/lib/cli/registry/linear-command-runner.ts` must stay focused on Linear
   workflow parsing and delegation (`<= 230` lines).
 - `src/lib/cli/registry/linear-gate-command-spec.ts` must stay focused on Linear
-  gate option projection and delegation (`<= 70` lines).
+  gate CLI option adapter and delegation (`<= 70` lines).
 - `src/lib/cli/registry/pr-template-gate-command-spec.ts` must stay focused on
-  PR template gate option projection and delegation (`<= 50` lines).
+  PR template gate CLI option adapter and delegation (`<= 50` lines).
 - `src/lib/output/normalise.ts` must remain a public output normalisation facade
   (`<= 10` lines).
 - `src/lib/output/normalise-core-v2.ts` must remain a compatibility export surface
@@ -547,7 +664,7 @@ Threshold policy:
   `GateResult` projection.
 - `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2600` lines).
 - `src/commands/doctor.ts` must remain a doctor command facade (`<= 210`
-  lines) and import the explicit doctor seams enforced by the architecture test.
+  lines) and import the explicit agent-safe work areas enforced by the architecture test.
 - `src/commands/doctor-tool-checks.ts` must remain a generic tool-check
   catalogue (`<= 170` lines); provider-specific tool checks move into named
   seams such as `doctor-github-tool-checks.ts`.

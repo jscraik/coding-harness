@@ -126,6 +126,7 @@ const normalizeDiagramContextLines = (lines) => {
 	let skipSection = false;
 
 	const volatileContextSections = new Set([
+		"changed source focus",
 		"agent",
 		"architecture",
 		"c4context",
@@ -176,7 +177,7 @@ const normalizeDiagramContextLines = (lines) => {
 		flushMermaid();
 	}
 
-	return `${normalized.join("\n")}\n`;
+	return `${normalized.join("\n").replace(/\n{3,}/g, "\n\n")}\n`;
 };
 
 module.exports = {

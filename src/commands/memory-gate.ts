@@ -8,8 +8,11 @@
  * - Closeout validation (FORJAMIE.md updated)
  */
 
-import type { MemoryGateOptions } from "../lib/memory/types.js";
-import { runMemoryGate, runMemoryGateCLI } from "../lib/memory/validator.js";
+import {
+	runMemoryGate,
+	runMemoryGateCLI,
+	type MemoryGateOptions,
+} from "../lib/memory-gate.js";
 
 export { runMemoryGate, runMemoryGateCLI };
 export type { MemoryGateOptions };

@@ -135,7 +135,7 @@ printf '%s\n' "$*" > .refresh-invoked
 		write(root, "src/example.test.ts", "export const exampleTest = 2;\n");
 
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
-		expect(result.status).toBe(0);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
 		expect(result.stdout).toContain(
 			"Diagram freshness check skipped: no architecture-sensitive implementation paths changed.",
 		);
@@ -226,12 +226,16 @@ printf '%s\n' "$*" > .refresh-invoked
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
 fence="$(printf '\\x60\\x60\\x60')"
-printf '%s\\n' \
-	"# Diagram Context Pack" \
-	"" \
-	"Generated: 2026-03-12T10:00:00Z" \
-	"" \
-	"## system" \
+		printf '%s\\n' \
+		"# Diagram Context Pack" \
+		"" \
+		"Generated: 2026-03-12T10:00:00Z" \
+		"" \
+		"## Changed source focus" \
+		"" \
+		"- src/commands/pr-closeout.ts" \
+		"" \
+		"## system" \
 	"" \
 	"\${fence}mermaid" \
 	"graph TD" \
@@ -252,10 +256,176 @@ jq -n --tab \
 `);
 		roots.push(root);
 
+		write(
+			root,
+			"AI/context/diagram-context.md",
+			[
+				"# Diagram Context Pack",
+				"",
+				"Generated: 2026-03-12T09:00:00Z",
+				"",
+				"## Changed source focus",
+				"",
+				"- src/lib/runtime/local-runtime-card.ts",
+				"",
+				"## system",
+				"",
+				"```mermaid",
+				"graph TD",
+				"  A[Start] --> B[Finish]",
+				"```",
+				"",
+			].join("\n"),
+		);
 		write(root, "src/example.ts", "export const example = 4;\n");
 
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
-		expect(result.status).toBe(0);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+		const status = run(root, "git", [
+			"status",
+			"--short",
+			"--",
+			".diagram/manifest.json",
+		]);
+		expect(status.status).toBe(0);
+		expect(status.stdout).toBe("");
+	});
+
+	it("passes when flat manifest entries only change volatile metadata", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/manifest.json <<'JSON'
+{
+  "generatedAt": "2026-03-12T00:00:00Z",
+  "architecture": {
+    "type": "architecture",
+    "file": "architecture.mmd",
+    "lines": 1,
+    "bytes": 2
+  }
+}
+JSON
+`);
+		roots.push(root);
+
+		write(
+			root,
+			".diagram/manifest.json",
+			JSON.stringify(
+				{
+					generatedAt: "2026-03-11T00:00:00Z",
+					architecture: {
+						type: "architecture",
+						file: "architecture.mmd",
+						lines: 99,
+						bytes: 999,
+					},
+				},
+				null,
+				2,
+			),
+		);
+		git(root, "add", ".");
+		git(root, "commit", "-m", "baseline flat manifest");
+		write(root, "src/example.ts", "export const example = 44;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+	});
+
+	it("passes when diagrams array entries only change volatile metadata", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/manifest.json <<'JSON'
+{
+  "generatedAt": "2026-03-12T00:00:00Z",
+  "diagrams": [
+    {
+      "type": "architecture",
+      "file": "architecture.mmd",
+      "lines": 1,
+      "bytes": 2
+    }
+  ]
+}
+JSON
+`);
+		roots.push(root);
+
+		write(
+			root,
+			".diagram/manifest.json",
+			JSON.stringify(
+				{
+					generatedAt: "2026-03-11T00:00:00Z",
+					diagrams: [
+						{
+							type: "architecture",
+							file: "architecture.mmd",
+							lines: 99,
+							bytes: 999,
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+		git(root, "add", ".");
+		git(root, "commit", "-m", "baseline diagrams array manifest");
+		write(root, "src/example.ts", "export const example = 45;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+	});
+
+	it("passes when diagrams object entries only change volatile metadata", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/manifest.json <<'JSON'
+{
+  "generatedAt": "2026-03-12T00:00:00Z",
+  "diagrams": {
+    "architecture": {
+      "type": "architecture",
+      "file": "architecture.mmd",
+      "lines": 1,
+      "bytes": 2
+    }
+  }
+}
+JSON
+`);
+		roots.push(root);
+
+		write(
+			root,
+			".diagram/manifest.json",
+			JSON.stringify(
+				{
+					generatedAt: "2026-03-11T00:00:00Z",
+					diagrams: {
+						architecture: {
+							type: "architecture",
+							file: "architecture.mmd",
+							lines: 99,
+							bytes: 999,
+						},
+					},
+				},
+				null,
+				2,
+			),
+		);
+		git(root, "add", ".");
+		git(root, "commit", "-m", "baseline diagrams object manifest");
+		write(root, "src/example.ts", "export const example = 47;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
 		expect(result.stdout).toContain("Diagram freshness check passed.");
 	});
 
@@ -277,6 +447,53 @@ MMD
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain("Diagram freshness check passed.");
+	});
+
+	it("restores semantically equivalent generated artifacts from the index", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+cat > .diagram/architecture.mmd <<'MMD'
+graph TD
+  subgraph sg_one_cccc3333["src/lib/one"]
+    node_alpha_33333333["alpha"]
+  end
+  ext_node_fs_cccc3333["node:fs"] --> node_alpha_33333333
+MMD
+`);
+		roots.push(root);
+
+		const stagedArtifact = [
+			"graph TD",
+			'  subgraph sg_one_bbbb2222["src/lib/one"]',
+			'    node_alpha_22222222["alpha"]',
+			"  end",
+			'  ext_node_fs_bbbb2222["node:fs"] --> node_alpha_22222222',
+			"",
+		].join("\n");
+		write(root, ".diagram/architecture.mmd", stagedArtifact);
+		git(root, "add", ".diagram/architecture.mmd");
+		write(root, "src/example.ts", "export const example = 46;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+		expect(result.stdout).toContain("Diagram freshness check passed.");
+
+		const unstagedStatus = run(root, "git", [
+			"diff",
+			"--quiet",
+			"--",
+			".diagram/architecture.mmd",
+		]);
+		expect(unstagedStatus.status).toBe(0);
+
+		const stagedStatus = run(root, "git", [
+			"diff",
+			"--cached",
+			"--quiet",
+			"--",
+			".diagram/architecture.mmd",
+		]);
+		expect(stagedStatus.status).toBe(1);
 	});
 
 	it("passes when refresh changes volatile suffixes for duplicate labels", () => {

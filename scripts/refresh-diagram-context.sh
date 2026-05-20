@@ -35,6 +35,10 @@ META_FILE="$DIAGRAM_CONTEXT_DIR/diagram-context.meta.json"
 LOG_FILE="$DIAGRAM_CONTEXT_DIR/refresh.log"
 MIN_SECONDS="${DIAGRAM_REFRESH_MIN_SECONDS:-1800}"
 MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"
+DEFAULT_DIAGRAM_PATTERNS="src/**/*.ts,scripts/**/*.js,scripts/**/*.cjs,scripts/**/*.mjs,e2e/**/*.ts"
+DEFAULT_EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/**,.tmp-diagram-refresh-*/**,.diagram/**,**/*.test.*,**/*.spec.*"
+DIAGRAM_PATTERNS="${DIAGRAM_REFRESH_PATTERNS:-$DEFAULT_DIAGRAM_PATTERNS}"
+EXCLUDE_PATTERNS="${DIAGRAM_REFRESH_EXCLUDE_PATTERNS:-$DEFAULT_EXCLUDE_PATTERNS}"
 NOW_EPOCH="$(date +%s)"
 
 mkdir -p "$DIAGRAM_DIR" "$DIAGRAM_CONTEXT_DIR" "$CONTEXT_DIR"
@@ -68,26 +72,41 @@ if ! command -v diagram >/dev/null 2>&1; then
 	exit 1
 fi
 
-TRUNC_DIR=".tmp-diagram-refresh-XXXXXX"
-TMP_DIR="$(mktemp -d "$ROOT_DIR/${TRUNC_DIR}")"
-TMP_BASENAME="$(basename "$TMP_DIR")"
-EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,${TMP_BASENAME}/**"
+TMP_DIR="$(mktemp -d "$DIAGRAM_CONTEXT_DIR/tmp-refresh-XXXXXX")"
+TMP_OUTPUT_DIR=".diagram/context/$(basename "$TMP_DIR")/diagrams"
+DIAGRAM_GENERATE_ARGS=(
+	generate-all
+	.
+	--output-dir "$TMP_OUTPUT_DIR"
+	--patterns "$DIAGRAM_PATTERNS"
+	--exclude "$EXCLUDE_PATTERNS"
+	--max-files "$MAX_FILES"
+	--deterministic
+)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 pushd "$ROOT_DIR" >/dev/null
 if [[ "$QUIET" -eq 1 ]]; then
 	diagram_stderr="$TMP_DIR/diagram-generate.stderr"
 	set +e
-	pnpm exec diagram generate-all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>"$diagram_stderr"
+	pnpm exec diagram "${DIAGRAM_GENERATE_ARGS[@]}" >/dev/null 2>"$diagram_stderr"
 	status=$?
 	set -e
 	if [[ "$status" -ne 0 ]]; then
 		popd >/dev/null
-		cat "$diagram_stderr" >&2
+		if [[ -s "$diagram_stderr" ]]; then
+			cat "$diagram_stderr" >&2
+		else
+			echo "error: diagram generate-all failed with exit $status before writing stderr to $diagram_stderr" >&2
+		fi
 		exit "$status"
 	fi
 else
-	pnpm exec diagram generate-all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
+	if ! command -v diagram >/dev/null 2>&1; then
+		log "error: diagram CLI is not available"
+		exit 1
+	fi
+	pnpm exec diagram "${DIAGRAM_GENERATE_ARGS[@]}"
 fi
 popd >/dev/null
 
@@ -446,8 +465,9 @@ if (diagramFiles.includes("c4context.mmd")) {
   );
   c4ContextContent = replaceRequired(
     c4ContextContent,
-    /System_Ext\(ext_1, "Version Control", "[^"]+"\)/,
-    'System_Ext(ext_1, "Version Control", "@octokit/rest, @octokit/request-error, @octokit/plugin-retry, @octokit/plugin-throttling")',
+    /System_Ext\((ext_\d+), "Version Control", "[^"]+"\)/,
+    (_match, extId) =>
+      `System_Ext(${extId}, "Version Control", "@octokit/rest, @octokit/request-error, @octokit/plugin-retry, @octokit/plugin-throttling")`,
     "version control dependency list",
   );
   writeFileSync(c4ContextPath, ensureTrailingNewline(c4ContextContent.trimEnd()));

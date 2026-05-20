@@ -1,68 +1,62 @@
 classDiagram
-  class review_gate_test_000e2ed6 {
-    +src/commands/review-gate.test.ts
+  class docs_gate_core_eb9b6c18 {
+    +src/commands/docs-gate-core.ts
   }
   class review_gate_core_4c8001f9 {
     +src/commands/review-gate-core.ts
   }
-  class remediate_test_6f59cafe {
-    +src/commands/remediate.test.ts
+  class errors_be4bd567 {
+    +src/lib/contract/errors.ts
   }
-  class linear_workflow_test_a351dcb0 {
-    +src/commands/linear-workflow.test.ts
+  class loader_d47712cc {
+    +src/lib/contract/loader.ts
   }
-  class linear_triage_test_1b75a8b8 {
-    +src/commands/linear-triage.test.ts
+  class preset_resolver_dc3dd716 {
+    +src/lib/contract/preset-resolver.ts
   }
-  class linear_sync_test_da1e1eab {
-    +src/commands/linear-sync.test.ts
+  class run_records_core_89286dfa {
+    +src/lib/contract/run-records-core.ts
   }
-  class linear_prepare_test_678f11a9 {
-    +src/commands/linear-prepare.test.ts
+  class harness_decision_881bdc15 {
+    +src/lib/decision/harness-decision.ts
   }
-  class docs_gate_core_eb9b6c18 {
-    +src/commands/docs-gate-core.ts
+  class he_phase_exit_core_1148895b {
+    +src/lib/decision/he-phase-exit-core.ts
   }
-  class branch_protect_test_c8d80aab {
-    +src/commands/branch-protect.test.ts
+  class validator_1_0c0621d8 {
+    +src/lib/evidence/validator.ts
   }
-  class run_state_core_25a955bc {
-    +src/lib/verify/run-state-core.ts
-  }
-  class session_closeout_f3efb270 {
-    +src/lib/session/session-closeout.ts
-  }
-  class required_checks_46396214 {
-    +src/lib/policy/required-checks.ts
-  }
-  class eval_seed_5699fd3e {
-    +src/lib/learnings/eval-seed.ts
-  }
-  class client_948fe603 {
-    +src/lib/linear/client.ts
-  }
-  class validator_3_28b6e9f3 {
-    +src/lib/input/validator.ts
-  }
-  class validation_98c41dcd {
-    +src/lib/input/validation.ts
+  class errors_1_84b56c88 {
+    +src/lib/github/errors.ts
   }
   class sha_d600474b {
     +src/lib/github/sha.ts
   }
-  class errors_be4bd567 {
-    +src/lib/github/errors.ts
-  }
   class eject_1_d0ecd4d1 {
     +src/lib/init/eject.ts
   }
-  class validator_4_5180cf23 {
-    +src/lib/evidence/validator.ts
+  class validation_98c41dcd {
+    +src/lib/input/validation.ts
   }
-  class contract_loader_src_lib_contract_loader_ts_12a7d1bf {
-    +src/lib/contract/loader.ts
+  class validator_2_744853f5 {
+    +src/lib/input/validator.ts
+  }
+  class eval_seed_5699fd3e {
+    +src/lib/learnings/eval-seed.ts
+  }
+  class client_1_914e1681 {
+    +src/lib/linear/client.ts
+  }
+  class required_checks_46396214 {
+    +src/lib/policy/required-checks.ts
+  }
+  class session_closeout_f3efb270 {
+    +src/lib/session/session-closeout.ts
+  }
+  class run_state_core_25a955bc {
+    +src/lib/verify/run-state-core.ts
   }
   class contract_validator_src_lib_contract_validator_ts_3254c053 {
     +src/lib/contract/validator.ts
   }
-  contract_loader_src_lib_contract_loader_ts_12a7d1bf --> contract_validator_src_lib_contract_validator_ts_3254c053 : validateContract
+  loader_d47712cc --> contract_validator_src_lib_contract_validator_ts_3254c053 : validateContract

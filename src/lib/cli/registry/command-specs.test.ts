@@ -9,7 +9,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
+import * as gardenerCommand from "../../../commands/gardener.js";
+import * as driftGateModule from "../../drift-gate.js";
+import * as memoryGateModule from "../../memory-gate.js";
+import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
+import * as silentErrorCommand from "../../../commands/silent-error.js";
 import { COMMAND_SPECS } from "./command-specs.js";
 import type { CommandSpec } from "./types.js";
 
@@ -234,6 +240,134 @@ describe("linear execute validation", () => {
 	});
 });
 
+describe("verify-work execute validation", () => {
+	const spec = findSpec("verify-work");
+	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+	beforeEach(() => {
+		consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+	});
+
+	afterEach(() => {
+		consoleErrorSpy.mockRestore();
+	});
+
+	it("returns 2 when --resume-from is missing a gate id", () => {
+		expect(spec.execute(["--resume-from"])).toBe(2);
+	});
+
+	it("returns 2 when --repo-root is missing a path", () => {
+		expect(spec.execute(["--repo-root"])).toBe(2);
+	});
+
+	it("returns 2 when --resume-from names an unknown gate", () => {
+		expect(spec.execute(["--resume-from", "missing-gate"])).toBe(2);
+	});
+
+	it("returns 2 when both governance scopes are requested", () => {
+		expect(
+			spec.execute(["--project-governance", "--workspace-governance"]),
+		).toBe(2);
+	});
+});
+
+describe("replay execute parsing", () => {
+	const spec = findSpec("replay");
+
+	beforeEach(() => {
+		vi.spyOn(replayCommand, "runReplayCLI").mockResolvedValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects replay listing flags into the replay command", async () => {
+		const result = await Promise.resolve(
+			spec.execute(["--list", "--trace-dir", "artifacts/traces", "--json"]),
+		);
+
+		expect(result).toBe(0);
+		expect(replayCommand.runReplayCLI).toHaveBeenCalledWith({
+			json: true,
+			dryRun: false,
+			list: true,
+			traceDir: "artifacts/traces",
+		});
+	});
+
+	it("prefers --trace-id over a positional trace id", async () => {
+		const result = await Promise.resolve(
+			spec.execute([
+				"positional-trace",
+				"--trace-id",
+				"flag-trace",
+				"--dry-run",
+			]),
+		);
+
+		expect(result).toBe(0);
+		expect(replayCommand.runReplayCLI).toHaveBeenCalledWith({
+			json: false,
+			dryRun: true,
+			list: false,
+			traceId: "flag-trace",
+		});
+	});
+
+	it("uses the first positional token as trace id when --trace-id is absent", async () => {
+		const result = await Promise.resolve(spec.execute(["positional-trace"]));
+
+		expect(result).toBe(0);
+		expect(replayCommand.runReplayCLI).toHaveBeenCalledWith({
+			json: false,
+			dryRun: false,
+			list: false,
+			traceId: "positional-trace",
+		});
+	});
+});
+
+describe("gardener execute parsing", () => {
+	const spec = findSpec("gardener");
+
+	beforeEach(() => {
+		vi.spyOn(gardenerCommand, "runGardenerCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects docs, stale-days, dry-run, and json flags into the gardener command", () => {
+		const result = spec.execute([
+			"--docs",
+			"docs/agents",
+			"--stale-days",
+			"45",
+			"--dry-run",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(gardenerCommand.runGardenerCLI).toHaveBeenCalledWith({
+			docsPath: "docs/agents",
+			dryRun: true,
+			json: true,
+			staleDays: 45,
+		});
+	});
+
+	it("omits invalid stale-days values instead of passing NaN", () => {
+		const result = spec.execute(["--stale-days", "later"]);
+
+		expect(result).toBe(0);
+		expect(gardenerCommand.runGardenerCLI).toHaveBeenCalledWith({});
+	});
+});
+
 describe("linear-gate execute parsing", () => {
 	const spec = findSpec("linear-gate");
 
@@ -315,6 +449,139 @@ contact_links:
 				}
 			}
 		});
+	});
+});
+
+describe("memory-gate execute parsing", () => {
+	const spec = findSpec("memory-gate");
+
+	beforeEach(() => {
+		vi.spyOn(memoryGateModule, "runMemoryGateCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects memory, forjamie, metrics, and json flags into the memory-gate command", () => {
+		const result = spec.execute([
+			"--memory",
+			".harness/memory/LEARNINGS.md",
+			"--forjamie",
+			"codex/FORJAMIE.md",
+			"--metrics",
+			"artifacts/memory-metrics.json",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(memoryGateModule.runMemoryGateCLI).toHaveBeenCalledWith({
+			memoryPath: ".harness/memory/LEARNINGS.md",
+			forjamiePath: "codex/FORJAMIE.md",
+			metricsPath: "artifacts/memory-metrics.json",
+			json: true,
+		});
+	});
+
+	it("uses defaults when optional memory-gate paths are absent", () => {
+		const result = spec.execute([]);
+
+		expect(result).toBe(0);
+		expect(memoryGateModule.runMemoryGateCLI).toHaveBeenCalledWith({});
+	});
+});
+
+describe("silent-error execute parsing", () => {
+	const spec = findSpec("silent-error");
+
+	beforeEach(() => {
+		vi.spyOn(silentErrorCommand, "runSilentErrorDetectorCLI").mockReturnValue(
+			0,
+		);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects files, dirs, strict, suggestions, and json flags into the detector command", () => {
+		const result = spec.execute([
+			"--files",
+			"src/a.ts,src/b.ts",
+			"--dirs",
+			"src/lib,src/commands",
+			"--strict",
+			"--suggestions",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(silentErrorCommand.runSilentErrorDetectorCLI).toHaveBeenCalledWith({
+			files: ["src/a.ts", "src/b.ts"],
+			dirs: ["src/lib", "src/commands"],
+			strict: true,
+			suggestions: true,
+			json: true,
+		});
+	});
+
+	it("uses defaults when optional detector flags are absent", () => {
+		const result = spec.execute([]);
+
+		expect(result).toBe(0);
+		expect(silentErrorCommand.runSilentErrorDetectorCLI).toHaveBeenCalledWith(
+			{},
+		);
+	});
+});
+
+describe("brainstorm-gate execute parsing", () => {
+	const spec = findSpec("brainstorm-gate");
+
+	beforeEach(() => {
+		vi.spyOn(brainstormGateCommand, "runBrainstormGateCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects brainstorms, topic, max-age, strict, and json flags into the brainstorm gate command", () => {
+		const result = spec.execute([
+			"--brainstorms",
+			".harness/brainstorm",
+			"--topic",
+			"deep modules",
+			"--max-age",
+			"7",
+			"--strict",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(brainstormGateCommand.runBrainstormGateCLI).toHaveBeenCalledWith({
+			brainstormsPath: ".harness/brainstorm",
+			topic: "deep modules",
+			maxAgeDays: 7,
+			strict: true,
+			json: true,
+		});
+	});
+
+	it("omits invalid max-age values while preserving other options", () => {
+		const result = spec.execute(["--max-age", "-1", "--topic", "module map"]);
+
+		expect(result).toBe(0);
+		expect(brainstormGateCommand.runBrainstormGateCLI).toHaveBeenCalledWith({
+			topic: "module map",
+		});
+	});
+
+	it("uses defaults when optional brainstorm-gate flags are absent", () => {
+		const result = spec.execute([]);
+
+		expect(result).toBe(0);
+		expect(brainstormGateCommand.runBrainstormGateCLI).toHaveBeenCalledWith({});
 	});
 });
 
@@ -515,8 +782,71 @@ describe("simulate execute validation", () => {
 describe("drift-gate execute validation", () => {
 	const spec = findSpec("drift-gate");
 
+	beforeEach(() => {
+		vi.spyOn(driftGateModule, "runDriftGateCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("projects drift-gate flags into the drift gate command", () => {
+		const result = spec.execute([
+			"--mode",
+			"advisory",
+			"--out",
+			"artifacts/drift.json",
+			"--baseline",
+			".harness/drift-baseline.json",
+			"--suppress",
+			"readme,docs",
+			"--repo-root",
+			"/tmp/repo",
+			"--seed-baseline",
+			"--json",
+		]);
+
+		expect(result).toBe(0);
+		expect(driftGateModule.runDriftGateCLI).toHaveBeenCalledWith({
+			mode: "advisory",
+			outPath: "artifacts/drift.json",
+			baselinePath: ".harness/drift-baseline.json",
+			suppressions: ["readme", "docs"],
+			repoRoot: "/tmp/repo",
+			seedBaseline: true,
+			json: true,
+		});
+	});
+
+	it("rejects mutually exclusive drift-gate seeding flags", () => {
+		const errorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		const result = spec.execute(["--seed-baseline", "--no-seed"]);
+
+		expect(result).toBe(2);
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error: --seed-baseline conflicts with --no-seed",
+		);
+		expect(driftGateModule.runDriftGateCLI).not.toHaveBeenCalled();
+	});
+
 	it("returns 2 when --mode is an invalid value", () => {
 		expect(spec.execute(["--mode", "strict"])).toBe(2);
+		expect(driftGateModule.runDriftGateCLI).not.toHaveBeenCalled();
+	});
+
+	it("returns 2 when value-bearing flags are missing values", () => {
+		for (const flag of [
+			"--mode",
+			"--out",
+			"--baseline",
+			"--suppress",
+			"--repo-root",
+		]) {
+			expect(spec.execute([flag])).toBe(2);
+		}
+		expect(driftGateModule.runDriftGateCLI).not.toHaveBeenCalled();
 	});
 
 	it("does not return 2 for --mode advisory", async () => {

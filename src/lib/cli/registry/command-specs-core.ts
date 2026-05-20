@@ -6,7 +6,6 @@ import {
 	runBlastRadiusCLI,
 } from "../../../commands/blast-radius.js";
 import { runBrainCLI } from "../../../commands/brain.js";
-import { runBrainstormGateCLI } from "../../../commands/brainstorm-gate.js";
 import {
 	runCIMigrateCLI,
 	runPromoteModeCLI,
@@ -17,14 +16,11 @@ import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
-import { runDriftGateCLI } from "../../../commands/drift-gate.js";
 import { runEjectCLI } from "../../../commands/eject.js";
 import { runGapCaseCLI } from "../../../commands/gap-case.js";
-import { runGardenerCLI } from "../../../commands/gardener.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
-import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
@@ -34,16 +30,13 @@ import {
 	runPilotRollbackCLI,
 } from "../../../commands/pilot-rollback.js";
 import { runPlanGateCLI } from "../../../commands/plan-gate.js";
-import { runPrCloseoutCLI } from "../../../commands/pr-closeout.js";
 import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
 import {
 	type RemediateOptions,
 	runRemediateCLI,
 } from "../../../commands/remediate.js";
-import { runReplayCLI } from "../../../commands/replay.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
 import { runSearchCLI } from "../../../commands/search.js";
-import { runSilentErrorDetectorCLI } from "../../../commands/silent-error.js";
 import {
 	printSimulateUsage,
 	runSimulateCLI,
@@ -58,14 +51,8 @@ import {
 	runUpgradeCLI,
 } from "../../../commands/upgrade.js";
 import { runValidationPlanCLI } from "../../../commands/validation-plan.js";
-import { runVerifyCodeRabbitCLI } from "../../../commands/verify-coderabbit.js";
-import {
-	EXIT_CODES as VERIFY_WORK_EXIT_CODES,
-	runVerifyWorkCLI,
-} from "../../../commands/verify-work.js";
 import type { IssueTracker } from "../../init/types.js";
 import type { PilotEvaluateOptions } from "../../pilot-evaluation/types.js";
-import { getValidationGateSpec } from "../../validation/gate-specs.js";
 import type { ProjectType } from "../../project-type/types.js";
 import { getVersion } from "../../version.js";
 import {
@@ -75,48 +62,49 @@ import {
 	parseIntegerArg,
 } from "../parse-utils.js";
 import { createAuditCommandSpec } from "./audit-command-spec.js";
+import { createBrainstormGateCommandSpec } from "./brainstorm-gate-command-spec.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createDoctorCommandSpec } from "./doctor-command-spec.js";
+import { createDriftGateCommandSpec } from "./drift-gate-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createFleetPlanCommandSpec } from "./fleet-plan-command-spec.js";
+import { createGardenerCommandSpec } from "./gardener-command-spec.js";
 import { createHealthCommandSpec } from "./health-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
 import { createLicenseGateCommandSpec } from "./license-gate-command-spec.js";
 import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
+import { createMemoryGateCommandSpec } from "./memory-gate-command-spec.js";
 import { createNextCommandSpec } from "./next-command-spec.js";
 import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPresetCommandSpec } from "./preset-command-spec.js";
+import { createPrCloseoutCommandSpec } from "./pr-closeout-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
+import { createReplayCommandSpec } from "./replay-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
 import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
+import { createSilentErrorCommandSpec } from "./silent-error-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
 import { createToolingAuditCommandSpec } from "./tooling-audit-command-spec.js";
+import { createVerifyCodeRabbitCommandSpec } from "./verify-coderabbit-command-spec.js";
+import { createVerifyWorkCommandSpec } from "./verify-work-command-spec.js";
 import { createWorkflowGenerateCommandSpec } from "./workflow-generate-command-spec.js";
 
 export const COMMAND_SPECS: CommandSpec[] = [
 	createFleetPlanCommandSpec(),
 	createLinearCommandSpec(),
 	createLinearGateCommandSpec(),
-	{
-		name: "pr-closeout",
-		summary:
-			"Build a read-only PR closeout evidence report from GitHub, CircleCI, CodeRabbit, Snyk, Coding Harness closeout gates, and normalized handoff state",
-		example:
-			"pr-closeout --pr 258 --gates artifacts/pr-closeout/closeout-gates.json --json",
-		errorLabel: "PR Closeout Error",
-		execute: (args) => runPrCloseoutCLI(args),
-	},
+	createPrCloseoutCommandSpec(),
 	createPrTemplateGateCommandSpec(),
 	createRuleLifecycleGateCommandSpec(),
 	createPolicyGateCommandSpec(),
@@ -158,81 +146,8 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runEjectCLI(targetDir, options);
 		},
 	},
-	{
-		name: "verify-work",
-		summary:
-			"Run canonical verification with fresh/resume modes via harness command",
-		example: "verify-work --fast --resume-from validate-codestyle-fast",
-		errorLabel: "Verify Work Error",
-		execute: (args) => {
-			const resumeFromFlag = inspectFlagValue(args, "--resume-from");
-			const repoRootFlag = inspectFlagValue(args, "--repo-root");
-			const projectGovernanceFlag = args.includes("--project-governance");
-			const workspaceGovernanceFlag = args.includes("--workspace-governance");
-			if (resumeFromFlag.missingValue) {
-				console.error("Error: --resume-from requires a gate id");
-				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
-			}
-			if (repoRootFlag.missingValue) {
-				console.error("Error: --repo-root requires a path");
-				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
-			}
-			if (
-				resumeFromFlag.value &&
-				getValidationGateSpec(resumeFromFlag.value) === undefined
-			) {
-				console.error(
-					`[verify-work] unknown gate id for --resume-from: ${resumeFromFlag.value}`,
-				);
-				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
-			}
-			if (projectGovernanceFlag && workspaceGovernanceFlag) {
-				console.error(
-					"Error: --project-governance and --workspace-governance are mutually exclusive",
-				);
-				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
-			}
-
-			return runVerifyWorkCLI({
-				all: args.includes("--all"),
-				changedOnly: args.includes("--changed-only"),
-				strict: args.includes("--strict"),
-				fast: args.includes("--fast"),
-				projectGovernance: projectGovernanceFlag,
-				workspaceGovernance: workspaceGovernanceFlag,
-				json: args.includes("--json"),
-				...(resumeFromFlag.value ? { resumeFrom: resumeFromFlag.value } : {}),
-				...(repoRootFlag.value ? { repoRoot: repoRootFlag.value } : {}),
-			});
-		},
-	},
-	{
-		name: "verify-coderabbit",
-		summary: "Verify CodeRabbit configuration and review settings",
-		errorLabel: "Verify CodeRabbit Error",
-		execute: async (args) => {
-			const jsonFlag = args.includes("--json");
-			const verboseFlag = args.includes("--verbose");
-			const ownerIndex = args.indexOf("--owner");
-			const repoIndex = args.indexOf("--repo");
-			const repoPathIndex = args.indexOf("--repo-path");
-			const tokenIndex = args.indexOf("--token");
-
-			const options: Parameters<typeof runVerifyCodeRabbitCLI>[0] = {};
-			if (jsonFlag) options.json = true;
-			if (verboseFlag) options.verbose = true;
-			const ownerArg = getFlagValue(args, ownerIndex);
-			if (ownerArg) options.owner = ownerArg;
-			const repoArg = getFlagValue(args, repoIndex);
-			if (repoArg) options.repo = repoArg;
-			const repoPathArg = getFlagValue(args, repoPathIndex);
-			if (repoPathArg) options.repoPath = repoPathArg;
-			const tokenArg = getFlagValue(args, tokenIndex);
-			if (tokenArg) options.token = tokenArg;
-
-			return runVerifyCodeRabbitCLI(options);
-		},
-	},
+	createVerifyWorkCommandSpec(),
+	createVerifyCodeRabbitCommandSpec(),
 	{
 		name: "contract",
 		summary: "Init, validate, or print the harness contract schema",
@@ -262,138 +177,11 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Artifact Routine Error",
 		execute: (args) => runArtifactRoutineCLI(args),
 	},
-	{
-		name: "replay",
-		summary: "Replay or list captured agent automation traces",
-		errorLabel: "Replay Error",
-		execute: (args) => {
-			const options: {
-				traceId?: string;
-				list?: boolean;
-				dryRun?: boolean;
-				json?: boolean;
-				traceDir?: string;
-			} = {
-				json: args.includes("--json"),
-				dryRun: args.includes("--dry-run"),
-				list: args.includes("--list"),
-			};
-
-			const traceIdValue = getFlagValue(args, args.indexOf("--trace-id"));
-			if (traceIdValue) options.traceId = traceIdValue;
-
-			const traceDirValue = getFlagValue(args, args.indexOf("--trace-dir"));
-			if (traceDirValue) options.traceDir = traceDirValue;
-
-			// Positional trace ID: first non-flag arg when --trace-id is absent
-			// Command name already stripped by dispatcher, so positional is at args[0]
-			if (!options.traceId && args[0] && !args[0].startsWith("-")) {
-				options.traceId = args[0];
-			}
-
-			return runReplayCLI(options);
-		},
-	},
-	{
-		name: "gardener",
-		summary: "Detect stale docs and broken links",
-		errorLabel: "Gardener Error",
-		execute: (args) => {
-			const options: {
-				docsPath?: string;
-				dryRun?: boolean;
-				json?: boolean;
-				staleDays?: number;
-			} = {};
-
-			if (args.includes("--dry-run")) options.dryRun = true;
-			if (args.includes("--json")) options.json = true;
-			const docsArg = getFlagValue(args, args.indexOf("--docs"));
-			if (docsArg) options.docsPath = docsArg;
-			const staleDaysArg = getFlagValue(args, args.indexOf("--stale-days"));
-			if (staleDaysArg) {
-				const staleDays = parseIntegerArg(staleDaysArg, 0);
-				if (staleDays !== undefined) options.staleDays = staleDays;
-			}
-
-			return runGardenerCLI(options);
-		},
-	},
-	{
-		name: "memory-gate",
-		summary: "Validate local-memory workflow compliance",
-		errorLabel: "Memory Gate Error",
-		execute: (args) => {
-			const options: {
-				memoryPath?: string;
-				forjamiePath?: string;
-				json?: boolean;
-				metricsPath?: string;
-			} = {};
-
-			if (args.includes("--json")) options.json = true;
-			const memoryArg = getFlagValue(args, args.indexOf("--memory"));
-			if (memoryArg) options.memoryPath = memoryArg;
-			const forjamieArg = getFlagValue(args, args.indexOf("--forjamie"));
-			if (forjamieArg) options.forjamiePath = forjamieArg;
-			const metricsArg = getFlagValue(args, args.indexOf("--metrics"));
-			if (metricsArg) options.metricsPath = metricsArg;
-
-			return runMemoryGateCLI(options);
-		},
-	},
-	{
-		name: "silent-error",
-		summary: "Detect silent error handling anti-patterns",
-		errorLabel: "Silent Error Detector Error",
-		execute: (args) => {
-			const options: {
-				files?: string[];
-				dirs?: string[];
-				json?: boolean;
-				strict?: boolean;
-				suggestions?: boolean;
-			} = {};
-
-			if (args.includes("--json")) options.json = true;
-			if (args.includes("--strict")) options.strict = true;
-			if (args.includes("--suggestions")) options.suggestions = true;
-			const filesArg = getFlagValue(args, args.indexOf("--files"));
-			if (filesArg !== undefined) options.files = parseCsvList(filesArg);
-			const dirsArg = getFlagValue(args, args.indexOf("--dirs"));
-			if (dirsArg !== undefined) options.dirs = parseCsvList(dirsArg);
-
-			return runSilentErrorDetectorCLI(options);
-		},
-	},
-	{
-		name: "brainstorm-gate",
-		summary: "Validate brainstorm artifacts",
-		errorLabel: "Brainstorm Gate Error",
-		execute: (args) => {
-			const options: {
-				brainstormsPath?: string;
-				topic?: string;
-				maxAgeDays?: number;
-				strict?: boolean;
-				json?: boolean;
-			} = {};
-
-			if (args.includes("--json")) options.json = true;
-			if (args.includes("--strict")) options.strict = true;
-			const brainstormsArg = getFlagValue(args, args.indexOf("--brainstorms"));
-			if (brainstormsArg) options.brainstormsPath = brainstormsArg;
-			const topicArg = getFlagValue(args, args.indexOf("--topic"));
-			if (topicArg) options.topic = topicArg;
-			const maxAgeArg = getFlagValue(args, args.indexOf("--max-age"));
-			if (maxAgeArg) {
-				const parsed = parseIntegerArg(maxAgeArg, 0);
-				if (parsed !== undefined) options.maxAgeDays = parsed;
-			}
-
-			return runBrainstormGateCLI(options);
-		},
-	},
+	createReplayCommandSpec(),
+	createGardenerCommandSpec(),
+	createMemoryGateCommandSpec(),
+	createSilentErrorCommandSpec(),
+	createBrainstormGateCommandSpec(),
 	{
 		name: "brain",
 		summary: "Project Brain knowledge and quality management",
@@ -491,75 +279,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			});
 		},
 	},
-	{
-		name: "drift-gate",
-		summary: "Evaluate consistency drift across governance surfaces",
-		example: "drift-gate --mode advisory --json",
-		errorLabel: "Drift Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const seedBaselineFlag = args.includes("--seed-baseline");
-			const noSeedFlag = args.includes("--no-seed");
-			const modeFlag = inspectFlagValue(args, "--mode");
-			const outFlag = inspectFlagValue(args, "--out");
-			const baselineFlag = inspectFlagValue(args, "--baseline");
-			const suppressFlag = inspectFlagValue(args, "--suppress");
-			const repoRootFlag = inspectFlagValue(args, "--repo-root");
-
-			if (modeFlag.missingValue) {
-				console.error("Error: --mode requires advisory or health");
-				return 2;
-			}
-			if (outFlag.missingValue) {
-				console.error("Error: --out requires a file path");
-				return 2;
-			}
-			if (baselineFlag.missingValue) {
-				console.error("Error: --baseline requires a file path");
-				return 2;
-			}
-			if (suppressFlag.missingValue) {
-				console.error("Error: --suppress requires a comma-separated list");
-				return 2;
-			}
-			if (repoRootFlag.missingValue) {
-				console.error("Error: --repo-root requires a path");
-				return 2;
-			}
-
-			const options: {
-				mode?: "advisory" | "health";
-				json?: boolean;
-				outPath?: string;
-				baselinePath?: string;
-				seedBaseline?: boolean;
-				suppressions?: string[];
-				repoRoot?: string;
-			} = {};
-
-			if (jsonFlag) options.json = true;
-			if (seedBaselineFlag) options.seedBaseline = true;
-			if (noSeedFlag) options.seedBaseline = false;
-			const modeArg = modeFlag.value;
-			if (modeArg) {
-				if (modeArg !== "advisory" && modeArg !== "health") {
-					console.error("Error: --mode must be advisory or health");
-					return 2;
-				}
-				options.mode = modeArg;
-			}
-			const outArg = outFlag.value;
-			if (outArg) options.outPath = outArg;
-			const baselineArg = baselineFlag.value;
-			if (baselineArg) options.baselinePath = baselineArg;
-			const suppressArg = suppressFlag.value;
-			if (suppressArg) options.suppressions = parseCsvList(suppressArg);
-			const repoRootArg = repoRootFlag.value;
-			if (repoRootArg) options.repoRoot = repoRootArg;
-
-			return runDriftGateCLI(options);
-		},
-	},
+	createDriftGateCommandSpec(),
 	{
 		name: "ui:fast",
 		aliases: ["ui-fast"],

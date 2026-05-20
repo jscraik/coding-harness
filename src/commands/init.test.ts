@@ -2284,18 +2284,32 @@ describe("runInit", () => {
 				"const buildDependency = (content, nodeMap) => {",
 			);
 			expect(refreshDiagrams).toContain(
-				'TRUNC_DIR=".tmp-diagram-refresh-XXXXXX"',
+				'DIAGRAM_CONTEXT_DIR="$DIAGRAM_DIR/context"',
 			);
 			expect(refreshDiagrams).toContain(
-				'TMP_DIR="$(mktemp -d "$ROOT_DIR/${TRUNC_DIR}")"',
+				'TMP_DIR="$(mktemp -d "$DIAGRAM_CONTEXT_DIR/tmp-refresh-XXXXXX")"',
 			);
 			expect(refreshDiagrams).toContain(
-				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,${TMP_BASENAME}/**"',
+				'TMP_OUTPUT_DIR=".diagram/context/$(basename "$TMP_DIR")/diagrams"',
+			);
+			expect(refreshDiagrams).toContain(
+				'DEFAULT_DIAGRAM_PATTERNS="src/**/*.ts,scripts/**/*.js,scripts/**/*.cjs,scripts/**/*.mjs,e2e/**/*.ts"',
+			);
+			expect(refreshDiagrams).toContain(
+				'DEFAULT_EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/**,.tmp-diagram-refresh-*/**,.diagram/**,**/*.test.*,**/*.spec.*"',
 			);
 			expect(refreshDiagrams).toContain(
 				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-10000}"',
 			);
+			expect(refreshDiagrams).toContain('--patterns "$DIAGRAM_PATTERNS"');
 			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
+			expect(refreshDiagrams).toContain("--deterministic");
+			expect(refreshDiagrams).toContain(
+				'pnpm exec diagram "${DIAGRAM_GENERATE_ARGS[@]}"',
+			);
+			expect(refreshDiagrams).toContain(
+				'/System_Ext\\((ext_\\d+), "Version Control", "[^"]+"\\)/',
+			);
 			expect(refreshDiagrams).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
 			expect(refreshDiagrams).toContain("const sourceManifest = (() => {");
 			expect(refreshDiagrams).toContain("...sourceManifest,");
@@ -2304,7 +2318,10 @@ describe("runInit", () => {
 			expect(diagramFreshness).not.toContain(".diagram/*)");
 			expect(diagramFreshness).not.toContain("AI/context/*)");
 			expect(diagramFreshness).toContain("src/*.test.ts|src/*.spec.ts");
-			expect(diagramFreshness).toContain("jq -c 'del(.generatedAt)'");
+			expect(diagramFreshness).toContain(
+				'if (.diagrams | type) == "array" then',
+			);
+			expect(diagramFreshness).toContain("with_entries(");
 			expect(diagramFreshness).toContain(
 				'bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet',
 			);
