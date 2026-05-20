@@ -42,7 +42,6 @@ import {
 } from "../../../commands/remediate.js";
 import { runReplayCLI } from "../../../commands/replay.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
-import { runRuntimeCardCLI } from "../../../commands/runtime-card.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import { runSilentErrorDetectorCLI } from "../../../commands/silent-error.js";
 import {
@@ -98,6 +97,7 @@ import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
+import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
@@ -136,15 +136,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createPresetCommandSpec(),
 	createCheckCommandSpec(),
 	createNextCommandSpec(),
-	{
-		name: "runtime-card",
-		summary:
-			"Build runtime-card/v1 and optional normalized evidence artifacts from git, harness evidence, normalized evidence bundles, and optional live provider state",
-		example:
-			"runtime-card --json --evidence .harness/runtime/session-evidence.json --out .harness/runtime/JSC-311.json --evidence-out .harness/runtime/JSC-311-evidence.json",
-		errorLabel: "Runtime Card Error",
-		execute: (args) => runRuntimeCardCLI(args),
-	},
+	createRuntimeCardCommandSpec(),
 	createAuditCommandSpec(getVersion),
 	createDoctorCommandSpec(getVersion),
 	createHealthCommandSpec(getVersion),

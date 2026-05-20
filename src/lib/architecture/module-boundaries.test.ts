@@ -82,7 +82,7 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_588,
+		maxLines: 1_580,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
 	},
@@ -96,6 +96,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		path: "src/lib/cli/registry/next-command-spec.ts",
 		maxLines: 25,
 		reason: "Next command spec must stay focused on next command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/runtime-card-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Runtime-card command spec must stay focused on runtime-card command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/docs-gate-command-spec.ts",
@@ -592,6 +598,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
 	"src/lib/cli/registry/risk-tier-command-spec.ts",
+	"src/lib/cli/registry/runtime-card-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
 	"src/lib/cli/registry/linear-command-spec.ts",
@@ -675,6 +682,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./preflight-gate-command-spec.js",
 	"./review-gate-command-spec.js",
 	"./risk-tier-command-spec.js",
+	"./runtime-card-command-spec.js",
 	"./linear-command-spec.js",
 	"./linear-gate-command-spec.js",
 	"./policy-gate-command-spec.js",
