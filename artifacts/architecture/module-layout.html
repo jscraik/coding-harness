@@ -1100,6 +1100,43 @@
         </section>
 
         <section class="panel">
+          <h2>7B. CI Migration Path Safety Seam</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/ci-migrate-core.ts</strong>
+              <span>
+                Transitional command core for CI migration orchestration, action
+                dispatch, and migration report assembly.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>repo-bound-paths.ts</strong>
+                <span>
+                  Repository-bounded path and file URL validation, symlink
+                  rejection, and allowlisted restore-path checks.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>ci-migrate-merge-queue-window.ts</strong>
+                <span>
+                  Signed merge-queue cutover window lifecycle state and
+                  replay-safety checks.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>repo-bound-paths.test.ts + module-boundaries.test.ts</strong>
+                <span>
+                  Direct path traversal regression tests plus ratchets that keep
+                  path-safety policy behind the CI module seam.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>8. Review Gate Decision Packet Seams</h2>
           <div class="doctor-grid">
             <div class="module public">

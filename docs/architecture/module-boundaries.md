@@ -228,10 +228,14 @@ absorbs more safety policy.
   - Signed merge-queue cutover window state, replay-binding shape validation,
     signature verification, terminal-window admission, and lifecycle-state
     writes for prepare/apply/commit flows.
+- `src/lib/ci/repo-bound-paths.ts`
+  - Repository-bounded configured path resolution, file URL resolution, symlink
+    rejection, and allowlisted restore-path safety checks.
 
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
-the command core and merge-queue window module so signed lifecycle-state policy
-does not grow back into the command orchestration file.
+the command core, merge-queue window module, and repository path-safety module
+so signed lifecycle-state and path traversal policy do not grow back into the
+command orchestration file.
 
 ## Verify Work Command Boundary
 

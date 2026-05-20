@@ -6,13 +6,11 @@ import {
 	mkdirSync,
 	readFileSync,
 	readdirSync,
-	realpathSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import { cwd, env } from "node:process";
-import { fileURLToPath } from "node:url";
 import {
 	CIRCLECI_PRIMARY_CHECK,
 	type CheckEntry,
@@ -60,6 +58,11 @@ import {
 	isValidMergeQueueEvidenceBinding,
 	writeMergeQueueWindow,
 } from "../lib/ci/ci-migrate-merge-queue-window.js";
+import {
+	isSafeAllowedRestorePath,
+	resolveRepoBoundFileUrl,
+	resolveRepoBoundPath,
+} from "../lib/ci/repo-bound-paths.js";
 import {
 	defaultSnapshotId,
 	getExternalControlPlaneStatePath,
@@ -2260,170 +2263,6 @@ function runMergeQueueProviderAPIOrchestrator(
 	return { ok: true };
 }
 
-function resolveRepoBoundPath(
-	targetDir: string,
-	configuredPath: string,
-	label: string,
-	mustExist: boolean,
-	expectedKind: "file" | "directory" = "file",
-): { ok: true; absolutePath: string } | { ok: false; error: string } {
-	const candidatePath = configuredPath.trim();
-	if (candidatePath.length === 0) {
-		return {
-			ok: false,
-			error: `${label} path cannot be empty.`,
-		};
-	}
-	const rootPath = realpathSync(targetDir);
-	const absolutePath = resolve(targetDir, candidatePath);
-	const isWithinRoot = (path: string): boolean =>
-		path === rootPath || path.startsWith(`${rootPath}${sep}`);
-
-	if (existsSync(absolutePath)) {
-		const stat = lstatSync(absolutePath);
-		if (stat.isSymbolicLink()) {
-			return {
-				ok: false,
-				error: `${label} path cannot be a symbolic link: ${configuredPath}`,
-			};
-		}
-		if (expectedKind === "file" && !stat.isFile()) {
-			return {
-				ok: false,
-				error: `${label} must be a file: ${configuredPath}`,
-			};
-		}
-		if (expectedKind === "directory" && !stat.isDirectory()) {
-			return {
-				ok: false,
-				error: `${label} must be a directory: ${configuredPath}`,
-			};
-		}
-		if (!isWithinRoot(realpathSync(absolutePath))) {
-			return {
-				ok: false,
-				error: `${label} path escapes repository root: ${configuredPath}`,
-			};
-		}
-		return { ok: true, absolutePath };
-	}
-
-	if (mustExist) {
-		return {
-			ok: false,
-			error: `${label} not found: ${configuredPath}`,
-		};
-	}
-
-	let ancestor = dirname(absolutePath);
-	while (!existsSync(ancestor)) {
-		const parent = dirname(ancestor);
-		if (parent === ancestor) {
-			return {
-				ok: false,
-				error: `${label} path escapes repository root: ${configuredPath}`,
-			};
-		}
-		ancestor = parent;
-	}
-	const ancestorStat = lstatSync(ancestor);
-	if (!ancestorStat.isDirectory() || ancestorStat.isSymbolicLink()) {
-		return {
-			ok: false,
-			error: `${label} path parent is not a safe directory: ${configuredPath}`,
-		};
-	}
-	if (!isWithinRoot(realpathSync(ancestor))) {
-		return {
-			ok: false,
-			error: `${label} path escapes repository root: ${configuredPath}`,
-		};
-	}
-	return { ok: true, absolutePath };
-}
-
-function resolveRepoBoundFileUrl(
-	targetDir: string,
-	url: string,
-	label: string,
-): { ok: true; absolutePath: string } | { ok: false; error: string } {
-	let filePath: string;
-	try {
-		filePath = fileURLToPath(url);
-	} catch (error) {
-		return {
-			ok: false,
-			error: `${label} is not a valid file URL: ${sanitizeError(error)}`,
-		};
-	}
-	const rootPath = realpathSync(targetDir);
-	const absolutePath = resolve(filePath);
-	const isWithinRoot = (path: string): boolean =>
-		path === rootPath || path.startsWith(`${rootPath}${sep}`);
-
-	if (!existsSync(absolutePath)) {
-		return {
-			ok: false,
-			error: `${label} not found: ${url}`,
-		};
-	}
-	const stat = lstatSync(absolutePath);
-	if (stat.isSymbolicLink()) {
-		return {
-			ok: false,
-			error: `${label} cannot be a symbolic link: ${url}`,
-		};
-	}
-	if (!stat.isFile()) {
-		return {
-			ok: false,
-			error: `${label} must be a file: ${url}`,
-		};
-	}
-	if (!isWithinRoot(realpathSync(absolutePath))) {
-		return {
-			ok: false,
-			error: `${label} escapes repository root: ${url}`,
-		};
-	}
-	return { ok: true, absolutePath };
-}
-
-function isSafeRestorePath(targetDir: string, relativePath: string): boolean {
-	if (!EXTERNAL_CONTROL_PLANE_PATH_SET.has(relativePath)) {
-		return false;
-	}
-	const rootPath = realpathSync(targetDir);
-	const absolutePath = resolve(targetDir, relativePath);
-	const isWithinRoot = (p: string): boolean =>
-		p === rootPath || p.startsWith(`${rootPath}${sep}`);
-
-	if (existsSync(absolutePath)) {
-		// Path exists: reject symlinks immediately; canonicalize otherwise.
-		const stat = lstatSync(absolutePath);
-		if (stat.isSymbolicLink()) {
-			return false;
-		}
-		return isWithinRoot(realpathSync(absolutePath));
-	}
-
-	// Path doesn't exist yet: walk up to find the nearest existing ancestor
-	// and verify it is a real non-symlink directory within the root.
-	let ancestor = dirname(absolutePath);
-	while (!existsSync(ancestor)) {
-		const parent = dirname(ancestor);
-		if (parent === ancestor) {
-			return false; // reached filesystem root without finding anything
-		}
-		ancestor = parent;
-	}
-	const ancestorStat = lstatSync(ancestor);
-	if (!ancestorStat.isDirectory() || ancestorStat.isSymbolicLink()) {
-		return false;
-	}
-	return isWithinRoot(realpathSync(ancestor));
-}
-
 function captureExternalControlPlaneState(
 	targetDir: string,
 	snapshotId: string,
@@ -2487,7 +2326,13 @@ function restoreExternalControlPlaneState(
 ): { ok: true } | { ok: false; error: string } {
 	try {
 		for (const artifact of snapshot.artifacts) {
-			if (!isSafeRestorePath(targetDir, artifact.relativePath)) {
+			if (
+				!isSafeAllowedRestorePath(
+					targetDir,
+					artifact.relativePath,
+					EXTERNAL_CONTROL_PLANE_PATH_SET,
+				)
+			) {
 				return {
 					ok: false,
 					error: `External control-plane artifact path is not allowed: ${artifact.relativePath}`,

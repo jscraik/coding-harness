@@ -4,6 +4,9 @@ flowchart TD
   fleet_plan_repo_ecdc6499["fleet-plan-repo"]
   UserRequest --> fleet_plan_repo_ecdc6499
   fleet_plan_repo_ecdc6499 --> fleet_plan_repo_ecdc6499_result["result"]
+  repo_bound_paths_e218b5b3["repo-bound-paths"]
+  UserRequest --> repo_bound_paths_e218b5b3
+  repo_bound_paths_e218b5b3 --> repo_bound_paths_e218b5b3_result["result"]
   json_schema_core_96d7e328["json-schema-core"]
   UserRequest --> json_schema_core_96d7e328
   json_schema_core_96d7e328 --> json_schema_core_96d7e328_result["result"]
@@ -23,6 +26,6 @@ flowchart TD
   UserRequest --> schema_migrate_c0646635
   schema_migrate_c0646635 --> schema_migrate_c0646635_result["result"]
   classDef dbNode fill:#0ea5e9,color:#fff
-  class fleet_plan_repo_ecdc6499,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635 dbNode
+  class fleet_plan_repo_ecdc6499,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635 dbNode
   classDef decisionNode fill:#0284c7,color:#fff
   class Decision decisionNode

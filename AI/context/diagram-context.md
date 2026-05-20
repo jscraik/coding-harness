@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-20T21:35:01Z
+Generated: 2026-05-20T22:23:44Z
 
 ## Table of Contents
 
@@ -32,10 +32,12 @@ Generated: 2026-05-20T21:35:01Z
 - `src/commands/ci-migrate-core.ts`
 - `src/commands/review-gate-core.ts`
 - `src/lib/ci/ci-migrate-merge-queue-window.ts`
+- `src/lib/ci/repo-bound-paths.ts`
 - `src/lib/memory-gate.ts`
 - `src/lib/memory/cli.ts`
 - `src/lib/memory/validator.ts`
 - `src/lib/review-gate/required-check-manifest.ts`
+- `src/lib/review-gate/required-check-sources.ts`
 - `src/lib/review-gate/required-checks.ts`
 
 ## agent
@@ -364,6 +366,9 @@ flowchart TD
   fleet_plan_repo_ecdc6499["fleet-plan-repo"]
   UserRequest --> fleet_plan_repo_ecdc6499
   fleet_plan_repo_ecdc6499 --> fleet_plan_repo_ecdc6499_result["result"]
+  repo_bound_paths_e218b5b3["repo-bound-paths"]
+  UserRequest --> repo_bound_paths_e218b5b3
+  repo_bound_paths_e218b5b3 --> repo_bound_paths_e218b5b3_result["result"]
   json_schema_core_96d7e328["json-schema-core"]
   UserRequest --> json_schema_core_96d7e328
   json_schema_core_96d7e328 --> json_schema_core_96d7e328_result["result"]
@@ -383,7 +388,7 @@ flowchart TD
   UserRequest --> schema_migrate_c0646635
   schema_migrate_c0646635 --> schema_migrate_c0646635_result["result"]
   classDef dbNode fill:#0ea5e9,color:#fff
-  class fleet_plan_repo_ecdc6499,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635 dbNode
+  class fleet_plan_repo_ecdc6499,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635 dbNode
   classDef decisionNode fill:#0284c7,color:#fff
   class Decision decisionNode
 
@@ -589,6 +594,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_registry_core_c9990279_3e2fda38
   ext_node_fs_a15b7d96["node:fs"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_fs_a15b7d96["node:fs"] --> node_remediate_runner_helpers_929fedcc_8714d951
+  ext_node_fs_a15b7d96["node:fs"] --> node_repo_bound_paths_e218b5b3_216d0eb0
   ext_node_fs_a15b7d96["node:fs"] --> node_repo_scanner_core_8e9f7646_10aca705
   ext_node_fs_a15b7d96["node:fs"] --> node_repositories_a8038884_2c62efe4
   ext_node_fs_a15b7d96["node:fs"] --> node_required_check_manifest_744e3936_5a20f8d5
@@ -774,6 +780,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_registry_core_c9990279_3e2fda38
   ext_node_path_78811c13["node:path"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_path_78811c13["node:path"] --> node_replay_ac203c98_115ce9a2
+  ext_node_path_78811c13["node:path"] --> node_repo_bound_paths_e218b5b3_216d0eb0
   ext_node_path_78811c13["node:path"] --> node_repo_scanner_core_8e9f7646_10aca705
   ext_node_path_78811c13["node:path"] --> node_repositories_a8038884_2c62efe4
   ext_node_path_78811c13["node:path"] --> node_required_check_manifest_744e3936_5a20f8d5
@@ -845,7 +852,6 @@ graph LR
   ext_node_process_00cdf119["node:process"] --> node_runtime_card_args_2b3d4b28_5cfe029c
   ext_node_process_00cdf119["node:process"] --> node_upgrade_core_b759da40_eeec275b
   ext_node_readline_bb6096cc["node:readline"] --> node_eject_1_d0ecd4d1_ba72accc
-  ext_node_url_d0cb3ad7["node:url"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_url_d0cb3ad7["node:url"] --> node_cli_99bb8840_659774ba
   ext_node_url_d0cb3ad7["node:url"] --> node_coderabbit_csv_3ef61ffc_af2b743e
   ext_node_url_d0cb3ad7["node:url"] --> node_control_plane_core_db3b4cb2_27437a14
@@ -853,6 +859,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_gate_c974e17b_07549baf
   ext_node_url_d0cb3ad7["node:url"] --> node_health_core_2b2fdada_341de678
   ext_node_url_d0cb3ad7["node:url"] --> node_preset_resolver_dc3dd716_3f747c75
+  ext_node_url_d0cb3ad7["node:url"] --> node_repo_bound_paths_e218b5b3_216d0eb0
   ext_node_url_d0cb3ad7["node:url"] --> node_run_e2e_39efe696_fb07ee74
   ext_node_url_d0cb3ad7["node:url"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_url_d0cb3ad7["node:url"] --> node_run_local_memory_preflight_36e92808_9841c57a

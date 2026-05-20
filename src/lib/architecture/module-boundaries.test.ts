@@ -15,6 +15,12 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 			"CI migration merge-queue window state must stay focused on signed lifecycle state and replay-safety checks.",
 	},
 	{
+		path: "src/lib/ci/repo-bound-paths.ts",
+		maxLines: 220,
+		reason:
+			"CI migration repository path-safety seam must stay focused on repository-bounded path and file URL validation.",
+	},
+	{
 		path: "src/commands/drift-gate.ts",
 		maxLines: 1_000,
 		reason:
