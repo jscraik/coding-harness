@@ -82,9 +82,73 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_741,
+		maxLines: 1_580,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
+	},
+	{
+		path: "src/lib/cli/registry/fleet-plan-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Fleet plan command spec must stay focused on fleet-plan command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/next-command-spec.ts",
+		maxLines: 25,
+		reason: "Next command spec must stay focused on next command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/runtime-card-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Runtime-card command spec must stay focused on runtime-card command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/docs-gate-command-spec.ts",
+		maxLines: 80,
+		reason:
+			"Docs gate command spec must stay focused on docs-gate option projection and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/check-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Check command spec must stay focused on check option projection and command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/health-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Health command spec must stay focused on health command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/doctor-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Doctor command spec must stay focused on doctor command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/audit-command-spec.ts",
+		maxLines: 25,
+		reason: "Audit command spec must stay focused on audit command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/org-audit-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Org audit command spec must stay focused on org-audit command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/tooling-audit-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Tooling audit command spec must stay focused on tooling-audit command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/preset-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Preset command spec must stay focused on preset command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/workflow-generate-command-spec.ts",
@@ -517,22 +581,33 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
+	"src/lib/cli/registry/audit-command-spec.ts",
 	"src/lib/cli/registry/branch-protect-command-spec.ts",
 	"src/lib/cli/registry/check-authz-command-spec.ts",
+	"src/lib/cli/registry/check-command-spec.ts",
 	"src/lib/cli/registry/check-environment-command-spec.ts",
+	"src/lib/cli/registry/docs-gate-command-spec.ts",
+	"src/lib/cli/registry/doctor-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
+	"src/lib/cli/registry/fleet-plan-command-spec.ts",
+	"src/lib/cli/registry/health-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
+	"src/lib/cli/registry/next-command-spec.ts",
+	"src/lib/cli/registry/org-audit-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
 	"src/lib/cli/registry/risk-tier-command-spec.ts",
+	"src/lib/cli/registry/runtime-card-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
 	"src/lib/cli/registry/linear-command-spec.ts",
 	"src/lib/cli/registry/policy-gate-command-spec.ts",
+	"src/lib/cli/registry/preset-command-spec.ts",
 	"src/lib/cli/registry/pr-template-gate-command-spec.ts",
 	"src/lib/cli/registry/rule-lifecycle-gate-command-spec.ts",
 	"src/lib/cli/registry/symphony-check-command-spec.ts",
+	"src/lib/cli/registry/tooling-audit-command-spec.ts",
 	"src/lib/cli/registry/workflow-generate-command-spec.ts",
 	"src/lib/init/index.ts",
 	"src/lib/output/normalise.ts",
@@ -591,20 +666,31 @@ const DOCTOR_CONFIG_SUBMODULES = [
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./branch-protect-command-spec.js",
+	"./audit-command-spec.js",
 	"./check-authz-command-spec.js",
+	"./check-command-spec.js",
 	"./check-environment-command-spec.js",
+	"./docs-gate-command-spec.js",
+	"./doctor-command-spec.js",
 	"./evidence-verify-command-spec.js",
+	"./fleet-plan-command-spec.js",
+	"./health-command-spec.js",
 	"./license-gate-command-spec.js",
 	"./local-memory-preflight-command-spec.js",
+	"./next-command-spec.js",
+	"./org-audit-command-spec.js",
 	"./preflight-gate-command-spec.js",
 	"./review-gate-command-spec.js",
 	"./risk-tier-command-spec.js",
+	"./runtime-card-command-spec.js",
 	"./linear-command-spec.js",
 	"./linear-gate-command-spec.js",
 	"./policy-gate-command-spec.js",
+	"./preset-command-spec.js",
 	"./pr-template-gate-command-spec.js",
 	"./rule-lifecycle-gate-command-spec.js",
 	"./symphony-check-command-spec.js",
+	"./tooling-audit-command-spec.js",
 	"./workflow-generate-command-spec.js",
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [
