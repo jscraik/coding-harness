@@ -154,6 +154,7 @@ The freshness gate compares the standalone `.diagram/*.mmd` artifacts for semant
 - If no suffix is present, normalization falls back to `rawId.toLowerCase()`.
 - Deterministic ordering uses this canonical key, so output ordering can change when fingerprint suffixes or raw node IDs change.
 - Duplicate-node rewrites must carry a rename map through dependent Mermaid selectors such as `class old_id className`; generated diagrams are stale if class selectors reference node IDs that no longer appear after deduplication.
+- Regression coverage for diagram identity rewrites should exercise both node rewrites and dependent class selectors so the generated context pack cannot silently preserve stale Mermaid references.
 
 ## Stop conditions
 
