@@ -93,6 +93,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"Docs gate command spec must stay focused on docs-gate option projection and command delegation.",
 	},
 	{
+		path: "src/lib/cli/registry/org-audit-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Org audit command spec must stay focused on org-audit command delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/workflow-generate-command-spec.ts",
 		maxLines: 40,
 		reason:
@@ -530,6 +536,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
+	"src/lib/cli/registry/org-audit-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
 	"src/lib/cli/registry/risk-tier-command-spec.ts",
@@ -604,6 +611,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./evidence-verify-command-spec.js",
 	"./license-gate-command-spec.js",
 	"./local-memory-preflight-command-spec.js",
+	"./org-audit-command-spec.js",
 	"./preflight-gate-command-spec.js",
 	"./review-gate-command-spec.js",
 	"./risk-tier-command-spec.js",

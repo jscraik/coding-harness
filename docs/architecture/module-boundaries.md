@@ -104,6 +104,8 @@ CLI registry modules are split into a loader plus focused policy modules:
     command.
 - `src/lib/cli/registry/docs-gate-command-spec.ts`
   - Docs gate option projection and delegation to the docs gate command.
+- `src/lib/cli/registry/org-audit-command-spec.ts`
+  - Org audit delegation to the org audit command.
 - `src/lib/cli/registry/local-memory-preflight-command-spec.ts`
   - Local Memory preflight option projection, usage-error handling, and
     delegation to the Local Memory preflight command.
@@ -138,7 +140,8 @@ registry seam. Agents can adjust Linear gate option projection in
 `branch-protect-command-spec.ts`, authorization check option projection in
 `check-authz-command-spec.ts`, environment check option projection in
 `check-environment-command-spec.ts`, docs gate option projection in
-`docs-gate-command-spec.ts`, Local Memory preflight option projection
+`docs-gate-command-spec.ts`, org audit delegation in
+`org-audit-command-spec.ts`, Local Memory preflight option projection
 and usage-error handling in `local-memory-preflight-command-spec.ts`, license
 gate option projection in `license-gate-command-spec.ts`, Symphony readiness
 option projection in `symphony-check-command-spec.ts`, workflow generation
@@ -434,6 +437,8 @@ Threshold policy:
   seams.
 - `src/lib/cli/registry/docs-gate-command-spec.ts` must stay focused on docs
   gate option projection and command delegation (`<= 80` lines).
+- `src/lib/cli/registry/org-audit-command-spec.ts` must stay focused on org
+  audit command delegation (`<= 25` lines).
 - `src/lib/cli/registry/workflow-generate-command-spec.ts` must stay focused on
   workflow generation option projection and command delegation (`<= 40`
   lines).

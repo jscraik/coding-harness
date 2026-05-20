@@ -33,7 +33,6 @@ import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
 import { runNextCLI } from "../../../commands/next.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
-import { runOrgAuditCLI } from "../../../commands/org-audit.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
 import { runPilotEvaluateCLI } from "../../../commands/pilot-evaluate.js";
 import {
@@ -94,6 +93,7 @@ import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
 import { createLicenseGateCommandSpec } from "./license-gate-command-spec.js";
 import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
+import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
@@ -139,15 +139,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createLicenseGateCommandSpec(),
 	createSymphonyCheckCommandSpec(),
 	createWorkflowGenerateCommandSpec(),
-	{
-		name: "org-audit",
-		summary: "Audit GitHub org settings and member permissions",
-		errorLabel: "Org Audit Error",
-		execute: async (args) => {
-			const { exitCode } = await runOrgAuditCLI(args);
-			return exitCode;
-		},
-	},
+	createOrgAuditCommandSpec(),
 	{
 		name: "tooling-audit",
 		summary: "Audit installed tooling versions and configuration health",
