@@ -25,7 +25,6 @@ import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runMemoryGateCLI } from "../../../commands/memory-gate.js";
-import { runNextCLI } from "../../../commands/next.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
@@ -91,6 +90,7 @@ import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
 import { createLicenseGateCommandSpec } from "./license-gate-command-spec.js";
 import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
+import { createNextCommandSpec } from "./next-command-spec.js";
 import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPresetCommandSpec } from "./preset-command-spec.js";
@@ -135,14 +135,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createToolingAuditCommandSpec(),
 	createPresetCommandSpec(),
 	createCheckCommandSpec(),
-	{
-		name: "next",
-		summary:
-			"Recommend the next safe harness command from current repo/runtime state",
-		example: "next --json --runtime-card .harness/runtime/JSC-311.json",
-		errorLabel: "Next Error",
-		execute: (args) => runNextCLI(args),
-	},
+	createNextCommandSpec(),
 	{
 		name: "runtime-card",
 		summary:
