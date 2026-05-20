@@ -108,6 +108,8 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Health delegation to the health command.
 - `src/lib/cli/registry/doctor-command-spec.ts`
   - Doctor delegation to the doctor command.
+- `src/lib/cli/registry/audit-command-spec.ts`
+  - Audit delegation to the audit command.
 - `src/lib/cli/registry/docs-gate-command-spec.ts`
   - Docs gate option projection and delegation to the docs gate command.
 - `src/lib/cli/registry/org-audit-command-spec.ts`
@@ -152,7 +154,8 @@ registry seam. Agents can adjust Linear gate option projection in
 `check-command-spec.ts`, environment check option projection in
 `check-environment-command-spec.ts`, health delegation in
 `health-command-spec.ts`, doctor delegation in
-`doctor-command-spec.ts`, docs gate option projection in
+`doctor-command-spec.ts`, audit delegation in
+`audit-command-spec.ts`, docs gate option projection in
 `docs-gate-command-spec.ts`, org audit delegation in
 `org-audit-command-spec.ts`, tooling audit delegation in
 `tooling-audit-command-spec.ts`, preset delegation in
@@ -448,8 +451,10 @@ Threshold policy:
 - `src/lib/cli/registry/command-capability-rules.ts` must remain a static
   capability policy-table seam (`<= 340` lines).
 - `src/lib/cli/registry/command-specs-core.ts` must remain a manifest assembler
-  (`<= 1612` lines); workflow-specific parsing belongs in focused command spec
+  (`<= 1603` lines); workflow-specific parsing belongs in focused command spec
   seams.
+- `src/lib/cli/registry/audit-command-spec.ts` must stay focused on audit
+  command delegation (`<= 25` lines).
 - `src/lib/cli/registry/check-command-spec.ts` must stay focused on check
   option projection and command delegation (`<= 25` lines).
 - `src/lib/cli/registry/health-command-spec.ts` must stay focused on health

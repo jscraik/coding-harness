@@ -1,6 +1,5 @@
 import { runArtifactGateCLI } from "../../../commands/artifact-gate.js";
 import { runArtifactRoutineCLI } from "../../../commands/artifact-routine.js";
-import { runAuditCLI } from "../../../commands/audit.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
 	type BlastRadiusOptions,
@@ -78,6 +77,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createAuditCommandSpec } from "./audit-command-spec.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createCheckCommandSpec } from "./check-command-spec.js";
@@ -160,16 +160,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Runtime Card Error",
 		execute: (args) => runRuntimeCardCLI(args),
 	},
-	{
-		name: "audit",
-		summary:
-			"Comprehensive governance state check with actionable recommendations",
-		example: "audit [--dir <path>] [--json]",
-		errorLabel: "Audit Error",
-		execute: (args) => {
-			return runAuditCLI(args, getVersion);
-		},
-	},
+	createAuditCommandSpec(getVersion),
 	createDoctorCommandSpec(getVersion),
 	createHealthCommandSpec(getVersion),
 	{

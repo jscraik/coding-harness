@@ -82,7 +82,7 @@ const OUTPUT_NORMALISE_SURFACE_RATCHETS = [
 const CLI_REGISTRY_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/cli/registry/command-specs-core.ts",
-		maxLines: 1_612,
+		maxLines: 1_603,
 		reason:
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
 	},
@@ -109,6 +109,11 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 25,
 		reason:
 			"Doctor command spec must stay focused on doctor command delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/audit-command-spec.ts",
+		maxLines: 25,
+		reason: "Audit command spec must stay focused on audit command delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/org-audit-command-spec.ts",
@@ -559,6 +564,7 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
+	"src/lib/cli/registry/audit-command-spec.ts",
 	"src/lib/cli/registry/branch-protect-command-spec.ts",
 	"src/lib/cli/registry/check-authz-command-spec.ts",
 	"src/lib/cli/registry/check-command-spec.ts",
@@ -640,6 +646,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./branch-protect-command-spec.js",
+	"./audit-command-spec.js",
 	"./check-authz-command-spec.js",
 	"./check-command-spec.js",
 	"./check-environment-command-spec.js",
