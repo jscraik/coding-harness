@@ -102,7 +102,14 @@ function inspectGitClean(
 
 function isPlaceholderBodyField(value: string): boolean {
 	const trimmed = value.trim();
-	if (/^(?:list\b|map\b|pending\b)/iu.test(trimmed)) return true;
+	const normalized = trimmed.replace(/\u0060/gu, "");
+	const templatePrompts = [
+		/^list Codex(?: thread\/session|-?session-collector\/harness session) IDs\b/iu,
+		/^list CI(?: workflow\/job URLs|, harness, eval,)\b/iu,
+		/^map the AI session or trace reference to the work it supports\b/iu,
+		/^pending (?:completion|confirmation)\b/iu,
+	];
+	if (templatePrompts.some((pattern) => pattern.test(normalized))) return true;
 	const angleMatch = /^<([^>]+)>\s*$/u.exec(trimmed);
 	if (!angleMatch) return false;
 	return !/^[a-z][a-z0-9+.-]*:/iu.test(angleMatch[1]?.trim() ?? "");

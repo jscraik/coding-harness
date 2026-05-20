@@ -2,6 +2,7 @@
 
 ## Table of Contents
 
+- [0. Snapshot And Refresh Status](#0-snapshot-and-refresh-status)
 - [1. Executive Summary](#1-executive-summary)
 - [2. Overall Gradecard](#2-overall-gradecard)
 - [3. Evidence-to-Code Mapping](#3-evidence-to-code-mapping)
@@ -13,14 +14,89 @@
 - [9. Highest-Leverage Fixes](#9-highest-leverage-fixes)
 - [10. Implementation Advice](#10-implementation-advice)
 - [11. Final Recommendation](#11-final-recommendation)
+- [12. Agent-Native Execution Bindings](#12-agent-native-execution-bindings)
+
+## 0. Snapshot And Refresh Status
+
+Original evidence snapshot: 2026-05-19.
+
+Refresh pass: 2026-05-20T09:10:50Z against git head 4367dfcb.
+
+Reviewer loop:
+
+- agent-native-reviewer: no-green until the audit includes an executable
+  capability parity map and per-gap authoritative owner/enforcement bindings.
+- architecture-strategist: no-green until the audit marks stale findings with
+  snapshot status and prevents already-landed gaps from being re-opened as new
+  implementation work.
+- adversarial-reviewer: requested, but the role did not return a usable mailbox
+  result twice during this pass. The self-adversarial refresh below was grounded
+  in live repo evidence and the completed reviewer findings.
+
+Refresh policy for this audit:
+
+- Treat this file as an execution roadmap only after checking each gap's
+  Refresh Status.
+- open means implementation work remains.
+- partially landed means the original gap is narrowed, and the remaining work
+  is listed in the refreshed gap text.
+- landed after snapshot means no new implementation should be started from the
+  original recommendation unless a fresh validation run proves regression.
+- historical evidence means the row explains why a fix existed, not what to
+  build next.
+- blocked pending refresh means the next action is a fresh verifier pass, not
+  implementation from the original recommendation.
+
+Execution-state enum for future automation:
+
+| Display status | Machine status | Implementation rule |
+|---|---|---|
+| Open | open | Implement from the refreshed recommendation. |
+| Partially landed | partially_landed | Implement only the remaining work named in the refreshed row. |
+| Landed after snapshot | landed_after_snapshot | Add or keep regression proof; do not rebuild the original fix. |
+| Historical evidence | historical_evidence | Preserve rationale only. |
+| Open pending fresh verifier pass | blocked_pending_refresh | Verify current behavior first, then either close or implement. |
+| Open roadmap | open_roadmap | Schedule after the deep-module boundary work unless a current blocker depends on it. |
+| Open follow-on | open_follow_on | Treat as architecture-quality follow-on, not closeout-critical work. |
+
+Live refresh evidence that changed gap status:
+
+- package.json now wires both research:evidence:validate and architecture:check
+  into pnpm check.
+- src/lib/pr-closeout/evidence.ts now accepts Refs, Closes, and Fixes Linear
+  references.
+- src/lib/cli/command-registry.ts now supports bounded commands --for-agent
+  modes: orient, verify, review, and handoff.
+- src/commands/next.test.ts now includes required_evidence_missing fixtures for
+  pr and ci mode without runtime evidence.
+- src/lib/runtime/runtime-evidence-producer.ts still synthesizes a phaseExit
+  object with gates: [] and phaseExitSourceCompleteness: "summary_only" when
+  adapting runtime-card phase-exit state. GAP-008 remains open.
+
+Refresh status summary:
+
+| Gap | Refresh Status | Current Execution Meaning |
+|---|---|---|
+| GAP-001 | Partially landed | pr and ci modes now block without evidence; verify closeout mode, artifact auto-loading, and stale evidence behavior before closing. |
+| GAP-002 | Open | Missing phase-exit still needs mode-aware blocker semantics in runtime-card/runtime-evidence. |
+| GAP-003 | Partially landed | The evidence-pattern manifest and validator exist and run in pnpm check; remaining work is promotion lifecycle quality, owners, and stale-reference enforcement. |
+| GAP-004 | Landed after snapshot | architecture:check is wired into pnpm check; keep only baseline ownership/freshness hardening if still needed. |
+| GAP-005 | Partially landed | Agent catalog modes exist; remaining work is proving mode contents and first-contact execution coverage. |
+| GAP-006 | Landed after snapshot | Refs, Closes, and Fixes are accepted; keep regression fixtures/current proof only. |
+| GAP-007 | Open pending fresh verifier pass | Metadata-gap versus external-wait routing still needs direct verification before implementation or closure. |
+| GAP-008 | Open | Summary-only phase-exit projection still risks laundering runtime-card state into gate evidence. |
+| GAP-009 | Open | Attempt-ledger and recovery-event contracts remain fragmented. |
+| GAP-010 | Open | Safety coverage still needs one surfaced local/CI coverage map. |
+| GAP-011 through GAP-022 | Open roadmap | These are post-deep-module agent-native context authority work. |
+| GAP-023 | Open follow-on | Effect migration remains scaffolded, not a closure prerequisite for agent-operability unless tied to a specific parity gap. |
 
 ## 1. Executive Summary
 
 Overall maturity grade: **B- / C+**.
 
-The repository is already a real agent control plane, not a documentation-only experiment. It has executable command routing, machine-readable CLI metadata, runtime-card contracts, phase-exit ingestion, PR closeout claim ledgers, CircleCI governance jobs, Project Brain surfaces, skill validation, and source-level invariant checks. The best parts of the codebase already match the evidence documents: repository as control plane, deterministic validators, current-state packets, typed closeout claims, and CI-owned governance.
+The repository is already a real agent control plane, not a documentation-only experiment. It has executable command routing, machine-readable CLI metadata, runtime-card contracts, phase-exit ingestion, PR closeout claim ledgers, CircleCI governance jobs, Project Brain surfaces, skill validation, evidence-pattern validation, architecture invariant checks, and source-level invariant checks. The best parts of the codebase already match the evidence documents: repository as control plane, deterministic validators, current-state packets, typed closeout claims, and CI-owned governance.
 
-The main weakness is enforcement depth. Several truth mechanisms exist but are optional at the point an agent makes a decision. The cockpit command can recommend work without a supplied runtime card or phase-exit artifact. Runtime-card can report phase-exit not_run without blockers. The research files are explicitly cold research, but there is no promotion ledger that turns extracted patterns into adopted validators, skills, schemas, or explicit rejects. Some architecture and safety checks exist as scripts or hooks but are not clearly default CI gates.
+The main weakness is now freshness-scoped enforcement depth rather than total absence. Several truth mechanisms exist, and some originally identified gaps have landed after the first evidence snapshot. The remaining risk is that runtime-card/runtime-evidence can still represent missing or summary-only proof too softly, some research promotion and architecture mechanisms need owner/freshness lifecycle rules, and the roadmap needs explicit agent-operability bindings so an implemented fix is discoverable and executable by agents without human translation.
 
 Effect-TS is also not complete in the strong migration sense. The repo has
 contained Effect seams and import guards, but it still needs a canonical
@@ -30,19 +106,19 @@ module pattern.
 
 Top 5 gaps:
 
-1. Evidence artifacts are optional in the cockpit path: src/commands/next.ts defines optional phaseExit and runtimeCard inputs and only blocks when they are supplied.
-2. Runtime-card treats missing phase-exit as advisory in local output: a live local run returned phaseExit.status not_run with blockers empty.
-3. Evidence-to-policy promotion is missing: the research docs mark themselves cold, but no manifest tracks adopted, deferred, or rejected patterns.
-4. Mechanical architecture rules are partly off the main gate: scripts/check-architecture-rules.cjs exists, but package.json check does not call it directly.
-5. PR closeout has two concrete verifier defects: Closes JSC references are rejected despite Refs/Closes blocker wording, and missing check SHA metadata can route to wait_for_external_check.
+1. Runtime-card and runtime-evidence still need mode-aware missing-proof and summary-only evidence semantics.
+2. Evidence-to-policy promotion exists but needs owner, lifecycle, stale-reference, and adoption-quality enforcement.
+3. Agent-facing command discovery now has modes, but the audit still needs an action-to-command capability parity map and first-contact execution proof.
+4. PR closeout still needs a fresh verifier pass for check metadata gaps versus external wait routing.
+5. The audit itself needs refresh metadata, per-gap status, authoritative surface, enforcement gate, and owner bindings so it does not reopen already-landed work.
 
 Top 5 risks:
 
-1. Agents can get a safe-looking next command while required runtime evidence is absent.
+1. Agents can get safe-looking evidence when runtime proof is summary-only, stale, or missing but not classified as a blocker.
 2. Missing validation evidence can look non-blocking.
-3. Good research repeats as prose instead of becoming repo behavior.
-4. Structural drift can pass the default gate.
-5. Closeout can stall or reject valid PR wording due to verifier-policy contradictions.
+3. Good research can still repeat as prose if promotion status lacks owners, lifecycle, and stale-reference checks.
+4. Stale audit rows can cause duplicate or conflicting implementation after the repo has already moved.
+5. Closeout can still stall if provider metadata gaps are classified as external waits instead of adapter evidence defects.
 
 Strongest foundations:
 
@@ -65,11 +141,11 @@ Reviewer coverage:
 | Repository as Control Plane | B+ | High | .harness authority map, active-artifacts, contract, instructions, CI manifests, specs, and plans exist. | Research and review artifacts remain secondary context without promotion status. | Add an evidence-pattern adoption manifest and validator. |
 | Runtime Truth and Decision Packets | B- | High | next, runtime-card/v1, HePhaseExit/v1, and PR closeout packets exist. | Runtime-card and phase-exit are optional cockpit inputs. | Add required evidence mode and canonical artifact auto-loading. |
 | Claim-vs-Evidence Verification | B- | High | PR closeout claims and a source invariant gate exist. | Some verifier rules contradict wording or over-route to external wait. | Patch classifier defects and add fixtures. |
-| Mechanical Architecture Enforcement | C+ | Medium | Architecture docs, module-boundary tests, and architecture script exist. | Architecture script is not directly in package check. | Wire architecture:check into check and CI. |
+| Mechanical Architecture Enforcement | B | Medium | Architecture docs, module-boundary tests, architecture script, and architecture:check in pnpm check exist. | Baseline ownership, refresh status, and contradiction handling still need tightening. | Keep architecture:check wired and add owner/freshness status to baselines and audits. |
 | Harness Runtime Loop | C | Medium | next, workflow contracts, validation-plan, review-gate, pr-closeout form a partial loop. | Attempt budgets and recovery records are fragmented. | Add attempt-ledger/v1 and recovery-event/v1. |
 | Trace and Session Evidence | C+ | Medium | replay, tracer libs, run records, session-collector integration, and PR template fields exist. | Not all primary commands emit required run records. | Standardize run-record emission across cockpit, review, and closeout. |
 | Context Engineering | B- | High | .harness authority levels, instruction map, glossary, CODESTYLE, and skills exist. | No executable context budget or research freshness gate. | Add context-health budget and stale-context checks. |
-| Skills and Workflow Density | B | Medium | Packaged skill validation exists. | --for-agent exposes only next. | Add phased command catalog modes. |
+| Skills and Workflow Density | B | Medium | Packaged skill validation and commands --for-agent modes exist. | Need proof that mode contents expose the right verifier/review/handoff actions without bloat. | Add agent capability parity fixtures and first-contact execution proof. |
 | Recovery and Failure Handling | C+ | Medium | CI retries, preflight recovery text, missing-context classifier, and replay fixtures exist. | No single recovery contract for attempts, stop reasons, and owners. | Add recovery schema and emit it from live commands. |
 | Governance and Safety | B | High | Branch protection contract, authz, Semgrep, secret scripts, PR traceability, and review independence exist. | Some safety checks are hook/manual rather than default local check. | Add safety:local and explicit coverage reporting. |
 | Effect Service and Layer Migration | C | Medium | Effect dependency, docs, two approved boundaries, and import containment tests exist. | No canonical service/layer exemplar or migration guide proves strong Effect adoption. | Convert one or two real modules end-to-end with sync facade, Effect builder, layers, and boundary tests. |
@@ -655,6 +731,11 @@ does not compound.
 
 **Category:** runtime / verification
 
+**Refresh Status (2026-05-20):** Partially landed. Current tests now block pr
+and ci modes without phase-exit and runtime-card evidence. Remaining work is to
+verify closeout-mode behavior, stale evidence handling, and canonical artifact
+auto-loading before treating the original P0 as closed.
+
 **Current State:** HarnessNextOptions defines phaseExit and runtimeCard as optional. Blocking logic only runs when those values are supplied. A local run of node --import tsx src/cli.ts next --json recommended validation-plan with evidence refs git:status and command-catalog only.
 
 **Expected State:** PR, CI, and closeout modes should fail closed when current runtime-card and phase-exit evidence are missing or stale.
@@ -711,13 +792,29 @@ does not compound.
 
 **Category:** context / governance / validation
 
-**Current State:** Evidence files say they are cold research, not instruction surfaces. .harness/README.md correctly says secondary context cannot drive implementation unless admitted, but there is no adopted/deferred/rejected manifest.
+**Refresh Status (2026-05-20):** Partially landed. The repo now has
+.harness/research/evidence-patterns.json, scripts/validate-evidence-patterns.cjs,
+and research:evidence:validate in pnpm check. Remaining work is lifecycle
+quality: owners, stale-reference checks, adopted/deferred/rejected completeness,
+and promotion proof strength.
+
+**Original Snapshot State:** Evidence files said they were cold research, not
+instruction surfaces. .harness/README.md correctly said secondary context could
+not drive implementation unless admitted, but there was no
+adopted/deferred/rejected manifest.
+
+**Current Implementation State:** The manifest and validator now exist and run
+in pnpm check. The remaining gap is lifecycle quality: ownership,
+stale-reference detection, disposition completeness, and proof that adopted
+patterns reached an authoritative surface.
 
 **Expected State:** High-value evidence patterns should have lifecycle status, target surface, owner, and validation command.
 
 **Evidence Basis:** Pocock's repo-as-prompt, thin documentation, and durable memory patterns; Ryan/Eno runtime control-plane patterns.
 
-**Code Evidence:** .harness/README.md lines 67-71; no validator found for .harness/research/deep promotion status.
+**Code Evidence:** .harness/README.md lines 67-71 at the original snapshot;
+package.json now runs research:evidence:validate in pnpm check; the remaining
+evidence requirement is owner and stale-reference enforcement.
 
 **Risk:** Useful patterns remain inert and are rediscovered repeatedly.
 
@@ -725,13 +822,19 @@ does not compound.
 
 **Fix Grade:** P1
 
-**Recommended Fix:** Add .harness/research/evidence-patterns.json plus scripts/validate-evidence-patterns.cjs. Track source refs, status, target surface, validation, and explicit rejection/defer reason. Wire it into pnpm check or docs-gate.
+**Recommended Fix:** Keep the manifest and validator wired, then harden them
+with owner, stale-reference, adoption-quality, and proof-strength fields. Track
+source refs, status, target surface, validation, and explicit
+rejection/defer reason.
 
 **Suggested Software / Method:** JSON Schema or Node shape validator, jq, markdown line-reference checker.
 
-**Files Likely To Change:** .harness/research/evidence-patterns.json, scripts/validate-evidence-patterns.cjs, package.json, docs.
+**Files Likely To Change:** .harness/research/evidence-patterns.json,
+scripts/validate-evidence-patterns.cjs, docs, and tests or fixtures for stale
+references and owner/disposition completeness.
 
-**Validation Command:** node scripts/validate-evidence-patterns.cjs --json && pnpm check
+**Validation Command:** node scripts/validate-evidence-patterns.cjs --json and
+pnpm check
 
 **Acceptance Criteria:** Every current deep evidence file has tracked pattern disposition; adopted patterns point to code, tests, docs, or an explicit issue; missing refs fail.
 
@@ -739,25 +842,48 @@ does not compound.
 
 **Category:** architecture / validation
 
-**Current State:** scripts/check-architecture-rules.cjs checks cycles, command cross-imports, auth crypto usage, GitHub lib filesystem separation, and diagram freshness. package.json check does not call it directly. CircleCI has many jobs but no explicit architecture rule job.
+**Refresh Status (2026-05-20):** Landed after the original snapshot.
+architecture:check is now wired into pnpm check. Do not reopen this gap as a new
+implementation slice unless a fresh validation run proves the default gate no
+longer executes it. Remaining hardening belongs to baseline owner/freshness
+metadata, not initial gate wiring.
 
-**Expected State:** Architecture drift should fail in the default validation path.
+**Original Snapshot State:** scripts/check-architecture-rules.cjs checked
+cycles, command cross-imports, auth crypto usage, GitHub lib filesystem
+separation, and diagram freshness. package.json check did not call it directly.
+CircleCI had many jobs but no explicit architecture rule job.
+
+**Current Implementation State:** architecture:check is now wired into pnpm
+check. The remaining work is regression proof plus baseline owner, reason, and
+freshness metadata.
+
+**Expected State:** Architecture drift should keep failing in the default
+validation path, and any baseline exception should have an owner, reason,
+created or reviewed date, and expiry or refresh condition.
 
 **Evidence Basis:** Deep-module and navigable-file-system evidence treats structure as agent infrastructure.
 
-**Code Evidence:** scripts/check-architecture-rules.cjs lines 10-16 and 357-384; package.json lines 49-100; .circleci/config.yml lines 403-474.
+**Code Evidence:** scripts/check-architecture-rules.cjs lines 10-16 and
+357-384; package.json now wires architecture:check through pnpm check; the
+remaining evidence requirement is baseline ownership/freshness proof.
 
-**Risk:** Architecture can drift while default checks pass.
+**Risk:** Architecture can drift through stale baseline exceptions or future
+gate removal if the landed default check is not protected by regression proof.
 
 **Severity:** High
 
 **Fix Grade:** P1
 
-**Recommended Fix:** Add architecture:check to package.json and include it in pnpm check. Add a CircleCI job or ensure the check job runs it. Require owner/reason/date for baseline entries.
+**Recommended Fix:** Keep architecture:check in pnpm check, add regression
+proof that the default gate still invokes it, and require owner/reason/date for
+baseline entries. Add or adjust CI only if the existing check job stops running
+pnpm check.
 
 **Suggested Software / Method:** Existing Node script first; dependency-cruiser, madge, or ts-morph only if local script becomes insufficient.
 
-**Files Likely To Change:** package.json, .circleci/config.yml, scripts/check-architecture-rules.cjs, .architecture-baseline.txt.
+**Files Likely To Change:** scripts/check-architecture-rules.cjs,
+.architecture-baseline.txt or its replacement registry, package.json only for
+regression fixture updates, and CI config only if pnpm check is not already run.
 
 **Validation Command:** pnpm run architecture:check && pnpm check
 
@@ -766,6 +892,11 @@ does not compound.
 ### GAP-005: Agent-Facing Command Discovery Is Too Narrow
 
 **Category:** skills / context / agent-native
+
+**Refresh Status (2026-05-20):** Partially landed. commands --for-agent now
+supports bounded orient, verify, review, and handoff modes. Remaining work is to
+prove that those modes expose the right native verifier/review/handoff commands
+without bloat and that first-contact agents can execute the path end to end.
 
 **Current State:** commands --json --for-agent returns one command: next. The full catalog has 70 commands and includes runtime-card, pr-closeout, review-gate, validation-plan, evidence-verify, and replay.
 
@@ -794,6 +925,10 @@ does not compound.
 ### GAP-006: PR Body Contract Rejects Closes Despite Saying Refs/Closes
 
 **Category:** verification / governance
+
+**Refresh Status (2026-05-20):** Landed after the original snapshot.
+hasLinearReference now accepts Refs, Closes, and Fixes. Keep this row as
+historical evidence and regression coverage guidance only.
 
 **Current State:** hasLinearReference only matches Refs JSC-123, while the blocker says Refs/Closes.
 
@@ -933,14 +1068,21 @@ does not compound.
 
 ## 6. Contradictions
 
-| Claim | Actual Implementation | Evidence | Severity | Operational Impact | Recommended Fix |
+Contradiction rows are blocking only when they are still current. If a
+contradiction is marked landed or historical, do not start implementation from
+the old row; keep only the regression fixture or status-refresh requirement.
+Critical and high current contradictions block governed closeout. Medium current
+contradictions block only when they affect the touched surface or the current
+PR's claimed readiness.
+
+| Claim | Actual Implementation At Snapshot | Refresh Status | Severity | Operational Impact | Recommended Fix |
 |---|---|---|---|---|---|
-| PR body accepts Refs/Closes references. | Regex accepts only Refs. | pr-closeout evidence.ts lines 52-55 and blockers.ts lines 121-127. | Medium | Valid closeout wording can be blocked. | Accept both or change all text to Refs only. |
-| Runtime-card is a current-state packet for safe continuation. | Missing phase-exit can be not_run with no blockers. | Runtime-card local command output; runtime-card.ts lines 61-67 and 240-244. | High | Missing validation proof can look non-blocking. | Mode-aware blocking for not_run. |
-| Agent command catalog is agent-readable. | --for-agent returns only next. | command-capabilities.ts lines 385 and 533-547; runtime count 1. | Medium | Agents miss native validators. | Add bounded first-contact modes. |
-| Architecture is mechanically enforced. | Architecture checker exists but is absent from package check. | check-architecture-rules.cjs and package.json lines 49-100. | Medium | Structural drift may pass default gate. | Add architecture:check to check and CI. |
-| Cold research can shape future validators. | No promotion manifest exists. | research docs and .harness/README.md lines 67-71. | High | Reusable insights stay inert. | Evidence pattern lifecycle manifest. |
-| Waiting for checks means checks are externally pending. | Missing SHA metadata can map to wait_for_external_check. | pr-closeout status.ts lines 72-80 and claim helper chain. | High | Agent waits instead of fixing evidence adapter. | Split metadata gaps from pending checks. |
+| PR body accepts Refs/Closes references. | Regex accepted only Refs. | Landed: Refs, Closes, and Fixes are now accepted. | Historical Medium | Valid closeout wording could be blocked. | Keep regression fixture/current proof only. |
+| Runtime-card is a current-state packet for safe continuation. | Missing phase-exit could be not_run with no blockers. | Open. | High | Missing validation proof can look non-blocking. | Mode-aware blocking for not_run and summary-only evidence. |
+| Agent command catalog is agent-readable. | --for-agent returned only next. | Partially landed: bounded modes now exist. | Medium | Agents can still miss native validators if mode contents are weak. | Add capability parity fixtures and first-contact execution proof. |
+| Architecture is mechanically enforced. | Architecture checker existed but was absent from package check. | Landed: architecture:check is now in pnpm check. | Historical Medium | Structural drift could pass default gate. | Keep gate wired; add baseline owner/freshness metadata. |
+| Cold research can shape future validators. | No promotion manifest existed. | Partially landed: manifest and validator exist. | High | Reusable insights can still stay inert without owners and stale-reference checks. | Harden evidence pattern lifecycle quality. |
+| Waiting for checks means checks are externally pending. | Missing SHA metadata can map to wait_for_external_check. | Open pending fresh verifier pass. | High | Agent waits instead of fixing evidence adapter. | Split metadata gaps from pending checks. |
 
 ## 7. Missing Features
 
@@ -952,18 +1094,18 @@ Runtime state:
 
 Command selection:
 
-- Agent-facing command catalog modes beyond next.
+- Agent-facing command catalog mode completeness and parity tests.
 - Safe verifier recommendation when runtime-card says evidence is missing.
 
 Verification:
 
-- Tests for Closes PR body acceptance.
+- Regression proof for Refs, Closes, and Fixes PR body acceptance.
 - Tests for missing check SHA classification.
 - Promotion validator for research patterns.
 
 Validation:
 
-- Default architecture:check gate.
+- Regression proof that architecture:check remains wired into pnpm check.
 - Local safety gate that names secrets and Semgrep coverage.
 
 Architecture enforcement:
@@ -1022,7 +1164,7 @@ Governance:
 
 CI/CD:
 
-- Architecture invariant job.
+- Architecture invariant job regression proof.
 - Runtime-card and phase-exit smoke fixtures.
 
 Observability:
@@ -1040,9 +1182,13 @@ Observability:
 
 Objective: eliminate false-success, stale-state, unsafe-command, and missing-evidence risks.
 
-Fixes included: GAP-001, GAP-002, GAP-006, GAP-007.
+Fixes included: open portions of GAP-001, GAP-002, and GAP-007. GAP-006
+is now a regression-proof item, not a fresh implementation item.
 
-Files likely affected: src/commands/next.ts, src/commands/next-decisions.ts, src/lib/runtime/local-runtime-card.ts, src/lib/runtime/runtime-card.ts, src/lib/pr-closeout/evidence.ts, src/lib/pr-closeout/claim-helpers.ts, src/lib/pr-closeout/claim-builders.ts, src/lib/pr-closeout/claims.ts, src/lib/pr-closeout/status.ts, related tests.
+Files likely affected: src/commands/next.ts, src/commands/next-decisions.ts,
+src/lib/runtime/local-runtime-card.ts, src/lib/runtime/runtime-card.ts,
+src/lib/pr-closeout/claim-helpers.ts, src/lib/pr-closeout/claim-builders.ts,
+src/lib/pr-closeout/claims.ts, src/lib/pr-closeout/status.ts, related tests.
 
 Validation gates: pnpm vitest run src/commands/next.test.ts src/commands/runtime-card.test.ts src/lib/pr-closeout.test.ts; node --import tsx src/cli.ts next --json --mode pr; node --import tsx src/cli.ts runtime-card --json --repo .
 
@@ -1052,7 +1198,10 @@ Expected risk reduction: high. This prevents continuation recommendations when r
 
 Objective: make architecture and evidence promotion fail in CI instead of relying on reviewer memory.
 
-Fixes included: GAP-003 and GAP-004.
+Fixes included: remaining open portions of GAP-003 plus GAP-004 regression and
+baseline-freshness hardening. The architecture check and evidence-pattern
+validator are already wired; the remaining work is ownership, freshness,
+adoption quality, and regression proof.
 
 Files likely affected: .harness/research/evidence-patterns.json, scripts/validate-evidence-patterns.cjs, scripts/check-architecture-rules.cjs, package.json, .circleci/config.yml.
 
@@ -1129,6 +1278,11 @@ steering visible before Jamie has to detect them manually.
 Objective: move from contained Effect seams to an honest, repeatable Effect
 module pattern without letting Effect leak through the whole codebase.
 
+Priority note: Effect is an architecture-quality follow-on, not an immediate
+agent-native closeout prerequisite, unless a specific runtime, recovery, or
+provider-boundary gap requires typed failures or layer substitution to be
+implemented safely.
+
 Fixes included: GAP-023.
 
 Files likely affected: docs/architecture/effect-deep-modules.md,
@@ -1147,13 +1301,13 @@ while preserving the thin public interfaces that make deep modules useful.
 
 | Rank | Fix | Impact | Difficulty | Risk Reduced | Why First |
 |---:|---|---|---|---|---|
-| 1 | Require evidence in harness next PR/CI modes | Very high | Medium | False safe recommendations | The cockpit is the front door. |
+| 1 | Prove and complete required evidence in harness next PR/CI modes | Very high | Medium | False safe recommendations | The cockpit is the front door. |
 | 2 | Make missing phase-exit block runtime-card closeout/PR mode | Very high | Medium | Missing validation proof | Runtime-card is otherwise too optimistic. |
-| 3 | Fix Refs/Closes parser contradiction | Medium | Low | PR closeout churn | Small patch, clear test. |
+| 3 | Keep Refs/Closes/Fixes PR body regression proof current | Medium | Low | PR closeout churn | The parser is landed; prevent regression. |
 | 4 | Fix missing check SHA classification | High | Medium | Infinite external waits | Prevents wrong-owner recovery. |
 | 5 | Add evidence-pattern promotion manifest | High | Medium | Research staying inert | Converts this audit into durable system work. |
-| 6 | Wire architecture check into pnpm check | High | Low-medium | Structural drift | Existing script can be promoted. |
-| 7 | Expand agent command catalog modes | Medium | Low-medium | Tool blindness | Agents discover native validators. |
+| 6 | Keep architecture check wired and add baseline owner/freshness metadata | High | Low-medium | Structural drift | The gate is landed; now make its authority explicit. |
+| 7 | Prove agent command catalog mode completeness | Medium | Low-medium | Tool blindness | Agents discover native validators. |
 | 8 | Mark runtime evidence summaries as summary-only | Medium | Medium | Evidence laundering | Prevents summaries masquerading as proof. |
 | 9 | Add attempt/recovery ledger | Medium | Medium-high | Blind retries | Builds runtime maturity. |
 | 10 | Add local safety coverage summary | Medium | Low | Overclaimed validation | Clarifies what local checks prove. |
@@ -1171,8 +1325,11 @@ while preserving the thin public interfaces that make deep modules useful.
 
 Build first:
 
-- Start with harness next evidence requirements and runtime-card missing phase-exit blocking.
-- Patch the two concrete PR closeout verifier contradictions while the files are already active.
+- Start with the still-open harness next evidence proofs, runtime-card missing
+  phase-exit blocking, and runtime-evidence summary-only semantics.
+- Run a fresh verifier pass for the missing check SHA classification before
+  patching it; if confirmed, split provider metadata gaps from pending external
+  checks.
 - Treat Effect as scaffolded, not complete. Before expanding Effect, pick one
   module that benefits from typed failures, provider substitution, or retry
   semantics and convert it end-to-end behind a stable facade.
@@ -1240,8 +1397,8 @@ Should become documentation:
 
 Should become CI:
 
-- architecture:check.
-- validate-evidence-patterns.
+- architecture:check regression proof and baseline freshness check.
+- validate-evidence-patterns adoption-quality check.
 - Runtime-card and phase-exit smoke fixtures.
 
 Should remain manual:
@@ -1252,12 +1409,118 @@ Should remain manual:
 
 ## 11. Final Recommendation
 
-Immediate next action: implement Phase 1 as a small trust-boundary patch.
+Immediate next action: implement the still-open parts of Phase 1 as a small
+trust-boundary patch, using the refresh statuses in this audit as the execution
+source. Do not reimplement rows marked landed or historical; add regression
+fixtures for those rows instead.
 
-Safest first patch: fix hasLinearReference to accept Refs and Closes, add the missing fixture, then fix missing check SHA classification. This is low-blast-radius and directly removes known verifier contradictions.
+Safest first patch: add or refresh the missing check SHA classification fixture,
+then fix the adapter only if the fresh verifier pass confirms the stale
+classification. In parallel, harden runtime-evidence so summary-only projections
+cannot be mistaken for gate-backed proof.
 
-Highest-risk missing system: required runtime evidence in harness next. Until next fails closed on missing or stale runtime-card and phase-exit evidence in PR/CI modes, the project is not ready for broader unattended Codex autonomy.
+Highest-risk missing system: required runtime evidence and source completeness
+in the continuation path. Until harness next, runtime-card, phase-exit,
+PR-closeout, and live PR/Linear evidence all fail closed on missing, stale, or
+summary-only proof, the project is not ready for broader unattended Codex
+autonomy.
 
-Best validation command to add first: pnpm run architecture:check, wired into pnpm check, because the checker already exists and directly supports the evidence-derived deep-module/control-plane pattern.
+Best validation to add first: a capability-parity fixture for commands
+--for-agent modes plus a runtime-evidence fixture proving summary-only is
+visible and non-authoritative. architecture:check is already wired into
+pnpm check and should be protected as regression coverage.
 
 Broader Codex autonomy readiness: **not yet** for PR closeout or lifecycle movement without human oversight. The repo is ready for bounded read-only planning, validation recommendation, and focused fixes. It is not ready for unattended closeout until runtime-card, phase-exit, PR closeout, and live PR/Linear state are required, current, and replayably evidenced.
+
+## 12. Agent-Native Execution Bindings
+
+This section converts the audit from a human-readable research note into an
+agent-operable execution map. If implementation work starts from this document,
+each row below must be treated as a binding control-plane expectation unless a
+newer canonical artifact supersedes it.
+
+### 12.1 Capability Parity Map
+
+| Operator action | Agent-operable surface | Evidence gate | Current status | Priority |
+|---|---|---|---|---|
+| Orient to current repo rules | AGENTS.md, CODESTYLE.md, docs/agents/01-instruction-map.md, commands --for-agent --mode orient | docs:lint, docs:ubiquitous:guard, command catalog fixture | Partially landed; needs first-contact proof | Must |
+| Choose validation for a change | commands --for-agent --mode verify, verify-work.sh, validation-expectations future command | focused command catalog fixture, verify-work evidence | Partially landed | Must |
+| Review PR readiness | commands --for-agent --mode review, pr-closeout, review-gate, CodeRabbit evidence import | PR closeout tests, review-context and learnings gates | Partially landed | Must |
+| Handoff or close a lane | commands --for-agent --mode handoff, pr-closeout/v1, runtime-card/v1, phase-exit evidence | closeout claim/evidence tests and live-state proof | Partially landed; not autonomous | Must |
+| Recover from missing evidence | runtime-card, phase-exit, next --mode pr/ci, future recovery-event/v1 | missing evidence fixtures and blocker-owner classification | Open | Must |
+| Promote research into policy | evidence-pattern manifest, validate-evidence-patterns, future research-promotion skill | adoption status, owner, stale-reference checks | Partially landed | Should |
+| Maintain canonical context | authority-map future registry, AGENTS authoring audit, context-health future command | authority:check, context-health counters, scanner tickets | Open roadmap | Should |
+| Evaluate agent behavior | internal eval fixtures for routing, verification, planning-only, repeated steering | eval pass/fail artifacts and recurrence metrics | Open roadmap | Should |
+| Observe governed flow | future agent-observability-event/v1 and JSONL trace records | replay fixtures and schema validation | Open roadmap | Should |
+
+### 12.2 Per-Gap Ownership Binding
+
+| Gap | Authoritative surface | Non-authoritative mirrors | Enforcement gate | Owner class |
+|---|---|---|---|---|
+| GAP-001 | harness next decision logic and tests | docs and audit notes | next PR/CI evidence fixtures | CLI/runtime owner |
+| GAP-002 | runtime-card closeout logic and schema | docs and PR examples | runtime-card tests | Runtime owner |
+| GAP-003 | evidence-pattern manifest and validator | research audit prose | research:evidence:validate plus owner/stale-reference checks | Governance owner |
+| GAP-004 | architecture checker and baseline registry | architecture diagrams and docs | architecture:check in pnpm check plus baseline freshness proof | Architecture owner |
+| GAP-005 | command registry and capability fixtures | README/help prose | commands --for-agent mode tests | CLI owner |
+| GAP-006 | PR closeout evidence parser tests | workflow docs | Refs/Closes/Fixes regression fixture | Closeout owner |
+| GAP-007 | PR closeout claim freshness and blocker model | closeout docs | missing SHA classification fixture | Closeout owner |
+| GAP-008 | runtime-evidence-bundle contract and producer | runtime-card summaries | runtime evidence source-completeness fixture | Runtime owner |
+| GAP-009 | attempt-ledger and recovery-event contracts | closeout notes | schema tests and replay fixtures | Runtime owner |
+| GAP-010 | verify-work safety summary and CI ownership contract | PR template wording | verify-work and docs-gate checks | Governance owner |
+| GAP-011 | authority-map registry | docs index | authority:check | Governance owner |
+| GAP-012 | nested AGENTS authoring validator | human docs | docs:lint plus AGENTS audit | Instruction owner |
+| GAP-013 | canon hygiene audit and cleanup classifier | audit notes | canon hygiene report with visibility/fixability ranking | Maintenance owner |
+| GAP-014 | canon ownership/freshness scanner | context notes | scheduled scanner plus owner/freshness checks | Maintenance owner |
+| GAP-015 | validation-expectations command or skill-backed output | docs examples | focused validation-expectations tests | Validation owner |
+| GAP-016 | context-health and north-star status metrics | narrative summaries | context-health metric fixtures | Product/ops owner |
+| GAP-017 | principle-focused internal eval fixture set | anecdotal feedback | eval runner artifacts | Eval owner |
+| GAP-018 | agent-behavior observability event contract | handoff summaries | trace schema and replay tests | Observability owner |
+| GAP-019 | flywheel record/status command | roadmap prose | flywheel status/eval/trace checks | Governance owner |
+| GAP-020 | eval-to-flywheel linkage fields | eval summaries | eval promotion and blocker routing checks | Eval owner |
+| GAP-021 | bounded agent-observability-event schema | raw trace notes | observability-gate event-shape and redaction checks | Observability owner |
+| GAP-022 | authority-map rollout policy fields | rollout prose | authority unknown-policy and expiry checks | Governance owner |
+| GAP-023 | Effect service/layer pattern and boundary tests | migration notes | module-boundary and exemplar tests | Architecture owner |
+
+### 12.3 Phase Agent-Operability Acceptance
+
+Each roadmap phase is complete only when an agent can discover, execute, and
+verify it from repo surfaces without human translation:
+
+| Phase | Agent-operability acceptance |
+|---|---|
+| Phase 1 | commands --for-agent --mode verify or handoff points to the trust-boundary command, and tests prove missing/stale evidence blocks. |
+| Phase 2 | pnpm check runs the relevant architecture and evidence validators, and failures name the owning surface. |
+| Phase 3 | runtime and recovery artifacts can be replayed from a command output without reading conversation history. |
+| Phase 4 | command catalog modes expose the right workflow surface with a bounded token footprint. |
+| Phase 5 | local, CI-owned, release-owned, and closeout-owned safety gates are distinguishable in verifier output. |
+| Phase 6 | authority-map and context-health checks prevent canon/not-canon confusion and default-include context drift. |
+| Phase 7 | public facades remain synchronous where required, Effect builders stay behind approved boundaries, and allowed-import tests prove no leakage. |
+
+### 12.4 Schema Governance For New Contracts
+
+New contracts proposed here should live under the existing contract/schema
+surface used by the harness, with namespaced version identifiers such as
+evidence-pattern/v1, attempt-ledger/v1, recovery-event/v1,
+agent-behavior-eval/v1, agent-observability-event/v1, and
+runtime-evidence-bundle/v1.
+
+Compatibility rule: v1 additions must be additive unless the artifact is marked
+experimental. Any breaking field rename, enum narrowing, or authority semantics
+change requires a new version, migration note, regression fixture, and docs-gate
+surface update.
+
+Promotion rule: no schema becomes canonical merely because this audit names it.
+It becomes canonical only after it has an owner, authoritative path, validation
+gate, adoption status, and at least one fixture proving the behavior it is meant
+to change.
+
+### 12.5 Contradiction Blocking Policy
+
+Current critical or high contradictions block governed closeout. Current medium
+contradictions block only when they affect the touched surface or a claimed
+readiness path. Historical contradictions do not block implementation, but they
+must retain regression proof if the prior failure would be costly to repeat.
+
+When this audit conflicts with current repo evidence, current executable repo
+evidence wins. The audit must then be refreshed rather than used as authority
+for duplicate implementation.

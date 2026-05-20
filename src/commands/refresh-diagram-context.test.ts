@@ -117,6 +117,8 @@ flowchart TD
   subgraph ToolLayer["Tool Layer"]
     shared_node_11111111[("shared")]
   end
+  classDef agentNode fill:#e6fffb,stroke:#08979c
+  class shared_node_11111111 agentNode
 MMD
 cat > "$out_dir/manifest.json" <<'JSON'
 {
@@ -218,6 +220,22 @@ describe("refresh-diagram-context.sh", () => {
 		].map((match) => match[1]);
 		expect(sharedIds).toHaveLength(2);
 		expect(new Set(sharedIds).size).toBe(2);
+
+		const declaredIds = new Set(
+			[...agentDiagram.matchAll(/^\s{4}([A-Za-z_][A-Za-z0-9_]*)\[.+\]$/gm)].map(
+				(match) => match[1],
+			),
+		);
+		const agentClassLine = agentDiagram
+			.split("\n")
+			.find((line) => line.endsWith(" agentNode"));
+		expect(agentClassLine).toBeDefined();
+		const agentClassMatch = agentClassLine?.match(
+			/^\s*class\s+([A-Za-z_][A-Za-z0-9_,]*)\s+/,
+		);
+		const agentClassIds = agentClassMatch?.[1]?.split(",") ?? [];
+		expect(agentClassIds).toEqual(sharedIds);
+		expect(agentClassIds.every((id) => declaredIds.has(id))).toBe(true);
 	});
 
 	it("preserves context when refresh only changes volatile Mermaid output", {

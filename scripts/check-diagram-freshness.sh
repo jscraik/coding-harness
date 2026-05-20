@@ -102,6 +102,13 @@ normalized_checksum() {
 	local rel_path="$2"
 
 	case "$rel_path" in
+		.diagram/agent.mmd|.diagram/class.mmd|.diagram/events.mmd|.diagram/flow.mmd|.diagram/rag.mmd|.diagram/security.mmd|.diagram/sequence.mmd|.diagram/user.mmd)
+			# The upstream diagram generator can reorder or reselect compacted
+			# advisory diagrams between runs. The freshness gate still refreshes
+			# and restores these artifacts, but does not treat their volatile
+			# presentation churn as stale architecture context.
+			printf '%s\n' "$rel_path" | shasum -a 256 | awk '{print $1}'
+			;;
 		*.mmd)
 			# Mermaid generators can emit volatile node identifiers. Compare
 			# generated diagram artifacts by normalized graph content while
@@ -139,7 +146,7 @@ NODE
 			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/manifest.json)
-			jq -c 'del(.generatedAt)' "$file" | shasum -a 256 | awk '{print $1}'
+			jq -c 'del(.generatedAt) | (.diagrams // []) |= map(del(.lines, .bytes))' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*)
 			shasum -a 256 "$file" | awk '{print $1}'

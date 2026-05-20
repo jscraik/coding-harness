@@ -42,6 +42,14 @@ function summarizeChecks(checks: readonly PrCloseoutCheckInput[]): {
 	return { total: checks.length, failed, pending, passed, unknown };
 }
 
+function hasConcreteTraceabilityText(value: string | null): boolean {
+	const trimmed = value?.trim() ?? "";
+	return (
+		trimmed.length > 0 &&
+		!/^(?:n\.?a\.?|not applicable|none required)\b/iu.test(trimmed)
+	);
+}
+
 function buildPrCloseoutReportValue(
 	input: PrCloseoutInput,
 	options: { now?: Date } = {},
@@ -72,8 +80,9 @@ function buildPrCloseoutReportValue(
 	const traceIds = traceability.traceIds ?? [];
 	const aiSessionTraceability = traceability.aiSessionTraceability ?? null;
 	const traceabilityComplete =
-		(sessionIds.length > 0 || traceIds.length > 0) &&
-		Boolean(aiSessionTraceability?.trim());
+		sessionIds.length > 0 ||
+		traceIds.length > 0 ||
+		hasConcreteTraceabilityText(aiSessionTraceability);
 	const claims = buildCloseoutClaims(input, checks, reviewThreads, generatedAt);
 	collectWorktreeBlockers(input, dirtyPathsExcluded, blockers);
 	collectPullRequestBlockers(pr, blockers);

@@ -84,6 +84,7 @@ const dedupeSubgraphNodeIds = (content, diagramName) => {
 	}
 
 	const seen = new Map();
+	const rewrittenIds = new Map();
 	for (const node of nodes) {
 		if (!duplicateIds.has(node.rawId)) {
 			continue;
@@ -103,6 +104,23 @@ const dedupeSubgraphNodeIds = (content, diagramName) => {
 			].join("/"),
 		);
 		lines[node.lineIndex] = `${node.indent}${scopedId}${node.suffix}`;
+		const ids = rewrittenIds.get(node.rawId) ?? [];
+		ids.push(scopedId);
+		rewrittenIds.set(node.rawId, ids);
+	}
+
+	for (const [lineIndex, line] of lines.entries()) {
+		const classMatch = line.match(
+			/^(\s*class\s+)([A-Za-z_][A-Za-z0-9_,]*)(\s+\S+.*)$/,
+		);
+		if (!classMatch) {
+			continue;
+		}
+		const classIds = classMatch[2]
+			.split(",")
+			.flatMap((id) => rewrittenIds.get(id) ?? [id]);
+		lines[lineIndex] =
+			`${classMatch[1]}${[...new Set(classIds)].join(",")}${classMatch[3]}`;
 	}
 
 	return ensureTrailingNewline(lines.join("\n"));
