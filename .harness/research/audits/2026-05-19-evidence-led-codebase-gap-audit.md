@@ -89,6 +89,7 @@ Refresh status summary:
 | GAP-010 | Open | Safety coverage still needs one surfaced local/CI coverage map. |
 | GAP-011 through GAP-022 | Open roadmap | These are post-deep-module agent-native context authority work. |
 | GAP-023 | Open follow-on | Effect migration remains scaffolded, not a closure prerequisite for agent-operability unless tied to a specific parity gap. |
+| GAP-024 through GAP-028 | Open roadmap | Verified upstream Codex primitives show packaging, environment profiles, lifecycle state, subagent hooks, permission profiles, and output fidelity should become harness-owned contracts after deep-module work. |
 
 ## 1. Executive Summary
 
@@ -670,6 +671,177 @@ boundary tests proving the facade and Effect path return the same
 caller-visible behavior. Effect imports remain restricted to approved boundary,
 runtime, provider, or test files.
 
+#### GAP-024: Skill Package Contract Is Not First-Class
+
+**Category:** packaging / skills / reproducibility
+
+**Current State:** Harness skill validation exists, and upstream Codex now has a
+canonical package layout with codex-package.json, bin entrypoints,
+codex-resources, codex-path/rg, layoutVersion, variant metadata, and package
+directory validation. The harness audit does not yet translate that verified
+packaging direction into a first-class skill or artifact package contract.
+
+**Expected State:** Skills and agent-facing packages have a harness-owned
+package contract with manifest, entrypoint, references, eval metadata,
+permission profile, environment compatibility, install/projection target,
+compatibility version, and smoke validation.
+
+**Risk:** Skill folders can look complete while still depending on hidden local
+paths, untested projections, or unvalidated packaging assumptions.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add skill-package/v1 plus package-doctor or
+artifact-doctor validation. Keep the schema provider-neutral, but use the
+verified Codex package layout as evidence that package layout, bundled tooling,
+entrypoints, and inspectability need deterministic checks.
+
+**Acceptance Criteria:** One real skill package can be built, inspected,
+projected, smoke-tested, and rejected when it references undeclared local paths
+or omits required entrypoint, eval, permission, or environment metadata.
+
+#### GAP-025: Environment And Permission Profiles Are Not Run-Bound
+
+**Category:** runtime / permissions / portability
+
+**Current State:** Upstream Codex has moved remote exec registration toward
+environments, exposes permissionProfile/list through the app-server protocol,
+and makes deny canonical for filesystem permission entries. Harness run records
+and audit guidance do not yet require every run to bind environment profile,
+permission profile, repo policy, current grants, and actual tool calls.
+
+**Expected State:** Every harness-governed run records environment_profile and
+permission_profile, then checks requested permissions against declared skill
+metadata, repo policy, current sandbox grants, and observed tool calls.
+
+**Risk:** A skill or agent run can silently assume Jamie's laptop, request
+network/write access by habit, or claim remote readiness without proving that
+its local paths, auth, and tooling are declared.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add run-environment-profile/v1 and
+run-permission-profile/v1. Default remote_ready to false until a package,
+projection, and smoke eval pass in a clean environment. Add permission drift
+fixtures for read-only skills that write, network calls without metadata, and
+non-canonical deny semantics.
+
+**Acceptance Criteria:** harness next, runtime-card, or the future run record
+can explain why a run needs repo-write/network/GitHub/Linear access. Governed
+PR, CI, closeout, review, and release modes fail closed when declared
+permissions, sandbox grants, and actual tool calls diverge. Warning-only
+behavior is allowed only for explicitly scoped exploratory modes.
+
+#### GAP-026: Skill Lifecycle State Is Not Modeled
+
+**Category:** skills / discovery / lifecycle
+
+**Current State:** Upstream Codex now exposes skills/list, plugin/list,
+plugin/install, plugin/read, plugin/skill/read, app/list, and related app-server
+methods, with recent work moving plugin and skill warmup toward session
+startup. Harness currently validates skill artifacts, but the audit does not
+require lifecycle states such as available, installable, installed, projected,
+enabled, warmed, runnable, and validated.
+
+**Expected State:** The harness can report skill lifecycle state and route work
+only through capabilities that are discoverable, enabled or requestable,
+warmed cheaply, and smoke-validated for the current environment.
+
+**Risk:** A skill can exist on disk but fail at the exact moment an agent needs
+to discover, enable, or run it. Heavy skill bodies can also over-warm and break
+default-no context discipline.
+
+**Severity:** Medium-high
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add skill-lifecycle-state/v1 and a lifecycle status lane
+that distinguishes source, projection, enablement, warmup, smoke eval, last use,
+and last failure. Keep warmup lightweight: trigger metadata and routing hints
+only, with deep references loaded after selection.
+
+**Acceptance Criteria:** A skill status report can show canonical source,
+projection health, warmup result, eval result, permission profile, last
+consumer, and blocker. A discovery/install/request eval proves Codex chooses the
+right skill without loading unrelated heavy references.
+
+#### GAP-027: Subagent Lifecycle Ledger Is Missing
+
+**Category:** subagents / reviews / observability
+
+**Current State:** Upstream Codex includes SubagentStart hook support,
+role-defined service-tier handling, and namespaced v1 sub-agent tooling. The
+harness review swarm contract already requires artifact-first outputs, but the
+audit does not yet require a runtime ledger that pairs subagent starts with
+expected artifacts, written artifacts, validation runs, reviewer closure, memory
+updates, and owner classification.
+
+**Expected State:** Subagent work is governed by a ledger with events such as
+SubagentStart, ArtifactExpected, ArtifactWritten, ValidationRun,
+ReviewerClosed, MemoryUpdated, and LinearUpdated. Mailbox completion is never
+treated as artifact completion.
+
+**Risk:** The harness can know that an agent started or claimed completion, but
+not whether it produced the right artifact, used the right service tier, or
+closed the expected validation loop.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add subagent-lifecycle-ledger/v1 and fail-closed review
+checks for missing or empty artifacts. Include validation ownership classes:
+introduced by current patch, pre-existing, unrelated dirty worktree, and
+environment or tooling failure.
+
+**Acceptance Criteria:** A review swarm is green only when every requested
+reviewer has a ledger entry, expected artifact, non-empty artifact, status,
+closed/blocked classification, and the role's minimum event chain:
+SubagentStart, ArtifactExpected, ArtifactWritten, ValidationRun when applicable,
+ReviewerClosed, and MemoryUpdated or LinearUpdated when the role owns durable
+state. Missing events require explicit n.a. reasons; missing artifacts produce a
+retry or explicit coverage gap.
+
+#### GAP-028: Output Evidence Envelope Is Not Formalized
+
+**Category:** output / memory / evidence fidelity
+
+**Current State:** Upstream Codex now preserves raw code-mode exec output by
+default, supports encrypted function-call output content, adds
+body_after_prefix auto-compact scope, fixes stale background terminal poll
+events, and includes thread-goal state surfaces. Harness has runtime-card,
+runtime-evidence, and closeout summaries, but the audit does not yet require a
+standard envelope that separates raw proof from parsed result, classification,
+agent synthesis, and human handoff.
+
+**Expected State:** Every professional summary can point back to raw evidence
+ids or artifact paths while keeping sensitive output encrypted or redacted.
+Compaction and goal persistence are tested so the actionable tail and run
+intent survive turn boundaries without replaying stale events as fresh proof.
+
+**Risk:** Output can sound polished while summarizing away the exact line that
+matters, leaking sensitive content, or treating a stale terminal event or stale
+goal as current evidence.
+
+**Severity:** High
+
+**Fix Grade:** Post-deep-module P1
+
+**Recommended Fix:** Add evidence-envelope/v1 with raw_output refs,
+parsed_result, classification, sensitivity/redaction status, summary, and
+handoff fields. Add output-fidelity evals for raw exec preservation, sensitive
+output handling, compaction tail retention, goal persistence, and stale-event
+rejection.
+
+**Acceptance Criteria:** Runtime-card, closeout, and review artifacts can link
+each claim to raw evidence refs; public summaries omit sensitive raw content;
+and evals fail when important failure lines are lost or stale events are
+accepted as fresh evidence.
+
 ### 4.5 Sequencing After Deep Module Work
 
 1. Add authority registry and validator in warning mode.
@@ -687,7 +859,11 @@ runtime, provider, or test files.
 11. Add context-health metrics to status/runtime evidence.
 12. Add observability events for governed agent flows and wire them into
     runtime-card, PR closeout, replay, and context-health summaries.
-13. Promote deterministic authority checks into pnpm check after shadow-mode
+13. Add skill package, environment profile, permission profile, skill lifecycle,
+    subagent ledger, and evidence-envelope schemas in shadow mode.
+14. Add package reproducibility, permission drift, environment mismatch,
+    skill-lifecycle, subagent-artifact, and output-fidelity eval fixtures.
+15. Promote deterministic authority checks into pnpm check after shadow-mode
     thresholds are met.
 
 ### 4.6 Failure-Point Hardening Pass
@@ -724,6 +900,168 @@ does not compound.
 - Do not add a dashboard or external eval platform before local artifacts feed
   replay, closeout, and context-health.
 - Do not store raw prompts, secrets, or bulky transcripts as flywheel evidence.
+
+### 4.8 Verified Upstream Codex Signals
+
+This audit should use Codex upstream as verified input, not as a vendor lock-in
+contract. The durable harness contracts remain provider-neutral; Codex evidence
+below identifies primitives that are now real enough to design against.
+
+Verification sources:
+
+- codex-repo MCP fetches for scripts/codex_package/README.md,
+  scripts/codex_package/layout.py, app-server remote transport, app-server
+  ClientRequest, PermissionProfileListResponse, FunctionCallOutputContentItem,
+  and AutoCompactTokenLimitScope.
+- Local /Users/jamiecraik/dev/codex origin/main log fetched on 2026-05-20,
+  with the checkout dirty and ahead of its branch. The audit uses origin/main
+  commit signal, not local worktree changes.
+- Local file evidence under /Users/jamiecraik/dev/codex for package layout,
+  remote app-server transport, ClientRequest methods, permission deny
+  precedence, invalid AGENTS.md UTF-8 warnings, SubagentStart hooks,
+  encrypted_content, body_after_prefix, raw exec output tests, stale terminal
+  tests, and thread-goal state.
+
+Before any GAP-024 through GAP-028 implementation is promoted from shadow mode,
+the upstream-derived row must be backed by upstream-evidence-manifest/v1 with
+source type, commit or tag, path, symbol or line anchor, retrieval timestamp,
+retrieval command or MCP tool id, local cached artifact path, freshness status,
+and owner. If the manifest cannot be refreshed within the agreed freshness
+window, the row downgrades from verified to stale-input until revalidated.
+
+| Upstream signal | Verified evidence | Harness implication |
+|---|---|---|
+| Package builder and package layout are first-class. | MCP and local evidence show codex-package.json, bin entrypoints, codex-resources, codex-path/rg, layoutVersion, variant metadata, package directory validation, and package archives as serializations. Local origin/main includes 7f4d7ae3a, 79f044ed3, 343a74076, 57a68fb9e, 59f262a2b, and cfa16fcc2. | Add skill-package/v1 and package-doctor or artifact-doctor so skill bundles are buildable, inspectable, installable, projected, and smoke-tested. |
+| Remote execution is becoming environment-bound. | MCP and local remote.rs evidence show remote app-server transport with shared AppServerEvent over WebSocket or Unix socket. Local origin/main includes 000bf5ce6, 5c43a64e2, 83af3abc6, c2141c7ce, 1509ae6d8, and 954a9c857. | Model every run with environment_profile, permission_profile, skill bundle, role, expected artifacts, validation contract, and memory surfaces updated. |
+| Plugin and skill lifecycle is moving into app-server/session surfaces. | MCP and local ClientRequest evidence show skills/list, plugin/list, plugin/installed, plugin/read, plugin/skill/read, plugin/install, plugin/uninstall, and app/list. Local origin/main includes 532b9c83a, 8335b56c3, dc255b0d8, and ae10708ae. The MCP main branch includes plugin manager details that are not visible at the same path in the dirty local branch, so this audit treats the lifecycle direction as verified but not tied to that local path. | Track lifecycle states: available, installable, installed, projected, enabled, warmed, runnable, and validated. Keep warmup metadata light and load deep skill references only after selection. |
+| Subagent work is hookable and service-tier aware. | Local evidence shows HookEventName::SubagentStart, hook_config SubagentStart, hook_runtime SubagentStart handling, external-agent migration examples, and service_tier fields across analytics, app-server, config, and API code. Local origin/main includes d661ab70e, c53da029b, 05b8ce435, and 9289b7cea. | Add subagent-lifecycle-ledger/v1 with SubagentStart, ArtifactExpected, ArtifactWritten, ValidationRun, ReviewerClosed, MemoryUpdated, and owner classification. |
+| Permission profiles and deny semantics are explicit. | MCP and local app-server protocol evidence show permissionProfile/list and PermissionProfileListResponse. Local config schema states that deny beats write and write beats read. Local core code warns on invalid UTF-8 in AGENTS.md. Local origin/main includes c3faea0b0, 3c7608187, and 9dda71dba. | Add permission drift checks and AGENTS UTF-8 scanning. Compare requested profile, declared skill profile, repo policy, sandbox grants, and observed tool calls. |
+| Output, compaction, and goal state are more evidence-aware. | MCP and local protocol evidence show encrypted_content function output content and body_after_prefix compact scope. Local state/app-server evidence shows GoalStore and ThreadGoal surfaces. Local origin/main includes 34aad4368, 5a4202ad9, e43a2e297, 40be41763, and 80fdd4688. | Add evidence-envelope/v1 so raw output, parsed result, classification, sensitivity, synthesis, and handoff are separate. Add output-fidelity evals for raw output, sensitive output, compaction, goals, and stale events. |
+
+### 4.9 Boundary Visual Mental Model
+
+The module-layout refactor should be understood like layered domain
+architecture with explicit cross-cutting boundaries, not cosmetic file
+movement. The useful part of the visual model is the box contract: each box
+owns a control surface, declares what can enter and leave, and is protected by
+tests or validators that prove agents can work locally inside it.
+
+For coding-harness, the layered shape is:
+
+- Thin CLI facades: small public command entrypoints that stay readable and
+  stable.
+- Command and control surfaces: verify-work, pr-closeout, runtime-card,
+  memory-gate, drift-gate, artifact-gate, observability-gate, replay, and
+  related workflow boundaries.
+- Domain policy modules: authority, validation, lifecycle, closeout,
+  permission, packaging, and evidence classification rules.
+- Runtime and evidence contracts: run records, runtime-card,
+  runtime-evidence-bundle, evidence-envelope, phase-exit, subagent ledger, and
+  flywheel records.
+- Adapter and provider boundaries: GitHub, Linear, Codex, filesystem, shell,
+  package, and future provider-specific integrations behind provider-neutral
+  core contracts.
+
+The refactor is successful only when the diagram maps to enforceable surfaces:
+public facade, private internals, allowed imports, authoritative artifact,
+schema, focused tests, and reviewer/agent ownership. A box that cannot name its
+owned decision, validation gate, and artifact contract is not yet a trustworthy
+module boundary.
+
+The observability visual is the right model for the flywheel. Harness work
+should emit raw evidence, parsed results, validation outcomes, reviewer events,
+permission/environment decisions, memory updates, and blocker classes. Codex
+then queries that evidence, implements the next change, reruns the workload,
+and feeds the result back into evals, runtime-card, closeout, context-health,
+and flywheel records. The loop is:
+
+    Harness run
+      -> raw evidence
+      -> parsed result
+      -> runtime-card / closeout / review artifacts
+      -> observability events
+      -> evals + flywheel records
+      -> durable guardrail, schema, validator, or skill-routing update
+      -> next run behaves better
+
+This is the practical meaning of making the project easier to understand:
+humans get a visual map of control surfaces, while agents get executable
+boundaries strong enough to operate without repeated steering.
+
+### 4.10 Local Collector Assets To Adapt
+
+The repo does not need to invent observability and session evidence collection
+from scratch. Jamie already has two local agent assets under /Users/jamiecraik/.agents
+that can be adapted into the harness implementation after the deep-module work:
+
+- session-collector: privacy-safe session reader for local Codex telemetry. It
+  reads /Users/jamiecraik/.agents/otel-collector/data/raw/*.ndjson plus Codex
+  rollout sessions, then emits session-level JSON with time bounds, record
+  counts, model/service mixes, token usage, skill invocation analytics,
+  blocker classes, validation command fingerprints, redaction status,
+  provenance records, agent-knowledge, skillify candidates, skill refactor
+  handoffs, and Harness Engineering evidence.
+- otel-collector: lightweight local OTLP/HTTP collector on
+  http://127.0.0.1:4318/v1/logs, /v1/traces, and /v1/metrics. It stores raw
+  NDJSON payloads, processes stats, exposes /health and /stats, tracks ingest
+  freshness, signal-specific service contribution, skill invocation counters,
+  telemetry_confidence, service-cardinality limits, and CircleCI redaction and
+  token controls for external ingest.
+
+Adaptation rules:
+
+- Treat otel-collector as the local raw signal intake for agent-observability
+  events, runtime evidence, validation outcomes, and feedback-loop metrics.
+- Treat session-collector as the normalization and evidence-correlation layer
+  for replay, flywheel records, skill-routing analysis, repeated-steering
+  detection, blocker classification, and skill package/lifecycle eval seeds.
+- Preserve the privacy split: public outputs must keep hashed provenance and
+  availability flags; sensitive provenance with raw local IDs or paths remains
+  local-only and must not be copied into PRs, Linear, shared audit artifacts, or
+  public summaries.
+- Keep the collector contracts provider-neutral. Codex-specific rollout,
+  thread, tool, or trace identifiers belong under adapter fields and feed
+  evidence-envelope refs; they must not become required top-level schema fields.
+- Reuse existing health and verification surfaces where possible:
+  /Users/jamiecraik/.agents/otel-collector/status.sh,
+  /Users/jamiecraik/.agents/otel-collector/start-local-test.sh, and
+  /Users/jamiecraik/.agents/otel-collector/scripts/verify-telemetry-sources.sh.
+
+The useful implementation path is to define adapter contracts first, then
+connect these collectors through those contracts:
+
+- agent-observability-event/v1 can emit to the local OTLP collector.
+- evidence-envelope/v1 can reference raw NDJSON payload ids, session collector
+  provenance hashes, and sanitized evidence artifact paths.
+- flywheel-record/v1 can consume session-collector blocker, validation,
+  skill-routing, and repeated-pattern signals.
+- context-health can consume session-level counts for repeated steering,
+  skipped skill routing, claims without evidence, stale closeout evidence,
+  recovery attempts, and post-guard recurrence.
+
+Add a harness-specific extraction profile rather than letting each downstream
+consumer invent its own projection. A file such as coding-harness.json should
+declare the exact signals the harness wants from the collectors:
+
+- source windows: days, session directories, OTLP raw directories, and freshness
+  rules.
+- privacy mode: public hashed provenance by default, sensitive local-only
+  provenance explicitly opt-in and never publishable.
+- event families: validation_run, blocker_class, skill_invocation,
+  subagent_lifecycle, permission_decision, environment_profile,
+  evidence_claim, recovery_attempt, steering_signal, and closeout_state.
+- evidence references: raw NDJSON pointer, provenance hash, command
+  fingerprint, artifact path, redaction status, and source freshness.
+- downstream projections: evidence-envelope/v1, flywheel-record/v1,
+  agent-observability-event/v1, context-health metrics, skill lifecycle eval
+  seeds, and package/review/closeout diagnostics.
+- exclusion rules: raw prompts, secrets, bulky transcripts, unbounded labels,
+  and provider-specific fields outside adapter namespaces.
+
+The acceptance test for this profile is simple: given the same local collector
+inputs, coding-harness.json produces stable, privacy-safe extraction output that
+can be consumed by runtime-card, replay, flywheel, context-health, and eval
+fixtures without each surface reparsing raw telemetry differently.
 
 ## 5. Gap Register
 
@@ -1297,6 +1635,34 @@ converted module; pnpm typecheck; pnpm run test:related; pnpm run quality:size.
 Expected risk reduction: medium. This gives agents a concrete migration pattern
 while preserving the thin public interfaces that make deep modules useful.
 
+### Phase 8 — Codex Primitive Alignment
+
+Objective: convert verified upstream Codex primitives into harness-owned
+contracts without binding the harness architecture to Codex internals.
+
+Priority note: this is post-deep-module work. The intent is to harvest useful
+runtime primitives into portable schemas, validators, evals, and observability
+events after the current module boundary work has stabilized.
+
+Fixes included: GAP-024, GAP-025, GAP-026, GAP-027, and GAP-028.
+
+Files likely affected: skill package schemas and validators, package-doctor or
+artifact-doctor command surfaces, run-record/environment/permission schemas,
+skill lifecycle status surfaces, subagent ledger contracts, runtime-card and
+PR-closeout evidence-envelope adapters, internal eval fixtures, and
+observability event schemas.
+
+Validation gates: package reproducibility smoke eval; permission drift eval;
+environment mismatch eval; skill discovery/lifecycle eval; subagent artifact
+contract eval; output fidelity eval; upstream-evidence-manifest validation;
+provider-adapter boundary validation; focused schema validation; pnpm
+docs:lint; and the narrow CLI tests for any new doctor/status command.
+
+Expected risk reduction: high. This turns current Codex runtime movement into
+portable harness control-plane contracts: packageable skills, environment-bound
+runs, explainable permissions, artifact-first subagents, and professional
+evidence envelopes.
+
 ## 9. Highest-Leverage Fixes
 
 | Rank | Fix | Impact | Difficulty | Risk Reduced | Why First |
@@ -1320,6 +1686,11 @@ while preserving the thin public interfaces that make deep modules useful.
 | 17 | Add governed-flow observability events | High | Medium-high | Invisible runtime failures | Shows what agents trusted, verified, skipped, and recovered from. |
 | 18 | Add flywheel record and status command | High | Medium | Disconnected learnings | Links signal, fix, proof, eval, observability, and retirement. |
 | 19 | Harden Effect service/layer exemplar | Medium-high | Medium | Effect leakage or shallow migration | Makes Effect adoption real and bounded. |
+| 20 | Add skill package contract and artifact doctor | High | Medium | Hidden local paths and package theater | Turns skills into reproducible, inspectable capabilities. |
+| 21 | Bind environment and permission profiles to runs | High | Medium | Local-assumption drift and over-permissioning | Makes portability and guardrails executable per run. |
+| 22 | Model skill lifecycle state | Medium-high | Medium | On-disk skills that cannot be discovered or warmed safely | Separates available from runnable and validated. |
+| 23 | Add subagent lifecycle ledger | High | Medium | Mailbox completion without artifact proof | Makes reviewer and worker fan-out artifact-first. |
+| 24 | Add output evidence envelope | High | Medium | Polished summaries losing raw proof | Preserves raw evidence while keeping summaries professional and safe. |
 
 ## 10. Implementation Advice
 
@@ -1333,6 +1704,11 @@ Build first:
 - Treat Effect as scaffolded, not complete. Before expanding Effect, pick one
   module that benefits from typed failures, provider substitution, or retry
   semantics and convert it end-to-end behind a stable facade.
+- Treat modularisation as layered domain architecture, not file shuffling:
+  thin CLI facades, command/control surfaces, domain policy modules,
+  runtime/evidence contracts, and adapter/provider boundaries. Diagrams are
+  useful when they point to enforced import rules, public facades, artifact
+  contracts, and tests.
 
 Do not build yet:
 
@@ -1354,6 +1730,13 @@ Should become a validator:
 - PR closeout wording contract.
 - Effect approved-boundary, facade, builder, service, layer, and test-provider
   requirements.
+- Package/artifact doctor for skill-package/v1.
+- Environment and permission profile drift checks.
+- Skill lifecycle state checks.
+- Subagent artifact-contract checks.
+- AGENTS.md UTF-8 scan and canonical deny semantics.
+- Upstream evidence manifest freshness and source-ref completeness.
+- Provider-neutral schema and adapter-boundary checks.
 
 Should become a schema:
 
@@ -1363,6 +1746,13 @@ Should become a schema:
 - agent-behavior-eval/v1.
 - agent-observability-event/v1.
 - runtime evidence sourceCompleteness.
+- upstream-evidence-manifest/v1.
+- skill-package/v1.
+- run-environment-profile/v1.
+- run-permission-profile/v1.
+- skill-lifecycle-state/v1.
+- subagent-lifecycle-ledger/v1.
+- evidence-envelope/v1.
 
 Should become internal evals:
 
@@ -1374,6 +1764,16 @@ Should become internal evals:
 - Skill-routing discipline.
 - Provider portability boundary checks.
 - Effect exemplar behavior parity between public facade and Effect builder.
+- Skill package reproducibility and no-hidden-local-paths behavior.
+- Environment mismatch and remote-ready negative behavior.
+- Permission profile drift behavior.
+- Skill discovery, request, enablement, warmup, and smoke behavior.
+- Subagent artifact-first contract behavior.
+- Raw output fidelity, sensitive output handling, compaction-tail, goal-state,
+  and stale-event behavior.
+- Provider-neutral schema behavior: core contracts reject provider-specific
+  top-level fields, while adapter fields are accepted only under a namespaced
+  provider envelope.
 
 Should become observability:
 
@@ -1384,11 +1784,21 @@ Should become observability:
 - Closeout evidence freshness.
 - Steering admissions and post-guard recurrence.
 - Recovery attempts, stop reasons, and next owner.
+- Run environment and permission profile requested, declared, granted, and
+  observed.
+- SubagentStart, ArtifactExpected, ArtifactWritten, ValidationRun, and
+  ReviewerClosed events.
+- Raw evidence refs, redaction status, and professional-summary claim refs.
+- Upstream evidence refresh status and stale-input downgrade events.
 
 Should become a skill:
 
 - Research promotion: convert a deep evidence file into adopted/deferred/rejected pattern records plus validator candidates.
 - Runtime closeout repair: inspect runtime-card, phase-exit, PR closeout, and CI state, then classify owner and next action.
+- Skill package doctor: inspect package metadata, permissions, environment
+  compatibility, projection health, and smoke eval status.
+- Subagent review coordinator: verify ledger completeness, artifacts, blocker
+  classes, and coverage gaps before synthesis.
 
 Should become documentation:
 
@@ -1452,6 +1862,11 @@ newer canonical artifact supersedes it.
 | Maintain canonical context | authority-map future registry, AGENTS authoring audit, context-health future command | authority:check, context-health counters, scanner tickets | Open roadmap | Should |
 | Evaluate agent behavior | internal eval fixtures for routing, verification, planning-only, repeated steering | eval pass/fail artifacts and recurrence metrics | Open roadmap | Should |
 | Observe governed flow | future agent-observability-event/v1 and JSONL trace records | replay fixtures and schema validation | Open roadmap | Should |
+| Package and smoke a skill capability | future package-doctor or artifact-doctor, skill-package/v1 | package reproducibility and no-hidden-local-path evals | Open roadmap | Should |
+| Explain and enforce run permissions | future environment/permission profile status, runtime-card, run record | governed-mode fail-closed permission drift evals | Open roadmap | Must |
+| Query skill lifecycle state | future skill lifecycle status command, skill-lifecycle-state/v1 | discovery/request/enable/warm/smoke fixtures | Open roadmap | Should |
+| Verify subagent work | subagent-lifecycle-ledger/v1 and review swarm artifact checks | missing-artifact and missing-event-chain fixtures | Open roadmap | Must |
+| Inspect output evidence envelope | evidence-envelope/v1 through runtime-card, closeout, and review artifacts | raw-output, redaction, compaction, goal, and stale-event evals | Open roadmap | Must |
 
 ### 12.2 Per-Gap Ownership Binding
 
@@ -1480,6 +1895,21 @@ newer canonical artifact supersedes it.
 | GAP-021 | bounded agent-observability-event schema | raw trace notes | observability-gate event-shape and redaction checks | Observability owner |
 | GAP-022 | authority-map rollout policy fields | rollout prose | authority unknown-policy and expiry checks | Governance owner |
 | GAP-023 | Effect service/layer pattern and boundary tests | migration notes | module-boundary and exemplar tests | Architecture owner |
+| GAP-024 | skill-package/v1 and package/artifact doctor | folder conventions and audit prose | package reproducibility and no-hidden-local-path evals | Skill/runtime owner |
+| GAP-025 | run-environment-profile/v1 and run-permission-profile/v1 | handoff summaries | environment mismatch and permission drift evals | Runtime/security owner |
+| GAP-026 | skill-lifecycle-state/v1 | skill README prose | skill discovery/lifecycle smoke evals | Skill/runtime owner |
+| GAP-027 | subagent-lifecycle-ledger/v1 | mailbox/status summaries | subagent artifact-contract evals and ledger checks | Review/runtime owner |
+| GAP-028 | evidence-envelope/v1 | polished summaries | raw-output fidelity, redaction, compaction, goal, and stale-event evals | Runtime/observability owner |
+
+Phase 8 execution-owner expansion:
+
+| Gap | Canonical command surface | Canonical artifact path | Owner surface |
+|---|---|---|---|
+| GAP-024 | package-doctor or artifact-doctor | `artifacts/packages/{package-id}/` and package validation JSON | skill package schema plus package doctor tests |
+| GAP-025 | environment/permission profile status through harness next, runtime-card, or run record | `artifacts/runs/{run-id}/environment-permissions.json` | runtime/security schema plus permission drift tests |
+| GAP-026 | skill lifecycle status | `artifacts/skills/{skill-id}/lifecycle.json` | skill lifecycle schema plus discovery/warmup tests |
+| GAP-027 | subagent ledger verification | `artifacts/reviews/{run-id}/subagent-ledger.json` | review/runtime ledger schema plus artifact-contract tests |
+| GAP-028 | evidence-envelope inspection through runtime-card, closeout, and review artifacts | `artifacts/evidence/{run-id}/evidence-envelope.json` | runtime/observability schema plus output-fidelity tests |
 
 ### 12.3 Phase Agent-Operability Acceptance
 
@@ -1495,6 +1925,7 @@ verify it from repo surfaces without human translation:
 | Phase 5 | local, CI-owned, release-owned, and closeout-owned safety gates are distinguishable in verifier output. |
 | Phase 6 | authority-map and context-health checks prevent canon/not-canon confusion and default-include context drift. |
 | Phase 7 | public facades remain synchronous where required, Effect builders stay behind approved boundaries, and allowed-import tests prove no leakage. |
+| Phase 8 | package, environment, permission, lifecycle, subagent, and evidence-envelope contracts are discoverable from harness command output and proven by focused evals. |
 
 ### 12.4 Schema Governance For New Contracts
 
@@ -1502,12 +1933,20 @@ New contracts proposed here should live under the existing contract/schema
 surface used by the harness, with namespaced version identifiers such as
 evidence-pattern/v1, attempt-ledger/v1, recovery-event/v1,
 agent-behavior-eval/v1, agent-observability-event/v1, and
-runtime-evidence-bundle/v1.
+runtime-evidence-bundle/v1. Codex-primitive-alignment contracts should use the
+same discipline for skill-package/v1, run-environment-profile/v1,
+run-permission-profile/v1, skill-lifecycle-state/v1,
+subagent-lifecycle-ledger/v1, and evidence-envelope/v1.
 
 Compatibility rule: v1 additions must be additive unless the artifact is marked
 experimental. Any breaking field rename, enum narrowing, or authority semantics
 change requires a new version, migration note, regression fixture, and docs-gate
 surface update.
+
+Provider portability invariant: core v1 contracts must not include
+provider-specific top-level fields. Provider-specific data must live under an
+adapter namespace such as adapters.codex, adapters.github, or adapters.linear
+and must be covered by schema tests before a contract leaves shadow mode.
 
 Promotion rule: no schema becomes canonical merely because this audit names it.
 It becomes canonical only after it has an owner, authoritative path, validation
