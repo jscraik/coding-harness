@@ -1,6 +1,6 @@
 # Agent Coordination Scratchpad
 
-Updated: 2026-05-21T12:59:36Z
+Updated: 2026-05-21T13:31:57Z
 
 ## Current Goal
 
@@ -112,6 +112,13 @@ locally as an existing `preflight-gate` cadence breach in
 `harness.contract.json`; that cadence refresh is outside the S001 allowed-file
 set and should be handled as a separate governance/health slice unless Jamie
 explicitly authorizes mixing it into this PR.
+
+Latest check classification: `orb-pinning`, CodeRabbit, Socket, Snyk, and the
+other CircleCI jobs are green. The only red check is
+`ci/circleci: consistency-drift-health`, with `pr-pipeline` failed because of
+that job. If Jamie is away, do not patch `harness.contract.json` into the S001
+runtime-evidence PR by default. Keep PR #271 draft/open, record the blocker, and
+activate the separate governance-health slice only through the board.
 
 ## Message To Replay Agent
 

@@ -62,10 +62,14 @@ coordination:
       - "Choose the safest S001 git lifecycle closeout path when all guardrails pass."
       - "Create a fresh S001 branch from the current target base if the current branch contains replay-module commits or other non-S001 branch history."
       - "Pause and record a blocker receipt if guardrails fail, validation fails, transplant conflicts, or slice contamination cannot be avoided."
+      - "Poll PR #271 remote checks and classify each failing or pending check by ownership before editing files."
+      - "If all S001-local validation, review, and remote checks pass except a pre-existing governance-health blocker outside the S001 allowed-file set, keep S001 draft/open, record the blocker, and route the fix to a separate governance-health slice."
     disallowed_decisions:
       - "Activate replay-module implementation without an explicit board update to a replay task."
       - "Stage or commit replay-module files as part of S001 closeout."
       - "Stage unrelated dirty worktree files, including active-artifacts or audit edits, unless a later active task explicitly allows them."
+      - "Patch harness.contract.json or required-check cadence metadata into the S001 PR unless a board task explicitly activates that governance-health slice."
+      - "Treat a failed required check as acceptable risk for S001 completion."
       - "Merge a PR without explicit human merge authority."
     guardrails:
       - "bash scripts/check-git-common-config.sh"
@@ -79,9 +83,9 @@ coordination:
 checks:
   dirty_fingerprint: unknown
   last_verification:
-    command: "gh pr view/checks 271; pr-template-gate local reproduction; drift-gate --mode health local reproduction"
+    command: "gh pr checks 271 --json name,state,workflow,startedAt,completedAt,link --watch=false; drift-gate --mode health local reproduction"
     outcome: blocked_remote_ci_preexisting
-    checked_at: "2026-05-21T13:15:26Z"
+    checked_at: "2026-05-21T13:31:57Z"
 tasks:
   - id: T001
     type: scout
@@ -225,5 +229,37 @@ tasks:
       - "check-git-common-config fails."
       - "Validation fails twice with the same root cause."
       - "PR creation requires credentials or external state that cannot be verified."
+      - "A required remote check fails for a pre-existing governance-health issue outside the S001 allowed-file set; keep S001 draft/open and route the fix to a separate governance-health slice."
       - "Merge is the next requested action without explicit human merge authority."
     receipt_id: R016-T004-DRAFT-PR-REMOTE-STATE
+  - id: T005
+    type: worker
+    assignee: Worker
+    status: queued
+    objective: "Governance-health follow-up: refresh the preflight-gate cadence evidence that currently blocks consistency-drift-health, without mixing the cadence repair into S001 runtime-evidence scope."
+    activation_condition: "May become active only after T004 records that PR #271 has no S001-owned red checks and the remaining blocker is the pre-existing preflight-gate cadence breach reproduced by drift-gate --mode health."
+    inputs:
+      - "harness.contract.json"
+      - "src/commands/preflight-gate.ts"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/state.yaml"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/receipts.jsonl"
+    constraints:
+      - "Keep this governance-health repair separate from S001 runtime-evidence implementation."
+      - "Do not touch replay-module files."
+      - "Do not merge S001 or the governance-health PR without explicit human merge authority."
+      - "If cadence review requires behavior changes beyond metadata freshness, stop and ask for owner direction."
+    expected_output: "A separate governance-health slice or PR that makes drift-gate --mode health pass for preflight-gate cadence evidence, with board receipts and exact validation."
+    allowed_files:
+      - "harness.contract.json"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/**"
+    verify:
+      - "bash scripts/run-harness-gate.sh drift-gate --mode health --json"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "The repair needs source behavior changes beyond harness.contract.json metadata."
+      - "Any S001 runtime-evidence file would need to change."
+      - "Replay-module files are dirty in the governance-health worktree."
+      - "Remote merge authority is required."
+    receipt_id: null

@@ -134,6 +134,17 @@ stale-state risk, false-success risk, or review-loop churn.
 - Unattended authority never permits staging replay files, staging unrelated
   dirty worktree files, activating the replay-module slice, merging a PR, or
   treating failed or missing guardrails as acceptable risk.
+- During unattended PR closeout, classify every red or pending remote check
+  before editing files. If the only blocker is a pre-existing governance-health
+  failure outside the active slice allowed files, do not broaden the active
+  slice or patch the blocker into the S001 PR by default. Record a blocker
+  receipt, keep S001 draft/open, and use a separately declared governance-health
+  slice before touching `harness.contract.json` or related required-check
+  metadata.
+- If a remote failure is plausibly introduced by the S001 runtime-evidence
+  change, the governor may inspect and fix only files already allowed by the
+  active S001 task. If provenance is unclear, stop in verification recovery
+  rather than guessing.
 
 ### Iteration Policy
 
