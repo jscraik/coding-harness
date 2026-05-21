@@ -34,6 +34,18 @@ export interface RuntimeEvidenceBundleSnapshot {
 	blockers: string[];
 }
 
+/** Options for consuming normalized runtime evidence. */
+export interface RuntimeEvidenceBundleInspectionOptions {
+	/** Whether a phase-exit projection must be gate-backed to satisfy the consumer. */
+	requireGateBackedPhaseExit?: boolean;
+}
+
+const SUMMARY_ONLY_REQUIRED_PHASE_EXIT_REASON =
+	"Summary-only phase-exit evidence cannot satisfy required gate evidence.";
+
+const SUMMARY_ONLY_REQUIRED_PHASE_EXIT_BLOCKER =
+	"Gate-backed phase-exit evidence is required; summary-only runtime-card phase-exit context cannot satisfy required evidence.";
+
 /**
  * Deduplicates runtime card sources by their `kind` and `ref`, preserving the first occurrence of each.
  *
@@ -71,6 +83,7 @@ function provenanceSourceKind(
 export function inspectRuntimeEvidenceBundle(
 	value: RuntimeEvidenceBundle | unknown | undefined,
 	collapsePhaseExit: RuntimeEvidencePhaseExitCollapser,
+	options: RuntimeEvidenceBundleInspectionOptions = {},
 ): RuntimeEvidenceBundleSnapshot {
 	if (value === undefined) {
 		return {
@@ -90,13 +103,37 @@ export function inspectRuntimeEvidenceBundle(
 		},
 		...bundle.sources,
 	]);
-	const phaseExit = bundle.phaseExit
-		? collapsePhaseExit(bundle.phaseExit)
-		: undefined;
+	const rejectSummaryOnlyRequiredPhaseExit =
+		options.requireGateBackedPhaseExit === true &&
+		bundle.phaseExitSourceCompleteness === "summary_only";
+	const phaseExit =
+		bundle.phaseExit && !rejectSummaryOnlyRequiredPhaseExit
+			? collapsePhaseExit(bundle.phaseExit)
+			: undefined;
+	const rejectedSummaryOnlyPhaseExit =
+		bundle.phaseExit && rejectSummaryOnlyRequiredPhaseExit;
 	return {
 		issueKey: bundle.issueKey,
 		...(bundle.pullRequest ? { pullRequest: bundle.pullRequest } : {}),
 		...(bundle.linear ? { linear: bundle.linear } : {}),
+		...(rejectedSummaryOnlyPhaseExit
+			? {
+					phaseExit: {
+						phaseExit: {
+							status: "blocked" as const,
+							reason: SUMMARY_ONLY_REQUIRED_PHASE_EXIT_REASON,
+						},
+						source: {
+							kind: "phase_exit" as const,
+							ref: `${bundle.provenance.ref}#phaseExit`,
+							freshness: "current" as const,
+							status: "blocked" as const,
+							failureClass: "phase_exit_summary_only",
+						},
+						blockers: [SUMMARY_ONLY_REQUIRED_PHASE_EXIT_BLOCKER],
+					},
+				}
+			: {}),
 		...(phaseExit
 			? {
 					phaseExit: {

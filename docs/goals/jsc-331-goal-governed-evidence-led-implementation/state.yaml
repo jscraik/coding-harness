@@ -1,0 +1,229 @@
+version: 2
+goal:
+  slug: jsc-331-goal-governed-evidence-led-implementation
+  status: active
+  objective: "Prepare and, only after explicit owner kickoff, run a governed evidence-led implementation loop for Coding Harness using the 2026-05-20 audit as the source of truth."
+  native_goal_id: null
+  native_thread_id: "019e4a4c-35cf-76a3-84a2-7ca9cbc64d63"
+  native_objective: "Follow docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md for JSC-331. Continue board-governed Coding Harness evidence-led implementation from the 2026-05-20 audit. Start with board reconciliation and then S001 only: block summary_only phase-exit evidence from satisfying required evidence. Preserve existing replay-module work as a separate active slice; do not touch replay files unless the board is explicitly updated to that slice."
+  native_status: active
+  token_budget: null
+  tokens_used: 0
+  time_used_seconds: 0
+  native_created_at: "2026-05-21T11:51:42Z"
+  native_updated_at: "2026-05-21T11:51:42Z"
+rules:
+  one_active_task: true
+  require_fresh_verification: true
+  require_final_audit: true
+completion_contract:
+  outcome: "Deliver audited, independently mergeable Coding Harness hardening slices without starting Worker implementation before explicit kickoff."
+  verification_surface:
+    - "goal.md"
+    - "state.yaml"
+    - "receipts.jsonl"
+    - ".harness/implementation-notes/2026-05-21-coding-harness-goal-governed-evidence-led-implementation-notes.html"
+    - ".harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md"
+    - ".harness/active-artifacts.md"
+    - "Linear JSC-331"
+    - "validation command evidence"
+    - "review artifacts"
+    - "PR and CI state after PR creation"
+  constraints:
+    - "No Worker implementation before owner kickoff and governor reconciliation."
+    - "Exactly one active task unless Jamie explicitly authorizes parallel Workers with disjoint allowed_files."
+    - "No git, PR, merge, CircleCI, CodeRabbit, automation, or Linear state mutation outside the active task authority."
+    - "No treating CI alone, chat summaries, or docs-only claims as proof."
+    - "Preserve unrelated dirty worktree files."
+    - "Treat missing mandatory review evidence as blocked_review_stack_incomplete."
+  boundaries:
+    - "Scout and Judge tasks are read-only unless their allowed_files explicitly name board or notes artifacts."
+    - "Worker implementation may touch only the active slice allowed_files."
+    - "Git staging, commit, push, PR creation, and merge require explicit lifecycle authority."
+    - "Merge requires explicit human approval unless a separate merge-authority contract exists."
+  iteration_policy: "Select the smallest independently mergeable audit-backed slice, validate immediately, run the mandatory review stack, fix valid in-scope findings, and stop on repeated failure or unclear blast radius."
+  blocked_stop_condition: "Stop for stale runtime truth, native/board mismatch, unreliable validation, incomplete review stack, missing merge authority, impossible deterministic verification, or dirty-worktree contamination."
+continuation_gate:
+  native_status: active
+  thread_idle: unknown
+  goal_active: pass
+  queued_user_input: absent
+  pending_work: present
+  auto_continue_allowed: yes
+coordination:
+  scratchpad: "docs/goals/jsc-331-goal-governed-evidence-led-implementation/notes/agent-coordination-scratchpad.md"
+  replay_module_edits: "separate active slice to preserve"
+  s001_conflict_policy: "S001 must not touch replay files unless the board is explicitly updated to make replay the active slice."
+  unattended_decision_authority:
+    status: active
+    granted_at: "2026-05-21T12:30:52Z"
+    source: "Jamie asked to update the board so the agent can make the best decision if he is away from the computer."
+    allowed_decisions:
+      - "Choose the safest S001 git lifecycle closeout path when all guardrails pass."
+      - "Create a fresh S001 branch from the current target base if the current branch contains replay-module commits or other non-S001 branch history."
+      - "Pause and record a blocker receipt if guardrails fail, validation fails, transplant conflicts, or slice contamination cannot be avoided."
+    disallowed_decisions:
+      - "Activate replay-module implementation without an explicit board update to a replay task."
+      - "Stage or commit replay-module files as part of S001 closeout."
+      - "Stage unrelated dirty worktree files, including active-artifacts or audit edits, unless a later active task explicitly allows them."
+      - "Merge a PR without explicit human merge authority."
+    guardrails:
+      - "bash scripts/check-git-common-config.sh"
+      - "git status --short --branch --untracked-files=all"
+      - "Stage set must be limited to S001 runtime files and JSC-331 goal-board/review artifacts."
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "pnpm vitest run src/lib/runtime/local-runtime-card.test.ts"
+      - "pnpm vitest run src/lib/runtime src/commands/runtime-card.test.ts src/commands/next.test.ts"
+      - "node --import tsx src/cli.ts next --json --mode local --evidence required"
+      - "bash scripts/validate-codestyle.sh --fast"
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    command: "gh pr view/checks 271; pr-template-gate local reproduction; drift-gate --mode health local reproduction"
+    outcome: blocked_remote_ci_preexisting
+    checked_at: "2026-05-21T13:15:26Z"
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "On explicit kickoff, reconcile native goal state, board state, audit state, git state, validation state, and Linear JSC-331 before drafting the first slice manifest."
+    inputs:
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/state.yaml"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/receipts.jsonl"
+      - ".harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md"
+      - ".harness/active-artifacts.md"
+      - "Linear JSC-331"
+    constraints:
+      - "Read-only except appending kickoff Scout receipt if owner explicitly starts the goal."
+      - "Do not start Worker implementation."
+      - "Do not move Linear out of Todo until owner kickoff and active-task authority allow it."
+      - "Preserve unrelated dirty worktree files."
+    expected_output: "Governor bootstrap receipt with native/board reconciliation, stale-state assessment, first slice manifest draft, rollback contract draft, validation plan, and stop conditions."
+    allowed_files: []
+    verify:
+      - "git status --short --branch"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "test -f .harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md"
+      - "test -f .harness/active-artifacts.md"
+    stop_if:
+      - "Native goal state and board state conflict without owner direction."
+      - "Primary audit path is missing."
+      - "Git dirty worktree includes unrelated implementation files."
+      - "Linear JSC-331 is unreachable."
+      - "A Worker slice would exceed default slice-size limits."
+    receipt_id: R003-BOARD-VERIFICATION-RECOVERY
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "S001-gap-004-summary-only-phase-exit-required-evidence: block summary_only phase-exit evidence from satisfying required evidence while allowing it as optional context."
+    inputs:
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/state.yaml"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/receipts.jsonl"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/notes/agent-coordination-scratchpad.md"
+      - ".harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md"
+    constraints:
+      - "Preserve existing replay-module edits as a separate active slice."
+      - "Do not touch replay files unless the board is explicitly updated to make replay the active slice."
+      - "Do not mutate git, GitHub, Linear, CircleCI, CodeRabbit, or automations."
+      - "Stop if the runtime evidence fix requires shared replay-adjacent architecture files."
+    expected_output: "Runtime evidence bundle validation and runtime-card consumption reject summary_only phase-exit as required gate evidence, with focused tests and receipt evidence."
+    allowed_files:
+      - "src/lib/runtime/runtime-evidence-bundle.ts"
+      - "src/lib/runtime/runtime-evidence-producer.ts"
+      - "src/lib/runtime/runtime-evidence-adapter.ts"
+      - "src/lib/runtime/**/*.test.ts"
+      - "src/commands/runtime-card.test.ts"
+      - "src/commands/next.test.ts"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/**"
+      - ".harness/implementation-notes/2026-05-21-coding-harness-goal-governed-evidence-led-implementation-notes.html"
+      - ".harness/implementation-notes/reviews/S001-gap-004-summary-only-phase-exit-required-evidence/**"
+    verify:
+      - "pnpm vitest run src/lib/runtime src/commands/runtime-card.test.ts src/commands/next.test.ts"
+      - "node --import tsx src/cli.ts next --json --mode local --evidence required"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "Required evidence semantics require touching replay files."
+      - "Summary-only evidence must be removed entirely instead of allowed as context."
+      - "Validation fails twice with the same root cause."
+      - "Review stack cannot produce artifacts."
+    receipt_id: R005-S001-REVIEWED-CLOSED
+  - id: T003
+    type: judge
+    assignee: PM
+    status: done
+    objective: "Owner decision point: choose git lifecycle closeout for S001 or explicitly activate a separate replay-module slice."
+    inputs:
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/state.yaml"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/receipts.jsonl"
+      - ".harness/implementation-notes/reviews/S001-gap-004-summary-only-phase-exit-required-evidence/**"
+    constraints:
+      - "Do not start git lifecycle actions without explicit owner authority."
+      - "Do not activate replay-module files unless the owner explicitly updates the board to that slice."
+      - "Preserve unrelated dirty worktree files."
+      - "Repo-local core.worktree drift was repaired in R008; rerun check-git-common-config before any git lifecycle action."
+    expected_output: "Owner selects the next lane: S001 git lifecycle closeout, replay-module slice activation, or pause."
+    allowed_files:
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/**"
+    verify:
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+    stop_if:
+      - "Owner direction is missing."
+      - "Next lane would mix S001 runtime evidence files with replay-module files."
+      - "Git lifecycle is requested and check-git-common-config fails."
+    receipt_id: R009-UNATTENDED-S001-CLOSEOUT-AUTHORITY
+  - id: T004
+    type: pm
+    assignee: PM
+    status: active
+    objective: "Use delegated unattended authority in pr_closeout mode to close out S001 through the safest git lifecycle path while preserving replay-module work as a separate slice."
+    inputs:
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/state.yaml"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/receipts.jsonl"
+      - ".harness/implementation-notes/reviews/S001-gap-004-summary-only-phase-exit-required-evidence/**"
+      - "src/lib/runtime/runtime-evidence-bundle.ts"
+      - "src/lib/runtime/runtime-evidence-adapter.ts"
+      - "src/lib/runtime/git-environment.ts"
+      - "src/lib/runtime/local-runtime-card.ts"
+      - "src/lib/runtime/local-runtime-card.test.ts"
+      - "src/commands/runtime-card.test.ts"
+    constraints:
+      - "Run the configured guardrails before staging, commit, push, or PR creation."
+      - "If the current branch contains replay-module commits or other non-S001 branch history, create a fresh S001 branch from the target base and transplant only S001 files."
+      - "Stage only S001 runtime evidence files and JSC-331 goal-board/review artifacts."
+      - "Do not stage .harness/active-artifacts.md, .harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md, Untitled.canvas, codex-native-harness-memory-baseline files, replay-module files, or unrelated dirty worktree files."
+      - "Do not activate replay-module files unless a later active task explicitly changes the board to that slice."
+      - "Do not merge; PR merge still requires explicit human authority."
+    expected_output: "S001 is committed, pushed, and opened or updated as an independently reviewable PR, or a blocker receipt records why clean closeout could not proceed unattended."
+    allowed_files:
+      - "src/lib/runtime/runtime-evidence-bundle.ts"
+      - "src/lib/runtime/runtime-evidence-adapter.ts"
+      - "src/lib/runtime/git-environment.ts"
+      - "src/lib/runtime/local-runtime-card.ts"
+      - "src/lib/runtime/local-runtime-card.test.ts"
+      - "src/commands/runtime-card.test.ts"
+      - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/**"
+      - ".harness/implementation-notes/2026-05-21-coding-harness-goal-governed-evidence-led-implementation-notes.html"
+      - ".harness/implementation-notes/reviews/S001-gap-004-summary-only-phase-exit-required-evidence/**"
+    verify:
+      - "bash scripts/check-git-common-config.sh"
+      - "git status --short --branch --untracked-files=all"
+      - "pnpm vitest run src/lib/runtime/local-runtime-card.test.ts"
+      - "pnpm vitest run src/lib/runtime src/commands/runtime-card.test.ts src/commands/next.test.ts"
+      - "node --import tsx src/cli.ts next --json --mode local --evidence required"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+    stop_if:
+      - "Stage set includes replay files or unrelated dirty worktree files."
+      - "Fresh S001 branch creation or transplant conflicts."
+      - "check-git-common-config fails."
+      - "Validation fails twice with the same root cause."
+      - "PR creation requires credentials or external state that cannot be verified."
+      - "Merge is the next requested action without explicit human merge authority."
+    receipt_id: R016-T004-DRAFT-PR-REMOTE-STATE
