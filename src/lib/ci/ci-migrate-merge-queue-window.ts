@@ -171,6 +171,29 @@ export function isValidMergeQueueCutoverWindow(
 			Number.isInteger(count) &&
 			Number.isFinite(count) &&
 			count >= 0);
+
+	const stageSpecificInvariantsValid = (): boolean => {
+		if (parsed.stage === "paused") {
+			return Number.isFinite(pausedAtMs);
+		}
+		if (parsed.stage === "drained") {
+			return Number.isFinite(pausedAtMs) && Number.isFinite(drainedAtMs);
+		}
+		if (parsed.stage === "revalidated") {
+			return (
+				Number.isFinite(pausedAtMs) &&
+				Number.isFinite(drainedAtMs) &&
+				Number.isFinite(revalidatedAtMs) &&
+				parsed.postCutover !== undefined &&
+				isValidBranchProtectionSatisfiabilityReport(parsed.postCutover)
+			);
+		}
+		if (parsed.stage === "aborted") {
+			return Number.isFinite(pausedAtMs) && Number.isFinite(abortedAtMs);
+		}
+		return false;
+	};
+
 	return (
 		parsed.schemaVersion === "ci-migrate-merge-queue-window/v1" &&
 		typeof parsed.snapshotId === "string" &&
@@ -179,13 +202,8 @@ export function isValidMergeQueueCutoverWindow(
 			parsed.stage === "drained" ||
 			parsed.stage === "revalidated" ||
 			parsed.stage === "aborted") &&
-		Number.isFinite(pausedAtMs) &&
-		(parsed.drainedAt === undefined || Number.isFinite(drainedAtMs)) &&
-		(parsed.revalidatedAt === undefined || Number.isFinite(revalidatedAtMs)) &&
-		(parsed.abortedAt === undefined || Number.isFinite(abortedAtMs)) &&
+		stageSpecificInvariantsValid() &&
 		isValidBranchProtectionSatisfiabilityReport(parsed.preCutover) &&
-		(parsed.postCutover === undefined ||
-			isValidBranchProtectionSatisfiabilityReport(parsed.postCutover)) &&
 		(evidenceRecord === undefined ||
 			(typeof evidenceRecord.sourcePath === "string" &&
 				evidenceRecord.sourcePath.trim().length > 0 &&

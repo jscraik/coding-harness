@@ -52,6 +52,14 @@ export function matchesExpectedSource(
 		return true;
 	}
 
+	// Treat empty constraint as unconstrained
+	if (
+		constraint.providerSlugs.size === 0 &&
+		constraint.sourceAppIds.size === 0
+	) {
+		return true;
+	}
+
 	const appSlug = normalizeSourceToken(run.app?.slug);
 	const appId = normalizeSourceToken(run.app?.id);
 	const appName = normalizeSourceToken(run.app?.name);

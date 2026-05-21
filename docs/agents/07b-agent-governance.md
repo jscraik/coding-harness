@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-20
+last_validated: 2026-05-21
 ---
 
 # Agent governance

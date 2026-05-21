@@ -60,7 +60,15 @@ export function resolveRepoBoundPath(
 			error: `${label} path cannot be empty.`,
 		};
 	}
-	const rootPath = realpathSync(targetDir);
+	let rootPath: string;
+	try {
+		rootPath = realpathSync(targetDir);
+	} catch (error) {
+		return {
+			ok: false,
+			error: `${label} target directory cannot be resolved: ${error instanceof Error ? error.message : String(error)}`,
+		};
+	}
 	const lexicalRootPath = resolve(targetDir);
 	const absolutePath = resolve(targetDir, candidatePath);
 	if (!isWithinRoot(lexicalRootPath, absolutePath)) {

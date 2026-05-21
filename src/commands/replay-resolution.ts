@@ -65,14 +65,23 @@ export async function resolveTrace(
 			message: `Invalid trace ID format: ${options.traceId}`,
 		};
 	}
-	const trace = await loadTrace(options.traceId, config);
-	if (!trace) {
+	try {
+		const trace = await loadTrace(options.traceId, config);
+		if (!trace) {
+			return {
+				ok: false,
+				code: "TRACE_NOT_FOUND",
+				message: `Trace not found: ${options.traceId}`,
+				hint: "Use --list to see available traces.",
+			};
+		}
+		return { ok: true, trace, traceId: options.traceId };
+	} catch (error) {
 		return {
 			ok: false,
-			code: "TRACE_NOT_FOUND",
-			message: `Trace not found: ${options.traceId}`,
-			hint: "Use --list to see available traces.",
+			code: "TRACE_LOAD_ERROR",
+			message: `Failed to load trace ${options.traceId}: ${error instanceof Error ? error.message : String(error)}`,
+			hint: "Ensure trace file is readable and properly formatted.",
 		};
 	}
-	return { ok: true, trace, traceId: options.traceId };
 }

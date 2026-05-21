@@ -17,7 +17,7 @@
 ## Audit Metadata
 
 - **Audit date:** 2026-05-20
-- **Target codebase:** `/Users/jamiecraik/dev/coding-harness`
+- **Target codebase:** `<repo-root>`
 - **Primary skill:** `improve-codebase-architecture`
 - **Evidence inputs:**
   - `.harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md`

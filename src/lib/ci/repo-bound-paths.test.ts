@@ -53,30 +53,58 @@ describe("repo-bound path seams", () => {
 	});
 
 	it("rejects file URLs outside the repository root", () => {
-		const outsidePath = join(tempDir, "..", "outside-file-url.json");
-		writeFileSync(outsidePath, "{}");
-
-		const result = resolveRepoBoundFileUrl(
+		const outsidePath = join(
 			tempDir,
-			pathToFileURL(outsidePath).toString(),
-			"Downloaded artifact",
+			"..",
+			`outside-file-url-${Date.now()}.json`,
 		);
+		try {
+			writeFileSync(outsidePath, "{}");
 
-		expect(result.ok).toBe(false);
-		if (!result.ok) {
-			expect(result.error).toContain("escapes repository root");
+			const result = resolveRepoBoundFileUrl(
+				tempDir,
+				pathToFileURL(outsidePath).toString(),
+				"Downloaded artifact",
+			);
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error).toContain("escapes repository root");
+			}
+		} finally {
+			try {
+				rmSync(outsidePath, { force: true });
+			} catch {
+				// Ignore cleanup errors
+			}
 		}
 	});
 
 	it("rejects allowlisted restore paths that resolve through a symlink", () => {
 		const allowedPath = ".harness/control-plane/github-rulesets.json";
 		const allowed = new Set([allowedPath]);
-		const outsidePath = join(tempDir, "..", "outside-restore.json");
-		writeFileSync(outsidePath, "{}");
-		mkdirSync(join(tempDir, ".harness", "control-plane"), { recursive: true });
-		symlinkSync(outsidePath, join(tempDir, allowedPath));
+		const outsidePath = join(
+			tempDir,
+			"..",
+			`outside-restore-${Date.now()}.json`,
+		);
+		try {
+			writeFileSync(outsidePath, "{}");
+			mkdirSync(join(tempDir, ".harness", "control-plane"), {
+				recursive: true,
+			});
+			symlinkSync(outsidePath, join(tempDir, allowedPath));
 
-		expect(isSafeAllowedRestorePath(tempDir, allowedPath, allowed)).toBe(false);
+			expect(isSafeAllowedRestorePath(tempDir, allowedPath, allowed)).toBe(
+				false,
+			);
+		} finally {
+			try {
+				rmSync(outsidePath, { force: true });
+			} catch {
+				// Ignore cleanup errors
+			}
+		}
 	});
 
 	it("allows missing allowlisted restore paths when the nearest parent is safe", () => {

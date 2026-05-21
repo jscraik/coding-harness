@@ -60,7 +60,19 @@ function resolveConstrainedCheckRun(
 		return { checkResult };
 	}
 	if (!hasCheckRunSourceMetadata(unconstrainedCheckResult.checkRun)) {
-		return { checkResult: unconstrainedCheckResult };
+		// Fail closed: when source constraints are present but check run lacks source metadata,
+		// produce a failing check result rather than accepting unconstrained run
+		return {
+			checkResult: {
+				found: false,
+				status: "not_found",
+				conclusion: null,
+			},
+			sourceMismatch: {
+				checkName,
+				expectedSource: describeExpectedSource(sourceConstraint),
+			},
+		};
 	}
 
 	return {

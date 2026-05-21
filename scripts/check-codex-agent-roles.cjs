@@ -212,7 +212,7 @@ function extractBooleanValue(content, key) {
 
 function extractStringArrayValue(content, key) {
 	const match = content.match(
-		new RegExp(`^\\s*${key}\\s*=\\s*\\[([^\\n]*)\\]\\s*$`, "m"),
+		new RegExp(`^\\s*${key}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*$`, "m"),
 	);
 	if (!match) {
 		return null;
@@ -221,11 +221,14 @@ function extractStringArrayValue(content, key) {
 	if (rawItems.length === 0) {
 		return [];
 	}
-	return rawItems.split(",").map((item) => {
-		const trimmed = item.trim();
-		const stringMatch = trimmed.match(/^"([^"\n]*)"$/);
-		return stringMatch ? stringMatch[1] : null;
-	});
+	return rawItems
+		.split(/\s*,\s*/)
+		.map((item) => {
+			const trimmed = item.trim();
+			const stringMatch = trimmed.match(/^"([^"]*)"/);
+			return stringMatch ? stringMatch[1] : null;
+		})
+		.filter((item) => item !== null);
 }
 
 function hasNonEmptyTripleQuotedBlock(content, key) {
