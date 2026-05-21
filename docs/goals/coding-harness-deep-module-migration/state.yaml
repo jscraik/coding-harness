@@ -1,0 +1,152 @@
+version: 2
+goal:
+  slug: coding-harness-deep-module-migration
+  status: active
+  objective: "Finish the remaining non-Effect coding-harness deep-module migration in small governed slices with per-slice review gates, validation evidence, GitHub handoff, and PR-green-sweep triage."
+  native_goal_id: "019e3c24-6cea-75f0-b564-1fe56230e597"
+  native_objective: "Follow docs/goals/coding-harness-deep-module-migration/goal.md to finish the remaining non-Effect coding-harness deep-module migration in small governed slices. Read goal.md, state.yaml, and receipts.jsonl first; require per-slice review gates, validation, GitHub handoff, PR-green-sweep triage, and receipts before continuing."
+  native_status: active
+  token_budget: null
+  tokens_used: null
+  time_used_seconds: null
+  native_created_at: "2026-05-21T10:02:53.000Z"
+  native_updated_at: "2026-05-21T10:02:53.000Z"
+rules:
+  one_active_task: true
+  parallel_workers: false
+  require_fresh_verification: true
+  require_final_audit: true
+  require_review_gates_per_slice: true
+  require_pr_green_sweep: true
+  effect_layers_deferred: true
+  forbid_core_worktree: true
+checks:
+  dirty_fingerprint: "clean at board creation"
+  source_review: ".harness/review/2026-05-20-module-boundary-taste-review.md"
+  implementation_visual: ".harness/implementation-notes/2026-05-19-module-layout.html"
+  architecture_visual: "artifacts/architecture/module-layout.html"
+  last_verification:
+    command: "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
+    outcome: "pass"
+    checked_at: "2026-05-21T09:54:35Z"
+completion_contract:
+  outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
+  verification_surface:
+    - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+    - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+    - ".harness/implementation-notes/2026-05-19-module-layout.html"
+    - "artifacts/architecture/module-layout.html"
+    - "focused tests named in each slice receipt"
+    - "bash scripts/validate-codestyle.sh --fast"
+    - "bash scripts/verify-work.sh --fast"
+    - "pnpm check before final readiness or broad shared-surface changes"
+    - "GitHub PR state, current head SHA, review threads, and mergeability"
+    - "CircleCI status loaded with ~/.codex/.env when credentials are required"
+  constraints:
+    - "One active implementation slice at a time."
+    - "Effect layers are out of scope."
+    - "No unrelated refactor, broad rewrite, unapproved destructive cleanup, or force push."
+    - "No completion claim from summaries without live evidence."
+  boundaries:
+    - "Declare allowed files before each slice."
+    - "Declare focused tests before each slice."
+    - "Keep edits inside the active slice unless validation proves a shared guard must change."
+    - "Classify generated artifact churn before staging."
+  iteration_policy: "After each split or module move, run simplify, unslopify, improve-codebase-architecture, testing, and codex-review; fix or classify findings; validate; commit; push; update GitHub; append a receipt."
+  blocked_stop_condition: "Stop if validation fails twice for the same reason, branch or PR state cannot be observed, unrelated dirty worktree files are unclassified, credentials are missing after ~/.codex/.env probe, or the split violates the module-boundary objective."
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Create the durable Goal Governor board for the deep-module migration before any further implementation slice."
+    inputs:
+      - "AGENTS.md"
+      - "CODESTYLE.md"
+      - "codestyle/04-docs-config-and-release.md"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Create only the goal board scaffold."
+      - "Do not edit implementation files."
+      - "Preserve unrelated user work."
+    expected_output: "Goal board, state file, initial receipt, and notes scaffold."
+    allowed_files:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - "docs/goals/coding-harness-deep-module-migration/notes/.gitkeep"
+    verify:
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
+      - "git status --short docs/goals/coding-harness-deep-module-migration"
+    stop_if:
+      - "Board checker fails."
+      - "Creation would require editing implementation files."
+    receipt_id: R001
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Deepen the drift-gate module boundary as the next non-Effect slice."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start until T001 board validation passes."
+      - "Declare allowed files and focused tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Commit, push, update GitHub, and append receipt before T003."
+    expected_output: "A small drift-gate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/drift-gate.ts"
+      - "src/lib/drift-gate.ts"
+      - "src/lib/cli/registry/drift-gate-command-spec.ts"
+      - "src/lib/output/normalise-drift-gate.ts"
+      - "src/commands/drift-gate*.test.ts"
+      - "src/lib/drift-gate*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused drift-gate test or direct production command to be named before implementation"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "Allowed files are not declared."
+      - "Focused validation path cannot be identified."
+      - "Review gates find a boundary issue requiring scope expansion."
+    receipt_id: R002
+pr_green_sweep:
+  status: pending
+  worker: pr-green-sweep
+  duplicate_guard: true
+  tools:
+    - "@github"
+    - "@circleci"
+    - "@coderabbit"
+    - "$autofix"
+  env_source: "~/.codex/.env"
+  report_back: "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+slice_queue:
+  completed:
+    - verify-work
+    - memory-gate
+  active: null
+  next: drift-gate
+  remaining:
+    - replay
+    - remediate
+    - observability-gate
+    - artifact-gate
+    - plan-gate
+    - prompt-gate
+    - gap-case
+    - simulate
+    - ci-migrate
+    - init
+    - upgrade
+    - brain
+  deferred:
+    - effect-layers
