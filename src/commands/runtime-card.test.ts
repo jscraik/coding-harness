@@ -15,6 +15,20 @@ import { HE_PHASE_EXIT_SCHEMA_VERSION } from "../lib/decision/he-phase-exit.js";
 import { validateRuntimeEvidenceBundle } from "../lib/runtime/runtime-evidence-bundle.js";
 
 const CODE = String.fromCharCode(96);
+const GIT_ENV_KEYS = [
+	"GIT_COMMON_DIR",
+	"GIT_DIR",
+	"GIT_INDEX_FILE",
+	"GIT_WORK_TREE",
+] as const;
+
+function gitFixtureEnvironment(): NodeJS.ProcessEnv {
+	const env = { ...process.env };
+	for (const key of GIT_ENV_KEYS) {
+		delete env[key];
+	}
+	return env;
+}
 
 async function captureRuntimeCardCLI(args: string[]): Promise<{
 	exitCode: number;
@@ -49,6 +63,7 @@ function setupRepo(): string {
 	const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-cli-"));
 	execFileSync("git", ["init"], {
 		cwd: repoRoot,
+		env: gitFixtureEnvironment(),
 		stdio: ["ignore", "ignore", "ignore"],
 	});
 	const specPath = ".harness/specs/2026-05-13-jsc-311-spec.md";
@@ -256,6 +271,21 @@ describe("runRuntimeCardCLI", () => {
 
 	it("can consume runtime evidence produced by --evidence-out", async () => {
 		const repoRoot = setupRepo();
+		const contaminatingRepoRoot = mkdtempSync(
+			join(tmpdir(), "runtime-card-env-"),
+		);
+		execFileSync("git", ["init"], {
+			cwd: contaminatingRepoRoot,
+			env: gitFixtureEnvironment(),
+			stdio: ["ignore", "ignore", "ignore"],
+		});
+		execFileSync("git", ["checkout", "-b", "JSC-999-contaminant"], {
+			cwd: contaminatingRepoRoot,
+			env: gitFixtureEnvironment(),
+			stdio: ["ignore", "ignore", "ignore"],
+		});
+		const previousGitDir = process.env.GIT_DIR;
+		const previousGitWorkTree = process.env.GIT_WORK_TREE;
 		const evidenceOutPath = ".harness/runtime/JSC-311-evidence.json";
 		const first = await captureRuntimeCardCLI([
 			"--json",
@@ -268,26 +298,41 @@ describe("runRuntimeCardCLI", () => {
 		]);
 		expect(first.exitCode).toBe(0);
 
-		const second = await captureRuntimeCardCLI([
-			"--json",
-			"--repo",
-			repoRoot,
-			"--evidence",
-			evidenceOutPath,
-		]);
+		try {
+			process.env.GIT_DIR = join(contaminatingRepoRoot, ".git");
+			process.env.GIT_WORK_TREE = contaminatingRepoRoot;
+			const second = await captureRuntimeCardCLI([
+				"--json",
+				"--repo",
+				repoRoot,
+				"--evidence",
+				evidenceOutPath,
+			]);
 
-		expect(second.exitCode).toBe(0);
-		const card = JSON.parse(second.output);
-		expect(card.issueKey).toBe("JSC-311");
-		expect(card.phaseExit.status).toBe("not_run");
-		expect(card.sources).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({
-					kind: "artifact",
-					ref: `artifact:${evidenceOutPath}`,
-				}),
-			]),
-		);
+			expect(second.exitCode).toBe(0);
+			const card = JSON.parse(second.output);
+			expect(card.issueKey).toBe("JSC-311");
+			expect(card.phaseExit.status).toBe("not_run");
+			expect(card.sources).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						kind: "artifact",
+						ref: `artifact:${evidenceOutPath}`,
+					}),
+				]),
+			);
+		} finally {
+			if (previousGitDir === undefined) {
+				delete process.env.GIT_DIR;
+			} else {
+				process.env.GIT_DIR = previousGitDir;
+			}
+			if (previousGitWorkTree === undefined) {
+				delete process.env.GIT_WORK_TREE;
+			} else {
+				process.env.GIT_WORK_TREE = previousGitWorkTree;
+			}
+		}
 	});
 
 	it("adapts normalized evidence bundles through --evidence", async () => {

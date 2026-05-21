@@ -83,7 +83,7 @@ export interface RuntimeEvidenceBundle {
 	linear?: RuntimeCard["linear"];
 	/** Optional full phase-exit artifact to collapse into runtime-card status. */
 	phaseExit?: HePhaseExit;
-	/** Whether phase-exit evidence is original gate evidence or a runtime-card summary projection. */
+	/** Whether phase-exit evidence is original gate evidence or a runtime-card summary projection; required when phaseExit exists. */
 	phaseExitSourceCompleteness?: RuntimeEvidencePhaseExitSourceCompleteness;
 	/** Normalized source refs inspected by the upstream collector or adapter. */
 	sources: RuntimeCardSource[];
@@ -302,9 +302,20 @@ function validateProvenance(value: unknown, errors: HeValidationError[]): void {
 
 function validatePhaseExitSourceCompleteness(
 	value: unknown,
+	hasPhaseExit: boolean,
 	errors: HeValidationError[],
 ): void {
-	if (value === undefined) return;
+	if (value === undefined) {
+		if (hasPhaseExit) {
+			errors.push(
+				toValidationError(
+					"phaseExitSourceCompleteness is required when phaseExit is present",
+					"phaseExitSourceCompleteness",
+				),
+			);
+		}
+		return;
+	}
 	validateEnum(
 		value,
 		"phaseExitSourceCompleteness",
@@ -353,6 +364,7 @@ export function validateRuntimeEvidenceBundle(
 	}
 	validatePhaseExitSourceCompleteness(
 		value.phaseExitSourceCompleteness,
+		value.phaseExit !== undefined,
 		errors,
 	);
 	validateSources(value.sources, errors);

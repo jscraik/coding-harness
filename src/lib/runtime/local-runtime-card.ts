@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { gitEnvironmentForRepoRoot } from "./git-environment.js";
 import {
 	assembleLiveRuntimeCard,
 	assembleLocalRuntimeCard,
@@ -64,6 +65,7 @@ function defaultGitRunner(repoRoot: string): RuntimeCardGitRunner {
 		try {
 			return execFileSync("git", [...args], {
 				cwd: repoRoot,
+				env: gitEnvironmentForRepoRoot(),
 				encoding: "utf8",
 				stdio: ["ignore", "pipe", "ignore"],
 			}).trim();
@@ -117,6 +119,7 @@ export function buildLocalRuntimeCard(
 	const evidence = inspectRuntimeEvidenceBundle(
 		options.evidenceBundle,
 		collapsePhaseExit,
+		{ requireGateBackedPhaseExit: options.requirePhaseExit === true },
 	);
 	const evidenceIssueKey =
 		options.issueKey === undefined ? evidence.issueKey : null;

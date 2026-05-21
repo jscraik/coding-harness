@@ -54,6 +54,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `--repo`; refresh architecture context and synchronize `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and this guide when docs-gate
   reports governance surfaces
+- phase-exit required evidence must come from gate-backed evidence; summary-only
+  runtime evidence may be retained as context, but must not satisfy required
+  phase-exit gates.
 - runtime-card evidence producer changes that add or alter `--evidence-out`,
   `runtime-evidence-bundle/v1`, or producer/adapter wiring should refresh
   `AI/context/diagram-context.md` and keep `AGENTS.md`,
