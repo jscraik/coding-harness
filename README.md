@@ -174,6 +174,10 @@ and its review cadence is mirrored in `harness.contract.json` so
 `drift-gate --mode health` can fail closed on stale north-star evidence.
 The roadmap and status metadata were last synchronized on 2026-05-18 as part
 of the Coding Harness evidence alignment refresh.
+The `preflight-gate` product-surface cadence evidence was refreshed on
+2026-05-21 after source and test review; future `harness.contract.json`
+cadence refreshes are contract-policy changes and must keep the docs-gate
+required surfaces synchronized.
 
 North-star command outputs also use canonical artifact contracts so agents can
 carry evidence between tools without guessing path or schema names. Current

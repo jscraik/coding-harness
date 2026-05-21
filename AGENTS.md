@@ -63,6 +63,7 @@ the same steering twice, the harness has failed to encode the operating system.
 - Generated diagram identity rewrites must keep dependent Mermaid references synchronized: when duplicate node IDs are renamed, selectors such as `class old_id className` must be rewritten to the current emitted node IDs and covered by a stale-reference regression.
 - Generated Codex environment action changes must keep setup PATH bootstrapping, detached-worktree branch attachment, and script-derived test/eval actions synchronized with the tooling and security governance docs.
 - Release readiness updates to governed north-star status surfaces must keep `docs/roadmap/agent-first-status.md` and the matching `harness.contract.json` `lastReviewedAt` entry synchronized.
+- Contract-policy cadence refreshes in `harness.contract.json`, including product-surface `lastReviewedAt` updates such as `preflight-gate`, must keep docs-gate required surfaces like `README.md` and `AGENTS.md` synchronized in the same change.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
 

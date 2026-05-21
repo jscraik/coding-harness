@@ -18,6 +18,7 @@ import {
 import {
 	RUNTIME_EVIDENCE_BUNDLE_SCHEMA_VERSION,
 	type RuntimeEvidenceBundle,
+	validateRuntimeEvidenceBundle,
 } from "./runtime-evidence-bundle.js";
 import { validateRuntimeCard } from "./runtime-card.js";
 
@@ -176,6 +177,7 @@ function runtimeEvidenceBundle(
 			actionRequired: null,
 		},
 		phaseExit: passingPhaseExit(),
+		phaseExitSourceCompleteness: "gate_backed",
 		sources: [
 			{
 				kind: "validation",
@@ -475,6 +477,91 @@ describe("buildLocalRuntimeCard", () => {
 		expect(card.blockers).toEqual([
 			"Session collector reports PR checks are blocked; resolve CI before closeout.",
 		]);
+	});
+
+	it("requires phase-exit source completeness when bundle phase-exit evidence exists", () => {
+		const bundle: Partial<RuntimeEvidenceBundle> = runtimeEvidenceBundle();
+		delete bundle.phaseExitSourceCompleteness;
+
+		const validation = validateRuntimeEvidenceBundle(bundle);
+
+		expect(validation.valid).toBe(false);
+		expect(validation.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "phaseExitSourceCompleteness is required when phaseExit is present",
+					path: "phaseExitSourceCompleteness",
+				}),
+			]),
+		);
+	});
+
+	it("allows phase-exit source completeness to be absent when bundle phase-exit evidence is absent", () => {
+		const bundle: Partial<RuntimeEvidenceBundle> = runtimeEvidenceBundle();
+		delete bundle.phaseExit;
+		delete bundle.phaseExitSourceCompleteness;
+
+		const validation = validateRuntimeEvidenceBundle(bundle);
+
+		expect(validation).toEqual({ valid: true, errors: [] });
+	});
+
+	it("allows summary-only phase-exit as optional context", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: runtimeEvidenceBundle({
+				phaseExitSourceCompleteness: "summary_only",
+				blockers: [],
+			}),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.phaseExit).toEqual({
+			status: "pass",
+			reason: "Required phase-exit gates passed.",
+		});
+		expect(card.blockers).toEqual([]);
+	});
+
+	it("rejects summary-only phase-exit as required gate evidence", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			requirePhaseExit: true,
+			evidenceBundle: runtimeEvidenceBundle({
+				phaseExitSourceCompleteness: "summary_only",
+				blockers: [],
+			}),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.lifecycle).toBe("blocked");
+		expect(card.phaseExit).toEqual({
+			status: "blocked",
+			reason:
+				"Summary-only phase-exit evidence cannot satisfy required gate evidence.",
+		});
+		expect(card.blockers).toEqual([
+			"Gate-backed phase-exit evidence is required; summary-only runtime-card phase-exit context cannot satisfy required evidence.",
+		]);
+		expect(card.sources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "phase_exit",
+					status: "blocked",
+					failureClass: "phase_exit_summary_only",
+				}),
+			]),
+		);
 	});
 
 	it("prefers local issue context over imported runtime evidence keys", () => {
