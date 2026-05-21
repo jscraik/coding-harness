@@ -1,6 +1,6 @@
 # Agent Coordination Scratchpad
 
-Updated: 2026-05-21T13:31:57Z
+Updated: 2026-05-21T13:59:48Z
 
 ## Current Goal
 
@@ -116,9 +116,15 @@ explicitly authorizes mixing it into this PR.
 Latest check classification: `orb-pinning`, CodeRabbit, Socket, Snyk, and the
 other CircleCI jobs are green. The only red check is
 `ci/circleci: consistency-drift-health`, with `pr-pipeline` failed because of
-that job. If Jamie is away, do not patch `harness.contract.json` into the S001
-runtime-evidence PR by default. Keep PR #271 draft/open, record the blocker, and
-activate the separate governance-health slice only through the board.
+that job.
+
+Away-mode update: the board now marks T004 done and activates T005 because live
+PR checks show no S001-owned red checks and local `drift-gate --mode health`
+reproduces the pre-existing `preflight-gate` cadence breach. If Jamie is away,
+T005 may choose the safest closeout shape: a same-PR follow-up commit is allowed
+only for metadata-only `harness.contract.json` cadence repair inside T005's
+allowed files; otherwise use a separate governance-health branch/PR or stop in
+verification recovery. Merge remains disallowed without explicit human authority.
 
 ## Message To Replay Agent
 

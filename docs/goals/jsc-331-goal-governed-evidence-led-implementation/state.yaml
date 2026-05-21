@@ -64,6 +64,8 @@ coordination:
       - "Pause and record a blocker receipt if guardrails fail, validation fails, transplant conflicts, or slice contamination cannot be avoided."
       - "Poll PR #271 remote checks and classify each failing or pending check by ownership before editing files."
       - "If all S001-local validation, review, and remote checks pass except a pre-existing governance-health blocker outside the S001 allowed-file set, keep S001 draft/open, record the blocker, and route the fix to a separate governance-health slice."
+      - "When live PR #271 checks show no S001-owned red checks and the only required-check blocker is the reproduced pre-existing preflight-gate cadence breach, mark T004 done and activate T005 without another prompt so the agent can make the safest unattended decision."
+      - "For active T005, choose same-PR follow-up versus separate governance-health PR based on lowest risk: same PR is allowed only for metadata-only harness.contract.json cadence repair inside T005 allowed_files; otherwise create a separate branch/PR or stop in verification recovery."
     disallowed_decisions:
       - "Activate replay-module implementation without an explicit board update to a replay task."
       - "Stage or commit replay-module files as part of S001 closeout."
@@ -84,8 +86,8 @@ checks:
   dirty_fingerprint: unknown
   last_verification:
     command: "gh pr checks 271 --json name,state,workflow,startedAt,completedAt,link --watch=false; drift-gate --mode health local reproduction"
-    outcome: blocked_remote_ci_preexisting
-    checked_at: "2026-05-21T13:31:57Z"
+    outcome: t005_unattended_activation_authorized
+    checked_at: "2026-05-21T13:59:48Z"
 tasks:
   - id: T001
     type: scout
@@ -184,7 +186,7 @@ tasks:
   - id: T004
     type: pm
     assignee: PM
-    status: active
+    status: done
     objective: "Use delegated unattended authority in pr_closeout mode to close out S001 through the safest git lifecycle path while preserving replay-module work as a separate slice."
     inputs:
       - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md"
@@ -231,11 +233,11 @@ tasks:
       - "PR creation requires credentials or external state that cannot be verified."
       - "A required remote check fails for a pre-existing governance-health issue outside the S001 allowed-file set; keep S001 draft/open and route the fix to a separate governance-health slice."
       - "Merge is the next requested action without explicit human merge authority."
-    receipt_id: R016-T004-DRAFT-PR-REMOTE-STATE
+    receipt_id: R018-AWAY-MODE-T004-CLOSED
   - id: T005
     type: worker
     assignee: Worker
-    status: queued
+    status: active
     objective: "Governance-health follow-up: refresh the preflight-gate cadence evidence that currently blocks consistency-drift-health, without mixing the cadence repair into S001 runtime-evidence scope."
     activation_condition: "May become active only after T004 records that PR #271 has no S001-owned red checks and the remaining blocker is the pre-existing preflight-gate cadence breach reproduced by drift-gate --mode health."
     inputs:
@@ -249,6 +251,8 @@ tasks:
       - "Do not touch replay-module files."
       - "Do not merge S001 or the governance-health PR without explicit human merge authority."
       - "If cadence review requires behavior changes beyond metadata freshness, stop and ask for owner direction."
+      - "If the cadence repair is metadata-only and limited to harness.contract.json plus board receipts, the governor may apply it as a same-PR follow-up commit to unblock PR #271; otherwise use a separate governance-health branch/PR or stop in verification recovery."
+      - "Before editing harness.contract.json, prove git truth with bash scripts/check-git-common-config.sh and git status --short --branch --untracked-files=all."
     expected_output: "A separate governance-health slice or PR that makes drift-gate --mode health pass for preflight-gate cadence evidence, with board receipts and exact validation."
     allowed_files:
       - "harness.contract.json"
@@ -262,4 +266,4 @@ tasks:
       - "Any S001 runtime-evidence file would need to change."
       - "Replay-module files are dirty in the governance-health worktree."
       - "Remote merge authority is required."
-    receipt_id: null
+    receipt_id: R019-AWAY-MODE-T005-ACTIVATED

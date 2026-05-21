@@ -141,6 +141,13 @@ stale-state risk, false-success risk, or review-loop churn.
   receipt, keep S001 draft/open, and use a separately declared governance-health
   slice before touching `harness.contract.json` or related required-check
   metadata.
+- During unattended away-mode, if T004 has live evidence that PR #271 has no
+  S001-owned red checks and the only remaining required-check blocker is the
+  reproduced pre-existing `preflight-gate` cadence breach, the governor may
+  mark T004 done, activate the existing T005 governance-health task, and choose
+  the safest T005 closeout shape without another prompt. T005 may use the same
+  PR only for a metadata-only cadence repair that stays inside its allowed files;
+  otherwise it must use a separate branch/PR or stop in verification recovery.
 - If a remote failure is plausibly introduced by the S001 runtime-evidence
   change, the governor may inspect and fix only files already allowed by the
   active S001 task. If provenance is unclear, stop in verification recovery
