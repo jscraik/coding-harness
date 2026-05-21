@@ -3,14 +3,14 @@ goal:
   slug: coding-harness-deep-module-migration
   status: active
   objective: "Finish the remaining non-Effect coding-harness deep-module migration in small governed slices with per-slice review gates, validation evidence, GitHub handoff, and PR-green-sweep triage."
-  native_goal_id: "019e3c24-6cea-75f0-b564-1fe56230e597"
+  native_goal_id: "019e4a39-47f8-7ac0-b979-d52b7f02ec23"
   native_objective: "Follow docs/goals/coding-harness-deep-module-migration/goal.md to finish the remaining non-Effect coding-harness deep-module migration in small governed slices. Read goal.md, state.yaml, and receipts.jsonl first; require per-slice review gates, validation, GitHub handoff, PR-green-sweep triage, and receipts before continuing."
   native_status: active
   token_budget: null
-  tokens_used: null
-  time_used_seconds: null
+  tokens_used: 604350
+  time_used_seconds: 2225
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-21T10:02:53.000Z"
+  native_updated_at: "2026-05-21T12:09:36Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -29,7 +29,7 @@ checks:
   last_verification:
     command: "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
-    checked_at: "2026-05-21T11:00:00Z"
+    checked_at: "2026-05-21T12:09:36Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -126,7 +126,7 @@ tasks:
   - id: T003
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "Prepare the replay module-boundary slice; do not edit implementation files until branch, PR, and receipt state are verified."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
@@ -159,17 +159,53 @@ tasks:
       - "T002 is not pushed."
       - "GitHub or PR state cannot be observed."
       - "Focused validation path cannot be identified."
-    receipt_id: R003
+    receipt_id: R003-COMPLETE
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Prepare the remediate module-boundary slice; do not edit implementation files until T003 is pushed and PR state is refreshed."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T003 is pushed and GitHub/PR state is observed."
+      - "Declare focused remediate tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R004 before any following slice."
+    expected_output: "A small remediate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/remediate*.ts"
+      - "src/lib/remediate/**"
+      - "src/lib/cli/registry/remediate-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/remediate*.test.ts"
+      - "src/lib/remediate*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused remediate test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T003 is not pushed."
+      - "GitHub or PR state cannot be observed."
+      - "Focused validation path cannot be identified."
+    receipt_id: R004
 pr_green_sweep:
-  status: ci_repair_validated_locally
+  status: t003_verified_pending_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "6e1ca818c9cc100344ee10f5564b46a24be317eb"
-  last_observed: "2026-05-21T11:01:00Z"
+  head_sha: "e5caef770788869f8fbb87d56dc03b36932a24cd"
+  last_observed: "2026-05-21T12:07:00Z"
   current_blockers:
-    - "CircleCI pr-template job failed on the first pipeline because PR context was unavailable; local pr-template-gate passes after PR body repair and should clear on rerun."
-    - "CircleCI consistency-drift-health failed on preflight-gate cadence breach; harness.contract.json and docs/roadmap/agent-first-status.md were refreshed, local drift-gate health exits 0 with baseline warnings only, and the repair is awaiting pushed CI rerun."
+    - "T003 replay slice is verified in an isolated worktree and pending commit/push plus PR #270 refresh."
   tools:
     - "@github"
     - "@circleci"
@@ -182,10 +218,10 @@ slice_queue:
     - verify-work
     - memory-gate
     - drift-gate
-  active: replay
-  next: remediate
+    - replay
+  active: remediate
+  next: observability-gate
   remaining:
-    - observability-gate
     - artifact-gate
     - plan-gate
     - prompt-gate

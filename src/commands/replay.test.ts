@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { buildReplayOptionsFromCliArgs } from "../lib/replay/cli-args.js";
 import { EXIT_CODES, runReplayCLI } from "./replay.js";
 
 function readReplayEventPayload(
@@ -32,6 +33,49 @@ describe("replay command", () => {
 				rmSync(dir, { recursive: true, force: true });
 			}
 		}
+	});
+
+	describe("buildReplayOptionsFromCliArgs", () => {
+		it("projects listing flags into replay options", () => {
+			expect(
+				buildReplayOptionsFromCliArgs([
+					"--list",
+					"--trace-dir",
+					"artifacts/traces",
+					"--json",
+				]),
+			).toEqual({
+				json: true,
+				dryRun: false,
+				list: true,
+				traceDir: "artifacts/traces",
+			});
+		});
+
+		it("prefers --trace-id over a positional trace id", () => {
+			expect(
+				buildReplayOptionsFromCliArgs([
+					"positional-trace",
+					"--trace-id",
+					"flag-trace",
+					"--dry-run",
+				]),
+			).toEqual({
+				json: false,
+				dryRun: true,
+				list: false,
+				traceId: "flag-trace",
+			});
+		});
+
+		it("uses the first positional token as trace id when --trace-id is absent", () => {
+			expect(buildReplayOptionsFromCliArgs(["positional-trace"])).toEqual({
+				json: false,
+				dryRun: false,
+				list: false,
+				traceId: "positional-trace",
+			});
+		});
 	});
 
 	describe("runReplayCLI", () => {

@@ -130,9 +130,9 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/lib/cli/registry/replay-command-spec.ts",
-		maxLines: 40,
+		maxLines: 20,
 		reason:
-			"Replay command spec must stay focused on replay trace option projection and command delegation.",
+			"Replay command spec must stay focused on registry metadata and replay-owned argv delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/fleet-plan-command-spec.ts",
@@ -493,16 +493,40 @@ const RUNTIME_CARD_SURFACE_RATCHETS = [
 
 const REPLAY_SURFACE_RATCHETS = [
 	{
-		path: "src/commands/replay.ts",
-		maxLines: 330,
+		path: "src/lib/replay/cli-args.ts",
+		maxLines: 60,
 		reason:
-			"Replay command must stay a command facade; run-record and recovery metadata stay behind the replay run-record seam.",
+			"Replay argument parsing must stay focused on raw CLI token projection and replay option shape.",
+	},
+	{
+		path: "src/lib/replay/options.ts",
+		maxLines: 60,
+		reason:
+			"Replay option and trace resolution contracts must stay small enough for registry adapters and command facades to share.",
+	},
+	{
+		path: "src/commands/replay.ts",
+		maxLines: 170,
+		reason:
+			"Replay command must stay a command facade; argv projection, output, resolution, run-record, and recovery metadata stay behind named replay seams.",
 	},
 	{
 		path: "src/commands/replay-run-record.ts",
 		maxLines: 235,
 		reason:
 			"Replay run-record seam must stay focused on canonical run-record emission, public run-record docs, attempt ledger, and recovery event metadata.",
+	},
+	{
+		path: "src/commands/replay-output.ts",
+		maxLines: 115,
+		reason:
+			"Replay output seam must stay focused on terminal and JSON presentation for replay results.",
+	},
+	{
+		path: "src/commands/replay-resolution.ts",
+		maxLines: 90,
+		reason:
+			"Replay resolution seam must stay focused on trace directory validation and trace lookup.",
 	},
 ] as const;
 
@@ -941,7 +965,11 @@ const NEXT_DECISION_SUBMODULES = [
 	"./next-blocked-decisions.js",
 	"./next-recommendation-decisions.js",
 ] as const;
-const REPLAY_COMMAND_SUBMODULES = ["./replay-run-record.js"] as const;
+const REPLAY_COMMAND_SUBMODULES = [
+	"./replay-output.js",
+	"./replay-resolution.js",
+	"./replay-run-record.js",
+] as const;
 const REMEDIATE_COMMAND_SUBMODULES = [
 	"./remediate-findings.js",
 	"./remediate-run-record.js",
@@ -1262,16 +1290,30 @@ describe("module boundaries", () => {
 		expectRatchetsWithinBudget(REPLAY_SURFACE_RATCHETS);
 	});
 
-	it("keeps replay run-record emission behind the command facade", () => {
+	it("keeps replay argv parsing and command helpers behind focused seams", () => {
 		const facadePath = "src/commands/replay.ts";
 		const facadeContent = readFileSync(
 			join(process.cwd(), facadePath),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/replay-command-spec.ts"),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/replay/cli-args.ts"),
 			"utf-8",
 		);
 
 		for (const submodule of REPLAY_COMMAND_SUBMODULES) {
 			expect(facadeContent).toContain(submodule);
 		}
+		expect(registryAdapterContent).toContain("../../replay/cli-args.js");
+		expect(registryAdapterContent).not.toContain("getFlagValue");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
+		expect(cliArgsAdapterContent).toContain("./options.js");
+		expect(facadeContent).toContain("../lib/replay/options.js");
 	});
 
 	it("keeps remediate surfaces split after decomposition", () => {

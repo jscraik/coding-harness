@@ -2,7 +2,7 @@ import {
 	emitTerminalRunRecord,
 	hashRunRecordValue,
 } from "../lib/contract/run-record-emitter.js";
-import type { ReplayOptions } from "./replay.js";
+import type { ReplayOptions } from "../lib/replay/options.js";
 
 /** Exit codes for replay command programmatic consumption. */
 export const EXIT_CODES = {

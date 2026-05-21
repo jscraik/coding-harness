@@ -98,8 +98,8 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Verify-work resume, repository-root, and governance CLI option adapter stay
     local to the canonical verification adapter.
 - `src/lib/cli/registry/replay-command-spec.ts`
-  - Replay trace selection, listing, dry-run, JSON, and trace-dir CLI option
-    adapter stay local to the replay command adapter.
+  - Registry metadata delegates raw replay arguments through the replay-owned
+    CLI args seam.
 - `src/lib/cli/registry/gardener-command-spec.ts`
   - Gardener docs path, dry-run, JSON, and stale-days CLI option adapter stay
     local to the docs freshness command adapter.
@@ -490,18 +490,30 @@ prefer evidence-loading seams before adding more branches to
 
 Replay is a command facade plus a canonical run-record seam:
 
+- `src/lib/replay/cli-args.ts`
+  - Raw replay CLI token projection and delegation into the typed replay
+    command contract.
+- `src/lib/replay/options.ts`
+  - Shared replay option, trace config, and trace resolution failure contracts.
+- `src/commands/replay-output.ts`
+  - Terminal and JSON replay output rendering.
+- `src/commands/replay-resolution.ts`
+  - Trace directory validation and trace lookup before replay execution.
 - `src/commands/replay.ts`
-  - Public CLI entrypoint, trace directory validation, trace listing, trace
-    loading, replay dispatch, and terminal/JSON output.
+  - Public CLI entrypoint, trace listing orchestration, replay dispatch, and
+    run-record outcome emission.
 - `src/commands/replay-run-record.ts`
   - Canonical run-record emission for replay outcomes, including replay
     attempt-ledger metadata, recovery-event metadata, policy context hashing,
     and precondition projection.
 
-The replay facade should stay about operator input, trace selection, and replay
-execution. Recovery ownership, retry-stop reasoning, and run-record payload
-construction should stay in `replay-run-record.ts` so agents can adjust
-operational metadata without changing trace replay behavior.
+The replay facade should stay about orchestration and replay execution. Raw argv
+projection stays in `src/lib/replay/cli-args.ts`, shared replay contracts stay
+in `src/lib/replay/options.ts`, output rendering stays in
+`replay-output.ts`, and trace lookup stays in `replay-resolution.ts`.
+Recovery ownership, retry-stop reasoning, and run-record payload construction should stay in
+`replay-run-record.ts` so agents can adjust operational metadata without
+changing trace replay behavior.
 
 ## Review Gate Command Boundaries
 
@@ -663,7 +675,7 @@ Threshold policy:
 - `src/lib/cli/registry/gardener-command-spec.ts` must stay focused on docs
   freshness CLI option adapter and command delegation (`<= 35` lines).
 - `src/lib/cli/registry/replay-command-spec.ts` must stay focused on replay
-  trace CLI option adapter and command delegation (`<= 40` lines).
+  command metadata and replay-owned argv delegation (`<= 20` lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
@@ -788,11 +800,22 @@ Threshold policy:
 - `src/lib/review-gate/required-check-manifest.ts` must remain a review-gate
   manifest seam (`<= 95` lines) for path resolution, loading, and validation
   errors.
-- `src/commands/replay.ts` must remain a replay command facade (`<= 330`
-  lines); canonical run-record and recovery metadata moves into
+- `src/lib/replay/cli-args.ts` must remain a replay argument adapter (`<= 60`
+  lines); raw token projection and facade delegation stay there.
+- `src/lib/replay/options.ts` must remain a replay option contract (`<= 60`
+  lines); option, trace config, and resolution failure contracts stay there.
+- `src/commands/replay-output.ts` must remain a replay output adapter
+  (`<= 115` lines); terminal and JSON rendering stay there.
+- `src/commands/replay-resolution.ts` must remain a replay trace resolution
+  adapter (`<= 90` lines); path validation and trace lookup stay there.
+- `src/commands/replay.ts` must remain a replay command facade (`<= 170`
+  lines); argv projection, output rendering, trace resolution, shared option
+  contracts, and canonical run-record/recovery metadata move into named replay
+  seams: `src/lib/replay/cli-args.ts`, `src/lib/replay/options.ts`,
+  `replay-output.ts`, `replay-resolution.ts`, and
   `replay-run-record.ts`.
 - `src/commands/replay-run-record.ts` must remain a replay run-record seam
-  (`<= 230` lines) for attempt ledger, recovery event, and policy context
+  (`<= 235` lines) for attempt ledger, recovery event, and policy context
   emission.
 - `src/lib/review-gate/decision-packet.ts` must remain a review-gate decision
   artifact assembly seam (`<= 390` lines); recovery and run-record metadata
