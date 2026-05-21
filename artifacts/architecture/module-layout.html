@@ -435,15 +435,15 @@
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-					<span>T007 / plan-gate is active. Plan-gate is split behind CLI args, CLI presentation, registry delegation, and a thin compatibility facade; T007 implementation commit 5c861396 is pushed to PR #270; live external checks are pending.</span>
+					<span>T007 / plan-gate is active. Plan-gate is split and pushed; current head f55e2155 has two CodeRabbit follow-ups repaired locally, with live external checks still pending.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Next</strong>
-				<span>Commit and push this post-push receipt, then wait for current-head external checks before starting prompt-gate.</span>
+				<span>Commit and push the fully validated review-followup repair, re-observe PR #270, then continue into prompt-gate if the board gates are clear.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Blocked</strong>
-					<span>CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout; PR #270 was re-observed at 5c861396 with Socket, CircleCI, pr-pipeline, and security-scan checks pending plus 32 review comments visible.</span>
+					<span>CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout; the T007 follow-up repair passed validate-codestyle, verify-work, and pnpm check, and PR #270 must be re-observed after push.</span>
 		  </article>
         </section>
 
@@ -460,11 +460,11 @@
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-					  <p>Current receipt is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-PLAN-GATE-PUSH, recording the pushed commit, live PR head, pending external checks, review-comment count, and preserved memory-baseline slice.</p>
+					  <p>Current receipt is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-REVIEW-FOLLOWUP-VALIDATION, recording the current-head CodeRabbit repairs, neutralized receipt command evidence, Browser reload, full local validation, and preserved memory-baseline slice.</p>
 			  <ul class="evidence-list">
 					<li>Focused proof: plan-gate command tests, raw CLI argument execution, module-boundary ratchets, dispatch test, Biome check, Effect scan, validate-codestyle --fast, and verify-work --fast passed before this report update.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-						<li>Handoff: PR #270 was re-observed at 5c861396 after push; Socket Security pull-request alerts, pr-pipeline, security-scan, and CircleCI leaves were pending or in progress, with 32 review comments visible.</li>
+						<li>Handoff: PR #270 was re-observed at f55e2155; two current-head CodeRabbit comments are repaired locally, Browser shows the review-followup report, and validate-codestyle --fast, verify-work --fast, and pnpm check pass before push.</li>
 			  </ul>
 			</article>
           </div>
@@ -1944,9 +1944,9 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
 			<p>
-				  Current board gate: T007 plan-gate is active and the split is
-				  locally verified. Reload Browser, then commit, push, and re-observe
-				  PR #270 before any prompt-gate work.
+				  Current board gate: T007 plan-gate follow-up repair is active and
+				  fully locally verified. Commit, push, and re-observe PR #270, then
+				  continue into prompt-gate if the live board gates are clear.
 			</p>
           </article>
         </section>

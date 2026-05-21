@@ -221,14 +221,11 @@ function extractStringArrayValue(content, key) {
 	if (rawItems.length === 0) {
 		return [];
 	}
-	return rawItems
-		.split(/\s*,\s*/)
-		.map((item) => {
-			const trimmed = item.trim();
-			const stringMatch = trimmed.match(/^"([^"]*)"/);
-			return stringMatch ? stringMatch[1] : null;
-		})
-		.filter((item) => item !== null);
+	return rawItems.split(/\s*,\s*/).map((item) => {
+		const trimmed = item.trim();
+		const stringMatch = trimmed.match(/^"([^"]*)"$/);
+		return stringMatch ? stringMatch[1] : null;
+	});
 }
 
 function hasNonEmptyTripleQuotedBlock(content, key) {
@@ -451,4 +448,11 @@ function main() {
 	console.info(`codex-agent-roles: pass (${EXPECTED_ROLES.length} roles)`);
 }
 
-main();
+if (require.main === module) {
+	main();
+}
+
+module.exports = {
+	extractStringArrayValue,
+	validateNicknameCandidates,
+};

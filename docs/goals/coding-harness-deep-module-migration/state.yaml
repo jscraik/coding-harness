@@ -10,7 +10,7 @@ goal:
   tokens_used: 610345
   time_used_seconds: 3210
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-21T22:59:11Z"
+  native_updated_at: "2026-05-21T23:20:42Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -27,9 +27,9 @@ checks:
   architecture_visual: "artifacts/architecture/module-layout.html"
   visual_record_contract: "module layout must show complete/current/next/remaining/blocked, enforcement, agent-safe zones, human-review zones, latest slice, and receipt/PR evidence"
   last_verification:
-    command: "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
+    command: "PYTHONDONTWRITEBYTECODE=1 python3 <goal-governor-skill>/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
-    checked_at: "2026-05-21T22:59:11Z"
+    checked_at: "2026-05-21T23:20:42Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -77,7 +77,7 @@ tasks:
       - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
       - "docs/goals/coding-harness-deep-module-migration/notes/.gitkeep"
     verify:
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 <goal-governor-skill>/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
       - "git status --short docs/goals/coding-harness-deep-module-migration"
     stop_if:
       - "Board checker fails."
@@ -267,7 +267,7 @@ tasks:
       - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
       - "bash scripts/validate-codestyle.sh --fast"
       - "bash scripts/verify-work.sh --fast before PR handoff"
-      - "TMPDIR=/private/tmp PREK_HOME=/Users/jamiecraik/dev/coding-harness/.git/.cache/prek prek run pre-commit --stage pre-commit -v --log-file /private/tmp/prek-t006.log"
+      - "TMPDIR=/private/tmp PREK_HOME=<repo-git-cache>/prek prek run pre-commit --stage pre-commit -v --log-file /private/tmp/prek-t006.log"
     stop_if:
       - "T005 is not pushed."
       - "GitHub or PR state cannot be observed."
@@ -311,22 +311,23 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_plan_gate_split_pushed_checks_pending_review_comments_pending
+  status: t007_review_followups_pnpm_check_passed_ready_to_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "5c8613967531bbb36f280fa1a62ee9453dc5e242"
-  last_observed: "2026-05-21T22:59:11Z"
+  head_sha: "f55e21559692a0ec54241ae5af7ca05bc74830f7"
+  last_observed: "2026-05-21T23:20:42Z"
   current_blockers:
-    - "Current-head external checks are pending at 5c861396 after the T007 plan-gate split push: Socket Security pull-request alerts, pr-pipeline, security-scan, and CircleCI leaves are still PENDING or IN_PROGRESS."
-    - "Flat PR review comment count is 32; review comments remain pending until the post-push current-head observation classifies or resolves them."
+    - "Current-head external checks are pending at f55e2155 after the T007 post-push receipt; the local review-followup repair is validated and ready to commit/push."
+    - "Two current-head CodeRabbit comments were classified as valid and repaired locally: malformed nickname_candidates validation in scripts/check-codex-agent-roles.cjs, and user-specific absolute paths in receipts.jsonl command evidence. Focused test, codex:agents:guard, validate-codestyle --fast, verify-work --fast, and pnpm check all pass."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
   last_evidence:
-    github_state: "PR #270 open and no longer draft at 5c8613967531bbb36f280fa1a62ee9453dc5e242; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
-    review_threads: 32
-    checks: "gh pr checks 270 exited 0 at 5c8613967531bbb36f280fa1a62ee9453dc5e242 with Socket Security pull-request alerts, pr-pipeline, security-scan, and CircleCI leaves pending or in progress; Snyk checks and Socket project report pass."
-    coderabbit: "Latest visible CodeRabbit actionable review text remains older than the current head; no new current-head actionable CodeRabbit finding was observed in gh pr view output after the T007 push."
-    pre_push: "T007 plan-gate split committed as 5c8613967531bbb36f280fa1a62ee9453dc5e242 and pushed to origin/codex/JSC-331-internal-agent-runtime-freshness; pre-commit and pre-push both passed."
+    github_state: "PR #270 open and no longer draft at f55e21559692a0ec54241ae5af7ca05bc74830f7; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
+    review_threads: 34
+    checks: "gh pr checks 270 exited 0 at f55e21559692a0ec54241ae5af7ca05bc74830f7 with pr-pipeline, security-scan, and CircleCI leaves pending or in progress; Socket Security, Snyk, and most CircleCI leaves pass."
+    coderabbit: "Latest current-head CodeRabbit actionable review reported two comments; both are repaired locally before the review-followup commit."
+    pre_push: "T007 plan-gate split and post-push receipt are pushed at f55e21559692a0ec54241ae5af7ca05bc74830f7; this follow-up repair passed local validation and remains local until commit, push, and re-observation complete."
+    validation: "Focused regression test, pnpm codex:agents:guard, Browser reload, bash scripts/validate-codestyle.sh --fast, bash scripts/verify-work.sh --fast, and pnpm check all pass for the review-followup repair."
   tools:
     - "@github"
     - "@circleci"
