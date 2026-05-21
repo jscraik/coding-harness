@@ -10,7 +10,7 @@ goal:
   tokens_used: 610345
   time_used_seconds: 3210
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-21T22:51:00Z"
+  native_updated_at: "2026-05-21T22:59:11Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -29,7 +29,7 @@ checks:
   last_verification:
     command: "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
-    checked_at: "2026-05-21T22:51:00Z"
+    checked_at: "2026-05-21T22:59:11Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -311,22 +311,22 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_plan_gate_split_verify_work_passed_ready_to_push_checks_pending_review_comments_pending
+  status: t007_plan_gate_split_pushed_checks_pending_review_comments_pending
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "59a7535542b025a8d7a4c06ce2d470e6a206d295"
-  last_observed: "2026-05-21T22:51:00Z"
+  head_sha: "5c8613967531bbb36f280fa1a62ee9453dc5e242"
+  last_observed: "2026-05-21T22:59:11Z"
   current_blockers:
-    - "Current-head external checks are still pending at 59a75355 after the CodeRabbit autofix commit: security-scan and pr-pipeline are IN_PROGRESS; ci/circleci snyk-dependency-scan, test, orb-pinning, linear-gate, check, and security-scan remain PENDING."
+    - "Current-head external checks are pending at 5c861396 after the T007 plan-gate split push: Socket Security pull-request alerts, pr-pipeline, security-scan, and CircleCI leaves are still PENDING or IN_PROGRESS."
     - "Flat PR review comment count is 32; review comments remain pending until the post-push current-head observation classifies or resolves them."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
   last_evidence:
-    github_state: "PR #270 open and no longer draft at 59a7535542b025a8d7a4c06ce2d470e6a206d295; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
+    github_state: "PR #270 open and no longer draft at 5c8613967531bbb36f280fa1a62ee9453dc5e242; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
     review_threads: 32
-    checks: "gh pr checks 270 exited 0 at 59a7535542b025a8d7a4c06ce2d470e6a206d295 with security-scan and pr-pipeline IN_PROGRESS plus several CircleCI leaves PENDING; completed Socket, Snyk, and visible CircleCI leaf checks pass."
-    coderabbit: "The remote branch advanced to 59a75355 with CodeRabbit autofixes before this local T007 split was committed; review comments remain pending current-head classification after this slice is pushed."
-    pre_push: "T007 plan-gate split is locally implemented; focused vitest, Biome, Effect scan, line-count ratchets, bash scripts/validate-codestyle.sh --fast, and bash scripts/verify-work.sh --fast all passed before push handoff. verify-work run id 20260521T224400Z-16154."
+    checks: "gh pr checks 270 exited 0 at 5c8613967531bbb36f280fa1a62ee9453dc5e242 with Socket Security pull-request alerts, pr-pipeline, security-scan, and CircleCI leaves pending or in progress; Snyk checks and Socket project report pass."
+    coderabbit: "Latest visible CodeRabbit actionable review text remains older than the current head; no new current-head actionable CodeRabbit finding was observed in gh pr view output after the T007 push."
+    pre_push: "T007 plan-gate split committed as 5c8613967531bbb36f280fa1a62ee9453dc5e242 and pushed to origin/codex/JSC-331-internal-agent-runtime-freshness; pre-commit and pre-push both passed."
   tools:
     - "@github"
     - "@circleci"
