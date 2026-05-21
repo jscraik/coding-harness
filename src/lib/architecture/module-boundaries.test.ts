@@ -533,9 +533,15 @@ const REPLAY_SURFACE_RATCHETS = [
 const REMEDIATE_SURFACE_RATCHETS = [
 	{
 		path: "src/commands/remediate.ts",
-		maxLines: 360,
+		maxLines: 285,
 		reason:
-			"Remediate command must stay a command facade; finding normalization and run-record emission stay behind focused seams.",
+			"Remediate command must stay a command facade; finding normalization, git probes, and run-record emission stay behind focused seams.",
+	},
+	{
+		path: "src/commands/remediate-git.ts",
+		maxLines: 95,
+		reason:
+			"Remediate git seam must stay focused on local HEAD, workspace status, and ancestry probes.",
 	},
 	{
 		path: "src/commands/remediate-findings.ts",
@@ -972,6 +978,7 @@ const REPLAY_COMMAND_SUBMODULES = [
 ] as const;
 const REMEDIATE_COMMAND_SUBMODULES = [
 	"./remediate-findings.js",
+	"./remediate-git.js",
 	"./remediate-run-record.js",
 ] as const;
 const PR_CLOSEOUT_EVALUATOR_SUBMODULES = ["./recovery.js"] as const;
@@ -1320,7 +1327,7 @@ describe("module boundaries", () => {
 		expectRatchetsWithinBudget(REMEDIATE_SURFACE_RATCHETS);
 	});
 
-	it("keeps remediate finding normalization and run-record emission behind the command facade", () => {
+	it("keeps remediate finding normalization, git probes, and run-record emission behind the command facade", () => {
 		const facadePath = "src/commands/remediate.ts";
 		const facadeContent = readFileSync(
 			join(process.cwd(), facadePath),
