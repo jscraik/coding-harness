@@ -33,14 +33,19 @@ export function runMemoryGateCLI(options: MemoryGateOptions): number {
 
 	let updatedHistory = history;
 	try {
-		saveMetrics(updatedMetrics, history, options.metricsPath);
-		updatedHistory = [
-			...history.slice(-99),
-			{
-				date: new Date().toISOString(),
-				metrics: { ...updatedMetrics },
-			},
-		];
+		let updatedHistory = history;
+		try {
+			updatedHistory = [
+				...history.slice(-99),
+				{
+					date: new Date().toISOString(),
+					metrics: { ...updatedMetrics },
+				},
+			];
+			saveMetrics(updatedMetrics, updatedHistory, options.metricsPath);
+		} catch {
+			// Metrics persistence is advisory; validation result remains authoritative.
+		}
 	} catch {
 		// Metrics persistence is advisory; validation result remains authoritative.
 	}
