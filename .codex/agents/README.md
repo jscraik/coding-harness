@@ -52,7 +52,7 @@ Codex discovers trusted project-local role files from this directory:
 .codex/agents/<role>/<role>.toml
 ```
 
-The repository is trusted in Jamie's Codex config, so a fresh thread started in
+When this repository is trusted in the active Codex config, a fresh thread started in
 this checkout after these files exist can use these roles through
 `spawn_agent(agent_type=...)`. Other projects should not see these roles unless
 they carry their own project-local copies or a deliberate global registration.
