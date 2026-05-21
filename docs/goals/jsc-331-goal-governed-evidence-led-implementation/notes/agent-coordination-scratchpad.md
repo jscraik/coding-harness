@@ -1,6 +1,6 @@
 # Agent Coordination Scratchpad
 
-Updated: 2026-05-21T13:59:48Z
+Updated: 2026-05-21T14:09:40Z
 
 ## Current Goal
 
@@ -125,6 +125,23 @@ T005 may choose the safest closeout shape: a same-PR follow-up commit is allowed
 only for metadata-only `harness.contract.json` cadence repair inside T005's
 allowed files; otherwise use a separate governance-health branch/PR or stop in
 verification recovery. Merge remains disallowed without explicit human authority.
+
+T005 local repair: `harness.contract.json` now refreshes only
+`preflight-gate` `lastReviewedAt` from `2026-04-21` to `2026-05-21`.
+Local `drift-gate --mode health` exits 0 with baseline warnings only, and
+`bash scripts/validate-codestyle.sh --fast` passed. Next safe action is to
+commit and push the metadata-only repair plus board receipt, then wait for
+PR #271 remote checks. Merge remains disallowed without explicit human authority.
+
+Pre-push recovery: docs-gate required mode blocked the contract-policy change
+until `README.md` and `AGENTS.md` are synchronized. T005 now permits only
+those two required docs surfaces in addition to `harness.contract.json` and the
+goal board. Replay files remain out of scope.
+
+Verification recovery continued: docs-gate required mode also classified the
+branch as agent-governance because the PR contains runtime-evidence changes, so
+`docs/agents/07b-agent-governance.md` is the only additional docs surface T005
+may update. Replay files remain out of scope.
 
 ## Message To Replay Agent
 

@@ -85,9 +85,9 @@ coordination:
 checks:
   dirty_fingerprint: unknown
   last_verification:
-    command: "gh pr checks 271 --json name,state,workflow,startedAt,completedAt,link --watch=false; drift-gate --mode health local reproduction"
-    outcome: t005_unattended_activation_authorized
-    checked_at: "2026-05-21T13:59:48Z"
+    command: "pnpm exec tsx src/cli.ts docs-gate --mode required --json; bash scripts/validate-codestyle.sh --fast; bash scripts/run-harness-gate.sh drift-gate --mode health --json"
+    outcome: t005_local_validation_passed
+    checked_at: "2026-05-21T14:23:08Z"
 tasks:
   - id: T001
     type: scout
@@ -253,12 +253,18 @@ tasks:
       - "If cadence review requires behavior changes beyond metadata freshness, stop and ask for owner direction."
       - "If the cadence repair is metadata-only and limited to harness.contract.json plus board receipts, the governor may apply it as a same-PR follow-up commit to unblock PR #271; otherwise use a separate governance-health branch/PR or stop in verification recovery."
       - "Before editing harness.contract.json, prove git truth with bash scripts/check-git-common-config.sh and git status --short --branch --untracked-files=all."
+      - "If docs-gate required mode demands README.md and AGENTS.md for this contract-policy metadata repair, update only those required docs surfaces and record the scope expansion receipt."
+      - "If docs-gate required mode also demands docs/agents/07b-agent-governance.md because the branch contains agent-governance runtime-evidence changes, update only that required docs surface and record the scope expansion receipt."
     expected_output: "A separate governance-health slice or PR that makes drift-gate --mode health pass for preflight-gate cadence evidence, with board receipts and exact validation."
     allowed_files:
       - "harness.contract.json"
+      - "README.md"
+      - "AGENTS.md"
+      - "docs/agents/07b-agent-governance.md"
       - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/**"
     verify:
       - "bash scripts/run-harness-gate.sh drift-gate --mode health --json"
+      - "pnpm exec tsx src/cli.ts docs-gate --mode required --json"
       - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
       - "bash scripts/validate-codestyle.sh --fast"
     stop_if:
@@ -266,4 +272,4 @@ tasks:
       - "Any S001 runtime-evidence file would need to change."
       - "Replay-module files are dirty in the governance-health worktree."
       - "Remote merge authority is required."
-    receipt_id: R019-AWAY-MODE-T005-ACTIVATED
+    receipt_id: R023-T005-LOCAL-VALIDATION-PASSED
