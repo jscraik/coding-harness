@@ -5,12 +5,12 @@ goal:
   objective: "Finish the remaining non-Effect coding-harness deep-module migration in small governed slices with per-slice review gates, validation evidence, GitHub handoff, and PR-green-sweep triage."
   native_goal_id: "019e4a39-47f8-7ac0-b979-d52b7f02ec23"
   native_objective: "Follow docs/goals/coding-harness-deep-module-migration/goal.md to continue the remaining non-Effect coding-harness deep-module migration in governed slices, preserving the separate active dirty-work slice, refreshing live repo/PR/HTML-report state before implementation, and recording receipts before advancing."
-  native_status: active
+  native_status: paused
   token_budget: null
-  tokens_used: 610345
-  time_used_seconds: 3210
+  tokens_used: 1639295
+  time_used_seconds: 8516
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-21T23:20:42Z"
+  native_updated_at: "2026-05-21T23:51:20Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -29,7 +29,7 @@ checks:
   last_verification:
     command: "PYTHONDONTWRITEBYTECODE=1 python3 <goal-governor-skill>/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
-    checked_at: "2026-05-21T23:20:42Z"
+    checked_at: "2026-05-21T23:51:20Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -311,23 +311,24 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_review_followups_pnpm_check_passed_ready_to_push
+  status: t007_expanded_review_followups_pnpm_check_passed_ready_to_commit_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
   head_sha: "f55e21559692a0ec54241ae5af7ca05bc74830f7"
-  last_observed: "2026-05-21T23:20:42Z"
+  last_observed: "2026-05-21T23:51:20Z"
   current_blockers:
-    - "Current-head external checks are pending at f55e2155 after the T007 post-push receipt; the local review-followup repair is validated and ready to commit/push."
-    - "Two current-head CodeRabbit comments were classified as valid and repaired locally: malformed nickname_candidates validation in scripts/check-codex-agent-roles.cjs, and user-specific absolute paths in receipts.jsonl command evidence. Focused test, codex:agents:guard, validate-codestyle --fast, verify-work --fast, and pnpm check all pass."
+    - "Current-head remote checks are green at f55e2155, but the expanded review-followup repair is still local until commit, push, and re-observation complete."
+    - "Native goal status is paused while the repository board remains active; treat this as a split-state observation, not completion."
+    - "Valid PR review feedback is repaired locally across external required-check aliases, ci-migrate reader fixture coverage, malformed nickname_candidates validation, user-specific receipt paths, merge-queue lifecycle ordering, and repo-bound root realpath failure handling."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
   last_evidence:
     github_state: "PR #270 open and no longer draft at f55e21559692a0ec54241ae5af7ca05bc74830f7; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
     review_threads: 34
-    checks: "gh pr checks 270 exited 0 at f55e21559692a0ec54241ae5af7ca05bc74830f7 with pr-pipeline, security-scan, and CircleCI leaves pending or in progress; Socket Security, Snyk, and most CircleCI leaves pass."
-    coderabbit: "Latest current-head CodeRabbit actionable review reported two comments; both are repaired locally before the review-followup commit."
-    pre_push: "T007 plan-gate split and post-push receipt are pushed at f55e21559692a0ec54241ae5af7ca05bc74830f7; this follow-up repair passed local validation and remains local until commit, push, and re-observation complete."
-    validation: "Focused regression test, pnpm codex:agents:guard, Browser reload, bash scripts/validate-codestyle.sh --fast, bash scripts/verify-work.sh --fast, and pnpm check all pass for the review-followup repair."
+    checks: "gh pr checks 270 --watch=false exited 0 at f55e21559692a0ec54241ae5af7ca05bc74830f7 with Socket Security, Snyk, CircleCI leaves, pr-pipeline, and security-scan all passing."
+    coderabbit: "Current-head review feedback and duplicate unresolved thread feedback were classified; valid findings are repaired locally before the expanded review-followup commit."
+    pre_push: "T007 plan-gate split and post-push receipt are pushed at f55e21559692a0ec54241ae5af7ca05bc74830f7; the expanded follow-up repair passed focused and aggregate local validation and remains local until commit, push, and re-observation complete."
+    validation: "Focused regression tests for agent-role parsing, required-check aliases, repo-bound root failures, merge-queue ordering, and ci-migrate reader fixture coverage pass; bash scripts/validate-codestyle.sh --fast, bash scripts/verify-work.sh --fast, pnpm check, and Browser report reload pass after the repo-bound path ratchet trim."
   tools:
     - "@github"
     - "@circleci"

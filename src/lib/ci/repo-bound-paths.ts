@@ -12,12 +12,30 @@ function isWithinRoot(rootPath: string, path: string): boolean {
 	return path === rootPath || path.startsWith(`${rootPath}${sep}`);
 }
 
+function resolveRootPath(
+	targetDir: string,
+	label: string,
+): { ok: true; rootPath: string } | { ok: false; error: string } {
+	try {
+		return { ok: true, rootPath: realpathSync(targetDir) };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `${label} target directory cannot be resolved: ${sanitizeError(error)}`,
+		};
+	}
+}
+
 function resolveSafeAncestor(
 	targetDir: string,
 	absolutePath: string,
 	label: string,
 	configuredPath: string,
 ): RepoBoundPathResult {
+	const root = resolveRootPath(targetDir, label);
+	if (!root.ok) {
+		return root;
+	}
 	let ancestor = dirname(absolutePath);
 	while (!existsSync(ancestor)) {
 		const parent = dirname(ancestor);
@@ -36,7 +54,7 @@ function resolveSafeAncestor(
 			error: `${label} path parent is not a safe directory: ${configuredPath}`,
 		};
 	}
-	if (!isWithinRoot(realpathSync(targetDir), realpathSync(ancestor))) {
+	if (!isWithinRoot(root.rootPath, realpathSync(ancestor))) {
 		return {
 			ok: false,
 			error: `${label} path escapes repository root: ${configuredPath}`,
@@ -60,14 +78,9 @@ export function resolveRepoBoundPath(
 			error: `${label} path cannot be empty.`,
 		};
 	}
-	let rootPath: string;
-	try {
-		rootPath = realpathSync(targetDir);
-	} catch (error) {
-		return {
-			ok: false,
-			error: `${label} target directory cannot be resolved: ${error instanceof Error ? error.message : String(error)}`,
-		};
+	const root = resolveRootPath(targetDir, label);
+	if (!root.ok) {
+		return root;
 	}
 	const lexicalRootPath = resolve(targetDir);
 	const absolutePath = resolve(targetDir, candidatePath);
@@ -98,7 +111,7 @@ export function resolveRepoBoundPath(
 				error: `${label} must be a directory: ${configuredPath}`,
 			};
 		}
-		if (!isWithinRoot(rootPath, realpathSync(absolutePath))) {
+		if (!isWithinRoot(root.rootPath, realpathSync(absolutePath))) {
 			return {
 				ok: false,
 				error: `${label} path escapes repository root: ${configuredPath}`,
@@ -132,7 +145,10 @@ export function resolveRepoBoundFileUrl(
 			error: `${label} is not a valid file URL: ${sanitizeError(error)}`,
 		};
 	}
-	const rootPath = realpathSync(targetDir);
+	const root = resolveRootPath(targetDir, label);
+	if (!root.ok) {
+		return root;
+	}
 	const absolutePath = resolve(filePath);
 
 	if (!existsSync(absolutePath)) {
@@ -154,7 +170,7 @@ export function resolveRepoBoundFileUrl(
 			error: `${label} must be a file: ${url}`,
 		};
 	}
-	if (!isWithinRoot(rootPath, realpathSync(absolutePath))) {
+	if (!isWithinRoot(root.rootPath, realpathSync(absolutePath))) {
 		return {
 			ok: false,
 			error: `${label} escapes repository root: ${url}`,
@@ -163,7 +179,7 @@ export function resolveRepoBoundFileUrl(
 	return { ok: true, absolutePath };
 }
 
-/** Return true only for allowlisted restore paths that stay inside the repository. */
+/** Checks whether a restore path is allowlisted and remains inside the repository. */
 export function isSafeAllowedRestorePath(
 	targetDir: string,
 	relativePath: string,
@@ -172,7 +188,10 @@ export function isSafeAllowedRestorePath(
 	if (!allowedRelativePaths.has(relativePath)) {
 		return false;
 	}
-	const rootPath = realpathSync(targetDir);
+	const root = resolveRootPath(targetDir, "Restore allowlist");
+	if (!root.ok) {
+		return false;
+	}
 	const absolutePath = resolve(targetDir, relativePath);
 
 	if (existsSync(absolutePath)) {
@@ -180,7 +199,7 @@ export function isSafeAllowedRestorePath(
 		if (stat.isSymbolicLink()) {
 			return false;
 		}
-		return isWithinRoot(rootPath, realpathSync(absolutePath));
+		return isWithinRoot(root.rootPath, realpathSync(absolutePath));
 	}
 
 	let ancestor = dirname(absolutePath);
@@ -195,5 +214,5 @@ export function isSafeAllowedRestorePath(
 	if (!ancestorStat.isDirectory() || ancestorStat.isSymbolicLink()) {
 		return false;
 	}
-	return isWithinRoot(rootPath, realpathSync(ancestor));
+	return isWithinRoot(root.rootPath, realpathSync(ancestor));
 }

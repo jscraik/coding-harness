@@ -2355,10 +2355,21 @@ describe("runCIMigrateCLI", () => {
 		expect(signatureContent).toMatch(/^[a-f0-9]{64}\n$/);
 		expect(signatureContent).not.toContain("\\n");
 
+		const manualWindow = {
+			...window,
+			snapshotId: "cutover-manual-window",
+		};
+		const manualWindowContent = JSON.stringify(manualWindow, null, 2);
+		writeFileSync(join(tempDir, MERGE_QUEUE_WINDOW_PATH), manualWindowContent);
+		writeFileSync(
+			join(tempDir, `${MERGE_QUEUE_WINDOW_PATH}.sig`),
+			`${signContent(manualWindowContent, TEST_SNAPSHOT_SIGNING_KEY)}\n`,
+		);
+
 		const readResult = readMergeQueueWindowIfPresent(tempDir);
 		expect(readResult.ok).toBe(true);
 		if (readResult.ok) {
-			expect(readResult.value?.snapshotId).toBe("cutover-signed-window");
+			expect(readResult.value?.snapshotId).toBe("cutover-manual-window");
 		}
 	});
 

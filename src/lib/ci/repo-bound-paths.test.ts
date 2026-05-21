@@ -80,6 +80,25 @@ describe("repo-bound path seams", () => {
 		}
 	});
 
+	it("returns a structured error when file URL root resolution fails", () => {
+		const missingRoot = join(tempDir, "missing-root");
+		const filePath = join(tempDir, "evidence.json");
+		writeFileSync(filePath, "{}");
+
+		const result = resolveRepoBoundFileUrl(
+			missingRoot,
+			pathToFileURL(filePath).toString(),
+			"Downloaded artifact",
+		);
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error).toContain(
+				"Downloaded artifact target directory cannot be resolved",
+			);
+		}
+	});
+
 	it("rejects allowlisted restore paths that resolve through a symlink", () => {
 		const allowedPath = ".harness/control-plane/github-rulesets.json";
 		const allowed = new Set([allowedPath]);
@@ -105,6 +124,16 @@ describe("repo-bound path seams", () => {
 				// Ignore cleanup errors
 			}
 		}
+	});
+
+	it("returns false when restore root resolution fails", () => {
+		expect(
+			isSafeAllowedRestorePath(
+				join(tempDir, "missing-root"),
+				".harness/control-plane/github-rulesets.json",
+				new Set([".harness/control-plane/github-rulesets.json"]),
+			),
+		).toBe(false);
 	});
 
 	it("allows missing allowlisted restore paths when the nearest parent is safe", () => {
