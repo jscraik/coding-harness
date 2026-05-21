@@ -7,10 +7,10 @@ goal:
   native_objective: "Follow docs/goals/coding-harness-deep-module-migration/goal.md to continue the remaining non-Effect coding-harness deep-module migration in governed slices, preserving the separate active dirty-work slice, refreshing live repo/PR/HTML-report state before implementation, and recording receipts before advancing."
   native_status: active
   token_budget: null
-  tokens_used: 604350
-  time_used_seconds: 2225
+  tokens_used: 379559
+  time_used_seconds: 1582
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-21T20:59:27Z"
+  native_updated_at: "2026-05-21T21:21:18Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -29,7 +29,7 @@ checks:
   last_verification:
     command: "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
-    checked_at: "2026-05-21T15:48:16Z"
+    checked_at: "2026-05-21T21:23:40Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -311,20 +311,20 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t006_artifact_gate_current_head_checks_pending
+  status: t007_plan_gate_current_head_checks_green_review_comments_pending
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "ade81d6ed98c61356057155112fec39a9d214e6f"
-  last_observed: "2026-05-21T20:59:27Z"
+  head_sha: "634385de858a09b9de91ce7fe3306060bd31f41f"
+  last_observed: "2026-05-21T21:21:18Z"
   current_blockers:
-    - "External PR checks still pending: pr-pipeline and ci/circleci: orb-pinning."
+    - "CodeRabbit latest review is COMMENTED with 23 flat PR review comments; one stale state.yaml PR-green-sweep comment was addressed in 634385de and the rest need triage before the PR is green."
   last_evidence:
-    github_state: "PR #270 open and no longer draft at ade81d6ed98c61356057155112fec39a9d214e6f; mergeable MERGEABLE; mergeStateStatus BLOCKED while external checks are pending; latestReviews empty; reviewRequests empty."
-    review_threads: 0
-    checks: "gh pr checks 270 exited 0 at ade81d6ed98c61356057155112fec39a9d214e6f with Socket, Snyk, security-scan, and CircleCI leaf checks passing except pr-pipeline IN_PROGRESS and ci/circleci: orb-pinning PENDING."
-    coderabbit: "No visible CodeRabbit check in gh pr checks at current head; latestReviews empty and reviewRequests empty."
-    pre_push: "Current branch contains R006 artifact-gate and merge-from-main updates; T007 implementation has not started."
+    github_state: "PR #270 open and no longer draft at 634385de858a09b9de91ce7fe3306060bd31f41f; mergeable MERGEABLE; mergeStateStatus BLOCKED; latest CodeRabbit review COMMENTED; reviewRequests empty."
+    review_threads: 23
+    checks: "gh pr checks 270 exited 0 at 634385de858a09b9de91ce7fe3306060bd31f41f with all listed Socket, CircleCI, Snyk, security, CodeRabbit, and pr-pipeline checks passing."
+    coderabbit: "CodeRabbit check is SUCCESS, but the latest CodeRabbit review is COMMENTED with 23 actionable flat PR comments. Comment 3284382859 on stale state.yaml PR-green-sweep state is addressed by commit 634385de; report-heading duplicate numbering is repaired in this verification-recovery update; the HTML request to revert the board to T002/T003 is classified stale against the active T007 board."
+    pre_push: "Current remote head contains R007-PREFLIGHT/R007-VALIDATION refresh commit 634385de; T007 plan-gate implementation has not started."
   tools:
     - "@github"
     - "@circleci"
