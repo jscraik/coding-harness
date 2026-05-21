@@ -40,6 +40,10 @@ vi.mock("./commands/plan-gate.js", () => ({
 	runPlanGateCLI: vi.fn(() => 51),
 }));
 
+vi.mock("./lib/plan-gate/cli.js", () => ({
+	runPlanGateFromCliArgs: vi.fn(() => 51),
+}));
+
 vi.mock("./commands/evidence-verify.js", () => ({
 	runEvidenceVerifyCLI: vi.fn(() => 52),
 }));
@@ -528,9 +532,9 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(50);
 	});
 
-	it("dispatches plan-gate and ignores missing --plans value", async () => {
+	it("dispatches plan-gate through the plan-gate argv seam", async () => {
 		const { run } = await import("./cli.js");
-		const { runPlanGateCLI } = await import("./commands/plan-gate.js");
+		const { runPlanGateFromCliArgs } = await import("./lib/plan-gate/cli.js");
 
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
 			code?: number,
@@ -542,10 +546,13 @@ describe("cli command dispatch", () => {
 			run(["plan-gate", "--plans", "--type", "feature", "--max-age", "30"]),
 		).toThrowError("EXIT_51");
 
-		expect(vi.mocked(runPlanGateCLI)).toHaveBeenCalledWith({
-			type: "feature",
-			maxAge: 30,
-		});
+		expect(vi.mocked(runPlanGateFromCliArgs)).toHaveBeenCalledWith([
+			"--plans",
+			"--type",
+			"feature",
+			"--max-age",
+			"30",
+		]);
 		expect(exitSpy).toHaveBeenCalledWith(51);
 	});
 

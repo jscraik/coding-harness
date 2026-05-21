@@ -105,6 +105,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"Artifact gate command spec must stay focused on registry metadata and artifact-gate-owned argv delegation.",
 	},
 	{
+		path: "src/lib/cli/registry/plan-gate-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Plan gate command spec must stay focused on registry metadata and plan-gate-owned argv delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
 		maxLines: 25,
 		reason:
@@ -764,6 +770,33 @@ const ARTIFACT_GATE_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const PLAN_GATE_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/plan-gate.ts",
+		maxLines: 25,
+		reason:
+			"Plan gate command must stay a compatibility facade; plan validation CLI behavior lives behind the plan-gate module seam.",
+	},
+	{
+		path: "src/lib/cli/registry/plan-gate-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Plan gate command spec must stay focused on registry metadata and plan-gate-owned argv delegation.",
+	},
+	{
+		path: "src/lib/plan-gate/cli-args.ts",
+		maxLines: 65,
+		reason:
+			"Plan gate CLI argument adapter must stay focused on raw flag projection before command execution.",
+	},
+	{
+		path: "src/lib/plan-gate/cli.ts",
+		maxLines: 155,
+		reason:
+			"Plan gate CLI seam must stay focused on result presentation, recovery hints, and exit-code mapping.",
+	},
+] as const;
+
 const RUNTIME_CARD_RUNTIME_RATCHETS = [
 	{
 		path: "src/lib/runtime/runtime-card.ts",
@@ -1420,6 +1453,45 @@ describe("module boundaries", () => {
 		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
 		expect(cliArgsAdapterContent).toContain("./options.js");
 		expect(facadeContent).toContain("../lib/replay/options.js");
+	});
+
+	it("keeps plan-gate surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(PLAN_GATE_SURFACE_RATCHETS);
+	});
+
+	it("keeps plan-gate argv parsing and presentation behind focused seams", () => {
+		const facadeContent = readFileSync(
+			join(process.cwd(), "src/commands/plan-gate.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/plan-gate-command-spec.ts"),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/plan-gate/cli-args.ts"),
+			"utf-8",
+		);
+		const cliContent = readFileSync(
+			join(process.cwd(), "src/lib/plan-gate/cli.ts"),
+			"utf-8",
+		);
+		const commandSpecsCoreContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/command-specs-core.ts"),
+			"utf-8",
+		);
+
+		expect(facadeContent).toContain("../lib/plan-gate/cli.js");
+		expect(facadeContent).not.toContain("function getRecoveryHint");
+		expect(facadeContent).not.toContain("normalisePlanGateResult");
+		expect(registryAdapterContent).toContain("../../plan-gate/cli.js");
+		expect(registryAdapterContent).not.toContain("getFlagValue");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
+		expect(cliArgsAdapterContent).toContain("buildPlanGateOptionsFromCliArgs");
+		expect(cliContent).toContain("normalisePlanGateResult");
+		expect(commandSpecsCoreContent).toContain("createPlanGateCommandSpec()");
+		expect(commandSpecsCoreContent).not.toContain('name: "plan-gate"');
 	});
 
 	it("keeps remediate surfaces split after decomposition", () => {

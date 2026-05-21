@@ -16,6 +16,7 @@ last_validated: 2026-05-21
 - [Drift Gate Command Boundary](#drift-gate-command-boundary)
 - [Observability Gate Command Boundary](#observability-gate-command-boundary)
 - [Artifact Gate Command Boundary](#artifact-gate-command-boundary)
+- [Plan Gate Command Boundary](#plan-gate-command-boundary)
 - [HE Phase-Exit Trust Boundary](#he-phase-exit-trust-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
@@ -124,6 +125,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/artifact-gate-command-spec.ts`
   - Thin registry metadata and command adapter; raw generated-artifact gate argv
     projection lives in `src/lib/artifact-gate/cli-args.ts`.
+- `src/lib/cli/registry/plan-gate-command-spec.ts`
+  - Thin registry metadata and command adapter; raw plan-gate argv projection
+    lives in `src/lib/plan-gate/cli-args.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -385,6 +389,32 @@ turning the command registry into a provenance evaluator or CLI parser.
 - `src/lib/architecture/module-boundaries.test.ts`
   - Ratchets the command facade, public facade, registry adapter, raw CLI
     adapter, CLI presentation seam, and type contract.
+
+## Plan Gate Command Boundary
+
+Plan-gate is the planning-artifact control surface. It validates plan documents,
+plan IDs, acceptance evidence, and PR traceability without turning the command
+facade or registry manifest into a plan parser, result renderer, or recovery
+hint table.
+
+- `src/commands/plan-gate.ts`
+  - Compatibility command facade and workflow-plan re-export contract.
+- `src/lib/plan-gate/cli-args.ts`
+  - Raw CLI option adapter for plan path, type, age, plan IDs, PR metadata,
+    changed files, strictness, and JSON/traceability requirements.
+- `src/lib/plan-gate/cli.ts`
+  - Plan-gate execution, terminal/JSON presentation, recovery hints, and
+    exit-code mapping.
+- `src/lib/plan-gate/detector.ts`
+  - Plan artifact discovery and validation behavior.
+- `src/lib/plan-gate/types.ts`
+  - Shared plan-gate option and exit-code contract.
+- `src/lib/cli/registry/plan-gate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the
+    plan-gate-owned CLI option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, registry adapter, raw CLI adapter, and CLI
+    presentation seam.
 
 ## Output Normalisation Boundaries
 
@@ -741,6 +771,8 @@ Threshold policy:
   freshness CLI option adapter and command delegation (`<= 35` lines).
 - `src/lib/cli/registry/replay-command-spec.ts` must stay focused on replay
   command metadata and replay-owned argv delegation (`<= 20` lines).
+- `src/lib/cli/registry/plan-gate-command-spec.ts` must stay focused on plan
+  gate command metadata and plan-gate-owned argv delegation (`<= 20` lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
@@ -817,6 +849,13 @@ Threshold policy:
 - `src/lib/output/normalise-plan-gate.ts` must remain a plan gate normalisation
   seam (`<= 80` lines) for plan validation findings, recovery hints, and
   canonical `GateResult` projection.
+- `src/commands/plan-gate.ts` must remain a plan-gate compatibility facade
+  (`<= 25` lines); raw argv projection and result presentation live behind
+  `src/lib/plan-gate/cli-args.ts` and `src/lib/plan-gate/cli.ts`.
+- `src/lib/plan-gate/cli-args.ts` must remain a plan-gate argument adapter
+  (`<= 65` lines).
+- `src/lib/plan-gate/cli.ts` must remain a plan-gate CLI presentation and
+  exit-code seam (`<= 155` lines).
 - `src/lib/output/normalise-policy-gate.ts` must remain a policy gate
   normalisation seam (`<= 130` lines) for policy tier findings, decision
   metadata, and canonical `GateResult` projection.

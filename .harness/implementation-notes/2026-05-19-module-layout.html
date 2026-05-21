@@ -435,15 +435,15 @@
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-					<span>T007 / plan-gate is active. R006 artifact-gate is complete; this verification recovery records PR #270 at 5e39faf5 before any plan-gate implementation starts.</span>
+					<span>T007 / plan-gate is active. Plan-gate is split behind CLI args, CLI presentation, registry delegation, and a thin compatibility facade; verify-work passed locally at PR base head 59a75355.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Next</strong>
-				<span>Declare plan-gate allowed files and focused tests, then split plan-gate after the green PR checks and pending CodeRabbit comments are recorded in receipts.jsonl.</span>
+				<span>Stage the full T007 seam, commit, push to PR #270, then re-observe current-head checks and review comments before starting prompt-gate.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Blocked</strong>
-					<span>The separate runtime-evidence/JSC-331 slice remains preserved outside this goal lane; PR #270 checks restarted after the current-head push, and CodeRabbit review state needs current-head re-observation before PR-green closeout.</span>
+					<span>CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout; PR #270 was last observed at 59a75355 with external checks pending and 32 review comments visible.</span>
 		  </article>
         </section>
 
@@ -452,19 +452,19 @@
           <div class="control-grid">
             <article class="note">
               <h3>Enforcement</h3>
-              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate and replay command behavior are covered by focused command-spec projection tests.</p>
+              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, and plan-gate command behavior are covered by focused command-spec and seam tests.</p>
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-				  <p>Review target: plan-gate is the active next slice. Artifact-gate is complete and remains bounded to generated-artifact provenance behind its CLI parsing, presentation, registry delegation, and provenance-evaluation seams.</p>
+				  <p>Review target: plan-gate split. The command facade is now a compatibility export surface while raw argv projection, output, exit-code mapping, and registry delegation live behind named plan-gate seams.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-					  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-POST-PULL-PUSH, recording the refreshed PR checks, pulled-branch validation repairs, CodeRabbit review state, and visual report repair before plan-gate implementation.</p>
+					  <p>Current receipt is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-PLAN-GATE-REPORT-VALIDATION, recording the synced board/report checks, in-app Browser reload, memory-baseline separation, and ready-to-push handoff.</p>
 			  <ul class="evidence-list">
-					<li>Focused proof: R006 artifact-gate command tests, registry dispatch tests, module-boundary ratchets, direct production command, typecheck, related validation, and staged pre-commit related-test recovery are recorded in receipts.jsonl.</li>
+					<li>Focused proof: plan-gate command tests, raw CLI argument execution, module-boundary ratchets, dispatch test, Biome check, Effect scan, validate-codestyle --fast, and verify-work --fast passed before this report update.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-						<li>Handoff: PR #270 is at 5e39faf5; local pre-push passed, current-head checks are pending, and CodeRabbit's latest visible COMMENTED review is older than this head.</li>
+						<li>Handoff: PR #270 was last observed at 59a75355; security-scan, pr-pipeline, and several CircleCI leaves were still pending, with 32 review comments visible. Post-push observation is the next required receipt.</li>
 			  </ul>
 			</article>
           </div>
@@ -474,7 +474,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, plan-gate, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -1514,7 +1514,53 @@
         </section>
 
         <section class="panel">
-          <h2>7D. Review Gate Required Check Seams</h2>
+          <h2>7D. Plan Gate Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/plan-gate.ts</strong>
+              <span>
+                Compatibility command facade. It re-exports the plan-gate CLI
+                and detector contracts plus workflow-plan utilities without
+                owning parsing, presentation, or recovery hints.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/plan-gate/cli-args.ts</strong>
+                <span>
+                  Raw CLI adapter for plan path, type, max age, plan IDs, PR
+                  metadata, changed files, strictness, JSON, and traceability
+                  requirements.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/plan-gate/cli.ts</strong>
+                <span>
+                  Plan-gate execution, terminal/JSON presentation, recovery
+                  hints, and exit-code mapping.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>plan-gate-command-spec.ts</strong>
+                <span>
+                  Thin registry metadata and delegation to the plan-gate-owned
+                  argv adapter.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facade, registry adapter, raw CLI args
+                  seam, and CLI presentation seam.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>7E. Review Gate Required Check Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/lib/review-gate/required-checks.ts</strong>
@@ -1856,6 +1902,9 @@
               artifact-gate/cli-args.ts, usage and result presentation behind
               artifact-gate/cli.ts, public exports behind src/lib/artifact-gate.ts,
 			  and registry delegation behind artifact-gate-command-spec.ts. The
+			  Plan-gate raw flag projection now lives behind plan-gate/cli-args.ts,
+			  terminal and JSON presentation behind plan-gate/cli.ts, and registry
+			  delegation behind plan-gate-command-spec.ts.
 			  pre-commit hook now uses the existing staged related-test mode so
 			  commit-time validation stays scoped to staged implementation files
 			  while broader validation lanes keep their branch-wide coverage.
@@ -1895,10 +1944,9 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
 			<p>
-				  Current board gate: T007 plan-gate is active but implementation has
-					  not started. PR checks restarted at 5e39faf5; record current-head
-					  check and CodeRabbit results, then declare the plan-gate allowed files and
-				  focused tests before editing.
+				  Current board gate: T007 plan-gate is active and the split is
+				  locally verified. Reload Browser, then commit, push, and re-observe
+				  PR #270 before any prompt-gate work.
 			</p>
           </article>
         </section>

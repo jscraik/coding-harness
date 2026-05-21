@@ -9,8 +9,9 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildPlanGateOptionsFromCliArgs } from "../lib/plan-gate/cli-args.js";
 import { EXIT_CODES, runPlanGate } from "../lib/plan-gate/detector.js";
-import { runPlanGateCLI } from "./plan-gate.js";
+import { runPlanGateCLI, runPlanGateFromCliArgs } from "./plan-gate.js";
 
 let testDir = "";
 
@@ -891,6 +892,52 @@ describe("plan-gate command", () => {
 	});
 
 	describe("runPlanGateCLI", () => {
+		it("ignores a dangling --plans flag when building plan-gate options", () => {
+			const parsed = buildPlanGateOptionsFromCliArgs([
+				"--plans",
+				"--type",
+				"feature",
+				"--max-age",
+				"30",
+			]);
+
+			expect(parsed.options).toEqual({
+				type: "feature",
+				maxAge: 30,
+			});
+		});
+
+		it("runs from raw CLI arguments through the plan-gate parser seam", () => {
+			const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+			createTestPlan(
+				"CLI Feature",
+				"2026-03-13",
+				"feat",
+				"draft",
+				"## Implementation Steps\n\n- Step 1\n\n## Acceptance Criteria\n\n- [ ] Criterion 1",
+				testDir,
+				undefined,
+				"feat-cli-plan",
+			);
+
+			try {
+				const exitCode = runPlanGateFromCliArgs([
+					"--plans",
+					join(testDir, "docs/plans"),
+					"--require-plan-id",
+					"--plan-ids",
+					"feat-cli-plan",
+					"--type",
+					"feat",
+				]);
+
+				expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			} finally {
+				infoSpy.mockRestore();
+			}
+		});
+
 		it("outputs JSON when --json flag is set", () => {
 			const stdoutSpy = vi
 				.spyOn(process.stdout, "write")
