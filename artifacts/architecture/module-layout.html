@@ -435,15 +435,15 @@
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-			<span>T004 / R004: remediate git/workspace probes were moved behind remediate-git.ts; focused tests and fast codestyle validation pass.</span>
+			<span>T005 / R005: observability-gate is the active slice; declare its allowed files and focused validation before editing.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Next</strong>
-			<span>Observability-gate follows after the staged R004 patch is committed, pushed, and PR #270 is re-observed.</span>
+			<span>Artifact-gate follows only after observability-gate is implemented, validated, pushed, and re-observed on PR #270.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Blocked</strong>
-			<span>Git handoff isolation: R004 is selectively staged; protected runtime-evidence/JSC-331 paths and overlapping remediate registry/argv work remain unstaged.</span>
+			<span>R004 handoff is green at ea8a805e; the separate runtime-evidence/JSC-331 slice remains preserved outside this goal lane.</span>
 		  </article>
         </section>
 
@@ -460,11 +460,11 @@
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-			  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R004-T004-REMEDIATE-VALIDATED.</p>
+			  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R004-PR-CURRENT.</p>
 			  <ul class="evidence-list">
-				<li>Focused proof: remediate command tests, remediate module-boundary ratchets, direct production dry-run command, related tests, and validate-codestyle fast all pass.</li>
+				<li>Focused proof: remediate command tests, remediate module-boundary ratchets, direct production dry-run command, related tests, validate-codestyle fast, and verify-work fast all pass.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-				<li>Handoff: selective staging and verify-work fast pass; PR #270 re-observation is pending after commit and push.</li>
+				<li>Handoff: PR #270 is mergeable and clean at ea8a805e; gh pr checks exits 0 and review threads are zero.</li>
 			  </ul>
 			</article>
           </div>
@@ -1779,9 +1779,9 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-			  Current board gate: the staged R004 patch is ready to commit and push.
-			  Re-observe PR #270 and append the handoff receipt before starting
-			  observability-gate.
+			  Current board gate: R004 is pushed and green. Start
+			  observability-gate only after confirming its allowed files and focused
+			  validation from live source.
 			</p>
           </article>
         </section>
