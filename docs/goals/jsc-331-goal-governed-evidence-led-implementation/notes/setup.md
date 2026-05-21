@@ -1,10 +1,10 @@
 # Setup Notes
 
 - Created: 2026-05-21
-- Status: ready for owner kickoff, no Worker implementation started.
-- Native goal runtime: a paused native goal exists in this thread from an
-  earlier accidental kickoff. The board records that runtime fact and requires
-  reconciliation before Worker work.
+- Status: post-kickoff S001/T005 work is implemented and PR #271 is ready for
+  review; the board is waiting on human review or merge authority.
+- Native goal runtime: the active native goal in this thread is reconciled with
+  the board and must remain active while PR #271 is open or not merged.
 - Linear tracker: JSC-331.
 - Kickoff prompt convention:
 

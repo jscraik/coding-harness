@@ -69,6 +69,7 @@ coordination:
       - "For active T006, mark PR #271 ready for review without another prompt when live PR state is OPEN draft, mergeStateStatus is CLEAN, all reported checks are SUCCESS including CodeRabbit and security checks, the branch is clean and synced, and the goal board is valid; do not merge."
       - "For active T006, if PR #271 is already ready/open/CLEAN/green but merge authority is missing, keep waiting and avoid a board-only commit whose only purpose is refreshing receipt head SHA."
       - "For active T006, if PR #271 leaves green state, classify each pending or failing check by ownership and route to green_sweep or verification recovery before any ready-for-review or merge decision."
+      - "For active T006, if CodeRabbit or Codex posts actionable comments while the check state is SUCCESS or COMMENTED, fix or explicitly disposition in-scope comments before treating the PR as waiting on owner review."
       - "For active T006, if the only failed required check is a CircleCI infrastructure or shared bootstrap failure before the target gate command runs, the exact target command passes locally, the branch is clean and synced, and the board is valid, classify the blocker as environment/tooling verification recovery; rerun the failed CircleCI workflow or job once when credentials allow, then resume the ready-for-review ladder only if the rerun is green."
     disallowed_decisions:
       - "Activate replay-module implementation without an explicit board update to a replay task."
@@ -82,7 +83,7 @@ coordination:
       - "bash scripts/check-git-common-config.sh"
       - "git status --short --branch --untracked-files=all"
       - "Stage set must be limited to S001 runtime files and JSC-331 goal-board/review artifacts."
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 \"${GOAL_GOVERNOR_CHECK_BOARD:?set GOAL_GOVERNOR_CHECK_BOARD to goal-governor/scripts/check_goal_board.py}\" docs/goals/jsc-331-goal-governed-evidence-led-implementation"
       - "pnpm vitest run src/lib/runtime/local-runtime-card.test.ts"
       - "pnpm vitest run src/lib/runtime src/commands/runtime-card.test.ts src/commands/next.test.ts"
       - "node --import tsx src/cli.ts next --json --mode local --evidence required"
@@ -90,9 +91,9 @@ coordination:
 checks:
   dirty_fingerprint: unknown
   last_verification:
-    command: "gh pr view 271 --json number,url,state,isDraft,mergeStateStatus,headRefOid,reviewDecision; gh pr checks 271 --json name,state,link --watch=false"
-    outcome: verification_recovery_remote_docs_gate_infra_failure
-    checked_at: "2026-05-21T15:20:55Z"
+    command: "gh pr view 271 --json number,url,state,isDraft,mergeStateStatus,mergeable,headRefOid,reviewDecision,latestReviews; gh pr checks 271 --json name,state,link --watch=false"
+    outcome: review_recovery_local_fix
+    checked_at: "2026-05-21T15:45:01Z"
 tasks:
   - id: T001
     type: scout
@@ -115,7 +116,7 @@ tasks:
     allowed_files: []
     verify:
       - "git status --short --branch"
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 \"${GOAL_GOVERNOR_CHECK_BOARD:?set GOAL_GOVERNOR_CHECK_BOARD to goal-governor/scripts/check_goal_board.py}\" docs/goals/jsc-331-goal-governed-evidence-led-implementation"
       - "test -f .harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md"
       - "test -f .harness/active-artifacts.md"
     stop_if:
@@ -155,7 +156,7 @@ tasks:
     verify:
       - "pnpm vitest run src/lib/runtime src/commands/runtime-card.test.ts src/commands/next.test.ts"
       - "node --import tsx src/cli.ts next --json --mode local --evidence required"
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 \"${GOAL_GOVERNOR_CHECK_BOARD:?set GOAL_GOVERNOR_CHECK_BOARD to goal-governor/scripts/check_goal_board.py}\" docs/goals/jsc-331-goal-governed-evidence-led-implementation"
       - "bash scripts/validate-codestyle.sh --fast"
     stop_if:
       - "Required evidence semantics require touching replay files."
@@ -182,7 +183,7 @@ tasks:
     allowed_files:
       - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/**"
     verify:
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 \"${GOAL_GOVERNOR_CHECK_BOARD:?set GOAL_GOVERNOR_CHECK_BOARD to goal-governor/scripts/check_goal_board.py}\" docs/goals/jsc-331-goal-governed-evidence-led-implementation"
     stop_if:
       - "Owner direction is missing."
       - "Next lane would mix S001 runtime evidence files with replay-module files."
@@ -229,7 +230,7 @@ tasks:
       - "pnpm vitest run src/lib/runtime src/commands/runtime-card.test.ts src/commands/next.test.ts"
       - "node --import tsx src/cli.ts next --json --mode local --evidence required"
       - "bash scripts/validate-codestyle.sh --fast"
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 \"${GOAL_GOVERNOR_CHECK_BOARD:?set GOAL_GOVERNOR_CHECK_BOARD to goal-governor/scripts/check_goal_board.py}\" docs/goals/jsc-331-goal-governed-evidence-led-implementation"
     stop_if:
       - "Stage set includes replay files or unrelated dirty worktree files."
       - "Fresh S001 branch creation or transplant conflicts."
@@ -270,7 +271,7 @@ tasks:
     verify:
       - "bash scripts/run-harness-gate.sh drift-gate --mode health --json"
       - "pnpm exec tsx src/cli.ts docs-gate --mode required --json"
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 \"${GOAL_GOVERNOR_CHECK_BOARD:?set GOAL_GOVERNOR_CHECK_BOARD to goal-governor/scripts/check_goal_board.py}\" docs/goals/jsc-331-goal-governed-evidence-led-implementation"
       - "bash scripts/validate-codestyle.sh --fast"
     stop_if:
       - "The repair needs source behavior changes beyond harness.contract.json metadata."
@@ -296,6 +297,7 @@ tasks:
       - "If PR #271 is already ready/open/CLEAN/green and merge authority is missing, keep waiting and do not create a board-only commit solely to refresh receipt head SHA."
       - "If PR #271 leaves green state, route back to green_sweep or verification recovery before any ready-for-review or merge decision."
       - "If the only failed required check is a CircleCI infrastructure or shared bootstrap failure before the target gate command runs, and the exact target command passes locally, classify it as environment/tooling verification recovery; a single failed-workflow or failed-job rerun is allowed when credentials allow, but ready-for-review still requires the rerun to go green."
+      - "If CodeRabbit or Codex posts actionable comments while the check state is SUCCESS or COMMENTED, fix or explicitly disposition in-scope comments before treating the PR as waiting on owner review."
       - "If reviewDecision is CHANGES_REQUESTED, enter review_recovery only for findings inside the active S001/T005 scope; otherwise record a blocker receipt and wait for owner direction."
       - "Browser plugin is not required unless a rendered browser target is introduced."
     expected_output: "A recorded owner decision for PR #271: ready-for-review under the away-mode guardrails, merge-authorized by explicit human instruction, keep-waiting, verification recovery, or next-slice activation; otherwise the board remains active and waiting."
@@ -306,9 +308,9 @@ tasks:
       - "git status --short --branch --untracked-files=all"
       - "gh pr view 271 --json number,url,state,isDraft,mergeStateStatus,headRefOid,reviewDecision"
       - "gh pr checks 271 --json name,state,link --watch=false"
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 \"${GOAL_GOVERNOR_CHECK_BOARD:?set GOAL_GOVERNOR_CHECK_BOARD to goal-governor/scripts/check_goal_board.py}\" docs/goals/jsc-331-goal-governed-evidence-led-implementation"
     stop_if:
       - "A merge action is requested but explicit human merge authority is missing."
       - "PR #271 is no longer green or mergeStateStatus is not CLEAN."
       - "The requested next action would touch replay-module files without an explicit replay task."
-    receipt_id: R024-T006-REMOTE-GREEN-OWNER-DECISION
+    receipt_id: R027-T006-CODERABBIT-ACTIONABLE-COMMENTS-FIXED
