@@ -66,11 +66,7 @@ export function getWorkspaceStatus(): WorkspaceStatus {
 	};
 }
 
-/**
- * Create a GitHubClient that performs SHA operations against the local git repository.
- *
- * @returns A GitHubClient that obtains the repository HEAD SHA and verifies commit ancestry using the local repository.
- */
+/** Create a local git-backed GitHubClient for SHA and ancestry checks. */
 export function createGitHubClient(): GitHubClient {
 	return {
 		async getHeadSha() {
@@ -86,16 +82,13 @@ export function createGitHubClient(): GitHubClient {
 				},
 			);
 			if (result.error) {
-				throw new Error(
-					`Failed to compare ancestry: ${result.error.message}`,
-				);
+				throw new Error(`Failed to compare ancestry: ${result.error.message}`);
 			}
 			if (result.status === 0) return true;
 			if (result.status === 1) return false;
 			throw new Error(
 				`git merge-base failed (status ${result.status}): ${result.stderr ?? "unknown error"}`,
 			);
-		}
 		},
 	};
 }
