@@ -58,7 +58,7 @@ function printUsageError(
 	error: ArtifactGateUsageError,
 	json: boolean | undefined,
 ): void {
-	if (error.code === "artifact-gate.files_required" && json) {
+	if (json) {
 		console.info(
 			JSON.stringify(
 				{
