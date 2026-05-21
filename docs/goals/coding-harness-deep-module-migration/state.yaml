@@ -198,14 +198,14 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R004
 pr_green_sweep:
-  status: t003_verified_pending_push
+  status: t003_committed_pending_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
   head_sha: "e5caef770788869f8fbb87d56dc03b36932a24cd"
   last_observed: "2026-05-21T12:07:00Z"
   current_blockers:
-    - "T003 replay slice is verified in an isolated worktree and pending commit/push plus PR #270 refresh."
+    - "T003 replay slice commit 096718ac is pending push plus PR #270 refresh."
   tools:
     - "@github"
     - "@circleci"
