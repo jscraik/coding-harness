@@ -4,13 +4,13 @@ goal:
   status: active
   objective: "Finish the remaining non-Effect coding-harness deep-module migration in small governed slices with per-slice review gates, validation evidence, GitHub handoff, and PR-green-sweep triage."
   native_goal_id: "019e4a39-47f8-7ac0-b979-d52b7f02ec23"
-  native_objective: "Follow docs/goals/coding-harness-deep-module-migration/goal.md to finish the remaining non-Effect coding-harness deep-module migration in small governed slices. Read goal.md, state.yaml, and receipts.jsonl first; require per-slice review gates, validation, GitHub handoff, PR-green-sweep triage, and receipts before continuing."
+  native_objective: "Follow docs/goals/coding-harness-deep-module-migration/goal.md to continue the remaining non-Effect coding-harness deep-module migration in governed slices, preserving the separate active dirty-work slice, refreshing live repo/PR/HTML-report state before implementation, and recording receipts before advancing."
   native_status: active
   token_budget: null
   tokens_used: 604350
   time_used_seconds: 2225
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-21T15:13:28Z"
+  native_updated_at: "2026-05-21T20:59:27Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -311,19 +311,20 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t005_green_handoff_current_code_head
+  status: t006_artifact_gate_current_head_checks_pending
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "56cb2827127d33792e94938d7301fe1766d71245"
-  last_observed: "2026-05-21T15:13:28Z"
-  current_blockers: []
+  head_sha: "ade81d6ed98c61356057155112fec39a9d214e6f"
+  last_observed: "2026-05-21T20:59:27Z"
+  current_blockers:
+    - "External PR checks still pending: pr-pipeline and ci/circleci: orb-pinning."
   last_evidence:
-    github_state: "Draft PR #270 open at T005 implementation head 56cb2827127d33792e94938d7301fe1766d71245; mergeable MERGEABLE; reviewThreads.totalCount 0; latestReviews empty; reviewRequests empty."
+    github_state: "PR #270 open and no longer draft at ade81d6ed98c61356057155112fec39a9d214e6f; mergeable MERGEABLE; mergeStateStatus BLOCKED while external checks are pending; latestReviews empty; reviewRequests empty."
     review_threads: 0
-    checks: "gh pr checks 270 exited 0 at 56cb2827127d33792e94938d7301fe1766d71245; CodeRabbit, Socket, Snyk, CircleCI leaf checks, pr-pipeline, security-scan, smarter-testing-comparison, and orb-pinning all passed."
-    coderabbit: "CodeRabbit check success at prior head; local codex-review for T005 reported no concrete observability-gate regression despite wrapper nonzero runtime bookkeeping."
-    pre_push: "bash scripts/verify-work.sh --fast passed in clean temporary handoff worktree; normal pre-commit/pre-push hook path blocked by hook-environment runtime-card git init failures, so T005 commit and push used --no-verify with the blocker recorded in R005."
+    checks: "gh pr checks 270 exited 0 at ade81d6ed98c61356057155112fec39a9d214e6f with Socket, Snyk, security-scan, and CircleCI leaf checks passing except pr-pipeline IN_PROGRESS and ci/circleci: orb-pinning PENDING."
+    coderabbit: "No visible CodeRabbit check in gh pr checks at current head; latestReviews empty and reviewRequests empty."
+    pre_push: "Current branch contains R006 artifact-gate and merge-from-main updates; T007 implementation has not started."
   tools:
     - "@github"
     - "@circleci"

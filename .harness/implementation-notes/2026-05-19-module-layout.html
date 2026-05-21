@@ -435,15 +435,15 @@
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-			<span>T006 / R006: artifact-gate now has a public module seam for CLI parsing, presentation, registry delegation, and provenance evaluation.</span>
+				<span>T007 / plan-gate is active. R006 artifact-gate is complete; this board refresh records PR #270 at ade81d6e before any plan-gate implementation starts.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Next</strong>
-			<span>Validate the artifact-gate seam, append receipts.jsonl evidence, then run PR green-sweep triage before advancing to plan-gate.</span>
+				<span>Declare plan-gate allowed files and focused tests, then split plan-gate only after the pending PR-pipeline and orb-pinning checks are re-observed or explicitly classified.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Blocked</strong>
-			<span>The separate runtime-evidence/JSC-331 slice remains preserved outside this goal lane.</span>
+				<span>The separate runtime-evidence/JSC-331 slice remains preserved outside this goal lane; PR #270 is mergeable but BLOCKED while external checks finish.</span>
 		  </article>
         </section>
 
@@ -456,15 +456,15 @@
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-			  <p>Review target: artifact-gate now stays bounded to generated-artifact provenance. The command and registry are facades; raw argv projection, usage/result presentation, CLI types, and provenance evaluation sit in artifact-gate-owned seams.</p>
+				  <p>Review target: plan-gate is the active next slice. Artifact-gate is complete and remains bounded to generated-artifact provenance behind its CLI parsing, presentation, registry delegation, and provenance-evaluation seams.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-			  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R006, with R006-HOOK-STAGED-RECOVERY recording the pre-commit related-test recovery.</p>
+				  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-PREFLIGHT, recording the refreshed PR and visual state before plan-gate implementation.</p>
 			  <ul class="evidence-list">
-				<li>Focused proof: artifact-gate command tests, registry dispatch tests, module-boundary ratchets, direct production command, typecheck, related validation, and staged pre-commit related-test recovery.</li>
+					<li>Focused proof: R006 artifact-gate command tests, registry dispatch tests, module-boundary ratchets, direct production command, typecheck, related validation, and staged pre-commit related-test recovery are recorded in receipts.jsonl.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-				<li>Handoff: PR #270 must be re-observed after the R006 commit lands on the branch.</li>
+					<li>Handoff: PR #270 is at ade81d6e; pr-pipeline and ci/circleci: orb-pinning remain pending at the latest observation.</li>
 			  </ul>
 			</article>
           </div>
@@ -1895,8 +1895,9 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
 			<p>
-			  Current board gate: R006 needs validation, receipts.jsonl, and PR
-			  re-observation after push. Plan-gate remains next in the goal queue.
+				  Current board gate: T007 plan-gate is active but implementation has
+				  not started. Re-observe pending PR checks, then declare the
+				  plan-gate allowed files and focused tests before editing.
 			</p>
           </article>
         </section>
