@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as artifactGateModule from "../../artifact-gate.js";
 import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
 import * as gardenerCommand from "../../../commands/gardener.js";
 import * as driftGateModule from "../../drift-gate.js";
@@ -1105,6 +1106,23 @@ describe("review-context execute validation", () => {
 
 describe("artifact-gate execute validation", () => {
 	const spec = findSpec("artifact-gate");
+
+	it("delegates raw argv to the artifact-gate module seam", () => {
+		const runSpy = vi
+			.spyOn(artifactGateModule, "runArtifactGateFromCliArgs")
+			.mockReturnValue(0);
+
+		expect(
+			spec.execute(["--files", "scripts/codex-preflight.sh", "--json"]),
+		).toBe(0);
+
+		expect(runSpy).toHaveBeenCalledWith([
+			"--files",
+			"scripts/codex-preflight.sh",
+			"--json",
+		]);
+		runSpy.mockRestore();
+	});
 
 	it("routes missing files to usage output", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});

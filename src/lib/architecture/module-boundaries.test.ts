@@ -99,6 +99,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"Command specs core must stay a manifest assembler; workflow-specific parsing must move behind focused command spec seams.",
 	},
 	{
+		path: "src/lib/cli/registry/artifact-gate-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Artifact gate command spec must stay focused on registry metadata and artifact-gate-owned argv delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
 		maxLines: 25,
 		reason:
@@ -719,6 +725,45 @@ const OBSERVABILITY_GATE_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const ARTIFACT_GATE_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/artifact-gate.ts",
+		maxLines: 10,
+		reason:
+			"Artifact gate command must stay a compatibility facade; artifact provenance CLI behavior lives behind the artifact-gate module seam.",
+	},
+	{
+		path: "src/lib/artifact-gate.ts",
+		maxLines: 30,
+		reason:
+			"Artifact gate public facade must stay a small export surface for command and registry callers.",
+	},
+	{
+		path: "src/lib/cli/registry/artifact-gate-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Artifact gate command spec must stay focused on registry metadata and artifact-gate-owned argv delegation.",
+	},
+	{
+		path: "src/lib/artifact-gate/cli-args.ts",
+		maxLines: 55,
+		reason:
+			"Artifact gate CLI argument adapter must stay focused on raw flag projection before command execution.",
+	},
+	{
+		path: "src/lib/artifact-gate/cli.ts",
+		maxLines: 85,
+		reason:
+			"Artifact gate CLI seam must stay focused on usage output, result presentation, and exit-code mapping.",
+	},
+	{
+		path: "src/lib/artifact-gate/types.ts",
+		maxLines: 40,
+		reason:
+			"Artifact gate types must describe the CLI contract without absorbing provenance evaluation behavior.",
+	},
+] as const;
+
 const RUNTIME_CARD_RUNTIME_RATCHETS = [
 	{
 		path: "src/lib/runtime/runtime-card.ts",
@@ -878,6 +923,7 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
+	"src/lib/cli/registry/artifact-gate-command-spec.ts",
 	"src/lib/cli/registry/audit-command-spec.ts",
 	"src/lib/cli/registry/brainstorm-gate-command-spec.ts",
 	"src/lib/cli/registry/branch-protect-command-spec.ts",
@@ -970,6 +1016,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 	"./doctor-north-star-contract-checks.js",
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
+	"./artifact-gate-command-spec.js",
 	"./brainstorm-gate-command-spec.js",
 	"./branch-protect-command-spec.js",
 	"./audit-command-spec.js",
@@ -1545,6 +1592,36 @@ describe("module boundaries", () => {
 		expect(registryAdapterContent).toContain("../../observability-gate.js");
 		expect(registryAdapterContent).not.toContain("getFlagValue");
 		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
+	});
+
+	it("keeps artifact-gate surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(ARTIFACT_GATE_SURFACE_RATCHETS);
+	});
+
+	it("keeps artifact-gate parsing behind the module seam", () => {
+		const commandFacadeContent = readFileSync(
+			join(process.cwd(), "src/commands/artifact-gate.ts"),
+			"utf-8",
+		);
+		const publicFacadeContent = readFileSync(
+			join(process.cwd(), "src/lib/artifact-gate.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/artifact-gate-command-spec.ts"),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/artifact-gate/cli-args.ts"),
+			"utf-8",
+		);
+
+		expect(commandFacadeContent).toContain("../lib/artifact-gate.js");
+		expect(publicFacadeContent).toContain("./artifact-gate/cli.js");
+		expect(registryAdapterContent).toContain("../../artifact-gate.js");
+		expect(registryAdapterContent).not.toContain("inspectFlagValue");
+		expect(registryAdapterContent).not.toContain("parseCsvList");
 		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
 	});
 

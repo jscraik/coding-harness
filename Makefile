@@ -1,7 +1,7 @@
 # Harness Development Makefile
 # Run `make help` to see available commands
 
-.PHONY: all help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: all help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests related-tests-staged semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 all: help ## Default aggregate target
@@ -47,7 +47,7 @@ hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	pnpm run quality:size
 	$(MAKE) secrets-staged
 	$(MAKE) docs-style-changed
-	$(MAKE) related-tests
+	$(MAKE) related-tests-staged
 
 hooks-pre-push: ## Run local pre-push governance gates before pushing
 	@if base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)" && \
@@ -98,6 +98,9 @@ docs-style-changed: ## Run Vale on staged authoritative docs only
 
 related-tests: ## Run Vitest related mode for changed src implementation files
 	pnpm run test:related
+
+related-tests-staged: ## Run Vitest related mode for staged src implementation files
+	bash scripts/check-related-tests.sh --staged
 
 semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files
 	pnpm run semgrep:changed

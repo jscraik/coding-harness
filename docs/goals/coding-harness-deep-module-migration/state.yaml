@@ -29,7 +29,7 @@ checks:
   last_verification:
     command: "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
-    checked_at: "2026-05-21T15:13:28Z"
+    checked_at: "2026-05-21T15:48:16Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -237,7 +237,7 @@ tasks:
   - id: T006
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "Prepare the artifact-gate module-boundary slice; do not edit implementation files until T005 is pushed and PR state is refreshed."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
@@ -261,16 +261,55 @@ tasks:
       - ".harness/implementation-notes/2026-05-19-module-layout.html"
       - "artifacts/architecture/module-layout.html"
       - "docs/goals/coding-harness-deep-module-migration/**"
+      - "Makefile"
     verify:
       - "focused artifact-gate test or direct production command to be named before implementation"
       - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
       - "bash scripts/validate-codestyle.sh --fast"
       - "bash scripts/verify-work.sh --fast before PR handoff"
+      - "TMPDIR=/private/tmp PREK_HOME=/Users/jamiecraik/dev/coding-harness/.git/.cache/prek prek run pre-commit --stage pre-commit -v --log-file /private/tmp/prek-t006.log"
     stop_if:
       - "T005 is not pushed."
       - "GitHub or PR state cannot be observed."
       - "Focused validation path cannot be identified."
     receipt_id: R006
+  - id: T007
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Prepare the plan-gate module-boundary slice; do not edit implementation files until T006 is pushed and PR state is refreshed."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T006 is pushed and GitHub/PR state is observed."
+      - "Declare focused plan-gate tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R007 before any following slice."
+    expected_output: "A small plan-gate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/plan-gate*.ts"
+      - "src/lib/plan-gate/**"
+      - "src/lib/cli/registry/plan-gate-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/plan-gate*.test.ts"
+      - "src/lib/plan-gate*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused plan-gate test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T006 is not pushed."
+      - "GitHub or PR state cannot be observed."
+      - "Focused validation path cannot be identified."
+    receipt_id: R007
 pr_green_sweep:
   status: t005_green_handoff_current_code_head
   worker: pr-green-sweep
@@ -300,10 +339,10 @@ slice_queue:
     - replay
     - remediate
     - observability-gate
-  active: artifact-gate
-  next: plan-gate
+    - artifact-gate
+  active: plan-gate
+  next: prompt-gate
   remaining:
-    - prompt-gate
     - gap-case
     - simulate
     - ci-migrate

@@ -435,11 +435,11 @@
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-			<span>T006 / R006: artifact-gate is next after the completed observability-gate metric-label cardinality split.</span>
+			<span>T006 / R006: artifact-gate now has a public module seam for CLI parsing, presentation, registry delegation, and provenance evaluation.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Next</strong>
-			<span>Artifact-gate must declare allowed files and focused validation before edits; observability-gate is complete pending PR re-observation receipt.</span>
+			<span>Validate the artifact-gate seam, append receipts.jsonl evidence, then run PR green-sweep triage before advancing to plan-gate.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Blocked</strong>
@@ -456,15 +456,15 @@
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-			  <p>Review target: observability-gate now stays bounded to metric-label cardinality. The command and registry are facades; label parsing, policy construction, CLI argv projection, and result presentation sit in observability-gate-owned seams.</p>
+			  <p>Review target: artifact-gate now stays bounded to generated-artifact provenance. The command and registry are facades; raw argv projection, usage/result presentation, CLI types, and provenance evaluation sit in artifact-gate-owned seams.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-			  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R005.</p>
+			  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R006, with R006-HOOK-STAGED-RECOVERY recording the pre-commit related-test recovery.</p>
 			  <ul class="evidence-list">
-				<li>Focused proof: observability-gate command tests, registry dispatch tests, module-boundary ratchets, direct production command, typecheck, and related validation pass.</li>
+				<li>Focused proof: artifact-gate command tests, registry dispatch tests, module-boundary ratchets, direct production command, typecheck, related validation, and staged pre-commit related-test recovery.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-				<li>Handoff: PR #270 must be re-observed after the R005 commit lands on the branch.</li>
+				<li>Handoff: PR #270 must be re-observed after the R006 commit lands on the branch.</li>
 			  </ul>
 			</article>
           </div>
@@ -1462,6 +1462,58 @@
         </section>
 
         <section class="panel">
+          <h2>7C. Artifact Gate Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/artifact-gate.ts</strong>
+              <span>
+                Compatibility command facade. It re-exports the public
+                artifact-gate contract and does not own parsing, output, or
+                provenance evaluation.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/artifact-gate/cli-args.ts</strong>
+                <span>
+                  Raw CLI adapter for files, registry path, JSON output, and
+                  missing-value usage errors.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/artifact-gate/cli.ts</strong>
+                <span>
+                  Usage output, gate result presentation, and exit-code mapping
+                  for generated-artifact provenance checks.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/artifact-gate.ts</strong>
+                <span>
+                  Public facade for command callers, registry callers, CLI
+                  types, and the artifact-provenance evaluator contract.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>artifact-gate-command-spec.ts</strong>
+                <span>
+                  Thin registry metadata and delegation to the
+                  artifact-gate-owned argv adapter.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facade, public facade, registry adapter,
+                  CLI args seam, CLI seam, and types.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>7A. Review Gate Required Check Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
@@ -1800,6 +1852,13 @@
               projection behind observability-gate/cli-args.ts, CLI
               presentation behind observability-gate/cli.ts, and registry
               delegation behind observability-gate-command-spec.ts.
+              Artifact-gate raw flag projection now lives behind
+              artifact-gate/cli-args.ts, usage and result presentation behind
+              artifact-gate/cli.ts, public exports behind src/lib/artifact-gate.ts,
+			  and registry delegation behind artifact-gate-command-spec.ts. The
+			  pre-commit hook now uses the existing staged related-test mode so
+			  commit-time validation stays scoped to staged implementation files
+			  while broader validation lanes keep their branch-wide coverage.
               CodeRabbit review evidence CLI option mapping now lives behind
               verify-coderabbit-command-spec.ts.
               Docs gate option projection now lives behind
@@ -1835,10 +1894,9 @@
           </article>
           <article class="note">
             <h3>Next Pressure Point</h3>
-            <p>
-			  Current board gate: R005 needs final PR re-observation after push. Start
-			  artifact-gate only after confirming its allowed files and focused
-			  validation from live source.
+			<p>
+			  Current board gate: R006 needs validation, receipts.jsonl, and PR
+			  re-observation after push. Plan-gate remains next in the goal queue.
 			</p>
           </article>
         </section>

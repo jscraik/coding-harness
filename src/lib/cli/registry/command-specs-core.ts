@@ -1,4 +1,3 @@
-import { runArtifactGateCLI } from "../../../commands/artifact-gate.js";
 import { runArtifactRoutineCLI } from "../../../commands/artifact-routine.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
@@ -60,6 +59,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createArtifactGateCommandSpec } from "./artifact-gate-command-spec.js";
 import { createAuditCommandSpec } from "./audit-command-spec.js";
 import { createBrainstormGateCommandSpec } from "./brainstorm-gate-command-spec.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
@@ -323,35 +323,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runUIFastCLI(options);
 		},
 	},
-	{
-		name: "artifact-gate",
-		summary:
-			"Check generated artifact changes against the artifact provenance registry",
-		example: "artifact-gate --files scripts/codex-preflight.sh --json",
-		errorLabel: "Artifact Gate Error",
-		execute: (args) => {
-			const filesFlag = inspectFlagValue(args, "--files");
-			const registryFlag = inspectFlagValue(args, "--registry");
-
-			if (filesFlag.missingValue) {
-				console.error("Artifact Gate Error: --files requires a value");
-				return 2;
-			}
-			if (registryFlag.missingValue) {
-				console.error("Artifact Gate Error: --registry requires a value");
-				return 2;
-			}
-
-			return runArtifactGateCLI({
-				files:
-					filesFlag.value !== undefined
-						? parseCsvList(filesFlag.value)
-						: undefined,
-				registryPath: registryFlag.value,
-				json: args.includes("--json"),
-			});
-		},
-	},
+	createArtifactGateCommandSpec(),
 	{
 		name: "ci-ownership-gate",
 		summary:
