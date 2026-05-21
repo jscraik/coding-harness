@@ -160,6 +160,18 @@ to green sweep or verification recovery. If the PR is already
 ready/open/CLEAN/green and merge authority is missing, keep waiting and avoid
 board-only commits whose only purpose is refreshing receipt head SHA.
 
+T006 verification recovery: the board-only away-mode commit moved PR #271 to
+head `b7489a394627189d2190b3657e9ab991b9fdb4d0`, where
+`ci/circleci: docs-gate` failed before the docs gate ran. CircleCI logs show
+the shared baseline shell tools step exited 100 because apt returned
+`520 <none>` for `noble-security` and timed out connecting to
+`ppa.launchpadcontent.net`. The exact target command
+`bash scripts/run-harness-gate.sh docs-gate --mode required --json` passes
+locally with zero errors and zero warnings. Away-mode may classify this as
+environment/tooling verification recovery and rerun the failed CircleCI workflow
+or job once when credentials allow, but PR #271 may not be marked ready until
+the live rerun is green.
+
 ## Message To Replay Agent
 
 Your replay-module edits are being treated as a separate active slice to preserve. S001 must not rewrite, stage, or normalize your replay files. If you need to continue replay work, update this scratchpad with your active files, focused validation command, and current blocker before touching shared architecture/module-layout files.
