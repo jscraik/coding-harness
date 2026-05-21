@@ -68,6 +68,7 @@ coordination:
       - "For active T005, choose same-PR follow-up versus separate governance-health PR based on lowest risk: same PR is allowed only for metadata-only harness.contract.json cadence repair inside T005 allowed_files; otherwise create a separate branch/PR or stop in verification recovery."
       - "For active T006, mark PR #271 ready for review without another prompt when live PR state is OPEN draft, mergeStateStatus is CLEAN, all reported checks are SUCCESS including CodeRabbit and security checks, the branch is clean and synced, and the goal board is valid; do not merge."
       - "For active T006, if PR #271 is already ready/open/CLEAN/green but merge authority is missing, keep waiting and avoid a board-only commit whose only purpose is refreshing receipt head SHA."
+      - "For active T006, if PR #271 is ready/open, mergeable, all checks are green, and mergeStateStatus remains BLOCKED only because human review or merge authority is missing, classify the lane as waiting on owner review/merge authority; do not merge or mark the native goal complete."
       - "For active T006, if PR #271 leaves green state, classify each pending or failing check by ownership and route to green_sweep or verification recovery before any ready-for-review or merge decision."
       - "For active T006, if CodeRabbit or Codex posts actionable comments while the check state is SUCCESS or COMMENTED, fix or explicitly disposition in-scope comments before treating the PR as waiting on owner review."
       - "For active T006, if the only failed required check is a CircleCI infrastructure or shared bootstrap failure before the target gate command runs, the exact target command passes locally, the branch is clean and synced, and the board is valid, classify the blocker as environment/tooling verification recovery; rerun the failed CircleCI workflow or job once when credentials allow, then resume the ready-for-review ladder only if the rerun is green."
@@ -92,8 +93,8 @@ checks:
   dirty_fingerprint: unknown
   last_verification:
     command: "gh pr view 271 --json number,url,state,isDraft,mergeStateStatus,mergeable,headRefOid,reviewDecision,latestReviews; gh pr checks 271 --json name,state,link --watch=false"
-    outcome: review_recovery_local_fix
-    checked_at: "2026-05-21T15:45:01Z"
+    outcome: waiting_on_human_review_or_merge_authority
+    checked_at: "2026-05-21T16:03:20Z"
 tasks:
   - id: T001
     type: scout
@@ -295,6 +296,7 @@ tasks:
       - "Do not activate replay-module work unless Jamie explicitly updates the board to a replay task."
       - "If live PR state is OPEN draft, mergeStateStatus is CLEAN, every reported check is SUCCESS, reviewDecision is empty or APPROVED, the local branch is clean and synced, and board validation passes, the governor may mark PR #271 ready for review without another prompt."
       - "If PR #271 is already ready/open/CLEAN/green and merge authority is missing, keep waiting and do not create a board-only commit solely to refresh receipt head SHA."
+      - "If PR #271 is ready/open, mergeable, and all checks are green, but mergeStateStatus remains BLOCKED only because human review or merge authority is missing, keep waiting and do not merge or mark the native goal complete."
       - "If PR #271 leaves green state, route back to green_sweep or verification recovery before any ready-for-review or merge decision."
       - "If the only failed required check is a CircleCI infrastructure or shared bootstrap failure before the target gate command runs, and the exact target command passes locally, classify it as environment/tooling verification recovery; a single failed-workflow or failed-job rerun is allowed when credentials allow, but ready-for-review still requires the rerun to go green."
       - "If CodeRabbit or Codex posts actionable comments while the check state is SUCCESS or COMMENTED, fix or explicitly disposition in-scope comments before treating the PR as waiting on owner review."
@@ -311,6 +313,6 @@ tasks:
       - "PYTHONDONTWRITEBYTECODE=1 python3 \"${GOAL_GOVERNOR_CHECK_BOARD:?set GOAL_GOVERNOR_CHECK_BOARD to goal-governor/scripts/check_goal_board.py}\" docs/goals/jsc-331-goal-governed-evidence-led-implementation"
     stop_if:
       - "A merge action is requested but explicit human merge authority is missing."
-      - "PR #271 is no longer green or mergeStateStatus is not CLEAN."
+      - "PR #271 is no longer green, or mergeStateStatus is neither CLEAN nor BLOCKED solely by missing human review or merge authority."
       - "The requested next action would touch replay-module files without an explicit replay task."
-    receipt_id: R027-T006-CODERABBIT-ACTIONABLE-COMMENTS-FIXED
+    receipt_id: R028-T006-GREEN-BLOCKED-WAITING-DECISION
