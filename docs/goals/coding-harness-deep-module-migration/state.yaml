@@ -25,6 +25,7 @@ checks:
   source_review: ".harness/review/2026-05-20-module-boundary-taste-review.md"
   implementation_visual: ".harness/implementation-notes/2026-05-19-module-layout.html"
   architecture_visual: "artifacts/architecture/module-layout.html"
+  visual_record_contract: "module layout must show complete/current/next/remaining/blocked, enforcement, agent-safe zones, human-review zones, latest slice, and receipt/PR evidence"
   last_verification:
     command: "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
@@ -96,6 +97,7 @@ tasks:
       - "Do not start until T001 board validation passes."
       - "Declare allowed files and focused tests before editing."
       - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML as an informative control surface, not only as an architecture diagram."
       - "Commit, push, update GitHub, and append receipt before T003."
     expected_output: "A small drift-gate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
     allowed_files:
@@ -111,6 +113,7 @@ tasks:
       - "docs/goals/coding-harness-deep-module-migration/**"
     verify:
       - "focused drift-gate test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
       - "bash scripts/validate-codestyle.sh --fast"
       - "bash scripts/verify-work.sh --fast before PR handoff"
     stop_if:

@@ -10,6 +10,7 @@
 - [Completion Contract](#completion-contract)
 - [Slice Queue](#slice-queue)
 - [Per-Slice Operating Loop](#per-slice-operating-loop)
+- [Module Layout Record Contract](#module-layout-record-contract)
 - [Review Gate Contract](#review-gate-contract)
 - [Background PR Green Sweep](#background-pr-green-sweep)
 - [Stop Conditions](#stop-conditions)
@@ -161,10 +162,56 @@ Completed baseline slices to preserve:
 6. Add or update boundary tests, import guards, size ratchets, or fixtures when
    applicable.
 7. Update `.harness/implementation-notes/2026-05-19-module-layout.html` and
-   `artifacts/architecture/module-layout.html` when the module map changes.
+   `artifacts/architecture/module-layout.html` using the module layout record
+   contract when the module map changes.
 8. Run the review gate contract.
 9. Run focused validation and repo safety validation.
 10. Commit with the required trailer, push, update GitHub, and append a receipt.
+
+## Module Layout Record Contract
+
+The module-layout HTML is both Jamie's live operating view and the durable
+record for future agents. It must be informative as a control surface, not only
+accurate as a diagram.
+
+Every slice that changes a module boundary must update both:
+
+- `.harness/implementation-notes/2026-05-19-module-layout.html`
+- `artifacts/architecture/module-layout.html`
+
+The layout must let Jamie answer these questions within 10 seconds:
+
+- What is complete?
+- What is current?
+- What is next?
+- What is remaining?
+- What is blocked?
+- Which boundaries are enforced by tests, size ratchets, import guards, or
+  contract fixtures?
+- Which boundaries are documented but not yet enforced?
+- Which files are agent-safe edit zones?
+- Which files need human taste review?
+- What changed in the latest slice?
+- Which PR, commit, validation commands, and receipts prove the current state?
+
+Required visual structure:
+
+1. A top status strip with current slice, next slice, branch, PR, head SHA,
+   latest receipt id, and validation state.
+2. A progress lane that separates complete, current, next, remaining, blocked,
+   and Effect-later work.
+3. A module map that labels public facades, internal modules, provider
+   adapters, Effect-later surfaces, and human-review surfaces.
+4. Enforcement badges for size ratchet, import guard, contract test, fixture
+   coverage, direct production-path proof, and not-enforced.
+5. A latest-change panel naming files changed, behavior preserved or changed,
+   tests run, review gates run, and the commit SHA.
+6. A record panel linking the matching `receipts.jsonl` entry and any PR/CI
+   evidence.
+
+If the HTML is technically updated but cannot answer those questions clearly,
+record the visual update as `blocked_visual_quality` and repair the layout
+before the slice is complete.
 
 ## Review Gate Contract
 
