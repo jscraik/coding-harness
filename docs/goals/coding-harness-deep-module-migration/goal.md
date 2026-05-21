@@ -73,7 +73,7 @@ Durable improvement for this goal:
 
 ## Repository Constraints
 
-- Target repository: `/Users/jamiecraik/dev/coding-harness`.
+- Target repository: current checkout root (verify with `pwd`).
 - Start every slice from live git state, not memory.
 - Do not use `core.worktree`.
 - Preserve unrelated user work.
