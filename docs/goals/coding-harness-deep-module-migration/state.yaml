@@ -86,7 +86,7 @@ tasks:
   - id: T002
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "Deepen the drift-gate module boundary as the next non-Effect slice."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
@@ -123,6 +123,43 @@ tasks:
       - "Focused validation path cannot be identified."
       - "Review gates find a boundary issue requiring scope expansion."
     receipt_id: R002
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Prepare the replay module-boundary slice; do not edit implementation files until branch, PR, and receipt state are verified."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T002 is pushed and GitHub/PR state is observed."
+      - "Declare focused replay tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R003 before any following slice."
+    expected_output: "A small replay module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/replay*.ts"
+      - "src/lib/replay/**"
+      - "src/lib/cli/registry/replay-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/replay*.test.ts"
+      - "src/lib/replay*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused replay test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T002 is not pushed."
+      - "GitHub or PR state cannot be observed."
+      - "Focused validation path cannot be identified."
+    receipt_id: R003
 pr_green_sweep:
   status: pending
   worker: pr-green-sweep
@@ -138,11 +175,10 @@ slice_queue:
   completed:
     - verify-work
     - memory-gate
-  active: null
-  next: drift-gate
+    - drift-gate
+  active: replay
+  next: remediate
   remaining:
-    - replay
-    - remediate
     - observability-gate
     - artifact-gate
     - plan-gate
