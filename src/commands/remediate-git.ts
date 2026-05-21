@@ -85,7 +85,17 @@ export function createGitHubClient(): GitHubClient {
 					timeout: 5000,
 				},
 			);
-			return result.status === 0;
+			if (result.error) {
+				throw new Error(
+					`Failed to compare ancestry: ${result.error.message}`,
+				);
+			}
+			if (result.status === 0) return true;
+			if (result.status === 1) return false;
+			throw new Error(
+				`git merge-base failed (status ${result.status}): ${result.stderr ?? "unknown error"}`,
+			);
+		}
 		},
 	};
 }
