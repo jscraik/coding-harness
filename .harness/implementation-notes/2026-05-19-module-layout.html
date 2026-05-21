@@ -435,15 +435,15 @@
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-			<span>T003 / R003: replay argv projection now lives in src/lib/replay/cli-args.ts; focused replay validation is the active proof path while review gates, receipt, commit, and push remain open.</span>
+			<span>T004 / R004: remediate is the active boundary-declaration slice. No implementation edits start until allowed files and focused remediate tests are declared.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Next</strong>
-			<span>T004 / R004: remediate is next after R003 is reviewed, committed, pushed, and PR #270 is re-observed.</span>
+			<span>Observability-gate follows only after R004 review gates, validation, receipt, push, and PR #270 re-observation.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Blocked</strong>
-			<span>No known code blocker. PR #270 was green at e5caef77 before T003 started; local unrelated work remains unstaged and classified.</span>
+			<span>No code blocker. T003 is pushed; PR #270 is clean and all visible checks are green at 25cce4b1 with zero review threads. Separate runtime-evidence work remains unstaged and preserved.</span>
 		  </article>
         </section>
 
@@ -452,19 +452,19 @@
           <div class="control-grid">
             <article class="note">
               <h3>Enforcement</h3>
-              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate command behavior is covered by focused command-spec projection tests.</p>
+              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate and replay command behavior are covered by focused command-spec projection tests.</p>
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-			  <p>Review the replay seam for taste: registry metadata stays thin, argv projection sits in the replay-owned adapter, and the command facade still owns trace execution.</p>
+			  <p>Review the remediate seam for taste before edits: registry metadata should stay thin, remediation option projection should sit in a remediate-owned adapter, and command behavior should remain behind the facade.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-			  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R003.</p>
+			  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R003-PR, then R004 before the next slice.</p>
 			  <ul class="evidence-list">
-				<li>Focused proof: replay command-spec projection, replay module-boundary ratchets, and replay command behavior tests.</li>
+				<li>Focused proof: replay command-spec projection, replay module-boundary ratchets, replay command behavior tests, and clean-clone pre-push validation are recorded.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-				<li>Handoff: run review gates, append R003, commit, push, and refresh PR #270 before the remediate slice.</li>
+				<li>Handoff: PR #270 is draft open, mergeable, clean, all visible checks green, and has zero review threads at 25cce4b1.</li>
 			  </ul>
 			</article>
           </div>
@@ -1771,9 +1771,9 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-			  Current board gate: finish R003 review gates, append the replay
-			  receipt, commit and push, then re-observe PR #270 checks and
-			  review state before starting remediate.
+			  Current board gate: T003 is pushed and PR #270 is re-observed clean at
+			  25cce4b1 with zero review threads. Start T004 by declaring remediate
+			  allowed files and focused tests before implementation.
 			</p>
           </article>
         </section>
