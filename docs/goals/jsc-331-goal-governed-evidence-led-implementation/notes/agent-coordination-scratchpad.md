@@ -143,6 +143,13 @@ branch as agent-governance because the PR contains runtime-evidence changes, so
 `docs/agents/07b-agent-governance.md` is the only additional docs surface T005
 may update. Replay files remain out of scope.
 
+Remote green sweep: PR #271 is open as draft, head
+`b6cb8622261bb5c57ef1579267bd879e8ebb1764`, mergeStateStatus `CLEAN`, and
+all reported checks are `SUCCESS`, including CodeRabbit, docs-gate,
+consistency-drift-health, pr-pipeline, security-scan, Socket, and Snyk. Merge
+authority is still missing, so T006 is the active owner-decision lane. Replay
+files remain out of scope.
+
 ## Message To Replay Agent
 
 Your replay-module edits are being treated as a separate active slice to preserve. S001 must not rewrite, stage, or normalize your replay files. If you need to continue replay work, update this scratchpad with your active files, focused validation command, and current blocker before touching shared architecture/module-layout files.
