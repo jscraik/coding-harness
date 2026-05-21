@@ -104,6 +104,8 @@ tasks:
       - "src/commands/drift-gate.ts"
       - "src/lib/drift-gate.ts"
       - "src/lib/cli/registry/drift-gate-command-spec.ts"
+      - "src/lib/drift-gate/**"
+      - "src/lib/architecture/module-boundaries.test.ts"
       - "src/lib/output/normalise-drift-gate.ts"
       - "src/commands/drift-gate*.test.ts"
       - "src/lib/drift-gate*.test.ts"

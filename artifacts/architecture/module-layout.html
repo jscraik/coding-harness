@@ -308,6 +308,62 @@
         margin-bottom: 4px;
       }
 
+      .status-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .status-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 12px;
+        min-height: 104px;
+      }
+
+      .status-card strong {
+        display: block;
+        font-size: 13px;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .status-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+        margin-top: 6px;
+      }
+
+      .status-ok {
+        border-left: 5px solid var(--doctor);
+      }
+
+      .status-current {
+        border-left: 5px solid var(--public);
+      }
+
+      .status-watch {
+        border-left: 5px solid var(--guard);
+      }
+
+      .control-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .evidence-list {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
       @media (max-width: 980px) {
         main {
           padding: 18px;
@@ -319,7 +375,9 @@
         .doctor-grid,
         .doctor-seams,
         .internal-grid,
-        .notes {
+        .notes,
+        .status-strip,
+        .control-grid {
           grid-template-columns: 1fr;
         }
 
@@ -370,6 +428,48 @@
       </header>
 
       <section class="map">
+        <section class="status-strip" aria-label="Deep-module migration status">
+          <article class="status-card status-ok">
+            <strong>Complete</strong>
+            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, and many command adapters already have facade-first module seams.</span>
+          </article>
+          <article class="status-card status-current">
+            <strong>Current Slice</strong>
+            <span>T002 / R002: drift-gate raw CLI parsing is moving out of the registry spec and into src/lib/drift-gate/cli-args.ts.</span>
+          </article>
+          <article class="status-card status-watch">
+            <strong>Next</strong>
+            <span>After this pushed receipt, choose the next non-Effect pressure point from the goal board. Effect layers stay deferred.</span>
+          </article>
+          <article class="status-card status-watch">
+            <strong>Blocked</strong>
+            <span>No known code blocker. PR handoff remains incomplete until review gates, full slice validation, commit, push, and GitHub evidence are recorded.</span>
+          </article>
+        </section>
+
+        <section class="panel">
+          <h2>0. Record Quality</h2>
+          <div class="control-grid">
+            <article class="note">
+              <h3>Enforcement</h3>
+              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate command behavior is covered by focused command-spec projection tests.</p>
+            </article>
+            <article class="note">
+              <h3>Human Review</h3>
+              <p>Review the public facade, drift-gate/cli-args.ts, and the thin registry spec first. Internals need attention only if behavior or validation fails.</p>
+            </article>
+            <article class="note">
+              <h3>Record Evidence</h3>
+              <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R002.</p>
+              <ul class="evidence-list">
+                <li>Focused test: command-spec drift-gate projection.</li>
+                <li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
+                <li>Handoff: commit, push, and PR evidence still pending.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
         <section class="panel">
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
@@ -832,8 +932,16 @@
               <div class="module doctor">
                 <strong>drift-gate-command-spec.ts</strong>
                 <span>
-                  Registry flag adapter for mode, seeding, output, suppression,
-                  repository root, and JSON; delegates through the facade.
+                  Thin registry adapter. It owns command metadata and delegates
+                  raw argv to the drift-gate-owned CLI args module.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>src/lib/drift-gate/cli-args.ts</strong>
+                <span>
+                  Current T002 seam: parses mode, seeding, output, suppression,
+                  repository root, and JSON into the typed runDriftGateCLI
+                  contract.
                 </span>
               </div>
               <div class="module doctor">
@@ -1614,7 +1722,9 @@
               lives behind brainstorm-gate-command-spec.ts.
               Drift-gate mode, baseline seeding, output, suppression,
               repository root, and JSON projection now lives behind
-              drift-gate-command-spec.ts and enters through src/lib/drift-gate.ts.
+              drift-gate/cli-args.ts. The registry spec is a thin command
+              metadata and delegation seam, and execution enters through
+              src/lib/drift-gate.ts.
               CodeRabbit review evidence CLI option mapping now lives behind
               verify-coderabbit-command-spec.ts.
               Docs gate option projection now lives behind
@@ -1651,10 +1761,10 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-              Current slice complete: memory-gate raw CLI flag projection moved
-              into memory/cli-args.ts. Next pressure point remains behavior-led:
-              drift-gate should move only when the runtime path and tests
-              identify a concrete seam.
+              Current slice in progress: drift-gate raw CLI flag projection is
+              moving into drift-gate/cli-args.ts. This is complete only after
+              review gates, focused validation, verify-work, commit, push, and
+              the R002 receipt are recorded.
             </p>
           </article>
         </section>

@@ -114,9 +114,8 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Brainstorm path, topic, age, strictness, and JSON CLI option adapter stay
     local to the brainstorm compliance command adapter.
 - `src/lib/cli/registry/drift-gate-command-spec.ts`
-  - Drift mode, baseline seeding, artifact output, suppression, repository
-    root, and JSON CLI option adapter stay local to the consistency-drift
-    command adapter and delegate through `src/lib/drift-gate.ts`.
+  - Thin registry metadata and command adapter; raw drift-gate argv projection
+    lives in `src/lib/drift-gate/cli-args.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -309,9 +308,12 @@ Its current implementation still lives behind the command facade, but callers in
 - `src/lib/drift-gate.ts`
   - Public facade for `runDriftGate`, `runDriftGateCLI`, and drift-gate result
     and option types.
+- `src/lib/drift-gate/cli-args.ts`
+  - Raw CLI option adapter for mode, baseline seeding, output, suppression,
+    repository root, and JSON; converts argv into the typed facade contract.
 - `src/lib/cli/registry/drift-gate-command-spec.ts`
-  - Registry flag adapter for mode, baseline seeding, output, suppression,
-    repository root, and JSON; delegates through the public facade.
+  - Thin registry command adapter; delegates raw argv to the drift-gate-owned
+    CLI option adapter.
 - `src/lib/output/normalise-drift-gate.ts`
   - GateResult projection for drift findings and artifact evidence; imports
     drift-gate types through the public facade.
@@ -648,7 +650,9 @@ Threshold policy:
   assembler (`<= 1300` lines); workflow-specific parsing belongs in focused
   command adapters.
 - `src/lib/cli/registry/drift-gate-command-spec.ts` must stay focused on
-  consistency-drift CLI option adapter and command delegation (`<= 100` lines).
+  registry metadata and command delegation (`<= 25` lines).
+- `src/lib/drift-gate/cli-args.ts` must stay focused on consistency-drift CLI
+  option parsing and facade delegation (`<= 120` lines).
 - `src/lib/cli/registry/memory-gate-command-spec.ts` must stay focused on
   command metadata and facade delegation (`<= 20` lines).
 - `src/lib/cli/registry/silent-error-command-spec.ts` must stay focused on

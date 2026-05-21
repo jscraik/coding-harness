@@ -100,9 +100,9 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
-		maxLines: 100,
+		maxLines: 25,
 		reason:
-			"Drift gate command spec must stay focused on consistency-drift option projection and command delegation.",
+			"Drift gate command spec must stay focused on registry metadata and drift-gate-owned argv delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/brainstorm-gate-command-spec.ts",
@@ -620,9 +620,15 @@ const DRIFT_GATE_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
-		maxLines: 100,
+		maxLines: 25,
 		reason:
-			"Drift gate command spec must stay focused on consistency-drift option projection and facade delegation.",
+			"Drift gate command spec must stay focused on registry metadata and drift-gate-owned argv delegation.",
+	},
+	{
+		path: "src/lib/drift-gate/cli-args.ts",
+		maxLines: 120,
+		reason:
+			"Drift gate CLI argument adapter must stay focused on raw flag projection before command execution.",
 	},
 	{
 		path: "src/lib/output/normalise-drift-gate.ts",
@@ -1381,13 +1387,18 @@ describe("module boundaries", () => {
 			join(process.cwd(), "src/lib/cli/registry/drift-gate-command-spec.ts"),
 			"utf-8",
 		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/drift-gate/cli-args.ts"),
+			"utf-8",
+		);
 		const outputAdapterContent = readFileSync(
 			join(process.cwd(), "src/lib/output/normalise-drift-gate.ts"),
 			"utf-8",
 		);
 
 		expect(publicFacadeContent).toContain("../commands/drift-gate.js");
-		expect(registryAdapterContent).toContain("../../drift-gate.js");
+		expect(registryAdapterContent).toContain("../../drift-gate/cli-args.js");
+		expect(cliArgsAdapterContent).toContain("../drift-gate.js");
 		expect(outputAdapterContent).toContain("../drift-gate.js");
 
 		const violations = collectTypeScriptFiles("src/lib")
