@@ -435,7 +435,7 @@
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-				<span>T007 / plan-gate is active. R006 artifact-gate is complete; this verification recovery records PR #270 at 634385de before any plan-gate implementation starts.</span>
+					<span>T007 / plan-gate is active. R006 artifact-gate is complete; this verification recovery records PR #270 at 5e39faf5 before any plan-gate implementation starts.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Next</strong>
@@ -443,7 +443,7 @@
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Blocked</strong>
-				<span>The separate runtime-evidence/JSC-331 slice remains preserved outside this goal lane; PR #270 checks are green, but CodeRabbit review comments remain to triage before PR-green closeout.</span>
+					<span>The separate runtime-evidence/JSC-331 slice remains preserved outside this goal lane; PR #270 checks restarted after the current-head push, and CodeRabbit review state needs current-head re-observation before PR-green closeout.</span>
 		  </article>
         </section>
 
@@ -460,11 +460,11 @@
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-				  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-PR-CURRENT, recording the refreshed PR checks, CodeRabbit review state, and visual report repair before plan-gate implementation.</p>
+					  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-POST-PULL-PUSH, recording the refreshed PR checks, pulled-branch validation repairs, CodeRabbit review state, and visual report repair before plan-gate implementation.</p>
 			  <ul class="evidence-list">
 					<li>Focused proof: R006 artifact-gate command tests, registry dispatch tests, module-boundary ratchets, direct production command, typecheck, related validation, and staged pre-commit related-test recovery are recorded in receipts.jsonl.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-					<li>Handoff: PR #270 is at 634385de; all listed checks are green, and CodeRabbit has a COMMENTED review with 23 flat PR review comments to triage.</li>
+						<li>Handoff: PR #270 is at 5e39faf5; local pre-push passed, current-head checks are pending, and CodeRabbit's latest visible COMMENTED review is older than this head.</li>
 			  </ul>
 			</article>
           </div>
@@ -1896,8 +1896,8 @@
             <h3>Next Pressure Point</h3>
 			<p>
 				  Current board gate: T007 plan-gate is active but implementation has
-				  not started. PR checks are green at 634385de; record CodeRabbit
-				  comment triage, then declare the plan-gate allowed files and
+					  not started. PR checks restarted at 5e39faf5; record current-head
+					  check and CodeRabbit results, then declare the plan-gate allowed files and
 				  focused tests before editing.
 			</p>
           </article>
