@@ -13,6 +13,7 @@ import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
 import * as gardenerCommand from "../../../commands/gardener.js";
 import * as driftGateModule from "../../drift-gate.js";
 import * as memoryGateModule from "../../memory-gate.js";
+import * as observabilityGateModule from "../../observability-gate.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import * as silentErrorCommand from "../../../commands/silent-error.js";
@@ -486,6 +487,39 @@ describe("memory-gate execute parsing", () => {
 
 		expect(result).toBe(0);
 		expect(memoryGateModule.runMemoryGateFromCliArgs).toHaveBeenCalledWith([]);
+	});
+});
+
+describe("observability-gate execute parsing", () => {
+	const spec = findSpec("observability-gate");
+
+	beforeEach(() => {
+		vi.spyOn(
+			observabilityGateModule,
+			"runObservabilityGateFromCliArgs",
+		).mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("delegates raw observability-gate flags to the module argument adapter", () => {
+		const args = [
+			"--labels",
+			'{"status":"success"}',
+			"--max-cardinality",
+			"10",
+			"--max-length",
+			"20",
+			"--json",
+		];
+		const result = spec.execute([...args]);
+
+		expect(result).toBe(0);
+		expect(
+			observabilityGateModule.runObservabilityGateFromCliArgs,
+		).toHaveBeenCalledWith(args);
 	});
 });
 

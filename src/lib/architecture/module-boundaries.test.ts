@@ -105,6 +105,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"Drift gate command spec must stay focused on registry metadata and drift-gate-owned argv delegation.",
 	},
 	{
+		path: "src/lib/cli/registry/observability-gate-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Observability gate command spec must stay focused on registry metadata and metric-label gate-owned argv delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/brainstorm-gate-command-spec.ts",
 		maxLines: 40,
 		reason:
@@ -668,6 +674,51 @@ const DRIFT_GATE_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const OBSERVABILITY_GATE_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/observability-gate.ts",
+		maxLines: 15,
+		reason:
+			"Observability gate command must stay a compatibility facade; metric-label gate internals live behind the observability-gate module seam.",
+	},
+	{
+		path: "src/lib/observability-gate.ts",
+		maxLines: 15,
+		reason:
+			"Observability gate public facade must stay a small export surface for command and registry callers.",
+	},
+	{
+		path: "src/lib/cli/registry/observability-gate-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Observability gate command spec must stay focused on registry metadata and metric-label gate-owned argv delegation.",
+	},
+	{
+		path: "src/lib/observability-gate/cli-args.ts",
+		maxLines: 55,
+		reason:
+			"Observability gate CLI argument adapter must stay focused on raw flag projection before command execution.",
+	},
+	{
+		path: "src/lib/observability-gate/label-cardinality.ts",
+		maxLines: 105,
+		reason:
+			"Observability gate label-cardinality seam must stay focused on parsing labels, building cardinality policy, and running metric-label validation.",
+	},
+	{
+		path: "src/lib/observability-gate/cli.ts",
+		maxLines: 75,
+		reason:
+			"Observability gate CLI seam must stay focused on result presentation and exit-code mapping.",
+	},
+	{
+		path: "src/lib/observability-gate/types.ts",
+		maxLines: 45,
+		reason:
+			"Observability gate types must describe the metric-label gate contract without absorbing validation behavior.",
+	},
+] as const;
+
 const RUNTIME_CARD_RUNTIME_RATCHETS = [
 	{
 		path: "src/lib/runtime/runtime-card.ts",
@@ -936,6 +987,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./local-memory-preflight-command-spec.js",
 	"./memory-gate-command-spec.js",
 	"./next-command-spec.js",
+	"./observability-gate-command-spec.js",
 	"./org-audit-command-spec.js",
 	"./preflight-gate-command-spec.js",
 	"./replay-command-spec.js",
@@ -1461,6 +1513,39 @@ describe("module boundaries", () => {
 			);
 
 		expect(violations).toEqual([]);
+	});
+
+	it("keeps observability-gate surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(OBSERVABILITY_GATE_SURFACE_RATCHETS);
+	});
+
+	it("keeps observability-gate parsing behind the module seam", () => {
+		const commandFacadeContent = readFileSync(
+			join(process.cwd(), "src/commands/observability-gate.ts"),
+			"utf-8",
+		);
+		const publicFacadeContent = readFileSync(
+			join(process.cwd(), "src/lib/observability-gate.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(
+				process.cwd(),
+				"src/lib/cli/registry/observability-gate-command-spec.ts",
+			),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/observability-gate/cli-args.ts"),
+			"utf-8",
+		);
+
+		expect(commandFacadeContent).toContain("../lib/observability-gate.js");
+		expect(publicFacadeContent).toContain("./observability-gate/cli.js");
+		expect(registryAdapterContent).toContain("../../observability-gate.js");
+		expect(registryAdapterContent).not.toContain("getFlagValue");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
 	});
 
 	it("keeps runtime-card contract and validation seams split after decomposition", () => {

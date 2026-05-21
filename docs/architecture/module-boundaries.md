@@ -14,6 +14,7 @@ last_validated: 2026-05-20
 - [Verify Work Command Boundary](#verify-work-command-boundary)
 - [Memory Gate Command Boundary](#memory-gate-command-boundary)
 - [Drift Gate Command Boundary](#drift-gate-command-boundary)
+- [Observability Gate Command Boundary](#observability-gate-command-boundary)
 - [HE Phase-Exit Trust Boundary](#he-phase-exit-trust-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
@@ -116,6 +117,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/drift-gate-command-spec.ts`
   - Thin registry metadata and command adapter; raw drift-gate argv projection
     lives in `src/lib/drift-gate/cli-args.ts`.
+- `src/lib/cli/registry/observability-gate-command-spec.ts`
+  - Thin registry metadata and command adapter; raw metric-label gate argv
+    projection lives in `src/lib/observability-gate/cli-args.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -199,7 +203,8 @@ parsing and delegation belong in named adapters:
   `check-command-spec.ts`, `check-environment-command-spec.ts`,
   `docs-gate-command-spec.ts`, `license-gate-command-spec.ts`,
   `risk-tier-command-spec.ts`, `evidence-verify-command-spec.ts`,
-  `preflight-gate-command-spec.ts`, and `review-gate-command-spec.ts`.
+  `observability-gate-command-spec.ts`, `preflight-gate-command-spec.ts`, and
+  `review-gate-command-spec.ts`.
 - Workflow command adapters own their focused parsing and delegation:
   `verify-work-command-spec.ts`, `replay-command-spec.ts`,
   `gardener-command-spec.ts`, `memory-gate-command-spec.ts`,
@@ -320,6 +325,32 @@ Its current implementation still lives behind the command facade, but callers in
 - `src/lib/architecture/module-boundaries.test.ts`
   - Ratchets the facade and fails if new `src/lib/**` callers import
     `src/commands/drift-gate.ts` directly.
+
+## Observability Gate Command Boundary
+
+Observability-gate is a metric-label cardinality control surface. It does not
+claim full trace, dashboard, or telemetry maturity; it gates whether command
+labels are safe enough for low-cardinality metrics.
+
+- `src/commands/observability-gate.ts`
+  - Compatibility command facade and CLI export contract.
+- `src/lib/observability-gate.ts`
+  - Public facade for `runObservabilityGate`, `runObservabilityGateCLI`, raw
+    argv execution, and observability-gate result and option types.
+- `src/lib/observability-gate/cli-args.ts`
+  - Raw CLI option adapter for `--labels`, `--max-cardinality`, `--max-length`,
+    and JSON output.
+- `src/lib/observability-gate/label-cardinality.ts`
+  - Metric-label JSON parsing, cardinality policy construction, and validation
+    against `src/lib/policy/cardinality.ts`.
+- `src/lib/observability-gate/cli.ts`
+  - CLI result presentation and exit-code mapping.
+- `src/lib/cli/registry/observability-gate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the
+    observability-gate-owned CLI option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, public facade, registry adapter, raw CLI
+    adapter, label-cardinality seam, CLI presentation seam, and type contract.
 
 ## Output Normalisation Boundaries
 

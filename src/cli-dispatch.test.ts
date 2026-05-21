@@ -93,8 +93,8 @@ vi.mock("./commands/ui-loop.js", () => ({
 	runUIExploreCLI: vi.fn(() => 55),
 }));
 
-vi.mock("./commands/observability-gate.js", () => ({
-	runObservabilityGateCLI: vi.fn(() => 56),
+vi.mock("./lib/observability-gate.js", () => ({
+	runObservabilityGateFromCliArgs: vi.fn(() => 56),
 }));
 
 vi.mock("./commands/prompt-gate.js", () => ({
@@ -2268,8 +2268,8 @@ describe("cli command dispatch", () => {
 
 	it("dispatches observability-gate and ignores missing --labels value", async () => {
 		const { run } = await import("./cli.js");
-		const { runObservabilityGateCLI } = await import(
-			"./commands/observability-gate.js"
+		const { runObservabilityGateFromCliArgs } = await import(
+			"./lib/observability-gate.js"
 		);
 
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
@@ -2290,18 +2290,21 @@ describe("cli command dispatch", () => {
 			]),
 		).toThrowError("EXIT_56");
 
-		expect(vi.mocked(runObservabilityGateCLI)).toHaveBeenCalledWith({
-			maxCardinality: 10,
-			maxLength: 20,
-			json: true,
-		});
+		expect(vi.mocked(runObservabilityGateFromCliArgs)).toHaveBeenCalledWith([
+			"--labels",
+			"--max-cardinality",
+			"10",
+			"--max-length",
+			"20",
+			"--json",
+		]);
 		expect(exitSpy).toHaveBeenCalledWith(56);
 	});
 
 	it("dispatches observability-gate and ignores malformed numeric values", async () => {
 		const { run } = await import("./cli.js");
-		const { runObservabilityGateCLI } = await import(
-			"./commands/observability-gate.js"
+		const { runObservabilityGateFromCliArgs } = await import(
+			"./lib/observability-gate.js"
 		);
 
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
@@ -2321,9 +2324,13 @@ describe("cli command dispatch", () => {
 			]),
 		).toThrowError("EXIT_56");
 
-		expect(vi.mocked(runObservabilityGateCLI)).toHaveBeenCalledWith({
-			json: true,
-		});
+		expect(vi.mocked(runObservabilityGateFromCliArgs)).toHaveBeenCalledWith([
+			"--max-cardinality",
+			"10abc",
+			"--max-length",
+			"20ms",
+			"--json",
+		]);
 		expect(exitSpy).toHaveBeenCalledWith(56);
 	});
 

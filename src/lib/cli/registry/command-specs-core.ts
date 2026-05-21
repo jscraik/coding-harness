@@ -22,7 +22,6 @@ import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
-import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
 import { runPilotEvaluateCLI } from "../../../commands/pilot-evaluate.js";
 import {
@@ -81,6 +80,7 @@ import { createLicenseGateCommandSpec } from "./license-gate-command-spec.js";
 import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
 import { createMemoryGateCommandSpec } from "./memory-gate-command-spec.js";
 import { createNextCommandSpec } from "./next-command-spec.js";
+import { createObservabilityGateCommandSpec } from "./observability-gate-command-spec.js";
 import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPresetCommandSpec } from "./preset-command-spec.js";
@@ -515,40 +515,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runRemediateCLI(remediateOptions);
 		},
 	},
-	{
-		name: "observability-gate",
-		summary: "Check cardinality limits in metrics",
-		errorLabel: "Observability Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const labelsIndex = args.indexOf("--labels");
-			const maxCardIndex = args.indexOf("--max-cardinality");
-			const maxLenIndex = args.indexOf("--max-length");
-
-			const options: {
-				labels?: string;
-				json?: boolean;
-				maxCardinality?: number;
-				maxLength?: number;
-			} = {};
-
-			if (jsonFlag) options.json = true;
-			const labelsValue = getFlagValue(args, labelsIndex);
-			if (labelsValue) options.labels = labelsValue;
-			const cardValue = getFlagValue(args, maxCardIndex);
-			if (cardValue) {
-				const val = parseIntegerArg(cardValue, 0);
-				if (val !== undefined) options.maxCardinality = val;
-			}
-			const lenValue = getFlagValue(args, maxLenIndex);
-			if (lenValue) {
-				const val = parseIntegerArg(lenValue, 0);
-				if (val !== undefined) options.maxLength = val;
-			}
-
-			return runObservabilityGateCLI(options);
-		},
-	},
+	createObservabilityGateCommandSpec(),
 	{
 		name: "gap-case",
 		summary: "Manage production gap cases (open/resolve)",

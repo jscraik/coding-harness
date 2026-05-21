@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildObservabilityGateOptionsFromCliArgs } from "../lib/observability-gate.js";
 import {
 	EXIT_CODES,
 	runObservabilityGate,
@@ -93,6 +94,40 @@ describe("observability-gate", () => {
 			});
 
 			expect(exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+		});
+	});
+
+	describe("buildObservabilityGateOptionsFromCliArgs", () => {
+		it("projects raw CLI flags into the metric label gate contract", () => {
+			expect(
+				buildObservabilityGateOptionsFromCliArgs([
+					"--labels",
+					'{"status":"success"}',
+					"--max-cardinality",
+					"12",
+					"--max-length",
+					"24",
+					"--json",
+				]),
+			).toEqual({
+				labels: '{"status":"success"}',
+				maxCardinality: 12,
+				maxLength: 24,
+				json: true,
+			});
+		});
+
+		it("ignores missing labels and malformed numeric flags", () => {
+			expect(
+				buildObservabilityGateOptionsFromCliArgs([
+					"--labels",
+					"--max-cardinality",
+					"12px",
+					"--max-length",
+					"twenty",
+					"--json",
+				]),
+			).toEqual({ json: true });
 		});
 	});
 });

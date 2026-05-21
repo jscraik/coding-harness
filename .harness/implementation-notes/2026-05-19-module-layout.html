@@ -435,15 +435,15 @@
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-			<span>T005 / R005: observability-gate is the active slice; declare its allowed files and focused validation before editing.</span>
+			<span>T006 / R006: artifact-gate is next after the completed observability-gate metric-label cardinality split.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Next</strong>
-			<span>Artifact-gate follows only after observability-gate is implemented, validated, pushed, and re-observed on PR #270.</span>
+			<span>Artifact-gate must declare allowed files and focused validation before edits; observability-gate is complete pending PR re-observation receipt.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Blocked</strong>
-			<span>R004 handoff is green at ea8a805e; the separate runtime-evidence/JSC-331 slice remains preserved outside this goal lane.</span>
+			<span>The separate runtime-evidence/JSC-331 slice remains preserved outside this goal lane.</span>
 		  </article>
         </section>
 
@@ -456,15 +456,15 @@
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-			  <p>Review target: the remediate command remains a public facade, while local HEAD, disposable-worktree detection, workspace status, and ancestry probes sit in the remediate-owned git seam.</p>
+			  <p>Review target: observability-gate now stays bounded to metric-label cardinality. The command and registry are facades; label parsing, policy construction, CLI argv projection, and result presentation sit in observability-gate-owned seams.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-			  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R004-PR-CURRENT.</p>
+			  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R005.</p>
 			  <ul class="evidence-list">
-				<li>Focused proof: remediate command tests, remediate module-boundary ratchets, direct production dry-run command, related tests, validate-codestyle fast, and verify-work fast all pass.</li>
+				<li>Focused proof: observability-gate command tests, registry dispatch tests, module-boundary ratchets, direct production command, typecheck, and related validation pass.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-				<li>Handoff: PR #270 is mergeable and clean at ea8a805e; gh pr checks exits 0 and review threads are zero.</li>
+				<li>Handoff: PR #270 must be re-observed after the R005 commit lands on the branch.</li>
 			  </ul>
 			</article>
           </div>
@@ -1410,6 +1410,58 @@
         </section>
 
         <section class="panel">
+          <h2>7B. Observability Gate Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/observability-gate.ts</strong>
+              <span>
+                Compatibility command facade. It re-exports the public
+                observability-gate contract and does not own parsing or
+                cardinality policy.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/observability-gate/label-cardinality.ts</strong>
+                <span>
+                  Metric-label JSON parsing, cardinality policy construction,
+                  and validation against the cardinality policy module.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/observability-gate/cli-args.ts</strong>
+                <span>
+                  Raw CLI adapter for labels, max-cardinality, max-length, and
+                  JSON output flags.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/observability-gate/cli.ts</strong>
+                <span>
+                  CLI presentation and exit-code mapping for the bounded
+                  metric-label gate.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>observability-gate-command-spec.ts</strong>
+                <span>
+                  Thin registry metadata and delegation to the
+                  observability-gate-owned argv adapter.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facade, public facade, registry adapter,
+                  CLI args seam, label-cardinality seam, CLI seam, and types.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>7A. Review Gate Required Check Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
@@ -1743,6 +1795,11 @@
               drift-gate/cli-args.ts. The registry spec is a thin command
               metadata and delegation seam, and execution enters through
               src/lib/drift-gate.ts.
+              Observability-gate label parsing and cardinality policy now live
+              behind observability-gate/label-cardinality.ts, raw flag
+              projection behind observability-gate/cli-args.ts, CLI
+              presentation behind observability-gate/cli.ts, and registry
+              delegation behind observability-gate-command-spec.ts.
               CodeRabbit review evidence CLI option mapping now lives behind
               verify-coderabbit-command-spec.ts.
               Docs gate option projection now lives behind
@@ -1779,8 +1836,8 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-			  Current board gate: R004 is pushed and green. Start
-			  observability-gate only after confirming its allowed files and focused
+			  Current board gate: R005 needs final PR re-observation after push. Start
+			  artifact-gate only after confirming its allowed files and focused
 			  validation from live source.
 			</p>
           </article>
