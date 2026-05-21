@@ -66,6 +66,9 @@ coordination:
       - "If all S001-local validation, review, and remote checks pass except a pre-existing governance-health blocker outside the S001 allowed-file set, keep S001 draft/open, record the blocker, and route the fix to a separate governance-health slice."
       - "When live PR #271 checks show no S001-owned red checks and the only required-check blocker is the reproduced pre-existing preflight-gate cadence breach, mark T004 done and activate T005 without another prompt so the agent can make the safest unattended decision."
       - "For active T005, choose same-PR follow-up versus separate governance-health PR based on lowest risk: same PR is allowed only for metadata-only harness.contract.json cadence repair inside T005 allowed_files; otherwise create a separate branch/PR or stop in verification recovery."
+      - "For active T006, mark PR #271 ready for review without another prompt when live PR state is OPEN draft, mergeStateStatus is CLEAN, all reported checks are SUCCESS including CodeRabbit and security checks, the branch is clean and synced, and the goal board is valid; do not merge."
+      - "For active T006, if PR #271 is already ready/open/CLEAN/green but merge authority is missing, keep waiting and avoid a board-only commit whose only purpose is refreshing receipt head SHA."
+      - "For active T006, if PR #271 leaves green state, classify each pending or failing check by ownership and route to green_sweep or verification recovery before any ready-for-review or merge decision."
     disallowed_decisions:
       - "Activate replay-module implementation without an explicit board update to a replay task."
       - "Stage or commit replay-module files as part of S001 closeout."
@@ -73,6 +76,7 @@ coordination:
       - "Patch harness.contract.json or required-check cadence metadata into the S001 PR unless a board task explicitly activates that governance-health slice."
       - "Treat a failed required check as acceptable risk for S001 completion."
       - "Merge a PR without explicit human merge authority."
+      - "Mark the native goal complete while PR #271 remains open, draft, unreviewed, or unmerged."
     guardrails:
       - "bash scripts/check-git-common-config.sh"
       - "git status --short --branch --untracked-files=all"
@@ -87,7 +91,7 @@ checks:
   last_verification:
     command: "gh pr view 271 --json number,url,state,isDraft,mergeStateStatus,headRefOid,reviewDecision; gh pr checks 271 --json name,state,link --watch=false"
     outcome: pr_271_green_waiting_owner_merge_or_draft_decision
-    checked_at: "2026-05-21T14:38:04Z"
+    checked_at: "2026-05-21T15:00:39Z"
 tasks:
   - id: T001
     type: scout
@@ -277,7 +281,7 @@ tasks:
     type: judge
     assignee: PM
     status: active
-    objective: "Owner decision point after PR #271 reached green remote state: choose whether to mark the draft PR ready, merge with explicit authority, keep it waiting, or activate the next non-replay slice."
+    objective: "Away-mode owner decision point after PR #271 reached green remote state: choose whether to mark the draft PR ready, merge with explicit authority, keep it waiting, or activate the next non-replay slice using the deterministic decision ladder."
     inputs:
       - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md"
       - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/state.yaml"
@@ -287,17 +291,22 @@ tasks:
       - "Do not merge PR #271 without explicit human merge authority."
       - "Do not mark the native goal complete while PR #271 remains draft/open or unmerged."
       - "Do not activate replay-module work unless Jamie explicitly updates the board to a replay task."
-      - "If PR #271 leaves green state, route back to green_sweep or verification recovery before any merge decision."
+      - "If live PR state is OPEN draft, mergeStateStatus is CLEAN, every reported check is SUCCESS, reviewDecision is empty or APPROVED, the local branch is clean and synced, and board validation passes, the governor may mark PR #271 ready for review without another prompt."
+      - "If PR #271 is already ready/open/CLEAN/green and merge authority is missing, keep waiting and do not create a board-only commit solely to refresh receipt head SHA."
+      - "If PR #271 leaves green state, route back to green_sweep or verification recovery before any ready-for-review or merge decision."
+      - "If reviewDecision is CHANGES_REQUESTED, enter review_recovery only for findings inside the active S001/T005 scope; otherwise record a blocker receipt and wait for owner direction."
       - "Browser plugin is not required unless a rendered browser target is introduced."
-    expected_output: "A recorded owner decision for PR #271: ready-for-review, merge-authorized, keep-waiting, or next-slice activation; otherwise the board remains active and waiting."
+    expected_output: "A recorded owner decision for PR #271: ready-for-review under the away-mode guardrails, merge-authorized by explicit human instruction, keep-waiting, verification recovery, or next-slice activation; otherwise the board remains active and waiting."
     allowed_files:
       - "docs/goals/jsc-331-goal-governed-evidence-led-implementation/**"
     verify:
+      - "bash scripts/check-git-common-config.sh"
+      - "git status --short --branch --untracked-files=all"
       - "gh pr view 271 --json number,url,state,isDraft,mergeStateStatus,headRefOid,reviewDecision"
       - "gh pr checks 271 --json name,state,link --watch=false"
       - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-goal-governed-evidence-led-implementation"
     stop_if:
-      - "Owner merge authority is missing."
+      - "A merge action is requested but explicit human merge authority is missing."
       - "PR #271 is no longer green or mergeStateStatus is not CLEAN."
       - "The requested next action would touch replay-module files without an explicit replay task."
     receipt_id: R024-T006-REMOTE-GREEN-OWNER-DECISION

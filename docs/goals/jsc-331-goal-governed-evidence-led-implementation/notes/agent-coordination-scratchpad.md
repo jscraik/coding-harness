@@ -1,6 +1,6 @@
 # Agent Coordination Scratchpad
 
-Updated: 2026-05-21T14:09:40Z
+Updated: 2026-05-21T15:00:39Z
 
 ## Current Goal
 
@@ -144,11 +144,21 @@ branch as agent-governance because the PR contains runtime-evidence changes, so
 may update. Replay files remain out of scope.
 
 Remote green sweep: PR #271 is open as draft, head
-`b6cb8622261bb5c57ef1579267bd879e8ebb1764`, mergeStateStatus `CLEAN`, and
+`08d7e72cd6fccddf076d09683335e5c3c9e25cb4`, mergeStateStatus `CLEAN`, and
 all reported checks are `SUCCESS`, including CodeRabbit, docs-gate,
 consistency-drift-health, pr-pipeline, security-scan, Socket, and Snyk. Merge
 authority is still missing, so T006 is the active owner-decision lane. Replay
 files remain out of scope.
+
+T006 away-mode decision ladder: if live PR state remains OPEN draft,
+mergeStateStatus `CLEAN`, every reported check is `SUCCESS`, the review
+decision is empty or `APPROVED`, the branch is clean and synced, and the board
+validates, an unattended governor may mark PR #271 ready for review without
+another prompt. It still must not merge, mark the native goal complete, or
+activate replay work without explicit human authority. If checks regress, route
+to green sweep or verification recovery. If the PR is already
+ready/open/CLEAN/green and merge authority is missing, keep waiting and avoid
+board-only commits whose only purpose is refreshing receipt head SHA.
 
 ## Message To Replay Agent
 
