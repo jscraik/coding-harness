@@ -435,15 +435,15 @@
           </article>
           <article class="status-card status-current">
             <strong>Current Slice</strong>
-            <span>T002 / R002: drift-gate raw CLI parsing is moving out of the registry spec and into src/lib/drift-gate/cli-args.ts.</span>
+            <span>R002-PR: drift-gate is complete locally; the PR green-sweep repair is being committed and pushed before replay implementation starts.</span>
           </article>
           <article class="status-card status-watch">
             <strong>Next</strong>
-            <span>After this pushed receipt, choose the next non-Effect pressure point from the goal board. Effect layers stay deferred.</span>
+            <span>T003 / R003: replay is the next governed non-Effect pressure point after branch and PR state are re-observed.</span>
           </article>
           <article class="status-card status-watch">
             <strong>Blocked</strong>
-            <span>No known code blocker. PR handoff remains incomplete until review gates, full slice validation, commit, push, and GitHub evidence are recorded.</span>
+            <span>No known code blocker. CI is waiting on the pushed PR repair that refreshed the stale preflight-gate cadence marker.</span>
           </article>
         </section>
 
@@ -456,15 +456,15 @@
             </article>
             <article class="note">
               <h3>Human Review</h3>
-              <p>Review the public facade, drift-gate/cli-args.ts, and the thin registry spec first. Internals need attention only if behavior or validation fails.</p>
+              <p>Review the PR green-sweep repair first: harness.contract.json, docs/roadmap/agent-first-status.md, and the R002-PR receipt. Replay internals wait until PR state is re-observed.</p>
             </article>
             <article class="note">
               <h3>Record Evidence</h3>
-              <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R002.</p>
+              <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R002-PR.</p>
               <ul class="evidence-list">
-                <li>Focused test: command-spec drift-gate projection.</li>
+                <li>Focused proof: drift-gate health, pr-template-gate, docs-gate, board checker, codestyle fast, and verify-work fast.</li>
                 <li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-                <li>Handoff: commit, push, and PR evidence still pending.</li>
+                <li>Handoff: commit and push the PR repair, then refresh PR #270 checks before T003 Worker edits.</li>
               </ul>
             </article>
           </div>
@@ -1761,10 +1761,10 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-              Current slice in progress: drift-gate raw CLI flag projection is
-              moving into drift-gate/cli-args.ts. This is complete only after
-              review gates, focused validation, verify-work, commit, push, and
-              the R002 receipt are recorded.
+              Current board gate: commit and push the R002-PR repair, then
+              re-observe PR #270 checks and review state. The next Worker slice
+              is T003 replay, but replay implementation should not start until
+              branch and PR state are live.
             </p>
           </article>
         </section>
