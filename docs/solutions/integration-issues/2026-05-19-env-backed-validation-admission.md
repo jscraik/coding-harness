@@ -45,6 +45,10 @@ validation contract.
   `unavailable credential` for local validation until `~/.codex/.env` has
   been checked for required variable names without printing values and the
   exact command has been rerun with that env loaded when values are present.
+- FIFO or other file-type metadata is not missing-credential evidence by
+  itself. If the approved env surface exposes the required variable names, the
+  blocker must be classified from the env-loaded rerun outcome, not from the
+  file type.
 
 ## Durable Rule
 
@@ -57,6 +61,9 @@ validation lane. The agent must:
 3. Report the final command status from the env-loaded rerun.
 4. Classify the lane as blocked only when the env file is missing, unreadable,
    incomplete, or the env-loaded rerun still fails.
+5. Do not classify FIFO metadata as proof that credentials are unavailable when
+   the variable-name probe succeeds; source the env surface through the
+   canonical command shape and report the command's actual failure.
 
 Canonical command shape:
 

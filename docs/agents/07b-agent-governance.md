@@ -78,6 +78,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   manifest updates inside `src/lib/upgrade/templates.ts`, and upgrade
   orchestration inside `src/lib/upgrade/runner.ts`, with
   module-boundary ratchets preserving the adapter seam.
+  Brain follows the same pattern with `src/commands/brain.ts` and
+  `src/commands/brain-core.ts` as compatibility facades,
+  `brain-command-spec.ts` as the registry adapter, raw Project Brain flag
+  projection inside `src/lib/project-brain/cli-args.ts`, the dispatcher and
+  public export surface inside `src/lib/project-brain/cli.ts`, and subcommand
+  behavior inside `src/lib/project-brain/*-cli.ts`, with module-boundary
+  ratchets preserving the adapter seam.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to

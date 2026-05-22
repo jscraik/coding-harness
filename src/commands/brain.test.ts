@@ -19,6 +19,10 @@ import {
 
 function createTempHarness(): string {
 	const dir = mkdtempSync(join("/tmp", "brain-test-"));
+	return createHarnessAt(dir);
+}
+
+function createHarnessAt(dir: string): string {
 	const harnessDir = join(dir, ".harness");
 	mkdirSync(harnessDir, { recursive: true });
 	mkdirSync(join(harnessDir, "knowledge"), { recursive: true });
@@ -78,6 +82,7 @@ describe("brain status", () => {
 		const result = runBrainStatus("/nonexistent/path/.harness");
 		expect(result.valid).toBe(false);
 		expect(result.validation.summary.errors).toBeGreaterThan(0);
+		expect(result.maturity.level).toBe("seeded");
 	});
 
 	it("reports warnings for placeholder content", () => {
@@ -269,12 +274,156 @@ describe("brain CLI", () => {
 		}
 	});
 
+	it("accepts dash-prefixed content values", () => {
+		const dir = createTempHarness();
+		const write = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runBrainCLI([
+				"add",
+				"--type",
+				"learning",
+				"--content",
+				"-avoid stale claims",
+				"--dir",
+				dir,
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			const output = write.mock.calls.map((call) => call[0]).join("");
+			const result = JSON.parse(output);
+			expect(result.content).toContain("-avoid stale claims");
+		} finally {
+			write.mockRestore();
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("accepts dash-prefixed query values", () => {
+		const dir = createTempHarness();
+		const write = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			writeFileSync(
+				join(dir, ".harness", "memory", "LEARNINGS.md"),
+				"# Learnings\n\n- -foo migration note\n",
+			);
+			const exitCode = runBrainCLI([
+				"query",
+				"--query",
+				"-foo",
+				"--dir",
+				dir,
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			const output = write.mock.calls.map((call) => call[0]).join("");
+			const result = JSON.parse(output);
+			expect(result.query).toBe("-foo");
+			expect(result.total).toBeGreaterThan(0);
+		} finally {
+			write.mockRestore();
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("accepts dash-prefixed relative --dir values", () => {
+		const parentDir = mkdtempSync(join("/tmp", "brain-dir-parent-"));
+		const dir = join(parentDir, "-repo");
+		mkdirSync(dir, { recursive: true });
+		createHarnessAt(dir);
+		const originalCwd = process.cwd();
+		const write = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			process.chdir(parentDir);
+			const exitCode = runBrainCLI(["status", "--dir", "-repo", "--json"]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			const output = write.mock.calls.map((call) => call[0]).join("");
+			const result = JSON.parse(output);
+			expect(result.harnessDir).toContain("-repo/.harness");
+		} finally {
+			process.chdir(originalCwd);
+			write.mockRestore();
+			rmSync(parentDir, { recursive: true, force: true });
+		}
+	});
+
+	it("preserves an explicit zero stale threshold", () => {
+		const dir = createTempHarness();
+		const write = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runBrainCLI([
+				"stale",
+				"--threshold-days",
+				"0",
+				"--dir",
+				dir,
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.WARNINGS);
+			const output = write.mock.calls.map((call) => call[0]).join("");
+			const result = JSON.parse(output);
+			expect(result.report.thresholdDays).toBe(0);
+		} finally {
+			write.mockRestore();
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects malformed stale thresholds", () => {
+		const dir = createTempHarness();
+		const error = vi
+			.spyOn(process.stderr, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runBrainCLI([
+				"stale",
+				"--threshold-days",
+				"later",
+				"--dir",
+				dir,
+			]);
+			expect(exitCode).toBe(EXIT_CODES.INVALID_ARGS);
+			const output = error.mock.calls.map((call) => call[0]).join("");
+			expect(output).toContain(
+				"--threshold-days must be a non-negative integer",
+			);
+		} finally {
+			error.mockRestore();
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("runs status subcommand", () => {
 		const dir = createTempHarness();
 		try {
 			const exitCode = runBrainCLI(["status", "--dir", dir, "--json"]);
 			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
 		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("renders parseable JSON when status cannot find a harness directory", () => {
+		const dir = mkdtempSync(join("/tmp", "brain-missing-"));
+		const write = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runBrainCLI(["status", "--dir", dir, "--json"]);
+			expect(exitCode).toBe(EXIT_CODES.NOT_FOUND);
+			const output = write.mock.calls.map((call) => call[0]).join("");
+			const result = JSON.parse(output);
+			expect(result.error).toBe("No .harness directory found");
+			expect(result.path).toBe(join(dir, ".harness"));
+		} finally {
+			write.mockRestore();
 			rmSync(dir, { recursive: true, force: true });
 		}
 	});

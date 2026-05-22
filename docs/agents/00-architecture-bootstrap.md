@@ -83,6 +83,12 @@ migration helpers inside `src/lib/upgrade/contract.ts`, keep the shared
 upgrade option contract inside `src/lib/upgrade/types.ts`, keep template
 and manifest updates inside `src/lib/upgrade/templates.ts`, and keep
 upgrade orchestration inside `src/lib/upgrade/runner.ts`.
+Brain follows the same registry-boundary pattern: keep `src/commands/brain.ts`
+and `src/commands/brain-core.ts` as compatibility facades, keep
+`brain-command-spec.ts` as the registry adapter, keep raw Project Brain flag
+projection inside `src/lib/project-brain/cli-args.ts`, keep the dispatcher and
+public export surface inside `src/lib/project-brain/cli.ts`, and keep
+subcommand behavior inside `src/lib/project-brain/*-cli.ts`.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
 Rule lifecycle governance updates are architecture-adjacent when they alter the manifest schema, `rule-lifecycle-gate`, or rule metadata validation. Keep this guide synchronized with `AGENTS.md` and `README.md` when docs-gate reports architecture-context or contract-policy surfaces, and ensure schema validation resolves from the target repo root rather than the caller's shell cwd.
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence.

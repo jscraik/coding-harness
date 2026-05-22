@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as artifactGateModule from "../../artifact-gate.js";
+import * as brainCli from "../../project-brain/cli.js";
 import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
 import * as gardenerCommand from "../../../commands/gardener.js";
 import * as driftGateModule from "../../drift-gate.js";
@@ -126,6 +127,7 @@ describe("COMMAND_SPECS structural integrity", () => {
 			"gardener",
 			"memory-gate",
 			"silent-error",
+			"brain",
 			"brainstorm-gate",
 			"plan-gate",
 			"prompt-gate",
@@ -569,6 +571,25 @@ describe("silent-error execute parsing", () => {
 		expect(silentErrorCommand.runSilentErrorDetectorCLI).toHaveBeenCalledWith(
 			{},
 		);
+	});
+});
+
+describe("brain execute delegation", () => {
+	const spec = findSpec("brain");
+
+	beforeEach(() => {
+		vi.spyOn(brainCli, "runBrainCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("delegates raw brain arguments to the Project Brain CLI", () => {
+		const result = spec.execute(["status", "--json"]);
+
+		expect(result).toBe(0);
+		expect(brainCli.runBrainCLI).toHaveBeenCalledWith(["status", "--json"]);
 	});
 });
 

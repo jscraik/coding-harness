@@ -13,6 +13,7 @@ last_validated: 2026-05-22
 - [CI Migration Command Boundary](#ci-migration-command-boundary)
 - [Init Command Boundary](#init-command-boundary)
 - [Upgrade Command Boundary](#upgrade-command-boundary)
+- [Brain Command Boundary](#brain-command-boundary)
 - [Verify Work Command Boundary](#verify-work-command-boundary)
 - [Memory Gate Command Boundary](#memory-gate-command-boundary)
 - [Drift Gate Command Boundary](#drift-gate-command-boundary)
@@ -124,6 +125,10 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/brainstorm-gate-command-spec.ts`
   - Brainstorm path, topic, age, strictness, and JSON CLI option adapter stay
     local to the brainstorm compliance command adapter.
+- `src/lib/cli/registry/brain-command-spec.ts`
+  - Thin registry metadata and command adapter; Project Brain command behavior
+    lives behind `src/lib/project-brain/cli.ts`, and raw flag helpers live in
+    `src/lib/project-brain/cli-args.ts`.
 - `src/lib/cli/registry/drift-gate-command-spec.ts`
   - Thin registry metadata and command adapter; raw drift-gate argv projection
     lives in `src/lib/drift-gate/cli-args.ts`.
@@ -318,6 +323,42 @@ the compatibility facade, registry adapter, raw CLI argument adapter, contract
 helper, shared type contract, template helper, and runner so upgrade workflow
 behavior does not grow back into the command facade or the global command
 registry.
+
+## Brain Command Boundary
+
+Project Brain remains responsible for repository-local knowledge, rule,
+decision, and preflight context behavior. The command facades and CLI registry
+must not own Project Brain workflow behavior or raw flag projection.
+
+- `src/commands/brain.ts`
+  - Compatibility facade that preserves the existing public command import
+    surface.
+- `src/commands/brain-core.ts`
+  - Compatibility facade for historical brain-core imports.
+- `src/lib/cli/registry/brain-command-spec.ts`
+  - Registry metadata and delegation to the Project Brain CLI entrypoint.
+- `src/lib/project-brain/cli.ts`
+  - Project Brain CLI dispatcher and public export surface for subcommands.
+- `src/lib/project-brain/cli-args.ts`
+  - Raw Project Brain flag projection and harness-directory resolution.
+- `src/lib/project-brain/cli-types.ts`
+  - Shared Project Brain CLI result and subcommand result contracts.
+- `src/lib/project-brain/status-cli.ts`
+  - Status validation, maturity projection, and status presentation.
+- `src/lib/project-brain/query-cli.ts`
+  - Project Brain search path projection, query execution, and query
+    presentation.
+- `src/lib/project-brain/add-cli.ts`
+  - Safe Project Brain capture writes and add-result presentation.
+- `src/lib/project-brain/preflight-cli.ts`
+  - Domain context loading, preflight projection, and preflight presentation.
+- `src/lib/project-brain/stale-cli.ts`
+  - Metadata staleness projection and stale-report presentation.
+
+Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
+the compatibility facade, registry adapter, CLI helper, shared type contract,
+and subcommand adapters so Project Brain behavior does not grow back into
+command facades or the global command registry.
 
 ## Verify Work Command Boundary
 
@@ -928,6 +969,28 @@ Threshold policy:
   lines).
 - `src/lib/cli/registry/brainstorm-gate-command-spec.ts` must stay focused on
   brainstorm CLI option adapter and command delegation (`<= 40` lines).
+- `src/lib/cli/registry/brain-command-spec.ts` must stay focused on Project
+  Brain command metadata and project-brain-owned CLI delegation (`<= 20`
+  lines).
+- `src/commands/brain-core.ts` must stay focused on exporting the Project
+  Brain CLI compatibility surface (`<= 10` lines).
+- `src/lib/project-brain/cli.ts` must stay a dispatcher and public export
+  surface while subcommand behavior lives in Project Brain modules (`<= 120`
+  lines).
+- `src/lib/project-brain/cli-args.ts` must stay focused on raw flag projection
+  and harness directory resolution (`<= 40` lines).
+- `src/lib/project-brain/cli-types.ts` must stay a small shared Project Brain
+  CLI contract (`<= 110` lines).
+- `src/lib/project-brain/status-cli.ts` must stay focused on validation
+  summary and status presentation (`<= 130` lines).
+- `src/lib/project-brain/query-cli.ts` must stay focused on search path
+  projection and query presentation (`<= 130` lines).
+- `src/lib/project-brain/add-cli.ts` must stay focused on safe capture writes
+  and add presentation (`<= 220` lines).
+- `src/lib/project-brain/preflight-cli.ts` must stay focused on domain context
+  loading and presentation (`<= 220` lines).
+- `src/lib/project-brain/stale-cli.ts` must stay focused on metadata
+  staleness projection and presentation (`<= 110` lines).
 - `src/lib/cli/registry/gardener-command-spec.ts` must stay focused on docs
   freshness CLI option adapter and command delegation (`<= 35` lines).
 - `src/lib/cli/registry/replay-command-spec.ts` must stay focused on replay

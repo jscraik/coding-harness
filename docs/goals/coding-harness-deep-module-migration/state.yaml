@@ -110,6 +110,8 @@ tasks:
       - "src/commands/drift-gate*.test.ts"
       - "src/lib/drift-gate*.test.ts"
       - "docs/architecture/module-boundaries.md"
+      - "docs/solutions/integration-issues/2026-05-19-env-backed-validation-admission.md"
+      - "scripts/check-steering-feedback-contract.cjs"
       - ".harness/implementation-notes/2026-05-19-module-layout.html"
       - "artifacts/architecture/module-layout.html"
       - "docs/goals/coding-harness-deep-module-migration/**"
@@ -542,7 +544,7 @@ tasks:
   - id: T013
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "Prepare the upgrade module-boundary slice from merged origin/main; do not edit implementation files until T012 merge evidence, scope, and focused validation are declared from live source."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
@@ -595,8 +597,56 @@ tasks:
       - "Focused validation path cannot be identified."
       - "Upgrade behavior boundary is unclear."
     receipt_id: R013-UPGRADE-LOCAL-GATES-VERIFIED
+  - id: T014
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Deepen the brain command module boundary from merged origin/main without changing Project Brain behavior."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+      - "src/commands/brain.ts"
+      - "src/commands/brain-core.ts"
+      - "src/lib/project-brain/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+    constraints:
+      - "Do not start implementation until T013 and PR #279 merge evidence are recorded."
+      - "Declare focused brain tests before editing implementation files."
+      - "Keep Project Brain behavior behind focused CLI, registry adapter, and internal module seams."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R014 before any final completion audit."
+    expected_output: "A small brain module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/brain.ts"
+      - "src/commands/brain-core.ts"
+      - "src/commands/brain.test.ts"
+      - "src/lib/project-brain/**"
+      - "src/lib/cli/registry/brain-command-spec.ts"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/cli/parse-utils.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "pnpm vitest run src/commands/brain.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot"
+      - "pnpm typecheck"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T013 is not recorded done."
+      - "PR #279 merge evidence is missing."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+      - "Project Brain behavior boundary is unclear."
+    receipt_id: R014-BRAIN-SCOPE-DECLARED
 pr_green_sweep:
-  status: t013_upgrade_pr279_coderabbit_review_response_fixed_pushed_reobserved
+  status: t014_brain_full_local_handoff_gates_pass_pr_pending
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -630,8 +680,10 @@ pr_green_sweep:
   upgrade_branch: "codex/JSC-331-upgrade-deep-module"
   upgrade_base_sha: "466aaaea0fa36f7fe670c7d496c0cb6a3816627b"
   upgrade_pr_url: "https://github.com/jscraik/coding-harness/pull/279"
-  upgrade_head_sha: "41140ad93f1babeaa616174be140ab7adfbec4e2"
-  upgrade_head_note: "Pushed PR #279 review-response head after malformed-manifest fail-closed coverage and report refresh; latest live PR metadata reports all visible checks green, zero unresolved review threads, and mergeStateStatus CLEAN."
+  upgrade_head_sha: "24066280f22dc6ccf2603bca4764cf1976803b39"
+  upgrade_head_note: "Final PR #279 head after CodeRabbit receipt/status repair; live PR metadata reported all visible checks green, zero unresolved review threads, and mergeStateStatus CLEAN before merge."
+  upgrade_merge_commit: "d8c2e9f02a63ac83541d14fc22484d7f89934f82"
+  upgrade_merged_at: "2026-05-22T21:03:04Z"
   last_observed: "2026-05-22T20:10:09Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
@@ -669,7 +721,7 @@ pr_green_sweep:
     - "PR #276 all visible checks pass at head 50e633e7b6caa8cd89a0ed4581236d2edc5488fe, including Socket, CodeRabbit, CircleCI aggregate/job contexts, Snyk license, and Snyk security."
     - "PR #276 GitHub review-thread lookup returned zero threads at head 50e633e7b6caa8cd89a0ed4581236d2edc5488fe; live PR view reports draft=true, mergeable MERGEABLE, mergeStateStatus CLEAN, and empty reviewDecision."
     - "PR #276 body was refreshed after the green/check-thread observation; the refreshed body passes pr-template-gate and linear-gate locally and removes stale pending-check and missing-reviewer-artifact wording."
-    - "pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration passed; the current process lacks GitHub and Linear credentials and ~/.codex/.env is a FIFO, so safe grep/source recovery would block."
+    - "The earlier pnpm test:deep credential blocker was reclassified on 2026-05-22: ~/.codex/.env exposes the required variable names without printing values, and an env-loaded pnpm test:deep run executed successfully through credential setup. The current deep-gate failure is a real module-boundary ratchet in src/lib/cli/registry/brain-command-spec.ts, not a missing-credential blocker."
     - "PR #276 was marked ready at head a7e85a378d04dcddb2cc32d21f3f14e9ac7cbe64; all visible checks passed before the ready transition completed, but CodeRabbit then posted seven unresolved review threads."
     - "PR #276 CodeRabbit review-response findings are classified as valid or already-present-but-needing-diff: docs architecture simulate adapter wording, stale PR #275 temp-path verification evidence, simulate facade argv guard coverage, recursive contract hash stability, artifact-directory override consistency across data quality/metrics/deltas, candidate manifest filtering by contractB hash, and default pilot artifactsProcessed reporting."
     - "PR #276 review-response commit 073b1f04b5addd66bf33907836ef581588da4ca9 was pushed after local validation and pre-push diagram refresh; follow-up observation found most visible checks passing, with CodeRabbit, ci/circleci: orb-pinning, and aggregate pr-pipeline still pending."
@@ -697,12 +749,16 @@ pr_green_sweep:
     - "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2; all 23 visible checks pass and GitHub review-thread lookup returns zero unresolved threads."
     - "T012 init is closed by PR #278 merge evidence; PR #278 merged at 2026-05-22T17:49:52Z with merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b."
     - "T013 upgrade is implemented locally on codex/JSC-331-upgrade-deep-module rooted at origin/main merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b; upgrade orchestration now lives behind src/lib/upgrade/runner.ts, raw CLI projection lives in src/lib/upgrade/cli-args.ts, shared option contracts live in src/lib/upgrade/types.ts, contract/default migration helpers live in src/lib/upgrade/contract.ts, template and manifest updates live in src/lib/upgrade/templates.ts, and registry metadata delegates through upgrade-command-spec.ts."
-    - "T013 reviewer findings were addressed locally: testing requested direct execute-path coverage for the new upgrade registry adapter plus malformed helper error-boundary coverage, and simplicity/architecture requested removal of duplicated upgrade option contracts. The focused upgrade, registry, and module-boundary suite passes with 206 tests after adding malformed upgrade-manifest fail-closed coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, validate-codestyle fast, and verify-work fast pass. pnpm test:deep reaches E2E credential validation after pnpm check, test:artifacts, and integration pass, then blocks because GitHub and Linear credentials are unavailable and ~/.codex/.env is a FIFO."
+    - "T013 reviewer findings were addressed locally: testing requested direct execute-path coverage for the new upgrade registry adapter plus malformed helper error-boundary coverage, and simplicity/architecture requested removal of duplicated upgrade option contracts. The focused upgrade, registry, and module-boundary suite passes with 206 tests after adding malformed upgrade-manifest fail-closed coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, validate-codestyle fast, and verify-work fast pass. The 2026-05-22 env-loaded pnpm test:deep rerun proves credentials are recoverable from ~/.codex/.env and fails instead on the T014 brain module-boundary ratchet for src/lib/cli/registry/brain-command-spec.ts."
     - "T013 full local PR-template gates now run: bash scripts/validate-codestyle.sh passes, pnpm check passes with 282 standard test files plus the ci-migrate suite and no known vulnerabilities, tooling-audit passes with zero findings, review-context succeeds, north-star-feedback succeeds with external evidence gaps called out, and learnings gate exits 0 with warning-only generated/report keyword matches."
     - "The module-layout report remains live for Jamie on http://127.0.0.1:8767/artifacts/architecture/module-layout.html and now exposes a Jamie Readout Now section with the implemented T013 upgrade seam, reviewer-response proof, Browser truth, and remaining handoff gates."
-    - "The in-app Browser was successfully launched on the 8767 report URL in R013-UPGRADE-REPORT-BROWSER-LAUNCHED-8767, but the latest Browser workflow retry in this thread lists no available browser targets and returns Browser is not available: iab; HTTP revalidation of the report URL passes."
-    - "PR #279 is open for T013 at https://github.com/jscraik/coding-harness/pull/279 and review-response head 41140ad93f1babeaa616174be140ab7adfbec4e2 is pushed. Latest live re-observation found CodeRabbit successful, all six CodeRabbit review-response threads resolved, all visible remote checks green, and mergeStateStatus CLEAN."
+    - "The in-app Browser is launched on the 8767 report URL for the active T014 report. The Browser target list now exposes the Codex In-app Browser, navigation reached http://127.0.0.1:8767/artifacts/architecture/module-layout.html?v=20260522-r023-pr279-merged, and the observed title is Coding Harness Module Layout."
+    - "PR #279 is merged for T013 at https://github.com/jscraik/coding-harness/pull/279. Final head 24066280f22dc6ccf2603bca4764cf1976803b39 had CodeRabbit successful, zero unresolved review threads, and all visible checks green before squash merge commit d8c2e9f02a63ac83541d14fc22484d7f89934f82 at 2026-05-22T21:03:04Z; the remote upgrade branch is deleted."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains preserved outside the T013 upgrade branch and must not be absorbed into the PR #279 closeout slice."
+    - "T014 brain is implemented locally on codex/JSC-331-brain-deep-module from merged origin/main d8c2e9f02a63ac83541d14fc22484d7f89934f82. Focused brain/registry/module-boundary tests pass with 191 tests, pnpm typecheck passes, production brain status JSON passes, validate-codestyle fast passes, and verify-work fast passes with run id 20260522T215354Z-27231."
+    - "T014 review gates are fixed or classified locally: architecture's stale-threshold-zero and missing brain facade ratchet findings are fixed; testing's dash-prefixed flag and missing-harness maturity findings are fixed with regressions; unslopify's add-type exhaustiveness finding is fixed; simplify/Codex found no required follow-up. Testing and unslopify artifact retries failed to write artifacts after mailbox findings were handled, so that coverage gap remains explicit."
+    - "T014 env-loaded pnpm test:deep progresses through pnpm check, the 283-file unit suite, and integration tests, then blocks at E2E credential validation because the current runtime cannot provide GitHub and Linear E2E credentials from ~/.codex/.env; stat reports ~/.codex/.env as a FIFO, and variable-name source probes hang in this runtime."
+    - "T014 full local handoff gates pass before staging: bash scripts/validate-codestyle.sh passes, tooling-audit exits 0 with zero findings, learnings gate exits 0 with warn-only advisory keyword/report matches, review-context succeeds, and north-star-feedback succeeds with pre-PR external evidence gaps called out."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_threads: "PR #276 GitHub review-thread lookup before merge returned nine total threads and zero unresolved threads. PR #270 remains merged with two current unresolved historical thread records whose fixes are shipped in merged PR #273."
@@ -710,7 +766,7 @@ pr_green_sweep:
     coderabbit: "The first seven PR #276 CodeRabbit findings were addressed by commit 073b1f04. The identical-hash follow-up finding was addressed by commit ef3db349. The stale-board finding was addressed by commit 2e1a817c, and GitHub reported zero unresolved PR #276 review threads before merge."
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
     post_push: "PR #275 was marked ready and squash-merged with merge commit a4f066a28ca91d67f84c1def5db552657e8b3cc4; the gap-case remote branch was deleted by the merge command."
-    validation: "T010 follow-up review-response local validation passed: pnpm test src/lib/simulate/analysis.test.ts src/commands/simulate.test.ts src/lib/simulate/recommendations.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot, pnpm typecheck, and bash scripts/validate-codestyle.sh --fast. validate-codestyle still reports non-blocking baseline drift-gate warnings plus simulate size ratchet warnings. pnpm test:deep remains blocked at E2E credential validation after prior pnpm check, test:artifacts, and integration passed; ~/.codex/.env is a FIFO and cannot be safely sourced/grepped without blocking."
+    validation: "T010 follow-up review-response local validation passed: pnpm test src/lib/simulate/analysis.test.ts src/commands/simulate.test.ts src/lib/simulate/recommendations.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot, pnpm typecheck, and bash scripts/validate-codestyle.sh --fast. validate-codestyle still reports non-blocking baseline drift-gate warnings plus simulate size ratchet warnings. The former pnpm test:deep E2E credential blocker is reclassified: ~/.codex/.env variable-name probing found the required credential names without printing values, and env-loaded pnpm test:deep now reaches the real T014 brain module-boundary ratchet."
     t009_review_gates: "Architecture review reported no actionable findings; simplify reported two low findings and the parser re-export was removed while the internal compatibility facade was kept intentionally; testing reported two medium coverage gaps that were fixed in tests but failed artifact-file verification; correctness review artifact did not complete before closeout."
     pr_handoff: "PR #276 merged at https://github.com/jscraik/coding-harness/pull/276. Current branch codex/JSC-331-ci-migrate-deep-module starts from origin/main at merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
@@ -723,15 +779,22 @@ pr_green_sweep:
       remaining: "Closed by PR #278 merge at 2026-05-22T17:49:52Z with merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b."
     t013_upgrade:
       implementation: "T013 upgrade split is implemented locally: src/commands/upgrade.ts is a compatibility facade, src/lib/cli/registry/upgrade-command-spec.ts owns registry metadata and delegation, src/lib/upgrade/cli-args.ts owns raw flag projection, src/lib/upgrade/types.ts owns the shared option contract, src/lib/upgrade/contract.ts owns contract/default migration helpers, src/lib/upgrade/templates.ts owns template and manifest updates, and src/lib/upgrade/runner.ts owns orchestration."
-      validation: "Focused upgrade/registry/module-boundary tests pass with 206 tests after adding direct upgrade registry execute-path coverage, malformed provider-value coverage, helper error-boundary coverage, and malformed upgrade-manifest fail-closed coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, the production CLI dry-run path, validate-codestyle fast, and verify-work fast pass. verify-work fast run id: 20260522T183031Z-7843. Full local PR-template gates also pass: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star-feedback; learnings gate exits 0 with warning-only generated/report keyword matches. pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration pass; ~/.codex/.env is a FIFO, so env-loaded recovery cannot be safely sourced in this runtime."
+      validation: "Focused upgrade/registry/module-boundary tests pass with 206 tests after adding direct upgrade registry execute-path coverage, malformed provider-value coverage, helper error-boundary coverage, and malformed upgrade-manifest fail-closed coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, the production CLI dry-run path, validate-codestyle fast, and verify-work fast pass. verify-work fast run id: 20260522T183031Z-7843. Full local PR-template gates also pass: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star-feedback; learnings gate exits 0 with warning-only generated/report keyword matches. Env-backed recovery is now proven: zsh -lc 'set -a; source ~/.codex/.env >/dev/null; set +a; pnpm test:deep' executes and fails on the T014 brain module-boundary ratchet because src/lib/cli/registry/brain-command-spec.ts imports from commands, not because credentials are missing."
       review: "Product, testing, simplicity, architecture, unslopify, and Codex/project-standards review artifacts exist under artifacts/reviews/. Testing's execute-path finding, simplicity/architecture option-contract duplication findings, stale-artifact findings, and Codex evidence-freshness finding are fixed locally. CodeRabbit's 2026-05-22T20:10:09Z PR #279 findings are pushed in head 41140ad93f1babeaa616174be140ab7adfbec4e2: the report active-slice text is T013/PR #279, receipt ordering/freshness is monotonic for T013, T013.verify includes the full mandatory gate set, upgrade_head_sha is machine-readable with a separate note, and malformed upgrade manifests fail closed instead of being treated as absent. Live re-observation found all six CodeRabbit threads resolved."
-      pr_handoff: "PR #279 is open at https://github.com/jscraik/coding-harness/pull/279 and review-response head 41140ad93f1babeaa616174be140ab7adfbec4e2 is pushed. The live PR body passes local pr-template-gate and linear-gate; CodeRabbit is successful; all six CodeRabbit review-response threads are resolved; all visible remote checks are green; GitHub reports mergeStateStatus CLEAN."
-      blocker: "The 8767 report was restarted and is live over HTTP; direct Browser reload is blocked because no iab browser target is currently exposed in this thread. T013 is blocked from advancement until merge-readiness evidence is recorded and PR #279 is closed; do not start brain before that closeout."
+      pr_handoff: "PR #279 is merged at https://github.com/jscraik/coding-harness/pull/279. Final head 24066280f22dc6ccf2603bca4764cf1976803b39 had all visible checks green and zero unresolved review threads before squash merge commit d8c2e9f02a63ac83541d14fc22484d7f89934f82 at 2026-05-22T21:03:04Z; git ls-remote confirms the remote upgrade branch is deleted."
+      blocker: "T013 has no active PR blocker. The 8767 report is live over HTTP, and the current Browser target is available again for the active T014 report."
+    t014_brain:
+      implementation: "T014 brain is the active final non-Effect slice from merged origin/main at d8c2e9f02a63ac83541d14fc22484d7f89934f82 on branch codex/JSC-331-brain-deep-module. Current boundary work keeps src/commands/brain-core.ts as a compatibility facade, routes the registry through src/lib/cli/registry/brain-command-spec.ts, and splits Project Brain CLI behavior across src/lib/project-brain/cli.ts plus add-cli.ts, cli-args.ts, cli-types.ts, preflight-cli.ts, query-cli.ts, stale-cli.ts, and status-cli.ts."
+      validation: "Focused local validation passes: brain command tests, registry execute-path coverage for brain, module-boundary ratchets, production brain status JSON, missing-.harness status JSON regression, and typecheck are proven by R014-BRAIN-FOCUSED-PROOF-REVIEW-REPAIRED. Broad local fast gates pass: validate-codestyle fast and verify-work fast run id 20260522T215354Z-27231. Full local handoff gates also pass before staging: bash scripts/validate-codestyle.sh, tooling-audit, review-context, and north-star-feedback; learnings gate exits 0 with warn-only advisory keyword/report matches. Env-loaded pnpm test:deep reaches E2E credential validation after check, unit, and integration suites pass, then blocks because the current runtime cannot provide GitHub and Linear E2E credentials from the ~/.codex/.env FIFO surface. The active 8767 report is launched in the Codex In-app Browser with title Coding Harness Module Layout."
+      review: "Review gates completed/classified locally: architecture found the explicit zero stale-threshold bug and missing src/commands/brain.ts ratchet, both fixed; testing found dash-prefixed flag-value handling and missing-harness maturity regressions, both fixed; unslopify found non-exhaustive add-type dispatch, fixed with an explicit learning case and never guard; simplify had no required changes and the optional array-copy cleanup is fixed; Codex review found no actionable issues. Testing and unslopify artifact retries failed to write artifacts after mailbox findings were handled, so the artifact coverage gap is explicit."
+      pr_handoff: "No T014 PR exists yet."
+      blocker: "No active focused-code or fast-gate blocker remains. T014 is still blocked from completion by pending PR handoff, remote checks, review-thread observation, and merge/deferral evidence; pnpm test:deep is blocked at E2E credential validation in this runtime after narrower code gates pass. Preserve CODEX-NATIVE HARNESS MEMORY BASELINE as a separate slice unless explicitly routed into this branch."
+      coordination: "Scratchpad for parallel agents, refreshed 2026-05-22T21:57Z: T014 owns src/commands/brain.ts, src/commands/brain-core.ts, src/lib/project-brain/**, src/lib/cli/registry/brain-command-spec.ts, src/lib/cli/parse-utils.ts, command-spec registry tests, module-boundary ratchets/docs, the env-backed validation-contract correction, the module-layout report mirrors, and goal receipts/state. CODEX-NATIVE HARNESS MEMORY BASELINE remains separate and should not be applied into this branch. If another agent needs one of these files, record the intended edit here or in receipts before changing it."
   pending_actions:
-    - "Record PR #279 merge-readiness evidence from head 41140ad93f1babeaa616174be140ab7adfbec4e2, then close the PR before advancing."
-    - "Keep the local static report server available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html; direct Browser reload is currently blocked because the Browser workflow exposes no iab target in this thread."
-    - "Do not start brain while PR #279 has pending checks, review gaps, or missing merge-readiness evidence."
-    - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
+    - "Prepare the T014 brain commit/PR handoff from branch codex/JSC-331-brain-deep-module without absorbing CODEX-NATIVE HARNESS MEMORY BASELINE or unrelated parallel-agent work."
+    - "Keep the local static report server available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html; the active T014 report is currently loaded in the Codex In-app Browser with title Coding Harness Module Layout."
+    - "Do not claim the overall goal complete until T014 brain is implemented, reviewed, validated, pushed, reviewed remotely, and closed or explicitly deferred."
+    - "Treat pnpm test:deep as blocked at E2E credential validation in this runtime after pnpm check, unit, and integration suites pass; do not claim deep-gate success until GitHub and Linear E2E credentials are available through a non-hanging approved env probe."
   tools:
     - "@github"
     - "@circleci"
@@ -754,9 +817,9 @@ slice_queue:
     - simulate
     - ci-migrate
     - init
-  active: upgrade
-  next: brain  # next is always the first entry of remaining
-  remaining:
-    - brain
+    - upgrade
+  active: brain
+  next: null  # next is always the first entry of remaining
+  remaining: []
   deferred:
     - effect-layers
