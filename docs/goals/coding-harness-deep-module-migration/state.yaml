@@ -491,7 +491,7 @@ tasks:
       - "Snapshot-backed ci-migrate safety boundary is unclear."
     receipt_id: R011-CI-MIGRATE-REGISTRY-SPLIT
 pr_green_sweep:
-  status: t011_ci_migrate_review_response_validated_pending_push
+  status: t011_ci_migrate_body_artifact_response_validated_pending_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -516,8 +516,8 @@ pr_green_sweep:
   simulate_merge_commit: "cf741e13c65b15aadb155d0701d60b4705f72eb0"
   ci_migrate_branch: "codex/JSC-331-ci-migrate-deep-module"
   ci_migrate_pr_url: "https://github.com/jscraik/coding-harness/pull/277"
-  ci_migrate_observed_head_sha: "4a95f8ba5361aa174efa653ccdf7849c79a7ce16"
-  last_observed: "2026-05-22T14:35:10Z"
+  ci_migrate_observed_head_sha: "12a24ffaabfac90ec287183792b32a663de38b46"
+  last_observed: "2026-05-22T14:55:02Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -572,7 +572,11 @@ pr_green_sweep:
     - "PR #277 evidence-only handoff commit 4a95f8ba5361aa174efa653ccdf7849c79a7ce16 was pushed; latest live observation found all visible checks passing, including CodeRabbit, pr-pipeline, security-scan, CircleCI contexts, Socket, and Snyk, but CodeRabbit posted six unresolved review threads."
     - "PR #277 CodeRabbit findings are classified as valid: placeholder command strings in receipts, missing governance/diagram artifacts in T011 allowed_files, stale ci_migrate_observed_head_sha, a non-matching ci-migrate test glob, delegated helper flag values being misclassified as targetDir, and missing regression coverage for delegated value-bearing helper flags."
     - "T011 CodeRabbit review-response patch is locally validated: focused ci-migrate registry/module-boundary tests pass after preserving the cli-args.ts line-count ratchet, typecheck passes, receipts parse, goal board passes, git diff --check passes, validate-codestyle fast passes, and verify-work fast passes with run id 20260522T143427Z-56863."
-    - "T011 is not remotely complete until the review-response patch is pushed, latest-head checks are reobserved, and review threads are resolved, outdated, or explicitly answered."
+    - "T011 CodeRabbit review-response commit 12a24ffaabfac90ec287183792b32a663de38b46 was pushed; latest-head observation found all 23 visible checks passing and the first six review threads resolved."
+    - "CodeRabbit then posted one new valid current thread PRRT_kwDORWZJCc6EJTPS on receipts.jsonl because PR body command evidence still pointed at /private/tmp body files instead of repo-tracked artifacts."
+    - "The PR body artifact response adds tracked snapshots under docs/goals/coding-harness-deep-module-migration/notes/pr-bodies/ and rewrites receipt PR-body commands to those repo-relative files. The first attempted location under docs/goals/coding-harness-deep-module-migration/evidence/pr-bodies/ was rejected by check-goal-board as an unexpected root entry, so notes/pr-bodies is the accepted goal-board surface."
+    - "Pre-commit docs-style initially rejected the tracked PR body snapshots because Vale treated literal PR-template fields and reobserved wording as spelling errors; the snapshots now use file-local Vale-off comments instead of changing global vocabulary."
+    - "T011 remains remotely incomplete until the PR body artifact response is committed and pushed, latest-head checks are reobserved, and review threads are resolved, outdated, or explicitly answered."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
@@ -586,9 +590,9 @@ pr_green_sweep:
     pr_handoff: "PR #276 merged at https://github.com/jscraik/coding-harness/pull/276. Current branch codex/JSC-331-ci-migrate-deep-module starts from origin/main at merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
     review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
-    t011_ci_migrate: "Local T011 implementation split ci-migrate raw argv parsing into src/lib/ci-migrate/cli-args.ts and registry dispatch into src/lib/cli/registry/ci-migrate-command-spec.ts. PR #277 is ready/open at head 4a95f8ba5361aa174efa653ccdf7849c79a7ce16 with all visible checks passing, but CodeRabbit posted six unresolved valid review threads. The local review-response patch is validated and pending commit/push; T011 remains active until latest-head checks plus review-thread resolution are recorded."
+    t011_ci_migrate: "T011 implementation and the first CodeRabbit review-response patch are pushed through head 12a24ffaabfac90ec287183792b32a663de38b46. Latest-head observation found all 23 visible checks passing and the first six review threads resolved, but CodeRabbit posted one new valid PR body artifact thread requiring tracked PR body snapshots. The local artifact response is validated and pending commit/push; T011 remains active until latest-head checks plus review-thread resolution are recorded."
   pending_actions:
-    - "Commit and push the validated PR #277 CodeRabbit review-response patch, then reobserve remote checks and review threads at the new head."
+    - "Commit and push the validated PR #277 PR body artifact response, then reobserve remote checks and review threads at the new head."
     - "Do not begin T012 init until T011 pushed-head PR evidence and review-thread resolution are recorded."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
