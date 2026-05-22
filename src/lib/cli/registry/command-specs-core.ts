@@ -4,7 +4,6 @@ import {
 	type BlastRadiusOptions,
 	runBlastRadiusCLI,
 } from "../../../commands/blast-radius.js";
-import { runBrainCLI } from "../../../commands/brain.js";
 import { runCIOwnershipGateCLI } from "../../../commands/ci-ownership-gate.js";
 import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
@@ -38,6 +37,7 @@ import {
 } from "../parse-utils.js";
 import { createArtifactGateCommandSpec } from "./artifact-gate-command-spec.js";
 import { createAuditCommandSpec } from "./audit-command-spec.js";
+import { createBrainCommandSpec } from "./brain-command-spec.js";
 import { createBrainstormGateCommandSpec } from "./brainstorm-gate-command-spec.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
@@ -169,15 +169,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createMemoryGateCommandSpec(),
 	createSilentErrorCommandSpec(),
 	createBrainstormGateCommandSpec(),
-	{
-		name: "brain",
-		summary: "Project Brain knowledge and quality management",
-		example: "brain status --json",
-		errorLabel: "Brain Error",
-		execute: (args) => {
-			return runBrainCLI(args);
-		},
-	},
+	createBrainCommandSpec(),
 	createPlanGateCommandSpec(),
 	createPromptGateCommandSpec(),
 	createDriftGateCommandSpec(),

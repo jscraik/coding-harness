@@ -63,6 +63,66 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 			"Simulate recommendation helper must stay a compatibility export surface; recommendation logic lives behind the simulate module seam.",
 	},
 	{
+		path: "src/commands/brain.ts",
+		maxLines: 10,
+		reason:
+			"Brain command must stay a stable compatibility export surface; Project Brain CLI behavior lives behind the project-brain module seam.",
+	},
+	{
+		path: "src/commands/brain-core.ts",
+		maxLines: 10,
+		reason:
+			"Brain core command must stay a compatibility export surface; Project Brain CLI behavior lives behind the project-brain module seam.",
+	},
+	{
+		path: "src/lib/project-brain/cli.ts",
+		maxLines: 120,
+		reason:
+			"Project Brain CLI must stay a dispatcher and public export surface; subcommand behavior lives in project-brain modules.",
+	},
+	{
+		path: "src/lib/project-brain/cli-args.ts",
+		maxLines: 40,
+		reason:
+			"Project Brain CLI argument helpers must stay focused on raw flag projection and harness directory resolution.",
+	},
+	{
+		path: "src/lib/project-brain/cli-types.ts",
+		maxLines: 110,
+		reason:
+			"Project Brain CLI types must stay a small shared contract for subcommand adapters.",
+	},
+	{
+		path: "src/lib/project-brain/status-cli.ts",
+		maxLines: 130,
+		reason:
+			"Project Brain status CLI must stay focused on validation summary and status presentation.",
+	},
+	{
+		path: "src/lib/project-brain/query-cli.ts",
+		maxLines: 130,
+		reason:
+			"Project Brain query CLI must stay focused on search path projection and query presentation.",
+	},
+	{
+		path: "src/lib/project-brain/add-cli.ts",
+		maxLines: 220,
+		reason:
+			"Project Brain add CLI must stay focused on safe capture writes and add presentation.",
+	},
+	{
+		path: "src/lib/project-brain/preflight-cli.ts",
+		maxLines: 220,
+		reason:
+			"Project Brain preflight CLI must stay focused on domain context loading and presentation.",
+	},
+	{
+		path: "src/lib/project-brain/stale-cli.ts",
+		maxLines: 110,
+		reason:
+			"Project Brain stale CLI must stay focused on metadata staleness projection and presentation.",
+	},
+	{
 		path: "src/lib/output/normalise.ts",
 		maxLines: 10,
 		reason:
@@ -175,6 +235,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 25,
 		reason:
 			"Init command spec must stay focused on registry metadata and init-owned argv delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/brain-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Brain command spec must stay focused on registry metadata and project-brain-owned CLI delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/upgrade-command-spec.ts",
@@ -1311,6 +1377,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./artifact-gate-command-spec.js",
+	"./brain-command-spec.js",
 	"./brainstorm-gate-command-spec.js",
 	"./branch-protect-command-spec.js",
 	"./audit-command-spec.js",

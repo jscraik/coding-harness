@@ -740,17 +740,25 @@ delegates through `upgrade-command-spec.ts`, raw flag projection stays in
 `src/lib/upgrade/runner.ts` so future upgrade behavior does not widen the
 registry core.
 
+The `brain` command follows the same command-registry split for Project Brain
+work. The public command facades stay compatibility export surfaces, the
+registry spec delegates through `brain-command-spec.ts`, raw flag projection
+stays in `src/lib/project-brain/cli-args.ts`, the dispatcher and public export
+surface stay in `src/lib/project-brain/cli.ts`, and subcommand behavior stays
+in `src/lib/project-brain/*-cli.ts` so future Project Brain behavior does not
+widen the registry core.
+
 ### Pilot, Remediation, And Automation
 
-| Command          | Purpose                                                          |
-| ---------------- | ---------------------------------------------------------------- |
-| `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness         |
-| `pilot-rollback` | Move pilot mode between autonomous and manual states             |
+| Command          | Purpose                                                                   |
+| ---------------- | ------------------------------------------------------------------------- |
+| `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness                  |
+| `pilot-rollback` | Move pilot mode between autonomous and manual states                      |
 | `simulate`       | Run counterfactual policy simulation through the simulate module boundary |
-| `automation-run` | Execute idempotent automation playbooks                          |
-| `gap-case`       | Manage production gap cases through the gap-case module boundary |
-| `remediate`      | Plan and run deterministic remediation for findings              |
-| `replay`         | Re-run policy checks from saved snapshots                        |
+| `automation-run` | Execute idempotent automation playbooks                                   |
+| `gap-case`       | Manage production gap cases through the gap-case module boundary          |
+| `remediate`      | Plan and run deterministic remediation for findings                       |
+| `replay`         | Re-run policy checks from saved snapshots                                 |
 
 ### Drift, Search, And Evidence
 
