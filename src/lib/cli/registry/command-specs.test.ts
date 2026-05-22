@@ -17,6 +17,8 @@ import * as memoryGateModule from "../../memory-gate.js";
 import * as observabilityGateModule from "../../observability-gate.js";
 import { buildCIMigrateOptionsFromCliArgs } from "../../ci-migrate/cli-args.js";
 import { buildInitOptionsFromCliArgs } from "../../init/cli-args.js";
+import { buildUpgradeOptionsFromCliArgs } from "../../upgrade/cli-args.js";
+import * as upgradeRunner from "../../upgrade/runner.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import * as silentErrorCommand from "../../../commands/silent-error.js";
@@ -1384,6 +1386,109 @@ describe("init execute validation", () => {
 		} finally {
 			errorSpy.mockRestore();
 		}
+	});
+});
+
+describe("upgrade execute validation", () => {
+	const spec = findSpec("upgrade");
+
+	beforeEach(() => {
+		vi.spyOn(upgradeRunner, "runUpgradeCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("keeps upgrade option projection in the upgrade module seam", () => {
+		const parsed = buildUpgradeOptionsFromCliArgs([
+			"repo",
+			"--provider",
+			"circleci",
+			"--dry-run",
+			"--json",
+			"--force",
+			"--skip-contract-migration",
+		]);
+
+		expect(parsed).toEqual({
+			targetDir: "repo",
+			options: {
+				dryRun: true,
+				force: true,
+				json: true,
+				provider: "circleci",
+				skipContractMigration: true,
+			},
+		});
+	});
+
+	it("does not treat provider values as the upgrade target directory", () => {
+		const parsed = buildUpgradeOptionsFromCliArgs([
+			"--provider",
+			"github-actions",
+			"--dry-run",
+			"repo",
+		]);
+
+		expect(parsed).toEqual({
+			targetDir: "repo",
+			options: expect.objectContaining({
+				dryRun: true,
+				provider: "github-actions",
+			}),
+		});
+	});
+
+	it("does not treat malformed provider flags as the upgrade target directory", () => {
+		expect(
+			buildUpgradeOptionsFromCliArgs(["--provider", "--dry-run", "repo"]),
+		).toEqual({
+			targetDir: "repo",
+			options: expect.objectContaining({
+				dryRun: true,
+				provider: undefined,
+			}),
+		});
+
+		expect(buildUpgradeOptionsFromCliArgs(["--provider", "repo"])).toEqual({
+			targetDir: undefined,
+			options: expect.objectContaining({
+				provider: "repo",
+			}),
+		});
+	});
+
+	it("ignores short flags when extracting the upgrade target directory", () => {
+		expect(buildUpgradeOptionsFromCliArgs(["-x", "repo", "--dry-run"])).toEqual(
+			{
+				targetDir: "repo",
+				options: expect.objectContaining({
+					dryRun: true,
+				}),
+			},
+		);
+	});
+
+	it("executes upgrade through the registry adapter seam", () => {
+		const result = spec.execute([
+			"repo",
+			"--provider",
+			"circleci",
+			"--dry-run",
+			"--json",
+			"--force",
+			"--skip-contract-migration",
+		]);
+
+		expect(result).toBe(0);
+		expect(upgradeRunner.runUpgradeCLI).toHaveBeenCalledWith("repo", {
+			dryRun: true,
+			force: true,
+			json: true,
+			provider: "circleci",
+			skipContractMigration: true,
+		});
 	});
 });
 

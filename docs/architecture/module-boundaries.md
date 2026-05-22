@@ -11,6 +11,8 @@ last_validated: 2026-05-22
 - [Agent Boundary Enforcement](#agent-boundary-enforcement)
 - [CLI Registry Boundaries](#cli-registry-boundaries)
 - [CI Migration Command Boundary](#ci-migration-command-boundary)
+- [Init Command Boundary](#init-command-boundary)
+- [Upgrade Command Boundary](#upgrade-command-boundary)
 - [Verify Work Command Boundary](#verify-work-command-boundary)
 - [Memory Gate Command Boundary](#memory-gate-command-boundary)
 - [Drift Gate Command Boundary](#drift-gate-command-boundary)
@@ -234,7 +236,7 @@ parsing and delegation belong in named adapters:
   `gardener-command-spec.ts`, `memory-gate-command-spec.ts`,
   `silent-error-command-spec.ts`, `brainstorm-gate-command-spec.ts`,
   `gap-case-command-spec.ts`, `ci-migrate-command-spec.ts`,
-  `init-command-spec.ts`,
+  `init-command-spec.ts`, `upgrade-command-spec.ts`,
   `verify-coderabbit-command-spec.ts`, `local-memory-preflight-command-spec.ts`,
   `symphony-check-command-spec.ts`, and
   `workflow-generate-command-spec.ts`.
@@ -285,11 +287,37 @@ registry must not own init flag projection.
   - Repository-bounded configured path resolution, file URL resolution, symlink
     rejection, and allowlisted restore-path safety checks.
 
+## Upgrade Command Boundary
+
+Upgrade remains responsible for existing-install detection, contract default
+backfill, schema migration, CI-provider resolution, template upgrade writes,
+and upgrade-manifest persistence. The command facade and registry must not own
+that workflow or raw flag projection.
+
+- `src/commands/upgrade.ts`
+  - Compatibility facade that preserves the existing command import surface and
+    exports the upgrade runner.
+- `src/lib/cli/registry/upgrade-command-spec.ts`
+  - Registry metadata and delegation to the upgrade command entrypoint.
+- `src/lib/upgrade/cli-args.ts`
+  - Raw upgrade flag projection, provider value handling, target-directory
+    detection, and dry-run/json/force option mapping.
+- `src/lib/upgrade/contract.ts`
+  - Contract schema migration and default backfill helpers used during upgrade.
+- `src/lib/upgrade/types.ts`
+  - Shared upgrade CLI option contract used by the parser and runner.
+- `src/lib/upgrade/templates.ts`
+  - Template classification, stock/customized update behavior, upgrade-manifest
+    persistence, and template summary output.
+- `src/lib/upgrade/runner.ts`
+  - Upgrade orchestration, install/context detection, provider resolution, JSON
+    dry-run routing, helper delegation, and terminal completion output.
+
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
-the command core, registry adapter, CLI-args adapter, merge-queue window module,
-and repository path-safety module so raw flag parsing, signed lifecycle-state,
-and path traversal policy do not grow back into the command orchestration file
-or the global command registry.
+the compatibility facade, registry adapter, raw CLI argument adapter, contract
+helper, shared type contract, template helper, and runner so upgrade workflow
+behavior does not grow back into the command facade or the global command
+registry.
 
 ## Verify Work Command Boundary
 
@@ -919,6 +947,22 @@ Threshold policy:
   metadata and init-owned argv delegation (`<= 25` lines).
 - `src/lib/init/cli-args.ts` must stay focused on init option projection and
   target-directory detection (`<= 80` lines).
+- `src/commands/upgrade.ts` must stay focused on exporting the upgrade runner
+  compatibility surface (`<= 5` lines).
+- `src/lib/cli/registry/upgrade-command-spec.ts` must stay focused on upgrade
+  command metadata and upgrade-owned argv delegation (`<= 25` lines).
+- `src/lib/upgrade/cli-args.ts` must stay focused on upgrade option projection
+  and target-directory detection (`<= 70` lines).
+- `src/lib/upgrade/contract.ts` must keep upgrade contract migration and
+  default backfill helpers outside the runner and registry adapter (`<= 140`
+  lines).
+- `src/lib/upgrade/types.ts` must remain a small shared upgrade CLI option
+  contract (`<= 20` lines).
+- `src/lib/upgrade/templates.ts` must keep template classification and
+  manifest persistence outside the runner and registry adapter (`<= 210`
+  lines).
+- `src/lib/upgrade/runner.ts` must coordinate upgrade modules instead of
+  absorbing contract, template, or registry parsing behavior (`<= 360` lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
