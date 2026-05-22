@@ -701,7 +701,7 @@ pr_green_sweep:
   current_blockers:
     - "No active implementation, PR, CI, or review-thread blocker remains for the non-Effect deep-module migration."
     - "Effect-layer work remains explicitly deferred and out of scope for this goal."
-    - "pnpm test:deep remains classified as blocked_env_fifo_timeout at E2E credential validation in this runtime after narrower code gates pass; this is an environment blocker, not an incomplete non-Effect slice."
+    - "pnpm test:deep remains classified as blocked_env_fifo_timeout at E2E credential validation in this runtime after narrower code gates pass; this is an environment blocker, not remaining non-Effect slice work."
   current_evidence:
     - "PR #270 and PRs #272 through #280 are merged. Live review-thread audit at 2026-05-22T23:05:00Z found zero unresolved threads across that PR chain."
     - "PR #280 merged at 2026-05-22T23:02:28Z with head 50109ac522228672f75a01202f8aaf825a3a2752 and squash merge commit 9886ec440149829ebe4f467b99cd183b04351998."
@@ -715,7 +715,7 @@ pr_green_sweep:
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
     post_push: "PR #275 was marked ready and squash-merged with merge commit a4f066a28ca91d67f84c1def5db552657e8b3cc4; the gap-case remote branch was deleted by the merge command."
     validation: "T010 follow-up review-response local validation passed: pnpm test src/lib/simulate/analysis.test.ts src/commands/simulate.test.ts src/lib/simulate/recommendations.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot, pnpm typecheck, and bash scripts/validate-codestyle.sh --fast. validate-codestyle still reports non-blocking baseline drift-gate warnings plus simulate size ratchet warnings. The former pnpm test:deep E2E credential blocker is reclassified: ~/.codex/.env variable-name probing found the required credential names without printing values, and env-loaded pnpm test:deep now reaches the real T014 brain module-boundary ratchet."
-    t009_review_gates: "Architecture review reported no actionable findings; simplify reported two low findings and the parser re-export was removed while the internal compatibility facade was kept intentionally; testing reported two medium coverage gaps that were fixed in tests but failed artifact-file verification; correctness review artifact did not complete before closeout."
+    t009_review_gates: "Architecture review reported no actionable findings; simplify reported two low findings and the parser re-export was removed while the internal compatibility facade was kept intentionally; testing reported two medium coverage gaps that were fixed in tests but failed artifact-file verification; the historical correctness-review artifact write gap was classified before closeout and is not an active implementation blocker."
     pr_handoff: "PR #276 merged at https://github.com/jscraik/coding-harness/pull/276. Current branch codex/JSC-331-ci-migrate-deep-module starts from origin/main at merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
     review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
@@ -738,9 +738,8 @@ pr_green_sweep:
       pr_handoff: "PR #280 is merged at https://github.com/jscraik/coding-harness/pull/280. Final head 50109ac522228672f75a01202f8aaf825a3a2752 passed all visible checks, GitHub review-thread lookup returned seven total threads and zero unresolved threads, and the branch merged through commit 9886ec440149829ebe4f467b99cd183b04351998 at 2026-05-22T23:02:28Z. No open JSC-331 PRs remain."
       blocker: "No active non-Effect implementation or PR-green blocker remains. pnpm test:deep is still classified as blocked_env_fifo_timeout at E2E credential validation in this runtime after narrower code gates pass; this is recorded as an environment blocker, not hidden remaining migration work. Preserve CODEX-NATIVE HARNESS MEMORY BASELINE as a separate slice unless explicitly routed into this branch."
       coordination: "Scratchpad for parallel agents, refreshed 2026-05-23T00:05Z: the deep-module migration goal is complete from the non-Effect slice queue perspective; CODEX-NATIVE HARNESS MEMORY BASELINE remains separate and should not be applied into this branch."
-  pending_actions:
-    - "Publish this final-audit receipt/report refresh from codex/JSC-331-deep-module-final-closeout."
-    - "Keep the local static report server available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html."
+  post_closeout_boundaries:
+    - "The local static report server can stay available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html, but it is not implementation work."
     - "Do not route CODEX-NATIVE HARNESS MEMORY BASELINE into this completed goal unless Jamie explicitly asks."
     - "Treat pnpm test:deep as blocked at E2E credential validation in this runtime after pnpm check, unit, and integration suites pass; do not claim deep-gate success until GitHub and Linear E2E credentials are available through a non-hanging approved env probe."
   tools:
