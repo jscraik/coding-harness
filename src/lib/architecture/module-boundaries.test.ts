@@ -1069,6 +1069,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./next-command-spec.js",
 	"./observability-gate-command-spec.js",
 	"./org-audit-command-spec.js",
+	"./plan-gate-command-spec.js",
 	"./preflight-gate-command-spec.js",
 	"./replay-command-spec.js",
 	"./review-gate-command-spec.js",

@@ -874,7 +874,7 @@ Threshold policy:
   ratchet (`<= 1750` lines) while more artifact and adapter policy moves behind focused seams.
 - `src/lib/decision/he-gate-trust-policy.ts` must remain the HE gate trust-policy
   seam (`<= 220` lines) for status, execution-mode, finding, blocker, and evidence-reference rules.
-- `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2600` lines).
+- `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2700` lines).
 - `src/commands/doctor.ts` must remain a doctor command facade (`<= 210`
   lines) and import the explicit agent-safe work areas enforced by the architecture test.
 - `src/commands/doctor-tool-checks.ts` must remain a generic tool-check

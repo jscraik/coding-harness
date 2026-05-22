@@ -123,7 +123,7 @@ function printPlanGateResult(
 function getRecoveryHint(code: string): string | undefined {
 	switch (code) {
 		case "MISSING":
-			return "Create a plan document in docs/plans/ with required sections";
+			return "Create a plan document in docs/plans/ or .harness/plan/ with required sections";
 		case "STALE":
 			return "Update the plan document or extend maxAge days in the gate options";
 		case "ORIGIN_MISSING":
@@ -131,7 +131,7 @@ function getRecoveryHint(code: string): string | undefined {
 		case "PLAN_ID_MISSING":
 			return "Add a plan_id field to the plan document frontmatter";
 		case "PLAN_ID_NOT_FOUND":
-			return "Ensure the plan_id references an existing plan in docs/plans/";
+			return "Ensure the plan_id references an existing plan in docs/plans/ or .harness/plan/";
 		case "ACCEPTANCE_EVIDENCE_MISSING":
 			return "Add acceptance evidence linking checklist items to completed work";
 		case "TRACEABILITY_MISSING":
