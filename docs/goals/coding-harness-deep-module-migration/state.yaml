@@ -316,24 +316,26 @@ pr_green_sweep:
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "fca800124afbd0b282e364fc516995af8f80c615"
-  last_observed: "2026-05-22T02:59:58Z"
+  head_sha: "703ccb0d751e66b20a755464f45e2a4a7d8f9326"
+  last_observed: "2026-05-22T03:11:11Z"
   current_blockers:
-    - "Observed PR #270 at fca800124afbd0b282e364fc516995af8f80c615 on 2026-05-22T02:59:58Z: state OPEN, not draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, mergedAt null."
-    - "Observed unresolved current review threads include runtime-evidence verifierResult.owner enum validation and runtimeProbe.sessionId shape validation."
+    - "Observed PR #270 at 703ccb0d751e66b20a755464f45e2a4a7d8f9326 on 2026-05-22T03:11:11Z: state OPEN, not draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, mergedAt null."
+    - "Observed remote check state after push: Socket Security and Snyk checks pass; pr-pipeline and security-scan are in progress; CircleCI checks are pending."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
+    - "Observed unresolved review threads still require post-push classification or reviewer resolution; valid runtime-budget and runtime-evidence findings are repaired in pushed commits."
     - "Prompt-gate has not started; observed slice remains T007 PR-green-sweep follow-up work."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
   last_evidence:
-    github_state: "PR #270 observed at fca800124afbd0b282e364fc516995af8f80c615 with state OPEN, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, and mergedAt null."
-    review_threads: "Review-thread snapshot includes unresolved runtime-evidence verifierResult.owner and runtimeProbe.sessionId contract findings at the observed head."
-    checks: "Remote checks were not yet clean at the observed snapshot; mergeStateStatus remained BLOCKED."
+    github_state: "PR #270 observed at 703ccb0d751e66b20a755464f45e2a4a7d8f9326 with state OPEN, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, and mergedAt null."
+    review_threads: "Review-thread snapshot after push still shows unresolved comments; current known valid findings are covered by pushed runtime-budget and runtime-evidence repairs."
+    checks: "Socket Security and Snyk checks passed at the observed snapshot; pr-pipeline and security-scan were in progress; CircleCI checks were pending."
     coderabbit: "CodeRabbit/review-thread state remains the gate before T007 can advance to prompt-gate or merge readiness."
     post_push: "n/a_snapshot_evidence"
-    validation: "Current local review-followup patch validates runtime-budget duplicate usage-output behavior, runtime-evidence verifier owner enum validation, runtimeProbe.sessionId shape validation, pr-closeout fixture ownership, and snapshot-only state evidence. Focused tests, goal-board checks, typecheck, validate-codestyle --fast, and verify-work --fast pass. verify-work run id 20260522T030728Z-26338."
+    validation: "Pushed commit 703ccb0d751e66b20a755464f45e2a4a7d8f9326 includes focused tests, goal-board checks, typecheck, validate-codestyle --fast, and verify-work --fast evidence. verify-work run id 20260522T030728Z-26338."
   pending_actions:
-    - "Commit and push the verifierResult.owner, runtimeProbe.sessionId, runtime-budget duplicate-output, and state-evidence repair batch."
-    - "Resolve or reclassify addressed review threads after the next pushed head."
+    - "Resolve or reclassify addressed review threads after the pushed 703ccb0d head."
+    - "Poll PR #270 remote checks until clean, failed, or externally blocked."
+    - "Do not start prompt-gate until PR #270 checks and review-thread classification are settled."
   tools:
     - "@github"
     - "@circleci"
