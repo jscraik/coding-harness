@@ -518,7 +518,7 @@
           </article>
           <article class="status-card status-current">
             <strong>Current Slice</strong>
-            <span>T013 upgrade is implemented locally: upgrade.ts is a facade, upgrade-command-spec.ts is the registry adapter, and upgrade behavior is split across cli-args, contract, templates, and runner modules.</span>
+            <span>T013 upgrade is open as draft PR #279 at clean head 1c7ea5f6: upgrade.ts is a facade, upgrade-command-spec.ts is the registry adapter, and upgrade behavior is split across cli-args, contract, templates, and runner modules.</span>
           </article>
           <article class="status-card status-watch">
             <strong>Report Status</strong>
@@ -526,7 +526,7 @@
           </article>
           <article class="status-card status-watch">
             <strong>Do Not Advance</strong>
-            <span>Brain stays queued until upgrade has focused validation, review coverage, pushed PR evidence, and merge-readiness proof.</span>
+            <span>Brain stays queued until PR #279 has all remote checks green, review-thread classification remains zero-unresolved, and merge-readiness proof is recorded.</span>
           </article>
         </section>
 
@@ -541,15 +541,15 @@
             <div class="priority-grid">
               <div class="priority-item">
                 <strong>Now</strong>
-                <span>Upgrade split is the active local change on codex/JSC-331-upgrade-deep-module; focused upgrade, registry, and module-boundary tests pass after the contract/templates extraction and reviewer-response coverage, with push and PR handoff still ahead.</span>
+                <span>Upgrade split is pushed as draft PR #279 on codex/JSC-331-upgrade-deep-module at 1c7ea5f6; focused upgrade, registry, and module-boundary tests pass, the local PR body fixture passes pr-template, and remote checks are green except an old pr-template failure from a drifted body plus orb-pinning/pipeline still pending.</span>
               </div>
               <div class="priority-item">
                 <strong>Proof</strong>
-				<span>Use PR #278 merge evidence, the 205-test focused upgrade proof, full local PR-template gates, module-boundary ratchets, R013 upgrade receipts, zero-unresolved review-thread recheck, and the live 8767 report URL for current-state proof.</span>
+					<span>Use PR #278 merge evidence, draft PR #279 at 1c7ea5f6, the 205-test focused upgrade proof, full local PR-template gates, module-boundary ratchets, R013 upgrade receipts, zero-unresolved review-thread checks through PR #279, and the live 8767 report URL for current-state proof.</span>
               </div>
               <div class="priority-item">
                 <strong>Guardrail</strong>
-                <span>No next feature slice starts while the upgrade PR lacks review-thread classification, remote checks, or an explicit merge-readiness state.</span>
+                <span>No next feature slice starts while PR #279 has pending remote checks, draft status, no independent PR review, or no explicit merge-readiness state.</span>
               </div>
             </div>
           </article>
@@ -561,9 +561,10 @@
               <li>Code split: src/commands/upgrade.ts is now a one-line compatibility facade exporting the upgrade runner.</li>
               <li>Registry seam: upgrade command metadata lives in src/lib/cli/registry/upgrade-command-spec.ts and imports the lib runner directly.</li>
 				  <li>Module seam: raw upgrade flag projection lives in src/lib/upgrade/cli-args.ts, the shared option contract lives in src/lib/upgrade/types.ts, contract migration/default backfill lives in src/lib/upgrade/contract.ts, template and manifest updates live in src/lib/upgrade/templates.ts, and orchestration lives in src/lib/upgrade/runner.ts.</li>
-              <li>Current proof: focused upgrade, registry, and module-boundary tests pass with 205 tests after helper extraction and reviewer-response coverage; validate-codestyle fast and verify-work fast pass, and no next slice advances until pushed PR evidence is current.</li>
+              <li>Current proof: focused upgrade, registry, and module-boundary tests pass with 205 tests after helper extraction and reviewer-response coverage; validate-codestyle fast and verify-work fast pass, PR #279 is pushed, and no next slice advances until remote checks and merge-readiness evidence are current.</li>
               <li>Full local PR gates: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star feedback now pass; learnings gate is warning-only with generated/report keyword matches to record in the PR body.</li>
               <li>Deep gate truth: pnpm test:deep reaches E2E credential validation after pnpm check, artifact tests, and integration pass, then blocks because GitHub and Linear credentials are unavailable and ~/.codex/.env is a FIFO in this runtime.</li>
+              <li>PR handoff: draft PR #279 is open at clean head 1c7ea5f6; the local body fixture passes pr-template, GitHub review-thread lookup returns zero threads, and the remote stale pr-template failure is being repaired by syncing the body and pushing a fresh report commit.</li>
               <li>Report server: live on http://127.0.0.1:8767/artifacts/architecture/module-layout.html with Jamie Readout Now, current slice, blocker, and remaining-work sections present.</li>
               <li>Browser status: latest retry via the Browser workflow lists no browser targets and returns "Browser is not available: iab"; the HTTP report URL is the current verified fallback until the in-app target reconnects.</li>
             </ul>
@@ -583,14 +584,14 @@
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-						  <p>Current evidence is focused T013 validation plus the PR #278 merge proof, zero-unresolved review-thread recheck across PRs #270/#272/#273/#274/#275/#276/#277/#278, 8767 restart, Browser reverify receipts, local PR-gate evidence, and upgrade split receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
+							  <p>Current evidence is focused T013 validation plus the PR #278 merge proof, draft PR #279 at 1c7ea5f6, zero-unresolved review-thread recheck across PRs #270/#272/#273/#274/#275/#276/#277/#278/#279, 8767 restart, Browser reverify receipts, local PR-gate evidence, and upgrade split receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
 			  <ul class="evidence-list">
 							<li>Focused proof: upgrade, registry, and module-boundary tests passed locally for T013 with 205 tests; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate, validate-codestyle fast, and verify-work fast pass. verify-work run id: 20260522T183031Z-7843.</li>
 							<li>PR-template gates: bash scripts/validate-codestyle.sh and pnpm check both pass; tooling-audit passes with zero findings; review-context succeeds; north-star-feedback succeeds with external evidence gaps called out; learnings gate exits 0 with warning-only generated/report matches.</li>
 							<li>Deep proof boundary: pnpm test:deep is blocked at E2E credential validation; ~/.codex/.env stat reports a FIFO, so sourcing it would hang rather than safely recover credentials.</li>
 						<li>Review response: testing asked for an execute-path registry adapter test; simplicity and architecture asked to remove duplicate upgrade option contracts. Both findings are fixed locally.</li>
 						<li>Visual: the updated report is serving on port 8767 for Jamie; latest Browser retry is blocked because no iab target is currently exposed, not because the report is stale.</li>
-								<li>Handoff: T013 is not ready for advancement until push/PR evidence, remote checks, and review-thread classification are recorded.</li>
+								<li>Handoff: T013 is not ready for advancement until PR #279 remote checks finish green, independent review state is known, and merge-readiness evidence is recorded.</li>
 			  </ul>
 			</article>
           </div>
