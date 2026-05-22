@@ -359,8 +359,8 @@ function validateVerifierResult(
 		);
 	}
 	if (isRecord(verifierResult)) {
-		const verifierReason = verifierResult.reason;
-		if (!isNullableString(verifierReason)) {
+		const verifierReason = asText(verifierResult.reason);
+		if (!isNullableString(verifierResult.reason)) {
 			add(
 				"verifierResult.reason",
 				"verifier_reason_invalid",
@@ -533,14 +533,16 @@ function validateRuntimeProbe(
 			"runtime probe spawnOutcome is not recognized.",
 		);
 	}
-	const blockerClass = probe.blockerClass;
-	if (!isNullableString(blockerClass)) {
+	if (!isNullableString(probe.blockerClass)) {
 		add(
 			"resolvedState.runtimeProbe.blockerClass",
 			"runtime_probe_blocker_invalid",
 			"runtime probe blockerClass must be a string or null.",
 		);
-	} else if (probe.spawnOutcome !== "available" && isBlank(blockerClass)) {
+	} else if (
+		probe.spawnOutcome !== "available" &&
+		isBlank(asText(probe.blockerClass))
+	) {
 		add(
 			"resolvedState.runtimeProbe.blockerClass",
 			"runtime_probe_blocker_missing",
