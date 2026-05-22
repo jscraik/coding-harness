@@ -67,4 +67,27 @@ describe("runtime-budget command", () => {
 		});
 		vi.restoreAllMocks();
 	});
+
+	it("returns a usage error for malformed observation entries", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const dir = mkdtempSync(join(tmpdir(), "runtime-budget-"));
+		const inputPath = join(dir, "observations.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify([{ command: "pnpm check", durationMs: "fast" }]),
+		);
+
+		const exitCode = runRuntimeBudgetCLI(["--input", inputPath, "--json"]);
+
+		expect(exitCode).toBe(2);
+		expect(JSON.parse(String(infoSpy.mock.calls[0]?.[0]))).toMatchObject({
+			schemaVersion: "command-runtime-budget/v1",
+			status: "error",
+			error: {
+				code: "runtime-budget.usage",
+				message: "runtime-budget observations[0] is malformed.",
+			},
+		});
+		vi.restoreAllMocks();
+	});
 });

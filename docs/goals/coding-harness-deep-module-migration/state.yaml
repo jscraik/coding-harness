@@ -312,27 +312,27 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_current_head_review_followup_validated_ready_to_commit_push
+  status: t007_runtime_budget_review_followup_validated_ready_to_commit_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "968ce07aa503821b2e8db57f1f46e809e24a4e70"
-  last_observed: "2026-05-22T02:05:23Z"
+  head_sha: "7ce85be681d19af614fa22be9b55bca4563c7e53"
+  last_observed: "2026-05-22T02:15:46Z"
   current_blockers:
-    - "Current pushed PR head before this local repair is 968ce07aa503821b2e8db57f1f46e809e24a4e70; this current-head review-followup batch is locally validated but not yet committed, pushed, or remotely re-observed."
-    - "GitHub reports PR #270 open, not draft, and not merge-ready until current-head checks and review-thread classification are refreshed after the next push."
+    - "Current pushed PR head before this local repair is 7ce85be681d19af614fa22be9b55bca4563c7e53; this runtime-budget/module-layout review-followup batch is locally validated but not yet pushed or remotely re-observed."
+    - "GitHub reports PR #270 open, not draft, mergeable MERGEABLE, and mergeStateStatus BLOCKED; CircleCI checks, pr-pipeline, security-scan, and CodeRabbit were pending after the latest push."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
-    - "Current-head review feedback on portable goal docs, docs-goal TOCs, Vale proof, diagram-context refresh, evidence-pattern command diagnostics, runtime-budget ratchets, artifact-routine assurance matrix behavior, generated Project Brain markdown TOCs, malformed pr-closeout runtime evidence, and remediate CLI input validation is repaired locally in this review-followup patch."
-    - "Review threads still require post-push classification; outdated required-check alias, nickname_candidates, state snapshot, and any newly superseded comments remain unresolved in GitHub until reviewer or maintainer resolution."
+    - "Current-head review feedback on portable goal docs, docs-goal TOCs, Vale proof, diagram-context refresh, evidence-pattern command diagnostics, runtime-budget ratchets, runtime-budget observation shape validation, artifact-routine assurance matrix behavior, generated Project Brain markdown TOCs, malformed pr-closeout runtime evidence, remediate CLI input validation, and module-layout PR-state evidence is repaired locally in this review-followup patch."
+    - "Review threads still require post-push classification; stale/outdated comments remain unresolved in GitHub until reviewer or maintainer resolution."
     - "Prompt-gate has not started; this is still T007 PR-green-sweep follow-up work."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
   last_evidence:
-    github_state: "PR #270 state was last pushed at 968ce07aa503821b2e8db57f1f46e809e24a4e70 before this local repair; live PR state must be refreshed after the next push."
-    review_threads: "Current-head review feedback from the latest pass has been repaired locally; post-push thread classification is still pending."
-    checks: "Local validation for this review-followup batch is passing; remote checks must be observed after commit and push."
+    github_state: "PR #270 state was observed at 7ce85be681d19af614fa22be9b55bca4563c7e53 before this local repair; live PR state must be refreshed after the next push."
+    review_threads: "Current-head runtime-budget observation-shape and module-layout stale-evidence feedback is repaired locally; post-push thread classification is still pending."
+    checks: "Focused and broader local validation for this review-followup batch is passing; remote checks must be observed after commit and push."
     coderabbit: "CodeRabbit/review-thread state remains the gate before T007 can advance to prompt-gate or merge readiness."
     post_push: "Next required action is commit, push, and re-observe current-head checks and review threads for this current-head review-followup batch."
-    validation: "pnpm vitest run src/lib/runtime/runtime-evidence-contract.test.ts src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/harness-artifact-routine.test.ts src/lib/init/project-brain-templates.test.ts src/lib/remediate/cli-args.test.ts src/lib/architecture/module-boundaries.test.ts src/cli-dispatch.test.ts src/lib/cli/registry/command-specs.test.ts --reporter verbose; pnpm typecheck; pnpm exec markdownlint-cli2 docs/goals/README.md docs/goals/codex-native-harness-memory-baseline/goal.md .harness/research/audits/2026-05-21-plan-and-research-code-tree-gap-audit.md; node scripts/validate-evidence-patterns.cjs --json; bash scripts/check-goal-board.sh docs/goals/codex-native-harness-memory-baseline; bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration; git diff --check; bash scripts/validate-codestyle.sh --fast; bash scripts/verify-work.sh --fast all pass."
+    validation: "pnpm exec biome check --write src/commands/runtime-budget.ts src/commands/runtime-budget.test.ts; pnpm vitest run src/commands/runtime-budget.test.ts --reporter verbose; cmp -s synced HTML reports; jq -c receipts JSONL; bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration; git diff --check; pnpm typecheck; bash scripts/validate-codestyle.sh --fast; bash scripts/verify-work.sh --fast all pass for this runtime-budget/module-layout repair. verify-work run id 20260522T021830Z-3192."
   tools:
     - "@github"
     - "@circleci"
