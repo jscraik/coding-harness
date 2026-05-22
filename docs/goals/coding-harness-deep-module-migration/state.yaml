@@ -516,7 +516,7 @@ pr_green_sweep:
   simulate_merge_commit: "cf741e13c65b15aadb155d0701d60b4705f72eb0"
   ci_migrate_branch: "codex/JSC-331-ci-migrate-deep-module"
   ci_migrate_pr_url: "https://github.com/jscraik/coding-harness/pull/277"
-  ci_migrate_observed_head_sha: "12a24ffaabfac90ec287183792b32a663de38b46"
+  ci_migrate_observed_head_sha: "f81f64ada6ed404e9305638643d2351c4c378486"
   last_observed: "2026-05-22T14:55:02Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
@@ -577,7 +577,8 @@ pr_green_sweep:
     - "The PR body artifact response adds tracked snapshots under docs/goals/coding-harness-deep-module-migration/notes/pr-bodies/ and rewrites receipt PR-body commands to those repo-relative files. The first attempted location under docs/goals/coding-harness-deep-module-migration/evidence/pr-bodies/ was rejected by check-goal-board as an unexpected root entry, so notes/pr-bodies is the accepted goal-board surface."
     - "Pre-commit docs-style initially rejected the tracked PR body snapshots because Vale treated literal PR-template fields and reobserved wording as spelling errors; the snapshots now use file-local Vale-off comments instead of changing global vocabulary."
     - "T011 PR body artifact response commit 9179f8a49c8e763514666e0c74387d275117e698 was pushed after rebasing over CodeRabbit autofixes; follow-up observation found all visible PR #277 checks passing, the prior PR body artifact thread PRRT_kwDORWZJCc6EJTPS outdated, and one new current thread PRRT_kwDORWZJCc6EJyyz on contradictory CodeRabbit pending/pass wording in notes/pr-bodies/pr277-body.md."
-    - "The current PR #277 body-status reconciliation keeps the archived 765cadf PR body snapshot internally consistent by replacing pending CodeRabbit wording with the observed passed-with-zero-threads result; it is locally patched and pending validation, commit, push, and latest-head PR recheck."
+    - "T011 PR body-status reconciliation commit f81f64ada6ed404e9305638643d2351c4c378486 was pushed; latest-head observation found all visible PR #277 checks passing, including CodeRabbit, pr-pipeline, security-scan, CircleCI contexts, Socket, and Snyk, and found all prior PR #277 review threads resolved or outdated."
+    - "CodeRabbit then posted current thread PRRT_kwDORWZJCc6EKEP5 because this board still described the body-status reconciliation as pending commit/push; this state refresh removes that self-stale wording and keeps T011 active for the next pushed-head check/thread observation before T012."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
@@ -591,9 +592,9 @@ pr_green_sweep:
     pr_handoff: "PR #276 merged at https://github.com/jscraik/coding-harness/pull/276. Current branch codex/JSC-331-ci-migrate-deep-module starts from origin/main at merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
     review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
-    t011_ci_migrate: "T011 implementation and CodeRabbit review responses are pushed through head 9179f8a49c8e763514666e0c74387d275117e698. Latest-head observation found all visible PR #277 checks passing; the earlier PR body artifact thread is outdated, but CodeRabbit posted one current valid thread on contradictory CodeRabbit pending/pass wording in notes/pr-bodies/pr277-body.md. The local body-status reconciliation is patched and pending validation, commit, push, and latest-head PR recheck; T011 remains active until latest-head checks plus review-thread resolution are recorded."
+    t011_ci_migrate: "T011 implementation and CodeRabbit review responses are pushed through head f81f64ada6ed404e9305638643d2351c4c378486. Latest-head observation found all visible PR #277 checks passing and all prior review threads resolved or outdated, then CodeRabbit posted one current valid stale-state thread on this board's pending commit/push wording. This refresh removes the self-stale wording; T011 remains active until the next pushed-head checks plus review-thread state are recorded."
   pending_actions:
-    - "Validate, commit, and push the PR #277 body-status reconciliation, then reobserve remote checks and review threads at the new head."
+    - "Reobserve PR #277 remote checks and review threads after this state refresh reaches the pushed head; do not begin T012 from local-only state."
     - "Do not begin T012 init until T011 pushed-head PR evidence and review-thread resolution are recorded."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
