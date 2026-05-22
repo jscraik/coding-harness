@@ -319,7 +319,7 @@ pr_green_sweep:
   head_sha: "cd93b6feee48a2e3e33d0e77d638aee838e85aac"
   followup_pr_url: "https://github.com/jscraik/coding-harness/pull/272"
   followup_branch: "codex/JSC-331-pr270-review-closeout"
-  followup_head_sha: "eff47f65f118f25fdf79aee5dcfe095f7e7c6542"
+  followup_head_sha: "observe live with gh pr view 272 before closeout; tracked board commits can advance the branch head"
   last_observed: "2026-05-22T04:46:18Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
@@ -333,7 +333,7 @@ pr_green_sweep:
     review_threads: "GitHub review-thread snapshot after merge showed 74 total threads, 72 resolved, and 2 unresolved runtime-evidence threads on verifierResult.reason and runtimeProbe.blockerClass."
     checks: "gh pr checks 270 reported 23 passing checks and no pending or failing checks."
     coderabbit: "The two remaining CodeRabbit runtime-evidence findings are valid and repaired in draft PR #272; PR #272 review and PR #270 final thread classification remain pending."
-    post_push: "PR #272 opened as draft from codex/JSC-331-pr270-review-closeout at eff47f65f118f25fdf79aee5dcfe095f7e7c6542."
+    post_push: "PR #272 opened as draft from codex/JSC-331-pr270-review-closeout; observe the current head live before closeout because board-only commits can advance it."
     validation: "Closeout validation passed: pnpm exec biome check --write src/lib/runtime/runtime-evidence-contract.ts src/lib/runtime/runtime-evidence-contract.test.ts, pnpm vitest run src/lib/runtime/runtime-evidence-contract.test.ts --reporter verbose, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, bash scripts/verify-work.sh --fast run id 20260522T043518Z-33661, jq JSONL parse, goal-board check, git diff --check, bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, corrected learnings gate, corrected review-context, and north-star-feedback."
   pending_actions:
     - "Commit and push codex/JSC-331-pr270-review-closeout, then open or update a follow-up PR for the post-merge PR #270 review-thread closeout."
