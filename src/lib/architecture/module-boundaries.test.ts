@@ -415,6 +415,12 @@ const PROMPT_GATE_SURFACE_RATCHETS = [
 			"Prompt gate validation must stay focused on template section checks and result construction.",
 	},
 	{
+		path: "src/lib/prompt-gate/sections.ts",
+		maxLines: 60,
+		reason:
+			"Prompt gate section helpers must stay focused on Markdown heading and checklist matching.",
+	},
+	{
 		path: "src/lib/prompt-gate/cli-args.ts",
 		maxLines: 55,
 		reason:
@@ -1589,6 +1595,9 @@ describe("module boundaries", () => {
 
 		expect(facadeContent).toContain("../lib/prompt-gate/cli.js");
 		expect(facadeContent).toContain("../lib/prompt-gate/validator.js");
+		expect(facadeContent).not.toContain("getFlagValue");
+		expect(facadeContent).not.toContain("args.indexOf");
+		expect(facadeContent).not.toContain("process.argv");
 		expect(registryAdapterContent).toContain("../../prompt-gate/cli.js");
 		expect(registryAdapterContent).not.toContain("getFlagValue");
 		expect(registryAdapterContent).not.toContain("args.indexOf");

@@ -6,6 +6,7 @@ import type {
 	PromptType,
 	PromptValidationResult,
 } from "./types.js";
+import { countCheckedItems, hasSection } from "./sections.js";
 
 const REQUIRED_SECTIONS: Record<PromptType, string[]> = {
 	feature: [
@@ -98,12 +99,22 @@ export function runPromptGate(options: PromptGateOptions): PromptGateOutput {
 	try {
 		const result = validatePrompt(options);
 
-		if (result.errors.length > 0 && result.errors[0]?.includes("not found")) {
+		if (result.missing.includes("File not found")) {
 			return {
 				ok: false,
 				error: {
 					code: "FILE_NOT_FOUND",
-					message: result.errors[0],
+					message: result.errors[0] ?? `File not found: ${options.file}`,
+				},
+			};
+		}
+
+		if (result.missing.includes("Read error")) {
+			return {
+				ok: false,
+				error: {
+					code: "SYSTEM_ERROR",
+					message: result.errors[0] ?? `Failed to read file: ${options.file}`,
 				},
 			};
 		}
@@ -118,21 +129,4 @@ export function runPromptGate(options: PromptGateOptions): PromptGateOutput {
 			},
 		};
 	}
-}
-
-function hasSection(content: string, sectionName: string): boolean {
-	return new RegExp(`^#{2,3}\\s+${sectionName}$`, "im").test(content);
-}
-
-function countCheckedItems(content: string, sectionName: string): number {
-	const sectionPattern = new RegExp(
-		`^#{2,3}\\s+${sectionName}$([\\s\\S]*?)(?=^##|^###|$)`,
-		"im",
-	);
-	const match = content.match(sectionPattern);
-	if (!match) return 0;
-
-	const sectionContent = match[1] ?? "";
-	const checked = sectionContent.match(/- \[x\]/gi);
-	return checked?.length ?? 0;
 }

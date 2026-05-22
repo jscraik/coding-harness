@@ -351,9 +351,9 @@ tasks:
       - "T007 is not recorded done."
       - "Current branch is not rooted at current origin/main."
       - "Focused validation path cannot be identified."
-    receipt_id: R008
+    receipt_id: R008-PROMPT-GATE-PR274-CODERABBIT-REPAIR-VALIDATION
 pr_green_sweep:
-  status: t008_prompt_gate_auto_merge_waiting_coderabbit
+  status: t008_prompt_gate_coderabbit_repair_validated_pending_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -365,8 +365,8 @@ pr_green_sweep:
   board_reconciliation_branch: "codex/JSC-331-pr270-review-closeout"
   prompt_gate_pr_url: "https://github.com/jscraik/coding-harness/pull/274"
   prompt_gate_branch: "codex/JSC-331-prompt-gate-deep-module"
-  prompt_gate_head_sha: "0d3ef2a70c3f60d6cd4275ade0c0aa6a89d26fc7"
-  last_observed: "2026-05-22T07:23:36Z"
+  prompt_gate_head_sha: "bb3e121ad098d35c0347b94ee7cfbc14ba7a5c37"
+  last_observed: "2026-05-22T07:42:55Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -378,9 +378,10 @@ pr_green_sweep:
     - "T007 plan-gate and PR-green-sweep closeout are complete; T008 prompt-gate is now the active implementation slice."
     - "T008 prompt-gate implementation is locally validated with focused tests, direct CLI proofs, review gates, validate-codestyle fast, verify-work fast, full validate-codestyle, pnpm check, and tooling-audit."
     - "T008 pre-push docs-gate initially required README.md, docs/agents/00-architecture-bootstrap.md, AGENTS.md, docs/agents/07b-agent-governance.md, and refreshed architecture context artifacts; those surfaces are now synchronized and docs-gate passes locally."
-    - "PR #274 is open, ready for review, and auto-merge-enabled for T008 at head 0d3ef2a70c3f60d6cd4275ade0c0aa6a89d26fc7; all visible checks pass except the post-undraft CodeRabbit check, which remains pending."
-    - "GitHub review-thread observation for PR #274 returned no threads after undraft."
-    - "T008 is not closed and T009 gap-case must not start until CodeRabbit settles and PR #274 auto-merges or the remaining blocker is reclassified with live evidence."
+    - "PR #274 is open, ready for review, and auto-merge-enabled for T008; after the board handoff push, current head bb3e121ad098d35c0347b94ee7cfbc14ba7a5c37 showed post-push remote checks still pending and CodeRabbit review threads requiring repair."
+    - "GitHub review-thread observation for PR #274 at head bb3e121ad098d35c0347b94ee7cfbc14ba7a5c37 found valid CodeRabbit findings for duplicate module-layout heading labels, stale T008 receipt reference, missing prompt-gate facade parser regression guards, unreadable prompt-path SYSTEM_ERROR mapping, and checklist-counting regex behavior; one stale last_observed thread was already outdated."
+    - "The valid PR #274 CodeRabbit findings are fixed locally and focused validation passes, but the repair still requires commit, push, and post-push remote/review re-observation."
+    - "T008 is not closed and T009 gap-case must not start until PR #274 checks and review threads settle and auto-merge completes or the remaining blocker is reclassified with live evidence."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #270 observed as MERGED with head cd93b6feee48a2e3e33d0e77d638aee838e85aac, merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec, and mergedAt 2026-05-22T04:24:29Z."
@@ -390,11 +391,13 @@ pr_green_sweep:
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
     post_push: "PR #272 was marked ready and squash-merged with merge commit 0498ac9db9f15f176ac04a7066ba4b3bafa22543; the follow-up branch was deleted by the merge command."
     validation: "T008 prompt-gate local validation passed after initial JSDoc and docs-style failures were fixed; docs-gate required-surface warnings were cleared after README, AGENTS, architecture-bootstrap, agent-governance, and architecture context synchronization. Full bash scripts/validate-codestyle.sh, explicit pnpm check, and tooling-audit also pass."
-    pr_handoff: "PR #274 is ready for review and auto-merge-enabled at head 0d3ef2a70c3f60d6cd4275ade0c0aa6a89d26fc7; all visible checks pass except post-undraft CodeRabbit pending; PR template gate passes after the body was corrected to this live blocker state."
+    pr_handoff: "PR #274 is ready for review and auto-merge-enabled; after the board-update push, head bb3e121ad098d35c0347b94ee7cfbc14ba7a5c37 had pending remote checks and unresolved CodeRabbit review threads."
+    review_response: "Valid PR #274 CodeRabbit findings are fixed locally and covered by focused prompt-gate/module-boundary tests, direct prompt-gate CLI proof, validate-codestyle fast, JSONL parsing, and whitespace checks; push and live re-observation are still pending."
   pending_actions:
-    - "Poll PR #274 until CodeRabbit settles, then confirm auto-merge completion or classify the remaining blocker."
+    - "Commit and push the PR #274 CodeRabbit repair on codex/JSC-331-prompt-gate-deep-module."
+    - "Reobserve PR #274 checks, CodeRabbit status, and review threads after the repair push."
     - "After PR #274 is merged or explicitly blocked with stable live evidence, record T008 closeout and only then activate T009 gap-case."
-    - "Do not start T009 gap-case while PR #274 remains open with CodeRabbit pending."
+    - "Do not start T009 gap-case while PR #274 remains open with pending checks or unresolved review-thread state."
   tools:
     - "@github"
     - "@circleci"
