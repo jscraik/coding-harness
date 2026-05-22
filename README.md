@@ -731,6 +731,15 @@ delegates raw arguments through `init-command-spec.ts`, and raw flag
 projection plus issue-tracker validation stay in `src/lib/init/cli-args.ts`
 so future bootstrap option changes do not widen the registry core.
 
+The `upgrade` command uses the same split for downstream update work. The
+public command facade stays a compatibility export surface, the registry spec
+delegates through `upgrade-command-spec.ts`, raw flag projection stays in
+`src/lib/upgrade/cli-args.ts`, shared option contracts stay in
+`src/lib/upgrade/types.ts`, contract/template helpers stay in
+`src/lib/upgrade/`, and upgrade orchestration stays in
+`src/lib/upgrade/runner.ts` so future upgrade behavior does not widen the
+registry core.
+
 ### Pilot, Remediation, And Automation
 
 | Command          | Purpose                                                          |

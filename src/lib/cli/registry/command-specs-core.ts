@@ -27,10 +27,6 @@ import {
 	runUIFastCLI,
 	runUIVerifyCLI,
 } from "../../../commands/ui-loop.js";
-import {
-	type HarnessUpgradeOptions,
-	runUpgradeCLI,
-} from "../../../commands/upgrade.js";
 import { runValidationPlanCLI } from "../../../commands/validation-plan.js";
 import type { PilotEvaluateOptions } from "../../pilot-evaluation/types.js";
 import { getVersion } from "../../version.js";
@@ -85,6 +81,7 @@ import { createSimulateCommandSpec } from "./simulate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
 import { createToolingAuditCommandSpec } from "./tooling-audit-command-spec.js";
+import { createUpgradeCommandSpec } from "./upgrade-command-spec.js";
 import { createVerifyCodeRabbitCommandSpec } from "./verify-coderabbit-command-spec.js";
 import { createVerifyWorkCommandSpec } from "./verify-work-command-spec.js";
 import { createWorkflowGenerateCommandSpec } from "./workflow-generate-command-spec.js";
@@ -455,34 +452,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		runReviewContextCLI,
 		runValidationPlanCLI,
 	}),
-	{
-		name: "upgrade",
-		summary: "Upgrade harness to the latest version",
-		errorLabel: "Upgrade Error",
-		execute: (args) => {
-			const dryRunFlag = args.includes("--dry-run");
-			const forceFlag = args.includes("--force");
-			const jsonFlag = args.includes("--json");
-			const skipContractFlag = args.includes("--skip-contract-migration");
-			const providerIndex = args.indexOf("--provider");
-			const provider = getFlagValue(args, providerIndex);
-			// Skip --provider value when finding targetDir
-			const rest = args;
-			const targetDir = rest.filter((arg, i) => {
-				if (arg.startsWith("-")) return false;
-				if (i > 0 && rest[i - 1] === "--provider") return false;
-				return true;
-			})[0];
-			const upgradeOptions: HarnessUpgradeOptions = {
-				dryRun: dryRunFlag,
-				force: forceFlag,
-				json: jsonFlag,
-				provider: provider ?? undefined,
-				skipContractMigration: skipContractFlag,
-			};
-			return runUpgradeCLI(targetDir, upgradeOptions);
-		},
-	},
+	createUpgradeCommandSpec(),
 	createCIMigrateCommandSpec(),
 	{
 		name: "diff-budget",

@@ -70,6 +70,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   raw CLI argument projection plus issue-tracker/minimal-mode validation inside
   `src/lib/init/cli-args.ts`, with module-boundary ratchets preserving the
   adapter seam.
+  Upgrade follows the same pattern with `src/commands/upgrade.ts` as the
+  compatibility facade, `upgrade-command-spec.ts` as the registry adapter,
+  raw CLI argument projection inside `src/lib/upgrade/cli-args.ts`,
+  contract/default migration helpers inside `src/lib/upgrade/contract.ts`,
+  shared option contracts inside `src/lib/upgrade/types.ts`, template and
+  manifest updates inside `src/lib/upgrade/templates.ts`, and upgrade
+  orchestration inside `src/lib/upgrade/runner.ts`, with
+  module-boundary ratchets preserving the adapter seam.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to

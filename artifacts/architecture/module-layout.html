@@ -514,25 +514,25 @@
         <section class="status-strip" aria-label="Deep-module migration status">
           <article class="status-card status-ok">
             <strong>Complete</strong>
-            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, plan-gate, prompt-gate, gap-case, simulate, and ci-migrate registry parsing now have facade-first module seams.</span>
+            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, and init registry parsing now have facade-first module seams.</span>
           </article>
           <article class="status-card status-current">
             <strong>Current Slice</strong>
-            <span>T012 init is implemented on PR #278; the active blocker is current remote check/review closeout, not the init code split.</span>
+            <span>T013 upgrade is implemented locally: upgrade.ts is a facade, upgrade-command-spec.ts is the registry adapter, and upgrade behavior is split across cli-args, contract, templates, and runner modules.</span>
           </article>
           <article class="status-card status-watch">
-            <strong>Live Blocker</strong>
-            <span>The original pr-template failure is repaired; PR #278 now needs the latest pushed-head checks, review threads, and Browser availability observed before advancing.</span>
+            <strong>Report Status</strong>
+            <span>The 8767 report serves over HTTP; the latest Browser workflow lists no available browser targets and returns "Browser is not available: iab", so direct reload is blocked in this thread.</span>
           </article>
           <article class="status-card status-watch">
             <strong>Do Not Advance</strong>
-            <span>Upgrade and brain stay queued until PR #278 has green checks, review-thread classification, and recorded merge-readiness evidence.</span>
+            <span>Brain stays queued until upgrade has focused validation, review coverage, pushed PR evidence, and merge-readiness proof.</span>
           </article>
         </section>
 
         <section class="jamie-board" aria-label="Jamie live readout">
           <article class="priority-panel">
-            <h2>Jamie Readout</h2>
+            <h2>Jamie Readout Now</h2>
             <p>
               This page is the live handoff board for the deep-module migration.
               It should answer what is done, what is blocked, what Codex is doing
@@ -541,29 +541,31 @@
             <div class="priority-grid">
               <div class="priority-item">
                 <strong>Now</strong>
-                <span>PR #278 now includes the CodeRabbit init parser fix; reobserve latest-head checks, review threads, and Browser availability.</span>
+                <span>Upgrade split is the active local change on codex/JSC-331-upgrade-deep-module; focused upgrade, registry, and module-boundary tests pass after the contract/templates extraction and reviewer-response coverage, with push and PR handoff still ahead.</span>
               </div>
               <div class="priority-item">
                 <strong>Proof</strong>
-                <span>Use docs/goals/.../notes/pr-bodies/pr278-body.md, R012-PR278-CODERABBIT-INIT-PARSER-FIX, and R012-PR278-BROWSER-LAUNCHED-8767-R019 for the latest Browser proof.</span>
+				<span>Use PR #278 merge evidence, the 205-test focused upgrade proof, full local PR-template gates, module-boundary ratchets, R013 upgrade receipts, zero-unresolved review-thread recheck, and the live 8767 report URL for current-state proof.</span>
               </div>
               <div class="priority-item">
                 <strong>Guardrail</strong>
-                <span>No next feature slice starts while the current PR still has a stale body, red template check, or unobserved review state.</span>
+                <span>No next feature slice starts while the upgrade PR lacks review-thread classification, remote checks, or an explicit merge-readiness state.</span>
               </div>
             </div>
           </article>
           <article class="timeline-panel">
             <h2>Current Evidence Trail</h2>
-            <p>Last refreshed for PR #278 init parser review fix on 2026-05-22.</p>
+            <p>Last refreshed for the T013 upgrade registry split on 2026-05-22.</p>
             <ul class="timeline-list">
-              <li>Code split: init argv projection lives in src/lib/init/cli-args.ts, with raw flag-value handling isolated in src/lib/init/flag-values.ts.</li>
-              <li>Registry seam: init metadata/delegation lives in init-command-spec.ts.</li>
-              <li>Review fix: malformed init value flags now return usage errors, and unknown is rejected as an explicit project-type override.</li>
-              <li>Local proof already passed: focused registry/module-boundary tests, pnpm typecheck, git diff check, goal-board check, and validate-codestyle fast.</li>
-              <li>Remote status: the repaired PR body passes local and remote pr-template/Linear gates; current pushed-head checks still need final observation at the latest head.</li>
-              <li>Report server: restarted on http://127.0.0.1:8767/artifacts/architecture/module-layout.html and HTTP 200 confirms the Jamie Readout, T012 status, Browser proof, and Do Not Advance sections are present.</li>
-              <li>Browser proof: the in-app Browser is visible on the 8767 report URL with title Coding Harness Module Layout.</li>
+              <li>Merged proof: PR #278 is merged into origin/main at 466aaaea, and this branch starts from that merge commit.</li>
+              <li>Code split: src/commands/upgrade.ts is now a one-line compatibility facade exporting the upgrade runner.</li>
+              <li>Registry seam: upgrade command metadata lives in src/lib/cli/registry/upgrade-command-spec.ts and imports the lib runner directly.</li>
+				  <li>Module seam: raw upgrade flag projection lives in src/lib/upgrade/cli-args.ts, the shared option contract lives in src/lib/upgrade/types.ts, contract migration/default backfill lives in src/lib/upgrade/contract.ts, template and manifest updates live in src/lib/upgrade/templates.ts, and orchestration lives in src/lib/upgrade/runner.ts.</li>
+              <li>Current proof: focused upgrade, registry, and module-boundary tests pass with 205 tests after helper extraction and reviewer-response coverage; validate-codestyle fast and verify-work fast pass, and no next slice advances until pushed PR evidence is current.</li>
+              <li>Full local PR gates: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star feedback now pass; learnings gate is warning-only with generated/report keyword matches to record in the PR body.</li>
+              <li>Deep gate truth: pnpm test:deep reaches E2E credential validation after pnpm check, artifact tests, and integration pass, then blocks because GitHub and Linear credentials are unavailable and ~/.codex/.env is a FIFO in this runtime.</li>
+              <li>Report server: live on http://127.0.0.1:8767/artifacts/architecture/module-layout.html with Jamie Readout Now, current slice, blocker, and remaining-work sections present.</li>
+              <li>Browser status: latest retry via the Browser workflow lists no browser targets and returns "Browser is not available: iab"; the HTTP report URL is the current verified fallback until the in-app target reconnects.</li>
             </ul>
           </article>
         </section>
@@ -573,19 +575,22 @@
           <div class="control-grid">
             <article class="note">
               <h3>Enforcement</h3>
-              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, and init registry behavior are covered by focused command-spec and seam tests.</p>
+              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, init, and upgrade facade/registry/runner behavior are covered by focused command-spec and seam tests.</p>
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-					  <p>Latest implementation target: init registry split. The command registry now delegates init metadata through a focused adapter while raw init flag projection, issue-tracker validation, minimal conflict handling, and target-dir detection live behind an init-owned seam.</p>
+					  <p>Latest implementation target: upgrade runner split. The command registry now delegates upgrade metadata through a focused adapter while raw upgrade flag projection and the upgrade execution workflow live behind upgrade-owned seams.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-						  <p>Current evidence is focused T012 validation plus the PR #278 body/report repair, 8767 restart, and CodeRabbit parser-fix receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
+						  <p>Current evidence is focused T013 validation plus the PR #278 merge proof, zero-unresolved review-thread recheck across PRs #270/#272/#273/#274/#275/#276/#277/#278, 8767 restart, Browser reverify receipts, local PR-gate evidence, and upgrade split receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
 			  <ul class="evidence-list">
-						<li>Focused proof: init registry parser tests, malformed-value fixtures, module-boundary ratchets, pnpm typecheck, git diff check, goal-board check, and validate-codestyle fast have passed for T012.</li>
-						<li>Visual: the updated report is serving on port 8767 for Jamie, and the in-app Browser is visible on the report with title Coding Harness Module Layout.</li>
-							<li>Handoff: PR #278 is not ready for advancement until final pushed-head check reruns, review-thread classification, and merge-readiness classification are recorded.</li>
+							<li>Focused proof: upgrade, registry, and module-boundary tests passed locally for T013 with 205 tests; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate, validate-codestyle fast, and verify-work fast pass. verify-work run id: 20260522T183031Z-7843.</li>
+							<li>PR-template gates: bash scripts/validate-codestyle.sh and pnpm check both pass; tooling-audit passes with zero findings; review-context succeeds; north-star-feedback succeeds with external evidence gaps called out; learnings gate exits 0 with warning-only generated/report matches.</li>
+							<li>Deep proof boundary: pnpm test:deep is blocked at E2E credential validation; ~/.codex/.env stat reports a FIFO, so sourcing it would hang rather than safely recover credentials.</li>
+						<li>Review response: testing asked for an execute-path registry adapter test; simplicity and architecture asked to remove duplicate upgrade option contracts. Both findings are fixed locally.</li>
+						<li>Visual: the updated report is serving on port 8767 for Jamie; latest Browser retry is blocked because no iab target is currently exposed, not because the report is stale.</li>
+								<li>Handoff: T013 is not ready for advancement until push/PR evidence, remote checks, and review-thread classification are recorded.</li>
 			  </ul>
 			</article>
           </div>
@@ -595,7 +600,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, plan-gate, prompt-gate, gap-case, simulate, ci-migrate registry parsing, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, init, and upgrade registry parsing, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -834,6 +839,16 @@
                   Init command metadata delegates through a focused registry
                   seam; raw init flag projection and issue-tracker validation
                   live in src/lib/init/cli-args.ts.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>upgrade-command-spec.ts</strong>
+                <span>
+                  Upgrade command metadata delegates through a focused registry
+                  seam; raw provider projection lives in src/lib/upgrade/cli-args.ts,
+                  contract/default migration helpers live in src/lib/upgrade/contract.ts,
+                  template and manifest updates live in src/lib/upgrade/templates.ts,
+                  and execution orchestration lives in src/lib/upgrade/runner.ts.
                 </span>
               </div>
               <div class="module doctor">

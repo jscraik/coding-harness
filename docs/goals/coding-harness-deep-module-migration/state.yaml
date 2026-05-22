@@ -493,7 +493,7 @@ tasks:
   - id: T012
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "Prepare the init module-boundary slice from merged origin/main; do not edit implementation files until T011 merge evidence, scope, and focused validation are declared from live source."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
@@ -538,9 +538,60 @@ tasks:
       - "Current branch is not rooted at current origin/main."
       - "Focused validation path cannot be identified."
       - "Init scaffolding behavior boundary is unclear."
-    receipt_id: R012-INIT-PREP
+    receipt_id: R012-PR278-REPORT-EVIDENCE-CLEANUP
+  - id: T013
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Prepare the upgrade module-boundary slice from merged origin/main; do not edit implementation files until T012 merge evidence, scope, and focused validation are declared from live source."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+      - "src/commands/upgrade.ts"
+      - "src/commands/upgrade.test.ts"
+      - "src/lib/cli/registry/upgrade-command-spec.ts"
+      - "src/lib/upgrade/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+    constraints:
+      - "Do not start implementation until T012 and PR #278 merge evidence are recorded."
+      - "Declare focused upgrade tests before editing implementation files."
+      - "Keep upgrade behavior behind a focused registry adapter and module seam."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R013 before any following slice."
+    expected_output: "A small upgrade module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "AGENTS.md"
+      - "README.md"
+      - "docs/agents/00-architecture-bootstrap.md"
+      - "docs/agents/07b-agent-governance.md"
+      - "src/commands/upgrade.ts"
+      - "src/commands/upgrade.test.ts"
+      - "src/lib/upgrade/**"
+      - "src/lib/cli/registry/upgrade-command-spec.ts"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "pnpm vitest run src/commands/upgrade.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot"
+      - "pnpm typecheck"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T012 is not recorded done."
+      - "PR #278 merge evidence is missing."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+      - "Upgrade behavior boundary is unclear."
+    receipt_id: R013-UPGRADE-LOCAL-GATES-VERIFIED
 pr_green_sweep:
-  status: t012_init_validated_pending_commit_push
+  status: t013_upgrade_local_gates_verified_pending_push_pr
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -569,13 +620,17 @@ pr_green_sweep:
   ci_migrate_merge_commit: "3a861a7438b9891535d3786f1cb2bd60131a9aa2"
   init_branch: "codex/JSC-331-init-deep-module"
   init_base_sha: "3a861a7438b9891535d3786f1cb2bd60131a9aa2"
-  last_observed: "2026-05-22T16:06:20Z"
+  init_head_sha: "3ec87445eb0050068ead53283cd341a9ba3387ba"
+  init_merge_commit: "466aaaea0fa36f7fe670c7d496c0cb6a3816627b"
+  upgrade_branch: "codex/JSC-331-upgrade-deep-module"
+  upgrade_base_sha: "466aaaea0fa36f7fe670c7d496c0cb6a3816627b"
+  last_observed: "2026-05-22T18:47:05Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
-    - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
+    - "Review-thread re-observation after merge found 74 total PR #270 threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
     - "PR #273 merged the runtime-evidence nullable metadata fix at 2026-05-22T05:06:07Z with merge commit 72bd18cc5cd7d5bcfa5f556666be20f8313b3a18; all visible PR #273 checks passed."
-    - "The two remaining PR #270 review threads are classified as valid and fixed by merged PR #273; GitHub still shows the old PR #270 thread records unresolved, so they remain historical-review-state rather than implementation blockers."
-    - "Live PR #270 recheck at 2026-05-22T12:49:06Z confirms the PR is MERGED, all 23 visible checks pass, and the same two current unresolved review-thread records remain historical because their fixes are shipped in merged PR #273."
+    - "The two remaining PR #270 review threads were valid and fixed by merged PR #273; they were resolved in GitHub at 2026-05-22T18:47:05Z after verifying the current runtime-evidence contract validates nullable metadata on pass/available outcomes."
+    - "Live review-thread recheck at 2026-05-22T18:47:05Z confirms merged PRs #270, #272, #273, #274, #275, #276, #277, and #278 have zero unresolved review threads."
     - "PR #272 was converted to ready, all visible checks passed, no review threads were returned, and it merged by squash at 2026-05-22T06:04:40Z with merge commit 0498ac9db9f15f176ac04a7066ba4b3bafa22543."
     - "Harness doc-history review found stale PR #272 push/recheck wording in this board; the stale wording was repaired before PR #272 merged."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
@@ -632,12 +687,13 @@ pr_green_sweep:
     - "T011 PR body-status reconciliation commit f81f64ada6ed404e9305638643d2351c4c378486 was pushed; latest-head observation found all visible PR #277 checks passing, including CodeRabbit, pr-pipeline, security-scan, CircleCI contexts, Socket, and Snyk, and found all prior PR #277 review threads resolved or outdated."
     - "CodeRabbit then posted current thread PRRT_kwDORWZJCc6EKEP5 because this board still described the body-status reconciliation as pending commit/push; this state refresh removes that self-stale wording and keeps T011 active for the next pushed-head check/thread observation before T012."
     - "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2; all 23 visible checks pass and GitHub review-thread lookup returns zero unresolved threads."
-    - "T011 ci-migrate is closed by PR #277 merge evidence; T012 init is active on codex/JSC-331-init-deep-module rooted at origin/main merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2."
-    - "PR #278 is draft/open at head e633c96d7b1f424f6b895854aa222de0f3db7098. Initial live observation found ci/circleci: pr-template failing because the live body omitted required template sections, while CodeRabbit was draft-skipped and other visible checks were passing. The active repair uses notes/pr-bodies/pr278-body.md plus a Jamie-facing module-layout report refresh before the next push/recheck."
-    - "PR #278 live body was updated from notes/pr-bodies/pr278-body.md; live-body pr-template-gate and linear-gate both pass. Browser report reload was attempted through the in-app Browser, but localhost navigation returned net::ERR_BLOCKED_BY_CLIENT and file navigation was rejected by Browser URL policy, so Browser visual proof is an environment/client blocker rather than a completed proof."
-    - "The module-layout report was restarted for Jamie on http://127.0.0.1:3004/artifacts/architecture/module-layout.html after port 3003 had a stale listener that dropped HTTP responses. The in-app Browser backend currently reports no available browser targets, so Browser visual verification remains blocked even though the report serves successfully over HTTP."
-    - "The module-layout report was restarted for Jamie on http://127.0.0.1:8767/artifacts/architecture/module-layout.html and now has a latest Browser recheck pass: the in-app Browser is visible on the report with title Coding Harness Module Layout."
-    - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
+    - "T012 init is closed by PR #278 merge evidence; PR #278 merged at 2026-05-22T17:49:52Z with merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b."
+    - "T013 upgrade is implemented locally on codex/JSC-331-upgrade-deep-module rooted at origin/main merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b; upgrade orchestration now lives behind src/lib/upgrade/runner.ts, raw CLI projection lives in src/lib/upgrade/cli-args.ts, shared option contracts live in src/lib/upgrade/types.ts, contract/default migration helpers live in src/lib/upgrade/contract.ts, template and manifest updates live in src/lib/upgrade/templates.ts, and registry metadata delegates through upgrade-command-spec.ts."
+    - "T013 reviewer findings were addressed locally: testing requested direct execute-path coverage for the new upgrade registry adapter plus malformed helper error-boundary coverage, and simplicity/architecture requested removal of duplicated upgrade option contracts. The focused upgrade, registry, and module-boundary suite passes with 205 tests; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, validate-codestyle fast, and verify-work fast pass. pnpm test:deep reaches E2E credential validation after pnpm check, test:artifacts, and integration pass, then blocks because GitHub and Linear credentials are unavailable and ~/.codex/.env is a FIFO."
+    - "T013 full local PR-template gates now run: bash scripts/validate-codestyle.sh passes, pnpm check passes with 282 standard test files plus the ci-migrate suite and no known vulnerabilities, tooling-audit passes with zero findings, review-context succeeds, north-star-feedback succeeds with external evidence gaps called out, and learnings gate exits 0 with warning-only generated/report keyword matches."
+    - "The module-layout report remains live for Jamie on http://127.0.0.1:8767/artifacts/architecture/module-layout.html and now exposes a Jamie Readout Now section with the implemented T013 upgrade seam, reviewer-response proof, Browser truth, and remaining handoff gates."
+    - "The in-app Browser was successfully launched on the 8767 report URL in R013-UPGRADE-REPORT-BROWSER-LAUNCHED-8767, but the latest Browser workflow retry in this thread lists no available browser targets and returns Browser is not available: iab; HTTP revalidation of the report URL passes."
+    - "CODEX-NATIVE HARNESS MEMORY BASELINE files remain preserved in stash and outside the T013 upgrade branch."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_threads: "PR #276 GitHub review-thread lookup before merge returned nine total threads and zero unresolved threads. PR #270 remains merged with two current unresolved historical thread records whose fixes are shipped in merged PR #273."
@@ -655,11 +711,16 @@ pr_green_sweep:
       implementation: "T012 init registry-boundary split is implemented on PR #278: raw argv projection moved to src/lib/init/cli-args.ts, registry delegation moved to src/lib/cli/registry/init-command-spec.ts, and command-specs-core no longer owns inline init parser logic."
       changes: "Focused registry/module-boundary tests, pnpm typecheck, docs-gate required surfaces, validate-codestyle/verify-work fast, pnpm check, and tooling-audit are passing (verify-work run id 20260522T160456Z-59419). Current CodeRabbit init parser findings are fixed locally with malformed-value fixtures and explicit project-type override validation."
       validation: "Live PR body now passes pr-template-gate and linear-gate after body update. The HTML report was restarted for Jamie at http://127.0.0.1:8767/artifacts/architecture/module-layout.html and returned HTTP 200 with Jamie Readout, T012 status, Browser proof, and Do Not Advance sections present. Focused review-response proof passes with 158 registry/module-boundary tests plus typecheck and validate-codestyle fast."
-      remaining: "Remaining blockers: push the CodeRabbit/parser/report receipt update, update the live PR body, then reobserve current remote checks and review threads."
+      remaining: "Closed by PR #278 merge at 2026-05-22T17:49:52Z with merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b."
+    t013_upgrade:
+      implementation: "T013 upgrade split is implemented locally: src/commands/upgrade.ts is a compatibility facade, src/lib/cli/registry/upgrade-command-spec.ts owns registry metadata and delegation, src/lib/upgrade/cli-args.ts owns raw flag projection, src/lib/upgrade/types.ts owns the shared option contract, src/lib/upgrade/contract.ts owns contract/default migration helpers, src/lib/upgrade/templates.ts owns template and manifest updates, and src/lib/upgrade/runner.ts owns orchestration."
+      validation: "Focused upgrade/registry/module-boundary tests pass with 205 tests after adding direct upgrade registry execute-path coverage, malformed provider-value coverage, and helper error-boundary coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, the production CLI dry-run path, validate-codestyle fast, and verify-work fast pass. verify-work fast run id: 20260522T183031Z-7843. Full local PR-template gates also pass: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star-feedback; learnings gate exits 0 with warning-only generated/report keyword matches. pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration pass; ~/.codex/.env is a FIFO, so env-loaded recovery cannot be safely sourced in this runtime."
+      review: "Product, testing, simplicity, architecture, unslopify, and Codex/project-standards review artifacts exist under artifacts/reviews/. Testing's execute-path finding, simplicity/architecture option-contract duplication findings, stale-artifact findings, and Codex evidence-freshness finding are fixed locally; no blocking reviewer findings remain in the current patch."
+      blocker: "The 8767 report is live over HTTP; the latest Browser workflow retry is blocked because no iab browser target is currently exposed in this thread. T013 is blocked from advancement until push/PR evidence, remote checks, and review-thread classification are recorded."
   pending_actions:
-    - "Push the PR #278 CodeRabbit/parser/report receipt update, then reobserve remote checks and review-thread classification at the new pushed head."
-    - "Keep the local static report server available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html; Browser launch proof is refreshed for this session."
-    - "Do not start T013 upgrade or brain while PR #278 has pending/stale remote checks, unobserved review threads, or missing independent review evidence."
+    - "Run T013 push/PR evidence and review-thread classification before advancing."
+    - "Keep the local static report server available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html; direct Browser reload is currently blocked because the Browser workflow exposes no iab target in this thread."
+    - "Do not start brain while upgrade lacks pushed PR evidence, review-thread classification, and merge-readiness evidence."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
     - "@github"
@@ -682,10 +743,10 @@ slice_queue:
     - gap-case
     - simulate
     - ci-migrate
-  active: init
-  next: upgrade  # next is always the first entry of remaining
+    - init
+  active: upgrade
+  next: brain  # next is always the first entry of remaining
   remaining:
-    - upgrade
     - brain
   deferred:
     - effect-layers

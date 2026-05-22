@@ -177,6 +177,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"Init command spec must stay focused on registry metadata and init-owned argv delegation.",
 	},
 	{
+		path: "src/lib/cli/registry/upgrade-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Upgrade command spec must stay focused on registry metadata and upgrade-owned argv delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
 		maxLines: 25,
 		reason:
@@ -737,6 +743,45 @@ const CI_MIGRATE_SURFACE_RATCHETS = [
 		maxLines: 170,
 		reason:
 			"CI migration argument parsing must stay focused on raw CLI token projection and delegated helper routing.",
+	},
+] as const;
+
+const UPGRADE_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/upgrade.ts",
+		maxLines: 5,
+		reason:
+			"Upgrade command facade must stay a compatibility export for the upgrade runner.",
+	},
+	{
+		path: "src/lib/upgrade/cli-args.ts",
+		maxLines: 70,
+		reason:
+			"Upgrade argument parsing must stay focused on raw CLI token projection before upgrade execution.",
+	},
+	{
+		path: "src/lib/upgrade/contract.ts",
+		maxLines: 140,
+		reason:
+			"Upgrade contract migration helpers must stay outside the runner and registry adapter.",
+	},
+	{
+		path: "src/lib/upgrade/types.ts",
+		maxLines: 20,
+		reason:
+			"Upgrade types must describe the CLI contract without absorbing parsing or execution behavior.",
+	},
+	{
+		path: "src/lib/upgrade/templates.ts",
+		maxLines: 210,
+		reason:
+			"Upgrade template classification and manifest persistence must stay outside the runner and registry adapter.",
+	},
+	{
+		path: "src/lib/upgrade/runner.ts",
+		maxLines: 360,
+		reason:
+			"Upgrade runner must own upgrade orchestration instead of growing back into the command facade or registry adapter.",
 	},
 ] as const;
 
@@ -1306,6 +1351,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./rule-lifecycle-gate-command-spec.js",
 	"./symphony-check-command-spec.js",
 	"./tooling-audit-command-spec.js",
+	"./upgrade-command-spec.js",
 	"./verify-coderabbit-command-spec.js",
 	"./verify-work-command-spec.js",
 	"./workflow-generate-command-spec.js",
@@ -1858,6 +1904,48 @@ describe("module boundaries", () => {
 		expect(cliArgsAdapterContent).toContain("buildCIMigrateOptionsFromCliArgs");
 		expect(commandSpecsCoreContent).toContain("createCIMigrateCommandSpec()");
 		expect(commandSpecsCoreContent).not.toContain('name: "ci-migrate"');
+	});
+
+	it("keeps upgrade registry parsing behind focused seams", () => {
+		const commandFacadeContent = readFileSync(
+			join(process.cwd(), "src/commands/upgrade.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/upgrade-command-spec.ts"),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/upgrade/cli-args.ts"),
+			"utf-8",
+		);
+		const runnerContent = readFileSync(
+			join(process.cwd(), "src/lib/upgrade/runner.ts"),
+			"utf-8",
+		);
+		const commandSpecsCoreContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/command-specs-core.ts"),
+			"utf-8",
+		);
+
+		expectRatchetsWithinBudget(UPGRADE_SURFACE_RATCHETS);
+		expect(commandFacadeContent.trim()).toBe(
+			'export * from "../lib/upgrade/runner.js";',
+		);
+		expect(registryAdapterContent).toContain("../../upgrade/cli-args.js");
+		expect(registryAdapterContent).not.toContain("getFlagValue");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("buildUpgradeOptionsFromCliArgs");
+		expect(cliArgsAdapterContent).toContain("./types.js");
+		expect(runnerContent).toContain("export function runUpgradeCLI");
+		expect(runnerContent).toContain("./types.js");
+		expect(runnerContent).toContain("detectUpgradeContext");
+		expect(runnerContent).toContain("./contract.js");
+		expect(runnerContent).toContain("./templates.js");
+		expect(runnerContent).not.toContain("function upgradeTemplates");
+		expect(runnerContent).not.toContain("function applyContractMigration");
+		expect(commandSpecsCoreContent).toContain("createUpgradeCommandSpec()");
+		expect(commandSpecsCoreContent).not.toContain('name: "upgrade"');
 	});
 
 	it("keeps init registry parsing behind focused seams", () => {

@@ -38,6 +38,11 @@ import {
 	formatMigrationChanges,
 	migrateContractSchema,
 } from "../lib/init/schema-migrate.js";
+import {
+	applyContractMigration,
+	backfillContractDefaults,
+} from "../lib/upgrade/contract.js";
+import { readUpgradeManifest } from "../lib/upgrade/templates.js";
 import { runUpgradeCLI } from "./upgrade.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -598,5 +603,48 @@ describe("runUpgradeCLI", () => {
 		} finally {
 			infoSpy.mockRestore();
 		}
+	});
+});
+
+// ─── Split module error boundaries ───────────────────────────────────────────
+
+describe("upgrade split module error boundaries", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+	});
+
+	afterEach(() => {
+		if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("returns a contract migration error for malformed contract JSON", () => {
+		writeFileSync(join(dir, "harness.contract.json"), "{");
+
+		const result = applyContractMigration(dir, "0.0.0", "0.15.1", false);
+
+		expect(result).toEqual({
+			ok: false,
+			error: expect.stringContaining("Could not parse harness.contract.json"),
+		});
+	});
+
+	it("returns a default backfill error for malformed contract JSON", () => {
+		writeFileSync(join(dir, "harness.contract.json"), "{");
+
+		const result = backfillContractDefaults(dir, false);
+
+		expect(result).toEqual({
+			ok: false,
+			error: expect.stringContaining("Could not parse harness.contract.json"),
+		});
+	});
+
+	it("ignores malformed upgrade manifests at the template boundary", () => {
+		ensureHarnessDir(dir);
+		writeFileSync(join(dir, ".harness", "upgrade-manifest.json"), "{");
+
+		expect(readUpgradeManifest(dir)).toBeNull();
 	});
 });
