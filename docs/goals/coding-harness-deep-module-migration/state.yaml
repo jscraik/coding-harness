@@ -565,7 +565,7 @@ pr_green_sweep:
   ci_migrate_merge_commit: "3a861a7438b9891535d3786f1cb2bd60131a9aa2"
   init_branch: "codex/JSC-331-init-deep-module"
   init_base_sha: "3a861a7438b9891535d3786f1cb2bd60131a9aa2"
-  last_observed: "2026-05-22T15:51:13Z"
+  last_observed: "2026-05-22T16:06:20Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -645,8 +645,8 @@ pr_green_sweep:
     t011_ci_migrate: "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2. All 23 visible checks pass, GitHub review-thread lookup returns zero unresolved threads, and T011 ci-migrate is closed."
     t012_init: "T012 init registry-boundary split is locally implemented on codex/JSC-331-init-deep-module: raw argv projection moved to src/lib/init/cli-args.ts, registry delegation moved to src/lib/cli/registry/init-command-spec.ts, and command-specs-core no longer owns inline init parser logic. Focused registry/module-boundary tests, pnpm typecheck, docs-gate required surfaces, and validate-codestyle/verify-work fast are passing (verify-work run id 20260522T160456Z-59419). Remaining work is review classification, commit/push, PR handoff, and remote check/thread classification."
   pending_actions:
-    - "Record T012 implementation validation receipt and keep state/receipt/module-layout evidence synchronized."
-    - "Complete T012 review classification and stage commit-ready evidence."
+    - "Commit and push the T012 slice, then open PR handoff at the pushed head."
+    - "Reobserve remote checks and review-thread classification after the push."
     - "Commit/push T012 branch and open PR handoff with remote checks/thread status."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
