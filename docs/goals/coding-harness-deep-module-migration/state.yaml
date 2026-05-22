@@ -633,6 +633,10 @@ pr_green_sweep:
     - "CodeRabbit then posted current thread PRRT_kwDORWZJCc6EKEP5 because this board still described the body-status reconciliation as pending commit/push; this state refresh removes that self-stale wording and keeps T011 active for the next pushed-head check/thread observation before T012."
     - "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2; all 23 visible checks pass and GitHub review-thread lookup returns zero unresolved threads."
     - "T011 ci-migrate is closed by PR #277 merge evidence; T012 init is active on codex/JSC-331-init-deep-module rooted at origin/main merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2."
+    - "PR #278 is draft/open at head e633c96d7b1f424f6b895854aa222de0f3db7098. Initial live observation found ci/circleci: pr-template failing because the live body omitted required template sections, while CodeRabbit was draft-skipped and other visible checks were passing. The active repair uses notes/pr-bodies/pr278-body.md plus a Jamie-facing module-layout report refresh before the next push/recheck."
+    - "PR #278 live body was updated from notes/pr-bodies/pr278-body.md; live-body pr-template-gate and linear-gate both pass. Browser report reload was attempted through the in-app Browser, but localhost navigation returned net::ERR_BLOCKED_BY_CLIENT and file navigation was rejected by Browser URL policy, so Browser visual proof is an environment/client blocker rather than a completed proof."
+    - "The module-layout report was restarted for Jamie on http://127.0.0.1:3004/artifacts/architecture/module-layout.html after port 3003 had a stale listener that dropped HTTP responses. The in-app Browser backend currently reports no available browser targets, so Browser visual verification remains blocked even though the report serves successfully over HTTP."
+    - "The module-layout report was restarted for Jamie on http://127.0.0.1:8767/artifacts/architecture/module-layout.html and now has a latest Browser recheck pass: the in-app Browser is visible on the report with title Coding Harness Module Layout."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
@@ -648,13 +652,14 @@ pr_green_sweep:
     review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
     t011_ci_migrate: "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2. All 23 visible checks pass, GitHub review-thread lookup returns zero unresolved threads, and T011 ci-migrate is closed."
     t012_init:
-      implementation: "T012 init registry-boundary split is locally implemented on codex/JSC-331-init-deep-module: raw argv projection moved to src/lib/init/cli-args.ts, registry delegation moved to src/lib/cli/registry/init-command-spec.ts, and command-specs-core no longer owns inline init parser logic."
-      changes: "Focused registry/module-boundary tests, pnpm typecheck, docs-gate required surfaces, and validate-codestyle/verify-work fast are passing (verify-work run id 20260522T160456Z-59419)."
-      validation: "All local validation gates pass including focused tests, typecheck, docs-gate, validate-codestyle, and verify-work."
-      remaining: "Remaining work is review classification, commit/push, PR handoff, and remote check/thread classification."
+      implementation: "T012 init registry-boundary split is implemented on PR #278: raw argv projection moved to src/lib/init/cli-args.ts, registry delegation moved to src/lib/cli/registry/init-command-spec.ts, and command-specs-core no longer owns inline init parser logic."
+      changes: "Focused registry/module-boundary tests, pnpm typecheck, docs-gate required surfaces, validate-codestyle/verify-work fast, pnpm check, and tooling-audit are passing (verify-work run id 20260522T160456Z-59419). Current CodeRabbit init parser findings are fixed locally with malformed-value fixtures and explicit project-type override validation."
+      validation: "Live PR body now passes pr-template-gate and linear-gate after body update. The HTML report was restarted for Jamie at http://127.0.0.1:8767/artifacts/architecture/module-layout.html and returned HTTP 200 with Jamie Readout, T012 status, Browser proof, and Do Not Advance sections present. Focused review-response proof passes with 158 registry/module-boundary tests plus typecheck and validate-codestyle fast."
+      remaining: "Remaining blockers: push the CodeRabbit/parser/report receipt update, update the live PR body, then reobserve current remote checks and review threads."
   pending_actions:
-    - "Commit and push the T012 slice, then open PR handoff at the pushed head."
-    - "Reobserve remote checks and review-thread classification after the push."
+    - "Push the PR #278 CodeRabbit/parser/report receipt update, then reobserve remote checks and review-thread classification at the new pushed head."
+    - "Keep the local static report server available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html; Browser launch proof is refreshed for this session."
+    - "Do not start T013 upgrade or brain while PR #278 has pending/stale remote checks, unobserved review threads, or missing independent review evidence."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
     - "@github"

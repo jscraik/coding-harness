@@ -1337,12 +1337,53 @@ describe("init execute validation", () => {
 	it("rejects minimal init with granular issue-tracker mode", () => {
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-		expect(spec.execute(["--minimal", "--issue-tracker", "github"])).toBe(2);
-		expect(errorSpy).toHaveBeenCalledWith(
-			"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
-		);
+		try {
+			expect(spec.execute(["--minimal", "--issue-tracker", "github"])).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
 
-		errorSpy.mockRestore();
+	it("rejects project-type without a value", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			expect(spec.execute(["--project-type"])).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: --project-type requires a value.",
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
+
+	it("rejects issue-tracker when the next token is another flag", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			expect(spec.execute(["--issue-tracker", "--json"])).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: --issue-tracker requires a value.",
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
+
+	it("rejects unknown as an explicit project-type override", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			expect(spec.execute(["--project-type", "unknown"])).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				'Error: Invalid --project-type value: "unknown". Valid values: cli | desktop | library | web.',
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
 	});
 });
 

@@ -1,8 +1,13 @@
-import type { ProjectType } from "../project-type/types.js";
+import {
+	VALID_OVERRIDE_TYPES,
+	type ProjectType,
+} from "../project-type/types.js";
+import { findPositionalArg, getRawFlagValue } from "./flag-values.js";
 import type { InitOptions, IssueTracker } from "./types.js";
 
 const INIT_VALUE_FLAGS = new Set(["--project-type", "--issue-tracker"]);
 const ISSUE_TRACKERS = new Set(["linear", "github", "none"]);
+const PROJECT_TYPES = new Set<string>(VALID_OVERRIDE_TYPES);
 
 /** Result of mapping raw init CLI arguments into typed options. */
 export type InitCliArgsResult =
@@ -20,18 +25,11 @@ export function buildInitOptionsFromCliArgs(args: string[]): InitCliArgsResult {
 	const projectTypeArg = getRawFlagValue(args, "--project-type");
 	const issueTrackerArg = getRawFlagValue(args, "--issue-tracker");
 
-	// Check for flags present without values
-	if (args.includes("--project-type") && projectTypeArg === undefined) {
-		return {
-			ok: false,
-			message: "Error: --project-type requires a value.",
-		};
+	if (projectTypeArg === null) {
+		return { ok: false, message: "Error: --project-type requires a value." };
 	}
-	if (args.includes("--issue-tracker") && issueTrackerArg === undefined) {
-		return {
-			ok: false,
-			message: "Error: --issue-tracker requires a value.",
-		};
+	if (issueTrackerArg === null) {
+		return { ok: false, message: "Error: --issue-tracker requires a value." };
 	}
 
 	if (minimalFlag && issueTrackerArg !== undefined) {
@@ -39,6 +37,12 @@ export function buildInitOptionsFromCliArgs(args: string[]): InitCliArgsResult {
 			ok: false,
 			message:
 				"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
+		};
+	}
+	if (projectTypeArg !== undefined && !PROJECT_TYPES.has(projectTypeArg)) {
+		return {
+			ok: false,
+			message: `Error: Invalid --project-type value: "${projectTypeArg}". Valid values: ${VALID_OVERRIDE_TYPES.join(" | ")}.`,
 		};
 	}
 	if (issueTrackerArg !== undefined && !ISSUE_TRACKERS.has(issueTrackerArg)) {
@@ -66,18 +70,10 @@ export function buildInitOptionsFromCliArgs(args: string[]): InitCliArgsResult {
 		...(projectTypeArg ? { projectType: projectTypeArg as ProjectType } : {}),
 	};
 
-	return { ok: true, targetDir: findInitTargetDir(args), options, interactive };
-}
-
-function getRawFlagValue(args: string[], flag: string): string | undefined {
-	const index = args.indexOf(flag);
-	return index === -1 ? undefined : args[index + 1];
-}
-
-function findInitTargetDir(args: string[]): string | undefined {
-	return args.find((arg, index) => {
-		if (arg.startsWith("-")) return false;
-		const previous = args[index - 1];
-		return !INIT_VALUE_FLAGS.has(previous ?? "");
-	});
+	return {
+		ok: true,
+		targetDir: findPositionalArg(args, INIT_VALUE_FLAGS),
+		options,
+		interactive,
+	};
 }

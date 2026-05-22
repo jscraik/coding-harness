@@ -350,6 +350,87 @@
         border-left: 5px solid var(--guard);
       }
 
+      .jamie-board {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .priority-panel {
+        border: 1px solid #f59e0b;
+        border-left: 5px solid var(--guard);
+        border-radius: 8px;
+        background: #fffbeb;
+        padding: 14px;
+      }
+
+      .priority-panel h2,
+      .timeline-panel h2 {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+
+      .priority-panel p,
+      .timeline-panel p {
+        color: #374151;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .priority-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .priority-item {
+        border: 1px solid rgba(180, 83, 9, 0.28);
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 10px;
+        min-height: 92px;
+      }
+
+      .priority-item strong {
+        display: block;
+        font-size: 12px;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .priority-item span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+        margin-top: 6px;
+      }
+
+      .timeline-panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .timeline-list {
+        display: grid;
+        gap: 8px;
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .timeline-list li {
+        border-left: 3px solid var(--public);
+        padding-left: 9px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
       .control-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -376,6 +457,8 @@
         .doctor-seams,
         .internal-grid,
         .notes,
+        .jamie-board,
+        .priority-grid,
         .status-strip,
         .control-grid {
           grid-template-columns: 1fr;
@@ -433,18 +516,56 @@
             <strong>Complete</strong>
             <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, plan-gate, prompt-gate, gap-case, simulate, and ci-migrate registry parsing now have facade-first module seams.</span>
           </article>
-		  <article class="status-card status-current">
-			<strong>Current Slice</strong>
-						<span>T012 init is implemented locally on codex/JSC-331-init-deep-module from the PR #277 merge commit; focused registry parser, module-boundary, and typecheck validation are passing.</span>
-		  </article>
-		  <article class="status-card status-watch">
-			<strong>Review Follow-ups</strong>
-					<span>Init raw argv projection now lives in src/lib/init/cli-args.ts, while registry metadata and delegation live in init-command-spec.ts.</span>
-		  </article>
-		  <article class="status-card status-watch">
-			<strong>Merge Gate</strong>
-						<span>The native goal and repository board remain active. Remaining T012 gates are review classification, fast validation, receipt update, push, PR handoff, and remote check/review classification.</span>
-		  </article>
+          <article class="status-card status-current">
+            <strong>Current Slice</strong>
+            <span>T012 init is implemented on PR #278; the active blocker is current remote check/review closeout, not the init code split.</span>
+          </article>
+          <article class="status-card status-watch">
+            <strong>Live Blocker</strong>
+            <span>The original pr-template failure is repaired; PR #278 now needs the latest pushed-head checks, review threads, and Browser availability observed before advancing.</span>
+          </article>
+          <article class="status-card status-watch">
+            <strong>Do Not Advance</strong>
+            <span>Upgrade and brain stay queued until PR #278 has green checks, review-thread classification, and recorded merge-readiness evidence.</span>
+          </article>
+        </section>
+
+        <section class="jamie-board" aria-label="Jamie live readout">
+          <article class="priority-panel">
+            <h2>Jamie Readout</h2>
+            <p>
+              This page is the live handoff board for the deep-module migration.
+              It should answer what is done, what is blocked, what Codex is doing
+              next, and which proof prevents stale optimism.
+            </p>
+            <div class="priority-grid">
+              <div class="priority-item">
+                <strong>Now</strong>
+                <span>PR #278 now includes the CodeRabbit init parser fix; push the receipt/report update, then reobserve latest-head checks and review threads.</span>
+              </div>
+              <div class="priority-item">
+                <strong>Proof</strong>
+                <span>Use docs/goals/.../notes/pr-bodies/pr278-body.md, R012-PR278-CODERABBIT-INIT-PARSER-FIX, and R012-PR278-BROWSER-LAUNCHED-8767-R019 for the latest Browser proof.</span>
+              </div>
+              <div class="priority-item">
+                <strong>Guardrail</strong>
+                <span>No next feature slice starts while the current PR still has a stale body, red template check, or unobserved review state.</span>
+              </div>
+            </div>
+          </article>
+          <article class="timeline-panel">
+            <h2>Current Evidence Trail</h2>
+            <p>Last refreshed for PR #278 init parser review fix on 2026-05-22.</p>
+            <ul class="timeline-list">
+              <li>Code split: init argv projection lives in src/lib/init/cli-args.ts, with raw flag-value handling isolated in src/lib/init/flag-values.ts.</li>
+              <li>Registry seam: init metadata/delegation lives in init-command-spec.ts.</li>
+              <li>Review fix: malformed init value flags now return usage errors, and unknown is rejected as an explicit project-type override.</li>
+              <li>Local proof already passed: focused registry/module-boundary tests, pnpm typecheck, git diff check, goal-board check, and validate-codestyle fast.</li>
+              <li>Remote status: the repaired PR body passes local and remote pr-template/Linear gates; current pushed-head checks still need final observation after this CodeRabbit/report receipt is pushed.</li>
+              <li>Report server: restarted on http://127.0.0.1:8767/artifacts/architecture/module-layout.html and HTTP 200 confirms the Jamie Readout, T012 status, Browser proof, and Do Not Advance sections are present.</li>
+              <li>Browser proof: the in-app Browser is visible on the 8767 report URL with title Coding Harness Module Layout.</li>
+            </ul>
+          </article>
         </section>
 
         <section class="panel">
@@ -460,11 +581,11 @@
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-						  <p>Current evidence is focused T012 validation plus the pending R012 receipt in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
+						  <p>Current evidence is focused T012 validation plus the PR #278 body/report repair, 8767 restart, and CodeRabbit parser-fix receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
 			  <ul class="evidence-list">
-						<li>Focused proof: init registry parser tests, module-boundary ratchets, and pnpm typecheck are the current T012 proof surface.</li>
-				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-							<li>Handoff: T012 init implementation is local; review classification, fast validation, receipt update, push, PR handoff, and remote classification remain.</li>
+						<li>Focused proof: init registry parser tests, malformed-value fixtures, module-boundary ratchets, pnpm typecheck, git diff check, goal-board check, and validate-codestyle fast have passed for T012.</li>
+						<li>Visual: the updated report is serving on port 8767 for Jamie, and the in-app Browser is visible on the report with title Coding Harness Module Layout.</li>
+							<li>Handoff: PR #278 is not ready for advancement until final pushed-head check reruns, review-thread classification, and merge-readiness classification are recorded.</li>
 			  </ul>
 			</article>
           </div>
@@ -1787,7 +1908,7 @@
         </section>
 
         <section class="panel">
-          <h2>7H. Gap Case Command Seams</h2>
+          <h2>7I. Gap Case Command Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/commands/gap-case.ts</strong>
@@ -1852,7 +1973,7 @@
         </section>
 
         <section class="panel">
-          <h2>7I. Simulate Command Seams</h2>
+          <h2>7J. Simulate Command Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/commands/simulate.ts</strong>
