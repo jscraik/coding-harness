@@ -536,7 +536,7 @@ tasks:
       - "Init scaffolding behavior boundary is unclear."
     receipt_id: R012-INIT-PREP
 pr_green_sweep:
-  status: t011_ci_migrate_merged_t012_init_active
+  status: t012_init_validated_pending_commit_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -643,10 +643,11 @@ pr_green_sweep:
     review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
     review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
     t011_ci_migrate: "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2. All 23 visible checks pass, GitHub review-thread lookup returns zero unresolved threads, and T011 ci-migrate is closed."
-    t012_init: "Current branch codex/JSC-331-init-deep-module is rooted at origin/main merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2. T012 is active for a bounded init module-boundary slice; implementation must declare focused init validation before editing production code."
+    t012_init: "T012 init registry-boundary split is locally implemented on codex/JSC-331-init-deep-module: raw argv projection moved to src/lib/init/cli-args.ts, registry delegation moved to src/lib/cli/registry/init-command-spec.ts, and command-specs-core no longer owns inline init parser logic. Focused registry/module-boundary tests, pnpm typecheck, docs-gate required surfaces, and validate-codestyle/verify-work fast are passing (verify-work run id 20260522T160456Z-59419). Remaining work is review classification, commit/push, PR handoff, and remote check/thread classification."
   pending_actions:
-    - "Declare T012 focused init validation before editing implementation files."
-    - "Inspect init registry boundaries and keep edits inside the active T012 allowed_files list."
+    - "Record T012 implementation validation receipt and keep state/receipt/module-layout evidence synchronized."
+    - "Complete T012 review classification and stage commit-ready evidence."
+    - "Commit/push T012 branch and open PR handoff with remote checks/thread status."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
     - "@github"

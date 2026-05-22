@@ -16,6 +16,7 @@ import * as driftGateModule from "../../drift-gate.js";
 import * as memoryGateModule from "../../memory-gate.js";
 import * as observabilityGateModule from "../../observability-gate.js";
 import { buildCIMigrateOptionsFromCliArgs } from "../../ci-migrate/cli-args.js";
+import { buildInitOptionsFromCliArgs } from "../../init/cli-args.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import * as silentErrorCommand from "../../../commands/silent-error.js";
@@ -1300,6 +1301,48 @@ describe("validation-plan execute validation", () => {
 		const output = String(infoSpy.mock.calls.at(-1)?.[0] ?? "");
 		expect(output).toContain("validation-plan.files_required");
 		infoSpy.mockRestore();
+	});
+});
+
+describe("init execute validation", () => {
+	const spec = findSpec("init");
+
+	it("keeps init option projection in the init module seam", () => {
+		const parsed = buildInitOptionsFromCliArgs([
+			"repo",
+			"--dry-run",
+			"--json",
+			"--track",
+			"--project-type",
+			"web",
+			"--issue-tracker",
+			"github",
+		]);
+
+		expect(parsed).toEqual({
+			ok: true,
+			targetDir: "repo",
+			interactive: false,
+			options: expect.objectContaining({
+				dryRun: true,
+				force: false,
+				json: true,
+				track: true,
+				projectType: "web",
+				issueTracker: "github",
+			}),
+		});
+	});
+
+	it("rejects minimal init with granular issue-tracker mode", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		expect(spec.execute(["--minimal", "--issue-tracker", "github"])).toBe(2);
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
+		);
+
+		errorSpy.mockRestore();
 	});
 });
 

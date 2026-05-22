@@ -12,7 +12,6 @@ import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
 import { runEjectCLI } from "../../../commands/eject.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
-import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
@@ -33,9 +32,7 @@ import {
 	runUpgradeCLI,
 } from "../../../commands/upgrade.js";
 import { runValidationPlanCLI } from "../../../commands/validation-plan.js";
-import type { IssueTracker } from "../../init/types.js";
 import type { PilotEvaluateOptions } from "../../pilot-evaluation/types.js";
-import type { ProjectType } from "../../project-type/types.js";
 import { getVersion } from "../../version.js";
 import {
 	getFlagValue,
@@ -59,6 +56,7 @@ import { createFleetPlanCommandSpec } from "./fleet-plan-command-spec.js";
 import { createGardenerCommandSpec } from "./gardener-command-spec.js";
 import { createGapCaseCommandSpec } from "./gap-case-command-spec.js";
 import { createHealthCommandSpec } from "./health-command-spec.js";
+import { createInitCommandSpec } from "./init-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
@@ -450,83 +448,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runContextHealthCLI(args);
 		},
 	},
-	{
-		name: "init",
-		summary: "Install harness in current directory",
-		example: "init [target-dir] [--dry-run] [--json]",
-		errorLabel: "Init Error",
-		execute: (args) => {
-			const dryRunFlag = args.includes("--dry-run");
-			const forceFlag = args.includes("--force");
-			const trackFlag = args.includes("--track");
-			const rollbackFlag = args.includes("--rollback");
-			const checkUpdatesFlag = args.includes("--check-updates");
-			const updateFlag = args.includes("--update");
-			const explainOwnershipFlag = args.includes("--explain-ownership");
-			const interactiveFlag = args.includes("--interactive");
-			const migrateFlag = args.includes("--migrate");
-			const jsonFlag = args.includes("--json");
-			const minimalFlag = args.includes("--minimal");
-
-			const projectTypeIndex = args.indexOf("--project-type");
-			const projectTypeArg =
-				projectTypeIndex !== -1 ? args[projectTypeIndex + 1] : undefined;
-			const issueTrackerIndex = args.indexOf("--issue-tracker");
-			const issueTrackerArg =
-				issueTrackerIndex !== -1 ? args[issueTrackerIndex + 1] : undefined;
-
-			if (minimalFlag) {
-				if (issueTrackerArg !== undefined) {
-					console.error(
-						"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
-					);
-					return 2;
-				}
-			}
-			if (
-				issueTrackerArg !== undefined &&
-				!["linear", "github", "none"].includes(issueTrackerArg)
-			) {
-				console.error(
-					`Error: Invalid --issue-tracker value: "${issueTrackerArg}". Valid values: linear | github | none.`,
-				);
-				return 2;
-			}
-			const issueTracker = issueTrackerArg as IssueTracker | undefined;
-
-			// Find target dir: first non-flag arg, not a value for a named flag
-			const targetDir = args.find((arg, i, arr) => {
-				if (arg.startsWith("-")) return false;
-				const prev = arr[i - 1];
-				if (prev === "--project-type" || prev === "--issue-tracker")
-					return false;
-				return true;
-			});
-
-			const options = {
-				dryRun: dryRunFlag,
-				force: forceFlag,
-				track: trackFlag,
-				rollback: rollbackFlag,
-				checkUpdates: checkUpdatesFlag,
-				update: updateFlag,
-				explainOwnership: explainOwnershipFlag,
-				interactive: interactiveFlag,
-				migrate: migrateFlag,
-				json: jsonFlag,
-				...(minimalFlag ? { minimal: true } : {}),
-				...(issueTracker ? { issueTracker } : {}),
-				...(projectTypeArg
-					? { projectType: projectTypeArg as ProjectType }
-					: {}),
-			};
-
-			if (interactiveFlag) {
-				return runInteractiveInitCLI(targetDir, options);
-			}
-			return runInitCLI(targetDir, options);
-		},
-	},
+	createInitCommandSpec(),
 	...createLearningEvidenceCommandSpecs({
 		runLearningsCLI,
 		runNorthStarFeedbackCLI,

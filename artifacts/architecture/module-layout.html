@@ -435,15 +435,15 @@
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-					<span>T011 ci-migrate is implemented locally on codex/JSC-331-ci-migrate-deep-module from origin/main; focused registry parser and boundary tests are passing.</span>
+						<span>T012 init is implemented locally on codex/JSC-331-init-deep-module from the PR #277 merge commit; focused registry parser, module-boundary, and typecheck validation are passing.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Review Follow-ups</strong>
-				<span>CI migration raw argv projection and delegated helper routing now live in src/lib/ci-migrate/cli-args.ts, while the registry manifest calls createCIMigrateCommandSpec().</span>
+					<span>Init raw argv projection now lives in src/lib/init/cli-args.ts, while registry metadata and delegation live in init-command-spec.ts.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Merge Gate</strong>
-					<span>The native goal and repository board remain active. Remaining gates are full fast validation, receipt update, push, PR handoff, and remote check/review classification.</span>
+						<span>The native goal and repository board remain active. Remaining T012 gates are review classification, fast validation, receipt update, push, PR handoff, and remote check/review classification.</span>
 		  </article>
         </section>
 
@@ -452,19 +452,19 @@
           <div class="control-grid">
             <article class="note">
               <h3>Enforcement</h3>
-              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, plan-gate, prompt-gate, gap-case, simulate, and ci-migrate registry behavior are covered by focused command-spec and seam tests.</p>
+              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, and init registry behavior are covered by focused command-spec and seam tests.</p>
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-				  <p>Latest implementation target: ci-migrate registry split. The command registry now delegates ci-migrate metadata through a focused adapter while parser details and delegated helper routing live behind a ci-migrate-owned seam.</p>
+					  <p>Latest implementation target: init registry split. The command registry now delegates init metadata through a focused adapter while raw init flag projection, issue-tracker validation, minimal conflict handling, and target-dir detection live behind an init-owned seam.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-					  <p>Current evidence is focused T011 validation plus the pending R011 receipt in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
+						  <p>Current evidence is focused T012 validation plus the pending R012 receipt in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
 			  <ul class="evidence-list">
-					<li>Focused proof: ci-migrate registry parser tests and module-boundary ratchets are the T011 proof surface.</li>
+						<li>Focused proof: init registry parser tests, module-boundary ratchets, and pnpm typecheck are the current T012 proof surface.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-						<li>Handoff: T011 ci-migrate implementation is local; fast validation, receipt update, push, PR handoff, and remote classification remain.</li>
+							<li>Handoff: T012 init implementation is local; review classification, fast validation, receipt update, push, PR handoff, and remote classification remain.</li>
 			  </ul>
 			</article>
           </div>
@@ -705,6 +705,14 @@
                   CI migration command metadata delegates through a focused
                   registry seam; raw flag projection and legacy helper routing
                   live in src/lib/ci-migrate/cli-args.ts.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>init-command-spec.ts</strong>
+                <span>
+                  Init command metadata delegates through a focused registry
+                  seam; raw init flag projection and issue-tracker validation
+                  live in src/lib/init/cli-args.ts.
                 </span>
               </div>
               <div class="module doctor">
@@ -1740,6 +1748,45 @@
         </section>
 
         <section class="panel">
+          <h2>7H. Init Registry Seam</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/init.ts</strong>
+              <span>
+                Compatibility command facade for project initialization and
+                scaffolding orchestration.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/init/cli-args.ts</strong>
+                <span>
+                  Raw init flag projection, project-type parsing,
+                  issue-tracker validation, minimal conflict handling, and
+                  target directory detection.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>init-command-spec.ts</strong>
+                <span>
+                  Registry metadata and command delegation seam for
+                  runInitCLI and runInteractiveInitCLI.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>command-specs.test.ts + module-boundaries.test.ts</strong>
+                <span>
+                  Registry parser regressions plus ratchets that keep init
+                  parsing behind the init module seam instead of the registry
+                  assembler.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>7H. Gap Case Command Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
@@ -2147,10 +2194,13 @@
 			  simulate/cli-args.ts, transition analysis behind simulate/analysis.ts,
 			  recommendations behind simulate/recommendations.ts, terminal and JSON
 			  presentation behind simulate/cli.ts, and registry delegation behind
-			  simulate-command-spec.ts. CI migration raw flag projection, target-dir
-			  parsing, snapshot option mapping, commit-mode parsing, and delegated
-			  helper routing now live behind ci-migrate/cli-args.ts, with registry
-			  delegation behind ci-migrate-command-spec.ts.
+				  simulate-command-spec.ts. CI migration raw flag projection, target-dir
+				  parsing, snapshot option mapping, commit-mode parsing, and delegated
+				  helper routing now live behind ci-migrate/cli-args.ts, with registry
+				  delegation behind ci-migrate-command-spec.ts. Init raw flag
+				  projection, issue-tracker validation, minimal conflict handling, and
+				  target directory detection now live behind init/cli-args.ts, with
+				  registry delegation behind init-command-spec.ts.
 			  pre-commit hook now uses the existing staged related-test mode so
 			  commit-time validation stays scoped to staged implementation files
 			  while broader validation lanes keep their branch-wide coverage.
@@ -2190,9 +2240,9 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
 			<p>
-				  Current board gate: T010 simulate is active. Next pressure point is
-				  completing post-split review lanes, fast validation, R010 receipt,
-				  PR handoff, and remote check/review classification.
+					  Current board gate: T012 init is active. Next pressure point is
+					  completing post-split review lanes, fast validation, R012 receipt,
+					  PR handoff, and remote check/review classification.
 			</p>
           </article>
         </section>

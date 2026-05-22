@@ -234,6 +234,7 @@ parsing and delegation belong in named adapters:
   `gardener-command-spec.ts`, `memory-gate-command-spec.ts`,
   `silent-error-command-spec.ts`, `brainstorm-gate-command-spec.ts`,
   `gap-case-command-spec.ts`, `ci-migrate-command-spec.ts`,
+  `init-command-spec.ts`,
   `verify-coderabbit-command-spec.ts`, `local-memory-preflight-command-spec.ts`,
   `symphony-check-command-spec.ts`, and
   `workflow-generate-command-spec.ts`.
@@ -264,6 +265,22 @@ absorbs more safety policy.
   - Signed merge-queue cutover window state, replay-binding shape validation,
     signature verification, terminal-window admission, and lifecycle-state
     writes for prepare/apply/commit flows.
+
+## Init Command Boundary
+
+Init remains responsible for repository scaffolding behavior, template
+selection, update/rollback modes, and interactive install flows. The command
+registry must not own init flag projection.
+
+- `src/lib/cli/registry/init-command-spec.ts`
+  - Registry metadata, usage-error reporting, and delegation to the init command
+    entrypoints.
+- `src/lib/init/cli-args.ts`
+  - Raw init flag projection, issue-tracker validation, minimal-mode conflict
+    handling, and target-directory detection.
+- `src/lib/init/cli.ts`
+  - Init orchestration and structured install/update/migrate/rollback result
+    production.
 - `src/lib/ci/repo-bound-paths.ts`
   - Repository-bounded configured path resolution, file URL resolution, symlink
     rejection, and allowlisted restore-path safety checks.
@@ -898,6 +915,10 @@ Threshold policy:
 - `src/lib/cli/registry/simulate-command-spec.ts` must stay focused on
   simulate command metadata and simulate-owned argv delegation (`<= 20`
   lines).
+- `src/lib/cli/registry/init-command-spec.ts` must stay focused on init command
+  metadata and init-owned argv delegation (`<= 25` lines).
+- `src/lib/init/cli-args.ts` must stay focused on init option projection and
+  target-directory detection (`<= 80` lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
