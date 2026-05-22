@@ -10,7 +10,7 @@ goal:
   tokens_used: 1639295
   time_used_seconds: 8516
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-22T06:46:21Z"
+  native_updated_at: "2026-05-22T06:55:06Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -27,9 +27,9 @@ checks:
   architecture_visual: "artifacts/architecture/module-layout.html"
   visual_record_contract: "module layout must show complete/current/next/remaining/blocked, enforcement, agent-safe zones, human-review zones, latest slice, and receipt/PR evidence"
   last_verification:
-    command: "pnpm exec tsx src/cli.ts docs-gate --mode required --json"
+    command: "PR_TEMPLATE_BODY=$(gh pr view 274 --repo jscraik/coding-harness --json body --jq .body) bash scripts/run-harness-gate.sh pr-template-gate --json"
     outcome: "pass"
-    checked_at: "2026-05-22T06:46:21Z"
+    checked_at: "2026-05-22T06:55:06Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -353,7 +353,7 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R008
 pr_green_sweep:
-  status: t008_prompt_gate_validated_pending_commit_push
+  status: t008_prompt_gate_pr274_draft_remote_pending
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -363,6 +363,9 @@ pr_green_sweep:
   followup_head_sha: "1ab7a0cdbc41c36f484d70b11a8a1b2463df66e7"
   board_reconciliation_pr_url: "https://github.com/jscraik/coding-harness/pull/272"
   board_reconciliation_branch: "codex/JSC-331-pr270-review-closeout"
+  prompt_gate_pr_url: "https://github.com/jscraik/coding-harness/pull/274"
+  prompt_gate_branch: "codex/JSC-331-prompt-gate-deep-module"
+  prompt_gate_head_sha: "35d143c0b164f9f9848ead88b5bed5f1604cc31b"
   last_observed: "2026-05-22T06:07:32Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
@@ -375,6 +378,7 @@ pr_green_sweep:
     - "T007 plan-gate and PR-green-sweep closeout are complete; T008 prompt-gate is now the active implementation slice."
     - "T008 prompt-gate implementation is locally validated with focused tests, direct CLI proofs, review gates, validate-codestyle fast, and verify-work fast; commit, push, PR handoff, remote checks, and review-thread observation are still pending."
     - "T008 pre-push docs-gate initially required README.md, docs/agents/00-architecture-bootstrap.md, AGENTS.md, docs/agents/07b-agent-governance.md, and refreshed architecture context artifacts; those surfaces are now synchronized and docs-gate passes locally."
+    - "Draft PR #274 is open for T008 at head 35d143c0b164f9f9848ead88b5bed5f1604cc31b; CodeRabbit is green and no review threads were returned, but remote checks are not merge-ready because pr-template initially failed before PR body repair and CircleCI check/test/orb-pinning were still pending at observation time."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #270 observed as MERGED with head cd93b6feee48a2e3e33d0e77d638aee838e85aac, merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec, and mergedAt 2026-05-22T04:24:29Z."
@@ -384,9 +388,10 @@ pr_green_sweep:
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
     post_push: "PR #272 was marked ready and squash-merged with merge commit 0498ac9db9f15f176ac04a7066ba4b3bafa22543; the follow-up branch was deleted by the merge command."
     validation: "T008 prompt-gate local validation passed after initial JSDoc and docs-style failures were fixed; docs-gate required-surface warnings were cleared after README, AGENTS, architecture-bootstrap, agent-governance, and architecture context synchronization."
+    pr_handoff: "PR #274 created as draft; local pr-template-gate passed after adding explicit pending markers to incomplete checklist items; remote checks require re-observation after this board handoff commit is pushed."
   pending_actions:
-    - "Commit and push the T008 prompt-gate implementation update on codex/JSC-331-prompt-gate-deep-module."
-    - "Create or update the prompt-gate PR, then observe remote checks, mergeability, and review-thread state."
+    - "Push this PR handoff receipt update for PR #274."
+    - "Re-observe PR #274 remote checks, mergeability, CodeRabbit/Semgrep, and review-thread state after the board handoff commit reaches GitHub."
     - "Do not start T009 gap-case until T008 PR handoff and remote/review state are recorded."
   tools:
     - "@github"
