@@ -596,7 +596,7 @@ tasks:
       - "Upgrade behavior boundary is unclear."
     receipt_id: R013-UPGRADE-LOCAL-GATES-VERIFIED
 pr_green_sweep:
-  status: t013_upgrade_pr279_coderabbit_review_response_fixed_pending_push
+  status: t013_upgrade_pr279_coderabbit_review_response_fixed_pushed_reobserved
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
