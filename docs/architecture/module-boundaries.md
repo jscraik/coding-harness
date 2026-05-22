@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-21
+last_validated: 2026-05-22
 ---
 
 # Module Boundaries
@@ -17,6 +17,7 @@ last_validated: 2026-05-21
 - [Observability Gate Command Boundary](#observability-gate-command-boundary)
 - [Artifact Gate Command Boundary](#artifact-gate-command-boundary)
 - [Plan Gate Command Boundary](#plan-gate-command-boundary)
+- [Prompt Gate Command Boundary](#prompt-gate-command-boundary)
 - [HE Phase-Exit Trust Boundary](#he-phase-exit-trust-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
@@ -131,6 +132,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/plan-gate-command-spec.ts`
   - Thin registry metadata and command adapter; raw plan-gate argv projection
     lives in `src/lib/plan-gate/cli-args.ts`.
+- `src/lib/cli/registry/prompt-gate-command-spec.ts`
+  - Thin registry metadata and command adapter; raw prompt-gate argv projection
+    lives in `src/lib/prompt-gate/cli-args.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -419,6 +423,31 @@ hint table.
 - `src/lib/architecture/module-boundaries.test.ts`
   - Ratchets the command facade, registry adapter, raw CLI adapter, and CLI
     presentation seam.
+
+## Prompt Gate Command Boundary
+
+Prompt-gate is the prompt-template compliance surface. It validates required
+prompt sections for feature, bug fix, refactor, and release prompts without
+letting the command facade or registry manifest become a Markdown parser,
+usage-error adapter, or terminal renderer.
+
+- `src/commands/prompt-gate.ts`
+  - Compatibility command facade and stable public export surface.
+- `src/lib/prompt-gate/cli-args.ts`
+  - Raw CLI option adapter for prompt type, prompt file, and JSON output.
+- `src/lib/prompt-gate/cli.ts`
+  - Prompt-gate execution, terminal/JSON presentation, and exit-code mapping.
+- `src/lib/prompt-gate/validator.ts`
+  - Prompt template section discovery, checkbox counting, file read failure
+    classification, and validation-result construction.
+- `src/lib/prompt-gate/types.ts`
+  - Shared prompt-gate option, prompt-type, result, and exit-code contract.
+- `src/lib/cli/registry/prompt-gate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the prompt-gate-owned
+    CLI option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, registry adapter, raw CLI adapter, validator,
+    and CLI presentation seam.
 
 ## Output Normalisation Boundaries
 
@@ -777,6 +806,9 @@ Threshold policy:
   command metadata and replay-owned argv delegation (`<= 20` lines).
 - `src/lib/cli/registry/plan-gate-command-spec.ts` must stay focused on plan
   gate command metadata and plan-gate-owned argv delegation (`<= 20` lines).
+- `src/lib/cli/registry/prompt-gate-command-spec.ts` must stay focused on
+  prompt gate command metadata and prompt-gate-owned argv delegation (`<= 20`
+  lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
@@ -860,6 +892,16 @@ Threshold policy:
   (`<= 65` lines).
 - `src/lib/plan-gate/cli.ts` must remain a plan-gate CLI presentation and
   exit-code seam (`<= 155` lines).
+- `src/commands/prompt-gate.ts` must remain a prompt-gate compatibility facade
+  (`<= 25` lines); raw argv projection, validation, and result presentation
+  live behind `src/lib/prompt-gate/cli-args.ts`,
+  `src/lib/prompt-gate/validator.ts`, and `src/lib/prompt-gate/cli.ts`.
+- `src/lib/prompt-gate/cli-args.ts` must remain a prompt-gate argument adapter
+  (`<= 55` lines).
+- `src/lib/prompt-gate/validator.ts` must remain a prompt-gate validation seam
+  (`<= 140` lines).
+- `src/lib/prompt-gate/cli.ts` must remain a prompt-gate CLI presentation and
+  exit-code seam (`<= 90` lines).
 - `src/lib/output/normalise-policy-gate.ts` must remain a policy gate
   normalisation seam (`<= 130` lines) for policy tier findings, decision
   metadata, and canonical `GateResult` projection.

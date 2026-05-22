@@ -10,7 +10,7 @@ goal:
   tokens_used: 1639295
   time_used_seconds: 8516
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-22T06:10:57Z"
+  native_updated_at: "2026-05-22T06:46:21Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -27,9 +27,9 @@ checks:
   architecture_visual: "artifacts/architecture/module-layout.html"
   visual_record_contract: "module layout must show complete/current/next/remaining/blocked, enforcement, agent-safe zones, human-review zones, latest slice, and receipt/PR evidence"
   last_verification:
-    command: "bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration"
+    command: "pnpm exec tsx src/cli.ts docs-gate --mode required --json"
     outcome: "pass"
-    checked_at: "2026-05-22T06:10:57Z"
+    checked_at: "2026-05-22T06:46:21Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -353,7 +353,7 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R008
 pr_green_sweep:
-  status: t007_complete_pr272_merged_prompt_gate_active
+  status: t008_prompt_gate_validated_pending_commit_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -373,6 +373,8 @@ pr_green_sweep:
     - "Harness doc-history review found stale PR #272 push/recheck wording in this board; the stale wording was repaired before PR #272 merged."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
     - "T007 plan-gate and PR-green-sweep closeout are complete; T008 prompt-gate is now the active implementation slice."
+    - "T008 prompt-gate implementation is locally validated with focused tests, direct CLI proofs, review gates, validate-codestyle fast, and verify-work fast; commit, push, PR handoff, remote checks, and review-thread observation are still pending."
+    - "T008 pre-push docs-gate initially required README.md, docs/agents/00-architecture-bootstrap.md, AGENTS.md, docs/agents/07b-agent-governance.md, and refreshed architecture context artifacts; those surfaces are now synchronized and docs-gate passes locally."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #270 observed as MERGED with head cd93b6feee48a2e3e33d0e77d638aee838e85aac, merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec, and mergedAt 2026-05-22T04:24:29Z."
@@ -381,11 +383,11 @@ pr_green_sweep:
     coderabbit: "PR #273 body records CodeRabbit PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH as fixed; PR #273 CodeRabbit check passed and no PR #273 review threads were returned. PR #272 CodeRabbit check passed and no PR #272 review threads were returned before merge."
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
     post_push: "PR #272 was marked ready and squash-merged with merge commit 0498ac9db9f15f176ac04a7066ba4b3bafa22543; the follow-up branch was deleted by the merge command."
-    validation: "Closeout implementation validation is recorded on merged PR #273; board reconciliation validation passed locally, PR #272 remote checks were green, PR #272 had no review threads, and PR #272 merged."
+    validation: "T008 prompt-gate local validation passed after initial JSDoc and docs-style failures were fixed; docs-gate required-surface warnings were cleared after README, AGENTS, architecture-bootstrap, agent-governance, and architecture context synchronization."
   pending_actions:
-    - "Commit and push this T008 prompt-gate activation update on codex/JSC-331-prompt-gate-deep-module."
-    - "Before source edits, inspect src/commands/prompt-gate.ts, src/commands/prompt-gate.test.ts, and registry references to declare the smallest module-boundary move."
-    - "Run focused prompt-gate validation and per-slice review gates before marking T008 done."
+    - "Commit and push the T008 prompt-gate implementation update on codex/JSC-331-prompt-gate-deep-module."
+    - "Create or update the prompt-gate PR, then observe remote checks, mergeability, and review-thread state."
+    - "Do not start T009 gap-case until T008 PR handoff and remote/review state are recorded."
   tools:
     - "@github"
     - "@circleci"

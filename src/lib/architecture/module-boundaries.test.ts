@@ -27,6 +27,12 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 			"Drift gate must move toward evaluator, artifact, and runner seams before it absorbs more policy.",
 	},
 	{
+		path: "src/commands/prompt-gate.ts",
+		maxLines: 25,
+		reason:
+			"Prompt gate command must stay a compatibility export surface; validation, argv parsing, and presentation live behind the prompt-gate module seam.",
+	},
+	{
 		path: "src/lib/output/normalise.ts",
 		maxLines: 10,
 		reason:
@@ -109,6 +115,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 20,
 		reason:
 			"Plan gate command spec must stay focused on registry metadata and plan-gate-owned argv delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/prompt-gate-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Prompt gate command spec must stay focused on registry metadata and prompt-gate-owned argv delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
@@ -386,6 +398,33 @@ const PR_CLOSEOUT_SURFACE_RATCHETS = [
 		maxLines: 170,
 		reason:
 			"PR closeout recovery seam must stay focused on attempt-ledger and recovery-event construction.",
+	},
+] as const;
+
+const PROMPT_GATE_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/prompt-gate/types.ts",
+		maxLines: 80,
+		reason:
+			"Prompt gate shared types must stay small enough to remain a stable module contract.",
+	},
+	{
+		path: "src/lib/prompt-gate/validator.ts",
+		maxLines: 140,
+		reason:
+			"Prompt gate validation must stay focused on template section checks and result construction.",
+	},
+	{
+		path: "src/lib/prompt-gate/cli-args.ts",
+		maxLines: 55,
+		reason:
+			"Prompt gate CLI args must stay focused on raw argv projection and usage-error messages.",
+	},
+	{
+		path: "src/lib/prompt-gate/cli.ts",
+		maxLines: 90,
+		reason:
+			"Prompt gate CLI presentation must stay focused on output formatting and exit-code mapping.",
 	},
 ] as const;
 
@@ -1095,6 +1134,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./observability-gate-command-spec.js",
 	"./org-audit-command-spec.js",
 	"./plan-gate-command-spec.js",
+	"./prompt-gate-command-spec.js",
 	"./preflight-gate-command-spec.js",
 	"./replay-command-spec.js",
 	"./remediate-command-spec.js",
@@ -1523,6 +1563,41 @@ describe("module boundaries", () => {
 		expect(cliContent).toContain("normalisePlanGateResult");
 		expect(commandSpecsCoreContent).toContain("createPlanGateCommandSpec()");
 		expect(commandSpecsCoreContent).not.toContain('name: "plan-gate"');
+	});
+
+	it("keeps prompt-gate surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(PROMPT_GATE_SURFACE_RATCHETS);
+	});
+
+	it("keeps prompt-gate argv parsing behind focused seams", () => {
+		const facadeContent = readFileSync(
+			join(process.cwd(), "src/commands/prompt-gate.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/prompt-gate-command-spec.ts"),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/prompt-gate/cli-args.ts"),
+			"utf-8",
+		);
+		const commandSpecsCoreContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/command-specs-core.ts"),
+			"utf-8",
+		);
+
+		expect(facadeContent).toContain("../lib/prompt-gate/cli.js");
+		expect(facadeContent).toContain("../lib/prompt-gate/validator.js");
+		expect(registryAdapterContent).toContain("../../prompt-gate/cli.js");
+		expect(registryAdapterContent).not.toContain("getFlagValue");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
+		expect(cliArgsAdapterContent).toContain(
+			"buildPromptGateOptionsFromCliArgs",
+		);
+		expect(commandSpecsCoreContent).toContain("createPromptGateCommandSpec()");
+		expect(commandSpecsCoreContent).not.toContain('name: "prompt-gate"');
 	});
 
 	it("keeps remediate surfaces split after decomposition", () => {

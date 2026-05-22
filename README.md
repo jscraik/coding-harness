@@ -664,7 +664,7 @@ harness commands --json | jq '
 | `docs-gate`              | Enforce documentation parity for governed changes                                               |
 | `plan-gate`              | Validate plan IDs, traceability, and acceptance evidence                                        |
 | `brainstorm-gate`        | Validate brainstorm artifacts                                                                   |
-| `prompt-gate`            | Validate prompt template usage                                                                  |
+| `prompt-gate`            | Validate prompt template section requirements while keeping CLI parsing and validation behind the prompt-gate module boundary |
 | `pr-template-gate`       | Validate PR template completion and placeholder replacement                                     |
 | `rule-lifecycle-gate`    | Validate governance rules have owner, evidence, enforcement, freshness, and retirement metadata |
 | `license-gate`           | Validate open-source license expectations                                                       |
@@ -697,6 +697,12 @@ action parsing stays in the registry runner while action-specific option
 builders and command delegation live behind a separate Linear action adapter
 seam, so agents can change one workflow action without widening the CLI
 surface.
+
+The `prompt-gate` command follows the same deep-module boundary pattern. The
+public command facade stays a compatibility export surface, the registry spec
+delegates raw arguments to the prompt-gate CLI adapter, and prompt-template
+section validation stays in `src/lib/prompt-gate/` so future prompt changes do
+not widen the registry or command facade.
 
 ### Pilot, Remediation, And Automation
 

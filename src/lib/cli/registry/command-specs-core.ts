@@ -27,7 +27,6 @@ import {
 	type PilotRollbackOptions,
 	runPilotRollbackCLI,
 } from "../../../commands/pilot-rollback.js";
-import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import {
@@ -83,6 +82,7 @@ import { createPresetCommandSpec } from "./preset-command-spec.js";
 import { createPrCloseoutCommandSpec } from "./pr-closeout-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
+import { createPromptGateCommandSpec } from "./prompt-gate-command-spec.js";
 import { createReplayCommandSpec } from "./replay-command-spec.js";
 import { createRemediateCommandSpec } from "./remediate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
@@ -191,41 +191,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		},
 	},
 	createPlanGateCommandSpec(),
-	{
-		name: "prompt-gate",
-		summary: "Validate prompt template usage",
-		errorLabel: "Prompt Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const typeArg = getFlagValue(args, args.indexOf("--type"));
-			const fileArg = getFlagValue(args, args.indexOf("--file"));
-
-			if (!typeArg) {
-				console.error(
-					"Error: --type is required (feature|bugfix|refactor|release)",
-				);
-				return 2;
-			}
-			if (!fileArg) {
-				console.error("Error: --file is required");
-				return 2;
-			}
-
-			const validTypes = ["feature", "bugfix", "refactor", "release"] as const;
-			if (!validTypes.includes(typeArg as (typeof validTypes)[number])) {
-				console.error(
-					`Error: Invalid type "${typeArg}". Must be one of: ${validTypes.join(", ")}`,
-				);
-				return 2;
-			}
-
-			return runPromptGateCLI({
-				type: typeArg as (typeof validTypes)[number],
-				file: fileArg,
-				json: jsonFlag,
-			});
-		},
-	},
+	createPromptGateCommandSpec(),
 	createDriftGateCommandSpec(),
 	{
 		name: "ui:fast",

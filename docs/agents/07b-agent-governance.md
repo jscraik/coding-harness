@@ -48,6 +48,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   named internal adapter seams. Treat those seams as agent-governance surfaces:
   update boundary tests, refresh architecture context, and keep docs-gate
   required surfaces synchronized when the command family boundary changes.
+  Prompt-gate follows this pattern with `src/commands/prompt-gate.ts` as the
+  compatibility facade, `prompt-gate-command-spec.ts` as the registry adapter,
+  and prompt-template parsing/validation inside `src/lib/prompt-gate/`.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to
