@@ -33,6 +33,18 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 			"Prompt gate command must stay a compatibility export surface; validation, argv parsing, and presentation live behind the prompt-gate module seam.",
 	},
 	{
+		path: "src/commands/gap-case.ts",
+		maxLines: 25,
+		reason:
+			"Gap-case command must stay a compatibility export surface; lifecycle logic, argv parsing, and presentation live behind the gap-case module seam.",
+	},
+	{
+		path: "src/commands/gap-case-internal.ts",
+		maxLines: 25,
+		reason:
+			"Gap-case internal command helper must stay a compatibility export surface; store, policy, and validation helpers live behind the gap-case module seam.",
+	},
+	{
 		path: "src/lib/output/normalise.ts",
 		maxLines: 10,
 		reason:
@@ -121,6 +133,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 20,
 		reason:
 			"Prompt gate command spec must stay focused on registry metadata and prompt-gate-owned argv delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/gap-case-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Gap-case command spec must stay focused on registry metadata and gap-case-owned argv delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
@@ -431,6 +449,45 @@ const PROMPT_GATE_SURFACE_RATCHETS = [
 		maxLines: 90,
 		reason:
 			"Prompt gate CLI presentation must stay focused on output formatting and exit-code mapping.",
+	},
+] as const;
+
+const GAP_CASE_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/gap-case/types.ts",
+		maxLines: 190,
+		reason:
+			"Gap-case shared types must stay small enough to remain a stable module contract.",
+	},
+	{
+		path: "src/lib/gap-case/store.ts",
+		maxLines: 240,
+		reason:
+			"Gap-case store helpers must stay focused on repository-bounded persistence and policy store resolution.",
+	},
+	{
+		path: "src/lib/gap-case/validators.ts",
+		maxLines: 140,
+		reason:
+			"Gap-case validation must stay focused on lifecycle option checks and primitive value validation.",
+	},
+	{
+		path: "src/lib/gap-case/operations.ts",
+		maxLines: 250,
+		reason:
+			"Gap-case operations must stay focused on open and resolve lifecycle behavior; CLI parsing and presentation live behind their own seams.",
+	},
+	{
+		path: "src/lib/gap-case/cli-args.ts",
+		maxLines: 95,
+		reason:
+			"Gap-case CLI args must stay focused on raw argv projection before lifecycle execution.",
+	},
+	{
+		path: "src/lib/gap-case/cli.ts",
+		maxLines: 120,
+		reason:
+			"Gap-case CLI presentation must stay focused on action dispatch, output formatting, and exit-code mapping.",
 	},
 ] as const;
 
@@ -1024,6 +1081,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/doctor-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/fleet-plan-command-spec.ts",
+	"src/lib/cli/registry/gap-case-command-spec.ts",
 	"src/lib/cli/registry/gardener-command-spec.ts",
 	"src/lib/cli/registry/health-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
@@ -1131,6 +1189,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./drift-gate-command-spec.js",
 	"./evidence-verify-command-spec.js",
 	"./fleet-plan-command-spec.js",
+	"./gap-case-command-spec.js",
 	"./gardener-command-spec.js",
 	"./health-command-spec.js",
 	"./license-gate-command-spec.js",
@@ -1607,6 +1666,39 @@ describe("module boundaries", () => {
 		);
 		expect(commandSpecsCoreContent).toContain("createPromptGateCommandSpec()");
 		expect(commandSpecsCoreContent).not.toContain('name: "prompt-gate"');
+	});
+
+	it("keeps gap-case argv parsing and lifecycle behavior behind focused seams", () => {
+		expectRatchetsWithinBudget(GAP_CASE_SURFACE_RATCHETS);
+
+		const facadeContent = readFileSync(
+			join(process.cwd(), "src/commands/gap-case.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/gap-case-command-spec.ts"),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/gap-case/cli-args.ts"),
+			"utf-8",
+		);
+		const commandSpecsCoreContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/command-specs-core.ts"),
+			"utf-8",
+		);
+
+		expect(facadeContent).toContain("../lib/gap-case/cli.js");
+		expect(facadeContent).toContain("../lib/gap-case/operations.js");
+		expect(facadeContent).not.toContain("getFlagValue");
+		expect(facadeContent).not.toContain("args.indexOf");
+		expect(registryAdapterContent).toContain("../../gap-case/cli.js");
+		expect(registryAdapterContent).not.toContain("getFlagValue");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
+		expect(cliArgsAdapterContent).toContain("buildGapCaseOptionsFromCliArgs");
+		expect(commandSpecsCoreContent).toContain("createGapCaseCommandSpec()");
+		expect(commandSpecsCoreContent).not.toContain('name: "gap-case"');
 	});
 
 	it("keeps remediate surfaces split after decomposition", () => {

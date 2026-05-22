@@ -16,7 +16,6 @@ import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
 import { runEjectCLI } from "../../../commands/eject.js";
-import { runGapCaseCLI } from "../../../commands/gap-case.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
@@ -66,6 +65,7 @@ import { createDriftGateCommandSpec } from "./drift-gate-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createFleetPlanCommandSpec } from "./fleet-plan-command-spec.js";
 import { createGardenerCommandSpec } from "./gardener-command-spec.js";
+import { createGapCaseCommandSpec } from "./gap-case-command-spec.js";
 import { createHealthCommandSpec } from "./health-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
@@ -330,104 +330,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		},
 	},
 	createObservabilityGateCommandSpec(),
-	{
-		name: "gap-case",
-		summary: "Manage production gap cases (open/resolve)",
-		errorLabel: "Gap Case Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const contractIndex = args.indexOf("--contract");
-			const storeIndex = args.indexOf("--store");
-
-			// args[0] is the action (command name already stripped by dispatcher)
-			const action = args[0] as "open" | "resolve" | undefined;
-			if (action !== "open" && action !== "resolve") {
-				console.error("Error: action must be 'open' or 'resolve'");
-				return 2;
-			}
-
-			const incidentIdIndex = args.indexOf("--incident-id");
-			const summaryIndex = args.indexOf("--summary");
-			const severityIndex = args.indexOf("--severity");
-			const ownerIndex = args.indexOf("--owner");
-			const providerIndex = args.indexOf("--provider");
-			const findingIdIndex = args.indexOf("--finding-id");
-			const prNumberIndex = args.indexOf("--pr-number");
-			const headShaIndex = args.indexOf("--head-sha");
-			const slaHoursIndex = args.indexOf("--sla-hours");
-			const caseIdIndex = args.indexOf("--case-id");
-			const evidenceUrlIndex = args.indexOf("--evidence-url");
-			const fixPrIndex = args.indexOf("--fix-pr");
-			const noteIndex = args.indexOf("--note");
-			const resolvedByIndex = args.indexOf("--resolved-by");
-
-			const options: {
-				action: "open" | "resolve";
-				json?: boolean;
-				contractPath?: string;
-				storePath?: string;
-				incidentId?: string;
-				summary?: string;
-				severity?: string;
-				owner?: string;
-				provider?: string;
-				findingId?: string;
-				prNumber?: number;
-				headSha?: string;
-				slaHours?: number;
-				caseId?: string;
-				evidenceUrl?: string;
-				fixPr?: number;
-				note?: string;
-				resolvedBy?: string;
-			} = { action };
-
-			if (jsonFlag) options.json = true;
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) options.contractPath = contractArg;
-			const storeArg = getFlagValue(args, storeIndex);
-			if (storeArg) options.storePath = storeArg;
-			const incidentIdArg = getFlagValue(args, incidentIdIndex);
-			if (incidentIdArg) options.incidentId = incidentIdArg;
-			const summaryArg = getFlagValue(args, summaryIndex);
-			if (summaryArg) options.summary = summaryArg;
-			const severityArg = getFlagValue(args, severityIndex);
-			if (severityArg) options.severity = severityArg;
-			const ownerArg = getFlagValue(args, ownerIndex);
-			if (ownerArg) options.owner = ownerArg;
-			const providerArg = getFlagValue(args, providerIndex);
-			if (providerArg) options.provider = providerArg;
-			const findingIdArg = getFlagValue(args, findingIdIndex);
-			if (findingIdArg) options.findingId = findingIdArg;
-			const prNumberArg = getFlagValue(args, prNumberIndex);
-			if (prNumberArg) {
-				const parsed = parseIntegerArg(prNumberArg, 1);
-				if (parsed !== undefined) options.prNumber = parsed;
-			}
-			const headShaArg = getFlagValue(args, headShaIndex);
-			if (headShaArg) options.headSha = headShaArg;
-			const slaHoursArg = getFlagValue(args, slaHoursIndex);
-			if (slaHoursArg) {
-				const parsed = parseIntegerArg(slaHoursArg, 1);
-				if (parsed !== undefined) options.slaHours = parsed;
-			}
-			const caseIdArg = getFlagValue(args, caseIdIndex);
-			if (caseIdArg) options.caseId = caseIdArg;
-			const evidenceUrlArg = getFlagValue(args, evidenceUrlIndex);
-			if (evidenceUrlArg) options.evidenceUrl = evidenceUrlArg;
-			const fixPrArg = getFlagValue(args, fixPrIndex);
-			if (fixPrArg) {
-				const parsed = parseIntegerArg(fixPrArg, 1);
-				if (parsed !== undefined) options.fixPr = parsed;
-			}
-			const noteArg = getFlagValue(args, noteIndex);
-			if (noteArg) options.note = noteArg;
-			const resolvedByArg = getFlagValue(args, resolvedByIndex);
-			if (resolvedByArg) options.resolvedBy = resolvedByArg;
-
-			return runGapCaseCLI(options);
-		},
-	},
+	createGapCaseCommandSpec(),
 	{
 		name: "ui:verify",
 		aliases: ["ui-verify"],

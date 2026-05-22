@@ -1014,6 +1014,16 @@ describe("remediate execute validation", () => {
 
 describe("gap-case execute validation", () => {
 	const spec = findSpec("gap-case");
+	const enabledGapCaseContract = {
+		version: "1.0",
+		riskTierRules: {},
+		pilotGapCasePolicy: {
+			enabled: true,
+			defaultSlaHours: 72,
+			requireClosureEvidence: true,
+			storePath: ".harness/gap-cases.v1.json",
+		},
+	};
 
 	it("returns 2 when action is missing", () => {
 		expect(spec.execute([])).toBe(2);
@@ -1023,14 +1033,123 @@ describe("gap-case execute validation", () => {
 		expect(spec.execute(["update"])).toBe(2);
 	});
 
-	it("does not return 2 for action open", async () => {
-		const result = await spec.execute(["open"]);
-		expect(result).not.toBe(2);
+	it("opens a case through the command spec", async () => {
+		await withTempWorkspace(async (workspacePath) => {
+			const contractPath = "harness.contract.json";
+			const storePath = "store.json";
+			writeFileSync(
+				join(workspacePath, contractPath),
+				JSON.stringify(enabledGapCaseContract, null, 2),
+			);
+			const infoSpy = vi
+				.spyOn(console, "info")
+				.mockImplementation(() => undefined);
+			try {
+				const result = await withCwd(workspacePath, () =>
+					Promise.resolve(
+						spec.execute([
+							"open",
+							"--incident-id",
+							"INC-1",
+							"--summary",
+							"Command spec proof",
+							"--severity",
+							"high",
+							"--owner",
+							"codex",
+							"--contract",
+							contractPath,
+							"--store",
+							storePath,
+							"--json",
+						]),
+					),
+				);
+				expect(result).toBe(0);
+				const store = JSON.parse(
+					readFileSync(join(workspacePath, storePath), "utf-8"),
+				) as {
+					cases: Array<{ incidentId: string; status: string }>;
+				};
+				expect(store.cases).toHaveLength(1);
+				expect(store.cases[0]).toMatchObject({
+					incidentId: "INC-1",
+					status: "open",
+				});
+			} finally {
+				infoSpy.mockRestore();
+			}
+		});
 	});
 
-	it("does not return 2 for action resolve", async () => {
-		const result = await spec.execute(["resolve"]);
-		expect(result).not.toBe(2);
+	it("resolves a case through the command spec", async () => {
+		await withTempWorkspace(async (workspacePath) => {
+			const contractPath = "harness.contract.json";
+			const storePath = "store.json";
+			writeFileSync(
+				join(workspacePath, contractPath),
+				JSON.stringify(enabledGapCaseContract, null, 2),
+			);
+			const infoSpy = vi
+				.spyOn(console, "info")
+				.mockImplementation(() => undefined);
+			try {
+				await withCwd(workspacePath, () =>
+					Promise.resolve(
+						spec.execute([
+							"open",
+							"--incident-id",
+							"INC-2",
+							"--summary",
+							"Command spec proof",
+							"--severity",
+							"medium",
+							"--owner",
+							"codex",
+							"--contract",
+							contractPath,
+							"--store",
+							storePath,
+							"--json",
+						]),
+					),
+				);
+				const openStore = JSON.parse(
+					readFileSync(join(workspacePath, storePath), "utf-8"),
+				) as { cases: Array<{ id: string; status: string }> };
+				const caseId = openStore.cases[0]?.id;
+				expect(caseId).toMatch(/^gc-/);
+				if (!caseId) {
+					throw new Error("Expected gap-case id after command-spec open");
+				}
+
+				const result = await withCwd(workspacePath, () =>
+					Promise.resolve(
+						spec.execute([
+							"resolve",
+							"--case-id",
+							caseId,
+							"--evidence-url",
+							"https://example.com/evidence",
+							"--resolved-by",
+							"codex",
+							"--contract",
+							contractPath,
+							"--store",
+							storePath,
+							"--json",
+						]),
+					),
+				);
+				expect(result).toBe(0);
+				const resolvedStore = JSON.parse(
+					readFileSync(join(workspacePath, storePath), "utf-8"),
+				) as { cases: Array<{ status: string }> };
+				expect(resolvedStore.cases[0]?.status).toBe("resolved");
+			} finally {
+				infoSpy.mockRestore();
+			}
+		});
 	});
 });
 

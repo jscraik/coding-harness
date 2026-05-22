@@ -10,9 +10,14 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GapCaseRecord } from "../lib/gap-case/types.js";
-import { openGapCase, resolveGapCase, runGapCaseCLI } from "./gap-case.js";
+import {
+	openGapCase,
+	resolveGapCase,
+	runGapCaseCLI,
+	runGapCaseFromCliArgs,
+} from "./gap-case.js";
 
 // Contract that enables gap-case
 const ENABLED_CONTRACT = {
@@ -531,6 +536,36 @@ describe("gap-case", () => {
 				contractPath,
 			});
 			expect(exitCode).toBe(1); // VALIDATION_ERROR
+		});
+	});
+
+	describe("runGapCaseFromCliArgs", () => {
+		it("returns usage error and message when action is missing", () => {
+			const errorSpy = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => undefined);
+
+			const exitCode = runGapCaseFromCliArgs([]);
+
+			expect(exitCode).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: action must be 'open' or 'resolve'",
+			);
+			errorSpy.mockRestore();
+		});
+
+		it("returns usage error and message when action is invalid", () => {
+			const errorSpy = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => undefined);
+
+			const exitCode = runGapCaseFromCliArgs(["update"]);
+
+			expect(exitCode).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: action must be 'open' or 'resolve'",
+			);
+			errorSpy.mockRestore();
 		});
 	});
 
