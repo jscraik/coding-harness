@@ -189,6 +189,7 @@ const PASSING_RUNTIME_EVIDENCE = {
 	},
 	resolvedState: {
 		permissionProfile: "workspace_write",
+		goalStatus: null,
 		serviceTier: "default",
 		model: "gpt-5",
 		pluginAttribution: ["harness-engineering"],

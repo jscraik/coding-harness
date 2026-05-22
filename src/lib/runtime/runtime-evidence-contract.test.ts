@@ -63,6 +63,60 @@ describe("runtime-evidence-contract", () => {
 		);
 	});
 
+	it("rejects malformed declared intent source refs", () => {
+		const contract = validContract();
+		contract.declaredIntent.sourceRefs = [123] as never;
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "source_ref_invalid",
+				path: "declaredIntent.sourceRefs",
+			}),
+		);
+	});
+
+	it("rejects malformed resolved state fields", () => {
+		const contract = validContract();
+		contract.resolvedState.goalStatus = 42 as never;
+		contract.resolvedState.serviceTier = false as never;
+		contract.resolvedState.pluginAttribution = [
+			"harness-engineering",
+			null,
+		] as never;
+		contract.resolvedState.runtimeProbe = "available" as never;
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "goal_status_invalid",
+				path: "resolvedState.goalStatus",
+			}),
+		);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "service_tier_invalid",
+				path: "resolvedState.serviceTier",
+			}),
+		);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "plugin_attribution_invalid",
+				path: "resolvedState.pluginAttribution",
+			}),
+		);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "runtime_probe_invalid",
+				path: "resolvedState.runtimeProbe",
+			}),
+		);
+	});
+
 	it("rejects unknown runtime probe spawn outcomes", () => {
 		const contract = validContract();
 		if (contract.resolvedState.runtimeProbe !== null) {

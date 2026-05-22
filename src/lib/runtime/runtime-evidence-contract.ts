@@ -216,6 +216,16 @@ function validateDeclaredIntent(
 			);
 		}
 		if (
+			Array.isArray(declaredIntent.sourceRefs) &&
+			declaredIntent.sourceRefs.some((ref) => isBlank(asText(ref)))
+		) {
+			add(
+				"declaredIntent.sourceRefs",
+				"source_ref_invalid",
+				"declared intent source refs must be non-empty strings.",
+			);
+		}
+		if (
 			!REQUESTED_SCOPES.has(
 				asText(
 					declaredIntent.requestedScope,
@@ -241,18 +251,44 @@ function validateResolvedState(
 			"resolved_state_invalid",
 			"resolvedState must be a JSON object.",
 		);
-	} else if (
-		!PERMISSION_PROFILES.has(
-			asText(
-				resolvedState.permissionProfile,
-			) as RuntimeEvidencePermissionProfile,
-		)
-	) {
-		add(
-			"resolvedState.permissionProfile",
-			"permission_profile_invalid",
-			"permission profile is not recognized.",
-		);
+	} else {
+		if (
+			!PERMISSION_PROFILES.has(
+				asText(
+					resolvedState.permissionProfile,
+				) as RuntimeEvidencePermissionProfile,
+			)
+		) {
+			add(
+				"resolvedState.permissionProfile",
+				"permission_profile_invalid",
+				"permission profile is not recognized.",
+			);
+		}
+		if (!isNullableString(resolvedState.goalStatus)) {
+			add(
+				"resolvedState.goalStatus",
+				"goal_status_invalid",
+				"goalStatus must be a string or null.",
+			);
+		}
+		if (!isNullableString(resolvedState.serviceTier)) {
+			add(
+				"resolvedState.serviceTier",
+				"service_tier_invalid",
+				"serviceTier must be a string or null.",
+			);
+		}
+		if (
+			!Array.isArray(resolvedState.pluginAttribution) ||
+			resolvedState.pluginAttribution.some((plugin) => isBlank(asText(plugin)))
+		) {
+			add(
+				"resolvedState.pluginAttribution",
+				"plugin_attribution_invalid",
+				"pluginAttribution must contain only non-empty strings.",
+			);
+		}
 	}
 }
 
@@ -496,6 +532,10 @@ function asText(value: unknown): string | null {
 
 function isBlank(value: string | null | undefined): boolean {
 	return value === null || value === undefined || value.trim().length === 0;
+}
+
+function isNullableString(value: unknown): boolean {
+	return value === null || typeof value === "string";
 }
 
 function isIsoTimestamp(value: string | null | undefined): boolean {

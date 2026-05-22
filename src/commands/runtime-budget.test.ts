@@ -114,6 +114,7 @@ describe("runtime-budget command", () => {
 					"runtime-budget requires --input or --command, --duration-ms, --budget-ms, and --evidence-ref.",
 			},
 		});
+		expect(infoSpy).toHaveBeenCalledTimes(1);
 		vi.restoreAllMocks();
 	});
 });
