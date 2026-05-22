@@ -312,16 +312,19 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_pr270_merged_two_review_threads_validated_pending_push
+  status: t007_pr270_closeout_pr272_open_remote_checks_pending
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
   head_sha: "cd93b6feee48a2e3e33d0e77d638aee838e85aac"
-  last_observed: "2026-05-22T04:32:14Z"
+  followup_pr_url: "https://github.com/jscraik/coding-harness/pull/272"
+  followup_branch: "codex/JSC-331-pr270-review-closeout"
+  followup_head_sha: "eff47f65f118f25fdf79aee5dcfe095f7e7c6542"
+  last_observed: "2026-05-22T04:46:18Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
-    - "The two unresolved runtime-evidence review findings are repaired locally on codex/JSC-331-pr270-review-closeout and broadly validated; commit, push, follow-up PR handoff, and review-thread classification are still required."
+    - "The two unresolved runtime-evidence review findings are repaired, committed, pushed, and handed off in draft PR #272; remote checks, CodeRabbit review, independent review, and final review-thread classification are still required."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
     - "Prompt-gate has not started; observed slice remains T007 PR-green-sweep follow-up work."
     - "Untitled.canvas remains untracked and intentionally untouched outside this closeout branch."
@@ -329,9 +332,9 @@ pr_green_sweep:
     github_state: "PR #270 observed as MERGED with head cd93b6feee48a2e3e33d0e77d638aee838e85aac, merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec, and mergedAt 2026-05-22T04:24:29Z."
     review_threads: "GitHub review-thread snapshot after merge showed 74 total threads, 72 resolved, and 2 unresolved runtime-evidence threads on verifierResult.reason and runtimeProbe.blockerClass."
     checks: "gh pr checks 270 reported 23 passing checks and no pending or failing checks."
-    coderabbit: "The two remaining CodeRabbit runtime-evidence findings are valid and repaired locally; follow-up branch validation has focused and broad proof and still requires push and PR handoff."
-    post_push: "pr270_merged_followup_branch_pending_push"
-    validation: "Final closeout validation passed: pnpm exec biome check --write src/lib/runtime/runtime-evidence-contract.ts src/lib/runtime/runtime-evidence-contract.test.ts, pnpm vitest run src/lib/runtime/runtime-evidence-contract.test.ts --reporter verbose, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, bash scripts/verify-work.sh --fast run id 20260522T043518Z-33661, jq JSONL parse, goal-board check, and git diff --check."
+    coderabbit: "The two remaining CodeRabbit runtime-evidence findings are valid and repaired in draft PR #272; PR #272 review and PR #270 final thread classification remain pending."
+    post_push: "PR #272 opened as draft from codex/JSC-331-pr270-review-closeout at eff47f65f118f25fdf79aee5dcfe095f7e7c6542."
+    validation: "Closeout validation passed: pnpm exec biome check --write src/lib/runtime/runtime-evidence-contract.ts src/lib/runtime/runtime-evidence-contract.test.ts, pnpm vitest run src/lib/runtime/runtime-evidence-contract.test.ts --reporter verbose, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, bash scripts/verify-work.sh --fast run id 20260522T043518Z-33661, jq JSONL parse, goal-board check, git diff --check, bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, corrected learnings gate, corrected review-context, and north-star-feedback."
   pending_actions:
     - "Commit and push codex/JSC-331-pr270-review-closeout, then open or update a follow-up PR for the post-merge PR #270 review-thread closeout."
     - "Classify or resolve the two PR #270 review threads after the follow-up fix is pushed."
