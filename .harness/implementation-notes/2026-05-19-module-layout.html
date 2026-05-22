@@ -434,16 +434,16 @@
             <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, and many command adapters already have facade-first module seams.</span>
           </article>
 		  <article class="status-card status-current">
-			<strong>Current Slice</strong>
-					<span>T007 / plan-gate is active. Plan-gate and the command-contract repair are committed and pushed at bfe22fd0; all observed CI, Snyk, Socket, pr-pipeline, and security checks pass except CodeRabbit, which is still pending review.</span>
+			<strong>Observed PR State</strong>
+					<span>At 2026-05-22T01:16:46Z, PR #270 head 2937171207432f80ce47a6a3f6e16cc0d86b7a04 was open and not draft with mergeStateStatus BLOCKED because CodeRabbit remained pending; CircleCI, Snyk, Socket, pr-pipeline, and security checks were passing.</span>
 		  </article>
 		  <article class="status-card status-watch">
-			<strong>Next</strong>
-				<span>Wait for CodeRabbit to finish, keep the four unresolved review threads classified, and continue into prompt-gate only after PR #270's live board gates are clear.</span>
+			<strong>Review Follow-ups</strong>
+				<span>This triage records current-head fixes for malformed runtime-budget input JSON, pr-closeout assurance/runtime evidence validation, ci-migrate independent signature assertion, and this immutable PR-state evidence refresh.</span>
 		  </article>
 		  <article class="status-card status-watch">
-			<strong>Blocked</strong>
-					<span>Native goal and repository board are active; CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout, and PR #270 is still blocked by pending CodeRabbit review.</span>
+			<strong>Merge Gate</strong>
+					<span>Auto-merge is enabled for PR #270; merge remains blocked until CodeRabbit completes successfully on the latest pushed head. The native goal and repository board remain active until that remote gate clears.</span>
 		  </article>
         </section>
 
@@ -460,11 +460,11 @@
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-					  <p>Current receipt is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-POST-PUSH-PR-GREEN-SWEEP, recording bfe22fd0 post-push PR state, CodeRabbit pending status, active goal state, and preserved memory-baseline slice.</p>
+					  <p>Current evidence is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-POST-PUSH-PR-GREEN-SWEEP plus the 2026-05-22T01:16:46Z PR #270 review sweep at 2937171207432f80ce47a6a3f6e16cc0d86b7a04.</p>
 			  <ul class="evidence-list">
-					<li>Focused proof: required-check aliases, merge-queue lifecycle ordering, repo-bound root failures, ci-migrate independent reader fixture, agent-role malformed entries, and module-boundary ratchets passed before this report update.</li>
+					<li>Focused proof: required-check aliases, merge-queue lifecycle ordering, repo-bound root failures, ci-migrate independent reader fixture, malformed runtime-budget JSON, pr-closeout evidence shape validation, agent-role malformed entries, and module-boundary ratchets passed before this report update.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-						<li>Handoff: PR #270 was re-observed at bfe22fd0 with all listed checks passing except CodeRabbit pending; four review threads remain unresolved and classified, so prompt-gate stays blocked.</li>
+						<li>Handoff: PR #270 was re-observed at 2937171207432f80ce47a6a3f6e16cc0d86b7a04 with all listed checks passing except CodeRabbit pending; current-head review follow-ups are classified in this triage so merge remains gated on the next remote review/check result.</li>
 			  </ul>
 			</article>
           </div>

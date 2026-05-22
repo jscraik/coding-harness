@@ -93,7 +93,16 @@ function readObservations(
 		emitUsage(json, `runtime-budget input file is missing: ${inputPath}`);
 		return null;
 	}
-	const parsed = JSON.parse(readFileSync(inputPath, "utf8")) as unknown;
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(readFileSync(inputPath, "utf8")) as unknown;
+	} catch {
+		emitUsage(
+			json,
+			`runtime-budget input file is malformed JSON: ${inputPath}`,
+		);
+		return null;
+	}
 	if (Array.isArray(parsed)) {
 		return parsed as CommandRuntimeBudgetObservation[];
 	}

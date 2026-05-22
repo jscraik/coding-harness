@@ -1049,6 +1049,7 @@ const APPROVED_PR_CLOSEOUT_PARENT_IMPORTS = new Map<string, readonly string[]>([
 ]);
 const PR_CLOSEOUT_COMMAND_SUBMODULES = [
 	"./pr-closeout/args.js",
+	"./pr-closeout/input-validation.js",
 	"./pr-closeout/live.js",
 	"./pr-closeout/types.js",
 ] as const;

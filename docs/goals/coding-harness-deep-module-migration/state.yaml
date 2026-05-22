@@ -312,26 +312,27 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_post_push_checks_green_except_coderabbit_pending
+  status: t007_input_validation_review_followup_validated_pending_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "bfe22fd0fecae3f3534479185f42a1cf8ed468fd"
-  last_observed: "2026-05-22T00:46:34Z"
+  head_sha: "2937171207432f80ce47a6a3f6e16cc0d86b7a04"
+  last_observed: "2026-05-22T01:30:07Z"
   current_blockers:
-    - "Current pushed PR head is bfe22fd0fecae3f3534479185f42a1cf8ed468fd; all observed CI, Snyk, Socket, pr-pipeline, and security checks pass except CodeRabbit, which is still pending with description Review in progress."
+    - "Current pushed PR head before this local repair is 2937171207432f80ce47a6a3f6e16cc0d86b7a04; all non-CodeRabbit checks were observed passing, with CodeRabbit still pending with description Review in progress."
     - "GitHub reports PR #270 open, not draft, mergeable MERGEABLE, and mergeStateStatus BLOCKED while CodeRabbit remains pending."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
-    - "Review threads total 32 with 4 unresolved: 2 current-head and 2 outdated. Current-head module-layout T002/T003 status-panel comment is stale against the live T007 board; current-head ci-migrate reader-fixture comment is already fixed by the independent manually signed fixture at bcc2c6ba and current code."
-    - "Outdated required-check alias and nickname_candidates threads are fixed in prior pushed commits but remain unresolved in GitHub until reviewer or maintainer resolution."
+    - "Review threads total 39 with 8 unresolved before this local repair: 5 current-head and 3 outdated. Current runtime-budget, pr-closeout input-validation, ci-migrate reader-fixture, and module-layout evidence comments are repaired locally in this review-followup patch."
+    - "Outdated required-check alias, nickname_candidates, and state snapshot comments are fixed in prior commits but remain unresolved in GitHub until reviewer or maintainer resolution."
+    - "Prompt-gate has not started; this is still T007 PR-green-sweep follow-up work."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
   last_evidence:
-    github_state: "PR #270 open and not draft at bfe22fd0fecae3f3534479185f42a1cf8ed468fd; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
-    review_threads: "32 total; 4 unresolved; 2 current-head and 2 outdated. Current-head module-layout T002/T003 comment is stale against live T007 evidence; ci-migrate reader-fixture comment is addressed by manually writing and signing an independent fixture before readback."
-    checks: "gh pr checks 270 --watch=false exited 0 at bfe22fd0fecae3f3534479185f42a1cf8ed468fd with CodeRabbit PENDING and all other listed CI, Snyk, Socket, pr-pipeline, and security checks passing."
+    github_state: "PR #270 open and not draft at 2937171207432f80ce47a6a3f6e16cc0d86b7a04 before this local repair; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
+    review_threads: "39 total; 8 unresolved; 5 current-head and 3 outdated before this local repair. Runtime-budget malformed JSON, pr-closeout malformed assurance/runtimeEvidence, ci-migrate reader-fixture, and module-layout evidence comments are repaired locally."
+    checks: "gh pr checks 270 --watch=false after polling reported all listed checks passing except CodeRabbit PENDING with Review in progress."
     coderabbit: "CodeRabbit status check remains PENDING with Review in progress, so T007 cannot advance to prompt-gate or merge readiness yet."
-    post_push: "Command-contract repair is committed and pushed at bfe22fd0fecae3f3534479185f42a1cf8ed468fd; live PR state was re-observed after push."
-    validation: "Post-push classification inspected PR checks, PR metadata, review threads, ci-migrate reader fixture code, required-check alias code, nickname_candidates parser code, synced HTML report state, and goal-board state."
+    post_push: "Next required action is commit, push, and re-observe current-head checks and review threads for this input-validation follow-up."
+    validation: "pnpm vitest run src/commands/runtime-budget.test.ts src/commands/pr-closeout.test.ts src/lib/architecture/module-boundaries.test.ts; pnpm vitest run src/commands/ci-migrate.test.ts -t writes merge-queue cutover window signatures; pnpm typecheck; bash scripts/validate-codestyle.sh --fast; bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration; cmp -s synced HTML reports; git diff --check; bash scripts/verify-work.sh --fast all pass."
   tools:
     - "@github"
     - "@circleci"

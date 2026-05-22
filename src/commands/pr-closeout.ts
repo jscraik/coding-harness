@@ -15,6 +15,10 @@ import {
 import type { HarnessAssuranceEntry } from "../lib/harness-assurance.js";
 import type { RuntimeEvidenceContract } from "../lib/runtime/runtime-evidence-contract.js";
 import { parsePrCloseoutArgs } from "./pr-closeout/args.js";
+import {
+	normalizeAssuranceEntries,
+	normalizeRuntimeEvidenceContract,
+} from "./pr-closeout/input-validation.js";
 import { buildLivePrCloseoutInput } from "./pr-closeout/live.js";
 import type { CommandRunner } from "./pr-closeout/types.js";
 
@@ -128,32 +132,6 @@ function normalizeCloseoutGatesArtifact(
 
 function loadInput(path: string): PrCloseoutInput {
 	return parseInput(readFileSync(path, "utf8"), path);
-}
-
-function normalizeAssuranceEntries(
-	value: unknown,
-	source: string,
-): HarnessAssuranceEntry[] {
-	if (Array.isArray(value)) return value as HarnessAssuranceEntry[];
-	if (value && typeof value === "object" && !Array.isArray(value)) {
-		const entries = (value as Record<string, unknown>).entries;
-		if (Array.isArray(entries)) return entries as HarnessAssuranceEntry[];
-	}
-	throw new Error(
-		`${source} must be a seven-layer assurance matrix array or an object with an entries array`,
-	);
-}
-
-function normalizeRuntimeEvidenceContract(
-	value: unknown,
-	source: string,
-): RuntimeEvidenceContract {
-	if (!value || typeof value !== "object" || Array.isArray(value)) {
-		throw new Error(
-			`${source} must be a runtime-evidence-contract/v1 JSON object`,
-		);
-	}
-	return value as RuntimeEvidenceContract;
 }
 
 function resolveRepoScopedPath(

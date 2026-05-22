@@ -2348,12 +2348,18 @@ describe("runCIMigrateCLI", () => {
 
 		const writeResult = writeMergeQueueWindow(tempDir, window);
 		expect(writeResult.ok).toBe(true);
+		const persistedWindow = readFileSync(
+			join(tempDir, MERGE_QUEUE_WINDOW_PATH),
+			"utf-8",
+		);
 		const signatureContent = readFileSync(
 			join(tempDir, `${MERGE_QUEUE_WINDOW_PATH}.sig`),
 			"utf-8",
 		);
 		expect(signatureContent).toMatch(/^[a-f0-9]{64}\n$/);
-		expect(signatureContent).not.toContain("\\n");
+		expect(signatureContent).toBe(
+			`${signContent(persistedWindow, TEST_SNAPSHOT_SIGNING_KEY)}\n`,
+		);
 
 		const manualWindow = {
 			...window,
