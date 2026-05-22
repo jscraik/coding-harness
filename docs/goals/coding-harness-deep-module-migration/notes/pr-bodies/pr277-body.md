@@ -23,12 +23,12 @@
 - Repeated-error research: n.a.; no same command/test failure repeated twice. Push-time docs-gate and diagram freshness blockers were validator-driven artifact requirements, recorded in receipts, and resolved by synchronizing the required surfaces.
 - Acceptance trace: T011 expected output maps to R011-CI-MIGRATE-REGISTRY-SPLIT for implementation, R011-CI-MIGRATE-HANDOFF-VALIDATION and R011-CI-MIGRATE-POST-DOCS-VERIFY for local validation, and R011-CI-MIGRATE-DIAGRAM-REFRESH for generated architecture artifact freshness.
 - Validation evidence: Focused ci-migrate vitest passed; full command-specs/module-boundary vitest files passed; pnpm typecheck passed; docs-gate passed; validate-codestyle fast passed; verify-work fast passed with run id 20260522T133451Z-70931; diagram freshness passed.
-- Review artifacts: CodeRabbit pending on this draft PR; independent reviewer pending; Codex implementation evidence in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.
+- Review artifacts: CodeRabbit status check passed at head 765cadf895825e671b022b77554254fd5eb5e462 with zero review threads; independent reviewer pending; Codex implementation evidence in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.
 - Runtime impact: Dev-only and CLI-facing parser/dispatch impact for ci-migrate; no remote CI migration mutation was executed.
-- CodeRabbit mode coverage: pending CodeRabbit analysis/validation on this draft PR.
-- Closeout state: PR is draft/open at head 765cadf895825e671b022b77554254fd5eb5e462, mergeStateStatus is BLOCKED, CodeRabbit passed with zero review threads, ci/circleci: pr-template is being repaired by this body update, several CircleCI contexts remain pending, Linear state is Refs JSC-331, and T012 remains blocked until pushed-head checks and review state are current.
+- CodeRabbit mode coverage: CodeRabbit status check passed at head 765cadf895825e671b022b77554254fd5eb5e462; review-thread lookup returned zero threads.
+- Closeout state: PR is draft/open at head 765cadf895825e671b022b77554254fd5eb5e462, mergeStateStatus is BLOCKED, CodeRabbit status check passed with zero review threads, ci/circleci: pr-template is being repaired by this body update, several CircleCI contexts remain pending, Linear state is Refs JSC-331, and T012 remains blocked until pushed-head checks and review state are current.
 - Learning / reinforcement: none beyond repo-local guard/doc updates; the durable pattern change is encoded in module-boundary tests and governance docs.
-- Deferred work: T012 init and later deep-module slices; full `bash scripts/validate-codestyle.sh`, `pnpm check`, `tooling-audit`, CodeRabbit, and independent review remain before merge readiness.
+- Deferred work: T012 init and later deep-module slices; full `bash scripts/validate-codestyle.sh`, `pnpm check`, `tooling-audit`, independent review, remaining remote checks, and PR closeout evidence remain before merge readiness.
 
 ## Checklist
 
@@ -45,7 +45,7 @@
 
 - verification_commands: `bash scripts/codex-preflight.sh --stack auto --mode required`; `pnpm vitest run src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts -t "ci-migrate"`; `pnpm vitest run src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot`; `pnpm typecheck`; `jq -c . docs/goals/coding-harness-deep-module-migration/receipts.jsonl >/dev/null`; `bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration`; `cmp -s .harness/implementation-notes/2026-05-19-module-layout.html artifacts/architecture/module-layout.html`; `git diff --check`; `pnpm exec tsx src/cli.ts docs-gate --mode required --json`; `bash scripts/validate-codestyle.sh --fast`; `bash scripts/verify-work.sh --fast`; `bash scripts/check-diagram-freshness.sh`
 - verification_outcomes: all listed commands passed; `git push origin codex/JSC-331-ci-migrate-deep-module` blocked twice before final success, first on docs-gate required surfaces and then on refreshed diagram artifacts.
-- blocked_steps_reason: Full pre-merge gates are intentionally pending for draft PR handoff: `bash scripts/validate-codestyle.sh`, `pnpm check`, `tooling-audit`, learning-loop gates, CodeRabbit, independent review, remote checks, and PR closeout have not completed at the PR head yet.
+- blocked_steps_reason: Full pre-merge gates are intentionally pending for draft PR handoff: `bash scripts/validate-codestyle.sh`, `pnpm check`, `tooling-audit`, learning-loop gates, independent review, remaining remote checks, and PR closeout have not completed at the PR head yet.
 - Command: `bash scripts/validate-codestyle.sh` -> blocked (not yet run for this draft PR; `bash scripts/validate-codestyle.sh --fast` passed)
 - Command: `pnpm check` -> blocked (not yet run for this draft PR)
 - Command: `bash scripts/run-harness-gate.sh tooling-audit --path . --json` -> blocked (not yet run for this draft PR)
@@ -70,6 +70,6 @@
 
 ## Notes
 
-Refs JSC-331. This draft PR delivers the T011 ci-migrate registry-boundary split and intentionally leaves merge readiness blocked until remote checks, CodeRabbit, independent review, and PR closeout evidence are current at the pushed head.
+Refs JSC-331. This draft PR delivers the T011 ci-migrate registry-boundary split and intentionally leaves merge readiness blocked until remaining remote checks, independent review, and PR closeout evidence are current at the pushed head.
 
 <!-- vale on -->
