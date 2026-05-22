@@ -1354,6 +1354,34 @@ describe("ci-migrate execute validation", () => {
 			delegatedArgs: ["repo", "--json"],
 		});
 	});
+
+	it("does not treat delegated helper flag values as targetDir", () => {
+		const parsed = buildCIMigrateOptionsFromCliArgs([
+			"sync-branch-protection",
+			"--owner",
+			"jscraik",
+			"--repo",
+			"coding-harness",
+			"--branch",
+			"main",
+			"--json",
+		]);
+
+		expect(parsed).toEqual({
+			ok: true,
+			targetDir: undefined,
+			delegate: "sync-branch-protection",
+			delegatedArgs: [
+				"--owner",
+				"jscraik",
+				"--repo",
+				"coding-harness",
+				"--branch",
+				"main",
+				"--json",
+			],
+		});
+	});
 });
 
 describe("pilot-evaluate execute validation", () => {

@@ -41,6 +41,14 @@ export type ParsedCIMigrateCliArgs =
 	| { ok: false; message: string };
 
 const VALUE_FLAGS = new Set([
+	"--owner",
+	"--repo",
+	"--branch",
+	"--token",
+	"--ruleset",
+	"--ecosystem",
+	"--checks",
+	"--required-approvals",
 	"--provider",
 	"--snapshot",
 	"--action",
@@ -83,6 +91,7 @@ export function buildCIMigrateOptionsFromCliArgs(
 
 	const targetDir = positionalArgs[0];
 	const delegatedArgs = buildDelegatedArgs(args, actionArg, actionIndex);
+	const flag = (name: string) => getFlagValue(args, args.indexOf(name));
 
 	if (parsedAction === "sync-branch-protection") {
 		return { ok: true, targetDir, delegate: parsedAction, delegatedArgs };
@@ -95,29 +104,18 @@ export function buildCIMigrateOptionsFromCliArgs(
 		ok: true,
 		targetDir,
 		options: {
-			provider: getFlagValue(args, args.indexOf("--provider")),
+			provider: flag("--provider"),
 			dryRun: args.includes("--dry-run"),
 			...(args.includes("--json") ? { json: true } : {}),
 			apply: args.includes("--apply"),
 			rollback: args.includes("--rollback"),
-			snapshot: getFlagValue(args, args.indexOf("--snapshot")),
+			snapshot: flag("--snapshot"),
 			action: parsedAction,
-			breakGlassApprovalPath: getFlagValue(
-				args,
-				args.indexOf("--break-glass-approval"),
-			),
-			mergeQueueEvidencePath: getFlagValue(
-				args,
-				args.indexOf("--merge-queue-evidence"),
-			),
-			mergeQueueOrchestratorPath: getFlagValue(
-				args,
-				args.indexOf("--merge-queue-orchestrator"),
-			),
+			breakGlassApprovalPath: flag("--break-glass-approval"),
+			mergeQueueEvidencePath: flag("--merge-queue-evidence"),
+			mergeQueueOrchestratorPath: flag("--merge-queue-orchestrator"),
 			autoGenerateProofPack: args.includes("--auto-generate-proof-pack"),
-			commitMode: parseCommitMode(
-				getFlagValue(args, args.indexOf("--commit-mode")),
-			),
+			commitMode: parseCommitMode(flag("--commit-mode")),
 			force: args.includes("--force"),
 		},
 	};
