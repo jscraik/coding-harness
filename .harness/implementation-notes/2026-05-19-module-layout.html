@@ -526,7 +526,7 @@
           </article>
           <article class="status-card status-watch">
             <strong>Do Not Advance</strong>
-            <span>Brain stays queued until PR #279 has all remote checks green, review-thread classification remains zero-unresolved, and merge-readiness proof is recorded.</span>
+            <span>Brain stays queued until the PR #279 CodeRabbit review-response patch is pushed, all remote checks return green, review-thread classification returns zero-unresolved, and merge-readiness proof is recorded.</span>
           </article>
         </section>
 
@@ -541,11 +541,11 @@
             <div class="priority-grid">
               <div class="priority-item">
                 <strong>Now</strong>
-                <span>Upgrade split is open as PR #279 on codex/JSC-331-upgrade-deep-module at the latest pushed report head. Focused upgrade, registry, module-boundary, PR-template, and Linear gates pass locally; the stale pr-template failure has been replaced by a current CircleCI run that is still pending.</span>
+                <span>Upgrade split is open as PR #279 on codex/JSC-331-upgrade-deep-module at the latest pushed report head. Focused upgrade, registry, module-boundary, PR-template, and Linear gates pass locally; the six current CodeRabbit review-response threads are fixed locally and awaiting push plus live re-observation.</span>
               </div>
               <div class="priority-item">
                 <strong>Proof</strong>
-						<span>Use PR #278 merge evidence, open PR #279 at the latest pushed report head, the 205-test focused upgrade proof, live-body pr-template and Linear gate passes, module-boundary ratchets, R013 upgrade receipts, live external-check observation, zero-review-thread lookup for PR #279, and the live 8767 report URL for current-state proof.</span>
+						<span>Use PR #278 merge evidence, open PR #279 at the latest pushed report head, the 206-test focused upgrade proof, live-body pr-template and Linear gate passes, module-boundary ratchets, R013 upgrade receipts, live external-check observation, current CodeRabbit review-response thread classification, and the live 8767 report URL for current-state proof.</span>
               </div>
               <div class="priority-item">
                 <strong>Guardrail</strong>
@@ -561,11 +561,11 @@
               <li>Code split: src/commands/upgrade.ts is now a one-line compatibility facade exporting the upgrade runner.</li>
               <li>Registry seam: upgrade command metadata lives in src/lib/cli/registry/upgrade-command-spec.ts and imports the lib runner directly.</li>
 				  <li>Module seam: raw upgrade flag projection lives in src/lib/upgrade/cli-args.ts, the shared option contract lives in src/lib/upgrade/types.ts, contract migration/default backfill lives in src/lib/upgrade/contract.ts, template and manifest updates live in src/lib/upgrade/templates.ts, and orchestration lives in src/lib/upgrade/runner.ts.</li>
-              <li>Current proof: focused upgrade, registry, and module-boundary tests pass with 205 tests after helper extraction and reviewer-response coverage; validate-codestyle fast and verify-work fast pass, PR #279 is pushed, and no next slice advances until remote checks and merge-readiness evidence are current.</li>
+              <li>Current proof: focused upgrade, registry, and module-boundary tests pass with 206 tests after helper extraction and reviewer-response coverage; validate-codestyle fast and verify-work fast pass, PR #279 is pushed, and no next slice advances until remote checks and merge-readiness evidence are current.</li>
               <li>Full local PR gates: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star feedback now pass; learnings gate is warning-only with generated/report keyword matches to record in the PR body.</li>
               <li>Deep gate truth: pnpm test:deep reaches E2E credential validation after pnpm check, artifact tests, and integration pass, then blocks because GitHub and Linear credentials are unavailable and ~/.codex/.env is a FIFO in this runtime.</li>
-              <li>PR handoff: open PR #279 is pushed at the latest report head, has a live body that passes local pr-template and Linear gates, and has a zero-thread GitHub review-thread lookup; CodeRabbit and CircleCI must be observed live after every evidence push because report-only commits restart those checks.</li>
-              <li>Report server: live on http://127.0.0.1:8767/artifacts/architecture/module-layout.html?v=20260522-r019-transient-checks with Jamie Readout Now, current slice, blocker, and remaining-work sections present.</li>
+              <li>PR handoff: open PR #279 is pushed at the latest report head, has a live body that passes local pr-template and Linear gates, and has six CodeRabbit review-response threads fixed locally pending push and live re-observation; CodeRabbit and CircleCI must be observed live after every evidence push because report-only commits restart those checks.</li>
+              <li>Report server: live on http://127.0.0.1:8767/artifacts/architecture/module-layout.html?v=20260522-r020-review-response with Jamie Readout Now, current slice, blocker, and remaining-work sections present.</li>
               <li>Browser status: direct Browser reload is blocked because the Browser workflow lists no iab target; the HTTP report was restarted and verified as the current fallback until the in-app target reconnects.</li>
               <li>Parallel-work boundary: CODEX-NATIVE HARNESS MEMORY BASELINE is preserved outside this PR; T013 report/receipt changes must not absorb that slice.</li>
             </ul>
@@ -585,14 +585,14 @@
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-							  <p>Current evidence is focused T013 validation plus the PR #278 merge proof, open PR #279, zero-unresolved review-thread recheck across PRs #270/#272/#273/#274/#275/#276/#277/#278/#279, 8767 restart, Browser fallback receipts, local PR-gate evidence, and upgrade split receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
+							  <p>Current evidence is focused T013 validation plus the PR #278 merge proof, open PR #279, zero-unresolved review-thread recheck across merged PRs #270/#272/#273/#274/#275/#276/#277/#278, the current PR #279 CodeRabbit review-response thread set, 8767 restart, Browser fallback receipts, local PR-gate evidence, and upgrade split receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
 			  <ul class="evidence-list">
-							<li>Focused proof: upgrade, registry, and module-boundary tests passed locally for T013 with 205 tests; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate, validate-codestyle fast, and verify-work fast pass. verify-work run id: 20260522T183031Z-7843.</li>
+							<li>Focused proof: upgrade, registry, and module-boundary tests passed locally for T013 with 206 tests; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate, validate-codestyle fast, and verify-work fast pass. verify-work run id: 20260522T183031Z-7843.</li>
 							<li>PR-template gates: the live PR body passes local pr-template-gate and linear-gate; bash scripts/validate-codestyle.sh and pnpm check both pass; tooling-audit passes with zero findings; review-context succeeds; north-star-feedback succeeds with external evidence gaps called out; learnings gate exits 0 with warning-only generated/report matches.</li>
 							<li>Deep proof boundary: pnpm test:deep is blocked at E2E credential validation; ~/.codex/.env stat reports a FIFO, so sourcing it would hang rather than safely recover credentials.</li>
 						<li>Review response: testing asked for an execute-path registry adapter test; simplicity and architecture asked to remove duplicate upgrade option contracts. Both findings are fixed locally.</li>
 						<li>Visual: the updated report is serving on port 8767 for Jamie; latest Browser retry is blocked because no iab target is currently exposed, not because the report is stale.</li>
-									<li>Handoff: T013 is not ready for advancement until the current PR #279 CircleCI run finishes green, independent review state is known, and merge-readiness evidence is recorded.</li>
+									<li>Handoff: T013 is not ready for advancement until the current PR #279 CodeRabbit review-response patch is pushed, CircleCI finishes green, review threads return zero-unresolved, independent review state is known, and merge-readiness evidence is recorded.</li>
 			  </ul>
 			</article>
           </div>
@@ -2377,11 +2377,12 @@
           </article>
           <article class="note">
             <h3>Next Pressure Point</h3>
-			<p>
-					  Current board gate: T012 init is active. Next pressure point is
-					  completing post-split review lanes, fast validation, R012 receipt,
-					  PR handoff, and remote check/review classification.
-			</p>
+            <p>
+              Current board gate: T013 upgrade / PR #279 is active. Next pressure
+              point is completing current CodeRabbit review-response fixes,
+              focused validation, R013 receipt, PR handoff, and remote
+              check/review classification.
+            </p>
           </article>
         </section>
       </section>

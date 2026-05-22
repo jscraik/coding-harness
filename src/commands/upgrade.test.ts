@@ -42,6 +42,7 @@ import {
 	applyContractMigration,
 	backfillContractDefaults,
 } from "../lib/upgrade/contract.js";
+import { EXIT_CODES } from "../lib/init/types.js";
 import { readUpgradeManifest } from "../lib/upgrade/templates.js";
 import { runUpgradeCLI } from "./upgrade.js";
 
@@ -641,10 +642,33 @@ describe("upgrade split module error boundaries", () => {
 		});
 	});
 
-	it("ignores malformed upgrade manifests at the template boundary", () => {
+	it("fails malformed upgrade manifests at the template boundary", () => {
 		ensureHarnessDir(dir);
 		writeFileSync(join(dir, ".harness", "upgrade-manifest.json"), "{");
 
-		expect(readUpgradeManifest(dir)).toBeNull();
+		expect(() => readUpgradeManifest(dir)).toThrow(
+			/Could not parse .*upgrade-manifest\.json/,
+		);
+	});
+
+	it("fails upgrade instead of treating malformed manifests as absent", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			writeRestoreManifest(dir, "0.0.0");
+			ensureHarnessDir(dir);
+			writeFileSync(join(dir, ".harness", "upgrade-manifest.json"), "{");
+
+			const exitCode = runUpgradeCLI(dir, {
+				dryRun: true,
+				skipContractMigration: true,
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.WRITE_ERROR);
+			expect(
+				errorSpy.mock.calls.map((call) => String(call[0] ?? "")).join("\n"),
+			).toContain("Could not parse");
+		} finally {
+			errorSpy.mockRestore();
+		}
 	});
 });

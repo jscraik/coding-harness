@@ -13,6 +13,7 @@
  */
 
 import { cwd } from "node:process";
+import { sanitizeError } from "../input/sanitize.js";
 import { runInitCLI } from "../init/cli.js";
 import { loadManifest } from "../init/rollback.js";
 import { normalizeCIProvider } from "../init/scaffold.js";
@@ -190,7 +191,13 @@ function executeTemplateUpgrade(
 ):
 	| { ok: true; value: TemplateUpgradeResult }
 	| { ok: false; exitCode: number } {
-	const upgradeManifest = readUpgradeManifest(dir);
+	let upgradeManifest: ReturnType<typeof readUpgradeManifest>;
+	try {
+		upgradeManifest = readUpgradeManifest(dir);
+	} catch (err) {
+		console.error(`Error: ${sanitizeError(err)}`);
+		return { ok: false, exitCode: EXIT_CODES.WRITE_ERROR };
+	}
 	const templateResult = upgradeTemplates(
 		dir,
 		ciProvider,

@@ -579,7 +579,12 @@ tasks:
       - "docs/goals/coding-harness-deep-module-migration/**"
     verify:
       - "pnpm vitest run src/commands/upgrade.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot"
+      - "pnpm lint"
       - "pnpm typecheck"
+      - "pnpm test"
+      - "pnpm audit"
+      - "pnpm check"
+      - "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
       - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
       - "bash scripts/validate-codestyle.sh --fast"
       - "bash scripts/verify-work.sh --fast before PR handoff"
@@ -591,7 +596,7 @@ tasks:
       - "Upgrade behavior boundary is unclear."
     receipt_id: R013-UPGRADE-LOCAL-GATES-VERIFIED
 pr_green_sweep:
-  status: t013_upgrade_pr279_current_head_checks_pending
+  status: t013_upgrade_pr279_coderabbit_review_response_fixed_pending_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -625,8 +630,9 @@ pr_green_sweep:
   upgrade_branch: "codex/JSC-331-upgrade-deep-module"
   upgrade_base_sha: "466aaaea0fa36f7fe670c7d496c0cb6a3816627b"
   upgrade_pr_url: "https://github.com/jscraik/coding-harness/pull/279"
-  upgrade_head_sha: "live PR #279 report-refresh head; avoid self-stale hard-coded report hash"
-  last_observed: "2026-05-22T19:49:18Z"
+  upgrade_head_sha: "81003cfc94bf3ecbf74d9239281ec651fb986dc7"
+  upgrade_head_note: "Last observed pushed PR #279 report head before this review-response pass; use live PR metadata for current remote state because report evidence commits advance the branch."
+  last_observed: "2026-05-22T20:10:09Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total PR #270 threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -691,11 +697,11 @@ pr_green_sweep:
     - "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2; all 23 visible checks pass and GitHub review-thread lookup returns zero unresolved threads."
     - "T012 init is closed by PR #278 merge evidence; PR #278 merged at 2026-05-22T17:49:52Z with merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b."
     - "T013 upgrade is implemented locally on codex/JSC-331-upgrade-deep-module rooted at origin/main merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b; upgrade orchestration now lives behind src/lib/upgrade/runner.ts, raw CLI projection lives in src/lib/upgrade/cli-args.ts, shared option contracts live in src/lib/upgrade/types.ts, contract/default migration helpers live in src/lib/upgrade/contract.ts, template and manifest updates live in src/lib/upgrade/templates.ts, and registry metadata delegates through upgrade-command-spec.ts."
-    - "T013 reviewer findings were addressed locally: testing requested direct execute-path coverage for the new upgrade registry adapter plus malformed helper error-boundary coverage, and simplicity/architecture requested removal of duplicated upgrade option contracts. The focused upgrade, registry, and module-boundary suite passes with 205 tests; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, validate-codestyle fast, and verify-work fast pass. pnpm test:deep reaches E2E credential validation after pnpm check, test:artifacts, and integration pass, then blocks because GitHub and Linear credentials are unavailable and ~/.codex/.env is a FIFO."
+    - "T013 reviewer findings were addressed locally: testing requested direct execute-path coverage for the new upgrade registry adapter plus malformed helper error-boundary coverage, and simplicity/architecture requested removal of duplicated upgrade option contracts. The focused upgrade, registry, and module-boundary suite passes with 206 tests after adding malformed upgrade-manifest fail-closed coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, validate-codestyle fast, and verify-work fast pass. pnpm test:deep reaches E2E credential validation after pnpm check, test:artifacts, and integration pass, then blocks because GitHub and Linear credentials are unavailable and ~/.codex/.env is a FIFO."
     - "T013 full local PR-template gates now run: bash scripts/validate-codestyle.sh passes, pnpm check passes with 282 standard test files plus the ci-migrate suite and no known vulnerabilities, tooling-audit passes with zero findings, review-context succeeds, north-star-feedback succeeds with external evidence gaps called out, and learnings gate exits 0 with warning-only generated/report keyword matches."
     - "The module-layout report remains live for Jamie on http://127.0.0.1:8767/artifacts/architecture/module-layout.html and now exposes a Jamie Readout Now section with the implemented T013 upgrade seam, reviewer-response proof, Browser truth, and remaining handoff gates."
     - "The in-app Browser was successfully launched on the 8767 report URL in R013-UPGRADE-REPORT-BROWSER-LAUNCHED-8767, but the latest Browser workflow retry in this thread lists no available browser targets and returns Browser is not available: iab; HTTP revalidation of the report URL passes."
-    - "PR #279 is open for T013 at https://github.com/jscraik/coding-harness/pull/279 and the latest report head is pushed. The live PR body passes local pr-template-gate and linear-gate, Socket/Snyk checks were green in the latest live check pass, and CodeRabbit/CircleCI must be observed live after every evidence push because report-only commits restart those checks."
+    - "PR #279 is open for T013 at https://github.com/jscraik/coding-harness/pull/279 and the latest report head is pushed. The live PR body passes local pr-template-gate and linear-gate, Socket/Snyk checks were green in the latest live check pass, and CodeRabbit posted six current review-response threads on 2026-05-22T20:10:09Z. The current local patch fixes those threads, but the PR remains not merge-ready until that patch is pushed and live review-thread/check evidence is reobserved."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains preserved outside the T013 upgrade branch and must not be absorbed into the PR #279 closeout slice."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
@@ -717,12 +723,12 @@ pr_green_sweep:
       remaining: "Closed by PR #278 merge at 2026-05-22T17:49:52Z with merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b."
     t013_upgrade:
       implementation: "T013 upgrade split is implemented locally: src/commands/upgrade.ts is a compatibility facade, src/lib/cli/registry/upgrade-command-spec.ts owns registry metadata and delegation, src/lib/upgrade/cli-args.ts owns raw flag projection, src/lib/upgrade/types.ts owns the shared option contract, src/lib/upgrade/contract.ts owns contract/default migration helpers, src/lib/upgrade/templates.ts owns template and manifest updates, and src/lib/upgrade/runner.ts owns orchestration."
-      validation: "Focused upgrade/registry/module-boundary tests pass with 205 tests after adding direct upgrade registry execute-path coverage, malformed provider-value coverage, and helper error-boundary coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, the production CLI dry-run path, validate-codestyle fast, and verify-work fast pass. verify-work fast run id: 20260522T183031Z-7843. Full local PR-template gates also pass: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star-feedback; learnings gate exits 0 with warning-only generated/report keyword matches. pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration pass; ~/.codex/.env is a FIFO, so env-loaded recovery cannot be safely sourced in this runtime."
-      review: "Product, testing, simplicity, architecture, unslopify, and Codex/project-standards review artifacts exist under artifacts/reviews/. Testing's execute-path finding, simplicity/architecture option-contract duplication findings, stale-artifact findings, and Codex evidence-freshness finding are fixed locally; no blocking reviewer findings remain in the current patch."
-      pr_handoff: "PR #279 is open at https://github.com/jscraik/coding-harness/pull/279 and the latest report head is pushed. The live PR body passes local pr-template-gate and linear-gate; Socket/Snyk checks were green in the latest live check pass; CodeRabbit/CircleCI must be observed live after every evidence push because report-only commits restart those checks. GitHub review-thread lookup returned zero threads in the current handoff pass."
-      blocker: "The 8767 report was restarted and is live over HTTP; direct Browser reload is blocked because no iab browser target is currently exposed in this thread. T013 is blocked from advancement until the current PR #279 CircleCI run finishes green, independent review state is known, and merge-readiness evidence is recorded."
+      validation: "Focused upgrade/registry/module-boundary tests pass with 206 tests after adding direct upgrade registry execute-path coverage, malformed provider-value coverage, helper error-boundary coverage, and malformed upgrade-manifest fail-closed coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, the production CLI dry-run path, validate-codestyle fast, and verify-work fast pass. verify-work fast run id: 20260522T183031Z-7843. Full local PR-template gates also pass: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star-feedback; learnings gate exits 0 with warning-only generated/report keyword matches. pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration pass; ~/.codex/.env is a FIFO, so env-loaded recovery cannot be safely sourced in this runtime."
+      review: "Product, testing, simplicity, architecture, unslopify, and Codex/project-standards review artifacts exist under artifacts/reviews/. Testing's execute-path finding, simplicity/architecture option-contract duplication findings, stale-artifact findings, and Codex evidence-freshness finding are fixed locally. CodeRabbit's 2026-05-22T20:10:09Z PR #279 findings are fixed in the current local patch: the report active-slice text is T013/PR #279, receipt ordering/freshness is monotonic for T013, T013.verify includes the full mandatory gate set, upgrade_head_sha is machine-readable with a separate note, and malformed upgrade manifests fail closed instead of being treated as absent."
+      pr_handoff: "PR #279 is open at https://github.com/jscraik/coding-harness/pull/279 and the latest report head is pushed. The live PR body passes local pr-template-gate and linear-gate; Socket/Snyk checks were green in the latest live check pass; CodeRabbit/CircleCI must be observed live after every evidence push because report/code commits restart those checks. The local review-response patch still needs push and live review-thread reobservation."
+      blocker: "The 8767 report was restarted and is live over HTTP; direct Browser reload is blocked because no iab browser target is currently exposed in this thread. T013 is blocked from advancement until the current PR #279 CodeRabbit review-response patch is pushed, CircleCI finishes green, review threads return zero-unresolved or are explicitly classified, independent review state is known, and merge-readiness evidence is recorded."
   pending_actions:
-    - "Reobserve PR #279 current-head CircleCI checks, CodeRabbit/review state, and review-thread classification before advancing."
+    - "Finish the PR #279 CodeRabbit review-response patch, validate it, push it, and reobserve CircleCI, CodeRabbit, and review-thread classification before advancing."
     - "Keep the local static report server available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html; direct Browser reload is currently blocked because the Browser workflow exposes no iab target in this thread."
     - "Do not start brain while PR #279 has pending checks, review gaps, or missing merge-readiness evidence."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."

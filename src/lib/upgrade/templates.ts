@@ -46,8 +46,8 @@ export function readUpgradeManifest(targetDir: string): UpgradeManifest | null {
 	if (!existsSync(path)) return null;
 	try {
 		return JSON.parse(readFileSync(path, "utf-8")) as UpgradeManifest;
-	} catch {
-		return null;
+	} catch (err) {
+		throw new Error(`Could not parse ${path}: ${sanitizeError(err)}`);
 	}
 }
 
