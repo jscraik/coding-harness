@@ -20,6 +20,20 @@ export function buildInitOptionsFromCliArgs(args: string[]): InitCliArgsResult {
 	const projectTypeArg = getRawFlagValue(args, "--project-type");
 	const issueTrackerArg = getRawFlagValue(args, "--issue-tracker");
 
+	// Check for flags present without values
+	if (args.includes("--project-type") && projectTypeArg === undefined) {
+		return {
+			ok: false,
+			message: "Error: --project-type requires a value.",
+		};
+	}
+	if (args.includes("--issue-tracker") && issueTrackerArg === undefined) {
+		return {
+			ok: false,
+			message: "Error: --issue-tracker requires a value.",
+		};
+	}
+
 	if (minimalFlag && issueTrackerArg !== undefined) {
 		return {
 			ok: false,

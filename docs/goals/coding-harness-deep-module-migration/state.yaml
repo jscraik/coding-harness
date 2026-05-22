@@ -512,6 +512,10 @@ tasks:
       - "Update module-layout HTML and append R012 before any following slice."
     expected_output: "A small init module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
     allowed_files:
+      - "AGENTS.md"
+      - "README.md"
+      - "docs/agents/00-architecture-bootstrap.md"
+      - "docs/agents/07b-agent-governance.md"
       - "src/commands/init.ts"
       - "src/commands/init.test.ts"
       - "src/lib/init/**"
@@ -643,7 +647,11 @@ pr_green_sweep:
     review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
     review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
     t011_ci_migrate: "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2. All 23 visible checks pass, GitHub review-thread lookup returns zero unresolved threads, and T011 ci-migrate is closed."
-    t012_init: "T012 init registry-boundary split is locally implemented on codex/JSC-331-init-deep-module: raw argv projection moved to src/lib/init/cli-args.ts, registry delegation moved to src/lib/cli/registry/init-command-spec.ts, and command-specs-core no longer owns inline init parser logic. Focused registry/module-boundary tests, pnpm typecheck, docs-gate required surfaces, and validate-codestyle/verify-work fast are passing (verify-work run id 20260522T160456Z-59419). Remaining work is review classification, commit/push, PR handoff, and remote check/thread classification."
+    t012_init:
+      implementation: "T012 init registry-boundary split is locally implemented on codex/JSC-331-init-deep-module: raw argv projection moved to src/lib/init/cli-args.ts, registry delegation moved to src/lib/cli/registry/init-command-spec.ts, and command-specs-core no longer owns inline init parser logic."
+      changes: "Focused registry/module-boundary tests, pnpm typecheck, docs-gate required surfaces, and validate-codestyle/verify-work fast are passing (verify-work run id 20260522T160456Z-59419)."
+      validation: "All local validation gates pass including focused tests, typecheck, docs-gate, validate-codestyle, and verify-work."
+      remaining: "Remaining work is review classification, commit/push, PR handoff, and remote check/thread classification."
   pending_actions:
     - "Commit and push the T012 slice, then open PR handoff at the pushed head."
     - "Reobserve remote checks and review-thread classification after the push."
@@ -670,7 +678,7 @@ slice_queue:
     - simulate
     - ci-migrate
   active: init
-  next: upgrade
+  next: upgrade  # next is always the first entry of remaining
   remaining:
     - upgrade
     - brain
