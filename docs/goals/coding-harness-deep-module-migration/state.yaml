@@ -647,7 +647,6 @@ pr_green_sweep:
   pending_actions:
     - "Commit and push the T012 slice, then open PR handoff at the pushed head."
     - "Reobserve remote checks and review-thread classification after the push."
-    - "Commit/push T012 branch and open PR handoff with remote checks/thread status."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
     - "@github"
