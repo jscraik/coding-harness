@@ -45,11 +45,25 @@ interface AgentRunEvent {
 	};
 }
 
-/**
- * Compute deterministic hash of a contract.
- */
+function stableSortForJson(value: unknown): unknown {
+	if (Array.isArray(value)) {
+		return value.map((item) => stableSortForJson(item));
+	}
+	if (value === null || typeof value !== "object") {
+		return value;
+	}
+	if (Object.getPrototypeOf(value) !== Object.prototype) return value;
+	const record = value as Record<string, unknown>;
+	return Object.fromEntries(
+		Object.keys(record)
+			.sort()
+			.map((key) => [key, stableSortForJson(record[key])]),
+	);
+}
+
+/** Compute deterministic hash of a contract. */
 export function computeContractHash(contract: HarnessContract): string {
-	const content = JSON.stringify(contract, Object.keys(contract).sort());
+	const content = JSON.stringify(stableSortForJson(contract));
 	return createHash("sha256").update(content).digest("hex").slice(0, 16);
 }
 
@@ -146,9 +160,9 @@ export function assessDataQuality(
 	artifactsDirOverride: string | undefined,
 	tracesDirOverride: string | undefined,
 ): DataQualityAssessment {
-	const artifactsDir = artifactsDirOverride
-		? resolve(artifactsDirOverride)
-		: resolve("./artifacts/agent-runs");
+	const artifactsDir = resolve(
+		artifactsDirOverride ?? "./artifacts/agent-runs",
+	);
 	const tracesDir = tracesDirOverride
 		? resolve(tracesDirOverride)
 		: resolve("./.traces");
@@ -194,9 +208,6 @@ export function assessDataQuality(
 	};
 }
 
-/**
- * Build MetricDelta from two counts with safe percent-change.
- */
 function buildMetricDelta(
 	baseline: number,
 	candidate: number,
@@ -222,6 +233,7 @@ export function computeMetrics(
 	contractA: HarnessContract,
 	contractB: HarnessContract,
 	dataQuality: DataQualityAssessment,
+	artifactsDirOverride?: string,
 ): SimulationMetrics {
 	const zeroDelta = buildMetricDelta(0, 0);
 
@@ -234,7 +246,9 @@ export function computeMetrics(
 		};
 	}
 
-	const artifactsDir = resolve("./artifacts/agent-runs");
+	const artifactsDir = resolve(
+		artifactsDirOverride ?? "./artifacts/agent-runs",
+	);
 	const { manifests } = readArtifactManifests(artifactsDir);
 	if (manifests.length === 0) {
 		return {
@@ -482,8 +496,11 @@ function classifyDecisionDelta(
 export function computeDeltas(
 	contractA: HarnessContract,
 	contractB: HarnessContract,
+	artifactsDirOverride?: string,
 ): { summary: DeltaSummary; topDeltas: DecisionDelta[] } {
-	const artifactsDir = resolve("./artifacts/agent-runs");
+	const artifactsDir = artifactsDirOverride
+		? resolve(artifactsDirOverride)
+		: resolve("./artifacts/agent-runs");
 	const { manifests } = readArtifactManifests(artifactsDir);
 
 	if (manifests.length === 0) {
@@ -500,8 +517,9 @@ export function computeDeltas(
 	}
 
 	const hashA = computeContractHash(contractA);
+	const hashB = computeContractHash(contractB);
 	const candidateManifests = manifests.filter(
-		(m) => m.contract?.hash !== hashA,
+		(m) => m.contract?.hash === hashB,
 	);
 	const baselineManifests = manifests.filter((m) => m.contract?.hash === hashA);
 

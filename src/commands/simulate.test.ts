@@ -1,6 +1,8 @@
 import {
 	existsSync,
 	mkdirSync,
+	mkdtempSync,
+	readFileSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
@@ -160,6 +162,45 @@ describe("simulate output path validation", () => {
 		expect(result.ok).toBe(true);
 		expect(result.exitCode).toBe(SIMULATE_EXIT_CODES.SUCCESS);
 		expect(existsSync(join(process.cwd(), outputPath))).toBe(true);
+	});
+
+	it("counts artifacts from the default pilot artifacts directory", () => {
+		const originalCwd = process.cwd();
+		const workspace = mkdtempSync(join(tmpdir(), "harness-simulate-default-"));
+		try {
+			writeFileSync(
+				join(workspace, "harness.contract.json"),
+				readFileSync(join(originalCwd, "harness.contract.json")),
+			);
+			process.chdir(workspace);
+			const artifactsRunDir = join(workspace, "artifacts", "pilot", "run-1");
+			mkdirSync(artifactsRunDir, { recursive: true });
+			writeFileSync(
+				join(artifactsRunDir, "manifest.json"),
+				JSON.stringify({
+					schemaVersion: "agent-run-manifest/v1",
+					runId: "run-1",
+					command: "remediate",
+					startedAt: "2026-05-22T00:00:00Z",
+					outcome: "success",
+				}),
+				"utf-8",
+			);
+
+			const result = runSimulate({
+				contractA: "harness.contract.json",
+				contractB: "harness.contract.json",
+				json: true,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.report.summary.artifactsProcessed).toBe(1);
+			}
+		} finally {
+			process.chdir(originalCwd);
+			rmSync(workspace, { recursive: true, force: true });
+		}
 	});
 
 	it("returns structured errors when contract loading fails", () => {

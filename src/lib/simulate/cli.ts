@@ -407,11 +407,16 @@ export function runSimulate(options: SimulateOptions): SimulateResult {
 	const dataQuality = assessDataQuality(
 		contractA,
 		contractB,
-		options.artifactsDir,
-		options.tracesDir,
+		artifactsDir,
+		tracesDir,
 	);
-	const metrics = computeMetrics(contractA, contractB, dataQuality);
-	const deltas = computeDeltas(contractA, contractB);
+	const metrics = computeMetrics(
+		contractA,
+		contractB,
+		dataQuality,
+		artifactsDir,
+	);
+	const deltas = computeDeltas(contractA, contractB, artifactsDir);
 	const confidence = computeConfidence(dataQuality);
 	const recommendations = generateRecommendations(metrics, deltas, confidence);
 	const flags = determineFlags(dataQuality, metrics);
@@ -425,14 +430,8 @@ export function runSimulate(options: SimulateOptions): SimulateResult {
 		summary: {
 			scenariosEvaluated: deltas.summary.total,
 			sufficientDataCount: dataQuality.effectiveSampleSize,
-			tracesProcessed: readTraceFiles(
-				options.tracesDir ? resolve(options.tracesDir) : resolve("./.traces"),
-			).traceCount,
-			artifactsProcessed: readArtifactManifests(
-				options.artifactsDir
-					? resolve(options.artifactsDir)
-					: resolve("./artifacts/agent-runs"),
-			).fileCount,
+			tracesProcessed: readTraceFiles(tracesDir).traceCount,
+			artifactsProcessed: readArtifactManifests(artifactsDir).fileCount,
 		},
 		dataQuality,
 		metrics,

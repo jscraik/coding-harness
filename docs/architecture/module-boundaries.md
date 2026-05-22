@@ -141,8 +141,8 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Thin registry metadata and command adapter; raw gap-case lifecycle argv
     projection lives in `src/lib/gap-case/cli-args.ts`.
 - `src/lib/cli/registry/simulate-command-spec.ts`
-  - Thin registry metadata and command adapter; raw simulate argv projection
-    lives in `src/lib/simulate/cli-args.ts`.
+  - Thin simulate registry metadata and command adapter; raw simulate argv
+    projection lives in `src/lib/simulate/cli-args.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`

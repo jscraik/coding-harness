@@ -1791,6 +1791,8 @@ describe("module boundaries", () => {
 		expect(facadeContent).toContain("../lib/simulate/cli.js");
 		expect(facadeContent).not.toContain("loadContract");
 		expect(facadeContent).not.toContain("getFlagValue");
+		expect(facadeContent).not.toContain("args.indexOf");
+		expect(facadeContent).not.toContain("process.argv");
 		expect(analysisFacadeContent).toContain("../lib/simulate/analysis.js");
 		expect(recommendationsFacadeContent).toContain(
 			"../lib/simulate/recommendations.js",
