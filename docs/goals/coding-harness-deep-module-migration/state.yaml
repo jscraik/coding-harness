@@ -5,7 +5,7 @@ goal:
   objective: "Finish the remaining non-Effect coding-harness deep-module migration in small governed slices with per-slice review gates, validation evidence, GitHub handoff, and PR-green-sweep triage."
   native_goal_id: "019e4a39-47f8-7ac0-b979-d52b7f02ec23"
   native_objective: "Follow docs/goals/coding-harness-deep-module-migration/goal.md to continue the remaining non-Effect coding-harness deep-module migration in governed slices, preserving the separate active dirty-work slice, refreshing live repo/PR/HTML-report state before implementation, and recording receipts before advancing."
-  native_status: paused
+  native_status: active
   token_budget: null
   tokens_used: 1639295
   time_used_seconds: 8516
@@ -27,9 +27,9 @@ checks:
   architecture_visual: "artifacts/architecture/module-layout.html"
   visual_record_contract: "module layout must show complete/current/next/remaining/blocked, enforcement, agent-safe zones, human-review zones, latest slice, and receipt/PR evidence"
   last_verification:
-    command: "PYTHONDONTWRITEBYTECODE=1 python3 <goal-governor-skill>/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
+    command: "bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
-    checked_at: "2026-05-22T00:07:15Z"
+    checked_at: "2026-05-22T00:32:14Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -77,7 +77,7 @@ tasks:
       - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
       - "docs/goals/coding-harness-deep-module-migration/notes/.gitkeep"
     verify:
-      - "PYTHONDONTWRITEBYTECODE=1 python3 <goal-governor-skill>/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
+      - "bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration"
       - "git status --short docs/goals/coding-harness-deep-module-migration"
     stop_if:
       - "Board checker fails."
@@ -267,7 +267,7 @@ tasks:
       - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
       - "bash scripts/validate-codestyle.sh --fast"
       - "bash scripts/verify-work.sh --fast before PR handoff"
-      - "TMPDIR=/private/tmp PREK_HOME=<repo-git-cache>/prek prek run pre-commit --stage pre-commit -v --log-file /private/tmp/prek-t006.log"
+      - "make hooks-pre-commit"
     stop_if:
       - "T005 is not pushed."
       - "GitHub or PR state cannot be observed."
@@ -300,6 +300,7 @@ tasks:
       - ".harness/implementation-notes/2026-05-19-module-layout.html"
       - "artifacts/architecture/module-layout.html"
       - "docs/goals/coding-harness-deep-module-migration/**"
+      - "scripts/check-goal-board.sh"
     verify:
       - "focused plan-gate test or direct production command to be named before implementation"
       - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
@@ -311,25 +312,25 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_second_review_followups_validated_ready_to_commit_push
+  status: t007_command_contract_repair_validated_ready_to_commit_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "bcc2c6ba3a41b52df154249e4e1ddc8a8486ff7f"
-  last_observed: "2026-05-22T00:07:15Z"
+  head_sha: "832b5d094a4f1a9cd690b83884f26fa3dee58c27"
+  last_observed: "2026-05-22T00:22:16Z"
   current_blockers:
-    - "Current pushed PR head is bcc2c6ba3a41b52df154249e4e1ddc8a8486ff7f; remote checks and review-comment classification remain pending after the T007 push."
-    - "The second review-followup repair is locally validated but still local until commit, push, and current-head PR re-observation complete."
-    - "Native goal status is paused while the repository board remains active; treat this as a split-state observation, not completion."
-    - "Current valid review feedback is repaired locally for plan-gate registry enforcement, plan-gate recovery hints, architecture ratchet documentation, and duplicate HTML heading identity."
+    - "Current pushed PR head is 832b5d094a4f1a9cd690b83884f26fa3dee58c27; pr-pipeline is in progress and CodeRabbit plus ci/circleci: orb-pinning are pending."
+    - "Fresh CodeRabbit command-contract feedback on this state.yaml is valid and repaired locally with a repo-owned goal-board wrapper before commit, push, and current-head PR re-observation."
+    - "Native goal and repository board are active; the overall deep-module goal is not complete."
+    - "Current-head unresolved review threads still include a stale/invalid module-layout T002/T003 status-panel comment and a ci-migrate fixture comment already fixed in bcc2c6ba; outdated alias and nickname threads are fixed."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
   last_evidence:
-    github_state: "PR #270 open and no longer draft at bcc2c6ba3a41b52df154249e4e1ddc8a8486ff7f; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
-    review_threads: "32 total; 7 unresolved; 4 unresolved current-head and 3 unresolved outdated before this second local follow-up."
-    checks: "gh pr checks 270 --watch=false exited 8 at bcc2c6ba3a41b52df154249e4e1ddc8a8486ff7f because CodeRabbit, Socket, CircleCI leaves, pr-pipeline, and security-scan were still pending."
-    coderabbit: "Current-head feedback was classified: status-panel T002/T003 comment is stale against T007; ci-migrate fixture issue was already fixed at bcc2c6ba; plan-gate registry enforcement and recovery hints were valid and are repaired locally."
-    pre_push: "T007 plan-gate split and expanded review-followup repair are pushed at bcc2c6ba3a41b52df154249e4e1ddc8a8486ff7f; the second review-followup repair passed focused and aggregate local validation and remains local until commit, push, and re-observation complete."
-    validation: "Second follow-up passed pnpm vitest run src/lib/architecture/module-boundaries.test.ts src/commands/plan-gate.test.ts --reporter=verbose, cmp synced HTML reports, bash scripts/validate-codestyle.sh --fast, pnpm check, and bash scripts/verify-work.sh --fast."
+    github_state: "PR #270 open and no longer draft at 832b5d094a4f1a9cd690b83884f26fa3dee58c27; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
+    review_threads: "32 total; 4 unresolved; 2 current-head and 2 outdated. Current-head threads are the stale module-layout status-panel comment and ci-migrate reader-fixture comment already fixed in bcc2c6ba."
+    checks: "gh pr checks 270 --watch=false exited 0 at 832b5d094a4f1a9cd690b83884f26fa3dee58c27 with pr-pipeline IN_PROGRESS, CodeRabbit PENDING, ci/circleci: orb-pinning PENDING, and remaining listed checks passing."
+    coderabbit: "Latest CodeRabbit review f38fc84d flags state.yaml placeholder or host-bound command contracts at lines 30, 80, and 270; finding is valid and repaired locally with scripts/check-goal-board.sh plus make hooks-pre-commit."
+    pre_push: "T007 plan-gate split and second review-followup repair are pushed at 832b5d094a4f1a9cd690b83884f26fa3dee58c27; the command-contract repair is locally validated and pending commit, push, and re-observation."
+    validation: "Command-contract repair passed bash -n scripts/check-goal-board.sh, bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration, placeholder rg guard, cmp synced HTML reports, git diff --check, bash scripts/validate-codestyle.sh --fast, bash scripts/verify-work.sh --fast, and pnpm check."
   tools:
     - "@github"
     - "@circleci"
