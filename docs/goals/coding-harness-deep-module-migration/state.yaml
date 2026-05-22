@@ -437,7 +437,7 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R010-SIMULATE-IMPLEMENTATION-VALIDATED
 pr_green_sweep:
-  status: t010_simulate_pr276_review_gap_tests_validated_pending_push
+  status: t010_simulate_pr276_checks_green_draft_deep_e2e_blocked
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -458,8 +458,8 @@ pr_green_sweep:
   simulate_branch: "codex/JSC-331-simulate-deep-module"
   simulate_base_sha: "a4f066a28ca91d67f84c1def5db552657e8b3cc4"
   simulate_pr_url: "https://github.com/jscraik/coding-harness/pull/276"
-  simulate_head_sha: "96d766498ffab984cd19a80e6a6b9a985972e31d"
-  last_observed: "2026-05-22T11:00:04Z"
+  simulate_head_sha: "50e633e7b6caa8cd89a0ed4581236d2edc5488fe"
+  last_observed: "2026-05-22T11:19:17Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -489,11 +489,14 @@ pr_green_sweep:
     - "T010 replacement testing review found valid high CLI error-path coverage gaps and medium direct branch gaps; the implementation now adds tests for contract A/B load failure codes, JSON/human CLI error formatting, ci-soft validation failure handling, recommendation threshold branches, machine-readable flags, artifact manifest reading, and trace counting."
     - "T010 simplify review reported duplicate parser/runtime required-argument validation and duplicate summary filesystem scans; parser/runtime validation is intentionally split across CLI usage and public runtime validation, while the duplicate scan reduction is deferred to avoid expanding this module-boundary slice."
     - "T010 implementation commit bb79f3cf5c696c2fff4e16f741a971007f17fd4c was pushed and opened as draft PR #276 at https://github.com/jscraik/coding-harness/pull/276."
-    - "PR #276 evidence-only board update commit 96d766498ffab984cd19a80e6a6b9a985972e31d is pushed and visible as the PR head."
+    - "PR #276 evidence-only board update commit 96d766498ffab984cd19a80e6a6b9a985972e31d was pushed and observed before the review-gap repair."
     - "PR #276 previous head 8f92a7ab08be4a5a3339f79d4d6d78e09adbf242 became clean before the review-gap test repair: all reported checks passed, mergeStateStatus was CLEAN, mergeable was MERGEABLE, and GitHub review-thread lookup returned zero review threads."
-    - "PR #276 is not merge-ready for the current lane because the validated T010 review-gap tests are local and pending commit/push; after push, remote checks and review-thread state must be reobserved before T011 starts."
-    - "T010 PR body passes pr-template-gate and linear-gate locally after adding the required JSC-331 reference, review-context learning acknowledgement, and exact command-evidence grammar."
+    - "PR #276 review-gap repair commit 50e633e7b6caa8cd89a0ed4581236d2edc5488fe is pushed and visible as the PR head; focused simulate/recommendations/registry/module-boundary tests, pnpm typecheck, and bash scripts/validate-codestyle.sh --fast passed before push."
+    - "PR #276 all visible checks pass at head 50e633e7b6caa8cd89a0ed4581236d2edc5488fe, including Socket, CodeRabbit, CircleCI aggregate/job contexts, Snyk license, and Snyk security."
+    - "PR #276 GitHub review-thread lookup returned zero threads at head 50e633e7b6caa8cd89a0ed4581236d2edc5488fe; live PR view reports draft=true, mergeable MERGEABLE, mergeStateStatus CLEAN, and empty reviewDecision."
+    - "PR #276 body was refreshed after the green/check-thread observation; the refreshed body passes pr-template-gate and linear-gate locally and removes stale pending-check and missing-reviewer-artifact wording."
     - "pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration passed; the current process lacks GitHub and Linear credentials and ~/.codex/.env is a FIFO, so safe grep/source recovery would block."
+    - "PR #276 remains draft while the ready/merge decision and credential-backed E2E blocker are intentionally classified; do not start T011 until that T010 handoff boundary is closed."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #275 observed as MERGED at 2026-05-22T09:41:52Z with head 1894f1154689cbdd49f15f07bbe87cf18431a333 and merge commit a4f066a28ca91d67f84c1def5db552657e8b3cc4."
@@ -504,13 +507,13 @@ pr_green_sweep:
     post_push: "PR #275 was marked ready and squash-merged with merge commit a4f066a28ca91d67f84c1def5db552657e8b3cc4; the gap-case remote branch was deleted by the merge command."
     validation: "T010 local validation passed: focused simulate/recommendations/registry/module-boundary tests, typecheck, direct production simulate CLI JSON proof, docs-gate, validate-codestyle fast, goal-board JSONL/check, whitespace checks, diagram freshness, verify-work fast, tooling-audit, full validate-codestyle, pr-template-gate, linear-gate, review-context, and north-star-feedback. pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration passed; ~/.codex/.env is a FIFO and cannot be safely sourced/grepped without blocking."
     t009_review_gates: "Architecture review reported no actionable findings; simplify reported two low findings and the parser re-export was removed while the internal compatibility facade was kept intentionally; testing reported two medium coverage gaps that were fixed in tests but failed artifact-file verification; correctness review artifact did not complete before closeout."
-    pr_handoff: "Draft PR #276 opened at https://github.com/jscraik/coding-harness/pull/276 for T010 simulate. Post-evidence-push observation at head 96d766498ffab984cd19a80e6a6b9a985972e31d: draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, CodeRabbit success, Socket success, pr-template success, zero review threads, and remaining CircleCI/security aggregate contexts pending."
-    review_gap_followup: "Replacement T010 architecture/testing artifacts were verified locally. Architecture is pass_with_followups only for remaining aggregation points; testing gaps were fixed with new simulate CLI error-path and recommendations/reader tests. Focused test command, pnpm typecheck, and bash scripts/validate-codestyle.sh --fast passed before commit."
+    pr_handoff: "Draft PR #276 opened at https://github.com/jscraik/coding-harness/pull/276 for T010 simulate. Current observation at head 50e633e7b6caa8cd89a0ed4581236d2edc5488fe: draft, mergeable MERGEABLE, mergeStateStatus CLEAN, all visible checks pass, CodeRabbit success, GitHub review-thread lookup returns zero threads, and the refreshed PR body passes pr-template-gate plus linear-gate."
+    review_gap_followup: "Replacement T010 architecture/testing artifacts were verified locally. Architecture is pass_with_followups only for remaining aggregation points; testing gaps were fixed with new simulate CLI error-path and recommendations/reader tests. Focused test command, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, push, live checks, and review-thread lookup passed at review-gap repair head 50e633e7b6caa8cd89a0ed4581236d2edc5488fe."
     review_response: "PR #275 returned zero review threads before merge; prior valid PR #274 CodeRabbit findings remain fixed, pushed, merged, and covered by focused prompt-gate/module-boundary tests, direct prompt-gate CLI proof, validate-codestyle fast, JSONL parsing, whitespace checks, and live post-merge review-thread observation."
   pending_actions:
-    - "Commit and push the T010 review-gap test repair, then reobserve PR #276 remote checks and review threads at the new head."
-    - "Resolve or classify any PR #276 remote check failures and the blocked pnpm test:deep E2E credential lane."
-    - "Do not start T011 ci-migrate until PR #276 has remote check, review-thread, and deep-validation blocker evidence classified."
+    - "Commit and push this PR #276 green-state board refresh, then reobserve PR #276 after the evidence-only head updates."
+    - "Classify the PR #276 draft/ready decision and the blocked pnpm test:deep E2E credential lane before marking T010 closeable."
+    - "Do not start T011 ci-migrate until PR #276 has current remote check, review-thread, PR-body, and deep-validation blocker evidence classified at the latest head."
   tools:
     - "@github"
     - "@circleci"
