@@ -21,34 +21,83 @@ const EXPECTED_ROLES = [
 	{
 		name: "harness-product-code-reviewer",
 		category: "product_code_and_tests",
+		nicknameCandidates: ["Harness Product", "Harness Tests", "Harness Code"],
+		sandboxMode: "read-only",
+		statusLine: "verdict = pass | findings | blocked",
 	},
 	{
 		name: "harness-ci-release-reviewer",
 		category: "ci_configuration_and_release_tooling",
+		nicknameCandidates: ["Harness CI", "Harness Release", "Harness Gates"],
+		sandboxMode: "read-only",
+		statusLine: "verdict = pass | findings | blocked",
 	},
 	{
 		name: "harness-dev-tools-reviewer",
 		category: "internal_developer_tools",
+		nicknameCandidates: ["Harness Tools", "Harness CLI", "Harness DevEx"],
+		sandboxMode: "read-only",
+		statusLine: "verdict = pass | findings | blocked",
 	},
 	{
 		name: "harness-doc-history-reviewer",
 		category: "documentation_and_design_history",
+		nicknameCandidates: ["Harness Docs", "Harness History", "Harness Design"],
+		sandboxMode: "read-only",
+		statusLine: "verdict = pass | findings | blocked",
 	},
 	{
 		name: "harness-evaluation-reviewer",
 		category: "evaluation_harnesses",
+		nicknameCandidates: ["Harness Evals", "Harness Metrics", "Harness Score"],
+		sandboxMode: "read-only",
+		statusLine: "verdict = pass | findings | blocked",
 	},
 	{
 		name: "harness-review-response-auditor",
 		category: "review_comments_and_responses",
+		nicknameCandidates: [
+			"Harness Review",
+			"Harness Replies",
+			"Harness Comments",
+		],
+		sandboxMode: "read-only",
+		statusLine: "verdict = pass | findings | blocked",
 	},
 	{
 		name: "harness-repository-automation-reviewer",
 		category: "repository_management_scripts",
+		nicknameCandidates: [
+			"Harness Repo",
+			"Harness Scripts",
+			"Harness Automation",
+		],
+		sandboxMode: "read-only",
+		statusLine: "verdict = pass | findings | blocked",
 	},
 	{
 		name: "harness-dashboard-definition-reviewer",
 		category: "production_dashboard_definition_files",
+		nicknameCandidates: [
+			"Harness Dashboard",
+			"Harness Panels",
+			"Harness Telemetry",
+		],
+		sandboxMode: "read-only",
+		statusLine: "verdict = pass | findings | blocked",
+	},
+	{
+		name: "harness-toolsmith",
+		category: "harness_toolsmith",
+		nicknameCandidates: ["Harness Toolsmith", "Harness Forge", "Harness Maker"],
+		sandboxMode: "workspace-write",
+		statusLine: "status = implemented | proposed | blocked",
+		extraInstructionText: [
+			"capability_gap",
+			"tool_or_primitive_changed",
+			"created_or_changed_surfaces",
+			"validation_evidence",
+		],
 	},
 ];
 
@@ -58,8 +107,12 @@ const REQUIRED_PRINCIPLE_TEXT = [
 		description: "Codex agent roles README",
 		snippets: [
 			"Harness Roles First",
+			"Harness Toolsmith",
+			"Runtime Freshness",
 			"first-choice subagents",
+			"unknown agent_type",
 			'spawn_agent(agent_type="harness-product-code-reviewer")',
+			'spawn_agent(agent_type="harness-toolsmith")',
 		],
 	},
 	{
@@ -67,8 +120,11 @@ const REQUIRED_PRINCIPLE_TEXT = [
 		description: "root agent instructions",
 		snippets: [
 			"Harness Reviewer Roles First",
+			"Harness Tool Builder",
 			"first-choice subagents",
+			"unknown agent_type",
 			'spawn_agent(agent_type="harness-product-code-reviewer")',
+			'spawn_agent(agent_type="harness-toolsmith")',
 		],
 	},
 	{
@@ -76,8 +132,11 @@ const REQUIRED_PRINCIPLE_TEXT = [
 		description: "tooling policy",
 		snippets: [
 			"project-local harness reviewer roles are",
+			"harness-toolsmith",
 			"the first-choice subagents",
+			"unknown agent_type",
 			'spawn_agent(agent_type="harness-product-code-reviewer")',
+			'spawn_agent(agent_type="harness-toolsmith")',
 		],
 	},
 	{
@@ -85,6 +144,8 @@ const REQUIRED_PRINCIPLE_TEXT = [
 		description: "validation guide",
 		snippets: [
 			"harness roles first principle",
+			"harness-toolsmith",
+			"unknown agent_type",
 			'spawn_agent(agent_type="<role>")',
 			"before generic/default/global reviewers",
 		],
@@ -149,11 +210,80 @@ function extractBooleanValue(content, key) {
 	return match[1] === "true";
 }
 
+function extractStringArrayValue(content, key) {
+	const match = content.match(
+		new RegExp(`^\\s*${key}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*$`, "m"),
+	);
+	if (!match) {
+		return null;
+	}
+	const rawItems = match[1].trim();
+	if (rawItems.length === 0) {
+		return [];
+	}
+	return rawItems.split(/\s*,\s*/).map((item) => {
+		const trimmed = item.trim();
+		const stringMatch = trimmed.match(/^"([^"]*)"$/);
+		return stringMatch ? stringMatch[1] : null;
+	});
+}
+
 function hasNonEmptyTripleQuotedBlock(content, key) {
 	const match = content.match(
 		new RegExp(`^\\s*${key}\\s*=\\s*'''\\n([\\s\\S]*?)\\n'''\\s*$`, "m"),
 	);
 	return Boolean(match && match[1].trim().length > 0);
+}
+
+function validateNicknameCandidates(errors, rolePath, actualCandidates) {
+	if (!actualCandidates) {
+		errors.push(
+			`${repoRelative(rolePath)}: expected non-empty nickname_candidates array`,
+		);
+		return;
+	}
+	if (actualCandidates.length === 0) {
+		errors.push(
+			`${repoRelative(rolePath)}: nickname_candidates must contain at least one name`,
+		);
+		return;
+	}
+	const seen = new Set();
+	for (const candidate of actualCandidates) {
+		if (candidate === null) {
+			errors.push(
+				`${repoRelative(rolePath)}: nickname_candidates must be string literals`,
+			);
+			continue;
+		}
+		const trimmedCandidate = candidate.trim();
+		if (trimmedCandidate.length === 0) {
+			errors.push(
+				`${repoRelative(rolePath)}: nickname_candidates cannot contain blank names`,
+			);
+		}
+		if (trimmedCandidate !== candidate) {
+			errors.push(
+				`${repoRelative(rolePath)}: nickname_candidates must already be trimmed`,
+			);
+		}
+		if (seen.has(trimmedCandidate)) {
+			errors.push(
+				`${repoRelative(rolePath)}: nickname_candidates cannot contain duplicates`,
+			);
+		}
+		seen.add(trimmedCandidate);
+		if (!/^[A-Za-z0-9 _-]+$/.test(trimmedCandidate)) {
+			errors.push(
+				`${repoRelative(rolePath)}: nickname_candidates may only contain ASCII letters, digits, spaces, hyphens, and underscores`,
+			);
+		}
+		if (!trimmedCandidate.startsWith("Harness ")) {
+			errors.push(
+				`${repoRelative(rolePath)}: nickname candidate \`${trimmedCandidate}\` must be harness-themed`,
+			);
+		}
+	}
 }
 
 function validateReadme(errors) {
@@ -165,6 +295,7 @@ function validateReadme(errors) {
 	for (const expectedText of [
 		".codex/agents/<role>/<role>.toml",
 		"spawn_agent(agent_type=...)",
+		"does not prove the active session runtime registry",
 		".agents/skills/**/agents/openai.yaml",
 		".agents/roles",
 		"pnpm codex:agents:guard",
@@ -252,7 +383,7 @@ function validateRoleFiles(errors) {
 			["name", role.name],
 			["model", "gpt-5.4-mini"],
 			["model_reasoning_effort", "medium"],
-			["sandbox_mode", "read-only"],
+			["sandbox_mode", role.sandboxMode],
 		];
 
 		for (const [key, expectedValue] of checks) {
@@ -269,6 +400,19 @@ function validateRoleFiles(errors) {
 				`${repoRelative(rolePath)}: expected allow_login_shell = false`,
 			);
 		}
+		const actualNicknameCandidates = extractStringArrayValue(
+			content,
+			"nickname_candidates",
+		);
+		if (
+			JSON.stringify(actualNicknameCandidates) !==
+			JSON.stringify(role.nicknameCandidates)
+		) {
+			errors.push(
+				`${repoRelative(rolePath)}: expected nickname_candidates = ${JSON.stringify(role.nicknameCandidates)}, got ${JSON.stringify(actualNicknameCandidates)}`,
+			);
+		}
+		validateNicknameCandidates(errors, rolePath, actualNicknameCandidates);
 
 		if (!hasNonEmptyTripleQuotedBlock(content, "developer_instructions")) {
 			errors.push(
@@ -278,8 +422,9 @@ function validateRoleFiles(errors) {
 
 		for (const expectedText of [
 			`category = "${role.category}"`,
-			"verdict = pass | findings | blocked",
+			role.statusLine,
 			"useful_skill_routes",
+			...(role.extraInstructionText ?? []),
 		]) {
 			if (!content.includes(expectedText)) {
 				errors.push(
@@ -303,4 +448,11 @@ function main() {
 	console.info(`codex-agent-roles: pass (${EXPECTED_ROLES.length} roles)`);
 }
 
-main();
+if (require.main === module) {
+	main();
+}
+
+module.exports = {
+	extractStringArrayValue,
+	validateNicknameCandidates,
+};

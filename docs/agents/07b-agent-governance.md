@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-20
+last_validated: 2026-05-21
 ---
 
 # Agent governance
@@ -65,6 +65,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - rule lifecycle governance changes that alter rule metadata validation, `.harness/rule-lifecycle-manifest.json`, `docs/rule-lifecycle.schema.json`, or `rule-lifecycle-gate` should keep this guide synchronized with `AGENTS.md`, `README.md`, and `docs/agents/00-architecture-bootstrap.md` when docs-gate reports agent-governance, contract-policy, or architecture-context surfaces
 - workflow-authority routing and validation behavior changes should update `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, and `docs/agents/14-docs-gate-rollout.md`
 - agent-governance/category updates should keep `AGENTS.md` and this guide synchronized in the same PR
+- project-local Codex role inventory changes should keep `.codex/agents/README.md`,
+  `AGENTS.md`, this guide, and `pnpm codex:agents:guard` synchronized.
+  Treat `.codex/agents/<role>/<role>.toml` files and the guard as repo
+  inventory evidence only: an already-open Codex thread can still return
+  `unknown agent_type` until the runtime is refreshed. Do not substitute a
+  generic/default subagent when the project-local role boundary is required.
+  Start a fresh thread rooted in this checkout before relying on that boundary.
 - north-star contract/scaffold updates that affect architecture context should update `docs/agents/00-architecture-bootstrap.md` and this guide in the same PR
 - north-star artifact contract changes should keep the README command evidence
   surface, AGENTS shared-vocabulary guidance, and this guide synchronized in

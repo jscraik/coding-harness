@@ -22,6 +22,7 @@ export {
 	type PrCloseoutReport,
 	type PrCloseoutReviewThreadsInput,
 	type PrCloseoutRollbackInput,
+	type PrCloseoutRuntimeEvidenceSummary,
 	type PrCloseoutStatus,
 	type PrCloseoutToolInput,
 	type PrCloseoutTraceabilityInput,

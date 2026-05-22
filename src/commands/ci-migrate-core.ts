@@ -6,13 +6,11 @@ import {
 	mkdirSync,
 	readFileSync,
 	readdirSync,
-	realpathSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import { cwd, env } from "node:process";
-import { fileURLToPath } from "node:url";
 import {
 	CIRCLECI_PRIMARY_CHECK,
 	type CheckEntry,
@@ -53,6 +51,18 @@ import {
 	resolveSnapshotSigningKey,
 	signContent,
 } from "../lib/ci/ci-migrate-signing.js";
+import {
+	assertNoBlockingMergeQueueCutoverWindow,
+	type MergeQueueCutoverWindow,
+	type MergeQueueEvidenceBinding,
+	isValidMergeQueueEvidenceBinding,
+	writeMergeQueueWindow,
+} from "../lib/ci/ci-migrate-merge-queue-window.js";
+import {
+	isSafeAllowedRestorePath,
+	resolveRepoBoundFileUrl,
+	resolveRepoBoundPath,
+} from "../lib/ci/repo-bound-paths.js";
 import {
 	defaultSnapshotId,
 	getExternalControlPlaneStatePath,
@@ -156,8 +166,6 @@ const EXTERNAL_CONTROL_PLANE_PATH_SET = new Set<string>(
 	EXTERNAL_CONTROL_PLANE_PATHS,
 );
 const PREPARED_STATE_MAX_AGE_HOURS = 24;
-const MERGE_QUEUE_WINDOW_PATH =
-	".harness/control-plane/merge-queue-cutover-window.json";
 const DEFAULT_MERGE_QUEUE_EVIDENCE_PATH =
 	".harness/control-plane/merge-queue-cutover-evidence.json";
 const CI_MIGRATE_VERIFY_FAILED_EXIT_CODE = 1;
@@ -558,39 +566,6 @@ interface ExternalControlPlaneStateArtifact {
 	contentDigest?: string | undefined;
 }
 
-interface MergeQueueCutoverWindow {
-	schemaVersion: "ci-migrate-merge-queue-window/v1";
-	snapshotId: string;
-	stage: "paused" | "drained" | "revalidated" | "aborted";
-	pausedAt: string;
-	drainedAt?: string | undefined;
-	revalidatedAt?: string | undefined;
-	abortedAt?: string | undefined;
-	preCutover: BranchProtectionSatisfiabilityReport;
-	postCutover?: BranchProtectionSatisfiabilityReport | undefined;
-	evidence?:
-		| {
-				sourcePath: string;
-				contentSha256: string;
-				binding?: MergeQueueEvidenceBinding | undefined;
-				pausedAt: string;
-				drainedAt?: string | undefined;
-				revalidatedAt?: string | undefined;
-				pausedQueueDepth?: number | undefined;
-				drainedCandidateCount?: number | undefined;
-				revalidatedCandidateCount?: number | undefined;
-		  }
-		| undefined;
-}
-
-interface MergeQueueEvidenceBinding {
-	repoFullName: string;
-	headSha: string;
-	trustedPolicyRef: string;
-	authorityConfigSha256: string;
-	requiredCheckManifestSha256: string;
-}
-
 interface MergeQueueCutoverEvidence {
 	schemaVersion: "ci-migrate-merge-queue-evidence/v2";
 	snapshotId: string;
@@ -607,255 +582,6 @@ interface MergeQueueCutoverEvidence {
 		signingKeyId: string;
 		payloadSha256: string;
 	};
-}
-
-function isValidBranchProtectionSatisfiabilityReport(
-	value: unknown,
-): value is BranchProtectionSatisfiabilityReport {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-	const parsed = value as Partial<BranchProtectionSatisfiabilityReport>;
-	if (
-		(parsed.status !== "satisfied" && parsed.status !== "unsatisfied") ||
-		typeof parsed.scannedOpenPrs !== "number" ||
-		!Number.isInteger(parsed.scannedOpenPrs) ||
-		parsed.scannedOpenPrs < 0 ||
-		!Array.isArray(parsed.failingPrs)
-	) {
-		return false;
-	}
-	return parsed.failingPrs.every((failingPr) => {
-		if (!failingPr || typeof failingPr !== "object") {
-			return false;
-		}
-		const parsedFailingPr = failingPr as {
-			number?: unknown;
-			missingChecks?: unknown;
-		};
-		return (
-			typeof parsedFailingPr.number === "number" &&
-			Number.isInteger(parsedFailingPr.number) &&
-			Array.isArray(parsedFailingPr.missingChecks) &&
-			parsedFailingPr.missingChecks.every((check) => typeof check === "string")
-		);
-	});
-}
-
-function isValidMergeQueueEvidenceBinding(
-	value: unknown,
-): value is MergeQueueEvidenceBinding {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-	const parsed = value as Partial<MergeQueueEvidenceBinding>;
-	return (
-		typeof parsed.repoFullName === "string" &&
-		parsed.repoFullName.trim().length > 0 &&
-		typeof parsed.headSha === "string" &&
-		isCommitSha(parsed.headSha) &&
-		typeof parsed.trustedPolicyRef === "string" &&
-		isCommitSha(parsed.trustedPolicyRef) &&
-		typeof parsed.authorityConfigSha256 === "string" &&
-		isHexDigest(parsed.authorityConfigSha256) &&
-		typeof parsed.requiredCheckManifestSha256 === "string" &&
-		isHexDigest(parsed.requiredCheckManifestSha256)
-	);
-}
-
-function isValidMergeQueueCutoverWindow(
-	value: unknown,
-): value is MergeQueueCutoverWindow {
-	if (!value || typeof value !== "object") {
-		return false;
-	}
-	const parsed = value as Partial<MergeQueueCutoverWindow>;
-	const pausedAtMs =
-		typeof parsed.pausedAt === "string"
-			? Date.parse(parsed.pausedAt)
-			: Number.NaN;
-	const drainedAtMs =
-		typeof parsed.drainedAt === "string"
-			? Date.parse(parsed.drainedAt)
-			: Number.NaN;
-	const revalidatedAtMs =
-		typeof parsed.revalidatedAt === "string"
-			? Date.parse(parsed.revalidatedAt)
-			: Number.NaN;
-	const abortedAtMs =
-		typeof parsed.abortedAt === "string"
-			? Date.parse(parsed.abortedAt)
-			: Number.NaN;
-	const evidence = parsed.evidence;
-	const evidenceRecord =
-		evidence && typeof evidence === "object"
-			? (evidence as Partial<MergeQueueCutoverWindow["evidence"]>)
-			: undefined;
-	const evidencePausedAtMs =
-		evidenceRecord && typeof evidenceRecord.pausedAt === "string"
-			? Date.parse(evidenceRecord.pausedAt)
-			: Number.NaN;
-	const evidenceDrainedAtMs =
-		evidenceRecord && typeof evidenceRecord.drainedAt === "string"
-			? Date.parse(evidenceRecord.drainedAt)
-			: Number.NaN;
-	const evidenceRevalidatedAtMs =
-		evidenceRecord && typeof evidenceRecord.revalidatedAt === "string"
-			? Date.parse(evidenceRecord.revalidatedAt)
-			: Number.NaN;
-	const evidenceQueueCountValid = (value: unknown): boolean =>
-		value === undefined ||
-		(typeof value === "number" &&
-			Number.isInteger(value) &&
-			Number.isFinite(value) &&
-			value >= 0);
-	return (
-		parsed.schemaVersion === "ci-migrate-merge-queue-window/v1" &&
-		typeof parsed.snapshotId === "string" &&
-		parsed.snapshotId.trim().length > 0 &&
-		(parsed.stage === "paused" ||
-			parsed.stage === "drained" ||
-			parsed.stage === "revalidated" ||
-			parsed.stage === "aborted") &&
-		Number.isFinite(pausedAtMs) &&
-		(parsed.drainedAt === undefined || Number.isFinite(drainedAtMs)) &&
-		(parsed.revalidatedAt === undefined || Number.isFinite(revalidatedAtMs)) &&
-		(parsed.abortedAt === undefined || Number.isFinite(abortedAtMs)) &&
-		isValidBranchProtectionSatisfiabilityReport(parsed.preCutover) &&
-		(parsed.postCutover === undefined ||
-			isValidBranchProtectionSatisfiabilityReport(parsed.postCutover)) &&
-		(evidenceRecord === undefined ||
-			(typeof evidenceRecord.sourcePath === "string" &&
-				evidenceRecord.sourcePath.trim().length > 0 &&
-				typeof evidenceRecord.contentSha256 === "string" &&
-				isHexDigest(evidenceRecord.contentSha256) &&
-				(evidenceRecord.binding === undefined ||
-					isValidMergeQueueEvidenceBinding(evidenceRecord.binding)) &&
-				Number.isFinite(evidencePausedAtMs) &&
-				(evidenceRecord.drainedAt === undefined ||
-					Number.isFinite(evidenceDrainedAtMs)) &&
-				(evidenceRecord.revalidatedAt === undefined ||
-					Number.isFinite(evidenceRevalidatedAtMs)) &&
-				evidenceQueueCountValid(evidenceRecord.pausedQueueDepth) &&
-				evidenceQueueCountValid(evidenceRecord.drainedCandidateCount) &&
-				evidenceQueueCountValid(evidenceRecord.revalidatedCandidateCount)))
-	);
-}
-
-function getMergeQueueWindowPath(targetDir: string): string {
-	return resolve(targetDir, MERGE_QUEUE_WINDOW_PATH);
-}
-
-function getMergeQueueWindowSignaturePath(targetDir: string): string {
-	return `${getMergeQueueWindowPath(targetDir)}.sig`;
-}
-
-function writeMergeQueueWindow(
-	targetDir: string,
-	window: MergeQueueCutoverWindow,
-): { ok: true } | { ok: false; error: string } {
-	const signingKeyResult = resolveSnapshotSigningKey();
-	if (!signingKeyResult.ok) {
-		return {
-			ok: false,
-			error: signingKeyResult.error,
-		};
-	}
-	try {
-		const windowPath = getMergeQueueWindowPath(targetDir);
-		const signaturePath = getMergeQueueWindowSignaturePath(targetDir);
-		const windowContent = JSON.stringify(window, null, 2);
-		const signature = signContent(windowContent, signingKeyResult.key);
-		mkdirSync(dirname(windowPath), { recursive: true });
-		writeFileSync(windowPath, windowContent);
-		writeFileSync(signaturePath, `${signature}\n`);
-		return { ok: true };
-	} catch (error) {
-		return {
-			ok: false,
-			error: `Failed to write merge-queue cutover window state: ${sanitizeError(error)}`,
-		};
-	}
-}
-
-function readMergeQueueWindowIfPresent(
-	targetDir: string,
-):
-	| { ok: true; value: MergeQueueCutoverWindow | null }
-	| { ok: false; error: string } {
-	const windowPath = getMergeQueueWindowPath(targetDir);
-	const signaturePath = getMergeQueueWindowSignaturePath(targetDir);
-	if (!existsSync(windowPath)) {
-		return { ok: true, value: null };
-	}
-	if (!existsSync(signaturePath)) {
-		return {
-			ok: false,
-			error: `Merge-queue cutover window signature is missing: ${signaturePath}`,
-		};
-	}
-	const signingKeyResult = resolveSnapshotSigningKey();
-	if (!signingKeyResult.ok) {
-		return {
-			ok: false,
-			error: signingKeyResult.error,
-		};
-	}
-	try {
-		const windowContent = readFileSync(windowPath, "utf-8");
-		const signature = readFileSync(signaturePath, "utf-8").trim();
-		if (!isHexDigest(signature)) {
-			return {
-				ok: false,
-				error: `Merge-queue cutover window signature must be a sha256 hex digest: ${signaturePath}`,
-			};
-		}
-		const expectedSignature = signContent(windowContent, signingKeyResult.key);
-		if (signature !== expectedSignature) {
-			return {
-				ok: false,
-				error:
-					"Merge-queue cutover window signature mismatch. Refusing untrusted state.",
-			};
-		}
-		const parsed = JSON.parse(windowContent) as unknown;
-		if (!isValidMergeQueueCutoverWindow(parsed)) {
-			return {
-				ok: false,
-				error: `Merge-queue cutover window schema is invalid: ${windowPath}`,
-			};
-		}
-		return { ok: true, value: parsed };
-	} catch (error) {
-		return {
-			ok: false,
-			error: `Failed to read merge-queue cutover window: ${sanitizeError(error)}`,
-		};
-	}
-}
-
-function assertNoBlockingMergeQueueCutoverWindow(
-	targetDir: string,
-	snapshotId: string,
-): { ok: true } | { ok: false; error: string } {
-	const windowResult = readMergeQueueWindowIfPresent(targetDir);
-	if (!windowResult.ok) {
-		return windowResult;
-	}
-	const window = windowResult.value;
-	if (!window) {
-		return { ok: true };
-	}
-	if (
-		(window.stage === "paused" || window.stage === "drained") &&
-		window.snapshotId !== snapshotId
-	) {
-		return {
-			ok: false,
-			error: `Active merge-queue cutover window blocks new apply: snapshot ${window.snapshotId} is ${window.stage}. Complete or abort the active window before starting snapshot ${snapshotId}.`,
-		};
-	}
-	return { ok: true };
 }
 
 function isValidSnapshotAttestation(
@@ -2537,170 +2263,6 @@ function runMergeQueueProviderAPIOrchestrator(
 	return { ok: true };
 }
 
-function resolveRepoBoundPath(
-	targetDir: string,
-	configuredPath: string,
-	label: string,
-	mustExist: boolean,
-	expectedKind: "file" | "directory" = "file",
-): { ok: true; absolutePath: string } | { ok: false; error: string } {
-	const candidatePath = configuredPath.trim();
-	if (candidatePath.length === 0) {
-		return {
-			ok: false,
-			error: `${label} path cannot be empty.`,
-		};
-	}
-	const rootPath = realpathSync(targetDir);
-	const absolutePath = resolve(targetDir, candidatePath);
-	const isWithinRoot = (path: string): boolean =>
-		path === rootPath || path.startsWith(`${rootPath}${sep}`);
-
-	if (existsSync(absolutePath)) {
-		const stat = lstatSync(absolutePath);
-		if (stat.isSymbolicLink()) {
-			return {
-				ok: false,
-				error: `${label} path cannot be a symbolic link: ${configuredPath}`,
-			};
-		}
-		if (expectedKind === "file" && !stat.isFile()) {
-			return {
-				ok: false,
-				error: `${label} must be a file: ${configuredPath}`,
-			};
-		}
-		if (expectedKind === "directory" && !stat.isDirectory()) {
-			return {
-				ok: false,
-				error: `${label} must be a directory: ${configuredPath}`,
-			};
-		}
-		if (!isWithinRoot(realpathSync(absolutePath))) {
-			return {
-				ok: false,
-				error: `${label} path escapes repository root: ${configuredPath}`,
-			};
-		}
-		return { ok: true, absolutePath };
-	}
-
-	if (mustExist) {
-		return {
-			ok: false,
-			error: `${label} not found: ${configuredPath}`,
-		};
-	}
-
-	let ancestor = dirname(absolutePath);
-	while (!existsSync(ancestor)) {
-		const parent = dirname(ancestor);
-		if (parent === ancestor) {
-			return {
-				ok: false,
-				error: `${label} path escapes repository root: ${configuredPath}`,
-			};
-		}
-		ancestor = parent;
-	}
-	const ancestorStat = lstatSync(ancestor);
-	if (!ancestorStat.isDirectory() || ancestorStat.isSymbolicLink()) {
-		return {
-			ok: false,
-			error: `${label} path parent is not a safe directory: ${configuredPath}`,
-		};
-	}
-	if (!isWithinRoot(realpathSync(ancestor))) {
-		return {
-			ok: false,
-			error: `${label} path escapes repository root: ${configuredPath}`,
-		};
-	}
-	return { ok: true, absolutePath };
-}
-
-function resolveRepoBoundFileUrl(
-	targetDir: string,
-	url: string,
-	label: string,
-): { ok: true; absolutePath: string } | { ok: false; error: string } {
-	let filePath: string;
-	try {
-		filePath = fileURLToPath(url);
-	} catch (error) {
-		return {
-			ok: false,
-			error: `${label} is not a valid file URL: ${sanitizeError(error)}`,
-		};
-	}
-	const rootPath = realpathSync(targetDir);
-	const absolutePath = resolve(filePath);
-	const isWithinRoot = (path: string): boolean =>
-		path === rootPath || path.startsWith(`${rootPath}${sep}`);
-
-	if (!existsSync(absolutePath)) {
-		return {
-			ok: false,
-			error: `${label} not found: ${url}`,
-		};
-	}
-	const stat = lstatSync(absolutePath);
-	if (stat.isSymbolicLink()) {
-		return {
-			ok: false,
-			error: `${label} cannot be a symbolic link: ${url}`,
-		};
-	}
-	if (!stat.isFile()) {
-		return {
-			ok: false,
-			error: `${label} must be a file: ${url}`,
-		};
-	}
-	if (!isWithinRoot(realpathSync(absolutePath))) {
-		return {
-			ok: false,
-			error: `${label} escapes repository root: ${url}`,
-		};
-	}
-	return { ok: true, absolutePath };
-}
-
-function isSafeRestorePath(targetDir: string, relativePath: string): boolean {
-	if (!EXTERNAL_CONTROL_PLANE_PATH_SET.has(relativePath)) {
-		return false;
-	}
-	const rootPath = realpathSync(targetDir);
-	const absolutePath = resolve(targetDir, relativePath);
-	const isWithinRoot = (p: string): boolean =>
-		p === rootPath || p.startsWith(`${rootPath}${sep}`);
-
-	if (existsSync(absolutePath)) {
-		// Path exists: reject symlinks immediately; canonicalize otherwise.
-		const stat = lstatSync(absolutePath);
-		if (stat.isSymbolicLink()) {
-			return false;
-		}
-		return isWithinRoot(realpathSync(absolutePath));
-	}
-
-	// Path doesn't exist yet: walk up to find the nearest existing ancestor
-	// and verify it is a real non-symlink directory within the root.
-	let ancestor = dirname(absolutePath);
-	while (!existsSync(ancestor)) {
-		const parent = dirname(ancestor);
-		if (parent === ancestor) {
-			return false; // reached filesystem root without finding anything
-		}
-		ancestor = parent;
-	}
-	const ancestorStat = lstatSync(ancestor);
-	if (!ancestorStat.isDirectory() || ancestorStat.isSymbolicLink()) {
-		return false;
-	}
-	return isWithinRoot(realpathSync(ancestor));
-}
-
 function captureExternalControlPlaneState(
 	targetDir: string,
 	snapshotId: string,
@@ -2764,7 +2326,13 @@ function restoreExternalControlPlaneState(
 ): { ok: true } | { ok: false; error: string } {
 	try {
 		for (const artifact of snapshot.artifacts) {
-			if (!isSafeRestorePath(targetDir, artifact.relativePath)) {
+			if (
+				!isSafeAllowedRestorePath(
+					targetDir,
+					artifact.relativePath,
+					EXTERNAL_CONTROL_PLANE_PATH_SET,
+				)
+			) {
 				return {
 					ok: false,
 					error: `External control-plane artifact path is not allowed: ${artifact.relativePath}`,

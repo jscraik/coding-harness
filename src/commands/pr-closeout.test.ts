@@ -126,6 +126,101 @@ const PASSING_CLOSEOUT_GATES = {
 	schemaVersion: HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION,
 };
 
+const PASSING_ASSURANCE = [
+	{
+		layer: "unit",
+		status: "pass",
+		evidence: ["test:unit"],
+	},
+	{
+		layer: "boundary",
+		status: "pass",
+		evidence: ["test:boundary"],
+	},
+	{
+		layer: "mock_integration",
+		status: "pass",
+		evidence: ["test:mock-integration"],
+	},
+	{
+		layer: "e2e",
+		status: "pass",
+		evidence: ["test:e2e"],
+	},
+	{
+		layer: "security",
+		status: "pass",
+		evidence: ["test:security"],
+	},
+	{
+		layer: "load_stress",
+		status: "pass",
+		evidence: ["test:load-stress"],
+		threshold: {
+			metric: "runtime",
+			operator: "<=",
+			unit: "ms",
+			value: 60_000,
+			observed: 42_000,
+		},
+	},
+	{
+		layer: "lifecycle_closeout",
+		status: "pass",
+		evidence: ["test:lifecycle-closeout"],
+		lifecycleState: {
+			automationState: "n.a.",
+			branchWorktreeState: "clean",
+			linearState: "aligned",
+			mergeState: "ready",
+			nextLaneRouting: "n.a.",
+			prState: "open-ready",
+			reviewThreadState: "resolved",
+		},
+	},
+];
+
+const PASSING_RUNTIME_EVIDENCE = {
+	schemaVersion: "runtime-evidence-contract/v1",
+	declaredIntent: {
+		objective: "Close PR with verifier-owned evidence.",
+		requestedScope: "closeout",
+		sourceRefs: ["input:test"],
+	},
+	resolvedState: {
+		permissionProfile: "workspace_write",
+		goalStatus: null,
+		serviceTier: "default",
+		model: "gpt-5",
+		pluginAttribution: ["harness-engineering"],
+		runtimeProbe: {
+			roleName: "harness-product-code-reviewer",
+			spawnOutcome: "available",
+			checkedAt: "2026-05-22T00:00:00.000Z",
+			sessionId: "codex-session:2026-05-22",
+			checkout: "/Users/jamiecraik/dev/coding-harness",
+			blockerClass: null,
+		},
+	},
+	verifierResult: {
+		status: "pass",
+		owner: "validator",
+		evidenceRefs: ["test:runtime-evidence"],
+		verifiedAt: "2026-05-22T00:01:00.000Z",
+		reason: null,
+	},
+	claimTraceConsistency: "consistent",
+	evaluation: {
+		portable: true,
+		command: "pnpm vitest run src/commands/pr-closeout.test.ts",
+		status: "pass",
+	},
+	outcomeMapping: {
+		outcome: "success",
+		exitClassification: "ok",
+	},
+};
+
 function writeCloseoutGates(
 	dir: string,
 	artifact: unknown = PASSING_CLOSEOUT_GATES,
@@ -137,6 +232,25 @@ function writeCloseoutGates(
 		"closeout-gates.json",
 	);
 	writeFileSync(path, JSON.stringify(artifact));
+	return path;
+}
+
+function writeRuntimeEvidence(
+	dir: string,
+	artifact: unknown = PASSING_RUNTIME_EVIDENCE,
+): string {
+	const baseDir = join(dir, ".harness");
+	mkdirSync(baseDir, { recursive: true });
+	const path = join(baseDir, "runtime-evidence.json");
+	writeFileSync(path, JSON.stringify(artifact));
+	return path;
+}
+
+function writeAssuranceMatrix(dir: string): string {
+	const baseDir = join(dir, ".harness");
+	mkdirSync(baseDir, { recursive: true });
+	const path = join(baseDir, "assurance.json");
+	writeFileSync(path, JSON.stringify({ entries: PASSING_ASSURANCE }));
 	return path;
 }
 
@@ -232,14 +346,21 @@ async function capture(
 			error.push(String(message));
 		});
 	try {
-		const runArgs =
-			args.includes("--pr") && !args.includes("--env-file")
-				? [
-						...args,
-						"--env-file",
-						writeEnvFile(mkdtempSync(join(tmpdir(), "pr-closeout-env-"))),
-					]
-				: args;
+		const runArgs = [...args];
+		if (runArgs.includes("--pr") && !runArgs.includes("--env-file")) {
+			runArgs.push(
+				"--env-file",
+				writeEnvFile(mkdtempSync(join(tmpdir(), "pr-closeout-env-"))),
+			);
+		}
+		if (runArgs.includes("--pr") && !runArgs.includes("--assurance")) {
+			let repoRoot = flagValue(runArgs, "--repo");
+			if (!repoRoot) {
+				repoRoot = mkdtempSync(join(tmpdir(), "pr-closeout-repo-"));
+				runArgs.push("--repo", repoRoot);
+			}
+			runArgs.push("--assurance", writeAssuranceMatrix(repoRoot));
+		}
 		const runOptions = runner ? { runner } : {};
 		return {
 			exitCode: await runPrCloseoutCLI(runArgs, runOptions),
@@ -250,6 +371,11 @@ async function capture(
 		infoSpy.mockRestore();
 		errorSpy.mockRestore();
 	}
+}
+
+function flagValue(args: readonly string[], flag: string): string | undefined {
+	const index = args.indexOf(flag);
+	return index === -1 ? undefined : args[index + 1];
 }
 
 afterEach(() => {
@@ -291,6 +417,8 @@ describe("runPrCloseoutCLI", () => {
 					evidenceRef: "pr-body:rollback",
 				},
 				closeoutGates: PASSING_PHASE_EXIT,
+				assurance: PASSING_ASSURANCE,
+				runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
 			}),
 		);
 
@@ -303,6 +431,11 @@ describe("runPrCloseoutCLI", () => {
 			pr: 258,
 			status: "ready",
 			nextAction: "ready_to_merge",
+			runtimeEvidence: {
+				present: true,
+				valid: true,
+				verifierStatus: "pass",
+			},
 		});
 	});
 
@@ -340,6 +473,7 @@ describe("runPrCloseoutCLI", () => {
 					evidenceRef: "pr-body:rollback",
 				},
 				closeoutGates: PASSING_CLOSEOUT_GATES,
+				assurance: PASSING_ASSURANCE,
 			}),
 		);
 
@@ -381,6 +515,66 @@ describe("runPrCloseoutCLI", () => {
 			status: "fail",
 			error: expect.stringContaining(
 				"closeoutGates must be a valid Coding Harness closeout-gates artifact",
+			),
+		});
+	});
+
+	it("fails closed when input embeds a malformed assurance entry", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+				assurance: [null],
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"assurance.entries[0] must be a JSON object",
+			),
+		});
+	});
+
+	it("fails closed when input embeds malformed runtime evidence", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+				runtimeEvidence: {
+					schemaVersion: "runtime-evidence-contract/v1",
+				},
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"runtimeEvidence.declaredIntent must be a JSON object",
 			),
 		});
 	});
@@ -592,6 +786,7 @@ describe("runPrCloseoutCLI", () => {
 	it("collects live GitHub, CircleCI, CodeRabbit, and Snyk tool evidence", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runtimeEvidencePath = writeRuntimeEvidence(dir);
 		const calls: string[] = [];
 		const runner = (
 			command: string,
@@ -641,7 +836,17 @@ describe("runPrCloseoutCLI", () => {
 			return "ok";
 		};
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--runtime-evidence",
+				runtimeEvidencePath,
+			],
 			runner,
 		);
 
@@ -660,6 +865,11 @@ describe("runPrCloseoutCLI", () => {
 					"circleci:workflow-123",
 					"artifacts/pr-closeout/pr-closeout.json",
 				],
+			},
+			runtimeEvidence: {
+				present: true,
+				valid: true,
+				verifierStatus: "pass",
 			},
 		});
 		expect(calls).toEqual(

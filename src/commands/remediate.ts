@@ -5,12 +5,12 @@
  * and orchestrator to process findings from CodeQL or Codex providers.
  */
 
-import { spawnSync } from "node:child_process";
 import { DEFAULT_REMEDIATION_POLICY } from "../lib/contract/types.js";
-import {
-	type GitHubClient,
-	RemediationOrchestrator,
-} from "../lib/remediation/orchestrator.js";
+import type {
+	RemediateOptions,
+	RemediateResult,
+} from "../lib/remediate/types.js";
+import { RemediationOrchestrator } from "../lib/remediation/orchestrator.js";
 import type {
 	CanonicalFinding,
 	RemediationOutcome,
@@ -18,6 +18,12 @@ import type {
 import { applyRemediationTransactions } from "./remediate-apply-transactions.js";
 import { renderRemediationOutput } from "./remediate-cli-output.js";
 import { normalizeFindingsOrFail } from "./remediate-findings.js";
+import {
+	createGitHubClient,
+	getHeadSha,
+	getWorkspaceStatus,
+	isDisposableWorkspace,
+} from "./remediate-git.js";
 import {
 	createRemediateFinalizer,
 	type RemediateFinalize,
@@ -32,139 +38,7 @@ import {
 } from "./remediate-runner-helpers.js";
 
 export { EXIT_CODES };
-
-/**
- * CLI options for `harness remediate`.
- */
-export interface RemediateOptions {
-	/** Execution subcommand: "run" (plan only) or "apply" (execute) */
-	subcommand?: "run" | "apply";
-	/** Behavioral mode: "manual" (default) or "autonomous" */
-	mode?: "manual" | "autonomous";
-	/** Repository owner */
-	owner?: string;
-	/** Repository name */
-	repo?: string;
-	/** PR number */
-	prNumber?: number;
-	/** Provider: "codeql" or "codex" */
-	provider?: "codeql" | "codex";
-	/** Maximum severity tier for auto-apply */
-	maxAutoTier?: "high" | "medium" | "low";
-	/** JSON file path for findings, or "-" for stdin */
-	findings?: string;
-	/** Run in dry-run mode (no actual changes) */
-	dryRun?: boolean;
-	/** Output as JSON */
-	json?: boolean;
-	/** Path to contract file */
-	contractPath?: string;
-	/** HEAD SHA (defaults to current git HEAD) */
-	headSha?: string;
-	/** Skip interactive prompts */
-	noInput?: boolean;
-	/** Force execution in apply mode */
-	force?: boolean;
-	/** Override rollback mode (manual/autonomous) */
-	/** Path to completion marker file */
-	completionMarkerPath?: string;
-	/** Optional override for canonical run-record base dir */
-	runRecordsDir?: string;
-}
-
-/**
- * Result envelope returned by remediation execution.
- */
-export interface RemediateResult {
-	outcome: RemediationOutcome;
-	exitCode: number;
-}
-
-/**
- * Get current HEAD SHA from git.
- */
-function getHeadSha(): string {
-	const result = spawnSync("git", ["rev-parse", "HEAD"], {
-		encoding: "utf-8",
-		timeout: 5000,
-	});
-
-	if (result.error || result.status !== 0) {
-		throw new Error(
-			`Failed to get HEAD SHA: ${result.error?.message ?? result.stderr}`,
-		);
-	}
-
-	return result.stdout.trim();
-}
-
-function isDisposableWorkspace(): boolean {
-	if (process.env.HARNESS_DISPOSABLE_WORKSPACE === "true") {
-		return true;
-	}
-	const gitDirResult = spawnSync("git", ["rev-parse", "--git-dir"], {
-		encoding: "utf-8",
-		timeout: 5000,
-	});
-
-	if (gitDirResult.status !== 0 || !gitDirResult.stdout) {
-		return false;
-	}
-
-	const gitDir = gitDirResult.stdout.trim();
-	return gitDir.split(/[\\/]/).includes("worktrees");
-}
-
-function getWorkspaceStatus():
-	| {
-			ok: true;
-			clean: boolean;
-	  }
-	| {
-			ok: false;
-			reason: string;
-	  } {
-	const result = spawnSync("git", ["status", "--porcelain"], {
-		encoding: "utf-8",
-		timeout: 5000,
-	});
-
-	if (result.error || result.status !== 0) {
-		return {
-			ok: false,
-			reason: result.error?.message ?? result.stderr ?? "git status failed",
-		};
-	}
-
-	return {
-		ok: true,
-		clean: result.stdout.trim().length === 0,
-	};
-}
-
-/**
- * Create a GitHubClient that performs SHA operations against the local git repository.
- *
- * @returns A GitHubClient that obtains the repository HEAD SHA and verifies commit ancestry using the local repository (avoids external GitHub API calls).
- */
-function createGitHubClient(): GitHubClient {
-	return {
-		async getHeadSha() {
-			return getHeadSha();
-		},
-		async isAncestor(ancestorSha: string, descendantSha: string) {
-			const result = spawnSync(
-				"git",
-				["merge-base", "--is-ancestor", ancestorSha, descendantSha],
-				{
-					encoding: "utf-8",
-					timeout: 5000,
-				},
-			);
-			return result.status === 0;
-		},
-	};
-}
+export type { RemediateOptions, RemediateResult };
 
 function resolveHeadSha(
 	options: RemediateOptions,

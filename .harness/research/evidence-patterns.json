@@ -1,6 +1,6 @@
 {
 	"schemaVersion": "evidence-patterns/v1",
-	"lastReviewedAt": "2026-05-19",
+	"lastReviewedAt": "2026-05-20",
 	"patterns": [
 		{
 			"id": "2026-05-18-coding-harness",
@@ -111,6 +111,32 @@
 			],
 			"validationCommand": "pnpm vitest run src/commands/next.test.ts src/commands/verify-work.test.ts",
 			"dispositionReason": "Admitted into required runtime evidence, bounded retry, and recovery ownership work."
+		},
+		{
+			"id": "2026-05-20-agent-ready-code-patterns",
+			"source": ".harness/research/deep/2026-05-20-agent-ready-code-patterns-evidence.md",
+			"status": "adopted",
+			"owner": "codex",
+			"targetSurfaces": [
+				"docs/architecture/module-boundaries.md",
+				"src/lib/architecture/module-boundaries.test.ts",
+				".harness/implementation-notes/2026-05-19-module-layout.html"
+			],
+			"validationCommand": "pnpm vitest run src/lib/memory/validator.test.ts src/lib/architecture/module-boundaries.test.ts",
+			"dispositionReason": "Admitted into deep-module boundary enforcement, live module-layout evidence, and seam-level validation for the current migration slice."
+		},
+		{
+			"id": "2026-05-22-steph-ango",
+			"source": ".harness/research/deep/2026-05-22-steph-ango-evidence.md",
+			"status": "adopted",
+			"owner": "codex",
+			"targetSurfaces": [
+				"docs/goals/codex-native-harness-memory-baseline/goal.md",
+				"docs/goals/codex-native-harness-memory-baseline/state.yaml",
+				"docs/goals/codex-native-harness-memory-baseline/notes/native-setup.md"
+			],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Admitted into the Codex-native memory baseline goal so vault, Project Brain, and generated memory layers stay tracked as distinct operating surfaces."
 		}
 	]
 }

@@ -1,6 +1,10 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+	validateHarnessAssuranceEntries,
+	type HarnessAssuranceEntry,
+} from "./harness-assurance.js";
+import {
 	containsGlobToken,
 	extractBacktickPaths,
 	formatLocalDate,
@@ -19,6 +23,7 @@ export const ARTIFACT_HANDLING_ROUTINE_SCHEMA_VERSION =
 /** Checks performed by the route-driving artifact routine gate. */
 export type ArtifactHandlingCheck =
 	| "active_index"
+	| "assurance_matrix"
 	| "closeout_refresh"
 	| "linear_owner"
 	| "reference_integrity"
@@ -47,6 +52,7 @@ export interface ArtifactHandlingRoutineResult {
 /** Inputs used to run the artifact routine against a repository. */
 export interface ArtifactHandlingRoutineOptions {
 	activeIndexPath?: string;
+	assuranceMatrixPath?: string;
 	repoRoot?: string;
 	today?: string;
 }
@@ -58,6 +64,7 @@ export interface FrontMatter {
 
 const CHECKS: ArtifactHandlingCheck[] = [
 	"active_index",
+	"assurance_matrix",
 	"closeout_refresh",
 	"linear_owner",
 	"reference_integrity",
@@ -75,7 +82,7 @@ const CHECKS: ArtifactHandlingCheck[] = [
  * @param referencedArtifacts - Repository-relative paths referenced by the active route
  * @param findings - Collected findings emitted during validation
  * @param checkFailures - Set of checks that failed; any check in this set will be marked `"fail"`
- * @param executedChecks - Set of checks that were executed; executed checks not in `checkFailures` will be marked `"pass"` (defaults to all checks in `CHECKS`)
+ * @param executedChecks - Set of checks that were executed; executed checks not in `checkFailures` will be marked `"pass"`
  * @returns An ArtifactHandlingRoutineResult containing per-check statuses, the provided findings and referenced artifacts, the `repoRoot`, `schemaVersion`, and overall `status` (`"pass"` if `findings` is empty, otherwise `"fail"`)
  */
 function buildResult(
@@ -83,7 +90,7 @@ function buildResult(
 	referencedArtifacts: string[],
 	findings: ArtifactHandlingFinding[],
 	checkFailures: Set<ArtifactHandlingCheck>,
-	executedChecks: Set<ArtifactHandlingCheck> = new Set(CHECKS),
+	executedChecks: Set<ArtifactHandlingCheck>,
 ): ArtifactHandlingRoutineResult {
 	return {
 		checks: Object.fromEntries(
@@ -121,8 +128,13 @@ export function validateHarnessArtifactRoutine(
 		repoRoot,
 		options.activeIndexPath ?? ".harness/active-artifacts.md",
 	);
+	const assuranceMatrixPath =
+		options.assuranceMatrixPath === undefined
+			? undefined
+			: normalizeRepoPath(repoRoot, options.assuranceMatrixPath);
 	const findings: ArtifactHandlingFinding[] = [];
 	const checkFailures = new Set<ArtifactHandlingCheck>();
+	const executedChecks = new Set<ArtifactHandlingCheck>(["active_index"]);
 
 	const fail = (finding: ArtifactHandlingFinding): void => {
 		findings.push(finding);
@@ -185,6 +197,7 @@ export function validateHarnessArtifactRoutine(
 	const reconciledDate = indexText.match(
 		/Last reconciled:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/,
 	)?.[1];
+	markIndexDrivenChecksExecuted(executedChecks);
 
 	if (activeArtifacts.length === 0) {
 		fail({
@@ -211,10 +224,98 @@ export function validateHarnessArtifactRoutine(
 	}
 
 	validateActiveArtifacts(repoRoot, activeArtifacts, fail);
+	if (assuranceMatrixPath !== undefined) {
+		executedChecks.add("assurance_matrix");
+		validateAssuranceMatrix(repoRoot, assuranceMatrixPath, fail);
+	}
 
 	validateHistoricalRows(activeIndexPath, artifactIndexText, fail);
 
-	return buildResult(repoRoot, activeArtifacts, findings, checkFailures);
+	return buildResult(
+		repoRoot,
+		activeArtifacts,
+		findings,
+		checkFailures,
+		executedChecks,
+	);
+}
+
+function markIndexDrivenChecksExecuted(
+	executedChecks: Set<ArtifactHandlingCheck>,
+): void {
+	for (const check of CHECKS) {
+		if (check !== "assurance_matrix") executedChecks.add(check);
+	}
+}
+
+function validateAssuranceMatrix(
+	repoRoot: string,
+	assuranceMatrixPath: string,
+	fail: (finding: ArtifactHandlingFinding) => void,
+): void {
+	if (!isPathInsideRepo(assuranceMatrixPath)) {
+		fail({
+			check: "assurance_matrix",
+			code: "assurance_matrix_outside_repo",
+			message: `Assurance matrix path must stay inside repo root: ${assuranceMatrixPath}`,
+			path: assuranceMatrixPath,
+		});
+		return;
+	}
+	const absolutePath = resolve(repoRoot, assuranceMatrixPath);
+	if (!existsSync(absolutePath)) {
+		fail({
+			check: "assurance_matrix",
+			code: "assurance_matrix_missing",
+			message: `Assurance matrix is missing: ${assuranceMatrixPath}`,
+			path: assuranceMatrixPath,
+		});
+		return;
+	}
+	if (!resolvedPathStaysInsideRepo(repoRoot, absolutePath)) {
+		fail({
+			check: "assurance_matrix",
+			code: "assurance_matrix_resolves_outside_repo",
+			message:
+				"Assurance matrix path must resolve inside repo root: " +
+				assuranceMatrixPath,
+			path: assuranceMatrixPath,
+		});
+		return;
+	}
+	let parsed: HarnessAssuranceEntry[] | { entries?: HarnessAssuranceEntry[] };
+	try {
+		parsed = JSON.parse(readFileSync(absolutePath, "utf8")) as
+			| HarnessAssuranceEntry[]
+			| { entries?: HarnessAssuranceEntry[] };
+	} catch (error) {
+		fail({
+			check: "assurance_matrix",
+			code: "assurance_matrix_json_invalid",
+			message: `Assurance matrix JSON is invalid: ${String(error)}`,
+			path: assuranceMatrixPath,
+		});
+		return;
+	}
+	const entries = Array.isArray(parsed) ? parsed : parsed.entries;
+	if (!Array.isArray(entries)) {
+		fail({
+			check: "assurance_matrix",
+			code: "assurance_matrix_invalid",
+			message: "Assurance matrix must be an array or object with entries.",
+			path: assuranceMatrixPath,
+		});
+		return;
+	}
+	const result = validateHarnessAssuranceEntries(entries);
+	for (const finding of result.findings) {
+		fail({
+			check: "assurance_matrix",
+			code: finding.blockerClass,
+			message: finding.message,
+			path: assuranceMatrixPath,
+		});
+	}
 }
 
 /**

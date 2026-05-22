@@ -9,10 +9,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as artifactGateModule from "../../artifact-gate.js";
 import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
 import * as gardenerCommand from "../../../commands/gardener.js";
 import * as driftGateModule from "../../drift-gate.js";
 import * as memoryGateModule from "../../memory-gate.js";
+import * as observabilityGateModule from "../../observability-gate.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import * as silentErrorCommand from "../../../commands/silent-error.js";
@@ -456,15 +458,15 @@ describe("memory-gate execute parsing", () => {
 	const spec = findSpec("memory-gate");
 
 	beforeEach(() => {
-		vi.spyOn(memoryGateModule, "runMemoryGateCLI").mockReturnValue(0);
+		vi.spyOn(memoryGateModule, "runMemoryGateFromCliArgs").mockReturnValue(0);
 	});
 
 	afterEach(() => {
 		vi.restoreAllMocks();
 	});
 
-	it("projects memory, forjamie, metrics, and json flags into the memory-gate command", () => {
-		const result = spec.execute([
+	it("delegates raw memory-gate flags to the module argument adapter", () => {
+		const args = [
 			"--memory",
 			".harness/memory/LEARNINGS.md",
 			"--forjamie",
@@ -472,22 +474,53 @@ describe("memory-gate execute parsing", () => {
 			"--metrics",
 			"artifacts/memory-metrics.json",
 			"--json",
-		]);
+		];
+		const result = spec.execute([...args]);
 
 		expect(result).toBe(0);
-		expect(memoryGateModule.runMemoryGateCLI).toHaveBeenCalledWith({
-			memoryPath: ".harness/memory/LEARNINGS.md",
-			forjamiePath: "codex/FORJAMIE.md",
-			metricsPath: "artifacts/memory-metrics.json",
-			json: true,
-		});
+		expect(memoryGateModule.runMemoryGateFromCliArgs).toHaveBeenCalledWith(
+			args,
+		);
 	});
 
-	it("uses defaults when optional memory-gate paths are absent", () => {
+	it("delegates empty memory-gate args to the module argument adapter", () => {
 		const result = spec.execute([]);
 
 		expect(result).toBe(0);
-		expect(memoryGateModule.runMemoryGateCLI).toHaveBeenCalledWith({});
+		expect(memoryGateModule.runMemoryGateFromCliArgs).toHaveBeenCalledWith([]);
+	});
+});
+
+describe("observability-gate execute parsing", () => {
+	const spec = findSpec("observability-gate");
+
+	beforeEach(() => {
+		vi.spyOn(
+			observabilityGateModule,
+			"runObservabilityGateFromCliArgs",
+		).mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("delegates raw observability-gate flags to the module argument adapter", () => {
+		const args = [
+			"--labels",
+			'{"status":"success"}',
+			"--max-cardinality",
+			"10",
+			"--max-length",
+			"20",
+			"--json",
+		];
+		const result = spec.execute([...args]);
+
+		expect(result).toBe(0);
+		expect(
+			observabilityGateModule.runObservabilityGateFromCliArgs,
+		).toHaveBeenCalledWith(args);
 	});
 });
 
@@ -926,7 +959,14 @@ describe("remediate execute validation", () => {
 
 			const result = await withCwd(workspacePath, () =>
 				Promise.resolve(
-					spec.execute(["run", "--findings", "findings.json", "--json"]),
+					spec.execute([
+						"run",
+						"--findings",
+						"findings.json",
+						"--pr",
+						"123",
+						"--json",
+					]),
 				),
 			);
 			expect(result).not.toBe(2);
@@ -951,7 +991,14 @@ describe("remediate execute validation", () => {
 
 			const result = await withCwd(workspacePath, () =>
 				Promise.resolve(
-					spec.execute(["apply", "--findings", "findings.json", "--json"]),
+					spec.execute([
+						"apply",
+						"--findings",
+						"findings.json",
+						"--pr",
+						"123",
+						"--json",
+					]),
 				),
 			);
 			expect(result).not.toBe(2);
@@ -1073,6 +1120,23 @@ describe("review-context execute validation", () => {
 
 describe("artifact-gate execute validation", () => {
 	const spec = findSpec("artifact-gate");
+
+	it("delegates raw argv to the artifact-gate module seam", () => {
+		const runSpy = vi
+			.spyOn(artifactGateModule, "runArtifactGateFromCliArgs")
+			.mockReturnValue(0);
+
+		expect(
+			spec.execute(["--files", "scripts/codex-preflight.sh", "--json"]),
+		).toBe(0);
+
+		expect(runSpy).toHaveBeenCalledWith([
+			"--files",
+			"scripts/codex-preflight.sh",
+			"--json",
+		]);
+		runSpy.mockRestore();
+	});
 
 	it("routes missing files to usage output", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});

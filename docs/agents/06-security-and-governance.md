@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-16
+last_validated: 2026-05-21
 ---
 
 # Security and governance
@@ -167,10 +167,6 @@ The canonical worktree branch format `jscraik/feature/$repo_slug-worktree-$short
 - `scripts/new-task.sh --bootstrap <issue-key>-<slug>` is the preferred one-shot path when you want creation plus immediate bootstrap in a single command.
 - `scripts/codex-enforced` should guard `main` by auto-creating a dedicated `codex/<issue-key>-<slug>` task branch/worktree (via `scripts/new-task.sh --bootstrap`) before launching Codex for feature work.
 - Generated `.codex/environments/environment.toml` setup, `Tools` actions, and tool bootstrap actions should invoke `scripts/prepare-worktree.sh` when present so Codex app bootstraps enforce the same hook, dependency, and branch-collision guarantees as manual worktree setup.
-- Project-local Codex reviewer roles under `.codex/agents/<role>/<role>.toml`
-  are repository-scoped execution policy. Keep them read-only, validated by
-  `pnpm codex:agents:guard`, and out of global Codex config unless an explicit
-  cross-project promotion decision is made.
 - `harness init --check-updates`, `harness init --update`, and `harness upgrade` should auto-repair legacy `.harness/restore-manifest.json` files when `ciProvider` can be inferred safely from `harness.contract.json`, an unambiguous CI layout on disk, or the current requested/default provider.
 - If `scripts/run-harness-setup-checks.sh` still hits an incomplete legacy `.harness/restore-manifest.json`, treat it as a drift warning that blocks only the tracked update lane; keep running `check-environment` and repo quality gates, and print the manifest repair remediation explicitly.
 - Keep `scripts/codex-preflight.sh` executable as a CLI script and invoke it with `bash scripts/codex-preflight.sh --stack auto --mode required` (or `--mode optional` for softer checks); do not source it.

@@ -25,6 +25,7 @@ vi.mock("./commands/risk-tier.js", () => ({
 
 vi.mock("./lib/memory-gate.js", () => ({
 	runMemoryGateCLI: vi.fn(() => 48),
+	runMemoryGateFromCliArgs: vi.fn(() => 48),
 }));
 
 vi.mock("./commands/gardener.js", () => ({
@@ -37,6 +38,10 @@ vi.mock("./commands/brainstorm-gate.js", () => ({
 
 vi.mock("./commands/plan-gate.js", () => ({
 	runPlanGateCLI: vi.fn(() => 51),
+}));
+
+vi.mock("./lib/plan-gate/cli.js", () => ({
+	runPlanGateFromCliArgs: vi.fn(() => 51),
 }));
 
 vi.mock("./commands/evidence-verify.js", () => ({
@@ -92,8 +97,8 @@ vi.mock("./commands/ui-loop.js", () => ({
 	runUIExploreCLI: vi.fn(() => 55),
 }));
 
-vi.mock("./commands/observability-gate.js", () => ({
-	runObservabilityGateCLI: vi.fn(() => 56),
+vi.mock("./lib/observability-gate.js", () => ({
+	runObservabilityGateFromCliArgs: vi.fn(() => 56),
 }));
 
 vi.mock("./commands/prompt-gate.js", () => ({
@@ -298,7 +303,7 @@ describe("cli command dispatch", () => {
 
 	it("dispatches memory-gate and ignores missing --memory value", async () => {
 		const { run } = await import("./cli.js");
-		const { runMemoryGateCLI } = await import("./lib/memory-gate.js");
+		const { runMemoryGateFromCliArgs } = await import("./lib/memory-gate.js");
 
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
 			code?: number,
@@ -310,10 +315,12 @@ describe("cli command dispatch", () => {
 			run(["memory-gate", "--memory", "--forjamie", "FORJAMIE.md", "--json"]),
 		).toThrowError("EXIT_48");
 
-		expect(vi.mocked(runMemoryGateCLI)).toHaveBeenCalledWith({
-			forjamiePath: "FORJAMIE.md",
-			json: true,
-		});
+		expect(vi.mocked(runMemoryGateFromCliArgs)).toHaveBeenCalledWith([
+			"--memory",
+			"--forjamie",
+			"FORJAMIE.md",
+			"--json",
+		]);
 		expect(exitSpy).toHaveBeenCalledWith(48);
 	});
 
@@ -525,9 +532,9 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(50);
 	});
 
-	it("dispatches plan-gate and ignores missing --plans value", async () => {
+	it("dispatches plan-gate through the plan-gate argv seam", async () => {
 		const { run } = await import("./cli.js");
-		const { runPlanGateCLI } = await import("./commands/plan-gate.js");
+		const { runPlanGateFromCliArgs } = await import("./lib/plan-gate/cli.js");
 
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
 			code?: number,
@@ -539,10 +546,13 @@ describe("cli command dispatch", () => {
 			run(["plan-gate", "--plans", "--type", "feature", "--max-age", "30"]),
 		).toThrowError("EXIT_51");
 
-		expect(vi.mocked(runPlanGateCLI)).toHaveBeenCalledWith({
-			type: "feature",
-			maxAge: 30,
-		});
+		expect(vi.mocked(runPlanGateFromCliArgs)).toHaveBeenCalledWith([
+			"--plans",
+			"--type",
+			"feature",
+			"--max-age",
+			"30",
+		]);
 		expect(exitSpy).toHaveBeenCalledWith(51);
 	});
 
@@ -1253,6 +1263,8 @@ describe("cli command dispatch", () => {
 			"findings.json",
 			"--dry-run",
 			"--json",
+			"--pr",
+			"123",
 			"--sha",
 			"a".repeat(40),
 		]);
@@ -1266,6 +1278,7 @@ describe("cli command dispatch", () => {
 				findings: "findings.json",
 				dryRun: true,
 				json: true,
+				prNumber: 123,
 				headSha: "a".repeat(40),
 			}),
 		);
@@ -1286,6 +1299,8 @@ describe("cli command dispatch", () => {
 			"--findings",
 			"--dry-run",
 			"--json",
+			"--pr",
+			"123",
 			"--sha",
 			"a".repeat(40),
 		]);
@@ -1298,6 +1313,7 @@ describe("cli command dispatch", () => {
 				subcommand: "run",
 				dryRun: true,
 				json: true,
+				prNumber: 123,
 				headSha: "a".repeat(40),
 			}),
 		);
@@ -2265,8 +2281,8 @@ describe("cli command dispatch", () => {
 
 	it("dispatches observability-gate and ignores missing --labels value", async () => {
 		const { run } = await import("./cli.js");
-		const { runObservabilityGateCLI } = await import(
-			"./commands/observability-gate.js"
+		const { runObservabilityGateFromCliArgs } = await import(
+			"./lib/observability-gate.js"
 		);
 
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
@@ -2287,18 +2303,21 @@ describe("cli command dispatch", () => {
 			]),
 		).toThrowError("EXIT_56");
 
-		expect(vi.mocked(runObservabilityGateCLI)).toHaveBeenCalledWith({
-			maxCardinality: 10,
-			maxLength: 20,
-			json: true,
-		});
+		expect(vi.mocked(runObservabilityGateFromCliArgs)).toHaveBeenCalledWith([
+			"--labels",
+			"--max-cardinality",
+			"10",
+			"--max-length",
+			"20",
+			"--json",
+		]);
 		expect(exitSpy).toHaveBeenCalledWith(56);
 	});
 
 	it("dispatches observability-gate and ignores malformed numeric values", async () => {
 		const { run } = await import("./cli.js");
-		const { runObservabilityGateCLI } = await import(
-			"./commands/observability-gate.js"
+		const { runObservabilityGateFromCliArgs } = await import(
+			"./lib/observability-gate.js"
 		);
 
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
@@ -2318,9 +2337,13 @@ describe("cli command dispatch", () => {
 			]),
 		).toThrowError("EXIT_56");
 
-		expect(vi.mocked(runObservabilityGateCLI)).toHaveBeenCalledWith({
-			json: true,
-		});
+		expect(vi.mocked(runObservabilityGateFromCliArgs)).toHaveBeenCalledWith([
+			"--max-cardinality",
+			"10abc",
+			"--max-length",
+			"20ms",
+			"--json",
+		]);
 		expect(exitSpy).toHaveBeenCalledWith(56);
 	});
 

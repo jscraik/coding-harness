@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-20
+last_validated: 2026-05-21
 ---
 
 # Module Boundaries
@@ -10,14 +10,20 @@ last_validated: 2026-05-20
 - [Deep Module And Effect Boundaries](#deep-module-and-effect-boundaries)
 - [Agent Boundary Enforcement](#agent-boundary-enforcement)
 - [CLI Registry Boundaries](#cli-registry-boundaries)
+- [CI Migration Command Boundary](#ci-migration-command-boundary)
 - [Verify Work Command Boundary](#verify-work-command-boundary)
 - [Memory Gate Command Boundary](#memory-gate-command-boundary)
 - [Drift Gate Command Boundary](#drift-gate-command-boundary)
+- [Observability Gate Command Boundary](#observability-gate-command-boundary)
+- [Artifact Gate Command Boundary](#artifact-gate-command-boundary)
+- [Plan Gate Command Boundary](#plan-gate-command-boundary)
+- [HE Phase-Exit Trust Boundary](#he-phase-exit-trust-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
 - [Doctor Command Boundaries](#doctor-command-boundaries)
 - [Harness Next Command Boundaries](#harness-next-command-boundaries)
 - [Replay Command Boundaries](#replay-command-boundaries)
+- [Review Gate Command Boundaries](#review-gate-command-boundaries)
 - [Review Gate Decision Packet Boundaries](#review-gate-decision-packet-boundaries)
 - [Runtime Card Command Boundaries](#runtime-card-command-boundaries)
 - [Runtime Card Runtime Boundaries](#runtime-card-runtime-boundaries)
@@ -95,14 +101,18 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Verify-work resume, repository-root, and governance CLI option adapter stay
     local to the canonical verification adapter.
 - `src/lib/cli/registry/replay-command-spec.ts`
-  - Replay trace selection, listing, dry-run, JSON, and trace-dir CLI option
-    adapter stay local to the replay command adapter.
+  - Registry metadata delegates raw replay arguments through the replay-owned
+    CLI args seam.
+- `src/lib/cli/registry/remediate-command-spec.ts`
+  - Registry metadata delegates raw remediate arguments through the
+    remediate-owned CLI args seam.
 - `src/lib/cli/registry/gardener-command-spec.ts`
   - Gardener docs path, dry-run, JSON, and stale-days CLI option adapter stay
     local to the docs freshness command adapter.
 - `src/lib/cli/registry/memory-gate-command-spec.ts`
-  - Memory gate memory, FORJAMIE, metrics, and JSON CLI option adapter stay
-    local to the Local Memory compliance command adapter.
+  - Memory gate command metadata delegates raw args through the public facade;
+    memory, FORJAMIE, metrics, and JSON option projection lives behind the
+    Local Memory compliance seam.
 - `src/lib/cli/registry/silent-error-command-spec.ts`
   - Silent-error files, directories, strictness, suggestions, and JSON CLI
     option adapter stay local to the detector command adapter.
@@ -110,9 +120,17 @@ CLI registry modules are split into a loader plus focused policy modules:
   - Brainstorm path, topic, age, strictness, and JSON CLI option adapter stay
     local to the brainstorm compliance command adapter.
 - `src/lib/cli/registry/drift-gate-command-spec.ts`
-  - Drift mode, baseline seeding, artifact output, suppression, repository
-    root, and JSON CLI option adapter stay local to the consistency-drift
-    command adapter and delegate through `src/lib/drift-gate.ts`.
+  - Thin registry metadata and command adapter; raw drift-gate argv projection
+    lives in `src/lib/drift-gate/cli-args.ts`.
+- `src/lib/cli/registry/observability-gate-command-spec.ts`
+  - Thin registry metadata and command adapter; raw metric-label gate argv
+    projection lives in `src/lib/observability-gate/cli-args.ts`.
+- `src/lib/cli/registry/artifact-gate-command-spec.ts`
+  - Thin registry metadata and command adapter; raw generated-artifact gate argv
+    projection lives in `src/lib/artifact-gate/cli-args.ts`.
+- `src/lib/cli/registry/plan-gate-command-spec.ts`
+  - Thin registry metadata and command adapter; raw plan-gate argv projection
+    lives in `src/lib/plan-gate/cli-args.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -196,9 +214,11 @@ parsing and delegation belong in named adapters:
   `check-command-spec.ts`, `check-environment-command-spec.ts`,
   `docs-gate-command-spec.ts`, `license-gate-command-spec.ts`,
   `risk-tier-command-spec.ts`, `evidence-verify-command-spec.ts`,
+  `observability-gate-command-spec.ts`, `artifact-gate-command-spec.ts`,
   `preflight-gate-command-spec.ts`, and `review-gate-command-spec.ts`.
 - Workflow command adapters own their focused parsing and delegation:
   `verify-work-command-spec.ts`, `replay-command-spec.ts`,
+  `remediate-command-spec.ts`,
   `gardener-command-spec.ts`, `memory-gate-command-spec.ts`,
   `silent-error-command-spec.ts`, `brainstorm-gate-command-spec.ts`,
   `verify-coderabbit-command-spec.ts`,
@@ -212,18 +232,43 @@ parsing and delegation belong in named adapters:
   `org-audit-command-spec.ts`, `tooling-audit-command-spec.ts`, and
   `preset-command-spec.ts`.
 
+## CI Migration Command Boundary
+
+CI migration remains a transitional command core, but snapshot-owned control
+plane state should move behind focused CI modules before the command facade
+absorbs more safety policy.
+
+- `src/commands/ci-migrate-core.ts`
+  - Transitional command orchestration, action dispatch, and migration report
+    assembly. It must keep moving policy-specific clusters into named CI
+    modules.
+- `src/lib/ci/ci-migrate-merge-queue-window.ts`
+  - Signed merge-queue cutover window state, replay-binding shape validation,
+    signature verification, terminal-window admission, and lifecycle-state
+    writes for prepare/apply/commit flows.
+- `src/lib/ci/repo-bound-paths.ts`
+  - Repository-bounded configured path resolution, file URL resolution, symlink
+    rejection, and allowlisted restore-path safety checks.
+
+Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
+the command core, merge-queue window module, and repository path-safety module
+so signed lifecycle-state and path traversal policy do not grow back into the
+command orchestration file.
+
 ## Verify Work Command Boundary
 
-Verify-work is the closeout trust surface for repo-local validation. Its public
-command facade stays small while wrapper execution and option-to-flag mapping
-live behind a deep module seam:
+Verify-work is the closeout trust surface for repo-local validation. Its command
+catalog adapter stays small while raw CLI parsing, wrapper execution, and
+option-to-flag mapping live behind a deep module seam:
 
 - `src/commands/verify-work.ts`
   - Command facade that preserves the existing CLI export contract and imports
     only `src/lib/verify-work.ts`.
 - `src/lib/verify-work.ts`
-  - Public facade for verify-work execution, runtime adapter, exit codes, and
-    CLI option types.
+  - Public facade for verify-work raw-argument parsing, execution, runtime
+    adapter, exit codes, and CLI option types.
+- `src/lib/verify-work/cli-args.ts`
+  - Internal raw CLI argument validation and typed option projection seam.
 - `src/lib/verify-work/args.ts`
   - Internal wrapper flag construction seam.
 - `src/lib/verify-work/runner.ts`
@@ -233,8 +278,8 @@ live behind a deep module seam:
   - Public command option and exit-code contract.
 
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` keep the
-command facade thin, ratchet the internal modules, and fail if callers bypass the
-public facade to import `src/lib/verify-work/*` internals.
+command adapter thin, ratchet the internal modules, and fail if callers bypass
+the public facade to import `src/lib/verify-work/*` internals.
 
 ## Memory Gate Command Boundary
 
@@ -247,20 +292,27 @@ terminal or JSON presentation. The public seam is deliberately small:
   - Command facade that preserves the existing CLI export contract and imports
     only `src/lib/memory-gate.ts`.
 - `src/lib/memory-gate.ts`
-  - Public facade for memory-gate execution and command option types.
+  - Public facade for memory-gate execution, raw CLI argument adaptation, and
+    command option types.
+- `src/lib/memory/cli-args.ts`
+  - Internal raw CLI argument adapter for memory, FORJAMIE, metrics, and JSON
+    flags before command execution.
 - `src/lib/memory/validator.ts`
-  - Internal Local Memory compliance validator and CLI presenter.
+  - Internal Local Memory compliance validator.
+- `src/lib/memory/cli.ts`
+  - Internal CLI presentation, metrics persistence, trend reporting, and Codex
+    branch display seam.
 - `src/lib/memory/types.ts`
   - Internal schema, result, metrics, and option contract exported through the
     public facade.
 - `src/lib/cli/registry/memory-gate-command-spec.ts`
-  - Registry option adapter for memory, FORJAMIE, metrics, and JSON flags;
-    delegates through the public facade rather than the command module.
+  - Registry metadata adapter; delegates raw args through the public facade
+    rather than owning option projection or importing memory internals.
 
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
-the command, facade, registry adapter, validator, and type contract, and fail if
-callers bypass `src/lib/memory-gate.ts` to import `src/lib/memory/*`
-internals.
+the command, facade, registry adapter, raw CLI argument adapter, validator, CLI
+presentation seam, and type contract, and fail if callers bypass
+`src/lib/memory-gate.ts` to import `src/lib/memory/*` internals.
 
 ## Drift Gate Command Boundary
 
@@ -273,15 +325,100 @@ Its current implementation still lives behind the command facade, but callers in
 - `src/lib/drift-gate.ts`
   - Public facade for `runDriftGate`, `runDriftGateCLI`, and drift-gate result
     and option types.
+- `src/lib/drift-gate/cli-args.ts`
+  - Raw CLI option adapter for mode, baseline seeding, output, suppression,
+    repository root, and JSON; converts argv into the typed facade contract.
 - `src/lib/cli/registry/drift-gate-command-spec.ts`
-  - Registry flag adapter for mode, baseline seeding, output, suppression,
-    repository root, and JSON; delegates through the public facade.
+  - Thin registry command adapter; delegates raw argv to the drift-gate-owned
+    CLI option adapter.
 - `src/lib/output/normalise-drift-gate.ts`
   - GateResult projection for drift findings and artifact evidence; imports
     drift-gate types through the public facade.
 - `src/lib/architecture/module-boundaries.test.ts`
   - Ratchets the facade and fails if new `src/lib/**` callers import
     `src/commands/drift-gate.ts` directly.
+
+## Observability Gate Command Boundary
+
+Observability-gate is a metric-label cardinality control surface. It does not
+claim full trace, dashboard, or telemetry maturity; it gates whether command
+labels are safe enough for low-cardinality metrics.
+
+- `src/commands/observability-gate.ts`
+  - Compatibility command facade and CLI export contract.
+- `src/lib/observability-gate.ts`
+  - Public facade for `runObservabilityGate`, `runObservabilityGateCLI`, raw
+    argv execution, and observability-gate result and option types.
+- `src/lib/observability-gate/cli-args.ts`
+  - Raw CLI option adapter for `--labels`, `--max-cardinality`, `--max-length`,
+    and JSON output.
+- `src/lib/observability-gate/label-cardinality.ts`
+  - Metric-label JSON parsing, cardinality policy construction, and validation
+    against `src/lib/policy/cardinality.ts`.
+- `src/lib/observability-gate/cli.ts`
+  - CLI result presentation and exit-code mapping.
+- `src/lib/cli/registry/observability-gate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the
+    observability-gate-owned CLI option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, public facade, registry adapter, raw CLI
+    adapter, label-cardinality seam, CLI presentation seam, and type contract.
+
+## Artifact Gate Command Boundary
+
+Artifact-gate is the generated-artifact provenance control surface. It checks
+whether generated files and their source templates move together without
+turning the command registry into a provenance evaluator or CLI parser.
+
+- `src/commands/artifact-gate.ts`
+  - Compatibility command facade and CLI export contract.
+- `src/lib/artifact-gate.ts`
+  - Public facade for `runArtifactGate`, `runArtifactGateCLI`, raw argv
+    execution, artifact-gate CLI types, and the artifact-provenance evaluator
+    contract.
+- `src/lib/artifact-gate/cli-args.ts`
+  - Raw CLI option adapter for `--files`, `--registry`, and JSON output,
+    including missing-value usage errors.
+- `src/lib/artifact-gate/cli.ts`
+  - Usage output, gate result presentation, and exit-code mapping.
+- `src/lib/artifact-gate/types.ts`
+  - Small CLI option and usage-error contract shared by command and registry
+    callers.
+- `src/lib/artifact-provenance.ts`
+  - Registry loading, registry validation, artifact/source drift evaluation,
+    and artifact-gate result construction.
+- `src/lib/cli/registry/artifact-gate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the
+    artifact-gate-owned CLI option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, public facade, registry adapter, raw CLI
+    adapter, CLI presentation seam, and type contract.
+
+## Plan Gate Command Boundary
+
+Plan-gate is the planning-artifact control surface. It validates plan documents,
+plan IDs, acceptance evidence, and PR traceability without turning the command
+facade or registry manifest into a plan parser, result renderer, or recovery
+hint table.
+
+- `src/commands/plan-gate.ts`
+  - Compatibility command facade and workflow-plan re-export contract.
+- `src/lib/plan-gate/cli-args.ts`
+  - Raw CLI option adapter for plan path, type, age, plan IDs, PR metadata,
+    changed files, strictness, and JSON/traceability requirements.
+- `src/lib/plan-gate/cli.ts`
+  - Plan-gate execution, terminal/JSON presentation, recovery hints, and
+    exit-code mapping.
+- `src/lib/plan-gate/detector.ts`
+  - Plan artifact discovery and validation behavior.
+- `src/lib/plan-gate/types.ts`
+  - Shared plan-gate option and exit-code contract.
+- `src/lib/cli/registry/plan-gate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the
+    plan-gate-owned CLI option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, registry adapter, raw CLI adapter, and CLI
+    presentation seam.
 
 ## Output Normalisation Boundaries
 
@@ -322,6 +459,24 @@ classification in `normalise-linear-gate.ts`, policy tier projection in
 `normalise-he-phase-exit.ts`. Terminal rendering changes stay in
 `normalise-renderer.ts` while callers continue importing through
 `src/lib/output/normalise.ts` and seam tests preserve the public export contract.
+
+## HE Phase-Exit Trust Boundary
+
+HE phase-exit validation remains a public facade plus focused trust-policy seam:
+
+- `src/lib/decision/he-phase-exit.ts`
+  - Public facade for HE phase-exit contracts, validators, adapters, and validation artifact helpers.
+- `src/lib/decision/he-phase-exit-core.ts`
+  - Gate schemas, payload validation, aggregation, and public `validateHeGateResult` / `validateHePhaseExit` entrypoints.
+- `src/lib/decision/he-gate-trust-policy.ts`
+  - Internal trust-policy seam for status, execution-mode, gate-local evidence, open-finding, blocker-reason, skipped-gate, and finding evidence-reference rules.
+- `src/lib/decision/he-gate-trust-policy.test.ts`
+  - Direct seam tests proving summary-only evidence, `validation_only`, skipped execution modes, and findings without evidence references cannot satisfy gate trust.
+
+The phase-exit core should stay the contract and aggregation surface. Trust rules
+that decide whether a gate result is real proof live in `he-gate-trust-policy.ts`,
+so agents can harden gate semantics without mixing payload schemas, aggregation,
+and trust classification in one file.
 
 ## Command Facade Boundaries
 
@@ -434,18 +589,57 @@ prefer evidence-loading seams before adding more branches to
 
 Replay is a command facade plus a canonical run-record seam:
 
+- `src/lib/replay/cli-args.ts`
+  - Raw replay CLI token projection and delegation into the typed replay
+    command contract.
+- `src/lib/replay/options.ts`
+  - Shared replay option, trace config, and trace resolution failure contracts.
+- `src/commands/replay-output.ts`
+  - Terminal and JSON replay output rendering.
+- `src/commands/replay-resolution.ts`
+  - Trace directory validation and trace lookup before replay execution.
 - `src/commands/replay.ts`
-  - Public CLI entrypoint, trace directory validation, trace listing, trace
-    loading, replay dispatch, and terminal/JSON output.
+  - Public CLI entrypoint, trace listing orchestration, replay dispatch, and
+    run-record outcome emission.
 - `src/commands/replay-run-record.ts`
   - Canonical run-record emission for replay outcomes, including replay
     attempt-ledger metadata, recovery-event metadata, policy context hashing,
     and precondition projection.
 
-The replay facade should stay about operator input, trace selection, and replay
-execution. Recovery ownership, retry-stop reasoning, and run-record payload
-construction should stay in `replay-run-record.ts` so agents can adjust
-operational metadata without changing trace replay behavior.
+The replay facade should stay about orchestration and replay execution. Raw argv
+projection stays in `src/lib/replay/cli-args.ts`, shared replay contracts stay
+in `src/lib/replay/options.ts`, output rendering stays in
+`replay-output.ts`, and trace lookup stays in `replay-resolution.ts`.
+Recovery ownership, retry-stop reasoning, and run-record payload construction should stay in
+`replay-run-record.ts` so agents can adjust operational metadata without
+changing trace replay behavior.
+
+## Review Gate Command Boundaries
+
+Review gate is a command facade plus focused validation and artifact seams:
+
+- `src/commands/review-gate.ts`
+  - Public compatibility facade for `review-gate-core.ts`.
+- `src/commands/review-gate-core.ts`
+  - Runtime orchestration for PR loading, review policy evaluation, polling,
+    reviewer independence, review-context readiness, authz preflight, and
+    terminal output.
+- `src/lib/review-gate/required-checks.ts`
+  - Required-check name resolution, alias resolution, check-run source matching,
+    and check-run blocker projection.
+- `src/lib/review-gate/required-check-sources.ts`
+  - Provider identity normalization, explicit external-check source authority,
+    and active-provider source constraint assembly.
+- `src/lib/review-gate/required-check-manifest.ts`
+  - Required-check manifest path resolution, JSON loading, normalization, and
+    manifest-specific validation errors.
+
+The command core should stay about orchestration and policy composition.
+Required-check identity, aliases, and source-authority constraints stay in
+`required-checks.ts` and `required-check-sources.ts`; manifest parsing stays in
+`required-check-manifest.ts`
+so agents can adjust CI provider mapping without changing the main review-gate
+control flow.
 
 ## Review Gate Decision Packet Boundaries
 
@@ -567,10 +761,11 @@ Threshold policy:
   assembler (`<= 1300` lines); workflow-specific parsing belongs in focused
   command adapters.
 - `src/lib/cli/registry/drift-gate-command-spec.ts` must stay focused on
-  consistency-drift CLI option adapter and command delegation (`<= 100` lines).
+  registry metadata and command delegation (`<= 25` lines).
+- `src/lib/drift-gate/cli-args.ts` must stay focused on consistency-drift CLI
+  option parsing and facade delegation (`<= 120` lines).
 - `src/lib/cli/registry/memory-gate-command-spec.ts` must stay focused on
-  Local Memory compliance CLI option adapter and command delegation (`<= 35`
-  lines).
+  command metadata and facade delegation (`<= 20` lines).
 - `src/lib/cli/registry/silent-error-command-spec.ts` must stay focused on
   silent-error detector CLI option adapter and command delegation (`<= 35`
   lines).
@@ -579,7 +774,9 @@ Threshold policy:
 - `src/lib/cli/registry/gardener-command-spec.ts` must stay focused on docs
   freshness CLI option adapter and command delegation (`<= 35` lines).
 - `src/lib/cli/registry/replay-command-spec.ts` must stay focused on replay
-  trace CLI option adapter and command delegation (`<= 40` lines).
+  command metadata and replay-owned argv delegation (`<= 20` lines).
+- `src/lib/cli/registry/plan-gate-command-spec.ts` must stay focused on plan
+  gate command metadata and plan-gate-owned argv delegation (`<= 20` lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
@@ -656,6 +853,13 @@ Threshold policy:
 - `src/lib/output/normalise-plan-gate.ts` must remain a plan gate normalisation
   seam (`<= 80` lines) for plan validation findings, recovery hints, and
   canonical `GateResult` projection.
+- `src/commands/plan-gate.ts` must remain a plan-gate compatibility facade
+  (`<= 25` lines); raw argv projection and result presentation live behind
+  `src/lib/plan-gate/cli-args.ts` and `src/lib/plan-gate/cli.ts`.
+- `src/lib/plan-gate/cli-args.ts` must remain a plan-gate argument adapter
+  (`<= 65` lines).
+- `src/lib/plan-gate/cli.ts` must remain a plan-gate CLI presentation and
+  exit-code seam (`<= 155` lines).
 - `src/lib/output/normalise-policy-gate.ts` must remain a policy gate
   normalisation seam (`<= 130` lines) for policy tier findings, decision
   metadata, and canonical `GateResult` projection.
@@ -670,7 +874,11 @@ Threshold policy:
 - `src/lib/output/normalise-linear-gate.ts` must remain a Linear gate
   normalisation seam (`<= 240` lines) for failure classification and canonical
   `GateResult` projection.
-- `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2600` lines).
+- `src/lib/decision/he-phase-exit-core.ts` must stay below the current trust-split
+  ratchet (`<= 1750` lines) while more artifact and adapter policy moves behind focused seams.
+- `src/lib/decision/he-gate-trust-policy.ts` must remain the HE gate trust-policy
+  seam (`<= 220` lines) for status, execution-mode, finding, blocker, and evidence-reference rules.
+- `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2700` lines).
 - `src/commands/doctor.ts` must remain a doctor command facade (`<= 210`
   lines) and import the explicit agent-safe work areas enforced by the architecture test.
 - `src/commands/doctor-tool-checks.ts` must remain a generic tool-check
@@ -691,11 +899,31 @@ Threshold policy:
   decision seam (`<= 160` lines).
 - `src/commands/next-runner.ts` must remain a harness-next decision producer
   seam (`<= 250` lines).
-- `src/commands/replay.ts` must remain a replay command facade (`<= 330`
-  lines); canonical run-record and recovery metadata moves into
+- `src/lib/review-gate/required-checks.ts` must remain a review-gate
+  required-check resolution seam (`<= 350` lines) for check-name, alias,
+  source matching, and blocker projection.
+- `src/lib/review-gate/required-check-sources.ts` must remain a review-gate
+  source-authority seam (`<= 220` lines) for provider identity normalization
+  and active/external source constraints.
+- `src/lib/review-gate/required-check-manifest.ts` must remain a review-gate
+  manifest seam (`<= 95` lines) for path resolution, loading, and validation
+  errors.
+- `src/lib/replay/cli-args.ts` must remain a replay argument adapter (`<= 60`
+  lines); raw token projection and facade delegation stay there.
+- `src/lib/replay/options.ts` must remain a replay option contract (`<= 60`
+  lines); option, trace config, and resolution failure contracts stay there.
+- `src/commands/replay-output.ts` must remain a replay output adapter
+  (`<= 115` lines); terminal and JSON rendering stay there.
+- `src/commands/replay-resolution.ts` must remain a replay trace resolution
+  adapter (`<= 90` lines); path validation and trace lookup stay there.
+- `src/commands/replay.ts` must remain a replay command facade (`<= 170`
+  lines); argv projection, output rendering, trace resolution, shared option
+  contracts, and canonical run-record/recovery metadata move into named replay
+  seams: `src/lib/replay/cli-args.ts`, `src/lib/replay/options.ts`,
+  `replay-output.ts`, `replay-resolution.ts`, and
   `replay-run-record.ts`.
 - `src/commands/replay-run-record.ts` must remain a replay run-record seam
-  (`<= 230` lines) for attempt ledger, recovery event, and policy context
+  (`<= 235` lines) for attempt ledger, recovery event, and policy context
   emission.
 - `src/lib/review-gate/decision-packet.ts` must remain a review-gate decision
   artifact assembly seam (`<= 390` lines); recovery and run-record metadata

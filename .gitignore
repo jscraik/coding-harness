@@ -89,6 +89,8 @@ gardener-report.json
 !.harness/research/audits/
 .harness/research/audits/*
 !.harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md
+!.harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md
+!.harness/research/audits/2026-05-21-plan-and-research-code-tree-gap-audit.md
 !.harness/research/deep/
 .harness/research/deep/*
 !.harness/research/deep/**/*.md
@@ -104,6 +106,11 @@ gardener-report.json
 .harness/quality/*
 !.harness/quality/criteria.md
 !.harness/review-log.md
+!.harness/artifacts/
+.harness/artifacts/*
+!.harness/artifacts/README.md
+!.harness/artifacts/brownfield-memory-inventory.md
+!.harness/artifacts/sync-receipts.jsonl
 !.harness/ci-required-checks.json
 !.harness/ci-provider-transition-status.json
 !.harness/artifact-provenance.json
@@ -130,6 +137,10 @@ artifacts/agent-runs/
 artifacts/policy/
 artifacts/consistency-gate/
 artifacts/context-integrity/
+!.harness/artifacts/
+!.harness/artifacts/README.md
+!.harness/artifacts/brownfield-memory-inventory.md
+!.harness/artifacts/sync-receipts.jsonl
 
 # UI explore output
 ui-explore-output/

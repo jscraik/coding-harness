@@ -1,4 +1,3 @@
-import { runArtifactGateCLI } from "../../../commands/artifact-gate.js";
 import { runArtifactRoutineCLI } from "../../../commands/artifact-routine.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
@@ -22,19 +21,13 @@ import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
-import { runObservabilityGateCLI } from "../../../commands/observability-gate.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
 import { runPilotEvaluateCLI } from "../../../commands/pilot-evaluate.js";
 import {
 	type PilotRollbackOptions,
 	runPilotRollbackCLI,
 } from "../../../commands/pilot-rollback.js";
-import { runPlanGateCLI } from "../../../commands/plan-gate.js";
 import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
-import {
-	type RemediateOptions,
-	runRemediateCLI,
-} from "../../../commands/remediate.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import {
@@ -61,6 +54,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createArtifactGateCommandSpec } from "./artifact-gate-command-spec.js";
 import { createAuditCommandSpec } from "./audit-command-spec.js";
 import { createBrainstormGateCommandSpec } from "./brainstorm-gate-command-spec.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
@@ -81,15 +75,19 @@ import { createLicenseGateCommandSpec } from "./license-gate-command-spec.js";
 import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-command-spec.js";
 import { createMemoryGateCommandSpec } from "./memory-gate-command-spec.js";
 import { createNextCommandSpec } from "./next-command-spec.js";
+import { createObservabilityGateCommandSpec } from "./observability-gate-command-spec.js";
 import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
+import { createPlanGateCommandSpec } from "./plan-gate-command-spec.js";
 import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPresetCommandSpec } from "./preset-command-spec.js";
 import { createPrCloseoutCommandSpec } from "./pr-closeout-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import { createReplayCommandSpec } from "./replay-command-spec.js";
+import { createRemediateCommandSpec } from "./remediate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
+import { createRuntimeBudgetCommandSpec } from "./runtime-budget-command-spec.js";
 import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import { createSilentErrorCommandSpec } from "./silent-error-command-spec.js";
@@ -178,6 +176,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		execute: (args) => runArtifactRoutineCLI(args),
 	},
 	createReplayCommandSpec(),
+	createRemediateCommandSpec(),
 	createGardenerCommandSpec(),
 	createMemoryGateCommandSpec(),
 	createSilentErrorCommandSpec(),
@@ -191,59 +190,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runBrainCLI(args);
 		},
 	},
-	{
-		name: "plan-gate",
-		summary: "Validate plan artifacts",
-		errorLabel: "Plan Gate Error",
-		execute: (args) => {
-			const options: {
-				plansPath?: string;
-				type?: string;
-				maxAge?: number;
-				requireOrigin?: boolean;
-				requirePlanId?: boolean;
-				requireAcceptanceEvidence?: boolean;
-				requireTraceability?: boolean;
-				planIds?: string[];
-				prTitle?: string;
-				prBody?: string;
-				changedFiles?: string[];
-				strict?: boolean;
-				json?: boolean;
-			} = {};
-
-			if (args.includes("--json")) options.json = true;
-			if (args.includes("--strict")) options.strict = true;
-			if (args.includes("--require-origin")) options.requireOrigin = true;
-			if (args.includes("--require-plan-id")) options.requirePlanId = true;
-			if (args.includes("--require-acceptance-evidence"))
-				options.requireAcceptanceEvidence = true;
-			if (args.includes("--require-traceability"))
-				options.requireTraceability = true;
-			const plansArg = getFlagValue(args, args.indexOf("--plans"));
-			if (plansArg) options.plansPath = plansArg;
-			const typeArg = getFlagValue(args, args.indexOf("--type"));
-			if (typeArg) options.type = typeArg;
-			const maxAgeArg = getFlagValue(args, args.indexOf("--max-age"));
-			if (maxAgeArg) {
-				const parsed = parseIntegerArg(maxAgeArg, 0);
-				if (parsed !== undefined) options.maxAge = parsed;
-			}
-			const planIdsArg = getFlagValue(args, args.indexOf("--plan-ids"));
-			if (planIdsArg) options.planIds = parseCsvList(planIdsArg);
-			const prTitleArg = getFlagValue(args, args.indexOf("--pr-title"));
-			if (prTitleArg) options.prTitle = prTitleArg;
-			const prBodyArg = getFlagValue(args, args.indexOf("--pr-body"));
-			if (prBodyArg) options.prBody = prBodyArg;
-			const changedFilesArg = getFlagValue(
-				args,
-				args.indexOf("--changed-files"),
-			);
-			if (changedFilesArg) options.changedFiles = parseCsvList(changedFilesArg);
-
-			return runPlanGateCLI(options);
-		},
-	},
+	createPlanGateCommandSpec(),
 	{
 		name: "prompt-gate",
 		summary: "Validate prompt template usage",
@@ -323,35 +270,8 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runUIFastCLI(options);
 		},
 	},
-	{
-		name: "artifact-gate",
-		summary:
-			"Check generated artifact changes against the artifact provenance registry",
-		example: "artifact-gate --files scripts/codex-preflight.sh --json",
-		errorLabel: "Artifact Gate Error",
-		execute: (args) => {
-			const filesFlag = inspectFlagValue(args, "--files");
-			const registryFlag = inspectFlagValue(args, "--registry");
-
-			if (filesFlag.missingValue) {
-				console.error("Artifact Gate Error: --files requires a value");
-				return 2;
-			}
-			if (registryFlag.missingValue) {
-				console.error("Artifact Gate Error: --registry requires a value");
-				return 2;
-			}
-
-			return runArtifactGateCLI({
-				files:
-					filesFlag.value !== undefined
-						? parseCsvList(filesFlag.value)
-						: undefined,
-				registryPath: registryFlag.value,
-				json: args.includes("--json"),
-			});
-		},
-	},
+	createArtifactGateCommandSpec(),
+	createRuntimeBudgetCommandSpec(),
 	{
 		name: "ci-ownership-gate",
 		summary:
@@ -443,112 +363,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			});
 		},
 	},
-	{
-		name: "remediate",
-		summary: "Auto-plan and execute deterministic remediation",
-		errorLabel: "Remediate Error",
-		execute: (args) => {
-			// args[0] is the subcommand (command name already stripped by dispatcher)
-			const subcommand = args[0];
-			if (subcommand !== "run" && subcommand !== "apply") {
-				console.error(
-					"Error: remediate command requires subcommand `run` or `apply`",
-				);
-				return 2;
-			}
-
-			const ownerIndex = args.indexOf("--owner");
-			const repoIndex = args.indexOf("--repo");
-			const prIndex = args.indexOf("--pr");
-			const shaIndex = args.indexOf("--sha");
-			const providerIndex = args.indexOf("--provider");
-			const dryRunFlag = args.includes("--dry-run");
-			const noInputFlag = args.includes("--no-input");
-			const forceFlag = args.includes("--force");
-			const jsonFlag = args.includes("--json");
-			const maxAutoTierIndex = args.indexOf("--max-auto-tier");
-			const modeArgIndex = args.indexOf("--mode");
-			const markerIndex = args.indexOf("--completion-marker");
-			const contractIndex = args.indexOf("--contract");
-			const findingsIndex = args.indexOf("--findings");
-			const headShaIndex = args.indexOf("--head-sha");
-
-			const prValue = getFlagValue(args, prIndex);
-			const maxAutoTierValue = getFlagValue(args, maxAutoTierIndex);
-
-			const remediateOptions: RemediateOptions = {
-				subcommand,
-				owner: getFlagValue(args, ownerIndex) ?? "",
-				repo: getFlagValue(args, repoIndex) ?? "",
-				prNumber: parseIntegerArg(prValue, 1) ?? 0,
-				headSha: getFlagValue(args, shaIndex) ?? "",
-				provider:
-					(getFlagValue(args, providerIndex) as
-						| "codeql"
-						| "codex"
-						| undefined) ?? "codeql",
-				dryRun: dryRunFlag,
-				noInput: noInputFlag,
-				force: forceFlag,
-				json: jsonFlag,
-			};
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) remediateOptions.contractPath = contractArg;
-			const findingsArg = getFlagValue(args, findingsIndex);
-			if (findingsArg) remediateOptions.findings = findingsArg;
-			const headShaArg = getFlagValue(args, headShaIndex);
-			if (headShaArg) remediateOptions.headSha = headShaArg;
-			const modeValue = getFlagValue(args, modeArgIndex);
-			if (modeValue === "manual" || modeValue === "autonomous") {
-				remediateOptions.mode = modeValue;
-			}
-			const markerArg = getFlagValue(args, markerIndex);
-			if (markerArg) remediateOptions.completionMarkerPath = markerArg;
-			if (
-				maxAutoTierValue === "low" ||
-				maxAutoTierValue === "medium" ||
-				maxAutoTierValue === "high"
-			) {
-				remediateOptions.maxAutoTier = maxAutoTierValue;
-			}
-
-			return runRemediateCLI(remediateOptions);
-		},
-	},
-	{
-		name: "observability-gate",
-		summary: "Check cardinality limits in metrics",
-		errorLabel: "Observability Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const labelsIndex = args.indexOf("--labels");
-			const maxCardIndex = args.indexOf("--max-cardinality");
-			const maxLenIndex = args.indexOf("--max-length");
-
-			const options: {
-				labels?: string;
-				json?: boolean;
-				maxCardinality?: number;
-				maxLength?: number;
-			} = {};
-
-			if (jsonFlag) options.json = true;
-			const labelsValue = getFlagValue(args, labelsIndex);
-			if (labelsValue) options.labels = labelsValue;
-			const cardValue = getFlagValue(args, maxCardIndex);
-			if (cardValue) {
-				const val = parseIntegerArg(cardValue, 0);
-				if (val !== undefined) options.maxCardinality = val;
-			}
-			const lenValue = getFlagValue(args, maxLenIndex);
-			if (lenValue) {
-				const val = parseIntegerArg(lenValue, 0);
-				if (val !== undefined) options.maxLength = val;
-			}
-
-			return runObservabilityGateCLI(options);
-		},
-	},
+	createObservabilityGateCommandSpec(),
 	{
 		name: "gap-case",
 		summary: "Manage production gap cases (open/resolve)",

@@ -17,11 +17,18 @@ describe("artifact-routine command", () => {
 
 	it("prints JSON and exits successfully for a valid active index", () => {
 		const repoRoot = makeRepo(tempDirs);
+		writeFileSync(
+			join(repoRoot, ".harness/assurance.json"),
+			JSON.stringify({ entries: assuranceEntries() }),
+			"utf8",
+		);
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
 		const exitCode = runArtifactRoutineCLI([
 			"--repo-root",
 			repoRoot,
+			"--assurance-matrix",
+			".harness/assurance.json",
 			"--today",
 			"2026-05-18",
 			"--json",
@@ -124,4 +131,41 @@ function makeRepo(
 		"utf8",
 	);
 	return repoRoot;
+}
+
+function assuranceEntries() {
+	const base = {
+		status: "pass" as const,
+		evidence: ["local:test"],
+	};
+	return [
+		{ ...base, layer: "unit" as const },
+		{ ...base, layer: "boundary" as const },
+		{ ...base, layer: "mock_integration" as const },
+		{ ...base, layer: "e2e" as const },
+		{ ...base, layer: "security" as const },
+		{
+			...base,
+			layer: "load_stress" as const,
+			threshold: {
+				metric: "duration",
+				operator: "<=" as const,
+				unit: "ms",
+				value: 1000,
+			},
+		},
+		{
+			...base,
+			layer: "lifecycle_closeout" as const,
+			lifecycleState: {
+				automationState: "n.a.",
+				branchWorktreeState: "clean",
+				linearState: "aligned",
+				mergeState: "ready",
+				nextLaneRouting: "none",
+				prState: "ready",
+				reviewThreadState: "resolved",
+			},
+		},
+	];
 }

@@ -57,6 +57,85 @@ describe("validateHarnessArtifactRoutine", () => {
 		expect(result.schemaVersion).toBe("artifact-handling-routine/v1");
 		expect(result.referencedArtifacts).toEqual([".harness/plan/current.md"]);
 		expect(result.findings).toEqual([]);
+		expect(result.checks.assurance_matrix).toBe("not_run");
+	});
+
+	it("validates an assurance matrix when supplied", () => {
+		const repoRoot = makeRepo();
+		writeFileSync(
+			join(repoRoot, ".harness/assurance.json"),
+			JSON.stringify({ entries: assuranceEntries() }),
+			"utf8",
+		);
+
+		const result = validateHarnessArtifactRoutine({
+			assuranceMatrixPath: ".harness/assurance.json",
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.status).toBe("pass");
+		expect(result.checks.assurance_matrix).toBe("pass");
+	});
+
+	it("fails when supplied assurance matrix overclaims a layer", () => {
+		const repoRoot = makeRepo();
+		const entries = assuranceEntries().map((entry) =>
+			entry.layer === "load_stress"
+				? { ...entry, threshold: undefined }
+				: entry,
+		);
+		writeFileSync(
+			join(repoRoot, ".harness/assurance.json"),
+			JSON.stringify(entries),
+			"utf8",
+		);
+
+		const result = validateHarnessArtifactRoutine({
+			assuranceMatrixPath: ".harness/assurance.json",
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "assurance_matrix",
+				code: "missing_threshold",
+			}),
+		);
+	});
+
+	it("rejects assurance matrix symlinks that resolve outside the repo", () => {
+		const repoRoot = makeRepo();
+		const externalRoot = mkdtempSync(join(tmpdir(), "assurance-external-"));
+		tempDirs.push(externalRoot);
+		writeFileSync(
+			join(externalRoot, "assurance.json"),
+			JSON.stringify({ entries: assuranceEntries() }),
+			"utf8",
+		);
+		mkdirSync(join(repoRoot, ".harness"), { recursive: true });
+		symlinkSync(
+			join(externalRoot, "assurance.json"),
+			join(repoRoot, ".harness/assurance.json"),
+		);
+
+		const result = validateHarnessArtifactRoutine({
+			assuranceMatrixPath: ".harness/assurance.json",
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.checks.assurance_matrix).toBe("fail");
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "assurance_matrix",
+				code: "assurance_matrix_resolves_outside_repo",
+				path: ".harness/assurance.json",
+			}),
+		);
 	});
 
 	it("requires active plans to name a Linear issue or local-only owner", () => {
@@ -462,6 +541,43 @@ function activeIndexText(
 			" | Active assurance | Current. |",
 		"",
 	].join("\n");
+}
+
+function assuranceEntries() {
+	const base = {
+		status: "pass" as const,
+		evidence: ["local:test"],
+	};
+	return [
+		{ ...base, layer: "unit" as const },
+		{ ...base, layer: "boundary" as const },
+		{ ...base, layer: "mock_integration" as const },
+		{ ...base, layer: "e2e" as const },
+		{ ...base, layer: "security" as const },
+		{
+			...base,
+			layer: "load_stress" as const,
+			threshold: {
+				metric: "duration",
+				operator: "<=" as const,
+				unit: "ms",
+				value: 1000,
+			},
+		},
+		{
+			...base,
+			layer: "lifecycle_closeout" as const,
+			lifecycleState: {
+				automationState: "n.a.",
+				branchWorktreeState: "clean",
+				linearState: "aligned",
+				mergeState: "ready",
+				nextLaneRouting: "none",
+				prState: "ready",
+				reviewThreadState: "resolved",
+			},
+		},
+	];
 }
 
 function activePlanText(): string {

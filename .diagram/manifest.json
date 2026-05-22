@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-05-20T20:32:57.872Z",
+	"generatedAt": "2026-05-22T00:45:45.426Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -22,8 +22,8 @@
 			"type": "agent",
 			"file": "agent.mmd",
 			"outputPath": ".diagram/agent.mmd",
-			"lines": 199,
-			"bytes": 27942,
+			"lines": 205,
+			"bytes": 28343,
 			"isPlaceholder": false
 		},
 		{
@@ -55,23 +55,23 @@
 			"file": "class.mmd",
 			"outputPath": ".diagram/class.mmd",
 			"lines": 63,
-			"bytes": 1569,
+			"bytes": 1590,
 			"isPlaceholder": false
 		},
 		{
 			"type": "database",
 			"file": "database.mmd",
 			"outputPath": ".diagram/database.mmd",
-			"lines": 29,
-			"bytes": 1448,
+			"lines": 32,
+			"bytes": 1641,
 			"isPlaceholder": false
 		},
 		{
 			"type": "dependency",
 			"file": "dependency.mmd",
 			"outputPath": ".diagram/dependency.mmd",
-			"lines": 513,
-			"bytes": 41014,
+			"lines": 521,
+			"bytes": 41725,
 			"isPlaceholder": false
 		},
 		{
@@ -87,7 +87,7 @@
 			"file": "events.mmd",
 			"outputPath": ".diagram/events.mmd",
 			"lines": 36,
-			"bytes": 2567,
+			"bytes": 2531,
 			"isPlaceholder": false
 		},
 		{
@@ -102,8 +102,8 @@
 			"type": "rag",
 			"file": "rag.mmd",
 			"outputPath": ".diagram/rag.mmd",
-			"lines": 159,
-			"bytes": 12465,
+			"lines": 162,
+			"bytes": 12603,
 			"isPlaceholder": false
 		},
 		{
@@ -111,7 +111,7 @@
 			"file": "security.mmd",
 			"outputPath": ".diagram/security.mmd",
 			"lines": 85,
-			"bytes": 4748,
+			"bytes": 4746,
 			"isPlaceholder": false
 		},
 		{

@@ -10,6 +10,12 @@ import {
 	collectWorktreeBlockers,
 } from "./blockers.js";
 import { buildCloseoutClaims, collectClaimBlockers } from "./claims.js";
+import {
+	buildAssuranceSummary,
+	buildRuntimeEvidenceSummary,
+	collectAssuranceBlockers,
+	collectRuntimeEvidenceBlockers,
+} from "./evidence-summaries.js";
 import { isFailedCheck, isPassingCheck, isPendingCheck } from "./evidence.js";
 import { buildPrCloseoutRecoveryState } from "./recovery.js";
 import { deriveNextAction } from "./status.js";
@@ -90,6 +96,8 @@ function buildPrCloseoutReportValue(
 	collectReviewBlockers(pr, reviewThreads, blockers);
 	collectTraceabilityBlocker(traceabilityComplete, blockers);
 	collectHarnessGateBlockers(harnessGates, blockers);
+	collectAssuranceBlockers(input, blockers);
+	collectRuntimeEvidenceBlockers(input, blockers);
 	collectToolBlockers(tools, blockers);
 	collectClaimBlockers(claims, blockers);
 
@@ -124,6 +132,8 @@ function buildPrCloseoutReportValue(
 			complete: traceabilityComplete,
 		},
 		harnessGates,
+		assurance: buildAssuranceSummary(input),
+		runtimeEvidence: buildRuntimeEvidenceSummary(input),
 		tools,
 		dirtyPathsExcluded,
 		attemptLedger,

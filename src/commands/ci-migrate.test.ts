@@ -29,6 +29,10 @@ import type {
 	BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability as scanOpenPullRequestSatisfiabilityType,
 } from "../lib/ci/satisfiability.js";
+import {
+	readMergeQueueWindowIfPresent,
+	writeMergeQueueWindow,
+} from "../lib/ci/ci-migrate-merge-queue-window.js";
 import { EXIT_CODES } from "../lib/init/types.js";
 import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 import type { runInitCLI as runInitCLIType } from "./init.js";
@@ -2325,6 +2329,62 @@ describe("runCIMigrateCLI", () => {
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
 		expect(runInitCLIMock).not.toHaveBeenCalled();
+	});
+
+	it("writes merge-queue cutover window signatures that read back as trusted hex digests", () => {
+		seedMigratableFixture(tempDir);
+		const pausedAt = new Date().toISOString();
+		const window = {
+			schemaVersion: "ci-migrate-merge-queue-window/v1" as const,
+			snapshotId: "cutover-signed-window",
+			stage: "paused" as const,
+			pausedAt,
+			preCutover: {
+				status: "satisfied" as const,
+				scannedOpenPrs: 0,
+				failingPrs: [],
+			},
+		};
+
+		const writeResult = writeMergeQueueWindow(tempDir, window);
+		expect(writeResult.ok).toBe(true);
+		const persistedWindow = readFileSync(
+			join(tempDir, MERGE_QUEUE_WINDOW_PATH),
+			"utf-8",
+		);
+		const signatureContent = readFileSync(
+			join(tempDir, `${MERGE_QUEUE_WINDOW_PATH}.sig`),
+			"utf-8",
+		);
+		expect(signatureContent).toMatch(/^[a-f0-9]{64}\n$/);
+		expect(signatureContent).toBe(
+			`${signContent(persistedWindow, TEST_SNAPSHOT_SIGNING_KEY)}\n`,
+		);
+
+		const readerFixtureContent = [
+			"{",
+			'  "schemaVersion": "ci-migrate-merge-queue-window/v1",',
+			'  "snapshotId": "cutover-manual-window",',
+			'  "stage": "paused",',
+			'  "pausedAt": "2026-05-22T00:00:00.000Z",',
+			'  "preCutover": {',
+			'    "status": "satisfied",',
+			'    "scannedOpenPrs": 0,',
+			'    "failingPrs": []',
+			"  }",
+			"}",
+		].join("\n");
+		writeFileSync(join(tempDir, MERGE_QUEUE_WINDOW_PATH), readerFixtureContent);
+		writeFileSync(
+			join(tempDir, `${MERGE_QUEUE_WINDOW_PATH}.sig`),
+			"7100e0395ef638fdf43a8343514ba0a867b1cde48cfd316e55d3743d88de66f9\n",
+		);
+
+		const readResult = readMergeQueueWindowIfPresent(tempDir);
+		expect(readResult.ok).toBe(true);
+		if (readResult.ok) {
+			expect(readResult.value?.snapshotId).toBe("cutover-manual-window");
+		}
 	});
 
 	it("allows apply when prior cutover window is terminal", () => {

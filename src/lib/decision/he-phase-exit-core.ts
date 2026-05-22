@@ -8,6 +8,7 @@ import {
 	validateString,
 	validateStringArray,
 } from "./validators.js";
+import { validateHeGateTrustPolicy } from "./he-gate-trust-policy.js";
 
 /** Re-export HeValidationError for external consumers. */
 export type { HeValidationError } from "./validators.js";
@@ -1197,142 +1198,8 @@ function gateResultFromRecord(
 			context,
 			errors,
 		);
-	validateGateConsistency(result, evidenceRefs, errors);
+	validateHeGateTrustPolicy(result, evidenceRefs, errors);
 	return result;
-}
-
-/**
- * Validate cross-field consistency of a single gate result and append any discovered error messages to `errors`.
- *
- * Performs checks for executionMode/status alignment; requires at least one gate-local evidence ref when status is `pass`, `fail`, `blocked`, or `not_applicable`; rejects `validation_only` as proof for skill-backed gate outcomes; requires an open finding when status is `fail` or `blocked`; requires a non-null `blockedReason` when status is `blocked`; requires matching `executionMode` and a non-empty `reason` for `not_applicable` and `not_run`; and ensures every finding `evidenceRef` (when non-null) references an existing `evidenceRefs.id`.
- *
- * @param result - The normalized gate result to validate
- * @param evidenceRefs - The evidence references declared on the gate result
- * @param errors - Mutable array that will receive human-readable error messages for each violated rule
- */
-function validateGateConsistency(
-	result: HeGateResult,
-	evidenceRefs: HeEvidenceRef[],
-	errors: HeValidationError[],
-): void {
-	if (
-		["pass", "fail", "blocked"].includes(result.status) &&
-		["not_applicable", "not_run"].includes(result.executionMode)
-	) {
-		errors.push(
-			toValidationError(
-				"pass, fail, and blocked gates cannot have not_applicable or not_run executionMode",
-				"executionMode",
-				result.gateId,
-			),
-		);
-	}
-	if (
-		["pass", "fail", "blocked"].includes(result.status) &&
-		result.executionMode === "validation_only"
-	) {
-		errors.push(
-			toValidationError(
-				"validation_only gates cannot satisfy pass, fail, or blocked skill-gate evidence",
-				"executionMode",
-				result.gateId,
-			),
-		);
-	}
-	if (
-		["pass", "fail", "blocked", "not_applicable"].includes(result.status) &&
-		!evidenceRefs.some((ref) => ref.gateLocal)
-	) {
-		errors.push(
-			toValidationError(
-				result.status === "not_applicable"
-					? "not_applicable gates require at least one gate-local evidence ref"
-					: "pass, fail, and blocked gates require at least one gate-local evidence ref",
-				"evidenceRefs",
-				result.gateId,
-			),
-		);
-	}
-	if (
-		["fail", "blocked"].includes(result.status) &&
-		!result.findings.some((finding) => finding.status === "open")
-	)
-		errors.push(
-			toValidationError(
-				"failed or blocked gates require an open finding",
-				"findings",
-				result.gateId,
-			),
-		);
-	if (
-		result.status === "blocked" &&
-		(typeof result.blockedReason !== "string" ||
-			result.blockedReason.trim().length === 0)
-	) {
-		errors.push(
-			toValidationError(
-				"blocked gates require blockedReason",
-				"blockedReason",
-				result.gateId,
-			),
-		);
-	}
-	if (
-		result.status === "not_applicable" &&
-		result.executionMode !== "not_applicable"
-	)
-		errors.push(
-			toValidationError(
-				"not_applicable gates require not_applicable executionMode",
-				"executionMode",
-				result.gateId,
-			),
-		);
-	if (
-		result.status === "not_applicable" &&
-		(typeof result.reason !== "string" || result.reason.trim().length === 0)
-	)
-		errors.push(
-			toValidationError(
-				"not_applicable gates require reason",
-				"reason",
-				result.gateId,
-			),
-		);
-	if (result.status === "not_run" && result.executionMode !== "not_run")
-		errors.push(
-			toValidationError(
-				"not_run gates require not_run executionMode",
-				"executionMode",
-				result.gateId,
-			),
-		);
-	if (
-		result.status === "not_run" &&
-		(typeof result.reason !== "string" || result.reason.trim().length === 0)
-	)
-		errors.push(
-			toValidationError(
-				"not_run gates require reason",
-				"reason",
-				result.gateId,
-			),
-		);
-	const evidenceRefIds = new Set(evidenceRefs.map((ref) => ref.id));
-	for (const finding of result.findings) {
-		if (
-			finding.evidenceRef !== null &&
-			!evidenceRefIds.has(finding.evidenceRef)
-		) {
-			errors.push(
-				toValidationError(
-					`unknown evidenceRefs.id: ${finding.evidenceRef}`,
-					"findings.evidenceRef",
-					result.gateId,
-				),
-			);
-		}
-	}
 }
 
 /**

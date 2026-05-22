@@ -11,8 +11,9 @@
 import {
 	runMemoryGate,
 	runMemoryGateCLI,
+	runMemoryGateFromCliArgs,
 	type MemoryGateOptions,
 } from "../lib/memory-gate.js";
 
-export { runMemoryGate, runMemoryGateCLI };
+export { runMemoryGate, runMemoryGateCLI, runMemoryGateFromCliArgs };
 export type { MemoryGateOptions };

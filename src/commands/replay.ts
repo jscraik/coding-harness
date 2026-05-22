@@ -4,165 +4,21 @@ import {
 	emitInvalidTraceDirectoryRunRecord,
 	emitReplayRunRecord,
 } from "./replay-run-record.js";
-import { validatePath } from "../lib/input/validator.js";
+import { listTraces, replayTrace } from "../lib/replay/tracer.js";
 import {
-	type ExecutionTrace,
-	isValidTraceId,
-	listTraces,
-	loadTrace,
-	replayTrace,
-} from "../lib/replay/tracer.js";
+	logReplayError,
+	printReplayResult,
+	printTraceList,
+} from "./replay-output.js";
+import type {
+	ReplayOptions,
+	ReplayTraceConfig,
+	ReplayTraceResolutionFailure,
+} from "../lib/replay/options.js";
+import { resolveReplayConfig, resolveTrace } from "./replay-resolution.js";
 
 export { EXIT_CODES } from "./replay-run-record.js";
-
-/**
- * CLI options for `harness replay`.
- */
-export interface ReplayOptions {
-	/** Trace ID to replay */
-	traceId?: string;
-	/** List available traces */
-	list?: boolean;
-	/** Dry run - don't execute, just show what would happen */
-	dryRun?: boolean;
-	/** Output as JSON */
-	json?: boolean;
-	/** Base directory for trace storage */
-	traceDir?: string;
-	/** Optional override for canonical run-record base dir */
-	runRecordsDir?: string;
-}
-
-/**
- * Log a replay error to stderr, respecting the JSON output option.
- *
- * @param options - Replay options that determine output format.
- * @param code - Error code for JSON output.
- * @param message - Human-readable error message.
- * @param hint - Optional hint to print in plain-text mode.
- */
-function logReplayError(
-	options: ReplayOptions,
-	code: string,
-	message: string,
-	hint?: string,
-): void {
-	if (options.json) {
-		console.error(JSON.stringify({ error: { code, message } }, null, 2));
-	} else {
-		console.error(`Error: ${message}`);
-		if (hint) {
-			console.error("");
-			console.error(hint);
-		}
-	}
-}
-
-/**
- * Print the list of available traces, respecting the JSON output option.
- */
-function printTraceList(
-	options: ReplayOptions,
-	traces: Array<{ traceId: string; command: string; createdAt: string }>,
-): void {
-	if (options.json) {
-		console.info(JSON.stringify({ traces }, null, 2));
-		return;
-	}
-	if (traces.length === 0) {
-		console.info("No traces found.");
-		return;
-	}
-	console.info(`Available traces (${traces.length}):`);
-	console.info("");
-	for (const trace of traces) {
-		console.info(`  ${trace.traceId}`);
-		console.info(`    Command: ${trace.command}`);
-		console.info(`    Created: ${trace.createdAt}`);
-		console.info("");
-	}
-}
-
-/**
- * Print replay output to stdout, respecting the JSON output option.
- */
-function printReplayResult(
-	options: ReplayOptions,
-	traceId: string,
-	trace: ExecutionTrace,
-	result: Awaited<ReturnType<typeof replayTrace>>,
-): void {
-	if (options.json) {
-		console.info(
-			JSON.stringify(
-				{
-					success: result.success,
-					traceId,
-					replayedEvents: result.replayedEvents,
-					message: result.message,
-					command: trace.command,
-					args: trace.args,
-					createdAt: trace.createdAt,
-				},
-				null,
-				2,
-			),
-		);
-		return;
-	}
-
-	console.info(`Replay: ${traceId}`);
-	console.info(`Command: ${trace.command} ${trace.args.join(" ")}`);
-	console.info(`Created: ${trace.createdAt}`);
-	console.info(`Events: ${trace.events.length}`);
-	console.info("");
-
-	if (options.dryRun) {
-		console.info("(Dry run - no events executed)");
-	}
-
-	if (result.success) {
-		console.info(`✓ ${result.message}`);
-	} else {
-		console.error(`✗ ${result.message}`);
-	}
-}
-
-/**
- * Validate trace input and load the trace if it exists.
- */
-async function resolveTrace(
-	options: ReplayOptions,
-	config?: { baseDir: string; maxTraces: number },
-): Promise<
-	| { ok: true; trace: ExecutionTrace; traceId: string }
-	| { ok: false; code: string; message: string; hint?: string }
-> {
-	if (!options.traceId) {
-		return {
-			ok: false,
-			code: "VALIDATION_ERROR",
-			message: "Trace ID required (--trace-id or --list)",
-		};
-	}
-	if (!isValidTraceId(options.traceId)) {
-		return {
-			ok: false,
-			code: "VALIDATION_ERROR",
-			message: `Invalid trace ID format: ${options.traceId}`,
-		};
-	}
-	const trace = await loadTrace(options.traceId, config);
-	if (!trace) {
-		return {
-			ok: false,
-			code: "TRACE_NOT_FOUND",
-			message: `Trace not found: ${options.traceId}`,
-			hint: "Use --list to see available traces.",
-		};
-	}
-	return { ok: true, trace, traceId: options.traceId };
-}
+export type { ReplayOptions } from "../lib/replay/options.js";
 
 /**
  * Emit the final run record for a replay execution.
@@ -171,7 +27,7 @@ function emitReplayResult(
 	startedAt: string,
 	options: ReplayOptions,
 	traceId: string,
-	config: { baseDir: string; maxTraces: number } | undefined,
+	config: ReplayTraceConfig | undefined,
 	result: Awaited<ReturnType<typeof replayTrace>>,
 ): number {
 	return emitReplayRunRecord(startedAt, options, {
@@ -191,39 +47,6 @@ function emitReplayResult(
 			},
 		],
 	});
-}
-
-type ReplayTraceConfig = { baseDir: string; maxTraces: number };
-type ReplayTraceResolutionFailure = {
-	code: string;
-	message: string;
-	hint?: string;
-};
-
-function resolveReplayConfig(
-	options: ReplayOptions,
-): { ok: true; config?: ReplayTraceConfig } | { ok: false; exitCode: number } {
-	if (!options.traceDir) return { ok: true };
-	try {
-		return {
-			ok: true,
-			config: {
-				baseDir: validatePath(process.cwd(), options.traceDir),
-				maxTraces: 100,
-			},
-		};
-	} catch (err) {
-		const reason = err instanceof Error ? err.message : String(err);
-		logReplayError(
-			options,
-			"VALIDATION_ERROR",
-			`Invalid trace directory: ${options.traceDir} (${reason})`,
-		);
-		return {
-			ok: false,
-			exitCode: EXIT_CODES.VALIDATION_ERROR,
-		};
-	}
 }
 
 async function runTraceList(
@@ -296,7 +119,7 @@ export async function runReplayCLI(options: ReplayOptions): Promise<number> {
 		}
 		const replayOptions: {
 			dryRun?: boolean;
-			config?: { baseDir: string; maxTraces: number };
+			config?: ReplayTraceConfig;
 		} = {
 			...(options.dryRun !== undefined ? { dryRun: options.dryRun } : {}),
 			...(config !== undefined ? { config } : {}),

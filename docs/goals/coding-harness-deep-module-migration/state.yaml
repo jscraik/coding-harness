@@ -1,0 +1,365 @@
+version: 2
+goal:
+  slug: coding-harness-deep-module-migration
+  status: active
+  objective: "Finish the remaining non-Effect coding-harness deep-module migration in small governed slices with per-slice review gates, validation evidence, GitHub handoff, and PR-green-sweep triage."
+  native_goal_id: "019e4a39-47f8-7ac0-b979-d52b7f02ec23"
+  native_objective: "Follow docs/goals/coding-harness-deep-module-migration/goal.md to continue the remaining non-Effect coding-harness deep-module migration in governed slices, preserving the separate active dirty-work slice, refreshing live repo/PR/HTML-report state before implementation, and recording receipts before advancing."
+  native_status: active
+  token_budget: null
+  tokens_used: 1639295
+  time_used_seconds: 8516
+  native_created_at: "2026-05-21T10:02:53.000Z"
+  native_updated_at: "2026-05-22T04:14:04Z"
+rules:
+  one_active_task: true
+  parallel_workers: false
+  require_fresh_verification: true
+  require_final_audit: true
+  require_review_gates_per_slice: true
+  require_pr_green_sweep: true
+  effect_layers_deferred: true
+  forbid_core_worktree: true
+checks:
+  dirty_fingerprint: "clean at board creation"
+  source_review: ".harness/review/2026-05-20-module-boundary-taste-review.md"
+  implementation_visual: ".harness/implementation-notes/2026-05-19-module-layout.html"
+  architecture_visual: "artifacts/architecture/module-layout.html"
+  visual_record_contract: "module layout must show complete/current/next/remaining/blocked, enforcement, agent-safe zones, human-review zones, latest slice, and receipt/PR evidence"
+  last_verification:
+    command: "bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration"
+    outcome: "pass"
+    checked_at: "2026-05-22T04:14:04Z"
+completion_contract:
+  outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
+  verification_surface:
+    - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+    - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+    - ".harness/implementation-notes/2026-05-19-module-layout.html"
+    - "artifacts/architecture/module-layout.html"
+    - "focused tests named in each slice receipt"
+    - "bash scripts/validate-codestyle.sh --fast"
+    - "bash scripts/verify-work.sh --fast"
+    - "pnpm check before final readiness or broad shared-surface changes"
+    - "GitHub PR state, current head SHA, review threads, and mergeability"
+    - "CircleCI status loaded with ~/.codex/.env when credentials are required"
+  constraints:
+    - "One active implementation slice at a time."
+    - "Effect layers are out of scope."
+    - "No unrelated refactor, broad rewrite, unapproved destructive cleanup, or force push."
+    - "No completion claim from summaries without live evidence."
+  boundaries:
+    - "Declare allowed files before each slice."
+    - "Declare focused tests before each slice."
+    - "Keep edits inside the active slice unless validation proves a shared guard must change."
+    - "Classify generated artifact churn before staging."
+  iteration_policy: "After each split or module move, run simplify, unslopify, improve-codebase-architecture, testing, and codex-review; fix or classify findings; validate; commit; push; update GitHub; append a receipt."
+  blocked_stop_condition: "Stop if validation fails twice for the same reason, branch or PR state cannot be observed, unrelated dirty worktree files are unclassified, credentials are missing after ~/.codex/.env probe, or the split violates the module-boundary objective."
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Create the durable Goal Governor board for the deep-module migration before any further implementation slice."
+    inputs:
+      - "AGENTS.md"
+      - "CODESTYLE.md"
+      - "codestyle/04-docs-config-and-release.md"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Create only the goal board scaffold."
+      - "Do not edit implementation files."
+      - "Preserve unrelated user work."
+    expected_output: "Goal board, state file, initial receipt, and notes scaffold."
+    allowed_files:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - "docs/goals/coding-harness-deep-module-migration/notes/.gitkeep"
+    verify:
+      - "bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration"
+      - "git status --short docs/goals/coding-harness-deep-module-migration"
+    stop_if:
+      - "Board checker fails."
+      - "Creation would require editing implementation files."
+    receipt_id: R001
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Deepen the drift-gate module boundary as the next non-Effect slice."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start until T001 board validation passes."
+      - "Declare allowed files and focused tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML as an informative control surface, not only as an architecture diagram."
+      - "Commit, push, update GitHub, and append receipt before T003."
+    expected_output: "A small drift-gate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/drift-gate.ts"
+      - "src/lib/drift-gate.ts"
+      - "src/lib/cli/registry/drift-gate-command-spec.ts"
+      - "src/lib/drift-gate/**"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/lib/output/normalise-drift-gate.ts"
+      - "src/commands/drift-gate*.test.ts"
+      - "src/lib/drift-gate*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused drift-gate test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "Allowed files are not declared."
+      - "Focused validation path cannot be identified."
+      - "Review gates find a boundary issue requiring scope expansion."
+    receipt_id: R002
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare the replay module-boundary slice; do not edit implementation files until branch, PR, and receipt state are verified."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T002 is pushed and GitHub/PR state is observed."
+      - "Declare focused replay tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R003 before any following slice."
+    expected_output: "A small replay module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/replay*.ts"
+      - "src/lib/replay/**"
+      - "src/lib/cli/registry/replay-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/replay*.test.ts"
+      - "src/lib/replay*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused replay test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T002 is not pushed."
+      - "GitHub or PR state cannot be observed."
+      - "Focused validation path cannot be identified."
+    receipt_id: R003-COMPLETE
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare the remediate module-boundary slice; do not edit implementation files until T003 is pushed and PR state is refreshed."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T003 is pushed and GitHub/PR state is observed."
+      - "Declare focused remediate tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R004 before any following slice."
+    expected_output: "A small remediate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/remediate*.ts"
+      - "src/lib/remediate/**"
+      - "src/lib/cli/registry/remediate-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/remediate*.test.ts"
+      - "src/lib/remediate*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused remediate test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T003 is not pushed."
+      - "GitHub or PR state cannot be observed."
+      - "Focused validation path cannot be identified."
+    receipt_id: R004-PR-CURRENT
+  - id: T005
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare the observability-gate module-boundary slice; do not edit implementation files until T004 is pushed and PR state is refreshed."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T004 is pushed and GitHub/PR state is observed."
+      - "Declare focused observability-gate tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R005 before any following slice."
+    expected_output: "A small observability-gate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/observability-gate*.ts"
+      - "src/lib/observability-gate/**"
+      - "src/lib/cli/registry/observability-gate-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/observability-gate*.test.ts"
+      - "src/lib/observability-gate*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused observability-gate test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T004 is not pushed."
+      - "GitHub or PR state cannot be observed."
+      - "Focused validation path cannot be identified."
+    receipt_id: R005
+  - id: T006
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare the artifact-gate module-boundary slice; do not edit implementation files until T005 is pushed and PR state is refreshed."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T005 is pushed and GitHub/PR state is observed."
+      - "Declare focused artifact-gate tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R006 before any following slice."
+    expected_output: "A small artifact-gate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/artifact-gate*.ts"
+      - "src/lib/artifact-gate/**"
+      - "src/lib/cli/registry/artifact-gate-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/artifact-gate*.test.ts"
+      - "src/lib/artifact-gate*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+      - "Makefile"
+    verify:
+      - "focused artifact-gate test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+      - "make hooks-pre-commit"
+    stop_if:
+      - "T005 is not pushed."
+      - "GitHub or PR state cannot be observed."
+      - "Focused validation path cannot be identified."
+    receipt_id: R006
+  - id: T007
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Prepare the plan-gate module-boundary slice; do not edit implementation files until T006 is pushed and PR state is refreshed."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T006 is pushed and GitHub/PR state is observed."
+      - "Declare focused plan-gate tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R007 before any following slice."
+    expected_output: "A small plan-gate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/plan-gate*.ts"
+      - "src/lib/plan-gate/**"
+      - "src/lib/cli/registry/plan-gate-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/plan-gate*.test.ts"
+      - "src/lib/plan-gate*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+      - "scripts/check-goal-board.sh"
+    verify:
+      - "focused plan-gate test or direct production command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T006 is not pushed."
+      - "GitHub or PR state cannot be observed."
+      - "Focused validation path cannot be identified."
+    receipt_id: R007
+pr_green_sweep:
+  status: t007_review_followup_batch7_broad_validated_pending_push
+  worker: pr-green-sweep
+  duplicate_guard: true
+  pr_url: "https://github.com/jscraik/coding-harness/pull/270"
+  head_sha: "5715b2d9b475551c8144a2b491a0643d71756f94"
+  last_observed: "2026-05-22T04:14:04Z"
+  current_blockers:
+    - "Observed PR #270 at 5715b2d9b475551c8144a2b491a0643d71756f94 after batch 6: state OPEN, not draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, CircleCI/CodeRabbit pending, and 1 unresolved runtime-evidence review thread."
+    - "Batch 7 fix for evaluation.portable boolean-shape validation is local and broadly validated; commit, push, and re-observation are still required."
+    - "Native goal and repository board are active; the overall deep-module goal is not complete."
+    - "Latest valid runtime-evidence source-ref/resolved-state/evaluation portable shape, pr-closeout runtime-evidence fixture, and runtime-budget usage-output assertion findings are repaired locally."
+    - "Prompt-gate has not started; observed slice remains T007 PR-green-sweep follow-up work."
+    - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
+  last_evidence:
+    github_state: "PR #270 observed after batch 6 at 5715b2d9b475551c8144a2b491a0643d71756f94 with state OPEN, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, and local branch matching origin."
+    review_threads: "GitHub review-thread snapshot after 5715b2d9b475551c8144a2b491a0643d71756f94 showed 72 total threads and 1 unresolved runtime-evidence thread for evaluation.portable boolean-shape validation; older fixed/stale threads were resolved."
+    checks: "Remote checks after 5715b2d9b475551c8144a2b491a0643d71756f94 were pending for CircleCI and CodeRabbit; Socket and Snyk had passing checks."
+    coderabbit: "A fresh runtime-evidence evaluation.portable finding is valid and repaired locally; batch 7 passed focused and broad validation and still requires commit, push, and re-observation."
+    post_push: "batch6_pushed_batch7_pending_push"
+    validation: "Batch 7 validation passed: biome for runtime-evidence contract files, Vitest runtime-evidence contract tests, git diff --check, JSONL parse, goal-board check, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, and bash scripts/verify-work.sh --fast run id 20260522T041305Z-59769."
+  pending_actions:
+    - "Commit and push batch 7 runtime-evidence review-followup repair."
+    - "Poll PR #270 remote checks after the pushed batch 7 head until clean, failed, or externally blocked."
+    - "Do not start prompt-gate until PR #270 checks and review-thread classification are settled for the latest pushed head."
+  tools:
+    - "@github"
+    - "@circleci"
+    - "@coderabbit"
+    - "$autofix"
+  env_source: "~/.codex/.env"
+  report_back: "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+slice_queue:
+  completed:
+    - verify-work
+    - memory-gate
+    - drift-gate
+    - replay
+    - remediate
+    - observability-gate
+    - artifact-gate
+  active: plan-gate
+  next: prompt-gate
+  remaining:
+    - gap-case
+    - simulate
+    - ci-migrate
+    - init
+    - upgrade
+    - brain
+  deferred:
+    - effect-layers

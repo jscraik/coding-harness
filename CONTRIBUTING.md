@@ -114,6 +114,11 @@ Recommended policy:
 - Prefer invoking production functions, classes, CLI commands, shell scripts, validators, or routes directly. If no existing test covers the path, create a temporary reproduction harness under `codex-scripts/` and keep that directory gitignored.
 - If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, record the blocker clearly, run the nearest meaningful validation, and do not describe production behavior as verified unless the touched path actually ran.
 - Keep docs-gate required documentation surfaces updated together when validation, required-check, tooling/runtime, or architecture-context behavior changes.
+- When required-check behavior moves into a deeper module, keep the command
+  facade thin, document the new seam in `docs/architecture/module-boundaries.md`,
+  and prove the branch-protection identity set still matches
+  `harness.contract.json`, `.harness/ci-required-checks.json`, generated
+  scaffolds, CircleCI, CodeRabbit, and `semgrep-cloud-platform/scan`.
 - Treat `scripts/new-task.sh` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
 - Treat `scripts/prepare-worktree.sh` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
