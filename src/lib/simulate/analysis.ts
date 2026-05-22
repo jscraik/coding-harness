@@ -490,9 +490,19 @@ function classifyDecisionDelta(
 	return { delta, deltaType };
 }
 
-/**
- * Compute decision deltas between baseline and candidate contracts.
- */
+function emptyDeltas(): { summary: DeltaSummary; topDeltas: DecisionDelta[] } {
+	return {
+		summary: {
+			total: 0,
+			blockedToAllowed: 0,
+			allowedToBlocked: 0,
+			confidenceChanges: 0,
+			unchanged: 0,
+		},
+		topDeltas: [],
+	};
+}
+/** Compute decision deltas between baseline and candidate contracts. */
 export function computeDeltas(
 	contractA: HarnessContract,
 	contractB: HarnessContract,
@@ -503,21 +513,11 @@ export function computeDeltas(
 		: resolve("./artifacts/agent-runs");
 	const { manifests } = readArtifactManifests(artifactsDir);
 
-	if (manifests.length === 0) {
-		return {
-			summary: {
-				total: 0,
-				blockedToAllowed: 0,
-				allowedToBlocked: 0,
-				confidenceChanges: 0,
-				unchanged: 0,
-			},
-			topDeltas: [],
-		};
-	}
+	if (manifests.length === 0) return emptyDeltas();
 
 	const hashA = computeContractHash(contractA);
 	const hashB = computeContractHash(contractB);
+	if (hashA === hashB) return emptyDeltas();
 	const candidateManifests = manifests.filter(
 		(m) => m.contract?.hash === hashB,
 	);

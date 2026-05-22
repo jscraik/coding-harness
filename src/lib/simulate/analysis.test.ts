@@ -173,4 +173,40 @@ describe("simulate analysis", () => {
 		expect(deltas.summary.blockedToAllowed).toBe(1);
 		expect(deltas.topDeltas[0]?.candidate.reason).toContain("success");
 	});
+
+	it("does not compare runs when contract hashes are identical", async () => {
+		const artifactsDir = join(makeTestRoot(), "artifacts");
+		const contract = await loadRepoContract();
+		const contractHash = computeContractHash(contract);
+
+		writeManifest({
+			artifactsDir,
+			runId: "baseline-run",
+			contractHash,
+			outcome: "failed",
+			events: [
+				{
+					schemaVersion: "agent-run-event/v1",
+					eventType: "decision",
+					status: "completed",
+					payload: { outcome: "failed" },
+				},
+			],
+		});
+		writeManifest({
+			artifactsDir,
+			runId: "candidate-looking-run",
+			contractHash,
+			outcome: "success",
+		});
+
+		const deltas = computeDeltas(
+			contract,
+			cloneContract(contract),
+			artifactsDir,
+		);
+
+		expect(deltas.summary.total).toBe(0);
+		expect(deltas.topDeltas).toEqual([]);
+	});
 });
