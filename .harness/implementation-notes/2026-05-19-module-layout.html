@@ -514,19 +514,19 @@
         <section class="status-strip" aria-label="Deep-module migration status">
           <article class="status-card status-ok">
             <strong>Complete</strong>
-            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, init, and upgrade registry parsing now have facade-first module seams.</span>
+            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, init, upgrade, and brain registry parsing now have facade-first module seams.</span>
           </article>
           <article class="status-card status-current">
-            <strong>Current Slice</strong>
-            <span>T014 brain is implemented locally from merged origin/main: the Project Brain command facade, registry adapter, dispatcher, parser helpers, typed CLI contracts, and subcommand modules are split and under module-boundary ratchets.</span>
+            <strong>Final Audit</strong>
+            <span>T014 brain is merged through PR #280: the Project Brain command facade, registry adapter, dispatcher, parser helpers, typed CLI contracts, and subcommand modules are split and under module-boundary ratchets.</span>
           </article>
           <article class="status-card status-watch">
             <strong>Report Status</strong>
-            <span>The 8767 report is live over HTTP and loaded in the Codex In-app Browser. Browser target discovery found the Codex In-app Browser, navigation reached the report URL, and the observed title is Coding Harness Module Layout.</span>
+            <span>The 8767 report is live over HTTP at the final-audit URL and launched in the Codex In-app Browser. Browser verification reached the report and observed Module Layout plus FINAL AUDIT on the rendered page.</span>
           </article>
           <article class="status-card status-watch">
-            <strong>Do Not Advance</strong>
-            <span>Do not claim the overall goal complete until T014 brain push, PR checks, review-thread observation, and merge/deferral evidence are recorded; local fast gates pass, while test:deep is currently blocked at E2E credential setup in this runtime.</span>
+            <strong>Completion Guard</strong>
+            <span>No remaining non-Effect slice is unclassified. Effect layers stay deferred, PR #280 is merged with green checks and zero unresolved threads, and test:deep remains separately classified as blocked_env_fifo_timeout at E2E credential validation.</span>
           </article>
         </section>
 
@@ -541,31 +541,31 @@
             <div class="priority-grid">
               <div class="priority-item">
                 <strong>Now</strong>
-                <span>Upgrade split is merged as PR #279 with squash merge commit d8c2e9f. T014 brain is implemented locally on codex/JSC-331-brain-deep-module from merged origin/main.</span>
+                <span>All non-Effect slices through brain are complete. PR #280 merged at 2026-05-22T23:02:28Z with merge commit 9886ec4, and no open JSC-331 PRs remain.</span>
               </div>
               <div class="priority-item">
                 <strong>Proof</strong>
-							<span>Use PR #279 merge evidence, R014 env-backed reclassification, R014-BRAIN-FOCUSED-PROOF-REVIEW-REPAIRED, R014-BRAIN-BROAD-LOCAL-GATES-VERIFY-WORK-PASS, focused brain/registry/module-boundary tests, pnpm typecheck, validate-codestyle fast, verify-work fast, production brain status JSON, and this live 8767 report for current-state proof.</span>
+						<span>Use PR #280 merge evidence, head 50109ac5, merge commit 9886ec4, seven total and zero unresolved review threads, all visible green checks, R014 receipts, focused brain/registry/module-boundary tests, goal-board validation, and this live 8767 report for current-state proof.</span>
               </div>
               <div class="priority-item">
                 <strong>Guardrail</strong>
-                <span>No completion claim starts while T014 brain lacks broad local validation, PR handoff, remote checks, review-thread observation, and merge/deferral evidence. CODEX-NATIVE HARNESS MEMORY BASELINE remains separate unless explicitly routed here.</span>
+                <span>CODEX-NATIVE HARNESS MEMORY BASELINE remains separate unless explicitly routed here. No new implementation slice starts from this completed goal board.</span>
               </div>
             </div>
           </article>
           <article class="timeline-panel">
             <h2>Current Evidence Trail</h2>
-            <p>Last refreshed for the T014 brain implementation, broad local gate receipt, E2E credential blocker classification, and parallel-agent coordination note on 2026-05-22.</p>
+            <p>Last refreshed for the final T014 brain merge audit, Browser report proof, E2E credential blocker classification, and parallel-agent coordination note on 2026-05-23.</p>
             <ul class="timeline-list">
-              <li>Merged proof: PR #279 is merged into origin/main at d8c2e9f, and this branch starts from that merge commit.</li>
+              <li>Merged proof: PR #280 is merged into origin/main at 9886ec4, and this branch starts from that merge commit.</li>
               <li>Code split: src/commands/brain-core.ts is a compatibility facade and the brain registry adapter imports the Project Brain lib layer directly.</li>
               <li>Module seam: src/lib/project-brain/cli.ts dispatches subcommands while add-cli.ts, preflight-cli.ts, query-cli.ts, stale-cli.ts, status-cli.ts, cli-args.ts, and cli-types.ts own focused Project Brain behavior.</li>
-              <li>Current proof: focused brain, registry, and module-boundary tests pass with 191 tests; pnpm typecheck passes; validate-codestyle fast passes; verify-work fast passes with run id 20260522T215354Z-27231; node --import tsx src/cli.ts brain status --json returns valid Project Brain status; missing-harness status JSON is covered by a regression.</li>
+              <li>Current proof: focused brain, registry, and module-boundary tests pass with 195 tests; pnpm typecheck, validate-codestyle fast, verify-work fast, full validate-codestyle, tooling-audit, learning-loop gates, production brain status JSON, and missing-harness status JSON regression are recorded in R014 receipts.</li>
               <li>Deep gate truth: env-loaded pnpm test:deep now reaches E2E environment validation after pnpm check, the full 283-file unit suite, and the integration suite pass; it is blocked because the current runtime cannot provide GitHub and Linear E2E credentials from ~/.codex/.env, whose metadata reports a FIFO.</li>
-              <li>PR handoff: PR #279 merged at 2026-05-22T21:03:04Z with squash merge commit d8c2e9f02a63ac83541d14fc22484d7f89934f82; git ls-remote confirms the remote upgrade branch is deleted.</li>
-              <li>Report server: live on http://127.0.0.1:8767/artifacts/architecture/module-layout.html?v=20260522-r026-t014-broad-local with Jamie Readout Now, current slice, blocker, and remaining-work sections present.</li>
-              <li>Browser status: the active T014 report is loaded in the Codex In-app Browser at the 8767 report URL with title Coding Harness Module Layout.</li>
-              <li>Parallel-work boundary: the goal-board coordination scratchpad now declares T014 ownership of Project Brain split files, report mirrors, receipts/state, and the env-backed validation-contract correction; CODEX-NATIVE HARNESS MEMORY BASELINE remains separate.</li>
+              <li>PR handoff: PR #280 merged at 2026-05-22T23:02:28Z with merge commit 9886ec440149829ebe4f467b99cd183b04351998; all visible checks passed and review-thread lookup returned zero unresolved threads.</li>
+              <li>Report server: live on http://127.0.0.1:8767/artifacts/architecture/module-layout.html?v=20260523-r001-final-audit with Jamie Readout Now, final audit, blocker, and remaining-work sections present.</li>
+              <li>Browser status: the final-audit report is launched in the Codex In-app Browser at the 8767 report URL; rendered text shows Module Layout and FINAL AUDIT.</li>
+              <li>Parallel-work boundary: CODEX-NATIVE HARNESS MEMORY BASELINE remains separate and is not absorbed into this completed deep-module migration goal.</li>
             </ul>
           </article>
         </section>
@@ -579,19 +579,19 @@
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-					  <p>Latest implementation target: brain command split. The command registry now delegates brain metadata through a focused adapter while Project Brain parsing, dispatch, subcommands, and result typing live behind project-brain-owned seams.</p>
+				  <p>Latest completed target: brain command split. The command registry now delegates brain metadata through a focused adapter while Project Brain parsing, dispatch, subcommands, and result typing live behind project-brain-owned seams.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-							  <p>Current evidence is PR #279 merge proof, PR #280 handoff proof, R014 env-backed validation reclassification, R014-BRAIN-FOCUSED-PROOF-REVIEW-REPAIRED, R014-BRAIN-BROAD-LOCAL-GATES-VERIFY-WORK-PASS, R014-BRAIN-FULL-LOCAL-HANDOFF-GATES, R014-BRAIN-PR280-OPENED-BODY-REPAIRED, the active T014 Browser launch, the T014 brain local split, the goal-board coordination scratchpad, focused, fast-gate, and full local handoff validation, 8767 report receipts, and deep-module receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
+					  <p>Current evidence is PR #280 merge proof, final head 50109ac5, merge commit 9886ec4, zero unresolved review threads, all visible green checks, R014 env-backed validation reclassification, R014 brain validation receipts, this final-audit receipt, focused/current tests, and deep-module receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
 			  <ul class="evidence-list">
-							<li>Focused proof: brain, registry, and module-boundary tests passed locally with 191 tests; pnpm typecheck passes; production brain status JSON returns valid Project Brain status; missing-harness status JSON is locked by a regression.</li>
+				<li>Focused proof: brain, registry, and module-boundary tests passed locally with 195 tests in final-audit revalidation; pnpm typecheck passes; production brain status JSON returns valid Project Brain status; missing-harness status JSON is locked by a regression.</li>
 											<li>Broad local proof: bash scripts/validate-codestyle.sh --fast passes; bash scripts/verify-work.sh --fast passes with run id 20260522T215354Z-27231; full bash scripts/validate-codestyle.sh passes; tooling-audit passes with zero findings; the learning loop succeeds with warn-only advisory matches; goal-board, receipt JSONL, diff-check, and report-mirror validation are part of the current R014 refresh.</li>
 							<li>Review gates: architecture findings are fixed, simplify/Codex found no required follow-up, product/dev-tools JSON concerns are resolved by direct parse proof plus regression, and testing/unslopify artifact retries failed after mailbox findings were fixed or classified.</li>
 							<li>Deep proof boundary: env-loaded pnpm test:deep progresses through check, unit, and integration suites, then blocks at E2E credential validation because GitHub and Linear credentials are not available from the current ~/.codex/.env FIFO surface.</li>
 							<li>Coordination: the goal board is the shared scratchpad for parallel agents; it names the T014-owned file set and keeps CODEX-NATIVE HARNESS MEMORY BASELINE out of this branch unless explicitly routed.</li>
-						<li>Visual: the updated report is serving on port 8767 for Jamie and is loaded in the Codex In-app Browser with title Coding Harness Module Layout.</li>
-													<li>Handoff: PR #280 is open from head 2078c1a8 with zero initial review threads. The first remote pr-template context failed on PR-body formatting; the live body is repaired and passes pr-template-gate locally. Remaining proof is the evidence push, remote checks, CodeRabbit/Semgrep review, review-thread re-observation, and merge/deferral evidence.</li>
+				<li>Visual: the updated report is serving on port 8767 for Jamie and is launched in the Codex In-app Browser with Module Layout and FINAL AUDIT visible.</li>
+								<li>Handoff: PR #280 is merged from final head 50109ac5 with all visible checks green and seven total, zero unresolved review threads. No open JSC-331 PRs remain.</li>
 			  </ul>
 			</article>
           </div>
@@ -2377,9 +2377,9 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
             <p>
-              Current board gate: T014 brain is active from merged origin/main.
-              Next pressure point is splitting the brain command boundary without
-				      changing Project Brain behavior, then proving the final slice before audit.
+              Current board gate: final audit complete for the non-Effect deep-module queue.
+              Next pressure point is outside this goal: Effect layers remain deferred, and
+		      CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active slice.
             </p>
           </article>
         </section>
