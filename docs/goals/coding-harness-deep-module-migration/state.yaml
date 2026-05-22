@@ -437,7 +437,7 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R010-SIMULATE-IMPLEMENTATION-VALIDATED
 pr_green_sweep:
-  status: t010_simulate_pr276_draft_blocked
+  status: t010_simulate_pr276_review_gap_tests_validated_pending_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -459,7 +459,7 @@ pr_green_sweep:
   simulate_base_sha: "a4f066a28ca91d67f84c1def5db552657e8b3cc4"
   simulate_pr_url: "https://github.com/jscraik/coding-harness/pull/276"
   simulate_head_sha: "96d766498ffab984cd19a80e6a6b9a985972e31d"
-  last_observed: "2026-05-22T10:42:22Z"
+  last_observed: "2026-05-22T11:00:04Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -484,12 +484,14 @@ pr_green_sweep:
     - "T009 correctness reviewer did not complete with a written artifact before closeout; this remains an explicit review coverage gap for the PR handoff, while focused behavior and registry tests pass locally."
     - "T010 simulate implementation is locally validated: focused simulate/registry/module-boundary tests pass, typecheck passes, direct production simulate CLI JSON proof passes, docs-gate passes after synchronizing README.md, AGENTS.md, docs/agents/00-architecture-bootstrap.md, and docs/agents/07b-agent-governance.md, and validate-codestyle fast passes with non-blocking baseline drift-gate warnings plus simulate size ratchet warnings."
     - "T010 architecture context refreshed after check-diagram-freshness reported stale generated diagram artifacts; .diagram/* and AI/context/diagram-context.md are included as validation-required architecture artifacts for this slice."
-    - "T010 review artifacts exist for simplicity and Codex product review; architecture review feedback was addressed with parser, CLI, and registry tests but failed artifact-file verification after retry, and testing review did not leave an artifact after retry."
+    - "T010 replacement architecture and testing reviewer artifacts now exist locally at artifacts/reviews/t010-architecture.md and artifacts/reviews/t010-testing.md after the first architecture/testing artifact writes failed verification; artifacts/ is gitignored, so the durable tracked evidence is this receipt/state classification."
+    - "T010 replacement architecture review reported no blocking boundary drift and one low follow-up that src/lib/simulate/cli.ts and src/lib/simulate/analysis.ts remain aggregation points for a later micro-slice."
+    - "T010 replacement testing review found valid high CLI error-path coverage gaps and medium direct branch gaps; the implementation now adds tests for contract A/B load failure codes, JSON/human CLI error formatting, ci-soft validation failure handling, recommendation threshold branches, machine-readable flags, artifact manifest reading, and trace counting."
     - "T010 simplify review reported duplicate parser/runtime required-argument validation and duplicate summary filesystem scans; parser/runtime validation is intentionally split across CLI usage and public runtime validation, while the duplicate scan reduction is deferred to avoid expanding this module-boundary slice."
     - "T010 implementation commit bb79f3cf5c696c2fff4e16f741a971007f17fd4c was pushed and opened as draft PR #276 at https://github.com/jscraik/coding-harness/pull/276."
     - "PR #276 evidence-only board update commit 96d766498ffab984cd19a80e6a6b9a985972e31d is pushed and visible as the PR head."
-    - "PR #276 is not merge-ready: it is draft, mergeStateStatus is BLOCKED, pr-pipeline and security-scan are in progress, and CircleCI contexts including check, test, linear-gate, orb-pinning, security-scan, snyk-dependency-scan, and the aggregate pipeline remain pending on the post-evidence-push run."
-    - "PR #276 post-evidence-push observation shows CodeRabbit success, Socket success, pr-template success, docs-gate/lint/memory/typecheck/audit/dependency-scan/consistency-drift-health success, and GitHub review-thread lookup returned zero review threads."
+    - "PR #276 previous head 8f92a7ab08be4a5a3339f79d4d6d78e09adbf242 became clean before the review-gap test repair: all reported checks passed, mergeStateStatus was CLEAN, mergeable was MERGEABLE, and GitHub review-thread lookup returned zero review threads."
+    - "PR #276 is not merge-ready for the current lane because the validated T010 review-gap tests are local and pending commit/push; after push, remote checks and review-thread state must be reobserved before T011 starts."
     - "T010 PR body passes pr-template-gate and linear-gate locally after adding the required JSC-331 reference, review-context learning acknowledgement, and exact command-evidence grammar."
     - "pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration passed; the current process lacks GitHub and Linear credentials and ~/.codex/.env is a FIFO, so safe grep/source recovery would block."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
@@ -500,14 +502,14 @@ pr_green_sweep:
     coderabbit: "PR #275 CodeRabbit check passed after ready-for-review; no CodeRabbit review threads were returned by GitHub."
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
     post_push: "PR #275 was marked ready and squash-merged with merge commit a4f066a28ca91d67f84c1def5db552657e8b3cc4; the gap-case remote branch was deleted by the merge command."
-    validation: "T010 local validation passed: focused simulate/registry/module-boundary tests, typecheck, direct production simulate CLI JSON proof, docs-gate, validate-codestyle fast, goal-board JSONL/check, whitespace checks, diagram freshness, verify-work fast, tooling-audit, full validate-codestyle, pr-template-gate, linear-gate, review-context, and north-star-feedback. pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration passed; ~/.codex/.env is a FIFO and cannot be safely sourced/grepped without blocking."
+    validation: "T010 local validation passed: focused simulate/recommendations/registry/module-boundary tests, typecheck, direct production simulate CLI JSON proof, docs-gate, validate-codestyle fast, goal-board JSONL/check, whitespace checks, diagram freshness, verify-work fast, tooling-audit, full validate-codestyle, pr-template-gate, linear-gate, review-context, and north-star-feedback. pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration passed; ~/.codex/.env is a FIFO and cannot be safely sourced/grepped without blocking."
     t009_review_gates: "Architecture review reported no actionable findings; simplify reported two low findings and the parser re-export was removed while the internal compatibility facade was kept intentionally; testing reported two medium coverage gaps that were fixed in tests but failed artifact-file verification; correctness review artifact did not complete before closeout."
     pr_handoff: "Draft PR #276 opened at https://github.com/jscraik/coding-harness/pull/276 for T010 simulate. Post-evidence-push observation at head 96d766498ffab984cd19a80e6a6b9a985972e31d: draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, CodeRabbit success, Socket success, pr-template success, zero review threads, and remaining CircleCI/security aggregate contexts pending."
+    review_gap_followup: "Replacement T010 architecture/testing artifacts were verified locally. Architecture is pass_with_followups only for remaining aggregation points; testing gaps were fixed with new simulate CLI error-path and recommendations/reader tests. Focused test command, pnpm typecheck, and bash scripts/validate-codestyle.sh --fast passed before commit."
     review_response: "PR #275 returned zero review threads before merge; prior valid PR #274 CodeRabbit findings remain fixed, pushed, merged, and covered by focused prompt-gate/module-boundary tests, direct prompt-gate CLI proof, validate-codestyle fast, JSONL parsing, whitespace checks, and live post-merge review-thread observation."
   pending_actions:
-    - "Continue monitoring PR #276 until pr-pipeline, security-scan, and pending CircleCI contexts settle."
+    - "Commit and push the T010 review-gap test repair, then reobserve PR #276 remote checks and review threads at the new head."
     - "Resolve or classify any PR #276 remote check failures and the blocked pnpm test:deep E2E credential lane."
-    - "Replace or explicitly waive the missing T010 architecture/testing reviewer artifacts."
     - "Do not start T011 ci-migrate until PR #276 has remote check, review-thread, and deep-validation blocker evidence classified."
   tools:
     - "@github"

@@ -1,11 +1,21 @@
-import { existsSync, mkdirSync, rmSync, symlinkSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildSimulateOptionsFromCliArgs } from "../lib/simulate/cli-args.js";
 import { SIMULATE_EXIT_CODES } from "../lib/simulate/types.js";
-import { runSimulate, runSimulateFromCliArgs } from "./simulate.js";
+import {
+	runSimulate,
+	runSimulateCLI,
+	runSimulateFromCliArgs,
+} from "./simulate.js";
 
 describe("simulate CLI argument parsing", () => {
 	it("projects required and optional flags into simulate options", () => {
@@ -150,5 +160,78 @@ describe("simulate output path validation", () => {
 		expect(result.ok).toBe(true);
 		expect(result.exitCode).toBe(SIMULATE_EXIT_CODES.SUCCESS);
 		expect(existsSync(join(process.cwd(), outputPath))).toBe(true);
+	});
+
+	it("returns structured errors when contract loading fails", () => {
+		mkdirSync(testRoot, { recursive: true });
+		const invalidContract = join(testRoot, "invalid-contract.json");
+		writeFileSync(invalidContract, "{", "utf-8");
+
+		const contractAResult = runSimulate({
+			contractA: invalidContract,
+			contractB: "harness.contract.json",
+			json: true,
+		});
+		expect(contractAResult.ok).toBe(false);
+		expect(contractAResult.exitCode).toBe(SIMULATE_EXIT_CODES.VALIDATION_ERROR);
+		if (!contractAResult.ok) {
+			expect(contractAResult.error.code).toBe("E_CONTRACT_A_LOAD_FAILED");
+		}
+
+		const contractBResult = runSimulate({
+			contractA: "harness.contract.json",
+			contractB: invalidContract,
+			json: true,
+		});
+		expect(contractBResult.ok).toBe(false);
+		expect(contractBResult.exitCode).toBe(SIMULATE_EXIT_CODES.VALIDATION_ERROR);
+		if (!contractBResult.ok) {
+			expect(contractBResult.error.code).toBe("E_CONTRACT_B_LOAD_FAILED");
+		}
+	});
+
+	it("formats CLI load failures as JSON or human output", () => {
+		mkdirSync(testRoot, { recursive: true });
+		const invalidContract = join(testRoot, "invalid-contract.json");
+		writeFileSync(invalidContract, "{", "utf-8");
+		const error = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runSimulateCLI({
+				contractA: invalidContract,
+				contractB: "harness.contract.json",
+				json: true,
+			}),
+		).toBe(SIMULATE_EXIT_CODES.VALIDATION_ERROR);
+		expect(JSON.parse(String(error.mock.calls.at(-1)?.[0]))).toMatchObject({
+			error: { code: "E_CONTRACT_A_LOAD_FAILED" },
+		});
+
+		expect(
+			runSimulateCLI({
+				contractA: invalidContract,
+				contractB: "harness.contract.json",
+			}),
+		).toBe(SIMULATE_EXIT_CODES.VALIDATION_ERROR);
+		expect(String(error.mock.calls.at(-1)?.[0])).toContain(
+			"Failed to load contract A",
+		);
+	});
+
+	it("does not let ci-soft mask validation failures", () => {
+		mkdirSync(testRoot, { recursive: true });
+		const invalidContract = join(testRoot, "invalid-contract.json");
+		writeFileSync(invalidContract, "{", "utf-8");
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+		expect(
+			runSimulateCLI({
+				contractA: invalidContract,
+				contractB: "harness.contract.json",
+				ciSoft: true,
+			}),
+		).toBe(SIMULATE_EXIT_CODES.VALIDATION_ERROR);
 	});
 });
