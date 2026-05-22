@@ -625,8 +625,8 @@ pr_green_sweep:
   upgrade_branch: "codex/JSC-331-upgrade-deep-module"
   upgrade_base_sha: "466aaaea0fa36f7fe670c7d496c0cb6a3816627b"
   upgrade_pr_url: "https://github.com/jscraik/coding-harness/pull/279"
-  upgrade_head_sha: "1c7ea5f697a892bfc3d337391c0b61d6050b196f"
-  last_observed: "2026-05-22T19:17:20Z"
+  upgrade_head_sha: "live PR #279 report-refresh head; avoid self-stale hard-coded report hash"
+  last_observed: "2026-05-22T19:36:07Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total PR #270 threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -695,8 +695,8 @@ pr_green_sweep:
     - "T013 full local PR-template gates now run: bash scripts/validate-codestyle.sh passes, pnpm check passes with 282 standard test files plus the ci-migrate suite and no known vulnerabilities, tooling-audit passes with zero findings, review-context succeeds, north-star-feedback succeeds with external evidence gaps called out, and learnings gate exits 0 with warning-only generated/report keyword matches."
     - "The module-layout report remains live for Jamie on http://127.0.0.1:8767/artifacts/architecture/module-layout.html and now exposes a Jamie Readout Now section with the implemented T013 upgrade seam, reviewer-response proof, Browser truth, and remaining handoff gates."
     - "The in-app Browser was successfully launched on the 8767 report URL in R013-UPGRADE-REPORT-BROWSER-LAUNCHED-8767, but the latest Browser workflow retry in this thread lists no available browser targets and returns Browser is not available: iab; HTTP revalidation of the report URL passes."
-    - "Draft PR #279 is open for T013 at https://github.com/jscraik/coding-harness/pull/279 with clean head 1c7ea5f697a892bfc3d337391c0b61d6050b196f; current remote checks are green except an old pr-template failure from a drifted live body plus orb-pinning/pr-pipeline still pending at 2026-05-22T19:17:20Z. The PR body is being resynced before a fresh report commit retriggers CircleCI."
-    - "CODEX-NATIVE HARNESS MEMORY BASELINE files remain preserved in stash and outside the T013 upgrade branch."
+    - "PR #279 is open for T013 at https://github.com/jscraik/coding-harness/pull/279. The live PR body now passes local pr-template-gate and linear-gate; remote CircleCI contexts are running after the latest report-status push and must finish green before T013 can advance."
+    - "CODEX-NATIVE HARNESS MEMORY BASELINE remains preserved outside the T013 upgrade branch and must not be absorbed into the PR #279 closeout slice."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_threads: "PR #276 GitHub review-thread lookup before merge returned nine total threads and zero unresolved threads. PR #270 remains merged with two current unresolved historical thread records whose fixes are shipped in merged PR #273."
@@ -719,12 +719,13 @@ pr_green_sweep:
       implementation: "T013 upgrade split is implemented locally: src/commands/upgrade.ts is a compatibility facade, src/lib/cli/registry/upgrade-command-spec.ts owns registry metadata and delegation, src/lib/upgrade/cli-args.ts owns raw flag projection, src/lib/upgrade/types.ts owns the shared option contract, src/lib/upgrade/contract.ts owns contract/default migration helpers, src/lib/upgrade/templates.ts owns template and manifest updates, and src/lib/upgrade/runner.ts owns orchestration."
       validation: "Focused upgrade/registry/module-boundary tests pass with 205 tests after adding direct upgrade registry execute-path coverage, malformed provider-value coverage, and helper error-boundary coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, the production CLI dry-run path, validate-codestyle fast, and verify-work fast pass. verify-work fast run id: 20260522T183031Z-7843. Full local PR-template gates also pass: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star-feedback; learnings gate exits 0 with warning-only generated/report keyword matches. pnpm test:deep is blocked at E2E credential validation after pnpm check, test:artifacts, and integration pass; ~/.codex/.env is a FIFO, so env-loaded recovery cannot be safely sourced in this runtime."
       review: "Product, testing, simplicity, architecture, unslopify, and Codex/project-standards review artifacts exist under artifacts/reviews/. Testing's execute-path finding, simplicity/architecture option-contract duplication findings, stale-artifact findings, and Codex evidence-freshness finding are fixed locally; no blocking reviewer findings remain in the current patch."
-      pr_handoff: "Draft PR #279 is open at https://github.com/jscraik/coding-harness/pull/279 with clean head 1c7ea5f697a892bfc3d337391c0b61d6050b196f. Remote checks are green except an old pr-template failure from a drifted live body plus orb-pinning/pr-pipeline still pending; the body is being resynced and a fresh report commit will retrigger the stale failure. GitHub review-thread lookup returned zero threads in the current handoff pass."
-      blocker: "The 8767 report is live over HTTP; the latest Browser workflow retry is blocked because no iab browser target is currently exposed in this thread. T013 is blocked from advancement until PR #279 pr-template is rerun green, remaining remote checks finish green, independent review state is known, and merge-readiness evidence is recorded."
+      pr_handoff: "PR #279 is open at https://github.com/jscraik/coding-harness/pull/279. The live PR body passes local pr-template-gate and linear-gate; remote CircleCI contexts are running after the latest report-status push and must finish green before merge. GitHub review-thread lookup returned zero threads in the current handoff pass."
+      blocker: "The 8767 report was restarted and is live over HTTP; direct Browser reload is blocked because no iab browser target is currently exposed in this thread. T013 is blocked from advancement until PR #279 remote checks finish green, independent review state is known, and merge-readiness evidence is recorded."
   pending_actions:
+    - "Reobserve the latest report-status push until PR #279 remote checks finish green or produce a concrete blocker."
     - "Reobserve PR #279 remote checks, CodeRabbit/review state, and review-thread classification before advancing."
     - "Keep the local static report server available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html; direct Browser reload is currently blocked because the Browser workflow exposes no iab target in this thread."
-    - "Do not start brain while PR #279 has pending checks, draft/review gaps, or missing merge-readiness evidence."
+    - "Do not start brain while PR #279 has pending checks, review gaps, or missing merge-readiness evidence."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
     - "@github"
