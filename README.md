@@ -712,13 +712,20 @@ adapter, and lifecycle validation, persistence, open/resolve behavior, and
 result presentation stay in `src/lib/gap-case/` so future production-gap
 changes do not widen the registry or command facade.
 
+The `simulate` command also follows the command-registry split pattern. The
+public command facade and legacy analysis facades stay compatibility export
+surfaces, the registry spec delegates raw arguments to the simulate CLI
+adapter, and CLI parsing, simulation orchestration, analysis, recommendations,
+and result presentation stay in `src/lib/simulate/` so future counterfactual
+simulation changes do not widen the registry or command facade.
+
 ### Pilot, Remediation, And Automation
 
 | Command          | Purpose                                                          |
 | ---------------- | ---------------------------------------------------------------- |
 | `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness         |
 | `pilot-rollback` | Move pilot mode between autonomous and manual states             |
-| `simulate`       | Run counterfactual policy simulation                             |
+| `simulate`       | Run counterfactual policy simulation through the simulate module boundary |
 | `automation-run` | Execute idempotent automation playbooks                          |
 | `gap-case`       | Manage production gap cases through the gap-case module boundary |
 | `remediate`      | Plan and run deterministic remediation for findings              |

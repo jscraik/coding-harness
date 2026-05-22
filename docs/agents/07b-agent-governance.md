@@ -55,6 +55,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   compatibility facade, `gap-case-command-spec.ts` as the registry adapter,
   and lifecycle parsing, validation, persistence, and presentation inside
   `src/lib/gap-case/`.
+  Simulate follows the same pattern with `src/commands/simulate.ts`,
+  `src/commands/simulate-analysis.ts`, and
+  `src/commands/simulate-analysis-recommendations.ts` as compatibility
+  facades, `simulate-command-spec.ts` as the registry adapter, and CLI
+  parsing, simulation orchestration, analysis, recommendations, and
+  presentation inside `src/lib/simulate/`.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to

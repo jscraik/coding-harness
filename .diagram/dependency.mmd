@@ -46,6 +46,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_packaged_skill_5e32c890_9228ad58
   ext_node_child_process_f62b7d19["node:child_process"] --> node_version_coherence_69733bcb_00c8d5d9
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_analysis_f44e85c4_c68a7cb6
   ext_node_crypto_c7dfc512["node:crypto"] --> node_artifact_io_ba511748_6d1faad8
   ext_node_crypto_c7dfc512["node:crypto"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_crypto_c7dfc512["node:crypto"] --> node_ci_migrate_signing_2d82ac3f_9e5e8974
@@ -74,13 +75,13 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_records_core_89286dfa_4ce958f7
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_state_core_25a955bc_a562e9bf
   ext_node_crypto_c7dfc512["node:crypto"] --> node_scan_cache_fc02c79c_11793337
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_simulate_analysis_164a460c_2367e095
   ext_node_crypto_c7dfc512["node:crypto"] --> node_sources_878a52fc_cd312fcd
   ext_node_crypto_c7dfc512["node:crypto"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
   ext_node_crypto_c7dfc512["node:crypto"] --> node_tracer_1e6243a2_cb3d802b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_crypto_c7dfc512["node:crypto"] --> node_upgrade_1_b277486e_4a06b7a8
   ext_node_dns_828a0bbf["node:dns"] --> node_url_validator_3c5a1568_b9b1dc66
+  ext_node_fs_a15b7d96["node:fs"] --> node_analysis_f44e85c4_c68a7cb6
   ext_node_fs_a15b7d96["node:fs"] --> node_artifact_io_ba511748_6d1faad8
   ext_node_fs_a15b7d96["node:fs"] --> node_artifact_provenance_03b81cbf_d3038614
   ext_node_fs_a15b7d96["node:fs"] --> node_audit_b81f37a0_398f4d93
@@ -105,6 +106,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_ci_migrate_merge_queue_window_0070bd6d_03bcdaa9
   ext_node_fs_a15b7d96["node:fs"] --> node_ci_migrate_promotion_evidence_1a2dc527_7ed1a850
   ext_node_fs_a15b7d96["node:fs"] --> node_cli_3_9d90d3fe_507ab5a9
+  ext_node_fs_a15b7d96["node:fs"] --> node_cli_8_e3a6ce03_79857c8d
   ext_node_fs_a15b7d96["node:fs"] --> node_cli_99bb8840_659774ba
   ext_node_fs_a15b7d96["node:fs"] --> node_config_validator_669ebc2e_d7ca485d
   ext_node_fs_a15b7d96["node:fs"] --> node_context_health_80bb7da9_169768cb
@@ -223,8 +225,6 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_scaffold_worktree_templates_66a38e9a_ff3c085c
   ext_node_fs_a15b7d96["node:fs"] --> node_scan_cache_fc02c79c_11793337
   ext_node_fs_a15b7d96["node:fs"] --> node_setup_git_hooks_70750d40_b4ca2cf9
-  ext_node_fs_a15b7d96["node:fs"] --> node_simulate_analysis_164a460c_2367e095
-  ext_node_fs_a15b7d96["node:fs"] --> node_simulate_b9efe395_90dff935
   ext_node_fs_a15b7d96["node:fs"] --> node_source_outline_1_54a631fa_8582fb07
   ext_node_fs_a15b7d96["node:fs"] --> node_sources_878a52fc_cd312fcd
   ext_node_fs_a15b7d96["node:fs"] --> node_stale_detector_a563289e_653281b0
@@ -268,6 +268,7 @@ graph LR
   ext_node_os_d93fe73a["node:os"] --> node_runner_527aa9f4_40925a5b
   ext_node_os_d93fe73a["node:os"] --> node_test_harness_6e520b98_6b3d1d32
   ext_node_os_d93fe73a["node:os"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
+  ext_node_path_78811c13["node:path"] --> node_analysis_f44e85c4_c68a7cb6
   ext_node_path_78811c13["node:path"] --> node_args_090772cf_1bac9202
   ext_node_path_78811c13["node:path"] --> node_args_1_15220d9b_f1d9281c
   ext_node_path_78811c13["node:path"] --> node_artifact_io_ba511748_6d1faad8
@@ -296,6 +297,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_ci_migrate_promotion_evidence_1a2dc527_7ed1a850
   ext_node_path_78811c13["node:path"] --> node_ci_migrate_snapshot_paths_a10de06b_30ae5166
   ext_node_path_78811c13["node:path"] --> node_cli_3_9d90d3fe_507ab5a9
+  ext_node_path_78811c13["node:path"] --> node_cli_8_e3a6ce03_79857c8d
   ext_node_path_78811c13["node:path"] --> node_cli_99bb8840_659774ba
   ext_node_path_78811c13["node:path"] --> node_config_validator_669ebc2e_d7ca485d
   ext_node_path_78811c13["node:path"] --> node_context_ea7792a2_08541ab6
@@ -408,8 +410,6 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_scan_cache_fc02c79c_11793337
   ext_node_path_78811c13["node:path"] --> node_search_24193290_6a30c5b7
   ext_node_path_78811c13["node:path"] --> node_setup_git_hooks_70750d40_b4ca2cf9
-  ext_node_path_78811c13["node:path"] --> node_simulate_analysis_164a460c_2367e095
-  ext_node_path_78811c13["node:path"] --> node_simulate_b9efe395_90dff935
   ext_node_path_78811c13["node:path"] --> node_source_outline_1_54a631fa_8582fb07
   ext_node_path_78811c13["node:path"] --> node_sources_878a52fc_cd312fcd
   ext_node_path_78811c13["node:path"] --> node_stale_detector_a563289e_653281b0

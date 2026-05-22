@@ -45,6 +45,24 @@ const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 			"Gap-case internal command helper must stay a compatibility export surface; store, policy, and validation helpers live behind the gap-case module seam.",
 	},
 	{
+		path: "src/commands/simulate.ts",
+		maxLines: 25,
+		reason:
+			"Simulate command must stay a compatibility export surface; CLI parsing, contract loading, analysis, recommendations, and presentation live behind the simulate module seam.",
+	},
+	{
+		path: "src/commands/simulate-analysis.ts",
+		maxLines: 25,
+		reason:
+			"Simulate analysis command helper must stay a compatibility export surface; comparison logic lives behind the simulate module seam.",
+	},
+	{
+		path: "src/commands/simulate-analysis-recommendations.ts",
+		maxLines: 25,
+		reason:
+			"Simulate recommendation helper must stay a compatibility export surface; recommendation logic lives behind the simulate module seam.",
+	},
+	{
 		path: "src/lib/output/normalise.ts",
 		maxLines: 10,
 		reason:
@@ -139,6 +157,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		maxLines: 20,
 		reason:
 			"Gap-case command spec must stay focused on registry metadata and gap-case-owned argv delegation.",
+	},
+	{
+		path: "src/lib/cli/registry/simulate-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Simulate command spec must stay focused on registry metadata and simulate-owned argv delegation.",
 	},
 	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
@@ -488,6 +512,39 @@ const GAP_CASE_SURFACE_RATCHETS = [
 		maxLines: 120,
 		reason:
 			"Gap-case CLI presentation must stay focused on action dispatch, output formatting, and exit-code mapping.",
+	},
+] as const;
+
+const SIMULATE_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/simulate/types.ts",
+		maxLines: 620,
+		reason:
+			"Simulate shared types must stay a bounded module contract while analysis internals move behind named seams.",
+	},
+	{
+		path: "src/lib/simulate/analysis.ts",
+		maxLines: 620,
+		reason:
+			"Simulate analysis must stay focused on contract comparison and plan classification, not CLI argv or terminal presentation.",
+	},
+	{
+		path: "src/lib/simulate/recommendations.ts",
+		maxLines: 160,
+		reason:
+			"Simulate recommendations must stay focused on analysis-to-action projection.",
+	},
+	{
+		path: "src/lib/simulate/cli-args.ts",
+		maxLines: 45,
+		reason:
+			"Simulate CLI args must stay focused on raw argv projection before simulation execution.",
+	},
+	{
+		path: "src/lib/simulate/cli.ts",
+		maxLines: 580,
+		reason:
+			"Simulate CLI presentation must stay focused on contract loading, output formatting, and exit-code mapping.",
 	},
 ] as const;
 
@@ -1082,6 +1139,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
 	"src/lib/cli/registry/fleet-plan-command-spec.ts",
 	"src/lib/cli/registry/gap-case-command-spec.ts",
+	"src/lib/cli/registry/simulate-command-spec.ts",
 	"src/lib/cli/registry/gardener-command-spec.ts",
 	"src/lib/cli/registry/health-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
@@ -1208,6 +1266,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./runtime-budget-command-spec.js",
 	"./runtime-card-command-spec.js",
 	"./silent-error-command-spec.js",
+	"./simulate-command-spec.js",
 	"./linear-command-spec.js",
 	"./linear-gate-command-spec.js",
 	"./policy-gate-command-spec.js",
@@ -1699,6 +1758,52 @@ describe("module boundaries", () => {
 		expect(cliArgsAdapterContent).toContain("buildGapCaseOptionsFromCliArgs");
 		expect(commandSpecsCoreContent).toContain("createGapCaseCommandSpec()");
 		expect(commandSpecsCoreContent).not.toContain('name: "gap-case"');
+	});
+
+	it("keeps simulate argv parsing and analysis behavior behind focused seams", () => {
+		expectRatchetsWithinBudget(SIMULATE_SURFACE_RATCHETS);
+
+		const facadeContent = readFileSync(
+			join(process.cwd(), "src/commands/simulate.ts"),
+			"utf-8",
+		);
+		const analysisFacadeContent = readFileSync(
+			join(process.cwd(), "src/commands/simulate-analysis.ts"),
+			"utf-8",
+		);
+		const recommendationsFacadeContent = readFileSync(
+			join(process.cwd(), "src/commands/simulate-analysis-recommendations.ts"),
+			"utf-8",
+		);
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/simulate-command-spec.ts"),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/simulate/cli-args.ts"),
+			"utf-8",
+		);
+		const commandSpecsCoreContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/command-specs-core.ts"),
+			"utf-8",
+		);
+
+		expect(facadeContent).toContain("../lib/simulate/cli.js");
+		expect(facadeContent).not.toContain("loadContract");
+		expect(facadeContent).not.toContain("getFlagValue");
+		expect(facadeContent).not.toContain("args.indexOf");
+		expect(facadeContent).not.toContain("process.argv");
+		expect(analysisFacadeContent).toContain("../lib/simulate/analysis.js");
+		expect(recommendationsFacadeContent).toContain(
+			"../lib/simulate/recommendations.js",
+		);
+		expect(registryAdapterContent).toContain("../../simulate/cli.js");
+		expect(registryAdapterContent).not.toContain("getFlagValue");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
+		expect(cliArgsAdapterContent).toContain("buildSimulateOptionsFromCliArgs");
+		expect(commandSpecsCoreContent).toContain("createSimulateCommandSpec()");
+		expect(commandSpecsCoreContent).not.toContain('name: "simulate"');
 	});
 
 	it("keeps remediate surfaces split after decomposition", () => {
