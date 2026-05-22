@@ -312,33 +312,37 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_pr270_closeout_pr272_open_remote_checks_pending
+  status: t007_pr270_closeout_pr273_merged_threads_classified_pr272_board_reconcile_pending
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
   head_sha: "cd93b6feee48a2e3e33d0e77d638aee838e85aac"
-  followup_pr_url: "https://github.com/jscraik/coding-harness/pull/272"
-  followup_branch: "codex/JSC-331-pr270-review-closeout"
-  followup_head_sha: "observe live with gh pr view 272 before closeout; tracked board commits can advance the branch head"
-  last_observed: "2026-05-22T04:46:18Z"
+  followup_pr_url: "https://github.com/jscraik/coding-harness/pull/273"
+  followup_branch: "codex/JSC-331-runtime-evidence-nullable-metadata"
+  followup_head_sha: "1ab7a0cdbc41c36f484d70b11a8a1b2463df66e7"
+  board_reconciliation_pr_url: "https://github.com/jscraik/coding-harness/pull/272"
+  board_reconciliation_branch: "codex/JSC-331-pr270-review-closeout"
+  last_observed: "2026-05-22T05:11:43Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
-    - "The two unresolved runtime-evidence review findings are repaired, committed, pushed, and handed off in draft PR #272; remote checks, CodeRabbit review, independent review, and final review-thread classification are still required."
+    - "PR #273 merged the runtime-evidence nullable metadata fix at 2026-05-22T05:06:07Z with merge commit 72bd18cc5cd7d5bcfa5f556666be20f8313b3a18; all visible PR #273 checks passed."
+    - "The two remaining PR #270 review threads are classified as valid and fixed by merged PR #273; GitHub still shows the old PR #270 thread records unresolved, so they remain historical-review-state rather than implementation blockers."
+    - "Draft PR #272 is superseded as an implementation PR and is now only a board-reconciliation branch that must be pushed and rechecked before prompt-gate starts."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
     - "Prompt-gate has not started; observed slice remains T007 PR-green-sweep follow-up work."
     - "Untitled.canvas remains untracked and intentionally untouched outside this closeout branch."
   last_evidence:
     github_state: "PR #270 observed as MERGED with head cd93b6feee48a2e3e33d0e77d638aee838e85aac, merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec, and mergedAt 2026-05-22T04:24:29Z."
-    review_threads: "GitHub review-thread snapshot after merge showed 74 total threads, 72 resolved, and 2 unresolved runtime-evidence threads on verifierResult.reason and runtimeProbe.blockerClass."
-    checks: "gh pr checks 270 reported 23 passing checks and no pending or failing checks."
-    coderabbit: "The two remaining CodeRabbit runtime-evidence findings are valid and repaired in draft PR #272; PR #272 review and PR #270 final thread classification remain pending."
-    post_push: "PR #272 opened as draft from codex/JSC-331-pr270-review-closeout; observe the current head live before closeout because board-only commits can advance it."
-    validation: "Closeout validation passed: pnpm exec biome check --write src/lib/runtime/runtime-evidence-contract.ts src/lib/runtime/runtime-evidence-contract.test.ts, pnpm vitest run src/lib/runtime/runtime-evidence-contract.test.ts --reporter verbose, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, bash scripts/verify-work.sh --fast run id 20260522T043518Z-33661, jq JSONL parse, goal-board check, git diff --check, bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, corrected learnings gate, corrected review-context, and north-star-feedback."
+    review_threads: "GitHub review-thread snapshot after PR #273 merge still shows PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH unresolved; both are classified fixed by PR #273 evidence and regression tests."
+    checks: "gh pr checks 273 reported all visible checks passing, including pr-pipeline, security-scan, CodeRabbit, CircleCI governance lanes, Socket, and Snyk."
+    coderabbit: "PR #273 body records CodeRabbit PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH as fixed; PR #273 CodeRabbit check passed and no PR #273 review threads were returned."
+    post_push: "PR #272 has been merged with origin/main to resolve the duplicate implementation conflict and should be pushed as board reconciliation only."
+    validation: "Closeout implementation validation is recorded on merged PR #273; board reconciliation validation must run on this branch before push."
   pending_actions:
-    - "Commit and push codex/JSC-331-pr270-review-closeout, then open or update a follow-up PR for the post-merge PR #270 review-thread closeout."
-    - "Classify or resolve the two PR #270 review threads after the follow-up fix is pushed."
-    - "Do not start prompt-gate until the post-merge closeout branch has clean remote state or an explicit blocker is recorded."
+    - "Commit and push the board reconciliation on codex/JSC-331-pr270-review-closeout, then update PR #272 title/body to describe board reconciliation instead of implementation closeout."
+    - "Re-observe PR #272 remote checks after the board-only push."
+    - "Do not start prompt-gate until the board reconciliation has clean remote state or an explicit blocker is recorded."
   tools:
     - "@github"
     - "@circleci"

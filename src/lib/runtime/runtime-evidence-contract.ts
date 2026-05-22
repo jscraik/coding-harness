@@ -559,7 +559,7 @@ function isBlank(value: string | null | undefined): boolean {
 	return value === null || value === undefined || value.trim().length === 0;
 }
 
-function isNullableString(value: unknown): value is string | null {
+function isNullableString(value: unknown): boolean {
 	return value === null || typeof value === "string";
 }
 
