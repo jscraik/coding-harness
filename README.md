@@ -719,6 +719,12 @@ adapter, and CLI parsing, simulation orchestration, analysis, recommendations,
 and result presentation stay in `src/lib/simulate/` so future counterfactual
 simulation changes do not widen the registry or command facade.
 
+The `ci-migrate` command follows the same registry-boundary rule. The public
+command facade remains the migration orchestration surface, the registry spec
+delegates raw arguments to the ci-migrate CLI adapter, and option projection
+plus delegated helper routing stay in `src/lib/ci-migrate/` so future CI
+migration actions do not widen the registry or command facade.
+
 ### Pilot, Remediation, And Automation
 
 | Command          | Purpose                                                          |

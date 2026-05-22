@@ -5,11 +5,6 @@ import {
 	runBlastRadiusCLI,
 } from "../../../commands/blast-radius.js";
 import { runBrainCLI } from "../../../commands/brain.js";
-import {
-	runCIMigrateCLI,
-	runPromoteModeCLI,
-	runSyncBranchProtectionCLI,
-} from "../../../commands/ci-migrate.js";
 import { runCIOwnershipGateCLI } from "../../../commands/ci-ownership-gate.js";
 import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
@@ -55,6 +50,7 @@ import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
+import { createCIMigrateCommandSpec } from "./ci-migrate-command-spec.js";
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createDoctorCommandSpec } from "./doctor-command-spec.js";
 import { createDriftGateCommandSpec } from "./drift-gate-command-spec.js";
@@ -565,137 +561,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runUpgradeCLI(targetDir, upgradeOptions);
 		},
 	},
-	{
-		name: "ci-migrate",
-		summary: "Migrate CI/CD pipelines to harness governance",
-		example: "ci-migrate prepare [target-dir] --dry-run --json",
-		errorLabel: "CI Migrate Error",
-		execute: (args) => {
-			const providerIndex = args.indexOf("--provider");
-			const snapshotIndex = args.indexOf("--snapshot");
-			const actionIndex = args.indexOf("--action");
-			const breakGlassApprovalIndex = args.indexOf("--break-glass-approval");
-			const mergeQueueEvidenceIndex = args.indexOf("--merge-queue-evidence");
-			const mergeQueueOrchestratorIndex = args.indexOf(
-				"--merge-queue-orchestrator",
-			);
-			const commitModeIndex = args.indexOf("--commit-mode");
-			const jsonFlag = args.includes("--json");
-			const dryRunFlag = args.includes("--dry-run");
-			const applyFlag = args.includes("--apply");
-			const rollbackFlag = args.includes("--rollback");
-			const autoGenerateProofPackFlag = args.includes(
-				"--auto-generate-proof-pack",
-			);
-			const forceFlag = args.includes("--force");
-			const valueFlags = new Set([
-				"--provider",
-				"--snapshot",
-				"--action",
-				"--break-glass-approval",
-				"--merge-queue-evidence",
-				"--merge-queue-orchestrator",
-				"--commit-mode",
-			]);
-			const positionalArgs: string[] = [];
-			// args[0] is already the first arg after command name (stripped by dispatcher)
-			for (let index = 0; index < args.length; index++) {
-				const token = args[index];
-				if (!token) continue;
-				if (token.startsWith("--")) {
-					if (valueFlags.has(token)) {
-						const nextToken = args[index + 1];
-						if (nextToken && !nextToken.startsWith("-")) {
-							index += 1;
-						}
-					}
-					continue;
-				}
-				if (token.startsWith("-")) continue;
-				positionalArgs.push(token);
-			}
-
-			const validActions = new Set([
-				"prepare",
-				"commit",
-				"abort",
-				"verify",
-				"bootstrap",
-				"sync-branch-protection",
-				"promote-mode",
-			]);
-			const actionArg = getFlagValue(args, actionIndex);
-			let parsedAction = actionArg;
-			if (
-				!parsedAction &&
-				positionalArgs[0] &&
-				validActions.has(positionalArgs[0])
-			) {
-				parsedAction = positionalArgs.shift();
-			}
-			if (positionalArgs.length > 1) {
-				console.error(
-					"Error: ci-migrate accepts at most one target directory positional argument.",
-				);
-				return 2;
-			}
-			const targetDir = positionalArgs[0];
-
-			// Build clean args for delegated helpers: exclude --action flag/value
-			const delegatedArgs = (() => {
-				if (actionArg && actionIndex >= 0) {
-					const filtered = [...args];
-					filtered.splice(actionIndex, 2); // remove --action and its value
-					return filtered;
-				}
-				// Positional action: skip the action token at args[0]
-				return args.slice(1);
-			})();
-
-			if (parsedAction === "sync-branch-protection") {
-				return runSyncBranchProtectionCLI(targetDir, delegatedArgs);
-			}
-			if (parsedAction === "promote-mode") {
-				return runPromoteModeCLI(targetDir, delegatedArgs);
-			}
-
-			const provider = getFlagValue(args, providerIndex);
-			const snapshot = getFlagValue(args, snapshotIndex);
-			const breakGlassApprovalPath = getFlagValue(
-				args,
-				breakGlassApprovalIndex,
-			);
-			const mergeQueueEvidencePath = getFlagValue(
-				args,
-				mergeQueueEvidenceIndex,
-			);
-			const mergeQueueOrchestratorPath = getFlagValue(
-				args,
-				mergeQueueOrchestratorIndex,
-			);
-			const commitModeRaw = getFlagValue(args, commitModeIndex);
-			const commitMode =
-				commitModeRaw === "solo" || commitModeRaw === "enterprise"
-					? commitModeRaw
-					: undefined;
-
-			return runCIMigrateCLI(targetDir, {
-				provider,
-				dryRun: dryRunFlag,
-				...(jsonFlag ? { json: true } : {}),
-				apply: applyFlag,
-				rollback: rollbackFlag,
-				snapshot,
-				action: parsedAction,
-				breakGlassApprovalPath,
-				mergeQueueEvidencePath,
-				mergeQueueOrchestratorPath,
-				autoGenerateProofPack: autoGenerateProofPackFlag,
-				commitMode,
-				force: forceFlag,
-			});
-		},
-	},
+	createCIMigrateCommandSpec(),
 	{
 		name: "diff-budget",
 		summary: "Enforce diff budget constraints",

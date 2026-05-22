@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-21
+last_validated: 2026-05-22
 ---
 
 # Agent governance
@@ -61,6 +61,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   facades, `simulate-command-spec.ts` as the registry adapter, and CLI
   parsing, simulation orchestration, analysis, recommendations, and
   presentation inside `src/lib/simulate/`.
+  Ci-migrate follows the same pattern with `src/commands/ci-migrate.ts` as
+  the migration orchestration facade, `ci-migrate-command-spec.ts` as the
+  registry adapter, and raw CLI argument projection plus delegated helper
+  routing inside `src/lib/ci-migrate/`.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to
