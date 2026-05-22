@@ -541,7 +541,7 @@
             <div class="priority-grid">
               <div class="priority-item">
                 <strong>Now</strong>
-                <span>Upgrade split is open as PR #279 on codex/JSC-331-upgrade-deep-module. Focused upgrade, registry, module-boundary, PR-template, and Linear gates pass locally; remote CircleCI contexts are running after the latest report-status push and must finish green before merge.</span>
+                <span>Upgrade split is open as PR #279 on codex/JSC-331-upgrade-deep-module. Focused upgrade, registry, module-boundary, PR-template, and Linear gates pass locally; remote ci/circleci: pr-template is stale red until a push or rerun rechecks the now-valid PR body.</span>
               </div>
               <div class="priority-item">
                 <strong>Proof</strong>
@@ -564,7 +564,7 @@
               <li>Current proof: focused upgrade, registry, and module-boundary tests pass with 205 tests after helper extraction and reviewer-response coverage; validate-codestyle fast and verify-work fast pass, PR #279 is pushed, and no next slice advances until remote checks and merge-readiness evidence are current.</li>
               <li>Full local PR gates: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star feedback now pass; learnings gate is warning-only with generated/report keyword matches to record in the PR body.</li>
               <li>Deep gate truth: pnpm test:deep reaches E2E credential validation after pnpm check, artifact tests, and integration pass, then blocks because GitHub and Linear credentials are unavailable and ~/.codex/.env is a FIFO in this runtime.</li>
-              <li>PR handoff: open PR #279 has a live body that passes local pr-template and Linear gates; GitHub review-thread lookup returns zero threads; remote CircleCI contexts are running after the latest report-status push and must finish green before merge.</li>
+              <li>PR handoff: open PR #279 has a live body that passes local pr-template and Linear gates; GitHub review-thread lookup returns zero threads; remote ci/circleci: pr-template is stale red until a push or rerun rechecks the now-valid PR body.</li>
               <li>Report server: live on http://127.0.0.1:8767/artifacts/architecture/module-layout.html with Jamie Readout Now, current slice, blocker, and remaining-work sections present.</li>
               <li>Browser status: direct Browser reload is blocked because the Browser workflow lists no iab target; the HTTP report was restarted and verified as the current fallback until the in-app target reconnects.</li>
               <li>Parallel-work boundary: CODEX-NATIVE HARNESS MEMORY BASELINE is preserved outside this PR; T013 report/receipt changes must not absorb that slice.</li>
@@ -592,7 +592,7 @@
 							<li>Deep proof boundary: pnpm test:deep is blocked at E2E credential validation; ~/.codex/.env stat reports a FIFO, so sourcing it would hang rather than safely recover credentials.</li>
 						<li>Review response: testing asked for an execute-path registry adapter test; simplicity and architecture asked to remove duplicate upgrade option contracts. Both findings are fixed locally.</li>
 						<li>Visual: the updated report is serving on port 8767 for Jamie; latest Browser retry is blocked because no iab target is currently exposed, not because the report is stale.</li>
-								<li>Handoff: T013 is not ready for advancement until PR #279 remote checks finish green, independent review state is known, and merge-readiness evidence is recorded.</li>
+								<li>Handoff: T013 is not ready for advancement until remote pr-template reruns green, remaining PR #279 checks finish green, independent review state is known, and merge-readiness evidence is recorded.</li>
 			  </ul>
 			</article>
           </div>
