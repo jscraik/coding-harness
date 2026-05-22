@@ -312,7 +312,7 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_current_head_review_followup_validated_pending_commit_push
+  status: t007_current_head_review_followup_validated_ready_to_commit_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -332,7 +332,7 @@ pr_green_sweep:
     checks: "Local validation for this review-followup batch is passing; remote checks must be observed after commit and push."
     coderabbit: "CodeRabbit/review-thread state remains the gate before T007 can advance to prompt-gate or merge readiness."
     post_push: "Next required action is commit, push, and re-observe current-head checks and review threads for this current-head review-followup batch."
-    validation: "pnpm vitest run src/lib/runtime/runtime-evidence-contract.test.ts src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/harness-artifact-routine.test.ts src/lib/init/project-brain-templates.test.ts src/lib/remediate/cli-args.test.ts src/lib/architecture/module-boundaries.test.ts src/cli-dispatch.test.ts src/lib/cli/registry/command-specs.test.ts --reporter verbose; pnpm typecheck; pnpm exec markdownlint-cli2 docs/goals/README.md docs/goals/codex-native-harness-memory-baseline/goal.md .harness/research/audits/2026-05-21-plan-and-research-code-tree-gap-audit.md; node scripts/validate-evidence-patterns.cjs --json; bash scripts/check-goal-board.sh docs/goals/codex-native-harness-memory-baseline; bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration; git diff --check; bash scripts/validate-codestyle.sh --fast all pass. bash scripts/verify-work.sh --fast remains to run after this receipt update."
+    validation: "pnpm vitest run src/lib/runtime/runtime-evidence-contract.test.ts src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/harness-artifact-routine.test.ts src/lib/init/project-brain-templates.test.ts src/lib/remediate/cli-args.test.ts src/lib/architecture/module-boundaries.test.ts src/cli-dispatch.test.ts src/lib/cli/registry/command-specs.test.ts --reporter verbose; pnpm typecheck; pnpm exec markdownlint-cli2 docs/goals/README.md docs/goals/codex-native-harness-memory-baseline/goal.md .harness/research/audits/2026-05-21-plan-and-research-code-tree-gap-audit.md; node scripts/validate-evidence-patterns.cjs --json; bash scripts/check-goal-board.sh docs/goals/codex-native-harness-memory-baseline; bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration; git diff --check; bash scripts/validate-codestyle.sh --fast; bash scripts/verify-work.sh --fast all pass."
   tools:
     - "@github"
     - "@circleci"
