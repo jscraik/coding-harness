@@ -104,21 +104,53 @@ function readObservations(
 		return null;
 	}
 	if (Array.isArray(parsed)) {
-		return parsed as CommandRuntimeBudgetObservation[];
+		return validateObservations(parsed, json);
 	}
 	if (
 		typeof parsed === "object" &&
 		parsed !== null &&
 		Array.isArray((parsed as { observations?: unknown }).observations)
 	) {
-		return (parsed as { observations: CommandRuntimeBudgetObservation[] })
-			.observations;
+		return validateObservations(
+			(parsed as { observations: unknown[] }).observations,
+			json,
+		);
 	}
 	emitUsage(
 		json,
 		"runtime-budget input must be an array or object with observations.",
 	);
 	return null;
+}
+
+function validateObservations(
+	observations: unknown[],
+	json: boolean,
+): CommandRuntimeBudgetObservation[] | null {
+	const normalized: CommandRuntimeBudgetObservation[] = [];
+	for (const [index, observation] of observations.entries()) {
+		if (!isObservationRecord(observation)) {
+			emitUsage(json, `runtime-budget observations[${index}] is malformed.`);
+			return null;
+		}
+		normalized.push(observation);
+	}
+	return normalized;
+}
+
+function isObservationRecord(
+	value: unknown,
+): value is CommandRuntimeBudgetObservation {
+	if (typeof value !== "object" || value === null) {
+		return false;
+	}
+	const candidate = value as Record<string, unknown>;
+	return (
+		typeof candidate.command === "string" &&
+		typeof candidate.durationMs === "number" &&
+		typeof candidate.budgetMs === "number" &&
+		typeof candidate.evidenceRef === "string"
+	);
 }
 
 function emitUsage(json: boolean, message: string): number {
