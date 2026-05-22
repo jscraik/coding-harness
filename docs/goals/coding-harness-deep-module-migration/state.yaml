@@ -482,7 +482,7 @@ tasks:
       - "Snapshot-backed ci-migrate safety boundary is unclear."
     receipt_id: R011-CI-MIGRATE-REGISTRY-SPLIT
 pr_green_sweep:
-  status: t011_ci_migrate_validated_pending_amend_push_pr_handoff
+  status: t011_ci_migrate_draft_pr_open_remote_checks_pending
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -505,7 +505,10 @@ pr_green_sweep:
   simulate_pr_url: "https://github.com/jscraik/coding-harness/pull/276"
   simulate_head_sha: "8ac3bca519411f64a056f1b2209714883dd339aa"
   simulate_merge_commit: "cf741e13c65b15aadb155d0701d60b4705f72eb0"
-  last_observed: "2026-05-22T13:02:56Z"
+  ci_migrate_branch: "codex/JSC-331-ci-migrate-deep-module"
+  ci_migrate_pr_url: "https://github.com/jscraik/coding-harness/pull/277"
+  ci_migrate_observed_head_sha: "765cadf895825e671b022b77554254fd5eb5e462"
+  last_observed: "2026-05-22T13:57:25Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -555,7 +558,9 @@ pr_green_sweep:
     - "T011 pre-push docs-gate blocked the first push on required governance surfaces; README.md, AGENTS.md, docs/agents/00-architecture-bootstrap.md, and docs/agents/07b-agent-governance.md now document the ci-migrate registry-boundary split, and docs-gate passes locally."
     - "T011 post-docs validation passes: receipts parse, goal board passes, module-layout HTML copy is synchronized, git diff --check passes, docs-gate passes, validate-codestyle fast passes, and verify-work fast passes with run id 20260522T133451Z-70931."
     - "T011 second pre-push attempt passed docs-gate, refreshed stale architecture diagram artifacts for changed sensitive paths, and blocked until .diagram/agent.mmd, .diagram/events.mmd, .diagram/manifest.json, .diagram/rag.mmd, .diagram/security.mmd, and AI/context/diagram-context.md were staged; diagram freshness now passes."
-    - "T011 is not remotely complete until this branch is committed, pushed, opened or updated as PR evidence, and GitHub checks plus review-thread state are observed at the pushed head."
+    - "T011 draft PR #277 is open at https://github.com/jscraik/coding-harness/pull/277. Initial pushed-head observation found CodeRabbit passing and zero GitHub review threads, but ci/circleci: pr-template failed before the live body repair and several CircleCI contexts remained pending."
+    - "The PR #277 body was repaired with bold Pending checklist markers and current CodeRabbit/thread evidence; local pr-template-gate passes against the repaired live body, but the remote pr-template context needs a fresh check run after the next push or rerun."
+    - "T011 is not remotely complete until PR #277 latest-head checks and review-thread state are observed after the evidence-only board update."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
@@ -569,9 +574,9 @@ pr_green_sweep:
     pr_handoff: "PR #276 merged at https://github.com/jscraik/coding-harness/pull/276. Current branch codex/JSC-331-ci-migrate-deep-module starts from origin/main at merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
     review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
-    t011_ci_migrate: "Local T011 implementation split ci-migrate raw argv parsing into src/lib/ci-migrate/cli-args.ts and registry dispatch into src/lib/cli/registry/ci-migrate-command-spec.ts. Focused ci-migrate vitest, full command-specs/module-boundaries vitest, pnpm typecheck, docs-gate, validate-codestyle fast, verify-work fast, and diagram freshness pass locally; amend, push, PR handoff, remote checks, and review-thread classification are still pending."
+    t011_ci_migrate: "Local T011 implementation split ci-migrate raw argv parsing into src/lib/ci-migrate/cli-args.ts and registry dispatch into src/lib/cli/registry/ci-migrate-command-spec.ts. Draft PR #277 is open; CodeRabbit passed and zero review threads were returned at first observation, but remote checks remain pending/blocked until the repaired PR body and evidence-only board update are observed at the latest head."
   pending_actions:
-    - "Amend and push T011 on codex/JSC-331-ci-migrate-deep-module, then create or update the GitHub PR and classify remote checks plus review threads at the pushed head."
+    - "Push this PR #277 evidence-only board update, then reobserve remote checks and review threads at the new head."
     - "Do not begin T012 init until T011 pushed-head PR evidence is recorded."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
