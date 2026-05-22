@@ -150,6 +150,22 @@ describe("runtime-evidence-contract", () => {
 		);
 	});
 
+	it("rejects malformed evaluation portable flags", () => {
+		const contract = validContract();
+		contract.evaluation.portable = "yes" as never;
+		contract.evaluation.command = null as never;
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "evaluation_portable_invalid",
+				path: "evaluation.portable",
+			}),
+		);
+	});
+
 	it("rejects unknown claim trace consistency values", () => {
 		const contract = validContract();
 		contract.claimTraceConsistency = "maybe" as never;

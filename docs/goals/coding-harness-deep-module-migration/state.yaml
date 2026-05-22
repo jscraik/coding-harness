@@ -10,7 +10,7 @@ goal:
   tokens_used: 1639295
   time_used_seconds: 8516
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-22T03:57:30Z"
+  native_updated_at: "2026-05-22T04:14:04Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -29,7 +29,7 @@ checks:
   last_verification:
     command: "bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
-    checked_at: "2026-05-22T03:57:30Z"
+    checked_at: "2026-05-22T04:14:04Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -312,29 +312,29 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_review_followup_batch6_broad_validated_pending_push
+  status: t007_review_followup_batch7_broad_validated_pending_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "f0632db15694fcb16995f2c0e904a5f2c0131f61"
-  last_observed: "2026-05-22T03:56:49Z"
+  head_sha: "5715b2d9b475551c8144a2b491a0643d71756f94"
+  last_observed: "2026-05-22T04:14:04Z"
   current_blockers:
-    - "Observed PR #270 at f0632db15694fcb16995f2c0e904a5f2c0131f61 after batch 5: state OPEN, not draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, 23 checks passing, and 0 unresolved review threads."
-    - "Batch 6 is broad-validated locally with verify-work run id 20260522T035628Z-7733 but not yet committed or pushed; remote checks must be re-observed after push."
+    - "Observed PR #270 at 5715b2d9b475551c8144a2b491a0643d71756f94 after batch 6: state OPEN, not draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, CircleCI/CodeRabbit pending, and 1 unresolved runtime-evidence review thread."
+    - "Batch 7 fix for evaluation.portable boolean-shape validation is local and broadly validated; commit, push, and re-observation are still required."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
-    - "Latest valid runtime-evidence source-ref/resolved-state shape, pr-closeout runtime-evidence fixture, and runtime-budget usage-output assertion findings are repaired locally."
+    - "Latest valid runtime-evidence source-ref/resolved-state/evaluation portable shape, pr-closeout runtime-evidence fixture, and runtime-budget usage-output assertion findings are repaired locally."
     - "Prompt-gate has not started; observed slice remains T007 PR-green-sweep follow-up work."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
   last_evidence:
-    github_state: "PR #270 observed after batch 5 at f0632db15694fcb16995f2c0e904a5f2c0131f61 with state OPEN, mergeable MERGEABLE, mergeStateStatus BLOCKED, and local branch matching origin."
-    review_threads: "GitHub review-thread snapshot after f0632db15694fcb16995f2c0e904a5f2c0131f61 showed 71 total threads and 0 unresolved."
-    checks: "Remote checks after f0632db15694fcb16995f2c0e904a5f2c0131f61 showed 23 pass and 0 non-pass, including CodeRabbit SUCCESS."
-    coderabbit: "CodeRabbit completed successfully after batch 5; batch 6 local edits are broad-validated and still require commit, push, and re-observation."
-    post_push: "batch5_green_batch6_pending_push"
-    validation: "Batch 6 local validation passed: biome for runtime-budget/runtime-evidence/pr-closeout files, Vitest runtime-budget plus runtime-evidence plus pr-closeout focused tests, jq receipts, goal-board check, git diff --check, pnpm typecheck, validate-codestyle --fast, and verify-work --fast run id 20260522T035628Z-7733. The first validate-codestyle attempt exposed a pr-closeout fixture regression, which was repaired before the passing rerun."
+    github_state: "PR #270 observed after batch 6 at 5715b2d9b475551c8144a2b491a0643d71756f94 with state OPEN, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, and local branch matching origin."
+    review_threads: "GitHub review-thread snapshot after 5715b2d9b475551c8144a2b491a0643d71756f94 showed 72 total threads and 1 unresolved runtime-evidence thread for evaluation.portable boolean-shape validation; older fixed/stale threads were resolved."
+    checks: "Remote checks after 5715b2d9b475551c8144a2b491a0643d71756f94 were pending for CircleCI and CodeRabbit; Socket and Snyk had passing checks."
+    coderabbit: "A fresh runtime-evidence evaluation.portable finding is valid and repaired locally; batch 7 passed focused and broad validation and still requires commit, push, and re-observation."
+    post_push: "batch6_pushed_batch7_pending_push"
+    validation: "Batch 7 validation passed: biome for runtime-evidence contract files, Vitest runtime-evidence contract tests, git diff --check, JSONL parse, goal-board check, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, and bash scripts/verify-work.sh --fast run id 20260522T041305Z-59769."
   pending_actions:
-    - "Commit and push batch 6 runtime-evidence and runtime-budget review-followup repair."
-    - "Poll PR #270 remote checks after the pushed batch 6 head until clean, failed, or externally blocked."
+    - "Commit and push batch 7 runtime-evidence review-followup repair."
+    - "Poll PR #270 remote checks after the pushed batch 7 head until clean, failed, or externally blocked."
     - "Do not start prompt-gate until PR #270 checks and review-thread classification are settled for the latest pushed head."
   tools:
     - "@github"

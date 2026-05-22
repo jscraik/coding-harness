@@ -419,6 +419,13 @@ function validateEvaluation(
 				"evaluation status is not recognized.",
 			);
 		}
+		if (typeof evaluation.portable !== "boolean") {
+			add(
+				"evaluation.portable",
+				"evaluation_portable_invalid",
+				"evaluation portable flag must be a boolean.",
+			);
+		}
 		if (evaluation.portable === true && isBlank(asText(evaluation.command))) {
 			add(
 				"evaluation.command",
