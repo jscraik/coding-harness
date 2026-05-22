@@ -358,10 +358,22 @@ function validateVerifierResult(
 			"verifier evidence refs must be non-empty strings.",
 		);
 	}
-	if (
-		verifierStatus !== "pass" &&
-		(!isRecord(verifierResult) || isBlank(asText(verifierResult.reason)))
-	) {
+	if (isRecord(verifierResult)) {
+		const verifierReason = asText(verifierResult.reason);
+		if (!isNullableString(verifierResult.reason)) {
+			add(
+				"verifierResult.reason",
+				"verifier_reason_invalid",
+				"verifier reason must be a string or null.",
+			);
+		} else if (verifierStatus !== "pass" && isBlank(verifierReason)) {
+			add(
+				"verifierResult.reason",
+				"verifier_reason_missing",
+				"non-pass verifier results require a reason.",
+			);
+		}
+	} else if (verifierStatus !== "pass") {
 		add(
 			"verifierResult.reason",
 			"verifier_reason_missing",
@@ -521,7 +533,13 @@ function validateRuntimeProbe(
 			"runtime probe spawnOutcome is not recognized.",
 		);
 	}
-	if (
+	if (!isNullableString(probe.blockerClass)) {
+		add(
+			"resolvedState.runtimeProbe.blockerClass",
+			"runtime_probe_blocker_invalid",
+			"runtime probe blockerClass must be a string or null.",
+		);
+	} else if (
 		probe.spawnOutcome !== "available" &&
 		isBlank(asText(probe.blockerClass))
 	) {

@@ -196,6 +196,22 @@ describe("runtime-evidence-contract", () => {
 		);
 	});
 
+	it("rejects malformed pass verifier reasons", () => {
+		const contract = validContract();
+		contract.verifierResult.status = "pass";
+		contract.verifierResult.reason = 123 as never;
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "verifier_reason_invalid",
+				path: "verifierResult.reason",
+			}),
+		);
+	});
+
 	it("rejects malformed runtime probe session ids", () => {
 		const contract = validContract();
 		if (contract.resolvedState.runtimeProbe !== null) {
@@ -209,6 +225,24 @@ describe("runtime-evidence-contract", () => {
 			expect.objectContaining({
 				code: "runtime_probe_session_id_invalid",
 				path: "resolvedState.runtimeProbe.sessionId",
+			}),
+		);
+	});
+
+	it("rejects malformed available runtime probe blocker classes", () => {
+		const contract = validContract();
+		if (contract.resolvedState.runtimeProbe !== null) {
+			contract.resolvedState.runtimeProbe.spawnOutcome = "available";
+			contract.resolvedState.runtimeProbe.blockerClass = 123 as never;
+		}
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "runtime_probe_blocker_invalid",
+				path: "resolvedState.runtimeProbe.blockerClass",
 			}),
 		);
 	});
