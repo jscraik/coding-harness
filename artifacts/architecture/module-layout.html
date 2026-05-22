@@ -541,7 +541,7 @@
             <div class="priority-grid">
               <div class="priority-item">
                 <strong>Now</strong>
-                <span>Upgrade split is pushed as draft PR #279 on codex/JSC-331-upgrade-deep-module with the report-refresh head current; focused upgrade, registry, and module-boundary tests pass, pr-template is green again, and the remaining observed remote blockers are active CircleCI contexts still running.</span>
+                <span>Upgrade split is pushed as open PR #279 on codex/JSC-331-upgrade-deep-module with the report-refresh head current; focused upgrade, registry, and module-boundary tests pass, pr-template is green again, and the remaining observed remote blockers are active CircleCI contexts still running.</span>
               </div>
               <div class="priority-item">
                 <strong>Proof</strong>
@@ -564,7 +564,7 @@
               <li>Current proof: focused upgrade, registry, and module-boundary tests pass with 205 tests after helper extraction and reviewer-response coverage; validate-codestyle fast and verify-work fast pass, PR #279 is pushed, and no next slice advances until remote checks and merge-readiness evidence are current.</li>
               <li>Full local PR gates: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star feedback now pass; learnings gate is warning-only with generated/report keyword matches to record in the PR body.</li>
               <li>Deep gate truth: pnpm test:deep reaches E2E credential validation after pnpm check, artifact tests, and integration pass, then blocks because GitHub and Linear credentials are unavailable and ~/.codex/.env is a FIFO in this runtime.</li>
-              <li>PR handoff: draft PR #279 is open at the pushed report-refresh head; pr-template is green again, GitHub review-thread lookup returns zero threads, and the remaining observed blockers are active CircleCI contexts still running.</li>
+              <li>PR handoff: open PR #279 is at the pushed report-refresh head; pr-template is green again, GitHub review-thread lookup returns zero threads, and the remaining observed blockers are active CircleCI contexts still running.</li>
               <li>Report server: live on http://127.0.0.1:8767/artifacts/architecture/module-layout.html with Jamie Readout Now, current slice, blocker, and remaining-work sections present.</li>
               <li>Browser status: latest retry via the Browser workflow lists no browser targets and returns "Browser is not available: iab"; the HTTP report URL is the current verified fallback until the in-app target reconnects.</li>
             </ul>
