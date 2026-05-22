@@ -583,7 +583,7 @@
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-							  <p>Current evidence is PR #279 merge proof, R014 env-backed validation reclassification, R014-BRAIN-FOCUSED-PROOF-REVIEW-REPAIRED, R014-BRAIN-BROAD-LOCAL-GATES-VERIFY-WORK-PASS, R014-BRAIN-FULL-LOCAL-HANDOFF-GATES, the active T014 Browser launch, the T014 brain local split, the goal-board coordination scratchpad, focused, fast-gate, and full local handoff validation, 8767 report receipts, and deep-module receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
+							  <p>Current evidence is PR #279 merge proof, PR #280 handoff proof, R014 env-backed validation reclassification, R014-BRAIN-FOCUSED-PROOF-REVIEW-REPAIRED, R014-BRAIN-BROAD-LOCAL-GATES-VERIFY-WORK-PASS, R014-BRAIN-FULL-LOCAL-HANDOFF-GATES, R014-BRAIN-PR280-OPENED-BODY-REPAIRED, the active T014 Browser launch, the T014 brain local split, the goal-board coordination scratchpad, focused, fast-gate, and full local handoff validation, 8767 report receipts, and deep-module receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
 			  <ul class="evidence-list">
 							<li>Focused proof: brain, registry, and module-boundary tests passed locally with 191 tests; pnpm typecheck passes; production brain status JSON returns valid Project Brain status; missing-harness status JSON is locked by a regression.</li>
 											<li>Broad local proof: bash scripts/validate-codestyle.sh --fast passes; bash scripts/verify-work.sh --fast passes with run id 20260522T215354Z-27231; full bash scripts/validate-codestyle.sh passes; tooling-audit passes with zero findings; the learning loop succeeds with warn-only advisory matches; goal-board, receipt JSONL, diff-check, and report-mirror validation are part of the current R014 refresh.</li>
@@ -591,7 +591,7 @@
 							<li>Deep proof boundary: env-loaded pnpm test:deep progresses through check, unit, and integration suites, then blocks at E2E credential validation because GitHub and Linear credentials are not available from the current ~/.codex/.env FIFO surface.</li>
 							<li>Coordination: the goal board is the shared scratchpad for parallel agents; it names the T014-owned file set and keeps CODEX-NATIVE HARNESS MEMORY BASELINE out of this branch unless explicitly routed.</li>
 						<li>Visual: the updated report is serving on port 8767 for Jamie and is loaded in the Codex In-app Browser with title Coding Harness Module Layout.</li>
-									<li>Handoff: T014 is locally fast-gate validated but not PR-complete yet; remaining proof is push, PR checks, review-thread observation, and merge/deferral evidence, with test:deep E2E credentials classified as blocked in this runtime.</li>
+													<li>Handoff: PR #280 is open from head 2078c1a8 with zero initial review threads. The first remote pr-template context failed on PR-body formatting; the live body is repaired and passes pr-template-gate locally. Remaining proof is the evidence push, remote checks, CodeRabbit/Semgrep review, review-thread re-observation, and merge/deferral evidence.</li>
 			  </ul>
 			</article>
           </div>
