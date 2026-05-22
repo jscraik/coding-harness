@@ -395,7 +395,7 @@ tasks:
     type: worker
     assignee: Worker
     status: active
-    objective: "Prepare the simulate module-boundary slice; do not edit implementation files until T009, PR #275, and current branch state are verified."
+    objective: "Split the simulate command family behind focused CLI, registry, analysis, and recommendation seams; push and open a PR before any following slice."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
       - "docs/goals/coding-harness-deep-module-migration/state.yaml"
@@ -415,6 +415,12 @@ tasks:
       - "src/lib/cli/registry/command-specs.test.ts"
       - "src/lib/architecture/module-boundaries.test.ts"
       - "src/commands/simulate*.test.ts"
+      - "AGENTS.md"
+      - "README.md"
+      - "AI/context/diagram-context.md"
+      - ".diagram/**"
+      - "docs/agents/00-architecture-bootstrap.md"
+      - "docs/agents/07b-agent-governance.md"
       - "docs/architecture/module-boundaries.md"
       - ".harness/implementation-notes/2026-05-19-module-layout.html"
       - "artifacts/architecture/module-layout.html"
@@ -429,7 +435,7 @@ tasks:
       - "T009 is not recorded done."
       - "Current branch is not rooted at current origin/main."
       - "Focused validation path cannot be identified."
-    receipt_id: R010
+    receipt_id: R010-SIMULATE-IMPLEMENTATION-VALIDATED
 pr_green_sweep:
   status: t009_gap_case_pr275_merged_t010_active
   worker: pr-green-sweep
@@ -451,7 +457,7 @@ pr_green_sweep:
   gap_case_merge_commit: "a4f066a28ca91d67f84c1def5db552657e8b3cc4"
   simulate_branch: "codex/JSC-331-simulate-deep-module"
   simulate_base_sha: "a4f066a28ca91d67f84c1def5db552657e8b3cc4"
-  last_observed: "2026-05-22T09:43:55Z"
+  last_observed: "2026-05-22T10:10:59Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -474,6 +480,10 @@ pr_green_sweep:
     - "PR #275 review-thread observation returned zero review threads before merge."
     - "T009 testing reviewer reported medium coverage gaps; the implementation fixed them with direct runGapCaseFromCliArgs parse-error assertions and command-spec open/resolve side-effect assertions, but the testing reviewer artifact retry did not write artifacts/reviews/t009-testing.md and is recorded as failed artifact verification."
     - "T009 correctness reviewer did not complete with a written artifact before closeout; this remains an explicit review coverage gap for the PR handoff, while focused behavior and registry tests pass locally."
+    - "T010 simulate implementation is locally validated: focused simulate/registry/module-boundary tests pass, typecheck passes, direct production simulate CLI JSON proof passes, docs-gate passes after synchronizing README.md, AGENTS.md, docs/agents/00-architecture-bootstrap.md, and docs/agents/07b-agent-governance.md, and validate-codestyle fast passes with non-blocking baseline drift-gate warnings plus simulate size ratchet warnings."
+    - "T010 architecture context refreshed after check-diagram-freshness reported stale generated diagram artifacts; .diagram/* and AI/context/diagram-context.md are included as validation-required architecture artifacts for this slice."
+    - "T010 review artifacts exist for simplicity and Codex product review; architecture review feedback was addressed with parser, CLI, and registry tests but failed artifact-file verification after retry, and testing review did not leave an artifact after retry."
+    - "T010 simplify review reported duplicate parser/runtime required-argument validation and duplicate summary filesystem scans; parser/runtime validation is intentionally split across CLI usage and public runtime validation, while the duplicate scan reduction is deferred to avoid expanding this module-boundary slice."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #275 observed as MERGED at 2026-05-22T09:41:52Z with head 1894f1154689cbdd49f15f07bbe87cf18431a333 and merge commit a4f066a28ca91d67f84c1def5db552657e8b3cc4."
@@ -482,13 +492,13 @@ pr_green_sweep:
     coderabbit: "PR #275 CodeRabbit check passed after ready-for-review; no CodeRabbit review threads were returned by GitHub."
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
     post_push: "PR #275 was marked ready and squash-merged with merge commit a4f066a28ca91d67f84c1def5db552657e8b3cc4; the gap-case remote branch was deleted by the merge command."
-    validation: "T009 local validation passed: pnpm typecheck; pnpm test src/commands/gap-case.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts src/cli.test.ts --reporter dot; direct node --import tsx src/cli.ts gap-case open/resolve proof with enabled policy; bash scripts/validate-codestyle.sh --fast; bash scripts/run-harness-gate.sh docs-gate --mode required --json; jq -c . docs/goals/coding-harness-deep-module-migration/receipts.jsonl >/dev/null; bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration; git diff --check; pnpm run docs:style:changed; bash scripts/check-diagram-freshness.sh; bash scripts/verify-work.sh --fast; pnpm check; bash scripts/run-harness-gate.sh tooling-audit --path . --json; learning gate/review-context/north-star-feedback; bash scripts/validate-codestyle.sh; PR_TEMPLATE_BODY=$(cat /private/tmp/t009-gap-case-pr-body.md) bash scripts/run-harness-gate.sh pr-template-gate --json."
+    validation: "T010 local validation passed: pnpm test src/commands/simulate.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot; pnpm typecheck; pnpm exec tsx src/cli.ts simulate --contract-a harness.contract.json --contract-b harness.contract.json --json; bash scripts/run-harness-gate.sh docs-gate --mode required --json; bash scripts/validate-codestyle.sh --fast; jq -c . docs/goals/coding-harness-deep-module-migration/receipts.jsonl >/dev/null; bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration; git diff --check; git diff --cached --check; bash scripts/check-diagram-freshness.sh; bash scripts/verify-work.sh --fast. The fast codestyle and verify-work runs passed with non-blocking baseline drift-gate warnings and simulate size ratchet warnings."
     t009_review_gates: "Architecture review reported no actionable findings; simplify reported two low findings and the parser re-export was removed while the internal compatibility facade was kept intentionally; testing reported two medium coverage gaps that were fixed in tests but failed artifact-file verification; correctness review artifact did not complete before closeout."
-    pr_handoff: "PR #275 closed the T009 gap-case slice by squash merge at https://github.com/jscraik/coding-harness/pull/275; T010 simulate branch codex/JSC-331-simulate-deep-module now starts from origin/main a4f066a28ca91d67f84c1def5db552657e8b3cc4."
+    pr_handoff: "PR #275 closed the T009 gap-case slice by squash merge at https://github.com/jscraik/coding-harness/pull/275; T010 simulate branch codex/JSC-331-simulate-deep-module starts from origin/main a4f066a28ca91d67f84c1def5db552657e8b3cc4 and is locally validated before commit/push/PR handoff."
     review_response: "PR #275 returned zero review threads before merge; prior valid PR #274 CodeRabbit findings remain fixed, pushed, merged, and covered by focused prompt-gate/module-boundary tests, direct prompt-gate CLI proof, validate-codestyle fast, JSONL parsing, whitespace checks, and live post-merge review-thread observation."
   pending_actions:
-    - "Validate, commit, and push this T009 closeout and T010 activation board update."
-    - "Before T010 implementation, declare the simulate allowed files and focused tests from the active T010 task."
+    - "Commit and push the T010 simulate implementation and open a draft PR."
+    - "Record PR handoff evidence after PR creation and remote check observation."
     - "Do not start T011 ci-migrate until T010 is implemented, reviewed, validated, pushed, and handed off with PR state evidence."
   tools:
     - "@github"

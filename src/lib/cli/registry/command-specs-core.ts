@@ -29,10 +29,6 @@ import {
 import { runReviewContextCLI } from "../../../commands/review-context.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import {
-	printSimulateUsage,
-	runSimulateCLI,
-} from "../../../commands/simulate.js";
-import {
 	runUIExploreCLI,
 	runUIFastCLI,
 	runUIVerifyCLI,
@@ -91,6 +87,7 @@ import { createRuntimeBudgetCommandSpec } from "./runtime-budget-command-spec.js
 import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import { createSilentErrorCommandSpec } from "./silent-error-command-spec.js";
+import { createSimulateCommandSpec } from "./simulate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
 import { createToolingAuditCommandSpec } from "./tooling-audit-command-spec.js";
@@ -423,63 +420,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runUIExploreCLI(options);
 		},
 	},
-	{
-		name: "simulate",
-		summary: "Simulate contract transitions between versions",
-		errorLabel: "Simulate Error",
-		execute: (args) => {
-			if (args.includes("--help") || args.includes("-h")) {
-				printSimulateUsage();
-				return 0;
-			}
-
-			const jsonFlag = args.includes("--json");
-			const ciSoftFlag = args.includes("--ci-soft");
-			const verboseFlag = args.includes("--verbose");
-
-			const contractAIndex = args.indexOf("--contract-a");
-			const contractBIndex = args.indexOf("--contract-b");
-			const artifactsIndex = args.indexOf("--artifacts");
-			const tracesIndex = args.indexOf("--traces");
-			const outputIndex = args.indexOf("--output");
-
-			const contractA = getFlagValue(args, contractAIndex);
-			const contractB = getFlagValue(args, contractBIndex);
-
-			if (!contractA) {
-				console.error("Error: --contract-a is required");
-				return 2;
-			}
-			if (!contractB) {
-				console.error("Error: --contract-b is required");
-				return 2;
-			}
-
-			const options: {
-				contractA: string;
-				contractB: string;
-				artifactsDir?: string;
-				tracesDir?: string;
-				outputPath?: string;
-				json?: boolean;
-				ciSoft?: boolean;
-				verbose?: boolean;
-			} = { contractA, contractB };
-
-			if (jsonFlag) options.json = true;
-			if (ciSoftFlag) options.ciSoft = true;
-			if (verboseFlag) options.verbose = true;
-
-			const artifactsArg = getFlagValue(args, artifactsIndex);
-			if (artifactsArg) options.artifactsDir = artifactsArg;
-			const tracesArg = getFlagValue(args, tracesIndex);
-			if (tracesArg) options.tracesDir = tracesArg;
-			const outputArg = getFlagValue(args, outputIndex);
-			if (outputArg) options.outputPath = outputArg;
-
-			return runSimulateCLI(options);
-		},
-	},
+	createSimulateCommandSpec(),
 	{
 		name: "context",
 		summary: "Semantic search for relevant prior work",

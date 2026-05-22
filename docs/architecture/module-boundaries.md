@@ -19,6 +19,7 @@ last_validated: 2026-05-22
 - [Plan Gate Command Boundary](#plan-gate-command-boundary)
 - [Prompt Gate Command Boundary](#prompt-gate-command-boundary)
 - [Gap Case Command Boundary](#gap-case-command-boundary)
+- [Simulate Command Boundary](#simulate-command-boundary)
 - [HE Phase-Exit Trust Boundary](#he-phase-exit-trust-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
@@ -139,6 +140,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/gap-case-command-spec.ts`
   - Thin registry metadata and command adapter; raw gap-case lifecycle argv
     projection lives in `src/lib/gap-case/cli-args.ts`.
+- `src/lib/cli/registry/simulate-command-spec.ts`
+  - Thin registry metadata and command adapter; raw simulate argv projection
+    lives in `src/lib/simulate/cli-args.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -487,6 +491,39 @@ adapter, or terminal renderer.
   - Ratchets the command facade, internal compatibility facade, registry
     adapter, raw CLI adapter, operations, store, validator, types, and CLI
     presentation seams.
+
+## Simulate Command Boundary
+
+Simulate is the contract transition analysis surface. It compares two harness
+contracts and projects lifecycle recommendations without letting the command
+facade or registry manifest become an argv parser, contract loader, analysis
+module, recommendation engine, or terminal renderer.
+
+- `src/commands/simulate.ts`
+  - Compatibility command facade and stable public export surface.
+- `src/commands/simulate-analysis.ts`
+  - Compatibility export surface for legacy analysis helper imports.
+- `src/commands/simulate-analysis-recommendations.ts`
+  - Compatibility export surface for legacy recommendation helper imports.
+- `src/lib/simulate/cli-args.ts`
+  - Raw CLI option adapter for contract paths, JSON output, artifact/traces
+    paths, CI-soft mode, and verbose output.
+- `src/lib/simulate/cli.ts`
+  - Contract loading, input validation, terminal/JSON presentation, artifact
+    output, and exit-code mapping.
+- `src/lib/simulate/analysis.ts`
+  - Contract comparison, enforcement plan generation, phase classification,
+    and migration risk analysis.
+- `src/lib/simulate/recommendations.ts`
+  - Recommendation and flag projection from the analysis result.
+- `src/lib/simulate/types.ts`
+  - Shared simulate option, analysis, recommendation, and result contracts.
+- `src/lib/cli/registry/simulate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the simulate-owned CLI
+    option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facades, registry adapter, raw CLI adapter, analysis,
+    recommendations, shared types, and CLI presentation seams.
 
 ## Output Normalisation Boundaries
 
@@ -851,6 +888,9 @@ Threshold policy:
 - `src/lib/cli/registry/gap-case-command-spec.ts` must stay focused on
   gap-case command metadata and gap-case-owned argv delegation (`<= 20`
   lines).
+- `src/lib/cli/registry/simulate-command-spec.ts` must stay focused on
+  simulate command metadata and simulate-owned argv delegation (`<= 20`
+  lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
@@ -963,6 +1003,23 @@ Threshold policy:
   (`<= 140` lines).
 - `src/lib/gap-case/types.ts` must remain a gap-case shared contract seam
   (`<= 190` lines).
+- `src/commands/simulate.ts`, `src/commands/simulate-analysis.ts`, and
+  `src/commands/simulate-analysis-recommendations.ts` must remain simulate
+  compatibility facades (`<= 25` lines each); raw argv projection, contract
+  loading, comparison analysis, recommendations, and result presentation live
+  behind `src/lib/simulate/cli-args.ts`, `src/lib/simulate/cli.ts`,
+  `src/lib/simulate/analysis.ts`, and
+  `src/lib/simulate/recommendations.ts`.
+- `src/lib/simulate/cli-args.ts` must remain a simulate argument adapter
+  (`<= 45` lines).
+- `src/lib/simulate/cli.ts` must remain a simulate CLI presentation and
+  exit-code seam (`<= 580` lines).
+- `src/lib/simulate/analysis.ts` must remain a simulate analysis seam
+  (`<= 620` lines).
+- `src/lib/simulate/recommendations.ts` must remain a simulate
+  recommendation projection seam (`<= 160` lines).
+- `src/lib/simulate/types.ts` must remain a simulate shared contract seam
+  (`<= 620` lines).
 - `src/lib/output/normalise-policy-gate.ts` must remain a policy gate
   normalisation seam (`<= 130` lines) for policy tier findings, decision
   metadata, and canonical `GateResult` projection.
