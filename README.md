@@ -725,6 +725,12 @@ delegates raw arguments to the ci-migrate CLI adapter, and option projection
 plus delegated helper routing stay in `src/lib/ci-migrate/` so future CI
 migration actions do not widen the registry or command facade.
 
+The `init` command now follows this deep-module boundary rule as well. The
+public command facade stays the init orchestration surface, the registry spec
+delegates raw arguments through `init-command-spec.ts`, and raw flag
+projection plus issue-tracker validation stay in `src/lib/init/cli-args.ts`
+so future bootstrap option changes do not widen the registry core.
+
 ### Pilot, Remediation, And Automation
 
 | Command          | Purpose                                                          |

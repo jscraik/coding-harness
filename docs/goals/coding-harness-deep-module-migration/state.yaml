@@ -439,7 +439,7 @@ tasks:
   - id: T011
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "Prepare the ci-migrate module-boundary slice from merged origin/main; do not edit implementation files until scope, snapshot safety, credentials, and focused validation are declared from live source."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
@@ -490,8 +490,57 @@ tasks:
       - "Focused validation path cannot be identified."
       - "Snapshot-backed ci-migrate safety boundary is unclear."
     receipt_id: R011-CI-MIGRATE-REGISTRY-SPLIT
+  - id: T012
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Prepare the init module-boundary slice from merged origin/main; do not edit implementation files until T011 merge evidence, scope, and focused validation are declared from live source."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+      - "src/commands/init.ts"
+      - "src/commands/init.test.ts"
+      - "src/lib/init/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+    constraints:
+      - "Do not start implementation until T011 and PR #277 merge evidence are recorded."
+      - "Declare focused init tests before editing implementation files."
+      - "Keep init scaffolding behavior snapshot-backed or golden where applicable."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R012 before any following slice."
+    expected_output: "A small init module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "AGENTS.md"
+      - "README.md"
+      - "docs/agents/00-architecture-bootstrap.md"
+      - "docs/agents/07b-agent-governance.md"
+      - "src/commands/init.ts"
+      - "src/commands/init.test.ts"
+      - "src/lib/init/**"
+      - "src/lib/cli/registry/init-command-spec.ts"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused init registry test or direct init dry-run command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T011 is not recorded done."
+      - "PR #277 merge evidence is missing."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+      - "Init scaffolding behavior boundary is unclear."
+    receipt_id: R012-INIT-PREP
 pr_green_sweep:
-  status: t011_ci_migrate_body_artifact_response_validated_pending_push
+  status: t012_init_validated_pending_commit_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -516,8 +565,11 @@ pr_green_sweep:
   simulate_merge_commit: "cf741e13c65b15aadb155d0701d60b4705f72eb0"
   ci_migrate_branch: "codex/JSC-331-ci-migrate-deep-module"
   ci_migrate_pr_url: "https://github.com/jscraik/coding-harness/pull/277"
-  ci_migrate_observed_head_sha: "f81f64ada6ed404e9305638643d2351c4c378486"
-  last_observed: "2026-05-22T14:55:02Z"
+  ci_migrate_observed_head_sha: "0ad9dc4b743ac9d55f154d34491060279a3914f6"
+  ci_migrate_merge_commit: "3a861a7438b9891535d3786f1cb2bd60131a9aa2"
+  init_branch: "codex/JSC-331-init-deep-module"
+  init_base_sha: "3a861a7438b9891535d3786f1cb2bd60131a9aa2"
+  last_observed: "2026-05-22T16:06:20Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -579,6 +631,12 @@ pr_green_sweep:
     - "T011 PR body artifact response commit 9179f8a49c8e763514666e0c74387d275117e698 was pushed after rebasing over CodeRabbit autofixes; follow-up observation found all visible PR #277 checks passing, the prior PR body artifact thread PRRT_kwDORWZJCc6EJTPS outdated, and one new current thread PRRT_kwDORWZJCc6EJyyz on contradictory CodeRabbit pending/pass wording in notes/pr-bodies/pr277-body.md."
     - "T011 PR body-status reconciliation commit f81f64ada6ed404e9305638643d2351c4c378486 was pushed; latest-head observation found all visible PR #277 checks passing, including CodeRabbit, pr-pipeline, security-scan, CircleCI contexts, Socket, and Snyk, and found all prior PR #277 review threads resolved or outdated."
     - "CodeRabbit then posted current thread PRRT_kwDORWZJCc6EKEP5 because this board still described the body-status reconciliation as pending commit/push; this state refresh removes that self-stale wording and keeps T011 active for the next pushed-head check/thread observation before T012."
+    - "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2; all 23 visible checks pass and GitHub review-thread lookup returns zero unresolved threads."
+    - "T011 ci-migrate is closed by PR #277 merge evidence; T012 init is active on codex/JSC-331-init-deep-module rooted at origin/main merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2."
+    - "PR #278 is draft/open at head e633c96d7b1f424f6b895854aa222de0f3db7098. Initial live observation found ci/circleci: pr-template failing because the live body omitted required template sections, while CodeRabbit was draft-skipped and other visible checks were passing. The active repair uses notes/pr-bodies/pr278-body.md plus a Jamie-facing module-layout report refresh before the next push/recheck."
+    - "PR #278 live body was updated from notes/pr-bodies/pr278-body.md; live-body pr-template-gate and linear-gate both pass. Browser report reload was attempted through the in-app Browser, but localhost navigation returned net::ERR_BLOCKED_BY_CLIENT and file navigation was rejected by Browser URL policy, so Browser visual proof is an environment/client blocker rather than a completed proof."
+    - "The module-layout report was restarted for Jamie on http://127.0.0.1:3004/artifacts/architecture/module-layout.html after port 3003 had a stale listener that dropped HTTP responses. The in-app Browser backend currently reports no available browser targets, so Browser visual verification remains blocked even though the report serves successfully over HTTP."
+    - "The module-layout report was restarted for Jamie on http://127.0.0.1:8767/artifacts/architecture/module-layout.html and now has a latest Browser recheck pass: the in-app Browser is visible on the report with title Coding Harness Module Layout."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
@@ -592,10 +650,16 @@ pr_green_sweep:
     pr_handoff: "PR #276 merged at https://github.com/jscraik/coding-harness/pull/276. Current branch codex/JSC-331-ci-migrate-deep-module starts from origin/main at merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
     review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
-    t011_ci_migrate: "T011 implementation and CodeRabbit review responses are pushed through head f81f64ada6ed404e9305638643d2351c4c378486. Latest-head observation found all visible PR #277 checks passing and all prior review threads resolved or outdated, then CodeRabbit posted one current valid stale-state thread on this board's pending commit/push wording. This refresh removes the self-stale wording; T011 remains active until the next pushed-head checks plus review-thread state are recorded."
+    t011_ci_migrate: "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2. All 23 visible checks pass, GitHub review-thread lookup returns zero unresolved threads, and T011 ci-migrate is closed."
+    t012_init:
+      implementation: "T012 init registry-boundary split is implemented on PR #278: raw argv projection moved to src/lib/init/cli-args.ts, registry delegation moved to src/lib/cli/registry/init-command-spec.ts, and command-specs-core no longer owns inline init parser logic."
+      changes: "Focused registry/module-boundary tests, pnpm typecheck, docs-gate required surfaces, validate-codestyle/verify-work fast, pnpm check, and tooling-audit are passing (verify-work run id 20260522T160456Z-59419). Current CodeRabbit init parser findings are fixed locally with malformed-value fixtures and explicit project-type override validation."
+      validation: "Live PR body now passes pr-template-gate and linear-gate after body update. The HTML report was restarted for Jamie at http://127.0.0.1:8767/artifacts/architecture/module-layout.html and returned HTTP 200 with Jamie Readout, T012 status, Browser proof, and Do Not Advance sections present. Focused review-response proof passes with 158 registry/module-boundary tests plus typecheck and validate-codestyle fast."
+      remaining: "Remaining blockers: push the CodeRabbit/parser/report receipt update, update the live PR body, then reobserve current remote checks and review threads."
   pending_actions:
-    - "Reobserve PR #277 remote checks and review threads after this state refresh reaches the pushed head; do not begin T012 from local-only state."
-    - "Do not begin T012 init until T011 pushed-head PR evidence and review-thread resolution are recorded."
+    - "Push the PR #278 CodeRabbit/parser/report receipt update, then reobserve remote checks and review-thread classification at the new pushed head."
+    - "Keep the local static report server available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html; Browser launch proof is refreshed for this session."
+    - "Do not start T013 upgrade or brain while PR #278 has pending/stale remote checks, unobserved review threads, or missing independent review evidence."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
     - "@github"
@@ -617,10 +681,10 @@ slice_queue:
     - prompt-gate
     - gap-case
     - simulate
-  active: ci-migrate
-  next: init
+    - ci-migrate
+  active: init
+  next: upgrade  # next is always the first entry of remaining
   remaining:
-    - init
     - upgrade
     - brain
   deferred:

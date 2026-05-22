@@ -171,6 +171,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"CI migration command spec must stay focused on registry metadata and ci-migrate-owned argv delegation.",
 	},
 	{
+		path: "src/lib/cli/registry/init-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Init command spec must stay focused on registry metadata and init-owned argv delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
 		maxLines: 25,
 		reason:
@@ -1137,6 +1143,12 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 		reason:
 			"Scaffold script template registry must stay focused; extract script-family renderers before raising this limit.",
 	},
+	{
+		path: "src/lib/init/cli-args.ts",
+		maxLines: 80,
+		reason:
+			"Init CLI argument parsing must stay focused on option projection and target-dir detection.",
+	},
 ] as const;
 
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
@@ -1158,6 +1170,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/simulate-command-spec.ts",
 	"src/lib/cli/registry/gardener-command-spec.ts",
 	"src/lib/cli/registry/health-command-spec.ts",
+	"src/lib/cli/registry/init-command-spec.ts",
 	"src/lib/cli/registry/license-gate-command-spec.ts",
 	"src/lib/cli/registry/local-memory-preflight-command-spec.ts",
 	"src/lib/cli/registry/next-command-spec.ts",
@@ -1185,6 +1198,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/verify-coderabbit-command-spec.ts",
 	"src/lib/cli/registry/verify-work-command-spec.ts",
 	"src/lib/cli/registry/workflow-generate-command-spec.ts",
+	"src/lib/init/cli-args.ts",
 	"src/lib/init/index.ts",
 	"src/lib/drift-gate.ts",
 	"src/lib/output/normalise.ts",
@@ -1844,6 +1858,29 @@ describe("module boundaries", () => {
 		expect(cliArgsAdapterContent).toContain("buildCIMigrateOptionsFromCliArgs");
 		expect(commandSpecsCoreContent).toContain("createCIMigrateCommandSpec()");
 		expect(commandSpecsCoreContent).not.toContain('name: "ci-migrate"');
+	});
+
+	it("keeps init registry parsing behind focused seams", () => {
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/init-command-spec.ts"),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/init/cli-args.ts"),
+			"utf-8",
+		);
+		const commandSpecsCoreContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/command-specs-core.ts"),
+			"utf-8",
+		);
+
+		expectRatchetsWithinBudget(CLI_REGISTRY_SURFACE_RATCHETS);
+		expectRatchetsWithinBudget(SCAFFOLD_SURFACE_RATCHETS);
+		expect(registryAdapterContent).toContain("../../init/cli-args.js");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("buildInitOptionsFromCliArgs");
+		expect(commandSpecsCoreContent).toContain("createInitCommandSpec()");
+		expect(commandSpecsCoreContent).not.toContain('name: "init"');
 	});
 
 	it("keeps remediate surfaces split after decomposition", () => {
