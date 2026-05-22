@@ -33,6 +33,12 @@ function renderProjectBrainIndexTemplate(): string {
 
 	return `# Knowledge Index
 
+## Table of Contents
+
+- [Domains](#domains)
+- [Recently Active](#recently-active)
+- [Review Needed](#review-needed)
+
 **Last updated:** ${new Date().toISOString().slice(0, 10)}
 
 ## Domains
@@ -55,6 +61,13 @@ function renderProjectBrainKnowledgeTemplate(
 	domain: ProjectBrainDomain,
 ): string {
 	return `# ${domain.label} Knowledge
+
+## Table of Contents
+
+- [Confirmed Facts](#confirmed-facts)
+- [Patterns](#patterns)
+- [Gotchas](#gotchas)
+- [References](#references)
 
 **Last verified:** (not yet)
 **Verification source:** manual
@@ -85,6 +98,12 @@ function renderProjectBrainHypothesesTemplate(
 ): string {
 	return `# ${domain.label} Hypotheses
 
+## Table of Contents
+
+- [Active Hypotheses](#active-hypotheses)
+- [Under Review](#under-review)
+- [Demoted From Rules](#demoted-from-rules)
+
 Unconfirmed patterns under observation. Promote to rules.md after 3+ confirmations.
 
 ## Active hypotheses
@@ -103,6 +122,11 @@ No active hypotheses. Record observations here when patterns are noticed but not
 
 function renderProjectBrainRulesTemplate(domain: ProjectBrainDomain): string {
 	return `# ${domain.label} Rules
+
+## Table of Contents
+
+- [Active Rules](#active-rules)
+- [Promotion Guide](#promotion-guide)
 
 **Rule count:** 0
 **Last promoted:** (not yet)
@@ -138,10 +162,20 @@ update_policy: |
 
 # Learnings
 
+## Table of Contents
+
+- [Scope](#scope)
+- [Format](#format)
+
 Repo-specific agent knowledge base. Append-only.
 
-> Scope: this repository only.
-> Format: **YYYY-MM-DD [Agent]:** \`problem → fix\`
+## Scope
+
+This repository only.
+
+## Format
+
+Use \`**YYYY-MM-DD [Agent]:** problem -> fix\`.
 `;
 }
 
@@ -247,6 +281,11 @@ drive implementation after an admitted \`.harness/linear\`, \`.harness/refactors
 function renderProjectBrainQualityTemplate(): string {
 	return `# Quality Criteria
 
+## Table of Contents
+
+- [Categories](#categories)
+- [Usage](#usage)
+
 **Last updated:** ${new Date().toISOString().slice(0, 10)}
 **Total criteria:** 3
 **Project domain:** CLI tool
@@ -279,6 +318,12 @@ Before marking any task complete:
 function renderProjectBrainReviewLogTemplate(): string {
 	return `# System Review Log
 
+## Table of Contents
+
+- [Review Schedule](#review-schedule)
+- [Reviews](#reviews)
+- [Instructions](#instructions)
+
 Record of periodic reviews for knowledge, decisions, and quality criteria.
 
 ## Review schedule
@@ -307,6 +352,13 @@ Add a new row after each review session. Include:
 
 function renderProjectBrainCodexLearnSummaryTemplate(): string {
 	return `# Codex Learn Summary
+
+## Table of Contents
+
+- [Error Frequency](#error-frequency)
+- [Suggested Preflight Overrides](#suggested-preflight-overrides)
+- [Path Hints](#path-hints)
+- [Promotion Guide](#promotion-guide)
 
 This file is maintained by \`./scripts/codex-learn analyze\`.
 
@@ -337,6 +389,11 @@ function renderActiveArtifactsTemplate(): string {
 	return `${[
 		"# Active Artifacts",
 		"",
+		"## Table of Contents",
+		"",
+		"- [Active](#active)",
+		"- [Rules](#rules)",
+		"",
 		"This index records the current execution-input artifacts Codex may use to route work.",
 		"",
 		"## Active",
@@ -356,6 +413,10 @@ function renderActiveArtifactsTemplate(): string {
 function renderHarnessArtifactsReadmeTemplate(): string {
 	return `${[
 		"# Harness Artifacts",
+		"",
+		"## Table of Contents",
+		"",
+		"- [Sync Receipts](#sync-receipts)",
 		"",
 		"Curated artifacts here are repo truth only when they are tracked, current, and tied to source evidence.",
 		"Runtime dumps, bulky traces, local databases, and unredacted transcripts stay out of the repository.",
@@ -444,6 +505,11 @@ function renderBrownfieldMemoryInventoryTemplate(): string {
 	return `${[
 		"# Brownfield Memory Inventory",
 		"",
+		"## Table of Contents",
+		"",
+		"- [Classification](#classification)",
+		"- [Rules](#rules)",
+		"",
 		"Use this inventory before adopting, replacing, or ignoring existing memory, artifact, goal, review, or decision surfaces.",
 		"",
 		"## Classification",
@@ -465,6 +531,10 @@ function renderBrownfieldMemoryInventoryTemplate(): string {
 function renderGoalBoardReadmeTemplate(): string {
 	return `${[
 		"# Goal Boards",
+		"",
+		"## Table of Contents",
+		"",
+		"- [Layout](#layout)",
 		"",
 		"Goal boards provide durable coordination for long-running Codex work.",
 		"",

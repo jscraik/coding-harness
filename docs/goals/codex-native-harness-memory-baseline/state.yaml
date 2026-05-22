@@ -5,7 +5,7 @@ goal:
   objective: "Prepare and later implement a Codex-native memory, artifact, and goal baseline in coding-harness and Harness Engineering so downstream greenfield and brownfield projects inherit it."
   native_goal_id: null
   native_thread_id: "019e4caf-59f2-7453-8370-921e5c768687"
-  native_objective: "Follow /Users/jamiecraik/dev/coding-harness/docs/goals/codex-native-harness-memory-baseline/goal.md"
+  native_objective: "Follow docs/goals/codex-native-harness-memory-baseline/goal.md"
   native_status: "complete"
   token_budget: null
   tokens_used: 629055
@@ -19,7 +19,7 @@ rules:
 completion_contract:
   outcome: "Reusable Codex-native harness baseline implemented in coding-harness, mirrored into Harness Engineering plugin enforcement, and ready for downstream greenfield and brownfield project setup."
   verification_surface:
-    - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/codex-native-harness-memory-baseline"
+    - "bash scripts/check-goal-board.sh docs/goals/codex-native-harness-memory-baseline"
     - "pnpm check"
     - "Focused tests or validators for changed generator/template/plugin code"
     - "Diff review confirming unrelated dirty worktree changes were not absorbed"
@@ -30,8 +30,8 @@ completion_contract:
     - "Do not claim completion without exact validation evidence."
   boundaries:
     - "Do not commit, push, open PRs, or update Linear without explicit owner instruction."
-    - "Do not edit /Users/jamiecraik/dev/codex without explicit write-scope expansion."
-    - "Do not edit /Users/jamiecraik/dev/configs without explicit write-scope expansion."
+    - "Do not edit the operator's Codex source checkout without explicit write-scope expansion."
+    - "Do not edit the operator's Codex configs checkout without explicit write-scope expansion."
     - "Do not start Worker implementation until the activation phrase is present."
   iteration_policy: "Scout first, then Worker, then Judge/PM audit; append receipts for every completed slice and encode repeated steering as durable rules, validators, or stop conditions."
   blocked_stop_condition: "Stop if the board is invalid, native goal state conflicts with the board, write scope touches protected repos, dirty work overlaps required files, validation cannot run, or migration would overwrite unresolved brownfield truth."
@@ -95,11 +95,11 @@ tasks:
     status: "done"
     objective: "After coding-harness source baseline lands, update Harness Engineering plugin memory enforcement to require compatible surfaces and sync receipts."
     allowed_files:
-      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/references/codex-native-memory-baseline.md"
-      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/references/solution-capture-contract.md"
-      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/references/stage-context-contract.md"
-      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-reinforce/SKILL.md"
-      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-work/SKILL.md"
+      - "Harness Engineering plugin source: references/codex-native-memory-baseline.md"
+      - "Harness Engineering plugin source: references/solution-capture-contract.md"
+      - "Harness Engineering plugin source: references/stage-context-contract.md"
+      - "Harness Engineering plugin source: skills/he-reinforce/SKILL.md"
+      - "Harness Engineering plugin source: skills/he-work/SKILL.md"
     verify:
       - "Activation phrase and Scout inventory receipt are present."
     stop_if:

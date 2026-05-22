@@ -176,6 +176,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"Runtime-card command spec must stay focused on runtime-card command delegation.",
 	},
 	{
+		path: "src/lib/cli/registry/runtime-budget-command-spec.ts",
+		maxLines: 25,
+		reason:
+			"Runtime-budget command spec must stay focused on runtime-budget command delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/pr-closeout-command-spec.ts",
 		maxLines: 25,
 		reason:
@@ -1094,6 +1100,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./remediate-command-spec.js",
 	"./review-gate-command-spec.js",
 	"./risk-tier-command-spec.js",
+	"./runtime-budget-command-spec.js",
 	"./runtime-card-command-spec.js",
 	"./silent-error-command-spec.js",
 	"./linear-command-spec.js",

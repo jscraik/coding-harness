@@ -959,7 +959,14 @@ describe("remediate execute validation", () => {
 
 			const result = await withCwd(workspacePath, () =>
 				Promise.resolve(
-					spec.execute(["run", "--findings", "findings.json", "--json"]),
+					spec.execute([
+						"run",
+						"--findings",
+						"findings.json",
+						"--pr",
+						"123",
+						"--json",
+					]),
 				),
 			);
 			expect(result).not.toBe(2);
@@ -984,7 +991,14 @@ describe("remediate execute validation", () => {
 
 			const result = await withCwd(workspacePath, () =>
 				Promise.resolve(
-					spec.execute(["apply", "--findings", "findings.json", "--json"]),
+					spec.execute([
+						"apply",
+						"--findings",
+						"findings.json",
+						"--pr",
+						"123",
+						"--json",
+					]),
 				),
 			);
 			expect(result).not.toBe(2);

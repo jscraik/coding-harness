@@ -259,13 +259,20 @@ function runValidationCommands(manifest) {
 			encoding: "utf8",
 			timeout: 180_000,
 		});
+		const spawnError =
+			result.error instanceof Error ? result.error.message : null;
+		const timedOut =
+			result.error?.code === "ETIMEDOUT" || result.signal === "SIGTERM";
 		results.push({
 			command,
-			status: result.status === 0 ? "pass" : "fail",
+			status: result.status === 0 && spawnError === null ? "pass" : "fail",
 			exitCode: result.status,
+			error: spawnError,
+			signal: result.signal ?? null,
 			startedAt,
 			finishedAt: new Date().toISOString(),
 			stderr: result.stderr?.slice(0, 4000) ?? "",
+			timedOut,
 		});
 	}
 	return results;
@@ -294,7 +301,12 @@ function main() {
 			errors.push({
 				code: "validation_command_failed",
 				command: commandResult.command,
+				error: commandResult.error,
+				exitCode: commandResult.exitCode,
 				message: "adopted pattern validation command failed",
+				signal: commandResult.signal,
+				stderr: commandResult.stderr,
+				timedOut: commandResult.timedOut,
 			});
 		}
 	}

@@ -82,7 +82,7 @@ const CHECKS: ArtifactHandlingCheck[] = [
  * @param referencedArtifacts - Repository-relative paths referenced by the active route
  * @param findings - Collected findings emitted during validation
  * @param checkFailures - Set of checks that failed; any check in this set will be marked `"fail"`
- * @param executedChecks - Set of checks that were executed; executed checks not in `checkFailures` will be marked `"pass"` (defaults to all checks in `CHECKS`)
+ * @param executedChecks - Set of checks that were executed; executed checks not in `checkFailures` will be marked `"pass"`
  * @returns An ArtifactHandlingRoutineResult containing per-check statuses, the provided findings and referenced artifacts, the `repoRoot`, `schemaVersion`, and overall `status` (`"pass"` if `findings` is empty, otherwise `"fail"`)
  */
 function buildResult(
@@ -90,7 +90,7 @@ function buildResult(
 	referencedArtifacts: string[],
 	findings: ArtifactHandlingFinding[],
 	checkFailures: Set<ArtifactHandlingCheck>,
-	executedChecks: Set<ArtifactHandlingCheck> = new Set(CHECKS),
+	executedChecks: Set<ArtifactHandlingCheck>,
 ): ArtifactHandlingRoutineResult {
 	return {
 		checks: Object.fromEntries(
@@ -134,6 +134,7 @@ export function validateHarnessArtifactRoutine(
 			: normalizeRepoPath(repoRoot, options.assuranceMatrixPath);
 	const findings: ArtifactHandlingFinding[] = [];
 	const checkFailures = new Set<ArtifactHandlingCheck>();
+	const executedChecks = new Set<ArtifactHandlingCheck>(["active_index"]);
 
 	const fail = (finding: ArtifactHandlingFinding): void => {
 		findings.push(finding);
@@ -196,6 +197,7 @@ export function validateHarnessArtifactRoutine(
 	const reconciledDate = indexText.match(
 		/Last reconciled:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/,
 	)?.[1];
+	markIndexDrivenChecksExecuted(executedChecks);
 
 	if (activeArtifacts.length === 0) {
 		fail({
@@ -223,12 +225,27 @@ export function validateHarnessArtifactRoutine(
 
 	validateActiveArtifacts(repoRoot, activeArtifacts, fail);
 	if (assuranceMatrixPath !== undefined) {
+		executedChecks.add("assurance_matrix");
 		validateAssuranceMatrix(repoRoot, assuranceMatrixPath, fail);
 	}
 
 	validateHistoricalRows(activeIndexPath, artifactIndexText, fail);
 
-	return buildResult(repoRoot, activeArtifacts, findings, checkFailures);
+	return buildResult(
+		repoRoot,
+		activeArtifacts,
+		findings,
+		checkFailures,
+		executedChecks,
+	);
+}
+
+function markIndexDrivenChecksExecuted(
+	executedChecks: Set<ArtifactHandlingCheck>,
+): void {
+	for (const check of CHECKS) {
+		if (check !== "assurance_matrix") executedChecks.add(check);
+	}
 }
 
 function validateAssuranceMatrix(
@@ -251,6 +268,17 @@ function validateAssuranceMatrix(
 			check: "assurance_matrix",
 			code: "assurance_matrix_missing",
 			message: `Assurance matrix is missing: ${assuranceMatrixPath}`,
+			path: assuranceMatrixPath,
+		});
+		return;
+	}
+	if (!resolvedPathStaysInsideRepo(repoRoot, absolutePath)) {
+		fail({
+			check: "assurance_matrix",
+			code: "assurance_matrix_resolves_outside_repo",
+			message:
+				"Assurance matrix path must resolve inside repo root: " +
+				assuranceMatrixPath,
 			path: assuranceMatrixPath,
 		});
 		return;

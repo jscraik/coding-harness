@@ -1263,6 +1263,8 @@ describe("cli command dispatch", () => {
 			"findings.json",
 			"--dry-run",
 			"--json",
+			"--pr",
+			"123",
 			"--sha",
 			"a".repeat(40),
 		]);
@@ -1276,6 +1278,7 @@ describe("cli command dispatch", () => {
 				findings: "findings.json",
 				dryRun: true,
 				json: true,
+				prNumber: 123,
 				headSha: "a".repeat(40),
 			}),
 		);
@@ -1296,6 +1299,8 @@ describe("cli command dispatch", () => {
 			"--findings",
 			"--dry-run",
 			"--json",
+			"--pr",
+			"123",
 			"--sha",
 			"a".repeat(40),
 		]);
@@ -1308,6 +1313,7 @@ describe("cli command dispatch", () => {
 				subcommand: "run",
 				dryRun: true,
 				json: true,
+				prNumber: 123,
 				headSha: "a".repeat(40),
 			}),
 		);

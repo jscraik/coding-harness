@@ -1,5 +1,10 @@
 # Goal Boards
 
+## Table of Contents
+
+- [Layout](#layout)
+- [Native Goal Boundary](#native-goal-boundary)
+
 Goal boards provide durable coordination for long-running Codex work.
 
 ## Layout

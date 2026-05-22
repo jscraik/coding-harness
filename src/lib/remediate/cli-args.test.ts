@@ -64,4 +64,40 @@ describe("buildRemediateOptionsFromCliArgs", () => {
 			},
 		});
 	});
+
+	it("returns a usage error when --pr is missing or invalid", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		const missingResult = buildRemediateOptionsFromCliArgs(["run"]);
+		const invalidResult = buildRemediateOptionsFromCliArgs([
+			"run",
+			"--pr",
+			"abc",
+		]);
+
+		expect(missingResult).toEqual({ ok: false, exitCode: 2 });
+		expect(invalidResult).toEqual({ ok: false, exitCode: 2 });
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error: --pr must be a positive integer",
+		);
+		errorSpy.mockRestore();
+	});
+
+	it("returns a usage error when --provider is unsupported", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		const result = buildRemediateOptionsFromCliArgs([
+			"run",
+			"--pr",
+			"270",
+			"--provider",
+			"semgrep",
+		]);
+
+		expect(result).toEqual({ ok: false, exitCode: 2 });
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error: --provider must be one of: codeql, codex",
+		);
+		errorSpy.mockRestore();
+	});
 });
