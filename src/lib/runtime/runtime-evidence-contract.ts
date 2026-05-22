@@ -105,6 +105,14 @@ const PERMISSION_PROFILES = new Set<RuntimeEvidencePermissionProfile>([
 	"unknown",
 ]);
 
+const REQUESTED_SCOPES = new Set<
+	RuntimeEvidenceDeclaredIntent["requestedScope"]
+>(["analysis", "implementation", "review", "closeout"]);
+
+const RUNTIME_PROBE_SPAWN_OUTCOMES = new Set<
+	RuntimeProbeReceipt["spawnOutcome"]
+>(["available", "unknown_agent_type", "blocked", "not_run"]);
+
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 
 type AddRuntimeEvidenceFinding = (
@@ -194,6 +202,19 @@ function validateDeclaredIntent(
 				"declaredIntent.sourceRefs",
 				"source_refs_missing",
 				"declared intent must cite at least one source reference.",
+			);
+		}
+		if (
+			!REQUESTED_SCOPES.has(
+				asText(
+					declaredIntent.requestedScope,
+				) as RuntimeEvidenceDeclaredIntent["requestedScope"],
+			)
+		) {
+			add(
+				"declaredIntent.requestedScope",
+				"requested_scope_invalid",
+				"requested scope is not recognized.",
 			);
 		}
 	}
@@ -306,15 +327,25 @@ function validateEvaluation(
 			"evaluation_invalid",
 			"evaluation must be a JSON object.",
 		);
-	} else if (
-		evaluation.portable === true &&
-		isBlank(asText(evaluation.command))
-	) {
-		add(
-			"evaluation.command",
-			"portable_command_missing",
-			"portable evaluations must name the replay command.",
-		);
+	} else {
+		if (
+			!VERIFIER_STATUSES.has(
+				asText(evaluation.status) as RuntimeEvidenceVerifierStatus,
+			)
+		) {
+			add(
+				"evaluation.status",
+				"evaluation_status_invalid",
+				"evaluation status is not recognized.",
+			);
+		}
+		if (evaluation.portable === true && isBlank(asText(evaluation.command))) {
+			add(
+				"evaluation.command",
+				"portable_command_missing",
+				"portable evaluations must name the replay command.",
+			);
+		}
 	}
 }
 
@@ -383,6 +414,17 @@ function validateRuntimeProbe(
 			"resolvedState.runtimeProbe.checkout",
 			"runtime_probe_checkout_missing",
 			"runtime probe must name the checkout.",
+		);
+	}
+	if (
+		!RUNTIME_PROBE_SPAWN_OUTCOMES.has(
+			asText(probe.spawnOutcome) as RuntimeProbeReceipt["spawnOutcome"],
+		)
+	) {
+		add(
+			"resolvedState.runtimeProbe.spawnOutcome",
+			"runtime_probe_spawn_outcome_invalid",
+			"runtime probe spawnOutcome is not recognized.",
 		);
 	}
 	if (

@@ -47,6 +47,54 @@ describe("runtime-evidence-contract", () => {
 			exitClassification: "manual_intervention_required",
 		});
 	});
+
+	it("rejects unknown declared intent scopes", () => {
+		const contract = validContract();
+		contract.declaredIntent.requestedScope = "observe" as never;
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "requested_scope_invalid",
+				path: "declaredIntent.requestedScope",
+			}),
+		);
+	});
+
+	it("rejects unknown runtime probe spawn outcomes", () => {
+		const contract = validContract();
+		if (contract.resolvedState.runtimeProbe !== null) {
+			contract.resolvedState.runtimeProbe.spawnOutcome = "maybe" as never;
+			contract.resolvedState.runtimeProbe.blockerClass = "runtime_drift";
+		}
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "runtime_probe_spawn_outcome_invalid",
+				path: "resolvedState.runtimeProbe.spawnOutcome",
+			}),
+		);
+	});
+
+	it("rejects unknown evaluation statuses", () => {
+		const contract = validContract();
+		contract.evaluation.status = "banana" as never;
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "evaluation_status_invalid",
+				path: "evaluation.status",
+			}),
+		);
+	});
 });
 
 function validContract(): RuntimeEvidenceContract {
