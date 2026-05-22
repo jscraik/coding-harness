@@ -84,7 +84,7 @@ export interface BrainStaleResult {
 
 /** Public API export. */
 export interface BrainCliResult {
-	exitCode: number;
+	exitCode: (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
 	result?:
 		| BrainStatusResult
 		| BrainQueryResult
