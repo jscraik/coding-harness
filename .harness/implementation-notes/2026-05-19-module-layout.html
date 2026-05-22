@@ -431,19 +431,19 @@
         <section class="status-strip" aria-label="Deep-module migration status">
           <article class="status-card status-ok">
             <strong>Complete</strong>
-            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, and many command adapters already have facade-first module seams.</span>
+            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, plan-gate, and prompt-gate now have facade-first module seams.</span>
           </article>
 		  <article class="status-card status-current">
-			<strong>Observed PR State</strong>
-					<span>At 2026-05-22T02:15:46Z, PR #270 head 7ce85be681d19af614fa22be9b55bca4563c7e53 was open and not draft with mergeStateStatus BLOCKED; CircleCI checks, pr-pipeline, security-scan, and CodeRabbit were still pending after the latest push while Snyk and Socket were passing.</span>
+			<strong>Current Slice</strong>
+					<span>T008 prompt-gate is active on codex/JSC-331-prompt-gate-deep-module. PR #272 merged at 2026-05-22T06:04:40Z, closing the T007 board-reconciliation gate.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Review Follow-ups</strong>
-				<span>This triage records current-head fixes for malformed runtime-budget input JSON, malformed runtime-budget observation entries, pr-closeout assurance/runtime evidence validation, ci-migrate independent signature assertion, and this immutable PR-state evidence refresh.</span>
+				<span>Prompt-gate source now splits validation, raw argv projection, CLI presentation, registry delegation, and public exports into named seams guarded by module-boundary ratchets.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Merge Gate</strong>
-					<span>Auto-merge is enabled for PR #270; merge remains blocked until CircleCI, security, and CodeRabbit checks complete successfully on the latest pushed head and current review-thread classification is complete. The native goal and repository board remain active until those remote gates clear.</span>
+					<span>The native goal and repository board remain active. The next gate is T008 focused validation, review-gate classification, commit, push, and PR handoff for the prompt-gate split.</span>
 		  </article>
         </section>
 
@@ -452,19 +452,19 @@
           <div class="control-grid">
             <article class="note">
               <h3>Enforcement</h3>
-              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, and plan-gate command behavior are covered by focused command-spec and seam tests.</p>
+              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, plan-gate, and prompt-gate command behavior are covered by focused command-spec and seam tests.</p>
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-				  <p>Review target: plan-gate split. The command facade is now a compatibility export surface while raw argv projection, output, exit-code mapping, and registry delegation live behind named plan-gate seams.</p>
+				  <p>Review target: prompt-gate split. The command facade is now a compatibility export surface while raw argv projection, validation, output, exit-code mapping, and registry delegation live behind named prompt-gate seams.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-					  <p>Current evidence is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-CURRENT-HEAD-REVIEW-FOLLOWUP-BATCH-2-VALIDATION plus the 2026-05-22T02:15:46Z PR #270 review sweep at 7ce85be681d19af614fa22be9b55bca4563c7e53.</p>
+					  <p>Current evidence is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R008-PROMPT-GATE-BOARD-VALIDATION plus this prompt-gate module split on codex/JSC-331-prompt-gate-deep-module.</p>
 			  <ul class="evidence-list">
-					<li>Focused proof: required-check aliases, merge-queue lifecycle ordering, repo-bound root failures, ci-migrate independent reader fixture, malformed runtime-budget JSON, malformed runtime-budget observation entries, pr-closeout evidence shape validation, agent-role malformed entries, and module-boundary ratchets passed before this report update.</li>
+					<li>Focused proof: prompt-gate command tests, CLI registry command-spec tests, CLI dispatch validation, module-boundary ratchets, and fast codestyle validation are the T008 proof surface.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-						<li>Handoff: PR #270 was re-observed at 7ce85be681d19af614fa22be9b55bca4563c7e53 with CircleCI checks, pr-pipeline, security-scan, and CodeRabbit pending; current-head review follow-ups are still being classified in this triage so merge remains gated on the next remote review/check result.</li>
+						<li>Handoff: T007 is closed by PR #272 merge evidence; T008 remains open until the prompt-gate split is validated, reviewed, committed, pushed, and handed off.</li>
 			  </ul>
 			</article>
           </div>
@@ -474,7 +474,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, plan-gate, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, plan-gate, prompt-gate, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -674,6 +674,14 @@
                   Drift mode, baseline seeding, output, suppression,
                   repository root, and JSON projection stay behind a focused
                   command-spec seam and enter through src/lib/drift-gate.ts.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>prompt-gate-command-spec.ts</strong>
+                <span>
+                  Prompt type, prompt file, and JSON projection delegate
+                  through the prompt-gate CLI adapter instead of living in the
+                  registry assembler.
                 </span>
               </div>
               <div class="module doctor">
@@ -1560,7 +1568,66 @@
         </section>
 
         <section class="panel">
-          <h2>7E. Review Gate Required Check Seams</h2>
+          <h2>7E. Prompt Gate Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/prompt-gate.ts</strong>
+              <span>
+                Compatibility command facade. It re-exports the prompt-gate
+                CLI, validator, type, and exit-code contracts without owning
+                parsing, validation internals, or presentation.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/prompt-gate/cli-args.ts</strong>
+                <span>
+                  Raw CLI adapter for prompt type, prompt file, and JSON
+                  output.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>src/lib/prompt-gate/validator.ts</strong>
+                <span>
+                  Required-section discovery, checkbox counting, file-read
+                  error classification, and validation-result construction.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/prompt-gate/cli.ts</strong>
+                <span>
+                  Prompt-gate execution, terminal/JSON presentation, and
+                  exit-code mapping.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/prompt-gate/types.ts</strong>
+                <span>
+                  Prompt types, options, results, output envelope, and
+                  exit-code contract.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>prompt-gate-command-spec.ts</strong>
+                <span>
+                  Thin registry metadata and delegation to the
+                  prompt-gate-owned argv adapter.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facade, registry adapter, raw CLI args
+                  seam, validator seam, and CLI presentation seam.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>7F. Review Gate Required Check Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/lib/review-gate/required-checks.ts</strong>
@@ -1597,7 +1664,7 @@
         </section>
 
         <section class="panel">
-          <h2>7F. CI Migration Path Safety Seam</h2>
+          <h2>7G. CI Migration Path Safety Seam</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/commands/ci-migrate-core.ts</strong>
@@ -1904,7 +1971,11 @@
 			  and registry delegation behind artifact-gate-command-spec.ts. The
 			  Plan-gate raw flag projection now lives behind plan-gate/cli-args.ts,
 			  terminal and JSON presentation behind plan-gate/cli.ts, and registry
-			  delegation behind plan-gate-command-spec.ts.
+			  delegation behind plan-gate-command-spec.ts. Prompt-gate raw flag
+			  projection now lives behind prompt-gate/cli-args.ts, template validation
+			  behind prompt-gate/validator.ts, terminal and JSON presentation behind
+			  prompt-gate/cli.ts, and registry delegation behind
+			  prompt-gate-command-spec.ts.
 			  pre-commit hook now uses the existing staged related-test mode so
 			  commit-time validation stays scoped to staged implementation files
 			  while broader validation lanes keep their branch-wide coverage.
@@ -1944,9 +2015,9 @@
           <article class="note">
             <h3>Next Pressure Point</h3>
 			<p>
-				  Current board gate: T007 plan-gate post-push review sweep is active
-				  at bfe22fd0. Wait for CodeRabbit and reviewer-thread resolution before
-				  continuing into prompt-gate.
+				  Current board gate: T008 prompt-gate is active. Next pressure point is
+				  focused prompt-gate validation, review-gate classification, and PR
+				  handoff for this split.
 			</p>
           </article>
         </section>

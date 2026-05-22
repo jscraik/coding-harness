@@ -732,11 +732,17 @@ describe("prompt-gate execute validation", () => {
 		);
 	});
 
-	it("accepts all valid --type values without returning 2 from validation", async () => {
+	it("runs all valid --type values successfully with matching templates", async () => {
 		const validTypes = ["feature", "bugfix", "refactor", "release"];
 		for (const type of validTypes) {
-			const result = await spec.execute(["--type", type, "--file", "foo.md"]);
-			expect(result).not.toBe(2);
+			const result = await spec.execute([
+				"--type",
+				type,
+				"--file",
+				`docs/prompts/${type}_template.md`,
+				"--json",
+			]);
+			expect(result).toBe(0);
 		}
 	});
 });
