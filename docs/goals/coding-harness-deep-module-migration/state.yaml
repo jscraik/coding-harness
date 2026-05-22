@@ -312,30 +312,30 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_review_followup_batch7_broad_validated_pending_push
+  status: t007_pr270_merged_two_review_threads_validated_pending_push
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "5715b2d9b475551c8144a2b491a0643d71756f94"
-  last_observed: "2026-05-22T04:14:04Z"
+  head_sha: "cd93b6feee48a2e3e33d0e77d638aee838e85aac"
+  last_observed: "2026-05-22T04:32:14Z"
   current_blockers:
-    - "Observed PR #270 at 5715b2d9b475551c8144a2b491a0643d71756f94 after batch 6: state OPEN, not draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, CircleCI/CodeRabbit pending, and 1 unresolved runtime-evidence review thread."
-    - "Batch 7 fix for evaluation.portable boolean-shape validation is local and broadly validated; commit, push, and re-observation are still required."
+    - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
+    - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
+    - "The two unresolved runtime-evidence review findings are repaired locally on codex/JSC-331-pr270-review-closeout and broadly validated; commit, push, follow-up PR handoff, and review-thread classification are still required."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
-    - "Latest valid runtime-evidence source-ref/resolved-state/evaluation portable shape, pr-closeout runtime-evidence fixture, and runtime-budget usage-output assertion findings are repaired locally."
     - "Prompt-gate has not started; observed slice remains T007 PR-green-sweep follow-up work."
-    - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
+    - "Untitled.canvas remains untracked and intentionally untouched outside this closeout branch."
   last_evidence:
-    github_state: "PR #270 observed after batch 6 at 5715b2d9b475551c8144a2b491a0643d71756f94 with state OPEN, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, and local branch matching origin."
-    review_threads: "GitHub review-thread snapshot after 5715b2d9b475551c8144a2b491a0643d71756f94 showed 72 total threads and 1 unresolved runtime-evidence thread for evaluation.portable boolean-shape validation; older fixed/stale threads were resolved."
-    checks: "Remote checks after 5715b2d9b475551c8144a2b491a0643d71756f94 were pending for CircleCI and CodeRabbit; Socket and Snyk had passing checks."
-    coderabbit: "A fresh runtime-evidence evaluation.portable finding is valid and repaired locally; batch 7 passed focused and broad validation and still requires commit, push, and re-observation."
-    post_push: "batch6_pushed_batch7_pending_push"
-    validation: "Batch 7 validation passed: biome for runtime-evidence contract files, Vitest runtime-evidence contract tests, git diff --check, JSONL parse, goal-board check, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, and bash scripts/verify-work.sh --fast run id 20260522T041305Z-59769."
+    github_state: "PR #270 observed as MERGED with head cd93b6feee48a2e3e33d0e77d638aee838e85aac, merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec, and mergedAt 2026-05-22T04:24:29Z."
+    review_threads: "GitHub review-thread snapshot after merge showed 74 total threads, 72 resolved, and 2 unresolved runtime-evidence threads on verifierResult.reason and runtimeProbe.blockerClass."
+    checks: "gh pr checks 270 reported 23 passing checks and no pending or failing checks."
+    coderabbit: "The two remaining CodeRabbit runtime-evidence findings are valid and repaired locally; follow-up branch validation has focused and broad proof and still requires push and PR handoff."
+    post_push: "pr270_merged_followup_branch_pending_push"
+    validation: "Final closeout validation passed: pnpm exec biome check --write src/lib/runtime/runtime-evidence-contract.ts src/lib/runtime/runtime-evidence-contract.test.ts, pnpm vitest run src/lib/runtime/runtime-evidence-contract.test.ts --reporter verbose, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, bash scripts/verify-work.sh --fast run id 20260522T043518Z-33661, jq JSONL parse, goal-board check, and git diff --check."
   pending_actions:
-    - "Commit and push batch 7 runtime-evidence review-followup repair."
-    - "Poll PR #270 remote checks after the pushed batch 7 head until clean, failed, or externally blocked."
-    - "Do not start prompt-gate until PR #270 checks and review-thread classification are settled for the latest pushed head."
+    - "Commit and push codex/JSC-331-pr270-review-closeout, then open or update a follow-up PR for the post-merge PR #270 review-thread closeout."
+    - "Classify or resolve the two PR #270 review threads after the follow-up fix is pushed."
+    - "Do not start prompt-gate until the post-merge closeout branch has clean remote state or an explicit blocker is recorded."
   tools:
     - "@github"
     - "@circleci"
