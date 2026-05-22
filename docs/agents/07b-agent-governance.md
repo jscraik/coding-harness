@@ -51,6 +51,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   Prompt-gate follows this pattern with `src/commands/prompt-gate.ts` as the
   compatibility facade, `prompt-gate-command-spec.ts` as the registry adapter,
   and prompt-template parsing/validation inside `src/lib/prompt-gate/`.
+  Gap-case follows the same pattern with `src/commands/gap-case.ts` as the
+  compatibility facade, `gap-case-command-spec.ts` as the registry adapter,
+  and lifecycle parsing, validation, persistence, and presentation inside
+  `src/lib/gap-case/`.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to

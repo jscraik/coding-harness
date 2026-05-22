@@ -390,9 +390,9 @@ tasks:
       - "T008 is not recorded done."
       - "Current branch is not rooted at current origin/main."
       - "Focused validation path cannot be identified."
-    receipt_id: R009-PENDING
+    receipt_id: R009-GAP-CASE-IMPLEMENTATION-VALIDATION
 pr_green_sweep:
-  status: t008_prompt_gate_pr274_merged_t009_active
+  status: t009_gap_case_final_local_validation_passed_pending_commit_push_pr_handoff
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -407,7 +407,7 @@ pr_green_sweep:
   prompt_gate_head_sha: "dea073f9ec1ceb0638cb804c894d144501fd7f6e"
   prompt_gate_merge_commit: "0fb4b353920c55c3fb85afa89009bb33e98144fc"
   gap_case_branch: "codex/JSC-331-gap-case-deep-module"
-  last_observed: "2026-05-22T08:03:06Z"
+  last_observed: "2026-05-22T08:46:15Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -422,7 +422,9 @@ pr_green_sweep:
     - "PR #274 merged by squash at 2026-05-22T08:00:50Z with merge commit 0fb4b353920c55c3fb85afa89009bb33e98144fc and head dea073f9ec1ceb0638cb804c894d144501fd7f6e; all visible PR #274 checks are passing."
     - "GitHub review-thread observation for PR #274 found seven total threads and zero unresolved after resolving the stale outdated checklist-counting thread PRRT_kwDORWZJCc6ECQb1 with sections.ts and prompt-gate test evidence."
     - "T008 prompt-gate is closed by PR #274 merge evidence; T009 gap-case is now active on codex/JSC-331-gap-case-deep-module from origin/main 0fb4b353920c55c3fb85afa89009bb33e98144fc."
-    - "T009 implementation has not started yet; the first T009 action is to declare allowed files and focused validation from live mainline state."
+    - "T009 gap-case implementation is locally validated with focused tests, direct production CLI proof, docs-gate, refreshed architecture context, validate-codestyle fast, docs-style changed check, staged diagram freshness, verify-work fast, and pnpm check; commit, push, PR handoff, remote checks, and review-thread classification remain pending."
+    - "T009 testing reviewer reported medium coverage gaps; the implementation fixed them with direct runGapCaseFromCliArgs parse-error assertions and command-spec open/resolve side-effect assertions, but the testing reviewer artifact retry did not write artifacts/reviews/t009-testing.md and is recorded as failed artifact verification."
+    - "T009 correctness reviewer did not complete with a written artifact before closeout; this remains an explicit review coverage gap for the PR handoff, while focused behavior and registry tests pass locally."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #274 observed as MERGED at 2026-05-22T08:00:50Z with head dea073f9ec1ceb0638cb804c894d144501fd7f6e and merge commit 0fb4b353920c55c3fb85afa89009bb33e98144fc."
@@ -431,13 +433,14 @@ pr_green_sweep:
     coderabbit: "PR #274 CodeRabbit check passed; CodeRabbit-authored review findings were addressed in dea073f9ec1ceb0638cb804c894d144501fd7f6e and the stale outdated checklist-counting thread was resolved."
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
     post_push: "PR #272 was marked ready and squash-merged with merge commit 0498ac9db9f15f176ac04a7066ba4b3bafa22543; the follow-up branch was deleted by the merge command."
-    validation: "T008 prompt-gate local validation passed after initial JSDoc and docs-style failures were fixed; docs-gate required-surface warnings were cleared after README, AGENTS, architecture-bootstrap, agent-governance, and architecture context synchronization. Full bash scripts/validate-codestyle.sh, explicit pnpm check, and tooling-audit also pass."
+    validation: "T009 local validation passed: pnpm typecheck; pnpm test src/commands/gap-case.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts src/cli.test.ts --reporter dot; direct node --import tsx src/cli.ts gap-case open/resolve proof with enabled policy; bash scripts/validate-codestyle.sh --fast; bash scripts/run-harness-gate.sh docs-gate --mode required --json; jq -c . docs/goals/coding-harness-deep-module-migration/receipts.jsonl >/dev/null; bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration; git diff --check; pnpm run docs:style:changed; bash scripts/check-diagram-freshness.sh; bash scripts/verify-work.sh --fast; pnpm check."
+    t009_review_gates: "Architecture review reported no actionable findings; simplify reported two low findings and the parser re-export was removed while the internal compatibility facade was kept intentionally; testing reported two medium coverage gaps that were fixed in tests but failed artifact-file verification; correctness review artifact did not complete before closeout."
     pr_handoff: "PR #274 auto-merge completed by squash after all visible remote checks passed and all review threads were resolved or classified."
     review_response: "Valid PR #274 CodeRabbit findings are fixed, pushed, merged, and covered by focused prompt-gate/module-boundary tests, direct prompt-gate CLI proof, validate-codestyle fast, JSONL parsing, whitespace checks, and live post-merge review-thread observation."
   pending_actions:
-    - "Validate and commit this T008 closeout and T009 activation board update on codex/JSC-331-gap-case-deep-module."
-    - "Declare T009 gap-case allowed files, focused tests, expected docs, and expected visual updates before implementation."
-    - "Run the T009 per-slice operating loop from origin/main 0fb4b353920c55c3fb85afa89009bb33e98144fc."
+    - "Commit and push T009 gap-case implementation on codex/JSC-331-gap-case-deep-module."
+    - "Open PR for T009, observe remote checks and review threads, and classify the missing testing/correctness artifacts in PR handoff evidence."
+    - "Do not start T010 simulate until T009 PR state settles or is explicitly blocked with live evidence."
   tools:
     - "@github"
     - "@circleci"

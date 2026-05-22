@@ -18,6 +18,7 @@ last_validated: 2026-05-22
 - [Artifact Gate Command Boundary](#artifact-gate-command-boundary)
 - [Plan Gate Command Boundary](#plan-gate-command-boundary)
 - [Prompt Gate Command Boundary](#prompt-gate-command-boundary)
+- [Gap Case Command Boundary](#gap-case-command-boundary)
 - [HE Phase-Exit Trust Boundary](#he-phase-exit-trust-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
@@ -135,6 +136,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/prompt-gate-command-spec.ts`
   - Thin registry metadata and command adapter; raw prompt-gate argv projection
     lives in `src/lib/prompt-gate/cli-args.ts`.
+- `src/lib/cli/registry/gap-case-command-spec.ts`
+  - Thin registry metadata and command adapter; raw gap-case lifecycle argv
+    projection lives in `src/lib/gap-case/cli-args.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -225,7 +229,7 @@ parsing and delegation belong in named adapters:
   `remediate-command-spec.ts`,
   `gardener-command-spec.ts`, `memory-gate-command-spec.ts`,
   `silent-error-command-spec.ts`, `brainstorm-gate-command-spec.ts`,
-  `verify-coderabbit-command-spec.ts`,
+  `gap-case-command-spec.ts`, `verify-coderabbit-command-spec.ts`,
   `local-memory-preflight-command-spec.ts`,
   `symphony-check-command-spec.ts`, and
   `workflow-generate-command-spec.ts`.
@@ -448,6 +452,41 @@ usage-error adapter, or terminal renderer.
 - `src/lib/architecture/module-boundaries.test.ts`
   - Ratchets the command facade, registry adapter, raw CLI adapter, validator,
     and CLI presentation seam.
+
+## Gap Case Command Boundary
+
+Gap-case is the production gap lifecycle surface. It opens and resolves
+policy-backed production gap records without letting the command facade or
+registry manifest become a store, policy loader, validation module, usage
+adapter, or terminal renderer.
+
+- `src/commands/gap-case.ts`
+  - Compatibility command facade and stable public export surface.
+- `src/commands/gap-case-internal.ts`
+  - Compatibility export surface for legacy internal helper imports.
+- `src/lib/gap-case/cli-args.ts`
+  - Raw CLI option adapter for lifecycle action, contract/store paths, case
+    metadata, resolution evidence, and JSON output.
+- `src/lib/gap-case/cli.ts`
+  - Gap-case action dispatch, terminal/JSON presentation, and exit-code
+    mapping.
+- `src/lib/gap-case/operations.ts`
+  - Open and resolve lifecycle behavior, including idempotent matching and
+    resolved-record construction.
+- `src/lib/gap-case/store.ts`
+  - Repository-bounded store path resolution, policy loading, persistence, and
+    corruption handling.
+- `src/lib/gap-case/validators.ts`
+  - Primitive value checks and lifecycle option validation.
+- `src/lib/gap-case/types.ts`
+  - Shared gap-case option, record, store, result, and exit-code contract.
+- `src/lib/cli/registry/gap-case-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the gap-case-owned CLI
+    option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, internal compatibility facade, registry
+    adapter, raw CLI adapter, operations, store, validator, types, and CLI
+    presentation seams.
 
 ## Output Normalisation Boundaries
 
@@ -809,6 +848,9 @@ Threshold policy:
 - `src/lib/cli/registry/prompt-gate-command-spec.ts` must stay focused on
   prompt gate command metadata and prompt-gate-owned argv delegation (`<= 20`
   lines).
+- `src/lib/cli/registry/gap-case-command-spec.ts` must stay focused on
+  gap-case command metadata and gap-case-owned argv delegation (`<= 20`
+  lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
@@ -902,6 +944,25 @@ Threshold policy:
   (`<= 140` lines).
 - `src/lib/prompt-gate/cli.ts` must remain a prompt-gate CLI presentation and
   exit-code seam (`<= 90` lines).
+- `src/commands/gap-case.ts` must remain a gap-case compatibility facade
+  (`<= 25` lines); raw argv projection, lifecycle validation, persistence, and
+  result presentation live behind `src/lib/gap-case/cli-args.ts`,
+  `src/lib/gap-case/validators.ts`, `src/lib/gap-case/store.ts`,
+  `src/lib/gap-case/operations.ts`, and `src/lib/gap-case/cli.ts`.
+- `src/commands/gap-case-internal.ts` must remain a gap-case internal
+  compatibility facade (`<= 25` lines).
+- `src/lib/gap-case/cli-args.ts` must remain a gap-case argument adapter
+  (`<= 95` lines).
+- `src/lib/gap-case/cli.ts` must remain a gap-case CLI presentation and
+  exit-code seam (`<= 120` lines).
+- `src/lib/gap-case/operations.ts` must remain a gap-case lifecycle seam
+  (`<= 250` lines).
+- `src/lib/gap-case/store.ts` must remain a gap-case persistence and policy
+  store-resolution seam (`<= 240` lines).
+- `src/lib/gap-case/validators.ts` must remain a gap-case validation seam
+  (`<= 140` lines).
+- `src/lib/gap-case/types.ts` must remain a gap-case shared contract seam
+  (`<= 190` lines).
 - `src/lib/output/normalise-policy-gate.ts` must remain a policy gate
   normalisation seam (`<= 130` lines) for policy tier findings, decision
   metadata, and canonical `GateResult` projection.
