@@ -124,6 +124,19 @@
 			],
 			"validationCommand": "pnpm vitest run src/lib/memory/validator.test.ts src/lib/architecture/module-boundaries.test.ts",
 			"dispositionReason": "Admitted into deep-module boundary enforcement, live module-layout evidence, and seam-level validation for the current migration slice."
+		},
+		{
+			"id": "2026-05-22-steph-ango",
+			"source": ".harness/research/deep/2026-05-22-steph-ango-evidence.md",
+			"status": "adopted",
+			"owner": "codex",
+			"targetSurfaces": [
+				"docs/goals/codex-native-harness-memory-baseline/goal.md",
+				"docs/goals/codex-native-harness-memory-baseline/state.yaml",
+				"docs/goals/codex-native-harness-memory-baseline/notes/native-setup.md"
+			],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Admitted into the Codex-native memory baseline goal so vault, Project Brain, and generated memory layers stay tracked as distinct operating surfaces."
 		}
 	]
 }

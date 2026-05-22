@@ -22,6 +22,20 @@ describe("project brain templates", () => {
 		expect(PROJECT_BRAIN_TEMPLATES.map((template) => template.path)).toEqual([
 			".harness/README.md",
 			".harness/memory/LEARNINGS.md",
+			".harness/active-artifacts.md",
+			".harness/artifacts/README.md",
+			".harness/core/README.md",
+			".harness/plan/README.md",
+			".harness/specs/README.md",
+			".harness/research/README.md",
+			".harness/decisions/README.md",
+			".harness/implementation-notes/README.md",
+			".harness/evals/README.md",
+			".harness/solutions/README.md",
+			".harness/artifacts/sync-receipts.jsonl",
+			".harness/artifacts/brownfield-memory-inventory.md",
+			".harness/artifact-provenance.json",
+			"docs/goals/README.md",
 			".harness/knowledge/INDEX.md",
 			".harness/knowledge/cli/knowledge.md",
 			".harness/knowledge/cli/hypotheses.md",
@@ -113,6 +127,20 @@ describe("project brain templates", () => {
 	it("renders project brain support artifacts", () => {
 		const harnessReadme = renderTemplate(".harness/README.md");
 		const learnings = renderTemplate(".harness/memory/LEARNINGS.md");
+		const activeArtifacts = renderTemplate(".harness/active-artifacts.md");
+		const artifactsReadme = renderTemplate(".harness/artifacts/README.md");
+		const planReadme = renderTemplate(".harness/plan/README.md");
+		const researchReadme = renderTemplate(".harness/research/README.md");
+		const syncReceipts = renderTemplate(
+			".harness/artifacts/sync-receipts.jsonl",
+		);
+		const brownfieldInventory = renderTemplate(
+			".harness/artifacts/brownfield-memory-inventory.md",
+		);
+		const artifactProvenance = renderTemplate(
+			".harness/artifact-provenance.json",
+		);
+		const goalReadme = renderTemplate("docs/goals/README.md");
 		const codexLearnSummary = renderTemplate(
 			".harness/knowledge/tooling/codex-learn-summary.md",
 		);
@@ -122,10 +150,25 @@ describe("project brain templates", () => {
 		expect(harnessReadme).toContain("Track curated Markdown and JSON");
 		expect(harnessReadme).toContain("secondary-context");
 		expect(harnessReadme).toContain("Admission Rule");
+		expect(harnessReadme).toContain("Codex-Native Baseline");
 		expect(learnings).toContain("schema_version: 1");
 		expect(learnings).toContain(
 			"Repo-specific agent knowledge base. Append-only.",
 		);
+		expect(activeArtifacts).toContain("# Active Artifacts");
+		expect(artifactsReadme).toContain("harness-sync-receipt/v1");
+		expect(artifactsReadme).toContain("local_memory_cli");
+		expect(planReadme).toContain("execution-input authority");
+		expect(researchReadme).toContain("evidence-patterns.json");
+		const parsedReceipt = JSON.parse(syncReceipts);
+		expect(parsedReceipt.schema_version).toBe("harness-sync-receipt/v1");
+		expect(parsedReceipt.local_memory_cli.status).toBe("deferred");
+		expect(brownfieldInventory).toContain("canonical, mirror, legacy");
+		expect(brownfieldInventory).toContain("blocked");
+		expect(JSON.parse(artifactProvenance).schemaVersion).toBe(
+			"artifact-provenance/v1",
+		);
+		expect(goalReadme).toContain("docs/goals/<goal-slug>/");
 		expect(codexLearnSummary).toContain(
 			"This file is maintained by `./scripts/codex-learn analyze`.",
 		);

@@ -6,7 +6,10 @@ import type {
 	CanonicalFinding,
 	RemediationOutcome,
 } from "../lib/remediation/types.js";
-import type { RemediateOptions, RemediateResult } from "./remediate.js";
+import type {
+	RemediateOptions,
+	RemediateResult,
+} from "../lib/remediate/types.js";
 
 type RemediateFinalize = (
 	result: RemediateResult,

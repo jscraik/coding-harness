@@ -153,6 +153,7 @@ function renderHarnessReadmeTemplate(): string {
 - [Tracking Policy](#tracking-policy)
 - [Authority Levels](#authority-levels)
 - [Directory Map](#directory-map)
+- [Codex-Native Baseline](#codex-native-baseline)
 - [Admission Rule](#admission-rule)
 
 ## Tracking Policy
@@ -192,6 +193,10 @@ move with the repository. Local run state should stay local.
 | \`.harness/specs/**.md\` | \`execution-input\` | Track when produced by Harness Engineering |
 | \`.harness/plan/**.md\` | \`execution-input\` | Track when produced by Harness Engineering |
 | \`.harness/memory/LEARNINGS.md\` | \`policy\` | Track |
+| \`.harness/active-artifacts.md\` | \`execution-input\` | Track |
+| \`.harness/artifacts/README.md\` | \`policy\` | Track |
+| \`.harness/artifacts/brownfield-memory-inventory.md\` | \`execution-input\` | Track when onboarding brownfield projects |
+| \`.harness/artifacts/sync-receipts.jsonl\` | \`secondary-context\` | Track curated receipts |
 | \`.harness/knowledge/**.md\` | \`secondary-context\` | Track |
 | \`.harness/quality/**\` | \`policy\` | Track |
 | \`.harness/review-log.md\` | \`secondary-context\` | Track |
@@ -205,6 +210,29 @@ move with the repository. Local run state should stay local.
 | \`.harness/runs/**\` | \`generated-runtime\` | Do not track |
 | \`.harness/memory/codex-learned/**\` | \`generated-runtime\` | Do not track |
 | \`.harness/memory/codex-preflight-overrides.env\` | \`generated-runtime\` | Do not track |
+
+## Codex-Native Baseline
+
+Greenfield and brownfield repositories need a small, source-owned memory and
+artifact baseline so Codex can distinguish repo truth from optional runtime
+signals. The baseline is:
+
+- \`.harness/memory/LEARNINGS.md\` for repo-scoped durable fixes.
+- \`.harness/knowledge/**\` and \`.harness/decisions/**\` for Project Brain facts,
+  hypotheses, rules, and accepted decisions.
+- \`.harness/review-log.md\` for periodic review evidence.
+- \`.harness/active-artifacts.md\` for current execution-input pointers.
+- \`.harness/artifacts/README.md\` for artifact and sync receipt rules.
+- \`.harness/artifacts/sync-receipts.jsonl\` for Project Brain, vault, Local
+  Memory CLI, Local Memory MCP, Chronicle, native citation, artifact state,
+  source evidence, redaction, and reason fields.
+- \`docs/goals/README.md\` for goal-board conventions. Runtime goal state stays
+  in \`docs/goals/<goal-slug>/state.yaml\` and receipt evidence stays in
+  \`docs/goals/<goal-slug>/receipts.jsonl\`.
+
+Chronicle is observational evidence only. Promote Chronicle-derived claims only
+after they are verified against repo files, runtime artifacts, PR or tracker
+state, or explicit owner direction.
 
 ## Admission Rule
 
@@ -305,6 +333,161 @@ No errors recorded yet. Run \`./scripts/codex-learn analyze\` to populate.
 `;
 }
 
+function renderActiveArtifactsTemplate(): string {
+	return `${[
+		"# Active Artifacts",
+		"",
+		"This index records the current execution-input artifacts Codex may use to route work.",
+		"",
+		"## Active",
+		"",
+		"| Artifact | Authority | Status | Last checked | Notes |",
+		"| --- | --- | --- | --- | --- |",
+		"| (none) | | | | |",
+		"",
+		"## Rules",
+		"",
+		"- Reference tracked plans, specs, Linear mirrors, or goal boards only.",
+		"- Do not route implementation from secondary context unless an admitted execution-input artifact points to it.",
+		"- Refresh this index when an artifact becomes active, completes, blocks, or is superseded.",
+	].join("\n")}\n`;
+}
+
+function renderHarnessArtifactsReadmeTemplate(): string {
+	return `${[
+		"# Harness Artifacts",
+		"",
+		"Curated artifacts here are repo truth only when they are tracked, current, and tied to source evidence.",
+		"Runtime dumps, bulky traces, local databases, and unredacted transcripts stay out of the repository.",
+		"",
+		"## Sync Receipts",
+		"",
+		"Use `.harness/artifacts/sync-receipts.jsonl` when a task updates or observes multiple memory surfaces.",
+		"Each JSONL row must use `schema_version: harness-sync-receipt/v1` and separate these fields instead of collapsing them into one success claim:",
+		"",
+		"- `schema_version`",
+		"- `receipt_id`",
+		"- `timestamp`",
+		"- `runtime_action`",
+		"- `project_brain`",
+		"- `vault`",
+		"- `local_memory_cli`",
+		"- `local_memory_mcp`",
+		"- `chronicle`",
+		"- `native_citation`",
+		"- `artifact_state`",
+		"- `source_evidence`",
+		"- `redaction`",
+		"- `reason`",
+		"",
+		"Allowed status classes are `updated`, `observed`, `not_applicable`, `deferred`, and `blocked`.",
+		"Chronicle remains observational until corroborated by repo, runtime, PR, tracker, artifact, or owner evidence.",
+	].join("\n")}\n`;
+}
+
+function renderHarnessDirectoryReadmeTemplate(
+	title: string,
+	purpose: string,
+	authority: string,
+	use: string,
+): string {
+	return [
+		`# ${title}`,
+		"",
+		"## Table of Contents",
+		"",
+		"- [Purpose](#purpose)",
+		"- [Authority](#authority)",
+		"- [Use](#use)",
+		"",
+		"## Purpose",
+		"",
+		purpose,
+		"",
+		"## Authority",
+		"",
+		authority,
+		"",
+		"## Use",
+		"",
+		use,
+		"",
+	].join("\n");
+}
+
+function renderSyncReceiptsTemplate(): string {
+	return `${JSON.stringify({
+		schema_version: "harness-sync-receipt/v1",
+		receipt_id: "bootstrap-0001",
+		timestamp: "2026-01-01T00:00:00.000Z",
+		runtime_action: "verify",
+		project_brain: { status: "updated", reason: "initial scaffold" },
+		vault: { status: "not_applicable", reason: "no vault configured" },
+		local_memory_cli: { status: "deferred", reason: "run local preflight" },
+		local_memory_mcp: {
+			status: "not_applicable",
+			reason: "optional runtime surface",
+		},
+		chronicle: { status: "not_applicable", reason: "no observation used" },
+		native_citation: { status: "not_applicable", reason: "no citation used" },
+		artifact_state: { status: "updated", reason: "baseline scaffolded" },
+		source_evidence: {
+			status: "updated",
+			paths: [".harness/README.md", "docs/goals/README.md"],
+		},
+		redaction: { status: "updated", reason: "no sensitive input" },
+		reason: "Codex-native harness memory baseline initialized.",
+	})}\n`;
+}
+
+function renderBrownfieldMemoryInventoryTemplate(): string {
+	return `${[
+		"# Brownfield Memory Inventory",
+		"",
+		"Use this inventory before adopting, replacing, or ignoring existing memory, artifact, goal, review, or decision surfaces.",
+		"",
+		"## Classification",
+		"",
+		"| Surface | Class | Adopted path | Conflict | Decision |",
+		"| --- | --- | --- | --- | --- |",
+		"| (none) | optional | | | |",
+		"",
+		"Classes: canonical, mirror, legacy, optional, blocked.",
+		"",
+		"## Rules",
+		"",
+		"- Resolve canonical or blocked conflicts before replacing content.",
+		"- Preserve useful legacy or mirror evidence with an explicit mapping or deferred reason.",
+		"- Add a sync receipt for adopted, mapped, deferred, or blocked surfaces.",
+	].join("\n")}\n`;
+}
+
+function renderGoalBoardReadmeTemplate(): string {
+	return `${[
+		"# Goal Boards",
+		"",
+		"Goal boards provide durable coordination for long-running Codex work.",
+		"",
+		"## Layout",
+		"",
+		"Use `docs/goals/<goal-slug>/` with:",
+		"",
+		"- `goal.md` for objective, scope, completion contract, and boundaries.",
+		"- `state.yaml` for current task and native-goal reconciliation state.",
+		"- `receipts.jsonl` for append-only RuntimeAction evidence.",
+		"",
+		"Receipts should name the task id, actor, action type, changed files, validation, blocker class when blocked, and next action.",
+	].join("\n")}\n`;
+}
+
+function renderArtifactProvenanceTemplate(): string {
+	return `${JSON.stringify(
+		{ schemaVersion: "artifact-provenance/v1", artifacts: [] },
+		null,
+		2,
+	)}\n`;
+}
+
 export const PROJECT_BRAIN_TEMPLATES: readonly Template[] = [
 	{
 		path: ".harness/README.md",
@@ -313,6 +496,110 @@ export const PROJECT_BRAIN_TEMPLATES: readonly Template[] = [
 	{
 		path: ".harness/memory/LEARNINGS.md",
 		render: () => renderProjectBrainLearningsTemplate(),
+	},
+	{
+		path: ".harness/active-artifacts.md",
+		render: () => renderActiveArtifactsTemplate(),
+	},
+	{
+		path: ".harness/artifacts/README.md",
+		render: () => renderHarnessArtifactsReadmeTemplate(),
+	},
+	{
+		path: ".harness/core/README.md",
+		render: () =>
+			renderHarnessDirectoryReadmeTemplate(
+				"Core Harness Policy",
+				".harness/core contains portable policy and operating-system rules for agents.",
+				"Files here are policy authority and may constrain implementation when referenced by active artifacts, repo instructions, validators, or command contracts.",
+				"Keep rules short, source-owned, and validator-backed where possible. Runtime state, generated logs, and bulky evidence belong elsewhere.",
+			),
+	},
+	{
+		path: ".harness/plan/README.md",
+		render: () =>
+			renderHarnessDirectoryReadmeTemplate(
+				"Harness Plans",
+				".harness/plan holds execution-input plans that may route implementation.",
+				"Files here are execution-input authority only when current, tracked, and named by .harness/active-artifacts.md or an equivalent admitted control-plane index.",
+				"Plans must name ownership, source evidence, acceptance criteria, and validation. Do not use old plans as route-driving truth without refreshing the active index.",
+			),
+	},
+	{
+		path: ".harness/specs/README.md",
+		render: () =>
+			renderHarnessDirectoryReadmeTemplate(
+				"Harness Specs",
+				".harness/specs holds source-owned specs that define desired behavior.",
+				"Specs are execution-input authority when admitted by the active artifact index. Research and strategy files can inform specs, but cannot replace them.",
+				"Specs should include scope, non-goals, acceptance evidence, and links to tracker or local-only ownership.",
+			),
+	},
+	{
+		path: ".harness/research/README.md",
+		render: () =>
+			renderHarnessDirectoryReadmeTemplate(
+				"Harness Research",
+				".harness/research stores curated research, evidence manifests, and audits.",
+				"Research is secondary-context until a plan, spec, decision, or validator admits it into implementation authority.",
+				"Use evidence-patterns.json to record disposition, target surfaces, and replayable validation commands for adopted patterns.",
+			),
+	},
+	{
+		path: ".harness/decisions/README.md",
+		render: () =>
+			renderHarnessDirectoryReadmeTemplate(
+				"Harness Decisions",
+				".harness/decisions records accepted tradeoffs and durable architecture choices.",
+				"Decision records are decision authority. They explain why a path was chosen and what would be required to revisit it.",
+				"Record the decision, alternatives considered, evidence, consequences, and review date.",
+			),
+	},
+	{
+		path: ".harness/implementation-notes/README.md",
+		render: () =>
+			renderHarnessDirectoryReadmeTemplate(
+				"Harness Implementation Notes",
+				".harness/implementation-notes captures dated execution notes, admissions, and implementation evidence.",
+				"Implementation notes are secondary-context unless an active plan, spec, decision, or validator promotes a rule from them.",
+				"Use these notes to preserve why work changed shape, what was validated, and where follow-up ownership lives when a blocker is outside current authority.",
+			),
+	},
+	{
+		path: ".harness/evals/README.md",
+		render: () =>
+			renderHarnessDirectoryReadmeTemplate(
+				"Harness Evals",
+				".harness/evals stores curated evaluation plans, fixtures, and result summaries.",
+				"Eval artifacts are secondary-context unless a plan, spec, quality criterion, or gate names them as required validation evidence.",
+				"Keep fixtures small, replayable, and tied to acceptance criteria. Store bulky or volatile run output outside tracked repo truth unless explicitly promoted.",
+			),
+	},
+	{
+		path: ".harness/solutions/README.md",
+		render: () =>
+			renderHarnessDirectoryReadmeTemplate(
+				"Harness Solutions",
+				".harness/solutions stores reusable fixes and recovery playbooks discovered during harness work.",
+				"Solutions are secondary-context until referenced by instructions, validators, or active execution-input artifacts.",
+				"Prefer refreshing a high-overlap solution over duplicating one. Include symptoms, root cause, exact fix, validation, and when not to apply it.",
+			),
+	},
+	{
+		path: ".harness/artifacts/sync-receipts.jsonl",
+		render: () => renderSyncReceiptsTemplate(),
+	},
+	{
+		path: ".harness/artifacts/brownfield-memory-inventory.md",
+		render: () => renderBrownfieldMemoryInventoryTemplate(),
+	},
+	{
+		path: ".harness/artifact-provenance.json",
+		render: () => renderArtifactProvenanceTemplate(),
+	},
+	{
+		path: "docs/goals/README.md",
+		render: () => renderGoalBoardReadmeTemplate(),
 	},
 	{
 		path: ".harness/knowledge/INDEX.md",

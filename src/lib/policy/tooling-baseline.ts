@@ -319,6 +319,12 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 export const REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS = [
 	".harness/README.md",
 	".harness/memory/LEARNINGS.md",
+	".harness/active-artifacts.md",
+	".harness/artifacts/README.md",
+	".harness/artifacts/sync-receipts.jsonl",
+	".harness/artifacts/brownfield-memory-inventory.md",
+	".harness/artifact-provenance.json",
+	"docs/goals/README.md",
 	".harness/knowledge/INDEX.md",
 	".harness/knowledge/cli/knowledge.md",
 	".harness/knowledge/cli/hypotheses.md",

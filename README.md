@@ -673,6 +673,7 @@ harness commands --json | jq '
 | `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                                          |
 | `artifact-gate`          | Check generated artifact changes against the artifact provenance registry                       |
 | `artifact-routine`       | Validate route-driving `.harness` artifacts before implementation                               |
+| `runtime-budget`         | Build `command-runtime-budget/v1` evidence from measured command durations and budgets          |
 | `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks                 |
 | `blast-radius`           | Determine required checks from changed files                                                    |
 | `risk-tier`              | Classify changed files by risk tier                                                             |

@@ -88,6 +88,13 @@ describe("classifySurface", () => {
 	});
 
 	it("classifies project-brain templates", () => {
+		expect(classifySurface(".harness/active-artifacts.md")).toBe(
+			"project-brain",
+		);
+		expect(classifySurface(".harness/artifacts/README.md")).toBe(
+			"project-brain",
+		);
+		expect(classifySurface("docs/goals/README.md")).toBe("project-brain");
 		expect(classifySurface(".harness/knowledge/INDEX.md")).toBe(
 			"project-brain",
 		);

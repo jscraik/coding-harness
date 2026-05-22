@@ -10,6 +10,8 @@ export interface PrCloseoutCLIOptions {
 	envFilePath?: string;
 	closeoutGatesPath?: string;
 	phaseExitPath?: string;
+	assurancePath?: string;
+	runtimeEvidencePath?: string;
 }
 
 /** Result of parsing PR closeout CLI arguments, including early exits. */
@@ -19,11 +21,11 @@ export type PrCloseoutParseResult =
 
 function printUsage(): void {
 	console.info(
-		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--gates <path>] [--phase-exit <path>] [--env-file <path>]",
+		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--gates <path>] [--phase-exit <path>] [--assurance <path>] [--runtime-evidence <path>] [--env-file <path>]",
 	);
 	console.info("");
 	console.info(
-		"Build a read-only pr-closeout/v1 report from normalized evidence or live GitHub CLI state, including Coding Harness closeout gates.",
+		"Build a read-only pr-closeout/v1 report from normalized evidence or live GitHub CLI state, including Coding Harness closeout gates and seven-layer assurance.",
 	);
 }
 
@@ -131,6 +133,26 @@ function applyPrCloseoutFlag(
 				options.closeoutGatesPath = value;
 			},
 			"pr-closeout: --gates requires a path",
+		);
+	}
+	if (arg === "--assurance") {
+		return applyStringFlag(
+			args,
+			index,
+			(value) => {
+				options.assurancePath = value;
+			},
+			"pr-closeout: --assurance requires a path",
+		);
+	}
+	if (arg === "--runtime-evidence") {
+		return applyStringFlag(
+			args,
+			index,
+			(value) => {
+				options.runtimeEvidencePath = value;
+			},
+			"pr-closeout: --runtime-evidence requires a path",
 		);
 	}
 	return "unknown";

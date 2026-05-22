@@ -12,6 +12,8 @@ import {
 	buildPrCloseoutReport,
 	type PrCloseoutInput,
 } from "../lib/pr-closeout.js";
+import type { HarnessAssuranceEntry } from "../lib/harness-assurance.js";
+import type { RuntimeEvidenceContract } from "../lib/runtime/runtime-evidence-contract.js";
 import { parsePrCloseoutArgs } from "./pr-closeout/args.js";
 import { buildLivePrCloseoutInput } from "./pr-closeout/live.js";
 import type { CommandRunner } from "./pr-closeout/types.js";
@@ -84,6 +86,18 @@ function parseInput(value: string, source: string): PrCloseoutInput {
 			`${source} phaseExit`,
 		);
 	}
+	if (parsed.assurance !== undefined) {
+		parsed.assurance = normalizeAssuranceEntries(
+			parsed.assurance,
+			`${source} assurance`,
+		);
+	}
+	if (parsed.runtimeEvidence !== undefined) {
+		parsed.runtimeEvidence = normalizeRuntimeEvidenceContract(
+			parsed.runtimeEvidence,
+			`${source} runtimeEvidence`,
+		);
+	}
 	return parsed as unknown as PrCloseoutInput;
 }
 
@@ -116,7 +130,37 @@ function loadInput(path: string): PrCloseoutInput {
 	return parseInput(readFileSync(path, "utf8"), path);
 }
 
-function resolveRepoScopedPath(path: string, repoRoot: string): string {
+function normalizeAssuranceEntries(
+	value: unknown,
+	source: string,
+): HarnessAssuranceEntry[] {
+	if (Array.isArray(value)) return value as HarnessAssuranceEntry[];
+	if (value && typeof value === "object" && !Array.isArray(value)) {
+		const entries = (value as Record<string, unknown>).entries;
+		if (Array.isArray(entries)) return entries as HarnessAssuranceEntry[];
+	}
+	throw new Error(
+		`${source} must be a seven-layer assurance matrix array or an object with an entries array`,
+	);
+}
+
+function normalizeRuntimeEvidenceContract(
+	value: unknown,
+	source: string,
+): RuntimeEvidenceContract {
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new Error(
+			`${source} must be a runtime-evidence-contract/v1 JSON object`,
+		);
+	}
+	return value as RuntimeEvidenceContract;
+}
+
+function resolveRepoScopedPath(
+	path: string,
+	repoRoot: string,
+	artifactLabel: string,
+): string {
 	const lexicalRoot = resolve(repoRoot);
 	const resolvedPath = resolve(lexicalRoot, path);
 	const lexicalRelativePath = relative(lexicalRoot, resolvedPath);
@@ -125,7 +169,7 @@ function resolveRepoScopedPath(path: string, repoRoot: string): string {
 		(!lexicalRelativePath.startsWith("..") && !isAbsolute(lexicalRelativePath));
 	if (!lexicallyInsideRepo) {
 		throw new Error(
-			`Closeout gates path must stay within the repository root: ${path}`,
+			`${artifactLabel} path must stay within the repository root: ${path}`,
 		);
 	}
 	const resolvedRoot = realpathSync(lexicalRoot);
@@ -136,16 +180,42 @@ function resolveRepoScopedPath(path: string, repoRoot: string): string {
 		(!relativePath.startsWith("..") && !isAbsolute(relativePath));
 	if (!isInsideRepo) {
 		throw new Error(
-			`Closeout gates path must stay within the repository root: ${path}`,
+			`${artifactLabel} path must stay within the repository root: ${path}`,
 		);
 	}
 	return canonicalPath;
 }
 
 function loadCloseoutGates(path: string, repoRoot: string): HePhaseExit {
-	const resolvedPath = resolveRepoScopedPath(path, repoRoot);
+	const resolvedPath = resolveRepoScopedPath(path, repoRoot, "Closeout gates");
 	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
 	return normalizeCloseoutGatesArtifact(parsed, path);
+}
+
+function loadAssuranceEntries(
+	path: string,
+	repoRoot: string,
+): HarnessAssuranceEntry[] {
+	const resolvedPath = resolveRepoScopedPath(
+		path,
+		repoRoot,
+		"Assurance matrix",
+	);
+	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
+	return normalizeAssuranceEntries(parsed, path);
+}
+
+function loadRuntimeEvidenceContract(
+	path: string,
+	repoRoot: string,
+): RuntimeEvidenceContract {
+	const resolvedPath = resolveRepoScopedPath(
+		path,
+		repoRoot,
+		"Runtime evidence",
+	);
+	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
+	return normalizeRuntimeEvidenceContract(parsed, path);
 }
 
 /** Run the read-only PR closeout command. */
@@ -181,7 +251,38 @@ export async function runPrCloseoutCLI(
 					),
 				}
 			: input;
-		const report = buildPrCloseoutReport(inputWithCloseoutGates);
+		if (parsed.options.assurancePath && "assurance" in inputWithCloseoutGates) {
+			throw new Error(
+				"Assurance evidence must come from either --input or --assurance, not both",
+			);
+		}
+		const inputWithAssurance = parsed.options.assurancePath
+			? {
+					...inputWithCloseoutGates,
+					assurance: loadAssuranceEntries(
+						parsed.options.assurancePath,
+						parsed.options.repoRoot,
+					),
+				}
+			: inputWithCloseoutGates;
+		if (
+			parsed.options.runtimeEvidencePath &&
+			"runtimeEvidence" in inputWithAssurance
+		) {
+			throw new Error(
+				"Runtime evidence must come from either --input or --runtime-evidence, not both",
+			);
+		}
+		const inputWithRuntimeEvidence = parsed.options.runtimeEvidencePath
+			? {
+					...inputWithAssurance,
+					runtimeEvidence: loadRuntimeEvidenceContract(
+						parsed.options.runtimeEvidencePath,
+						parsed.options.repoRoot,
+					),
+				}
+			: inputWithAssurance;
+		const report = buildPrCloseoutReport(inputWithRuntimeEvidence);
 		if (parsed.options.json) {
 			console.info(JSON.stringify(report, null, 2));
 		} else {

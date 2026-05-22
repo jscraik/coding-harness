@@ -28,10 +28,6 @@ import {
 	runPilotRollbackCLI,
 } from "../../../commands/pilot-rollback.js";
 import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
-import {
-	type RemediateOptions,
-	runRemediateCLI,
-} from "../../../commands/remediate.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import {
@@ -88,8 +84,10 @@ import { createPrCloseoutCommandSpec } from "./pr-closeout-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
 import { createReplayCommandSpec } from "./replay-command-spec.js";
+import { createRemediateCommandSpec } from "./remediate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
 import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
+import { createRuntimeBudgetCommandSpec } from "./runtime-budget-command-spec.js";
 import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import { createSilentErrorCommandSpec } from "./silent-error-command-spec.js";
@@ -178,6 +176,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		execute: (args) => runArtifactRoutineCLI(args),
 	},
 	createReplayCommandSpec(),
+	createRemediateCommandSpec(),
 	createGardenerCommandSpec(),
 	createMemoryGateCommandSpec(),
 	createSilentErrorCommandSpec(),
@@ -272,6 +271,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		},
 	},
 	createArtifactGateCommandSpec(),
+	createRuntimeBudgetCommandSpec(),
 	{
 		name: "ci-ownership-gate",
 		summary:
@@ -361,78 +361,6 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				simulateFailure: simulateFailureFlag,
 				json: jsonFlag,
 			});
-		},
-	},
-	{
-		name: "remediate",
-		summary: "Auto-plan and execute deterministic remediation",
-		errorLabel: "Remediate Error",
-		execute: (args) => {
-			// args[0] is the subcommand (command name already stripped by dispatcher)
-			const subcommand = args[0];
-			if (subcommand !== "run" && subcommand !== "apply") {
-				console.error(
-					"Error: remediate command requires subcommand `run` or `apply`",
-				);
-				return 2;
-			}
-
-			const ownerIndex = args.indexOf("--owner");
-			const repoIndex = args.indexOf("--repo");
-			const prIndex = args.indexOf("--pr");
-			const shaIndex = args.indexOf("--sha");
-			const providerIndex = args.indexOf("--provider");
-			const dryRunFlag = args.includes("--dry-run");
-			const noInputFlag = args.includes("--no-input");
-			const forceFlag = args.includes("--force");
-			const jsonFlag = args.includes("--json");
-			const maxAutoTierIndex = args.indexOf("--max-auto-tier");
-			const modeArgIndex = args.indexOf("--mode");
-			const markerIndex = args.indexOf("--completion-marker");
-			const contractIndex = args.indexOf("--contract");
-			const findingsIndex = args.indexOf("--findings");
-			const headShaIndex = args.indexOf("--head-sha");
-
-			const prValue = getFlagValue(args, prIndex);
-			const maxAutoTierValue = getFlagValue(args, maxAutoTierIndex);
-
-			const remediateOptions: RemediateOptions = {
-				subcommand,
-				owner: getFlagValue(args, ownerIndex) ?? "",
-				repo: getFlagValue(args, repoIndex) ?? "",
-				prNumber: parseIntegerArg(prValue, 1) ?? 0,
-				headSha: getFlagValue(args, shaIndex) ?? "",
-				provider:
-					(getFlagValue(args, providerIndex) as
-						| "codeql"
-						| "codex"
-						| undefined) ?? "codeql",
-				dryRun: dryRunFlag,
-				noInput: noInputFlag,
-				force: forceFlag,
-				json: jsonFlag,
-			};
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) remediateOptions.contractPath = contractArg;
-			const findingsArg = getFlagValue(args, findingsIndex);
-			if (findingsArg) remediateOptions.findings = findingsArg;
-			const headShaArg = getFlagValue(args, headShaIndex);
-			if (headShaArg) remediateOptions.headSha = headShaArg;
-			const modeValue = getFlagValue(args, modeArgIndex);
-			if (modeValue === "manual" || modeValue === "autonomous") {
-				remediateOptions.mode = modeValue;
-			}
-			const markerArg = getFlagValue(args, markerIndex);
-			if (markerArg) remediateOptions.completionMarkerPath = markerArg;
-			if (
-				maxAutoTierValue === "low" ||
-				maxAutoTierValue === "medium" ||
-				maxAutoTierValue === "high"
-			) {
-				remediateOptions.maxAutoTier = maxAutoTierValue;
-			}
-
-			return runRemediateCLI(remediateOptions);
 		},
 	},
 	createObservabilityGateCommandSpec(),

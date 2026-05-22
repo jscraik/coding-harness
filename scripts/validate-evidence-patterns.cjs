@@ -3,6 +3,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { spawnSync } = require("node:child_process");
 
 const ROOT = path.resolve(__dirname, "..");
 const MANIFEST_PATH = path.join(
@@ -20,7 +21,10 @@ function relative(filePath) {
 }
 
 function parseArgs(argv) {
-	return { json: argv.includes("--json") };
+	return {
+		json: argv.includes("--json"),
+		runValidationCommands: argv.includes("--run-validation-commands"),
+	};
 }
 
 function readJson(filePath, errors) {
@@ -237,9 +241,40 @@ function validateManifest(manifest) {
 	return errors;
 }
 
+function runValidationCommands(manifest) {
+	const results = [];
+	const commands = [
+		...new Set(
+			manifest.patterns
+				.filter((pattern) => pattern.status === "adopted")
+				.map((pattern) => pattern.validationCommand)
+				.filter(hasText),
+		),
+	];
+	for (const command of commands) {
+		const startedAt = new Date().toISOString();
+		const result = spawnSync(command, {
+			cwd: ROOT,
+			shell: process.env.SHELL || "zsh",
+			encoding: "utf8",
+			timeout: 180_000,
+		});
+		results.push({
+			command,
+			status: result.status === 0 ? "pass" : "fail",
+			exitCode: result.status,
+			startedAt,
+			finishedAt: new Date().toISOString(),
+			stderr: result.stderr?.slice(0, 4000) ?? "",
+		});
+	}
+	return results;
+}
+
 function main() {
 	const options = parseArgs(process.argv.slice(2));
 	const errors = [];
+	let manifest = null;
 	if (!fs.existsSync(MANIFEST_PATH)) {
 		errors.push({
 			code: "manifest_missing",
@@ -247,8 +282,21 @@ function main() {
 			message: "evidence-patterns.json does not exist",
 		});
 	} else {
-		const manifest = readJson(MANIFEST_PATH, errors);
+		manifest = readJson(MANIFEST_PATH, errors);
 		if (manifest) errors.push(...validateManifest(manifest));
+	}
+	const validationCommands =
+		options.runValidationCommands && manifest && errors.length === 0
+			? runValidationCommands(manifest)
+			: [];
+	for (const commandResult of validationCommands) {
+		if (commandResult.status !== "pass") {
+			errors.push({
+				code: "validation_command_failed",
+				command: commandResult.command,
+				message: "adopted pattern validation command failed",
+			});
+		}
 	}
 
 	const report = {
@@ -256,6 +304,7 @@ function main() {
 		status: errors.length === 0 ? "pass" : "fail",
 		manifest: relative(MANIFEST_PATH),
 		deepEvidenceCount: deepEvidenceFiles().length,
+		validationCommands,
 		errors,
 	};
 
