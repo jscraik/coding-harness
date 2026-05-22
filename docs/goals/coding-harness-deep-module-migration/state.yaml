@@ -312,30 +312,39 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_review_followup_batch7_broad_validated_pending_push
+  status: t007_pr270_closeout_pr273_merged_threads_classified_pr272_board_reviewed_green_refresh_pending
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "5715b2d9b475551c8144a2b491a0643d71756f94"
-  last_observed: "2026-05-22T04:14:04Z"
+  head_sha: "cd93b6feee48a2e3e33d0e77d638aee838e85aac"
+  followup_pr_url: "https://github.com/jscraik/coding-harness/pull/273"
+  followup_branch: "codex/JSC-331-runtime-evidence-nullable-metadata"
+  followup_head_sha: "1ab7a0cdbc41c36f484d70b11a8a1b2463df66e7"
+  board_reconciliation_pr_url: "https://github.com/jscraik/coding-harness/pull/272"
+  board_reconciliation_branch: "codex/JSC-331-pr270-review-closeout"
+  last_observed: "2026-05-22T05:36:54Z"
   current_blockers:
-    - "Observed PR #270 at 5715b2d9b475551c8144a2b491a0643d71756f94 after batch 6: state OPEN, not draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, CircleCI/CodeRabbit pending, and 1 unresolved runtime-evidence review thread."
-    - "Batch 7 fix for evaluation.portable boolean-shape validation is local and broadly validated; commit, push, and re-observation are still required."
+    - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
+    - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
+    - "PR #273 merged the runtime-evidence nullable metadata fix at 2026-05-22T05:06:07Z with merge commit 72bd18cc5cd7d5bcfa5f556666be20f8313b3a18; all visible PR #273 checks passed."
+    - "The two remaining PR #270 review threads are classified as valid and fixed by merged PR #273; GitHub still shows the old PR #270 thread records unresolved, so they remain historical-review-state rather than implementation blockers."
+    - "Draft PR #272 is superseded as an implementation PR and is now only a board-reconciliation branch; at head 7bd606e1fab7459ff5363b2a86316a6d63ccf24c it was mergeable/CLEAN, all visible checks were passing, CodeRabbit was green, and no PR #272 review threads were returned."
+    - "Harness doc-history review found stale PR #272 push/recheck wording in this board and requested this refresh before prompt-gate starts; artifact: artifacts/reviews/harness-doc-history-reviewer-pr272.md."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
-    - "Latest valid runtime-evidence source-ref/resolved-state/evaluation portable shape, pr-closeout runtime-evidence fixture, and runtime-budget usage-output assertion findings are repaired locally."
     - "Prompt-gate has not started; observed slice remains T007 PR-green-sweep follow-up work."
-    - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
+    - "Untitled.canvas remains untracked and intentionally untouched outside this closeout branch."
   last_evidence:
-    github_state: "PR #270 observed after batch 6 at 5715b2d9b475551c8144a2b491a0643d71756f94 with state OPEN, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, and local branch matching origin."
-    review_threads: "GitHub review-thread snapshot after 5715b2d9b475551c8144a2b491a0643d71756f94 showed 72 total threads and 1 unresolved runtime-evidence thread for evaluation.portable boolean-shape validation; older fixed/stale threads were resolved."
-    checks: "Remote checks after 5715b2d9b475551c8144a2b491a0643d71756f94 were pending for CircleCI and CodeRabbit; Socket and Snyk had passing checks."
-    coderabbit: "A fresh runtime-evidence evaluation.portable finding is valid and repaired locally; batch 7 passed focused and broad validation and still requires commit, push, and re-observation."
-    post_push: "batch6_pushed_batch7_pending_push"
-    validation: "Batch 7 validation passed: biome for runtime-evidence contract files, Vitest runtime-evidence contract tests, git diff --check, JSONL parse, goal-board check, pnpm typecheck, bash scripts/validate-codestyle.sh --fast, and bash scripts/verify-work.sh --fast run id 20260522T041305Z-59769."
+    github_state: "PR #270 observed as MERGED with head cd93b6feee48a2e3e33d0e77d638aee838e85aac, merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec, and mergedAt 2026-05-22T04:24:29Z."
+    review_threads: "GitHub review-thread snapshot after PR #273 merge still shows PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH unresolved; both are classified fixed by PR #273 evidence and regression tests."
+    checks: "gh pr checks 272 reported all visible PR #272 checks passing at 7bd606e1fab7459ff5363b2a86316a6d63ccf24c, including pr-pipeline, security-scan, CodeRabbit, CircleCI governance lanes, Socket, and Snyk."
+    coderabbit: "PR #273 body records CodeRabbit PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH as fixed; PR #273 CodeRabbit check passed and no PR #273 review threads were returned. PR #272 CodeRabbit check passed and no PR #272 review threads were returned."
+    board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
+    post_push: "PR #272 branch has already been pushed as board reconciliation only; this new board-refresh commit must be pushed and re-observed at its latest head before PR #272 is marked ready or prompt-gate starts."
+    validation: "Closeout implementation validation is recorded on merged PR #273; board reconciliation validation passed locally and PR #272 remote checks were green at 7bd606e1fab7459ff5363b2a86316a6d63ccf24c before this board-refresh commit."
   pending_actions:
-    - "Commit and push batch 7 runtime-evidence review-followup repair."
-    - "Poll PR #270 remote checks after the pushed batch 7 head until clean, failed, or externally blocked."
-    - "Do not start prompt-gate until PR #270 checks and review-thread classification are settled for the latest pushed head."
+    - "Commit and push this board-refresh receipt update on codex/JSC-331-pr270-review-closeout."
+    - "Re-observe PR #272 remote checks, review threads, and draft/ready state at the new head after push."
+    - "Do not start prompt-gate until the latest PR #272 head has clean remote state or an explicit blocker is recorded."
   tools:
     - "@github"
     - "@circleci"
