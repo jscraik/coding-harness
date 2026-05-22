@@ -203,7 +203,7 @@ const PASSING_RUNTIME_EVIDENCE = {
 	},
 	verifierResult: {
 		status: "pass",
-		owner: "pr-closeout",
+		owner: "validator",
 		evidenceRefs: ["test:runtime-evidence"],
 		verifiedAt: "2026-05-22T00:01:00.000Z",
 		reason: null,

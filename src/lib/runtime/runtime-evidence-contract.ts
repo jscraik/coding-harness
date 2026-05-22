@@ -98,6 +98,12 @@ const VERIFIER_STATUSES = new Set<RuntimeEvidenceVerifierStatus>([
 	"unknown",
 ]);
 
+const VERIFIER_OWNERS = new Set<RuntimeEvidenceVerifierResult["owner"]>([
+	"validator",
+	"runtime",
+	"human",
+]);
+
 const PERMISSION_PROFILES = new Set<RuntimeEvidencePermissionProfile>([
 	"read_only",
 	"workspace_write",
@@ -272,6 +278,18 @@ function validateVerifierResult(
 		);
 	}
 	if (
+		isRecord(verifierResult) &&
+		!VERIFIER_OWNERS.has(
+			asText(verifierResult.owner) as RuntimeEvidenceVerifierResult["owner"],
+		)
+	) {
+		add(
+			"verifierResult.owner",
+			"verifier_owner_invalid",
+			"verifier owner is not recognized.",
+		);
+	}
+	if (
 		!isRecord(verifierResult) ||
 		!ISO_DATE_PATTERN.test(asText(verifierResult.verifiedAt) ?? "")
 	) {
@@ -428,6 +446,13 @@ function validateRuntimeProbe(
 			"resolvedState.runtimeProbe.checkout",
 			"runtime_probe_checkout_missing",
 			"runtime probe must name the checkout.",
+		);
+	}
+	if (!(probe.sessionId === null || typeof probe.sessionId === "string")) {
+		add(
+			"resolvedState.runtimeProbe.sessionId",
+			"runtime_probe_session_id_invalid",
+			"runtime probe sessionId must be a string or null.",
 		);
 	}
 	if (

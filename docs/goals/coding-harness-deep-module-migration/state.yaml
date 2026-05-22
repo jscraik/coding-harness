@@ -312,27 +312,28 @@ tasks:
       - "Focused validation path cannot be identified."
     receipt_id: R007
 pr_green_sweep:
-  status: t007_current_head_review_followup_validated_ready_to_commit_push
+  status: t007_pr_green_sweep_snapshot_recorded
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "aac395dff6b6b3e9ed9b096d1405f3da672c370f"
-  last_observed: "2026-05-22T02:50:39Z"
+  head_sha: "fca800124afbd0b282e364fc516995af8f80c615"
+  last_observed: "2026-05-22T02:59:58Z"
   current_blockers:
-    - "Current pushed PR head before this local repair is aac395dff6b6b3e9ed9b096d1405f3da672c370f; this current-head review follow-up is focused-validated and broad-gated locally but not yet pushed or remotely re-observed."
-    - "GitHub reports PR #270 open, not draft, mergeable MERGEABLE, and mergeStateStatus BLOCKED; Socket Pull Request Alerts, pr-pipeline, security-scan, CircleCI leaves, and CodeRabbit were pending or in progress after the latest push."
+    - "Observed PR #270 at fca800124afbd0b282e364fc516995af8f80c615 on 2026-05-22T02:59:58Z: state OPEN, not draft, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, mergedAt null."
+    - "Observed unresolved current review threads include runtime-evidence verifierResult.owner enum validation and runtimeProbe.sessionId shape validation."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
-    - "Current-head review feedback on portable goal docs, docs-goal TOCs, Vale proof, diagram-context refresh, evidence-pattern command diagnostics, runtime-budget ratchets, runtime-budget observation shape validation, runtime-budget missing-flag JSON usage, runtime-evidence evaluation/status, requestedScope, spawnOutcome, and claimTraceConsistency enum validation, artifact-routine assurance matrix behavior, generated Project Brain markdown TOCs, malformed pr-closeout runtime evidence, remediate CLI input validation, and module-layout PR-state evidence is repaired locally in this review-followup patch."
-    - "Review threads still require post-push classification; stale/outdated comments remain unresolved in GitHub until reviewer or maintainer resolution."
-    - "Prompt-gate has not started; this is still T007 PR-green-sweep follow-up work."
+    - "Prompt-gate has not started; observed slice remains T007 PR-green-sweep follow-up work."
     - "CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active dirty-work slice in the main checkout and is intentionally preserved outside this T007 worktree."
   last_evidence:
-    github_state: "PR #270 state was observed at aac395dff6b6b3e9ed9b096d1405f3da672c370f before this local repair; live PR state must be refreshed after the next push."
-    review_threads: "Current-head runtime-budget missing-flag JSON usage, runtime-evidence claimTraceConsistency enum validation, and audit-wide Vale suppression feedback is repaired locally; module-layout stale-evidence and other current threads still require post-push classification."
-    checks: "Focused and broader local validation for this current-head review follow-up is passing; remote checks must be observed after commit and push."
+    github_state: "PR #270 observed at fca800124afbd0b282e364fc516995af8f80c615 with state OPEN, mergeable MERGEABLE, mergeStateStatus BLOCKED, auto-merge enabled, and mergedAt null."
+    review_threads: "Review-thread snapshot includes unresolved runtime-evidence verifierResult.owner and runtimeProbe.sessionId contract findings at the observed head."
+    checks: "Remote checks were not yet clean at the observed snapshot; mergeStateStatus remained BLOCKED."
     coderabbit: "CodeRabbit/review-thread state remains the gate before T007 can advance to prompt-gate or merge readiness."
-    post_push: "Next required action is commit, push, and re-observe current-head checks and review threads for this current-head review-followup batch."
-    validation: "pnpm exec biome check --write src/commands/runtime-budget.ts src/commands/runtime-budget.test.ts src/lib/runtime/runtime-evidence-contract.ts src/lib/runtime/runtime-evidence-contract.test.ts; pnpm vitest run src/commands/runtime-budget.test.ts src/lib/runtime/runtime-evidence-contract.test.ts --reporter verbose; pnpm exec vale .harness/research/audits/2026-05-21-plan-and-research-code-tree-gap-audit.md; pnpm exec biome check src/commands/runtime-budget.ts src/commands/runtime-budget.test.ts src/lib/runtime/runtime-evidence-contract.ts src/lib/runtime/runtime-evidence-contract.test.ts; pnpm exec markdownlint-cli2 .harness/research/audits/2026-05-21-plan-and-research-code-tree-gap-audit.md; jq -c receipts JSONL; bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration; git diff --check; pnpm typecheck; bash scripts/validate-codestyle.sh --fast; bash scripts/verify-work.sh --fast all pass for this current-head follow-up. verify-work run id 20260522T024941Z-81857."
+    post_push: "n/a_snapshot_evidence"
+    validation: "Current local review-followup patch validates runtime-budget duplicate usage-output behavior, runtime-evidence verifier owner enum validation, runtimeProbe.sessionId shape validation, pr-closeout fixture ownership, and snapshot-only state evidence. Focused tests, goal-board checks, typecheck, validate-codestyle --fast, and verify-work --fast pass. verify-work run id 20260522T030728Z-26338."
+  pending_actions:
+    - "Commit and push the verifierResult.owner, runtimeProbe.sessionId, runtime-budget duplicate-output, and state-evidence repair batch."
+    - "Resolve or reclassify addressed review threads after the next pushed head."
   tools:
     - "@github"
     - "@circleci"

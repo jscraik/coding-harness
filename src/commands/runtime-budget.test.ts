@@ -65,6 +65,7 @@ describe("runtime-budget command", () => {
 				message: `runtime-budget input file is malformed JSON: ${inputPath}`,
 			},
 		});
+		expect(infoSpy).toHaveBeenCalledTimes(1);
 		vi.restoreAllMocks();
 	});
 
@@ -88,6 +89,7 @@ describe("runtime-budget command", () => {
 				message: "runtime-budget observations[0] is malformed.",
 			},
 		});
+		expect(infoSpy).toHaveBeenCalledTimes(1);
 		vi.restoreAllMocks();
 	});
 

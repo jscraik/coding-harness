@@ -110,6 +110,38 @@ describe("runtime-evidence-contract", () => {
 			}),
 		);
 	});
+
+	it("rejects unknown verifier result owners", () => {
+		const contract = validContract();
+		contract.verifierResult.owner = "bot" as never;
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "verifier_owner_invalid",
+				path: "verifierResult.owner",
+			}),
+		);
+	});
+
+	it("rejects malformed runtime probe session ids", () => {
+		const contract = validContract();
+		if (contract.resolvedState.runtimeProbe !== null) {
+			contract.resolvedState.runtimeProbe.sessionId = 42 as never;
+		}
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "runtime_probe_session_id_invalid",
+				path: "resolvedState.runtimeProbe.sessionId",
+			}),
+		);
+	});
 });
 
 function validContract(): RuntimeEvidenceContract {
