@@ -314,7 +314,7 @@ tasks:
   - id: T008
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "Prepare the prompt-gate module-boundary slice; do not edit implementation files until T007, PR #272, and current branch state are verified."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
@@ -351,9 +351,48 @@ tasks:
       - "T007 is not recorded done."
       - "Current branch is not rooted at current origin/main."
       - "Focused validation path cannot be identified."
-    receipt_id: R008-PROMPT-GATE-PR274-CODERABBIT-REPAIR-VALIDATION
+    receipt_id: R008-PROMPT-GATE-PR274-MERGED-T009-ACTIVE
+  - id: T009
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Prepare the gap-case module-boundary slice; do not edit implementation files until T008, PR #274, and current branch state are verified."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T008 is recorded done and the gap-case branch starts from current origin/main."
+      - "Declare focused gap-case tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R009 before any following slice."
+    expected_output: "A small gap-case module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/gap-case*.ts"
+      - "src/lib/gap-case/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/gap-case-command-spec.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/gap-case*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "pnpm vitest run src/commands/gap-case.test.ts --reporter verbose"
+      - "focused gap-case registry or CLI dispatch test to be named before implementation if registry behavior changes"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T008 is not recorded done."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+    receipt_id: R009-PENDING
 pr_green_sweep:
-  status: t008_prompt_gate_coderabbit_repair_validated_pending_push
+  status: t008_prompt_gate_pr274_merged_t009_active
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -365,8 +404,10 @@ pr_green_sweep:
   board_reconciliation_branch: "codex/JSC-331-pr270-review-closeout"
   prompt_gate_pr_url: "https://github.com/jscraik/coding-harness/pull/274"
   prompt_gate_branch: "codex/JSC-331-prompt-gate-deep-module"
-  prompt_gate_head_sha: "bb3e121ad098d35c0347b94ee7cfbc14ba7a5c37"
-  last_observed: "2026-05-22T07:42:55Z"
+  prompt_gate_head_sha: "dea073f9ec1ceb0638cb804c894d144501fd7f6e"
+  prompt_gate_merge_commit: "0fb4b353920c55c3fb85afa89009bb33e98144fc"
+  gap_case_branch: "codex/JSC-331-gap-case-deep-module"
+  last_observed: "2026-05-22T08:03:06Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
@@ -375,29 +416,28 @@ pr_green_sweep:
     - "PR #272 was converted to ready, all visible checks passed, no review threads were returned, and it merged by squash at 2026-05-22T06:04:40Z with merge commit 0498ac9db9f15f176ac04a7066ba4b3bafa22543."
     - "Harness doc-history review found stale PR #272 push/recheck wording in this board; the stale wording was repaired before PR #272 merged."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
-    - "T007 plan-gate and PR-green-sweep closeout are complete; T008 prompt-gate is now the active implementation slice."
+    - "T007 plan-gate and PR-green-sweep closeout are complete."
     - "T008 prompt-gate implementation is locally validated with focused tests, direct CLI proofs, review gates, validate-codestyle fast, verify-work fast, full validate-codestyle, pnpm check, and tooling-audit."
     - "T008 pre-push docs-gate initially required README.md, docs/agents/00-architecture-bootstrap.md, AGENTS.md, docs/agents/07b-agent-governance.md, and refreshed architecture context artifacts; those surfaces are now synchronized and docs-gate passes locally."
-    - "PR #274 is open, ready for review, and auto-merge-enabled for T008; after the board handoff push, current head bb3e121ad098d35c0347b94ee7cfbc14ba7a5c37 showed post-push remote checks still pending and CodeRabbit review threads requiring repair."
-    - "GitHub review-thread observation for PR #274 at head bb3e121ad098d35c0347b94ee7cfbc14ba7a5c37 found valid CodeRabbit findings for duplicate module-layout heading labels, stale T008 receipt reference, missing prompt-gate facade parser regression guards, unreadable prompt-path SYSTEM_ERROR mapping, and checklist-counting regex behavior; one stale last_observed thread was already outdated."
-    - "The valid PR #274 CodeRabbit findings are fixed locally and focused validation passes, but the repair still requires commit, push, and post-push remote/review re-observation."
-    - "T008 is not closed and T009 gap-case must not start until PR #274 checks and review threads settle and auto-merge completes or the remaining blocker is reclassified with live evidence."
+    - "PR #274 merged by squash at 2026-05-22T08:00:50Z with merge commit 0fb4b353920c55c3fb85afa89009bb33e98144fc and head dea073f9ec1ceb0638cb804c894d144501fd7f6e; all visible PR #274 checks are passing."
+    - "GitHub review-thread observation for PR #274 found seven total threads and zero unresolved after resolving the stale outdated checklist-counting thread PRRT_kwDORWZJCc6ECQb1 with sections.ts and prompt-gate test evidence."
+    - "T008 prompt-gate is closed by PR #274 merge evidence; T009 gap-case is now active on codex/JSC-331-gap-case-deep-module from origin/main 0fb4b353920c55c3fb85afa89009bb33e98144fc."
+    - "T009 implementation has not started yet; the first T009 action is to declare allowed files and focused validation from live mainline state."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
-    github_state: "PR #270 observed as MERGED with head cd93b6feee48a2e3e33d0e77d638aee838e85aac, merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec, and mergedAt 2026-05-22T04:24:29Z."
-    review_threads: "GitHub review-thread snapshot after PR #273 merge still shows PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH unresolved; both are classified fixed by PR #273 evidence and regression tests."
-    checks: "gh pr checks 272 reported all visible PR #272 checks passing before ready/merge; PR #272 merged at 2026-05-22T06:04:40Z."
-    coderabbit: "PR #273 body records CodeRabbit PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH as fixed; PR #273 CodeRabbit check passed and no PR #273 review threads were returned. PR #272 CodeRabbit check passed and no PR #272 review threads were returned before merge."
+    github_state: "PR #274 observed as MERGED at 2026-05-22T08:00:50Z with head dea073f9ec1ceb0638cb804c894d144501fd7f6e and merge commit 0fb4b353920c55c3fb85afa89009bb33e98144fc."
+    review_threads: "PR #274 review-thread snapshot showed seven total threads and zero unresolved after resolving outdated thread PRRT_kwDORWZJCc6ECQb1 from sections.ts and prompt-gate test evidence."
+    checks: "gh pr checks 274 reported all visible checks passing, including pr-pipeline, orb-pinning, CodeRabbit, Snyk, Socket, and CircleCI lanes."
+    coderabbit: "PR #274 CodeRabbit check passed; CodeRabbit-authored review findings were addressed in dea073f9ec1ceb0638cb804c894d144501fd7f6e and the stale outdated checklist-counting thread was resolved."
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
     post_push: "PR #272 was marked ready and squash-merged with merge commit 0498ac9db9f15f176ac04a7066ba4b3bafa22543; the follow-up branch was deleted by the merge command."
     validation: "T008 prompt-gate local validation passed after initial JSDoc and docs-style failures were fixed; docs-gate required-surface warnings were cleared after README, AGENTS, architecture-bootstrap, agent-governance, and architecture context synchronization. Full bash scripts/validate-codestyle.sh, explicit pnpm check, and tooling-audit also pass."
-    pr_handoff: "PR #274 is ready for review and auto-merge-enabled; after the board-update push, head bb3e121ad098d35c0347b94ee7cfbc14ba7a5c37 had pending remote checks and unresolved CodeRabbit review threads."
-    review_response: "Valid PR #274 CodeRabbit findings are fixed locally and covered by focused prompt-gate/module-boundary tests, direct prompt-gate CLI proof, validate-codestyle fast, JSONL parsing, and whitespace checks; push and live re-observation are still pending."
+    pr_handoff: "PR #274 auto-merge completed by squash after all visible remote checks passed and all review threads were resolved or classified."
+    review_response: "Valid PR #274 CodeRabbit findings are fixed, pushed, merged, and covered by focused prompt-gate/module-boundary tests, direct prompt-gate CLI proof, validate-codestyle fast, JSONL parsing, whitespace checks, and live post-merge review-thread observation."
   pending_actions:
-    - "Commit and push the PR #274 CodeRabbit repair on codex/JSC-331-prompt-gate-deep-module."
-    - "Reobserve PR #274 checks, CodeRabbit status, and review threads after the repair push."
-    - "After PR #274 is merged or explicitly blocked with stable live evidence, record T008 closeout and only then activate T009 gap-case."
-    - "Do not start T009 gap-case while PR #274 remains open with pending checks or unresolved review-thread state."
+    - "Validate and commit this T008 closeout and T009 activation board update on codex/JSC-331-gap-case-deep-module."
+    - "Declare T009 gap-case allowed files, focused tests, expected docs, and expected visual updates before implementation."
+    - "Run the T009 per-slice operating loop from origin/main 0fb4b353920c55c3fb85afa89009bb33e98144fc."
   tools:
     - "@github"
     - "@circleci"
@@ -415,10 +455,10 @@ slice_queue:
     - observability-gate
     - artifact-gate
     - plan-gate
-  active: prompt-gate
-  next: gap-case
+    - prompt-gate
+  active: gap-case
+  next: simulate
   remaining:
-    - gap-case
     - simulate
     - ci-migrate
     - init
