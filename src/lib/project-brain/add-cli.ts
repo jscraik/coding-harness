@@ -37,20 +37,7 @@ function isInsideDirectory(rootDir: string, targetPath: string): boolean {
 	);
 }
 
-/**
- * Adds a knowledge item to the harness repository by creating or appending the appropriate file for the given type.
- *
- * The function writes or appends a formatted entry for `type` into the harness directory structure (e.g., knowledge/<domain>/rules.md,
- * knowledge/<domain>/hypotheses.md, decisions/<date>-<slug>.md, or memory/LEARNINGS.md) and returns metadata about the created/updated file.
- *
- * @param harnessDir - Path to the root harness directory (the function writes under this directory)
- * @param type - One of `"learning" | "rule" | "hypothesis" | "decision"` selecting the target file and formatting
- * @param domain - Domain name used for domain-scoped files (e.g., `knowledge/<domain>/...`); ignored for decisions and global learnings
- * @param content - The textual content to be inserted into the selected file
- * @param options - Optional settings
- * @param options.severity - Severity label used when `type` is `"rule"` (default: `"should"`)
- * @returns An object describing the addition: `type`, `domain`, `path` (relative to the harness dir), the `content` written, and `appended: true`
- */
+/** Add a Project Brain item and return metadata about the written target. */
 export function runBrainAdd(
 	harnessDir: string,
 	type: BrainAddType,
@@ -107,8 +94,15 @@ export function runBrainAdd(
 	}
 	mkdirSync(dirname(fullPath), { recursive: true });
 
+	const appended = type !== "decision";
 	if (type === "decision") {
-		writeFileSync(fullPath, formattedContent, "utf-8");
+		if (existsSync(fullPath)) {
+			throw new Error(`Decision file already exists: ${targetFile}`);
+		}
+		writeFileSync(fullPath, formattedContent, {
+			encoding: "utf-8",
+			flag: "wx",
+		});
 	} else {
 		appendFileSync(fullPath, formattedContent, "utf-8");
 	}
@@ -118,21 +112,11 @@ export function runBrainAdd(
 		domain,
 		path: targetFile,
 		content: formattedContent,
-		appended: true,
+		appended,
 	};
 }
 
-/**
- * Handle the `brain add` CLI subcommand: validate flags, perform the add action, and emit output.
- *
- * Processes expected flags from `args` (e.g., `--type`, `--domain`, `--content`, `--severity`, `--dir`, and `--json`),
- * writes human or JSON output to stdout (and error messages to stderr), and invokes the add operation.
- *
- * @param args - The CLI token array passed to the `add` subcommand
- * @returns A `BrainCliResult` containing an `exitCode` and, on success, the `result` produced by `runBrainAdd`.
- *          Returns `EXIT_CODES.INVALID_ARGS` when required flags are missing or invalid, and
- *          `EXIT_CODES.NOT_FOUND` when a `.harness` directory cannot be located.
- */
+/** Validate and execute the `brain add` CLI subcommand. */
 export function cliBrainAdd(args: string[]): BrainCliResult {
 	const typeVal = getBrainFlagValue(args, args.indexOf("--type"));
 	const domainVal = getBrainFlagValue(args, args.indexOf("--domain"));
@@ -190,13 +174,20 @@ export function cliBrainAdd(args: string[]): BrainCliResult {
 	const addOptions: { severity?: string } = {};
 	if (severityVal) addOptions.severity = severityVal;
 
-	const result = runBrainAdd(
-		harnessDir,
-		type,
-		domainVal ?? "general",
-		contentVal,
-		addOptions,
-	);
+	let result: BrainAddResult;
+	try {
+		result = runBrainAdd(
+			harnessDir,
+			type,
+			domainVal ?? "general",
+			contentVal,
+			addOptions,
+		);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		process.stderr.write(`Error: ${message}\n`);
+		return { exitCode: EXIT_CODES.ERRORS };
+	}
 	const json = shouldRenderBrainJson(args);
 
 	if (json) {

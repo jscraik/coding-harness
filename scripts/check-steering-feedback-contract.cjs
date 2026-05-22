@@ -69,7 +69,7 @@ const CLOSEOUT_COMPLETION_PATTERN =
 const ENV_BACKED_VALIDATION_PATTERN =
 	/(Env-Backed Validation Recovery|env-backed validation recovery|~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|inspect.*required.*variable names.*without printing values|missing credential.*env-loaded rerun)/i;
 const STALE_ENV_BACKED_BLOCKER_PATTERN =
-	/(current process lacks GitHub and Linear credentials|GitHub and Linear credentials are unavailable|credentials are unavailable|missing_credentials|~\/\.codex\/\.env is a FIFO[\s\S]{0,180}(?:block|blocked|hang|cannot|unavailable|unsafe|not safely|cannot be safely))/i;
+	/(current process lacks GitHub and Linear credentials|GitHub and Linear credentials are unavailable|credentials are unavailable|missing_credentials|(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}\bFIFO\b[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely)|\bFIFO\b[\s\S]{0,220}(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely))/i;
 const CLOSEOUT_STATE_FIELD_PATTERNS = [
 	[/PR state/i, "PR state"],
 	[/merge or auto-merge state/i, "merge or auto-merge state"],

@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { parseIntegerArg } from "../cli/parse-utils.js";
 import { scanBrainMetadata } from "./metadata-scanner.js";
 import {
 	EXIT_CODES,
@@ -74,11 +75,8 @@ export function cliBrainStale(args: string[]): BrainCliResult {
 		args.indexOf("--threshold-days"),
 	);
 	const thresholdDays =
-		thresholdVal === undefined ? undefined : Number.parseInt(thresholdVal, 10);
-	if (
-		thresholdDays !== undefined &&
-		(!Number.isInteger(thresholdDays) || thresholdDays < 0)
-	) {
+		thresholdVal === undefined ? undefined : parseIntegerArg(thresholdVal, 0);
+	if (thresholdVal !== undefined && thresholdDays === undefined) {
 		process.stderr.write(
 			"Error: --threshold-days must be a non-negative integer\n",
 		);

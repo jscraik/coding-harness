@@ -12,6 +12,9 @@ export const EXIT_CODES = {
 } as const;
 
 /** Public API export. */
+export type BrainExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
+
+/** Public API export. */
 export interface BrainStatusResult {
 	valid: boolean;
 	harnessDir: string;
@@ -84,7 +87,7 @@ export interface BrainStaleResult {
 
 /** Public API export. */
 export interface BrainCliResult {
-	exitCode: (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
+	exitCode: BrainExitCode;
 	result?:
 		| BrainStatusResult
 		| BrainQueryResult

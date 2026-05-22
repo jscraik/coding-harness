@@ -1,6 +1,7 @@
 import {
 	existsSync,
 	mkdirSync,
+	readFileSync,
 	readdirSync,
 	rmSync,
 	writeFileSync,
@@ -229,10 +230,35 @@ describe("brain add", () => {
 				"general",
 				"We will use vitest for all testing",
 			);
-			expect(result.appended).toBe(true);
+			expect(result.appended).toBe(false);
 			expect(result.path).toContain("decisions/");
 			expect(result.path).toContain("we-will-use-vitest-for-all-testing");
 			expect(existsSync(join(dir, ".harness", result.path))).toBe(true);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("refuses to overwrite an existing decision file", () => {
+		const dir = createTempHarness();
+		try {
+			const result = runBrainAdd(
+				join(dir, ".harness"),
+				"decision",
+				"general",
+				"Keep review evidence stable",
+			);
+			const decisionPath = join(dir, ".harness", result.path);
+			const originalContent = readFileSync(decisionPath, "utf-8");
+			expect(() =>
+				runBrainAdd(
+					join(dir, ".harness"),
+					"decision",
+					"general",
+					"Keep review evidence stable",
+				),
+			).toThrow(/Decision file already exists/);
+			expect(readFileSync(decisionPath, "utf-8")).toBe(originalContent);
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -243,6 +269,29 @@ describe("brain CLI", () => {
 	it("shows help and returns success", () => {
 		const exitCode = runBrainCLI(["--help"]);
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+	});
+
+	it("delegates help flags after a known subcommand", () => {
+		const dir = createTempHarness();
+		const write = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runBrainCLI([
+				"status",
+				"--help",
+				"--dir",
+				dir,
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			const output = write.mock.calls.map((call) => call[0]).join("");
+			const result = JSON.parse(output);
+			expect(result.harnessDir).toBe(join(dir, ".harness"));
+		} finally {
+			write.mockRestore();
+			rmSync(dir, { recursive: true, force: true });
+		}
 	});
 
 	it("rejects unknown subcommands", () => {
@@ -376,7 +425,11 @@ describe("brain CLI", () => {
 		}
 	});
 
-	it("rejects malformed stale thresholds", () => {
+	it.each([
+		"later",
+		"1.5",
+		"7days",
+	])("rejects malformed stale threshold %s", (threshold) => {
 		const dir = createTempHarness();
 		const error = vi
 			.spyOn(process.stderr, "write")
@@ -385,7 +438,7 @@ describe("brain CLI", () => {
 			const exitCode = runBrainCLI([
 				"stale",
 				"--threshold-days",
-				"later",
+				threshold,
 				"--dir",
 				dir,
 			]);

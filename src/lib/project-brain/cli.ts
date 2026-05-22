@@ -11,6 +11,14 @@ import { cliBrainQuery } from "./query-cli.js";
 import { cliBrainStale } from "./stale-cli.js";
 import { cliBrainStatus } from "./status-cli.js";
 
+const BRAIN_SUBCOMMANDS = new Set([
+	"status",
+	"query",
+	"add",
+	"preflight",
+	"stale",
+]);
+
 export { runBrainAdd } from "./add-cli.js";
 export {
 	EXIT_CODES,
@@ -36,7 +44,10 @@ export { runBrainStatus } from "./status-cli.js";
  * @returns An integer exit code: 0 for success, 1 for warnings, 2 for errors, 3 for not found, 4 for invalid arguments.
  */
 export function runBrainCLI(args: string[]): number {
-	if (args.includes("--help") || args.includes("-h") || args.length === 0) {
+	const subcommand = args[0];
+	const shouldShowTopLevelHelp =
+		args.length === 0 || subcommand === "--help" || subcommand === "-h";
+	if (shouldShowTopLevelHelp) {
 		process.stdout.write(`Usage: harness brain <subcommand> [options]
 
 Subcommands:
@@ -60,8 +71,14 @@ Examples:
 		return EXIT_CODES.SUCCESS;
 	}
 
-	const subcommand = args[0];
 	const subArgs = args.slice(1);
+
+	if (!BRAIN_SUBCOMMANDS.has(subcommand ?? "")) {
+		process.stderr.write(
+			`Error: Unknown brain subcommand "${subcommand}"\n  Available: ${[...BRAIN_SUBCOMMANDS].join(", ")}\n`,
+		);
+		return EXIT_CODES.INVALID_ARGS;
+	}
 
 	switch (subcommand) {
 		case "status": {
@@ -85,9 +102,6 @@ Examples:
 			return r.exitCode;
 		}
 		default:
-			process.stderr.write(
-				`Error: Unknown brain subcommand "${subcommand}"\n  Available: status, query, add, preflight, stale\n`,
-			);
 			return EXIT_CODES.INVALID_ARGS;
 	}
 }
