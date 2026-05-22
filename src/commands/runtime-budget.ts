@@ -44,7 +44,10 @@ export function runRuntimeBudgetCLI(args: string[]): number {
 				evidenceFlag.value,
 			);
 	if (observations === null) {
-		return EXIT_CODES.USAGE;
+		return emitUsage(
+			json,
+			"runtime-budget requires --input or --command, --duration-ms, --budget-ms, and --evidence-ref.",
+		);
 	}
 
 	const report = buildCommandRuntimeBudgetReport(observations);

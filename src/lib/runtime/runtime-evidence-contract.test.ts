@@ -95,6 +95,21 @@ describe("runtime-evidence-contract", () => {
 			}),
 		);
 	});
+
+	it("rejects unknown claim trace consistency values", () => {
+		const contract = validContract();
+		contract.claimTraceConsistency = "maybe" as never;
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "claim_trace_consistency_invalid",
+				path: "claimTraceConsistency",
+			}),
+		);
+	});
 });
 
 function validContract(): RuntimeEvidenceContract {

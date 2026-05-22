@@ -113,6 +113,10 @@ const RUNTIME_PROBE_SPAWN_OUTCOMES = new Set<
 	RuntimeProbeReceipt["spawnOutcome"]
 >(["available", "unknown_agent_type", "blocked", "not_run"]);
 
+const CLAIM_TRACE_CONSISTENCIES = new Set<
+	RuntimeEvidenceContract["claimTraceConsistency"]
+>(["consistent", "inconsistent", "unknown"]);
+
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 
 type AddRuntimeEvidenceFinding = (
@@ -308,6 +312,16 @@ function validateClaimTraceConsistency(
 	verifierStatus: RuntimeEvidenceVerifierStatus | undefined,
 	add: AddRuntimeEvidenceFinding,
 ): void {
+	const normalizedClaimTraceConsistency = asText(
+		claimTraceConsistency,
+	) as RuntimeEvidenceContract["claimTraceConsistency"];
+	if (!CLAIM_TRACE_CONSISTENCIES.has(normalizedClaimTraceConsistency)) {
+		add(
+			"claimTraceConsistency",
+			"claim_trace_consistency_invalid",
+			"claimTraceConsistency is not recognized.",
+		);
+	}
 	if (claimTraceConsistency === "inconsistent" && verifierStatus === "pass") {
 		add(
 			"claimTraceConsistency",

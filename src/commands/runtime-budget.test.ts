@@ -90,4 +90,28 @@ describe("runtime-budget command", () => {
 		});
 		vi.restoreAllMocks();
 	});
+
+	it("returns a usage error for incomplete flag observations", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runRuntimeBudgetCLI([
+			"--command",
+			"pnpm check",
+			"--duration-ms",
+			"45000",
+			"--json",
+		]);
+
+		expect(exitCode).toBe(2);
+		expect(JSON.parse(String(infoSpy.mock.calls[0]?.[0]))).toMatchObject({
+			schemaVersion: "command-runtime-budget/v1",
+			status: "error",
+			error: {
+				code: "runtime-budget.usage",
+				message:
+					"runtime-budget requires --input or --command, --duration-ms, --budget-ms, and --evidence-ref.",
+			},
+		});
+		vi.restoreAllMocks();
+	});
 });

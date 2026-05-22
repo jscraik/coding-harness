@@ -1,7 +1,5 @@
 # Plan And Research Code Tree Gap Audit
 
-<!-- vale off -->
-
 ## Table of Contents
 
 - [Scope](#scope)
@@ -274,5 +272,3 @@ editing mistake:
 - Command: pnpm vitest run src/lib/memory/validator.test.ts src/lib/architecture/module-boundaries.test.ts -> pass.
 - Command: pnpm typecheck -> pass.
 - Command: node scripts/validate-evidence-patterns.cjs --json --run-validation-commands -> pass.
-
-<!-- vale on -->
