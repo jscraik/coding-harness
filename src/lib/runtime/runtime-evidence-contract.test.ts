@@ -142,6 +142,46 @@ describe("runtime-evidence-contract", () => {
 			}),
 		);
 	});
+
+	it("rejects malformed runtime evidence timestamps", () => {
+		const contract = validContract();
+		contract.verifierResult.verifiedAt = "2026-05-22T10:01:00junk";
+		if (contract.resolvedState.runtimeProbe !== null) {
+			contract.resolvedState.runtimeProbe.checkedAt =
+				"2026-02-30T10:00:00.000Z";
+		}
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "verified_at_invalid",
+				path: "verifierResult.verifiedAt",
+			}),
+		);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "runtime_probe_checked_at_invalid",
+				path: "resolvedState.runtimeProbe.checkedAt",
+			}),
+		);
+	});
+
+	it("rejects malformed verifier evidence refs", () => {
+		const contract = validContract();
+		contract.verifierResult.evidenceRefs = [123] as never;
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "verifier_evidence_ref_invalid",
+				path: "verifierResult.evidenceRefs",
+			}),
+		);
+	});
 });
 
 function validContract(): RuntimeEvidenceContract {

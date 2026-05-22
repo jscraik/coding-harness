@@ -2361,15 +2361,23 @@ describe("runCIMigrateCLI", () => {
 			`${signContent(persistedWindow, TEST_SNAPSHOT_SIGNING_KEY)}\n`,
 		);
 
-		const manualWindow = {
-			...window,
-			snapshotId: "cutover-manual-window",
-		};
-		const manualWindowContent = JSON.stringify(manualWindow, null, 2);
-		writeFileSync(join(tempDir, MERGE_QUEUE_WINDOW_PATH), manualWindowContent);
+		const readerFixtureContent = [
+			"{",
+			'  "schemaVersion": "ci-migrate-merge-queue-window/v1",',
+			'  "snapshotId": "cutover-manual-window",',
+			'  "stage": "paused",',
+			'  "pausedAt": "2026-05-22T00:00:00.000Z",',
+			'  "preCutover": {',
+			'    "status": "satisfied",',
+			'    "scannedOpenPrs": 0,',
+			'    "failingPrs": []',
+			"  }",
+			"}",
+		].join("\n");
+		writeFileSync(join(tempDir, MERGE_QUEUE_WINDOW_PATH), readerFixtureContent);
 		writeFileSync(
 			join(tempDir, `${MERGE_QUEUE_WINDOW_PATH}.sig`),
-			`${signContent(manualWindowContent, TEST_SNAPSHOT_SIGNING_KEY)}\n`,
+			"7100e0395ef638fdf43a8343514ba0a867b1cde48cfd316e55d3743d88de66f9\n",
 		);
 
 		const readResult = readMergeQueueWindowIfPresent(tempDir);

@@ -123,7 +123,8 @@ const CLAIM_TRACE_CONSISTENCIES = new Set<
 	RuntimeEvidenceContract["claimTraceConsistency"]
 >(["consistent", "inconsistent", "unknown"]);
 
-const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+const ISO_TIMESTAMP_PATTERN =
+	/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
 type AddRuntimeEvidenceFinding = (
 	path: string,
@@ -291,7 +292,7 @@ function validateVerifierResult(
 	}
 	if (
 		!isRecord(verifierResult) ||
-		!ISO_DATE_PATTERN.test(asText(verifierResult.verifiedAt) ?? "")
+		!isIsoTimestamp(asText(verifierResult.verifiedAt))
 	) {
 		add(
 			"verifierResult.verifiedAt",
@@ -308,6 +309,17 @@ function validateVerifierResult(
 			"verifierResult.evidenceRefs",
 			"verifier_evidence_missing",
 			"verifier result must cite evidence.",
+		);
+	}
+	if (
+		isRecord(verifierResult) &&
+		Array.isArray(verifierResult.evidenceRefs) &&
+		verifierResult.evidenceRefs.some((ref) => isBlank(asText(ref)))
+	) {
+		add(
+			"verifierResult.evidenceRefs",
+			"verifier_evidence_ref_invalid",
+			"verifier evidence refs must be non-empty strings.",
 		);
 	}
 	if (
@@ -434,7 +446,7 @@ function validateRuntimeProbe(
 			"runtime probe must name the role.",
 		);
 	}
-	if (!ISO_DATE_PATTERN.test(asText(probe.checkedAt) ?? "")) {
+	if (!isIsoTimestamp(asText(probe.checkedAt))) {
 		add(
 			"resolvedState.runtimeProbe.checkedAt",
 			"runtime_probe_checked_at_invalid",
@@ -484,6 +496,25 @@ function asText(value: unknown): string | null {
 
 function isBlank(value: string | null | undefined): boolean {
 	return value === null || value === undefined || value.trim().length === 0;
+}
+
+function isIsoTimestamp(value: string | null | undefined): boolean {
+	if (
+		typeof value !== "string" ||
+		value.trim().length === 0 ||
+		!ISO_TIMESTAMP_PATTERN.test(value)
+	) {
+		return false;
+	}
+	const candidate = value;
+	const normalized =
+		candidate.endsWith("Z") && !candidate.includes(".")
+			? candidate.replace("Z", ".000Z")
+			: candidate;
+	const timestamp = new Date(candidate);
+	return (
+		!Number.isNaN(timestamp.getTime()) && timestamp.toISOString() === normalized
+	);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
