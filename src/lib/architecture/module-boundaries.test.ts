@@ -165,6 +165,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"Simulate command spec must stay focused on registry metadata and simulate-owned argv delegation.",
 	},
 	{
+		path: "src/lib/cli/registry/ci-migrate-command-spec.ts",
+		maxLines: 40,
+		reason:
+			"CI migration command spec must stay focused on registry metadata and ci-migrate-owned argv delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/drift-gate-command-spec.ts",
 		maxLines: 25,
 		reason:
@@ -719,6 +725,15 @@ const REPLAY_SURFACE_RATCHETS = [
 	},
 ] as const;
 
+const CI_MIGRATE_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/ci-migrate/cli-args.ts",
+		maxLines: 170,
+		reason:
+			"CI migration argument parsing must stay focused on raw CLI token projection and delegated helper routing.",
+	},
+] as const;
+
 const REMEDIATE_SURFACE_RATCHETS = [
 	{
 		path: "src/commands/remediate.ts",
@@ -1134,6 +1149,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/check-authz-command-spec.ts",
 	"src/lib/cli/registry/check-command-spec.ts",
 	"src/lib/cli/registry/check-environment-command-spec.ts",
+	"src/lib/cli/registry/ci-migrate-command-spec.ts",
 	"src/lib/cli/registry/docs-gate-command-spec.ts",
 	"src/lib/cli/registry/doctor-command-spec.ts",
 	"src/lib/cli/registry/evidence-verify-command-spec.ts",
@@ -1804,6 +1820,30 @@ describe("module boundaries", () => {
 		expect(cliArgsAdapterContent).toContain("buildSimulateOptionsFromCliArgs");
 		expect(commandSpecsCoreContent).toContain("createSimulateCommandSpec()");
 		expect(commandSpecsCoreContent).not.toContain('name: "simulate"');
+	});
+
+	it("keeps ci-migrate registry parsing behind focused seams", () => {
+		const registryAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/ci-migrate-command-spec.ts"),
+			"utf-8",
+		);
+		const cliArgsAdapterContent = readFileSync(
+			join(process.cwd(), "src/lib/ci-migrate/cli-args.ts"),
+			"utf-8",
+		);
+		const commandSpecsCoreContent = readFileSync(
+			join(process.cwd(), "src/lib/cli/registry/command-specs-core.ts"),
+			"utf-8",
+		);
+
+		expectRatchetsWithinBudget(CI_MIGRATE_SURFACE_RATCHETS);
+		expect(registryAdapterContent).toContain("../../ci-migrate/cli-args.js");
+		expect(registryAdapterContent).not.toContain("getFlagValue");
+		expect(registryAdapterContent).not.toContain("args.indexOf");
+		expect(cliArgsAdapterContent).toContain("../cli/parse-utils.js");
+		expect(cliArgsAdapterContent).toContain("buildCIMigrateOptionsFromCliArgs");
+		expect(commandSpecsCoreContent).toContain("createCIMigrateCommandSpec()");
+		expect(commandSpecsCoreContent).not.toContain('name: "ci-migrate"');
 	});
 
 	it("keeps remediate surfaces split after decomposition", () => {

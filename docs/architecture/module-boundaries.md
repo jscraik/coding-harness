@@ -233,8 +233,8 @@ parsing and delegation belong in named adapters:
   `remediate-command-spec.ts`,
   `gardener-command-spec.ts`, `memory-gate-command-spec.ts`,
   `silent-error-command-spec.ts`, `brainstorm-gate-command-spec.ts`,
-  `gap-case-command-spec.ts`, `verify-coderabbit-command-spec.ts`,
-  `local-memory-preflight-command-spec.ts`,
+  `gap-case-command-spec.ts`, `ci-migrate-command-spec.ts`,
+  `verify-coderabbit-command-spec.ts`, `local-memory-preflight-command-spec.ts`,
   `symphony-check-command-spec.ts`, and
   `workflow-generate-command-spec.ts`.
 - Pure delegation seams stay thin in `fleet-plan-command-spec.ts`,
@@ -254,6 +254,12 @@ absorbs more safety policy.
   - Transitional command orchestration, action dispatch, and migration report
     assembly. It must keep moving policy-specific clusters into named CI
     modules.
+- `src/lib/cli/registry/ci-migrate-command-spec.ts`
+  - Registry metadata, usage-error reporting, and command delegation for
+    `runCIMigrateCLI`, `sync-branch-protection`, and `promote-mode`.
+- `src/lib/ci-migrate/cli-args.ts`
+  - Raw ci-migrate flag projection, target-directory parsing, snapshot option
+    mapping, commit-mode parsing, and delegated helper action routing.
 - `src/lib/ci/ci-migrate-merge-queue-window.ts`
   - Signed merge-queue cutover window state, replay-binding shape validation,
     signature verification, terminal-window admission, and lifecycle-state
@@ -263,9 +269,10 @@ absorbs more safety policy.
     rejection, and allowlisted restore-path safety checks.
 
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
-the command core, merge-queue window module, and repository path-safety module
-so signed lifecycle-state and path traversal policy do not grow back into the
-command orchestration file.
+the command core, registry adapter, CLI-args adapter, merge-queue window module,
+and repository path-safety module so raw flag parsing, signed lifecycle-state,
+and path traversal policy do not grow back into the command orchestration file
+or the global command registry.
 
 ## Verify Work Command Boundary
 

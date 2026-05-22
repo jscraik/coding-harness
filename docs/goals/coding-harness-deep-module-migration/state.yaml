@@ -27,9 +27,9 @@ checks:
   architecture_visual: "artifacts/architecture/module-layout.html"
   visual_record_contract: "module layout must show complete/current/next/remaining/blocked, enforcement, agent-safe zones, human-review zones, latest slice, and receipt/PR evidence"
   last_verification:
-    command: "gh pr checks 276 --repo jscraik/coding-harness --json name,state,bucket,workflow,link"
+    command: "bash scripts/check-diagram-freshness.sh"
     outcome: "pass"
-    checked_at: "2026-05-22T12:49:06Z"
+    checked_at: "2026-05-22T13:47:28Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -480,9 +480,9 @@ tasks:
       - "Current branch is not rooted at current origin/main."
       - "Focused validation path cannot be identified."
       - "Snapshot-backed ci-migrate safety boundary is unclear."
-    receipt_id: R011
+    receipt_id: R011-CI-MIGRATE-REGISTRY-SPLIT
 pr_green_sweep:
-  status: t010_simulate_pr276_merged_t011_ci_migrate_active
+  status: t011_ci_migrate_validated_pending_amend_push_pr_handoff
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -550,6 +550,12 @@ pr_green_sweep:
     - "PR #276 board-refresh commit 2e1a817c7beaca4a34df08c92f5d6efc0acb80f5 is pushed; live recheck at 2026-05-22T12:49:06Z found the PR OPEN and ready, mergeable MERGEABLE, mergeStateStatus CLEAN, reviewDecision empty, and all 23 visible checks passing."
     - "PR #276 GitHub review-thread lookup at 2026-05-22T12:49:06Z returned nine total threads and zero unresolved threads; the earlier identical-hash and stale-state-board threads are resolved."
     - "PR #276 latest evidence head 8ac3bca519411f64a056f1b2209714883dd339aa passed all 23 visible checks, had zero unresolved review threads, had a refreshed PR body that passed pr-template-gate and linear-gate locally, and merged by squash at 2026-05-22T13:02:56Z with merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
+    - "T011 ci-migrate registry-boundary split is locally validated: ci-migrate argv projection moved into src/lib/ci-migrate/cli-args.ts, registry dispatch moved into src/lib/cli/registry/ci-migrate-command-spec.ts, command-specs-core no longer owns ci-migrate option assembly, focused ci-migrate registry/module-boundary tests pass, full registry/module-boundary tests pass, and pnpm typecheck passes."
+    - "T011 did not run mutating ci-migrate prepare, commit, abort, branch-protection, or promote-mode actions; snapshot-backed behavior remains untouched and is covered here only by argument-routing tests."
+    - "T011 pre-push docs-gate blocked the first push on required governance surfaces; README.md, AGENTS.md, docs/agents/00-architecture-bootstrap.md, and docs/agents/07b-agent-governance.md now document the ci-migrate registry-boundary split, and docs-gate passes locally."
+    - "T011 post-docs validation passes: receipts parse, goal board passes, module-layout HTML copy is synchronized, git diff --check passes, docs-gate passes, validate-codestyle fast passes, and verify-work fast passes with run id 20260522T133451Z-70931."
+    - "T011 second pre-push attempt passed docs-gate, refreshed stale architecture diagram artifacts for changed sensitive paths, and blocked until .diagram/agent.mmd, .diagram/events.mmd, .diagram/manifest.json, .diagram/rag.mmd, .diagram/security.mmd, and AI/context/diagram-context.md were staged; diagram freshness now passes."
+    - "T011 is not remotely complete until this branch is committed, pushed, opened or updated as PR evidence, and GitHub checks plus review-thread state are observed at the pushed head."
     - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
@@ -563,9 +569,10 @@ pr_green_sweep:
     pr_handoff: "PR #276 merged at https://github.com/jscraik/coding-harness/pull/276. Current branch codex/JSC-331-ci-migrate-deep-module starts from origin/main at merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
     review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
     review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
+    t011_ci_migrate: "Local T011 implementation split ci-migrate raw argv parsing into src/lib/ci-migrate/cli-args.ts and registry dispatch into src/lib/cli/registry/ci-migrate-command-spec.ts. Focused ci-migrate vitest, full command-specs/module-boundaries vitest, pnpm typecheck, docs-gate, validate-codestyle fast, verify-work fast, and diagram freshness pass locally; amend, push, PR handoff, remote checks, and review-thread classification are still pending."
   pending_actions:
-    - "Declare T011 ci-migrate allowed files, focused validation, rollback, and snapshot-safety plan before editing implementation files."
-    - "Verify the ci-migrate command contract and credentials/snapshot prerequisites from live source before running any mutating ci-migrate action."
+    - "Amend and push T011 on codex/JSC-331-ci-migrate-deep-module, then create or update the GitHub PR and classify remote checks plus review threads at the pushed head."
+    - "Do not begin T012 init until T011 pushed-head PR evidence is recorded."
     - "Keep pnpm test:deep E2E credential blocker classified until a safe env recovery path exists; do not treat it as final-goal green."
   tools:
     - "@github"

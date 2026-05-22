@@ -15,6 +15,7 @@ import * as gardenerCommand from "../../../commands/gardener.js";
 import * as driftGateModule from "../../drift-gate.js";
 import * as memoryGateModule from "../../memory-gate.js";
 import * as observabilityGateModule from "../../observability-gate.js";
+import { buildCIMigrateOptionsFromCliArgs } from "../../ci-migrate/cli-args.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import * as silentErrorCommand from "../../../commands/silent-error.js";
@@ -1309,6 +1310,49 @@ describe("ci-migrate execute validation", () => {
 		// Two positional args after the action => error
 		const result = spec.execute(["prepare", "dir1", "extra-arg"]);
 		expect(result).toBe(2);
+	});
+
+	it("keeps ci-migrate option projection in the ci-migrate module seam", () => {
+		const parsed = buildCIMigrateOptionsFromCliArgs([
+			"prepare",
+			"repo",
+			"--provider",
+			"circleci",
+			"--snapshot",
+			"cutover-1",
+			"--dry-run",
+			"--json",
+			"--commit-mode",
+			"solo",
+		]);
+
+		expect(parsed).toEqual({
+			ok: true,
+			targetDir: "repo",
+			options: expect.objectContaining({
+				action: "prepare",
+				provider: "circleci",
+				snapshot: "cutover-1",
+				dryRun: true,
+				json: true,
+				commitMode: "solo",
+			}),
+		});
+	});
+
+	it("keeps delegated ci-migrate helper args out of the registry manifest", () => {
+		const parsed = buildCIMigrateOptionsFromCliArgs([
+			"sync-branch-protection",
+			"repo",
+			"--json",
+		]);
+
+		expect(parsed).toEqual({
+			ok: true,
+			targetDir: "repo",
+			delegate: "sync-branch-protection",
+			delegatedArgs: ["repo", "--json"],
+		});
 	});
 });
 

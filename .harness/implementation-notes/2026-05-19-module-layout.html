@@ -431,19 +431,19 @@
         <section class="status-strip" aria-label="Deep-module migration status">
           <article class="status-card status-ok">
             <strong>Complete</strong>
-            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, plan-gate, prompt-gate, gap-case, and simulate now have facade-first module seams.</span>
+            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, plan-gate, prompt-gate, gap-case, simulate, and ci-migrate registry parsing now have facade-first module seams.</span>
           </article>
 		  <article class="status-card status-current">
 			<strong>Current Slice</strong>
-					<span>T010 simulate is implemented locally on codex/JSC-331-simulate-deep-module from origin/main; focused command, registry, and boundary tests are passing.</span>
+					<span>T011 ci-migrate is implemented locally on codex/JSC-331-ci-migrate-deep-module from origin/main; focused registry parser and boundary tests are passing.</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Review Follow-ups</strong>
-				<span>Simulate source now splits raw argv projection, contract loading and presentation, analysis, recommendations, registry delegation, and public exports into named seams guarded by module-boundary ratchets.</span>
+				<span>CI migration raw argv projection and delegated helper routing now live in src/lib/ci-migrate/cli-args.ts, while the registry manifest calls createCIMigrateCommandSpec().</span>
 		  </article>
 		  <article class="status-card status-watch">
 			<strong>Merge Gate</strong>
-					<span>The native goal and repository board remain active. Remaining gates are post-split review lanes, full fast validation, receipt update, PR handoff, and remote check/review classification.</span>
+					<span>The native goal and repository board remain active. Remaining gates are full fast validation, receipt update, push, PR handoff, and remote check/review classification.</span>
 		  </article>
         </section>
 
@@ -452,19 +452,19 @@
           <div class="control-grid">
             <article class="note">
               <h3>Enforcement</h3>
-              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, plan-gate, prompt-gate, gap-case, and simulate command behavior are covered by focused command-spec and seam tests.</p>
+              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, plan-gate, prompt-gate, gap-case, simulate, and ci-migrate registry behavior are covered by focused command-spec and seam tests.</p>
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-				  <p>Latest implementation target: simulate split. The command facades are now compatibility export surfaces while raw argv projection, contract loading, transition analysis, recommendations, output, exit-code mapping, and registry delegation live behind named simulate seams.</p>
+				  <p>Latest implementation target: ci-migrate registry split. The command registry now delegates ci-migrate metadata through a focused adapter while parser details and delegated helper routing live behind a ci-migrate-owned seam.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-					  <p>Current evidence is focused T010 validation plus the pending R010 receipt in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
+					  <p>Current evidence is focused T011 validation plus the pending R011 receipt in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
 			  <ul class="evidence-list">
-					<li>Focused proof: simulate command tests, CLI registry command-spec tests, CLI dispatch validation, and module-boundary ratchets are the T010 proof surface.</li>
+					<li>Focused proof: ci-migrate registry parser tests and module-boundary ratchets are the T011 proof surface.</li>
 				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-						<li>Handoff: T010 simulate implementation is local; review lanes, fast validation, receipt update, PR handoff, and remote classification remain.</li>
+						<li>Handoff: T011 ci-migrate implementation is local; fast validation, receipt update, push, PR handoff, and remote classification remain.</li>
 			  </ul>
 			</article>
           </div>
@@ -474,7 +474,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, plan-gate, prompt-gate, gap-case, simulate, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, plan-gate, prompt-gate, gap-case, simulate, ci-migrate registry parsing, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -697,6 +697,14 @@
                   Simulate contract transition actions delegate through the
                   simulate CLI adapter instead of living in the registry
                   assembler.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>ci-migrate-command-spec.ts</strong>
+                <span>
+                  CI migration command metadata delegates through a focused
+                  registry seam; raw flag projection and legacy helper routing
+                  live in src/lib/ci-migrate/cli-args.ts.
                 </span>
               </div>
               <div class="module doctor">
@@ -1698,6 +1706,21 @@
                 </span>
               </div>
               <div class="module doctor">
+                <strong>src/lib/ci-migrate/cli-args.ts</strong>
+                <span>
+                  Raw ci-migrate flag projection, target-dir parsing, snapshot
+                  option mapping, commit-mode parsing, and delegated helper
+                  action routing.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>ci-migrate-command-spec.ts</strong>
+                <span>
+                  Registry metadata and command delegation seam for
+                  runCIMigrateCLI, sync-branch-protection, and promote-mode.
+                </span>
+              </div>
+              <div class="module doctor">
                 <strong>ci-migrate-merge-queue-window.ts</strong>
                 <span>
                   Signed merge-queue cutover window lifecycle state and
@@ -1705,10 +1728,11 @@
                 </span>
               </div>
               <div class="module guard">
-                <strong>repo-bound-paths.test.ts + module-boundaries.test.ts</strong>
+                <strong>command-specs.test.ts + module-boundaries.test.ts</strong>
                 <span>
-                  Direct path traversal regression tests plus ratchets that keep
-                  path-safety policy behind the CI module seam.
+                  Registry parser regressions plus ratchets that keep
+                  ci-migrate parser and path-safety policy behind CI module
+                  seams.
                 </span>
               </div>
             </div>
@@ -2123,7 +2147,10 @@
 			  simulate/cli-args.ts, transition analysis behind simulate/analysis.ts,
 			  recommendations behind simulate/recommendations.ts, terminal and JSON
 			  presentation behind simulate/cli.ts, and registry delegation behind
-			  simulate-command-spec.ts.
+			  simulate-command-spec.ts. CI migration raw flag projection, target-dir
+			  parsing, snapshot option mapping, commit-mode parsing, and delegated
+			  helper routing now live behind ci-migrate/cli-args.ts, with registry
+			  delegation behind ci-migrate-command-spec.ts.
 			  pre-commit hook now uses the existing staged related-test mode so
 			  commit-time validation stays scoped to staged implementation files
 			  while broader validation lanes keep their branch-wide coverage.
