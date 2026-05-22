@@ -10,7 +10,7 @@ goal:
   tokens_used: 1639295
   time_used_seconds: 8516
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-22T04:14:04Z"
+  native_updated_at: "2026-05-22T06:10:57Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -29,7 +29,7 @@ checks:
   last_verification:
     command: "bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration"
     outcome: "pass"
-    checked_at: "2026-05-22T04:14:04Z"
+    checked_at: "2026-05-22T06:10:57Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -276,7 +276,7 @@ tasks:
   - id: T007
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "Prepare the plan-gate module-boundary slice; do not edit implementation files until T006 is pushed and PR state is refreshed."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
@@ -310,9 +310,50 @@ tasks:
       - "T006 is not pushed."
       - "GitHub or PR state cannot be observed."
       - "Focused validation path cannot be identified."
-    receipt_id: R007
+    receipt_id: R007-PR272-MERGED-BOARD-CLOSEOUT
+  - id: T008
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Prepare the prompt-gate module-boundary slice; do not edit implementation files until T007, PR #272, and current branch state are verified."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T007 is recorded done and the prompt-gate branch starts from current origin/main."
+      - "Declare focused prompt-gate tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R008 before any following slice."
+    expected_output: "A small prompt-gate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/prompt-gate*.ts"
+      - "src/lib/prompt-gate/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/prompt-gate-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/prompt-gate*.test.ts"
+      - "src/lib/prompt-gate*.test.ts"
+      - "src/cli-dispatch.test.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "pnpm vitest run src/commands/prompt-gate.test.ts --reporter verbose"
+      - "focused prompt-gate registry or CLI dispatch test to be named before implementation if registry behavior changes"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T007 is not recorded done."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+    receipt_id: R008
 pr_green_sweep:
-  status: t007_pr270_closeout_pr273_merged_threads_classified_pr272_board_reviewed_green_refresh_pending
+  status: t007_complete_pr272_merged_prompt_gate_active
   worker: pr-green-sweep
   duplicate_guard: true
   pr_url: "https://github.com/jscraik/coding-harness/pull/270"
@@ -322,29 +363,29 @@ pr_green_sweep:
   followup_head_sha: "1ab7a0cdbc41c36f484d70b11a8a1b2463df66e7"
   board_reconciliation_pr_url: "https://github.com/jscraik/coding-harness/pull/272"
   board_reconciliation_branch: "codex/JSC-331-pr270-review-closeout"
-  last_observed: "2026-05-22T05:36:54Z"
+  last_observed: "2026-05-22T06:07:32Z"
   current_blockers:
     - "PR #270 merged at 2026-05-22T04:24:29Z with merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec and head cd93b6feee48a2e3e33d0e77d638aee838e85aac; all 23 reported checks are passing."
     - "Review-thread re-observation after merge found 74 total threads and 2 unresolved runtime-evidence comments: verifierResult.reason type validation for pass results and runtimeProbe.blockerClass type validation for available probes."
     - "PR #273 merged the runtime-evidence nullable metadata fix at 2026-05-22T05:06:07Z with merge commit 72bd18cc5cd7d5bcfa5f556666be20f8313b3a18; all visible PR #273 checks passed."
     - "The two remaining PR #270 review threads are classified as valid and fixed by merged PR #273; GitHub still shows the old PR #270 thread records unresolved, so they remain historical-review-state rather than implementation blockers."
-    - "Draft PR #272 is superseded as an implementation PR and is now only a board-reconciliation branch; at head 7bd606e1fab7459ff5363b2a86316a6d63ccf24c it was mergeable/CLEAN, all visible checks were passing, CodeRabbit was green, and no PR #272 review threads were returned."
-    - "Harness doc-history review found stale PR #272 push/recheck wording in this board and requested this refresh before prompt-gate starts; artifact: artifacts/reviews/harness-doc-history-reviewer-pr272.md."
+    - "PR #272 was converted to ready, all visible checks passed, no review threads were returned, and it merged by squash at 2026-05-22T06:04:40Z with merge commit 0498ac9db9f15f176ac04a7066ba4b3bafa22543."
+    - "Harness doc-history review found stale PR #272 push/recheck wording in this board; the stale wording was repaired before PR #272 merged."
     - "Native goal and repository board are active; the overall deep-module goal is not complete."
-    - "Prompt-gate has not started; observed slice remains T007 PR-green-sweep follow-up work."
-    - "Untitled.canvas remains untracked and intentionally untouched outside this closeout branch."
+    - "T007 plan-gate and PR-green-sweep closeout are complete; T008 prompt-gate is now the active implementation slice."
+    - "Untitled.canvas remains untracked and intentionally untouched outside this goal branch."
   last_evidence:
     github_state: "PR #270 observed as MERGED with head cd93b6feee48a2e3e33d0e77d638aee838e85aac, merge commit c47d2f582bc7fd2e656995f899d6656d7696f9ec, and mergedAt 2026-05-22T04:24:29Z."
     review_threads: "GitHub review-thread snapshot after PR #273 merge still shows PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH unresolved; both are classified fixed by PR #273 evidence and regression tests."
-    checks: "gh pr checks 272 reported all visible PR #272 checks passing at 7bd606e1fab7459ff5363b2a86316a6d63ccf24c, including pr-pipeline, security-scan, CodeRabbit, CircleCI governance lanes, Socket, and Snyk."
-    coderabbit: "PR #273 body records CodeRabbit PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH as fixed; PR #273 CodeRabbit check passed and no PR #273 review threads were returned. PR #272 CodeRabbit check passed and no PR #272 review threads were returned."
+    checks: "gh pr checks 272 reported all visible PR #272 checks passing before ready/merge; PR #272 merged at 2026-05-22T06:04:40Z."
+    coderabbit: "PR #273 body records CodeRabbit PR #270 thread IDs PRRT_kwDORWZJCc6D_5aJ and PRRT_kwDORWZJCc6D_5aH as fixed; PR #273 CodeRabbit check passed and no PR #273 review threads were returned. PR #272 CodeRabbit check passed and no PR #272 review threads were returned before merge."
     board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
-    post_push: "PR #272 branch has already been pushed as board reconciliation only; this new board-refresh commit must be pushed and re-observed at its latest head before PR #272 is marked ready or prompt-gate starts."
-    validation: "Closeout implementation validation is recorded on merged PR #273; board reconciliation validation passed locally and PR #272 remote checks were green at 7bd606e1fab7459ff5363b2a86316a6d63ccf24c before this board-refresh commit."
+    post_push: "PR #272 was marked ready and squash-merged with merge commit 0498ac9db9f15f176ac04a7066ba4b3bafa22543; the follow-up branch was deleted by the merge command."
+    validation: "Closeout implementation validation is recorded on merged PR #273; board reconciliation validation passed locally, PR #272 remote checks were green, PR #272 had no review threads, and PR #272 merged."
   pending_actions:
-    - "Commit and push this board-refresh receipt update on codex/JSC-331-pr270-review-closeout."
-    - "Re-observe PR #272 remote checks, review threads, and draft/ready state at the new head after push."
-    - "Do not start prompt-gate until the latest PR #272 head has clean remote state or an explicit blocker is recorded."
+    - "Commit and push this T008 prompt-gate activation update on codex/JSC-331-prompt-gate-deep-module."
+    - "Before source edits, inspect src/commands/prompt-gate.ts, src/commands/prompt-gate.test.ts, and registry references to declare the smallest module-boundary move."
+    - "Run focused prompt-gate validation and per-slice review gates before marking T008 done."
   tools:
     - "@github"
     - "@circleci"
@@ -361,8 +402,9 @@ slice_queue:
     - remediate
     - observability-gate
     - artifact-gate
-  active: plan-gate
-  next: prompt-gate
+    - plan-gate
+  active: prompt-gate
+  next: gap-case
   remaining:
     - gap-case
     - simulate
