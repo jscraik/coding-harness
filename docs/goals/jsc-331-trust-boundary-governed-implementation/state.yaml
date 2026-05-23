@@ -94,7 +94,17 @@ checks:
       - "PR_BODY=\"$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh linear-gate --json"
       - "gh pr edit 286 --body-file docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md"
       - "PR_BODY=\"$(gh pr view 286 --json body --jq .body)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh linear-gate --json"
-      - "bash scripts/check_goal_board.sh docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "pnpm vitest run src/dev/validate-audit-references-script.test.ts src/dev/validate-he-artifacts-script.test.ts src/lib/reviewer-coverage-receipt.test.ts"
+      - "node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json"
+      - "node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json"
+      - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "pnpm exec biome check scripts/validate-evidence-patterns.cjs src/dev/validate-evidence-patterns-script.test.ts scripts/validate-audit-references.cjs scripts/validate-he-artifacts.sh scripts/validate-reviewer-coverage.cjs src/dev/validate-audit-references-script.test.ts src/dev/validate-he-artifacts-script.test.ts src/lib/reviewer-coverage-receipt.test.ts"
+      - "pnpm vitest run src/dev/validate-evidence-patterns-script.test.ts src/dev/validate-audit-references-script.test.ts src/dev/validate-he-artifacts-script.test.ts src/lib/reviewer-coverage-receipt.test.ts"
+      - "node scripts/validate-evidence-patterns.cjs --strict-adopted --json"
+      - "pnpm lint"
+      - "pnpm check"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
       - "artifacts/reviews/t006-testing.md"
@@ -109,8 +119,10 @@ checks:
       - "artifacts/reviews/t008-testing.md"
       - "artifacts/reviews/t008-codex-review.md"
       - "artifacts/reviews/t009-pr-ci-triage.md"
-    outcome: pass_with_t009_local_bundle_and_live_pr_body_repaired_remote_rerun_pending
-    checked_at: "2026-05-23T20:27:47Z"
+      - "artifacts/reviews/t010-review-thread-audit.md"
+      - "artifacts/reviews/t011-ci-autofix-triage.md"
+    outcome: pass_with_t010_t011_repairs_ready_for_remote_commit
+    checked_at: "2026-05-23T21:01:40Z"
 tasks:
   - id: T001
     type: scout
@@ -135,7 +147,7 @@ tasks:
       - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
       - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
     verify:
-      - "bash scripts/check_goal_board.sh docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
       - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
       - "git status --short --branch --untracked-files=all"
     stop_if:
@@ -391,7 +403,7 @@ tasks:
     expected_output: "Judge receipt with decision complete, continue, or blocked."
     allowed_files: []
     verify:
-      - "bash scripts/check_goal_board.sh docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
       - "bash scripts/validate-codestyle.sh --fast"
     stop_if:
       - "No final Judge or PM receipt can be produced from current evidence."

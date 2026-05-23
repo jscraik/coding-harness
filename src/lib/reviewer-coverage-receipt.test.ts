@@ -122,6 +122,39 @@ describe("validate-reviewer-coverage script", () => {
 		]);
 	});
 
+	it("fails closed when a reviewer artifact resolves outside the repository", () => {
+		const root = makeRoot();
+		const outsideRoot = mkdtempSync(
+			join(tmpdir(), "reviewer-coverage-outside-"),
+		);
+		roots.push(outsideRoot);
+		writeFileSync(
+			join(outsideRoot, "outside-review.md"),
+			"WROTE: ../outside-review.md\n",
+		);
+		writeManifest(root, {
+			requiredReviewers: [
+				{ artifact: join(outsideRoot, "outside-review.md"), role: "security" },
+			],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report).toMatchObject({
+			blockerClass: "missing_artifacts",
+			status: "blocked",
+		});
+		expect(report.missingArtifacts).toEqual([
+			expect.objectContaining({
+				reason: "artifact_outside_repo",
+				role: "security",
+			}),
+		]);
+	});
+
 	it("reports partial coverage when one reviewer completed and another is missing", () => {
 		const root = makeRoot();
 		write(

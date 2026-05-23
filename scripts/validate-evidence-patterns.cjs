@@ -185,7 +185,15 @@ function validateTargetSurface(pattern, target, errors) {
 	}
 }
 
-function validatePattern(pattern, index, seenSources, seenIds, errors, deepDir, strictAdopted) {
+function validatePattern(
+	pattern,
+	index,
+	seenSources,
+	seenIds,
+	errors,
+	deepDir,
+	strictAdopted,
+) {
 	if (!isRecord(pattern)) {
 		errors.push({
 			code: "pattern_not_object",
@@ -254,7 +262,11 @@ function validatePattern(pattern, index, seenSources, seenIds, errors, deepDir, 
 			message: "pattern.owner must be codex or jamie",
 		});
 	}
-	if (strictAdopted && isAdoptedPattern(pattern) && !hasText(pattern.validationCommand)) {
+	if (
+		strictAdopted &&
+		isAdoptedPattern(pattern) &&
+		!hasText(pattern.validationCommand)
+	) {
 		errors.push({
 			code: "adopted_validation_command_missing",
 			patternId: pattern.id,
@@ -277,7 +289,11 @@ function validatePattern(pattern, index, seenSources, seenIds, errors, deepDir, 
 		});
 		return;
 	}
-	if (strictAdopted && isAdoptedPattern(pattern) && pattern.targetSurfaces.length === 0) {
+	if (
+		strictAdopted &&
+		isAdoptedPattern(pattern) &&
+		pattern.targetSurfaces.length === 0
+	) {
 		errors.push({
 			code: "adopted_target_surface_missing",
 			patternId: pattern.id,
@@ -322,7 +338,15 @@ function validateManifest(manifest, deepDir, strictAdopted) {
 	const seenSources = new Set();
 	const seenIds = new Set();
 	for (const [index, pattern] of manifest.patterns.entries()) {
-		validatePattern(pattern, index, seenSources, seenIds, errors, deepDir, strictAdopted);
+		validatePattern(
+			pattern,
+			index,
+			seenSources,
+			seenIds,
+			errors,
+			deepDir,
+			strictAdopted,
+		);
 	}
 	for (const source of deepEvidenceFiles(deepDir)) {
 		if (!seenSources.has(source)) {
@@ -417,7 +441,10 @@ function main() {
 		});
 	} else if (errors.length === 0) {
 		manifest = readJson(MANIFEST_PATH, errors);
-		if (manifest) errors.push(...validateManifest(manifest, DEEP_DIR, options.strictAdopted));
+		if (manifest)
+			errors.push(
+				...validateManifest(manifest, DEEP_DIR, options.strictAdopted),
+			);
 	}
 	const validationCommands =
 		options.runValidationCommands && manifest && errors.length === 0

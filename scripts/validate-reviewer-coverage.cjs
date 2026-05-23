@@ -97,6 +97,13 @@ function toRepoRelative(root, absolutePath) {
 	return relative;
 }
 
+function isInsideRoot(root, absolutePath) {
+	const relative = path.relative(root, absolutePath);
+	return (
+		relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative)
+	);
+}
+
 function baseReport(options) {
 	const root = path.resolve(options.root);
 	return {
@@ -210,6 +217,17 @@ function classifyEntry(root, reviewsDir, entry) {
 			result: {
 				artifact,
 				reason: "missing_artifact_path",
+				role: entry.role,
+			},
+		};
+	}
+	if (!isInsideRoot(root, artifactPath)) {
+		return {
+			kind: "missing",
+			requested,
+			result: {
+				artifact,
+				reason: "artifact_outside_repo",
 				role: entry.role,
 			},
 		};

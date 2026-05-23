@@ -181,20 +181,35 @@ function isProbablyPath(value) {
 	return value.includes("/") && hasFileExtension(value);
 }
 
-function pushCandidate(set, value) {
-	const candidate = cleanCandidate(value);
-	if (isProbablyPath(candidate)) {
-		set.add(candidate);
+function pushCandidate(set, value, options = {}) {
+	let candidate = cleanCandidate(value);
+	if (options.sourceRelative === true) {
+		candidate = resolveSourceRelativeReference(
+			options.sourceArtifactPath,
+			candidate,
+		);
 	}
+	if (!isProbablyPath(candidate)) {
+		return;
+	}
+	const current = set.get(candidate);
+	set.set(candidate, {
+		explicit: Boolean(current?.explicit || options.explicit),
+		path: candidate,
+	});
 }
 
-function resolveMarkdownLinkTarget(sourceArtifactPath, candidate) {
+function resolveSourceRelativeReference(sourceArtifactPath, candidate) {
 	const target = cleanCandidate(candidate);
 	if (target.startsWith("./") || target.startsWith("../")) {
 		const sourceDirectory = path.posix.dirname(sourceArtifactPath);
 		return path.posix.normalize(path.posix.join(sourceDirectory, target));
 	}
 	return target;
+}
+
+function resolveMarkdownLinkTarget(sourceArtifactPath, candidate) {
+	return resolveSourceRelativeReference(sourceArtifactPath, candidate);
 }
 
 function matchPathTokens(value) {
@@ -204,7 +219,7 @@ function matchPathTokens(value) {
 }
 
 function extractReferences(markdown, sourceArtifactPath) {
-	const candidates = new Set();
+	const candidates = new Map();
 	const backtick = String.fromCharCode(96);
 	const codeFence = new RegExp(
 		backtick +
@@ -218,13 +233,17 @@ function extractReferences(markdown, sourceArtifactPath) {
 	);
 	const withoutFences = markdown.replace(codeFence, (block) => {
 		for (const match of matchPathTokens(block)) {
-			pushCandidate(candidates, match[1]);
+			pushCandidate(candidates, match[1], { explicit: true });
 		}
 		return "\n";
 	});
 	const codeSpan = new RegExp(`${backtick}([^${backtick}]+)${backtick}`, "gu");
 	for (const match of withoutFences.matchAll(codeSpan)) {
-		pushCandidate(candidates, match[1]);
+		pushCandidate(candidates, match[1], {
+			explicit: true,
+			sourceArtifactPath,
+			sourceRelative: true,
+		});
 	}
 	const withoutLinks = withoutFences.replace(
 		/\[[^\]]*\]\(([^)]+)\)/gu,
@@ -232,6 +251,7 @@ function extractReferences(markdown, sourceArtifactPath) {
 			pushCandidate(
 				candidates,
 				resolveMarkdownLinkTarget(sourceArtifactPath, target),
+				{ explicit: true },
 			);
 			return "\n";
 		},
@@ -239,7 +259,9 @@ function extractReferences(markdown, sourceArtifactPath) {
 	for (const match of matchPathTokens(withoutLinks)) {
 		pushCandidate(candidates, match[1]);
 	}
-	return [...candidates].sort();
+	return [...candidates.values()].sort((left, right) =>
+		left.path.localeCompare(right.path),
+	);
 }
 
 function isTracked(repoRoot, repoRelativePath) {
@@ -264,13 +286,13 @@ function classifyReferences(repoRoot, references, sourceArtifactPath) {
 	const blockedRefs = [];
 
 	for (const reference of references) {
-		const normalized = toRepoRelative(repoRoot, reference);
+		const normalized = toRepoRelative(repoRoot, reference.path);
 		if (!normalized.outsideRepo && normalized.path === sourceArtifactPath) {
 			continue;
 		}
 		if (normalized.outsideRepo) {
 			blockedRefs.push({
-				path: reference,
+				path: reference.path,
 				classification: "outside_repo",
 				reason: "reference resolves outside the repository root",
 			});
@@ -299,7 +321,12 @@ function classifyReferences(repoRoot, references, sourceArtifactPath) {
 		}
 		const tracked = isFile && isTracked(repoRoot, normalized.path);
 		const ignored = isFile && !tracked && isIgnored(repoRoot, normalized.path);
-		if (!exists && !tracked && !hasFileExtension(normalized.path)) {
+		if (
+			!reference.explicit &&
+			!exists &&
+			!tracked &&
+			!hasFileExtension(normalized.path)
+		) {
 			continue;
 		}
 

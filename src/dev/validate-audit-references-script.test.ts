@@ -219,6 +219,29 @@ describe("validate-audit-references script", () => {
 		]);
 	});
 
+	it("resolves dot-relative inline code spans from the source artifact directory", () => {
+		const root = makeRoot();
+		write(
+			root,
+			".harness/research/audits/audit.md",
+			"The source proof is `../deep/source.md`.\n",
+		);
+		write(root, ".harness/research/deep/source.md");
+		gitAdd(root, ".");
+
+		const result = runValidator(root, ".harness/research/audits/audit.md");
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.referencedArtifacts).toEqual([
+			expect.objectContaining({
+				classification: "tracked",
+				path: ".harness/research/deep/source.md",
+			}),
+		]);
+	});
+
 	it("validates allowlisted extensionless root artifacts", () => {
 		const root = makeRoot();
 		write(root, ".harness/research/audits/audit.md", "- Makefile\n");
@@ -236,6 +259,19 @@ describe("validate-audit-references script", () => {
 				path: "Makefile",
 			}),
 		]);
+	});
+
+	it("fails closed when an explicit extensionless root artifact is missing", () => {
+		const root = makeRoot();
+		write(root, ".harness/research/audits/audit.md", "Review `Makefile`.\n");
+		gitAdd(root, ".harness/research/audits/audit.md");
+
+		const result = runValidator(root, ".harness/research/audits/audit.md");
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("missing");
+		expect(report.missingRefs).toEqual(["Makefile"]);
 	});
 
 	it("validates tracked extensionless artifacts under allowed prefixes", () => {
