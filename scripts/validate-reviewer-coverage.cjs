@@ -14,6 +14,10 @@ function hasText(value) {
 	return typeof value === "string" && value.trim().length > 0;
 }
 
+function isFlag(value) {
+	return typeof value === "string" && value.startsWith("-");
+}
+
 function normalizeDisplayPath(value) {
 	return String(value || "").replaceAll("\\", "/");
 }
@@ -31,7 +35,7 @@ function parseArgs(argv) {
 		if (arg === "--json") continue;
 		if (arg === "--manifest") {
 			index += 1;
-			if (!hasText(argv[index])) {
+			if (!hasText(argv[index]) || isFlag(argv[index])) {
 				options.usageErrors.push({
 					code: "usage_missing_value",
 					message: "--manifest requires a path value",
@@ -41,7 +45,7 @@ function parseArgs(argv) {
 			}
 		} else if (arg === "--reviews-dir") {
 			index += 1;
-			if (!hasText(argv[index])) {
+			if (!hasText(argv[index]) || isFlag(argv[index])) {
 				options.usageErrors.push({
 					code: "usage_missing_value",
 					message: "--reviews-dir requires a path value",
@@ -51,7 +55,7 @@ function parseArgs(argv) {
 			}
 		} else if (arg === "--root") {
 			index += 1;
-			if (!hasText(argv[index])) {
+			if (!hasText(argv[index]) || isFlag(argv[index])) {
 				options.usageErrors.push({
 					code: "usage_missing_value",
 					message: "--root requires a path value",
@@ -100,7 +104,8 @@ function toRepoRelative(root, absolutePath) {
 function isInsideRoot(root, absolutePath) {
 	const relative = path.relative(root, absolutePath);
 	return (
-		relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative)
+		relative === "" ||
+		(!relative.startsWith("..") && !path.isAbsolute(relative))
 	);
 }
 
@@ -244,7 +249,21 @@ function classifyEntry(root, reviewsDir, entry) {
 		};
 	}
 
-	const content = fs.readFileSync(artifactPath, "utf8");
+	let content;
+	try {
+		content = fs.readFileSync(artifactPath, "utf8");
+	} catch (error) {
+		return {
+			kind: "missing",
+			requested,
+			result: {
+				artifact,
+				error: error instanceof Error ? error.message : String(error),
+				reason: "artifact_unreadable",
+				role: entry.role,
+			},
+		};
+	}
 	if (!hasText(content)) {
 		return {
 			kind: "missing",
@@ -359,6 +378,30 @@ function run(options) {
 
 	const manifestPath = resolveFromRoot(root, options.manifest);
 	report.evidenceRefs.push(toRepoRelative(root, manifestPath));
+	if (!isInsideRoot(root, manifestPath)) {
+		report.blockerClass = "usage";
+		report.reason = "--manifest must resolve inside --root";
+		report.usageErrors = [
+			{
+				code: "usage_path_outside_root",
+				message: "--manifest must resolve inside --root",
+				path: toRepoRelative(root, manifestPath),
+			},
+		];
+		writeReport(report, 2);
+	}
+	if (!isInsideRoot(root, reviewsDir)) {
+		report.blockerClass = "usage";
+		report.reason = "--reviews-dir must resolve inside --root";
+		report.usageErrors = [
+			{
+				code: "usage_path_outside_root",
+				message: "--reviews-dir must resolve inside --root",
+				path: toRepoRelative(root, reviewsDir),
+			},
+		];
+		writeReport(report, 2);
+	}
 	if (!fs.existsSync(manifestPath)) {
 		report.blockerClass = "missing_manifest";
 		report.reason = "reviewer coverage manifest does not exist";

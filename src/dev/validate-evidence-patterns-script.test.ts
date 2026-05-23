@@ -13,6 +13,7 @@ const roots: string[] = [];
 
 type PatternFixture = {
 	id: string;
+	source?: string;
 	status: string;
 	targetSurfaces: string[];
 	validationCommand?: string;
@@ -97,6 +98,12 @@ function runValidator(root: string, ...args: string[]) {
 			},
 		},
 	);
+}
+
+function parseReport(result: ReturnType<typeof runValidator>) {
+	const stdout = result.stdout.trim();
+	expect(stdout).toMatch(/^\{[\s\S]*\}$/u);
+	return JSON.parse(stdout);
 }
 
 afterEach(() => {
@@ -310,5 +317,81 @@ describe("validate-evidence-patterns script", () => {
 		expect(report.status).toBe("pass");
 		expect(report.errors).toEqual([]);
 		expect(report.strictAdopted).toBe(false);
+	});
+
+	it("resolves manifest and deep-dir values relative to the configured root", () => {
+		const root = makeRoot();
+		mkdirSync(join(root, "custom", "deep"), { recursive: true });
+		writeFileSync(join(root, "custom", "deep", "fixture.md"), "# Custom\n");
+		writeManifest(root, {
+			deferred: {
+				source: "custom/deep/fixture.md",
+				targetSurfaces: ["custom/deep/fixture.md"],
+			},
+			documented: {
+				source: "custom/deep/fixture.md",
+				targetSurfaces: ["custom/deep/fixture.md"],
+			},
+			enforced: {
+				source: "custom/deep/fixture.md",
+			},
+			implemented: {
+				source: "custom/deep/fixture.md",
+			},
+			planning: {
+				source: "custom/deep/fixture.md",
+				targetSurfaces: ["custom/deep/fixture.md"],
+			},
+		});
+
+		const result = runValidator(
+			root,
+			"--manifest",
+			".harness/research/evidence-patterns.json",
+			"--deep-dir",
+			"custom/deep",
+			"--strict-adopted",
+		);
+		const report = parseReport(result);
+
+		expect(result.status).toBe(0);
+		expect(report).toMatchObject({
+			deepEvidenceCount: 1,
+			status: "pass",
+		});
+		expect(report.errors).toEqual([]);
+	});
+
+	it("rejects manifest and deep-dir values outside the repository root", () => {
+		const root = makeRoot();
+		const outsideRoot = mkdtempSync(
+			join(tmpdir(), "evidence-patterns-outside-"),
+		);
+		roots.push(outsideRoot);
+		writeFileSync(join(outsideRoot, "evidence-patterns.json"), "{}\n");
+
+		const result = runValidator(
+			root,
+			"--manifest",
+			join(outsideRoot, "evidence-patterns.json"),
+			"--deep-dir",
+			outsideRoot,
+		);
+		const report = parseReport(result);
+
+		expect(result.status).toBe(2);
+		expect(report.status).toBe("usage");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "usage_path_outside_root",
+					message: "--manifest must resolve inside --root",
+				}),
+				expect.objectContaining({
+					code: "usage_path_outside_root",
+					message: "--deep-dir must resolve inside --root",
+				}),
+			]),
+		);
 	});
 });

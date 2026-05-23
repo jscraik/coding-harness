@@ -233,7 +233,11 @@ function extractReferences(markdown, sourceArtifactPath) {
 	);
 	const withoutFences = markdown.replace(codeFence, (block) => {
 		for (const match of matchPathTokens(block)) {
-			pushCandidate(candidates, match[1], { explicit: true });
+			pushCandidate(candidates, match[1], {
+				explicit: true,
+				sourceArtifactPath,
+				sourceRelative: true,
+			});
 		}
 		return "\n";
 	});

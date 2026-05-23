@@ -164,6 +164,35 @@ describe("validate-audit-references script", () => {
 		]);
 	});
 
+	it("resolves dot-relative fenced code references from the source artifact directory", () => {
+		const root = makeRoot();
+		write(
+			root,
+			".harness/research/audits/audit.md",
+			[
+				"# Audit",
+				"```text",
+				"Review supporting artifact ../deep/source.md",
+				"```",
+				"",
+			].join("\n"),
+		);
+		write(root, ".harness/research/deep/source.md");
+		gitAdd(root, ".");
+
+		const result = runValidator(root, ".harness/research/audits/audit.md");
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.referencedArtifacts).toEqual([
+			expect.objectContaining({
+				classification: "tracked",
+				path: ".harness/research/deep/source.md",
+			}),
+		]);
+	});
+
 	it("extracts allowlisted root-file references from fenced code blocks", () => {
 		const root = makeRoot();
 		write(

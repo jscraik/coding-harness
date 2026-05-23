@@ -30,7 +30,7 @@ const VALID_STATUSES = new Set([
 const VALID_OWNERS = new Set(["codex", "jamie"]);
 
 function relative(filePath) {
-	return path.relative(ROOT, filePath);
+	return toPosixPath(path.relative(ROOT, filePath));
 }
 
 function parseArgs(argv) {
@@ -82,7 +82,7 @@ function parseArgs(argv) {
 					message: "--manifest requires a path value",
 				});
 			} else {
-				options.manifestPath = path.resolve(argv[index]);
+				options.manifestPath = argv[index];
 			}
 		} else if (arg === "--deep-dir") {
 			index += 1;
@@ -92,7 +92,7 @@ function parseArgs(argv) {
 					message: "--deep-dir requires a path value",
 				});
 			} else {
-				options.deepDir = path.resolve(argv[index]);
+				options.deepDir = argv[index];
 			}
 		} else {
 			options.usageErrors.push({
@@ -129,6 +129,24 @@ function isFlag(value) {
 	return typeof value === "string" && value.startsWith("-");
 }
 
+function toPosixPath(value) {
+	return String(value || "").replaceAll("\\", "/");
+}
+
+function resolveFromRoot(root, value) {
+	return path.isAbsolute(value)
+		? path.resolve(value)
+		: path.resolve(root, value);
+}
+
+function isInsideRoot(root, absolutePath) {
+	const relativePath = path.relative(root, absolutePath);
+	return (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+	);
+}
+
 function isAdoptedPattern(pattern) {
 	return ADOPTED_STATUSES.has(pattern.status) || pattern.status === "adopted";
 }
@@ -140,12 +158,13 @@ function normalizePatternStatus(status) {
 }
 
 function deepEvidenceFiles(deepDir) {
+	if (!isInsideRoot(ROOT, deepDir)) return [];
 	if (!fs.existsSync(deepDir)) return [];
-	const relativeDeepDir = path.relative(ROOT, deepDir);
+	const relativeDeepDir = relative(deepDir);
 	return fs
 		.readdirSync(deepDir)
 		.filter((name) => name.endsWith(".md"))
-		.map((name) => path.join(relativeDeepDir, name))
+		.map((name) => path.posix.join(relativeDeepDir, name))
 		.sort();
 }
 
@@ -226,22 +245,23 @@ function validatePattern(
 			message: "pattern.source must be a non-empty string",
 		});
 	} else {
-		seenSources.add(pattern.source);
-		const relativeDeepDir = path.relative(ROOT, deepDir);
-		const expectedPrefix = `${relativeDeepDir}/`;
-		if (!pattern.source.startsWith(expectedPrefix)) {
+		const sourcePath = toPosixPath(pattern.source);
+		seenSources.add(sourcePath);
+		const relativeDeepDir = relative(deepDir);
+		const expectedPrefix = relativeDeepDir === "." ? "" : `${relativeDeepDir}/`;
+		if (expectedPrefix && !sourcePath.startsWith(expectedPrefix)) {
 			errors.push({
 				code: "source_not_deep_evidence",
 				patternId: pattern.id,
-				path: pattern.source,
+				path: sourcePath,
 				message: `pattern.source must point under ${relativeDeepDir}`,
 			});
 		}
-		if (!pathExists(pattern.source)) {
+		if (!pathExists(sourcePath)) {
 			errors.push({
 				code: "source_missing_file",
 				patternId: pattern.id,
-				path: pattern.source,
+				path: sourcePath,
 				message: "pattern.source does not exist",
 			});
 		}
@@ -426,11 +446,25 @@ function main() {
 	const options = parseArgs(process.argv.slice(2));
 	ROOT = path.resolve(options.root);
 	MANIFEST_PATH = options.manifestPath
-		? path.resolve(options.manifestPath)
+		? resolveFromRoot(ROOT, options.manifestPath)
 		: path.join(ROOT, ".harness", "research", "evidence-patterns.json");
 	DEEP_DIR = options.deepDir
-		? path.resolve(options.deepDir)
+		? resolveFromRoot(ROOT, options.deepDir)
 		: path.join(ROOT, ".harness", "research", "deep");
+	if (!isInsideRoot(ROOT, MANIFEST_PATH)) {
+		options.usageErrors.push({
+			code: "usage_path_outside_root",
+			message: "--manifest must resolve inside --root",
+			path: relative(MANIFEST_PATH),
+		});
+	}
+	if (!isInsideRoot(ROOT, DEEP_DIR)) {
+		options.usageErrors.push({
+			code: "usage_path_outside_root",
+			message: "--deep-dir must resolve inside --root",
+			path: relative(DEEP_DIR),
+		});
+	}
 	const errors = [...options.usageErrors];
 	let manifest = null;
 	if (errors.length === 0 && !fs.existsSync(MANIFEST_PATH)) {

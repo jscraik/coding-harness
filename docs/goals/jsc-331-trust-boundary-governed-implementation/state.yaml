@@ -111,6 +111,17 @@ checks:
       - "PR_TEMPLATE_BODY="$(gh pr view 286 --json body --jq .body)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh pr-template-gate --json"
       - "gh pr view 286 --json headRefOid,mergeStateStatus,reviewDecision,statusCheckRollup,isDraft,url,title"
       - "gh pr checks 286 --watch=false"
+      - "pnpm exec biome check scripts/validate-evidence-patterns.cjs scripts/validate-reviewer-coverage.cjs scripts/validate-audit-references.cjs src/dev/validate-evidence-patterns-script.test.ts src/lib/reviewer-coverage-receipt.test.ts src/dev/validate-audit-references-script.test.ts"
+      - "pnpm vitest run src/dev/validate-evidence-patterns-script.test.ts src/lib/reviewer-coverage-receipt.test.ts src/dev/validate-audit-references-script.test.ts"
+      - "node scripts/validate-evidence-patterns.cjs --strict-adopted --json"
+      - "node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json"
+      - "node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json"
+      - "pnpm lint"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "PR_BODY="$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh linear-gate --json"
+      - "PR_TEMPLATE_BODY="$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "pnpm check"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
       - "artifacts/reviews/t006-testing.md"
@@ -127,8 +138,9 @@ checks:
       - "artifacts/reviews/t009-pr-ci-triage.md"
       - "artifacts/reviews/t010-review-thread-audit.md"
       - "artifacts/reviews/t011-ci-autofix-triage.md"
-    outcome: pass_with_t010_t011_repairs_published_remote_checks_pending
-    checked_at: "2026-05-23T21:09:20Z"
+      - "artifacts/reviews/t012-review-thread-triage.md"
+    outcome: pass_with_t012_validator_boundary_repair_local_validated_remote_pending
+    checked_at: "2026-05-23T21:39:25Z"
 tasks:
   - id: T001
     type: scout

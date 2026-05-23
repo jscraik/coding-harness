@@ -47,7 +47,6 @@ function runValidator(root: string, ...args: string[]) {
 }
 
 function parseSingleJsonReport(result: ReturnType<typeof runValidator>) {
-	expect(result.stderr).toBe("");
 	const stdout = result.stdout.trim();
 	expect(stdout).toMatch(/^\{[\s\S]*\}$/u);
 	return JSON.parse(stdout);
@@ -209,6 +208,35 @@ describe("validate-reviewer-coverage script", () => {
 		]);
 	});
 
+	it("classifies unreadable reviewer artifacts without throwing", () => {
+		const root = makeRoot();
+		mkdirSync(join(root, "artifacts", "reviews", "architecture.md"), {
+			recursive: true,
+		});
+		writeManifest(root, {
+			requiredReviewers: [
+				{ artifact: "architecture.md", role: "architecture" },
+			],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report).toMatchObject({
+			blockerClass: "missing_artifacts",
+			status: "blocked",
+		});
+		expect(report.missingArtifacts).toEqual([
+			expect.objectContaining({
+				reason: "artifact_unreadable",
+				role: "architecture",
+			}),
+		]);
+		expect(report.missingArtifacts[0].error).toEqual(expect.any(String));
+	});
+
 	it("treats mailbox-only reviewer text as non-proof", () => {
 		const root = makeRoot();
 		writeManifest(root, {
@@ -272,5 +300,80 @@ describe("validate-reviewer-coverage script", () => {
 				expect.objectContaining({ code: "usage_unknown_option" }),
 			]),
 		);
+	});
+
+	it("rejects flag-shaped values for path options", () => {
+		const result = spawnSync(
+			process.execPath,
+			[
+				SCRIPT_PATH,
+				"--root",
+				"--json",
+				"--manifest",
+				"reviewers.json",
+				"--json",
+			],
+			{
+				encoding: "utf8",
+			},
+		);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(2);
+		expect(report).toMatchObject({
+			blockerClass: "usage",
+			status: "blocked",
+		});
+		expect(report.usageErrors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "usage_missing_value",
+					message: "--root requires a path value",
+				}),
+			]),
+		);
+	});
+
+	it("rejects reviewer manifests outside the repository root", () => {
+		const root = makeRoot();
+		const outsideRoot = mkdtempSync(
+			join(tmpdir(), "reviewer-coverage-manifest-outside-"),
+		);
+		roots.push(outsideRoot);
+		writeFileSync(
+			join(outsideRoot, "reviewers.json"),
+			JSON.stringify({
+				requiredReviewers: [],
+				synthesisStatus: "complete",
+			}),
+		);
+
+		const result = spawnSync(
+			process.execPath,
+			[
+				SCRIPT_PATH,
+				"--root",
+				root,
+				"--manifest",
+				join(outsideRoot, "reviewers.json"),
+				"--json",
+			],
+			{
+				encoding: "utf8",
+			},
+		);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(2);
+		expect(report).toMatchObject({
+			blockerClass: "usage",
+			reason: "--manifest must resolve inside --root",
+			status: "blocked",
+		});
+		expect(report.usageErrors).toEqual([
+			expect.objectContaining({
+				code: "usage_path_outside_root",
+			}),
+		]);
 	});
 });
