@@ -126,6 +126,14 @@ they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `runtime-card --evidence-out`, `runtime-evidence-bundle/v1`, or related
 producer and adapter wiring changes.
 
+Trust-boundary validator changes that add script-backed evidence reports, such
+as `audit-reference-report/v1`, are architecture-adjacent when they classify
+repository paths, git-tracked proof, or stale artifacts. Refresh
+`AI/context/diagram-context.md` and synchronize `AGENTS.md`,
+`docs/agents/00-architecture-bootstrap.md`, and
+`docs/agents/07b-agent-governance.md` whenever making trust-boundary validator
+changes that classify repo paths, git-tracked proof, or stale artifacts.
+
 For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
 When required-check or CI migration logic is split into deep modules, keep the
 public command facade as orchestration only, add or update executable module

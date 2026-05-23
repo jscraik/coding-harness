@@ -5,8 +5,10 @@ import {
 } from "./runtime-evidence-bundle.js";
 import type {
 	RuntimeCard,
+	RuntimeCardFreshness,
 	RuntimeCardPhaseExitState,
 	RuntimeCardSource,
+	RuntimeCardSourceStatus,
 } from "./runtime-card.js";
 
 /** Function that collapses HePhaseExit/v1 into runtime-card phase-exit state. */
@@ -46,20 +48,57 @@ const SUMMARY_ONLY_REQUIRED_PHASE_EXIT_REASON =
 const SUMMARY_ONLY_REQUIRED_PHASE_EXIT_BLOCKER =
 	"Gate-backed phase-exit evidence is required; summary-only runtime-card phase-exit context cannot satisfy required evidence.";
 
-/**
- * Deduplicates runtime card sources by their `kind` and `ref`, preserving the first occurrence of each.
- *
- * @param sources - The list of runtime card sources to filter
- * @returns An array containing the first occurrence of each unique source where uniqueness is determined by `source.kind` and `source.ref`
- */
-function uniqueSources(sources: RuntimeCardSource[]): RuntimeCardSource[] {
-	const seen = new Set<string>();
-	return sources.filter((source) => {
-		const key = `${source.kind}\u0000${source.ref}`;
-		if (seen.has(key)) return false;
-		seen.add(key);
-		return true;
-	});
+const SOURCE_STATUS_RISK: Record<RuntimeCardSourceStatus, number> = {
+	usable: 0,
+	empty: 1,
+	invalid: 2,
+	blocked: 3,
+};
+
+const SOURCE_FRESHNESS_RISK: Record<RuntimeCardFreshness, number> = {
+	current: 0,
+	unknown: 1,
+	stale: 2,
+	missing: 3,
+};
+
+function failureClassRisk(source: RuntimeCardSource): number {
+	return source.failureClass ? 1 : 0;
+}
+
+function compareSourceRisk(
+	left: RuntimeCardSource,
+	right: RuntimeCardSource,
+): number {
+	const statusDifference =
+		SOURCE_STATUS_RISK[left.status] - SOURCE_STATUS_RISK[right.status];
+	if (statusDifference !== 0) return statusDifference;
+
+	const freshnessDifference =
+		SOURCE_FRESHNESS_RISK[left.freshness] -
+		SOURCE_FRESHNESS_RISK[right.freshness];
+	if (freshnessDifference !== 0) return freshnessDifference;
+
+	return failureClassRisk(left) - failureClassRisk(right);
+}
+
+function sourceIdentity(source: RuntimeCardSource): string {
+	return `${source.kind}\u0000${source.ref}`;
+}
+
+/** Merge duplicate runtime-card sources by identity while retaining the highest-risk evidence record. */
+export function mergeRuntimeCardSources(
+	sources: RuntimeCardSource[],
+): RuntimeCardSource[] {
+	const byIdentity = new Map<string, RuntimeCardSource>();
+	for (const source of sources) {
+		const key = sourceIdentity(source);
+		const current = byIdentity.get(key);
+		if (!current || compareSourceRisk(source, current) > 0) {
+			byIdentity.set(key, source);
+		}
+	}
+	return Array.from(byIdentity.values());
 }
 
 function provenanceSourceKind(
@@ -93,7 +132,7 @@ export function inspectRuntimeEvidenceBundle(
 		};
 	}
 	const bundle = asRuntimeEvidenceBundle(value);
-	const sources = uniqueSources([
+	const sources = mergeRuntimeCardSources([
 		{
 			kind: provenanceSourceKind(bundle.provenance.kind),
 			ref: bundle.provenance.ref,

@@ -1,0 +1,430 @@
+version: 2
+goal:
+  slug: jsc-331-trust-boundary-governed-implementation
+  status: active
+  objective: "Govern and execute the JSC-331 Trust Boundary P0 implementation from the May 23 plan and master spec until local implementation is operational, validated, reviewed, documented, and ready for merge handoff."
+  native_goal_id: null
+  native_thread_id: "019e560b-fd21-7483-a243-96b844a7d4c7"
+  native_objective: "Follow docs/goals/jsc-331-trust-boundary-governed-implementation/goal.md to govern and implement the JSC-331 Trust Boundary P0 plan/spec through validated bounded slices; preserve subagent triage and commit/PR boundaries between slices; do not mark complete without Judge or PM audit."
+  native_status: active
+  token_budget: null
+  tokens_used: 94008
+  time_used_seconds: 278
+  native_created_at: "2026-05-23T20:06:33Z"
+  native_updated_at: "2026-05-23T20:11:11Z"
+rules:
+  one_active_task: true
+  require_fresh_verification: true
+  require_final_audit: true
+completion_contract:
+  outcome: "Deliver operational Trust Boundary P0 implementation slices that strengthen deterministic enforcement, runtime truth, architecture coherence, validation, and stale-state resistance."
+  verification_surface:
+    - "docs/goals/jsc-331-trust-boundary-governed-implementation/goal.md"
+    - "docs/goals/jsc-331-trust-boundary-governed-implementation/state.yaml"
+    - "docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl"
+    - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+    - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
+    - ".harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+    - "validation command evidence"
+    - "review artifacts"
+    - "PR, CI, review, and Linear state after PR creation"
+  constraints:
+    - "Exactly one active task unless Jamie explicitly authorizes parallel Workers with disjoint allowed_files."
+    - "Worker implementation may touch only active-slice files."
+    - "No speculative refactors, placeholder scaffolding, or partial pipeline claims."
+    - "No external mutation unless active-task authority and explicit user instruction allow it."
+    - "No treating chat summaries, mailbox-only status, docs-only claims, or green CI alone as proof."
+    - "Preserve unrelated dirty worktree files."
+  boundaries:
+    - "Governor and Scout tasks are read-only unless allowed_files permit board or notes updates."
+    - "Implementation Workers must include allowed_files, verify, and stop_if."
+    - "Further Linear mutation requires implementation evidence and explicit user instruction."
+    - "Merge requires explicit human authority unless a later board update grants a narrow merge policy."
+  iteration_policy: "Choose the smallest operationally complete slice, validate immediately, run the mandatory review stack, fix valid in-scope findings, update implementation notes, hand off git triage, and continue only after safe state is confirmed."
+  blocked_stop_condition: "Stop on stale runtime truth, native/board mismatch, unclear blast radius, unreliable validation, incomplete review stack, unresolved blockers, merge safety uncertainty, repeated retry without progress, or dirty-worktree contamination."
+continuation_gate:
+  native_status: active
+  thread_idle: pass
+  goal_active: pass
+  queued_user_input: absent
+  pending_work: present
+  auto_continue_allowed: no
+claims:
+  - id: C001
+    claim: "The May 23 plan and May 22 master spec are the source artifacts for this governed implementation."
+    evidence_surface:
+      - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
+      - ".harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+    route: reproduced
+    status: confirmed
+    remaining_uncertainty:
+      - "Runtime code seams must still be refreshed before Worker implementation."
+  - id: C002
+    claim: "Linear destination confirmation for JSC-331 has been recorded, but further tracker mutation requires explicit instruction."
+    evidence_surface:
+      - "Linear comment ac992e03-6f58-457d-8c45-a45b7102294e"
+      - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
+    route: reproduced
+    status: confirmed
+    remaining_uncertainty:
+      - "Later tracker status, attachment, or description updates require implementation evidence."
+checks:
+  dirty_fingerprint: "codex/jsc-331-trust-boundary-p0; modified: .harness/memory/LEARNINGS.md, .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md, package.json, scripts/validate-evidence-patterns.cjs, src/commands/runtime-card.test.ts, src/lib/runtime/local-runtime-card-artifacts.ts, src/lib/runtime/local-runtime-card-assembly.ts, src/lib/runtime/local-runtime-card-live.ts, src/lib/runtime/local-runtime-card.test.ts, src/lib/runtime/local-runtime-card.ts, src/lib/runtime/runtime-evidence-adapter.ts; untracked: .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md, docs/goals/jsc-331-trust-boundary-governed-implementation/**, scripts/validate-he-artifacts.sh, src/dev/validate-evidence-patterns-script.test.ts, src/dev/validate-he-artifacts-script.test.ts, src/lib/runtime/issue-key.ts, src/lib/runtime/issue-key.test.ts"
+  last_verification:
+    commands:
+      - "pnpm vitest run src/dev/validate-audit-references-script.test.ts"
+      - "node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json"
+      - "pnpm run safety:local"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "pnpm run docs:style:changed"
+      - "pnpm vitest run src/lib/runtime/local-runtime-card.test.ts src/lib/runtime/issue-key.test.ts src/commands/runtime-card.test.ts"
+      - "pnpm exec biome check src/lib/runtime/local-runtime-card-assembly.ts"
+      - "pnpm vitest run src/lib/architecture/module-boundaries.test.ts src/lib/runtime/local-runtime-card.test.ts"
+      - "PR_TEMPLATE_BODY=\"$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "PR_TEMPLATE_BODY=\"$(gh pr view 286 --json body --jq .body)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "gh pr checks 286"
+      - "pnpm vitest run src/lib/reviewer-coverage-receipt.test.ts"
+      - "node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json"
+      - "pnpm run safety:local"
+      - "pnpm run semgrep:changed"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+      - "bash scripts/verify-work.sh --fast"
+      - "PR_TEMPLATE_BODY=\"$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "PR_BODY=\"$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh linear-gate --json"
+      - "gh pr edit 286 --body-file docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md"
+      - "PR_BODY=\"$(gh pr view 286 --json body --jq .body)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh linear-gate --json"
+      - "pnpm vitest run src/dev/validate-audit-references-script.test.ts src/dev/validate-he-artifacts-script.test.ts src/lib/reviewer-coverage-receipt.test.ts"
+      - "node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json"
+      - "node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json"
+      - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "pnpm exec biome check scripts/validate-evidence-patterns.cjs src/dev/validate-evidence-patterns-script.test.ts scripts/validate-audit-references.cjs scripts/validate-he-artifacts.sh scripts/validate-reviewer-coverage.cjs src/dev/validate-audit-references-script.test.ts src/dev/validate-he-artifacts-script.test.ts src/lib/reviewer-coverage-receipt.test.ts"
+      - "pnpm vitest run src/dev/validate-evidence-patterns-script.test.ts src/dev/validate-audit-references-script.test.ts src/dev/validate-he-artifacts-script.test.ts src/lib/reviewer-coverage-receipt.test.ts"
+      - "node scripts/validate-evidence-patterns.cjs --strict-adopted --json"
+      - "pnpm lint"
+      - "pnpm check"
+      - "gh api repos/jscraik/coding-harness/git/commits ..."
+      - "gh pr edit 286 --body-file docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md"
+      - "PR_BODY="$(gh pr view 286 --json body --jq .body)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh linear-gate --json"
+      - "PR_TEMPLATE_BODY="$(gh pr view 286 --json body --jq .body)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "gh pr view 286 --json headRefOid,mergeStateStatus,reviewDecision,statusCheckRollup,isDraft,url,title"
+      - "gh pr checks 286 --watch=false"
+      - "pnpm exec biome check scripts/validate-evidence-patterns.cjs scripts/validate-reviewer-coverage.cjs scripts/validate-audit-references.cjs src/dev/validate-evidence-patterns-script.test.ts src/lib/reviewer-coverage-receipt.test.ts src/dev/validate-audit-references-script.test.ts"
+      - "pnpm vitest run src/dev/validate-evidence-patterns-script.test.ts src/lib/reviewer-coverage-receipt.test.ts src/dev/validate-audit-references-script.test.ts"
+      - "node scripts/validate-evidence-patterns.cjs --strict-adopted --json"
+      - "node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json"
+      - "node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json"
+      - "pnpm lint"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "PR_BODY="$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh linear-gate --json"
+      - "PR_TEMPLATE_BODY="$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "pnpm check"
+      - "gh api repos/jscraik/coding-harness/git/commits ..."
+    review_artifacts:
+      - "artifacts/reviews/t006-architecture.md"
+      - "artifacts/reviews/t006-testing.md"
+      - "artifacts/reviews/t006-simplicity.md"
+      - "artifacts/reviews/t006-devtools.md"
+      - "artifacts/reviews/t006-devtools-final.md"
+      - "artifacts/reviews/t006-git-triage.md"
+      - "artifacts/reviews/t008-ci-pr-triage.md"
+      - "artifacts/reviews/t008-architecture.md"
+      - "artifacts/reviews/t008-simplify.md"
+      - "artifacts/reviews/t008-unslopify.md"
+      - "artifacts/reviews/t008-testing.md"
+      - "artifacts/reviews/t008-codex-review.md"
+      - "artifacts/reviews/t009-pr-ci-triage.md"
+      - "artifacts/reviews/t010-review-thread-audit.md"
+      - "artifacts/reviews/t011-ci-autofix-triage.md"
+      - "artifacts/reviews/t012-review-thread-triage.md"
+    outcome: pass_with_t012_validator_boundary_repair_published_pr_body_sync_pending
+    checked_at: "2026-05-23T21:42:12Z"
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Govern: reconcile native goal state, board state, plan/spec freshness, git dirty state, Linear JSC-331, required skills/tools, and validator entrypoints before any Worker implementation."
+    inputs:
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/goal.md"
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/state.yaml"
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl"
+      - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
+      - ".harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "Linear JSC-331"
+    constraints:
+      - "Read-only except board and implementation-notes updates."
+      - "Do not start Worker implementation."
+      - "Do not mutate git, GitHub, CircleCI, CodeRabbit, automations, or Linear."
+      - "Preserve unrelated dirty worktree files."
+    expected_output: "Governor bootstrap receipt with runtime reconciliation, first Worker slice readiness, validation route, review-stack availability, and stop conditions."
+    allowed_files:
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+    verify:
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+      - "git status --short --branch --untracked-files=all"
+    stop_if:
+      - "Native goal state and board state conflict without owner direction."
+      - "Plan or spec path is missing."
+      - "HE artifact validation fails."
+      - "Git dirty worktree includes files that overlap first Worker slice unexpectedly."
+      - "Linear JSC-331 is unreachable."
+    receipt_id: R001-T001-GOVERNOR-RECONCILIATION
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "PU-000 Evidence and Seam Discovery Gate: prove current implementation seams and validation entrypoints before code changes."
+    inputs:
+      - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
+      - ".harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+    constraints:
+      - "Do not edit runtime code during seam discovery unless the governor activates a repair."
+      - "Record selected and rejected seams."
+      - "No public CLI expansion."
+    expected_output: "Recorded seam decision and validator-readiness receipt."
+    allowed_files:
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+    verify:
+      - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+      - "rg -n validate-evidence-patterns scripts src .harness"
+    stop_if:
+      - "Seam ownership is unclear."
+      - "Validator command contract cannot be reproduced."
+      - "Public command expansion appears necessary."
+    receipt_id: R002-T002-SEAM-DISCOVERY
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "PU-001 Strict Adopted-Evidence Validation: make adopted evidence fail closed when declared validation is missing, stale, non-runnable, or failing."
+    inputs:
+      - "scripts/validate-evidence-patterns.cjs"
+    constraints:
+      - "Keep status vocabulary aligned with plan/spec."
+      - "No docs-only adoption claims."
+    expected_output: "Strict adopted-evidence validation with failing and passing fixture proof."
+    allowed_files:
+      - "scripts/validate-evidence-patterns.cjs"
+      - "scripts/validate-he-artifacts.sh"
+      - "src/dev/validate-evidence-patterns-script.test.ts"
+      - "src/dev/validate-he-artifacts-script.test.ts"
+      - "test/**"
+      - "tests/**"
+      - "src/dev/validate-audit-references-script.test.ts"
+      - "fixtures/**"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+    verify:
+      - "node scripts/validate-evidence-patterns.cjs --strict-adopted --json"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "Strict mode breaks documented non-adopted statuses."
+      - "Validation cannot distinguish missing from failing commands."
+    receipt_id: R003-T003-STRICT-ADOPTED-EVIDENCE
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "PU-002 Runtime Evidence Merge Precedence: preserve blocked, stale, or worse runtime evidence over optimistic duplicate provenance."
+    inputs:
+      - "src/lib/runtime/runtime-evidence-adapter.ts"
+      - "src/lib/runtime/local-runtime-card-assembly.ts"
+      - "src/lib/runtime/local-runtime-card.test.ts"
+    constraints:
+      - "Keep runtime-card/v1 advisory."
+      - "Do not weaken blocked or stale evidence."
+    expected_output: "Runtime merge precedence logic and tests."
+    allowed_files:
+      - "src/lib/runtime/runtime-evidence-adapter.ts"
+      - "src/lib/runtime/local-runtime-card-assembly.ts"
+      - "src/lib/runtime/local-runtime-card.test.ts"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+    verify:
+      - "pnpm vitest run src/lib/runtime/local-runtime-card.test.ts"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "Runtime-card output contract changes beyond selected fields."
+      - "Tests cannot prove worse-evidence precedence."
+    receipt_id: R004-T004-RUNTIME-EVIDENCE-PRECEDENCE
+  - id: T005
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "PU-003 Runtime-Card Linear Issue-Key Normalization: case-normalize matching while preserving display value."
+    inputs:
+      - "src/commands/runtime-card.test.ts"
+      - "src/lib/runtime/local-runtime-card.test.ts"
+    constraints:
+      - "Do not mutate Linear."
+      - "Preserve issue display formatting."
+    expected_output: "Mixed-case issue matching tests and implementation."
+    allowed_files:
+      - "src/commands/runtime-card.test.ts"
+      - "src/lib/runtime/local-runtime-card.test.ts"
+      - "src/lib/runtime/**"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+    verify:
+      - "pnpm vitest run src/commands/runtime-card.test.ts src/lib/runtime/local-runtime-card.test.ts"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "Normalization changes displayed issue IDs."
+      - "Runtime-card command behavior changes outside issue matching."
+    receipt_id: R005-T005-ISSUE-KEY-NORMALIZATION
+  - id: T006
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "PU-004 Audit Reference Report: implement scripts/validate-audit-references.cjs or route an existing narrower seam."
+    inputs:
+      - "scripts/validate-audit-references.cjs"
+      - ".harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md"
+    constraints:
+      - "Local-only until upstream branch and PR state are established or explicitly deferred."
+      - "Validate real, allowed, tracked, ignored, untracked, missing, and blocked references."
+      - "Stdout must be exactly one JSON object."
+      - "No public CLI unless command admission passes."
+    expected_output: "audit-reference-report/v1 validator and fixture proof."
+    allowed_files:
+      - "scripts/validate-audit-references.cjs"
+      - ".harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md"
+      - ".gitignore"
+      - "src/lib/harness-artifact-routine.ts"
+      - "src/lib/harness-artifact-routine.test.ts"
+      - "src/dev/validate-audit-references-script.test.ts"
+      - "test/**"
+      - "tests/**"
+      - "fixtures/**"
+      - "package.json"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+    verify:
+      - "node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json"
+      - "pnpm run safety:local"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "Validator needs policy for private or off-repo references not present in the spec."
+      - "Output contract cannot remain one stdout JSON object."
+    receipt_id: R006-T006-AUDIT-REFERENCE-REPORT
+  - id: T007
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Git Boundary Handoff: create the intentional commit, push the branch, open the PR, and record remote readiness before any reviewer-coverage implementation starts."
+    inputs:
+      - "artifacts/reviews/t006-git-triage.md"
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+    constraints:
+      - "Stage only intentional JSC-331 files."
+      - "Preserve unrelated .harness/memory/LEARNINGS.md dirty worktree changes."
+      - "Do not start reviewer-coverage implementation in this task."
+      - "Do not claim CI, CodeRabbit, merge, or Linear completion until live PR state is observed."
+      - "T007 may remediate reviewer-identified runtime-card fallback defects discovered during git triage before PR creation."
+    expected_output: "Committed branch, upstream tracking, open draft PR, and boundary receipt or explicit blocker."
+    allowed_files:
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "src/lib/runtime/local-runtime-card-artifacts.ts"
+      - "src/lib/runtime/local-runtime-card-assembly.ts"
+      - "src/lib/runtime/local-runtime-card.test.ts"
+    verify:
+      - "git status --short --branch --untracked-files=all"
+      - "git log --oneline -3"
+      - "gh pr view --json url,number,state,headRefName,baseRefName,isDraft"
+    stop_if:
+      - "Staging would include unrelated .harness/memory/LEARNINGS.md."
+      - "Branch push or PR creation fails."
+      - "PR template cannot be filled with concrete evidence."
+    receipt_id: R007B-T007-PR-BOUNDARY
+  - id: T008
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "PU-005 Reviewer Coverage Receipt: implement scripts/validate-reviewer-coverage.cjs or route an existing narrower seam."
+    inputs:
+      - "scripts/validate-reviewer-coverage.cjs"
+      - "artifacts/reviews/reviewer-coverage-manifest.json"
+    constraints:
+      - "Mailbox-only reviewer text is non-proof."
+      - "Missing artifacts after retry are partial or blocked, never pass."
+      - "Stdout must be exactly one JSON object."
+    expected_output: "reviewer-coverage-receipt/v1 validator and fixture proof."
+    allowed_files:
+      - "scripts/validate-reviewer-coverage.cjs"
+      - "src/lib/review-gate/**"
+      - "src/lib/harness-artifact-routine.ts"
+      - "src/lib/reviewer-coverage-receipt.test.ts"
+      - "artifacts/reviews/reviewer-coverage-manifest.json"
+      - "test/**"
+      - "tests/**"
+      - "fixtures/**"
+      - "package.json"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+    verify:
+      - "node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json"
+      - "pnpm vitest run src/lib/reviewer-coverage-receipt.test.ts"
+      - "pnpm run safety:local"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "Receipt validation requires changing reviewer swarm runtime behavior."
+      - "Manifest schema cannot distinguish blocked from missing reviewers."
+    receipt_id: R008C-T008-COMMIT-PR-BOUNDARY
+  - id: T009
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "PU-006 Trust Boundary P0 Integration and Handoff: run proof bundle, update docs/notes, classify blockers, and prepare merge-ready handoff."
+    inputs:
+      - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
+      - ".harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+    constraints:
+      - "No closeout claim until all required proof commands pass or are explicitly blocked."
+      - "No further Linear mutation without explicit instruction."
+    expected_output: "Complete proof bundle, implementation notes update, review stack summary, and git triage handoff."
+    allowed_files:
+      - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
+      - ".harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+    verify:
+      - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast"
+    stop_if:
+      - "Any required proof command is missing, stale, failing, or partial."
+      - "Review stack has unresolved blockers."
+      - "Git triage reports stale PR, CI, review, branch, or Linear state."
+    receipt_id: null
+  - id: T010
+    type: judge
+    assignee: Judge
+    status: queued
+    objective: "Final completion audit: decide whether the governed implementation can be marked complete."
+    inputs:
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl"
+      - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "review artifacts"
+      - "PR, CI, review, branch, and Linear state"
+    constraints:
+      - "Read-only unless completion receipt is authorized."
+      - "Do not mark complete while PR or review state is stale."
+    expected_output: "Judge receipt with decision complete, continue, or blocked."
+    allowed_files: []
+    verify:
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "bash scripts/validate-codestyle.sh --fast"
+    stop_if:
+      - "No final Judge or PM receipt can be produced from current evidence."
+      - "Runtime truth or merge safety is stale."
+    receipt_id: null

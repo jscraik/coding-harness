@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	HE_GATE_RESULT_SCHEMA_VERSION,
 	HE_PHASE_EXIT_SCHEMA_VERSION,
@@ -16,6 +16,12 @@ import {
 	type RuntimeCardGitRunner,
 } from "./local-runtime-card.js";
 import {
+	LinearAPIError,
+	LinearClient,
+	type LinearIssueSummary,
+} from "../linear/client.js";
+import { defaultLiveProvider } from "./local-runtime-card-live.js";
+import {
 	RUNTIME_EVIDENCE_BUNDLE_SCHEMA_VERSION,
 	type RuntimeEvidenceBundle,
 	validateRuntimeEvidenceBundle,
@@ -23,6 +29,10 @@ import {
 import { validateRuntimeCard } from "./runtime-card.js";
 
 const CODE = String.fromCharCode(96);
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
 
 function codePath(path: string): string {
 	return CODE + path + CODE;
@@ -79,6 +89,26 @@ function writeActiveArtifactsForIssues(repoRoot: string): void {
 	);
 }
 
+function writeActiveArtifactsForMixedCaseIssue(repoRoot: string): void {
+	const specPath = ".harness/specs/2026-05-20-jsc-999-runtime-evidence-spec.md";
+	const planPath = ".harness/plan/2026-05-20-JSC-999-runtime-evidence-plan.md";
+	mkdirSync(join(repoRoot, ".harness/specs"), { recursive: true });
+	mkdirSync(join(repoRoot, ".harness/plan"), { recursive: true });
+	writeFileSync(join(repoRoot, specPath), "# Evidence Spec\n");
+	writeFileSync(join(repoRoot, planPath), "# Evidence Plan\n");
+	writeFileSync(
+		join(repoRoot, ".harness/active-artifacts.md"),
+		[
+			"# Active Harness Specs And Plans",
+			"",
+			"| Linear Key | Active Spec | Active Plan |",
+			"| --- | --- | --- |",
+			`| jsc-999 | ${codePath(specPath)} | ${codePath(planPath)} |`,
+			"",
+		].join("\n"),
+	);
+}
+
 function gitRunner(status = ""): RuntimeCardGitRunner {
 	return (args) => {
 		if (args.join(" ") === "branch --show-current") {
@@ -91,6 +121,25 @@ function gitRunner(status = ""): RuntimeCardGitRunner {
 			return status;
 		}
 		return undefined;
+	};
+}
+
+function linearIssue(identifier: string): LinearIssueSummary {
+	return {
+		id: identifier.toLowerCase(),
+		identifier,
+		title: `Issue ${identifier}`,
+		url: `https://linear.app/jscraik/issue/${identifier}/runtime-card`,
+		team: {
+			id: "team-jsc",
+			key: "JSC",
+			name: "JSC",
+		},
+		state: {
+			id: "state-started",
+			name: "In Progress",
+			type: "started",
+		},
 	};
 }
 
@@ -316,7 +365,7 @@ describe("buildLocalRuntimeCard", () => {
 		});
 	});
 
-	it("normalizes lowercase issue keys from branch names", () => {
+	it("preserves lowercase issue display values from branch names", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
 		const card = buildLocalRuntimeCard({
 			repoRoot,
@@ -325,8 +374,8 @@ describe("buildLocalRuntimeCard", () => {
 		});
 
 		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
-		expect(card.issueKey).toBe("JSC-311");
-		expect(card.linear.issueKey).toBe("JSC-311");
+		expect(card.issueKey).toBe("jsc-311");
+		expect(card.linear.issueKey).toBe("jsc-311");
 		expect(card.linear.freshness).toBe("unknown");
 	});
 
@@ -412,6 +461,13 @@ describe("buildLocalRuntimeCard", () => {
 				},
 				sources: [
 					{
+						kind: "git",
+						ref: "command:git status --porcelain",
+						freshness: "stale",
+						status: "blocked",
+						failureClass: "live_git_state_stale",
+					},
+					{
 						kind: "pr",
 						ref: "command:gh pr view",
 						freshness: "current",
@@ -442,6 +498,12 @@ describe("buildLocalRuntimeCard", () => {
 			"pr",
 			"linear",
 		]);
+		expect(card.sources.find((source) => source.kind === "git")).toMatchObject({
+			ref: "command:git status --porcelain",
+			freshness: "stale",
+			status: "blocked",
+			failureClass: "live_git_state_stale",
+		});
 		expect(card.blockers).toEqual([
 			"GitHub PR merge state is DIRTY; resolve PR blockers before continuing.",
 		]);
@@ -528,6 +590,129 @@ describe("buildLocalRuntimeCard", () => {
 		expect(card.blockers).toEqual([]);
 	});
 
+	it("preserves blocked duplicate runtime evidence over optimistic provenance", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: runtimeEvidenceBundle({
+				sources: [
+					{
+						kind: "git",
+						ref: "command:git status --porcelain",
+						freshness: "stale",
+						status: "blocked",
+						failureClass: "imported_git_state_stale",
+					},
+					{
+						kind: "session",
+						ref: "session-collector:run-123",
+						freshness: "stale",
+						status: "blocked",
+						failureClass: "session_evidence_stale",
+					},
+				],
+			}),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.sources.find((source) => source.kind === "git")).toMatchObject({
+			ref: "command:git status --porcelain",
+			freshness: "stale",
+			status: "blocked",
+			failureClass: "imported_git_state_stale",
+		});
+		expect(
+			card.sources.filter(
+				(source) =>
+					source.kind === "session" &&
+					source.ref === "session-collector:run-123",
+			),
+		).toEqual([
+			{
+				kind: "session",
+				ref: "session-collector:run-123",
+				freshness: "stale",
+				status: "blocked",
+				failureClass: "session_evidence_stale",
+			},
+		]);
+	});
+
+	it("uses source status ordering before deterministic tie preservation", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: runtimeEvidenceBundle({
+				sources: [
+					{
+						kind: "validation",
+						ref: "command:duplicate-empty",
+						freshness: "current",
+						status: "empty",
+						failureClass: null,
+					},
+					{
+						kind: "validation",
+						ref: "command:duplicate-empty",
+						freshness: "current",
+						status: "invalid",
+						failureClass: "invalid_validation_output",
+					},
+					{
+						kind: "review",
+						ref: "artifact:duplicate-review",
+						freshness: "stale",
+						status: "invalid",
+						failureClass: "first_invalid_review",
+					},
+					{
+						kind: "review",
+						ref: "artifact:duplicate-review",
+						freshness: "stale",
+						status: "invalid",
+						failureClass: "second_invalid_review",
+					},
+				],
+			}),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(
+			card.sources.find(
+				(source) =>
+					source.kind === "validation" &&
+					source.ref === "command:duplicate-empty",
+			),
+		).toEqual({
+			kind: "validation",
+			ref: "command:duplicate-empty",
+			freshness: "current",
+			status: "invalid",
+			failureClass: "invalid_validation_output",
+		});
+		expect(
+			card.sources.find(
+				(source) =>
+					source.kind === "review" &&
+					source.ref === "artifact:duplicate-review",
+			),
+		).toEqual({
+			kind: "review",
+			ref: "artifact:duplicate-review",
+			freshness: "stale",
+			status: "invalid",
+			failureClass: "first_invalid_review",
+		});
+	});
+
 	it("rejects summary-only phase-exit as required gate evidence", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
 		writeActiveArtifacts(repoRoot);
@@ -593,6 +778,146 @@ describe("buildLocalRuntimeCard", () => {
 		expect(card.artifacts.status).toBe("current");
 	});
 
+	it("matches imported Linear issue keys case-insensitively without rewriting display value", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: runtimeEvidenceBundle({
+				issueKey: "jsc-311",
+				linear: {
+					issueKey: "jSc-311",
+					freshness: "current",
+					status: "In Review",
+					statusType: "started",
+					url: "https://linear.app/jscraik/issue/JSC-311/runtime-evidence",
+					actionRequired: null,
+				},
+			}),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.issueKey).toBe("JSC-311");
+		expect(card.linear.issueKey).toBe("jSc-311");
+		expect(card.linear.status).toBe("In Review");
+	});
+
+	it("matches default live Linear issues case-insensitively without rewriting provider display value", async () => {
+		const searchIssues = vi
+			.spyOn(LinearClient.prototype, "searchIssues")
+			.mockResolvedValue([linearIssue("JSC-999"), linearIssue("jSc-311")]);
+
+		const live = await defaultLiveProvider(
+			{
+				repoRoot: mkdtempSync(join(tmpdir(), "runtime-card-")),
+				branchName: null,
+				issueKey: "JSC-311",
+			},
+			{ LINEAR_API_KEY: "test-token" },
+		);
+
+		expect(searchIssues).toHaveBeenCalledWith("JSC-311");
+		expect(live.linear).toEqual({
+			issueKey: "jSc-311",
+			freshness: "current",
+			status: "In Progress",
+			statusType: "started",
+			url: "https://linear.app/jscraik/issue/jSc-311/runtime-card",
+			actionRequired: null,
+		});
+		expect(live.sources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "linear",
+					ref: "api:linear:jSc-311",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				}),
+			]),
+		);
+		expect(live.blockers).toEqual([]);
+	});
+
+	it("reports default live Linear misses after case-insensitive search", async () => {
+		vi.spyOn(LinearClient.prototype, "searchIssues").mockResolvedValue([
+			linearIssue("JSC-999"),
+		]);
+
+		const live = await defaultLiveProvider(
+			{
+				repoRoot: mkdtempSync(join(tmpdir(), "runtime-card-")),
+				branchName: null,
+				issueKey: "JSC-311",
+			},
+			{ LINEAR_API_KEY: "test-token" },
+		);
+
+		expect(live.linear).toEqual({
+			issueKey: "JSC-311",
+			freshness: "missing",
+			status: null,
+			statusType: null,
+			url: null,
+			actionRequired: "Linear issue JSC-311 was not found by live search.",
+		});
+		expect(live.sources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "linear",
+					ref: "api:linear:JSC-311",
+					freshness: "missing",
+					status: "empty",
+					failureClass: "linear_issue_not_found",
+				}),
+			]),
+		);
+		expect(live.blockers).toEqual([
+			"Linear issue JSC-311 was not found by live search.",
+		]);
+	});
+
+	it("reports default live Linear API failures as blocked evidence", async () => {
+		vi.spyOn(LinearClient.prototype, "searchIssues").mockRejectedValue(
+			new LinearAPIError("RATE_LIMITED", "Rate limited."),
+		);
+
+		const live = await defaultLiveProvider(
+			{
+				repoRoot: mkdtempSync(join(tmpdir(), "runtime-card-")),
+				branchName: null,
+				issueKey: "JSC-311",
+			},
+			{ LINEAR_API_KEY: "test-token" },
+		);
+
+		expect(live.linear).toEqual({
+			issueKey: "JSC-311",
+			freshness: "unknown",
+			status: null,
+			statusType: null,
+			url: null,
+			actionRequired: "Live Linear state could not be refreshed.",
+		});
+		expect(live.sources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "linear",
+					ref: "api:linear:JSC-311",
+					freshness: "unknown",
+					status: "blocked",
+					failureClass: "linear_api_error:RATE_LIMITED",
+				}),
+			]),
+		);
+		expect(live.blockers).toEqual([
+			"Live Linear state could not be refreshed.",
+		]);
+	});
+
 	it("uses imported evidence issue keys for artifact lookup when no local issue is available", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
 		writeActiveArtifactsForIssues(repoRoot);
@@ -625,6 +950,66 @@ describe("buildLocalRuntimeCard", () => {
 		expect(card.artifacts.activeSpec).toContain("jsc-999");
 		expect(card.artifacts.activePlan).toContain("JSC-999");
 		expect(card.linear.issueKey).toBe("JSC-999");
+	});
+
+	it("does not fall back to another issue's active artifacts when issue lookup misses", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifactsForIssues(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			issueKey: "JSC-404",
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: (args) => {
+				if (args.join(" ") === "branch --show-current")
+					return "codex/jsc-404-missing";
+				if (args.join(" ") === "rev-parse HEAD") return "b".repeat(40);
+				if (args.join(" ") === "status --porcelain") return "";
+				return undefined;
+			},
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.issueKey).toBe("JSC-404");
+		expect(card.artifacts).toEqual({
+			activeSpec: null,
+			activePlan: null,
+			status: "unknown",
+			staleRefs: [],
+		});
+		expect(card.sources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "artifact",
+					status: "invalid",
+					failureClass: "active_artifacts_unresolved",
+				}),
+			]),
+		);
+	});
+
+	it("matches active artifact issue rows case-insensitively", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifactsForMixedCaseIssue(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: runtimeEvidenceBundle({ issueKey: "JSC-999" }),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: (args) => {
+				if (args.join(" ") === "branch --show-current")
+					return "feature/runtime-card";
+				if (args.join(" ") === "rev-parse HEAD") return "b".repeat(40);
+				if (args.join(" ") === "status --porcelain") return "";
+				return undefined;
+			},
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.issueKey).toBe("jsc-999");
+		expect(card.artifacts.status).toBe("current");
+		expect(card.artifacts.activeSpec).toContain("jsc-999");
+		expect(card.artifacts.activePlan).toContain("JSC-999");
 	});
 
 	it("drops only stale phase-exit blockers when explicit phase-exit evidence is supplied", () => {

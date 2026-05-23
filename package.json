@@ -75,6 +75,7 @@
 		"workflow:normalize": "node scripts/normalize-workflow-contracts.cjs",
 		"workflow:validate": "node scripts/validate-workflow-contracts.cjs",
 		"research:evidence:validate": "node scripts/validate-evidence-patterns.cjs",
+		"he:artifacts:validate": "bash scripts/validate-he-artifacts.sh",
 		"architecture:check": "node scripts/check-architecture-rules.cjs --format json",
 		"observed:eval-usage": "tsx scripts/collect-observed-eval-usage.ts",
 		"markdownlint": "markdownlint-cli2 \"**/*.md\"",

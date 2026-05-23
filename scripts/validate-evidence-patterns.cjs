@@ -5,26 +5,103 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
-const ROOT = path.resolve(__dirname, "..");
-const MANIFEST_PATH = path.join(
+const DEFAULT_ROOT = path.resolve(__dirname, "..");
+let ROOT = DEFAULT_ROOT;
+let MANIFEST_PATH = path.join(
 	ROOT,
 	".harness",
 	"research",
 	"evidence-patterns.json",
 );
-const DEEP_DIR = path.join(ROOT, ".harness", "research", "deep");
-const VALID_STATUSES = new Set(["adopted", "deferred", "rejected"]);
+let DEEP_DIR = path.join(ROOT, ".harness", "research", "deep");
+const ADOPTED_STATUSES = new Set([
+	"enforcement_backed",
+	"implementation_backed",
+]);
+const VALID_STATUSES = new Set([
+	"documented_only",
+	"planning_only",
+	"enforcement_backed",
+	"implementation_backed",
+	"deferred",
+	"adopted",
+	"rejected",
+]);
 const VALID_OWNERS = new Set(["codex", "jamie"]);
 
 function relative(filePath) {
-	return path.relative(ROOT, filePath);
+	return toPosixPath(path.relative(ROOT, filePath));
 }
 
 function parseArgs(argv) {
-	return {
-		json: argv.includes("--json"),
-		runValidationCommands: argv.includes("--run-validation-commands"),
+	const options = {
+		commandTimeoutMs: 180_000,
+		deepDir: null,
+		json: false,
+		manifestPath: null,
+		root: DEFAULT_ROOT,
+		runValidationCommands: false,
+		strictAdopted: false,
+		usageErrors: [],
 	};
+	for (let index = 0; index < argv.length; index += 1) {
+		const arg = argv[index];
+		if (arg === "--json") {
+			options.json = true;
+		} else if (arg === "--run-validation-commands") {
+			options.runValidationCommands = true;
+		} else if (arg === "--strict-adopted") {
+			options.strictAdopted = true;
+			options.runValidationCommands = true;
+		} else if (arg === "--command-timeout-ms") {
+			index += 1;
+			const timeoutMs = Number(argv[index]);
+			if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
+				options.usageErrors.push({
+					code: "usage_invalid_value",
+					message: "--command-timeout-ms requires a positive integer",
+				});
+			} else {
+				options.commandTimeoutMs = timeoutMs;
+			}
+		} else if (arg === "--root") {
+			index += 1;
+			if (!hasText(argv[index]) || isFlag(argv[index])) {
+				options.usageErrors.push({
+					code: "usage_missing_value",
+					message: "--root requires a path value",
+				});
+			} else {
+				options.root = path.resolve(argv[index]);
+			}
+		} else if (arg === "--manifest") {
+			index += 1;
+			if (!hasText(argv[index]) || isFlag(argv[index])) {
+				options.usageErrors.push({
+					code: "usage_missing_value",
+					message: "--manifest requires a path value",
+				});
+			} else {
+				options.manifestPath = argv[index];
+			}
+		} else if (arg === "--deep-dir") {
+			index += 1;
+			if (!hasText(argv[index]) || isFlag(argv[index])) {
+				options.usageErrors.push({
+					code: "usage_missing_value",
+					message: "--deep-dir requires a path value",
+				});
+			} else {
+				options.deepDir = argv[index];
+			}
+		} else {
+			options.usageErrors.push({
+				code: "usage_unknown_option",
+				message: `unknown option: ${arg}`,
+			});
+		}
+	}
+	return options;
 }
 
 function readJson(filePath, errors) {
@@ -48,12 +125,46 @@ function hasText(value) {
 	return typeof value === "string" && value.trim().length > 0;
 }
 
-function deepEvidenceFiles() {
-	if (!fs.existsSync(DEEP_DIR)) return [];
+function isFlag(value) {
+	return typeof value === "string" && value.startsWith("-");
+}
+
+function toPosixPath(value) {
+	return String(value || "").replaceAll("\\", "/");
+}
+
+function resolveFromRoot(root, value) {
+	return path.isAbsolute(value)
+		? path.resolve(value)
+		: path.resolve(root, value);
+}
+
+function isInsideRoot(root, absolutePath) {
+	const relativePath = path.relative(root, absolutePath);
+	return (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+	);
+}
+
+function isAdoptedPattern(pattern) {
+	return ADOPTED_STATUSES.has(pattern.status) || pattern.status === "adopted";
+}
+
+function normalizePatternStatus(status) {
+	if (status === "adopted") return "implementation_backed";
+	if (status === "rejected") return "deferred";
+	return status;
+}
+
+function deepEvidenceFiles(deepDir) {
+	if (!isInsideRoot(ROOT, deepDir)) return [];
+	if (!fs.existsSync(deepDir)) return [];
+	const relativeDeepDir = relative(deepDir);
 	return fs
-		.readdirSync(DEEP_DIR)
+		.readdirSync(deepDir)
 		.filter((name) => name.endsWith(".md"))
-		.map((name) => path.join(".harness", "research", "deep", name))
+		.map((name) => path.posix.join(relativeDeepDir, name))
 		.sort();
 }
 
@@ -93,7 +204,15 @@ function validateTargetSurface(pattern, target, errors) {
 	}
 }
 
-function validatePattern(pattern, index, seenSources, seenIds, errors) {
+function validatePattern(
+	pattern,
+	index,
+	seenSources,
+	seenIds,
+	errors,
+	deepDir,
+	strictAdopted,
+) {
 	if (!isRecord(pattern)) {
 		errors.push({
 			code: "pattern_not_object",
@@ -126,20 +245,23 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 			message: "pattern.source must be a non-empty string",
 		});
 	} else {
-		seenSources.add(pattern.source);
-		if (!pattern.source.startsWith(".harness/research/deep/")) {
+		const sourcePath = toPosixPath(pattern.source);
+		seenSources.add(sourcePath);
+		const relativeDeepDir = relative(deepDir);
+		const expectedPrefix = relativeDeepDir === "." ? "" : `${relativeDeepDir}/`;
+		if (expectedPrefix && !sourcePath.startsWith(expectedPrefix)) {
 			errors.push({
 				code: "source_not_deep_evidence",
 				patternId: pattern.id,
-				path: pattern.source,
-				message: "pattern.source must point under .harness/research/deep",
+				path: sourcePath,
+				message: `pattern.source must point under ${relativeDeepDir}`,
 			});
 		}
-		if (!pathExists(pattern.source)) {
+		if (!pathExists(sourcePath)) {
 			errors.push({
 				code: "source_missing_file",
 				patternId: pattern.id,
-				path: pattern.source,
+				path: sourcePath,
 				message: "pattern.source does not exist",
 			});
 		}
@@ -149,7 +271,8 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 		errors.push({
 			code: "status_invalid",
 			patternId: pattern.id,
-			message: "pattern.status must be adopted, deferred, or rejected",
+			message:
+				"pattern.status must be documented_only, planning_only, enforcement_backed, implementation_backed, deferred, adopted, or rejected",
 		});
 	}
 	if (!VALID_OWNERS.has(pattern.owner)) {
@@ -159,11 +282,15 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 			message: "pattern.owner must be codex or jamie",
 		});
 	}
-	if (!hasText(pattern.validationCommand)) {
+	if (
+		strictAdopted &&
+		isAdoptedPattern(pattern) &&
+		!hasText(pattern.validationCommand)
+	) {
 		errors.push({
-			code: "validation_command_missing",
+			code: "adopted_validation_command_missing",
 			patternId: pattern.id,
-			message: "pattern.validationCommand must be a non-empty string",
+			message: "adopted evidence patterns must declare a validationCommand",
 		});
 	}
 	if (!hasText(pattern.dispositionReason)) {
@@ -182,7 +309,11 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 		});
 		return;
 	}
-	if (pattern.status === "adopted" && pattern.targetSurfaces.length === 0) {
+	if (
+		strictAdopted &&
+		isAdoptedPattern(pattern) &&
+		pattern.targetSurfaces.length === 0
+	) {
 		errors.push({
 			code: "adopted_target_surface_missing",
 			patternId: pattern.id,
@@ -194,7 +325,7 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 	}
 }
 
-function validateManifest(manifest) {
+function validateManifest(manifest, deepDir, strictAdopted) {
 	const errors = [];
 	if (!isRecord(manifest)) {
 		return [
@@ -227,9 +358,17 @@ function validateManifest(manifest) {
 	const seenSources = new Set();
 	const seenIds = new Set();
 	for (const [index, pattern] of manifest.patterns.entries()) {
-		validatePattern(pattern, index, seenSources, seenIds, errors);
+		validatePattern(
+			pattern,
+			index,
+			seenSources,
+			seenIds,
+			errors,
+			deepDir,
+			strictAdopted,
+		);
 	}
-	for (const source of deepEvidenceFiles()) {
+	for (const source of deepEvidenceFiles(deepDir)) {
 		if (!seenSources.has(source)) {
 			errors.push({
 				code: "deep_evidence_untracked",
@@ -241,12 +380,12 @@ function validateManifest(manifest) {
 	return errors;
 }
 
-function runValidationCommands(manifest) {
+function runValidationCommands(manifest, timeoutMs) {
 	const results = [];
 	const commands = [
 		...new Set(
 			manifest.patterns
-				.filter((pattern) => pattern.status === "adopted")
+				.filter(isAdoptedPattern)
 				.map((pattern) => pattern.validationCommand)
 				.filter(hasText),
 		),
@@ -257,7 +396,7 @@ function runValidationCommands(manifest) {
 			cwd: ROOT,
 			shell: process.env.SHELL || "zsh",
 			encoding: "utf8",
-			timeout: 180_000,
+			timeout: timeoutMs,
 		});
 		const spawnError =
 			result.error instanceof Error ? result.error.message : null;
@@ -265,6 +404,8 @@ function runValidationCommands(manifest) {
 			result.error?.code === "ETIMEDOUT" || result.signal === "SIGTERM";
 		results.push({
 			command,
+			declaredValidationCommand: command,
+			executedCommand: command,
 			status: result.status === 0 && spawnError === null ? "pass" : "fail",
 			exitCode: result.status,
 			error: spawnError,
@@ -278,23 +419,70 @@ function runValidationCommands(manifest) {
 	return results;
 }
 
+function patternStatusSummary(manifest) {
+	if (!manifest || !Array.isArray(manifest.patterns)) {
+		return {
+			counts: {},
+			patterns: [],
+		};
+	}
+	const counts = {};
+	const patterns = manifest.patterns.filter(isRecord).map((pattern) => {
+		const status = normalizePatternStatus(pattern.status);
+		counts[status] = (counts[status] ?? 0) + 1;
+		return {
+			id: pattern.id,
+			status,
+			sourceStatus: pattern.status,
+		};
+	});
+	return {
+		counts,
+		patterns,
+	};
+}
+
 function main() {
 	const options = parseArgs(process.argv.slice(2));
-	const errors = [];
+	ROOT = path.resolve(options.root);
+	MANIFEST_PATH = options.manifestPath
+		? resolveFromRoot(ROOT, options.manifestPath)
+		: path.join(ROOT, ".harness", "research", "evidence-patterns.json");
+	DEEP_DIR = options.deepDir
+		? resolveFromRoot(ROOT, options.deepDir)
+		: path.join(ROOT, ".harness", "research", "deep");
+	if (!isInsideRoot(ROOT, MANIFEST_PATH)) {
+		options.usageErrors.push({
+			code: "usage_path_outside_root",
+			message: "--manifest must resolve inside --root",
+			path: relative(MANIFEST_PATH),
+		});
+	}
+	if (!isInsideRoot(ROOT, DEEP_DIR)) {
+		options.usageErrors.push({
+			code: "usage_path_outside_root",
+			message: "--deep-dir must resolve inside --root",
+			path: relative(DEEP_DIR),
+		});
+	}
+	const errors = [...options.usageErrors];
 	let manifest = null;
-	if (!fs.existsSync(MANIFEST_PATH)) {
+	if (errors.length === 0 && !fs.existsSync(MANIFEST_PATH)) {
 		errors.push({
 			code: "manifest_missing",
 			path: relative(MANIFEST_PATH),
 			message: "evidence-patterns.json does not exist",
 		});
-	} else {
+	} else if (errors.length === 0) {
 		manifest = readJson(MANIFEST_PATH, errors);
-		if (manifest) errors.push(...validateManifest(manifest));
+		if (manifest)
+			errors.push(
+				...validateManifest(manifest, DEEP_DIR, options.strictAdopted),
+			);
 	}
 	const validationCommands =
 		options.runValidationCommands && manifest && errors.length === 0
-			? runValidationCommands(manifest)
+			? runValidationCommands(manifest, options.commandTimeoutMs)
 			: [];
 	for (const commandResult of validationCommands) {
 		if (commandResult.status !== "pass") {
@@ -313,9 +501,16 @@ function main() {
 
 	const report = {
 		schemaVersion: "evidence-patterns-validation/v1",
-		status: errors.length === 0 ? "pass" : "fail",
+		status:
+			options.usageErrors.length > 0
+				? "usage"
+				: errors.length === 0
+					? "pass"
+					: "fail",
 		manifest: relative(MANIFEST_PATH),
-		deepEvidenceCount: deepEvidenceFiles().length,
+		deepEvidenceCount: deepEvidenceFiles(DEEP_DIR).length,
+		strictAdopted: options.strictAdopted,
+		statusSummary: patternStatusSummary(manifest),
 		validationCommands,
 		errors,
 	};
@@ -331,7 +526,9 @@ function main() {
 			);
 		}
 	}
-	process.exit(errors.length === 0 ? 0 : 1);
+	process.exit(
+		errors.length === 0 ? 0 : options.usageErrors.length > 0 ? 2 : 1,
+	);
 }
 
 main();
