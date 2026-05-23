@@ -266,7 +266,7 @@ tasks:
   - id: T007
     type: scout
     assignee: Scout
-    status: active
+    status: done
     objective: "Git Boundary Handoff: create the intentional commit, push the branch, open the PR, and record remote readiness before any reviewer-coverage implementation starts."
     inputs:
       - "artifacts/reviews/t006-git-triage.md"
@@ -293,11 +293,11 @@ tasks:
       - "Staging would include unrelated .harness/memory/LEARNINGS.md."
       - "Branch push or PR creation fails."
       - "PR template cannot be filled with concrete evidence."
-    receipt_id: null
+    receipt_id: R007B-T007-PR-BOUNDARY
   - id: T008
     type: worker
     assignee: Worker
-    status: queued
+    status: active
     objective: "PU-005 Reviewer Coverage Receipt: implement scripts/validate-reviewer-coverage.cjs or route an existing narrower seam."
     inputs:
       - "scripts/validate-reviewer-coverage.cjs"
