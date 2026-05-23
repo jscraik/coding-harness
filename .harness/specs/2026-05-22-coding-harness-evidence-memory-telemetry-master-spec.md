@@ -1003,11 +1003,11 @@ observability infrastructure.
 
 ## Evidence and References
 
-- /Users/jamiecraik/dev/coding-harness/.harness/linear/2026-05-22-coding-harness-evidence-led-gap-fixes-linear-plan.md
-- /Users/jamiecraik/dev/coding-harness/.harness/specs/2026-05-22-portable-memory-subsystem-spec.md
-- /Users/jamiecraik/dev/coding-harness/.harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md
-- /Users/jamiecraik/dev/coding-harness/.harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md
-- /Users/jamiecraik/dev/coding-harness/.harness/research/evidence-patterns.json
+- .harness/linear/2026-05-22-coding-harness-evidence-led-gap-fixes-linear-plan.md
+- .harness/specs/2026-05-22-portable-memory-subsystem-spec.md
+- .harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md
+- .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md
+- .harness/research/evidence-patterns.json
 - Harness Engineering he-spec artifact contract
 - Harness Engineering BLUF review contract
 
