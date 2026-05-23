@@ -184,10 +184,12 @@ const PASSING_RUNTIME_EVIDENCE = {
 	schemaVersion: "runtime-evidence-contract/v1",
 	declaredIntent: {
 		objective: "Close PR with verifier-owned evidence.",
+		requestedScope: "closeout",
 		sourceRefs: ["input:test"],
 	},
 	resolvedState: {
 		permissionProfile: "workspace_write",
+		goalStatus: null,
 		serviceTier: "default",
 		model: "gpt-5",
 		pluginAttribution: ["harness-engineering"],
@@ -195,13 +197,14 @@ const PASSING_RUNTIME_EVIDENCE = {
 			roleName: "harness-product-code-reviewer",
 			spawnOutcome: "available",
 			checkedAt: "2026-05-22T00:00:00.000Z",
+			sessionId: "codex-session:2026-05-22",
 			checkout: "/Users/jamiecraik/dev/coding-harness",
 			blockerClass: null,
 		},
 	},
 	verifierResult: {
 		status: "pass",
-		owner: "pr-closeout",
+		owner: "validator",
 		evidenceRefs: ["test:runtime-evidence"],
 		verifiedAt: "2026-05-22T00:01:00.000Z",
 		reason: null,
@@ -512,6 +515,66 @@ describe("runPrCloseoutCLI", () => {
 			status: "fail",
 			error: expect.stringContaining(
 				"closeoutGates must be a valid Coding Harness closeout-gates artifact",
+			),
+		});
+	});
+
+	it("fails closed when input embeds a malformed assurance entry", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+				assurance: [null],
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"assurance.entries[0] must be a JSON object",
+			),
+		});
+	});
+
+	it("fails closed when input embeds malformed runtime evidence", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					body: "Refs JSC-327\n",
+				},
+				runtimeEvidence: {
+					schemaVersion: "runtime-evidence-contract/v1",
+				},
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.output)).toMatchObject({
+			schemaVersion: "pr-closeout-error/v1",
+			status: "fail",
+			error: expect.stringContaining(
+				"runtimeEvidence.declaredIntent must be a JSON object",
 			),
 		});
 	});

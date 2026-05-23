@@ -10,11 +10,16 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as artifactGateModule from "../../artifact-gate.js";
+import * as brainCli from "../../project-brain/cli.js";
 import * as brainstormGateCommand from "../../../commands/brainstorm-gate.js";
 import * as gardenerCommand from "../../../commands/gardener.js";
 import * as driftGateModule from "../../drift-gate.js";
 import * as memoryGateModule from "../../memory-gate.js";
 import * as observabilityGateModule from "../../observability-gate.js";
+import { buildCIMigrateOptionsFromCliArgs } from "../../ci-migrate/cli-args.js";
+import { buildInitOptionsFromCliArgs } from "../../init/cli-args.js";
+import { buildUpgradeOptionsFromCliArgs } from "../../upgrade/cli-args.js";
+import * as upgradeRunner from "../../upgrade/runner.js";
 import * as replayCommand from "../../../commands/replay.js";
 import * as reviewGateCommand from "../../../commands/review-gate.js";
 import * as silentErrorCommand from "../../../commands/silent-error.js";
@@ -122,6 +127,7 @@ describe("COMMAND_SPECS structural integrity", () => {
 			"gardener",
 			"memory-gate",
 			"silent-error",
+			"brain",
 			"brainstorm-gate",
 			"plan-gate",
 			"prompt-gate",
@@ -568,6 +574,25 @@ describe("silent-error execute parsing", () => {
 	});
 });
 
+describe("brain execute delegation", () => {
+	const spec = findSpec("brain");
+
+	beforeEach(() => {
+		vi.spyOn(brainCli, "runBrainCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("delegates raw brain arguments to the Project Brain CLI", () => {
+		const result = spec.execute(["status", "--json"]);
+
+		expect(result).toBe(0);
+		expect(brainCli.runBrainCLI).toHaveBeenCalledWith(["status", "--json"]);
+	});
+});
+
 describe("brainstorm-gate execute parsing", () => {
 	const spec = findSpec("brainstorm-gate");
 
@@ -732,11 +757,17 @@ describe("prompt-gate execute validation", () => {
 		);
 	});
 
-	it("accepts all valid --type values without returning 2 from validation", async () => {
+	it("runs all valid --type values successfully with matching templates", async () => {
 		const validTypes = ["feature", "bugfix", "refactor", "release"];
 		for (const type of validTypes) {
-			const result = await spec.execute(["--type", type, "--file", "foo.md"]);
-			expect(result).not.toBe(2);
+			const result = await spec.execute([
+				"--type",
+				type,
+				"--file",
+				`docs/prompts/${type}_template.md`,
+				"--json",
+			]);
+			expect(result).toBe(0);
 		}
 	});
 });
@@ -959,7 +990,14 @@ describe("remediate execute validation", () => {
 
 			const result = await withCwd(workspacePath, () =>
 				Promise.resolve(
-					spec.execute(["run", "--findings", "findings.json", "--json"]),
+					spec.execute([
+						"run",
+						"--findings",
+						"findings.json",
+						"--pr",
+						"123",
+						"--json",
+					]),
 				),
 			);
 			expect(result).not.toBe(2);
@@ -984,7 +1022,14 @@ describe("remediate execute validation", () => {
 
 			const result = await withCwd(workspacePath, () =>
 				Promise.resolve(
-					spec.execute(["apply", "--findings", "findings.json", "--json"]),
+					spec.execute([
+						"apply",
+						"--findings",
+						"findings.json",
+						"--pr",
+						"123",
+						"--json",
+					]),
 				),
 			);
 			expect(result).not.toBe(2);
@@ -994,6 +1039,16 @@ describe("remediate execute validation", () => {
 
 describe("gap-case execute validation", () => {
 	const spec = findSpec("gap-case");
+	const enabledGapCaseContract = {
+		version: "1.0",
+		riskTierRules: {},
+		pilotGapCasePolicy: {
+			enabled: true,
+			defaultSlaHours: 72,
+			requireClosureEvidence: true,
+			storePath: ".harness/gap-cases.v1.json",
+		},
+	};
 
 	it("returns 2 when action is missing", () => {
 		expect(spec.execute([])).toBe(2);
@@ -1003,14 +1058,123 @@ describe("gap-case execute validation", () => {
 		expect(spec.execute(["update"])).toBe(2);
 	});
 
-	it("does not return 2 for action open", async () => {
-		const result = await spec.execute(["open"]);
-		expect(result).not.toBe(2);
+	it("opens a case through the command spec", async () => {
+		await withTempWorkspace(async (workspacePath) => {
+			const contractPath = "harness.contract.json";
+			const storePath = "store.json";
+			writeFileSync(
+				join(workspacePath, contractPath),
+				JSON.stringify(enabledGapCaseContract, null, 2),
+			);
+			const infoSpy = vi
+				.spyOn(console, "info")
+				.mockImplementation(() => undefined);
+			try {
+				const result = await withCwd(workspacePath, () =>
+					Promise.resolve(
+						spec.execute([
+							"open",
+							"--incident-id",
+							"INC-1",
+							"--summary",
+							"Command spec proof",
+							"--severity",
+							"high",
+							"--owner",
+							"codex",
+							"--contract",
+							contractPath,
+							"--store",
+							storePath,
+							"--json",
+						]),
+					),
+				);
+				expect(result).toBe(0);
+				const store = JSON.parse(
+					readFileSync(join(workspacePath, storePath), "utf-8"),
+				) as {
+					cases: Array<{ incidentId: string; status: string }>;
+				};
+				expect(store.cases).toHaveLength(1);
+				expect(store.cases[0]).toMatchObject({
+					incidentId: "INC-1",
+					status: "open",
+				});
+			} finally {
+				infoSpy.mockRestore();
+			}
+		});
 	});
 
-	it("does not return 2 for action resolve", async () => {
-		const result = await spec.execute(["resolve"]);
-		expect(result).not.toBe(2);
+	it("resolves a case through the command spec", async () => {
+		await withTempWorkspace(async (workspacePath) => {
+			const contractPath = "harness.contract.json";
+			const storePath = "store.json";
+			writeFileSync(
+				join(workspacePath, contractPath),
+				JSON.stringify(enabledGapCaseContract, null, 2),
+			);
+			const infoSpy = vi
+				.spyOn(console, "info")
+				.mockImplementation(() => undefined);
+			try {
+				await withCwd(workspacePath, () =>
+					Promise.resolve(
+						spec.execute([
+							"open",
+							"--incident-id",
+							"INC-2",
+							"--summary",
+							"Command spec proof",
+							"--severity",
+							"medium",
+							"--owner",
+							"codex",
+							"--contract",
+							contractPath,
+							"--store",
+							storePath,
+							"--json",
+						]),
+					),
+				);
+				const openStore = JSON.parse(
+					readFileSync(join(workspacePath, storePath), "utf-8"),
+				) as { cases: Array<{ id: string; status: string }> };
+				const caseId = openStore.cases[0]?.id;
+				expect(caseId).toMatch(/^gc-/);
+				if (!caseId) {
+					throw new Error("Expected gap-case id after command-spec open");
+				}
+
+				const result = await withCwd(workspacePath, () =>
+					Promise.resolve(
+						spec.execute([
+							"resolve",
+							"--case-id",
+							caseId,
+							"--evidence-url",
+							"https://example.com/evidence",
+							"--resolved-by",
+							"codex",
+							"--contract",
+							contractPath,
+							"--store",
+							storePath,
+							"--json",
+						]),
+					),
+				);
+				expect(result).toBe(0);
+				const resolvedStore = JSON.parse(
+					readFileSync(join(workspacePath, storePath), "utf-8"),
+				) as { cases: Array<{ status: string }> };
+				expect(resolvedStore.cases[0]?.status).toBe("resolved");
+			} finally {
+				infoSpy.mockRestore();
+			}
+		});
 	});
 });
 
@@ -1163,6 +1327,192 @@ describe("validation-plan execute validation", () => {
 	});
 });
 
+describe("init execute validation", () => {
+	const spec = findSpec("init");
+
+	it("keeps init option projection in the init module seam", () => {
+		const parsed = buildInitOptionsFromCliArgs([
+			"repo",
+			"--dry-run",
+			"--json",
+			"--track",
+			"--project-type",
+			"web",
+			"--issue-tracker",
+			"github",
+		]);
+
+		expect(parsed).toEqual({
+			ok: true,
+			targetDir: "repo",
+			interactive: false,
+			options: expect.objectContaining({
+				dryRun: true,
+				force: false,
+				json: true,
+				track: true,
+				projectType: "web",
+				issueTracker: "github",
+			}),
+		});
+	});
+
+	it("rejects minimal init with granular issue-tracker mode", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			expect(spec.execute(["--minimal", "--issue-tracker", "github"])).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
+
+	it("rejects project-type without a value", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			expect(spec.execute(["--project-type"])).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: --project-type requires a value.",
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
+
+	it("rejects issue-tracker when the next token is another flag", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			expect(spec.execute(["--issue-tracker", "--json"])).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"Error: --issue-tracker requires a value.",
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
+
+	it("rejects unknown as an explicit project-type override", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		try {
+			expect(spec.execute(["--project-type", "unknown"])).toBe(2);
+			expect(errorSpy).toHaveBeenCalledWith(
+				'Error: Invalid --project-type value: "unknown". Valid values: cli | desktop | library | web.',
+			);
+		} finally {
+			errorSpy.mockRestore();
+		}
+	});
+});
+
+describe("upgrade execute validation", () => {
+	const spec = findSpec("upgrade");
+
+	beforeEach(() => {
+		vi.spyOn(upgradeRunner, "runUpgradeCLI").mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("keeps upgrade option projection in the upgrade module seam", () => {
+		const parsed = buildUpgradeOptionsFromCliArgs([
+			"repo",
+			"--provider",
+			"circleci",
+			"--dry-run",
+			"--json",
+			"--force",
+			"--skip-contract-migration",
+		]);
+
+		expect(parsed).toEqual({
+			targetDir: "repo",
+			options: {
+				dryRun: true,
+				force: true,
+				json: true,
+				provider: "circleci",
+				skipContractMigration: true,
+			},
+		});
+	});
+
+	it("does not treat provider values as the upgrade target directory", () => {
+		const parsed = buildUpgradeOptionsFromCliArgs([
+			"--provider",
+			"github-actions",
+			"--dry-run",
+			"repo",
+		]);
+
+		expect(parsed).toEqual({
+			targetDir: "repo",
+			options: expect.objectContaining({
+				dryRun: true,
+				provider: "github-actions",
+			}),
+		});
+	});
+
+	it("does not treat malformed provider flags as the upgrade target directory", () => {
+		expect(
+			buildUpgradeOptionsFromCliArgs(["--provider", "--dry-run", "repo"]),
+		).toEqual({
+			targetDir: "repo",
+			options: expect.objectContaining({
+				dryRun: true,
+				provider: undefined,
+			}),
+		});
+
+		expect(buildUpgradeOptionsFromCliArgs(["--provider", "repo"])).toEqual({
+			targetDir: undefined,
+			options: expect.objectContaining({
+				provider: "repo",
+			}),
+		});
+	});
+
+	it("ignores short flags when extracting the upgrade target directory", () => {
+		expect(buildUpgradeOptionsFromCliArgs(["-x", "repo", "--dry-run"])).toEqual(
+			{
+				targetDir: "repo",
+				options: expect.objectContaining({
+					dryRun: true,
+				}),
+			},
+		);
+	});
+
+	it("executes upgrade through the registry adapter seam", () => {
+		const result = spec.execute([
+			"repo",
+			"--provider",
+			"circleci",
+			"--dry-run",
+			"--json",
+			"--force",
+			"--skip-contract-migration",
+		]);
+
+		expect(result).toBe(0);
+		expect(upgradeRunner.runUpgradeCLI).toHaveBeenCalledWith("repo", {
+			dryRun: true,
+			force: true,
+			json: true,
+			provider: "circleci",
+			skipContractMigration: true,
+		});
+	});
+});
+
 describe("ci-migrate execute validation", () => {
 	const spec = findSpec("ci-migrate");
 
@@ -1170,6 +1520,77 @@ describe("ci-migrate execute validation", () => {
 		// Two positional args after the action => error
 		const result = spec.execute(["prepare", "dir1", "extra-arg"]);
 		expect(result).toBe(2);
+	});
+
+	it("keeps ci-migrate option projection in the ci-migrate module seam", () => {
+		const parsed = buildCIMigrateOptionsFromCliArgs([
+			"prepare",
+			"repo",
+			"--provider",
+			"circleci",
+			"--snapshot",
+			"cutover-1",
+			"--dry-run",
+			"--json",
+			"--commit-mode",
+			"solo",
+		]);
+
+		expect(parsed).toEqual({
+			ok: true,
+			targetDir: "repo",
+			options: expect.objectContaining({
+				action: "prepare",
+				provider: "circleci",
+				snapshot: "cutover-1",
+				dryRun: true,
+				json: true,
+				commitMode: "solo",
+			}),
+		});
+	});
+
+	it("keeps delegated ci-migrate helper args out of the registry manifest", () => {
+		const parsed = buildCIMigrateOptionsFromCliArgs([
+			"sync-branch-protection",
+			"repo",
+			"--json",
+		]);
+
+		expect(parsed).toEqual({
+			ok: true,
+			targetDir: "repo",
+			delegate: "sync-branch-protection",
+			delegatedArgs: ["repo", "--json"],
+		});
+	});
+
+	it("does not treat delegated helper flag values as targetDir", () => {
+		const parsed = buildCIMigrateOptionsFromCliArgs([
+			"sync-branch-protection",
+			"--owner",
+			"jscraik",
+			"--repo",
+			"coding-harness",
+			"--branch",
+			"main",
+			"--json",
+		]);
+
+		expect(parsed).toEqual({
+			ok: true,
+			targetDir: undefined,
+			delegate: "sync-branch-protection",
+			delegatedArgs: [
+				"--owner",
+				"jscraik",
+				"--repo",
+				"coding-harness",
+				"--branch",
+				"main",
+				"--json",
+			],
+		});
 	});
 });
 

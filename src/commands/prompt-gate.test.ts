@@ -1,3 +1,6 @@
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	EXIT_CODES,
@@ -8,6 +11,50 @@ import {
 
 describe("prompt-gate", () => {
 	describe("validatePrompt", () => {
+		it("counts checked items within required sections", () => {
+			const baseDir = mkdtempSync(join(tmpdir(), "prompt-gate-"));
+			try {
+				writeFileSync(
+					join(baseDir, "feature.md"),
+					[
+						"# Feature",
+						"",
+						"## Required Inputs",
+						"- [x] Target repository identified",
+						"- [ ] Base branch specified",
+						"- [x] Scope boundaries defined",
+						"",
+						"## Constraints",
+						"- [x] Keep changes focused",
+						"",
+						"## Acceptance Criteria",
+						"- [x] Behavior is verified",
+						"",
+						"## Expected Outputs",
+						"- [x] Implementation",
+						"",
+						"## Do Not Do",
+						"- [x] Skip tests",
+						"",
+					].join("\n"),
+				);
+
+				const result = validatePrompt({
+					type: "feature",
+					file: "feature.md",
+					baseDir,
+				});
+
+				expect(result.passed).toBe(true);
+				expect(
+					result.checks.find((check) => check.section === "Required Inputs")
+						?.itemsFound,
+				).toBe(2);
+			} finally {
+				rmSync(baseDir, { recursive: true, force: true });
+			}
+		});
+
 		it("returns failure for non-existent file", () => {
 			const result = validatePrompt({
 				type: "feature",
@@ -31,6 +78,27 @@ describe("prompt-gate", () => {
 	});
 
 	describe("runPromptGate", () => {
+		it("returns system error for unreadable prompt paths", () => {
+			const baseDir = mkdtempSync(join(tmpdir(), "prompt-gate-"));
+			try {
+				mkdirSync(join(baseDir, "prompt-dir"));
+
+				const result = runPromptGate({
+					type: "feature",
+					file: "prompt-dir",
+					baseDir,
+				});
+
+				expect(result.ok).toBe(false);
+				if (!result.ok) {
+					expect(result.error.code).toBe("SYSTEM_ERROR");
+					expect(result.error.message).toContain("Failed to read file");
+				}
+			} finally {
+				rmSync(baseDir, { recursive: true, force: true });
+			}
+		});
+
 		it("returns error for missing file", () => {
 			const result = runPromptGate({
 				type: "feature",

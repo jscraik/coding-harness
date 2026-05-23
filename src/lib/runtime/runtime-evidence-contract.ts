@@ -98,6 +98,12 @@ const VERIFIER_STATUSES = new Set<RuntimeEvidenceVerifierStatus>([
 	"unknown",
 ]);
 
+const VERIFIER_OWNERS = new Set<RuntimeEvidenceVerifierResult["owner"]>([
+	"validator",
+	"runtime",
+	"human",
+]);
+
 const PERMISSION_PROFILES = new Set<RuntimeEvidencePermissionProfile>([
 	"read_only",
 	"workspace_write",
@@ -105,7 +111,26 @@ const PERMISSION_PROFILES = new Set<RuntimeEvidencePermissionProfile>([
 	"unknown",
 ]);
 
-const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+const REQUESTED_SCOPES = new Set<
+	RuntimeEvidenceDeclaredIntent["requestedScope"]
+>(["analysis", "implementation", "review", "closeout"]);
+
+const RUNTIME_PROBE_SPAWN_OUTCOMES = new Set<
+	RuntimeProbeReceipt["spawnOutcome"]
+>(["available", "unknown_agent_type", "blocked", "not_run"]);
+
+const CLAIM_TRACE_CONSISTENCIES = new Set<
+	RuntimeEvidenceContract["claimTraceConsistency"]
+>(["consistent", "inconsistent", "unknown"]);
+
+const ISO_TIMESTAMP_PATTERN =
+	/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+
+type AddRuntimeEvidenceFinding = (
+	path: string,
+	code: string,
+	message: string,
+) => void;
 
 /** Map verifier status into the canonical run-record outcome and exit classification. */
 export function mapRuntimeVerifierToRunExit(
@@ -131,53 +156,191 @@ export function validateRuntimeEvidenceContract(
 	contract: RuntimeEvidenceContract,
 ): RuntimeEvidenceContractValidationResult {
 	const findings: RuntimeEvidenceContractFinding[] = [];
-	const add = (path: string, code: string, message: string): void => {
+	const add: AddRuntimeEvidenceFinding = (path, code, message): void => {
 		findings.push({ path, code, message });
 	};
+	const candidate = contract as unknown as Record<string, unknown>;
 
-	if (contract.schemaVersion !== RUNTIME_EVIDENCE_CONTRACT_SCHEMA_VERSION) {
+	if (candidate.schemaVersion !== RUNTIME_EVIDENCE_CONTRACT_SCHEMA_VERSION) {
 		add(
 			"schemaVersion",
 			"schema_version_invalid",
 			"schemaVersion must be runtime-evidence-contract/v1.",
 		);
 	}
-	if (isBlank(contract.declaredIntent.objective)) {
+	validateDeclaredIntent(candidate.declaredIntent, add);
+	const resolvedState = candidate.resolvedState;
+	validateResolvedState(resolvedState, add);
+	const verifierStatus = validateVerifierResult(candidate.verifierResult, add);
+	validateClaimTraceConsistency(
+		candidate.claimTraceConsistency,
+		verifierStatus,
+		add,
+	);
+	validateEvaluation(candidate.evaluation, add);
+	validateOutcomeMapping(candidate.outcomeMapping, verifierStatus, add);
+	validateRuntimeProbe(
+		isRecord(resolvedState) ? resolvedState.runtimeProbe : null,
+		add,
+	);
+
+	return { valid: findings.length === 0, findings };
+}
+
+function validateDeclaredIntent(
+	declaredIntent: unknown,
+	add: AddRuntimeEvidenceFinding,
+): void {
+	if (!isRecord(declaredIntent)) {
 		add(
-			"declaredIntent.objective",
-			"objective_missing",
-			"declared intent must name the objective.",
+			"declaredIntent",
+			"declared_intent_invalid",
+			"declaredIntent must be a JSON object.",
 		);
+	} else {
+		if (isBlank(asText(declaredIntent.objective))) {
+			add(
+				"declaredIntent.objective",
+				"objective_missing",
+				"declared intent must name the objective.",
+			);
+		}
+		if (
+			!Array.isArray(declaredIntent.sourceRefs) ||
+			declaredIntent.sourceRefs.length === 0
+		) {
+			add(
+				"declaredIntent.sourceRefs",
+				"source_refs_missing",
+				"declared intent must cite at least one source reference.",
+			);
+		}
+		if (
+			Array.isArray(declaredIntent.sourceRefs) &&
+			declaredIntent.sourceRefs.some((ref) => isBlank(asText(ref)))
+		) {
+			add(
+				"declaredIntent.sourceRefs",
+				"source_ref_invalid",
+				"declared intent source refs must be non-empty strings.",
+			);
+		}
+		if (
+			!REQUESTED_SCOPES.has(
+				asText(
+					declaredIntent.requestedScope,
+				) as RuntimeEvidenceDeclaredIntent["requestedScope"],
+			)
+		) {
+			add(
+				"declaredIntent.requestedScope",
+				"requested_scope_invalid",
+				"requested scope is not recognized.",
+			);
+		}
 	}
-	if (contract.declaredIntent.sourceRefs.length === 0) {
+}
+
+function validateResolvedState(
+	resolvedState: unknown,
+	add: AddRuntimeEvidenceFinding,
+): void {
+	if (!isRecord(resolvedState)) {
 		add(
-			"declaredIntent.sourceRefs",
-			"source_refs_missing",
-			"declared intent must cite at least one source reference.",
+			"resolvedState",
+			"resolved_state_invalid",
+			"resolvedState must be a JSON object.",
 		);
+	} else {
+		if (
+			!PERMISSION_PROFILES.has(
+				asText(
+					resolvedState.permissionProfile,
+				) as RuntimeEvidencePermissionProfile,
+			)
+		) {
+			add(
+				"resolvedState.permissionProfile",
+				"permission_profile_invalid",
+				"permission profile is not recognized.",
+			);
+		}
+		if (!isNullableString(resolvedState.goalStatus)) {
+			add(
+				"resolvedState.goalStatus",
+				"goal_status_invalid",
+				"goalStatus must be a string or null.",
+			);
+		}
+		if (!isNullableString(resolvedState.serviceTier)) {
+			add(
+				"resolvedState.serviceTier",
+				"service_tier_invalid",
+				"serviceTier must be a string or null.",
+			);
+		}
+		if (
+			!Array.isArray(resolvedState.pluginAttribution) ||
+			resolvedState.pluginAttribution.some((plugin) => isBlank(asText(plugin)))
+		) {
+			add(
+				"resolvedState.pluginAttribution",
+				"plugin_attribution_invalid",
+				"pluginAttribution must contain only non-empty strings.",
+			);
+		}
 	}
-	if (!PERMISSION_PROFILES.has(contract.resolvedState.permissionProfile)) {
+}
+
+function validateVerifierResult(
+	verifierResult: unknown,
+	add: AddRuntimeEvidenceFinding,
+): RuntimeEvidenceVerifierStatus | undefined {
+	const verifierStatus = isRecord(verifierResult)
+		? asText(verifierResult.status)
+		: undefined;
+	if (!isRecord(verifierResult)) {
 		add(
-			"resolvedState.permissionProfile",
-			"permission_profile_invalid",
-			"permission profile is not recognized.",
+			"verifierResult",
+			"verifier_result_invalid",
+			"verifierResult must be a JSON object.",
 		);
-	}
-	if (!VERIFIER_STATUSES.has(contract.verifierResult.status)) {
+	} else if (
+		!VERIFIER_STATUSES.has(verifierStatus as RuntimeEvidenceVerifierStatus)
+	) {
 		add(
 			"verifierResult.status",
 			"verifier_status_invalid",
 			"verifier status is not recognized.",
 		);
 	}
-	if (!ISO_DATE_PATTERN.test(contract.verifierResult.verifiedAt)) {
+	if (
+		isRecord(verifierResult) &&
+		!VERIFIER_OWNERS.has(
+			asText(verifierResult.owner) as RuntimeEvidenceVerifierResult["owner"],
+		)
+	) {
+		add(
+			"verifierResult.owner",
+			"verifier_owner_invalid",
+			"verifier owner is not recognized.",
+		);
+	}
+	if (
+		!isRecord(verifierResult) ||
+		!isIsoTimestamp(asText(verifierResult.verifiedAt))
+	) {
 		add(
 			"verifierResult.verifiedAt",
 			"verified_at_invalid",
 			"verifiedAt must be an ISO timestamp.",
 		);
 	}
-	if (contract.verifierResult.evidenceRefs.length === 0) {
+	if (
+		!isRecord(verifierResult) ||
+		!Array.isArray(verifierResult.evidenceRefs) ||
+		verifierResult.evidenceRefs.length === 0
+	) {
 		add(
 			"verifierResult.evidenceRefs",
 			"verifier_evidence_missing",
@@ -185,56 +348,137 @@ export function validateRuntimeEvidenceContract(
 		);
 	}
 	if (
-		contract.verifierResult.status !== "pass" &&
-		isBlank(contract.verifierResult.reason)
+		isRecord(verifierResult) &&
+		Array.isArray(verifierResult.evidenceRefs) &&
+		verifierResult.evidenceRefs.some((ref) => isBlank(asText(ref)))
 	) {
+		add(
+			"verifierResult.evidenceRefs",
+			"verifier_evidence_ref_invalid",
+			"verifier evidence refs must be non-empty strings.",
+		);
+	}
+	if (isRecord(verifierResult)) {
+		const verifierReason = asText(verifierResult.reason);
+		if (!isNullableString(verifierResult.reason)) {
+			add(
+				"verifierResult.reason",
+				"verifier_reason_invalid",
+				"verifier reason must be a string or null.",
+			);
+		} else if (verifierStatus !== "pass" && isBlank(verifierReason)) {
+			add(
+				"verifierResult.reason",
+				"verifier_reason_missing",
+				"non-pass verifier results require a reason.",
+			);
+		}
+	} else if (verifierStatus !== "pass") {
 		add(
 			"verifierResult.reason",
 			"verifier_reason_missing",
 			"non-pass verifier results require a reason.",
 		);
 	}
-	if (
-		contract.claimTraceConsistency === "inconsistent" &&
-		contract.verifierResult.status === "pass"
-	) {
+	return VERIFIER_STATUSES.has(verifierStatus as RuntimeEvidenceVerifierStatus)
+		? (verifierStatus as RuntimeEvidenceVerifierStatus)
+		: undefined;
+}
+
+function validateClaimTraceConsistency(
+	claimTraceConsistency: unknown,
+	verifierStatus: RuntimeEvidenceVerifierStatus | undefined,
+	add: AddRuntimeEvidenceFinding,
+): void {
+	const normalizedClaimTraceConsistency = asText(
+		claimTraceConsistency,
+	) as RuntimeEvidenceContract["claimTraceConsistency"];
+	if (!CLAIM_TRACE_CONSISTENCIES.has(normalizedClaimTraceConsistency)) {
+		add(
+			"claimTraceConsistency",
+			"claim_trace_consistency_invalid",
+			"claimTraceConsistency is not recognized.",
+		);
+	}
+	if (claimTraceConsistency === "inconsistent" && verifierStatus === "pass") {
 		add(
 			"claimTraceConsistency",
 			"inconsistent_claim_overclaimed",
 			"inconsistent claim traces cannot be marked passing.",
 		);
 	}
-	if (contract.evaluation.portable && isBlank(contract.evaluation.command)) {
+}
+
+function validateEvaluation(
+	evaluation: unknown,
+	add: AddRuntimeEvidenceFinding,
+): void {
+	if (!isRecord(evaluation)) {
 		add(
-			"evaluation.command",
-			"portable_command_missing",
-			"portable evaluations must name the replay command.",
+			"evaluation",
+			"evaluation_invalid",
+			"evaluation must be a JSON object.",
 		);
+	} else {
+		if (
+			!VERIFIER_STATUSES.has(
+				asText(evaluation.status) as RuntimeEvidenceVerifierStatus,
+			)
+		) {
+			add(
+				"evaluation.status",
+				"evaluation_status_invalid",
+				"evaluation status is not recognized.",
+			);
+		}
+		if (typeof evaluation.portable !== "boolean") {
+			add(
+				"evaluation.portable",
+				"evaluation_portable_invalid",
+				"evaluation portable flag must be a boolean.",
+			);
+		}
+		if (evaluation.portable === true && isBlank(asText(evaluation.command))) {
+			add(
+				"evaluation.command",
+				"portable_command_missing",
+				"portable evaluations must name the replay command.",
+			);
+		}
 	}
-	const expectedOutcome = mapRuntimeVerifierToRunExit(
-		contract.verifierResult.status,
-	);
-	if (
-		contract.outcomeMapping.outcome !== expectedOutcome.outcome ||
-		contract.outcomeMapping.exitClassification !==
-			expectedOutcome.exitClassification
-	) {
+}
+
+function validateOutcomeMapping(
+	outcomeMapping: unknown,
+	verifierStatus: RuntimeEvidenceVerifierStatus | undefined,
+	add: AddRuntimeEvidenceFinding,
+): void {
+	if (!isRecord(outcomeMapping)) {
 		add(
 			"outcomeMapping",
-			"outcome_mapping_mismatch",
-			"outcome mapping must match verifier status.",
+			"outcome_mapping_invalid",
+			"outcomeMapping must be a JSON object.",
 		);
+	} else if (verifierStatus !== undefined) {
+		const expectedOutcome = mapRuntimeVerifierToRunExit(verifierStatus);
+		if (
+			outcomeMapping.outcome !== expectedOutcome.outcome ||
+			outcomeMapping.exitClassification !== expectedOutcome.exitClassification
+		) {
+			add(
+				"outcomeMapping",
+				"outcome_mapping_mismatch",
+				"outcome mapping must match verifier status.",
+			);
+		}
 	}
-	validateRuntimeProbe(contract.resolvedState.runtimeProbe, add);
-
-	return { valid: findings.length === 0, findings };
 }
 
 function validateRuntimeProbe(
-	probe: RuntimeProbeReceipt | null,
-	add: (path: string, code: string, message: string) => void,
+	probe: unknown,
+	add: AddRuntimeEvidenceFinding,
 ): void {
-	if (probe === null) {
+	if (probe === null || probe === undefined) {
 		add(
 			"resolvedState.runtimeProbe",
 			"runtime_probe_missing",
@@ -242,28 +486,63 @@ function validateRuntimeProbe(
 		);
 		return;
 	}
-	if (isBlank(probe.roleName)) {
+	if (!isRecord(probe)) {
+		add(
+			"resolvedState.runtimeProbe",
+			"runtime_probe_invalid",
+			"runtime probe receipt must be a JSON object.",
+		);
+		return;
+	}
+	if (isBlank(asText(probe.roleName))) {
 		add(
 			"resolvedState.runtimeProbe.roleName",
 			"runtime_probe_role_missing",
 			"runtime probe must name the role.",
 		);
 	}
-	if (!ISO_DATE_PATTERN.test(probe.checkedAt)) {
+	if (!isIsoTimestamp(asText(probe.checkedAt))) {
 		add(
 			"resolvedState.runtimeProbe.checkedAt",
 			"runtime_probe_checked_at_invalid",
 			"runtime probe checkedAt must be an ISO timestamp.",
 		);
 	}
-	if (isBlank(probe.checkout)) {
+	if (isBlank(asText(probe.checkout))) {
 		add(
 			"resolvedState.runtimeProbe.checkout",
 			"runtime_probe_checkout_missing",
 			"runtime probe must name the checkout.",
 		);
 	}
-	if (probe.spawnOutcome !== "available" && isBlank(probe.blockerClass)) {
+	if (!(probe.sessionId === null || typeof probe.sessionId === "string")) {
+		add(
+			"resolvedState.runtimeProbe.sessionId",
+			"runtime_probe_session_id_invalid",
+			"runtime probe sessionId must be a string or null.",
+		);
+	}
+	if (
+		!RUNTIME_PROBE_SPAWN_OUTCOMES.has(
+			asText(probe.spawnOutcome) as RuntimeProbeReceipt["spawnOutcome"],
+		)
+	) {
+		add(
+			"resolvedState.runtimeProbe.spawnOutcome",
+			"runtime_probe_spawn_outcome_invalid",
+			"runtime probe spawnOutcome is not recognized.",
+		);
+	}
+	if (!isNullableString(probe.blockerClass)) {
+		add(
+			"resolvedState.runtimeProbe.blockerClass",
+			"runtime_probe_blocker_invalid",
+			"runtime probe blockerClass must be a string or null.",
+		);
+	} else if (
+		probe.spawnOutcome !== "available" &&
+		isBlank(asText(probe.blockerClass))
+	) {
 		add(
 			"resolvedState.runtimeProbe.blockerClass",
 			"runtime_probe_blocker_missing",
@@ -272,6 +551,37 @@ function validateRuntimeProbe(
 	}
 }
 
+function asText(value: unknown): string | null {
+	return typeof value === "string" ? value : null;
+}
+
 function isBlank(value: string | null | undefined): boolean {
 	return value === null || value === undefined || value.trim().length === 0;
+}
+
+function isNullableString(value: unknown): boolean {
+	return value === null || typeof value === "string";
+}
+
+function isIsoTimestamp(value: string | null | undefined): boolean {
+	if (
+		typeof value !== "string" ||
+		value.trim().length === 0 ||
+		!ISO_TIMESTAMP_PATTERN.test(value)
+	) {
+		return false;
+	}
+	const candidate = value;
+	const normalized =
+		candidate.endsWith("Z") && !candidate.includes(".")
+			? candidate.replace("Z", ".000Z")
+			: candidate;
+	const timestamp = new Date(candidate);
+	return (
+		!Number.isNaN(timestamp.getTime()) && timestamp.toISOString() === normalized
+	);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

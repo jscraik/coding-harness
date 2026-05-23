@@ -171,25 +171,26 @@ export function isValidMergeQueueCutoverWindow(
 			Number.isInteger(count) &&
 			Number.isFinite(count) &&
 			count >= 0);
+	const inOrder = (earlier: number, later: number): boolean =>
+		Number.isFinite(earlier) && Number.isFinite(later) && later >= earlier;
 
 	const stageSpecificInvariantsValid = (): boolean => {
 		if (parsed.stage === "paused") {
 			return Number.isFinite(pausedAtMs);
 		}
 		if (parsed.stage === "drained") {
-			return Number.isFinite(pausedAtMs) && Number.isFinite(drainedAtMs);
+			return inOrder(pausedAtMs, drainedAtMs);
 		}
 		if (parsed.stage === "revalidated") {
 			return (
-				Number.isFinite(pausedAtMs) &&
-				Number.isFinite(drainedAtMs) &&
-				Number.isFinite(revalidatedAtMs) &&
+				inOrder(pausedAtMs, drainedAtMs) &&
+				inOrder(drainedAtMs, revalidatedAtMs) &&
 				parsed.postCutover !== undefined &&
 				isValidBranchProtectionSatisfiabilityReport(parsed.postCutover)
 			);
 		}
 		if (parsed.stage === "aborted") {
-			return Number.isFinite(pausedAtMs) && Number.isFinite(abortedAtMs);
+			return inOrder(pausedAtMs, abortedAtMs);
 		}
 		return false;
 	};

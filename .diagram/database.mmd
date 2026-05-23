@@ -25,7 +25,15 @@ flowchart TD
   schema_migrate_c0646635["schema-migrate"]
   UserRequest --> schema_migrate_c0646635
   schema_migrate_c0646635 --> schema_migrate_c0646635_result["result"]
+  query_cli_b95be64d["query-cli"]
+  UserRequest --> query_cli_b95be64d
+  query_cli_b95be64d --> query_cli_b95be64d_lookup["lookup query"]
+  query_cli_b95be64d_lookup --> Decision
+  Decision -->|found| query_cli_b95be64d_update["update or modify"]
+  Decision -->|not found| query_cli_b95be64d_create["insert/create"]
+  query_cli_b95be64d_update --> query_cli_b95be64d_result["result"]
+  query_cli_b95be64d_create --> query_cli_b95be64d_result["result"]
   classDef dbNode fill:#0ea5e9,color:#fff
-  class fleet_plan_repo_ecdc6499,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635 dbNode
+  class fleet_plan_repo_ecdc6499,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635,query_cli_b95be64d dbNode
   classDef decisionNode fill:#0284c7,color:#fff
   class Decision decisionNode

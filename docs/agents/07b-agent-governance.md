@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-21
+last_validated: 2026-05-22
 ---
 
 # Agent governance
@@ -48,6 +48,43 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   named internal adapter seams. Treat those seams as agent-governance surfaces:
   update boundary tests, refresh architecture context, and keep docs-gate
   required surfaces synchronized when the command family boundary changes.
+  Prompt-gate follows this pattern with `src/commands/prompt-gate.ts` as the
+  compatibility facade, `prompt-gate-command-spec.ts` as the registry adapter,
+  and prompt-template parsing/validation inside `src/lib/prompt-gate/`.
+  Gap-case follows the same pattern with `src/commands/gap-case.ts` as the
+  compatibility facade, `gap-case-command-spec.ts` as the registry adapter,
+  and lifecycle parsing, validation, persistence, and presentation inside
+  `src/lib/gap-case/`.
+  Simulate follows the same pattern with `src/commands/simulate.ts`,
+  `src/commands/simulate-analysis.ts`, and
+  `src/commands/simulate-analysis-recommendations.ts` as compatibility
+  facades, `simulate-command-spec.ts` as the registry adapter, and CLI
+  parsing, simulation orchestration, analysis, recommendations, and
+  presentation inside `src/lib/simulate/`.
+  Ci-migrate follows the same pattern with `src/commands/ci-migrate.ts` as
+  the migration orchestration facade, `ci-migrate-command-spec.ts` as the
+  registry adapter, and raw CLI argument projection plus delegated helper
+  routing inside `src/lib/ci-migrate/`.
+  Init follows the same pattern with `src/commands/init.ts` as the bootstrap
+  orchestration facade, `init-command-spec.ts` as the registry adapter, and
+  raw CLI argument projection plus issue-tracker/minimal-mode validation inside
+  `src/lib/init/cli-args.ts`, with module-boundary ratchets preserving the
+  adapter seam.
+  Upgrade follows the same pattern with `src/commands/upgrade.ts` as the
+  compatibility facade, `upgrade-command-spec.ts` as the registry adapter,
+  raw CLI argument projection inside `src/lib/upgrade/cli-args.ts`,
+  contract/default migration helpers inside `src/lib/upgrade/contract.ts`,
+  shared option contracts inside `src/lib/upgrade/types.ts`, template and
+  manifest updates inside `src/lib/upgrade/templates.ts`, and upgrade
+  orchestration inside `src/lib/upgrade/runner.ts`, with
+  module-boundary ratchets preserving the adapter seam.
+  Brain follows the same pattern with `src/commands/brain.ts` and
+  `src/commands/brain-core.ts` as compatibility facades,
+  `brain-command-spec.ts` as the registry adapter, raw Project Brain flag
+  projection inside `src/lib/project-brain/cli-args.ts`, the dispatcher and
+  public export surface inside `src/lib/project-brain/cli.ts`, and subcommand
+  behavior inside `src/lib/project-brain/*-cli.ts`, with module-boundary
+  ratchets preserving the adapter seam.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to

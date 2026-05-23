@@ -156,7 +156,9 @@ describe("project brain templates", () => {
 			"Repo-specific agent knowledge base. Append-only.",
 		);
 		expect(activeArtifacts).toContain("# Active Artifacts");
+		expect(activeArtifacts).toContain("## Table of Contents");
 		expect(artifactsReadme).toContain("harness-sync-receipt/v1");
+		expect(artifactsReadme).toContain("- [Sync Receipts](#sync-receipts)");
 		expect(artifactsReadme).toContain("local_memory_cli");
 		expect(planReadme).toContain("execution-input authority");
 		expect(researchReadme).toContain("evidence-patterns.json");
@@ -169,6 +171,7 @@ describe("project brain templates", () => {
 			"artifact-provenance/v1",
 		);
 		expect(goalReadme).toContain("docs/goals/<goal-slug>/");
+		expect(goalReadme).toContain("- [Layout](#layout)");
 		expect(codexLearnSummary).toContain(
 			"This file is maintained by `./scripts/codex-learn analyze`.",
 		);

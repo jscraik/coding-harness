@@ -1,16 +1,16 @@
 version: 2
 goal:
   slug: coding-harness-deep-module-migration
-  status: active
+  status: done
   objective: "Finish the remaining non-Effect coding-harness deep-module migration in small governed slices with per-slice review gates, validation evidence, GitHub handoff, and PR-green-sweep triage."
   native_goal_id: "019e4a39-47f8-7ac0-b979-d52b7f02ec23"
   native_objective: "Follow docs/goals/coding-harness-deep-module-migration/goal.md to continue the remaining non-Effect coding-harness deep-module migration in governed slices, preserving the separate active dirty-work slice, refreshing live repo/PR/HTML-report state before implementation, and recording receipts before advancing."
-  native_status: active
+  native_status: complete
   token_budget: null
-  tokens_used: 610345
-  time_used_seconds: 3210
+  tokens_used: 1639295
+  time_used_seconds: 8516
   native_created_at: "2026-05-21T10:02:53.000Z"
-  native_updated_at: "2026-05-21T21:51:00Z"
+  native_updated_at: "2026-05-22T23:05:00Z"
 rules:
   one_active_task: true
   parallel_workers: false
@@ -27,9 +27,9 @@ checks:
   architecture_visual: "artifacts/architecture/module-layout.html"
   visual_record_contract: "module layout must show complete/current/next/remaining/blocked, enforcement, agent-safe zones, human-review zones, latest slice, and receipt/PR evidence"
   last_verification:
-    command: "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
+    command: "bash scripts/check-diagram-freshness.sh"
     outcome: "pass"
-    checked_at: "2026-05-21T21:51:00Z"
+    checked_at: "2026-05-22T13:47:28Z"
 completion_contract:
   outcome: "All remaining non-Effect deep-module slices are completed or explicitly deferred with live evidence, receipts, current visuals, pushed commits, and PR state."
   verification_surface:
@@ -77,7 +77,7 @@ tasks:
       - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
       - "docs/goals/coding-harness-deep-module-migration/notes/.gitkeep"
     verify:
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/coding-harness-deep-module-migration"
+      - "bash scripts/check-goal-board.sh docs/goals/coding-harness-deep-module-migration"
       - "git status --short docs/goals/coding-harness-deep-module-migration"
     stop_if:
       - "Board checker fails."
@@ -110,6 +110,8 @@ tasks:
       - "src/commands/drift-gate*.test.ts"
       - "src/lib/drift-gate*.test.ts"
       - "docs/architecture/module-boundaries.md"
+      - "docs/solutions/integration-issues/2026-05-19-env-backed-validation-admission.md"
+      - "scripts/check-steering-feedback-contract.cjs"
       - ".harness/implementation-notes/2026-05-19-module-layout.html"
       - "artifacts/architecture/module-layout.html"
       - "docs/goals/coding-harness-deep-module-migration/**"
@@ -267,7 +269,7 @@ tasks:
       - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
       - "bash scripts/validate-codestyle.sh --fast"
       - "bash scripts/verify-work.sh --fast before PR handoff"
-      - "TMPDIR=/private/tmp PREK_HOME=/Users/jamiecraik/dev/coding-harness/.git/.cache/prek prek run pre-commit --stage pre-commit -v --log-file /private/tmp/prek-t006.log"
+      - "make hooks-pre-commit"
     stop_if:
       - "T005 is not pushed."
       - "GitHub or PR state cannot be observed."
@@ -276,7 +278,7 @@ tasks:
   - id: T007
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "Prepare the plan-gate module-boundary slice; do not edit implementation files until T006 is pushed and PR state is refreshed."
     inputs:
       - "docs/goals/coding-harness-deep-module-migration/goal.md"
@@ -300,6 +302,7 @@ tasks:
       - ".harness/implementation-notes/2026-05-19-module-layout.html"
       - "artifacts/architecture/module-layout.html"
       - "docs/goals/coding-harness-deep-module-migration/**"
+      - "scripts/check-goal-board.sh"
     verify:
       - "focused plan-gate test or direct production command to be named before implementation"
       - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
@@ -309,22 +312,436 @@ tasks:
       - "T006 is not pushed."
       - "GitHub or PR state cannot be observed."
       - "Focused validation path cannot be identified."
-    receipt_id: R007
+    receipt_id: R007-PR272-MERGED-BOARD-CLOSEOUT
+  - id: T008
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare the prompt-gate module-boundary slice; do not edit implementation files until T007, PR #272, and current branch state are verified."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T007 is recorded done and the prompt-gate branch starts from current origin/main."
+      - "Declare focused prompt-gate tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R008 before any following slice."
+    expected_output: "A small prompt-gate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/prompt-gate*.ts"
+      - "src/lib/prompt-gate/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/prompt-gate-command-spec.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/prompt-gate*.test.ts"
+      - "src/lib/prompt-gate*.test.ts"
+      - "src/cli-dispatch.test.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "pnpm vitest run src/commands/prompt-gate.test.ts --reporter verbose"
+      - "focused prompt-gate registry or CLI dispatch test to be named before implementation if registry behavior changes"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T007 is not recorded done."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+    receipt_id: R008-PROMPT-GATE-PR274-MERGED-T009-ACTIVE
+  - id: T009
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare the gap-case module-boundary slice; do not edit implementation files until T008, PR #274, and current branch state are verified."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T008 is recorded done and the gap-case branch starts from current origin/main."
+      - "Declare focused gap-case tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R009 before any following slice."
+    expected_output: "A small gap-case module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/gap-case*.ts"
+      - "src/lib/gap-case/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/gap-case-command-spec.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/gap-case*.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "pnpm vitest run src/commands/gap-case.test.ts --reporter verbose"
+      - "focused gap-case registry or CLI dispatch test to be named before implementation if registry behavior changes"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T008 is not recorded done."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+    receipt_id: R009-GAP-CASE-PR275-MERGED-T010-ACTIVE
+  - id: T010
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Split the simulate command family behind focused CLI, registry, analysis, and recommendation seams; push and open a PR before any following slice."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+    constraints:
+      - "Do not start implementation until T009 is recorded done and the simulate branch starts from current origin/main."
+      - "Declare focused simulate tests before editing."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R010 before any following slice."
+    expected_output: "A small simulate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/simulate*.ts"
+      - "src/lib/simulate/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/simulate-command-spec.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "src/commands/simulate*.test.ts"
+      - "AGENTS.md"
+      - "README.md"
+      - "AI/context/diagram-context.md"
+      - ".diagram/**"
+      - "docs/agents/00-architecture-bootstrap.md"
+      - "docs/agents/07b-agent-governance.md"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "pnpm vitest run src/commands/simulate.test.ts --reporter verbose"
+      - "focused simulate registry or CLI dispatch test to be named before implementation if registry behavior changes"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T009 is not recorded done."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+    receipt_id: R010-SIMULATE-PR276-MERGED-T011-ACTIVE
+  - id: T011
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare the ci-migrate module-boundary slice from merged origin/main; do not edit implementation files until scope, snapshot safety, credentials, and focused validation are declared from live source."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+      - "src/commands/ci-migrate*.ts"
+      - "src/lib/ci-migrate/**"
+      - "src/lib/cli/registry/ci-migrate-command-spec.ts"
+    constraints:
+      - "Do not start implementation until T010 and PR #276 merge evidence are recorded."
+      - "Declare focused ci-migrate tests before editing."
+      - "Preview or test snapshot-backed ci-migrate behavior before any mutating prepare/commit/abort action."
+      - "Do not manually delete workflows or mutate remote branch protection outside the snapshot-backed command contract."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R011 before any following slice."
+    expected_output: "A small ci-migrate module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "AGENTS.md"
+      - "README.md"
+      - "AI/context/diagram-context.md"
+      - ".diagram/agent.mmd"
+      - ".diagram/events.mmd"
+      - ".diagram/manifest.json"
+      - ".diagram/rag.mmd"
+      - ".diagram/security.mmd"
+      - "docs/agents/00-architecture-bootstrap.md"
+      - "docs/agents/07b-agent-governance.md"
+      - "src/commands/ci-migrate*.ts"
+      - "src/lib/ci-migrate/**"
+      - "src/lib/cli/registry/ci-migrate-command-spec.ts"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused ci-migrate test or direct dry-run command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T010 is not recorded done."
+      - "PR #276 merge evidence is missing."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+      - "Snapshot-backed ci-migrate safety boundary is unclear."
+    receipt_id: R011-CI-MIGRATE-REGISTRY-SPLIT
+  - id: T012
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare the init module-boundary slice from merged origin/main; do not edit implementation files until T011 merge evidence, scope, and focused validation are declared from live source."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+      - "src/commands/init.ts"
+      - "src/commands/init.test.ts"
+      - "src/lib/init/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+    constraints:
+      - "Do not start implementation until T011 and PR #277 merge evidence are recorded."
+      - "Declare focused init tests before editing implementation files."
+      - "Keep init scaffolding behavior snapshot-backed or golden where applicable."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R012 before any following slice."
+    expected_output: "A small init module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "AGENTS.md"
+      - "README.md"
+      - "docs/agents/00-architecture-bootstrap.md"
+      - "docs/agents/07b-agent-governance.md"
+      - "src/commands/init.ts"
+      - "src/commands/init.test.ts"
+      - "src/lib/init/**"
+      - "src/lib/cli/registry/init-command-spec.ts"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "focused init registry test or direct init dry-run command to be named before implementation"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T011 is not recorded done."
+      - "PR #277 merge evidence is missing."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+      - "Init scaffolding behavior boundary is unclear."
+    receipt_id: R012-PR278-REPORT-EVIDENCE-CLEANUP
+  - id: T013
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare the upgrade module-boundary slice from merged origin/main; do not edit implementation files until T012 merge evidence, scope, and focused validation are declared from live source."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+      - "src/commands/upgrade.ts"
+      - "src/commands/upgrade.test.ts"
+      - "src/lib/cli/registry/upgrade-command-spec.ts"
+      - "src/lib/upgrade/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+    constraints:
+      - "Do not start implementation until T012 and PR #278 merge evidence are recorded."
+      - "Declare focused upgrade tests before editing implementation files."
+      - "Keep upgrade behavior behind a focused registry adapter and module seam."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R013 before any following slice."
+    expected_output: "A small upgrade module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "AGENTS.md"
+      - "README.md"
+      - "docs/agents/00-architecture-bootstrap.md"
+      - "docs/agents/07b-agent-governance.md"
+      - "src/commands/upgrade.ts"
+      - "src/commands/upgrade.test.ts"
+      - "src/lib/upgrade/**"
+      - "src/lib/cli/registry/upgrade-command-spec.ts"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "pnpm vitest run src/commands/upgrade.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot"
+      - "pnpm lint"
+      - "pnpm typecheck"
+      - "pnpm test"
+      - "pnpm audit"
+      - "pnpm check"
+      - "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T012 is not recorded done."
+      - "PR #278 merge evidence is missing."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+      - "Upgrade behavior boundary is unclear."
+    receipt_id: R013-UPGRADE-LOCAL-GATES-VERIFIED
+  - id: T014
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Deepen the brain command module boundary from merged origin/main without changing Project Brain behavior."
+    inputs:
+      - "docs/goals/coding-harness-deep-module-migration/goal.md"
+      - "docs/goals/coding-harness-deep-module-migration/state.yaml"
+      - "docs/goals/coding-harness-deep-module-migration/receipts.jsonl"
+      - ".harness/review/2026-05-20-module-boundary-taste-review.md"
+      - "src/commands/brain.ts"
+      - "src/commands/brain-core.ts"
+      - "src/lib/project-brain/**"
+      - "src/lib/cli/registry/command-specs-core.ts"
+    constraints:
+      - "Do not start implementation until T013 and PR #279 merge evidence are recorded."
+      - "Declare focused brain tests before editing implementation files."
+      - "Keep Project Brain behavior behind focused CLI, registry adapter, and internal module seams."
+      - "Run simplify, unslopify, improve-codebase-architecture, testing, and codex-review after the split."
+      - "Update module-layout HTML and append R014 before any final completion audit."
+    expected_output: "A small brain module-boundary move with enforcement, validation, visual update, pushed commit, and receipt."
+    allowed_files:
+      - "src/commands/brain.ts"
+      - "src/commands/brain-core.ts"
+      - "src/commands/brain.test.ts"
+      - "src/lib/project-brain/**"
+      - "src/lib/cli/registry/brain-command-spec.ts"
+      - "src/lib/cli/registry/command-specs-core.ts"
+      - "src/lib/cli/registry/command-specs.test.ts"
+      - "src/lib/cli/parse-utils.ts"
+      - "src/lib/architecture/module-boundaries.test.ts"
+      - "docs/architecture/module-boundaries.md"
+      - ".harness/implementation-notes/2026-05-19-module-layout.html"
+      - "artifacts/architecture/module-layout.html"
+      - "docs/goals/coding-harness-deep-module-migration/**"
+    verify:
+      - "pnpm vitest run src/commands/brain.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot"
+      - "pnpm typecheck"
+      - "module-layout HTML answers complete/current/next/remaining/blocked, enforcement, agent-safe, human-review, latest-change, and receipt-evidence questions"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "bash scripts/verify-work.sh --fast before PR handoff"
+    stop_if:
+      - "T013 is not recorded done."
+      - "PR #279 merge evidence is missing."
+      - "Current branch is not rooted at current origin/main."
+      - "Focused validation path cannot be identified."
+      - "Project Brain behavior boundary is unclear."
+    receipt_id: R014-FINAL-COMPLETION-AUDIT
 pr_green_sweep:
-  status: t007_plan_gate_current_head_checks_pending_review_comments_pending
+  status: complete
   worker: pr-green-sweep
   duplicate_guard: true
-  pr_url: "https://github.com/jscraik/coding-harness/pull/270"
-  head_sha: "5e39faf51c06c902fb19ff3da6dc58e2d86a85d5"
-  last_observed: "2026-05-21T21:47:59Z"
+  pr_url: "https://github.com/jscraik/coding-harness/pull/280"
+  head_sha: "50109ac522228672f75a01202f8aaf825a3a2752"
+  followup_pr_url: "https://github.com/jscraik/coding-harness/pull/273"
+  followup_branch: "codex/JSC-331-runtime-evidence-nullable-metadata"
+  followup_head_sha: "1ab7a0cdbc41c36f484d70b11a8a1b2463df66e7"
+  board_reconciliation_pr_url: "https://github.com/jscraik/coding-harness/pull/272"
+  board_reconciliation_branch: "codex/JSC-331-pr270-review-closeout"
+  prompt_gate_pr_url: "https://github.com/jscraik/coding-harness/pull/274"
+  prompt_gate_branch: "codex/JSC-331-prompt-gate-deep-module"
+  prompt_gate_head_sha: "dea073f9ec1ceb0638cb804c894d144501fd7f6e"
+  prompt_gate_merge_commit: "0fb4b353920c55c3fb85afa89009bb33e98144fc"
+  gap_case_branch: "codex/JSC-331-gap-case-deep-module"
+  gap_case_pr_url: "https://github.com/jscraik/coding-harness/pull/275"
+  gap_case_head_sha: "1894f1154689cbdd49f15f07bbe87cf18431a333"
+  gap_case_merge_commit: "a4f066a28ca91d67f84c1def5db552657e8b3cc4"
+  simulate_branch: "codex/JSC-331-simulate-deep-module"
+  simulate_base_sha: "a4f066a28ca91d67f84c1def5db552657e8b3cc4"
+  simulate_pr_url: "https://github.com/jscraik/coding-harness/pull/276"
+  simulate_head_sha: "8ac3bca519411f64a056f1b2209714883dd339aa"
+  simulate_merge_commit: "cf741e13c65b15aadb155d0701d60b4705f72eb0"
+  ci_migrate_branch: "codex/JSC-331-ci-migrate-deep-module"
+  ci_migrate_pr_url: "https://github.com/jscraik/coding-harness/pull/277"
+  ci_migrate_observed_head_sha: "0ad9dc4b743ac9d55f154d34491060279a3914f6"
+  ci_migrate_merge_commit: "3a861a7438b9891535d3786f1cb2bd60131a9aa2"
+  init_branch: "codex/JSC-331-init-deep-module"
+  init_base_sha: "3a861a7438b9891535d3786f1cb2bd60131a9aa2"
+  init_head_sha: "3ec87445eb0050068ead53283cd341a9ba3387ba"
+  init_merge_commit: "466aaaea0fa36f7fe670c7d496c0cb6a3816627b"
+  upgrade_branch: "codex/JSC-331-upgrade-deep-module"
+  upgrade_base_sha: "466aaaea0fa36f7fe670c7d496c0cb6a3816627b"
+  upgrade_pr_url: "https://github.com/jscraik/coding-harness/pull/279"
+  upgrade_head_sha: "24066280f22dc6ccf2603bca4764cf1976803b39"
+  upgrade_head_note: "Final PR #279 head after CodeRabbit receipt/status repair; live PR metadata reported all visible checks green, zero unresolved review threads, and mergeStateStatus CLEAN before merge."
+  upgrade_merge_commit: "d8c2e9f02a63ac83541d14fc22484d7f89934f82"
+  upgrade_merged_at: "2026-05-22T21:03:04Z"
+  brain_branch: "codex/JSC-331-brain-deep-module"
+  brain_pr_url: "https://github.com/jscraik/coding-harness/pull/280"
+  brain_head_sha: "50109ac522228672f75a01202f8aaf825a3a2752"
+  brain_merge_commit: "9886ec440149829ebe4f467b99cd183b04351998"
+  brain_merged_at: "2026-05-22T23:02:28Z"
+  brain_initial_review_threads: 0
+  brain_initial_pr_template: "Initial ci/circleci: pr-template failed on the first PR body; the live body was repaired and now passes pr-template-gate locally."
+  brain_review_repair_base_sha: "98508daa21fc24f2bb82abc3e0d243b494557ab1"
+  brain_review_repair_threads: 7
+  brain_review_repair_status: "Seven CodeRabbit review threads were repaired, pushed at head 50109ac522228672f75a01202f8aaf825a3a2752, resolved on GitHub, and merged through PR #280."
+  brain_final_checks: "All visible PR #280 checks pass, including pr-pipeline, security-scan, CodeRabbit, CircleCI contexts, Socket, Snyk license, and Snyk security."
+  brain_final_review_threads: "GitHub review-thread lookup at 2026-05-22T23:05:00Z returned seven PR #280 threads and zero unresolved threads."
+  final_audit_decision: "complete"
+  last_observed: "2026-05-22T23:05:00Z"
   current_blockers:
-    - "Current-head external checks restarted after 5e39faf5 and are pending; CodeRabbit's latest visible COMMENTED review is older than the current head and still needs current-head re-observation before PR-green closeout."
+    - "No active implementation, PR, CI, or review-thread blocker remains for the non-Effect deep-module migration."
+    - "Effect-layer work remains explicitly deferred and out of scope for this goal."
+    - "pnpm test:deep remains classified as blocked_env_fifo_timeout at E2E credential validation in this runtime after narrower code gates pass; this is an environment blocker, not remaining non-Effect slice work."
+  current_evidence:
+    - "PR #270 and PRs #272 through #280 are merged. Live review-thread audit at 2026-05-22T23:05:00Z found zero unresolved threads across that PR chain."
+    - "PR #280 merged at 2026-05-22T23:02:28Z with head 50109ac522228672f75a01202f8aaf825a3a2752 and squash merge commit 9886ec440149829ebe4f467b99cd183b04351998."
+    - "All visible PR #280 checks pass, including pr-pipeline, security-scan, CodeRabbit, CircleCI contexts, Socket, Snyk license, and Snyk security."
+    - "T014 brain is the final non-Effect slice and is closed by PR #280 merge evidence."
   last_evidence:
-    github_state: "PR #270 open and no longer draft at 5e39faf51c06c902fb19ff3da6dc58e2d86a85d5; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewRequests empty."
-    review_threads: 26
-    checks: "gh pr checks 270 exited 0 at 5e39faf51c06c902fb19ff3da6dc58e2d86a85d5 with pr-pipeline and security-scan IN_PROGRESS, CircleCI leaf checks PENDING, and Socket/Snyk checks passing."
-    coderabbit: "Latest visible CodeRabbit review is COMMENTED from an older head; the T006-status state.yaml comment is addressed by this current-head verification recovery, and current-head CodeRabbit/check results are still pending or not yet refreshed."
-    pre_push: "Current remote head contains the timestamp fix and pulled-branch validation-blocker repair commit 5e39faf5; normal git push passed pre-commit and pre-push. T007 plan-gate implementation has not started."
+    github_state: "PR #276 merged at 2026-05-22T13:02:56Z with head 8ac3bca519411f64a056f1b2209714883dd339aa and squash merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
+    review_threads: "PR #276 GitHub review-thread lookup before merge returned nine total threads and zero unresolved threads. PR #270 remains merged with two current unresolved historical thread records whose fixes are shipped in merged PR #273."
+    checks: "gh pr checks 276 at head 8ac3bca519411f64a056f1b2209714883dd339aa reported all 23 visible checks passing, including pr-pipeline, security-scan, CodeRabbit, CircleCI job contexts, Socket, Snyk license, and Snyk security."
+    coderabbit: "The first seven PR #276 CodeRabbit findings were addressed by commit 073b1f04. The identical-hash follow-up finding was addressed by commit ef3db349. The stale-board finding was addressed by commit 2e1a817c, and GitHub reported zero unresolved PR #276 review threads before merge."
+    board_review: "Harness doc-history reviewer reported one medium stale-board finding and one low stale-receipt finding in artifacts/reviews/harness-doc-history-reviewer-pr272.md; this board refresh addresses both."
+    post_push: "PR #275 was marked ready and squash-merged with merge commit a4f066a28ca91d67f84c1def5db552657e8b3cc4; the gap-case remote branch was deleted by the merge command."
+    validation: "T010 follow-up review-response local validation passed: pnpm test src/lib/simulate/analysis.test.ts src/commands/simulate.test.ts src/lib/simulate/recommendations.test.ts src/lib/cli/registry/command-specs.test.ts src/lib/architecture/module-boundaries.test.ts --reporter dot, pnpm typecheck, and bash scripts/validate-codestyle.sh --fast. validate-codestyle still reports non-blocking baseline drift-gate warnings plus simulate size ratchet warnings. The former pnpm test:deep E2E credential blocker is reclassified: ~/.codex/.env variable-name probing found the required credential names without printing values, and env-loaded pnpm test:deep now reaches the real T014 brain module-boundary ratchet."
+    t009_review_gates: "Architecture review reported no actionable findings; simplify reported two low findings and the parser re-export was removed while the internal compatibility facade was kept intentionally; testing reported two medium coverage gaps that were fixed in tests but failed artifact-file verification; the historical correctness-review artifact write gap was classified before closeout and is not an active implementation blocker."
+    pr_handoff: "PR #276 merged at https://github.com/jscraik/coding-harness/pull/276. Current branch codex/JSC-331-ci-migrate-deep-module starts from origin/main at merge commit cf741e13c65b15aadb155d0701d60b4705f72eb0."
+    review_gap_followup: "Replacement T010 architecture/testing artifacts remain classified as local-only artifacts with tracked receipt/state evidence. The pushed follow-up keeps the CodeRabbit-requested analysis regressions and facade guard coverage without starting T011."
+    review_response: "Pushed follow-up commit ef3db349 keeps same-hash contract comparisons from producing artificial deltas by returning an empty delta result when contractA and contractB hashes match, with a regression covering same-command runs that would otherwise look blocked-to-allowed."
+    t011_ci_migrate: "PR #277 merged at 2026-05-22T15:46:44Z with head 0ad9dc4b743ac9d55f154d34491060279a3914f6 and squash merge commit 3a861a7438b9891535d3786f1cb2bd60131a9aa2. All 23 visible checks pass, GitHub review-thread lookup returns zero unresolved threads, and T011 ci-migrate is closed."
+    t012_init:
+      implementation: "T012 init registry-boundary split is implemented on PR #278: raw argv projection moved to src/lib/init/cli-args.ts, registry delegation moved to src/lib/cli/registry/init-command-spec.ts, and command-specs-core no longer owns inline init parser logic."
+      changes: "Focused registry/module-boundary tests, pnpm typecheck, docs-gate required surfaces, validate-codestyle/verify-work fast, pnpm check, and tooling-audit are passing (verify-work run id 20260522T160456Z-59419). Current CodeRabbit init parser findings are fixed locally with malformed-value fixtures and explicit project-type override validation."
+      validation: "Live PR body now passes pr-template-gate and linear-gate after body update. The HTML report was restarted for Jamie at http://127.0.0.1:8767/artifacts/architecture/module-layout.html and returned HTTP 200 with Jamie Readout, T012 status, Browser proof, and Do Not Advance sections present. Focused review-response proof passes with 158 registry/module-boundary tests plus typecheck and validate-codestyle fast."
+      remaining: "Closed by PR #278 merge at 2026-05-22T17:49:52Z with merge commit 466aaaea0fa36f7fe670c7d496c0cb6a3816627b."
+    t013_upgrade:
+      implementation: "T013 upgrade split is implemented locally: src/commands/upgrade.ts is a compatibility facade, src/lib/cli/registry/upgrade-command-spec.ts owns registry metadata and delegation, src/lib/upgrade/cli-args.ts owns raw flag projection, src/lib/upgrade/types.ts owns the shared option contract, src/lib/upgrade/contract.ts owns contract/default migration helpers, src/lib/upgrade/templates.ts owns template and manifest updates, and src/lib/upgrade/runner.ts owns orchestration."
+      validation: "Focused upgrade/registry/module-boundary tests pass with 206 tests after adding direct upgrade registry execute-path coverage, malformed provider-value coverage, helper error-boundary coverage, and malformed upgrade-manifest fail-closed coverage; pnpm typecheck, quality:docstrings, quality:size, test:related, docs-gate required mode, the production CLI dry-run path, validate-codestyle fast, and verify-work fast pass. verify-work fast run id: 20260522T183031Z-7843. Full local PR-template gates also pass: bash scripts/validate-codestyle.sh, pnpm check, tooling-audit, review-context, and north-star-feedback; learnings gate exits 0 with warning-only generated/report keyword matches. Env-backed recovery is now proven: zsh -lc 'set -a; source ~/.codex/.env >/dev/null; set +a; pnpm test:deep' executes and fails on the T014 brain module-boundary ratchet because src/lib/cli/registry/brain-command-spec.ts imports from commands, not because credentials are missing."
+      review: "Product, testing, simplicity, architecture, unslopify, and Codex/project-standards review artifacts exist under artifacts/reviews/. Testing's execute-path finding, simplicity/architecture option-contract duplication findings, stale-artifact findings, and Codex evidence-freshness finding are fixed locally. CodeRabbit's 2026-05-22T20:10:09Z PR #279 findings are pushed in head 41140ad93f1babeaa616174be140ab7adfbec4e2: the report active-slice text is T013/PR #279, receipt ordering/freshness is monotonic for T013, T013.verify includes the full mandatory gate set, upgrade_head_sha is machine-readable with a separate note, and malformed upgrade manifests fail closed instead of being treated as absent. Live re-observation found all six CodeRabbit threads resolved."
+      pr_handoff: "PR #279 is merged at https://github.com/jscraik/coding-harness/pull/279. Final head 24066280f22dc6ccf2603bca4764cf1976803b39 had all visible checks green and zero unresolved review threads before squash merge commit d8c2e9f02a63ac83541d14fc22484d7f89934f82 at 2026-05-22T21:03:04Z; git ls-remote confirms the remote upgrade branch is deleted."
+      blocker: "T013 has no active PR blocker. The 8767 report is live over HTTP, and the current Browser target is available again for the active T014 report."
+    t014_brain:
+      implementation: "T014 brain is the final completed non-Effect slice. The merged implementation keeps src/commands/brain-core.ts as a compatibility facade, routes the registry through src/lib/cli/registry/brain-command-spec.ts, and splits Project Brain CLI behavior across src/lib/project-brain/cli.ts plus add-cli.ts, cli-args.ts, cli-types.ts, preflight-cli.ts, query-cli.ts, stale-cli.ts, and status-cli.ts."
+      validation: "Focused local validation passes: brain command tests, registry execute-path coverage for brain, module-boundary ratchets, production brain status JSON, missing-.harness status JSON regression, and typecheck are proven by R014-BRAIN-FOCUSED-PROOF-REVIEW-REPAIRED. Broad local fast gates pass: validate-codestyle fast and verify-work fast run id 20260522T215354Z-27231. Full local handoff gates also pass before staging: bash scripts/validate-codestyle.sh, tooling-audit, review-context, and north-star-feedback; learnings gate exits 0 with warn-only advisory keyword/report matches. Current final-audit revalidation passes focused brain/registry/module-boundary tests with 195 tests and goal-board validation. Env-loaded pnpm test:deep reaches E2E credential validation after check, unit, and integration suites pass; approved env metadata plus bounded probe evidence classify the remaining E2E blocker as blocked_env_fifo_timeout. The 8767 report is live over HTTP and launched in the Codex In-app Browser; rendered text shows Module Layout and FINAL AUDIT."
+      review: "Review gates completed/classified locally: architecture found the explicit zero stale-threshold bug and missing src/commands/brain.ts ratchet, both fixed; testing found dash-prefixed flag-value handling and missing-harness maturity regressions, both fixed; unslopify found non-exhaustive add-type dispatch, fixed with an explicit learning case and never guard; simplify had no required changes and the optional array-copy cleanup is fixed; Codex review found no actionable issues. Testing and unslopify artifact retries failed to write artifacts after mailbox findings were handled, so the artifact coverage gap is explicit."
+      pr_handoff: "PR #280 is merged at https://github.com/jscraik/coding-harness/pull/280. Final head 50109ac522228672f75a01202f8aaf825a3a2752 passed all visible checks, GitHub review-thread lookup returned seven total threads and zero unresolved threads, and the branch merged through commit 9886ec440149829ebe4f467b99cd183b04351998 at 2026-05-22T23:02:28Z. No open JSC-331 PRs remain."
+      blocker: "No active non-Effect implementation or PR-green blocker remains. pnpm test:deep is still classified as blocked_env_fifo_timeout at E2E credential validation in this runtime after narrower code gates pass; this is recorded as an environment blocker, not hidden remaining migration work. Preserve CODEX-NATIVE HARNESS MEMORY BASELINE as a separate slice unless explicitly routed into this branch."
+      coordination: "Scratchpad for parallel agents, refreshed 2026-05-23T00:05Z: the deep-module migration goal is complete from the non-Effect slice queue perspective; CODEX-NATIVE HARNESS MEMORY BASELINE remains separate and should not be applied into this branch."
+  post_closeout_boundaries:
+    - "The local static report server can stay available while Jamie is using http://127.0.0.1:8767/artifacts/architecture/module-layout.html, but it is not implementation work."
+    - "Do not route CODEX-NATIVE HARNESS MEMORY BASELINE into this completed goal unless Jamie explicitly asks."
+    - "Treat pnpm test:deep as blocked at E2E credential validation in this runtime after pnpm check, unit, and integration suites pass; do not claim deep-gate success until GitHub and Linear E2E credentials are available through a non-hanging approved env probe."
   tools:
     - "@github"
     - "@circleci"
@@ -341,14 +758,16 @@ slice_queue:
     - remediate
     - observability-gate
     - artifact-gate
-  active: plan-gate
-  next: prompt-gate
-  remaining:
+    - plan-gate
+    - prompt-gate
     - gap-case
     - simulate
     - ci-migrate
     - init
     - upgrade
     - brain
+  active: null
+  next: null  # next is always the first entry of remaining
+  remaining: []
   deferred:
     - effect-layers

@@ -44,7 +44,13 @@ export function runRuntimeBudgetCLI(args: string[]): number {
 				evidenceFlag.value,
 			);
 	if (observations === null) {
-		return EXIT_CODES.USAGE;
+		if (inputFlag.value) {
+			return EXIT_CODES.USAGE;
+		}
+		return emitUsage(
+			json,
+			"runtime-budget requires --input or --command, --duration-ms, --budget-ms, and --evidence-ref.",
+		);
 	}
 
 	const report = buildCommandRuntimeBudgetReport(observations);
@@ -93,23 +99,64 @@ function readObservations(
 		emitUsage(json, `runtime-budget input file is missing: ${inputPath}`);
 		return null;
 	}
-	const parsed = JSON.parse(readFileSync(inputPath, "utf8")) as unknown;
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(readFileSync(inputPath, "utf8")) as unknown;
+	} catch {
+		emitUsage(
+			json,
+			`runtime-budget input file is malformed JSON: ${inputPath}`,
+		);
+		return null;
+	}
 	if (Array.isArray(parsed)) {
-		return parsed as CommandRuntimeBudgetObservation[];
+		return validateObservations(parsed, json);
 	}
 	if (
 		typeof parsed === "object" &&
 		parsed !== null &&
 		Array.isArray((parsed as { observations?: unknown }).observations)
 	) {
-		return (parsed as { observations: CommandRuntimeBudgetObservation[] })
-			.observations;
+		return validateObservations(
+			(parsed as { observations: unknown[] }).observations,
+			json,
+		);
 	}
 	emitUsage(
 		json,
 		"runtime-budget input must be an array or object with observations.",
 	);
 	return null;
+}
+
+function validateObservations(
+	observations: unknown[],
+	json: boolean,
+): CommandRuntimeBudgetObservation[] | null {
+	const normalized: CommandRuntimeBudgetObservation[] = [];
+	for (const [index, observation] of observations.entries()) {
+		if (!isObservationRecord(observation)) {
+			emitUsage(json, `runtime-budget observations[${index}] is malformed.`);
+			return null;
+		}
+		normalized.push(observation);
+	}
+	return normalized;
+}
+
+function isObservationRecord(
+	value: unknown,
+): value is CommandRuntimeBudgetObservation {
+	if (typeof value !== "object" || value === null) {
+		return false;
+	}
+	const candidate = value as Record<string, unknown>;
+	return (
+		typeof candidate.command === "string" &&
+		typeof candidate.durationMs === "number" &&
+		typeof candidate.budgetMs === "number" &&
+		typeof candidate.evidenceRef === "string"
+	);
 }
 
 function emitUsage(json: boolean, message: string): number {
