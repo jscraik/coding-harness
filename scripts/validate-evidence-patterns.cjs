@@ -16,20 +16,10 @@ const DEEP_DIR = path.join(ROOT, ".harness", "research", "deep");
 const VALID_STATUSES = new Set(["adopted", "deferred", "rejected"]);
 const VALID_OWNERS = new Set(["codex", "jamie"]);
 
-/**
- * Get the path of a file relative to the repository root.
- * @param {string} filePath - Absolute or relative filesystem path to convert.
- * @returns {string} The path from the repository root to `filePath`.
- */
 function relative(filePath) {
 	return path.relative(ROOT, filePath);
 }
 
-/**
- * Parse CLI flags into an options object.
- * @param {string[]} argv - Array of CLI arguments (e.g. process.argv.slice(2)).
- * @returns {{json: boolean, runValidationCommands: boolean}} An object where `json` is `true` if `--json` is present, and `runValidationCommands` is `true` if `--run-validation-commands` is present.
- */
 function parseArgs(argv) {
 	return {
 		json: argv.includes("--json"),
@@ -37,12 +27,6 @@ function parseArgs(argv) {
 	};
 }
 
-/**
- * Read and parse JSON from a filesystem path, appending an error entry to `errors` if reading or parsing fails.
- * @param {string} filePath - Filesystem path to the JSON file.
- * @param {Array<Object>} errors - Array that will receive an error object when read/parse fails; the object includes `code`, `path`, and `message`.
- * @returns {any|null} The parsed JSON value, or `null` if reading or parsing failed.
- */
 function readJson(filePath, errors) {
 	try {
 		return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -210,12 +194,6 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 	}
 }
 
-/**
- * Validate an evidence patterns manifest and collect any validation errors.
- *
- * @param {object} manifest - The parsed manifest to validate.
- * @returns {Array<object>} An array of error objects describing validation failures. If `manifest` is not an object the array contains a single `manifest_not_object` error. Each error object contains a `code` and `message`; some errors also include `path` or `patternId` for additional context.
- */
 function validateManifest(manifest) {
 	const errors = [];
 	if (!isRecord(manifest)) {
@@ -263,17 +241,6 @@ function validateManifest(manifest) {
 	return errors;
 }
 
-/**
- * Execute each unique validation command from adopted patterns and collect their execution results.
- * @param {Object} manifest - Manifest object containing a `patterns` array.
- * @returns {Array<Object>} An array of result objects for each executed command. Each object contains:
- *  - `command` {string} — the shell command that was run.
- *  - `status` {'pass'|'fail'} — `"pass"` when the command exited with code 0, otherwise `"fail"`.
- *  - `exitCode` {number|null} — the command's numeric exit code, or `null` if unavailable.
- *  - `startedAt` {string} — ISO timestamp when the command started.
- *  - `finishedAt` {string} — ISO timestamp when the command finished.
- *  - `stderr` {string} — the captured stderr output truncated to the first 4000 characters (empty string if none).
- */
 function runValidationCommands(manifest) {
 	const results = [];
 	const commands = [
@@ -292,23 +259,25 @@ function runValidationCommands(manifest) {
 			encoding: "utf8",
 			timeout: 180_000,
 		});
+		const spawnError =
+			result.error instanceof Error ? result.error.message : null;
+		const timedOut =
+			result.error?.code === "ETIMEDOUT" || result.signal === "SIGTERM";
 		results.push({
 			command,
-			status: result.status === 0 ? "pass" : "fail",
+			status: result.status === 0 && spawnError === null ? "pass" : "fail",
 			exitCode: result.status,
+			error: spawnError,
+			signal: result.signal ?? null,
 			startedAt,
 			finishedAt: new Date().toISOString(),
 			stderr: result.stderr?.slice(0, 4000) ?? "",
+			timedOut,
 		});
 	}
 	return results;
 }
 
-/**
- * Validate the evidence-patterns manifest, optionally run adopted patterns' validation commands, output a report, and exit with a success or failure status.
- *
- * Reads and validates .harness/research/evidence-patterns.json, collects validation errors, and—when `--run-validation-commands` is provided and the manifest has no validation errors—executes each adopted pattern's `validationCommand`. Emits either a JSON report when `--json` is passed or a human-readable pass/fail report otherwise, and exits with code 0 if there are no errors or 1 if any errors occurred.
- */
 function main() {
 	const options = parseArgs(process.argv.slice(2));
 	const errors = [];
@@ -332,7 +301,12 @@ function main() {
 			errors.push({
 				code: "validation_command_failed",
 				command: commandResult.command,
+				error: commandResult.error,
+				exitCode: commandResult.exitCode,
 				message: "adopted pattern validation command failed",
+				signal: commandResult.signal,
+				stderr: commandResult.stderr,
+				timedOut: commandResult.timedOut,
 			});
 		}
 	}

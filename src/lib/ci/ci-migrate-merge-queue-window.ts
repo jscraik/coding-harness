@@ -51,33 +51,14 @@ export interface MergeQueueCutoverWindow {
 		| undefined;
 }
 
-/**
- * Determines whether a string is a lowercase SHA-256 hex digest (64 hexadecimal characters).
- *
- * @returns `true` if `value` consists of exactly 64 lowercase hexadecimal characters, `false` otherwise.
- */
 function isHexDigest(value: string): boolean {
 	return SHA256_HEX_PATTERN.test(value);
 }
 
-/**
- * Checks whether a string is a 40-character lowercase hex commit SHA.
- *
- * @param value - Candidate commit SHA to validate
- * @returns `true` if `value` matches 40 lowercase hexadecimal characters, `false` otherwise.
- */
 function isCommitSha(value: string): boolean {
 	return COMMIT_SHA_PATTERN.test(value);
 }
 
-/**
- * Validates that a value conforms to the BranchProtectionSatisfiabilityReport shape.
- *
- * Ensures `status` is exactly `"satisfied"` or `"unsatisfied"`, `scannedOpenPrs` is an integer greater than or equal to zero, and `failingPrs` is an array whose elements are objects containing an integer `number` and a `missingChecks` array of strings.
- *
- * @param value - Candidate value to validate
- * @returns `true` if `value` matches the BranchProtectionSatisfiabilityReport structure, `false` otherwise.
- */
 function isValidBranchProtectionSatisfiabilityReport(
 	value: unknown,
 ): value is BranchProtectionSatisfiabilityReport {
@@ -112,10 +93,10 @@ function isValidBranchProtectionSatisfiabilityReport(
 }
 
 /**
- * Checks whether a value conforms to the MergeQueueEvidenceBinding shape.
+ * Validates the replay-binding shape embedded in merge-queue evidence artifacts.
  *
- * @param value - Candidate parsed JSON value to validate
- * @returns `true` if `value` has the required repository, commit, policy, and SHA-256 digest fields; `false` otherwise.
+ * @param value - Candidate parsed JSON value.
+ * @returns True when the value carries the required repository and policy digests.
  */
 export function isValidMergeQueueEvidenceBinding(
 	value: unknown,
@@ -190,25 +171,26 @@ export function isValidMergeQueueCutoverWindow(
 			Number.isInteger(count) &&
 			Number.isFinite(count) &&
 			count >= 0);
+	const inOrder = (earlier: number, later: number): boolean =>
+		Number.isFinite(earlier) && Number.isFinite(later) && later >= earlier;
 
 	const stageSpecificInvariantsValid = (): boolean => {
 		if (parsed.stage === "paused") {
 			return Number.isFinite(pausedAtMs);
 		}
 		if (parsed.stage === "drained") {
-			return Number.isFinite(pausedAtMs) && Number.isFinite(drainedAtMs);
+			return inOrder(pausedAtMs, drainedAtMs);
 		}
 		if (parsed.stage === "revalidated") {
 			return (
-				Number.isFinite(pausedAtMs) &&
-				Number.isFinite(drainedAtMs) &&
-				Number.isFinite(revalidatedAtMs) &&
+				inOrder(pausedAtMs, drainedAtMs) &&
+				inOrder(drainedAtMs, revalidatedAtMs) &&
 				parsed.postCutover !== undefined &&
 				isValidBranchProtectionSatisfiabilityReport(parsed.postCutover)
 			);
 		}
 		if (parsed.stage === "aborted") {
-			return Number.isFinite(pausedAtMs) && Number.isFinite(abortedAtMs);
+			return inOrder(pausedAtMs, abortedAtMs);
 		}
 		return false;
 	};
@@ -241,22 +223,10 @@ export function isValidMergeQueueCutoverWindow(
 	);
 }
 
-/**
- * Resolve the filesystem path to the merge-queue cutover window JSON within a target directory.
- *
- * @param targetDir - Base directory that contains the harness control-plane (the directory to resolve from)
- * @returns The resolved file path to the merge-queue window JSON document
- */
 function getMergeQueueWindowPath(targetDir: string): string {
 	return resolve(targetDir, MERGE_QUEUE_WINDOW_PATH);
 }
 
-/**
- * Get the filesystem path to the merge-queue window signature file inside a target directory.
- *
- * @param targetDir - Directory that contains the harness control-plane files
- * @returns The resolved path to the `.sig` file paired with the merge-queue window JSON
- */
 function getMergeQueueWindowSignaturePath(targetDir: string): string {
 	return `${getMergeQueueWindowPath(targetDir)}.sig`;
 }
@@ -264,9 +234,9 @@ function getMergeQueueWindowSignaturePath(targetDir: string): string {
 /**
  * Writes a signed merge-queue cutover window for a snapshot lifecycle stage.
  *
- * @param targetDir - Path to the repository root containing the harness control-plane directory.
+ * @param targetDir - Repository root containing the harness control-plane directory.
  * @param window - Cutover window state to serialize and sign.
- * @returns `{ ok: true }` on success, or `{ ok: false; error: string }` with a sanitized error message on failure.
+ * @returns Success or a sanitized error describing the write failure.
  */
 export function writeMergeQueueWindow(
 	targetDir: string,
@@ -297,10 +267,10 @@ export function writeMergeQueueWindow(
 }
 
 /**
- * Read and verify the signed merge-queue cutover window file if present.
+ * Reads and verifies the signed merge-queue cutover window when it exists.
  *
  * @param targetDir - Repository root containing the harness control-plane directory.
- * @returns An object with `ok: true` and `value` set to the verified `MergeQueueCutoverWindow` or `null` when no window file exists; or `ok: false` and `error` with a diagnostic message when verification or reading fails.
+ * @returns Null when no window exists, or the verified window document.
  */
 export function readMergeQueueWindowIfPresent(
 	targetDir: string,
@@ -361,13 +331,11 @@ export function readMergeQueueWindowIfPresent(
 }
 
 /**
- * Prevents starting a new snapshot apply when an active non-terminal merge-queue cutover window
- * belonging to a different snapshot exists.
+ * Fails a new apply when another snapshot still owns a non-terminal window.
  *
  * @param targetDir - Repository root containing the harness control-plane directory.
  * @param snapshotId - Snapshot id requested by the current migration operation.
- * @returns `{ ok: true }` when no blocking window exists; `{ ok: false, error }` when a blocking
- * window is present or reading/verifying the existing window fails.
+ * @returns Success when no blocking window exists.
  */
 export function assertNoBlockingMergeQueueCutoverWindow(
 	targetDir: string,

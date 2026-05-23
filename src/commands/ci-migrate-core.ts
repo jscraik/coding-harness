@@ -584,13 +584,6 @@ interface MergeQueueCutoverEvidence {
 	};
 }
 
-/**
- * Determines whether a value conforms to the SnapshotAttestation shape for the given snapshot and is signed with the expected snapshot signature algorithm.
- *
- * @param value - The value to validate as a snapshot attestation.
- * @param snapshotId - The snapshot identifier that the attestation must reference.
- * @returns `true` if `value` is a valid `SnapshotAttestation` for `snapshotId`, `false` otherwise.
- */
 function isValidSnapshotAttestation(
 	value: unknown,
 	snapshotId: string,
@@ -2087,18 +2080,6 @@ function parseMergeQueueProviderAPIConfig(
 	}
 }
 
-/**
- * Orchestrates merge-queue provider API requests (pause, optionally drain and revalidate), assembles cutover evidence, signs it, and writes the evidence file and its signature.
- *
- * @param targetDir - Path to the repository root where repo-bound paths are resolved
- * @param configPath - Path to the merge-queue provider API config (repo-bound)
- * @param snapshotId - Snapshot identifier to embed in the generated evidence
- * @param evidencePath - Destination path (repo-bound) where the evidence JSON and `.sig` will be written
- * @param requireFullLifecycle - When true, the orchestrator will invoke drain and revalidate requests and include their timestamps/counts in the evidence
- * @param binding - Derived MergeQueueEvidenceBinding identifying the repository and policy digests to bind the evidence to
- * @param signingKey - Private signing key material used to produce the evidence `.sig` file
- * @returns `{ ok: true }` on success, or `{ ok: false, error: string }` when an error occurs with a human-readable message. 
- */
 function runMergeQueueProviderAPIOrchestrator(
 	targetDir: string,
 	configPath: string,
@@ -2282,17 +2263,6 @@ function runMergeQueueProviderAPIOrchestrator(
 	return { ok: true };
 }
 
-/**
- * Capture a snapshot of allowlisted external control-plane files and persist it under the given snapshot id.
- *
- * Reads each configured external control-plane path; for files that exist (and are not symbolic links) it records
- * their UTF-8 content and SHA-256 content digest, then writes a timestamped snapshot JSON file for `snapshotId`.
- *
- * @param targetDir - Repository root where allowlisted paths are resolved and the snapshot file is written
- * @param snapshotId - Identifier used to name the snapshot artifact
- * @returns An object with `{ ok: true, digest }` containing the SHA-256 digest of the written snapshot on success,
- *          or `{ ok: false, error }` with an error message on failure.
- */
 function captureExternalControlPlaneState(
 	targetDir: string,
 	snapshotId: string,
@@ -2350,17 +2320,6 @@ function captureExternalControlPlaneState(
 	}
 }
 
-/**
- * Restores an external control-plane snapshot by writing or removing the listed artifacts under the repository.
- *
- * The function validates that each artifact's relative path is allowed for restore, verifies artifact content digests,
- * writes artifact content to the resolved path (creating parent directories as needed), and removes files for artifacts
- * marked as not existing. On any validation or IO failure it returns a descriptive error.
- *
- * @param targetDir - Repository root directory where artifacts will be restored.
- * @param snapshot - External control-plane snapshot containing artifacts to restore.
- * @returns `{ ok: true }` on successful restore, or `{ ok: false, error: string }` when validation or IO fails with a human-readable error message.
- */
 function restoreExternalControlPlaneState(
 	targetDir: string,
 	snapshot: ExternalControlPlaneStateSnapshot,

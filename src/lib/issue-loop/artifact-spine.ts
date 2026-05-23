@@ -13,7 +13,7 @@ export const ISSUE_LOOP_REQUIRED_ARTIFACTS = [
 	"linear_tracker",
 ] as const;
 
-/** Canonical semantic artifact class required by an issue-loop artifact spine. */
+/** Canonical artifact kind labels used to prove an issue loop is implementation-ready. */
 export type IssueLoopArtifactKind =
 	(typeof ISSUE_LOOP_REQUIRED_ARTIFACTS)[number];
 

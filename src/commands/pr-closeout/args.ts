@@ -19,12 +19,6 @@ export type PrCloseoutParseResult =
 	| { options: PrCloseoutCLIOptions }
 	| { exitCode: number };
 
-/**
- * Print usage information and a short description for the `harness pr-closeout` CLI command.
- *
- * The output includes the command syntax with supported flags and a one-line description of the
- * command's purpose.
- */
 function printUsage(): void {
 	console.info(
 		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--gates <path>] [--phase-exit <path>] [--assurance <path>] [--runtime-evidence <path>] [--env-file <path>]",
@@ -76,14 +70,6 @@ function applyStringFlag(
 	return "handled";
 }
 
-/**
- * Processes a single command-line token for the `pr-closeout` command and updates the provided options.
- *
- * @param options - Mutable CLI options object that will be populated when a recognized flag and value are found.
- * @param args - Full argv-style token list.
- * @param index - Index in `args` of the token to process; if the flag consumes a following value the caller should skip the next token when `"handled"` is returned.
- * @returns `'handled'` if the flag and its value were consumed, `'unknown'` if the token is not a recognized flag, or an object `{ exitCode: number }` when a parsing error occurs.
- */
 function applyPrCloseoutFlag(
 	options: PrCloseoutCLIOptions,
 	args: readonly string[],

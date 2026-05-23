@@ -261,11 +261,7 @@ export function resolveRequiredCheckAliases(
 		return aliases;
 	}
 	for (const gate of normalizedManifest.gates) {
-		if (
-			gate.enabled === false ||
-			gate.class !== "required" ||
-			gate.provider !== normalizedManifest.activeProvider
-		) {
+		if (gate.enabled === false || gate.class !== "required") {
 			continue;
 		}
 		if (!gate.githubCheckName || gate.githubCheckName === gate.displayName) {

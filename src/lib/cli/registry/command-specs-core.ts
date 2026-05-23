@@ -4,21 +4,13 @@ import {
 	type BlastRadiusOptions,
 	runBlastRadiusCLI,
 } from "../../../commands/blast-radius.js";
-import { runBrainCLI } from "../../../commands/brain.js";
-import {
-	runCIMigrateCLI,
-	runPromoteModeCLI,
-	runSyncBranchProtectionCLI,
-} from "../../../commands/ci-migrate.js";
 import { runCIOwnershipGateCLI } from "../../../commands/ci-ownership-gate.js";
 import { runContextHealthCLI } from "../../../commands/context-health.js";
 import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
 import { runEjectCLI } from "../../../commands/eject.js";
-import { runGapCaseCLI } from "../../../commands/gap-case.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
-import { runInitCLI, runInteractiveInitCLI } from "../../../commands/init.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
@@ -27,26 +19,15 @@ import {
 	type PilotRollbackOptions,
 	runPilotRollbackCLI,
 } from "../../../commands/pilot-rollback.js";
-import { runPromptGateCLI } from "../../../commands/prompt-gate.js";
 import { runReviewContextCLI } from "../../../commands/review-context.js";
 import { runSearchCLI } from "../../../commands/search.js";
-import {
-	printSimulateUsage,
-	runSimulateCLI,
-} from "../../../commands/simulate.js";
 import {
 	runUIExploreCLI,
 	runUIFastCLI,
 	runUIVerifyCLI,
 } from "../../../commands/ui-loop.js";
-import {
-	type HarnessUpgradeOptions,
-	runUpgradeCLI,
-} from "../../../commands/upgrade.js";
 import { runValidationPlanCLI } from "../../../commands/validation-plan.js";
-import type { IssueTracker } from "../../init/types.js";
 import type { PilotEvaluateOptions } from "../../pilot-evaluation/types.js";
-import type { ProjectType } from "../../project-type/types.js";
 import { getVersion } from "../../version.js";
 import {
 	getFlagValue,
@@ -56,18 +37,22 @@ import {
 } from "../parse-utils.js";
 import { createArtifactGateCommandSpec } from "./artifact-gate-command-spec.js";
 import { createAuditCommandSpec } from "./audit-command-spec.js";
+import { createBrainCommandSpec } from "./brain-command-spec.js";
 import { createBrainstormGateCommandSpec } from "./brainstorm-gate-command-spec.js";
 import { createBranchProtectCommandSpec } from "./branch-protect-command-spec.js";
 import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
+import { createCIMigrateCommandSpec } from "./ci-migrate-command-spec.js";
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createDoctorCommandSpec } from "./doctor-command-spec.js";
 import { createDriftGateCommandSpec } from "./drift-gate-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
 import { createFleetPlanCommandSpec } from "./fleet-plan-command-spec.js";
 import { createGardenerCommandSpec } from "./gardener-command-spec.js";
+import { createGapCaseCommandSpec } from "./gap-case-command-spec.js";
 import { createHealthCommandSpec } from "./health-command-spec.js";
+import { createInitCommandSpec } from "./init-command-spec.js";
 import { createLinearGateCommandSpec } from "./linear-gate-command-spec.js";
 import { createLinearCommandSpec } from "./linear-command-spec.js";
 import { createLearningEvidenceCommandSpecs } from "./learning-evidence-command-specs.js";
@@ -77,12 +62,13 @@ import { createMemoryGateCommandSpec } from "./memory-gate-command-spec.js";
 import { createNextCommandSpec } from "./next-command-spec.js";
 import { createObservabilityGateCommandSpec } from "./observability-gate-command-spec.js";
 import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
-import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPlanGateCommandSpec } from "./plan-gate-command-spec.js";
+import { createPolicyGateCommandSpec } from "./policy-gate-command-spec.js";
 import { createPresetCommandSpec } from "./preset-command-spec.js";
 import { createPrCloseoutCommandSpec } from "./pr-closeout-command-spec.js";
 import { createPreflightGateCommandSpec } from "./preflight-gate-command-spec.js";
 import { createPrTemplateGateCommandSpec } from "./pr-template-gate-command-spec.js";
+import { createPromptGateCommandSpec } from "./prompt-gate-command-spec.js";
 import { createReplayCommandSpec } from "./replay-command-spec.js";
 import { createRemediateCommandSpec } from "./remediate-command-spec.js";
 import { createReviewGateCommandSpec } from "./review-gate-command-spec.js";
@@ -91,9 +77,11 @@ import { createRuntimeBudgetCommandSpec } from "./runtime-budget-command-spec.js
 import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
 import { createSilentErrorCommandSpec } from "./silent-error-command-spec.js";
+import { createSimulateCommandSpec } from "./simulate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
 import type { CommandSpec } from "./types.js";
 import { createToolingAuditCommandSpec } from "./tooling-audit-command-spec.js";
+import { createUpgradeCommandSpec } from "./upgrade-command-spec.js";
 import { createVerifyCodeRabbitCommandSpec } from "./verify-coderabbit-command-spec.js";
 import { createVerifyWorkCommandSpec } from "./verify-work-command-spec.js";
 import { createWorkflowGenerateCommandSpec } from "./workflow-generate-command-spec.js";
@@ -181,51 +169,9 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createMemoryGateCommandSpec(),
 	createSilentErrorCommandSpec(),
 	createBrainstormGateCommandSpec(),
-	{
-		name: "brain",
-		summary: "Project Brain knowledge and quality management",
-		example: "brain status --json",
-		errorLabel: "Brain Error",
-		execute: (args) => {
-			return runBrainCLI(args);
-		},
-	},
+	createBrainCommandSpec(),
 	createPlanGateCommandSpec(),
-	{
-		name: "prompt-gate",
-		summary: "Validate prompt template usage",
-		errorLabel: "Prompt Gate Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const typeArg = getFlagValue(args, args.indexOf("--type"));
-			const fileArg = getFlagValue(args, args.indexOf("--file"));
-
-			if (!typeArg) {
-				console.error(
-					"Error: --type is required (feature|bugfix|refactor|release)",
-				);
-				return 2;
-			}
-			if (!fileArg) {
-				console.error("Error: --file is required");
-				return 2;
-			}
-
-			const validTypes = ["feature", "bugfix", "refactor", "release"] as const;
-			if (!validTypes.includes(typeArg as (typeof validTypes)[number])) {
-				console.error(
-					`Error: Invalid type "${typeArg}". Must be one of: ${validTypes.join(", ")}`,
-				);
-				return 2;
-			}
-
-			return runPromptGateCLI({
-				type: typeArg as (typeof validTypes)[number],
-				file: fileArg,
-				json: jsonFlag,
-			});
-		},
-	},
+	createPromptGateCommandSpec(),
 	createDriftGateCommandSpec(),
 	{
 		name: "ui:fast",
@@ -364,104 +310,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		},
 	},
 	createObservabilityGateCommandSpec(),
-	{
-		name: "gap-case",
-		summary: "Manage production gap cases (open/resolve)",
-		errorLabel: "Gap Case Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const contractIndex = args.indexOf("--contract");
-			const storeIndex = args.indexOf("--store");
-
-			// args[0] is the action (command name already stripped by dispatcher)
-			const action = args[0] as "open" | "resolve" | undefined;
-			if (action !== "open" && action !== "resolve") {
-				console.error("Error: action must be 'open' or 'resolve'");
-				return 2;
-			}
-
-			const incidentIdIndex = args.indexOf("--incident-id");
-			const summaryIndex = args.indexOf("--summary");
-			const severityIndex = args.indexOf("--severity");
-			const ownerIndex = args.indexOf("--owner");
-			const providerIndex = args.indexOf("--provider");
-			const findingIdIndex = args.indexOf("--finding-id");
-			const prNumberIndex = args.indexOf("--pr-number");
-			const headShaIndex = args.indexOf("--head-sha");
-			const slaHoursIndex = args.indexOf("--sla-hours");
-			const caseIdIndex = args.indexOf("--case-id");
-			const evidenceUrlIndex = args.indexOf("--evidence-url");
-			const fixPrIndex = args.indexOf("--fix-pr");
-			const noteIndex = args.indexOf("--note");
-			const resolvedByIndex = args.indexOf("--resolved-by");
-
-			const options: {
-				action: "open" | "resolve";
-				json?: boolean;
-				contractPath?: string;
-				storePath?: string;
-				incidentId?: string;
-				summary?: string;
-				severity?: string;
-				owner?: string;
-				provider?: string;
-				findingId?: string;
-				prNumber?: number;
-				headSha?: string;
-				slaHours?: number;
-				caseId?: string;
-				evidenceUrl?: string;
-				fixPr?: number;
-				note?: string;
-				resolvedBy?: string;
-			} = { action };
-
-			if (jsonFlag) options.json = true;
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) options.contractPath = contractArg;
-			const storeArg = getFlagValue(args, storeIndex);
-			if (storeArg) options.storePath = storeArg;
-			const incidentIdArg = getFlagValue(args, incidentIdIndex);
-			if (incidentIdArg) options.incidentId = incidentIdArg;
-			const summaryArg = getFlagValue(args, summaryIndex);
-			if (summaryArg) options.summary = summaryArg;
-			const severityArg = getFlagValue(args, severityIndex);
-			if (severityArg) options.severity = severityArg;
-			const ownerArg = getFlagValue(args, ownerIndex);
-			if (ownerArg) options.owner = ownerArg;
-			const providerArg = getFlagValue(args, providerIndex);
-			if (providerArg) options.provider = providerArg;
-			const findingIdArg = getFlagValue(args, findingIdIndex);
-			if (findingIdArg) options.findingId = findingIdArg;
-			const prNumberArg = getFlagValue(args, prNumberIndex);
-			if (prNumberArg) {
-				const parsed = parseIntegerArg(prNumberArg, 1);
-				if (parsed !== undefined) options.prNumber = parsed;
-			}
-			const headShaArg = getFlagValue(args, headShaIndex);
-			if (headShaArg) options.headSha = headShaArg;
-			const slaHoursArg = getFlagValue(args, slaHoursIndex);
-			if (slaHoursArg) {
-				const parsed = parseIntegerArg(slaHoursArg, 1);
-				if (parsed !== undefined) options.slaHours = parsed;
-			}
-			const caseIdArg = getFlagValue(args, caseIdIndex);
-			if (caseIdArg) options.caseId = caseIdArg;
-			const evidenceUrlArg = getFlagValue(args, evidenceUrlIndex);
-			if (evidenceUrlArg) options.evidenceUrl = evidenceUrlArg;
-			const fixPrArg = getFlagValue(args, fixPrIndex);
-			if (fixPrArg) {
-				const parsed = parseIntegerArg(fixPrArg, 1);
-				if (parsed !== undefined) options.fixPr = parsed;
-			}
-			const noteArg = getFlagValue(args, noteIndex);
-			if (noteArg) options.note = noteArg;
-			const resolvedByArg = getFlagValue(args, resolvedByIndex);
-			if (resolvedByArg) options.resolvedBy = resolvedByArg;
-
-			return runGapCaseCLI(options);
-		},
-	},
+	createGapCaseCommandSpec(),
 	{
 		name: "ui:verify",
 		aliases: ["ui-verify"],
@@ -554,63 +403,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runUIExploreCLI(options);
 		},
 	},
-	{
-		name: "simulate",
-		summary: "Simulate contract transitions between versions",
-		errorLabel: "Simulate Error",
-		execute: (args) => {
-			if (args.includes("--help") || args.includes("-h")) {
-				printSimulateUsage();
-				return 0;
-			}
-
-			const jsonFlag = args.includes("--json");
-			const ciSoftFlag = args.includes("--ci-soft");
-			const verboseFlag = args.includes("--verbose");
-
-			const contractAIndex = args.indexOf("--contract-a");
-			const contractBIndex = args.indexOf("--contract-b");
-			const artifactsIndex = args.indexOf("--artifacts");
-			const tracesIndex = args.indexOf("--traces");
-			const outputIndex = args.indexOf("--output");
-
-			const contractA = getFlagValue(args, contractAIndex);
-			const contractB = getFlagValue(args, contractBIndex);
-
-			if (!contractA) {
-				console.error("Error: --contract-a is required");
-				return 2;
-			}
-			if (!contractB) {
-				console.error("Error: --contract-b is required");
-				return 2;
-			}
-
-			const options: {
-				contractA: string;
-				contractB: string;
-				artifactsDir?: string;
-				tracesDir?: string;
-				outputPath?: string;
-				json?: boolean;
-				ciSoft?: boolean;
-				verbose?: boolean;
-			} = { contractA, contractB };
-
-			if (jsonFlag) options.json = true;
-			if (ciSoftFlag) options.ciSoft = true;
-			if (verboseFlag) options.verbose = true;
-
-			const artifactsArg = getFlagValue(args, artifactsIndex);
-			if (artifactsArg) options.artifactsDir = artifactsArg;
-			const tracesArg = getFlagValue(args, tracesIndex);
-			if (tracesArg) options.tracesDir = tracesArg;
-			const outputArg = getFlagValue(args, outputIndex);
-			if (outputArg) options.outputPath = outputArg;
-
-			return runSimulateCLI(options);
-		},
-	},
+	createSimulateCommandSpec(),
 	{
 		name: "context",
 		summary: "Semantic search for relevant prior work",
@@ -644,248 +437,15 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			return runContextHealthCLI(args);
 		},
 	},
-	{
-		name: "init",
-		summary: "Install harness in current directory",
-		example: "init [target-dir] [--dry-run] [--json]",
-		errorLabel: "Init Error",
-		execute: (args) => {
-			const dryRunFlag = args.includes("--dry-run");
-			const forceFlag = args.includes("--force");
-			const trackFlag = args.includes("--track");
-			const rollbackFlag = args.includes("--rollback");
-			const checkUpdatesFlag = args.includes("--check-updates");
-			const updateFlag = args.includes("--update");
-			const explainOwnershipFlag = args.includes("--explain-ownership");
-			const interactiveFlag = args.includes("--interactive");
-			const migrateFlag = args.includes("--migrate");
-			const jsonFlag = args.includes("--json");
-			const minimalFlag = args.includes("--minimal");
-
-			const projectTypeIndex = args.indexOf("--project-type");
-			const projectTypeArg =
-				projectTypeIndex !== -1 ? args[projectTypeIndex + 1] : undefined;
-			const issueTrackerIndex = args.indexOf("--issue-tracker");
-			const issueTrackerArg =
-				issueTrackerIndex !== -1 ? args[issueTrackerIndex + 1] : undefined;
-
-			if (minimalFlag) {
-				if (issueTrackerArg !== undefined) {
-					console.error(
-						"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
-					);
-					return 2;
-				}
-			}
-			if (
-				issueTrackerArg !== undefined &&
-				!["linear", "github", "none"].includes(issueTrackerArg)
-			) {
-				console.error(
-					`Error: Invalid --issue-tracker value: "${issueTrackerArg}". Valid values: linear | github | none.`,
-				);
-				return 2;
-			}
-			const issueTracker = issueTrackerArg as IssueTracker | undefined;
-
-			// Find target dir: first non-flag arg, not a value for a named flag
-			const targetDir = args.find((arg, i, arr) => {
-				if (arg.startsWith("-")) return false;
-				const prev = arr[i - 1];
-				if (prev === "--project-type" || prev === "--issue-tracker")
-					return false;
-				return true;
-			});
-
-			const options = {
-				dryRun: dryRunFlag,
-				force: forceFlag,
-				track: trackFlag,
-				rollback: rollbackFlag,
-				checkUpdates: checkUpdatesFlag,
-				update: updateFlag,
-				explainOwnership: explainOwnershipFlag,
-				interactive: interactiveFlag,
-				migrate: migrateFlag,
-				json: jsonFlag,
-				...(minimalFlag ? { minimal: true } : {}),
-				...(issueTracker ? { issueTracker } : {}),
-				...(projectTypeArg
-					? { projectType: projectTypeArg as ProjectType }
-					: {}),
-			};
-
-			if (interactiveFlag) {
-				return runInteractiveInitCLI(targetDir, options);
-			}
-			return runInitCLI(targetDir, options);
-		},
-	},
+	createInitCommandSpec(),
 	...createLearningEvidenceCommandSpecs({
 		runLearningsCLI,
 		runNorthStarFeedbackCLI,
 		runReviewContextCLI,
 		runValidationPlanCLI,
 	}),
-	{
-		name: "upgrade",
-		summary: "Upgrade harness to the latest version",
-		errorLabel: "Upgrade Error",
-		execute: (args) => {
-			const dryRunFlag = args.includes("--dry-run");
-			const forceFlag = args.includes("--force");
-			const jsonFlag = args.includes("--json");
-			const skipContractFlag = args.includes("--skip-contract-migration");
-			const providerIndex = args.indexOf("--provider");
-			const provider = getFlagValue(args, providerIndex);
-			// Skip --provider value when finding targetDir
-			const rest = args;
-			const targetDir = rest.filter((arg, i) => {
-				if (arg.startsWith("-")) return false;
-				if (i > 0 && rest[i - 1] === "--provider") return false;
-				return true;
-			})[0];
-			const upgradeOptions: HarnessUpgradeOptions = {
-				dryRun: dryRunFlag,
-				force: forceFlag,
-				json: jsonFlag,
-				provider: provider ?? undefined,
-				skipContractMigration: skipContractFlag,
-			};
-			return runUpgradeCLI(targetDir, upgradeOptions);
-		},
-	},
-	{
-		name: "ci-migrate",
-		summary: "Migrate CI/CD pipelines to harness governance",
-		example: "ci-migrate prepare [target-dir] --dry-run --json",
-		errorLabel: "CI Migrate Error",
-		execute: (args) => {
-			const providerIndex = args.indexOf("--provider");
-			const snapshotIndex = args.indexOf("--snapshot");
-			const actionIndex = args.indexOf("--action");
-			const breakGlassApprovalIndex = args.indexOf("--break-glass-approval");
-			const mergeQueueEvidenceIndex = args.indexOf("--merge-queue-evidence");
-			const mergeQueueOrchestratorIndex = args.indexOf(
-				"--merge-queue-orchestrator",
-			);
-			const commitModeIndex = args.indexOf("--commit-mode");
-			const jsonFlag = args.includes("--json");
-			const dryRunFlag = args.includes("--dry-run");
-			const applyFlag = args.includes("--apply");
-			const rollbackFlag = args.includes("--rollback");
-			const autoGenerateProofPackFlag = args.includes(
-				"--auto-generate-proof-pack",
-			);
-			const forceFlag = args.includes("--force");
-			const valueFlags = new Set([
-				"--provider",
-				"--snapshot",
-				"--action",
-				"--break-glass-approval",
-				"--merge-queue-evidence",
-				"--merge-queue-orchestrator",
-				"--commit-mode",
-			]);
-			const positionalArgs: string[] = [];
-			// args[0] is already the first arg after command name (stripped by dispatcher)
-			for (let index = 0; index < args.length; index++) {
-				const token = args[index];
-				if (!token) continue;
-				if (token.startsWith("--")) {
-					if (valueFlags.has(token)) {
-						const nextToken = args[index + 1];
-						if (nextToken && !nextToken.startsWith("-")) {
-							index += 1;
-						}
-					}
-					continue;
-				}
-				if (token.startsWith("-")) continue;
-				positionalArgs.push(token);
-			}
-
-			const validActions = new Set([
-				"prepare",
-				"commit",
-				"abort",
-				"verify",
-				"bootstrap",
-				"sync-branch-protection",
-				"promote-mode",
-			]);
-			const actionArg = getFlagValue(args, actionIndex);
-			let parsedAction = actionArg;
-			if (
-				!parsedAction &&
-				positionalArgs[0] &&
-				validActions.has(positionalArgs[0])
-			) {
-				parsedAction = positionalArgs.shift();
-			}
-			if (positionalArgs.length > 1) {
-				console.error(
-					"Error: ci-migrate accepts at most one target directory positional argument.",
-				);
-				return 2;
-			}
-			const targetDir = positionalArgs[0];
-
-			// Build clean args for delegated helpers: exclude --action flag/value
-			const delegatedArgs = (() => {
-				if (actionArg && actionIndex >= 0) {
-					const filtered = [...args];
-					filtered.splice(actionIndex, 2); // remove --action and its value
-					return filtered;
-				}
-				// Positional action: skip the action token at args[0]
-				return args.slice(1);
-			})();
-
-			if (parsedAction === "sync-branch-protection") {
-				return runSyncBranchProtectionCLI(targetDir, delegatedArgs);
-			}
-			if (parsedAction === "promote-mode") {
-				return runPromoteModeCLI(targetDir, delegatedArgs);
-			}
-
-			const provider = getFlagValue(args, providerIndex);
-			const snapshot = getFlagValue(args, snapshotIndex);
-			const breakGlassApprovalPath = getFlagValue(
-				args,
-				breakGlassApprovalIndex,
-			);
-			const mergeQueueEvidencePath = getFlagValue(
-				args,
-				mergeQueueEvidenceIndex,
-			);
-			const mergeQueueOrchestratorPath = getFlagValue(
-				args,
-				mergeQueueOrchestratorIndex,
-			);
-			const commitModeRaw = getFlagValue(args, commitModeIndex);
-			const commitMode =
-				commitModeRaw === "solo" || commitModeRaw === "enterprise"
-					? commitModeRaw
-					: undefined;
-
-			return runCIMigrateCLI(targetDir, {
-				provider,
-				dryRun: dryRunFlag,
-				...(jsonFlag ? { json: true } : {}),
-				apply: applyFlag,
-				rollback: rollbackFlag,
-				snapshot,
-				action: parsedAction,
-				breakGlassApprovalPath,
-				mergeQueueEvidencePath,
-				mergeQueueOrchestratorPath,
-				autoGenerateProofPack: autoGenerateProofPackFlag,
-				commitMode,
-				force: forceFlag,
-			});
-		},
-	},
+	createUpgradeCommandSpec(),
+	createCIMigrateCommandSpec(),
 	{
 		name: "diff-budget",
 		summary: "Enforce diff budget constraints",

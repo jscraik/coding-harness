@@ -11,16 +11,7 @@ const FILES_REQUIRED_ERROR: ArtifactGateUsageError = {
 	fix: "Use --files path/to/generated-artifact,path/to/source-template.",
 };
 
-/**
- * Run Artifact Gate using the provided CLI-style options, print results, and return a process-like exit code.
- *
- * When `options.json` is truthy the function prints the full result as formatted JSON; otherwise it prints a short
- * status line followed by one formatted line per finding (errors go to stderr). If no file paths are provided the
- * function prints a usage error and returns immediately.
- *
- * @param options - CLI-style options including `files`, `repoRoot`, `registryPath`, and `json` output flag
- * @returns `0` when no errors were reported, `1` when one or more errors were reported, `2` when invocation is invalid (e.g., no files supplied)
- */
+/** Execute artifact-gate with typed CLI options and formatted output. */
 export function runArtifactGateCLI(options: ArtifactGateCliOptions): number {
 	const files = (options.files ?? [])
 		.map((entry) => entry.trim())
@@ -52,12 +43,7 @@ export function runArtifactGateCLI(options: ArtifactGateCliOptions): number {
 	return result.summary.errors > 0 ? 1 : 0;
 }
 
-/**
- * Parse CLI arguments and execute the artifact-gate CLI entry point.
- *
- * @param args - Raw command-line arguments (e.g., `process.argv.slice(2)`)
- * @returns `0` on success, `1` if artifact-gate reported errors, `2` for usage or parsing errors
- */
+/** Run artifact-gate from raw CLI arguments. */
 export function runArtifactGateFromCliArgs(args: string[]): number {
 	const parsed = buildArtifactGateOptionsFromCliArgs(args);
 	if (!parsed.ok) {
@@ -68,12 +54,6 @@ export function runArtifactGateFromCliArgs(args: string[]): number {
 	return runArtifactGateCLI(parsed.options);
 }
 
-/**
- * Print a usage error either as a structured JSON object or as a human-readable message.
- *
- * @param error - The usage error to report, including message and metadata.
- * @param json - If truthy, output a JSON object with `schemaVersion: "artifact-gate/v1"`, `status: "error"`, and the provided `error`; otherwise print a concise human-readable message to stderr.
- */
 function printUsageError(
 	error: ArtifactGateUsageError,
 	json: boolean | undefined,

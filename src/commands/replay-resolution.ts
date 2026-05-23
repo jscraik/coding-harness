@@ -13,10 +13,7 @@ import { logReplayError } from "./replay-output.js";
 import { EXIT_CODES } from "./replay-run-record.js";
 
 /**
- * Resolve and validate replay trace storage configuration when a trace directory is provided.
- *
- * @param options - CLI replay options; `options.traceDir` selects and validates the trace storage directory and controls whether a config is produced.
- * @returns If `options.traceDir` is not set, `{ ok: true }`. If set and valid, `{ ok: true, config }` where `config` contains the resolved `baseDir` and `maxTraces` (100). If validation fails, `{ ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR }`.
+ * Resolve and validate the optional replay trace storage configuration.
  */
 export function resolveReplayConfig(
 	options: ReplayOptions,

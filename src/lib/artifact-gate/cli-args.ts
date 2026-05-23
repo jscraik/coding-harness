@@ -1,18 +1,7 @@
 import { inspectFlagValue, parseCsvList } from "../cli/parse-utils.js";
 import type { ArtifactGateCliArgsResult } from "./types.js";
 
-/**
- * Converts raw artifact-gate CLI argv into a typed command contract.
- *
- * @param args - Raw CLI arguments (e.g. `process.argv.slice(2)`)
- * @returns An `ArtifactGateCliArgsResult` indicating parsed options on success or a structured error when a required flag is missing.
- *          When `ok` is `true`, `options` contains:
- *            - `files` — optional array of file paths parsed from `--files`
- *            - `registryPath` — the value of `--registry` (or `undefined` if not provided)
- *            - `json` — whether `--json` was present
- *          When `ok` is `false`, `error.code` will be either
- *            `'artifact-gate.files_missing_value'` or `'artifact-gate.registry_missing_value'`.
- */
+/** Convert raw artifact-gate argv into the typed command contract. */
 export function buildArtifactGateOptionsFromCliArgs(
 	args: string[],
 ): ArtifactGateCliArgsResult {

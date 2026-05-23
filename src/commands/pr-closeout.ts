@@ -15,6 +15,10 @@ import {
 import type { HarnessAssuranceEntry } from "../lib/harness-assurance.js";
 import type { RuntimeEvidenceContract } from "../lib/runtime/runtime-evidence-contract.js";
 import { parsePrCloseoutArgs } from "./pr-closeout/args.js";
+import {
+	normalizeAssuranceEntries,
+	normalizeRuntimeEvidenceContract,
+} from "./pr-closeout/input-validation.js";
 import { buildLivePrCloseoutInput } from "./pr-closeout/live.js";
 import type { CommandRunner } from "./pr-closeout/types.js";
 
@@ -51,21 +55,6 @@ function parseJsonObject(
 	return parsed as Record<string, unknown>;
 }
 
-/**
- * Parse and validate a PR closeout JSON payload, normalizing optional artifact fields.
- *
- * Parses `value` as a JSON object labelled by `source`, requires a `pullRequest` object
- * whose `number` is a positive integer, enforces that `closeoutGates` and `phaseExit`
- * are not both present, and normalizes any provided `closeoutGates`, `phaseExit`,
- * `assurance`, and `runtimeEvidence` fields into their canonical shapes.
- *
- * @param value - The JSON string containing the PR closeout payload
- * @param source - Human-readable label used in error messages to identify the payload source
- * @returns The validated and normalized `PrCloseoutInput` object
- * @throws Error if the input is not a JSON object, if `pullRequest` is missing or its `number`
- *   is not a positive integer, if both `closeoutGates` and `phaseExit` are provided, or if
- *   any normalization/validation of the optional artifacts fails
- */
 function parseInput(value: string, source: string): PrCloseoutInput {
 	const parsed = parseJsonObject(value, source);
 	const pullRequest = parsed.pullRequest;
@@ -141,71 +130,10 @@ function normalizeCloseoutGatesArtifact(
 	return normalized as HePhaseExit;
 }
 
-/**
- * Load and parse a PR closeout JSON file into a normalized `PrCloseoutInput`.
- *
- * @param path - Filesystem path to the JSON file containing the PR closeout input
- * @returns The parsed and validated `PrCloseoutInput`
- */
 function loadInput(path: string): PrCloseoutInput {
 	return parseInput(readFileSync(path, "utf8"), path);
 }
 
-/**
- * Normalize an assurance input into a seven-layer assurance matrix array.
- *
- * Accepts either an array of assurance entries or an object containing an `entries` array; otherwise an error is thrown.
- *
- * @param value - Parsed JSON input that should be either an array of `HarnessAssuranceEntry` or an object with an `entries` array
- * @param source - Label used in error messages to identify the origin of `value`
- * @returns The assurance entries as an array of `HarnessAssuranceEntry`
- * @throws Error if `value` is neither an array nor an object with an `entries` array
- */
-function normalizeAssuranceEntries(
-	value: unknown,
-	source: string,
-): HarnessAssuranceEntry[] {
-	if (Array.isArray(value)) return value as HarnessAssuranceEntry[];
-	if (value && typeof value === "object" && !Array.isArray(value)) {
-		const entries = (value as Record<string, unknown>).entries;
-		if (Array.isArray(entries)) return entries as HarnessAssuranceEntry[];
-	}
-	throw new Error(
-		`${source} must be a seven-layer assurance matrix array or an object with an entries array`,
-	);
-}
-
-/**
- * Normalize and validate a `runtime-evidence-contract/v1` JSON object.
- *
- * @param value - The parsed JSON value expected to be a runtime evidence contract.
- * @param source - Label identifying the origin of `value` used in error messages.
- * @returns The same `value` asserted as a `RuntimeEvidenceContract`.
- * @throws Error if `value` is not a non-null, non-array object; the thrown message will reference `source`.
- */
-function normalizeRuntimeEvidenceContract(
-	value: unknown,
-	source: string,
-): RuntimeEvidenceContract {
-	if (!value || typeof value !== "object" || Array.isArray(value)) {
-		throw new Error(
-			`${source} must be a runtime-evidence-contract/v1 JSON object`,
-		);
-	}
-	return value as RuntimeEvidenceContract;
-}
-
-/**
- * Resolves an artifact path to a canonical path inside a repository, ensuring it does not escape the repo root.
- *
- * Performs both lexical and canonical containment checks and returns the canonical resolved path.
- *
- * @param path - Path to the artifact (absolute or relative to `repoRoot`)
- * @param repoRoot - Repository root directory used as the containment boundary
- * @param artifactLabel - Human-readable label used in error messages when containment checks fail
- * @returns The canonical resolved path to the artifact
- * @throws Error if the resolved path is outside `repoRoot`
- */
 function resolveRepoScopedPath(
 	path: string,
 	repoRoot: string,
@@ -236,28 +164,12 @@ function resolveRepoScopedPath(
 	return canonicalPath;
 }
 
-/**
- * Load a closeout-gates JSON artifact from disk (resolved and constrained to the repository root), normalize it, and validate it as a `HePhaseExit`.
- *
- * @param path - File system path to the closeout-gates JSON artifact; the path is resolved and must remain within `repoRoot`
- * @param repoRoot - Repository root used to resolve and canonicalize `path`
- * @returns The normalized and validated closeout-gates artifact as a `HePhaseExit`
- */
 function loadCloseoutGates(path: string, repoRoot: string): HePhaseExit {
 	const resolvedPath = resolveRepoScopedPath(path, repoRoot, "Closeout gates");
 	const parsed = JSON.parse(readFileSync(resolvedPath, "utf8")) as unknown;
 	return normalizeCloseoutGatesArtifact(parsed, path);
 }
 
-/**
- * Load and normalize an assurance matrix artifact from a repository-scoped path.
- *
- * Resolves `path` against `repoRoot` (ensuring the resolved file remains inside the repository), reads and parses the JSON file, and returns the normalized assurance entries.
- *
- * @param path - Filesystem path to the assurance matrix artifact; may be absolute or relative to `repoRoot`
- * @param repoRoot - Filesystem path of the repository root used to resolve and validate `path` containment
- * @returns The assurance entries normalized into an array of `HarnessAssuranceEntry`
- */
 function loadAssuranceEntries(
 	path: string,
 	repoRoot: string,
@@ -271,14 +183,6 @@ function loadAssuranceEntries(
 	return normalizeAssuranceEntries(parsed, path);
 }
 
-/**
- * Load and validate a runtime evidence contract JSON file from the repository.
- *
- * @param path - Path to the runtime evidence artifact (may be relative to `repoRoot`)
- * @param repoRoot - Repository root used to resolve and enforce that `path` remains inside the repo
- * @returns The parsed and validated `RuntimeEvidenceContract`
- * @throws If `path` resolves outside `repoRoot`, the file cannot be read, the file is not valid JSON, or the contents fail runtime-evidence-contract validation
- */
 function loadRuntimeEvidenceContract(
 	path: string,
 	repoRoot: string,
@@ -292,14 +196,7 @@ function loadRuntimeEvidenceContract(
 	return normalizeRuntimeEvidenceContract(parsed, path);
 }
 
-/**
- * Run the PR closeout CLI flow using the given command-line arguments and optional runner.
- *
- * @param args - The command-line arguments to parse (typically process.argv.slice(2)).
- * @param options - Optional settings for the command.
- * @param options.runner - Optional command runner used when constructing live input; defaults to the built-in runner.
- * @returns The numeric exit code: `0` on success, `1` on error, or a parser-provided code when argument parsing requests immediate exit.
- */
+/** Run the read-only PR closeout command. */
 export async function runPrCloseoutCLI(
 	args: readonly string[],
 	options: { runner?: CommandRunner } = {},

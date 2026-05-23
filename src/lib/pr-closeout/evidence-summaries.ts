@@ -1,11 +1,46 @@
 import { validateHarnessAssuranceEntries } from "../harness-assurance.js";
 import { validateRuntimeEvidenceContract } from "../runtime/runtime-evidence-contract.js";
 import type {
+	RuntimeEvidenceContract,
+	RuntimeEvidenceContractValidationResult,
+	RuntimeEvidenceVerifierStatus,
+} from "../runtime/runtime-evidence-contract.js";
+import type {
 	PrCloseoutAssuranceSummary,
 	PrCloseoutBlocker,
 	PrCloseoutInput,
 	PrCloseoutRuntimeEvidenceSummary,
 } from "./types.js";
+
+function validateRuntimeEvidenceSafely(
+	runtimeEvidence: RuntimeEvidenceContract,
+): RuntimeEvidenceContractValidationResult {
+	try {
+		return validateRuntimeEvidenceContract(runtimeEvidence);
+	} catch {
+		return {
+			valid: false,
+			findings: [
+				{
+					path: "runtimeEvidence",
+					code: "runtime_evidence_malformed",
+					message: "Runtime evidence contract is malformed.",
+				},
+			],
+		};
+	}
+}
+
+function normalizeVerifierStatus(
+	status: unknown,
+): RuntimeEvidenceVerifierStatus | null {
+	return status === "pass" ||
+		status === "fail" ||
+		status === "blocked" ||
+		status === "unknown"
+		? status
+		: null;
+}
 
 /** Add blockers for missing or invalid seven-layer harness assurance evidence. */
 export function collectAssuranceBlockers(
@@ -40,7 +75,8 @@ export function collectRuntimeEvidenceBlockers(
 	blockers: PrCloseoutBlocker[],
 ): void {
 	if (input.runtimeEvidence === undefined) return;
-	const validation = validateRuntimeEvidenceContract(input.runtimeEvidence);
+	const runtimeEvidence = input.runtimeEvidence;
+	const validation = validateRuntimeEvidenceSafely(runtimeEvidence);
 	for (const finding of validation.findings) {
 		blockers.push({
 			surface: "runtime_evidence",
@@ -50,7 +86,19 @@ export function collectRuntimeEvidenceBlockers(
 			ref: [finding.path, finding.code].join(":"),
 		});
 	}
-	const status = input.runtimeEvidence.verifierResult.status;
+	const verifierResult = runtimeEvidence.verifierResult as
+		| { evidenceRefs?: unknown; status?: unknown }
+		| undefined;
+	if (typeof verifierResult?.status !== "string") {
+		blockers.push({
+			surface: "runtime_evidence",
+			classification: "introduced",
+			reason: "Runtime evidence is missing verifierResult.status.",
+			fixableByCodex: true,
+		});
+		return;
+	}
+	const status = verifierResult.status;
 	if (status !== "pass") {
 		const blocker: PrCloseoutBlocker = {
 			surface: "runtime_evidence",
@@ -58,9 +106,10 @@ export function collectRuntimeEvidenceBlockers(
 			reason: `Runtime verifier status is ${status}.`,
 			fixableByCodex: status !== "blocked",
 		};
-		const firstEvidenceRef =
-			input.runtimeEvidence.verifierResult.evidenceRefs[0];
-		if (firstEvidenceRef !== undefined) {
+		const firstEvidenceRef = Array.isArray(verifierResult.evidenceRefs)
+			? verifierResult.evidenceRefs[0]
+			: undefined;
+		if (typeof firstEvidenceRef === "string") {
 			blocker.ref = firstEvidenceRef;
 		}
 		blockers.push(blocker);
@@ -90,14 +139,25 @@ export function buildRuntimeEvidenceSummary(
 	const validation =
 		input.runtimeEvidence === undefined
 			? { valid: false, findings: [] }
-			: validateRuntimeEvidenceContract(input.runtimeEvidence);
+			: validateRuntimeEvidenceSafely(input.runtimeEvidence);
+	const verifierResult = input.runtimeEvidence?.verifierResult as
+		| { status?: unknown }
+		| undefined;
+	const outcomeMapping = input.runtimeEvidence?.outcomeMapping as
+		| { exitClassification?: unknown; outcome?: unknown }
+		| undefined;
 	return {
 		present: input.runtimeEvidence !== undefined,
 		valid: validation.valid,
-		verifierStatus: input.runtimeEvidence?.verifierResult.status ?? null,
-		outcome: input.runtimeEvidence?.outcomeMapping.outcome ?? null,
+		verifierStatus: normalizeVerifierStatus(verifierResult?.status),
+		outcome:
+			typeof outcomeMapping?.outcome === "string"
+				? outcomeMapping.outcome
+				: null,
 		exitClassification:
-			input.runtimeEvidence?.outcomeMapping.exitClassification ?? null,
+			typeof outcomeMapping?.exitClassification === "string"
+				? outcomeMapping.exitClassification
+				: null,
 		findings: validation.findings,
 	};
 }

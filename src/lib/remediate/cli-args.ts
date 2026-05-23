@@ -25,17 +25,24 @@ export function buildRemediateOptionsFromCliArgs(
 
 	const prValue = getFlagValue(args, args.indexOf("--pr"));
 	const maxAutoTierValue = getFlagValue(args, args.indexOf("--max-auto-tier"));
+	const prNumber = parseIntegerArg(prValue, 1);
+	if (prNumber === undefined) {
+		console.error("Error: --pr must be a positive integer");
+		return { ok: false, exitCode: 2 };
+	}
+	const providerValue =
+		getFlagValue(args, args.indexOf("--provider")) ?? "codeql";
+	if (providerValue !== "codeql" && providerValue !== "codex") {
+		console.error("Error: --provider must be one of: codeql, codex");
+		return { ok: false, exitCode: 2 };
+	}
 	const options: RemediateOptions = {
 		subcommand,
 		owner: getFlagValue(args, args.indexOf("--owner")) ?? "",
 		repo: getFlagValue(args, args.indexOf("--repo")) ?? "",
-		prNumber: parseIntegerArg(prValue, 1) ?? 0,
+		prNumber,
 		headSha: getFlagValue(args, args.indexOf("--sha")) ?? "",
-		provider:
-			(getFlagValue(args, args.indexOf("--provider")) as
-				| "codeql"
-				| "codex"
-				| undefined) ?? "codeql",
+		provider: providerValue,
 		dryRun: args.includes("--dry-run"),
 		noInput: args.includes("--no-input"),
 		force: args.includes("--force"),

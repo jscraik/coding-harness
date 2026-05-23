@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-21
+last_validated: 2026-05-22
 ---
 
 # Module Boundaries
@@ -11,11 +11,18 @@ last_validated: 2026-05-21
 - [Agent Boundary Enforcement](#agent-boundary-enforcement)
 - [CLI Registry Boundaries](#cli-registry-boundaries)
 - [CI Migration Command Boundary](#ci-migration-command-boundary)
+- [Init Command Boundary](#init-command-boundary)
+- [Upgrade Command Boundary](#upgrade-command-boundary)
+- [Brain Command Boundary](#brain-command-boundary)
 - [Verify Work Command Boundary](#verify-work-command-boundary)
 - [Memory Gate Command Boundary](#memory-gate-command-boundary)
 - [Drift Gate Command Boundary](#drift-gate-command-boundary)
 - [Observability Gate Command Boundary](#observability-gate-command-boundary)
 - [Artifact Gate Command Boundary](#artifact-gate-command-boundary)
+- [Plan Gate Command Boundary](#plan-gate-command-boundary)
+- [Prompt Gate Command Boundary](#prompt-gate-command-boundary)
+- [Gap Case Command Boundary](#gap-case-command-boundary)
+- [Simulate Command Boundary](#simulate-command-boundary)
 - [HE Phase-Exit Trust Boundary](#he-phase-exit-trust-boundary)
 - [Output Normalisation Boundaries](#output-normalisation-boundaries)
 - [Command Facade Boundaries](#command-facade-boundaries)
@@ -118,6 +125,10 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/brainstorm-gate-command-spec.ts`
   - Brainstorm path, topic, age, strictness, and JSON CLI option adapter stay
     local to the brainstorm compliance command adapter.
+- `src/lib/cli/registry/brain-command-spec.ts`
+  - Thin registry metadata and command adapter; Project Brain command behavior
+    lives behind `src/lib/project-brain/cli.ts`, and raw flag helpers live in
+    `src/lib/project-brain/cli-args.ts`.
 - `src/lib/cli/registry/drift-gate-command-spec.ts`
   - Thin registry metadata and command adapter; raw drift-gate argv projection
     lives in `src/lib/drift-gate/cli-args.ts`.
@@ -127,6 +138,18 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/artifact-gate-command-spec.ts`
   - Thin registry metadata and command adapter; raw generated-artifact gate argv
     projection lives in `src/lib/artifact-gate/cli-args.ts`.
+- `src/lib/cli/registry/plan-gate-command-spec.ts`
+  - Thin registry metadata and command adapter; raw plan-gate argv projection
+    lives in `src/lib/plan-gate/cli-args.ts`.
+- `src/lib/cli/registry/prompt-gate-command-spec.ts`
+  - Thin registry metadata and command adapter; raw prompt-gate argv projection
+    lives in `src/lib/prompt-gate/cli-args.ts`.
+- `src/lib/cli/registry/gap-case-command-spec.ts`
+  - Thin registry metadata and command adapter; raw gap-case lifecycle argv
+    projection lives in `src/lib/gap-case/cli-args.ts`.
+- `src/lib/cli/registry/simulate-command-spec.ts`
+  - Thin simulate registry metadata and command adapter; raw simulate argv
+    projection lives in `src/lib/simulate/cli-args.ts`.
 - `src/lib/cli/registry/linear-command-spec.ts`
   - Small public registry seam for the Linear workflow command spec.
 - `src/lib/cli/registry/linear-command-runner.ts`
@@ -217,8 +240,9 @@ parsing and delegation belong in named adapters:
   `remediate-command-spec.ts`,
   `gardener-command-spec.ts`, `memory-gate-command-spec.ts`,
   `silent-error-command-spec.ts`, `brainstorm-gate-command-spec.ts`,
-  `verify-coderabbit-command-spec.ts`,
-  `local-memory-preflight-command-spec.ts`,
+  `gap-case-command-spec.ts`, `ci-migrate-command-spec.ts`,
+  `init-command-spec.ts`, `upgrade-command-spec.ts`,
+  `verify-coderabbit-command-spec.ts`, `local-memory-preflight-command-spec.ts`,
   `symphony-check-command-spec.ts`, and
   `workflow-generate-command-spec.ts`.
 - Pure delegation seams stay thin in `fleet-plan-command-spec.ts`,
@@ -238,18 +262,103 @@ absorbs more safety policy.
   - Transitional command orchestration, action dispatch, and migration report
     assembly. It must keep moving policy-specific clusters into named CI
     modules.
+- `src/lib/cli/registry/ci-migrate-command-spec.ts`
+  - Registry metadata, usage-error reporting, and command delegation for
+    `runCIMigrateCLI`, `sync-branch-protection`, and `promote-mode`.
+- `src/lib/ci-migrate/cli-args.ts`
+  - Raw ci-migrate flag projection, target-directory parsing, snapshot option
+    mapping, commit-mode parsing, and delegated helper action routing.
 - `src/lib/ci/ci-migrate-merge-queue-window.ts`
   - Signed merge-queue cutover window state, replay-binding shape validation,
     signature verification, terminal-window admission, and lifecycle-state
     writes for prepare/apply/commit flows.
+
+## Init Command Boundary
+
+Init remains responsible for repository scaffolding behavior, template
+selection, update/rollback modes, and interactive install flows. The command
+registry must not own init flag projection.
+
+- `src/lib/cli/registry/init-command-spec.ts`
+  - Registry metadata, usage-error reporting, and delegation to the init command
+    entrypoints.
+- `src/lib/init/cli-args.ts`
+  - Raw init flag projection, issue-tracker validation, minimal-mode conflict
+    handling, and target-directory detection.
+- `src/lib/init/cli.ts`
+  - Init orchestration and structured install/update/migrate/rollback result
+    production.
 - `src/lib/ci/repo-bound-paths.ts`
   - Repository-bounded configured path resolution, file URL resolution, symlink
     rejection, and allowlisted restore-path safety checks.
 
+## Upgrade Command Boundary
+
+Upgrade remains responsible for existing-install detection, contract default
+backfill, schema migration, CI-provider resolution, template upgrade writes,
+and upgrade-manifest persistence. The command facade and registry must not own
+that workflow or raw flag projection.
+
+- `src/commands/upgrade.ts`
+  - Compatibility facade that preserves the existing command import surface and
+    exports the upgrade runner.
+- `src/lib/cli/registry/upgrade-command-spec.ts`
+  - Registry metadata and delegation to the upgrade command entrypoint.
+- `src/lib/upgrade/cli-args.ts`
+  - Raw upgrade flag projection, provider value handling, target-directory
+    detection, and dry-run/json/force option mapping.
+- `src/lib/upgrade/contract.ts`
+  - Contract schema migration and default backfill helpers used during upgrade.
+- `src/lib/upgrade/types.ts`
+  - Shared upgrade CLI option contract used by the parser and runner.
+- `src/lib/upgrade/templates.ts`
+  - Template classification, stock/customized update behavior, upgrade-manifest
+    persistence, and template summary output.
+- `src/lib/upgrade/runner.ts`
+  - Upgrade orchestration, install/context detection, provider resolution, JSON
+    dry-run routing, helper delegation, and terminal completion output.
+
 Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
-the command core, merge-queue window module, and repository path-safety module
-so signed lifecycle-state and path traversal policy do not grow back into the
-command orchestration file.
+the compatibility facade, registry adapter, raw CLI argument adapter, contract
+helper, shared type contract, template helper, and runner so upgrade workflow
+behavior does not grow back into the command facade or the global command
+registry.
+
+## Brain Command Boundary
+
+Project Brain remains responsible for repository-local knowledge, rule,
+decision, and preflight context behavior. The command facades and CLI registry
+must not own Project Brain workflow behavior or raw flag projection.
+
+- `src/commands/brain.ts`
+  - Compatibility facade that preserves the existing public command import
+    surface.
+- `src/commands/brain-core.ts`
+  - Compatibility facade for historical brain-core imports.
+- `src/lib/cli/registry/brain-command-spec.ts`
+  - Registry metadata and delegation to the Project Brain CLI entrypoint.
+- `src/lib/project-brain/cli.ts`
+  - Project Brain CLI dispatcher and public export surface for subcommands.
+- `src/lib/project-brain/cli-args.ts`
+  - Raw Project Brain flag projection and harness-directory resolution.
+- `src/lib/project-brain/cli-types.ts`
+  - Shared Project Brain CLI result and subcommand result contracts.
+- `src/lib/project-brain/status-cli.ts`
+  - Status validation, maturity projection, and status presentation.
+- `src/lib/project-brain/query-cli.ts`
+  - Project Brain search path projection, query execution, and query
+    presentation.
+- `src/lib/project-brain/add-cli.ts`
+  - Safe Project Brain capture writes and add-result presentation.
+- `src/lib/project-brain/preflight-cli.ts`
+  - Domain context loading, preflight projection, and preflight presentation.
+- `src/lib/project-brain/stale-cli.ts`
+  - Metadata staleness projection and stale-report presentation.
+
+Executable guards in `src/lib/architecture/module-boundaries.test.ts` ratchet
+the compatibility facade, registry adapter, CLI helper, shared type contract,
+and subcommand adapters so Project Brain behavior does not grow back into
+command facades or the global command registry.
 
 ## Verify Work Command Boundary
 
@@ -389,6 +498,125 @@ turning the command registry into a provenance evaluator or CLI parser.
 - `src/lib/architecture/module-boundaries.test.ts`
   - Ratchets the command facade, public facade, registry adapter, raw CLI
     adapter, CLI presentation seam, and type contract.
+
+## Plan Gate Command Boundary
+
+Plan-gate is the planning-artifact control surface. It validates plan documents,
+plan IDs, acceptance evidence, and PR traceability without turning the command
+facade or registry manifest into a plan parser, result renderer, or recovery
+hint table.
+
+- `src/commands/plan-gate.ts`
+  - Compatibility command facade and workflow-plan re-export contract.
+- `src/lib/plan-gate/cli-args.ts`
+  - Raw CLI option adapter for plan path, type, age, plan IDs, PR metadata,
+    changed files, strictness, and JSON/traceability requirements.
+- `src/lib/plan-gate/cli.ts`
+  - Plan-gate execution, terminal/JSON presentation, recovery hints, and
+    exit-code mapping.
+- `src/lib/plan-gate/detector.ts`
+  - Plan artifact discovery and validation behavior.
+- `src/lib/plan-gate/types.ts`
+  - Shared plan-gate option and exit-code contract.
+- `src/lib/cli/registry/plan-gate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the
+    plan-gate-owned CLI option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, registry adapter, raw CLI adapter, and CLI
+    presentation seam.
+
+## Prompt Gate Command Boundary
+
+Prompt-gate is the prompt-template compliance surface. It validates required
+prompt sections for feature, bug fix, refactor, and release prompts without
+letting the command facade or registry manifest become a Markdown parser,
+usage-error adapter, or terminal renderer.
+
+- `src/commands/prompt-gate.ts`
+  - Compatibility command facade and stable public export surface.
+- `src/lib/prompt-gate/cli-args.ts`
+  - Raw CLI option adapter for prompt type, prompt file, and JSON output.
+- `src/lib/prompt-gate/cli.ts`
+  - Prompt-gate execution, terminal/JSON presentation, and exit-code mapping.
+- `src/lib/prompt-gate/validator.ts`
+  - Prompt template section discovery, checkbox counting, file read failure
+    classification, and validation-result construction.
+- `src/lib/prompt-gate/types.ts`
+  - Shared prompt-gate option, prompt-type, result, and exit-code contract.
+- `src/lib/cli/registry/prompt-gate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the prompt-gate-owned
+    CLI option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, registry adapter, raw CLI adapter, validator,
+    and CLI presentation seam.
+
+## Gap Case Command Boundary
+
+Gap-case is the production gap lifecycle surface. It opens and resolves
+policy-backed production gap records without letting the command facade or
+registry manifest become a store, policy loader, validation module, usage
+adapter, or terminal renderer.
+
+- `src/commands/gap-case.ts`
+  - Compatibility command facade and stable public export surface.
+- `src/commands/gap-case-internal.ts`
+  - Compatibility export surface for legacy internal helper imports.
+- `src/lib/gap-case/cli-args.ts`
+  - Raw CLI option adapter for lifecycle action, contract/store paths, case
+    metadata, resolution evidence, and JSON output.
+- `src/lib/gap-case/cli.ts`
+  - Gap-case action dispatch, terminal/JSON presentation, and exit-code
+    mapping.
+- `src/lib/gap-case/operations.ts`
+  - Open and resolve lifecycle behavior, including idempotent matching and
+    resolved-record construction.
+- `src/lib/gap-case/store.ts`
+  - Repository-bounded store path resolution, policy loading, persistence, and
+    corruption handling.
+- `src/lib/gap-case/validators.ts`
+  - Primitive value checks and lifecycle option validation.
+- `src/lib/gap-case/types.ts`
+  - Shared gap-case option, record, store, result, and exit-code contract.
+- `src/lib/cli/registry/gap-case-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the gap-case-owned CLI
+    option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facade, internal compatibility facade, registry
+    adapter, raw CLI adapter, operations, store, validator, types, and CLI
+    presentation seams.
+
+## Simulate Command Boundary
+
+Simulate is the contract transition analysis surface. It compares two harness
+contracts and projects lifecycle recommendations without letting the command
+facade or registry manifest become an argv parser, contract loader, analysis
+module, recommendation engine, or terminal renderer.
+
+- `src/commands/simulate.ts`
+  - Compatibility command facade and stable public export surface.
+- `src/commands/simulate-analysis.ts`
+  - Compatibility export surface for legacy analysis helper imports.
+- `src/commands/simulate-analysis-recommendations.ts`
+  - Compatibility export surface for legacy recommendation helper imports.
+- `src/lib/simulate/cli-args.ts`
+  - Raw CLI option adapter for contract paths, JSON output, artifact/traces
+    paths, CI-soft mode, and verbose output.
+- `src/lib/simulate/cli.ts`
+  - Contract loading, input validation, terminal/JSON presentation, artifact
+    output, and exit-code mapping.
+- `src/lib/simulate/analysis.ts`
+  - Contract comparison, enforcement plan generation, phase classification,
+    and migration risk analysis.
+- `src/lib/simulate/recommendations.ts`
+  - Recommendation and flag projection from the analysis result.
+- `src/lib/simulate/types.ts`
+  - Shared simulate option, analysis, recommendation, and result contracts.
+- `src/lib/cli/registry/simulate-command-spec.ts`
+  - Thin registry command adapter; delegates raw argv to the simulate-owned CLI
+    option adapter.
+- `src/lib/architecture/module-boundaries.test.ts`
+  - Ratchets the command facades, registry adapter, raw CLI adapter, analysis,
+    recommendations, shared types, and CLI presentation seams.
 
 ## Output Normalisation Boundaries
 
@@ -741,10 +969,63 @@ Threshold policy:
   lines).
 - `src/lib/cli/registry/brainstorm-gate-command-spec.ts` must stay focused on
   brainstorm CLI option adapter and command delegation (`<= 40` lines).
+- `src/lib/cli/registry/brain-command-spec.ts` must stay focused on Project
+  Brain command metadata and project-brain-owned CLI delegation (`<= 20`
+  lines).
+- `src/commands/brain-core.ts` must stay focused on exporting the Project
+  Brain CLI compatibility surface (`<= 10` lines).
+- `src/lib/project-brain/cli.ts` must stay a dispatcher and public export
+  surface while subcommand behavior lives in Project Brain modules (`<= 120`
+  lines).
+- `src/lib/project-brain/cli-args.ts` must stay focused on raw flag projection
+  and harness directory resolution (`<= 40` lines).
+- `src/lib/project-brain/cli-types.ts` must stay a small shared Project Brain
+  CLI contract (`<= 110` lines).
+- `src/lib/project-brain/status-cli.ts` must stay focused on validation
+  summary and status presentation (`<= 130` lines).
+- `src/lib/project-brain/query-cli.ts` must stay focused on search path
+  projection and query presentation (`<= 130` lines).
+- `src/lib/project-brain/add-cli.ts` must stay focused on safe capture writes
+  and add presentation (`<= 220` lines).
+- `src/lib/project-brain/preflight-cli.ts` must stay focused on domain context
+  loading and presentation (`<= 220` lines).
+- `src/lib/project-brain/stale-cli.ts` must stay focused on metadata
+  staleness projection and presentation (`<= 110` lines).
 - `src/lib/cli/registry/gardener-command-spec.ts` must stay focused on docs
   freshness CLI option adapter and command delegation (`<= 35` lines).
 - `src/lib/cli/registry/replay-command-spec.ts` must stay focused on replay
   command metadata and replay-owned argv delegation (`<= 20` lines).
+- `src/lib/cli/registry/plan-gate-command-spec.ts` must stay focused on plan
+  gate command metadata and plan-gate-owned argv delegation (`<= 20` lines).
+- `src/lib/cli/registry/prompt-gate-command-spec.ts` must stay focused on
+  prompt gate command metadata and prompt-gate-owned argv delegation (`<= 20`
+  lines).
+- `src/lib/cli/registry/gap-case-command-spec.ts` must stay focused on
+  gap-case command metadata and gap-case-owned argv delegation (`<= 20`
+  lines).
+- `src/lib/cli/registry/simulate-command-spec.ts` must stay focused on
+  simulate command metadata and simulate-owned argv delegation (`<= 20`
+  lines).
+- `src/lib/cli/registry/init-command-spec.ts` must stay focused on init command
+  metadata and init-owned argv delegation (`<= 25` lines).
+- `src/lib/init/cli-args.ts` must stay focused on init option projection and
+  target-directory detection (`<= 80` lines).
+- `src/commands/upgrade.ts` must stay focused on exporting the upgrade runner
+  compatibility surface (`<= 5` lines).
+- `src/lib/cli/registry/upgrade-command-spec.ts` must stay focused on upgrade
+  command metadata and upgrade-owned argv delegation (`<= 25` lines).
+- `src/lib/upgrade/cli-args.ts` must stay focused on upgrade option projection
+  and target-directory detection (`<= 70` lines).
+- `src/lib/upgrade/contract.ts` must keep upgrade contract migration and
+  default backfill helpers outside the runner and registry adapter (`<= 140`
+  lines).
+- `src/lib/upgrade/types.ts` must remain a small shared upgrade CLI option
+  contract (`<= 20` lines).
+- `src/lib/upgrade/templates.ts` must keep template classification and
+  manifest persistence outside the runner and registry adapter (`<= 210`
+  lines).
+- `src/lib/upgrade/runner.ts` must coordinate upgrade modules instead of
+  absorbing contract, template, or registry parsing behavior (`<= 360` lines).
 - `src/lib/cli/registry/fleet-plan-command-spec.ts` must stay focused on
   fleet-plan command delegation (`<= 25` lines).
 - `src/lib/cli/registry/next-command-spec.ts` must stay focused on next
@@ -821,6 +1102,59 @@ Threshold policy:
 - `src/lib/output/normalise-plan-gate.ts` must remain a plan gate normalisation
   seam (`<= 80` lines) for plan validation findings, recovery hints, and
   canonical `GateResult` projection.
+- `src/commands/plan-gate.ts` must remain a plan-gate compatibility facade
+  (`<= 25` lines); raw argv projection and result presentation live behind
+  `src/lib/plan-gate/cli-args.ts` and `src/lib/plan-gate/cli.ts`.
+- `src/lib/plan-gate/cli-args.ts` must remain a plan-gate argument adapter
+  (`<= 65` lines).
+- `src/lib/plan-gate/cli.ts` must remain a plan-gate CLI presentation and
+  exit-code seam (`<= 155` lines).
+- `src/commands/prompt-gate.ts` must remain a prompt-gate compatibility facade
+  (`<= 25` lines); raw argv projection, validation, and result presentation
+  live behind `src/lib/prompt-gate/cli-args.ts`,
+  `src/lib/prompt-gate/validator.ts`, and `src/lib/prompt-gate/cli.ts`.
+- `src/lib/prompt-gate/cli-args.ts` must remain a prompt-gate argument adapter
+  (`<= 55` lines).
+- `src/lib/prompt-gate/validator.ts` must remain a prompt-gate validation seam
+  (`<= 140` lines).
+- `src/lib/prompt-gate/cli.ts` must remain a prompt-gate CLI presentation and
+  exit-code seam (`<= 90` lines).
+- `src/commands/gap-case.ts` must remain a gap-case compatibility facade
+  (`<= 25` lines); raw argv projection, lifecycle validation, persistence, and
+  result presentation live behind `src/lib/gap-case/cli-args.ts`,
+  `src/lib/gap-case/validators.ts`, `src/lib/gap-case/store.ts`,
+  `src/lib/gap-case/operations.ts`, and `src/lib/gap-case/cli.ts`.
+- `src/commands/gap-case-internal.ts` must remain a gap-case internal
+  compatibility facade (`<= 25` lines).
+- `src/lib/gap-case/cli-args.ts` must remain a gap-case argument adapter
+  (`<= 95` lines).
+- `src/lib/gap-case/cli.ts` must remain a gap-case CLI presentation and
+  exit-code seam (`<= 120` lines).
+- `src/lib/gap-case/operations.ts` must remain a gap-case lifecycle seam
+  (`<= 250` lines).
+- `src/lib/gap-case/store.ts` must remain a gap-case persistence and policy
+  store-resolution seam (`<= 240` lines).
+- `src/lib/gap-case/validators.ts` must remain a gap-case validation seam
+  (`<= 140` lines).
+- `src/lib/gap-case/types.ts` must remain a gap-case shared contract seam
+  (`<= 190` lines).
+- `src/commands/simulate.ts`, `src/commands/simulate-analysis.ts`, and
+  `src/commands/simulate-analysis-recommendations.ts` must remain simulate
+  compatibility facades (`<= 25` lines each); raw argv projection, contract
+  loading, comparison analysis, recommendations, and result presentation live
+  behind `src/lib/simulate/cli-args.ts`, `src/lib/simulate/cli.ts`,
+  `src/lib/simulate/analysis.ts`, and
+  `src/lib/simulate/recommendations.ts`.
+- `src/lib/simulate/cli-args.ts` must remain a simulate argument adapter
+  (`<= 45` lines).
+- `src/lib/simulate/cli.ts` must remain a simulate CLI presentation and
+  exit-code seam (`<= 580` lines).
+- `src/lib/simulate/analysis.ts` must remain a simulate analysis seam
+  (`<= 620` lines).
+- `src/lib/simulate/recommendations.ts` must remain a simulate
+  recommendation projection seam (`<= 160` lines).
+- `src/lib/simulate/types.ts` must remain a simulate shared contract seam
+  (`<= 620` lines).
 - `src/lib/output/normalise-policy-gate.ts` must remain a policy gate
   normalisation seam (`<= 130` lines) for policy tier findings, decision
   metadata, and canonical `GateResult` projection.
@@ -839,7 +1173,7 @@ Threshold policy:
   ratchet (`<= 1750` lines) while more artifact and adapter policy moves behind focused seams.
 - `src/lib/decision/he-gate-trust-policy.ts` must remain the HE gate trust-policy
   seam (`<= 220` lines) for status, execution-mode, finding, blocker, and evidence-reference rules.
-- `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2600` lines).
+- `src/lib/contract/validator.ts` must remain an entrypoint (`<= 2700` lines).
 - `src/commands/doctor.ts` must remain a doctor command facade (`<= 210`
   lines) and import the explicit agent-safe work areas enforced by the architecture test.
 - `src/commands/doctor-tool-checks.ts` must remain a generic tool-check

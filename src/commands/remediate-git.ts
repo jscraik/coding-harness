@@ -12,12 +12,7 @@ export type WorkspaceStatus =
 			reason: string;
 	  };
 
-/**
- * Get the current local git HEAD SHA.
- *
- * @returns The trimmed SHA string of the repository's HEAD.
- * @throws Error if executing `git rev-parse HEAD` fails or returns a non-zero exit code.
- */
+/** Return the current local git HEAD SHA. */
 export function getHeadSha(): string {
 	const result = spawnSync("git", ["rev-parse", "HEAD"], {
 		encoding: "utf-8",
@@ -33,14 +28,7 @@ export function getHeadSha(): string {
 	return result.stdout.trim();
 }
 
-/**
- * Detects whether the current checkout is an explicitly disposable git worktree.
- *
- * Considers the HARNESS_DISPOSABLE_WORKSPACE environment variable and whether
- * the repository's git directory path contains a `worktrees` segment.
- *
- * @returns `true` if the checkout is a disposable worktree, `false` otherwise.
- */
+/** Return whether the current checkout is an explicitly disposable git worktree. */
 export function isDisposableWorkspace(): boolean {
 	if (process.env.HARNESS_DISPOSABLE_WORKSPACE === "true") {
 		return true;
@@ -58,11 +46,7 @@ export function isDisposableWorkspace(): boolean {
 	return gitDir.split(/[\\/]/).includes("worktrees");
 }
 
-/**
- * Determine whether the current git workspace is suitable for remediation.
- *
- * @returns `{ ok: true; clean: boolean }` when the status check succeeds — `clean` is `true` if there are no uncommitted changes; `{ ok: false; reason: string }` when the check fails, with `reason` describing the failure.
- */
+/** Return whether the current git workspace is clean enough for remediation. */
 export function getWorkspaceStatus(): WorkspaceStatus {
 	const result = spawnSync("git", ["status", "--porcelain"], {
 		encoding: "utf-8",
@@ -82,13 +66,7 @@ export function getWorkspaceStatus(): WorkspaceStatus {
 	};
 }
 
-/**
- * Create a GitHubClient that uses the local git repository for SHA and ancestry checks.
- *
- * @returns An object implementing `GitHubClient`:
- * - `getHeadSha()` — returns the current repository HEAD SHA.
- * - `isAncestor(ancestorSha, descendantSha)` — `true` if `ancestorSha` is an ancestor of `descendantSha`, `false` if not; throws on git execution errors or unexpected exit codes.
- */
+/** Create a local git-backed GitHubClient for SHA and ancestry checks. */
 export function createGitHubClient(): GitHubClient {
 	return {
 		async getHeadSha() {

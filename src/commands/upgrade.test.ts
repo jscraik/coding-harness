@@ -38,6 +38,12 @@ import {
 	formatMigrationChanges,
 	migrateContractSchema,
 } from "../lib/init/schema-migrate.js";
+import {
+	applyContractMigration,
+	backfillContractDefaults,
+} from "../lib/upgrade/contract.js";
+import { EXIT_CODES } from "../lib/init/types.js";
+import { readUpgradeManifest } from "../lib/upgrade/templates.js";
 import { runUpgradeCLI } from "./upgrade.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -597,6 +603,72 @@ describe("runUpgradeCLI", () => {
 			);
 		} finally {
 			infoSpy.mockRestore();
+		}
+	});
+});
+
+// ─── Split module error boundaries ───────────────────────────────────────────
+
+describe("upgrade split module error boundaries", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+	});
+
+	afterEach(() => {
+		if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("returns a contract migration error for malformed contract JSON", () => {
+		writeFileSync(join(dir, "harness.contract.json"), "{");
+
+		const result = applyContractMigration(dir, "0.0.0", "0.15.1", false);
+
+		expect(result).toEqual({
+			ok: false,
+			error: expect.stringContaining("Could not parse harness.contract.json"),
+		});
+	});
+
+	it("returns a default backfill error for malformed contract JSON", () => {
+		writeFileSync(join(dir, "harness.contract.json"), "{");
+
+		const result = backfillContractDefaults(dir, false);
+
+		expect(result).toEqual({
+			ok: false,
+			error: expect.stringContaining("Could not parse harness.contract.json"),
+		});
+	});
+
+	it("fails malformed upgrade manifests at the template boundary", () => {
+		ensureHarnessDir(dir);
+		writeFileSync(join(dir, ".harness", "upgrade-manifest.json"), "{");
+
+		expect(() => readUpgradeManifest(dir)).toThrow(
+			/Could not parse .*upgrade-manifest\.json/,
+		);
+	});
+
+	it("fails upgrade instead of treating malformed manifests as absent", () => {
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			writeRestoreManifest(dir, "0.0.0");
+			ensureHarnessDir(dir);
+			writeFileSync(join(dir, ".harness", "upgrade-manifest.json"), "{");
+
+			const exitCode = runUpgradeCLI(dir, {
+				dryRun: true,
+				skipContractMigration: true,
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.WRITE_ERROR);
+			expect(
+				errorSpy.mock.calls.map((call) => String(call[0] ?? "")).join("\n"),
+			).toContain("Could not parse");
+		} finally {
+			errorSpy.mockRestore();
 		}
 	});
 });

@@ -350,6 +350,87 @@
         border-left: 5px solid var(--guard);
       }
 
+      .jamie-board {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .priority-panel {
+        border: 1px solid #f59e0b;
+        border-left: 5px solid var(--guard);
+        border-radius: 8px;
+        background: #fffbeb;
+        padding: 14px;
+      }
+
+      .priority-panel h2,
+      .timeline-panel h2 {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+
+      .priority-panel p,
+      .timeline-panel p {
+        color: #374151;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .priority-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .priority-item {
+        border: 1px solid rgba(180, 83, 9, 0.28);
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 10px;
+        min-height: 92px;
+      }
+
+      .priority-item strong {
+        display: block;
+        font-size: 12px;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .priority-item span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+        margin-top: 6px;
+      }
+
+      .timeline-panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .timeline-list {
+        display: grid;
+        gap: 8px;
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .timeline-list li {
+        border-left: 3px solid var(--public);
+        padding-left: 9px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
       .control-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -376,6 +457,8 @@
         .doctor-seams,
         .internal-grid,
         .notes,
+        .jamie-board,
+        .priority-grid,
         .status-strip,
         .control-grid {
           grid-template-columns: 1fr;
@@ -431,20 +514,60 @@
         <section class="status-strip" aria-label="Deep-module migration status">
           <article class="status-card status-ok">
             <strong>Complete</strong>
-            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, and many command adapters already have facade-first module seams.</span>
+            <span>PR closeout, command catalog, verify-work, memory-gate, output normalisation, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, init, upgrade, and brain registry parsing now have facade-first module seams.</span>
           </article>
-		  <article class="status-card status-current">
-			<strong>Current Slice</strong>
-					<span>T007 / plan-gate is active. R006 artifact-gate is complete; this verification recovery records PR #270 at 5e39faf5 before any plan-gate implementation starts.</span>
-		  </article>
-		  <article class="status-card status-watch">
-			<strong>Next</strong>
-				<span>Declare plan-gate allowed files and focused tests, then split plan-gate after the green PR checks and pending CodeRabbit comments are recorded in receipts.jsonl.</span>
-		  </article>
-		  <article class="status-card status-watch">
-			<strong>Blocked</strong>
-					<span>The separate runtime-evidence/JSC-331 slice remains preserved outside this goal lane; PR #270 checks restarted after the current-head push, and CodeRabbit review state needs current-head re-observation before PR-green closeout.</span>
-		  </article>
+          <article class="status-card status-current">
+            <strong>Final Audit</strong>
+            <span>T014 brain is merged through PR #280: the Project Brain command facade, registry adapter, dispatcher, parser helpers, typed CLI contracts, and subcommand modules are split and under module-boundary ratchets.</span>
+          </article>
+          <article class="status-card status-watch">
+            <strong>Report Status</strong>
+            <span>The 8767 report is live over HTTP at the final-audit URL and launched in the Codex In-app Browser. Browser verification reached the report and observed Module Layout plus FINAL AUDIT on the rendered page.</span>
+          </article>
+          <article class="status-card status-watch">
+            <strong>Completion Guard</strong>
+            <span>No remaining non-Effect slice is unclassified. Effect layers stay deferred, PR #280 is merged with green checks and zero unresolved threads, and test:deep remains separately classified as blocked_env_fifo_timeout at E2E credential validation.</span>
+          </article>
+        </section>
+
+        <section class="jamie-board" aria-label="Jamie live readout">
+          <article class="priority-panel">
+            <h2>Jamie Readout Now</h2>
+            <p>
+              This page is the live handoff board for the deep-module migration.
+              It should answer what is done, what is blocked, what Codex is doing
+              next, and which proof prevents stale optimism.
+            </p>
+            <div class="priority-grid">
+              <div class="priority-item">
+                <strong>Now</strong>
+                <span>All non-Effect slices through brain are complete. PR #280 merged at 2026-05-22T23:02:28Z with merge commit 9886ec4, and no open JSC-331 PRs remain.</span>
+              </div>
+              <div class="priority-item">
+                <strong>Proof</strong>
+						<span>Use PR #280 merge evidence, head 50109ac5, merge commit 9886ec4, seven total and zero unresolved review threads, all visible green checks, R014 receipts, focused brain/registry/module-boundary tests, goal-board validation, and this live 8767 report for current-state proof.</span>
+              </div>
+              <div class="priority-item">
+                <strong>Guardrail</strong>
+                <span>CODEX-NATIVE HARNESS MEMORY BASELINE remains separate unless explicitly routed here. No new implementation slice starts from this completed goal board.</span>
+              </div>
+            </div>
+          </article>
+          <article class="timeline-panel">
+            <h2>Current Evidence Trail</h2>
+            <p>Last refreshed for the final T014 brain merge audit, Browser report proof, E2E credential blocker classification, and parallel-agent coordination note on 2026-05-23.</p>
+            <ul class="timeline-list">
+              <li>Merged proof: PR #280 is merged into origin/main at 9886ec4, and this branch starts from that merge commit.</li>
+              <li>Code split: src/commands/brain-core.ts is a compatibility facade and the brain registry adapter imports the Project Brain lib layer directly.</li>
+              <li>Module seam: src/lib/project-brain/cli.ts dispatches subcommands while add-cli.ts, preflight-cli.ts, query-cli.ts, stale-cli.ts, status-cli.ts, cli-args.ts, and cli-types.ts own focused Project Brain behavior.</li>
+              <li>Current proof: focused brain, registry, and module-boundary tests pass with 195 tests; pnpm typecheck, validate-codestyle fast, verify-work fast, full validate-codestyle, tooling-audit, learning-loop gates, production brain status JSON, and missing-harness status JSON regression are recorded in R014 receipts.</li>
+              <li>Deep gate truth: env-loaded pnpm test:deep now reaches E2E environment validation after pnpm check, the full 283-file unit suite, and the integration suite pass; it is blocked because the current runtime cannot provide GitHub and Linear E2E credentials from ~/.codex/.env, whose metadata reports a FIFO.</li>
+              <li>PR handoff: PR #280 merged at 2026-05-22T23:02:28Z with merge commit 9886ec440149829ebe4f467b99cd183b04351998; all visible checks passed and review-thread lookup returned zero unresolved threads.</li>
+              <li>Report server: live on http://127.0.0.1:8767/artifacts/architecture/module-layout.html?v=20260523-r001-final-audit with Jamie Readout Now, final audit, blocker, and remaining-work sections present.</li>
+              <li>Browser status: the final-audit report is launched in the Codex In-app Browser at the 8767 report URL; rendered text shows Module Layout and FINAL AUDIT.</li>
+              <li>Parallel-work boundary: CODEX-NATIVE HARNESS MEMORY BASELINE remains separate and is not absorbed into this completed deep-module migration goal.</li>
+            </ul>
+          </article>
         </section>
 
         <section class="panel">
@@ -452,19 +575,23 @@
           <div class="control-grid">
             <article class="note">
               <h3>Enforcement</h3>
-              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate and replay command behavior are covered by focused command-spec projection tests.</p>
+              <p>Agent boundary enforcement is ratcheted by module-boundaries.test.ts. Drift-gate, replay, artifact-gate, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, init, upgrade, and brain facade/registry/lib behavior are covered by focused command-spec and seam tests.</p>
             </article>
 			<article class="note">
 			  <h3>Human Review</h3>
-				  <p>Review target: plan-gate is the active next slice. Artifact-gate is complete and remains bounded to generated-artifact provenance behind its CLI parsing, presentation, registry delegation, and provenance-evaluation seams.</p>
+				  <p>Latest completed target: brain command split. The command registry now delegates brain metadata through a focused adapter while Project Brain parsing, dispatch, subcommands, and result typing live behind project-brain-owned seams.</p>
 			</article>
 			<article class="note">
 			  <h3>Record Evidence</h3>
-					  <p>Current receipt target is docs/goals/coding-harness-deep-module-migration/receipts.jsonl R007-POST-PULL-PUSH, recording the refreshed PR checks, pulled-branch validation repairs, CodeRabbit review state, and visual report repair before plan-gate implementation.</p>
+					  <p>Current evidence is PR #280 merge proof, final head 50109ac5, merge commit 9886ec4, zero unresolved review threads, all visible green checks, R014 env-backed validation reclassification, R014 brain validation receipts, this final-audit receipt, focused/current tests, and deep-module receipts in docs/goals/coding-harness-deep-module-migration/receipts.jsonl.</p>
 			  <ul class="evidence-list">
-					<li>Focused proof: R006 artifact-gate command tests, registry dispatch tests, module-boundary ratchets, direct production command, typecheck, related validation, and staged pre-commit related-test recovery are recorded in receipts.jsonl.</li>
-				<li>Visual: this HTML and artifacts/architecture/module-layout.html.</li>
-						<li>Handoff: PR #270 is at 5e39faf5; local pre-push passed, current-head checks are pending, and CodeRabbit's latest visible COMMENTED review is older than this head.</li>
+				<li>Focused proof: brain, registry, and module-boundary tests passed locally with 195 tests in final-audit revalidation; pnpm typecheck passes; production brain status JSON returns valid Project Brain status; missing-harness status JSON is locked by a regression.</li>
+											<li>Broad local proof: bash scripts/validate-codestyle.sh --fast passes; bash scripts/verify-work.sh --fast passes with run id 20260522T215354Z-27231; full bash scripts/validate-codestyle.sh passes; tooling-audit passes with zero findings; the learning loop succeeds with warn-only advisory matches; goal-board, receipt JSONL, diff-check, and report-mirror validation are part of the current R014 refresh.</li>
+							<li>Review gates: architecture findings are fixed, simplify/Codex found no required follow-up, product/dev-tools JSON concerns are resolved by direct parse proof plus regression, and testing/unslopify artifact retries failed after mailbox findings were fixed or classified.</li>
+							<li>Deep proof boundary: env-loaded pnpm test:deep progresses through check, unit, and integration suites, then blocks at E2E credential validation because GitHub and Linear credentials are not available from the current ~/.codex/.env FIFO surface.</li>
+							<li>Coordination: the goal board is the shared scratchpad for parallel agents; it names the T014-owned file set and keeps CODEX-NATIVE HARNESS MEMORY BASELINE out of this branch unless explicitly routed.</li>
+				<li>Visual: the updated report is serving on port 8767 for Jamie and is launched in the Codex In-app Browser with Module Layout and FINAL AUDIT visible.</li>
+								<li>Handoff: PR #280 is merged from final head 50109ac5 with all visible checks green and seven total, zero unresolved review threads. No open JSC-331 PRs remain.</li>
 			  </ul>
 			</article>
           </div>
@@ -474,7 +601,7 @@
           <h2>1. The Architecture In One Sentence</h2>
           <div class="callout">
             <strong>Callers stay on small facades; agents work inside deeper modules; tests guard the boundary.</strong>
-			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
+			PR closeout is the main deep module. Doctor, command catalog, verify-work, memory-gate, HE phase-exit trust, output normalisation, and review-gate control surfaces are split into smaller work areas. Effect is contained to approved files. Linear workflow, Linear gate, PR template gate, rule lifecycle gate, policy gate, replay CLI args, plan-gate, prompt-gate, gap-case, simulate, ci-migrate, init, and upgrade registry parsing, gardener, memory-gate, silent-error, brainstorm-gate, drift-gate, evidence verify, review gate, and CodeRabbit review evidence mapping now live behind focused command adapters.
           </div>
         </section>
 
@@ -674,6 +801,55 @@
                   Drift mode, baseline seeding, output, suppression,
                   repository root, and JSON projection stay behind a focused
                   command-spec seam and enter through src/lib/drift-gate.ts.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>prompt-gate-command-spec.ts</strong>
+                <span>
+                  Prompt type, prompt file, and JSON projection delegate
+                  through the prompt-gate CLI adapter instead of living in the
+                  registry assembler.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>gap-case-command-spec.ts</strong>
+                <span>
+                  Gap-case lifecycle actions delegate through the gap-case CLI
+                  adapter instead of living in the registry assembler.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>simulate-command-spec.ts</strong>
+                <span>
+                  Simulate contract transition actions delegate through the
+                  simulate CLI adapter instead of living in the registry
+                  assembler.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>ci-migrate-command-spec.ts</strong>
+                <span>
+                  CI migration command metadata delegates through a focused
+                  registry seam; raw flag projection and legacy helper routing
+                  live in src/lib/ci-migrate/cli-args.ts.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>init-command-spec.ts</strong>
+                <span>
+                  Init command metadata delegates through a focused registry
+                  seam; raw init flag projection and issue-tracker validation
+                  live in src/lib/init/cli-args.ts.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>upgrade-command-spec.ts</strong>
+                <span>
+                  Upgrade command metadata delegates through a focused registry
+                  seam; raw provider projection lives in src/lib/upgrade/cli-args.ts,
+                  contract/default migration helpers live in src/lib/upgrade/contract.ts,
+                  template and manifest updates live in src/lib/upgrade/templates.ts,
+                  and execution orchestration lives in src/lib/upgrade/runner.ts.
                 </span>
               </div>
               <div class="module doctor">
@@ -1514,7 +1690,112 @@
         </section>
 
         <section class="panel">
-          <h2>7D. Review Gate Required Check Seams</h2>
+          <h2>7D. Plan Gate Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/plan-gate.ts</strong>
+              <span>
+                Compatibility command facade. It re-exports the plan-gate CLI
+                and detector contracts plus workflow-plan utilities without
+                owning parsing, presentation, or recovery hints.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/plan-gate/cli-args.ts</strong>
+                <span>
+                  Raw CLI adapter for plan path, type, max age, plan IDs, PR
+                  metadata, changed files, strictness, JSON, and traceability
+                  requirements.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/plan-gate/cli.ts</strong>
+                <span>
+                  Plan-gate execution, terminal/JSON presentation, recovery
+                  hints, and exit-code mapping.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>plan-gate-command-spec.ts</strong>
+                <span>
+                  Thin registry metadata and delegation to the plan-gate-owned
+                  argv adapter.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facade, registry adapter, raw CLI args
+                  seam, and CLI presentation seam.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>7E. Prompt Gate Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/prompt-gate.ts</strong>
+              <span>
+                Compatibility command facade. It re-exports the prompt-gate
+                CLI, validator, type, and exit-code contracts without owning
+                parsing, validation internals, or presentation.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/prompt-gate/cli-args.ts</strong>
+                <span>
+                  Raw CLI adapter for prompt type, prompt file, and JSON
+                  output.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>src/lib/prompt-gate/validator.ts</strong>
+                <span>
+                  Required-section discovery, checkbox counting, file-read
+                  error classification, and validation-result construction.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/prompt-gate/cli.ts</strong>
+                <span>
+                  Prompt-gate execution, terminal/JSON presentation, and
+                  exit-code mapping.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/prompt-gate/types.ts</strong>
+                <span>
+                  Prompt types, options, results, output envelope, and
+                  exit-code contract.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>prompt-gate-command-spec.ts</strong>
+                <span>
+                  Thin registry metadata and delegation to the
+                  prompt-gate-owned argv adapter.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facade, registry adapter, raw CLI args
+                  seam, validator seam, and CLI presentation seam.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>7F. Review Gate Required Check Seams</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/lib/review-gate/required-checks.ts</strong>
@@ -1551,7 +1832,7 @@
         </section>
 
         <section class="panel">
-          <h2>7E. CI Migration Path Safety Seam</h2>
+          <h2>7G. CI Migration Path Safety Seam</h2>
           <div class="doctor-grid">
             <div class="module public">
               <strong>src/commands/ci-migrate-core.ts</strong>
@@ -1570,6 +1851,21 @@
                 </span>
               </div>
               <div class="module doctor">
+                <strong>src/lib/ci-migrate/cli-args.ts</strong>
+                <span>
+                  Raw ci-migrate flag projection, target-dir parsing, snapshot
+                  option mapping, commit-mode parsing, and delegated helper
+                  action routing.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>ci-migrate-command-spec.ts</strong>
+                <span>
+                  Registry metadata and command delegation seam for
+                  runCIMigrateCLI, sync-branch-protection, and promote-mode.
+                </span>
+              </div>
+              <div class="module doctor">
                 <strong>ci-migrate-merge-queue-window.ts</strong>
                 <span>
                   Signed merge-queue cutover window lifecycle state and
@@ -1577,10 +1873,174 @@
                 </span>
               </div>
               <div class="module guard">
-                <strong>repo-bound-paths.test.ts + module-boundaries.test.ts</strong>
+                <strong>command-specs.test.ts + module-boundaries.test.ts</strong>
                 <span>
-                  Direct path traversal regression tests plus ratchets that keep
-                  path-safety policy behind the CI module seam.
+                  Registry parser regressions plus ratchets that keep
+                  ci-migrate parser and path-safety policy behind CI module
+                  seams.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>7H. Init Registry Seam</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/init.ts</strong>
+              <span>
+                Compatibility command facade for project initialization and
+                scaffolding orchestration.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/init/cli-args.ts</strong>
+                <span>
+                  Raw init flag projection, project-type parsing,
+                  issue-tracker validation, minimal conflict handling, and
+                  target directory detection.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>init-command-spec.ts</strong>
+                <span>
+                  Registry metadata and command delegation seam for
+                  runInitCLI and runInteractiveInitCLI.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>command-specs.test.ts + module-boundaries.test.ts</strong>
+                <span>
+                  Registry parser regressions plus ratchets that keep init
+                  parsing behind the init module seam instead of the registry
+                  assembler.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>7I. Gap Case Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/gap-case.ts</strong>
+              <span>
+                Compatibility command facade. It re-exports the gap-case CLI,
+                operations, types, and exit-code contracts without owning
+                parsing, lifecycle behavior, persistence, or presentation.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/gap-case/cli-args.ts</strong>
+                <span>
+                  Raw CLI adapter for open/resolve actions, contract/store
+                  paths, case metadata, evidence fields, and JSON output.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>src/lib/gap-case/operations.ts</strong>
+                <span>
+                  Open and resolve lifecycle behavior, idempotent matching, and
+                  resolved-record construction.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/gap-case/store.ts</strong>
+                <span>
+                  Repository-bounded store path resolution, policy loading,
+                  persistence, and corruption handling.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/gap-case/validators.ts</strong>
+                <span>
+                  Primitive value checks and lifecycle option validation.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/gap-case/cli.ts</strong>
+                <span>
+                  Gap-case action dispatch, terminal/JSON presentation, and
+                  exit-code mapping.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>gap-case-command-spec.ts</strong>
+                <span>
+                  Thin registry metadata and delegation to the gap-case-owned
+                  argv adapter.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facade, internal compatibility facade,
+                  registry adapter, lifecycle seams, and CLI presentation seam.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>7J. Simulate Command Seams</h2>
+          <div class="doctor-grid">
+            <div class="module public">
+              <strong>src/commands/simulate.ts</strong>
+              <span>
+                Compatibility command facade. It re-exports the simulate CLI
+                contracts without owning parsing, contract loading, transition
+                analysis, recommendations, or presentation.
+              </span>
+            </div>
+
+            <div class="doctor-seams">
+              <div class="module doctor current">
+                <strong>src/lib/simulate/cli-args.ts</strong>
+                <span>
+                  Raw CLI adapter for contract paths, JSON mode, CI-soft mode,
+                  artifacts, traces, output path, and verbose output.
+                </span>
+              </div>
+              <div class="module doctor current">
+                <strong>src/lib/simulate/analysis.ts</strong>
+                <span>
+                  Contract comparison, enforcement plan generation, phase
+                  classification, and migration risk analysis.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/simulate/recommendations.ts</strong>
+                <span>
+                  Recommendation and flag projection from the simulation
+                  analysis result.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>src/lib/simulate/cli.ts</strong>
+                <span>
+                  Contract loading, validation, terminal/JSON presentation,
+                  artifact output, and exit-code mapping.
+                </span>
+              </div>
+              <div class="module doctor">
+                <strong>simulate-command-spec.ts</strong>
+                <span>
+                  Thin registry metadata and delegation to the simulate-owned
+                  argv adapter.
+                </span>
+              </div>
+              <div class="module guard">
+                <strong>module-boundaries.test.ts</strong>
+                <span>
+                  Ratchets the command facades, registry adapter, analysis,
+                  recommendation, shared contract, and CLI presentation seams.
                 </span>
               </div>
             </div>
@@ -1856,6 +2316,28 @@
               artifact-gate/cli-args.ts, usage and result presentation behind
               artifact-gate/cli.ts, public exports behind src/lib/artifact-gate.ts,
 			  and registry delegation behind artifact-gate-command-spec.ts. The
+			  Plan-gate raw flag projection now lives behind plan-gate/cli-args.ts,
+			  terminal and JSON presentation behind plan-gate/cli.ts, and registry
+			  delegation behind plan-gate-command-spec.ts. Prompt-gate raw flag
+			  projection now lives behind prompt-gate/cli-args.ts, template validation
+			  behind prompt-gate/validator.ts, terminal and JSON presentation behind
+			  prompt-gate/cli.ts, and registry delegation behind
+			  prompt-gate-command-spec.ts. Gap-case raw flag projection now lives
+			  behind gap-case/cli-args.ts, lifecycle validation behind
+			  gap-case/validators.ts, persistence behind gap-case/store.ts,
+			  open/resolve behavior behind gap-case/operations.ts, terminal and JSON
+			  presentation behind gap-case/cli.ts, and registry delegation behind
+			  gap-case-command-spec.ts. Simulate raw flag projection now lives behind
+			  simulate/cli-args.ts, transition analysis behind simulate/analysis.ts,
+			  recommendations behind simulate/recommendations.ts, terminal and JSON
+			  presentation behind simulate/cli.ts, and registry delegation behind
+				  simulate-command-spec.ts. CI migration raw flag projection, target-dir
+				  parsing, snapshot option mapping, commit-mode parsing, and delegated
+				  helper routing now live behind ci-migrate/cli-args.ts, with registry
+				  delegation behind ci-migrate-command-spec.ts. Init raw flag
+				  projection, issue-tracker validation, minimal conflict handling, and
+				  target directory detection now live behind init/cli-args.ts, with
+				  registry delegation behind init-command-spec.ts.
 			  pre-commit hook now uses the existing staged related-test mode so
 			  commit-time validation stays scoped to staged implementation files
 			  while broader validation lanes keep their branch-wide coverage.
@@ -1894,12 +2376,11 @@
           </article>
           <article class="note">
             <h3>Next Pressure Point</h3>
-			<p>
-				  Current board gate: T007 plan-gate is active but implementation has
-					  not started. PR checks restarted at 5e39faf5; record current-head
-					  check and CodeRabbit results, then declare the plan-gate allowed files and
-				  focused tests before editing.
-			</p>
+            <p>
+              Current board gate: final audit complete for the non-Effect deep-module queue.
+              Next pressure point is outside this goal: Effect layers remain deferred, and
+		      CODEX-NATIVE HARNESS MEMORY BASELINE remains a separate active slice.
+            </p>
           </article>
         </section>
       </section>

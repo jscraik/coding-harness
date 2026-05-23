@@ -639,7 +639,6 @@ harness commands --json | jq '
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                                                                                                                                                                                          |
 | `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                                                                                                                                                                                                  |
 | `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`)                                                                                                                                                      |
-| `runtime-budget`    | Build a `command-runtime-budget/v1` report from measured command durations and budget thresholds (`--json`, `--input <path>` or `--command <command> --duration-ms <ms> --budget-ms <ms> --evidence-ref <ref>`)                                                                                                                                                                                                                                          |
 | `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including claim/evidence closeout truth, PR metadata, check state, repo-scoped Coding Harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--gates`, compatibility `--phase-exit`, optional shell-style `--env-file`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                                                                                                                                                                                                  |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -657,31 +656,33 @@ harness commands --json | jq '
 
 ### Review And Policy Gates
 
-| Command                  | Purpose                                                                                         |
-| ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `policy-gate`            | Validate policy expectations from changed files                                                 |
-| `preflight-gate`         | Run fast policy checks before expensive work                                                    |
-| `review-gate`            | Validate SHA-linked review readiness (review check + review-policy required checks)             |
-| `docs-gate`              | Enforce documentation parity for governed changes                                               |
-| `plan-gate`              | Validate plan IDs, traceability, and acceptance evidence                                        |
-| `brainstorm-gate`        | Validate brainstorm artifacts                                                                   |
-| `prompt-gate`            | Validate prompt template usage                                                                  |
-| `pr-template-gate`       | Validate PR template completion and placeholder replacement                                     |
-| `rule-lifecycle-gate`    | Validate governance rules have owner, evidence, enforcement, freshness, and retirement metadata |
-| `license-gate`           | Validate open-source license expectations                                                       |
-| `check-authz`            | Validate authorization policy for mutative operations                                           |
-| `check-environment`      | Validate pilot environment governance checks                                                    |
-| `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                                          |
-| `artifact-gate`          | Check generated artifact changes against the artifact provenance registry                       |
-| `artifact-routine`       | Validate route-driving `.harness` artifacts before implementation                               |
-| `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks                 |
-| `blast-radius`           | Determine required checks from changed files                                                    |
-| `risk-tier`              | Classify changed files by risk tier                                                             |
-| `pattern-scope`          | Build a pattern-scope artifact from steering feedback and changed files                         |
-| `diff-budget`            | Enforce diff budget constraints                                                                 |
-| `observability-gate`     | Check metrics cardinality limits                                                                |
-| `silent-error`           | Detect silent error-handling anti-patterns                                                      |
-| `memory-gate`            | Validate local-memory workflow compliance                                                       |
+| Command                  | Purpose                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `policy-gate`            | Validate policy expectations from changed files                                                                                            |
+| `preflight-gate`         | Run fast policy checks before expensive work                                                                                               |
+| `review-gate`            | Validate SHA-linked review readiness (review check + review-policy required checks)                                                        |
+| `docs-gate`              | Enforce documentation parity for governed changes                                                                                          |
+| `plan-gate`              | Validate plan IDs, traceability, and acceptance evidence                                                                                   |
+| `brainstorm-gate`        | Validate brainstorm artifacts                                                                                                              |
+| `prompt-gate`            | Validate prompt template section requirements while keeping CLI parsing and validation behind the prompt-gate module boundary              |
+| `gap-case`               | Manage production gap cases while keeping lifecycle parsing, validation, persistence, and presentation behind the gap-case module boundary |
+| `pr-template-gate`       | Validate PR template completion and placeholder replacement                                                                                |
+| `rule-lifecycle-gate`    | Validate governance rules have owner, evidence, enforcement, freshness, and retirement metadata                                            |
+| `license-gate`           | Validate open-source license expectations                                                                                                  |
+| `check-authz`            | Validate authorization policy for mutative operations                                                                                      |
+| `check-environment`      | Validate pilot environment governance checks                                                                                               |
+| `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                                                                                     |
+| `artifact-gate`          | Check generated artifact changes against the artifact provenance registry                                                                  |
+| `artifact-routine`       | Validate route-driving `.harness` artifacts before implementation                                                                          |
+| `runtime-budget`         | Build safe, read-only `command-runtime-budget/v1` evidence from measured command durations and budgets                                     |
+| `ci-ownership-gate`      | Validate CircleCI primary ownership plus CodeRabbit and Semgrep required checks                                                            |
+| `blast-radius`           | Determine required checks from changed files                                                                                               |
+| `risk-tier`              | Classify changed files by risk tier                                                                                                        |
+| `pattern-scope`          | Build a pattern-scope artifact from steering feedback and changed files                                                                    |
+| `diff-budget`            | Enforce diff budget constraints                                                                                                            |
+| `observability-gate`     | Check metrics cardinality limits                                                                                                           |
+| `silent-error`           | Detect silent error-handling anti-patterns                                                                                                 |
+| `memory-gate`            | Validate local-memory workflow compliance                                                                                                  |
 
 ### Linear And Workflow Operations
 
@@ -698,17 +699,66 @@ builders and command delegation live behind a separate Linear action adapter
 seam, so agents can change one workflow action without widening the CLI
 surface.
 
+The `prompt-gate` command follows the same deep-module boundary pattern. The
+public command facade stays a compatibility export surface, the registry spec
+delegates raw arguments to the prompt-gate CLI adapter, and prompt-template
+section validation stays in `src/lib/prompt-gate/` so future prompt changes do
+not widen the registry or command facade.
+
+The `gap-case` command follows the same command-registry split pattern. The
+public command facade and legacy internal helper facade stay compatibility
+export surfaces, the registry spec delegates raw arguments to the gap-case CLI
+adapter, and lifecycle validation, persistence, open/resolve behavior, and
+result presentation stay in `src/lib/gap-case/` so future production-gap
+changes do not widen the registry or command facade.
+
+The `simulate` command also follows the command-registry split pattern. The
+public command facade and legacy analysis facades stay compatibility export
+surfaces, the registry spec delegates raw arguments to the simulate CLI
+adapter, and CLI parsing, simulation orchestration, analysis, recommendations,
+and result presentation stay in `src/lib/simulate/` so future counterfactual
+simulation changes do not widen the registry or command facade.
+
+The `ci-migrate` command follows the same registry-boundary rule. The public
+command facade remains the migration orchestration surface, the registry spec
+delegates raw arguments to the ci-migrate CLI adapter, and option projection
+plus delegated helper routing stay in `src/lib/ci-migrate/` so future CI
+migration actions do not widen the registry or command facade.
+
+The `init` command now follows this deep-module boundary rule as well. The
+public command facade stays the init orchestration surface, the registry spec
+delegates raw arguments through `init-command-spec.ts`, and raw flag
+projection plus issue-tracker validation stay in `src/lib/init/cli-args.ts`
+so future bootstrap option changes do not widen the registry core.
+
+The `upgrade` command uses the same split for downstream update work. The
+public command facade stays a compatibility export surface, the registry spec
+delegates through `upgrade-command-spec.ts`, raw flag projection stays in
+`src/lib/upgrade/cli-args.ts`, shared option contracts stay in
+`src/lib/upgrade/types.ts`, contract/template helpers stay in
+`src/lib/upgrade/`, and upgrade orchestration stays in
+`src/lib/upgrade/runner.ts` so future upgrade behavior does not widen the
+registry core.
+
+The `brain` command follows the same command-registry split for Project Brain
+work. The public command facades stay compatibility export surfaces, the
+registry spec delegates through `brain-command-spec.ts`, raw flag projection
+stays in `src/lib/project-brain/cli-args.ts`, the dispatcher and public export
+surface stay in `src/lib/project-brain/cli.ts`, and subcommand behavior stays
+in `src/lib/project-brain/*-cli.ts` so future Project Brain behavior does not
+widen the registry core.
+
 ### Pilot, Remediation, And Automation
 
-| Command          | Purpose                                                  |
-| ---------------- | -------------------------------------------------------- |
-| `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness |
-| `pilot-rollback` | Move pilot mode between autonomous and manual states     |
-| `simulate`       | Run counterfactual policy simulation                     |
-| `automation-run` | Execute idempotent automation playbooks                  |
-| `gap-case`       | Manage production gap cases                              |
-| `remediate`      | Plan and run deterministic remediation for findings      |
-| `replay`         | Re-run policy checks from saved snapshots                |
+| Command          | Purpose                                                                   |
+| ---------------- | ------------------------------------------------------------------------- |
+| `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness                  |
+| `pilot-rollback` | Move pilot mode between autonomous and manual states                      |
+| `simulate`       | Run counterfactual policy simulation through the simulate module boundary |
+| `automation-run` | Execute idempotent automation playbooks                                   |
+| `gap-case`       | Manage production gap cases through the gap-case module boundary          |
+| `remediate`      | Plan and run deterministic remediation for findings                       |
+| `replay`         | Re-run policy checks from saved snapshots                                 |
 
 ### Drift, Search, And Evidence
 

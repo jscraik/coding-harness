@@ -1,1 +1,1 @@
-export * from "./upgrade-core.js";
+export * from "../lib/upgrade/runner.js";

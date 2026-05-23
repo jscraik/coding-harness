@@ -309,6 +309,33 @@ describe("buildPrCloseoutReport", () => {
 		});
 	});
 
+	it("blocks malformed runtime evidence without throwing", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				runtimeEvidence: {
+					schemaVersion: "runtime-evidence-contract/v1",
+				} as unknown as NonNullable<PrCloseoutInput["runtimeEvidence"]>,
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.runtimeEvidence).toMatchObject({
+			present: true,
+			valid: false,
+			verifierStatus: null,
+			outcome: null,
+			exitClassification: null,
+		});
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "runtime_evidence",
+					reason: "Runtime evidence is missing verifierResult.status.",
+				}),
+			]),
+		);
+	});
+
 	it("accepts a single concrete session reference as traceability evidence", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

@@ -70,8 +70,8 @@ flowchart LR
     det_detectedmemory_review_context_1_e3afed15[("review-context")]
     det_detectedmemory_memory_gate_1_265164ac[("memory-gate")]
     det_detectedmemory_branch_enforcer_acb749cd[("branch-enforcer")]
-    det_detectedmemory_cli_args_2_81c58cf7[("cli-args")]
-    det_detectedmemory_cli_3_9d90d3fe[("cli")]
+    det_detectedmemory_cli_args_5_09ea29f0[("cli-args")]
+    det_detectedmemory_cli_4_4efe97c7[("cli")]
     det_detectedmemory_metrics_tracker_98cec29c[("metrics-tracker")]
     det_detectedmemory_types_11_4be3ee64[("types")]
     det_detectedmemory_validator_4_5180cf23[("validator")]
@@ -83,7 +83,7 @@ flowchart LR
     det_detectedmemory_local_memory_0db17ecc[("local-memory")]
     det_detectedmemory_performance_overload_c685bfcf[("performance-overload")]
     det_detectedmemory_suggestion_generator_0956f794[("suggestion-generator")]
-    det_detectedmemory_types_22_f3cf4a73[("types")]
+    det_detectedmemory_types_23_4352ee2e[("types")]
     det_detectedmemory_overload_guard_2748c559[("overload-guard")]
   end
   VecDB -. "implemented by" .-> DetectedMemory
@@ -98,6 +98,7 @@ flowchart LR
     det_detectedllm_remediate_runner_helpers_929fedcc["remediate-runner-helpers"]
     det_detectedllm_search_24193290["search"]
     det_detectedllm_command_specs_core_1c0ffc99["command-specs-core"]
+    det_detectedllm_prompt_gate_command_spec_9a941482["prompt-gate-command-spec"]
     det_detectedllm_constants_7517017f["constants"]
     det_detectedllm_index_1bc04b52["index"]
     det_detectedllm_indexer_70fa78e5["indexer"]
@@ -105,7 +106,12 @@ flowchart LR
     det_detectedllm_sync_contract_c79fa191["sync-contract"]
     det_detectedllm_north_star_validators_cfc926ce["north-star-validators"]
     det_detectedllm_sensitive_text_7c11f760["sensitive-text"]
-    det_detectedllm_cli_args_4_15572cd3["cli-args"]
+    det_detectedllm_cli_args_9_9c136878["cli-args"]
+    det_detectedllm_cli_8_e3a6ce03["cli"]
+    det_detectedllm_sections_4697ef32["sections"]
+    det_detectedllm_types_19_eb4ad5f0["types"]
+    det_detectedllm_validator_6_3688adbf["validator"]
+    det_detectedllm_cli_args_10_861cdd3f["cli-args"]
   end
   LLMNode -. "implemented by" .-> DetectedLLM
   subgraph DetectedTools["Agentic tool calls"]
@@ -122,6 +128,7 @@ flowchart LR
     det_detectedtools_remediate_cli_output_cc165396["🔧 remediate-cli-output"]
     det_detectedtools_remediate_runner_helpers_929fedcc["🔧 remediate-runner-helpers"]
     det_detectedtools_review_gate_core_4c8001f9["🔧 review-gate-core"]
+    det_detectedtools_cli_args_1_6144b055["🔧 cli-args"]
     det_detectedtools_command_capabilities_a4d5c71e["🔧 command-capabilities"]
     det_detectedtools_command_capability_rules_ca3f496a["🔧 command-capability-rules"]
     det_detectedtools_linear_command_actions_e430f4f4["🔧 linear-command-actions"]
@@ -144,12 +151,12 @@ flowchart LR
     det_detectedtools_scaffold_github_actions_pr_pipeline_renderer_1ee18de5["🔧 scaffold-github-actions-pr-pipeline-renderer"]
     det_detectedtools_scaffold_github_actions_pr_pipeline_template_e2b85f62["🔧 scaffold-github-actions-pr-pipeline-template"]
     det_detectedtools_scaffold_release_private_npm_template_075499f8["🔧 scaffold-release-private-npm-template"]
-    det_detectedtools_cli_3_9d90d3fe["🔧 cli"]
+    det_detectedtools_cli_4_4efe97c7["🔧 cli"]
     det_detectedtools_metrics_tracker_98cec29c["🔧 metrics-tracker"]
     det_detectedtools_normalise_renderer_85f2e563["🔧 normalise-renderer"]
     det_detectedtools_evaluation_engine_core_e054fe49["🔧 evaluation-engine-core"]
     det_detectedtools_tooling_baseline_50ab2eeb["🔧 tooling-baseline"]
-    det_detectedtools_types_24_c63dc1a7["🔧 types"]
+    det_detectedtools_types_25_89d086aa["🔧 types"]
   end
   LLMNode -->|tool use| DetectedTools
   DetectedTools -->|result| LLMNode
@@ -158,4 +165,4 @@ flowchart LR
   classDef llmNode fill:#555,color:#fff
   class LLMNode,Embed llmNode
   classDef toolNode fill:#555,color:#fff
-  class det_detectedtools_check_codex_agent_roles_5bb2e89b,det_detectedtools_check_steering_feedback_contract_80134459,det_detectedtools_run_harness_evals_77704768,det_detectedtools_validate_packaged_skill_5e32c890,det_detectedtools_ci_migrate_core_7005b5af,det_detectedtools_doctor_checks_5a2eb2b9,det_detectedtools_doctor_github_tool_checks_a53b0382,det_detectedtools_doctor_tool_checks_4acac51a,det_detectedtools_next_blocked_decisions_4140ad2b,det_detectedtools_policy_gate_213f7313,det_detectedtools_remediate_cli_output_cc165396,det_detectedtools_remediate_runner_helpers_929fedcc,det_detectedtools_review_gate_core_4c8001f9,det_detectedtools_command_capabilities_a4d5c71e,det_detectedtools_command_capability_rules_ca3f496a,det_detectedtools_linear_command_actions_e430f4f4,det_detectedtools_linear_command_runner_4a740dfc,det_detectedtools_policy_validators_core_714a3fe7,det_detectedtools_types_core_e405ddca,det_detectedtools_validator_core_4358f8ba,det_detectedtools_validator_helpers_7b927667,det_detectedtools_he_phase_exit_core_1148895b,det_detectedtools_ralph_runtime_73d63c0e,det_detectedtools_observed_skill_usage_ed7d5930,det_detectedtools_closure_evidence_aaa31467,det_detectedtools_pr_creator_dc6b1ea4,det_detectedtools_client_948fe603,det_detectedtools_init_output_360dce91,det_detectedtools_scaffold_ci_templates_2afd6392,det_detectedtools_scaffold_codex_environment_templates_334fbbed,det_detectedtools_scaffold_config_templates_4b80ce53,det_detectedtools_scaffold_environment_templates_c1ceba6a,det_detectedtools_scaffold_github_actions_pr_pipeline_renderer_1ee18de5,det_detectedtools_scaffold_github_actions_pr_pipeline_template_e2b85f62,det_detectedtools_scaffold_release_private_npm_template_075499f8,det_detectedtools_cli_3_9d90d3fe,det_detectedtools_metrics_tracker_98cec29c,det_detectedtools_normalise_renderer_85f2e563,det_detectedtools_evaluation_engine_core_e054fe49,det_detectedtools_tooling_baseline_50ab2eeb,det_detectedtools_types_24_c63dc1a7 toolNode
+  class det_detectedtools_check_codex_agent_roles_5bb2e89b,det_detectedtools_check_steering_feedback_contract_80134459,det_detectedtools_run_harness_evals_77704768,det_detectedtools_validate_packaged_skill_5e32c890,det_detectedtools_ci_migrate_core_7005b5af,det_detectedtools_doctor_checks_5a2eb2b9,det_detectedtools_doctor_github_tool_checks_a53b0382,det_detectedtools_doctor_tool_checks_4acac51a,det_detectedtools_next_blocked_decisions_4140ad2b,det_detectedtools_policy_gate_213f7313,det_detectedtools_remediate_cli_output_cc165396,det_detectedtools_remediate_runner_helpers_929fedcc,det_detectedtools_review_gate_core_4c8001f9,det_detectedtools_cli_args_1_6144b055,det_detectedtools_command_capabilities_a4d5c71e,det_detectedtools_command_capability_rules_ca3f496a,det_detectedtools_linear_command_actions_e430f4f4,det_detectedtools_linear_command_runner_4a740dfc,det_detectedtools_policy_validators_core_714a3fe7,det_detectedtools_types_core_e405ddca,det_detectedtools_validator_core_4358f8ba,det_detectedtools_validator_helpers_7b927667,det_detectedtools_he_phase_exit_core_1148895b,det_detectedtools_ralph_runtime_73d63c0e,det_detectedtools_observed_skill_usage_ed7d5930,det_detectedtools_closure_evidence_aaa31467,det_detectedtools_pr_creator_dc6b1ea4,det_detectedtools_client_948fe603,det_detectedtools_init_output_360dce91,det_detectedtools_scaffold_ci_templates_2afd6392,det_detectedtools_scaffold_codex_environment_templates_334fbbed,det_detectedtools_scaffold_config_templates_4b80ce53,det_detectedtools_scaffold_environment_templates_c1ceba6a,det_detectedtools_scaffold_github_actions_pr_pipeline_renderer_1ee18de5,det_detectedtools_scaffold_github_actions_pr_pipeline_template_e2b85f62,det_detectedtools_scaffold_release_private_npm_template_075499f8,det_detectedtools_cli_4_4efe97c7,det_detectedtools_metrics_tracker_98cec29c,det_detectedtools_normalise_renderer_85f2e563,det_detectedtools_evaluation_engine_core_e054fe49,det_detectedtools_tooling_baseline_50ab2eeb,det_detectedtools_types_25_89d086aa toolNode

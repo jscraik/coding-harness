@@ -200,17 +200,6 @@ function extractStringValue(content, key) {
 	return match ? match[1] : null;
 }
 
-/**
- * Extracts a boolean literal assigned to a given key from text content.
- *
- * Searches for a line of the form `key = true` or `key = false` (allowing surrounding whitespace)
- * and returns the corresponding boolean. Matching is case-sensitive and requires the literal `true` or `false`
- * on its own line.
- *
- * @param {string} content - The text to search (e.g., file contents).
- * @param {string} key - The exact key name to locate.
- * @returns {boolean|null} `true` if the key is assigned `true`, `false` if assigned `false`, or `null` if no match is found.
- */
 function extractBooleanValue(content, key) {
 	const match = content.match(
 		new RegExp(`^\\s*${key}\\s*=\\s*(true|false)\\s*$`, "m"),
@@ -221,18 +210,6 @@ function extractBooleanValue(content, key) {
 	return match[1] === "true";
 }
 
-/**
- * Extracts a TOML-style string array assigned to a given key from file content.
- *
- * Searches for a top-level assignment of the form `key = [ ... ]` and returns the
- * double-quoted string elements found inside the brackets.
- *
- * @param {string} content - File or fragment contents to search.
- * @param {string} key - The TOML key whose array value to extract.
- * @returns {string[]|null} An array of extracted string values if the array is present,
- *                         an empty array when the array is present but contains no items,
- *                         or `null` if the `key = [ ... ]` block is not found.
- */
 function extractStringArrayValue(content, key) {
 	const match = content.match(
 		new RegExp(`^\\s*${key}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*$`, "m"),
@@ -244,23 +221,13 @@ function extractStringArrayValue(content, key) {
 	if (rawItems.length === 0) {
 		return [];
 	}
-	return rawItems
-		.split(/\s*,\s*/)
-		.map((item) => {
-			const trimmed = item.trim();
-			const stringMatch = trimmed.match(/^"([^"]*)"/);
-			return stringMatch ? stringMatch[1] : null;
-		})
-		.filter((item) => item !== null);
+	return rawItems.split(/\s*,\s*/).map((item) => {
+		const trimmed = item.trim();
+		const stringMatch = trimmed.match(/^"([^"]*)"$/);
+		return stringMatch ? stringMatch[1] : null;
+	});
 }
 
-/**
- * Checks whether a TOML-style triple-quoted string block assigned to a given key contains non-whitespace content.
- *
- * @param {string} content - The text to search (typically the contents of a TOML file).
- * @param {string} key - The TOML key to locate (e.g., `developer_instructions`).
- * @returns {boolean} `true` if a triple-quoted block exists for `key` and its inner text contains at least one non-whitespace character, `false` otherwise.
- */
 function hasNonEmptyTripleQuotedBlock(content, key) {
 	const match = content.match(
 		new RegExp(`^\\s*${key}\\s*=\\s*'''\\n([\\s\\S]*?)\\n'''\\s*$`, "m"),
@@ -268,15 +235,6 @@ function hasNonEmptyTripleQuotedBlock(content, key) {
 	return Boolean(match && match[1].trim().length > 0);
 }
 
-/**
- * Validate a role's `nickname_candidates` array and append any validation messages to `errors`.
- *
- * Performs these checks on each entry: presence (array must exist and contain at least one item), string literal type, non-blank after trimming, already-trimmed (no leading/trailing whitespace), uniqueness, allowed characters (ASCII letters, digits, spaces, hyphens, underscores), and that the candidate begins with the prefix "Harness ".
- *
- * @param {string[]} errors - Accumulator for human-readable error messages; messages will include a repository-relative `rolePath`.
- * @param {string} rolePath - Filesystem path to the role TOML used when formatting error messages.
- * @param {string[]|null|undefined} actualCandidates - The parsed `nickname_candidates` value from the role file; expected to be a non-empty array of strings.
- */
 function validateNicknameCandidates(errors, rolePath, actualCandidates) {
 	if (!actualCandidates) {
 		errors.push(
@@ -328,13 +286,6 @@ function validateNicknameCandidates(errors, rolePath, actualCandidates) {
 	}
 }
 
-/**
- * Verifies the Codex agent roles README contains required reference snippets and entries for every expected role.
- *
- * Checks that the README includes a set of fixed guidance/reference strings (TOML path pattern, spawn call, runtime-proving note, skill/roles discovery paths, and guard command) and that each role in EXPECTED_ROLES appears as a backticked inventory entry. For each missing item, pushes a formatted error string into the provided errors array referencing the README path.
- *
- * @param {string[]} errors - Accumulator array; missing-item messages are appended to this array.
- */
 function validateReadme(errors) {
 	const content = readText(errors, README_PATH, "Codex agent roles README");
 	if (!content) {
@@ -388,17 +339,6 @@ function validateNoUnsupportedRoleSurface(errors) {
 	}
 }
 
-/**
- * Validate the repository's Codex agent role TOML files and record any discrepancies.
- *
- * Performs file presence checks under .codex/agents, validates each expected role's
- * TOML content (name, model, model_reasoning_effort, sandbox_mode, allow_login_shell,
- * nickname_candidates, developer_instructions block), verifies required instruction text
- * fragments (category, status line, useful_skill_routes, and any role-specific extra text),
- * and reports unexpected or missing TOML files.
- *
- * @param {string[]} errors - Mutable array that receives human-readable error messages for each validation failure.
- */
 function validateRoleFiles(errors) {
 	if (!assertExists(errors, AGENTS_ROOT, "Codex agent roles directory")) {
 		return;
@@ -508,4 +448,11 @@ function main() {
 	console.info(`codex-agent-roles: pass (${EXPECTED_ROLES.length} roles)`);
 }
 
-main();
+if (require.main === module) {
+	main();
+}
+
+module.exports = {
+	extractStringArrayValue,
+	validateNicknameCandidates,
+};

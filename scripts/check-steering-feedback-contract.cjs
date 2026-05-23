@@ -24,6 +24,13 @@ const FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT =
 	".harness/research/audits/2026-05-21-plan-and-research-code-tree-gap-audit.md";
 const FULL_IMPLEMENTATION_DOWNSCOPE_STATE =
 	"docs/goals/jsc-331-goal-governed-evidence-led-implementation/state.yaml";
+const ACTIVE_ENV_BACKED_VALIDATION_SURFACES = [
+	"docs/goals/coding-harness-deep-module-migration/state.yaml",
+	".harness/implementation-notes/2026-05-19-module-layout.html",
+	"artifacts/architecture/module-layout.html",
+];
+const ACTIVE_ENV_BACKED_RECEIPTS =
+	"docs/goals/coding-harness-deep-module-migration/receipts.jsonl";
 
 const DURABLE_DESTINATION_PATTERN =
 	/(gate|validator|schema|scaffold|template field|validation rule|project brain|linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
@@ -61,6 +68,8 @@ const CLOSEOUT_COMPLETION_PATTERN =
 	/(closeout completion|green checks.*not.*complete|green checks.*validation evidence|not equivalent to green checks|PR state.*merge.*Linear.*next-lane|heartbeat.*lane.*complete)/i;
 const ENV_BACKED_VALIDATION_PATTERN =
 	/(Env-Backed Validation Recovery|env-backed validation recovery|~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|inspect.*required.*variable names.*without printing values|missing credential.*env-loaded rerun)/i;
+const STALE_ENV_BACKED_BLOCKER_PATTERN =
+	/(current process lacks GitHub and Linear credentials|GitHub and Linear credentials are unavailable|credentials are unavailable|missing_credentials|(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}\bFIFO\b[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely)|\bFIFO\b[\s\S]{0,220}(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely))/i;
 const CLOSEOUT_STATE_FIELD_PATTERNS = [
 	[/PR state/i, "PR state"],
 	[/merge or auto-merge state/i, "merge or auto-merge state"],
@@ -1221,16 +1230,6 @@ function validateEnvSolution(content) {
 	return errors;
 }
 
-/**
- * Validates the "full-implementation downscope" steering-feedback contract across the goal-state and audit files.
- *
- * Reads the configured goal-state file and, only when it contains an S001-only downscope signal with a
- * "smallest independently mergeable audit-backed slice" claim, reads the configured downscope audit file and
- * enforces required headings, claims, and replacement-of-advisory-section rules that must be present for a
- * correct downscope audit.
- *
- * @returns {string[]} An array of error messages describing contract violations; empty when the contract is satisfied.
- */
 function validateFullImplementationDownscopeContract() {
 	const errors = [];
 	const stateResult = readRequiredFile(
@@ -1315,6 +1314,54 @@ function validateFullImplementationDownscopeContract() {
 	return errors;
 }
 
+function latestJsonlRecord(content) {
+	const lines = content
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter(Boolean);
+	if (lines.length === 0) {
+		return "";
+	}
+	return lines[lines.length - 1];
+}
+
+function collectActiveEnvBackedValidationEvidenceErrors() {
+	const errors = [];
+	for (const path of ACTIVE_ENV_BACKED_VALIDATION_SURFACES) {
+		const result = readRequiredFile(
+			"active env-backed validation surface",
+			path,
+		);
+		errors.push(...result.errors);
+		if (
+			result.errors.length === 0 &&
+			STALE_ENV_BACKED_BLOCKER_PATTERN.test(result.content)
+		) {
+			errors.push(
+				path +
+					": current evidence must not classify ~/.codex/.env FIFO metadata as missing or unavailable credentials; record the env-loaded rerun outcome instead",
+			);
+		}
+	}
+
+	const receiptResult = readRequiredFile(
+		"active env-backed validation latest receipt",
+		ACTIVE_ENV_BACKED_RECEIPTS,
+	);
+	errors.push(...receiptResult.errors);
+	if (receiptResult.errors.length === 0) {
+		const latestReceipt = latestJsonlRecord(receiptResult.content);
+		if (STALE_ENV_BACKED_BLOCKER_PATTERN.test(latestReceipt)) {
+			errors.push(
+				ACTIVE_ENV_BACKED_RECEIPTS +
+					": latest receipt must not revive the stale missing-credential/FIFO blocker classification; record env-loaded rerun status",
+			);
+		}
+	}
+
+	return errors;
+}
+
 const validations = [
 	["agents", validateAgents],
 	["validation", validateValidationDoc],
@@ -1337,6 +1384,7 @@ for (const [label, validate] of validations) {
 }
 errors.push(...validateAdmissionRecords());
 errors.push(...validateFullImplementationDownscopeContract());
+errors.push(...collectActiveEnvBackedValidationEvidenceErrors());
 
 if (errors.length > 0) {
 	console.error("steering-feedback-contract: failed");

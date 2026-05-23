@@ -66,7 +66,7 @@ export interface FlagListInspection {
  * @returns Presence, parsed list values, and whether the flag was missing a usable value.
  */
 export function inspectFlagList(
-	args: string[],
+	args: readonly string[],
 	flag: string,
 ): FlagListInspection {
 	const flagIndexes = args

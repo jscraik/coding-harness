@@ -49,19 +49,19 @@ Because all projects will receive `coding-harness`, this is a cross-project base
 
 Primary implementation repo:
 
-- `/Users/jamiecraik/dev/coding-harness`
+- this `coding-harness` checkout
 
 Plugin source to update:
 
-- `/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering`
+- the Harness Engineering plugin source checkout, resolved by the operator before editing
 
 Reference-only inputs:
 
-- `/Users/jamiecraik/dev/codex`
-- `/Users/jamiecraik/dev/configs`
-- `/Users/jamiecraik/.codex/memories/extensions/chronicle`
+- the operator's Codex source checkout
+- the operator's Codex configs checkout
+- the local Codex memory/Chronicle store
 
-Do not edit `/Users/jamiecraik/dev/codex` or `/Users/jamiecraik/dev/configs` unless Jamie explicitly expands the write scope.
+Do not edit the Codex source checkout or Codex configs checkout unless Jamie explicitly expands the write scope.
 
 ## Native Platform Alignment
 
@@ -129,7 +129,7 @@ Outcome:
 
 Verification surface:
 
-- `PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/codex-native-harness-memory-baseline`
+- `bash scripts/check-goal-board.sh docs/goals/codex-native-harness-memory-baseline`
 - `pnpm check`
 - focused tests or validators for any changed generator/template/plugin code
 - diff review proving no unrelated dirty worktree changes were absorbed
@@ -145,7 +145,7 @@ Constraints:
 Boundaries:
 
 - do not commit, push, open PRs, or update Linear without explicit owner instruction
-- do not edit `/Users/jamiecraik/dev/codex` or `/Users/jamiecraik/dev/configs` without explicit write-scope expansion
+- do not edit the Codex source checkout or Codex configs checkout without explicit write-scope expansion
 - do not start Worker implementation until the activation phrase is present
 - do not replace brownfield memory/artifact surfaces without inventory and conflict classification
 

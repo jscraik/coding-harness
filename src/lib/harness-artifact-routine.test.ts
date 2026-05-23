@@ -57,6 +57,7 @@ describe("validateHarnessArtifactRoutine", () => {
 		expect(result.schemaVersion).toBe("artifact-handling-routine/v1");
 		expect(result.referencedArtifacts).toEqual([".harness/plan/current.md"]);
 		expect(result.findings).toEqual([]);
+		expect(result.checks.assurance_matrix).toBe("not_run");
 	});
 
 	it("validates an assurance matrix when supplied", () => {
@@ -101,6 +102,38 @@ describe("validateHarnessArtifactRoutine", () => {
 			expect.objectContaining({
 				check: "assurance_matrix",
 				code: "missing_threshold",
+			}),
+		);
+	});
+
+	it("rejects assurance matrix symlinks that resolve outside the repo", () => {
+		const repoRoot = makeRepo();
+		const externalRoot = mkdtempSync(join(tmpdir(), "assurance-external-"));
+		tempDirs.push(externalRoot);
+		writeFileSync(
+			join(externalRoot, "assurance.json"),
+			JSON.stringify({ entries: assuranceEntries() }),
+			"utf8",
+		);
+		mkdirSync(join(repoRoot, ".harness"), { recursive: true });
+		symlinkSync(
+			join(externalRoot, "assurance.json"),
+			join(repoRoot, ".harness/assurance.json"),
+		);
+
+		const result = validateHarnessArtifactRoutine({
+			assuranceMatrixPath: ".harness/assurance.json",
+			repoRoot,
+			today: "2026-05-18",
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.checks.assurance_matrix).toBe("fail");
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				check: "assurance_matrix",
+				code: "assurance_matrix_resolves_outside_repo",
+				path: ".harness/assurance.json",
 			}),
 		);
 	});

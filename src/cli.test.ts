@@ -1,5 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -334,12 +340,17 @@ describe("run", () => {
 				contractPath,
 			]),
 		).toThrowError("EXIT_0");
+		const openedStore = JSON.parse(readFileSync(storePath, "utf-8")) as {
+			cases: Array<{ id: string }>;
+		};
+		const openedCaseId = openedStore.cases[0]?.id;
+		expect(openedCaseId).toEqual(expect.stringMatching(/^gc-/));
 		expect(() =>
 			run([
 				"gap-case",
 				"resolve",
 				"--case-id",
-				"gap-001",
+				openedCaseId ?? "",
 				"--resolved-by",
 				"alice",
 				"--evidence-url",
@@ -351,7 +362,7 @@ describe("run", () => {
 			]),
 		).toThrowError("EXIT_0");
 
-		// Clean up test directory (store file not created since module is mocked)
+		// Clean up test directory and the local store created by the real route.
 		rmSync(testDir, { recursive: true, force: true });
 		expect(exitSpy).toHaveBeenCalledWith(0);
 	});
