@@ -140,6 +140,16 @@ function toRepoRelative(repoRoot, value) {
 	return { outsideRepo: false, path: relative };
 }
 
+function realPathInsideRoot(repoRoot, absolutePath) {
+	const realRoot = fs.realpathSync(repoRoot);
+	const realPath = fs.realpathSync(absolutePath);
+	const relative = path.relative(realRoot, realPath);
+	return (
+		relative === "" ||
+		(!relative.startsWith("..") && !path.isAbsolute(relative))
+	);
+}
+
 function isAllowedPath(repoRelativePath) {
 	return (
 		ALLOWED_FILES.has(repoRelativePath) ||
@@ -315,6 +325,14 @@ function classifyReferences(repoRoot, references, sourceArtifactPath) {
 		const absolutePath = path.join(repoRoot, normalized.path);
 		const exists = fs.existsSync(absolutePath);
 		const isFile = exists && fs.statSync(absolutePath).isFile();
+		if (isFile && !realPathInsideRoot(repoRoot, absolutePath)) {
+			blockedRefs.push({
+				path: normalized.path,
+				classification: "outside_repo",
+				reason: "reference real path resolves outside the repository root",
+			});
+			continue;
+		}
 		if (exists && !isFile) {
 			blockedRefs.push({
 				path: normalized.path,
@@ -454,6 +472,13 @@ function main() {
 		report.status = "blocked";
 		report.blockerClass = "source_not_file";
 		report.reason = "source artifact is not a file";
+		writeReport(report, 1);
+	}
+	if (!realPathInsideRoot(gitRoot, sourcePath)) {
+		report.status = "blocked";
+		report.blockerClass = "source_outside_repo";
+		report.reason =
+			"source artifact real path resolves outside the repository root";
 		writeReport(report, 1);
 	}
 

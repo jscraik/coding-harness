@@ -123,6 +123,13 @@ checks:
       - "PR_TEMPLATE_BODY="$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh pr-template-gate --json"
       - "pnpm check"
       - "gh api repos/jscraik/coding-harness/git/commits ..."
+      - "gh pr checks 286 --watch=false"
+      - "gh api graphql ... reviewThreads"
+      - "pnpm vitest run src/lib/reviewer-coverage-receipt.test.ts src/dev/validate-audit-references-script.test.ts"
+      - "node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json"
+      - "node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json"
+      - "pnpm exec biome check scripts/validate-reviewer-coverage.cjs scripts/validate-audit-references.cjs src/lib/reviewer-coverage-receipt.test.ts src/dev/validate-audit-references-script.test.ts"
+      - "bash scripts/validate-codestyle.sh --fast"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
       - "artifacts/reviews/t006-testing.md"
@@ -140,8 +147,9 @@ checks:
       - "artifacts/reviews/t010-review-thread-audit.md"
       - "artifacts/reviews/t011-ci-autofix-triage.md"
       - "artifacts/reviews/t012-review-thread-triage.md"
-    outcome: pass_with_t012_validator_boundary_repair_published_pr_body_sync_pending
-    checked_at: "2026-05-23T21:42:12Z"
+      - "artifacts/reviews/t013-symlink-boundary-triage.md"
+    outcome: pass_with_t013_symlink_boundary_repair_local_commit_pr_boundary_pending
+    checked_at: "2026-05-23T21:59:11Z"
 tasks:
   - id: T001
     type: scout
@@ -397,6 +405,11 @@ tasks:
       - ".harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
       - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
       - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
+      - "scripts/validate-reviewer-coverage.cjs"
+      - "scripts/validate-audit-references.cjs"
+      - "src/lib/reviewer-coverage-receipt.test.ts"
+      - "src/dev/validate-audit-references-script.test.ts"
+      - "artifacts/reviews/t013-symlink-boundary-triage.md"
     verify:
       - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
       - "bash scripts/validate-codestyle.sh --fast"
