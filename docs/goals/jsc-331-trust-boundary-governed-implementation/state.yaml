@@ -4,14 +4,14 @@ goal:
   status: active
   objective: "Govern and execute the JSC-331 Trust Boundary P0 implementation from the May 23 plan and master spec until local implementation is operational, validated, reviewed, documented, and ready for merge handoff."
   native_goal_id: null
-  native_thread_id: "019e5531-8a63-77e1-a799-1d77b5e31d23"
-  native_objective: "Follow docs/goals/jsc-331-trust-boundary-governed-implementation/goal.md to govern and implement the JSC-331 Trust Boundary P0 plan/spec through validated bounded slices; do not mark complete without Judge or PM audit."
+  native_thread_id: "019e560b-fd21-7483-a243-96b844a7d4c7"
+  native_objective: "Follow docs/goals/jsc-331-trust-boundary-governed-implementation/goal.md to govern and implement the JSC-331 Trust Boundary P0 plan/spec through validated bounded slices; preserve subagent triage and commit/PR boundaries between slices; do not mark complete without Judge or PM audit."
   native_status: active
   token_budget: null
-  tokens_used: 112590
-  time_used_seconds: 233
-  native_created_at: "2026-05-23T15:44:43Z"
-  native_updated_at: "2026-05-23T15:49:14Z"
+  tokens_used: 94008
+  time_used_seconds: 278
+  native_created_at: "2026-05-23T20:06:33Z"
+  native_updated_at: "2026-05-23T20:11:11Z"
 rules:
   one_active_task: true
   require_fresh_verification: true
@@ -83,6 +83,11 @@ checks:
       - "PR_TEMPLATE_BODY=\"$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
       - "PR_TEMPLATE_BODY=\"$(gh pr view 286 --json body --jq .body)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
       - "gh pr checks 286"
+      - "pnpm vitest run src/lib/reviewer-coverage-receipt.test.ts"
+      - "node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json"
+      - "pnpm run safety:local"
+      - "pnpm run semgrep:changed"
+      - "bash scripts/validate-codestyle.sh --fast"
       - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
@@ -92,8 +97,13 @@ checks:
       - "artifacts/reviews/t006-devtools-final.md"
       - "artifacts/reviews/t006-git-triage.md"
       - "artifacts/reviews/t008-ci-pr-triage.md"
-    outcome: pass_with_pr_body_repair_and_ci_rerun_pending
-    checked_at: "2026-05-23T19:10:24Z"
+      - "artifacts/reviews/t008-architecture.md"
+      - "artifacts/reviews/t008-simplify.md"
+      - "artifacts/reviews/t008-unslopify.md"
+      - "artifacts/reviews/t008-testing.md"
+      - "artifacts/reviews/t008-codex-review.md"
+    outcome: pass_with_reviewer_coverage_validator_and_commit_pr_boundary_pending
+    checked_at: "2026-05-23T20:11:30Z"
 tasks:
   - id: T001
     type: scout
@@ -331,7 +341,7 @@ tasks:
     stop_if:
       - "Receipt validation requires changing reviewer swarm runtime behavior."
       - "Manifest schema cannot distinguish blocked from missing reviewers."
-    receipt_id: null
+    receipt_id: R008B-T008-REVIEWER-COVERAGE-VALIDATOR
   - id: T009
     type: worker
     assignee: Worker
