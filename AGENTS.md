@@ -222,6 +222,14 @@ Notes:
   keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized in the same PR when
   docs-gate reports governance surfaces.
+- Trust-boundary validator changes that add or alter script-backed evidence
+  reports such as `audit-reference-report/v1` are architecture-adjacent
+  agent-governance changes when they classify repository paths, git-tracked
+  proof, stale artifacts, or review evidence. Refresh
+  `AI/context/diagram-context.md` and keep `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  those surfaces.
 - PR closeout evidence changes that add or alter `pr-closeout/v1`,
   `harness pr-closeout`, required PR metadata, or AI session/traceability
   evidence are agent-governance changes; keep PR template guidance,
