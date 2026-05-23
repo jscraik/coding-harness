@@ -102,8 +102,8 @@ checks:
       - "artifacts/reviews/t008-unslopify.md"
       - "artifacts/reviews/t008-testing.md"
       - "artifacts/reviews/t008-codex-review.md"
-    outcome: pass_with_reviewer_coverage_validator_and_commit_pr_boundary_pending
-    checked_at: "2026-05-23T20:11:30Z"
+    outcome: pass_with_t008_remote_boundary_and_pr_checks_pending
+    checked_at: "2026-05-23T20:20:30Z"
 tasks:
   - id: T001
     type: scout
@@ -311,7 +311,7 @@ tasks:
   - id: T008
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "PU-005 Reviewer Coverage Receipt: implement scripts/validate-reviewer-coverage.cjs or route an existing narrower seam."
     inputs:
       - "scripts/validate-reviewer-coverage.cjs"
@@ -341,11 +341,11 @@ tasks:
     stop_if:
       - "Receipt validation requires changing reviewer swarm runtime behavior."
       - "Manifest schema cannot distinguish blocked from missing reviewers."
-    receipt_id: R008B-T008-REVIEWER-COVERAGE-VALIDATOR
+    receipt_id: R008C-T008-COMMIT-PR-BOUNDARY
   - id: T009
     type: worker
     assignee: Worker
-    status: queued
+    status: active
     objective: "PU-006 Trust Boundary P0 Integration and Handoff: run proof bundle, update docs/notes, classify blockers, and prepare merge-ready handoff."
     inputs:
       - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
