@@ -952,6 +952,42 @@ describe("buildLocalRuntimeCard", () => {
 		expect(card.linear.issueKey).toBe("JSC-999");
 	});
 
+	it("does not fall back to another issue's active artifacts when issue lookup misses", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		writeActiveArtifactsForIssues(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			issueKey: "JSC-404",
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: (args) => {
+				if (args.join(" ") === "branch --show-current")
+					return "codex/jsc-404-missing";
+				if (args.join(" ") === "rev-parse HEAD") return "b".repeat(40);
+				if (args.join(" ") === "status --porcelain") return "";
+				return undefined;
+			},
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.issueKey).toBe("JSC-404");
+		expect(card.artifacts).toEqual({
+			activeSpec: null,
+			activePlan: null,
+			status: "unknown",
+			staleRefs: [],
+		});
+		expect(card.sources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "artifact",
+					status: "invalid",
+					failureClass: "active_artifacts_unresolved",
+				}),
+			]),
+		);
+	});
+
 	it("matches active artifact issue rows case-insensitively", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
 		writeActiveArtifactsForMixedCaseIssue(repoRoot);

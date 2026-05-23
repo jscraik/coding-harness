@@ -56,6 +56,7 @@ function findArtifactLine(
 				line.includes(`${MARKDOWN_CODE_MARKER}.harness/`),
 		);
 		if (issueLine) return issueLine;
+		return null;
 	}
 	return (
 		lines.find(
