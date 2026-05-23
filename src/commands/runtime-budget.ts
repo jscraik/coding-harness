@@ -12,7 +12,12 @@ const EXIT_CODES = {
 	USAGE: 2,
 } as const;
 
-/** Parse command runtime observations and print a command-runtime-budget/v1 report. */
+/**
+ * Parse CLI arguments for the runtime-budget command, produce a `command-runtime-budget/v1` report, print the report (JSON or human-readable), and return an exit code.
+ *
+ * @param args - The command-line arguments to parse (e.g., process.argv.slice(2)).
+ * @returns `0` when the report status is "pass", `1` when the report status is "fail", `2` for usage or input errors.
+ */
 export function runRuntimeBudgetCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const inputFlag = inspectFlagValue(args, "--input");
@@ -66,6 +71,15 @@ export function runRuntimeBudgetCLI(args: string[]): number {
 	return report.status === "pass" ? EXIT_CODES.SUCCESS : EXIT_CODES.FAILURE;
 }
 
+/**
+ * Build a single runtime budget observation from raw CLI flag values or return `null` if inputs are missing/invalid.
+ *
+ * @param command - The command string from `--command`
+ * @param duration - The duration value from `--duration-ms` (string form); expected to parse to an integer number of milliseconds
+ * @param budget - The budget value from `--budget-ms` (string form); expected to parse to an integer number of milliseconds
+ * @param evidenceRef - The evidence reference from `--evidence-ref`
+ * @returns A single-element `CommandRuntimeBudgetObservation[]` with parsed `durationMs` and `budgetMs`, or `null` if any required flag is missing or integer parsing fails
+ */
 function observationFromFlags(
 	command: string | undefined,
 	duration: string | undefined,
@@ -85,6 +99,19 @@ function observationFromFlags(
 	return [{ command, durationMs, budgetMs, evidenceRef }];
 }
 
+/**
+ * Load command runtime budget observations from a JSON file.
+ *
+ * Attempts to read and parse `inputPath` as JSON. If the top-level value is an
+ * array it is returned as the observations array. If the top-level value is
+ * an object with an `observations` array property, that array is returned.
+ * On missing file or unexpected JSON shape this emits a usage error (JSON or
+ * plain text depending on `json`) and returns `null`.
+ *
+ * @param inputPath - Filesystem path to the JSON input file
+ * @param json - If `true`, format usage/error output as JSON
+ * @returns The parsed `CommandRuntimeBudgetObservation[]` on success, or `null` on error
+ */
 function readObservations(
 	inputPath: string,
 	json: boolean,
@@ -112,6 +139,13 @@ function readObservations(
 	return null;
 }
 
+/**
+ * Emit a usage-formatted error message and return the usage exit code.
+ *
+ * @param json - If true, output a JSON error object; otherwise print a human-readable error to stderr
+ * @param message - The error message to include in the output
+ * @returns The usage exit code (2)
+ */
 function emitUsage(json: boolean, message: string): number {
 	if (json) {
 		console.info(

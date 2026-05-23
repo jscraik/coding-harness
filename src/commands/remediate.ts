@@ -40,6 +40,13 @@ import {
 export { EXIT_CODES };
 export type { RemediateOptions, RemediateResult };
 
+/**
+ * Resolve the Git HEAD SHA to use for the remediation run.
+ *
+ * @param options - Remediation options; `options.headSha` overrides automatic detection when provided
+ * @param finalize - Finalizer used to produce a `RemediateResult` when HEAD SHA resolution fails
+ * @returns An object with `ok: true` and the resolved `headSha` on success, or `ok: false` and a finalized `RemediateResult` describing the failure to obtain the HEAD SHA on error
+ */
 function resolveHeadSha(
 	options: RemediateOptions,
 	finalize: RemediateFinalize,

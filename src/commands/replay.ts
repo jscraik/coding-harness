@@ -21,7 +21,9 @@ export { EXIT_CODES } from "./replay-run-record.js";
 export type { ReplayOptions } from "../lib/replay/options.js";
 
 /**
- * Emit the final run record for a replay execution.
+ * Emit the final run record for a completed replay and return the numeric exit code.
+ *
+ * @returns `EXIT_CODES.SUCCESS` if the replay succeeded, `EXIT_CODES.REPLAY_ERROR` otherwise.
  */
 function emitReplayResult(
 	startedAt: string,
@@ -49,6 +51,14 @@ function emitReplayResult(
 	});
 }
 
+/**
+ * List available traces according to the provided config and emit a success run record.
+ *
+ * @param startedAt - ISO 8601 timestamp marking when the CLI run began
+ * @param options - Replay CLI options that control output and behavior
+ * @param config - Resolved trace configuration, or `undefined` if not available
+ * @returns The numeric exit code `EXIT_CODES.SUCCESS`
+ */
 async function runTraceList(
 	startedAt: string,
 	options: ReplayOptions,
@@ -93,7 +103,10 @@ function emitTraceResolutionFailure(
 }
 
 /**
- * Execute the replay command and return a process-style exit code.
+ * Run the replay CLI workflow (resolve config, optionally list traces, resolve and replay a trace) and return a process-style exit code.
+ *
+ * @param options - CLI options controlling config resolution, listing mode, trace selection, and dry-run behavior
+ * @returns A numeric exit code: `EXIT_CODES.SUCCESS` when the replay completed successfully, otherwise an appropriate `EXIT_CODES.*` value describing the failure mode
  */
 export async function runReplayCLI(options: ReplayOptions): Promise<number> {
 	const startedAt = new Date().toISOString();

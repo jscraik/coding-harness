@@ -1221,6 +1221,16 @@ function validateEnvSolution(content) {
 	return errors;
 }
 
+/**
+ * Validates the "full-implementation downscope" steering-feedback contract across the goal-state and audit files.
+ *
+ * Reads the configured goal-state file and, only when it contains an S001-only downscope signal with a
+ * "smallest independently mergeable audit-backed slice" claim, reads the configured downscope audit file and
+ * enforces required headings, claims, and replacement-of-advisory-section rules that must be present for a
+ * correct downscope audit.
+ *
+ * @returns {string[]} An array of error messages describing contract violations; empty when the contract is satisfied.
+ */
 function validateFullImplementationDownscopeContract() {
 	const errors = [];
 	const stateResult = readRequiredFile(

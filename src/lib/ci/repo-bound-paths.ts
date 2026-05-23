@@ -8,10 +8,32 @@ export type RepoBoundPathResult =
 	| { ok: true; absolutePath: string }
 	| { ok: false; error: string };
 
+/**
+ * Determines whether `path` is equal to or a descendant of `rootPath`.
+ *
+ * @param rootPath - The root directory path to test against (lexical form)
+ * @param path - The path to check (lexical form)
+ * @returns `true` if `path` is `rootPath` or is located inside `rootPath`, `false` otherwise
+ */
 function isWithinRoot(rootPath: string, path: string): boolean {
 	return path === rootPath || path.startsWith(`${rootPath}${sep}`);
 }
 
+/**
+ * Validates that a non-existent target path can be safely created inside the repository and returns the resolved absolute path.
+ *
+ * Performs the following checks:
+ * - Finds the nearest existing ancestor directory of `absolutePath`.
+ * - Fails if no existing ancestor is found before hitting the filesystem root (indicates escaping `targetDir`).
+ * - Fails if the nearest existing ancestor is not a directory or is a symbolic link.
+ * - Fails if the real (resolved) ancestor is outside the repository root.
+ *
+ * @param targetDir - Repository root directory against which containment is enforced
+ * @param absolutePath - Absolute filesystem path that may not exist yet
+ * @param label - Human-readable label used in error messages
+ * @param configuredPath - Original configured path string used in error messages
+ * @returns `{ ok: true; absolutePath }` when the original `absolutePath` is accepted; otherwise `{ ok: false; error: string }` describing why the path is unsafe
+ */
 function resolveSafeAncestor(
 	targetDir: string,
 	absolutePath: string,
@@ -45,7 +67,16 @@ function resolveSafeAncestor(
 	return { ok: true, absolutePath };
 }
 
-/** Resolve a configured relative path while rejecting symlinks and repository escapes. */
+/**
+ * Resolve a configured relative path against a repository root, rejecting paths that escape the root or are symbolic links.
+ *
+ * @param targetDir - Repository root directory on disk
+ * @param configuredPath - Configured relative path to resolve (whitespace is ignored)
+ * @param label - Human-readable label used in generated error messages
+ * @param mustExist - If true, fail when the resolved path does not exist
+ * @param expectedKind - Expected filesystem kind for an existing path: `"file"` or `"directory"`
+ * @returns `{ ok: true; absolutePath: string }` when resolution succeeds, or `{ ok: false; error: string }` with a descriptive error when it fails
+ */
 export function resolveRepoBoundPath(
 	targetDir: string,
 	configuredPath: string,
@@ -117,7 +148,18 @@ export function resolveRepoBoundPath(
 	return resolveSafeAncestor(targetDir, absolutePath, label, configuredPath);
 }
 
-/** Resolve a file URL while rejecting symlinks and repository escapes. */
+/**
+ * Resolve a file:// URL to an on-disk file path that is inside the repository and is not a symlink.
+ *
+ * Converts `url` to a filesystem path, verifies the path exists, is a regular file (not a symbolic link),
+ * and that the file's realpath is contained within the resolved `targetDir`.
+ *
+ * @param targetDir - Repository root directory used to validate containment.
+ * @param url - The file URL to resolve.
+ * @param label - Human-readable label included in error messages.
+ * @returns `{ ok: true; absolutePath: string }` when the URL resolves to an allowed file; `{ ok: false; error: string }` otherwise.
+ *          Errors are returned for an invalid file URL, missing path, symbolic link, non-file target, or repository-root escape.
+ */
 export function resolveRepoBoundFileUrl(
 	targetDir: string,
 	url: string,
@@ -163,7 +205,16 @@ export function resolveRepoBoundFileUrl(
 	return { ok: true, absolutePath };
 }
 
-/** Return true only for allowlisted restore paths that stay inside the repository. */
+/**
+ * Determine whether a relative restore path is permitted and remains within the repository.
+ *
+ * Checks that `relativePath` is present in `allowedRelativePaths`, that the resolved path does not traverse or end at a symbolic link, and that the path (or its nearest existing ancestor when the path does not exist) is contained within `targetDir`.
+ *
+ * @param targetDir - Repository root directory on disk
+ * @param relativePath - Candidate relative path to validate
+ * @param allowedRelativePaths - Set of allowed relative paths; `relativePath` must be a member
+ * @returns `true` if `relativePath` is allowlisted and resolves (or has a safe existing ancestor) strictly inside `targetDir` without any symbolic links, `false` otherwise
+ */
 export function isSafeAllowedRestorePath(
 	targetDir: string,
 	relativePath: string,

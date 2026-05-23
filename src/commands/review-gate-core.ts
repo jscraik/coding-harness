@@ -219,6 +219,13 @@ function withReadinessFields(
 	};
 }
 
+/**
+ * Constructs a blocker message indicating a review check was found only from non-authoritative providers.
+ *
+ * @param checkName - The name of the review check
+ * @param expectedSource - Optional authoritative provider name to include in the message
+ * @returns A human-readable blocker message; includes the expected source when provided
+ */
 function formatReviewCheckSourceMismatchBlocker(
 	checkName: string,
 	expectedSource?: string,
@@ -418,6 +425,13 @@ async function resolveCodingActor(
 	}
 }
 
+/**
+ * Ensures at least one approving reviewer is independent of the coding actor.
+ *
+ * @param approvers - List of normalized reviewer logins who approved the current head SHA
+ * @param codingActor - Normalized login of the determined coding actor
+ * @returns `true` if at least one approver's login differs from `codingActor`, `false` otherwise; when `false`, `blockers` contains a descriptive failure message
+ */
 function evaluateReviewerIndependence({
 	approvers,
 	codingActor,
