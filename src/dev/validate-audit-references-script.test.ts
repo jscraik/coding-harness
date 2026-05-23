@@ -1,5 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -446,6 +452,55 @@ describe("validate-audit-references script", () => {
 				path: "../outside.md",
 			}),
 		]);
+	});
+
+	it("blocks tracked symlink references that resolve outside the repository boundary", () => {
+		const root = makeRoot();
+		const outsideRoot = mkdtempSync(
+			join(tmpdir(), "audit-references-symlink-outside-"),
+		);
+		roots.push(outsideRoot);
+		writeFileSync(join(outsideRoot, "external.md"), "outside\n");
+		write(root, ".harness/research/audits/audit.md", "- docs/external.md\n");
+		symlinkSync(
+			join(outsideRoot, "external.md"),
+			join(root, "docs", "external.md"),
+		);
+		gitAdd(root, ".harness/research/audits/audit.md", "docs/external.md");
+
+		const result = runValidator(root, ".harness/research/audits/audit.md");
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("blocked");
+		expect(report.blockerClass).toBe("reference_outside_allowed_boundary");
+		expect(report.blockedRefs).toEqual([
+			expect.objectContaining({
+				classification: "outside_repo",
+				path: "docs/external.md",
+			}),
+		]);
+	});
+
+	it("blocks source artifacts that symlink outside the repository boundary", () => {
+		const root = makeRoot();
+		const outsideRoot = mkdtempSync(
+			join(tmpdir(), "audit-source-symlink-outside-"),
+		);
+		roots.push(outsideRoot);
+		writeFileSync(join(outsideRoot, "audit.md"), "- docs/source.md\n");
+		symlinkSync(
+			join(outsideRoot, "audit.md"),
+			join(root, ".harness", "research", "audits", "audit.md"),
+		);
+		gitAdd(root, ".harness/research/audits/audit.md");
+
+		const result = runValidator(root, ".harness/research/audits/audit.md");
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("blocked");
+		expect(report.blockerClass).toBe("source_outside_repo");
 	});
 
 	it("blocks references inside the repo but outside allowed boundaries", () => {

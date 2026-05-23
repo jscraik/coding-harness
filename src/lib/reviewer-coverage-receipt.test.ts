@@ -1,5 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -150,6 +156,44 @@ describe("validate-reviewer-coverage script", () => {
 			expect.objectContaining({
 				reason: "artifact_outside_repo",
 				role: "security",
+			}),
+		]);
+	});
+
+	it("fails closed when a reviewer artifact symlink targets outside the repository", () => {
+		const root = makeRoot();
+		const outsideRoot = mkdtempSync(
+			join(tmpdir(), "reviewer-coverage-symlink-outside-"),
+		);
+		roots.push(outsideRoot);
+		writeFileSync(
+			join(outsideRoot, "architecture.md"),
+			"WROTE: artifacts/reviews/architecture.md\n",
+		);
+		symlinkSync(
+			join(outsideRoot, "architecture.md"),
+			join(root, "artifacts", "reviews", "architecture.md"),
+		);
+		writeManifest(root, {
+			requiredReviewers: [
+				{ artifact: "architecture.md", role: "architecture" },
+			],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report).toMatchObject({
+			blockerClass: "missing_artifacts",
+			status: "blocked",
+		});
+		expect(report.missingArtifacts).toEqual([
+			expect.objectContaining({
+				artifact: "artifacts/reviews/architecture.md",
+				reason: "artifact_outside_repo",
+				role: "architecture",
 			}),
 		]);
 	});
