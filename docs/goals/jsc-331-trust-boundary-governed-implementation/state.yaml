@@ -80,6 +80,9 @@ checks:
       - "pnpm vitest run src/lib/runtime/local-runtime-card.test.ts src/lib/runtime/issue-key.test.ts src/commands/runtime-card.test.ts"
       - "pnpm exec biome check src/lib/runtime/local-runtime-card-assembly.ts"
       - "pnpm vitest run src/lib/architecture/module-boundaries.test.ts src/lib/runtime/local-runtime-card.test.ts"
+      - "PR_TEMPLATE_BODY=\"$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "PR_TEMPLATE_BODY=\"$(gh pr view 286 --json body --jq .body)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "gh pr checks 286"
       - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
@@ -88,8 +91,9 @@ checks:
       - "artifacts/reviews/t006-devtools.md"
       - "artifacts/reviews/t006-devtools-final.md"
       - "artifacts/reviews/t006-git-triage.md"
-    outcome: pass_with_commit_pr_boundary_required_after_t007_remediation
-    checked_at: "2026-05-23T18:45:45Z"
+      - "artifacts/reviews/t008-ci-pr-triage.md"
+    outcome: pass_with_pr_body_repair_and_ci_rerun_pending
+    checked_at: "2026-05-23T19:10:24Z"
 tasks:
   - id: T001
     type: scout
