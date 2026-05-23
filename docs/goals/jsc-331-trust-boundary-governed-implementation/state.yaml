@@ -77,6 +77,7 @@ checks:
       - "pnpm run safety:local"
       - "bash scripts/validate-codestyle.sh --fast"
       - "pnpm run docs:style:changed"
+      - "pnpm vitest run src/lib/runtime/local-runtime-card.test.ts src/lib/runtime/issue-key.test.ts src/commands/runtime-card.test.ts"
       - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
@@ -85,8 +86,8 @@ checks:
       - "artifacts/reviews/t006-devtools.md"
       - "artifacts/reviews/t006-devtools-final.md"
       - "artifacts/reviews/t006-git-triage.md"
-    outcome: pass_with_commit_pr_boundary_required
-    checked_at: "2026-05-23T18:30:12Z"
+    outcome: pass_with_commit_pr_boundary_required_after_t007_remediation
+    checked_at: "2026-05-23T18:45:45Z"
 tasks:
   - id: T001
     type: scout
@@ -274,10 +275,13 @@ tasks:
       - "Preserve unrelated .harness/memory/LEARNINGS.md dirty worktree changes."
       - "Do not start reviewer-coverage implementation in this task."
       - "Do not claim CI, CodeRabbit, merge, or Linear completion until live PR state is observed."
+      - "T007 may remediate reviewer-identified runtime-card fallback defects discovered during git triage before PR creation."
     expected_output: "Committed branch, upstream tracking, open draft PR, and boundary receipt or explicit blocker."
     allowed_files:
       - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
       - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
+      - "src/lib/runtime/local-runtime-card-artifacts.ts"
+      - "src/lib/runtime/local-runtime-card.test.ts"
     verify:
       - "git status --short --branch --untracked-files=all"
       - "git log --oneline -3"
