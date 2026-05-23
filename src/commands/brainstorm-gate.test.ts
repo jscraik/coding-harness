@@ -44,15 +44,17 @@ describe("brainstorm-gate command", () => {
 		);
 	}
 
+	function isoDate(offsetDays = 0): string {
+		const date = new Date();
+		date.setUTCDate(date.getUTCDate() + offsetDays);
+		return date.toISOString().slice(0, 10);
+	}
+
 	it("returns success for a fresh strict-complete brainstorm", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "brainstorm-gate-pass-"));
 		tempDirs.push(tempDir);
-		createBrainstorm(
-			tempDir,
-			"2026-04-22-throughput-brainstorm.md",
-			"2026-04-22",
-			true,
-		);
+		const today = isoDate();
+		createBrainstorm(tempDir, `${today}-throughput-brainstorm.md`, today, true);
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
 		const exitCode = runBrainstormGateCLI({
