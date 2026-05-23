@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-05-22T21:23:35.738Z",
+	"generatedAt": "2026-05-23T18:34:58.548Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -70,8 +70,8 @@
 			"type": "dependency",
 			"file": "dependency.mmd",
 			"outputPath": ".diagram/dependency.mmd",
-			"lines": 530,
-			"bytes": 42329,
+			"lines": 533,
+			"bytes": 42616,
 			"isPlaceholder": false
 		},
 		{
@@ -111,7 +111,7 @@
 			"file": "security.mmd",
 			"outputPath": ".diagram/security.mmd",
 			"lines": 85,
-			"bytes": 4755,
+			"bytes": 4799,
 			"isPlaceholder": false
 		},
 		{

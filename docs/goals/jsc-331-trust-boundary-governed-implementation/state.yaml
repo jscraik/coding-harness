@@ -71,7 +71,20 @@ claims:
 checks:
   dirty_fingerprint: "codex/jsc-331-trust-boundary-p0; modified: .harness/memory/LEARNINGS.md, .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md, package.json, scripts/validate-evidence-patterns.cjs, src/commands/runtime-card.test.ts, src/lib/runtime/local-runtime-card-artifacts.ts, src/lib/runtime/local-runtime-card-assembly.ts, src/lib/runtime/local-runtime-card-live.ts, src/lib/runtime/local-runtime-card.test.ts, src/lib/runtime/local-runtime-card.ts, src/lib/runtime/runtime-evidence-adapter.ts; untracked: .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md, docs/goals/jsc-331-trust-boundary-governed-implementation/**, scripts/validate-he-artifacts.sh, src/dev/validate-evidence-patterns-script.test.ts, src/dev/validate-he-artifacts-script.test.ts, src/lib/runtime/issue-key.ts, src/lib/runtime/issue-key.test.ts"
   last_verification:
-    command: "T006 closeout validation: pnpm vitest run src/dev/validate-audit-references-script.test.ts; node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json; pnpm run safety:local; bash scripts/validate-codestyle.sh --fast; artifacts/reviews/t006-architecture.md; artifacts/reviews/t006-testing.md; artifacts/reviews/t006-simplicity.md; artifacts/reviews/t006-devtools.md; artifacts/reviews/t006-devtools-final.md; artifacts/reviews/t006-git-triage.md"
+    commands:
+      - "pnpm vitest run src/dev/validate-audit-references-script.test.ts"
+      - "node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json"
+      - "pnpm run safety:local"
+      - "bash scripts/validate-codestyle.sh --fast"
+      - "pnpm run docs:style:changed"
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+    review_artifacts:
+      - "artifacts/reviews/t006-architecture.md"
+      - "artifacts/reviews/t006-testing.md"
+      - "artifacts/reviews/t006-simplicity.md"
+      - "artifacts/reviews/t006-devtools.md"
+      - "artifacts/reviews/t006-devtools-final.md"
+      - "artifacts/reviews/t006-git-triage.md"
     outcome: pass_with_commit_pr_boundary_required
     checked_at: "2026-05-23T18:30:12Z"
 tasks:

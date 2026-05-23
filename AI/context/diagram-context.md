@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-22T21:23:25Z
+Generated: 2026-05-23T18:34:28Z
 
 ## Table of Contents
 
@@ -25,6 +25,17 @@ Generated: 2026-05-22T21:23:25Z
 - Start here for compact architecture, dependency, database, and ERD context before opening raw source files.
 - Use .diagram/manifest.json to choose a focused Mermaid file when this combined pack is too large.
 - For TypeScript implementation detail in this checkout, run `bash scripts/harness-cli.sh source-outline <path> --json` first, then unwrap one symbol with `--symbol <name>`. Downstream repositories can use `harness source-outline <path>`.
+
+## Changed source focus
+
+- These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
+- `package.json`
+- `src/lib/runtime/issue-key.ts`
+- `src/lib/runtime/local-runtime-card-artifacts.ts`
+- `src/lib/runtime/local-runtime-card-assembly.ts`
+- `src/lib/runtime/local-runtime-card-live.ts`
+- `src/lib/runtime/local-runtime-card.ts`
+- `src/lib/runtime/runtime-evidence-adapter.ts`
 
 ## agent
 
@@ -458,6 +469,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_test_harness_6e520b98_6b3d1d32
   ext_node_child_process_f62b7d19["node:child_process"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_audit_references_811f872a_0ce355a8
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_commit_msg_43b008fe_f9560ef9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_packaged_skill_5e32c890_9228ad58
@@ -663,6 +675,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_ui_loop_tooling_12b2d2c7_1abedab2
   ext_node_fs_a15b7d96["node:fs"] --> node_update_core_bced358c_b710dd59
   ext_node_fs_a15b7d96["node:fs"] --> node_upgrade_1_b277486e_4a06b7a8
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_audit_references_811f872a_0ce355a8
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_branch_protection_alignment_09b7779a_6f299056
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_commit_msg_43b008fe_f9560ef9
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
@@ -852,6 +865,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_ui_loop_tooling_12b2d2c7_1abedab2
   ext_node_path_78811c13["node:path"] --> node_update_core_bced358c_b710dd59
   ext_node_path_78811c13["node:path"] --> node_upgrade_1_b277486e_4a06b7a8
+  ext_node_path_78811c13["node:path"] --> node_validate_audit_references_811f872a_0ce355a8
   ext_node_path_78811c13["node:path"] --> node_validate_branch_protection_alignment_09b7779a_6f299056
   ext_node_path_78811c13["node:path"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
   ext_node_path_78811c13["node:path"] --> node_validate_packaged_skill_5e32c890_9228ad58
@@ -1202,6 +1216,8 @@ flowchart LR
 ```mermaid
 flowchart TD
   Untrusted["Untrusted input"]
+  validate_audit_references_811f872a["validate-audit-references"]
+  Untrusted --> validate_audit_references_811f872a
   audit_b81f37a0["audit"]
   Untrusted --> audit_b81f37a0
   evidence_verify_3b73c290["evidence-verify"]
@@ -1258,6 +1274,8 @@ flowchart TD
   Untrusted --> risk_tier_1_96b6ff91
   tooling_baseline_50ab2eeb["tooling-baseline"]
   Untrusted --> tooling_baseline_50ab2eeb
+  issue_key_305bf3db["issue-key"]
+  Untrusted --> issue_key_305bf3db
   verify_work_1_cd8e7ec3["verify-work"]
   Untrusted --> verify_work_1_cd8e7ec3
   args_1_15220d9b["args"]
@@ -1278,12 +1296,8 @@ flowchart TD
   Untrusted --> resume_admissibility_a59835da
   retry_policy_eebf8de9["retry-policy"]
   Untrusted --> retry_policy_eebf8de9
-  run_state_core_25a955bc["run-state-core"]
-  Untrusted --> run_state_core_25a955bc
-  run_state_94d814a7["run-state"]
-  Untrusted --> run_state_94d814a7
   classDef securityNode fill:#dc2626,color:#fff
-  class audit_b81f37a0,evidence_verify_3b73c290,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,policy_823412d1,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,verify_work_1_cd8e7ec3,args_1_15220d9b,cli_args_14_3481043e,runner_1_6f281bf8,types_27_4d134744,orchestrator_core_d0678b53,orchestrator_1_6b7137c5,resume_admissibility_core_8ab84488,resume_admissibility_a59835da,retry_policy_eebf8de9,run_state_core_25a955bc,run_state_94d814a7 securityNode
+  class validate_audit_references_811f872a,audit_b81f37a0,evidence_verify_3b73c290,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,policy_823412d1,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,issue_key_305bf3db,verify_work_1_cd8e7ec3,args_1_15220d9b,cli_args_14_3481043e,runner_1_6f281bf8,types_27_4d134744,orchestrator_core_d0678b53,orchestrator_1_6b7137c5,resume_admissibility_core_8ab84488,resume_admissibility_a59835da,retry_policy_eebf8de9 securityNode
 
 ```
 
