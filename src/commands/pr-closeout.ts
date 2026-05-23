@@ -164,6 +164,12 @@ function normalizeRuntimeEvidenceContract(
 			`${source} must be a runtime-evidence-contract/v1 JSON object`,
 		);
 	}
+	const record = value as Record<string, unknown>;
+	if (record.schemaVersion !== "runtime-evidence-contract/v1") {
+		throw new Error(
+			`${source} must use schemaVersion runtime-evidence-contract/v1`,
+		);
+	}
 	return value as RuntimeEvidenceContract;
 }
 
