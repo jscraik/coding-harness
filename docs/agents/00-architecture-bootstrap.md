@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-22
+last_validated: 2026-05-24
 ---
 
 # Architecture bootstrap
@@ -17,6 +17,12 @@ last_validated: 2026-05-22
 ## Purpose
 
 Use this guide first when a task changes architecture, policy flow, or cross-command behavior.
+The root `ARCHITECTURE.md` file is the stable source map for high-level
+boundaries and invariants, while `AI/context/diagram-context.md` and
+`.diagram/` are generated context packs that prove the current implementation
+shape. When a change adds or materially refreshes the root architecture map,
+keep this guide in the same branch so agents know which architecture surface is
+canonical and which surfaces are generated evidence.
 
 ## One-task-at-a-time intake
 

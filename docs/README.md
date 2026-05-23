@@ -10,6 +10,7 @@ last_validated: 2026-04-18
 
 - [Root README](../README.md) — product overview, install, workflows
 - [Root AGENTS](../AGENTS.md) — mandatory operator baseline
+- [Root architecture](../ARCHITECTURE.md) — source map, boundaries, invariants
 
 ## Layer 1 — Quickstart
 

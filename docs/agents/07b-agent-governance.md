@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-22
+last_validated: 2026-05-24
 ---
 
 # Agent governance
@@ -43,6 +43,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   synchronized with the implementation and required documentation surfaces so
   docs-gate does not pass with stale operator guidance.
 - validation gate graph changes that add typed gate specs, phase-exit evidence gates, `harness next --phase-exit` visibility, parity tests, or resume-checkpoint guards should refresh `AI/context/diagram-context.md` and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
+- root scaffold or modularity changes that add or materially refresh `ARCHITECTURE.md` should treat that file as the human-authored source map, refresh generated architecture context as evidence, and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
 - command-registry deep-module splits should preserve one small public command
   facade while moving action-specific option builders and delegation behind
   named internal adapter seams. Treat those seams as agent-governance surfaces:
@@ -115,7 +116,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `unknown agent_type` until the runtime is refreshed. Do not substitute a
   generic/default subagent when the project-local role boundary is required.
   Start a fresh thread rooted in this checkout before relying on that boundary.
-- north-star contract/scaffold updates that affect architecture context should update `docs/agents/00-architecture-bootstrap.md` and this guide in the same PR
+- north-star contract/scaffold updates that affect architecture context should update `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide in the same PR
 - north-star artifact contract changes should keep the README command evidence
   surface, AGENTS shared-vocabulary guidance, and this guide synchronized in
   the same PR
