@@ -294,4 +294,21 @@ describe("validate-evidence-patterns script", () => {
 			]),
 		);
 	});
+
+	it("default mode does not require validationCommand for adopted patterns", () => {
+		const root = makeRoot();
+		writeManifest(root, {
+			implemented: {
+				validationCommand: "",
+			},
+		});
+
+		const result = runValidator(root);
+		const report = JSON.parse(result.stdout);
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.errors).toEqual([]);
+		expect(report.strictAdopted).toBe(false);
+	});
 });

@@ -10,7 +10,7 @@ date: 2026-05-23
 traceability_required: true
 origin: .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md
 linear_issue: JSC-331
-linear_status: destination_verified_mutation_authorized
+linear_status: confirmation_required
 linear_milestone: not_applicable
 ---
 

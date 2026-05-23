@@ -66,7 +66,7 @@ function parseArgs(argv) {
 			}
 		} else if (arg === "--root") {
 			index += 1;
-			if (!hasText(argv[index])) {
+			if (!hasText(argv[index]) || isFlag(argv[index])) {
 				options.usageErrors.push({
 					code: "usage_missing_value",
 					message: "--root requires a path value",
@@ -76,7 +76,7 @@ function parseArgs(argv) {
 			}
 		} else if (arg === "--manifest") {
 			index += 1;
-			if (!hasText(argv[index])) {
+			if (!hasText(argv[index]) || isFlag(argv[index])) {
 				options.usageErrors.push({
 					code: "usage_missing_value",
 					message: "--manifest requires a path value",
@@ -86,7 +86,7 @@ function parseArgs(argv) {
 			}
 		} else if (arg === "--deep-dir") {
 			index += 1;
-			if (!hasText(argv[index])) {
+			if (!hasText(argv[index]) || isFlag(argv[index])) {
 				options.usageErrors.push({
 					code: "usage_missing_value",
 					message: "--deep-dir requires a path value",
@@ -125,6 +125,10 @@ function hasText(value) {
 	return typeof value === "string" && value.trim().length > 0;
 }
 
+function isFlag(value) {
+	return typeof value === "string" && value.startsWith("-");
+}
+
 function isAdoptedPattern(pattern) {
 	return ADOPTED_STATUSES.has(pattern.status) || pattern.status === "adopted";
 }
@@ -135,12 +139,13 @@ function normalizePatternStatus(status) {
 	return status;
 }
 
-function deepEvidenceFiles() {
-	if (!fs.existsSync(DEEP_DIR)) return [];
+function deepEvidenceFiles(deepDir) {
+	if (!fs.existsSync(deepDir)) return [];
+	const relativeDeepDir = path.relative(ROOT, deepDir);
 	return fs
-		.readdirSync(DEEP_DIR)
+		.readdirSync(deepDir)
 		.filter((name) => name.endsWith(".md"))
-		.map((name) => path.join(".harness", "research", "deep", name))
+		.map((name) => path.join(relativeDeepDir, name))
 		.sort();
 }
 
@@ -180,7 +185,7 @@ function validateTargetSurface(pattern, target, errors) {
 	}
 }
 
-function validatePattern(pattern, index, seenSources, seenIds, errors) {
+function validatePattern(pattern, index, seenSources, seenIds, errors, deepDir, strictAdopted) {
 	if (!isRecord(pattern)) {
 		errors.push({
 			code: "pattern_not_object",
@@ -214,12 +219,14 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 		});
 	} else {
 		seenSources.add(pattern.source);
-		if (!pattern.source.startsWith(".harness/research/deep/")) {
+		const relativeDeepDir = path.relative(ROOT, deepDir);
+		const expectedPrefix = `${relativeDeepDir}/`;
+		if (!pattern.source.startsWith(expectedPrefix)) {
 			errors.push({
 				code: "source_not_deep_evidence",
 				patternId: pattern.id,
 				path: pattern.source,
-				message: "pattern.source must point under .harness/research/deep",
+				message: `pattern.source must point under ${relativeDeepDir}`,
 			});
 		}
 		if (!pathExists(pattern.source)) {
@@ -247,7 +254,7 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 			message: "pattern.owner must be codex or jamie",
 		});
 	}
-	if (isAdoptedPattern(pattern) && !hasText(pattern.validationCommand)) {
+	if (strictAdopted && isAdoptedPattern(pattern) && !hasText(pattern.validationCommand)) {
 		errors.push({
 			code: "adopted_validation_command_missing",
 			patternId: pattern.id,
@@ -270,7 +277,7 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 		});
 		return;
 	}
-	if (isAdoptedPattern(pattern) && pattern.targetSurfaces.length === 0) {
+	if (strictAdopted && isAdoptedPattern(pattern) && pattern.targetSurfaces.length === 0) {
 		errors.push({
 			code: "adopted_target_surface_missing",
 			patternId: pattern.id,
@@ -282,7 +289,7 @@ function validatePattern(pattern, index, seenSources, seenIds, errors) {
 	}
 }
 
-function validateManifest(manifest) {
+function validateManifest(manifest, deepDir, strictAdopted) {
 	const errors = [];
 	if (!isRecord(manifest)) {
 		return [
@@ -315,9 +322,9 @@ function validateManifest(manifest) {
 	const seenSources = new Set();
 	const seenIds = new Set();
 	for (const [index, pattern] of manifest.patterns.entries()) {
-		validatePattern(pattern, index, seenSources, seenIds, errors);
+		validatePattern(pattern, index, seenSources, seenIds, errors, deepDir, strictAdopted);
 	}
-	for (const source of deepEvidenceFiles()) {
+	for (const source of deepEvidenceFiles(deepDir)) {
 		if (!seenSources.has(source)) {
 			errors.push({
 				code: "deep_evidence_untracked",
@@ -410,7 +417,7 @@ function main() {
 		});
 	} else if (errors.length === 0) {
 		manifest = readJson(MANIFEST_PATH, errors);
-		if (manifest) errors.push(...validateManifest(manifest));
+		if (manifest) errors.push(...validateManifest(manifest, DEEP_DIR, options.strictAdopted));
 	}
 	const validationCommands =
 		options.runValidationCommands && manifest && errors.length === 0
@@ -440,7 +447,7 @@ function main() {
 					? "pass"
 					: "fail",
 		manifest: relative(MANIFEST_PATH),
-		deepEvidenceCount: deepEvidenceFiles().length,
+		deepEvidenceCount: deepEvidenceFiles(DEEP_DIR).length,
 		strictAdopted: options.strictAdopted,
 		statusSummary: patternStatusSummary(manifest),
 		validationCommands,

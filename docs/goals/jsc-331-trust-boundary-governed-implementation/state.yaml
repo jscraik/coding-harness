@@ -94,7 +94,7 @@ checks:
       - "PR_BODY=\"$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh linear-gate --json"
       - "gh pr edit 286 --body-file docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md"
       - "PR_BODY=\"$(gh pr view 286 --json body --jq .body)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh linear-gate --json"
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "bash scripts/check_goal_board.sh docs/goals/jsc-331-trust-boundary-governed-implementation"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
       - "artifacts/reviews/t006-testing.md"
@@ -135,7 +135,7 @@ tasks:
       - "docs/goals/jsc-331-trust-boundary-governed-implementation/**"
       - ".harness/implementation-notes/2026-05-23-jsc-331-trust-boundary-governed-implementation-notes.html"
     verify:
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "bash scripts/check_goal_board.sh docs/goals/jsc-331-trust-boundary-governed-implementation"
       - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
       - "git status --short --branch --untracked-files=all"
     stop_if:
@@ -391,7 +391,7 @@ tasks:
     expected_output: "Judge receipt with decision complete, continue, or blocked."
     allowed_files: []
     verify:
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
+      - "bash scripts/check_goal_board.sh docs/goals/jsc-331-trust-boundary-governed-implementation"
       - "bash scripts/validate-codestyle.sh --fast"
     stop_if:
       - "No final Judge or PM receipt can be produced from current evidence."

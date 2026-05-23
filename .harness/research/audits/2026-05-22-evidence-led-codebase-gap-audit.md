@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-Target repository: /Users/jamiecraik/dev/coding-harness
+Target repository: coding-harness
 
 Primary evidence documents:
 

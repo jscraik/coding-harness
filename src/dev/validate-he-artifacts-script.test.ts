@@ -38,4 +38,23 @@ describe("validate-he-artifacts script", () => {
 			status: "blocked",
 		});
 	});
+
+	it("rejects paths outside the repository", () => {
+		const root = mkdtempSync(join(tmpdir(), "he-artifacts-"));
+		roots.push(root);
+
+		const result = spawnSync("bash", [SCRIPT_PATH, "../plan.md", "../spec.md"], {
+			cwd: root,
+			encoding: "utf8",
+			env: {
+				...process.env,
+				HE_AGENT_SKILLS_ROOT: "",
+			},
+		});
+		const report = JSON.parse(result.stdout);
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("blocked");
+		expect(report.blockerClass).toMatch(/repo_root_unavailable|missing_plan/);
+	});
 });

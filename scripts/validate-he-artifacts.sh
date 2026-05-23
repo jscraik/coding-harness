@@ -52,15 +52,44 @@ cd "$repo_root" || {
 plan_path=$1
 spec_path=$2
 
-if [[ ! -f "$plan_path" ]]; then
+# Resolve to canonical absolute paths
+if ! plan_path_resolved=$(realpath "$plan_path" 2>/dev/null); then
+  emit_json "blocked" "missing_plan" "plan path does not exist or cannot be resolved: $plan_path"
+  exit 1
+fi
+
+if ! spec_path_resolved=$(realpath "$spec_path" 2>/dev/null); then
+  emit_json "blocked" "missing_spec" "spec path does not exist or cannot be resolved: $spec_path"
+  exit 1
+fi
+
+# Verify both paths are inside the repository root
+plan_relative=$(realpath --relative-to="$repo_root" "$plan_path_resolved" 2>/dev/null || echo "")
+if [[ -z "$plan_relative" || "$plan_relative" == ../* || "$plan_relative" == /* ]]; then
+  emit_json "blocked" "missing_plan" "plan path is outside repository: $plan_path"
+  exit 1
+fi
+
+spec_relative=$(realpath --relative-to="$repo_root" "$spec_path_resolved" 2>/dev/null || echo "")
+if [[ -z "$spec_relative" || "$spec_relative" == ../* || "$spec_relative" == /* ]]; then
+  emit_json "blocked" "missing_spec" "spec path is outside repository: $spec_path"
+  exit 1
+fi
+
+# Use resolved paths for file checks
+if [[ ! -f "$plan_path_resolved" ]]; then
   emit_json "blocked" "missing_plan" "plan path does not exist: $plan_path"
   exit 1
 fi
 
-if [[ ! -f "$spec_path" ]]; then
+if [[ ! -f "$spec_path_resolved" ]]; then
   emit_json "blocked" "missing_spec" "spec path does not exist: $spec_path"
   exit 1
 fi
+
+# Use original paths for validator commands
+plan_path="$plan_path_resolved"
+spec_path="$spec_path_resolved"
 
 candidate_roots=()
 if [[ -n "${HE_AGENT_SKILLS_ROOT:-}" ]]; then
