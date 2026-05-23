@@ -136,6 +136,7 @@ export const RETRYABILITY_BY_NAME: Partial<
 	next: "safe",
 	"pr-closeout": "safe",
 	"runtime-card": "safe",
+	"runtime-budget": "safe",
 	"fleet-plan": "safe",
 	doctor: "safe",
 	health: "safe",
