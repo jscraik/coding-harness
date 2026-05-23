@@ -9,8 +9,9 @@
 ## Work performed
 
 - Plan IDs: JSC-331; `.harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md`; `.harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md`; `docs/goals/jsc-331-trust-boundary-governed-implementation/goal.md`
-- Phase / slice: T001-T006 complete; T007 commit/push/PR boundary complete through PR #286; T008 remote-state triage, reviewer-coverage validator proof, and commit/PR boundary complete through `ecba7958`; T009 integration is active; T010 Judge/PM audit remains queued.
-- Session IDs: Native goal thread reference from board state: `019e560b-fd21-7483-a243-96b844a7d4c7`; goal-board receipts `R001` through `R008B`.
+- Linear reference: Refs JSC-331
+- Phase / slice: T001-T006 complete; T007 commit/push/PR boundary complete through PR #286; T008 remote-state triage, reviewer-coverage validator proof, and commit/PR boundary complete through `140dff6b`; T009 integration proof is active with PR-body Linear repair recorded; T010 Judge/PM audit remains queued.
+- Session IDs: Native goal thread reference from board state: `019e560b-fd21-7483-a243-96b844a7d4c7`; goal-board receipts `R001` through `R009A`.
 - Trace IDs: PR #286 at `https://github.com/jscraik/coding-harness/pull/286`; review artifacts under `artifacts/reviews/t004-*.md`, `artifacts/reviews/t005-*.md`, `artifacts/reviews/t006-*.md`, and `artifacts/reviews/t008-*.md`; pushed commit range begins at `0587a534` and continues through the current PR head.
 - AI session / traceability: Goal-board state and receipts map the Codex implementation session to each governed slice, including the user-correction receipt `R006`, T007 remediation receipt `R007`, and PR-boundary receipt `R007B`.
 - Completed work: Added and validated runtime evidence precedence, issue-key matching, HE artifact validation, evidence pattern validation, audit-reference reporting, reviewer-coverage receipt validation, generated architecture context, required governance doc sync, runtime-card fallback remediation, module-boundary ratchet repair, and PR-body gate repair.
@@ -19,12 +20,12 @@
 - Pattern scope inventory: Principle: an issue-scoped evidence lookup must not fall back to another issue's artifact row, and every validated goal slice needs subagent git triage plus a commit/PR boundary before next-slice movement. Searched sibling runtime-card issue-key paths, active-artifact parsing, live Linear matching, audit reference validation, goal receipts, docs-gate surfaces, PR-template gate behavior, and module-boundary ratchets. Changed runtime-card artifact lookup, audit-reference validator, governance docs, generated diagram context, state/receipt records, PR body artifact, and tests; deferred T008 reviewer coverage and T009 integration by goal-board task.
 - Meta-behavior proof: User correction \"part of the goal instructions was to commit pr between slices and a subagent triage\" was recorded in the durable guard `docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl` as `R006`; T007 was inserted as the active Git Boundary Handoff; `artifacts/reviews/t006-git-triage.md`, `R007`, and `R007B` record the subagent triage, remediation, and PR boundary.
 - Repeated-error research: n.a. No same command or test failure repeated twice in the same troubleshooting lane; distinct blockers were classified separately as diagram freshness/docs-gate, dirty-memory hook interaction, module-boundary ratchet, PR-template body grammar, and sandbox Git ref-update limits.
-- Acceptance trace: PU-001/T001 through PU-004/T006 map to `receipts.jsonl`; T007 maps to `R007` and `R007B`; T008 remote-state triage maps to `R008A`, reviewer-coverage validator proof maps to `R008B`, and the T008 commit/PR boundary maps to `R008C`; T009 integration is active.
+- Acceptance trace: PU-001/T001 through PU-004/T006 map to `receipts.jsonl`; T007 maps to `R007` and `R007B`; T008 remote-state triage maps to `R008A`, reviewer-coverage validator proof maps to `R008B`, and the T008 commit/PR boundary maps to `R008C`; T009 integration/local proof and PR-body Linear repair map to `R009A`.
 - Validation evidence: Focused tests, validators, docs gates, learning gates, generated diagram refresh, goal-board validation, local PR-template reproduction, and push evidence are listed in Testing.
-- Review artifacts: Subagent artifacts include `artifacts/reviews/t006-architecture.md`, `artifacts/reviews/t006-testing.md`, `artifacts/reviews/t006-simplicity.md`, `artifacts/reviews/t006-devtools.md`, `artifacts/reviews/t006-devtools-final.md`, `artifacts/reviews/t006-git-triage.md`, `artifacts/reviews/t008-architecture.md`, `artifacts/reviews/t008-simplify.md`, `artifacts/reviews/t008-unslopify.md`, `artifacts/reviews/t008-testing.md`, `artifacts/reviews/t008-codex-review.md`, and `artifacts/reviews/t008-ci-pr-triage.md`.
+- Review artifacts: Subagent artifacts include `artifacts/reviews/t006-architecture.md`, `artifacts/reviews/t006-testing.md`, `artifacts/reviews/t006-simplicity.md`, `artifacts/reviews/t006-devtools.md`, `artifacts/reviews/t006-devtools-final.md`, `artifacts/reviews/t006-git-triage.md`, `artifacts/reviews/t008-architecture.md`, `artifacts/reviews/t008-simplify.md`, `artifacts/reviews/t008-unslopify.md`, `artifacts/reviews/t008-testing.md`, `artifacts/reviews/t008-codex-review.md`, `artifacts/reviews/t008-ci-pr-triage.md`, and `artifacts/reviews/t009-pr-ci-triage.md`.
 - Runtime impact: Dev/CI/runtime-adjacent. Runtime-card local evidence behavior changes by refusing stale cross-issue artifact fallback; validators and PR-template repair are dev/CI guardrails.
 - CodeRabbit mode coverage: Local learning, review-context, and north-star feedback gates ran; PR CodeRabbit status context is success, but thread-level review audit remains a T008 closeout item.
-- Closeout state: PR #286 is open at head `ecba79583400ede0d843cf4fb961880ab9efb935` and currently reports `isDraft=false`, mergeStateStatus `BLOCKED`, and fresh CI/CodeRabbit checks pending on the new head. T008 reviewer coverage is locally validated and published; the next lane is T009 integration. Local remote-tracking ref updates remain unreliable because sandbox Git ref locks fail; Linear state is unmodified. Unrelated local `.harness/memory/LEARNINGS.md` remains dirty and unstaged.
+- Closeout state: PR #286 is open at head `140dff6b485cb199f6ca596ab164a6a14d9c3a40` and currently reports `isDraft=false`, mergeStateStatus `BLOCKED`. T009 local proof gates pass and the live PR body now passes `pr-template-gate` and `linear-gate` after adding `Refs JSC-331`; remote CircleCI still needs a fresh head/rerun to replace the prior `ci/circleci: linear-gate` failure. Local remote-tracking ref updates remain unreliable because sandbox Git ref locks fail; Linear state is unmodified. Unrelated local `.harness/memory/LEARNINGS.md` remains dirty and unstaged.
 - Learning / reinforcement: Learning gate returned non-blocking warnings and review-context required acknowledgement of `coderabbit.coding-harness.docs-frontmatter-machine-readable`; the durable reinforcement is recorded in `docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl`, this PR-body artifact, and the goal-board continuation gates.
 - Deferred work: T009 integration validation, T010 Judge/PM audit, CodeRabbit thread audit, remaining CI check triage, Linear closeout/update, and merge readiness.
 
@@ -71,6 +72,13 @@
   - Command: `node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json` -> pass
   - Command: `pnpm run safety:local` -> blocked (secrets subcommand passed; semgrep subcommand blocked by sandbox denial writing `.git/semgrep/tool-cache`)
   - Command: `pnpm run semgrep:changed` -> pass
+  - Command: `pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md` -> pass
+  - Command: `bash scripts/validate-codestyle.sh --fast` -> pass
+  - Command: `bash scripts/verify-work.sh --fast` -> pass
+  - Command: `PR_TEMPLATE_BODY="$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh pr-template-gate --json` -> pass
+  - Command: `PR_BODY="$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh linear-gate --json` -> pass
+  - Command: `gh pr edit 286 --body-file docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md` -> pass
+  - Command: `PR_BODY="$(gh pr view 286 --json body --jq .body)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh linear-gate --json` -> pass
   - Command: `git push -u origin codex/jsc-331-trust-boundary-p0` -> pass
   - Command: `git push --no-verify` -> pass
 
@@ -79,10 +87,10 @@
 - Review status:
   - CodeRabbit review: status context is success; T008 still needs thread-level audit and any finding resolution or waiver.
   - Independent reviewer: pending Judge/PM audit or other independent reviewer evidence.
-  - Codex review: T006 subagent artifacts exist; T008 CI/PR subagent triage is active.
+  - Codex review: T006 and T008 subagent artifacts exist; T009 PR/CI triage artifact exists and identified the live `ci/circleci: linear-gate` blocker.
 - CodeRabbit: PR #286 status context success; thread-level artifact pending T008.
 - Independent reviewer evidence: pending T010 Judge/PM audit.
-- Codex: `artifacts/reviews/t006-architecture.md`, `artifacts/reviews/t006-testing.md`, `artifacts/reviews/t006-simplicity.md`, `artifacts/reviews/t006-devtools.md`, `artifacts/reviews/t006-devtools-final.md`, `artifacts/reviews/t006-git-triage.md`; T008 CI/PR triage artifact pending.
+- Codex: `artifacts/reviews/t006-architecture.md`, `artifacts/reviews/t006-testing.md`, `artifacts/reviews/t006-simplicity.md`, `artifacts/reviews/t006-devtools.md`, `artifacts/reviews/t006-devtools-final.md`, `artifacts/reviews/t006-git-triage.md`, `artifacts/reviews/t008-ci-pr-triage.md`, and `artifacts/reviews/t009-pr-ci-triage.md`.
 - CodeRabbit Semgrep: n.a. for local CodeRabbit findings; local `pnpm run safety:local` and pre-push `semgrep:changed` reported no blocking findings.
 - Additional evidence (if any): `docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl`, `docs/goals/jsc-331-trust-boundary-governed-implementation/state.yaml`, `AI/context/diagram-context.md`, `.diagram/manifest.json`, and this PR-body artifact.
 

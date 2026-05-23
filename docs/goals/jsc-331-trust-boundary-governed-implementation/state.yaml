@@ -88,6 +88,12 @@ checks:
       - "pnpm run safety:local"
       - "pnpm run semgrep:changed"
       - "bash scripts/validate-codestyle.sh --fast"
+      - "pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md"
+      - "bash scripts/verify-work.sh --fast"
+      - "PR_TEMPLATE_BODY=\"$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "PR_BODY=\"$(cat docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh linear-gate --json"
+      - "gh pr edit 286 --body-file docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md"
+      - "PR_BODY=\"$(gh pr view 286 --json body --jq .body)\" PR_TITLE=\"$(gh pr view 286 --json title --jq .title)\" bash scripts/run-harness-gate.sh linear-gate --json"
       - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/jsc-331-trust-boundary-governed-implementation"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
@@ -102,8 +108,9 @@ checks:
       - "artifacts/reviews/t008-unslopify.md"
       - "artifacts/reviews/t008-testing.md"
       - "artifacts/reviews/t008-codex-review.md"
-    outcome: pass_with_t008_remote_boundary_and_pr_checks_pending
-    checked_at: "2026-05-23T20:20:30Z"
+      - "artifacts/reviews/t009-pr-ci-triage.md"
+    outcome: pass_with_t009_local_bundle_and_live_pr_body_repaired_remote_rerun_pending
+    checked_at: "2026-05-23T20:27:47Z"
 tasks:
   - id: T001
     type: scout
