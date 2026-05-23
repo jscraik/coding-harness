@@ -1,13 +1,15 @@
 ---
 schema_version: 1
-artifact_id: spec:coding-harness-evidence-memory-telemetry-master:2026-05-22
+artifact_id: coding-harness-evidence-memory-telemetry-master-he-spec
 artifact_type: he-spec
+harness_stage: he-spec
 canonical_slug: coding-harness-evidence-memory-telemetry-master
 title: Coding Harness Evidence, Memory, and Telemetry Trust Boundary Master Spec
 status: draft
 date: 2026-05-22
 origin: he-spec
 linear_issue: JSC-331
+linear_status: confirmation_required
 linear_project: null
 linear_project_candidates:
   - Harness cockpit routing
@@ -53,7 +55,7 @@ Decision Needed: Approve this artifact as the master source for the combined evi
 
 Top Risks: False-success claims from adopted research whose validation command did not run; stale or uncited memory used as authority; telemetry health confused with closeout proof; runtime-card evidence that masks blockers; and reviewer swarms treated as complete without artifact receipts.
 
-Next Action: Run technical review, repair fixable spec gaps, then hand off to he-plan for the Trust Boundary P0 code slice covering FR-001 through FR-008 and SA-001 through SA-006.
+Next Action: Run technical review, repair fixable spec gaps, then hand off to he-plan for the Trust Boundary P0 code slice covering FR-001 through FR-006 and SA-001 through SA-006.
 
 ## Table of Contents
 
@@ -64,11 +66,14 @@ Next Action: Run technical review, repair fixable spec gaps, then hand off to he
 - [Goals](#goals)
 - [Non-Goals](#non-goals)
 - [Current State / Evidence](#current-state--evidence)
+- [Authority and Scope Boundary](#authority-and-scope-boundary)
 - [Proposed Behavior](#proposed-behavior)
 - [Requirements](#requirements)
 - [Interfaces](#interfaces)
 - [Data / Domain Contract](#data--domain-contract)
 - [Enforcement Contract](#enforcement-contract)
+- [Proof and Runtime Boundary](#proof-and-runtime-boundary)
+- [Coding and Testing Lenses](#coding-and-testing-lenses)
 - [Security, Privacy, and Safety](#security-privacy-and-safety)
 - [Accessibility and Operator Ergonomics](#accessibility-and-operator-ergonomics)
 - [Failure and Recovery](#failure-and-recovery)
@@ -227,6 +232,22 @@ Known gaps admitted by the audit and source specs:
 - Memory receipts, vault readiness, and synthesis outputs are not yet wired into
   runtime-card, harness next, or pr-closeout.
 - Telemetry health is not a closeout authority and must stay separate.
+
+## Authority and Scope Boundary
+
+requested_depth: full_implementation
+
+approved_execution_boundary: This master spec owns the full evidence, memory, telemetry, reviewer, and closeout trust-boundary program. The first approved implementation slice is Trust Boundary P0 only: FR-001 through FR-006 and SA-001 through SA-006.
+
+downscope_authority: The master spec is the source artifact for the first he-plan slice. Further downscope requires explicit user confirmation or a successor plan that records the narrowed requirement and acceptance IDs.
+
+external_mutation_boundary: Code and documentation edits may proceed only through normal repository workflow. Linear, GitHub PR state, external tracker state, raw telemetry storage, vault files, and user private-source promotion remain confirmation_required unless a later plan records explicit approval.
+
+freshness_required: Before implementation begins, agents must refresh branch status, dirty-worktree scope, active artifact paths, plan and spec validator status, and any live tracker or PR state that the implementation claims. Stale memory, mailbox status, or unrefreshed tracker state is not proof.
+
+human_acceptance_boundary: User or spec-owner confirmation is required before Linear mutation, new public schema versioning, authority-file synthesis from generated content, brownfield file movement, private-source promotion, or any change that converts telemetry health into closeout authority.
+
+The Trust Boundary P0 plan is intentionally narrower than this spec. It may strengthen discovery, validation, ownership, sequencing, and rollback for FR-001 through FR-006 without changing the broader memory and telemetry program. It must not silently implement FR-007 or later work.
 
 ## Proposed Behavior
 
@@ -425,6 +446,19 @@ Implementation MAY keep some commands as scripts first if public CLI admission
 is deferred. If a command is deferred, the same JSON shape and validation
 behavior must still exist behind the script or library path.
 
+Trust Boundary P0 MUST use the repo-owned wrapper
+pnpm he:artifacts:validate <plan.md> <spec.md> for HE artifact validation.
+Absolute validator paths under a user workspace MAY appear only inside the
+wrapper implementation or diagnostic output; they are not accepted as the
+operator-facing command contract.
+
+Script-backed P0 validators are admitted before public CLI commands when the
+public command-admission checklist is not fully satisfied. The first reviewer
+coverage proof target is node scripts/validate-reviewer-coverage.cjs
+--manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir
+artifacts/reviews --json unless PU-000 records a narrower existing command
+seam with the same output and exit-code contract.
+
 ### Existing Integrations
 
 | Existing Surface | Required Integration |
@@ -475,6 +509,20 @@ Error handling:
 
 - Malformed JSON MUST fail validation and name the parse failure.
 - Ambiguous identity MUST produce blocked or unknown, not pass.
+
+Command-level output contract:
+
+- Validator stdout MUST contain exactly one JSON object for pass, fail,
+  blocked, missing, partial, stale, or usage outcomes.
+- Human diagnostics, tool banners, and stack traces MUST go to stderr.
+- Exit 0 means status pass.
+- Exit 1 means required-mode fail, blocked, missing, partial, or stale.
+- Exit 2 means usage error.
+- Every non-pass JSON object MUST include blockerClass and reason.
+- Public command admission for Trust Boundary P0 requires an existing command
+  family owner, no new parser semantics, locked JSON schema tests, no FR-007 or
+  later behavior, and explicit docs-gate scope. Otherwise the proof remains
+  script-backed for this slice.
 
 ### validation-receipt/v1
 
@@ -739,6 +787,44 @@ Closeout MUST report:
 - blockers and next action;
 - rollback or supersession path.
 
+## Proof and Runtime Boundary
+
+proof_boundary: Required evidence must be artifact-backed, command-backed, and fresh enough for the gate that consumes it. A plan, spec, audit, issue comment, memory summary, or telemetry health signal is source evidence only until a validator, runtime adapter, or receipt proves it in the repository.
+
+non_proof_sources: Raw session logs, raw OTLP payloads, mailbox-only reviewer status, uncited memory, stale tracker text, and narrative closeout notes do not satisfy required proof unless converted into an admitted receipt or validation artifact.
+
+runtime_state: Runtime-card and pr-closeout integrations must report the evidence source, freshness, blocker class, and issue identity used for each closeout-relevant claim. Duplicate evidence must preserve the strictest blocker rather than masking it with a better source.
+
+resumption_key: Any deferred slice must carry the canonical slug, Linear issue, requirement IDs, acceptance IDs, active artifact path, and last observed validation state so a later agent can resume from the same boundary without treating memory as authority.
+
+runtime_invocation_receipt: Any new runtime-facing command, validator, or importer introduced by this program must emit machine-readable pass, fail, blocked, or advisory status with command name, input path, output path when applicable, timestamp, and blocker class when blocked.
+
+artifact_chain_key: Receipts that feed closeout or runtime-card state must preserve source artifact path, validator path or command, schema version, produced artifact path, and validation timestamp.
+
+persistent_artifacts: Durable proof artifacts belong under tracked .harness policy surfaces only when they are redaction-safe and intentionally portable. Raw collector data, secrets, prompts, transcripts, and user-private source material remain outside tracked artifacts.
+
+live_state_refresh: Claims about Git branch, dirty worktree, PR checks, review artifacts, Linear issue state, or active artifacts require a current observation in the same implementation or closeout turn. Unobserved live state must be labeled unobserved rather than inferred from memory.
+
+session_evidence_status: Session evidence can support closeout only when it is imported through the admitted bundle or contract path and passes redaction and repo-boundary checks. Telemetry availability alone is advisory.
+
+## Coding and Testing Lenses
+
+coding_lens:
+
+- Prefer existing validator, runtime-card, artifact-routine, review-gate, and memory-gate seams over new public command surfaces.
+- Keep Trust Boundary P0 local, fixture-backed, and refusal-friendly before adding telemetry, memory synthesis, or downstream rollout behavior.
+- Do not broaden source paths from precise runtime, validator, and artifact-routine seams to unrelated command-registry or deep-module rewrites without a recorded decision.
+- Keep public v1 schemas additive or introduce a new version explicitly; do not silently alter runtime-evidence-bundle/v1 or runtime-evidence-contract/v1.
+- Keep Linear mutation and external system writes out of implementation patches until the destination and authority are confirmed.
+
+testing_lens:
+
+- Add failing fixtures before changing validator behavior for strict adopted evidence, audit references, and reviewer coverage receipts.
+- Exercise the production functions, validators, or CLI paths that consume the new evidence, not only helper-level unit tests.
+- Include negative tests for stale evidence, missing commands, case-drifted issue keys, duplicate evidence precedence, off-repo outputs, and missing reviewer artifacts.
+- Run HE artifact identity, Linear traceability, BLUF, and generated-shape checks on the active plan and spec before implementation begins.
+- Treat implementation tests as required before production use; this spec alone is not executable proof.
+
 ## Security, Privacy, and Safety
 
 SEC-001: Receipt and runtime evidence outputs MUST redact secret-like values.
@@ -846,6 +932,14 @@ VAL-014: Run contract-compatibility tests for runtime-evidence-bundle/v1 and
 runtime-evidence-contract/v1 whenever this spec or implementation changes those
 schema descriptions.
 
+VAL-015: Run pnpm he:artifacts:validate on the active Trust Boundary P0 plan
+and this spec before implementation starts.
+
+VAL-016: Run node scripts/validate-reviewer-coverage.cjs --manifest
+artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir
+artifacts/reviews --json for reviewer-coverage-receipt/v1 once PU-005 is
+implemented, unless PU-000 records an equivalent narrower command.
+
 Suggested first implementation proof:
 
 - node scripts/validate-evidence-patterns.cjs --strict-adopted --json
@@ -937,6 +1031,7 @@ IDs disagree.
 
 Recommended implementation order:
 
+0. Pre-implementation evidence and seam discovery: verify current git status, resolve the active plan and spec paths, run HE artifact validators on both artifacts, inventory existing runtime-card, evidence-pattern, artifact-routine, and reviewer/review-gate seams, and record whether audit-reference and reviewer-coverage proof will be script-backed or command-backed in the first slice. This step must not mutate Linear or external tracker state.
 1. Trust Boundary P0: implement FR-001 through FR-006 and SA-001 through SA-006.
 2. Memory proof boundary: implement FR-007 through FR-012 and SA-007 through
    SA-009.
@@ -961,6 +1056,8 @@ Likely first changed files:
 - src/commands/runtime-card.test.ts
 - src/lib/runtime/local-runtime-card.test.ts
 - scripts/validate-audit-references.cjs
+- src/lib/harness-artifact-routine.ts when audit-reference or reviewer-coverage proof extends artifact-routine behavior
+- src/lib/review-gate when reviewer coverage proof extends an existing review-gate seam
 - package.json if a script entry is added
 
 Likely later changed files:
@@ -1047,6 +1144,17 @@ observability infrastructure.
   that preserves evidence-led implementation, memory receipts, telemetry import,
   reviewer coverage, and closeout proof in a single contract.
 
+### Linear Work Item Contract
+
+The associated Linear work item is JSC-331. Linear mutation remains confirmation_required until the live destination is confirmed. This spec may be used for planning and local implementation, but no agent may change Linear state from this spec alone.
+
+### Linear Acceptance Traceability
+
+| Linear issue | Acceptance IDs | Scope status |
+|---|---|---|
+| JSC-331 | SA-001 through SA-006 | Trust Boundary P0 first implementation slice |
+| JSC-331 | SA-007 through SA-016 | Later slices after Trust Boundary P0 validation and explicit continuation approval |
+
 ## Appendix B. Review Outcomes
 
 technical_review_status: completed
@@ -1092,12 +1200,16 @@ Recommended first he-plan unit:
 - name: Trust Boundary P0
 - requirement IDs: FR-001, FR-002, FR-003, FR-004, FR-005, FR-006
 - acceptance IDs: SA-001, SA-002, SA-003, SA-004, SA-005, SA-006
+- precondition: complete the evidence and seam discovery gate before implementation, including HE validation of this spec and the active plan plus a current inventory of existing runtime-card, evidence-pattern, artifact-routine, and review-gate seams.
 - allowed paths:
   - scripts/validate-evidence-patterns.cjs
   - scripts/validate-audit-references.cjs
-  - src/lib/runtime
+  - src/lib/runtime/runtime-evidence-adapter.ts
+  - src/lib/runtime/local-runtime-card-assembly.ts
   - src/commands/runtime-card.test.ts
   - src/lib/runtime/local-runtime-card.test.ts
+  - src/lib/harness-artifact-routine.ts when audit-reference or reviewer-coverage proof extends artifact-routine behavior
+  - src/lib/review-gate only when discovery proves reviewer coverage belongs in that seam
   - package.json when needed for command wiring
 - forbidden paths:
   - raw collector data
@@ -1105,9 +1217,12 @@ Recommended first he-plan unit:
   - unrelated dirty deep-module migration artifacts
   - authority docs unless docs-gate explicitly requires synchronization
 - validation:
+  - pnpm he:artifacts:validate .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md
   - node scripts/validate-evidence-patterns.cjs --strict-adopted --json
   - pnpm vitest run src/commands/runtime-card.test.ts src/lib/runtime/local-runtime-card.test.ts
   - after implementation: node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json
+  - after implementation: node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/reviewer-coverage-manifest.json --reviews-dir artifacts/reviews --json
+  - conditional: pnpm run safety:local when receipt/report payload, redaction, telemetry, or tracked evidence-output logic changes
 - stop condition: implementation needs a new public schema, cannot distinguish
   telemetry health from proof, or cannot preserve repo-boundary safety.
 - rollback: remove new validator/importer wiring and leave existing

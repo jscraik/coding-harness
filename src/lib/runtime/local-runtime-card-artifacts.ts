@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { sanitizeError } from "../input/sanitize.js";
+import { detectIssueKey, issueKeysMatch } from "./issue-key.js";
 import type {
 	RuntimeCardArtifactState,
 	RuntimeCardSource,
@@ -21,16 +22,6 @@ export interface RuntimeCardArtifactSnapshot {
 	blockers: string[];
 }
 
-function detectIssueKey(
-	...values: Array<string | null | undefined>
-): string | null {
-	for (const value of values) {
-		const match = value?.match(/\b[A-Z][A-Z0-9]+-\d+\b/iu);
-		if (match) return match[0].toUpperCase();
-	}
-	return null;
-}
-
 function hasCodePath(line: string, path: string): boolean {
 	return line.includes(MARKDOWN_CODE_MARKER + path);
 }
@@ -48,6 +39,11 @@ function extractCodePath(line: string, prefix: string): string | null {
 	return null;
 }
 
+function extractRowIssueKey(line: string): string | null {
+	const cells = line.split("|").map((cell) => cell.trim());
+	return cells[1] ?? null;
+}
+
 function findArtifactLine(
 	activeArtifacts: string,
 	issueKey: string | null,
@@ -56,7 +52,7 @@ function findArtifactLine(
 	if (issueKey) {
 		const issueLine = lines.find(
 			(line) =>
-				line.includes(`| ${issueKey} |`) &&
+				issueKeysMatch(extractRowIssueKey(line), issueKey) &&
 				line.includes(`${MARKDOWN_CODE_MARKER}.harness/`),
 		);
 		if (issueLine) return issueLine;
@@ -122,7 +118,10 @@ export function inspectRuntimeCardArtifacts(
 	const line = findArtifactLine(activeArtifacts, issueKey);
 	const activeSpec = line ? extractCodePath(line, ".harness/specs/") : null;
 	const activePlan = line ? extractCodePath(line, ".harness/plan/") : null;
-	const derivedIssueKey = detectIssueKey(issueKey, line);
+	const derivedIssueKey = detectIssueKey(
+		extractRowIssueKey(line ?? ""),
+		issueKey,
+	);
 	const staleRefs = [activeSpec, activePlan].filter(
 		(path): path is string =>
 			path !== null && !existsSync(join(repoRoot, path)),

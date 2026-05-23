@@ -14,6 +14,7 @@ import {
 	collapsePhaseExit,
 	inspectRuntimeCardPhaseExit,
 } from "./local-runtime-card-phase-exit.js";
+import { detectIssueKey } from "./issue-key.js";
 import { inspectRuntimeEvidenceBundle } from "./runtime-evidence-adapter.js";
 import type { RuntimeCard, RuntimeCardSource } from "./runtime-card.js";
 export type {
@@ -75,16 +76,6 @@ function defaultGitRunner(repoRoot: string): RuntimeCardGitRunner {
 	};
 }
 
-function detectIssueKey(
-	...values: Array<string | null | undefined>
-): string | null {
-	for (const value of values) {
-		const match = value?.match(/\b[A-Z][A-Z0-9]+-\d+\b/iu);
-		if (match) return match[0].toUpperCase();
-	}
-	return null;
-}
-
 function inspectGit(repoRoot: string, git?: RuntimeCardGitRunner): GitSnapshot {
 	const runGit = git ?? defaultGitRunner(repoRoot);
 	const branchName = runGit(["branch", "--show-current"]) ?? null;
@@ -123,14 +114,14 @@ export function buildLocalRuntimeCard(
 	);
 	const evidenceIssueKey =
 		options.issueKey === undefined ? evidence.issueKey : null;
-	const localIssueKey = detectIssueKey(
+	const artifactLookupIssueKey = detectIssueKey(
 		options.issueKey,
 		git.branchName,
 		evidenceIssueKey,
 	);
 	const artifacts = inspectRuntimeCardArtifacts(
 		options.repoRoot,
-		localIssueKey,
+		artifactLookupIssueKey,
 	);
 	const phaseExit =
 		options.phaseExitPath !== undefined

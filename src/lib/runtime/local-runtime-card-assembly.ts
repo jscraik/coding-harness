@@ -2,7 +2,11 @@ import type { RuntimeCardArtifactSnapshot } from "./local-runtime-card-artifacts
 import { addRuntimeAttemptMetadata } from "./local-runtime-card-attempts.js";
 import type { RuntimeCardPhaseExitSnapshot } from "./local-runtime-card-phase-exit.js";
 import type { RuntimeCardLiveEvidence } from "./local-runtime-card-live.js";
-import type { RuntimeEvidenceBundleSnapshot } from "./runtime-evidence-adapter.js";
+import { issueKeysMatch } from "./issue-key.js";
+import {
+	mergeRuntimeCardSources,
+	type RuntimeEvidenceBundleSnapshot,
+} from "./runtime-evidence-adapter.js";
 import {
 	RUNTIME_CARD_SCHEMA_VERSION,
 	type RuntimeCard,
@@ -72,6 +76,14 @@ function fallbackLinear(issueKey: string | null): RuntimeCard["linear"] {
 	};
 }
 
+function matchingLinearEvidence(
+	linear: RuntimeEvidenceBundleSnapshot["linear"],
+	issueKey: string | null,
+): RuntimeCard["linear"] | null {
+	if (!linear || !issueKeysMatch(linear.issueKey, issueKey)) return null;
+	return linear;
+}
+
 function validatedRuntimeCard(card: RuntimeCard): RuntimeCard {
 	const validation = validateRuntimeCard(card);
 	if (!validation.valid) {
@@ -92,12 +104,12 @@ export function assembleLocalRuntimeCard(
 		...args.phaseExit.blockers,
 		...evidenceBlockers(args.evidence, args.phaseExitPathSupplied),
 	];
-	const sources = [
+	const sources = mergeRuntimeCardSources([
 		args.git.source,
 		args.artifacts.source,
 		...(args.phaseExit.source ? [args.phaseExit.source] : []),
 		...args.evidence.sources,
-	];
+	]);
 	const phaseExit = args.phaseExit.phaseExit;
 	const card = {
 		schemaVersion: RUNTIME_CARD_SCHEMA_VERSION,
@@ -127,9 +139,8 @@ export function assembleLocalRuntimeCard(
 		},
 		artifacts: args.artifacts.artifacts,
 		linear:
-			args.evidence.linear && args.evidence.linear.issueKey === args.issueKey
-				? args.evidence.linear
-				: fallbackLinear(args.issueKey),
+			matchingLinearEvidence(args.evidence.linear, args.issueKey) ??
+			fallbackLinear(args.issueKey),
 		phaseExit,
 		sources,
 		blockers,
@@ -148,7 +159,10 @@ export function assembleLiveRuntimeCard(
 		...base,
 		pullRequest: live.pullRequest ?? base.pullRequest,
 		linear: live.linear ?? base.linear,
-		sources: [...base.sources, ...(live.sources ?? [])],
+		sources: mergeRuntimeCardSources([
+			...base.sources,
+			...(live.sources ?? []),
+		]),
 		blockers,
 		lifecycle: deriveLifecycle({
 			blockers,

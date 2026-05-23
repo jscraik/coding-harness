@@ -84,6 +84,23 @@ function setupRepo(): string {
 	return repoRoot;
 }
 
+function rewriteActiveArtifactsIssueRow(
+	repoRoot: string,
+	issueKey: string,
+): void {
+	const specPath = ".harness/specs/2026-05-13-jsc-311-spec.md";
+	const planPath = ".harness/plan/2026-05-13-JSC-311-plan.md";
+	writeFileSync(
+		join(repoRoot, ".harness/active-artifacts.md"),
+		[
+			"| Linear Key | Active Spec | Active Plan |",
+			"| --- | --- | --- |",
+			`| ${issueKey} | ${CODE}${specPath}${CODE} | ${CODE}${planPath}${CODE} |`,
+			"",
+		].join("\n"),
+	);
+}
+
 function writeRuntimeEvidenceBundle(repoRoot: string): string {
 	const evidencePath = ".harness/runtime/session-evidence.json";
 	mkdirSync(join(repoRoot, ".harness/runtime"), { recursive: true });
@@ -174,6 +191,25 @@ describe("runRuntimeCardCLI", () => {
 		expect(card.schemaVersion).toBe("runtime-card/v1");
 		expect(card.issueKey).toBe("JSC-311");
 		expect(card.artifacts.status).toBe("current");
+	});
+
+	it("matches mixed-case issue flags against active artifact rows", async () => {
+		const repoRoot = setupRepo();
+		rewriteActiveArtifactsIssueRow(repoRoot, "jsc-311");
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"jSc-311",
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		const card = JSON.parse(output);
+		expect(card.issueKey).toBe("jSc-311");
+		expect(card.artifacts.status).toBe("current");
+		expect(card.artifacts.activeSpec).toContain("jsc-311");
 	});
 
 	it("persists the generated runtime card when --out is supplied", async () => {

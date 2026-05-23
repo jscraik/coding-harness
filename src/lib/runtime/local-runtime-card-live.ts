@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { sanitizeError } from "../input/sanitize.js";
 import { LinearAPIError, LinearClient } from "../linear/client.js";
+import { issueKeysMatch } from "./issue-key.js";
 import type { RuntimeCard, RuntimeCardSource } from "./runtime-card.js";
 
 const LIVE_PROVIDER_TIMEOUT_MS = 10_000;
@@ -189,7 +190,9 @@ async function defaultLinearSnapshot(
 			timeoutMs: LIVE_PROVIDER_TIMEOUT_MS,
 		});
 		const issues = await client.searchIssues(issueKey);
-		const issue = issues.find((candidate) => candidate.identifier === issueKey);
+		const issue = issues.find((candidate) =>
+			issueKeysMatch(candidate.identifier, issueKey),
+		);
 		if (!issue) {
 			return missingLinearSnapshot(
 				issueKey,
