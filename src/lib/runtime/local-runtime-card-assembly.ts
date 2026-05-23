@@ -76,14 +76,6 @@ function fallbackLinear(issueKey: string | null): RuntimeCard["linear"] {
 	};
 }
 
-function matchingLinearEvidence(
-	linear: RuntimeEvidenceBundleSnapshot["linear"],
-	issueKey: string | null,
-): RuntimeCard["linear"] | null {
-	if (!linear || !issueKeysMatch(linear.issueKey, issueKey)) return null;
-	return linear;
-}
-
 function validatedRuntimeCard(card: RuntimeCard): RuntimeCard {
 	const validation = validateRuntimeCard(card);
 	if (!validation.valid) {
@@ -139,8 +131,10 @@ export function assembleLocalRuntimeCard(
 		},
 		artifacts: args.artifacts.artifacts,
 		linear:
-			matchingLinearEvidence(args.evidence.linear, args.issueKey) ??
-			fallbackLinear(args.issueKey),
+			args.evidence.linear &&
+			issueKeysMatch(args.evidence.linear.issueKey, args.issueKey)
+				? args.evidence.linear
+				: fallbackLinear(args.issueKey),
 		phaseExit,
 		sources,
 		blockers,
