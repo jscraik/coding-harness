@@ -45,11 +45,14 @@ acceptance_ids:
 - [Goals](#goals)
 - [Non-Goals](#non-goals)
 - [Current State / Evidence](#current-state--evidence)
+- [Authority and Scope Boundary](#authority-and-scope-boundary)
 - [Proposed Behavior](#proposed-behavior)
 - [Requirements](#requirements)
 - [Interfaces](#interfaces)
 - [Data / Domain Contract](#data--domain-contract)
 - [Enforcement Contract](#enforcement-contract)
+- [Proof and Runtime Boundary](#proof-and-runtime-boundary)
+- [Coding and Testing Lenses](#coding-and-testing-lenses)
 - [Security, Privacy, and Safety](#security-privacy-and-safety)
 - [Accessibility and Operator Ergonomics](#accessibility-and-operator-ergonomics)
 - [Failure and Recovery](#failure-and-recovery)
@@ -182,6 +185,26 @@ artifact-only confidence, exactly the JSC-331 failure mode.
   active spec.
 - Live Linear JSC-331 is Todo, assigned to Jamie, parented by JSC-327, and
   describes the apparatus verifier lens that refuses artifact-only confidence.
+
+## Authority and Scope Boundary
+
+- requested_depth: implementation-ready bridge spec with enough validation
+  detail for a bounded code slice and no external deployment claims.
+- approved_execution_boundary: Coding Harness may import sanitized
+  session-collector bundle artifacts into existing runtime evidence contracts
+  and add fixture-backed tests for that bridge.
+- downscope_authority: implementation agents may narrow the first slice to the
+  importer, fixtures, and consuming command tests when broad telemetry rollout
+  would exceed this spec.
+- external_mutation_boundary: this spec does not authorize Linear mutation,
+  collector deployment, GitHub writes, or changes in the separate
+  otel-collector project.
+- freshness_required: live PR, branch, issue, and collector assumptions must be
+  rechecked before closeout; stale evidence must classify as blocked or
+  unknown.
+- human_acceptance_boundary: human acceptance is required before telemetry
+  health becomes a closeout source or before any raw session evidence is
+  promoted into tracked artifacts.
 
 ## Proposed Behavior
 
@@ -320,6 +343,45 @@ future schema, not a replacement for runtime-evidence-contract/v1.
   pass/fail/block outcomes, evidence artifact paths, unresolved blockers,
   rollback path, and whether live Linear/GitHub/CI state was observed.
 
+## Proof and Runtime Boundary
+
+- proof_boundary: runtime proof must flow through sanitized, repo-local
+  artifacts that can be replayed by Coding Harness tests or validators.
+- non_proof_sources: raw collector files, home-directory session caches, local
+  environment variables, external service state, and telemetry health summaries
+  are diagnostic inputs only.
+- runtime_state: imported evidence must record freshness, provenance, identity,
+  validation status, and blocked or unknown states explicitly.
+- resumption_key: evidence bundles must retain enough repo, branch, issue, PR,
+  and head-SHA identity for a later agent to resume without conversational
+  memory.
+- runtime_invocation_receipt: command consumers must preserve the command,
+  timestamp, result, and blocker class that produced the evidence summary.
+- artifact_chain_key: imported evidence must point back to the normalized source
+  bundle and fixture or validation receipt that accepted it.
+- persistent_artifacts: durable proof belongs in curated fixtures, runtime
+  evidence bundles, receipts, or tracked specs; raw telemetry remains outside
+  tracked outputs.
+- live_state_refresh: closeout must refresh live GitHub, Linear, branch, and CI
+  state before claims can pass.
+- session_evidence_status: missing, stale, malformed, off-repo, or incomplete
+  session evidence must produce blocked or unknown status rather than success.
+
+## Coding and Testing Lenses
+
+- coding_lens: schemas and command outputs remain versioned, additive, and
+  backward-compatible unless a migration plan explicitly says otherwise.
+- privacy_lens: no raw prompts, secrets, OTLP headers, transcripts, or
+  home-directory paths are persisted into tracked evidence.
+- testing_lens: every new parser, adapter, or validator path is exercised
+  through the production command or a fixture-backed module test, including
+  malformed, stale, missing, and off-repo evidence paths.
+- recovery_lens: malformed, stale, missing, or off-repo evidence returns a
+  blocked or unknown result with a concrete recovery action.
+- agent_native_lens: JSON output is stable enough for agents to parse, and
+  human output names the next safe action without requiring raw telemetry
+  inspection.
+
 ## Security, Privacy, and Safety
 
 - Do not store collector tokens or OTLP headers in artifacts.
@@ -375,10 +437,14 @@ Minimum first-slice validation:
 
 Artifact validation:
 
-- check_bluf_structure.py on this spec.
-- check_generated_artifact_shape.py on this spec with kind spec.
-- he_artifact_identity_lint.py on this spec.
-- he_linear_traceability_lint.py on this spec.
+- `bash scripts/run-he-artifact-validator.sh bluf .harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md --json`
+  MUST exit 0 and emit JSON with `"status": "pass"`.
+- `bash scripts/run-he-artifact-validator.sh shape .harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md --kind spec --json`
+  MUST exit 0 and emit JSON with `"status": "pass"`.
+- `bash scripts/run-he-artifact-validator.sh artifact-identity .harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md`
+  MUST exit 0 and print `PASS .harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md`.
+- `bash scripts/run-he-artifact-validator.sh linear-traceability .harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md`
+  MUST exit 0 and print `PASS .harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md`.
 
 Broaden to bash scripts/validate-codestyle.sh --fast when code changes land.
 Broaden to pnpm check before PR closeout when the importer becomes part of a

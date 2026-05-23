@@ -17,7 +17,7 @@ selected_stage: he-linear-plan
 generated_at: 2026-05-22
 
 source_artifact:
-/Users/jamiecraik/dev/coding-harness/.harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md
+.harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md
 
 linear_mutation_status: confirmation_required
 
@@ -157,7 +157,7 @@ implementation.
 
 Decision artifact:
 
-- /Users/jamiecraik/dev/coding-harness/.harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md
+- .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md
 
 ## Core / Invariant Artifact Readiness
 
