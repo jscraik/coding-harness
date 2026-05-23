@@ -25,7 +25,7 @@
 - Review artifacts: `artifacts/reviews/t013-symlink-boundary-triage.md` exists and was produced after the required artifact-only retry.
 - Runtime impact: Dev/CI validator-only. Runtime product behavior is unchanged.
 - CodeRabbit mode coverage: CodeRabbit status on PR #287 is currently reported as skipped/pass; GraphQL review-thread observation reports zero unresolved current/outdated review threads.
-- Closeout state: PR #287 is open as a draft from `codex/jsc-331-t013-symlink-boundary`; merge state is blocked while some remote checks are pending. PR #286 is already merged and is historical for this follow-up. Linear JSC-331 is unmodified in this follow-up. Next lane is T010 Judge/PM audit after current PR, CI, review, branch, and Linear truth is fresh.
+- Closeout state: PR #287 is open non-draft from `codex/jsc-331-t013-symlink-boundary`; merge state is blocked while some remote checks are pending. PR #286 is already merged and is historical for this follow-up. Linear JSC-331 is unmodified in this follow-up. Next lane is T010 Judge/PM audit after current PR, CI, review, branch, and Linear truth is fresh.
 - Learning / reinforcement: Durable reinforcement is recorded in `docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl` as `R018`; no memory update was requested.
 - Deferred work: Full standalone closeout gates, final required-check observation after this receipt sync commit, T010 Judge/PM audit, Linear closeout/update, and merge readiness.
 
