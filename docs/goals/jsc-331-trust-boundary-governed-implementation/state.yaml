@@ -130,6 +130,12 @@ checks:
       - "node scripts/validate-audit-references.cjs .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md --json"
       - "pnpm exec biome check scripts/validate-reviewer-coverage.cjs scripts/validate-audit-references.cjs src/lib/reviewer-coverage-receipt.test.ts src/dev/validate-audit-references-script.test.ts"
       - "bash scripts/validate-codestyle.sh --fast"
+      - "gh api repos/jscraik/coding-harness/git/commits ..."
+      - "gh pr edit 286 --body-file docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md"
+      - "live PR body linear-gate via Node env injection"
+      - "live PR body pr-template-gate via Node env injection"
+      - "gh api repos/jscraik/coding-harness/commits/8c377c83e658fb02f0812d9ba04e5c7aea81c903/status"
+      - "gh api graphql ... reviewThreads"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
       - "artifacts/reviews/t006-testing.md"
@@ -148,8 +154,8 @@ checks:
       - "artifacts/reviews/t011-ci-autofix-triage.md"
       - "artifacts/reviews/t012-review-thread-triage.md"
       - "artifacts/reviews/t013-symlink-boundary-triage.md"
-    outcome: pass_with_t013_symlink_boundary_repair_local_commit_pr_boundary_pending
-    checked_at: "2026-05-23T21:59:11Z"
+    outcome: pass_with_t013_published_review_threads_resolved_pr_template_rerun_pending
+    checked_at: "2026-05-23T22:18:41Z"
 tasks:
   - id: T001
     type: scout
