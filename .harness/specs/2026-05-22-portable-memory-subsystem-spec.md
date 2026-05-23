@@ -582,8 +582,8 @@ This is the smallest patch that turns the baseline from a planning idea into a t
 
 ## Evidence and References
 
-- /Users/jamiecraik/dev/coding-harness/.harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md
-- /Users/jamiecraik/dev/coding-harness/.harness/research/deep/2026-05-22-steph-ango-evidence.md
+- .harness/research/audits/2026-05-22-evidence-led-codebase-gap-audit.md
+- .harness/research/deep/2026-05-22-steph-ango-evidence.md
 - /Users/jamiecraik/dev/coding-harness/.harness/research/evidence-patterns.json
 - Harness Engineering he-spec contract
 - Harness Engineering spec artifact contract
