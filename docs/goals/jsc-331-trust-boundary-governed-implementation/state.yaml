@@ -136,6 +136,7 @@ checks:
       - "live PR body pr-template-gate via Node env injection"
       - "gh api repos/jscraik/coding-harness/commits/8c377c83e658fb02f0812d9ba04e5c7aea81c903/status"
       - "gh api graphql ... reviewThreads"
+      - "git push origin <receipt-sync-commit>:refs/heads/codex/jsc-331-trust-boundary-p0"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
       - "artifacts/reviews/t006-testing.md"
@@ -154,8 +155,8 @@ checks:
       - "artifacts/reviews/t011-ci-autofix-triage.md"
       - "artifacts/reviews/t012-review-thread-triage.md"
       - "artifacts/reviews/t013-symlink-boundary-triage.md"
-    outcome: pass_with_t013_published_review_threads_resolved_pr_template_rerun_pending
-    checked_at: "2026-05-23T22:18:41Z"
+    outcome: pass_with_t013_published_review_threads_resolved_receive_pack_sync_pending
+    checked_at: "2026-05-23T22:24:40Z"
 tasks:
   - id: T001
     type: scout
