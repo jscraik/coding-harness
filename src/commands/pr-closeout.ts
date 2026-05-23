@@ -134,10 +134,21 @@ function normalizeAssuranceEntries(
 	value: unknown,
 	source: string,
 ): HarnessAssuranceEntry[] {
-	if (Array.isArray(value)) return value as HarnessAssuranceEntry[];
+	const normalize = (entries: unknown): HarnessAssuranceEntry[] => {
+		if (!Array.isArray(entries)) {
+			throw new Error(
+				`${source} must be a seven-layer assurance matrix array or an object with an entries array`,
+			);
+		}
+		if (entries.length !== 7) {
+			throw new Error(`${source} must contain exactly 7 assurance entries`);
+		}
+		return entries as HarnessAssuranceEntry[];
+	};
+	if (Array.isArray(value)) return normalize(value);
 	if (value && typeof value === "object" && !Array.isArray(value)) {
 		const entries = (value as Record<string, unknown>).entries;
-		if (Array.isArray(entries)) return entries as HarnessAssuranceEntry[];
+		return normalize(entries);
 	}
 	throw new Error(
 		`${source} must be a seven-layer assurance matrix array or an object with an entries array`,
