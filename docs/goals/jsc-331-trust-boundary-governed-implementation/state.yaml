@@ -105,6 +105,12 @@ checks:
       - "node scripts/validate-evidence-patterns.cjs --strict-adopted --json"
       - "pnpm lint"
       - "pnpm check"
+      - "gh api repos/jscraik/coding-harness/git/commits ..."
+      - "gh pr edit 286 --body-file docs/goals/jsc-331-trust-boundary-governed-implementation/notes/pr-bodies/pr286-body.md"
+      - "PR_BODY="$(gh pr view 286 --json body --jq .body)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh linear-gate --json"
+      - "PR_TEMPLATE_BODY="$(gh pr view 286 --json body --jq .body)" PR_TITLE="$(gh pr view 286 --json title --jq .title)" bash scripts/run-harness-gate.sh pr-template-gate --json"
+      - "gh pr view 286 --json headRefOid,mergeStateStatus,reviewDecision,statusCheckRollup,isDraft,url,title"
+      - "gh pr checks 286 --watch=false"
     review_artifacts:
       - "artifacts/reviews/t006-architecture.md"
       - "artifacts/reviews/t006-testing.md"
@@ -121,8 +127,8 @@ checks:
       - "artifacts/reviews/t009-pr-ci-triage.md"
       - "artifacts/reviews/t010-review-thread-audit.md"
       - "artifacts/reviews/t011-ci-autofix-triage.md"
-    outcome: pass_with_t010_t011_repairs_ready_for_remote_commit
-    checked_at: "2026-05-23T21:01:40Z"
+    outcome: pass_with_t010_t011_repairs_published_remote_checks_pending
+    checked_at: "2026-05-23T21:09:20Z"
 tasks:
   - id: T001
     type: scout
