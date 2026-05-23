@@ -7,7 +7,10 @@ import type {
 	RunOutcome,
 } from "../lib/contract/run-records.js";
 import { DEFAULT_REMEDIATION_POLICY } from "../lib/contract/types.js";
-import type { RemediateOptions, RemediateResult } from "./remediate.js";
+import type {
+	RemediateOptions,
+	RemediateResult,
+} from "../lib/remediate/types.js";
 import { EXIT_CODES } from "./remediate-runner-helpers.js";
 
 /**

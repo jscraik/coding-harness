@@ -147,6 +147,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 			"Replay command spec must stay focused on registry metadata and replay-owned argv delegation.",
 	},
 	{
+		path: "src/lib/cli/registry/remediate-command-spec.ts",
+		maxLines: 20,
+		reason:
+			"Remediate command spec must stay focused on registry metadata and remediate-owned argv delegation.",
+	},
+	{
 		path: "src/lib/cli/registry/fleet-plan-command-spec.ts",
 		maxLines: 25,
 		reason:
@@ -942,15 +948,18 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/org-audit-command-spec.ts",
 	"src/lib/cli/registry/preflight-gate-command-spec.ts",
 	"src/lib/cli/registry/replay-command-spec.ts",
+	"src/lib/cli/registry/remediate-command-spec.ts",
 	"src/lib/cli/registry/review-gate-command-spec.ts",
 	"src/lib/cli/registry/risk-tier-command-spec.ts",
 	"src/lib/cli/registry/runtime-card-command-spec.ts",
+	"src/lib/cli/registry/runtime-budget-command-spec.ts",
 	"src/lib/cli/registry/silent-error-command-spec.ts",
 	"src/lib/cli/registry/linear-gate-command-spec.ts",
 	"src/lib/cli/registry/linear-command-actions.ts",
 	"src/lib/cli/registry/linear-command-runner.ts",
 	"src/lib/cli/registry/linear-command-spec.ts",
 	"src/lib/cli/registry/policy-gate-command-spec.ts",
+	"src/lib/cli/registry/plan-gate-command-spec.ts",
 	"src/lib/cli/registry/preset-command-spec.ts",
 	"src/lib/cli/registry/pr-closeout-command-spec.ts",
 	"src/lib/cli/registry/pr-template-gate-command-spec.ts",
@@ -975,7 +984,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 const COMMAND_IMPORT_PATTERN = /^(?:\.\.\/)+commands\//;
 const EFFECT_IMPORT_PATTERN = /^effect(?:\/.*)?$/;
 const PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN =
-	/^.*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|evidence|evaluator|recovery|status|types)\.js$/;
+	/^.*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|evidence|evidence-summaries|evaluator|recovery|status|types)\.js$/;
 const IMPORT_SPECIFIER_PATTERN =
 	/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["'](?<specifier>[^"']+)["']/g;
 const APPROVED_EFFECT_BOUNDARIES = new Set([
@@ -988,7 +997,16 @@ const APPROVED_PR_CLOSEOUT_INTERNAL_IMPORTERS = new Set([
 const APPROVED_PR_CLOSEOUT_PARENT_IMPORTS = new Map<string, readonly string[]>([
 	[
 		"src/lib/pr-closeout/types.ts",
-		["../decision/he-phase-exit.js", "../missing-context/classifier.js"],
+		[
+			"../decision/he-phase-exit.js",
+			"../harness-assurance.js",
+			"../missing-context/classifier.js",
+			"../runtime/runtime-evidence-contract.js",
+		],
+	],
+	[
+		"src/lib/pr-closeout/evidence-summaries.ts",
+		["../harness-assurance.js", "../runtime/runtime-evidence-contract.js"],
 	],
 	["src/lib/pr-closeout/blockers.ts", ["../decision/he-phase-exit.js"]],
 	[
@@ -1038,6 +1056,7 @@ const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./org-audit-command-spec.js",
 	"./preflight-gate-command-spec.js",
 	"./replay-command-spec.js",
+	"./remediate-command-spec.js",
 	"./review-gate-command-spec.js",
 	"./risk-tier-command-spec.js",
 	"./runtime-card-command-spec.js",
@@ -1080,7 +1099,10 @@ const REMEDIATE_COMMAND_SUBMODULES = [
 	"./remediate-git.js",
 	"./remediate-run-record.js",
 ] as const;
-const PR_CLOSEOUT_EVALUATOR_SUBMODULES = ["./recovery.js"] as const;
+const PR_CLOSEOUT_EVALUATOR_SUBMODULES = [
+	"./evidence-summaries.js",
+	"./recovery.js",
+] as const;
 const REVIEW_GATE_CORE_SUBMODULES = [
 	"../lib/review-gate/required-check-manifest.js",
 	"../lib/review-gate/required-checks.js",

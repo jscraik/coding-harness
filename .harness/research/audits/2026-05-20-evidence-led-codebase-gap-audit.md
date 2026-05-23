@@ -22,6 +22,7 @@
 - **Evidence inputs:**
   - `.harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md`
   - all Markdown files under `.harness/research/deep/`, including the 2026-05-18 source extractions, 2026-05-19 agent-RFT and agent-ready evidence, and `2026-05-20-agent-ready-code-patterns-evidence.md`.
+  - 2026-05-21 upstream Codex runtime-governance delta, verified read-only from `/Users/jamiecraik/dev/codex` across `59507b849..20fedafff`. The codex-repo MCP/doc-search path was attempted but unavailable in this session (`unsupported call`; MCP resources were empty), so source verification used the local Codex checkout.
 - **Reviewer coverage:** `agent-native-reviewer`, `adversarial-reviewer`, `api-contract-reviewer`, and local API-contract inspection incorporated. The first expanded adversarial reviewer returned only a readiness handshake and was replaced; the final API-contract reviewer confirmed the duplicate `pr-closeout/v1` contract fork.
 - **Method:** inspected live code, command entrypoints, runtime flows, schemas, validators, package scripts, CI files, harness instructions, `.harness` authority surfaces, and targeted runtime commands. Documentation-only claims are not treated as implementation.
 - **Existing worktree note:** unrelated active edits existed before this audit in architecture, review-gate, CI migrate, docs, generated architecture artifacts, and CI migration extraction work. This audit does not interpret those dirty files as completed work unless live code paths were inspected. Fresh runtime probes showed `commands`, `next`, and `runtime-card` are importable; the CI migration extraction still has split helper ownership that should be finished before delivery.
@@ -39,6 +40,15 @@ Expanded deep evidence inventory:
 - `.harness/research/deep/2026-05-19-matt-pocock-evidence.md`: clarification before implementation, thin high-leverage docs, ubiquitous language, progressive disclosure, deep modules, regression-test-first bugs.
 - `.harness/research/deep/2026-05-19-ryan-lopopolo-evidence.md`: humans steer agents execute, missing-context telemetry, environment inversion, review disagreement protocol, full PR lifecycle delegation, disposable runs with mandatory learning.
 - `.harness/research/deep/2026-05-20-agent-ready-code-patterns-evidence.md`: proof-carrying boundary transformation, validation artifacts, changed-behavior proof, filesystem layout as agent UX, codemap before atlas, structural failure classification, evidence freshness.
+
+Verified 2026-05-21 Codex runtime-governance delta:
+
+- Permission profiles are now runtime policy, not static prose. Local Codex evidence shows inherited profile resolution, managed `requirements.toml` sources, resolved active profiles, runtime permission refresh, Windows runner propagation, and explicit rejection of unsafe read-only fallback when approvals are disabled. Coding Harness should model declared, inherited, managed, effective, refreshed, fallback, and runner-enforced permission state separately.
+- Goals are default-on runtime state with accounting semantics. Local Codex evidence shows active-goal accounting on turn and tool lifecycles plus preservation/reporting of accounting flush failures. Coding Harness should classify goal accounting failure as blocked or degraded evidence, not as missing narrative.
+- Subagent lifecycle now has terminal stop hooks. Harness review and issue-loop evidence should require `SubagentStart -> ArtifactExpected -> ArtifactWritten -> SubagentStop -> ParentIntegrated`, not merely mailbox completion text or artifact presence.
+- Extension and MCP tool evidence now carries stronger attribution: extension calls include `turn_id` and `truncation_policy`; MCP tool-call items include optional `plugin_id`; plugin telemetry includes plugin and marketplace identity. Harness evidence envelopes should capture those fields when the source runtime exposes them.
+- Network and package execution now have governance surfaces: MITM hook config/runtime enforcement, standalone websearch client use, checksum-published package archives, DotSlash entrypoints, platform packages, bundled resources, and SDK-launched packaged runtimes. Harness run records need network policy and package provenance fields when those capabilities are used.
+- `.agents/session-collector` and `.agents/otel-collector` should become the observed-state bridge: declared contracts live in skills, enforcement lives in Coding Harness, portable proof lives in evals, and observed local telemetry/provenance/installed-state evidence lives in `.agents`.
 
 Status vocabulary used below:
 
@@ -67,7 +77,7 @@ The gap is sharper than “needs more code.” The codebase is strong at orienta
 2. Runtime and closeout evidence can still be laundered through summary-only or weak evidence paths. The runtime evidence producer can synthesize phase-exit evidence with empty gates, and PR closeout accepts weak traceability text.
 3. Visual bug-fix evidence is partially present but not product-profile driven. Screenshots and video file verification exist, but the harness does not enforce before/after comparable UI evidence or product-specific video capture adapters.
 4. Linear bug tracking is not yet a deterministic tracker contract. Existing `linear-sync` uses fuzzy issue search by label text and can update the wrong issue.
-5. Several guardrails are documented but not mechanized: reviewer artifact-first outputs, subagent lifecycle ledger, role runtime freshness checks, full trace/session evidence, permission tiers, and observability extraction.
+5. Codex runtime evidence is not yet a harness-owned contract: effective permission profiles, runtime refreshes, thread settings, goal accounting, plugin/tool attribution, subagent stop events, MITM policy, package provenance, and `.agents` observed-state extraction are missing from the execution model.
 
 **Top 5 risks:**
 
@@ -75,7 +85,7 @@ The gap is sharper than “needs more code.” The codebase is strong at orienta
 2. A bug fix lands without durable reproduction evidence, failure video/screenshot, resolution video/screenshot, or product-driver trace.
 3. Linear automation creates or updates the wrong issue, making the tracker look current while routing work incorrectly.
 4. Duplicate schema names let old and new `pr-closeout/v1` meanings coexist, which weakens agent-native contract reliability.
-5. Context and skill sprawl reappear because authority, maintenance, internal evals, and observability are not yet fully wired into runtime gates.
+5. Declared contracts drift from resolved runtime behavior because the harness does not yet compare declared skill/run intent with Codex's effective permissions, goal accounting, plugin attribution, network policy, package provenance, and collector evidence.
 
 **Strongest existing foundations:**
 
@@ -91,7 +101,7 @@ The gap is sharper than “needs more code.” The codebase is strong at orienta
 2. Tighten PR closeout so skipped/neutral checks, stale checks, and arbitrary text traceability cannot count as complete required evidence.
 3. Introduce the minimal `issue-loop` schema set before building the full loop: `bugfix-record/v1`, `product-driver-profile/v1`, `visual-evidence-pair/v1`, `linear-bug-tracker/v1`, and `merge-decision/v1`.
 4. Add deterministic Linear bug tracker creation/update rules: required templates, labels, exact issue identity, duplicate prevention, and dry-run fixtures.
-5. Add `review-artifact-ledger/v1` and a verifier command so review swarms are artifact-first in code, not only in `AGENTS.md`.
+5. Add `runtime-evidence-contract/v1` and a repo-owned `.agents` extraction profile so Codex runtime state can become closeout evidence instead of conversation memory.
 
 ## 2. Overall Gradecard
 
@@ -111,6 +121,7 @@ The gap is sharper than “needs more code.” The codebase is strong at orienta
 | Product Driver and Visual Evidence | D+ | High | UI loop and screenshot/video file validation exist. | No product-driver profile or before/after visual evidence contract; Browser is not modeled as one adapter among several. | Add product-driver adapters and evidence-pair gate for bug fixes. |
 | Issue-to-Merge Autonomy | D | High | Pieces exist across PR closeout, validation, UI exploration, evidence verify, and Linear sync. | Full lifecycle is documented but not reachable as one contract. | Implement `issue-loop` as an artifact-first state machine with hard stop reasons. |
 | Internal Evals and Observability | D+ | Medium | Repo has tests and local session/collector ecosystems available outside the codebase. | No harness-owned `coding-harness.json` extraction profile, OTEL mapping, or eval pack proving issue-loop behavior. | Add collector profile, trace schema, and offline eval cases for false-success and product-driver failures. |
+| Codex Runtime Evidence Contract | D | High | Upstream Codex now exposes or records resolvable permission profiles, goal accounting, SubagentStop, plugin IDs, turn IDs, truncation policy, MITM hooks, package provenance, and app-server thread settings. | Coding Harness does not model declared vs resolved vs observed runtime state, and cannot use those fields as closeout evidence. | Add `runtime-evidence-contract/v1`, a Codex runtime compatibility report, and `.agents` extraction fields before broad issue-loop automation. |
 
 ## 3. Evidence-to-Code Mapping
 
@@ -142,6 +153,11 @@ The gap is sharper than “needs more code.” The codebase is strong at orienta
 | Reviewer artifact-first enforcement | Review swarm contract | `AGENTS.md` policy; no matching runtime artifact verifier found | documented_only | D | High |
 | Subagent lifecycle ledger | Hooks/subagent lifecycle pattern | No reachable ledger implementation found | missing | F | Medium |
 | Observability extraction profile | Observability and internal evals | `~/.agents/session-collector` and `~/.agents/otel-collector` available, but no harness-owned profile found | documented_only | D | Medium |
+| Runtime permission profile resolution | Codex `59507b849..20fedafff` delta | Local Codex exposes resolved/inherited/managed/effective/refreshed permission profiles; no matching harness run contract fields found | missing | F | High |
+| Goal accounting and flush-failure evidence | Codex `59507b849..20fedafff` delta | Local Codex goal extension accounts progress and preserves/report failures; no harness closeout classification found | missing | F | High |
+| Extension and MCP tool attribution | Codex `59507b849..20fedafff` delta | Local Codex extension calls include `turn_id`/`truncation_policy`, and MCP items include `plugin_id`; harness evidence envelopes do not require them | missing | F | High |
+| Network MITM and package provenance | Codex `59507b849..20fedafff` delta | Local Codex has MITM config/runtime enforcement and package checksum/DotSlash/SDK launch surfaces; harness run records do not model them | missing | F | Medium |
+| `.agents` observed-state bridge | Codex runtime-governance delta plus local collector directories | External collectors exist, but Coding Harness does not own extraction fields for permissions, goals, hooks, tools, plugins, network, packages, or websocket traces | documented_only | D | Medium |
 
 ## 4. Gap Register
 
@@ -1038,24 +1054,25 @@ Markdown frontmatter parser, link checker, ripgrep, JSON Schema, CI scheduled sc
 
 **Current State:**
 
-The wider environment has `~/.agents/session-collector` and `~/.agents/otel-collector`, and those can be adapted. The repo does not yet contain a `coding-harness.json` extraction profile or internal eval pack that proves issue-loop, product-driver, permission, and false-success behavior.
+The wider environment has `~/.agents/session-collector` and `~/.agents/otel-collector`, and those can be adapted. The repo does not yet contain a `coding-harness.json` extraction profile or internal eval pack that proves issue-loop, product-driver, permission, Codex runtime evidence, and false-success behavior.
 
 **Expected State:**
 
-Coding Harness should define what telemetry it needs to extract: session events, tool calls, subagent starts, artifact expected/written events, validation runs, product-driver captures, Linear/GitHub state changes, and closeout decisions. It should also have offline eval cases for false-success and recovery behavior.
+Coding Harness should define what telemetry it needs to extract: session events, tool calls, subagent start/stop pairs, artifact expected/written events, validation runs, product-driver captures, Linear/GitHub state changes, closeout decisions, effective permission profile changes, goal accounting events, plugin attribution, MITM/network decisions, package provenance, and logical request traces. It should also have offline eval cases for false-success and recovery behavior.
 
 **Evidence Basis:**
 
-The conversation added internal evals and observability as missing pieces. The flywheel requires feedback from runtime evidence into code, validators, skills, and context.
+The conversation added internal evals and observability as missing pieces. The flywheel requires feedback from runtime evidence into code, validators, skills, and context. The 2026-05-21 Codex delta makes `.agents` more important because Codex now exposes observable runtime governance fields that should be collected rather than summarized away.
 
 **Code Evidence:**
 
 - External collector directories exist outside this repo.
 - No repo-local `coding-harness.json` collector profile or eval pack for issue-loop runtime contracts was found.
+- Repository search found no harness-owned fields for `effective_permission_profile`, `goal_accounting`, `SubagentStop`, `extension_turn_id`, `truncation_policy`, `plugin_id`, `network_mitm`, `package_checksum`, `sdk_runtime`, or `thread_settings_revision`.
 
 **Risk:**
 
-The harness cannot learn systematically from repeated steering, failed runs, missing artifacts, or false closeout claims.
+The harness cannot learn systematically from repeated steering, failed runs, missing artifacts, false closeout claims, runtime permission drift, goal accounting failures, unattributed plugin/tool calls, network policy violations, or package provenance gaps.
 
 **Severity:** Medium
 
@@ -1063,11 +1080,11 @@ The harness cannot learn systematically from repeated steering, failed runs, mis
 
 **Recommended Fix:**
 
-Add a repo-owned observability extraction profile and internal eval fixtures. Keep collectors external, but make Coding Harness own the events and claims it needs.
+Add a repo-owned observability extraction profile and internal eval fixtures. Keep collectors external, but make Coding Harness own the events and claims it needs, including Codex runtime-governance fields exposed by current upstream.
 
 **Suggested Software / Method:**
 
-OpenTelemetry event taxonomy, JSONL session extraction, `coding-harness.json` profile, offline eval fixtures, fixture scorer with Vitest.
+OpenTelemetry event taxonomy, JSONL session extraction, `coding-harness.json` profile, offline eval fixtures, fixture scorer with Vitest, collector extraction fields for permission resolution, goal accounting, hooks, plugin IDs, network policy, package provenance, and logical websocket request IDs.
 
 **Files Likely To Change:**
 
@@ -1085,6 +1102,79 @@ OpenTelemetry event taxonomy, JSONL session extraction, `coding-harness.json` pr
 
 - The profile names events to extract without leaking secrets.
 - Evals catch skipped-check success, summary-only phase-exit, missing visual evidence, missing reviewer artifact, and fuzzy Linear update.
+- The profile reserves or extracts Codex runtime fields for effective permissions, goal accounting, SubagentStart/SubagentStop, extension turn binding, plugin attribution, MITM/websearch policy, package provenance, and warmup-vs-logical request tracing.
+
+### GAP-017: Codex Runtime Evidence Contract Is Missing
+
+**Category:** runtime / governance / traceability / observability
+
+**Current State:**
+
+The audit verified current upstream Codex runtime-governance primitives from `/Users/jamiecraik/dev/codex`, but Coding Harness does not yet model those primitives as a run or closeout contract. Repository search found no harness-owned schema fields for `effective_permission_profile`, `permission_profile_source`, `permission_profile_refreshed_at`, `approvals_available`, `fallback_rejected_reason`, `goal_accounting_flush_status`, `thread_settings_revision`, `extension_turn_id`, `extension_truncation_policy`, `plugin_id`, `plugin_marketplace`, `subagent_stop_seen`, `session_start_compact`, `network_mitm_policy`, `package_checksum_ref`, `sdk_runtime_launch_source`, or `logical_websocket_request_id`.
+
+**Expected State:**
+
+Coding Harness should define `runtime-evidence-contract/v1` or an equivalent contract consumed by run records, runtime cards, PR closeout, and issue-loop records. The contract should distinguish declared intent, resolved runtime state, observed telemetry, and portable eval proof. `.agents/session-collector` and `.agents/otel-collector` should be the observed-state bridge, while Coding Harness owns the field contract and validation behavior.
+
+**Evidence Basis:**
+
+The 2026-05-21 Codex delta moved runtime primitives from advisory metadata toward enforced and observable runtime state: permission profile inheritance and runtime refresh, managed `requirements.toml` profiles, rejected read-only fallback when approvals are disabled, default-on goal accounting, SubagentStop hooks, turn-bound extension calls, MCP plugin IDs, plugin marketplace telemetry, MITM hook enforcement, package checksums, DotSlash entrypoints, SDK-launched packaged runtimes, and logical websocket request tracing after warmup.
+
+**Code Evidence:**
+
+- Verified local Codex source includes permission profile resolution and active resolved profile snapshots in `/Users/jamiecraik/dev/codex/codex-rs/core/src/config/permissions.rs` and `/Users/jamiecraik/dev/codex/codex-rs/core/src/config/resolved_permission_profile.rs`.
+- Verified local Codex source refreshes active permission behavior during turn context setup in `/Users/jamiecraik/dev/codex/codex-rs/core/src/session/turn_context.rs`.
+- Verified local Codex source accounts active goal progress and warns on failed accounting flushes in `/Users/jamiecraik/dev/codex/codex-rs/ext/goal/src/extension.rs`.
+- Verified local Codex source exposes `SubagentStop` hook configuration in `/Users/jamiecraik/dev/codex/codex-rs/config/src/hook_config.rs` and hook engine mapping in `/Users/jamiecraik/dev/codex/codex-rs/hooks/src/engine/mod.rs`.
+- Verified local Codex source includes `turn_id` and `truncation_policy` in extension tool calls in `/Users/jamiecraik/dev/codex/codex-rs/tools/src/tool_call.rs`.
+- Verified local Codex source includes optional `plugin_id` on MCP tool-call items in `/Users/jamiecraik/dev/codex/codex-rs/protocol/src/items.rs` and plugin/marketplace telemetry in `/Users/jamiecraik/dev/codex/codex-rs/analytics/src/events.rs`.
+- Verified local Codex source includes MITM network config and runtime conversion in `/Users/jamiecraik/dev/codex/codex-rs/config/src/permissions_toml.rs`.
+- Coding Harness search found no matching run-contract or closeout fields for the new runtime evidence terms.
+
+**Risk:**
+
+A run can claim it obeyed the declared contract while the effective runtime profile drifted, approvals were unavailable, a goal accounting flush failed, a plugin-backed tool call lacked attribution, network access lacked MITM/redaction evidence, a packaged runtime lacked checksum provenance, or a subagent never reached a terminal stop event.
+
+**Severity:** High
+
+**Fix Grade:** P1
+
+**Recommended Fix:**
+
+Add a minimal `runtime-evidence-contract/v1` before expanding issue-loop automation. Keep it narrow: effective permission profile, permission profile source, runtime refresh timestamp, approvals/fallback classification, goal accounting status, thread settings revision, resolved service tier, subagent start/stop status, extension turn/truncation binding, plugin attribution, network MITM/websearch policy, package checksum/SDK launch provenance, raw output refs, and warmup-vs-logical trace classification. Then make runtime-card, PR closeout, and issue-loop accept this evidence as advisory at first and fail closed only for phases where the field is required.
+
+**Suggested Software / Method:**
+
+Zod or JSON Schema, Vitest fixtures, JSONL event envelope, `.agents` extraction profile, OpenTelemetry semantic fields, jq validation, optional Codex runtime doctor command.
+
+**Files Likely To Change:**
+
+- `src/lib/runtime/runtime-evidence-contract.ts`
+- `src/lib/runtime/runtime-card.ts`
+- `src/lib/contract/run-records-core.ts`
+- `src/lib/pr-closeout/*`
+- `src/lib/issue-loop/*`
+- `src/commands/runtime-card.ts`
+- `.harness/observability/coding-harness.json`
+- `docs/agents/07b-agent-governance.md`
+- `.harness/research/evidence-patterns.json` if promoted from audit finding to adopted pattern
+
+**Validation Command:**
+
+- `pnpm vitest run src/lib/runtime src/lib/contract src/lib/pr-closeout`
+- `jq . .harness/observability/coding-harness.json`
+- `node --import tsx src/cli.ts runtime-card --json --repo .`
+
+**Acceptance Criteria:**
+
+- Write, network, GitHub, Linear, install, elevated-runner, PR closeout, and merge phases can require an effective permission profile instead of trusting declared intent.
+- A goal accounting flush failure is represented as blocked or degraded evidence, never as success.
+- A subagent-backed claim requires a terminal stop event or explicit equivalent terminal evidence.
+- MCP-backed evidence can record `plugin_id` and marketplace/source attribution when available.
+- Extension-backed evidence can record `turn_id`, `truncation_policy`, and evidence completeness.
+- Network-backed evidence records MITM/websearch policy when network is used.
+- Package-backed evidence records checksum and launch source when a packaged runtime or skill is used.
+- `.agents` extraction profile names the fields without requiring collectors to live inside this repo.
 
 ## 5. Contradictions
 
@@ -1161,6 +1251,10 @@ OpenTelemetry event taxonomy, JSONL session extraction, `coding-harness.json` pr
 - `merge-decision/v1` with authority and blocker fields.
 - Required default runtime evidence for issue/PR modes.
 - Async approval state machine: `not_required`, `requested`, `pending`, `approved`, `denied`, `expired`, `resumed`, `blocked`.
+- `runtime-evidence-contract/v1` with declared, resolved, observed, and evaluated runtime state.
+- Effective permission profile fields: source, inheritance, managed profile, refresh timestamp, approvals availability, and fail-closed fallback classification.
+- Goal accounting status: absent, active, accounted, flush failed, store unavailable, cleared, complete.
+- Thread settings revision and client-resolved service tier snapshot for a run.
 
 ### Command Selection
 
@@ -1196,8 +1290,12 @@ OpenTelemetry event taxonomy, JSONL session extraction, `coding-harness.json` pr
 
 - Run records for `next`, `runtime-card`, `pr-closeout`, and issue-loop.
 - Subagent start/expected artifact/written artifact events.
+- Subagent stop and parent-integrated terminal events.
 - Product-driver trace schema.
 - Raw output refs linked to final claims.
+- Extension tool-call `turn_id` and `truncation_policy` binding.
+- MCP tool-call `plugin_id`, plugin marketplace, and source attribution.
+- Warmup trace versus logical websocket request classification.
 
 ### Context
 
@@ -1209,6 +1307,7 @@ OpenTelemetry event taxonomy, JSONL session extraction, `coding-harness.json` pr
 ### Skills
 
 - Skill package contract v1 with manifest, permission profile, environment profile, warmup, artifacts, evals, and lifecycle.
+- Skill runtime contract with effective permission, goal accounting, package provenance, plugin attribution, compact startup, and subagent stop expectations.
 - Internal evals proving skill routing and default-no behavior.
 - Skill density/deduplication checks.
 
@@ -1221,6 +1320,7 @@ OpenTelemetry event taxonomy, JSONL session extraction, `coding-harness.json` pr
 ### Governance
 
 - Permission profiles and deny semantics applied to harness runs.
+- Runtime-refreshed effective permission profiles applied before risky phases.
 - Environment profiles for local/remote/product-specific runs.
 - Destructive action gate and revocation path.
 - Human escalation classifier for judgment-only boundaries.
@@ -1235,7 +1335,7 @@ OpenTelemetry event taxonomy, JSONL session extraction, `coding-harness.json` pr
 ### Observability
 
 - `coding-harness.json` collector profile for session/OTEL extraction.
-- Event taxonomy for subagent lifecycle, tool calls, artifacts, validation, PR/Linear updates, and closeout.
+- Event taxonomy for subagent lifecycle, tool calls, artifacts, validation, PR/Linear updates, closeout, permission refreshes, goal accounting, plugin attribution, MITM/websearch policy, package provenance, and logical websocket requests.
 - Internal evals for false-success, missing evidence, fuzzy tracker, and stale-state cases.
 
 ## 7. Fix Roadmap
@@ -1319,6 +1419,7 @@ Make issue and PR work replayable through runtime records and typed state.
 - GAP-001: Minimal issue-loop command and state machine.
 - GAP-010: Wire or remove `harness-run-context/v1`.
 - GAP-014: Emit run records from core cockpit commands.
+- GAP-017: Add `runtime-evidence-contract/v1` for declared/resolved/observed Codex runtime state.
 - Add subagent lifecycle ledger events.
 - Add retry budgets and recovery classifications.
 
@@ -1327,6 +1428,7 @@ Make issue and PR work replayable through runtime records and typed state.
 - `src/commands/issue-loop.ts`
 - `src/lib/issue-loop/*`
 - `src/lib/contract/*`
+- `src/lib/runtime/runtime-evidence-contract.ts`
 - `src/commands/next.ts`
 - `src/commands/runtime-card.ts`
 - `src/commands/pr-closeout.ts`
@@ -1336,10 +1438,12 @@ Make issue and PR work replayable through runtime records and typed state.
 
 - `pnpm vitest run src/lib/issue-loop src/lib/contract src/commands/next.test.ts src/commands/runtime-card.test.ts src/commands/pr-closeout.test.ts`
 - Fixture run: validate a synthetic issue-loop record from open to blocked/ready.
+- Runtime evidence fixture: declared permission profile differs from effective runtime profile and fails closed for a write phase.
 
 **Expected risk reduction:**
 
 Turns fragmented command outputs into replayable, durable evidence.
+It also prevents declared contracts from being mistaken for resolved runtime behavior.
 
 ### Phase 4 — Context and Skill Compression
 
@@ -1350,6 +1454,7 @@ Keep the hot path thin while preserving deep evidence in lazy, validated referen
 **Fixes included:**
 
 - Skill package contract v1.
+- Skill runtime contract fields aligned to Codex runtime evidence.
 - Skill lifecycle states: available, installed, projected, enabled, warmed, runnable, validated.
 - Permission/environment metadata for operational skills.
 - Context scanner for canonical surfaces.
@@ -1385,6 +1490,7 @@ Make broader Codex autonomy safe across greenfield, brownfield, web, macOS, Elec
 - GAP-002: Product-driver profiles and video adapters.
 - GAP-003: Linear bug tracker contract.
 - GAP-016: Observability profile and internal evals.
+- GAP-017: `.agents` observed-state bridge fields for permissions, goals, hooks, plugins, network, packages, and logical request traces.
 - Permission and environment profiles for harness runs.
 - Human escalation decision contract.
 
@@ -1393,6 +1499,7 @@ Make broader Codex autonomy safe across greenfield, brownfield, web, macOS, Elec
 - `src/lib/product-driver/*`
 - `src/lib/linear/*`
 - `.harness/observability/coding-harness.json`
+- `src/lib/runtime/runtime-evidence-contract.ts`
 - `src/lib/evals/*`
 - `docs/agents/13-linear-production-workflow.md`
 - `docs/agents/07b-agent-governance.md`
@@ -1413,10 +1520,10 @@ Moves the harness from repo governance into production software delivery governa
 |---:|---|---|---|---|---|
 | 1 | Reject summary-only phase-exit for required evidence | Very high | Medium | False validation and false closeout | Small patch, direct trust-boundary improvement. |
 | 2 | Treat skipped/neutral required checks as non-passing by default | Very high | Low | False green CI | Clear code path and easy negative fixtures. |
-| 3 | Consolidate duplicate `pr-closeout/v1` contracts | High | Medium | API contract drift | Prevents agents using different closeout meanings. |
-| 4 | Add structured traceability refs | High | Medium | Evidence laundering | Converts prose claims into auditable refs. |
-| 5 | Enforce CI freshness age windows | High | Medium | Stale-state closeout | Uses existing policy field already present. |
-| 6 | Finish CI migration helper extraction and add smoke coverage | Medium | Low/Medium | Helper drift and future import regressions | Current runtime probes pass, but ownership remains split and should be closed before delivery. |
+| 3 | Add `runtime-evidence-contract/v1` | Very high | Medium | Declared-vs-effective runtime drift | Current Codex exposes enforced runtime state; the harness needs to consume it before deeper autonomy. |
+| 4 | Consolidate duplicate `pr-closeout/v1` contracts | High | Medium | API contract drift | Prevents agents using different closeout meanings. |
+| 5 | Add structured traceability refs | High | Medium | Evidence laundering | Converts prose claims into auditable refs. |
+| 6 | Enforce CI freshness age windows | High | Medium | Stale-state closeout | Uses existing policy field already present. |
 | 7 | Add minimal `issue-loop` schemas | Very high | Medium | Missing issue-to-merge contract | Creates the spine before heavy orchestration. |
 | 8 | Add product-driver profile and visual-evidence-pair | Very high | Medium/High | Unproven bug fixes | Makes screenshots/video real acceptance evidence. |
 | 9 | Add Linear bug tracker contract | High | Medium | Wrong tracker updates | Required before Linear can be trusted as route authority. |
@@ -1426,11 +1533,12 @@ Moves the harness from repo governance into production software delivery governa
 
 **What to build first:**
 
-Build the false-success patch before the full issue-loop. Specifically: runtime evidence completeness, strict PR closeout check conclusions, duplicate closeout schema consolidation, and structured traceability refs. In parallel, finish the active CI migration helper extraction and keep command-catalog smoke coverage so the CLI cannot regress silently.
+Build the false-success patch before the full issue-loop. Specifically: runtime evidence completeness, strict PR closeout check conclusions, duplicate closeout schema consolidation, structured traceability refs, and the minimal `runtime-evidence-contract/v1`. In parallel, finish the active CI migration helper extraction and keep command-catalog smoke coverage so the CLI cannot regress silently.
 
 **What not to build yet:**
 
 Do not build a full autonomous merge bot first. Do not wire real Linear writes, GitHub merge actions, or native screen recording until dry-run schemas and fixture validators reject bad records.
+Do not make `.agents` collectors a hard runtime dependency yet; first define the harness-owned extraction profile and offline fixtures so collector integration can remain additive.
 
 **What to remove:**
 
@@ -1449,6 +1557,11 @@ Keep `issue-loop` as an artifact validator first. A small command that validates
 - Visual evidence pair validator.
 - Linear bug tracker dry-run validator.
 - Canonical context scanner.
+- Runtime evidence contract validator.
+- Permission resolution drift validator.
+- Subagent start/stop lifecycle validator.
+- Plugin/tool attribution validator.
+- MITM/network policy and package provenance validator.
 
 **What should become a schema:**
 
@@ -1461,10 +1574,18 @@ Keep `issue-loop` as an artifact validator first. A small command that validates
 - `review-artifact-ledger/v1`
 - `traceability-ref/v1`
 - `evidence-manifest/v1`
+- `runtime-evidence-contract/v1`
+- `permission-resolution/v1`
+- `goal-accounting-evidence/v1`
+- `subagent-lifecycle-ledger/v1`
+- `plugin-tool-attribution/v1`
+- `network-policy-evidence/v1`
+- `package-provenance/v1`
 
 **What should become a skill:**
 
 The issue-to-merge workflow should eventually become a high-density skill, but only after the CLI contracts exist. The skill should route agents to commands and artifact schemas rather than restating the whole process as prose.
+Skill runtime contracts should also declare which Codex runtime evidence they require: effective permission profile, goal accounting, plugin attribution, package provenance, compact startup behavior, and subagent stop evidence where relevant.
 
 **What should become documentation:**
 
@@ -1476,6 +1597,7 @@ Only the authority map, product-driver profile authoring guide, Effect migration
 - Architecture/import boundary ratchets.
 - Evidence-pattern validation.
 - Product-driver fixture validation.
+- Runtime evidence fixture validation.
 - Context scanner in warning mode first, then required for canonical surfaces.
 - PR closeout contract tests.
 
@@ -1487,15 +1609,15 @@ Human judgment should remain manual for ambiguous product taste, destructive pro
 
 **Immediate next action:**
 
-Ship the trust-boundary patch first: reject summary-only phase-exit as required evidence, stop skipped/neutral checks from passing by default, consolidate `pr-closeout/v1`, and require structured traceability refs. Also finish the active `ci-migrate-core.ts` helper ownership cleanup before delivery, because it is not the top autonomy gap but it is a cheap import-regression guard.
+Ship the trust-boundary patch first: reject summary-only phase-exit as required evidence, stop skipped/neutral checks from passing by default, consolidate `pr-closeout/v1`, require structured traceability refs, and add the minimal `runtime-evidence-contract/v1`. Also finish the active `ci-migrate-core.ts` helper ownership cleanup before delivery, because it is not the top autonomy gap but it is a cheap import-regression guard.
 
 **Safest first patch:**
 
-Start with runtime evidence completeness because it is small, local, and foundational: make `phaseExitSourceCompleteness` mandatory whenever `phaseExit` exists, and make consumers reject `summary_only` for required evidence. Then remove the remaining duplicate `resolveRepoBoundPath` ownership and keep a command-catalog smoke test so helper extraction cannot re-break importability.
+Start with runtime evidence completeness because it is small, local, and foundational: make `phaseExitSourceCompleteness` mandatory whenever `phaseExit` exists, make consumers reject `summary_only` for required evidence, and add a fixture proving declared permission intent cannot satisfy a write phase when the effective runtime profile disagrees. Then remove the remaining duplicate `resolveRepoBoundPath` ownership and keep a command-catalog smoke test so helper extraction cannot re-break importability.
 
 **Highest-risk missing system:**
 
-The highest-risk missing system is the `Issue-To-Merge Contract`: bugfix record, product-driver profile, visual evidence pair, Linear tracker, PR feedback ledger, CI remediation ledger, and merge decision. Without it, the harness can assist issue work but cannot honestly claim single-prompt issue-to-merge autonomy.
+The highest-risk missing system is still the `Issue-To-Merge Contract`: bugfix record, product-driver profile, visual evidence pair, Linear tracker, PR feedback ledger, CI remediation ledger, runtime evidence contract, and merge decision. Without it, the harness can assist issue work but cannot honestly claim single-prompt issue-to-merge autonomy.
 
 **Best validation command to add first:**
 
@@ -1507,8 +1629,12 @@ Then add closeout false-green tests:
 
 - `pnpm vitest run src/lib/pr-closeout src/lib/evidence`
 
+Then add runtime evidence drift tests:
+
+- `pnpm vitest run src/lib/runtime src/lib/contract`
+
 **Broader Codex autonomy readiness:**
 
-The project is ready for bounded Codex autonomy in orientation, validation planning, architecture checks, review support, and PR closeout assistance. It is not yet ready for unattended issue-to-merge autonomy across product types. The missing blockers are concrete and fixable: product-driver evidence, Linear tracker identity, strict closeout evidence, run records, reviewer artifact enforcement, and observability/internal evals.
+The project is ready for bounded Codex autonomy in orientation, validation planning, architecture checks, review support, and PR closeout assistance. It is not yet ready for unattended issue-to-merge autonomy across product types. The missing blockers are concrete and fixable: product-driver evidence, Linear tracker identity, strict closeout evidence, runtime evidence contract, run records, reviewer artifact enforcement, `.agents` observed-state extraction, and observability/internal evals.
 
 The right path is not a rewrite. Keep the existing control plane, harden the false-success edges, then build the issue-loop as a small schema-backed runtime path with validators before adding more orchestration.

@@ -3,7 +3,16 @@ import type {
 	HeGateStatus,
 	HePhaseExit,
 } from "../decision/he-phase-exit.js";
+import type {
+	HarnessAssuranceEntry,
+	HarnessAssuranceFinding,
+} from "../harness-assurance.js";
 import type { MissingContextClassification } from "../missing-context/classifier.js";
+import type {
+	RuntimeEvidenceContract,
+	RuntimeEvidenceContractFinding,
+	RuntimeEvidenceVerifierStatus,
+} from "../runtime/runtime-evidence-contract.js";
 
 /** Schema version for the first read-only pull request closeout evidence report. */
 export const PR_CLOSEOUT_SCHEMA_VERSION = "pr-closeout/v1" as const;
@@ -65,6 +74,24 @@ export type PrCloseoutClaimSource =
 	| "review"
 	| "linear"
 	| "harness_gates";
+
+/** PR closeout summary for the seven-layer harness assurance matrix. */
+export interface PrCloseoutAssuranceSummary {
+	present: boolean;
+	valid: boolean;
+	entries: HarnessAssuranceEntry[];
+	findings: HarnessAssuranceFinding[];
+}
+
+/** PR closeout summary for verifier-owned runtime evidence. */
+export interface PrCloseoutRuntimeEvidenceSummary {
+	present: boolean;
+	valid: boolean;
+	verifierStatus: RuntimeEvidenceVerifierStatus | null;
+	outcome: string | null;
+	exitClassification: string | null;
+	findings: RuntimeEvidenceContractFinding[];
+}
 
 /** One required claim in the pr-closeout/v1 evidence contract. */
 export interface PrCloseoutClaim {
@@ -212,6 +239,8 @@ export interface PrCloseoutInput {
 	phaseExit?: HePhaseExit;
 	dirtyPaths?: PrCloseoutDirtyPathInput[];
 	tools?: PrCloseoutToolInput[];
+	assurance?: HarnessAssuranceEntry[];
+	runtimeEvidence?: RuntimeEvidenceContract;
 }
 
 /** One blocker that prevents the PR from being safely closed out. */
@@ -225,6 +254,8 @@ export interface PrCloseoutBlocker {
 		| "traceability"
 		| "worktree"
 		| "harness_gates"
+		| "assurance"
+		| "runtime_evidence"
 		| "tool";
 	classification: PrCloseoutBlockerClassification;
 	kind?: "state" | "closeout_claim";
@@ -297,6 +328,8 @@ export interface PrCloseoutReport {
 		complete: boolean;
 	};
 	harnessGates: PrCloseoutHarnessGateSummary;
+	assurance: PrCloseoutAssuranceSummary;
+	runtimeEvidence: PrCloseoutRuntimeEvidenceSummary;
 	tools: PrCloseoutToolInput[];
 	dirtyPathsExcluded: PrCloseoutDirtyPathInput[];
 	attemptLedger: PrCloseoutAttemptLedger;

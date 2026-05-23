@@ -20,6 +20,10 @@ const REQUIRED_FILES = {
 const ADMISSION_RECORD_DIR = ".harness/implementation-notes";
 const REQUIRED_ADMISSION_RECORD =
 	".harness/implementation-notes/2026-05-20-steering-admission.md";
+const FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT =
+	".harness/research/audits/2026-05-21-plan-and-research-code-tree-gap-audit.md";
+const FULL_IMPLEMENTATION_DOWNSCOPE_STATE =
+	"docs/goals/jsc-331-goal-governed-evidence-led-implementation/state.yaml";
 
 const DURABLE_DESTINATION_PATTERN =
 	/(gate|validator|schema|scaffold|template field|validation rule|project brain|linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
@@ -1217,6 +1221,90 @@ function validateEnvSolution(content) {
 	return errors;
 }
 
+function validateFullImplementationDownscopeContract() {
+	const errors = [];
+	const stateResult = readRequiredFile(
+		"full implementation goal state",
+		FULL_IMPLEMENTATION_DOWNSCOPE_STATE,
+	);
+	errors.push(...stateResult.errors);
+	if (stateResult.errors.length > 0) {
+		return errors;
+	}
+
+	const downscopeSignalPresent =
+		/S001 only/i.test(stateResult.content) &&
+		/smallest independently mergeable audit-backed slice/i.test(
+			stateResult.content,
+		);
+	if (!downscopeSignalPresent) {
+		return errors;
+	}
+
+	const auditResult = readRequiredFile(
+		"full implementation downscope audit",
+		FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT,
+	);
+	errors.push(...auditResult.errors);
+	if (auditResult.errors.length > 0) {
+		return errors;
+	}
+
+	requirePattern(
+		errors,
+		FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT,
+		auditResult.content,
+		/^## Scope Correction$/m,
+		"scope correction section for full-implementation downscope",
+	);
+	requirePattern(
+		errors,
+		FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT,
+		auditResult.content,
+		/unfinished full-implementation scope/i,
+		"unfinished full-implementation scope classification",
+	);
+	requirePattern(
+		errors,
+		FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT,
+		auditResult.content,
+		/prior execution downscoped full implementation to S001/i,
+		"S001 full-implementation downscope gap row",
+	);
+	requirePattern(
+		errors,
+		FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT,
+		auditResult.content,
+		/^## Full-Implementation Slices$/m,
+		"full-implementation slice heading",
+	);
+	requirePattern(
+		errors,
+		FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT,
+		auditResult.content,
+		/^## Implemented Status$/m,
+		"implemented status section for full-feature closure",
+	);
+
+	if (/^## Recommended Next Slices$/m.test(auditResult.content)) {
+		errors.push(
+			`${FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT}: replace advisory Recommended Next Slices heading with Full-Implementation Slices while the goal state records S001 downscope`,
+		);
+	}
+	if (/^## Current Gap Register$/m.test(auditResult.content)) {
+		errors.push(
+			`${FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT}: replace Current Gap Register with implemented evidence while the user requested full implementation`,
+		);
+	}
+	if (/^### Pending Closeout Validation$/m.test(auditResult.content)) {
+		errors.push(
+			`${FULL_IMPLEMENTATION_DOWNSCOPE_AUDIT}: replace Pending Closeout Validation with concrete command outcomes before closeout`,
+		);
+	}
+
+	return errors;
+}
+
 const validations = [
 	["agents", validateAgents],
 	["validation", validateValidationDoc],
@@ -1238,6 +1326,7 @@ for (const [label, validate] of validations) {
 	}
 }
 errors.push(...validateAdmissionRecords());
+errors.push(...validateFullImplementationDownscopeContract());
 
 if (errors.length > 0) {
 	console.error("steering-feedback-contract: failed");

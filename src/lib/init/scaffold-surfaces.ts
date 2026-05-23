@@ -149,6 +149,10 @@ export function classifySurface(templatePath: string): ScaffoldSurface {
 	// Project brain
 	if (
 		templatePath === ".harness/README.md" ||
+		templatePath === ".harness/active-artifacts.md" ||
+		templatePath === ".harness/artifact-provenance.json" ||
+		templatePath.startsWith(".harness/artifacts") ||
+		templatePath.startsWith("docs/goals/") ||
 		templatePath.startsWith(".harness/memory") ||
 		templatePath.startsWith(".harness/knowledge") ||
 		templatePath.startsWith(".harness/quality") ||

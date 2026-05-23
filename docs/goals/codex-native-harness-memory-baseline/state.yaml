@@ -1,0 +1,121 @@
+version: 2
+goal:
+  slug: "codex-native-harness-memory-baseline"
+  status: "done"
+  objective: "Prepare and later implement a Codex-native memory, artifact, and goal baseline in coding-harness and Harness Engineering so downstream greenfield and brownfield projects inherit it."
+  native_goal_id: null
+  native_thread_id: "019e4caf-59f2-7453-8370-921e5c768687"
+  native_objective: "Follow /Users/jamiecraik/dev/coding-harness/docs/goals/codex-native-harness-memory-baseline/goal.md"
+  native_status: "complete"
+  token_budget: null
+  tokens_used: 629055
+  time_used_seconds: 2364
+  native_created_at: "2026-05-21T12:02:19Z"
+  native_updated_at: "2026-05-21T23:16:28Z"
+rules:
+  one_active_task: true
+  require_fresh_verification: true
+  require_final_audit: true
+completion_contract:
+  outcome: "Reusable Codex-native harness baseline implemented in coding-harness, mirrored into Harness Engineering plugin enforcement, and ready for downstream greenfield and brownfield project setup."
+  verification_surface:
+    - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/codex-native-harness-memory-baseline"
+    - "pnpm check"
+    - "Focused tests or validators for changed generator/template/plugin code"
+    - "Diff review confirming unrelated dirty worktree changes were not absorbed"
+  constraints:
+    - "Preserve existing user and in-flight JSC-331 worktree changes."
+    - "Keep baseline source-owned by coding-harness templates and Harness Engineering plugin enforcement."
+    - "Treat Chronicle as observational evidence only until verified against repo, runtime, artifact, PR, or user direction."
+    - "Do not claim completion without exact validation evidence."
+  boundaries:
+    - "Do not commit, push, open PRs, or update Linear without explicit owner instruction."
+    - "Do not edit /Users/jamiecraik/dev/codex without explicit write-scope expansion."
+    - "Do not edit /Users/jamiecraik/dev/configs without explicit write-scope expansion."
+    - "Do not start Worker implementation until the activation phrase is present."
+  iteration_policy: "Scout first, then Worker, then Judge/PM audit; append receipts for every completed slice and encode repeated steering as durable rules, validators, or stop conditions."
+  blocked_stop_condition: "Stop if the board is invalid, native goal state conflicts with the board, write scope touches protected repos, dirty work overlaps required files, validation cannot run, or migration would overwrite unresolved brownfield truth."
+continuation_gate:
+  native_status: "complete"
+  thread_idle: "pass"
+  goal_active: "pass"
+  queued_user_input: "absent"
+  pending_work: "absent"
+  auto_continue_allowed: "no"
+checks:
+  dirty_fingerprint: "Observed existing coding-harness dirty worktree on 2026-05-21; setup must not absorb unrelated JSC-331 changes."
+  last_verification: "Goal baseline focused tests, Harness Engineering plugin validators, pnpm typecheck, remediate architecture repair tests, and pnpm check passed on 2026-05-21. Delivery actions intentionally not run without owner instruction."
+tasks:
+  - id: "T001"
+    type: "scout"
+    assignee: "Scout"
+    status: "done"
+    objective: "Setup-readiness only: validate the goal board, reconcile native goal state, and stop before Worker implementation until activation."
+    inputs:
+      - "docs/goals/codex-native-harness-memory-baseline/goal.md"
+      - "docs/goals/codex-native-harness-memory-baseline/state.yaml"
+      - "docs/goals/codex-native-harness-memory-baseline/receipts.jsonl"
+      - "AGENTS.md"
+      - "CODESTYLE.md"
+      - "docs/agents/01-instruction-map.md"
+      - "docs/agents/03-local-memory.md"
+      - "docs/agents/20-project-brain-memory-extension-rollout.md"
+    constraints:
+      - "No Worker implementation before activation phrase."
+      - "No edits outside this goal directory during setup validation unless owner expands scope."
+      - "Preserve unrelated dirty worktree files."
+    expected_output: "Readiness note with native goal status, board validation result, and next Worker slice proposal."
+    receipt_id: "R156"
+  - id: "T002"
+    type: "worker"
+    assignee: "Worker"
+    status: "done"
+    objective: "After activation, implement the coding-harness source baseline for memory, artifact, goal, citation, and sync receipt surfaces."
+    allowed_files:
+      - ".gitignore"
+      - ".harness/artifacts/README.md"
+      - ".harness/artifacts/brownfield-memory-inventory.md"
+      - ".harness/artifacts/sync-receipts.jsonl"
+      - "docs/goals/README.md"
+      - "src/lib/init/project-brain-templates.ts"
+      - "src/lib/init/project-brain-templates.test.ts"
+      - "src/lib/init/scaffold-surfaces.ts"
+      - "src/lib/init/scaffold-surfaces.test.ts"
+      - "src/lib/policy/tooling-baseline.ts"
+    verify:
+      - "Activation phrase and Scout inventory receipt are present."
+    stop_if:
+      - "Activation phrase is absent."
+      - "Allowed files overlap unrelated dirty worktree changes."
+      - "Canonical generator/template source cannot be identified."
+    receipt_id: "R157"
+  - id: "T003"
+    type: "worker"
+    assignee: "Worker"
+    status: "done"
+    objective: "After coding-harness source baseline lands, update Harness Engineering plugin memory enforcement to require compatible surfaces and sync receipts."
+    allowed_files:
+      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/references/codex-native-memory-baseline.md"
+      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/references/solution-capture-contract.md"
+      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/references/stage-context-contract.md"
+      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-reinforce/SKILL.md"
+      - "/Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/skills/he-work/SKILL.md"
+    verify:
+      - "Activation phrase and Scout inventory receipt are present."
+    stop_if:
+      - "Activation phrase is absent."
+      - "Plugin source ownership is ambiguous."
+      - "Changes would require generated cache edits instead of source edits."
+    receipt_id: "R158"
+  - id: "T004"
+    type: "judge"
+    assignee: "Judge"
+    status: "done"
+    objective: "Audit implementation against native Codex alignment, downstream greenfield/brownfield coverage, plugin enforcement, and validation evidence."
+    receipt_id: "R159"
+  - id: "T005"
+    type: "pm"
+    assignee: "PM"
+    status: "done"
+    objective: "Confirm final completion contract, residual risk, validation evidence, and owner handoff before any delivery action."
+    receipt_id: "R160"

@@ -142,7 +142,7 @@ function passingPhaseExit(): HePhaseExit {
 }
 
 function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
-	return {
+	const input: PrCloseoutInput = {
 		pullRequest: {
 			number: 258,
 			state: "OPEN",
@@ -184,6 +184,7 @@ function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 			evidenceRef: "pr-body:rollback",
 		},
 		phaseExit: passingPhaseExit(),
+		assurance: passingAssurance(),
 		tools: [
 			{
 				name: "github_cli",
@@ -193,8 +194,45 @@ function baseInput(overrides: Partial<PrCloseoutInput> = {}): PrCloseoutInput {
 				failureClass: null,
 			},
 		],
-		...overrides,
 	};
+	return { ...input, ...overrides } as PrCloseoutInput;
+}
+
+function passingAssurance(): NonNullable<PrCloseoutInput["assurance"]> {
+	const base = {
+		status: "pass" as const,
+		evidence: ["closeout:evidence"],
+	};
+	return [
+		{ ...base, layer: "unit" as const },
+		{ ...base, layer: "boundary" as const },
+		{ ...base, layer: "mock_integration" as const },
+		{ ...base, layer: "e2e" as const },
+		{ ...base, layer: "security" as const },
+		{
+			...base,
+			layer: "load_stress" as const,
+			threshold: {
+				metric: "duration",
+				operator: "<=" as const,
+				unit: "ms",
+				value: 1000,
+			},
+		},
+		{
+			...base,
+			layer: "lifecycle_closeout" as const,
+			lifecycleState: {
+				automationState: "n.a.",
+				branchWorktreeState: "clean",
+				linearState: "aligned",
+				mergeState: "ready",
+				nextLaneRouting: "none",
+				prState: "ready",
+				reviewThreadState: "resolved",
+			},
+		},
+	];
 }
 
 describe("buildPrCloseoutReport", () => {

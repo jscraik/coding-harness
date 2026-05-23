@@ -102,6 +102,9 @@ CLI registry modules are split into a loader plus focused policy modules:
 - `src/lib/cli/registry/replay-command-spec.ts`
   - Registry metadata delegates raw replay arguments through the replay-owned
     CLI args seam.
+- `src/lib/cli/registry/remediate-command-spec.ts`
+  - Registry metadata delegates raw remediate arguments through the
+    remediate-owned CLI args seam.
 - `src/lib/cli/registry/gardener-command-spec.ts`
   - Gardener docs path, dry-run, JSON, and stale-days CLI option adapter stay
     local to the docs freshness command adapter.
@@ -211,6 +214,7 @@ parsing and delegation belong in named adapters:
   `preflight-gate-command-spec.ts`, and `review-gate-command-spec.ts`.
 - Workflow command adapters own their focused parsing and delegation:
   `verify-work-command-spec.ts`, `replay-command-spec.ts`,
+  `remediate-command-spec.ts`,
   `gardener-command-spec.ts`, `memory-gate-command-spec.ts`,
   `silent-error-command-spec.ts`, `brainstorm-gate-command-spec.ts`,
   `verify-coderabbit-command-spec.ts`,

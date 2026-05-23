@@ -20,10 +20,12 @@ const EXIT_CODES = {
 export function runArtifactRoutineCLI(args: string[]): number {
 	const json = args.includes("--json");
 	const activeIndexFlag = inspectFlagValue(args, "--active-index");
+	const assuranceMatrixFlag = inspectFlagValue(args, "--assurance-matrix");
 	const repoRootFlag = inspectFlagValue(args, "--repo-root");
 	const todayFlag = inspectFlagValue(args, "--today");
 	const missingFlag = [
 		{ flag: "--active-index", inspection: activeIndexFlag },
+		{ flag: "--assurance-matrix", inspection: assuranceMatrixFlag },
 		{ flag: "--repo-root", inspection: repoRootFlag },
 		{ flag: "--today", inspection: todayFlag },
 	].find(({ inspection }) => inspection.missingValue);
@@ -38,6 +40,9 @@ export function runArtifactRoutineCLI(args: string[]): number {
 	const options: Parameters<typeof validateHarnessArtifactRoutine>[0] = {};
 	if (activeIndexFlag.value !== undefined) {
 		options.activeIndexPath = activeIndexFlag.value;
+	}
+	if (assuranceMatrixFlag.value !== undefined) {
+		options.assuranceMatrixPath = assuranceMatrixFlag.value;
 	}
 	if (repoRootFlag.value !== undefined) {
 		options.repoRoot = repoRootFlag.value;
