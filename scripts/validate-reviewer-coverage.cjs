@@ -109,6 +109,12 @@ function isInsideRoot(root, absolutePath) {
 	);
 }
 
+function realPathInsideRoot(root, absolutePath) {
+	const realRoot = fs.realpathSync(root);
+	const realPath = fs.realpathSync(absolutePath);
+	return isInsideRoot(realRoot, realPath);
+}
+
 function baseReport(options) {
 	const root = path.resolve(options.root);
 	return {
@@ -244,6 +250,17 @@ function classifyEntry(root, reviewsDir, entry) {
 			result: {
 				artifact,
 				reason: "artifact_not_found",
+				role: entry.role,
+			},
+		};
+	}
+	if (!realPathInsideRoot(root, artifactPath)) {
+		return {
+			kind: "missing",
+			requested,
+			result: {
+				artifact,
+				reason: "artifact_outside_repo",
 				role: entry.role,
 			},
 		};
