@@ -72,7 +72,7 @@ function extractTargets(markdown) {
 		if (
 			target.startsWith("docs/archive/root-cleanup/") ||
 			(!target.includes("/") &&
-				/^\\d{3}-(complete|pending)-.*\\.md$/.test(target))
+				/^\d{3}-(complete|pending)-.*\.md$/.test(target))
 		) {
 			targets.push(target);
 		}
