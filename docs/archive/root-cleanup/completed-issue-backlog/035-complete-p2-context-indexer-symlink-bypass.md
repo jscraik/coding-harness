@@ -19,7 +19,7 @@ The context indexer validates candidate document paths using lexical `resolve`/`
 - `getRelativePathWithinBase()` therefore treats `baseDir/safe.md` that is a symlink to `/etc/secret.md` as inside `baseDir`.
 - Impact: indexer can ingest arbitrary files outside intended repository scope when symlinks are present in the indexed set.
 
-**Known Pattern:** This mirrors earlier symlink traversal findings (e.g., `todos/016-complete-p1-symlink-bypass-validatePath.md`) and should be fixed consistently.
+**Known Pattern:** This mirrors earlier symlink traversal findings (e.g., `docs/archive/root-cleanup/completed-issue-backlog/016-complete-p1-symlink-bypass-validatePath.md`) and should be fixed consistently.
 
 ## Proposed Solutions
 

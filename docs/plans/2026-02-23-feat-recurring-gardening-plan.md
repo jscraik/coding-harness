@@ -298,7 +298,7 @@ export async function createMaintenancePR(
 - [x] Add `runGardenerCLI()` wrapper with console output
 - [x] Add `--docs` flag for docs path
 - [x] Add `--dry-run` flag for testing
-- [x] Add `--json` flag for structured output (todos/002)
+- [x] Add `--json` flag for structured output (archived backlog 002)
 - [x] Add `--stale-days` flag for customization
 - [x] Register command in cli.ts
 - [x] Add to printUsage() help text
@@ -367,7 +367,7 @@ jobs:
 - [x] Test quality score calculation
 - [x] Test `--dry-run` mode (no PR created)
 - [x] Test `--json` output format
-- [x] Test CLI exit codes (todos/003)
+- [x] Test CLI exit codes (archived backlog 003)
 
 ## System-Wide Impact
 
@@ -416,8 +416,8 @@ harness gardener
 ### Non-Functional Requirements
 
 - [x] Lychee link checking completes in <60s for typical docs
-- [x] Exit codes follow semantic contract (todos/003)
-- [x] JSON output is machine-readable for CI consumption (todos/002)
+- [x] Exit codes follow semantic contract (archived backlog 003)
+- [x] JSON output is machine-readable for CI consumption (archived backlog 002)
 
 ### Quality Gates
 
@@ -463,12 +463,12 @@ harness gardener
 - Command pattern: `src/commands/evidence-verify.ts:1-180`
 - Contract types: `src/lib/contract/types.ts:1-26`
 - Exit codes: `src/commands/risk-tier.ts:7-13`
-- JSON output flag: `src/commands/risk-tier.ts:86-99` (todos/002)
+- JSON output flag: `src/commands/risk-tier.ts:86-99` (archived backlog 002)
 
 ### Institutional Learnings
 
-- **--json flag for CLI:** Always provide structured output for agents (todos/002)
-- **Exit code contract:** Semantic codes (0=success, 1=validation, 2=not found, 3=permission, 10+=system) (todos/003)
+- **--json flag for CLI:** Always provide structured output for agents (archived backlog 002)
+- **Exit code contract:** Semantic codes (0=success, 1=validation, 2=not found, 3=permission, 10+=system) (archived backlog 003)
 - **GitHub API rate limits:** Use @octokit/plugin-throttling with retry limit of 3
 
 ### External References

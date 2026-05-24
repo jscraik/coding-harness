@@ -77,7 +77,7 @@ Implement Option A: Suppress non-essential warnings when `--json` flag is used. 
 **Lines:** 73-76 (warning), 149-152 (error output)
 
 **Related Learnings:**
-- See `todos/002-pending-p1-json-output-flag.md` for JSON output pattern
+- See `docs/archive/root-cleanup/completed-issue-backlog/002-complete-p1-json-output-flag.md` for JSON output pattern
 
 ## Acceptance Criteria
 

@@ -323,12 +323,12 @@ harness evidence-verify
 
 ### Institutional Learnings
 
-- **Path traversal bypass:** Use `realpathSync()` on resolved path, handle non-existent paths via parent directory (todos/001)
-- **JSON depth limit:** Use reviver function to track depth, max 100 (todos/004)
-- **Prototype pollution:** Block `__proto__`, `constructor`, `prototype` keys (todos/005)
-- **CLI --json flag:** Always provide structured output for agents (todos/002)
-- **Exit code contract:** Semantic codes (0=success, 1=validation, 2=not found, 3=permission) (todos/003)
-- **Error codes:** Machine-readable `code` field in all errors (todos/007)
+- **Path traversal bypass:** Use `realpathSync()` on resolved path, handle non-existent paths via parent directory (archived backlog 001)
+- **JSON depth limit:** Use reviver function to track depth, max 100 (archived backlog 004)
+- **Prototype pollution:** Block `__proto__`, `constructor`, `prototype` keys (archived backlog 005)
+- **CLI --json flag:** Always provide structured output for agents (archived backlog 002)
+- **Exit code contract:** Semantic codes (0=success, 1=validation, 2=not found, 3=permission) (archived backlog 003)
+- **Error codes:** Machine-readable `code` field in all errors (archived backlog 007)
 
 ### External References
 

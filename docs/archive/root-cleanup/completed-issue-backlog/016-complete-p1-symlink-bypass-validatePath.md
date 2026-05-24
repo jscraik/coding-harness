@@ -42,7 +42,7 @@ const realResolved = realpathSync(resolved);
 if (!realResolved.startsWith(realBase)) { ... }
 ```
 
-**Evidence:** Security-sentinel agent confirmed vulnerability. Related to existing todo `001-pending-p1-symlink-path-traversal.md`.
+**Evidence:** Security-sentinel agent confirmed vulnerability. Related to existing todo `001-complete-p1-symlink-path-traversal.md`.
 
 ## Proposed Solutions
 
@@ -98,5 +98,5 @@ import { validatePath } from "../input/validator.js";
 
 ## Resources
 
-- Related: `todos/001-pending-p1-symlink-path-traversal.md`
+- Related: `docs/archive/root-cleanup/completed-issue-backlog/001-complete-p1-symlink-path-traversal.md`
 - CWE-59: Improper Link Resolution Before File Access

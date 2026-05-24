@@ -57,7 +57,7 @@ This is an MVP reliability initiative, not a full architecture rewrite. The imme
 Current repo state shows coherence drift across governance surfaces:
 
 - `docs/QUALITY_SCORE.md` reports `Score: 0/100` with `Stale Docs: 35`.
-- `todos/*-ready-*.md` entries include `status: complete`, creating filename/frontmatter contradiction.
+- `docs/archive/root-cleanup/completed-issue-backlog/*-ready-*.md` entries include `status: complete`, creating filename/frontmatter contradiction.
 - `src/cli.ts` contains manual command/help wiring with duplicate policy-gate handling paths, increasing drift risk between behavior and docs/help output.
 - Several command modules have no same-name command test file, reducing confidence in command-surface consistency.
 
@@ -231,7 +231,7 @@ Initial operational SLO targets:
 - Define canonical source list explicitly:
   - command surface source: command metadata registry only; deterministic dispatch extraction output may be used as bootstrap fallback only when registry is not yet present, and must never be treated as canonical when both exist; human-authored help text is always derived.
   - status docs: `README.md`, `docs/QUALITY_SCORE.md`, `docs/roadmap/agent-first-status.md`,
-  - todo lifecycle source: `todos/*.md` filename token + frontmatter `status`.
+  - todo lifecycle source: `docs/archive/root-cleanup/completed-issue-backlog/*.md` filename token + frontmatter `status`.
 - Target files (planning/spec): `contracts/consistency-contract.schema.yaml` (new), `contracts/consistency-baseline-pointer.json` (new), command-registry source artifact, this plan.
 
 ### Phase 1 — Contract schema and deterministic rule model
@@ -368,7 +368,7 @@ None for this revision. Previously open items were resolved as:
 - Plan pattern references:
   - `docs/plans/2026-03-05-feat-command-metadata-registry-core-parity-plan.md`
   - `docs/plans/2026-02-27-feat-roadmap-cli-gap-closure-plan.md`
-- Todo lifecycle examples with filename/status mismatch: `todos/*-ready-*.md`
+- Todo lifecycle examples with filename/status mismatch: `docs/archive/root-cleanup/completed-issue-backlog/*-ready-*.md`
 - Node process and CLI parsing references:
   - [Node.js process docs](https://github.com/nodejs/node/blob/main/doc/api/process.md)
   - [Node.js util.parseArgs docs](https://github.com/nodejs/node/blob/main/doc/api/util.md)

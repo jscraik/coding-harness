@@ -12,6 +12,11 @@ fi
 staged_docs=()
 while IFS= read -r -d "" path; do
 	[[ -n "$path" ]] || continue
+	case "$path" in
+		docs/archive/root-cleanup/completed-issue-backlog/* | docs/archive/root-cleanup/strategy-evidence/*)
+			continue
+			;;
+	esac
 	staged_docs+=("$path")
 done < <(
 	git diff --cached --name-only --diff-filter=ACMR -z -- \

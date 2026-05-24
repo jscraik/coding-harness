@@ -3,7 +3,7 @@ title: Linear Triage System Rollout Plan
 type: feat
 status: active
 date: 2026-04-08
-origin: tmp/LINEAR_TRIAGE.md
+origin: docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md
 deepened: 2026-04-08
 last_validated: 2026-04-18
 ---
@@ -45,7 +45,7 @@ last_validated: 2026-04-18
 
 ## Overview
 
-Implement the `tmp/LINEAR_TRIAGE.md` strategy as a repeatable, auditable triage system inside the harness workflow so issue pull-order, WIP limits, and dependency-aware sequencing are enforced consistently instead of handled ad hoc.
+Implement the `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md` strategy as a repeatable, auditable triage system inside the harness workflow so issue pull-order, WIP limits, and dependency-aware sequencing are enforced consistently instead of handled ad hoc.
 
 ## Problem Frame
 
@@ -59,19 +59,19 @@ The `coding-harness` project currently has a high number of open issues concentr
 ## Requirements Trace
 
 - **R1**: Preserve a deterministic issue-state workflow and avoid state drift from the canonical Linear lifecycle (`Triage/Ready/In Progress/In Review/Done` plus `Blocked` label convention).
-  - Source: `tmp/LINEAR_TRIAGE.md` (Operating Rules, Lane Model), `docs/agents/13-linear-production-workflow.md`, `docs/agents/19-linear-templates.md`.
+  - Source: `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md` (Operating Rules, Lane Model), `docs/agents/13-linear-production-workflow.md`, `docs/agents/19-linear-templates.md`.
 - **R2**: Enforce finish-before-start through explicit WIP limits by lane.
-  - Source: `tmp/LINEAR_TRIAGE.md` (Operating Rules, Lane Model).
+  - Source: `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md` (Operating Rules, Lane Model).
 - **R3**: Apply a consistent scoring model so issue pull order is evidence-based.
-  - Source: `tmp/LINEAR_TRIAGE.md` (Scoring Model).
+  - Source: `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md` (Scoring Model).
 - **R4**: Respect dependency-first execution and explicit wave sequencing.
-  - Source: `tmp/LINEAR_TRIAGE.md` (Recommended Execution Sequence).
+  - Source: `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md` (Recommended Execution Sequence).
 - **R5**: Keep Linear and Git metadata traceable to a single `JSC-*` key per active item.
-  - Source: `tmp/LINEAR_TRIAGE.md` (Operating Rules), `docs/agents/13-linear-production-workflow.md`.
+  - Source: `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md` (Operating Rules), `docs/agents/13-linear-production-workflow.md`.
 - **R6**: Preserve cycle realism by limiting promotion into active work to feasible throughput.
-  - Source: `tmp/LINEAR_TRIAGE.md` (Cycle Cadence).
+  - Source: `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md` (Cycle Cadence).
 - **R7**: Keep triage quality consistent via a required checklist before status transition.
-  - Source: `tmp/LINEAR_TRIAGE.md` (Triage Checklist), `src/templates/linear/*.md`.
+  - Source: `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md` (Triage Checklist), `src/templates/linear/*.md`.
 - **R8**: Provide machine-readable outputs for agent workflows.
   - Source: `AGENTS.md` harness command JSON contract, existing command patterns in `src/lib/cli/command-registry.ts`.
 
@@ -197,7 +197,7 @@ Design constraints:
 - Align lane terminology and status vocabulary to canonical state machine.
 - Define explicit mapping for readiness transitions and blocked handling.
 - Add cycle-feasibility guard language so triage promotion rules are policy-consistent.
-- Treat `tmp/LINEAR_TRIAGE.md` as immutable origin evidence; do not use `tmp/` as a normative policy surface.
+- Treat `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md` as immutable origin evidence; do not use the archive path as a normative policy surface.
 
 **Patterns to follow:**
 - Workflow-state invariants in `docs/agents/13-linear-production-workflow.md`.
@@ -494,7 +494,7 @@ P5 | completed | codex | Validation/runbook and operational semantics are aligne
 
 ## Sources and References
 
-- Origin document: `tmp/LINEAR_TRIAGE.md`
+- Origin document: `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md`
 - Workflow policy: `docs/agents/13-linear-production-workflow.md`
 - Compact workflow spec: `docs/agents/16-linear-production-compact.md`
 - Linear templates and blocked routing: `docs/agents/19-linear-templates.md`

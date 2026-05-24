@@ -1,7 +1,7 @@
 # coding-harness — Robust Linear Triage System
 **Date:** 2026-04-08  
 **Scope:** `coding-harness` project only  
-**Source inputs:** live Linear project state + `tmp/` strategy artifacts  
+**Source inputs:** live Linear project state + archived strategy artifacts
 **Goal:** deterministic, dependency-aware triage that minimizes thrash and maximizes throughput
 
 ## Table of Contents

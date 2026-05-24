@@ -37,6 +37,7 @@ last_validated: 2026-04-18
 
 - [CLI reference](./cli-reference.md)
 - [AI assistant security policy](./ai-assistant-security-policy.md)
+- [Security best practices report](./security/security-best-practices-report.md)
 
 ## Layer 3 — Extended governance reference
 
@@ -64,6 +65,8 @@ last_validated: 2026-04-18
 ### Architecture and planning
 
 - [Documentation layers](./architecture/documentation-layers.md)
+- [Root surface classification](./architecture/root-surface-classification.md)
+- [Archived root cleanup evidence](./archive/root-cleanup/)
 - [Blast radius](./architecture/blast-radius.md)
 - [Agent run records](./architecture/agent-run-records.md)
 - [Runtime-aware harness control plane](./architecture/runtime-aware-harness-control-plane.md)

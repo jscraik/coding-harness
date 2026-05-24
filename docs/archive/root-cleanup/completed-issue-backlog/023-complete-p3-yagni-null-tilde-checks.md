@@ -76,4 +76,4 @@ if (inputPath.includes("..") || inputPath.includes("~")) {
 
 ## Resources
 
-- Related: `todos/016-pending-p1-symlink-bypass-validatePath.md`
+- Related: `docs/archive/root-cleanup/completed-issue-backlog/016-complete-p1-symlink-bypass-validatePath.md`

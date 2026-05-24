@@ -29,7 +29,7 @@ Do not alter documented outcomes after checks are complete without rerunning the
 
 For process changes, link to:
 
-- relevant docs in `docs/plans/*` and `todos/*`,
+- relevant docs in `docs/plans/*` and `docs/archive/root-cleanup/completed-issue-backlog/*`,
 - issue/PR context if applicable,
 - any decision records created in memory.
 

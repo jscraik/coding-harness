@@ -97,4 +97,4 @@ export function detectStaleDocs(basePath: string, staleDays: number = DEFAULT_ST
 
 ## Resources
 
-- Related: `todos/016-pending-p1-symlink-bypass-validatePath.md`
+- Related: `docs/archive/root-cleanup/completed-issue-backlog/016-complete-p1-symlink-bypass-validatePath.md`

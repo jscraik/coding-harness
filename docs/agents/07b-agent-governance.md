@@ -44,6 +44,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   docs-gate does not pass with stale operator guidance.
 - validation gate graph changes that add typed gate specs, phase-exit evidence gates, `harness next --phase-exit` visibility, parity tests, or resume-checkpoint guards should refresh `AI/context/diagram-context.md` and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
 - root scaffold or modularity changes that add or materially refresh `ARCHITECTURE.md` should treat that file as the human-authored source map, refresh generated architecture context as evidence, and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
+- root-surface cleanup that moves tracked top-level files or directories should use `docs/architecture/root-surface-classification.md` as the classification contract, preserve historical evidence under `docs/archive/root-cleanup/` or a domain docs surface, and keep `AGENTS.md`, `docs/README.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports governance surfaces
 - command-registry deep-module splits should preserve one small public command
   facade while moving action-specific option builders and delegation behind
   named internal adapter seams. Treat those seams as agent-governance surfaces:
