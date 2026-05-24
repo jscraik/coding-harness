@@ -575,7 +575,7 @@ Phase-oriented validation expectations:
 - **Linear references:**
   - `docs/agents/13-linear-production-workflow.md`
   - `docs/agents/16-linear-production-compact.md`
-  - `tmp/LINEAR_TRIAGE.md`
+  - `docs/archive/root-cleanup/strategy-evidence/LINEAR_TRIAGE.md`
 
 ## Acceptance Criteria
 

@@ -108,4 +108,4 @@ try {
 
 ## Resources
 
-- Related: `todos/011-pending-p2-return-structured-result.md`
+- Related: `docs/archive/root-cleanup/completed-issue-backlog/011-complete-p2-return-structured-result.md`

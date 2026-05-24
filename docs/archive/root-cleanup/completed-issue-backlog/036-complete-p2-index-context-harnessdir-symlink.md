@@ -19,7 +19,7 @@ The `runIndexContext` CLI validates `--harness-dir` with lexical path checks onl
 - `isPathWithinBase()` can accept a `harnessDir` that is lexically inside `baseDir` but symlink-resolves outside.
 - `VectorStore` path is then derived from `join(validatedHarnessDir, DEFAULT_DB_FILENAME)`, so an escaping path can shift persistence location.
 
-**Known Pattern:** Similar path traversal risk previously addressed for other input validators in `todos/016-complete-p1-symlink-bypass-validatePath.md`.
+**Known Pattern:** Similar path traversal risk previously addressed for other input validators in `docs/archive/root-cleanup/completed-issue-backlog/016-complete-p1-symlink-bypass-validatePath.md`.
 
 ## Proposed Solutions
 

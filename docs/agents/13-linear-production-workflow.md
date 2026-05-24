@@ -253,7 +253,7 @@ Operational notes:
 
 - Use **Linear** for intake, ownership, prioritization, delegation, and status.
 - Use **GitHub** for PR discussion, CI signals, code review artifacts, and merge provenance.
-- Use repo docs under `docs/` and `todos/` for durable technical detail that would be too verbose or volatile to duplicate in tracker fields.
+- Use repo docs under `docs/` and archived completed issue backlog entries for durable technical detail that would be too verbose or volatile to duplicate in tracker fields.
 
 ## Definition of done
 

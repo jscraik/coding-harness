@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-23T22:17:21Z
+Generated: 2026-05-24T00:48:06Z
 
 ## Table of Contents
 
@@ -30,12 +30,6 @@ Generated: 2026-05-23T22:17:21Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `package.json`
-- `src/lib/runtime/issue-key.ts`
-- `src/lib/runtime/local-runtime-card-artifacts.ts`
-- `src/lib/runtime/local-runtime-card-assembly.ts`
-- `src/lib/runtime/local-runtime-card-live.ts`
-- `src/lib/runtime/local-runtime-card.ts`
-- `src/lib/runtime/runtime-evidence-adapter.ts`
 
 ## agent
 
@@ -528,6 +522,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_fs_a15b7d96["node:fs"] --> node_check_pr_closeout_truth_contract_f135348c_b39f6edc
   ext_node_fs_a15b7d96["node:fs"] --> node_check_public_api_docs_a9604f1b_f824853c
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_root_archive_links_bba945ff_9be55643
   ext_node_fs_a15b7d96["node:fs"] --> node_check_scorecard_regressions_5c7c6445_4b474868
   ext_node_fs_a15b7d96["node:fs"] --> node_check_self_affirming_tests_7638e575_c6155698
   ext_node_fs_a15b7d96["node:fs"] --> node_check_steering_feedback_contract_80134459_abb076fc
@@ -725,6 +720,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_path_78811c13["node:path"] --> node_check_pr_closeout_truth_contract_f135348c_b39f6edc
   ext_node_path_78811c13["node:path"] --> node_check_public_api_docs_a9604f1b_f824853c
+  ext_node_path_78811c13["node:path"] --> node_check_root_archive_links_bba945ff_9be55643
   ext_node_path_78811c13["node:path"] --> node_check_scorecard_regressions_5c7c6445_4b474868
   ext_node_path_78811c13["node:path"] --> node_check_self_affirming_tests_7638e575_c6155698
   ext_node_path_78811c13["node:path"] --> node_check_steering_feedback_contract_80134459_abb076fc

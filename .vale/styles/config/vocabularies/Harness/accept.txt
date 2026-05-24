@@ -198,6 +198,15 @@ Installability
 Jamie
 Jscraik
 gate_backed
+brokenLinks
+json
+metacharacters
+schemaVersion
+SLOs
+staleDocs
+Unescaped
+unindexed
+workflow_dispatch
 issue_loop
 linear_tracker
 Lopopolo

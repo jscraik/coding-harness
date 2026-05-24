@@ -91,5 +91,5 @@ validatePath(baseDir, userPath)
 
 ## Resources
 
-- Related: `todos/009-pending-p2-validate-path-location.md`
-- Related: `todos/016-pending-p1-symlink-bypass-validatePath.md`
+- Related: `docs/archive/root-cleanup/completed-issue-backlog/009-complete-p2-validate-path-location.md`
+- Related: `docs/archive/root-cleanup/completed-issue-backlog/016-complete-p1-symlink-bypass-validatePath.md`
