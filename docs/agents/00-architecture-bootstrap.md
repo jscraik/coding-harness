@@ -133,6 +133,13 @@ they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `runtime-card --evidence-out`, `runtime-evidence-bundle/v1`, or related
 producer and adapter wiring changes.
 
+Codex runtime evidence packet changes belong in the existing runtime deep module
+before they feed the runtime-card adapter. Keep the public
+`codex-runtime-evidence/v1` surface as a narrow facade over runtime types,
+source classification, validation, and reference-integrity checks; refresh
+`AI/context/diagram-context.md` and this guide when those packet or validator
+modules change.
+
 Trust-boundary validator changes that add script-backed evidence reports, such
 as `audit-reference-report/v1`, are architecture-adjacent when they classify
 repository paths, git-tracked proof, or stale artifacts. Refresh
