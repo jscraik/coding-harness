@@ -49,7 +49,7 @@ continuation_gate:
   auto_continue_allowed: "no"
 checks:
   dirty_fingerprint: "Worktree already contained uncommitted .harness research/spec/plan changes before this goal board was created; future slices must preserve unrelated changes."
-  last_verification: "2026-05-24T22:50:26Z: PU-001 evidence-receipt/v1 is implemented in src/lib/evidence, focused receipt tests pass with 14 tests, typecheck passes, and final adversarial plus agent-native review artifacts exist and are non-empty."
+  last_verification: "2026-05-24T23:24:57Z: PU-002 codex-runtime-evidence/v1 is implemented in src/lib/runtime as facade, types, validation, reference-integrity, and helper modules; focused runtime tests pass with 21 tests, typecheck passes, and adversarial plus agent-native review artifacts exist and are non-empty."
 claims:
   - id: "C001"
     claim: "The user requested a durable full-lifecycle goal prompt, not immediate Worker implementation."
@@ -122,7 +122,7 @@ tasks:
     objective: "Implement PU-001 through PU-008 as bounded foundation slices, each with deterministic validation, reviewer artifacts, GitHub PR handoff, and pr-green-sweep triage."
     allowed_files:
       - "src/lib/evidence/**"
-      - "src/lib/runtime/codex-runtime-evidence.ts"
+      - "src/lib/runtime/codex-runtime-evidence*.ts"
       - "src/lib/runtime/codex-runtime-evidence-adapter.ts"
       - "src/lib/runtime/runtime-evidence-bundle.ts"
       - "src/lib/runtime/runtime-evidence-adapter.ts"
@@ -134,6 +134,7 @@ tasks:
       - "Each slice has simplify, unslopify, HE code review, testing, adversarial review, and agent-native review coverage or explicit blocked evidence."
       - "Each slice has an atomic commit, GitHub PR truth, and pr-green-sweep triage handoff."
       - "PU-001 evidence-receipt/v1 has R004 local implementation and review evidence; PR handoff remains pending."
+      - "PU-002 codex-runtime-evidence/v1 has R005 local implementation, reference-integrity validation, source-kind/path validation, focused tests, and final adversarial plus agent-native review evidence; PR handoff remains pending."
     stop_if:
       - "A slice lacks reviewed intent."
       - "Private fixtures are used to claim production verifier completion."
