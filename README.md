@@ -23,6 +23,9 @@ itself. It helps you make a repo safer to automate by giving it a contract,
 repo-local verification scripts, review policy, CI migration tooling, and
 artifact-backed rollout checks.
 
+For the source map, stable boundaries, and architecture invariants, see
+[ARCHITECTURE.md](./ARCHITECTURE.md).
+
 The shortest honest description of the project today is:
 
 - it helps a solo developer steer agentic software work safely
