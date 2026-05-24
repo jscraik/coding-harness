@@ -10,7 +10,7 @@ from an explicit contract instead of ad hoc memory.
 ## Table of Contents
 
 - [Classification Contract](#classification-contract)
-- [Moved in This Slice](#moved-in-this-slice)
+- [Resolved in This Slice](#resolved-in-this-slice)
 - [Current Root Files](#current-root-files)
 - [Current Root Directories](#current-root-directories)
 - [Deferred Cleanup](#deferred-cleanup)
@@ -30,16 +30,19 @@ Each tracked top-level root entry belongs to exactly one classification:
 - `legacy/drift`: historical, obsolete, or scratch-shaped content that should
   not stay at root.
 
-This first cleanup slice is intentionally non-destructive. It only moves
-low-risk legacy/drift entries with direct archive or security destinations.
+This cleanup slice started non-destructively by moving low-risk legacy/drift
+entries with direct archive or security destinations. The later `.claude/`
+removal is an explicit destructive cleanup decision for a tracked legacy agent
+memory file after Codex became the repository's active agent system.
 
-## Moved in This Slice
+## Resolved in This Slice
 
 | Previous root entry | Classification | New location | Reason |
 | --- | --- | --- | --- |
 | `tmp/` | legacy/drift | `docs/archive/root-cleanup/strategy-evidence/` | Historical strategy evidence was tracked intentionally, but `tmp/` reads as local scratch and had already caused hook/formatting ambiguity. |
 | `todos/` | legacy/drift | `docs/archive/root-cleanup/completed-issue-backlog/` | The entries are completed historical issue evidence, not an active root backlog. |
 | `security_best_practices_report.md` | legacy/drift | `docs/security/security-best-practices-report.md` | Security analysis belongs under the security docs surface rather than as an unindexed root report. |
+| `.claude/` | should move | removed from tracked root | The only tracked entry was obsolete Claude feedback memory. Removal was explicitly authorized as a destructive root cleanup follow-up after the repository standardized on Codex-facing governance. |
 
 ## Current Root Files
 
@@ -56,7 +59,7 @@ low-risk legacy/drift entries with direct archive or security destinations.
 | --- | --- |
 | canonical root | `.agents/`, `.circleci/`, `.codex/`, `.github/`, `.harness/`, `.vale/`, `codestyle/`, `contracts/`, `docs/`, `e2e/`, `evals/`, `ops/`, `rules/`, `scripts/`, `security/`, `src/`, `templates/`, `test-fixtures/`, `tests/`. |
 | generated but tracked intentionally | `.diagram/`, `AI/`, `artifacts/`. |
-| should move | `.claude/`, `instructions/`. |
+| should move | `instructions/`. |
 | legacy/drift | none remaining at root after this slice. |
 
 ## Deferred Cleanup
@@ -66,9 +69,6 @@ The following entries are deliberately classified but not moved in this slice:
 - `FORJAMIE.md`: should move, but current Codex-subtree instructions treat
   `codex/FORJAMIE.md` as the live handoff surface. Moving or deleting the root
   file needs an explicit handoff-surface decision.
-- `.claude/`: should move, but the repository currently documents Codex as the
-  active agent system. Any removal should prove no generated projections,
-  customer scaffolds, or historical support workflows still reference it.
 - `instructions/`: should move or consolidate, but it may still be part of
   older generated or downstream instruction routing. Moving it requires a
   dedicated instruction-routing contract.

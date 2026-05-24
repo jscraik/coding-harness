@@ -1,12 +1,12 @@
 version: 2
 goal:
   slug: jsc-331-trust-boundary-governed-implementation
-  status: active
+  status: done
   objective: "Govern and execute the JSC-331 Trust Boundary P0 implementation from the May 23 plan and master spec until local implementation is operational, validated, reviewed, documented, and ready for merge handoff."
   native_goal_id: null
   native_thread_id: "019e560b-fd21-7483-a243-96b844a7d4c7"
   native_objective: "Follow docs/goals/jsc-331-trust-boundary-governed-implementation/goal.md to govern and implement the JSC-331 Trust Boundary P0 plan/spec through validated bounded slices; preserve subagent triage and commit/PR boundaries between slices; do not mark complete without Judge or PM audit."
-  native_status: active
+  native_status: complete
   token_budget: null
   tokens_used: 94008
   time_used_seconds: 278
@@ -43,11 +43,11 @@ completion_contract:
   iteration_policy: "Choose the smallest operationally complete slice, validate immediately, run the mandatory review stack, fix valid in-scope findings, update implementation notes, hand off git triage, and continue only after safe state is confirmed."
   blocked_stop_condition: "Stop on stale runtime truth, native/board mismatch, unclear blast radius, unreliable validation, incomplete review stack, unresolved blockers, merge safety uncertainty, repeated retry without progress, or dirty-worktree contamination."
 continuation_gate:
-  native_status: active
+  native_status: complete
   thread_idle: pass
   goal_active: pass
   queued_user_input: absent
-  pending_work: present
+  pending_work: absent
   auto_continue_allowed: no
 claims:
   - id: C001
@@ -60,16 +60,27 @@ claims:
     remaining_uncertainty:
       - "Runtime code seams must still be refreshed before Worker implementation."
   - id: C002
-    claim: "Linear destination confirmation for JSC-331 has been recorded, but further tracker mutation requires explicit instruction."
+    claim: "Linear destination confirmation and terminal Done state for JSC-331 have been recorded under explicit user instruction."
     evidence_surface:
       - "Linear comment ac992e03-6f58-457d-8c45-a45b7102294e"
       - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
     route: reproduced
     status: confirmed
     remaining_uncertainty:
-      - "Later tracker status, attachment, or description updates require implementation evidence."
+      - "No remaining tracker mutation is required for this governed closeout."
+  - id: C003
+    claim: "The final Judge/PM closeout receipt is current and authorizes native goal completion after repository validation, explicit root cleanup follow-up, and main-branch closeout proof."
+    evidence_surface:
+      - "docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl"
+      - "docs/architecture/root-surface-classification.md"
+      - "gh pr checks 290 --repo jscraik/coding-harness --watch=false"
+      - "Linear JSC-331 status Done"
+    route: reproduced
+    status: confirmed
+    remaining_uncertainty:
+      - "None for the JSC-331 Trust Boundary P0 governed implementation goal."
 checks:
-  dirty_fingerprint: "codex/jsc-331-trust-boundary-p0; modified: .harness/memory/LEARNINGS.md, .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md, package.json, scripts/validate-evidence-patterns.cjs, src/commands/runtime-card.test.ts, src/lib/runtime/local-runtime-card-artifacts.ts, src/lib/runtime/local-runtime-card-assembly.ts, src/lib/runtime/local-runtime-card-live.ts, src/lib/runtime/local-runtime-card.test.ts, src/lib/runtime/local-runtime-card.ts, src/lib/runtime/runtime-evidence-adapter.ts; untracked: .harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md, docs/goals/jsc-331-trust-boundary-governed-implementation/**, scripts/validate-he-artifacts.sh, src/dev/validate-evidence-patterns-script.test.ts, src/dev/validate-he-artifacts-script.test.ts, src/lib/runtime/issue-key.ts, src/lib/runtime/issue-key.test.ts"
+  dirty_fingerprint: "codex/jsc-331-final-closeout-sync; intentional closeout edits to goal state, receipts, root classification, and explicit .claude removal before commit."
   last_verification:
     commands:
       - "pnpm vitest run src/dev/validate-audit-references-script.test.ts"
@@ -403,7 +414,7 @@ tasks:
   - id: T009
     type: worker
     assignee: Worker
-    status: active
+    status: done
     objective: "PU-006 Trust Boundary P0 Integration and Handoff: run proof bundle, update docs/notes, classify blockers, and prepare merge-ready handoff."
     inputs:
       - ".harness/plan/2026-05-23-JSC-331-coding-harness-evidence-memory-telemetry-trust-boundary-plan.md"
@@ -434,7 +445,7 @@ tasks:
   - id: T010
     type: judge
     assignee: Judge
-    status: queued
+    status: done
     objective: "Final completion audit: decide whether the governed implementation can be marked complete."
     inputs:
       - "docs/goals/jsc-331-trust-boundary-governed-implementation/receipts.jsonl"
@@ -452,4 +463,4 @@ tasks:
     stop_if:
       - "No final Judge or PM receipt can be produced from current evidence."
       - "Runtime truth or merge safety is stale."
-    receipt_id: null
+    receipt_id: R019-T010-FINAL-JUDGE-PM-CLOSEOUT
