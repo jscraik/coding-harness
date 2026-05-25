@@ -86,6 +86,21 @@ guards, provider adapters, and reusable typed contracts.
 **Architecture Invariant:** implementation logic belongs in library modules,
 not in docs, templates, generated context, or command facades.
 
+Current runtime-evidence deep modules include:
+
+- src/lib/evidence/: shared receipt contracts that classify validation,
+  artifact, runtime-card, review, external-state, and run-record proof.
+- src/lib/runtime/: Codex runtime evidence, runtime evidence bundles, runtime
+  cards, producer adapters, and runtime-card projections.
+- src/lib/delivery-truth/: private and production verdict composition for
+  delivery, root hygiene, Judge/PM readiness, and merge-readiness claims.
+- src/lib/review-state/: PR review truth packets, reviewer artifact receipt
+  validation, unresolved thread counts, and validation ownership
+  classification.
+- src/lib/external-state/: live PR/CI/review/tracker snapshot packets,
+  freshness/TTL/head-SHA validation, stale-state classification, and
+  claim-support eligibility.
+
 ### scripts/
 
 Repository validation, setup, governance, migration, release, and audit
@@ -165,6 +180,8 @@ Treat these surfaces as compatibility boundaries:
 - PR template and closeout evidence schemas.
 - Review artifact contracts under artifacts/reviews/ when reviewers are
   requested.
+- Review-state and external-state packet schemas that keep review truth, remote
+  checks, tracker state, and merge readiness as separate evidence families.
 - Exported downstream skill and template surfaces.
 - Generated Codex environment actions.
 - CI required-check contracts and branch-protection identities.

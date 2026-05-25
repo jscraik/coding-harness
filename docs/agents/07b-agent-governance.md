@@ -114,6 +114,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   context and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`,
   and this guide synchronized when docs-gate reports architecture-context or
   agent-governance surfaces
+- review-state and external-state packet changes should keep review truth in
+  `src/lib/review-state/` and live PR/CI/review/tracker freshness truth in
+  `src/lib/external-state/`; validators must keep reviewer artifact receipts,
+  unresolved review threads, source completeness, TTL freshness, head SHA, and
+  claim-support eligibility separate before delivery-truth composition consumes
+  those packet families; refresh architecture context and keep `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized
+  when docs-gate reports architecture-context or agent-governance surfaces
 - trust-boundary validator changes that add script-backed evidence reports
   such as `audit-reference-report/v1` should keep output machine-readable,
   path classification repo-scoped, and proof based on current tracked
