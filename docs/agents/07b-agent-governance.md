@@ -101,6 +101,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `AI/context/diagram-context.md` and keep `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized
   when docs-gate reports architecture-context or agent-governance surfaces
+- codex-runtime-evidence packet changes should stay inside the existing
+  `src/lib/runtime` deep module as a narrow public facade plus typed contract,
+  source-classification, validation, and reference-integrity internals before
+  any runtime-card adapter consumes them; refresh architecture context and this
+  guide when those packet or validator modules change
 - trust-boundary validator changes that add script-backed evidence reports
   such as `audit-reference-report/v1` should keep output machine-readable,
   path classification repo-scoped, and proof based on current tracked

@@ -53,6 +53,14 @@ const VALID_PHASE_EXIT_SOURCE_COMPLETENESS = [
 	"summary_only",
 ] as const;
 
+const VALID_PROVENANCE_KINDS = [
+	"session_collector",
+	"manual",
+	"ci",
+	"runtime_card_adapter",
+	"codex_runtime",
+] as const;
+
 /** Completeness of phase-exit evidence carried by a runtime evidence bundle. */
 export type RuntimeEvidencePhaseExitSourceCompleteness =
 	(typeof VALID_PHASE_EXIT_SOURCE_COMPLETENESS)[number];
@@ -60,7 +68,7 @@ export type RuntimeEvidencePhaseExitSourceCompleteness =
 /** Provenance for a normalized runtime evidence bundle. */
 export interface RuntimeEvidenceBundleProvenance {
 	/** Producer family, for example session_collector, manual, or ci. */
-	kind: "session_collector" | "manual" | "ci" | "runtime_card_adapter";
+	kind: (typeof VALID_PROVENANCE_KINDS)[number];
 	/** Stable source reference such as an artifact path, run id, or command. */
 	ref: string;
 	/** Collection timestamp when known. */
@@ -290,12 +298,7 @@ function validateProvenance(value: unknown, errors: HeValidationError[]): void {
 		);
 		return;
 	}
-	validateEnum(
-		value.kind,
-		"provenance.kind",
-		["session_collector", "manual", "ci", "runtime_card_adapter"],
-		errors,
-	);
+	validateEnum(value.kind, "provenance.kind", VALID_PROVENANCE_KINDS, errors);
 	validateString(value.ref, "provenance.ref", errors);
 	validateNullableString(value.collectedAt, "provenance.collectedAt", errors);
 }

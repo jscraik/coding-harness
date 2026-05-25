@@ -224,6 +224,15 @@ Notes:
   keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized in the same PR when
   docs-gate reports governance surfaces.
+- Codex runtime evidence packet changes that add or alter
+  `codex-runtime-evidence/v1`, source-provenance classification, packet
+  validation, or evidence-reference integrity are architecture-adjacent runtime
+  cockpit changes. Keep the public packet surface inside `src/lib/runtime` as
+  a narrow facade over typed contract, validation, and reference-integrity
+  modules; refresh `AI/context/diagram-context.md` and keep `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
 - Trust-boundary validator changes that add or alter script-backed evidence
   reports such as `audit-reference-report/v1` are architecture-adjacent
   agent-governance changes when they classify repository paths, git-tracked

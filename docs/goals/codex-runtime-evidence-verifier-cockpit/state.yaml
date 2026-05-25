@@ -1,0 +1,167 @@
+version: 2
+goal:
+  slug: "codex-runtime-evidence-verifier-cockpit"
+  status: "active"
+  objective: "Govern the full lifecycle implementation of the Codex Runtime Evidence Verifier Cockpit from reviewed intent through validated slices, PR triage, documentation accuracy, and Judge/PM-ready closeout evidence."
+  native_goal_id: null
+  native_thread_id: null
+  native_objective: "Follow docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
+  native_status: null
+  token_budget: null
+  tokens_used: 0
+  time_used_seconds: 0
+  native_created_at: null
+  native_updated_at: null
+rules:
+  one_active_task: true
+  require_fresh_verification: true
+  require_final_audit: true
+completion_contract:
+  outcome: "Coding Harness implements the full Codex runtime evidence verifier cockpit lifecycle with runtime-card ingestion, evidence receipts, delivery-truth, review-state, external-state refresh, PR/CI/Linear closeout, docs accuracy, and Judge/PM-ready audit evidence."
+  verification_surface:
+    - "python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+    - ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md"
+    - ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md"
+    - "Slice-specific validators and tests recorded in receipts.jsonl"
+    - "Adversarial and agent-native review artifacts before each done claim"
+    - "GitHub PR state and pr-green-sweep evidence for each committed slice"
+  constraints:
+    - "Scope AI tasks tightly to small bounds and deep modules."
+    - "Make intent a first-class artifact and review it before implementation."
+    - "Automate mechanically checkable acceptance criteria."
+    - "Preserve unrelated dirty worktree changes."
+    - "Do not claim full implementation from plan, spec, research, or Phase 1 foundation work alone."
+    - "Keep /Users/jamiecraik/dev/codex read-only unless Jamie explicitly expands write authority."
+  boundaries:
+    - "Do not start Worker implementation until the activation phrase is present."
+    - "Do not weaken the plan or spec to fit already-written code."
+    - "Do not blend local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness into one success claim."
+    - "Do not mark a slice done without simplify, unslopify, HE code review, testing, adversarial review, and agent-native review coverage or explicit blocked evidence."
+    - "Do not approach cleanup or closeout until docs-expert and agents-md accuracy checks are complete when relevant."
+  iteration_policy: "Scout first, then bounded Worker slices with reviewed intent, deterministic validation, reviewer artifacts, atomic commits, GitHub PRs, pr-green-sweep triage, and append-only receipts. Continue to the next safe slice while PR triage runs only when dependency and branch state permit."
+  blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
+continuation_gate:
+  native_status: "unknown"
+  thread_idle: "unknown"
+  goal_active: "unknown"
+  queued_user_input: "unknown"
+  pending_work: "present"
+  auto_continue_allowed: "no"
+checks:
+  dirty_fingerprint: "Worktree already contained uncommitted .harness research/spec/plan changes before this goal board was created; future slices must preserve unrelated changes."
+  last_verification: "2026-05-25T08:42:00Z: PU-003 runtime evidence bundle adapter remains in the existing src/lib/runtime deep-module seam; focused tests, Biome, typecheck, quality:docstrings, quality:self-affirming, quality:size, and the goal-board checker pass. Agent-native review artifact exists. Adversarial reviewer returned no actionable findings after fixes, but both adversarial subagent attempts failed to write the requested file, so the coordinator persisted a clearly marked mailbox capture artifact and recorded the subagent artifact-write failure as a process gap."
+claims:
+  - id: "C001"
+    claim: "The user requested a durable full-lifecycle goal prompt, not immediate Worker implementation."
+    evidence_surface:
+      - "Current chat instruction naming goal-governor and the lifecycle validation/review/PR constraints."
+      - "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
+    route: "reproduced"
+    status: "supported"
+    remaining_uncertainty:
+      - "Native /goal runtime has not been created in this thread."
+  - id: "C002"
+    claim: "The implementation plan is full lifecycle and must not be collapsed to Phase 1."
+    evidence_surface:
+      - ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md"
+    route: "reproduced"
+    status: "supported"
+    remaining_uncertainty:
+      - "Implementation evidence still requires future slices."
+  - id: "C003"
+    claim: "Every slice requires validation, independent review, GitHub PR handoff, and PR green sweep triage before a done claim."
+    evidence_surface:
+      - "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
+    route: "reproduced"
+    status: "supported"
+    remaining_uncertainty:
+      - "Exact per-slice commands will be selected from the touched module and recorded in slice receipts."
+tasks:
+  - id: "T001"
+    type: "scout"
+    assignee: "Scout"
+    status: "done"
+    objective: "Validate the goal board, reconcile native goal state, and stop before Worker implementation until the activation phrase is present."
+    inputs:
+      - "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
+      - "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
+      - "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+      - ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md"
+      - ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md"
+    constraints:
+      - "No Worker implementation before activation phrase."
+      - "No edits outside this goal directory during setup validation unless owner expands scope."
+      - "Preserve unrelated dirty worktree files."
+    expected_output: "Readiness note with board validation result, native goal status, and first Worker-slice startup instruction."
+    receipt_id: "R001"
+  - id: "T002"
+    type: "worker"
+    assignee: "Worker"
+    status: "done"
+    objective: "After activation, implement PU-000: reviewed intent artifact, baseline, and acceptance coverage before any runtime implementation changes."
+    allowed_files:
+      - ".harness/intent/codex-runtime-evidence-verifier-cockpit-implementation-intent.json"
+      - ".harness/intent/codex-runtime-evidence-verifier-cockpit-contract-baseline.json"
+      - ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-000-review-receipt.json"
+      - "src/lib/plan-gate/lifecycle-intent*.ts"
+      - "artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-*.md"
+      - ".harness/implementation-notes/implementation-notes.html"
+    verify:
+      - "Activation phrase is present."
+      - "Intent artifact names objective, allowed files, forbidden files, assumptions, stop conditions, validation gates, reviewer roles, PR strategy, and rollback path."
+      - "Intent has been reviewed before implementation."
+    stop_if:
+      - "Activation phrase is absent."
+      - "Allowed files overlap unrelated dirty worktree changes."
+      - "Plan/spec authority is unclear."
+    receipt_id: "R003"
+  - id: "T003"
+    type: "worker"
+    assignee: "Worker"
+    status: "active"
+    objective: "Implement PU-001 through PU-008 as bounded foundation slices, each with deterministic validation, reviewer artifacts, GitHub PR handoff, and pr-green-sweep triage."
+    allowed_files:
+      - "src/lib/evidence/**"
+      - "src/lib/runtime/codex-runtime-evidence*.ts"
+      - "src/lib/runtime/codex-runtime-evidence-adapter.ts"
+      - "src/lib/runtime/runtime-evidence-bundle.ts"
+      - "src/lib/runtime/runtime-evidence-adapter.ts"
+      - "src/lib/runtime/runtime-card.ts"
+      - "src/lib/runtime/runtime-card-validation.ts"
+      - "src/lib/delivery-truth/**"
+      - "focused fixtures and tests for PU-001 through PU-008"
+    verify:
+      - "Each slice has simplify, unslopify, HE code review, testing, adversarial review, and agent-native review coverage or explicit blocked evidence."
+      - "Each slice has an atomic commit, GitHub PR truth, and pr-green-sweep triage handoff."
+      - "PU-001 evidence-receipt/v1 has R004 local implementation and review evidence; PR handoff remains pending."
+      - "PU-002 codex-runtime-evidence/v1 has R005 local implementation, reference-integrity validation, source-kind/path validation, focused tests, and final adversarial plus agent-native review evidence; PR handoff remains pending."
+      - "PU-003 runtime-evidence-bundle adapter has R006/R007 local implementation evidence, healthy packet, duplicate-source collision, unknown-source-cleanliness, and blank-provenanceRef tests, focused validation, agent-native artifact evidence, and a coordinator-persisted adversarial mailbox capture after the adversarial subagent failed to write the requested file twice. The code slice is locally validated; PR handoff must disclose the artifact-write process gap."
+    stop_if:
+      - "A slice lacks reviewed intent."
+      - "Private fixtures are used to claim production verifier completion."
+      - "PR triage cannot be isolated from next-slice branch work."
+  - id: "T004"
+    type: "worker"
+    assignee: "Worker"
+    status: "queued"
+    objective: "Implement PU-009 through PU-016 production verifier, Codex bridge, closeout, docs, CI, and maintenance hardening with the same slice validation and PR triage contract."
+    allowed_files:
+      - "Plan-authorized production verifier, runtime-card, pr-closeout, external-state, review-state, root hygiene, docs, CI, and maintenance files"
+    verify:
+      - "Delivery-truth separates local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness."
+      - "Docs-expert and agents-md checks pass or are explicitly not applicable before cleanup."
+      - "Judge/PM-ready audit packet exists before goal completion."
+    stop_if:
+      - "Production claims rely on stale snapshots or local validation alone."
+      - "Docs or AGENTS surfaces drift from implementation."
+      - "PR/CI/review/Linear state cannot be refreshed."
+  - id: "T005"
+    type: "judge"
+    assignee: "Judge"
+    status: "queued"
+    objective: "Audit the full implementation against the goal board, plan, spec, validation receipts, PR truth, reviewer artifacts, docs accuracy, and delivery-truth outputs."
+  - id: "T006"
+    type: "pm"
+    assignee: "PM"
+    status: "queued"
+    objective: "Confirm final lifecycle completion, residual risk, owner handoff, Linear truth, PR state, and whether the native goal may be marked complete."

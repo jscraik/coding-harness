@@ -105,7 +105,8 @@ function provenanceSourceKind(
 	kind: RuntimeEvidenceBundle["provenance"]["kind"],
 ): RuntimeCardSource["kind"] {
 	if (kind === "ci") return "validation";
-	if (kind === "session_collector") return "session";
+	if (kind === "session_collector" || kind === "codex_runtime")
+		return "session";
 	return "artifact";
 }
 

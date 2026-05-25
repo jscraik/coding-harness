@@ -1,10 +1,10 @@
 ---
-last_validated: 2026-05-21
+last_validated: 2026-05-25
 ---
 
 # Agent-First Status Matrix
 
-> Last updated: 2026-05-21
+> Last updated: 2026-05-25
 > Owner: Jamie Craik
 > Review cadence: Weekly
 
@@ -281,13 +281,13 @@ repo by hand first.
 
 ### Adoption Levels
 
-| Level                          | Status     | Purpose                                                              | Proof Needed                                                                                                                      |
-| ------------------------------ | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Level 0: Diagnose only         | 📋 Planned | Inspect repo state with no writes.                                   | `harness init --dry-run --json` reports stack, existing surfaces, conflicts, proposed writes, and rollback plan.                  |
+| Level                          | Status     | Purpose                                                                                    | Proof Needed                                                                                                                        |
+| ------------------------------ | ---------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Level 0: Diagnose only         | 📋 Planned | Inspect repo state with no writes.                                                         | `harness init --dry-run --json` reports stack, existing surfaces, conflicts, proposed writes, and rollback plan.                    |
 | Level 1: Thin operator surface | 📋 Planned | Let dropped-in agents self-bootstrap the minimum Codex orientation and validation mapping. | Existing `AGENTS.md`, scripts, CI, and PR templates are patched or skipped without overwrite; missing setup becomes named blockers. |
-| Level 2: Guardrails            | 🔶 Partial | Add executable checks for repeated PR/review failures.               | Metadata gates, rule lifecycle, review-context, and PR closeout evidence catch known failure classes before remote CI or merge.    |
-| Level 3: Runtime evidence      | 🔶 Partial | Feed current repo truth into `runtime-card`, `pr-closeout`, and `harness next`. | Missing integrations degrade to `unknown`; available git/PR/CI/Linear/session evidence changes recommendations deterministically. |
-| Level 4: Compounding memory    | 🔶 Partial | Convert failures into Project Brain, solutions, evals, and fixtures. | `he-reinforce` outputs map to durable rules only when evidence proves recurrence or resolution.                                   |
+| Level 2: Guardrails            | 🔶 Partial | Add executable checks for repeated PR/review failures.                                     | Metadata gates, rule lifecycle, review-context, and PR closeout evidence catch known failure classes before remote CI or merge.     |
+| Level 3: Runtime evidence      | 🔶 Partial | Feed current repo truth into `runtime-card`, `pr-closeout`, and `harness next`.            | Missing integrations degrade to `unknown`; available git/PR/CI/Linear/session evidence changes recommendations deterministically.   |
+| Level 4: Compounding memory    | 🔶 Partial | Convert failures into Project Brain, solutions, evals, and fixtures.                       | `he-reinforce` outputs map to durable rules only when evidence proves recurrence or resolution.                                     |
 
 Unknown-provider semantics:
 
@@ -305,12 +305,12 @@ Live repos are canaries, not playgrounds. The first pass is read-only. Stable
 failures become installer rules and fixtures only after the canary evidence is
 understood.
 
-| Repo                                  | Role                                              | First Pass                                                           | Status     |
-| ------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
-| `~/dev/agent-skills` (brownfield)     | Brownfield repo with mature eval/workout patterns | Audit install state, eval model, and old/new harness surfaces.       | 📋 Planned |
-| `~/dev/diagram-cli` (brownfield)      | Brownfield CLI with project-specific workflow     | Audit command discovery, validation mapping, and local instructions. | 📋 Planned |
-| `~/dev/design-system` (product)       | Product/design repo                               | Audit visual/evidence workflow and frontend validation fit.          | 📋 Planned |
-| `~/dev/x-writer` (active product)     | Active app/product repo                           | Audit non-destructive adoption and runtime-card degradation.         | 📋 Planned |
+| Repo                              | Role                                              | First Pass                                                           | Status     |
+| --------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
+| `~/dev/agent-skills` (brownfield) | Brownfield repo with mature eval/workout patterns | Audit install state, eval model, and old/new harness surfaces.       | 📋 Planned |
+| `~/dev/diagram-cli` (brownfield)  | Brownfield CLI with project-specific workflow     | Audit command discovery, validation mapping, and local instructions. | 📋 Planned |
+| `~/dev/design-system` (product)   | Product/design repo                               | Audit visual/evidence workflow and frontend validation fit.          | 📋 Planned |
+| `~/dev/x-writer` (active product) | Active app/product repo                           | Audit non-destructive adoption and runtime-card degradation.         | 📋 Planned |
 
 Read-only canary command shape:
 
@@ -380,19 +380,19 @@ justify a broader command surface or a new governance lane.
 
 ### Trace Execution Contract
 
-| Span            | Command Or Source                                               | Required Artifact                                                         | Pass/Fail/Unknown Semantics                                                                                                                          |
-| --------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `doctor`        | `harness doctor --json`                                         | Doctor JSON or blocked command reason.                                    | Pass when repo prerequisites are healthy; fail on required setup errors; unknown when command is absent in a canary repo.                            |
-| `init-dry-run`  | `harness init --dry-run --json`                                 | Installability report with proposed writes, conflicts, and rollback plan. | Pass when no unsafe overwrite exists; fail on locally owned required-surface conflict; unknown only before the command exists.                       |
-| `runtime-card`  | `harness runtime-card --json` or current runtime-card artifact  | `runtime-card/v1` evidence.                                               | Pass when current evidence is fresh; fail on stale or contradictory evidence; unknown when optional providers are unavailable.                       |
-| `next`          | `harness next --json`                                           | `HarnessDecision` JSON.                                                   | Pass when a safe next command and stop conditions are explicit; fail when required sources are blocked; unknown sources must stay visible in `meta`. |
-| `linear-gate`   | `harness linear-gate --json`                                    | Gate JSON with issue key and PR metadata result.                          | Pass when metadata is current; fail before PR handoff if required references are missing; unknown if Linear is not part of the repo contract.        |
-| `pr-closeout`   | `harness pr-closeout --pr <number> --json` or normalized input   | `pr-closeout/v1` evidence with PR state, check state, tool state, dirty worktree state, and AI session/traceability refs. | Pass when closeout evidence is complete; fail on red checks, missing PR metadata, missing traceability, unresolved review blockers, or blocked required tools. |
-| `ci-state`      | CI provider adapter or required-check mapping                   | CI/check evidence tied to branch and SHA.                                 | Pass when required checks match current head; fail on red, stale, or missing required checks; unknown for optional providers.                        |
-| `reinforcement` | `he-reinforce` output, solution record, or Project Brain update | Solution, rule, fixture, or explicit skip reason.                         | Pass when lesson has evidence and scope; fail when it would create stale doctrine; unknown remains a hypothesis.                                     |
-| `claim-verifier` | Trace, environment, PR, CI, or runtime evidence                 | Claim-vs-evidence result with checked facts and blocker class.            | Pass when the claimed outcome matches independent evidence; fail on false success, missing verifier, or contradictory state.                         |
-| `recovery-handler` | Deterministic setup, auth, environment, CI, or review recovery path | Redacted recovery event with authority, action, resume state, and verifier impact. | Pass when recovery is scoped, trace-visible, and verified; fail when it hides a real failure, leaks secrets, or lacks rollback.                       |
-| `missing-context` | PR comment, failed gate, discarded run, page, or user correction | Classified missing-context record with durable destination or explicit rejection. | Pass when the lesson has scope, owner, validation, and retirement condition; fail when it would become unbounded doctrine.                           |
+| Span               | Command Or Source                                                   | Required Artifact                                                                                                         | Pass/Fail/Unknown Semantics                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `doctor`           | `harness doctor --json`                                             | Doctor JSON or blocked command reason.                                                                                    | Pass when repo prerequisites are healthy; fail on required setup errors; unknown when command is absent in a canary repo.                                      |
+| `init-dry-run`     | `harness init --dry-run --json`                                     | Installability report with proposed writes, conflicts, and rollback plan.                                                 | Pass when no unsafe overwrite exists; fail on locally owned required-surface conflict; unknown only before the command exists.                                 |
+| `runtime-card`     | `harness runtime-card --json` or current runtime-card artifact      | `runtime-card/v1` evidence.                                                                                               | Pass when current evidence is fresh; fail on stale or contradictory evidence; unknown when optional providers are unavailable.                                 |
+| `next`             | `harness next --json`                                               | `HarnessDecision` JSON.                                                                                                   | Pass when a safe next command and stop conditions are explicit; fail when required sources are blocked; unknown sources must stay visible in `meta`.           |
+| `linear-gate`      | `harness linear-gate --json`                                        | Gate JSON with issue key and PR metadata result.                                                                          | Pass when metadata is current; fail before PR handoff if required references are missing; unknown if Linear is not part of the repo contract.                  |
+| `pr-closeout`      | `harness pr-closeout --pr <number> --json` or normalized input      | `pr-closeout/v1` evidence with PR state, check state, tool state, dirty worktree state, and AI session/traceability refs. | Pass when closeout evidence is complete; fail on red checks, missing PR metadata, missing traceability, unresolved review blockers, or blocked required tools. |
+| `ci-state`         | CI provider adapter or required-check mapping                       | CI/check evidence tied to branch and SHA.                                                                                 | Pass when required checks match current head; fail on red, stale, or missing required checks; unknown for optional providers.                                  |
+| `reinforcement`    | `he-reinforce` output, solution record, or Project Brain update     | Solution, rule, fixture, or explicit skip reason.                                                                         | Pass when lesson has evidence and scope; fail when it would create stale doctrine; unknown remains a hypothesis.                                               |
+| `claim-verifier`   | Trace, environment, PR, CI, or runtime evidence                     | Claim-vs-evidence result with checked facts and blocker class.                                                            | Pass when the claimed outcome matches independent evidence; fail on false success, missing verifier, or contradictory state.                                   |
+| `recovery-handler` | Deterministic setup, auth, environment, CI, or review recovery path | Redacted recovery event with authority, action, resume state, and verifier impact.                                        | Pass when recovery is scoped, trace-visible, and verified; fail when it hides a real failure, leaks secrets, or lacks rollback.                                |
+| `missing-context`  | PR comment, failed gate, discarded run, page, or user correction    | Classified missing-context record with durable destination or explicit rejection.                                         | Pass when the lesson has scope, owner, validation, and retirement condition; fail when it would become unbounded doctrine.                                     |
 
 Canary audit artifacts should include resolved path, git remote, branch, commit
 SHA, detected harness version, existing managed or locally owned surfaces, dry-run
@@ -401,17 +401,17 @@ scores, and residual risk.
 
 ### Next Evaluation Slices
 
-| Slice                              | Status     | Outcome                                                                                           |
-| ---------------------------------- | ---------- | ------------------------------------------------------------------------------------------------- |
-| Live repo installability matrix    | 📋 Planned | Read-only audit across the four canary repos.                                                     |
-| Minimal greenfield fixture         | 📋 Planned | Deterministic proof that fresh install creates only the thin operator surface.                    |
-| Brownfield old-harness fixture     | 📋 Planned | Regression proof for managed and locally owned surface detection and rollback.                    |
-| Runtime-card partial-adoption eval | 🔶 Partial | `harness next` remains useful when Linear, CI, Project Brain, or session evidence is unavailable. |
-| PR stack-health eval               | 📋 Planned | Upper PR work pauses when lower stack layers are red, behind, or conflicted.                      |
+| Slice                              | Status     | Outcome                                                                                                                                |
+| ---------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Live repo installability matrix    | 📋 Planned | Read-only audit across the four canary repos.                                                                                          |
+| Minimal greenfield fixture         | 📋 Planned | Deterministic proof that fresh install creates only the thin operator surface.                                                         |
+| Brownfield old-harness fixture     | 📋 Planned | Regression proof for managed and locally owned surface detection and rollback.                                                         |
+| Runtime-card partial-adoption eval | 🔶 Partial | `harness next` remains useful when Linear, CI, Project Brain, or session evidence is unavailable.                                      |
+| PR stack-health eval               | 📋 Planned | Upper PR work pauses when lower stack layers are red, behind, or conflicted.                                                           |
 | Workflow skill flag eval           | 📋 Planned | High-level skills prove login, upload/chat, access-grant, and closeout flows by capturing explicit flags with retained trace evidence. |
-| Claim-vs-evidence closeout eval    | 📋 Planned | Agent completion claims fail when PR, CI, runtime, or trace evidence contradicts them.             |
-| Recovery-handler safety eval       | 📋 Planned | Repeated setup/auth/environment blockers recover only with scoped authority, redacted traces, rollback, and verifier proof. |
-| Missing-context promotion eval     | 📋 Planned | Repeated failures become durable rules only with evidence, scope, owner, validation, and retirement condition. |
+| Claim-vs-evidence closeout eval    | 📋 Planned | Agent completion claims fail when PR, CI, runtime, or trace evidence contradicts them.                                                 |
+| Recovery-handler safety eval       | 📋 Planned | Repeated setup/auth/environment blockers recover only with scoped authority, redacted traces, rollback, and verifier proof.            |
+| Missing-context promotion eval     | 📋 Planned | Repeated failures become durable rules only with evidence, scope, owner, validation, and retirement condition.                         |
 
 ## Codex Alignment Assessment
 
