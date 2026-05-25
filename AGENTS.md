@@ -243,6 +243,18 @@ Notes:
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Review-state and external-state packet changes that add or alter
+  `review-state/v1`, `external-state-snapshot/v1`, reviewer artifact
+  validation, unresolved thread classification, external-source freshness,
+  TTL/head-SHA validation, or claim-support eligibility are
+  architecture-adjacent runtime cockpit changes. Keep review truth in
+  `src/lib/review-state/`, keep PR/CI/review/tracker freshness truth in
+  `src/lib/external-state/`, and preserve separate verdicts for local
+  validation, remote checks, review threads, tracker state, and merge
+  readiness. Refresh `AI/context/diagram-context.md` and keep `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
 - Trust-boundary validator changes that add or alter script-backed evidence
   reports such as `audit-reference-report/v1` are architecture-adjacent
   agent-governance changes when they classify repository paths, git-tracked

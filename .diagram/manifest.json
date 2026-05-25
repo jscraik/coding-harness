@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-05-25T10:22:03.205Z",
+	"generatedAt": "2026-05-25T17:51:47.237Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -55,7 +55,7 @@
 			"file": "class.mmd",
 			"outputPath": ".diagram/class.mmd",
 			"lines": 63,
-			"bytes": 1590,
+			"bytes": 1592,
 			"isPlaceholder": false
 		},
 		{
@@ -118,8 +118,8 @@
 			"type": "sequence",
 			"file": "sequence.mmd",
 			"outputPath": ".diagram/sequence.mmd",
-			"lines": 10,
-			"bytes": 322,
+			"lines": 12,
+			"bytes": 402,
 			"isPlaceholder": false
 		},
 		{

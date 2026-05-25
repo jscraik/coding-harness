@@ -148,6 +148,16 @@ source classification, validation, and reference-integrity checks; refresh
 `AI/context/diagram-context.md` and this guide when those packet or validator
 modules change.
 
+Review-state and external-state packet changes are runtime-cockpit architecture
+work even when they do not add public CLI commands. Keep `review-state/v1`
+inside `src/lib/review-state/` as the PR review truth packet for reviewer
+artifacts, unresolved threads, CodeRabbit/GitHub review summaries, and
+validation ownership classification. Keep `external-state-snapshot/v1` inside
+`src/lib/external-state/` as the PR/CI/review/tracker freshness packet, with
+source completeness, TTL-derived staleness, head-SHA binding, and claim-support
+eligibility handled by validators before delivery-truth composition consumes
+those packets.
+
 Trust-boundary validator changes that add script-backed evidence reports, such
 as `audit-reference-report/v1`, are architecture-adjacent when they classify
 repository paths, git-tracked proof, or stale artifacts. Refresh
