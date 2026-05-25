@@ -7,6 +7,8 @@ import type {
 	EvidenceReceiptKind,
 } from "../evidence/evidence-receipt.js";
 import type { PrCloseoutClaimStatus } from "../pr-closeout/types.js";
+import { sameRootHygieneRepositoryIdentity } from "../root-hygiene/repository-identity.js";
+import { isTrustedRootHygieneEvidence } from "./root-hygiene-evidence.js";
 import { DELIVERY_TRUTH_SCHEMA_VERSION } from "./types.js";
 import type {
 	DeliveryTruthBlockerCode,
@@ -99,7 +101,7 @@ function firstBlocker(
 	}
 	const separateEvidenceBlocker = mergeReadySeparateEvidenceBlocker(input);
 	if (separateEvidenceBlocker) return separateEvidenceBlocker;
-	return mergeReadyHeadBlocker(input);
+	return claimHeadBlocker(input);
 }
 
 function evidenceBlocker(
@@ -122,6 +124,8 @@ function evidenceBlocker(
 	if (!isActionableEvidenceRef(evidence)) {
 		return blocked("invalid_evidence_ref", "unknown", evidence);
 	}
+	const repositoryBlocker = rootHygieneRepositoryBlocker(evidence, input);
+	if (repositoryBlocker) return repositoryBlocker;
 	const freshnessBlocker = receiptFreshnessBlocker(evidence);
 	if (freshnessBlocker) return freshnessBlocker;
 	const statusBlocker = receiptStatusBlocker(evidence);
@@ -129,6 +133,25 @@ function evidenceBlocker(
 	const ttlBlocker = verifierFreshnessBlocker(evidence, input);
 	if (ttlBlocker) return ttlBlocker;
 	return recomputedHeadBlocker(evidence);
+}
+
+function rootHygieneRepositoryBlocker(
+	evidence: DeliveryTruthEvidence,
+	input: DeliveryTruthCompositionInput,
+): DeliveryTruthBlocker | null {
+	if (evidence.source !== "root_hygiene") return null;
+	if (
+		input.repositoryIdentity === undefined ||
+		input.repositoryIdentity === null
+	) {
+		return blocked("missing_repository_identity", "missing", evidence);
+	}
+	return sameRootHygieneRepositoryIdentity(
+		evidence.rootHygieneReport?.repository,
+		input.repositoryIdentity,
+	)
+		? null
+		: blocked("repository_identity_mismatch", "stale", evidence);
 }
 
 function sourceCanSupportClaim(
@@ -197,19 +220,6 @@ function isActionableEvidenceRef(evidence: DeliveryTruthEvidence): boolean {
 		ref.startsWith(policy.refPrefix) &&
 		/^[A-Za-z][A-Za-z0-9-]*:[A-Za-z0-9._/@:-]+$/.test(ref)
 	);
-}
-
-function isTrustedRootHygieneEvidence(
-	evidence: DeliveryTruthEvidence,
-): boolean {
-	switch (evidence.receipt.ref) {
-		case "root-hygiene:docs/architecture/root-surface-classification.md":
-			return true;
-		case "root-hygiene:root-hygiene-classification/v1":
-			return evidence.receipt.producer === "root-hygiene-classifier";
-		default:
-			return false;
-	}
 }
 
 function receiptFreshnessBlocker(
@@ -288,13 +298,14 @@ function recomputedHeadBlocker(
 	return null;
 }
 
-function mergeReadyHeadBlocker(
+function claimHeadBlocker(
 	input: DeliveryTruthCompositionInput,
 ): DeliveryTruthBlocker | null {
 	const verdictHead = input.verdictHeadSha?.trim();
-	if (!verdictHead && input.claim !== "merge_ready") return null;
 	if (!verdictHead) {
-		return blocked("missing_verdict_head_sha", "missing", input.evidence[0]);
+		return requiresVerdictHead(input.claim)
+			? blocked("missing_verdict_head_sha", "missing", input.evidence[0])
+			: null;
 	}
 	const receiptHeads = input.evidence.map((evidence) =>
 		evidence.receipt.headSha?.trim(),
@@ -306,6 +317,12 @@ function mergeReadyHeadBlocker(
 	return mixed
 		? blocked("mixed_head_evidence", "stale", input.evidence[0])
 		: null;
+}
+
+function requiresVerdictHead(
+	claim: DeliveryTruthCompositionInput["claim"],
+): boolean {
+	return claim === "merge_ready";
 }
 
 function blocked(

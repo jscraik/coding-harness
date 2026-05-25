@@ -1121,6 +1121,75 @@ const RUNTIME_CARD_RUNTIME_RATCHETS = [
 	},
 ] as const;
 
+const ROOT_HYGIENE_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/root-hygiene/index.ts",
+		maxLines: 45,
+		reason:
+			"Root-hygiene public surface must stay a small facade over classifier, policy, and typed contract modules.",
+	},
+	{
+		path: "src/lib/root-hygiene/types.ts",
+		maxLines: 120,
+		reason:
+			"Root-hygiene types must stay focused on report, inventory, summary, policy, and classified-entry contracts.",
+	},
+	{
+		path: "src/lib/root-hygiene/policy.ts",
+		maxLines: 160,
+		reason:
+			"Root-hygiene policy must stay a compact projection of the root-surface classification contract.",
+	},
+	{
+		path: "src/lib/root-hygiene/policy-digest.ts",
+		maxLines: 45,
+		reason:
+			"Root-hygiene policy digesting must stay separate from the policy row projection.",
+	},
+	{
+		path: "src/lib/root-hygiene/inventory.ts",
+		maxLines: 70,
+		reason:
+			"Root-hygiene inventory proof must stay focused on complete coverage metadata and input digests.",
+	},
+	{
+		path: "src/lib/root-hygiene/git-tracked-paths.ts",
+		maxLines: 45,
+		reason:
+			"Root-hygiene git inventory reading must stay a small no-shell tracked-path adapter.",
+	},
+	{
+		path: "src/lib/root-hygiene/tracked-paths.ts",
+		maxLines: 60,
+		reason:
+			"Root-hygiene tracked-path projection must stay separate from policy and classifier trust logic.",
+	},
+	{
+		path: "src/lib/root-hygiene/entry-classification.ts",
+		maxLines: 80,
+		reason:
+			"Root-hygiene entry classification and summary counting must stay separate from git inventory orchestration.",
+	},
+	{
+		path: "src/lib/root-hygiene/receipt.ts",
+		maxLines: 70,
+		reason:
+			"Root-hygiene receipt construction must stay separate from policy lookup and tracked-path trust logic.",
+	},
+	{
+		path: "src/lib/root-hygiene/report-freeze.ts",
+		maxLines: 30,
+		reason:
+			"Root-hygiene report freezing must stay separate from policy lookup and classifier orchestration.",
+	},
+	{
+		path: "src/lib/root-hygiene/classifier.ts",
+		maxLines: 135,
+		reason:
+			"Root-hygiene classifier must stay focused on tracked-path orchestration, policy lookup, and blocker summary.",
+	},
+] as const;
+
 const LOCAL_RUNTIME_CARD_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/runtime/local-runtime-card.ts",
@@ -1765,6 +1834,10 @@ describe("module boundaries", () => {
 		expectRatchetsWithinBudget(RUNTIME_CARD_SURFACE_RATCHETS);
 	});
 
+	it("keeps root-hygiene surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(ROOT_HYGIENE_SURFACE_RATCHETS);
+	});
+
 	it("keeps replay surfaces split after decomposition", () => {
 		expectRatchetsWithinBudget(REPLAY_SURFACE_RATCHETS);
 	});
@@ -2245,6 +2318,22 @@ describe("module boundaries", () => {
 
 	it("keeps runtime-card contract and validation seams split after decomposition", () => {
 		expectRatchetsWithinBudget(RUNTIME_CARD_RUNTIME_RATCHETS);
+	});
+
+	it("keeps root-hygiene policy and classification behind the public facade", () => {
+		const facadeContent = readFileSync(
+			join(process.cwd(), "src/lib/root-hygiene/index.ts"),
+			"utf-8",
+		);
+
+		expect(facadeContent).toContain("./classifier.js");
+		expect(facadeContent).toContain("./git-tracked-paths.js");
+		expect(facadeContent).toContain("./inventory.js");
+		expect(facadeContent).toContain("./policy.js");
+		expect(facadeContent).toContain("./policy-digest.js");
+		expect(facadeContent).toContain("./receipt.js");
+		expect(facadeContent).toContain("./tracked-paths.js");
+		expect(facadeContent).toContain("./types.js");
 	});
 
 	it("keeps runtime-card validation behind the public contract seam", () => {

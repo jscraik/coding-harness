@@ -86,7 +86,7 @@ guards, provider adapters, and reusable typed contracts.
 **Architecture Invariant:** implementation logic belongs in library modules,
 not in docs, templates, generated context, or command facades.
 
-Current runtime-evidence deep modules include:
+**Deep Modules Placement:** current runtime-evidence deep modules include:
 
 - src/lib/evidence/: shared receipt contracts that classify validation,
   artifact, runtime-card, review, external-state, and run-record proof.
@@ -94,6 +94,27 @@ Current runtime-evidence deep modules include:
   cards, producer adapters, and runtime-card projections.
 - src/lib/delivery-truth/: private and production verdict composition for
   delivery, root hygiene, Judge/PM readiness, and merge-readiness claims.
+- src/lib/root-hygiene/: root-surface classification and claim-support receipt
+  generation for root_surface_tidy. It reads live git-tracked paths through a
+  no-shell verifier-owned seam before claim support, maps policy-backed root
+  entries into canonical, should-move, generated-tracked, legacy/drift, and
+  unclassified classes, recomputes coverage digests from classified entries
+  before receipt emission, binds receipts to the current policy digest and
+  classifier-owned complete git-tracked root inventories, binds reports to a
+  non-path repository identity derived from the real git top-level directory, and requires
+  delivery-truth to verify the report payload, repository identity,
+  verifier-owned runtime report token, frozen report graph, receipt checksum,
+  and head SHA when the verdict is head-bound. The verifier-owned marker is
+  module-private to the classifier seam, so other in-process callers cannot
+  mint claim support by importing a marker helper; the report is frozen before
+  it receives the marker so callers cannot mutate trusted evidence after
+  classification. The module keeps hook-safe git environment sanitization,
+  git top-level resolution, git inventory reading, tracked-path projection,
+  entry classification, report freezing, receipt construction, policy digesting,
+  policy rows, and classifier trust
+  logic split so delivery-truth does not trust prose-only, stale-policy,
+  stale-head, caller-forged, post-token-mutated, direct-import-forged, or
+  cross-repository replayed root hygiene claims.
 - src/lib/pr-closeout/: PR closeout claim evaluation and recovery state; it may
   consume delivery-truth verdict summaries as additive evidence but must not
   collapse local validation, remote checks, review state, tracker state, and

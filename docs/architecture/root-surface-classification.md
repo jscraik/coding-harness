@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-24
+last_validated: 2026-05-25
 ---
 
 # Root Surface Classification
@@ -10,6 +10,7 @@ from an explicit contract instead of ad hoc memory.
 ## Table of Contents
 
 - [Classification Contract](#classification-contract)
+- [Claim Support Contract](#claim-support-contract)
 - [Resolved in This Slice](#resolved-in-this-slice)
 - [Current Root Files](#current-root-files)
 - [Current Root Directories](#current-root-directories)
@@ -34,6 +35,33 @@ This cleanup slice started non-destructively by moving low-risk legacy/drift
 entries with direct archive or security destinations. The later `.claude/`
 removal is an explicit destructive cleanup decision for a tracked legacy agent
 memory file after Codex became the repository's active agent system.
+
+## Claim Support Contract
+
+This document is the policy source for classifying tracked root entries. It is
+not sufficient claim-support evidence on its own.
+
+Delivery-truth claims for `root_surface_tidy` must cite a current
+`root-hygiene-classification/v1` evidence receipt produced by
+`root-hygiene-classifier` from the verifier-owned tracked-path classification
+seam. The general policy classifier may orient tests or operators, but must fail
+closed for caller-supplied `git_tracked_paths` inventory labels. The
+claim-support seam must read live git-tracked paths itself, derive root entries
+and complete inventory metadata internally, recompute the coverage checksum from
+the classified root entries, bind the receipt reference to the current policy
+digest, bind the report to a non-path repository identity derived from the real
+git top-level directory, strip caller-scoped \`GIT_*\` variables from git child
+processes, and fail closed when the computed inventory digest differs.
+Delivery-truth must verify the classifier report payload, receipt fields,
+repository identity, module-private verifier-owned runtime report token, frozen
+report graph, coverage checksum, and head SHA when the verdict is head-bound
+before treating the receipt as claim support. A Markdown-only reference to this
+document, a stale policy-era receipt, a stale-head receipt, a
+post-token-mutated report, a shape-valid synthetic receipt,
+direct-import-forged token attempt, digest-consistent copied report, or
+cross-repository replayed report may orient an operator, but must not pass a
+closeout, merge-readiness, or delivery claim without the current classifier
+receipt, matching repository identity, and complete live inventory proof.
 
 ## Resolved in This Slice
 

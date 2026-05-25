@@ -7,6 +7,8 @@ import type {
 	PrCloseoutClaimStatus,
 	PrCloseoutEvidenceFreshness,
 } from "../pr-closeout/types.js";
+import type { RootHygieneReport } from "../root-hygiene/types.js";
+import type { RootHygieneRepositoryIdentity } from "../root-hygiene/repository-identity.js";
 
 /** Schema version for private delivery-truth verdict fixtures. */
 export const DELIVERY_TRUTH_SCHEMA_VERSION = "delivery-truth/v1" as const;
@@ -46,6 +48,8 @@ export type DeliveryTruthBlockerCode =
 	| "producer_ttl_exceeds_verifier_policy"
 	| "head_sha_recomputed_mismatch"
 	| "fetched_at_after_verified_at"
+	| "missing_repository_identity"
+	| "repository_identity_mismatch"
 	| "invalid_policy_timestamp";
 
 /** Receipt plus verifier-owned policy context for one delivery-truth proof input. */
@@ -56,6 +60,7 @@ export interface DeliveryTruthEvidence {
 	verifierTtlSeconds?: number;
 	fetchedAt?: string;
 	recomputedHeadSha?: string | null;
+	rootHygieneReport?: RootHygieneReport;
 }
 
 /** Input accepted by the private delivery-truth composition helper. */
@@ -65,6 +70,7 @@ export interface DeliveryTruthCompositionInput {
 	evidence: readonly DeliveryTruthEvidence[];
 	verifiedAt: string;
 	verdictHeadSha?: string | null;
+	repositoryIdentity?: RootHygieneRepositoryIdentity | null;
 	verifierTtlSeconds?: number;
 }
 
