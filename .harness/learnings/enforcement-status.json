@@ -1,0 +1,14 @@
+{
+	"schemaVersion": "learning-enforcement-status/v1",
+	"items": [
+		{
+			"learningId": "coderabbit.coding-harness.docs-frontmatter-machine-readable",
+			"promotionStatus": "enforced",
+			"enforcedBy": [
+				"src/lib/docs-surface/frontmatter-metadata-gate.ts",
+				"src/lib/docs-surface/frontmatter-metadata-gate.test.ts"
+			],
+			"reason": "High-usage frontmatter metadata learning promoted to a permanent docs-surface validator."
+		}
+	]
+}
