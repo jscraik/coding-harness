@@ -31,6 +31,16 @@ export const EVIDENCE_RECEIPT_USES = [
 	"audit_trail",
 ] as const;
 
+const MAX_RECEIPT_POINTER_LENGTH = 512;
+const RAW_OR_SENSITIVE_POINTER_PATTERNS = [
+	/\n/u,
+	/\{\s*"schemaVersion"/u,
+	/\b(raw[-_ ]?prompt|system[-_ ]?prompt|user[-_ ]?prompt|transcript|raw[-_ ]?events?)\b/iu,
+	/\b(password|secret|token|credential|api[-_ ]?key)\s*[:=]/iu,
+	/\bsk-[A-Za-z0-9_-]{16,}\b/u,
+	/-----BEGIN [A-Z ]*PRIVATE KEY-----/u,
+] as const;
+
 /** Receipt categories that identify what kind of proof a receipt describes. */
 export type EvidenceReceiptKind = (typeof EVIDENCE_RECEIPT_KINDS)[number];
 
@@ -97,6 +107,8 @@ export function validateEvidenceReceipt(
 	requireEnum(value.freshness, EVIDENCE_RECEIPT_FRESHNESS, "freshness", errors);
 	requireEnum(value.evidenceUse, EVIDENCE_RECEIPT_USES, "evidenceUse", errors);
 	requireNullableNonEmptyString(value.blockerClass, "blockerClass", errors);
+	validateSafeReceiptPointer(value.ref, "ref", errors);
+	validateSafeReceiptPointer(value.producer, "producer", errors);
 
 	if (
 		typeof value.producedAt !== "string" &&
@@ -132,6 +144,7 @@ export function validateEvidenceReceipt(
 	}
 	if (value.checksum !== undefined) {
 		requireNullableNonEmptyString(value.checksum, "checksum", errors);
+		validateSafeReceiptPointer(value.checksum, "checksum", errors);
 	}
 	if (value.sizeBytes !== undefined && value.sizeBytes !== null) {
 		if (
@@ -148,6 +161,31 @@ export function validateEvidenceReceipt(
 	}
 
 	return { valid: errors.length === 0, errors };
+}
+
+/** Return true when a receipt string is a compact pointer, not embedded evidence data. */
+export function isSafeEvidenceReceiptPointer(value: string): boolean {
+	return (
+		value.length <= MAX_RECEIPT_POINTER_LENGTH &&
+		!RAW_OR_SENSITIVE_POINTER_PATTERNS.some((pattern) => pattern.test(value))
+	);
+}
+
+function validateSafeReceiptPointer(
+	value: unknown,
+	path: string,
+	errors: EvidenceReceiptValidationError[],
+): void {
+	if (typeof value !== "string") {
+		return;
+	}
+	if (!isSafeEvidenceReceiptPointer(value)) {
+		addReceiptError(
+			errors,
+			`${path} must be a compact safe evidence pointer`,
+			path,
+		);
+	}
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

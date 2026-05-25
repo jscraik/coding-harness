@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-24
+last_validated: 2026-05-25
 ---
 
 # Architecture bootstrap
@@ -132,6 +132,14 @@ they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `docs/agents/07b-agent-governance.md` in the PR when
 `runtime-card --evidence-out`, `runtime-evidence-bundle/v1`, or related
 producer and adapter wiring changes.
+
+Runtime evidence receipts and private delivery-truth composition belong to the
+same architecture-adjacent cockpit lane when they decide whether a claim can be
+supported. Keep `evidence-receipt/v1` and `delivery-truth/v1` changes
+additive, fixture-backed, and separated from public closeout authority until the
+production verifier surface is intentionally wired. Refresh
+`AI/context/diagram-context.md` and update this guide when those contracts add
+new claim-support, freshness, head-SHA, blocker-class, or source-kind rules.
 
 Codex runtime evidence packet changes belong in the existing runtime deep module
 before they feed the runtime-card adapter. Keep the public

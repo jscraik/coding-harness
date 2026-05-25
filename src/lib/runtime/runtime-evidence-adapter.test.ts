@@ -78,6 +78,16 @@ describe("codex runtime evidence adapter", () => {
 		expect(snapshot.blockers).toContain(
 			"Review state unavailable: sdk_event_does_not_expose_review_state.",
 		);
+		expect(snapshot.codexRuntime).toMatchObject({
+			provenanceRef: "codex-runtime://turn-456",
+			sessionRefs: expect.arrayContaining([
+				"codex-runtime://turn-456/permissions",
+			]),
+			reviewRefs: expect.arrayContaining(["codex-review_state://unknown"]),
+		});
+		expect(snapshot.codexRuntime?.receiptRefs).not.toContain(
+			CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
+		);
 	});
 
 	it("emits no synthetic blockers for a healthy Codex runtime packet", () => {
@@ -157,6 +167,35 @@ describe("codex runtime evidence adapter", () => {
 				failureClass: "run_record_stale",
 			}),
 		]);
+		expect(snapshot.codexRuntime?.sourceCount).toBe(
+			snapshot.codexRuntime?.receiptRefs.length,
+		);
+		expect(snapshot.codexRuntime?.blockedSourceCount).toBeGreaterThan(0);
+		expect(snapshot.codexRuntime?.receiptRefs).toContain(
+			"codex-runtime://turn-456",
+		);
+	});
+
+	it("keeps unique provenance outside Codex receipt subset counts", () => {
+		const bundle = adaptCodexRuntimeEvidenceToRuntimeEvidenceBundle(
+			healthyPacket(),
+			{ provenanceRef: "codex-runtime://unique-provenance" },
+		);
+
+		const snapshot = inspectRuntimeEvidenceBundle(bundle, unexpectedPhaseExit);
+
+		expect(snapshot.sources).toContainEqual(
+			expect.objectContaining({ ref: "codex-runtime://unique-provenance" }),
+		);
+		expect(snapshot.codexRuntime?.receiptRefs).not.toContain(
+			"codex-runtime://unique-provenance",
+		);
+		expect(snapshot.codexRuntime?.sourceCount).toBe(
+			snapshot.codexRuntime?.receiptRefs.length,
+		);
+		expect(snapshot.codexRuntime?.sourceCount).toBeLessThan(
+			snapshot.sources.length,
+		);
 	});
 
 	it("downgrades unknown Codex source cleanliness instead of treating it as healthy", () => {
