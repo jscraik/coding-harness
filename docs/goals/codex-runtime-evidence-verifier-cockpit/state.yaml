@@ -137,6 +137,8 @@ tasks:
       - "PU-002 codex-runtime-evidence/v1 has R005 local implementation, reference-integrity validation, source-kind/path validation, focused tests, and final adversarial plus agent-native review evidence; PR handoff remains pending."
       - "PU-003 runtime-evidence-bundle adapter has R006/R007 local implementation evidence, healthy packet, duplicate-source collision, unknown-source-cleanliness, and blank-provenanceRef tests, focused validation, agent-native artifact evidence, and a coordinator-persisted adversarial mailbox capture after the adversarial subagent failed to write the requested file twice. The code slice is locally validated; PR handoff must disclose the artifact-write process gap."
       - "PU-004 runtime-card Codex projection has R008 implementation, validation, final adversarial plus agent-native review artifacts, commit 73b5958a, draft PR #294, and pr-green-sweep evidence. Merge readiness remains blocked by draft PR state plus current pr-template and consistency-drift-health failures."
+      - "PU-005 private delivery-truth claim verifier has R009 implementation, focused validation, final adversarial plus agent-native review artifacts, commit f9274b09, draft PR #295, and pr-green-sweep evidence. Merge readiness remains blocked by parent PR #294 plus current pr-template and consistency-drift-health failures."
+      - "PU-005 PR body has R010 repair evidence: stored body artifact and live PR #295 body both pass pr-template-gate locally. Remote check refresh is still required before clearing the PR-template blocker."
     stop_if:
       - "A slice lacks reviewed intent."
       - "Private fixtures are used to claim production verifier completion."
