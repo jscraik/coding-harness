@@ -19,16 +19,23 @@ export function rootHygieneRepositoryTopLevel(repoRoot: string): string {
 			"repoRoot is required for root-hygiene repository identity",
 		);
 	}
-	const gitTopLevel = execFileSync(
-		"git",
-		["-C", repoRoot, "rev-parse", "--show-toplevel"],
-		{
-			encoding: "utf8",
-			env: rootHygieneGitEnv(),
-			maxBuffer: 1024 * 1024,
-		},
-	).trim();
-	return realpathSync(gitTopLevel);
+	try {
+		const gitTopLevel = execFileSync(
+			"git",
+			["-C", repoRoot, "rev-parse", "--show-toplevel"],
+			{
+				encoding: "utf8",
+				env: rootHygieneGitEnv(),
+				maxBuffer: 1024 * 1024,
+			},
+		).trim();
+		return realpathSync(gitTopLevel);
+	} catch (error) {
+		throw new Error(
+			`Failed to resolve repository top-level for repoRoot=${repoRoot}: ${error instanceof Error ? error.message : String(error)}`,
+			{ cause: error },
+		);
+	}
 }
 
 /** Build a non-path repository identity for root-hygiene replay checks. */

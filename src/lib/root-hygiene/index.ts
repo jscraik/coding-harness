@@ -17,6 +17,12 @@ export {
 	isCurrentRootHygieneReceiptRef,
 	rootHygieneReceiptRef,
 } from "./receipt.js";
+export {
+	ROOT_HYGIENE_REPOSITORY_ID_KIND,
+	rootHygieneRepositoryIdentity,
+	rootHygieneRepositoryTopLevel,
+	sameRootHygieneRepositoryIdentity,
+} from "./repository-identity.js";
 export { rootSurfaceEntriesFromTrackedPaths } from "./tracked-paths.js";
 export {
 	ROOT_HYGIENE_CLASSIFICATION_CLASSES,
@@ -27,6 +33,7 @@ export {
 	ROOT_HYGIENE_RECEIPT_REF,
 	ROOT_HYGIENE_RECEIPT_REF_POLICY_PREFIX,
 } from "./types.js";
+export type { RootHygieneRepositoryIdentity } from "./repository-identity.js";
 export type {
 	ClassifiedRootHygieneEntry,
 	ClassifyGitTrackedRootInput,

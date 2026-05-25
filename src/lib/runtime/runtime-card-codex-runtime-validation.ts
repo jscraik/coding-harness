@@ -138,9 +138,10 @@ function validateProjectionConsistency(
 	}
 	const receiptRefs = getStringArray(value.receiptRefs);
 	if (!receiptRefs) return;
+	const uniqueReceiptRefs = Array.from(new Set(receiptRefs));
 	if (
 		typeof value.sourceCount === "number" &&
-		value.sourceCount < receiptRefs.length
+		value.sourceCount < uniqueReceiptRefs.length
 	) {
 		errors.push(
 			toValidationError(
@@ -162,7 +163,7 @@ function validateProjectionConsistency(
 			),
 		);
 	}
-	const receiptRefSet = new Set(receiptRefs);
+	const receiptRefSet = new Set(uniqueReceiptRefs);
 	validateRefsAreProjected(
 		value.validationRefs,
 		"codexRuntime.validationRefs",
@@ -198,7 +199,8 @@ export function validateCodexRuntimeSourceProjection(
 	if (!isRecord(codexRuntime) || !Array.isArray(sources)) return;
 	const receiptRefs = getStringArray(codexRuntime.receiptRefs);
 	if (!receiptRefs) return;
-	if (codexRuntime.sourceCount !== receiptRefs.length) {
+	const uniqueReceiptRefs = Array.from(new Set(receiptRefs));
+	if (codexRuntime.sourceCount !== uniqueReceiptRefs.length) {
 		errors.push(
 			toValidationError(
 				"codexRuntime.sourceCount must match codexRuntime.receiptRefs length",
@@ -212,7 +214,7 @@ export function validateCodexRuntimeSourceProjection(
 			sourceRefs.add(source.ref);
 		}
 	}
-	for (const [index, ref] of receiptRefs.entries()) {
+	for (const [index, ref] of uniqueReceiptRefs.entries()) {
 		if (!sourceRefs.has(ref)) {
 			errors.push(
 				toValidationError(
@@ -222,7 +224,10 @@ export function validateCodexRuntimeSourceProjection(
 			);
 		}
 	}
-	const blockedSourceCount = nonUsableReceiptSourceCount(receiptRefs, sources);
+	const blockedSourceCount = nonUsableReceiptSourceCount(
+		uniqueReceiptRefs,
+		sources,
+	);
 	if (codexRuntime.blockedSourceCount !== blockedSourceCount) {
 		errors.push(
 			toValidationError(

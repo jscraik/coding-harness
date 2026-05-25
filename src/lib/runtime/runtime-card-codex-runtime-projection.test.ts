@@ -1,7 +1,7 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
 	buildLocalRuntimeCard,
 	type RuntimeCardGitRunner,
@@ -96,8 +96,22 @@ function codexRuntimeEvidenceBundle(): RuntimeEvidenceBundle {
 }
 
 describe("runtime-card Codex runtime projection", () => {
+	const tempDirs: string[] = [];
+
+	afterEach(() => {
+		for (const dir of tempDirs) {
+			try {
+				rmSync(dir, { recursive: true, force: true });
+			} catch {
+				// Ignore cleanup errors
+			}
+		}
+		tempDirs.length = 0;
+	});
+
 	it("projects compact Codex runtime evidence without embedding raw packet bodies", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
 		writeActiveArtifacts(repoRoot);
 
 		const card = buildLocalRuntimeCard({
@@ -131,6 +145,7 @@ describe("runtime-card Codex runtime projection", () => {
 
 	it("rejects runtime cards that embed raw event streams or full review bodies", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
 		writeActiveArtifacts(repoRoot);
 		const card = buildLocalRuntimeCard({
 			repoRoot,
@@ -166,6 +181,7 @@ describe("runtime-card Codex runtime projection", () => {
 
 	it("rejects raw packet payloads tunneled through source and projection refs", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
 		writeActiveArtifacts(repoRoot);
 		const card = buildLocalRuntimeCard({
 			repoRoot,
@@ -211,6 +227,7 @@ describe("runtime-card Codex runtime projection", () => {
 
 	it("rejects short prose bodies tunneled through source and projection refs", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
 		writeActiveArtifacts(repoRoot);
 		const card = buildLocalRuntimeCard({
 			repoRoot,
@@ -255,6 +272,7 @@ describe("runtime-card Codex runtime projection", () => {
 
 	it("rejects prose and JSON payloads hidden behind admitted ref prefixes", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
 		writeActiveArtifacts(repoRoot);
 		const card = buildLocalRuntimeCard({
 			repoRoot,
@@ -336,6 +354,7 @@ describe("runtime-card Codex runtime projection", () => {
 
 	it("rejects Codex runtime projection counts that drift from projected source refs", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
 		writeActiveArtifacts(repoRoot);
 		const card = buildLocalRuntimeCard({
 			repoRoot,
@@ -361,6 +380,7 @@ describe("runtime-card Codex runtime projection", () => {
 
 	it("rejects blocked source counts that under-report receipt-backed source status", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
 		writeActiveArtifacts(repoRoot);
 		const card = buildLocalRuntimeCard({
 			repoRoot,
@@ -388,6 +408,7 @@ describe("runtime-card Codex runtime projection", () => {
 
 	it("rejects inconsistent Codex runtime projection counts, refs, and fields", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
 		writeActiveArtifacts(repoRoot);
 		const card = buildLocalRuntimeCard({
 			repoRoot,
