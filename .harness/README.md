@@ -16,6 +16,18 @@ backup, database, cache, and bulk snapshot output.
 ground. Durable policy, decisions, execution inputs, and curated context should
 move with the repository. Local run state should stay local.
 
+Do not rely on a blanket ignore rule to decide whether a `.harness` file is
+repository truth. Classify the artifact first:
+
+- Track stable control-plane inputs: policy, decisions, accepted specs/plans,
+  curated research, intent packets, validator manifests, and example contracts.
+- Keep mutable runtime output local: run directories, databases, caches,
+  snapshots, imported local learning feeds, bulk telemetry, and live browser
+  views.
+- Promote generated evidence only when a spec, plan, PR, validator, or decision
+  names it as an acceptance artifact and the artifact has been redacted for
+  local paths, secrets, and bulky telemetry.
+
 ## Authority Levels
 
 | Level | Meaning |
@@ -38,6 +50,9 @@ move with the repository. Local run state should stay local.
 | `.harness/refactors/**.md` | `execution-input` | Track |
 | `.harness/features/**.md` | `secondary-context` | Track |
 | `.harness/implementation-notes/**.md` | `secondary-context` | Track when they admit steering, capture implementation proof, or are referenced by a validator |
+| `.harness/implementation-notes/**.html` | `generated-runtime` | Keep local while used as a live browser view; promote only as a reviewed final artifact |
+| `.harness/intent/**.md` | `execution-input` | Track when tied to an accepted plan, goal, or review packet |
+| `.harness/intent/**.json` | `execution-input` | Track when it is a stable intent, baseline, or review receipt; do not track bulky runtime captures |
 | `.harness/strategy/**.md` | `secondary-context` | Track |
 | `.harness/triage/**.md` | `secondary-context` | Track |
 | `.harness/review/**.md` | `secondary-context` | Track when curated |
@@ -48,16 +63,26 @@ move with the repository. Local run state should stay local.
 | `.harness/specs/**.md` | `execution-input` | Track when produced by Harness Engineering |
 | `.harness/plan/**.md` | `execution-input` | Track when produced by Harness Engineering |
 | `.harness/memory/LEARNINGS.md` | `policy` | Track |
+| `.harness/learnings/*.example.json` | `policy` | Track as reusable learning-loop examples |
+| `.harness/learnings/enforcement-status.json` | `policy` | Track when it represents the repo intent for enforcement posture |
+| `.harness/learnings/*.local.json` | `generated-runtime` | Do not track imported local reviewer, session, or telemetry feeds |
 | `.harness/knowledge/**.md` | `secondary-context` | Track |
 | `.harness/quality/**` | `policy` | Track |
 | `.harness/review-log.md` | `secondary-context` | Track |
+| `.harness/media/**/*.md` | `secondary-context` | Track sidecars, prompts, and review notes for promoted media artifacts |
+| `.harness/media/**/*.json` | `secondary-context` | Track metadata for promoted media artifacts |
+| `.harness/media/**/*.{png,jpg,jpeg,webp}` | `generated-runtime` | Do not track by default; promote only when the image is a required review/spec artifact |
 | `.harness/ci-required-checks.json` | `policy` | Track |
 | `.harness/ci-provider-transition-status.json` | `policy` | Track |
 | `.harness/artifact-provenance.json` | `policy` | Track |
 | `.harness/rule-lifecycle-manifest.json` | `policy` | Track |
 | `.harness/research/evidence-patterns.json` | `policy` | Track |
-| `.harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md` | `secondary-context` | Track when referenced by adopted evidence patterns |
+| `.harness/research/README.md` | `policy` | Track as the research intake and promotion map |
+| `.harness/research/audits/**.md` | `secondary-context` | Track when referenced by adopted evidence patterns, plans, or specs |
 | `.harness/research/deep/**.md` | `secondary-context` | Track when listed by `.harness/research/evidence-patterns.json` |
+| `.harness/evidence/**` | `generated-runtime` | Do not track raw command evidence by default; promote redacted fixture or closeout evidence explicitly |
+| `.harness/guardrails/**` | `generated-runtime` | Do not track generated guardrail snapshots unless a validator consumes the exact file |
+| `.harness/metrics/**` | `generated-runtime` | Do not track local metrics snapshots by default |
 | `.harness/*-manifest.json` | `policy` | Track with care when validators consume it |
 | `.harness/backups/**` | `backup/scratch` | Do not track |
 | `.harness/*.db` | `generated-runtime` | Do not track unless promoted to a fixture |
@@ -65,6 +90,7 @@ move with the repository. Local run state should stay local.
 | `.harness/runs/**` | `generated-runtime` | Do not track |
 | `.harness/memory/codex-learned/**` | `generated-runtime` | Do not track |
 | `.harness/memory/codex-preflight-overrides.env` | `generated-runtime` | Do not track |
+| `.harness/rollback-marker.json` | `generated-runtime` | Do not track; use a decision or plan note for durable rollback policy |
 
 ## Admission Rule
 

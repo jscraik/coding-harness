@@ -1,0 +1,132 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-003",
+	"createdAt": "2026-05-25T00:10:00Z",
+	"objective": "Implement PU-003 by adapting codex-runtime-evidence/v1 packets into runtime-evidence-bundle/v1 without flattening provenance, embedding raw packet bodies, or changing public CLI behavior.",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceSpec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+	"linearIssue": "JSC-363",
+	"ownedAcceptanceIds": ["SA-004"],
+	"deepModuleBoundary": "src/lib/runtime/codex-runtime-evidence-adapter.ts plus existing runtime-evidence-bundle validation seams",
+	"lifecycleUnit": "PU-003",
+	"prerequisites": [
+		"PU-000 reviewed intent and contract baseline exist.",
+		"PU-001 evidence-receipt/v1 validation exists.",
+		"PU-002 codex-runtime-evidence/v1 validation exists.",
+		"PU-002 validation is replayed on the current worktree before implementation with: pnpm vitest run src/lib/runtime/codex-runtime-evidence.test.ts src/lib/runtime/codex-runtime-source-provenance.test.ts.",
+		"The current implementation branch head is recorded before PU-003 code edits so prerequisite evidence cannot float across commits."
+	],
+	"inScope": [
+		"src/lib/runtime/codex-runtime-evidence-adapter.ts",
+		"src/lib/runtime/runtime-evidence-bundle.ts",
+		"src/lib/runtime/runtime-evidence-adapter.ts",
+		"src/lib/runtime/codex-runtime-evidence.test.ts",
+		"src/lib/runtime/runtime-evidence-adapter.test.ts",
+		"adapter fixtures directly required for PU-003",
+		"artifacts/reviews/codex-runtime-evidence-pu-003-*.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/implementation-notes/implementation-notes.html"
+	],
+	"outOfScope": [
+		"Public CLI behavior or parser changes",
+		"Runtime-card projection fields owned by PU-004",
+		"Private delivery-truth composition owned by PU-005",
+		"Review-state or external-state production packets owned by PU-009",
+		"Codex source mutations before PU-012",
+		"Any claim that PU-003 completes the full runtime evidence verifier cockpit"
+	],
+	"guardedPathGlobs": [
+		"src/lib/runtime/codex-runtime-evidence-adapter.ts",
+		"src/lib/runtime/runtime-evidence-bundle.ts",
+		"src/lib/runtime/runtime-evidence-adapter.ts",
+		"src/lib/runtime/codex-runtime-evidence*.ts",
+		"src/lib/runtime/runtime-evidence-adapter.test.ts"
+	],
+	"implementationRules": [
+		"Validate Codex packets with the PU-002 validator before producing a runtime-evidence-bundle/v1.",
+		"Preserve source classification and raw packet location as runtime-evidence-bundle provenance or source refs rather than copying the full packet into the bundle.",
+		"Preserve receipt refs as existing runtime-evidence-bundle source records that remain consumable by current inspectRuntimeEvidenceBundle behavior; do not add runtime-card projection fields or new runtime-card semantics in PU-003.",
+		"Add a deterministic negative assertion that the adapted bundle does not persist a full Codex packet body, raw event arrays, full review comments, or bulky telemetry.",
+		"Represent unsupported Codex fields as blockers or invalid/blocked sources, not inferred truth.",
+		"Keep existing runtime-evidence-bundle/v1 producers valid and unchanged unless a narrow extension is required for Codex provenance."
+	],
+	"automationPlan": [
+		{
+			"name": "codex packet validator regression",
+			"command": "pnpm vitest run src/lib/runtime/codex-runtime-evidence.test.ts",
+			"proves": [
+				"PU-002 validation still rejects malformed Codex packets before adapter mapping"
+			]
+		},
+		{
+			"name": "runtime evidence adapter validation",
+			"command": "pnpm vitest run src/lib/runtime/runtime-evidence-adapter.test.ts",
+			"proves": [
+				"SA-004",
+				"codex-runtime-evidence/v1 maps into runtime-evidence-bundle/v1",
+				"provenance and receipt refs are preserved",
+				"malformed packet input fails without mutating existing non-Codex evidence behavior",
+				"adapted bundle output remains consumable by existing runtime-card source readers without PU-004 projection fields",
+				"adapted bundle output does not include full Codex packet bodies or raw event arrays"
+			]
+		},
+		{
+			"name": "focused PU-003 validation",
+			"command": "pnpm vitest run src/lib/runtime/codex-runtime-evidence.test.ts src/lib/runtime/runtime-evidence-adapter.test.ts",
+			"proves": [
+				"PU-003 handoff state enables PU-004 without regressing PU-002"
+			]
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": ["adversarial-reviewer", "agent-native-reviewer"],
+		"artifactPaths": [
+			"artifacts/reviews/codex-runtime-evidence-pu-003-intent-adversarial.md",
+			"artifacts/reviews/codex-runtime-evidence-pu-003-intent-agent-native.md"
+		]
+	},
+	"reviewStatus": "pending",
+	"reviewedBy": [],
+	"reviewReceiptRef": null,
+	"reviewedAt": null,
+	"reviewResolutionPolicy": {
+		"requiredBeforeImplementation": true,
+		"statusField": "reviewStatus",
+		"allowedReviewedStatus": "reviewed",
+		"requiredResolutionArtifact": ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-003-review-receipt.json",
+		"requiredFindingStatuses": [
+			"fixed",
+			"accepted_with_reason",
+			"not_applicable_with_reason"
+		],
+		"blockingFindingStatuses": ["open", "untriaged"]
+	},
+	"baselineRef": ".harness/intent/codex-runtime-evidence-verifier-cockpit-contract-baseline.json",
+	"implementationStartPolicy": "blocked_until_reviewed",
+	"stopConditions": [
+		"Stop if the intent review artifacts are missing or non-empty findings remain unresolved.",
+		"Stop if reviewStatus is not reviewed, reviewReceiptRef is null, or the review receipt contains any finding with status open or untriaged.",
+		"Stop if PU-002 validation has not been replayed on the current worktree before implementation.",
+		"Stop if adapting Codex evidence requires widening public CLI behavior before PU-004.",
+		"Stop if runtime-card output changes before PU-004.",
+		"Stop if existing runtime-evidence-bundle/v1 validation or runtime-card evidence consumption regresses.",
+		"Stop if the adapter embeds raw packet bodies instead of refs and summaries."
+	],
+	"rollback": [
+		"Remove src/lib/runtime/codex-runtime-evidence-adapter.ts if newly added.",
+		"Remove PU-003 adapter tests and fixtures.",
+		"Revert any narrow runtime-evidence-bundle provenance extension if existing producers fail validation.",
+		"Remove or append corrective receipts for PU-003 review and validation state if implementation is reverted.",
+		"Restore docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml to the previous active task state if PU-003 is rolled back.",
+		"Append a rollback note to docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl rather than deleting historical receipts.",
+		"Update .harness/implementation-notes/implementation-notes.html to describe rollback or partial state if the slice is abandoned.",
+		"Keep PU-000 through PU-002 artifacts intact."
+	],
+	"assumptions": [
+		"A Codex runtime evidence packet can be represented as a runtime-evidence-bundle/v1 producer without changing runtime-card/v1 in PU-003.",
+		"If runtime-evidence-bundle/v1 needs a Codex-specific provenance kind, that extension is additive and validated against existing producers.",
+		"PU-004 will own runtime-card projection of any compact Codex summaries; PU-003 only prepares the normalized bundle."
+	]
+}
