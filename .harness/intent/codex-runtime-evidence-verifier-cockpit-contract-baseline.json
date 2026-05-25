@@ -1,0 +1,177 @@
+{
+	"schemaVersion": "contract-baseline/v1",
+	"baselineId": "codex-runtime-evidence-verifier-cockpit-pu-000-baseline",
+	"producer": "Codex",
+	"capturedAt": "2026-05-24T21:39:40Z",
+	"git": {
+		"headSha": "d4433929d5d69c62db16f2ff1a6ad77a12a20853",
+		"worktreeState": "dirty",
+		"dirtySummary": [
+			"M .harness/research/evidence-patterns.json",
+			"?? .harness/implementation-notes/2026-05-24-runtime-evidence-full-lifecycle-steering-admission.md",
+			"?? .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+			"?? .harness/research/deep/2026-05-24-codex-ecosystem-native-alignment.md",
+			"?? .harness/research/deep/2026-05-24-jamie-craik-operational-telemetry-evidence.md",
+			"?? .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+			"?? docs/goals/codex-runtime-evidence-verifier-cockpit/"
+		]
+	},
+	"sourceArtifacts": [
+		{
+			"path": ".harness/intent/codex-runtime-evidence-verifier-cockpit-implementation-intent.json",
+			"sha256": "d7a80d092c0224b5332cbcf09079a6703a05bf2a988f1a08656a5992139ff9e7",
+			"frozenSections": [
+				"ownedAcceptanceIds",
+				"deepModuleBoundary",
+				"inScope",
+				"outOfScope",
+				"guardedPathGlobs",
+				"mechanicalAcceptanceIds",
+				"reviewReceiptRequirements",
+				"implementationStartPolicy",
+				"stopConditions",
+				"rollback"
+			]
+		},
+		{
+			"path": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+			"sha256": "b553c5b8f2a4a2ec91f56feb36d627bf154638bca909f1099f8951c9b6b60ca3",
+			"frozenSections": [
+				"Source Contract",
+				"Full Lifecycle Contract",
+				"Scope and Boundaries",
+				"Enforcement Contract",
+				"Work Units",
+				"Validation Gates",
+				"Rollback Plan",
+				"Risk Register",
+				"Open Questions"
+			]
+		},
+		{
+			"path": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+			"sha256": "00554a7fb9a1560cb0c7a7ac541b0ea5521be04e05c094012d34de9e6fb81f95",
+			"frozenSections": [
+				"Requirements",
+				"Interfaces / Contracts",
+				"Data Model",
+				"Validation Gates",
+				"Acceptance Criteria",
+				"Linear Acceptance Traceability"
+			]
+		},
+		{
+			"path": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+			"sha256": "eec57e048e9be8734f23ce3bfe8f446ed3ea657efb071ab9e73576f0857f76f2",
+			"frozenSections": [
+				"Slice Execution Contract",
+				"Review and Validation Contract",
+				"GitHub and PR Triage Contract",
+				"Completion Contract",
+				"Blocked Stop Conditions"
+			]
+		},
+		{
+			"path": "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"sha256": "51c7e91b0907a42f05078e4a4b4e637f428f90e057ead4ddbd949c36fc834ae3",
+			"frozenSections": ["completion_contract", "claims", "tasks"]
+		}
+	],
+	"acceptanceIds": [
+		"SA-001",
+		"SA-002",
+		"SA-003",
+		"SA-004",
+		"SA-005",
+		"SA-006",
+		"SA-007",
+		"SA-008",
+		"SA-009",
+		"SA-010",
+		"SA-011",
+		"SA-012",
+		"SA-013",
+		"SA-014",
+		"SA-015",
+		"SA-016",
+		"SA-017",
+		"SA-018"
+	],
+	"mechanicalAcceptanceIds": [
+		"SA-001",
+		"SA-002",
+		"SA-003",
+		"SA-004",
+		"SA-005",
+		"SA-006",
+		"SA-007",
+		"SA-008",
+		"SA-009",
+		"SA-010",
+		"SA-011",
+		"SA-012",
+		"SA-013",
+		"SA-014",
+		"SA-015",
+		"SA-016",
+		"SA-017",
+		"SA-018"
+	],
+	"nonMechanicalAcceptanceRationales": [],
+	"guardedPathGlobs": [
+		"src/lib/evidence/**",
+		"src/lib/runtime/**",
+		"src/lib/delivery-truth/**",
+		"src/lib/review-state/**",
+		"src/lib/external-state/**",
+		"src/lib/pr-closeout/**",
+		"src/commands/runtime-card.ts",
+		"src/commands/runtime-card.test.ts",
+		"src/commands/pr-closeout.ts",
+		"src/commands/pr-closeout/**",
+		"src/commands/next*.ts",
+		"scripts/**",
+		"docs/architecture/root-surface-classification.md",
+		"AGENTS.md",
+		"README.md",
+		"harness.contract.json",
+		"docs/agents/**",
+		"/Users/jamiecraik/dev/codex/**"
+	],
+	"unknownRuntimePathPolicy": "fail_closed_until_reviewed_intent_updates_guardedPathGlobs",
+	"lifecycleUnits": [
+		"PU-000",
+		"PU-001",
+		"PU-002",
+		"PU-003",
+		"PU-004",
+		"PU-005",
+		"PU-006",
+		"PU-007",
+		"PU-008",
+		"PU-009",
+		"PU-010",
+		"PU-011",
+		"PU-012",
+		"PU-013",
+		"PU-014",
+		"PU-015",
+		"PU-016"
+	],
+	"forbiddenWeakening": [
+		"acceptance_ids",
+		"phase_labels",
+		"forbidden_paths",
+		"stop_conditions",
+		"validation_gates",
+		"rollback_obligations",
+		"claim_boundaries",
+		"activation_boundary"
+	],
+	"reviewerReceiptRef": ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-000-review-receipt.json",
+	"notes": [
+		"This baseline is captured before PU-000 implementation code changes.",
+		"Dirty worktree entries are recorded so future ordering checks do not mistake pre-existing artifacts for PU-000 implementation output.",
+		"The intent artifact checksum was refreshed after the architecture correction moved PU-000 lifecycle intent validation into the existing plan-gate deep module. The reviewed checksum refers to the pre-advancement intent content before reviewStatus, reviewedAt, reviewReceiptRef, and reviewedIntentSha256 were advanced."
+	]
+}
