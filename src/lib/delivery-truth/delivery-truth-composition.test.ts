@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
 import { composeDeliveryTruth } from "./composition.js";
-import type { DeliveryTruthClaim, DeliveryTruthEvidence } from "./types.js";
+import type {
+	DeliveryTruthClaim,
+	DeliveryTruthEvidence,
+	DeliveryTruthVerdict,
+} from "./types.js";
 
 const CURRENT_HEAD = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const OTHER_HEAD = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const VERIFIED_AT = "2026-05-25T10:15:00Z";
+type CloseoutPhrase = "green" | "tidy" | "delivered" | "merged" | "ready";
 
 describe("composeDeliveryTruth", () => {
 	it("passes root_surface_tidy only with current claim-support evidence", () => {
@@ -87,17 +92,133 @@ describe("composeDeliveryTruth", () => {
 			const evidence = evidenceForClaim(claim);
 			const verdict = composeDeliveryTruth({
 				claim,
-				source: evidence.source,
+				source: sourceForClaim(claim),
 				verifiedAt: VERIFIED_AT,
 				verdictHeadSha: CURRENT_HEAD,
-				evidence: [evidence],
+				evidence,
 			});
 
 			expect(verdict.claim).toBe(claim);
 			expect(verdict.status).toBe("pass");
-			expect(verdict.evidenceRefs).toEqual([evidence.receipt.ref]);
+			expect(verdict.evidenceRefs).toEqual(
+				evidence.map((item) => item.receipt.ref),
+			);
 		});
 	}
+
+	it("requires separate current evidence families before passing merge_ready", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "merge_ready",
+			source: "external_state",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				externalStateEvidence("external-state:pr.json"),
+				reviewStateEvidence("review-state:threads.json"),
+				prCloseoutEvidence("pr-closeout:merge-readiness.json"),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "pass",
+			blockerCode: null,
+			freshness: "current",
+		});
+		expect(verdict.evidenceRefs).toEqual([
+			"external-state:pr.json",
+			"review-state:threads.json",
+			"pr-closeout:merge-readiness.json",
+		]);
+	});
+
+	it("refuses one blended readiness receipt for merge_ready", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "merge_ready",
+			source: "pr_closeout",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [prCloseoutEvidence("pr-closeout:blended-ready.json")],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			statusLabel: "merge_ready blocked: missing_separate_evidence",
+			freshness: "missing",
+			blockerCode: "missing_separate_evidence",
+			blockerRefs: ["pr-closeout:blended-ready.json"],
+		});
+	});
+
+	it("requires each merge_ready evidence family independently", () => {
+		const requiredEvidence = [
+			externalStateEvidence("external-state:pr.json"),
+			reviewStateEvidence("review-state:threads.json"),
+			prCloseoutEvidence("pr-closeout:merge-readiness.json"),
+		];
+
+		for (const omittedSource of [
+			"external_state",
+			"review_state",
+			"pr_closeout",
+		] satisfies DeliveryTruthEvidence["source"][]) {
+			const evidence = requiredEvidence.filter(
+				(item) => item.source !== omittedSource,
+			);
+			const verdict = composeDeliveryTruth({
+				claim: "merge_ready",
+				source: "external_state",
+				verifiedAt: VERIFIED_AT,
+				verdictHeadSha: CURRENT_HEAD,
+				evidence,
+			});
+
+			expect(verdict).toMatchObject({
+				status: "blocked",
+				freshness: "missing",
+				blockerCode: "missing_separate_evidence",
+			});
+			expect(verdict.evidenceRefs).toEqual(
+				evidence.map((item) => item.receipt.ref),
+			);
+		}
+	});
+
+	it("downgrades closeout language when required claim-support verdicts are absent or stale", () => {
+		for (const phrase of [
+			"green",
+			"tidy",
+			"delivered",
+			"merged",
+			"ready",
+		] as const) {
+			const missing = closeoutLanguageVerdict(phrase, []);
+			const stale = closeoutLanguageVerdict(phrase, [
+				staleVerdictForCloseoutPhrase(phrase),
+			]);
+			const mismatchedHeadBacking =
+				mismatchedHeadVerdictForCloseoutPhrase(phrase);
+			const mismatchedHead = closeoutLanguageVerdict(phrase, [
+				mismatchedHeadBacking,
+			]);
+			const orientationOnly = closeoutLanguageVerdict(phrase, [
+				orientationOnlyVerdictForCloseoutPhrase(phrase),
+			]);
+
+			expect(missing.status).not.toBe("pass");
+			expect(missing.statusLabel).toContain("missing_evidence");
+			expect(stale.status).toBe("blocked");
+			expect(stale.statusLabel).toContain("stale_evidence");
+			expect(mismatchedHeadBacking.statusLabel).toContain(
+				"mixed_head_evidence",
+			);
+			expect(mismatchedHead.status).toBe("blocked");
+			expect(mismatchedHead.status).not.toBe("pass");
+			expect(orientationOnly.status).toBe("blocked");
+			expect(orientationOnly.statusLabel).toContain(
+				"non_claim_support_evidence",
+			);
+		}
+	});
 
 	it("refuses missing evidence instead of passing a claim", () => {
 		const verdict = composeDeliveryTruth({
@@ -419,6 +540,8 @@ describe("composeDeliveryTruth", () => {
 						kind: "external_state",
 					},
 				}),
+				reviewStateEvidence("review-state:threads.json"),
+				prCloseoutEvidence("pr-closeout:merge-readiness.json"),
 			],
 		});
 		const mixedHead = composeDeliveryTruth({
@@ -435,6 +558,8 @@ describe("composeDeliveryTruth", () => {
 						kind: "external_state",
 					},
 				}),
+				reviewStateEvidence("review-state:threads.json"),
+				prCloseoutEvidence("pr-closeout:merge-readiness.json"),
 				supportingEvidence({
 					source: "external_state",
 					receipt: {
@@ -485,21 +610,204 @@ function rootVerdict(overrides: { receipt?: Partial<EvidenceReceipt> }) {
 	});
 }
 
-function evidenceForClaim(claim: DeliveryTruthClaim): DeliveryTruthEvidence {
+function evidenceForClaim(
+	claim: DeliveryTruthClaim,
+): readonly DeliveryTruthEvidence[] {
 	switch (claim) {
 		case "root_surface_tidy":
-			return supportingEvidence({ source: "root_hygiene" });
+			return [supportingEvidence({ source: "root_hygiene" })];
 		case "goal_ready_for_judge_pm":
-			return supportingEvidence({
-				source: "pr_closeout",
-				receipt: { ref: "pr-closeout:judge-pm.json" },
-			});
+			return [prCloseoutEvidence("pr-closeout:judge-pm.json")];
 		case "merge_ready":
-			return supportingEvidence({
-				source: "external_state",
-				receipt: { ref: "external-state:pr.json", kind: "external_state" },
-			});
+			return [
+				externalStateEvidence("external-state:pr.json"),
+				reviewStateEvidence("review-state:threads.json"),
+				prCloseoutEvidence("pr-closeout:merge-readiness.json"),
+			];
 	}
+}
+
+function sourceForClaim(
+	claim: DeliveryTruthClaim,
+): DeliveryTruthEvidence["source"] {
+	switch (claim) {
+		case "root_surface_tidy":
+			return "root_hygiene";
+		case "goal_ready_for_judge_pm":
+			return "pr_closeout";
+		case "merge_ready":
+			return "external_state";
+	}
+}
+
+function closeoutLanguageVerdict(
+	phrase: CloseoutPhrase,
+	verdicts: readonly DeliveryTruthVerdict[],
+): DeliveryTruthVerdict {
+	const claim = claimForCloseoutPhrase(phrase);
+	const verdict = verdicts.find((item) => item.claim === claim);
+	if (verdict?.status === "pass" && verdict.freshness === "current") {
+		return verdict;
+	}
+	return composeDeliveryTruth({
+		claim,
+		source: sourceForCloseoutPhrase(phrase),
+		verifiedAt: VERIFIED_AT,
+		verdictHeadSha: CURRENT_HEAD,
+		evidence: verdict ? [evidenceFromVerdict(verdict)] : [],
+	});
+}
+
+function claimForCloseoutPhrase(phrase: CloseoutPhrase): DeliveryTruthClaim {
+	switch (phrase) {
+		case "tidy":
+			return "root_surface_tidy";
+		case "merged":
+		case "ready":
+			return "merge_ready";
+		case "green":
+		case "delivered":
+			return "goal_ready_for_judge_pm";
+	}
+}
+
+function sourceForCloseoutPhrase(
+	phrase: CloseoutPhrase,
+): DeliveryTruthEvidence["source"] {
+	switch (phrase) {
+		case "tidy":
+			return "root_hygiene";
+		case "merged":
+		case "ready":
+			return "external_state";
+		case "green":
+		case "delivered":
+			return "pr_closeout";
+	}
+}
+
+function staleVerdictForCloseoutPhrase(
+	phrase: CloseoutPhrase,
+): DeliveryTruthVerdict {
+	return closeoutVerdictFromEvidence(
+		phrase,
+		evidenceForCloseoutPhrase(phrase, { freshness: "stale" }),
+	);
+}
+
+function mismatchedHeadVerdictForCloseoutPhrase(
+	phrase: CloseoutPhrase,
+): DeliveryTruthVerdict {
+	return closeoutVerdictFromEvidence(
+		phrase,
+		evidenceForCloseoutPhrase(phrase, { headSha: OTHER_HEAD }),
+	);
+}
+
+function orientationOnlyVerdictForCloseoutPhrase(
+	phrase: CloseoutPhrase,
+): DeliveryTruthVerdict {
+	return closeoutVerdictFromEvidence(
+		phrase,
+		evidenceForCloseoutPhrase(phrase, { evidenceUse: "orientation" }),
+	);
+}
+
+function closeoutVerdictFromEvidence(
+	phrase: CloseoutPhrase,
+	evidence: readonly DeliveryTruthEvidence[],
+): DeliveryTruthVerdict {
+	return composeDeliveryTruth({
+		claim: claimForCloseoutPhrase(phrase),
+		source: sourceForCloseoutPhrase(phrase),
+		verifiedAt: VERIFIED_AT,
+		verdictHeadSha: CURRENT_HEAD,
+		evidence,
+	});
+}
+
+function evidenceForCloseoutPhrase(
+	phrase: CloseoutPhrase,
+	receipt: Partial<EvidenceReceipt>,
+): readonly DeliveryTruthEvidence[] {
+	switch (phrase) {
+		case "tidy":
+			return [supportingEvidence({ source: "root_hygiene", receipt })];
+		case "merged":
+		case "ready":
+			return [
+				externalStateEvidence("external-state:pr.json", receipt),
+				reviewStateEvidence("review-state:threads.json"),
+				prCloseoutEvidence("pr-closeout:merge-readiness.json"),
+			];
+		case "green":
+		case "delivered":
+			return [prCloseoutEvidence("pr-closeout:judge-pm.json", receipt)];
+	}
+}
+
+function evidenceFromVerdict(
+	verdict: DeliveryTruthVerdict,
+): DeliveryTruthEvidence {
+	return supportingEvidence({
+		source: verdict.source,
+		receipt: {
+			kind: kindForSource(verdict.source),
+			ref: verdict.evidenceRef ?? "pr-closeout:missing.json",
+			freshness: verdict.freshness,
+			evidenceUse: verdict.evidenceUse ?? "claim_support",
+			headSha: verdict.headSha,
+			status: verdict.status,
+		},
+	});
+}
+
+function kindForSource(
+	source: DeliveryTruthEvidence["source"],
+): EvidenceReceipt["kind"] {
+	switch (source) {
+		case "external_state":
+			return "external_state";
+		case "review_state":
+			return "review_artifact";
+		case "runtime_card":
+			return "runtime_card";
+		case "validation":
+			return "validation";
+		case "root_hygiene":
+		case "pr_closeout":
+			return "artifact";
+	}
+}
+
+function externalStateEvidence(
+	ref: string,
+	receipt: Partial<EvidenceReceipt> = {},
+): DeliveryTruthEvidence {
+	return supportingEvidence({
+		source: "external_state",
+		receipt: { ref, kind: "external_state", ...receipt },
+	});
+}
+
+function reviewStateEvidence(
+	ref: string,
+	receipt: Partial<EvidenceReceipt> = {},
+): DeliveryTruthEvidence {
+	return supportingEvidence({
+		source: "review_state",
+		receipt: { ref, kind: "review_artifact", ...receipt },
+	});
+}
+
+function prCloseoutEvidence(
+	ref: string,
+	receipt: Partial<EvidenceReceipt> = {},
+): DeliveryTruthEvidence {
+	return supportingEvidence({
+		source: "pr_closeout",
+		receipt: { ref, ...receipt },
+	});
 }
 
 function supportingEvidence(

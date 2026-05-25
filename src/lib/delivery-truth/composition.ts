@@ -22,6 +22,12 @@ interface DeliveryTruthBlocker {
 	evidence: DeliveryTruthEvidence | null;
 }
 
+const MERGE_READY_REQUIRED_SOURCES = [
+	"external_state",
+	"review_state",
+	"pr_closeout",
+] satisfies readonly DeliveryTruthEvidence["source"][];
+
 /** Compose a private delivery-truth verdict from receipt-backed claim evidence. */
 export function composeDeliveryTruth(
 	input: DeliveryTruthCompositionInput,
@@ -91,6 +97,8 @@ function firstBlocker(
 		const blocker = evidenceBlocker(evidence, input);
 		if (blocker) return blocker;
 	}
+	const separateEvidenceBlocker = mergeReadySeparateEvidenceBlocker(input);
+	if (separateEvidenceBlocker) return separateEvidenceBlocker;
 	return mergeReadyHeadBlocker(input);
 }
 
@@ -133,12 +141,23 @@ function sourceCanSupportClaim(
 		case "goal_ready_for_judge_pm":
 			return source === "pr_closeout";
 		case "merge_ready":
-			return (
-				source === "external_state" ||
-				source === "review_state" ||
-				source === "pr_closeout"
+			return MERGE_READY_REQUIRED_SOURCES.some(
+				(requiredSource) => requiredSource === source,
 			);
 	}
+}
+
+function mergeReadySeparateEvidenceBlocker(
+	input: DeliveryTruthCompositionInput,
+): DeliveryTruthBlocker | null {
+	if (input.claim !== "merge_ready") return null;
+	const sources = new Set(input.evidence.map((evidence) => evidence.source));
+	const hasRequiredSources = MERGE_READY_REQUIRED_SOURCES.every((source) =>
+		sources.has(source),
+	);
+	return hasRequiredSources
+		? null
+		: blocked("missing_separate_evidence", "missing", input.evidence[0]);
 }
 
 interface SourceReceiptPolicy {
