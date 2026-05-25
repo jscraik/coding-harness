@@ -79,15 +79,13 @@ function fallbackLinear(issueKey: string | null): RuntimeCard["linear"] {
 function validatedRuntimeCard(card: RuntimeCard): RuntimeCard {
 	const validation = validateRuntimeCard(card);
 	if (!validation.valid) {
-		throw new Error(
-			"generated runtime card failed validation: " +
-				validation.errors.map((error) => error.code).join("; "),
-		);
+		const codes = validation.errors.map((error) => error.code).join("; ");
+		throw new Error(`generated runtime card failed validation: ${codes}`);
 	}
 	return card;
 }
 
-/** Assemble and validate the runtime-card/v1 artifact from inspected local evidence. */
+/** Assemble and validate a runtime-card/v1 from local repository evidence. */
 export function assembleLocalRuntimeCard(
 	args: AssembleLocalRuntimeCardArgs,
 ): RuntimeCard {
@@ -137,12 +135,15 @@ export function assembleLocalRuntimeCard(
 				: fallbackLinear(args.issueKey),
 		phaseExit,
 		sources,
+		...(args.evidence.codexRuntime
+			? { codexRuntime: args.evidence.codexRuntime }
+			: {}),
 		blockers,
 	};
 	return validatedRuntimeCard(addRuntimeAttemptMetadata(card));
 }
 
-/** Merge live provider evidence into an already validated local runtime-card/v1 artifact. */
+/** Merge live provider evidence into an existing runtime-card/v1 candidate. */
 export function assembleLiveRuntimeCard(
 	base: RuntimeCard,
 	live: RuntimeCardLiveEvidence,

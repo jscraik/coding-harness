@@ -1,5 +1,7 @@
 export { validateRuntimeCard } from "./runtime-card-validation.js";
+export type { RuntimeCardCodexRuntimeProjection } from "./runtime-card-codex-runtime.js";
 import type { HeValidationError } from "../decision/validators.js";
+import type { RuntimeCardCodexRuntimeProjection } from "./runtime-card-codex-runtime.js";
 
 /** Schema version for the first local harness runtime state card. */
 export const RUNTIME_CARD_SCHEMA_VERSION = "runtime-card/v1" as const;
@@ -208,6 +210,8 @@ export interface RuntimeCard {
 	phaseExit: RuntimeCardPhaseExitState;
 	/** Evidence sources inspected to produce the card. */
 	sources: RuntimeCardSource[];
+	/** Compact Codex runtime summary when Codex runtime evidence was imported. */
+	codexRuntime?: RuntimeCardCodexRuntimeProjection;
 	/** Blocking conditions that must be resolved before moving on. */
 	blockers: string[];
 	/** Attempt/retry metadata for the runtime-card generation pass. */
@@ -242,6 +246,7 @@ export function normaliseRuntimeCard(
 		artifacts: card.artifacts,
 		linear: card.linear,
 		phaseExit: card.phaseExit,
+		codexRuntime: card.codexRuntime ?? null,
 		blockers: card.blockers,
 		attemptLedger: card.attemptLedger,
 		recoveryEvent: card.recoveryEvent,
