@@ -1,0 +1,178 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-000",
+	"createdAt": "2026-05-24T21:39:40Z",
+	"objective": "Implement PU-000 so later Codex Runtime Evidence Verifier Cockpit slices cannot start without a reviewed intent artifact, contract baseline, ordering guard, and automated acceptance coverage.",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceSpec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+	"linearIssue": "JSC-363",
+	"ownedAcceptanceIds": ["SA-017", "SA-018"],
+	"deepModuleBoundary": "src/lib/plan-gate/lifecycle-intent*",
+	"lifecycleUnit": "PU-000",
+	"inScope": [
+		"src/lib/plan-gate/lifecycle-intent*.ts",
+		"src/lib/plan-gate/lifecycle-intent*.test.ts",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-implementation-intent.json",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-contract-baseline.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-*.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
+		".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md"
+	],
+	"outOfScope": [
+		"Runtime evidence implementation files for PU-001 through PU-016 before this intent is reviewed",
+		"/Users/jamiecraik/dev/codex mutations",
+		"Public command surfaces unless a tiny validator command is proven to be the narrowest pattern",
+		"GitHub PR creation before PU-000 validation and review pass",
+		"Any claim that PU-000 completes the full runtime evidence verifier cockpit"
+	],
+	"guardedPathGlobs": [
+		"src/lib/evidence/**",
+		"src/lib/runtime/**",
+		"src/lib/delivery-truth/**",
+		"src/lib/review-state/**",
+		"src/lib/external-state/**",
+		"src/lib/pr-closeout/**",
+		"src/commands/runtime-card.ts",
+		"src/commands/runtime-card.test.ts",
+		"src/commands/pr-closeout.ts",
+		"src/commands/pr-closeout/**",
+		"src/commands/next*.ts",
+		"scripts/**",
+		"docs/architecture/root-surface-classification.md",
+		"AGENTS.md",
+		"README.md",
+		"harness.contract.json",
+		"docs/agents/**",
+		"/Users/jamiecraik/dev/codex/**"
+	],
+	"unknownRuntimePathPolicy": "fail_closed_until_reviewed_intent_updates_guardedPathGlobs",
+	"mechanicalAcceptanceIds": [
+		"SA-001",
+		"SA-002",
+		"SA-003",
+		"SA-004",
+		"SA-005",
+		"SA-006",
+		"SA-007",
+		"SA-008",
+		"SA-009",
+		"SA-010",
+		"SA-011",
+		"SA-012",
+		"SA-013",
+		"SA-014",
+		"SA-015",
+		"SA-016",
+		"SA-017",
+		"SA-018"
+	],
+	"nonMechanicalAcceptanceRationales": [],
+	"automationPlan": [
+		{
+			"name": "intent artifact validation",
+			"command": "pnpm vitest run src/lib/plan-gate/lifecycle-intent-artifact-validation.test.ts",
+			"proves": [
+				"SA-017",
+				"objective",
+				"ownedAcceptanceIds",
+				"deepModuleBoundary",
+				"automationPlan",
+				"reviewStatus",
+				"reviewReceiptRef",
+				"baselineRef",
+				"linearIssue",
+				"reviewedAt"
+			]
+		},
+		{
+			"name": "acceptance coverage validation",
+			"command": "pnpm vitest run src/lib/plan-gate/lifecycle-intent-acceptance-coverage-validation.test.ts",
+			"proves": [
+				"SA-018",
+				"all mechanically checkable SA IDs have validator, test, fixture, command, or schema assertion coverage"
+			]
+		},
+		{
+			"name": "intent ordering guard",
+			"command": "pnpm vitest run src/lib/plan-gate/lifecycle-intent-ordering-guard.test.ts",
+			"proves": [
+				"PU-001 through PU-016 implementation paths are blocked before reviewed PU-000 intent"
+			]
+		},
+		{
+			"name": "contract freeze validation",
+			"command": "pnpm vitest run src/lib/plan-gate/lifecycle-contract-freeze-validation.test.ts",
+			"proves": [
+				"acceptance IDs, lifecycle labels, forbidden paths, stop conditions, validation gates, and rollback obligations are compared to baselineRef"
+			]
+		},
+		{
+			"name": "contract baseline validation",
+			"command": "pnpm vitest run src/lib/plan-gate/lifecycle-contract-baseline-validation.test.ts",
+			"proves": [
+				"baselineRef is immutable enough for PU-000 ordering and contract-freeze checks"
+			]
+		},
+		{
+			"name": "goal board validation",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+			"proves": ["goal board remains valid after PU-000 state updates"]
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": ["adversarial-reviewer", "agent-native-reviewer"],
+		"artifactPaths": [
+			"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-adversarial-final.md",
+			"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-agent-native.md"
+		]
+	},
+	"reviewStatus": "reviewed",
+	"reviewedBy": ["adversarial-reviewer", "agent-native-reviewer"],
+	"reviewReceiptRef": ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-000-review-receipt.json",
+	"reviewedAt": "2026-05-24T23:23:00Z",
+	"reviewedIntentSha256": "d7a80d092c0224b5332cbcf09079a6703a05bf2a988f1a08656a5992139ff9e7",
+	"baselineRef": ".harness/intent/codex-runtime-evidence-verifier-cockpit-contract-baseline.json",
+	"reviewReceiptRequirements": {
+		"intentId": "codex-runtime-evidence-verifier-cockpit-pu-000",
+		"intentSha256Field": "reviewedIntentSha256",
+		"requiredReviewerRoles": ["adversarial-reviewer", "agent-native-reviewer"],
+		"requiredArtifactRefs": [
+			"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-adversarial-final.md",
+			"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-agent-native.md"
+		],
+		"requiredStatus": "pass",
+		"allowedEvidenceUse": ["claim_support", "audit_trail"],
+		"minimumTimestamp": "2026-05-24T21:39:40Z"
+	},
+	"implementationStartPolicy": "blocked_until_reviewed",
+	"postReviewMutationPolicy": "any mutation to intent-controlled fields after reviewStatus=reviewed resets reviewStatus to pending and invalidates reviewReceiptRef unless reviewedIntentSha256 is updated by a new review receipt",
+	"parallelPrTriageStrategy": {
+		"default": "sequential_for_dependent_slices",
+		"parallelCodeWorkAllowed": "only_with_explicit_branch_or_worktree_owner_record",
+		"blockedWhen": [
+			"next slice depends on an unmerged PR under triage",
+			"branch ownership is unclear",
+			"PR triage subagent owns the same branch the coordinator would mutate"
+		],
+		"safeFallback": "perform non-mutating next-slice prep, intent drafting, discovery, or review while PR triage runs"
+	},
+	"stopConditions": [
+		"Stop if this intent lacks objective, owned acceptance IDs, deep module boundary, automation plan, reviewStatus, reviewReceiptRef, baselineRef, linearIssue, or reviewedAt.",
+		"Stop if reviewReceiptRef cannot resolve to a pass receipt bound to this intentId, reviewedIntentSha256, required reviewer roles, expected artifact refs, verifiedAt, status pass, and evidenceUse claim_support or audit_trail.",
+		"Stop if any PU-001 through PU-016 lifecycle implementation path was changed before this intent reached reviewed status.",
+		"Stop if an unknown runtime or governance path is touched and cannot be classified by guardedPathGlobs.",
+		"Stop if acceptance coverage cannot map every mechanically checkable SA ID to a validator, test, fixture, command, or schema assertion."
+	],
+	"rollback": [
+		"Remove src/lib/plan-gate/lifecycle-intent*.ts files added by PU-000.",
+		"Remove PU-000 tests and fixtures.",
+		"Keep plan and spec unchanged unless a reviewed contract patch says otherwise.",
+		"Restore this intent to pending if review evidence is invalidated."
+	],
+	"assumptions": [
+		"JSC-363 remains the implementation owner until PU-000 records a different owner with Linear evidence.",
+		"The intent and baseline artifacts may live under .harness/intent because they are execution-control artifacts for this lifecycle.",
+		"Lifecycle intent validation belongs under the existing src/lib/plan-gate deep module because plan-gate already owns plan artifact validation, acceptance evidence, plan IDs, and traceability."
+	]
+}
