@@ -34,9 +34,6 @@ export interface PrCloseoutTraceabilitySummary {
 export function buildTraceabilitySummary(
 	input: PrCloseoutInput,
 ): PrCloseoutTraceabilitySummary {
-export function buildTraceabilitySummary(
-	input: PrCloseoutInput,
-): PrCloseoutTraceabilitySummary {
 	const traceability = input.traceability ?? {};
 	const sessionIds = (traceability.sessionIds ?? [])
 		.map((id) => id.trim())
@@ -50,7 +47,6 @@ export function buildTraceabilitySummary(
 		traceIds.length > 0 ||
 		hasConcreteTraceabilityText(aiSessionTraceability);
 	return { sessionIds, traceIds, aiSessionTraceability, complete };
-}
 }
 
 function hasConcreteTraceabilityText(value: string | null): boolean {
