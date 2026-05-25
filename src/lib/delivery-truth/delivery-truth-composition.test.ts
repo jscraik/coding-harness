@@ -21,10 +21,60 @@ describe("composeDeliveryTruth", () => {
 			schemaVersion: "delivery-truth/v1",
 			claim: "root_surface_tidy",
 			status: "pass",
-			evidenceRef: "root-hygiene:classification.json",
+			evidenceRef:
+				"root-hygiene:docs/architecture/root-surface-classification.md",
 			freshness: "current",
 			blockerCode: null,
 			evidenceUse: "claim_support",
+		});
+	});
+
+	it("passes root_surface_tidy with a trusted classifier receipt", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					receipt: {
+						ref: "root-hygiene:root-hygiene-classification/v1",
+						producer: "root-hygiene-classifier",
+					},
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "pass",
+			evidenceRef: "root-hygiene:root-hygiene-classification/v1",
+			blockerCode: null,
+		});
+	});
+
+	it("keeps the canonical root-surface classification doc as a trusted receipt ref", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					receipt: {
+						ref: "root-hygiene:docs/architecture/root-surface-classification.md",
+						producer: "delivery-truth-fixture",
+					},
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "pass",
+			evidenceRef:
+				"root-hygiene:docs/architecture/root-surface-classification.md",
+			blockerCode: null,
 		});
 	});
 
@@ -59,10 +109,116 @@ describe("composeDeliveryTruth", () => {
 
 		expect(verdict).toMatchObject({
 			status: "unknown",
+			statusLabel: "goal_ready_for_judge_pm unknown: missing_evidence",
 			freshness: "missing",
 			blockerCode: "missing_evidence",
 			evidenceRef: null,
+			blockerRefs: [],
 		});
+	});
+
+	it("emits textual status labels and blocker refs for operator-facing verdicts", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "goal_ready_for_judge_pm",
+			source: "pr_closeout",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "pr_closeout",
+					receipt: {
+						freshness: "stale",
+						ref: "pr-closeout:judge-pm.json",
+					},
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			statusLabel: "goal_ready_for_judge_pm blocked: stale_evidence",
+			blockerCode: "stale_evidence",
+			blockerRefs: ["pr-closeout:judge-pm.json"],
+		});
+		expect(verdict.statusLabel).toMatch(/blocked/);
+		expect(verdict.statusLabel).not.toMatch(/[✓✗🟢🔴]/u);
+	});
+
+	it("does not echo unsafe raw prompts, secrets, credentials, or bulky payloads through verdict refs", () => {
+		const secretRef =
+			"runtime-card:raw prompt: token=sk-1234567890abcdef1234567890abcdef";
+		const verdict = composeDeliveryTruth({
+			claim: "goal_ready_for_judge_pm",
+			source: "pr_closeout",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "pr_closeout",
+					receipt: {
+						ref: secretRef,
+						producer: "credential=top-secret",
+					},
+				}),
+			],
+		});
+		const serialized = JSON.stringify(verdict);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			statusLabel: "goal_ready_for_judge_pm blocked: invalid_receipt",
+			blockerCode: "invalid_receipt",
+			evidenceRef: null,
+			evidenceRefs: [],
+			blockerRefs: [],
+		});
+		expect(serialized).not.toContain("sk-1234567890abcdef1234567890abcdef");
+		expect(serialized).not.toContain("top-secret");
+		expect(serialized).not.toContain("raw prompt");
+	});
+
+	it("keeps large mixed evidence arrays deterministic without leaking unsafe refs", () => {
+		const staleRef = "pr-closeout:stale-24.json";
+		const secretRef =
+			"pr-closeout:raw prompt token=sk-1234567890abcdef1234567890abcdef";
+		const evidence = [
+			...Array.from({ length: 24 }, (_, index) =>
+				supportingEvidence({
+					source: "pr_closeout",
+					receipt: { ref: `pr-closeout:current-${index}.json` },
+				}),
+			),
+			supportingEvidence({
+				source: "pr_closeout",
+				receipt: { freshness: "stale", ref: staleRef },
+			}),
+			supportingEvidence({
+				source: "pr_closeout",
+				receipt: { ref: secretRef, producer: "credential=top-secret" },
+			}),
+		];
+
+		const verdict = composeDeliveryTruth({
+			claim: "goal_ready_for_judge_pm",
+			source: "pr_closeout",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence,
+		});
+		const serialized = JSON.stringify(verdict);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			statusLabel: "goal_ready_for_judge_pm blocked: stale_evidence",
+			blockerCode: "stale_evidence",
+			evidenceRef: staleRef,
+			blockerRefs: [staleRef],
+		});
+		expect(verdict.evidenceRefs).toHaveLength(25);
+		expect(verdict.evidenceRefs.at(-1)).toBe(staleRef);
+		expect(serialized).not.toContain("sk-1234567890abcdef1234567890abcdef");
+		expect(serialized).not.toContain("top-secret");
+		expect(serialized).not.toContain("raw prompt");
 	});
 
 	it("refuses stale, missing, and unknown receipts", () => {
@@ -155,6 +311,49 @@ describe("composeDeliveryTruth", () => {
 				supportingEvidence({
 					source: "root_hygiene",
 					receipt: { ref: "n/a" },
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "invalid_evidence_ref",
+		});
+	});
+
+	it("refuses loose root-hygiene artifact refs for root_surface_tidy", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					receipt: { ref: "root-hygiene:classification.json" },
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "invalid_evidence_ref",
+		});
+	});
+
+	it("refuses unknown-provenance root-hygiene classifier refs", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					receipt: {
+						ref: "root-hygiene:root-hygiene-classification/v1",
+						producer: "delivery-truth-fixture",
+					},
 				}),
 			],
 		});
@@ -314,7 +513,7 @@ function supportingEvidence(
 		receipt: {
 			schemaVersion: "evidence-receipt/v1",
 			kind: "artifact",
-			ref: "root-hygiene:classification.json",
+			ref: "root-hygiene:docs/architecture/root-surface-classification.md",
 			producer: "delivery-truth-fixture",
 			status: "pass",
 			freshness: "current",
