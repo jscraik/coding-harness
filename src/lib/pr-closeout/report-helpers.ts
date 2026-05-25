@@ -34,15 +34,23 @@ export interface PrCloseoutTraceabilitySummary {
 export function buildTraceabilitySummary(
 	input: PrCloseoutInput,
 ): PrCloseoutTraceabilitySummary {
+export function buildTraceabilitySummary(
+	input: PrCloseoutInput,
+): PrCloseoutTraceabilitySummary {
 	const traceability = input.traceability ?? {};
-	const sessionIds = traceability.sessionIds ?? [];
-	const traceIds = traceability.traceIds ?? [];
+	const sessionIds = (traceability.sessionIds ?? [])
+		.map((id) => id.trim())
+		.filter((id) => id.length > 0);
+	const traceIds = (traceability.traceIds ?? [])
+		.map((id) => id.trim())
+		.filter((id) => id.length > 0);
 	const aiSessionTraceability = traceability.aiSessionTraceability ?? null;
 	const complete =
 		sessionIds.length > 0 ||
 		traceIds.length > 0 ||
 		hasConcreteTraceabilityText(aiSessionTraceability);
 	return { sessionIds, traceIds, aiSessionTraceability, complete };
+}
 }
 
 function hasConcreteTraceabilityText(value: string | null): boolean {
