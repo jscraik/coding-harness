@@ -16,45 +16,20 @@ import {
 	collectAssuranceBlockers,
 	collectRuntimeEvidenceBlockers,
 } from "./evidence-summaries.js";
-import { isFailedCheck, isPassingCheck, isPendingCheck } from "./evidence.js";
+import {
+	buildDeliveryTruthSummary,
+	collectDeliveryTruthBlockers,
+} from "./delivery-truth.js";
+import { buildTraceabilitySummary, summarizeChecks } from "./report-helpers.js";
 import { buildPrCloseoutRecoveryState } from "./recovery.js";
 import { deriveNextAction } from "./status.js";
 import {
 	PR_CLOSEOUT_SCHEMA_VERSION,
 	type PrCloseoutBlocker,
-	type PrCloseoutCheckInput,
 	type PrCloseoutHarnessGateEvidenceSource,
 	type PrCloseoutInput,
 	type PrCloseoutReport,
 } from "./types.js";
-
-function summarizeChecks(checks: readonly PrCloseoutCheckInput[]): {
-	total: number;
-	failed: number;
-	pending: number;
-	passed: number;
-	unknown: number;
-} {
-	let failed = 0;
-	let pending = 0;
-	let passed = 0;
-	let unknown = 0;
-	for (const check of checks) {
-		if (isFailedCheck(check)) failed += 1;
-		else if (isPendingCheck(check)) pending += 1;
-		else if (isPassingCheck(check)) passed += 1;
-		else unknown += 1;
-	}
-	return { total: checks.length, failed, pending, passed, unknown };
-}
-
-function hasConcreteTraceabilityText(value: string | null): boolean {
-	const trimmed = value?.trim() ?? "";
-	return (
-		trimmed.length > 0 &&
-		!/^(?:n\.?a\.?|not applicable|none required)\b/iu.test(trimmed)
-	);
-}
 
 function buildPrCloseoutReportValue(
 	input: PrCloseoutInput,
@@ -65,7 +40,7 @@ function buildPrCloseoutReportValue(
 	const pr = input.pullRequest;
 	const checks = input.checks ?? [];
 	const reviewThreads = input.reviewThreads ?? { unresolved: null };
-	const traceability = input.traceability ?? {};
+	const traceability = buildTraceabilitySummary(input);
 	const harnessGateEvidenceSource: PrCloseoutHarnessGateEvidenceSource =
 		input.closeoutGates !== undefined
 			? "closeout_gates"
@@ -82,22 +57,17 @@ function buildPrCloseoutReportValue(
 		(path) => path.classification === "unrelated_local_noise",
 	);
 
-	const sessionIds = traceability.sessionIds ?? [];
-	const traceIds = traceability.traceIds ?? [];
-	const aiSessionTraceability = traceability.aiSessionTraceability ?? null;
-	const traceabilityComplete =
-		sessionIds.length > 0 ||
-		traceIds.length > 0 ||
-		hasConcreteTraceabilityText(aiSessionTraceability);
 	const claims = buildCloseoutClaims(input, checks, reviewThreads, generatedAt);
+	const deliveryTruth = buildDeliveryTruthSummary(input.deliveryTruth);
 	collectWorktreeBlockers(input, dirtyPathsExcluded, blockers);
 	collectPullRequestBlockers(pr, blockers);
 	collectCheckBlockers(checks, blockers);
 	collectReviewBlockers(pr, reviewThreads, blockers);
-	collectTraceabilityBlocker(traceabilityComplete, blockers);
+	collectTraceabilityBlocker(traceability.complete, blockers);
 	collectHarnessGateBlockers(harnessGates, blockers);
 	collectAssuranceBlockers(input, blockers);
 	collectRuntimeEvidenceBlockers(input, blockers);
+	collectDeliveryTruthBlockers(deliveryTruth, blockers);
 	collectToolBlockers(tools, blockers);
 	collectClaimBlockers(claims, blockers);
 
@@ -126,14 +96,15 @@ function buildPrCloseoutReportValue(
 			autofixable: reviewThreads.autofixable ?? null,
 		},
 		traceability: {
-			sessionIds,
-			traceIds,
-			aiSessionTraceability,
-			complete: traceabilityComplete,
+			sessionIds: traceability.sessionIds,
+			traceIds: traceability.traceIds,
+			aiSessionTraceability: traceability.aiSessionTraceability,
+			complete: traceability.complete,
 		},
 		harnessGates,
 		assurance: buildAssuranceSummary(input),
 		runtimeEvidence: buildRuntimeEvidenceSummary(input),
+		deliveryTruth,
 		tools,
 		dirtyPathsExcluded,
 		attemptLedger,

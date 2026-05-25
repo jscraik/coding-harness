@@ -12,6 +12,8 @@ export {
 	type PrCloseoutClaimSource,
 	type PrCloseoutClaimStatus,
 	type PrCloseoutDirtyPathInput,
+	type PrCloseoutDeliveryTruthSummary,
+	type PrCloseoutDeliveryTruthVerdict,
 	type PrCloseoutEvidenceFreshness,
 	type PrCloseoutHarnessGateEvidence,
 	type PrCloseoutHarnessGateEvidenceSource,

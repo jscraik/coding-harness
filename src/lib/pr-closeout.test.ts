@@ -12,6 +12,7 @@ import {
 	buildPrCloseoutReport,
 	buildPrCloseoutReportEffect,
 	type PrCloseoutInput,
+	type PrCloseoutDeliveryTruthVerdict,
 } from "./pr-closeout.js";
 
 function gatePayload(gateId: HeGateId): HeGatePayload {
@@ -235,6 +236,33 @@ function passingAssurance(): NonNullable<PrCloseoutInput["assurance"]> {
 	];
 }
 
+function deliveryTruthVerdict(
+	overrides: Partial<PrCloseoutDeliveryTruthVerdict> = {},
+): PrCloseoutDeliveryTruthVerdict {
+	return {
+		schemaVersion: "delivery-truth/v1",
+		claim: "merge_ready",
+		status: "pass",
+		statusLabel: "merge_ready pass",
+		source: "external_state",
+		evidenceRef: "external-state:pr-258/checks",
+		evidenceRefs: [
+			"external-state:pr-258/checks",
+			"review-state:pr-258/threads",
+			"pr-closeout:pr-258/report",
+		],
+		blockerRefs: [],
+		headSha: "abc123",
+		verdictHeadSha: "abc123",
+		freshness: "current",
+		blockerClass: null,
+		blockerCode: null,
+		verifiedAt: "2026-05-16T12:00:00.000Z",
+		evidenceUse: "claim_support",
+		...overrides,
+	};
+}
+
 describe("buildPrCloseoutReport", () => {
 	it("marks a fully evidenced PR ready to merge", () => {
 		const report = buildPrCloseoutReport(baseInput(), {
@@ -290,6 +318,287 @@ describe("buildPrCloseoutReport", () => {
 				}),
 			]),
 		);
+	});
+
+	it("projects supplied delivery-truth verdicts without replacing closeout claims", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				deliveryTruth: [deliveryTruthVerdict()],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.deliveryTruth).toMatchObject({
+			present: true,
+			blockingVerdicts: [],
+			mergeReady: expect.objectContaining({
+				claim: "merge_ready",
+				status: "pass",
+				freshness: "current",
+				verdictHeadSha: "abc123",
+			}),
+		});
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "pass",
+					evidenceRef: "check:pr-pipeline",
+				}),
+				expect.objectContaining({
+					claim: "review_threads_resolved",
+					status: "pass",
+				}),
+			]),
+		);
+	});
+
+	it("blocks closeout when supplied delivery-truth evidence is stale", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				deliveryTruth: [
+					deliveryTruthVerdict({
+						status: "blocked",
+						statusLabel: "merge_ready blocked: stale_evidence",
+						freshness: "stale",
+						blockerClass: "unknown",
+						blockerCode: "stale_evidence",
+					}),
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("blocked");
+		expect(report.nextAction).toBe("needs_jamie_decision");
+		expect(report.deliveryTruth.blockingVerdicts).toEqual([
+			expect.objectContaining({
+				claim: "merge_ready",
+				status: "blocked",
+				freshness: "stale",
+			}),
+		]);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "delivery_truth",
+					kind: "closeout_claim",
+					reason:
+						"Delivery-truth claim merge_ready has stale evidence for the current head.",
+					ref: "external-state:pr-258/checks",
+				}),
+			]),
+		);
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "pass",
+				}),
+			]),
+		);
+	});
+
+	it("blocks closeout when supplied delivery-truth passes with stale freshness", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				deliveryTruth: [
+					deliveryTruthVerdict({
+						status: "pass",
+						statusLabel: "merge_ready pass",
+						freshness: "stale",
+						blockerClass: "unknown",
+						blockerCode: "stale_evidence",
+					}),
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.deliveryTruth.blockingVerdicts).toEqual([
+			expect.objectContaining({
+				claim: "merge_ready",
+				status: "pass",
+				freshness: "stale",
+			}),
+		]);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "delivery_truth",
+					reason:
+						"Delivery-truth claim merge_ready has stale evidence for the current head.",
+				}),
+			]),
+		);
+	});
+
+	it("selects a blocking merge-ready verdict over an earlier passing duplicate", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				deliveryTruth: [
+					deliveryTruthVerdict(),
+					deliveryTruthVerdict({
+						status: "pass",
+						statusLabel: "merge_ready pass but stale",
+						freshness: "stale",
+						blockerClass: "unknown",
+						blockerCode: "stale_evidence",
+						evidenceRef: "external-state:pr-258/stale-checks",
+						evidenceRefs: ["external-state:pr-258/stale-checks"],
+					}),
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("blocked");
+		expect(report.deliveryTruth.mergeReady).toEqual(
+			expect.objectContaining({
+				claim: "merge_ready",
+				freshness: "stale",
+				evidenceRef: "external-state:pr-258/stale-checks",
+			}),
+		);
+		expect(report.deliveryTruth.blockingVerdicts).toEqual([
+			expect.objectContaining({
+				claim: "merge_ready",
+				freshness: "stale",
+			}),
+		]);
+	});
+
+	it.each([
+		{
+			name: "not applicable merge readiness",
+			claim: "merge_ready" as const,
+			status: "not_applicable" as const,
+			freshness: "current" as const,
+			blockerClass: "unknown" as const,
+			blockerCode: null,
+			reason:
+				"Delivery-truth claim merge_ready is not applicable and cannot support closeout.",
+		},
+		{
+			name: "not applicable root hygiene",
+			claim: "root_surface_tidy" as const,
+			status: "not_applicable" as const,
+			freshness: "current" as const,
+			blockerClass: "unknown" as const,
+			blockerCode: null,
+			reason:
+				"Delivery-truth claim root_surface_tidy is not applicable and cannot support closeout.",
+		},
+		{
+			name: "missing evidence",
+			claim: "merge_ready" as const,
+			status: "unknown" as const,
+			freshness: "missing" as const,
+			blockerClass: "unknown" as const,
+			blockerCode: "missing_evidence" as const,
+			reason: "Delivery-truth claim merge_ready is missing required evidence.",
+		},
+		{
+			name: "failed evidence",
+			claim: "merge_ready" as const,
+			status: "fail" as const,
+			freshness: "current" as const,
+			blockerClass: "unknown" as const,
+			blockerCode: "receipt_failed" as const,
+			reason: "Delivery-truth claim merge_ready failed verifier evidence.",
+		},
+		{
+			name: "unknown evidence",
+			claim: "merge_ready" as const,
+			status: "unknown" as const,
+			freshness: "unknown" as const,
+			blockerClass: "unknown" as const,
+			blockerCode: "unknown_evidence" as const,
+			reason:
+				"Delivery-truth claim merge_ready could not be proven from verifier evidence.",
+		},
+		{
+			name: "introduced blocker with current failure",
+			claim: "merge_ready" as const,
+			status: "fail" as const,
+			freshness: "current" as const,
+			blockerClass: "introduced" as const,
+			blockerCode: "receipt_failed" as const,
+			reason: "Delivery-truth claim merge_ready failed verifier evidence.",
+		},
+	])("blocks closeout when supplied delivery-truth verdict has $name", ({
+		claim,
+		status,
+		freshness,
+		blockerClass,
+		blockerCode,
+		reason,
+	}) => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				deliveryTruth: [
+					deliveryTruthVerdict({
+						claim,
+						status,
+						statusLabel: `${claim} ${status}: ${blockerCode ?? "not_applicable"}`,
+						freshness,
+						blockerClass,
+						blockerCode,
+					}),
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.deliveryTruth.blockingVerdicts).toEqual([
+			expect.objectContaining({
+				claim,
+				status,
+				freshness,
+			}),
+		]);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "delivery_truth",
+					kind: "closeout_claim",
+					reason,
+					ref: "external-state:pr-258/checks",
+					classification: blockerClass,
+					fixableByCodex: expect.any(Boolean),
+				}),
+			]),
+		);
+	});
+
+	it("keeps non-closeout delivery-truth verdicts informational", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				deliveryTruth: [
+					deliveryTruthVerdict(),
+					deliveryTruthVerdict({
+						claim: "goal_ready_for_judge_pm",
+						status: "fail",
+						statusLabel: "goal_ready_for_judge_pm fail",
+						source: "runtime_card",
+						evidenceRef: "runtime-card:goal",
+						evidenceRefs: ["runtime-card:goal"],
+						freshness: "current",
+						blockerClass: "needs_jamie_decision",
+						blockerCode: "receipt_failed",
+					}),
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.deliveryTruth.verdicts).toHaveLength(2);
+		expect(report.deliveryTruth.blockingVerdicts).toEqual([]);
+		expect(report.blockers).toEqual([]);
 	});
 
 	it("keeps the Effect API behind the same closeout evidence boundary", () => {
