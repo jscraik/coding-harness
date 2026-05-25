@@ -5,6 +5,7 @@ import {
 } from "./runtime-evidence-bundle.js";
 import type {
 	RuntimeCard,
+	RuntimeCardCodexRuntimeProjection,
 	RuntimeCardFreshness,
 	RuntimeCardPhaseExitState,
 	RuntimeCardSource,
@@ -32,6 +33,8 @@ export interface RuntimeEvidenceBundleSnapshot {
 	};
 	/** Normalized source records to merge into runtime-card/v1. */
 	sources: RuntimeCardSource[];
+	/** Compact Codex runtime projection when the evidence came from Codex runtime packets. */
+	codexRuntime?: RuntimeCardCodexRuntimeProjection;
 	/** Blocking conditions reported by the evidence producer. */
 	blockers: string[];
 }
@@ -110,6 +113,68 @@ function provenanceSourceKind(
 	return "artifact";
 }
 
+function provenanceSource(bundle: RuntimeEvidenceBundle): RuntimeCardSource {
+	return {
+		kind: provenanceSourceKind(bundle.provenance.kind),
+		ref: bundle.provenance.ref,
+		freshness: "current",
+		status: "usable",
+		failureClass: null,
+	};
+}
+
+function buildRuntimeEvidenceSources(
+	bundle: RuntimeEvidenceBundle,
+): RuntimeCardSource[] {
+	return mergeRuntimeCardSources([provenanceSource(bundle), ...bundle.sources]);
+}
+
+function uniqueRefs(sources: RuntimeCardSource[]): string[] {
+	return [...new Set(sources.map((source) => source.ref))];
+}
+
+function uniqueBlockedRefs(sources: RuntimeCardSource[]): Set<string> {
+	return new Set(
+		sources
+			.filter((source) => source.status !== "usable")
+			.map((source) => source.ref),
+	);
+}
+
+function buildCodexRuntimeProjection(
+	bundle: RuntimeEvidenceBundle,
+): RuntimeCardCodexRuntimeProjection | undefined {
+	if (bundle.provenance.kind !== "codex_runtime") return undefined;
+	const codexSources = mergeRuntimeCardSources(bundle.sources);
+	const receiptRefs = uniqueRefs(codexSources);
+	const blockedRefs = uniqueBlockedRefs(codexSources);
+	return {
+		provenanceRef: bundle.provenance.ref,
+		collectedAt: bundle.provenance.collectedAt,
+		sourceCount: receiptRefs.length,
+		blockedSourceCount: receiptRefs.filter((ref) => blockedRefs.has(ref))
+			.length,
+		blockerCount: bundle.blockers.length,
+		receiptRefs,
+		validationRefs: uniqueRefs(
+			bundle.sources.filter((source) => source.kind === "validation"),
+		),
+		reviewRefs: uniqueRefs(
+			bundle.sources.filter((source) => source.kind === "review"),
+		),
+		sessionRefs: uniqueRefs(
+			bundle.sources.filter((source) => source.kind === "session"),
+		),
+		staleStateRefs: uniqueRefs(
+			bundle.sources.filter(
+				(source) =>
+					source.ref.startsWith("codex-stale-state://") ||
+					source.freshness === "stale",
+			),
+		),
+	};
+}
+
 /**
  * Produce a normalized snapshot of a runtime evidence bundle for runtime-card generation.
  *
@@ -133,16 +198,7 @@ export function inspectRuntimeEvidenceBundle(
 		};
 	}
 	const bundle = asRuntimeEvidenceBundle(value);
-	const sources = mergeRuntimeCardSources([
-		{
-			kind: provenanceSourceKind(bundle.provenance.kind),
-			ref: bundle.provenance.ref,
-			freshness: "current",
-			status: "usable",
-			failureClass: null,
-		},
-		...bundle.sources,
-	]);
+	const sources = buildRuntimeEvidenceSources(bundle);
 	const rejectSummaryOnlyRequiredPhaseExit =
 		options.requireGateBackedPhaseExit === true &&
 		bundle.phaseExitSourceCompleteness === "summary_only";
@@ -152,6 +208,7 @@ export function inspectRuntimeEvidenceBundle(
 			: undefined;
 	const rejectedSummaryOnlyPhaseExit =
 		bundle.phaseExit && rejectSummaryOnlyRequiredPhaseExit;
+	const codexRuntime = buildCodexRuntimeProjection(bundle);
 	return {
 		issueKey: bundle.issueKey,
 		...(bundle.pullRequest ? { pullRequest: bundle.pullRequest } : {}),
@@ -197,6 +254,7 @@ export function inspectRuntimeEvidenceBundle(
 				}
 			: {}),
 		sources,
+		...(codexRuntime ? { codexRuntime } : {}),
 		blockers: [...bundle.blockers],
 	};
 }

@@ -752,27 +752,30 @@ Allowed paths:
 
 - src/lib/delivery-truth/**
 - src/lib/pr-closeout/** tests only if additive fixture reuse is needed
-- no public command surfaces unless necessary for existing private test hooks
+- private delivery-truth test/helpers only; no public command surfaces in PU-008
 
 Forbidden paths:
 
 - Full review-state/v1 implementation.
 - Full external-state-snapshot/v1 implementation.
 - Automated closeout hook wiring.
+- Public delivery-truth or closeout command behavior.
+- Production closeout rendering or final-response/PR-body text rewriting.
 - Live PR, tracker, CI, or review API calls.
 
 Steps:
 
 1. Add foundation non-blending fixture with separate review-state and external-state refs.
 2. Add negative fixture proving one blended readiness status cannot satisfy separate claims.
-3. Add private closeout text fixture that downgrades or blocks green, tidy, delivered, merged, or ready language when no current claim-support verdict exists.
+3. Add private closeout text fixture that downgrades or blocks green, tidy, delivered, merged, or ready language when no current claim-support verdict exists, including stale, head-SHA-mismatched, missing, or orientation-only evidence.
 4. Keep automated closeout hook integration deferred.
 
 Validation:
 
 - Command: pnpm vitest run src/lib/delivery-truth/delivery-truth-composition.test.ts -> required after PU-008.
+- Command: rg 'from "\\.\\./(review-state|external-state)/|src/lib/(review-state|external-state)|src/commands/' src/lib/delivery-truth -> must return no matches.
 
-Stop condition: Stop if implementation wires a live closeout hook or public command before PU-009 and PU-010 approval.
+Stop condition: Stop if implementation requires production review-state/external-state modules, wires a live closeout hook, mutates production closeout rendering, or adds public command behavior before PU-009 and PU-010 approval.
 
 Rollback note: Remove private non-blending and closeout downgrade fixtures.
 

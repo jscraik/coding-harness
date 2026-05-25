@@ -652,14 +652,14 @@ describe("buildLocalRuntimeCard", () => {
 				sources: [
 					{
 						kind: "validation",
-						ref: "command:duplicate-empty",
+						ref: "command:pnpm duplicate-empty",
 						freshness: "current",
 						status: "empty",
 						failureClass: null,
 					},
 					{
 						kind: "validation",
-						ref: "command:duplicate-empty",
+						ref: "command:pnpm duplicate-empty",
 						freshness: "current",
 						status: "invalid",
 						failureClass: "invalid_validation_output",
@@ -689,11 +689,11 @@ describe("buildLocalRuntimeCard", () => {
 			card.sources.find(
 				(source) =>
 					source.kind === "validation" &&
-					source.ref === "command:duplicate-empty",
+					source.ref === "command:pnpm duplicate-empty",
 			),
 		).toEqual({
 			kind: "validation",
-			ref: "command:duplicate-empty",
+			ref: "command:pnpm duplicate-empty",
 			freshness: "current",
 			status: "invalid",
 			failureClass: "invalid_validation_output",

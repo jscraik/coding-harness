@@ -4,6 +4,7 @@ import {
 	EVIDENCE_RECEIPT_KINDS,
 	EVIDENCE_RECEIPT_STATUSES,
 	EVIDENCE_RECEIPT_USES,
+	isSafeEvidenceReceiptPointer,
 	validateEvidenceReceipt,
 } from "./evidence-receipt.js";
 
@@ -135,6 +136,32 @@ describe("validateEvidenceReceipt", () => {
 		expect(result.valid).toBe(false);
 		expect(result.errors.map(({ path }) => path)).toEqual(
 			expect.arrayContaining(["blockerClass", "headSha", "checksum"]),
+		);
+	});
+
+	it("rejects receipt pointers that embed raw prompts, secrets, credentials, or bulky payloads", () => {
+		const rawPromptRef =
+			"runtime-card:raw prompt: summarize this private thread";
+		const secretProducer =
+			"validator token=sk-1234567890abcdef1234567890abcdef";
+		const bulkyChecksum = `sha256:${"a".repeat(600)}`;
+		const result = validateEvidenceReceipt(
+			validReceipt({
+				ref: rawPromptRef,
+				producer: secretProducer,
+				checksum: bulkyChecksum,
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors.map(({ path }) => path)).toEqual(
+			expect.arrayContaining(["ref", "producer", "checksum"]),
+		);
+		expect(isSafeEvidenceReceiptPointer("artifact://reviews/summary.md")).toBe(
+			true,
+		);
+		expect(isSafeEvidenceReceiptPointer("system prompt: do the task")).toBe(
+			false,
 		);
 	});
 
