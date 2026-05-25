@@ -98,6 +98,8 @@ describe("delivery-truth verifier freshness policy", () => {
 					fetchedAt: "2026-05-25T10:14:00Z",
 					recomputedHeadSha: HEAD_SHA,
 				}),
+				reviewStateEvidence(),
+				prCloseoutEvidence(),
 			],
 		});
 
@@ -138,6 +140,42 @@ function evidence(
 			verifiedAt: VERIFIED_AT,
 			headSha: HEAD_SHA,
 			...overrides.receipt,
+		},
+	};
+}
+
+function reviewStateEvidence(): DeliveryTruthEvidence {
+	return {
+		source: "review_state",
+		receipt: {
+			schemaVersion: "evidence-receipt/v1",
+			kind: "review_artifact",
+			ref: "review-state:threads.json",
+			producer: "review-state-fixture",
+			status: "pass",
+			freshness: "current",
+			evidenceUse: "claim_support",
+			blockerClass: null,
+			verifiedAt: VERIFIED_AT,
+			headSha: HEAD_SHA,
+		},
+	};
+}
+
+function prCloseoutEvidence(): DeliveryTruthEvidence {
+	return {
+		source: "pr_closeout",
+		receipt: {
+			schemaVersion: "evidence-receipt/v1",
+			kind: "artifact",
+			ref: "pr-closeout:merge-readiness.json",
+			producer: "pr-closeout-fixture",
+			status: "pass",
+			freshness: "current",
+			evidenceUse: "claim_support",
+			blockerClass: null,
+			verifiedAt: VERIFIED_AT,
+			headSha: HEAD_SHA,
 		},
 	};
 }

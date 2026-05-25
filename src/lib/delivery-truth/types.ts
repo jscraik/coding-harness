@@ -39,6 +39,7 @@ export type DeliveryTruthBlockerCode =
 	| "receipt_failed"
 	| "receipt_blocked"
 	| "receipt_unknown"
+	| "missing_separate_evidence"
 	| "missing_verdict_head_sha"
 	| "missing_head_sha"
 	| "mixed_head_evidence"
