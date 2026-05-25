@@ -49,7 +49,7 @@ continuation_gate:
   auto_continue_allowed: "no"
 checks:
   dirty_fingerprint: "Worktree already contained uncommitted .harness research/spec/plan changes before this goal board was created; future slices must preserve unrelated changes."
-  last_verification: "2026-05-24T23:24:57Z: PU-002 codex-runtime-evidence/v1 is implemented in src/lib/runtime as facade, types, validation, reference-integrity, and helper modules; focused runtime tests pass with 21 tests, typecheck passes, and adversarial plus agent-native review artifacts exist and are non-empty."
+  last_verification: "2026-05-25T08:42:00Z: PU-003 runtime evidence bundle adapter remains in the existing src/lib/runtime deep-module seam; focused tests, Biome, typecheck, quality:docstrings, quality:self-affirming, quality:size, and the goal-board checker pass. Agent-native review artifact exists. Adversarial reviewer returned no actionable findings after fixes, but both adversarial subagent attempts failed to write the requested file, so the coordinator persisted a clearly marked mailbox capture artifact and recorded the subagent artifact-write failure as a process gap."
 claims:
   - id: "C001"
     claim: "The user requested a durable full-lifecycle goal prompt, not immediate Worker implementation."
@@ -135,6 +135,7 @@ tasks:
       - "Each slice has an atomic commit, GitHub PR truth, and pr-green-sweep triage handoff."
       - "PU-001 evidence-receipt/v1 has R004 local implementation and review evidence; PR handoff remains pending."
       - "PU-002 codex-runtime-evidence/v1 has R005 local implementation, reference-integrity validation, source-kind/path validation, focused tests, and final adversarial plus agent-native review evidence; PR handoff remains pending."
+      - "PU-003 runtime-evidence-bundle adapter has R006/R007 local implementation evidence, healthy packet, duplicate-source collision, unknown-source-cleanliness, and blank-provenanceRef tests, focused validation, agent-native artifact evidence, and a coordinator-persisted adversarial mailbox capture after the adversarial subagent failed to write the requested file twice. The code slice is locally validated; PR handoff must disclose the artifact-write process gap."
     stop_if:
       - "A slice lacks reviewed intent."
       - "Private fixtures are used to claim production verifier completion."
