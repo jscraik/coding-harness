@@ -845,7 +845,7 @@ Steps:
 
 Validation:
 
-- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts -> required after PU-010.
+- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout.test.ts -> required after PU-010.
 - Command: pnpm exec tsx src/cli.ts pr-closeout --help -> required if pr-closeout command behavior changes.
 
 Stop condition: Stop if delivery-truth creates a false-success path, if PU-010 touches `src/commands/next*.ts`, or if any planned PU-013 cockpit summary becomes executable authority rather than advisory metadata.

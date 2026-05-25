@@ -94,5 +94,12 @@ function deliveryTruthFixableByCodex(
 ): boolean {
 	if (verdict.blockerClass === "needs_jamie_decision") return false;
 	if (verdict.blockerClass === "external_service") return false;
+	if (
+		verdict.blockerClass === "introduced" &&
+		verdict.freshness === "current" &&
+		verdict.status === "fail"
+	) {
+		return true;
+	}
 	return verdict.freshness === "missing" || verdict.freshness === "unknown";
 }

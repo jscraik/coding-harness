@@ -69,7 +69,7 @@
 		},
 		{
 			"acceptanceId": "FR-010",
-			"command": "pnpm vitest run src/lib/pr-closeout/*.test.ts",
+			"command": "pnpm vitest run src/lib/pr-closeout.test.ts",
 			"proof": "additive closeout consumption or downgrade behavior"
 		},
 		{
@@ -95,12 +95,12 @@
 		{
 			"acceptanceId": "SA-015",
 			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
-			"proof": "statusLabel, blockerRefs, and blocker-class assertions"
+			"proof": "mixed-head merge-ready evidence"
 		},
 		{
 			"acceptanceId": "SA-016",
-			"command": "pnpm vitest run src/lib/pr-closeout/*.test.ts",
-			"proof": "verdicts do not replace unrelated closeout claims"
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "freshness-policy override evidence"
 		},
 		{
 			"acceptanceId": "SA-017",
