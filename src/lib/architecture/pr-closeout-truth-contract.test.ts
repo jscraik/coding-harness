@@ -99,8 +99,8 @@ describe("pr-closeout truth contract invariant gate", () => {
 
 		const contractPath = join(tempDir, "src/lib/pr-closeout/types.ts");
 		const contractSource = readFileSync(contractPath, "utf-8").replace(
-			/\n\s*verifiedAt:\s*string;\n/u,
-			"\n",
+			/(export interface PrCloseoutClaim \{[\s\S]*?)\n\s*verifiedAt:\s*string;\n/u,
+			"$1\n",
 		);
 		writeFileSync(contractPath, contractSource, "utf-8");
 

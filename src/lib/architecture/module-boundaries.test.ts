@@ -1325,7 +1325,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 const COMMAND_IMPORT_PATTERN = /^(?:\.\.\/)+commands\//;
 const EFFECT_IMPORT_PATTERN = /^effect(?:\/.*)?$/;
 const PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN =
-	/^.*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|evidence|evidence-summaries|evaluator|recovery|status|types)\.js$/;
+	/^.*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|delivery-truth|evidence|evidence-summaries|evaluator|recovery|report-helpers|status|types)\.js$/;
 const IMPORT_SPECIFIER_PATTERN =
 	/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["'](?<specifier>[^"']+)["']/g;
 const APPROVED_EFFECT_BOUNDARIES = new Set([
@@ -1449,7 +1449,9 @@ const REMEDIATE_COMMAND_SUBMODULES = [
 	"./remediate-run-record.js",
 ] as const;
 const PR_CLOSEOUT_EVALUATOR_SUBMODULES = [
+	"./delivery-truth.js",
 	"./evidence-summaries.js",
+	"./report-helpers.js",
 	"./recovery.js",
 ] as const;
 const REVIEW_GATE_CORE_SUBMODULES = [

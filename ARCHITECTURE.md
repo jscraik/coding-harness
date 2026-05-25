@@ -94,6 +94,10 @@ Current runtime-evidence deep modules include:
   cards, producer adapters, and runtime-card projections.
 - src/lib/delivery-truth/: private and production verdict composition for
   delivery, root hygiene, Judge/PM readiness, and merge-readiness claims.
+- src/lib/pr-closeout/: PR closeout claim evaluation and recovery state; it may
+  consume delivery-truth verdict summaries as additive evidence but must not
+  collapse local validation, remote checks, review state, tracker state, and
+  merge readiness into one blended truth.
 - src/lib/review-state/: PR review truth packets, reviewer artifact receipt
   validation, unresolved thread counts, and validation ownership
   classification.

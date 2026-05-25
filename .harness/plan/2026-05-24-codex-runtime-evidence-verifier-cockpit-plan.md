@@ -820,7 +820,7 @@ Handoff state: Enables PU-010 production delivery-truth.
 
 ### PU-010: delivery-truth/v1 Production Verifier and Closeout Integration
 
-Promote private delivery-truth fixtures into production claim verification that can be consumed by runtime-card, harness next, and pr-closeout flows.
+Promote private delivery-truth fixtures into production claim verification that can be consumed by pr-closeout flows and later projected by runtime-card and harness next in PU-013. PU-010 owns the production verifier and the narrow closeout library seam only; it does not own cockpit command wiring.
 
 Source trace: FR-006, FR-007, FR-010, SA-006, SA-007, SA-010, SA-011, SA-015, SA-016.
 
@@ -829,7 +829,6 @@ Allowed paths:
 - src/lib/delivery-truth/**
 - src/lib/pr-closeout/**
 - src/commands/pr-closeout.ts and tests when the existing command is the narrowest integration surface
-- src/commands/next*.ts and tests when cockpit summaries need verdict refs
 
 Forbidden paths:
 
@@ -841,15 +840,15 @@ Steps:
 
 1. Define production delivery-truth/v1 claim verdicts with status, evidenceRef, source, headSha, freshness, blockerClass, verifiedAt, and evidenceUse.
 2. Wire delivery-truth into pr-closeout or the narrowest existing closeout helper so unsupported closeout language is blocked or downgraded.
-3. Expose compact delivery-truth summaries to harness next --json without expanding harness next into a broad status surface.
+3. Define the compact delivery-truth summary shape that PU-013 may later project into runtime-card and harness next output, without touching `src/commands/next*.ts` in this slice.
 4. Add negative fixtures for blended readiness, mixed-head evidence, producer TTL overreach, missing artifact receipt, stale external state, and unresolved review state.
 
 Validation:
 
-- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts src/commands/next*.test.ts -> required after PU-010.
+- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts -> required after PU-010.
 - Command: pnpm exec tsx src/cli.ts pr-closeout --help -> required if pr-closeout command behavior changes.
 
-Stop condition: Stop if delivery-truth creates a false-success path or if harness next becomes executable authority rather than a cockpit summary.
+Stop condition: Stop if delivery-truth creates a false-success path, if PU-010 touches `src/commands/next*.ts`, or if any planned PU-013 cockpit summary becomes executable authority rather than advisory metadata.
 
 Rollback note: Disable delivery-truth integration behind the prior pr-closeout behavior and keep fixture tests for the failure case.
 
@@ -1149,7 +1148,7 @@ pnpm vitest run src/lib/runtime/runtime-card-validation.test.ts src/commands/run
 pnpm vitest run src/lib/delivery-truth/delivery-truth-composition.test.ts
 pnpm vitest run src/lib/delivery-truth/delivery-truth-freshness-policy.test.ts
 pnpm vitest run src/lib/review-state/*.test.ts src/lib/external-state/*.test.ts src/lib/pr-closeout/*.test.ts
-pnpm vitest run src/commands/next*.test.ts
+pnpm vitest run src/commands/next*.test.ts # after PU-013 cockpit projection only; not a PU-010 validation gate
 pnpm exec tsx src/cli.ts runtime-card --json --repo .
 bash scripts/validate-codestyle.sh --fast
 ~~~
