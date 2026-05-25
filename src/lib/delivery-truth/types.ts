@@ -72,9 +72,11 @@ export interface DeliveryTruthVerdict {
 	schemaVersion: typeof DELIVERY_TRUTH_SCHEMA_VERSION;
 	claim: DeliveryTruthClaim;
 	status: PrCloseoutClaimStatus;
+	statusLabel: string;
 	source: DeliveryTruthSource;
 	evidenceRef: string | null;
 	evidenceRefs: string[];
+	blockerRefs: string[];
 	headSha: string | null;
 	verdictHeadSha: string | null;
 	freshness: PrCloseoutEvidenceFreshness;

@@ -1,4 +1,7 @@
-import { validateEvidenceReceipt } from "../evidence/evidence-receipt.js";
+import {
+	isSafeEvidenceReceiptPointer,
+	validateEvidenceReceipt,
+} from "../evidence/evidence-receipt.js";
 import type {
 	EvidenceReceiptFreshness,
 	EvidenceReceiptKind,
@@ -23,17 +26,25 @@ interface DeliveryTruthBlocker {
 export function composeDeliveryTruth(
 	input: DeliveryTruthCompositionInput,
 ): DeliveryTruthVerdict {
-	const evidenceRefs = input.evidence.map((evidence) => evidence.receipt.ref);
+	const evidenceRefs = input.evidence
+		.map((evidence) => evidence.receipt.ref)
+		.filter(isSafeEvidenceReceiptPointer);
 	const blocker = firstBlocker(input);
 	const firstEvidence = blocker?.evidence ?? input.evidence[0] ?? null;
 	const status = blocker?.status ?? "pass";
+	const evidenceRef = safeEvidenceRef(firstEvidence);
+	const blockerRefs = blocker?.evidence
+		? [safeEvidenceRef(blocker.evidence)]
+		: [];
 	return {
 		schemaVersion: DELIVERY_TRUTH_SCHEMA_VERSION,
 		claim: input.claim,
 		status,
+		statusLabel: deliveryTruthStatusLabel(input.claim, status, blocker?.code),
 		source: firstEvidence?.source ?? input.source,
-		evidenceRef: firstEvidence?.receipt.ref ?? null,
+		evidenceRef,
 		evidenceRefs,
+		blockerRefs: blockerRefs.filter((ref): ref is string => ref !== null),
 		headSha: firstEvidence?.receipt.headSha ?? input.verdictHeadSha ?? null,
 		verdictHeadSha: input.verdictHeadSha ?? null,
 		freshness: blocker?.freshness ?? "current",
@@ -42,6 +53,23 @@ export function composeDeliveryTruth(
 		verifiedAt: input.verifiedAt,
 		evidenceUse: firstEvidence?.receipt.evidenceUse ?? null,
 	};
+}
+
+function safeEvidenceRef(
+	evidence: DeliveryTruthEvidence | null,
+): string | null {
+	const ref = evidence?.receipt.ref;
+	return ref && isSafeEvidenceReceiptPointer(ref) ? ref : null;
+}
+
+function deliveryTruthStatusLabel(
+	claim: DeliveryTruthCompositionInput["claim"],
+	status: PrCloseoutClaimStatus,
+	blockerCode: DeliveryTruthBlockerCode | null | undefined,
+): string {
+	return blockerCode
+		? `${claim} ${status}: ${blockerCode}`
+		: `${claim} ${status}`;
 }
 
 function firstBlocker(
