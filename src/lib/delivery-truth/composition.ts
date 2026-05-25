@@ -141,12 +141,28 @@ function sourceMatchesReceipt(evidence: DeliveryTruthEvidence): boolean {
 }
 
 function isActionableEvidenceRef(evidence: DeliveryTruthEvidence): boolean {
+	if (evidence.source === "root_hygiene") {
+		return isTrustedRootHygieneEvidence(evidence);
+	}
 	const ref = evidence.receipt.ref;
 	const policy = SOURCE_RECEIPT_POLICIES[evidence.source];
 	return (
 		ref.startsWith(policy.refPrefix) &&
 		/^[A-Za-z][A-Za-z0-9-]*:[A-Za-z0-9._/@:-]+$/.test(ref)
 	);
+}
+
+function isTrustedRootHygieneEvidence(
+	evidence: DeliveryTruthEvidence,
+): boolean {
+	switch (evidence.receipt.ref) {
+		case "root-hygiene:docs/architecture/root-surface-classification.md":
+			return true;
+		case "root-hygiene:root-hygiene-classification/v1":
+			return evidence.receipt.producer === "root-hygiene-classifier";
+		default:
+			return false;
+	}
 }
 
 function receiptFreshnessBlocker(

@@ -49,7 +49,7 @@ continuation_gate:
   auto_continue_allowed: "no"
 checks:
   dirty_fingerprint: "Worktree already contained uncommitted .harness research/spec/plan changes before this goal board was created; future slices must preserve unrelated changes."
-  last_verification: "2026-05-25T08:42:00Z: PU-003 runtime evidence bundle adapter remains in the existing src/lib/runtime deep-module seam; focused tests, Biome, typecheck, quality:docstrings, quality:self-affirming, quality:size, and the goal-board checker pass. Agent-native review artifact exists. Adversarial reviewer returned no actionable findings after fixes, but both adversarial subagent attempts failed to write the requested file, so the coordinator persisted a clearly marked mailbox capture artifact and recorded the subagent artifact-write failure as a process gap."
+  last_verification: "2026-05-25T12:28:24Z: PU-006 root-hygiene receipt fixture remains in the existing src/lib/delivery-truth deep-module seam. Focused delivery-truth tests pass (23 tests), typecheck passes, validate-codestyle --fast passes, quality:self-affirming passes, and final adversarial plus agent-native review artifacts exist with no actionable findings. PR handoff remains pending."
 claims:
   - id: "C001"
     claim: "The user requested a durable full-lifecycle goal prompt, not immediate Worker implementation."
@@ -139,6 +139,7 @@ tasks:
       - "PU-004 runtime-card Codex projection has R008 implementation, validation, final adversarial plus agent-native review artifacts, commit 73b5958a, draft PR #294, and pr-green-sweep evidence. Merge readiness remains blocked by draft PR state plus current pr-template and consistency-drift-health failures."
       - "PU-005 private delivery-truth claim verifier has R009 implementation, focused validation, final adversarial plus agent-native review artifacts, commit f9274b09, draft PR #295, and pr-green-sweep evidence. Merge readiness remains blocked by parent PR #294 plus current pr-template and consistency-drift-health failures."
       - "PU-005 PR body has R010 repair evidence: stored body artifact and live PR #295 body both pass pr-template-gate locally. Remote check refresh is still required before clearing the PR-template blocker."
+      - "PU-006 root-hygiene receipt fixture has R011 local implementation evidence in src/lib/delivery-truth/**, focused validation, quality:self-affirming, final adversarial plus agent-native review artifacts, and an explicit trusted-ref regression for the canonical root-surface classification doc. Commit, PR handoff, and pr-green-sweep triage remain pending."
     stop_if:
       - "A slice lacks reviewed intent."
       - "Private fixtures are used to claim production verifier completion."
