@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-24
+last_validated: 2026-05-25
 ---
 
 # Agent governance
@@ -106,6 +106,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   source-classification, validation, and reference-integrity internals before
   any runtime-card adapter consumes them; refresh architecture context and this
   guide when those packet or validator modules change
+- runtime evidence receipt and delivery-truth changes that add or alter
+  `evidence-receipt/v1`, `delivery-truth/v1`, claim-support policy,
+  freshness, head-SHA, blocker-class, or source-kind rules should stay additive,
+  fixture-backed, and separated from public closeout authority until the
+  production verifier surface is intentionally wired; refresh architecture
+  context and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`,
+  and this guide synchronized when docs-gate reports architecture-context or
+  agent-governance surfaces
 - trust-boundary validator changes that add script-backed evidence reports
   such as `audit-reference-report/v1` should keep output machine-readable,
   path classification repo-scoped, and proof based on current tracked

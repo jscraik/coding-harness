@@ -233,6 +233,16 @@ Notes:
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Runtime evidence receipt and delivery-truth changes that add or alter
+  `evidence-receipt/v1`, `delivery-truth/v1`, claim-support policy,
+  freshness, head-SHA, blocker-class, or source-kind rules are
+  architecture-adjacent runtime cockpit changes. Keep these contracts additive,
+  fixture-backed, and separated from public closeout authority until the
+  production verifier surface is intentionally wired; refresh
+  `AI/context/diagram-context.md` and keep `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
 - Trust-boundary validator changes that add or alter script-backed evidence
   reports such as `audit-reference-report/v1` are architecture-adjacent
   agent-governance changes when they classify repository paths, git-tracked
