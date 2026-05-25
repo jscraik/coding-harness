@@ -1,0 +1,13 @@
+{
+	"schemaVersion": "learning-override/v1",
+	"suppressions": [
+		{
+			"learningId": "coderabbit.coding-harness.example-learning",
+			"pathPattern": "docs/example.md",
+			"reason": "Documented false positive during a bounded migration.",
+			"owner": "docs-owner",
+			"expiresAt": "2026-12-31",
+			"replacementAction": "Track the migration exception in the owning plan and remove this override before expiry."
+		}
+	]
+}
