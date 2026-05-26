@@ -6,6 +6,8 @@ import {
 	ROOT_HYGIENE_CLASSIFICATION_SCHEMA_VERSION,
 	ROOT_HYGIENE_RECEIPT_PRODUCER,
 } from "../root-hygiene/types.js";
+import { missingRequiredPolicyBlockers } from "../root-hygiene/policy-coverage.js";
+import type { ClassifiedRootHygieneEntry } from "../root-hygiene/types.js";
 import { isVerifierOwnedRootHygieneReport } from "../root-hygiene/classifier.js";
 import { ROOT_HYGIENE_REPOSITORY_ID_KIND } from "../root-hygiene/repository-identity.js";
 
@@ -41,6 +43,10 @@ function rootHygieneReportInternalsMatch(
 		return false;
 	}
 	const blockingEntries = report.entries.filter((entry) => entry.blocking);
+	const expectedBlockers = [
+		...blockingEntries,
+		...missingRequiredPolicyBlockers(report.entries),
+	];
 	const deferredEntries = report.entries.filter(
 		(entry) => entry.classification === "should_move",
 	);
@@ -60,9 +66,35 @@ function rootHygieneReportInternalsMatch(
 			countRootHygieneClassification(report.entries, "legacy_drift") &&
 		report.summary.unclassified ===
 			countRootHygieneClassification(report.entries, "unclassified") &&
-		report.summary.blocking === blockingEntries.length &&
-		report.blockers.length === blockingEntries.length &&
+		report.summary.blocking === expectedBlockers.length &&
+		rootHygieneBlockersMatch(report.blockers, expectedBlockers) &&
 		report.deferredEntries.length === deferredEntries.length
+	);
+}
+
+function rootHygieneBlockersMatch(
+	actual: readonly ClassifiedRootHygieneEntry[],
+	expected: readonly ClassifiedRootHygieneEntry[],
+): boolean {
+	return (
+		actual.length === expected.length &&
+		actual.every((entry, index) =>
+			rootHygieneEntryMatches(entry, expected[index]),
+		)
+	);
+}
+
+function rootHygieneEntryMatches(
+	actual: ClassifiedRootHygieneEntry,
+	expected: ClassifiedRootHygieneEntry | undefined,
+): boolean {
+	return (
+		expected !== undefined &&
+		actual.path === expected.path &&
+		actual.kind === expected.kind &&
+		actual.classification === expected.classification &&
+		actual.reason === expected.reason &&
+		actual.blocking === expected.blocking
 	);
 }
 
