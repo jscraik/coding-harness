@@ -35,6 +35,16 @@ export function isTrustedRootHygieneEvidence(
 	);
 }
 
+/**
+ * Validates internal consistency of a root-hygiene report within the given evidence.
+ *
+ * Checks that the report exists and that its status, summary totals, per-classification
+ * counts, blocking count, ordered blockers list, and deferred-entries count align with
+ * the report's entries and derived policy blockers.
+ *
+ * @param evidence - The delivery truth evidence containing the root-hygiene report and receipt
+ * @returns `true` if all internal consistency checks pass, `false` otherwise
+ */
 function rootHygieneReportInternalsMatch(
 	evidence: DeliveryTruthEvidence,
 ): boolean {
@@ -72,6 +82,13 @@ function rootHygieneReportInternalsMatch(
 	);
 }
 
+/**
+ * Determine whether two blocker arrays match exactly in length and in element-by-element content.
+ *
+ * @param actual - Blocker entries reported in the root-hygiene report
+ * @param expected - Blocker entries expected (computed from entries and policy-derived blockers)
+ * @returns `true` if `actual` and `expected` have the same length and each element at the same index matches, `false` otherwise.
+ */
 function rootHygieneBlockersMatch(
 	actual: readonly ClassifiedRootHygieneEntry[],
 	expected: readonly ClassifiedRootHygieneEntry[],
@@ -84,6 +101,13 @@ function rootHygieneBlockersMatch(
 	);
 }
 
+/**
+ * Determines whether two root-hygiene entries match exactly across all identifying fields.
+ *
+ * @param actual - The observed entry to compare
+ * @param expected - The expected entry; if `undefined`, the entries do not match
+ * @returns `true` if `expected` is defined and `actual.path`, `kind`, `classification`, `reason`, and `blocking` all equal the corresponding fields on `expected`, `false` otherwise
+ */
 function rootHygieneEntryMatches(
 	actual: ClassifiedRootHygieneEntry,
 	expected: ClassifiedRootHygieneEntry | undefined,
@@ -98,6 +122,13 @@ function rootHygieneEntryMatches(
 	);
 }
 
+/**
+ * Count entries in a root-hygiene report that have a given classification.
+ *
+ * @param entries - The report entries to examine
+ * @param classification - The classification value to count among `entries`
+ * @returns The number of entries whose `classification` equals `classification`
+ */
 function countRootHygieneClassification(
 	entries: NonNullable<DeliveryTruthEvidence["rootHygieneReport"]>["entries"],
 	classification: NonNullable<
