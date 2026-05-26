@@ -87,6 +87,26 @@ describe("buildJudgePmAuditVerdict", () => {
 		});
 	});
 
+	it("accepts multiple runtime-card receipt refs under the canonical slot", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				runtimeCardRefs: [
+					auditSurface("runtime-card", "runtime_card", {
+						ref: "runtime-card:main",
+					}),
+					auditSurface("runtime-card", "runtime_card", {
+						ref: "runtime-card:fallback",
+					}),
+				],
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "pass",
+			freshness: "current",
+		});
+	});
+
 	it("fails closed when required audit surfaces are missing or stale", () => {
 		const missingRuntimeCard = buildJudgePmAuditVerdict(
 			baseInput({ runtimeCardRefs: [] }),
@@ -143,6 +163,46 @@ describe("buildJudgePmAuditVerdict", () => {
 			freshness: "unknown",
 			blockerCode: "invalid_audit_surface",
 			blockerRefs: ["root-hygiene:unrelated"],
+		});
+	});
+
+	it("fails closed when an audit surface spoofs the required slot name", () => {
+		const input = baseInput({
+			rootHygieneRef: auditSurface("tmp", "artifact", {
+				ref: "root-hygiene:tmp",
+			}),
+		});
+		const verdict = buildJudgePmAuditVerdict(input);
+		const packet = buildJudgePmAuditPacket(input);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "unknown",
+			blockerCode: "invalid_audit_surface",
+			blockerRefs: ["root-hygiene:tmp"],
+		});
+		expect(packet.auditSurfaces).toContainEqual(
+			expect.objectContaining({ name: "root-hygiene" }),
+		);
+		expect(packet.auditSurfaces).not.toContainEqual(
+			expect.objectContaining({ name: "tmp" }),
+		);
+	});
+
+	it("fails closed when singleton audit surfaces use slot-scoped variant refs", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				reviewStateRef: auditSurface("review-state", "review_artifact", {
+					ref: "review-state:alt",
+				}),
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "unknown",
+			blockerCode: "invalid_audit_surface",
+			blockerRefs: ["review-state:alt"],
 		});
 	});
 
@@ -346,6 +406,29 @@ describe("buildJudgePmAuditVerdict", () => {
 			freshness: "stale",
 			blockerCode: "audit_verdict_not_current",
 			blockerRefs: ["external-state:linear_state_aligned"],
+		});
+	});
+
+	it("fails closed when a current supporting verdict lacks traceable evidence", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				supportingVerdicts: [
+					...supportingVerdicts().filter(
+						(verdict) => verdict.claim !== "merge_ready",
+					),
+					deliveryVerdict("merge_ready", "pr_closeout", {
+						evidenceRef: null,
+						evidenceRefs: [],
+					}),
+				],
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "current",
+			blockerCode: "audit_verdict_not_current",
+			blockerRefs: [],
 		});
 	});
 });
