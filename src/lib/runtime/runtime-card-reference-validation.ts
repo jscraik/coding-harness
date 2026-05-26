@@ -80,6 +80,7 @@ function decodedPayloadLikeRef(value: string): boolean {
 	if (!/%[0-9a-fA-F]{2}/.test(value)) return false;
 	let decoded = value;
 	try {
+		// Decode up to 4 times to handle nested URL encoding while preventing unbounded loops
 		for (let attempt = 0; attempt < 4; attempt += 1) {
 			if (!/%[0-9a-fA-F]{2}/.test(decoded)) return false;
 			const nextDecoded = decodeURIComponent(decoded);

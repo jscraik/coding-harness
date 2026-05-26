@@ -141,6 +141,16 @@ production verifier surface is intentionally wired. Refresh
 `AI/context/diagram-context.md` and update this guide when those contracts add
 new claim-support, freshness, head-SHA, blocker-class, or source-kind rules.
 
+Root-hygiene evidence belongs in the same deep-module lane when it supports
+delivery-truth claims. Keep repository inventory, git-tracked path resolution,
+policy digestion, freeze classification, and receipt generation inside
+`src/lib/root-hygiene/`, then expose only the narrow verifier seam through
+`src/lib/delivery-truth/root-hygiene-evidence.ts`. Update
+`ARCHITECTURE.md`, `docs/architecture/root-surface-classification.md`, and
+the generated architecture context when root-surface classification or
+`root_surface_tidy` claim-support rules change, so agent cockpit guidance
+continues to show where the work is placed.
+
 Codex runtime evidence packet changes belong in the existing runtime deep module
 before they feed the runtime-card adapter. Keep the public
 `codex-runtime-evidence/v1` surface as a narrow facade over runtime types,

@@ -243,6 +243,16 @@ Notes:
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Root-hygiene evidence changes that add or alter repository inventory,
+  git-tracked path resolution, root-surface policy digestion, freeze
+  classification, receipt generation, or `root_surface_tidy` claim support
+  are architecture-adjacent runtime cockpit changes. Keep the deep module in
+  `src/lib/root-hygiene/`, expose delivery-truth integration through
+  `src/lib/delivery-truth/root-hygiene-evidence.ts`, and keep
+  `ARCHITECTURE.md`, `docs/architecture/root-surface-classification.md`,
+  `AI/context/diagram-context.md`, `docs/agents/00-architecture-bootstrap.md`,
+  and `docs/agents/07b-agent-governance.md` synchronized when docs-gate
+  reports architecture-context or agent-governance surfaces.
 - Review-state and external-state packet changes that add or alter
   `review-state/v1`, `external-state-snapshot/v1`, reviewer artifact
   validation, unresolved thread classification, external-source freshness,

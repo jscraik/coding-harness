@@ -1,6 +1,17 @@
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
-import { composeDeliveryTruth } from "./composition.js";
+import {
+	classifyGitTrackedRoot,
+	policyRootSurfaceEntries,
+	rootHygieneGitEnv,
+	rootHygieneReceiptRef,
+} from "../root-hygiene/index.js";
+import type { RootHygieneReport } from "../root-hygiene/types.js";
+import { composeDeliveryTruth as composeDeliveryTruthBase } from "./composition.js";
 import type {
 	DeliveryTruthClaim,
 	DeliveryTruthEvidence,
@@ -26,8 +37,7 @@ describe("composeDeliveryTruth", () => {
 			schemaVersion: "delivery-truth/v1",
 			claim: "root_surface_tidy",
 			status: "pass",
-			evidenceRef:
-				"root-hygiene:docs/architecture/root-surface-classification.md",
+			evidenceRef: rootHygieneReceiptRef(),
 			freshness: "current",
 			blockerCode: null,
 			evidenceUse: "claim_support",
@@ -35,6 +45,7 @@ describe("composeDeliveryTruth", () => {
 	});
 
 	it("passes root_surface_tidy with a trusted classifier receipt", () => {
+		const report = rootHygieneClassifierReport();
 		const verdict = composeDeliveryTruth({
 			claim: "root_surface_tidy",
 			source: "root_hygiene",
@@ -43,9 +54,9 @@ describe("composeDeliveryTruth", () => {
 			evidence: [
 				supportingEvidence({
 					source: "root_hygiene",
+					rootHygieneReport: report,
 					receipt: {
-						ref: "root-hygiene:root-hygiene-classification/v1",
-						producer: "root-hygiene-classifier",
+						...report.receipt,
 					},
 				}),
 			],
@@ -53,12 +64,254 @@ describe("composeDeliveryTruth", () => {
 
 		expect(verdict).toMatchObject({
 			status: "pass",
-			evidenceRef: "root-hygiene:root-hygiene-classification/v1",
+			evidenceRef: rootHygieneReceiptRef(),
 			blockerCode: null,
 		});
 	});
 
-	it("keeps the canonical root-surface classification doc as a trusted receipt ref", () => {
+	it("passes root_surface_tidy without a verdict head when evidence is trusted", () => {
+		const report = rootHygieneClassifierReport();
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					rootHygieneReport: report,
+					receipt: {
+						...report.receipt,
+					},
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "pass",
+			blockerCode: null,
+		});
+	});
+
+	it("refuses root_surface_tidy without repository identity", () => {
+		const report = rootHygieneClassifierReport();
+		const verdict = composeDeliveryTruthBase({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			repositoryIdentity: null,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					rootHygieneReport: report,
+					receipt: {
+						...report.receipt,
+					},
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "missing_repository_identity",
+		});
+	});
+
+	it("refuses root_surface_tidy evidence replayed from another repository", () => {
+		const repoA = makeGitRepo(trackedPathsForPolicyEntries());
+		const repoB = makeGitRepo(trackedPathsForPolicyEntries());
+		try {
+			const reportA = classifyGitTrackedRoot({
+				repoRoot: repoA,
+				generatedAt: VERIFIED_AT,
+				headSha: CURRENT_HEAD,
+			});
+			const reportB = classifyGitTrackedRoot({
+				repoRoot: repoB,
+				generatedAt: VERIFIED_AT,
+				headSha: CURRENT_HEAD,
+			});
+			const verdict = composeDeliveryTruthBase({
+				claim: "root_surface_tidy",
+				source: "root_hygiene",
+				verifiedAt: VERIFIED_AT,
+				repositoryIdentity: reportB.repository,
+				evidence: [
+					supportingEvidence({
+						source: "root_hygiene",
+						rootHygieneReport: reportA,
+						receipt: {
+							...reportA.receipt,
+						},
+					}),
+				],
+			});
+
+			expect(verdict).toMatchObject({
+				status: "blocked",
+				blockerCode: "repository_identity_mismatch",
+			});
+		} finally {
+			rmSync(repoA, { force: true, recursive: true });
+			rmSync(repoB, { force: true, recursive: true });
+		}
+	});
+
+	it("does not allow post-classification repository identity mutation to bypass replay checks", () => {
+		const repoA = makeGitRepo(trackedPathsForPolicyEntries());
+		const repoB = makeGitRepo(trackedPathsForPolicyEntries());
+		try {
+			const reportA = classifyGitTrackedRoot({
+				repoRoot: repoA,
+				generatedAt: VERIFIED_AT,
+				headSha: CURRENT_HEAD,
+			});
+			const reportB = classifyGitTrackedRoot({
+				repoRoot: repoB,
+				generatedAt: VERIFIED_AT,
+				headSha: CURRENT_HEAD,
+			});
+
+			expect(() => {
+				(reportA.repository as { digest: string }).digest =
+					reportB.repository?.digest ?? "";
+			}).toThrow(TypeError);
+
+			const verdict = composeDeliveryTruthBase({
+				claim: "root_surface_tidy",
+				source: "root_hygiene",
+				verifiedAt: VERIFIED_AT,
+				repositoryIdentity: reportB.repository,
+				evidence: [
+					supportingEvidence({
+						source: "root_hygiene",
+						rootHygieneReport: reportA,
+						receipt: {
+							...reportA.receipt,
+						},
+					}),
+				],
+			});
+
+			expect(verdict).toMatchObject({
+				status: "blocked",
+				blockerCode: "repository_identity_mismatch",
+			});
+		} finally {
+			rmSync(repoA, { force: true, recursive: true });
+			rmSync(repoB, { force: true, recursive: true });
+		}
+	});
+
+	it("refuses root-hygiene reports with caller-asserted coverage counts", () => {
+		const report = rootHygieneClassifierReport();
+		const forgedReport: RootHygieneReport = {
+			...report,
+			coverage: {
+				...report.coverage,
+				entryCount: report.entries.length + 1,
+				valid: true,
+			},
+		};
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					rootHygieneReport: forgedReport,
+					receipt: report.receipt,
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "invalid_evidence_ref",
+		});
+	});
+
+	it("refuses digest-consistent reports not produced by the verifier seam", () => {
+		const report = rootHygieneClassifierReport();
+		const syntheticReport: RootHygieneReport = {
+			...report,
+			coverage: { ...report.coverage },
+			receipt: { ...report.receipt },
+			entries: [...report.entries],
+			blockers: [...report.blockers],
+			deferredEntries: [...report.deferredEntries],
+			summary: { ...report.summary },
+		};
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					rootHygieneReport: syntheticReport,
+					receipt: report.receipt,
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "invalid_evidence_ref",
+		});
+	});
+
+	it("refuses shape-valid root-hygiene receipts without classifier report proof", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					rootHygieneReport: null,
+					receipt: {
+						ref: rootHygieneReceiptRef(),
+						producer: "root-hygiene-classifier",
+						checksum: "c".repeat(64),
+						headSha: CURRENT_HEAD,
+					},
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "invalid_evidence_ref",
+		});
+	});
+
+	it("refuses root-hygiene evidence from a mismatched head", () => {
+		const report = rootHygieneClassifierReport({ headSha: OTHER_HEAD });
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					rootHygieneReport: report,
+					receipt: report.receipt,
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "mixed_head_evidence",
+		});
+	});
+
+	it("refuses document-only root-surface policy refs as claim support", () => {
 		const verdict = composeDeliveryTruth({
 			claim: "root_surface_tidy",
 			source: "root_hygiene",
@@ -76,10 +329,55 @@ describe("composeDeliveryTruth", () => {
 		});
 
 		expect(verdict).toMatchObject({
-			status: "pass",
-			evidenceRef:
-				"root-hygiene:docs/architecture/root-surface-classification.md",
-			blockerCode: null,
+			status: "blocked",
+			blockerCode: "invalid_evidence_ref",
+		});
+	});
+
+	it("refuses root-hygiene receipts that are not bound to a coverage checksum", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					receipt: {
+						ref: rootHygieneReceiptRef(),
+						producer: "root-hygiene-classifier",
+						checksum: null,
+					},
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "invalid_evidence_ref",
+		});
+	});
+
+	it("refuses root-hygiene receipts from an older policy ref", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				supportingEvidence({
+					source: "root_hygiene",
+					receipt: {
+						ref: "root-hygiene:root-hygiene-classification/v1",
+						producer: "root-hygiene-classifier",
+					},
+				}),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "invalid_evidence_ref",
 		});
 	});
 
@@ -389,9 +687,9 @@ describe("composeDeliveryTruth", () => {
 	});
 
 	it("maps failed, blocked, and unknown receipts to non-pass verdicts", () => {
-		const failed = rootVerdict({ receipt: { status: "fail" } });
-		const blocked = rootVerdict({ receipt: { status: "blocked" } });
-		const unknown = rootVerdict({ receipt: { status: "unknown" } });
+		const failed = closeoutVerdict({ receipt: { status: "fail" } });
+		const blocked = closeoutVerdict({ receipt: { status: "blocked" } });
+		const unknown = closeoutVerdict({ receipt: { status: "unknown" } });
 
 		expect(failed).toMatchObject({
 			status: "fail",
@@ -472,7 +770,7 @@ describe("composeDeliveryTruth", () => {
 				supportingEvidence({
 					source: "root_hygiene",
 					receipt: {
-						ref: "root-hygiene:root-hygiene-classification/v1",
+						ref: rootHygieneReceiptRef(),
 						producer: "delivery-truth-fixture",
 					},
 				}),
@@ -600,13 +898,36 @@ describe("composeDeliveryTruth", () => {
 	});
 });
 
-function rootVerdict(overrides: { receipt?: Partial<EvidenceReceipt> }) {
+function composeDeliveryTruth(
+	input: Parameters<typeof composeDeliveryTruthBase>[0],
+): DeliveryTruthVerdict {
+	const repositoryIdentity =
+		input.repositoryIdentity !== undefined
+			? input.repositoryIdentity
+			: repositoryIdentityFromEvidence(input.evidence);
+	if (repositoryIdentity === undefined) {
+		return composeDeliveryTruthBase(input);
+	}
+	return composeDeliveryTruthBase({
+		...input,
+		repositoryIdentity,
+	});
+}
+
+function repositoryIdentityFromEvidence(
+	evidence: readonly DeliveryTruthEvidence[],
+): Parameters<typeof composeDeliveryTruthBase>[0]["repositoryIdentity"] {
+	return evidence.find((item) => item.source === "root_hygiene")
+		?.rootHygieneReport?.repository;
+}
+
+function closeoutVerdict(overrides: { receipt?: Partial<EvidenceReceipt> }) {
 	return composeDeliveryTruth({
-		claim: "root_surface_tidy",
-		source: "root_hygiene",
+		claim: "goal_ready_for_judge_pm",
+		source: "pr_closeout",
 		verifiedAt: VERIFIED_AT,
 		verdictHeadSha: CURRENT_HEAD,
-		evidence: [supportingEvidence({ source: "root_hygiene", ...overrides })],
+		evidence: [supportingEvidence({ source: "pr_closeout", ...overrides })],
 	});
 }
 
@@ -749,15 +1070,21 @@ function evidenceForCloseoutPhrase(
 function evidenceFromVerdict(
 	verdict: DeliveryTruthVerdict,
 ): DeliveryTruthEvidence {
+	const report =
+		verdict.source === "root_hygiene"
+			? rootHygieneClassifierReport({ headSha: verdict.headSha })
+			: undefined;
 	return supportingEvidence({
 		source: verdict.source,
+		...(report ? { rootHygieneReport: report } : {}),
 		receipt: {
+			...(report?.receipt ?? {}),
 			kind: kindForSource(verdict.source),
 			ref: verdict.evidenceRef ?? "pr-closeout:missing.json",
 			freshness: verdict.freshness,
 			evidenceUse: verdict.evidenceUse ?? "claim_support",
 			headSha: verdict.headSha,
-			status: verdict.status,
+			status: "pass",
 		},
 	});
 }
@@ -814,22 +1141,141 @@ function supportingEvidence(
 	overrides: {
 		source?: DeliveryTruthEvidence["source"];
 		receipt?: Partial<EvidenceReceipt>;
+		rootHygieneReport?: RootHygieneReport | null;
 	} = {},
 ): DeliveryTruthEvidence {
+	const source = overrides.source ?? "root_hygiene";
+	if (source === "root_hygiene") {
+		const report =
+			overrides.rootHygieneReport === undefined
+				? rootHygieneClassifierReport({
+						headSha: overrides.receipt?.headSha ?? CURRENT_HEAD,
+					})
+				: overrides.rootHygieneReport;
+		const evidence: DeliveryTruthEvidence = {
+			source,
+			receipt: {
+				...(report?.receipt ?? defaultReceiptForSource(source)),
+				...overrides.receipt,
+			},
+		};
+		if (report) {
+			evidence.rootHygieneReport = report;
+		}
+		return evidence;
+	}
 	return {
-		source: overrides.source ?? "root_hygiene",
+		source,
 		receipt: {
-			schemaVersion: "evidence-receipt/v1",
-			kind: "artifact",
-			ref: "root-hygiene:docs/architecture/root-surface-classification.md",
-			producer: "delivery-truth-fixture",
-			status: "pass",
-			freshness: "current",
-			evidenceUse: "claim_support",
-			blockerClass: null,
-			verifiedAt: VERIFIED_AT,
-			headSha: CURRENT_HEAD,
+			...defaultReceiptForSource(source),
 			...overrides.receipt,
 		},
+	};
+}
+
+function defaultReceiptForSource(
+	source: DeliveryTruthEvidence["source"],
+): EvidenceReceipt {
+	switch (source) {
+		case "root_hygiene":
+			return rootHygieneClassifierReceipt();
+		case "external_state":
+			return baseReceipt({
+				kind: "external_state",
+				ref: "external-state:fixture.json",
+				producer: "external-state-fixture",
+			});
+		case "review_state":
+			return baseReceipt({
+				kind: "review_artifact",
+				ref: "review-state:fixture.json",
+				producer: "review-state-fixture",
+			});
+		case "runtime_card":
+			return baseReceipt({
+				kind: "runtime_card",
+				ref: "runtime-card:fixture.json",
+				producer: "runtime-card-fixture",
+			});
+		case "validation":
+			return baseReceipt({
+				kind: "validation",
+				ref: "validation:fixture.json",
+				producer: "validation-fixture",
+			});
+		case "pr_closeout":
+			return baseReceipt({
+				kind: "artifact",
+				ref: "pr-closeout:fixture.json",
+				producer: "pr-closeout-fixture",
+			});
+	}
+}
+
+function rootHygieneClassifierReceipt(
+	overrides: Partial<EvidenceReceipt> = {},
+): EvidenceReceipt {
+	return {
+		...rootHygieneClassifierReport().receipt,
+		...overrides,
+	};
+}
+
+function rootHygieneClassifierReport(
+	input: { headSha?: string | null } = {},
+): RootHygieneReport {
+	const repoRoot = makeGitRepo(trackedPathsForPolicyEntries());
+	try {
+		return classifyGitTrackedRoot({
+			repoRoot,
+			generatedAt: VERIFIED_AT,
+			headSha: input.headSha ?? CURRENT_HEAD,
+		});
+	} finally {
+		rmSync(repoRoot, { force: true, recursive: true });
+	}
+}
+
+function makeGitRepo(trackedPaths: readonly string[]): string {
+	const repoRoot = mkdtempSync(join(tmpdir(), "delivery-truth-root-"));
+	execFileSync("git", ["init"], {
+		cwd: repoRoot,
+		env: rootHygieneGitEnv(),
+		stdio: "ignore",
+	});
+	for (const trackedPath of trackedPaths) {
+		const absolutePath = join(repoRoot, trackedPath);
+		mkdirSync(dirname(absolutePath), { recursive: true });
+		writeFileSync(absolutePath, "tracked\n");
+	}
+	execFileSync("git", ["add", "-A"], {
+		cwd: repoRoot,
+		env: rootHygieneGitEnv(),
+		stdio: "ignore",
+	});
+	return repoRoot;
+}
+
+function trackedPathsForPolicyEntries(): string[] {
+	return policyRootSurfaceEntries().map((entry) =>
+		entry.kind === "directory"
+			? `${entry.path}/.tracked-root-placeholder`
+			: entry.path,
+	);
+}
+
+function baseReceipt(overrides: Partial<EvidenceReceipt>): EvidenceReceipt {
+	return {
+		schemaVersion: "evidence-receipt/v1",
+		kind: "artifact",
+		ref: "artifact:fixture.json",
+		producer: "delivery-truth-fixture",
+		status: "pass",
+		freshness: "current",
+		evidenceUse: "claim_support",
+		blockerClass: null,
+		verifiedAt: VERIFIED_AT,
+		headSha: CURRENT_HEAD,
+		...overrides,
 	};
 }

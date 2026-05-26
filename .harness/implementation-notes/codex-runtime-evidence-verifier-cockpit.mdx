@@ -1,0 +1,81 @@
+---
+schema_version: implementation-notes/v1
+title: Codex Runtime Evidence Verifier Cockpit Implementation Notes
+goal: codex-runtime-evidence-verifier-cockpit
+updated_at: 2026-05-26T01:10:00Z
+status: present
+---
+
+# Codex Runtime Evidence Verifier Cockpit Implementation Notes
+
+This MDX source is the version-controlled implementation-notes artifact for the goal board. The operator-facing browser view remains a local HTML projection while work is active.
+
+## Deep Module Topology
+
+<DeepModuleMap
+  modules={[
+    "src/lib/runtime",
+    "src/lib/evidence",
+    "src/lib/review-state",
+    "src/lib/external-state",
+    "src/lib/delivery-truth",
+    "src/lib/root-hygiene",
+    "src/lib/pr-closeout",
+  ]}
+/>
+
+Runtime evidence work stays inside the existing deep modules instead of adding a parallel truth subsystem. `src/lib/runtime` owns Codex runtime packets, adapters, and runtime-card projection. `src/lib/delivery-truth` composes claim support from receipts, review state, external state, root hygiene, and PR closeout evidence.
+
+## Current Slice Insertion Map
+
+<InsertionPoint
+  slice="PU-011 PR #302 review repair"
+  branch="codex/jsc-363-runtime-evidence-pu011"
+  files={[
+    "src/lib/root-hygiene/git-tracked-paths.ts",
+    "src/lib/root-hygiene/repository-identity.ts",
+    "src/lib/root-hygiene/classifier.ts",
+    "src/lib/root-hygiene/index.ts",
+    "scripts/check-goal-board.py",
+  ]}
+/>
+
+The PR repair addresses current review feedback by adding contextual root-hygiene git failures, a configurable `git ls-files` buffer, facade exports for repository identity, and a repo-local goal-board validation command.
+
+## Runtime Truth Surface
+
+<RuntimeCardState
+  pr="302"
+  mergeable="MERGEABLE"
+  merge_state="BLOCKED"
+  checks="local gates passing; remote CI rerun pending after push"
+  review_threads="unresolved current and outdated threads remain"
+/>
+
+Live PR inspection showed no merge conflict. CircleCI later failed on the root-hygiene module-boundary ratchet, so the repair keeps the facade and git adapter inside the enforced deep-module size limits before pushing a new remote CI attempt.
+
+## Blast Radius View
+
+<BlastRadiusMap
+  changed_modules={[
+    "root-hygiene",
+    "goal-board validation wrapper",
+    "goal-board metadata",
+  ]}
+/>
+
+The repair is intentionally narrow: it does not alter runtime-card behavior, delivery-truth verdict policy, review-state packets, or external-state freshness.
+
+## Validation Coverage
+
+<ValidatorCoverage
+  checks={[
+    "pnpm vitest run src/lib/root-hygiene/root-hygiene.test.ts",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+    "pnpm typecheck",
+    "pnpm run quality:self-affirming",
+    "git diff --check",
+  ]}
+/>
+
+Validation is recorded in PR handoff only when the command was actually run and its pass, fail, or blocked result is known.

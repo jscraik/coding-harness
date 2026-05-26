@@ -114,6 +114,15 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   context and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`,
   and this guide synchronized when docs-gate reports architecture-context or
   agent-governance surfaces
+- root-hygiene evidence changes should keep repository inventory,
+  git-tracked path resolution, root-surface policy digestion, freeze
+  classification, and receipt generation inside `src/lib/root-hygiene/`;
+  delivery-truth should consume that evidence only through
+  `src/lib/delivery-truth/root-hygiene-evidence.ts`, and changes to
+  `root_surface_tidy` claim support should synchronize `ARCHITECTURE.md`,
+  `docs/architecture/root-surface-classification.md`, generated architecture
+  context, `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this
+  guide when docs-gate reports architecture-context or agent-governance surfaces
 - review-state and external-state packet changes should keep review truth in
   `src/lib/review-state/` and live PR/CI/review/tracker freshness truth in
   `src/lib/external-state/`; validators must keep reviewer artifact receipts,

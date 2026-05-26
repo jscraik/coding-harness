@@ -845,7 +845,7 @@ Steps:
 
 Validation:
 
-- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout.test.ts -> required after PU-010.
+- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts -> required after PU-010.
 - Command: pnpm exec tsx src/cli.ts pr-closeout --help -> required if pr-closeout command behavior changes.
 
 Stop condition: Stop if delivery-truth creates a false-success path, if PU-010 touches `src/commands/next*.ts`, or if any planned PU-013 cockpit summary becomes executable authority rather than advisory metadata.
@@ -863,7 +863,10 @@ Source trace: SA-012 and repeated ROOT cleanup steering.
 Allowed paths:
 
 - src/lib/delivery-truth/**
-- src/lib/root-hygiene/** if a dedicated module is needed
+- src/lib/root-hygiene/** for the classifier, verifier-owned tracked-path
+  inventory projection, receipt construction, coverage digest, policy
+  projection, and typed report contract
+- ARCHITECTURE.md when the root-hygiene deep module is added or split
 - docs/architecture/root-surface-classification.md
 - docs/README.md
 - docs/agents/00-architecture-bootstrap.md
@@ -879,13 +882,16 @@ Forbidden paths:
 Steps:
 
 1. Define root-hygiene-classification/v1 or equivalent receipt fields for canonical root, should move, generated intentionally tracked, and legacy/drift.
-2. Require root_surface_tidy delivery-truth to cite current root classification evidence.
-3. Add fixtures proving missing classification, stale classification, and unreferenced root drift block root_surface_tidy.
-4. Update root classification and governance docs only for the paths touched by the approved cleanup slice.
+2. Derive claim-support reports through a verifier-owned live git-tracked-path seam that reads `git ls-files` without a shell, computes root entries and complete git-tracked inventory internally, and does not expose caller-supplied path lists as the passing claim-support path.
+3. Bind classifier receipts to a coverage checksum recomputed from the classified root entries, to the current root-surface policy digest, and to a non-path repository identity derived from the real git toplevel; fail closed if the computed inventory digest differs or if a caller tries to label policy-only entries as git-tracked evidence through the general classifier.
+4. Require root_surface_tidy delivery-truth to verify the classifier report payload, repository identity, module-private verifier-owned runtime report token, frozen report graph, report-internal summary and coverage counts, receipt fields, checksum-bound coverage, current policy-bound receipt ref, and matching head SHA when the verdict is head-bound before passing.
+5. Add fixtures proving missing classification, stale classification, unreferenced root drift, incomplete inventory, inventory digest mismatch, policy-only inventory mislabeled as git-tracked evidence, document-only refs, checksum-less receipts, stale policy-era receipt refs, stale-head receipts, synthetic tracked-path arrays, shape-valid synthetic receipts without classifier reports, post-token mutation attempts, direct-import-forged token attempts, digest-consistent copied reports not produced by the verifier seam, missing repository identity, and cross-repository replay attempts block root_surface_tidy.
+6. Update root classification and governance docs only for the paths touched by the approved cleanup slice.
 
 Validation:
 
-- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts -> required after PU-011.
+- Command: pnpm vitest run src/lib/root-hygiene/*.test.ts src/lib/delivery-truth/*.test.ts src/lib/architecture/module-boundaries.test.ts -> required after PU-011.
+- Command: pnpm architecture:check -> required after PU-011 when the root-hygiene deep module is added.
 - Command: pnpm run docs:ubiquitous:guard -> required if AGENTS or glossary-governed terms change.
 - Command: bash scripts/run-harness-gate.sh docs-gate --mode required --json -> required if docs-gate surfaces change.
 - Command: bash scripts/validate-codestyle.sh --fast -> required after PU-011.

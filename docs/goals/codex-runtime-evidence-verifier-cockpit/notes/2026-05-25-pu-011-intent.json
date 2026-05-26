@@ -1,0 +1,69 @@
+{
+	"schemaVersion": "slice-intent/v1",
+	"intentId": "pu-011-root-hygiene-claim-support",
+	"objective": "Add a root-hygiene classifier and require root_surface_tidy delivery-truth to cite current root classification evidence.",
+	"ownedAcceptanceIds": ["SA-012", "SA-017", "SA-018", "FR-007"],
+	"deepModuleBoundary": "src/lib/root-hygiene/** production classifier module with non-path repository identity binding, module-private verifier-owned runtime report tokens, frozen report graphs, and split entry-classification/report-freeze seams plus narrow src/lib/delivery-truth/** trust-policy fixtures for root_surface_tidy.",
+	"inScope": [
+		"root classification contract",
+		"classifier validation",
+		"root-hygiene evidence receipt creation",
+		"verifier-owned root-hygiene report provenance",
+		"delivery-truth root_surface_tidy negative fixtures",
+		"ARCHITECTURE.md deep-module map",
+		"goal-board slice receipts"
+	],
+	"outOfScope": [
+		"deleting or moving root files",
+		"public cleanup command",
+		"live git cleanup automation",
+		"Codex producer bridge",
+		"external-state or review-state changes",
+		"harness next projection"
+	],
+	"baselineRef": {
+		"branch": "codex/jsc-363-runtime-evidence-pu010",
+		"headSha": "05602c0b475b4b714edfd852fda66af2728a1d8f",
+		"remote": "origin"
+	},
+	"reviewStatus": "reviewed_intent_ready_for_implementation",
+	"reviewedBy": [
+		"planning-specialist-agent",
+		"adversarial-reviewer",
+		"agent-native-reviewer"
+	],
+	"reviewReceiptRefs": [
+		"artifacts/reviews/pu011-intent-planning.md",
+		"artifacts/reviews/pu011-intent-adversarial.md",
+		"artifacts/reviews/pu011-intent-agent-native.md"
+	],
+	"planAlignmentRef": {
+		"path": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+		"slice": "PU-011",
+		"decision": "PU-011 owns production root hygiene classification and root_surface_tidy claim-support proof without moving or deleting root artifacts."
+	},
+	"automationPlan": [
+		{
+			"acceptanceId": "SA-012",
+			"command": "pnpm vitest run src/lib/root-hygiene/*.test.ts src/lib/delivery-truth/*.test.ts",
+			"proof": "root-hygiene-classification/v1 emits classed root entries and delivery-truth trusts only current verifier-produced classifier evidence"
+		},
+		{
+			"acceptanceId": "SA-017",
+			"command": "stat -f '%N %z' artifacts/reviews/pu011-intent-planning.md artifacts/reviews/pu011-intent-agent-native.md artifacts/reviews/pu011-intent-adversarial.md && rg -n '^WROTE: artifacts/reviews/pu011-intent-(planning|agent-native|adversarial)\\.md$' artifacts/reviews/pu011-intent-*.md",
+			"proof": "intent reviewed before implementation with non-empty artifact-first reports and expected WROTE lines"
+		},
+		{
+			"acceptanceId": "SA-018",
+			"command": "goal-board receipt validation",
+			"proof": "acceptance map and slice receipt before PR handoff"
+		},
+		{
+			"acceptanceId": "FR-007",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "missing, stale, loose document-only, untrusted, unclassified, legacy-drift, post-token mutation, direct-import-forged, digest-consistent copied, missing repository identity, and cross-repository replayed root hygiene evidence blocks root_surface_tidy"
+		}
+	],
+	"requiredFreshnessGate": "expected=05602c0b475b4b714edfd852fda66af2728a1d8f; local_sha=$(git rev-parse codex/jsc-363-runtime-evidence-pu010); remote_sha=$(git ls-remote origin refs/heads/codex/jsc-363-runtime-evidence-pu010 | awk '{print $1}'); test \"$local_sha\" = \"$expected\" && test \"$remote_sha\" = \"$expected\"",
+	"createdAt": "2026-05-25T20:05:00Z"
+}

@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
-import {
-	REVIEW_STATE_OWNERSHIP_CLASSIFICATIONS,
-	validateReviewStatePacket,
-} from "./index.js";
+import { validateReviewStatePacket } from "./index.js";
 import type {
 	ReviewStateOwnershipClassification,
 	ReviewStatePacket,
@@ -157,7 +154,15 @@ describe("review-state/v1 validation", () => {
 	});
 
 	it("accepts every review-state ownership classification used by reviewers", () => {
-		for (const ownershipClassification of REVIEW_STATE_OWNERSHIP_CLASSIFICATIONS) {
+		const expectedOwnershipClassifications: ReviewStateOwnershipClassification[] =
+			[
+				"introduced_by_current_patch",
+				"pre_existing",
+				"unrelated_dirty_worktree",
+				"environment_or_tooling_failure",
+			];
+
+		for (const ownershipClassification of expectedOwnershipClassifications) {
 			const result = validateReviewStatePacket(
 				reviewStatePacket({
 					reviewerArtifacts: [
