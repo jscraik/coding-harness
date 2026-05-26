@@ -475,6 +475,10 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("command: pnpm check");
 			expect(circleConfig).toContain("name: pr-template");
 			expect(circleConfig).toContain("check_name: pr-template");
+			expect(circleConfig).toContain('pr_ref="${CIRCLE_PULL_REQUESTS%%,*}"');
+			expect(circleConfig).toContain(
+				'--head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}"',
+			);
 			expect(circleConfig).toContain(
 				"bash scripts/run-harness-gate.sh pr-template-gate --json",
 			);

@@ -225,8 +225,16 @@ workflows:
             if [[ -n "$repo_slug" ]]; then
               gh_repo_args=(--repo "$repo_slug")
             fi
+            if [[ -z "$pr_ref" && -n "${CIRCLE_PULL_REQUESTS:-}" ]]; then
+              pr_ref="${CIRCLE_PULL_REQUESTS%%,*}"
+            fi
             if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
-              pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
+              if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" ]]; then
+                pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+              fi
+            fi
+            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
+              pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
             fi
             if [[ -z "$pr_ref" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
               pr_ref="$(gh api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '([.[] | select(.state == "open")][0].html_url // .[0].html_url // "")' 2>/dev/null || true)"
@@ -256,8 +264,16 @@ workflows:
             if [[ -n "$repo_slug" ]]; then
               gh_repo_args=(--repo "$repo_slug")
             fi
+            if [[ -z "$pr_ref" && -n "${CIRCLE_PULL_REQUESTS:-}" ]]; then
+              pr_ref="${CIRCLE_PULL_REQUESTS%%,*}"
+            fi
             if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
-              pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
+              if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" ]]; then
+                pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+              fi
+            fi
+            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
+              pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
             fi
             if [[ -z "$pr_ref" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
               pr_ref="$(gh api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '([.[] | select(.state == "open")][0].html_url // .[0].html_url // "")' 2>/dev/null || true)"

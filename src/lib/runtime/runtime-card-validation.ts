@@ -8,6 +8,12 @@ import {
 	validateStringArray,
 } from "../decision/validators.js";
 import {
+	rejectRawRuntimeCardEmbeddings,
+	validateCodexRuntimeSourceProjection,
+	validateOptionalCodexRuntimeProjection,
+} from "./runtime-card-codex-runtime-validation.js";
+import { validateRuntimeCardReference } from "./runtime-card-reference-validation.js";
+import {
 	validateRuntimeCardAttemptLedger,
 	validateRuntimeCardRecoveryEvent,
 } from "./runtime-card-recovery-validation.js";
@@ -217,7 +223,7 @@ function validateSources(value: unknown, errors: HeValidationError[]): void {
 			continue;
 		}
 		validateEnum(source.kind, `${field}.kind`, VALID_SOURCE_KINDS, errors);
-		validateString(source.ref, `${field}.ref`, errors);
+		validateRuntimeCardReference(source.ref, `${field}.ref`, errors);
 		validateEnum(
 			source.freshness,
 			`${field}.freshness`,
@@ -249,6 +255,7 @@ export function validateRuntimeCard(
 			errors: [toValidationError("runtime card must be an object")],
 		};
 	}
+	rejectRawRuntimeCardEmbeddings(value, errors);
 
 	if (value.schemaVersion !== EXPECTED_RUNTIME_CARD_SCHEMA_VERSION) {
 		errors.push(
@@ -269,6 +276,12 @@ export function validateRuntimeCard(
 	validateLinearState(value.linear, errors);
 	validatePhaseExitState(value.phaseExit, errors);
 	validateSources(value.sources, errors);
+	validateOptionalCodexRuntimeProjection(value.codexRuntime, errors);
+	validateCodexRuntimeSourceProjection(
+		value.codexRuntime,
+		value.sources,
+		errors,
+	);
 	validateStringArray(value.blockers, "blockers", errors);
 	validateRuntimeCardAttemptLedger(value.attemptLedger, errors);
 	validateRuntimeCardRecoveryEvent(value.recoveryEvent, errors);

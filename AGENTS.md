@@ -233,6 +233,38 @@ Notes:
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Runtime evidence receipt and delivery-truth changes that add or alter
+  `evidence-receipt/v1`, `delivery-truth/v1`, claim-support policy,
+  freshness, head-SHA, blocker-class, or source-kind rules are
+  architecture-adjacent runtime cockpit changes. Keep these contracts additive,
+  fixture-backed, and separated from public closeout authority until the
+  production verifier surface is intentionally wired; refresh
+  `AI/context/diagram-context.md` and keep `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
+- Root-hygiene evidence changes that add or alter repository inventory,
+  git-tracked path resolution, root-surface policy digestion, freeze
+  classification, receipt generation, or `root_surface_tidy` claim support
+  are architecture-adjacent runtime cockpit changes. Keep the deep module in
+  `src/lib/root-hygiene/`, expose delivery-truth integration through
+  `src/lib/delivery-truth/root-hygiene-evidence.ts`, and keep
+  `ARCHITECTURE.md`, `docs/architecture/root-surface-classification.md`,
+  `AI/context/diagram-context.md`, `docs/agents/00-architecture-bootstrap.md`,
+  and `docs/agents/07b-agent-governance.md` synchronized when docs-gate
+  reports architecture-context or agent-governance surfaces.
+- Review-state and external-state packet changes that add or alter
+  `review-state/v1`, `external-state-snapshot/v1`, reviewer artifact
+  validation, unresolved thread classification, external-source freshness,
+  TTL/head-SHA validation, or claim-support eligibility are
+  architecture-adjacent runtime cockpit changes. Keep review truth in
+  `src/lib/review-state/`, keep PR/CI/review/tracker freshness truth in
+  `src/lib/external-state/`, and preserve separate verdicts for local
+  validation, remote checks, review threads, tracker state, and merge
+  readiness. Refresh `AI/context/diagram-context.md` and keep `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
 - Trust-boundary validator changes that add or alter script-backed evidence
   reports such as `audit-reference-report/v1` are architecture-adjacent
   agent-governance changes when they classify repository paths, git-tracked
@@ -312,6 +344,7 @@ Core routing (Layer 2):
 - Local ESM imports must include `.js` extensions.
 - This repo publishes a harness skill to downstream repos via `harness init`; installed path is `.agents/skills/coding-harness/` in the target repo (not this repo's local skills tree). Keep skill eval cases and acceptance criteria synchronized with skill behavior changes.
 - `harness init` emits downstream PR, workflow, and worktree scaffolding with `jscraik/feature/*` as the agent-created branch prefix; keep those generated surfaces synchronized through `AGENT_BRANCH_PREFIX`.
+- CircleCI PR-context scaffolding for `pr-template` and `linear-gate` must resolve the current PR through `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`, owner-qualified branch lookup, bare branch lookup, and commit-to-PR fallback before failing closed. Keep `.circleci/config.yml`, `src/templates/circleci-config.yml`, `src/templates/circleci-linear-gate.yml`, and init scaffold regression coverage synchronized when this lookup contract changes.
 - Keep the repo-root code-style pack (`CODESTYLE.md` + `codestyle/`) synchronized and enforce integrity with `codestyle/CHECKSUMS.sha256` plus `bash scripts/check-codestyle-parity.sh`.
 - Use repo script contracts: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts` (see [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)).
 

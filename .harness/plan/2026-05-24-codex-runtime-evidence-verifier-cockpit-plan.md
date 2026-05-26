@@ -752,27 +752,30 @@ Allowed paths:
 
 - src/lib/delivery-truth/**
 - src/lib/pr-closeout/** tests only if additive fixture reuse is needed
-- no public command surfaces unless necessary for existing private test hooks
+- private delivery-truth test/helpers only; no public command surfaces in PU-008
 
 Forbidden paths:
 
 - Full review-state/v1 implementation.
 - Full external-state-snapshot/v1 implementation.
 - Automated closeout hook wiring.
+- Public delivery-truth or closeout command behavior.
+- Production closeout rendering or final-response/PR-body text rewriting.
 - Live PR, tracker, CI, or review API calls.
 
 Steps:
 
 1. Add foundation non-blending fixture with separate review-state and external-state refs.
 2. Add negative fixture proving one blended readiness status cannot satisfy separate claims.
-3. Add private closeout text fixture that downgrades or blocks green, tidy, delivered, merged, or ready language when no current claim-support verdict exists.
+3. Add private closeout text fixture that downgrades or blocks green, tidy, delivered, merged, or ready language when no current claim-support verdict exists, including stale, head-SHA-mismatched, missing, or orientation-only evidence.
 4. Keep automated closeout hook integration deferred.
 
 Validation:
 
 - Command: pnpm vitest run src/lib/delivery-truth/delivery-truth-composition.test.ts -> required after PU-008.
+- Command: rg 'from "\\.\\./(review-state|external-state)/|src/lib/(review-state|external-state)|src/commands/' src/lib/delivery-truth -> must return no matches.
 
-Stop condition: Stop if implementation wires a live closeout hook or public command before PU-009 and PU-010 approval.
+Stop condition: Stop if implementation requires production review-state/external-state modules, wires a live closeout hook, mutates production closeout rendering, or adds public command behavior before PU-009 and PU-010 approval.
 
 Rollback note: Remove private non-blending and closeout downgrade fixtures.
 
@@ -817,7 +820,7 @@ Handoff state: Enables PU-010 production delivery-truth.
 
 ### PU-010: delivery-truth/v1 Production Verifier and Closeout Integration
 
-Promote private delivery-truth fixtures into production claim verification that can be consumed by runtime-card, harness next, and pr-closeout flows.
+Promote private delivery-truth fixtures into production claim verification that can be consumed by pr-closeout flows and later projected by runtime-card and harness next in PU-013. PU-010 owns the production verifier and the narrow closeout library seam only; it does not own cockpit command wiring.
 
 Source trace: FR-006, FR-007, FR-010, SA-006, SA-007, SA-010, SA-011, SA-015, SA-016.
 
@@ -826,7 +829,6 @@ Allowed paths:
 - src/lib/delivery-truth/**
 - src/lib/pr-closeout/**
 - src/commands/pr-closeout.ts and tests when the existing command is the narrowest integration surface
-- src/commands/next*.ts and tests when cockpit summaries need verdict refs
 
 Forbidden paths:
 
@@ -838,15 +840,15 @@ Steps:
 
 1. Define production delivery-truth/v1 claim verdicts with status, evidenceRef, source, headSha, freshness, blockerClass, verifiedAt, and evidenceUse.
 2. Wire delivery-truth into pr-closeout or the narrowest existing closeout helper so unsupported closeout language is blocked or downgraded.
-3. Expose compact delivery-truth summaries to harness next --json without expanding harness next into a broad status surface.
+3. Define the compact delivery-truth summary shape that PU-013 may later project into runtime-card and harness next output, without touching `src/commands/next*.ts` in this slice.
 4. Add negative fixtures for blended readiness, mixed-head evidence, producer TTL overreach, missing artifact receipt, stale external state, and unresolved review state.
 
 Validation:
 
-- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts src/commands/next*.test.ts -> required after PU-010.
+- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts -> required after PU-010.
 - Command: pnpm exec tsx src/cli.ts pr-closeout --help -> required if pr-closeout command behavior changes.
 
-Stop condition: Stop if delivery-truth creates a false-success path or if harness next becomes executable authority rather than a cockpit summary.
+Stop condition: Stop if delivery-truth creates a false-success path, if PU-010 touches `src/commands/next*.ts`, or if any planned PU-013 cockpit summary becomes executable authority rather than advisory metadata.
 
 Rollback note: Disable delivery-truth integration behind the prior pr-closeout behavior and keep fixture tests for the failure case.
 
@@ -861,7 +863,10 @@ Source trace: SA-012 and repeated ROOT cleanup steering.
 Allowed paths:
 
 - src/lib/delivery-truth/**
-- src/lib/root-hygiene/** if a dedicated module is needed
+- src/lib/root-hygiene/** for the classifier, verifier-owned tracked-path
+  inventory projection, receipt construction, coverage digest, policy
+  projection, and typed report contract
+- ARCHITECTURE.md when the root-hygiene deep module is added or split
 - docs/architecture/root-surface-classification.md
 - docs/README.md
 - docs/agents/00-architecture-bootstrap.md
@@ -877,13 +882,16 @@ Forbidden paths:
 Steps:
 
 1. Define root-hygiene-classification/v1 or equivalent receipt fields for canonical root, should move, generated intentionally tracked, and legacy/drift.
-2. Require root_surface_tidy delivery-truth to cite current root classification evidence.
-3. Add fixtures proving missing classification, stale classification, and unreferenced root drift block root_surface_tidy.
-4. Update root classification and governance docs only for the paths touched by the approved cleanup slice.
+2. Derive claim-support reports through a verifier-owned live git-tracked-path seam that reads `git ls-files` without a shell, computes root entries and complete git-tracked inventory internally, and does not expose caller-supplied path lists as the passing claim-support path.
+3. Bind classifier receipts to a coverage checksum recomputed from the classified root entries, to the current root-surface policy digest, and to a non-path repository identity derived from the real git toplevel; fail closed if the computed inventory digest differs or if a caller tries to label policy-only entries as git-tracked evidence through the general classifier.
+4. Require root_surface_tidy delivery-truth to verify the classifier report payload, repository identity, module-private verifier-owned runtime report token, frozen report graph, report-internal summary and coverage counts, receipt fields, checksum-bound coverage, current policy-bound receipt ref, and matching head SHA when the verdict is head-bound before passing.
+5. Add fixtures proving missing classification, stale classification, unreferenced root drift, incomplete inventory, inventory digest mismatch, policy-only inventory mislabeled as git-tracked evidence, document-only refs, checksum-less receipts, stale policy-era receipt refs, stale-head receipts, synthetic tracked-path arrays, shape-valid synthetic receipts without classifier reports, post-token mutation attempts, direct-import-forged token attempts, digest-consistent copied reports not produced by the verifier seam, missing repository identity, and cross-repository replay attempts block root_surface_tidy.
+6. Update root classification and governance docs only for the paths touched by the approved cleanup slice.
 
 Validation:
 
-- Command: pnpm vitest run src/lib/delivery-truth/*.test.ts -> required after PU-011.
+- Command: pnpm vitest run src/lib/root-hygiene/*.test.ts src/lib/delivery-truth/*.test.ts src/lib/architecture/module-boundaries.test.ts -> required after PU-011.
+- Command: pnpm architecture:check -> required after PU-011 when the root-hygiene deep module is added.
 - Command: pnpm run docs:ubiquitous:guard -> required if AGENTS or glossary-governed terms change.
 - Command: bash scripts/run-harness-gate.sh docs-gate --mode required --json -> required if docs-gate surfaces change.
 - Command: bash scripts/validate-codestyle.sh --fast -> required after PU-011.
@@ -1146,7 +1154,7 @@ pnpm vitest run src/lib/runtime/runtime-card-validation.test.ts src/commands/run
 pnpm vitest run src/lib/delivery-truth/delivery-truth-composition.test.ts
 pnpm vitest run src/lib/delivery-truth/delivery-truth-freshness-policy.test.ts
 pnpm vitest run src/lib/review-state/*.test.ts src/lib/external-state/*.test.ts src/lib/pr-closeout/*.test.ts
-pnpm vitest run src/commands/next*.test.ts
+pnpm vitest run src/commands/next*.test.ts # after PU-013 cockpit projection only; not a PU-010 validation gate
 pnpm exec tsx src/cli.ts runtime-card --json --repo .
 bash scripts/validate-codestyle.sh --fast
 ~~~

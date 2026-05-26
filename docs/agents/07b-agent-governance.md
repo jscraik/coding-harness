@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-24
+last_validated: 2026-05-25
 ---
 
 # Agent governance
@@ -106,12 +106,43 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   source-classification, validation, and reference-integrity internals before
   any runtime-card adapter consumes them; refresh architecture context and this
   guide when those packet or validator modules change
+- runtime evidence receipt and delivery-truth changes that add or alter
+  `evidence-receipt/v1`, `delivery-truth/v1`, claim-support policy,
+  freshness, head-SHA, blocker-class, or source-kind rules should stay additive,
+  fixture-backed, and separated from public closeout authority until the
+  production verifier surface is intentionally wired; refresh architecture
+  context and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`,
+  and this guide synchronized when docs-gate reports architecture-context or
+  agent-governance surfaces
+- root-hygiene evidence changes should keep repository inventory,
+  git-tracked path resolution, root-surface policy digestion, freeze
+  classification, and receipt generation inside `src/lib/root-hygiene/`;
+  delivery-truth should consume that evidence only through
+  `src/lib/delivery-truth/root-hygiene-evidence.ts`, and changes to
+  `root_surface_tidy` claim support should synchronize `ARCHITECTURE.md`,
+  `docs/architecture/root-surface-classification.md`, generated architecture
+  context, `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this
+  guide when docs-gate reports architecture-context or agent-governance surfaces
+- review-state and external-state packet changes should keep review truth in
+  `src/lib/review-state/` and live PR/CI/review/tracker freshness truth in
+  `src/lib/external-state/`; validators must keep reviewer artifact receipts,
+  unresolved review threads, source completeness, TTL freshness, head SHA, and
+  claim-support eligibility separate before delivery-truth composition consumes
+  those packet families; refresh architecture context and keep `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized
+  when docs-gate reports architecture-context or agent-governance surfaces
 - trust-boundary validator changes that add script-backed evidence reports
   such as `audit-reference-report/v1` should keep output machine-readable,
   path classification repo-scoped, and proof based on current tracked
   artifacts; refresh architecture context and keep `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized
   when docs-gate reports architecture-context or agent-governance surfaces
+- CircleCI PR-context scaffold changes for `pr-template` or `linear-gate`
+  should keep the live `.circleci/config.yml`, generated CircleCI templates,
+  init scaffold regression coverage, `AGENTS.md`, and this guide synchronized.
+  The resolver should try `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`,
+  owner-qualified branch lookup, bare branch lookup, and commit-to-PR fallback
+  before failing closed.
 - rule lifecycle governance changes that alter rule metadata validation, `.harness/rule-lifecycle-manifest.json`, `docs/rule-lifecycle.schema.json`, or `rule-lifecycle-gate` should keep this guide synchronized with `AGENTS.md`, `README.md`, and `docs/agents/00-architecture-bootstrap.md` when docs-gate reports agent-governance, contract-policy, or architecture-context surfaces
 - workflow-authority routing and validation behavior changes should update `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, and `docs/agents/14-docs-gate-rollout.md`
 - agent-governance/category updates should keep `AGENTS.md` and this guide synchronized in the same PR

@@ -93,6 +93,33 @@ export interface PrCloseoutRuntimeEvidenceSummary {
 	findings: RuntimeEvidenceContractFinding[];
 }
 
+/** Compact projection of supplied delivery-truth verdicts inside pr-closeout. */
+export interface PrCloseoutDeliveryTruthVerdict {
+	schemaVersion: "delivery-truth/v1";
+	claim: string;
+	status: PrCloseoutClaimStatus;
+	statusLabel?: string;
+	source: string;
+	evidenceRef: string | null;
+	evidenceRefs?: string[];
+	blockerRefs?: string[];
+	headSha: string | null;
+	verdictHeadSha?: string | null;
+	freshness: PrCloseoutEvidenceFreshness;
+	blockerClass: PrCloseoutBlockerClassification | null;
+	blockerCode?: string | null;
+	verifiedAt: string;
+	evidenceUse?: string | null;
+}
+
+/** Compact summary of supplied delivery-truth verdicts inside pr-closeout. */
+export interface PrCloseoutDeliveryTruthSummary {
+	present: boolean;
+	verdicts: PrCloseoutDeliveryTruthVerdict[];
+	blockingVerdicts: PrCloseoutDeliveryTruthVerdict[];
+	mergeReady: PrCloseoutDeliveryTruthVerdict | null;
+}
+
 /** One required claim in the pr-closeout/v1 evidence contract. */
 export interface PrCloseoutClaim {
 	claim:
@@ -241,6 +268,7 @@ export interface PrCloseoutInput {
 	tools?: PrCloseoutToolInput[];
 	assurance?: HarnessAssuranceEntry[];
 	runtimeEvidence?: RuntimeEvidenceContract;
+	deliveryTruth?: PrCloseoutDeliveryTruthVerdict[];
 }
 
 /** One blocker that prevents the PR from being safely closed out. */
@@ -256,6 +284,7 @@ export interface PrCloseoutBlocker {
 		| "harness_gates"
 		| "assurance"
 		| "runtime_evidence"
+		| "delivery_truth"
 		| "tool";
 	classification: PrCloseoutBlockerClassification;
 	kind?: "state" | "closeout_claim";
@@ -330,6 +359,7 @@ export interface PrCloseoutReport {
 	harnessGates: PrCloseoutHarnessGateSummary;
 	assurance: PrCloseoutAssuranceSummary;
 	runtimeEvidence: PrCloseoutRuntimeEvidenceSummary;
+	deliveryTruth: PrCloseoutDeliveryTruthSummary;
 	tools: PrCloseoutToolInput[];
 	dirtyPathsExcluded: PrCloseoutDirtyPathInput[];
 	attemptLedger: PrCloseoutAttemptLedger;

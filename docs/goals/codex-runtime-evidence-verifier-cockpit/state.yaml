@@ -16,10 +16,22 @@ rules:
   one_active_task: true
   require_fresh_verification: true
   require_final_audit: true
+artifacts:
+  implementation_notes:
+    path: ".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx"
+    format: "mdx"
+    status: "present"
+    browser_preview:
+      surface: "localhost"
+      status: "blocked"
+      blocker: "The PR branch stores the reviewed MDX source; the live HTML browser preview is a local runtime projection and is not version-controlled."
+      live_update:
+        status: "blocked"
+        blocker: "No repo-owned watcher converts the MDX source into the local HTML preview yet."
 completion_contract:
   outcome: "Coding Harness implements the full Codex runtime evidence verifier cockpit lifecycle with runtime-card ingestion, evidence receipts, delivery-truth, review-state, external-state refresh, PR/CI/Linear closeout, docs accuracy, and Judge/PM-ready audit evidence."
   verification_surface:
-    - "python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+    - "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
     - ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md"
     - ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md"
     - "Slice-specific validators and tests recorded in receipts.jsonl"
@@ -49,7 +61,7 @@ continuation_gate:
   auto_continue_allowed: "no"
 checks:
   dirty_fingerprint: "Worktree already contained uncommitted .harness research/spec/plan changes before this goal board was created; future slices must preserve unrelated changes."
-  last_verification: "2026-05-25T16:04:00Z: PU-008 non-blending and closeout downgrade fixture is locally validated in src/lib/delivery-truth/**. Reviewed intent passed after adversarial and agent-native delta artifacts; implementation review coverage includes simplify, unslopify, HE code review, testing, adversarial, and agent-native artifacts plus delta confirmation after reviewer findings were fixed. Focused delivery-truth Vitest passes with 30 tests, pnpm typecheck passes, quality:self-affirming passes, test:related passes with baseline drift warnings only, validate-codestyle --fast passes with baseline drift warnings only, and the boundary grep returns no review-state/external-state/command imports. PR handoff remains pending; no merge readiness is claimed."
+  last_verification: "2026-05-26T01:58:00Z: PR #302 current-head CI was rechecked after pushing adb97a6d: visible CircleCI, Snyk, Socket, pr-pipeline, security-scan checks were green, but CodeRabbit left an active P1 root-hygiene review thread. Local repair R033 adds a root-hygiene policy-coverage deep module so live classifyGitTrackedRoot evidence fails closed when required policy roots such as AGENTS.md are absent, while should_move policy entries remain deferred rather than required. Focused Biome, root-hygiene plus architecture tests, public API docs, bash scripts/validate-codestyle.sh --fast, goal-board validation, and R034 adversarial plus agent-native review artifacts pass. This repair is not yet pushed; merge readiness remains unsupported until the commit is pushed, remote checks rerun green, and review threads resolve or are explicitly classified."
 claims:
   - id: "C001"
     claim: "The user requested a durable full-lifecycle goal prompt, not immediate Worker implementation."
@@ -103,6 +115,7 @@ tasks:
       - ".harness/intent/codex-runtime-evidence-verifier-cockpit-implementation-intent.json"
       - ".harness/intent/codex-runtime-evidence-verifier-cockpit-contract-baseline.json"
       - ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-000-review-receipt.json"
+      - ".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx"
       - "src/lib/plan-gate/lifecycle-intent*.ts"
       - "artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-*.md"
       - ".harness/implementation-notes/implementation-notes.html"
@@ -118,7 +131,7 @@ tasks:
   - id: "T003"
     type: "worker"
     assignee: "Worker"
-    status: "active"
+    status: "done"
     objective: "Implement PU-001 through PU-008 as bounded foundation slices, each with deterministic validation, reviewer artifacts, GitHub PR handoff, and pr-green-sweep triage."
     allowed_files:
       - "src/lib/evidence/**"
@@ -147,14 +160,18 @@ tasks:
       - "A slice lacks reviewed intent."
       - "Private fixtures are used to claim production verifier completion."
       - "PR triage cannot be isolated from next-slice branch work."
+    receipt_id: "R018"
   - id: "T004"
     type: "worker"
     assignee: "Worker"
-    status: "queued"
+    status: "active"
     objective: "Implement PU-009 through PU-016 production verifier, Codex bridge, closeout, docs, CI, and maintenance hardening with the same slice validation and PR triage contract."
     allowed_files:
       - "Plan-authorized production verifier, runtime-card, pr-closeout, external-state, review-state, root hygiene, docs, CI, and maintenance files"
     verify:
+      - "PU-009 review-state/v1 and external-state-snapshot/v1 has R019/R020/R021/R022/R023/R024/R025 local implementation, reviewer, architecture-doc, validation, PR handoff, pr-green-sweep, current-remote-state, and PR linkage repair evidence in src/lib/review-state/** and src/lib/external-state/**. It validates reviewer artifact receipts, exact review-state refs, reviewer path/producer/head-SHA binding, positive passing artifact size, unresolved review-thread math, validation ownership classifications, source TTL/head-SHA freshness, required source-family coverage, orientation-only external snapshots, unavailable/stale/unknown source blockers, non-current freshness blockers, non-passing source result blockers, and claim-support evaluation. Product reviewer artifact persistence failed after retry and is disclosed as a process coverage gap. The PU-009 branch is pushed, draft PR #300 is open against codex/jsc-363-runtime-evidence-pu004, the live PR body passes pr-template-gate and linear-gate locally after adding Refs JSC-363, and artifacts/reviews/pr-300-green-sweep.md records the corrected PR sweep. Merge readiness remains blocked by draft state, parent stack, remote checks, GitHub review, and review-state capture."
+      - "PU-010 pr-closeout delivery-truth consumption has R026 local implementation, architecture-doc, validation, and final adversarial, agent-native, and harness-product review evidence in src/lib/pr-closeout/**. It keeps delivery-truth as an additive summary, uses surface=delivery_truth blockers, treats closeout-relevant pass+stale, missing, fail, unknown, and not_applicable verdicts as blockers, keeps non-closeout claims informational, and selects a blocking merge_ready verdict over an earlier passing duplicate. Commit, PR handoff, pr-green-sweep, remote checks, and review-state capture remain pending."
+      - "PU-011 root-hygiene trust boundaries has local implementation covering root-hygiene scope with classifier, git-env, git-tracked-paths, git-tracked-stage-record, inventory, policy, receipt, tracked-paths, repository-identity, and types modules. Trust-boundary mapping includes repository identity digest, git command isolation, and receipt-backed claim support. Tests pass covering all modules with positive and negative fixtures for canonical_root, should_move, generated_tracked_intentionally, legacy_drift, unclassified entries, repository identity binding, cross-repository replay blocking, gitlink directory projection, live-verifier ownership, and delivery-truth integration. PR #302 reached all-green remote checks at e16ba00d, then new CodeRabbit review findings were patched locally. The first follow-up push was blocked by the module-boundary ratchet and repaired in R032 by splitting git stage-record parsing into its own deep module; no merge-readiness claim is supported until the amended follow-up is pushed and remote/review state is refreshed."
       - "Delivery-truth separates local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness."
       - "Docs-expert and agents-md checks pass or are explicitly not applicable before cleanup."
       - "Judge/PM-ready audit packet exists before goal completion."

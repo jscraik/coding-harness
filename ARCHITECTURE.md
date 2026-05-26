@@ -86,6 +86,46 @@ guards, provider adapters, and reusable typed contracts.
 **Architecture Invariant:** implementation logic belongs in library modules,
 not in docs, templates, generated context, or command facades.
 
+**Deep Modules Placement:** current runtime-evidence deep modules include:
+
+- src/lib/evidence/: shared receipt contracts that classify validation,
+  artifact, runtime-card, review, external-state, and run-record proof.
+- src/lib/runtime/: Codex runtime evidence, runtime evidence bundles, runtime
+  cards, producer adapters, and runtime-card projections.
+- src/lib/delivery-truth/: private and production verdict composition for
+  delivery, root hygiene, Judge/PM readiness, and merge-readiness claims.
+- src/lib/root-hygiene/: root-surface classification and claim-support receipt
+  generation for root_surface_tidy. It reads live git-tracked paths through a
+  no-shell verifier-owned seam before claim support, maps policy-backed root
+  entries into canonical, should-move, generated-tracked, legacy/drift, and
+  unclassified classes, recomputes coverage digests from classified entries
+  before receipt emission, binds receipts to the current policy digest and
+  classifier-owned complete git-tracked root inventories, binds reports to a
+  non-path repository identity derived from the real git top-level directory, and requires
+  delivery-truth to verify the report payload, repository identity,
+  verifier-owned runtime report token, frozen report graph, receipt checksum,
+  and head SHA when the verdict is head-bound. The verifier-owned marker is
+  module-private to the classifier seam, so other in-process callers cannot
+  mint claim support by importing a marker helper; the report is frozen before
+  it receives the marker so callers cannot mutate trusted evidence after
+  classification. The module keeps hook-safe git environment sanitization,
+  git top-level resolution, git inventory reading, tracked-path projection,
+  entry classification, report freezing, receipt construction, policy digesting,
+  policy rows, and classifier trust
+  logic split so delivery-truth does not trust prose-only, stale-policy,
+  stale-head, caller-forged, post-token-mutated, direct-import-forged, or
+  cross-repository replayed root hygiene claims.
+- src/lib/pr-closeout/: PR closeout claim evaluation and recovery state; it may
+  consume delivery-truth verdict summaries as additive evidence but must not
+  collapse local validation, remote checks, review state, tracker state, and
+  merge readiness into one blended truth.
+- src/lib/review-state/: PR review truth packets, reviewer artifact receipt
+  validation, unresolved thread counts, and validation ownership
+  classification.
+- src/lib/external-state/: live PR/CI/review/tracker snapshot packets,
+  freshness/TTL/head-SHA validation, stale-state classification, and
+  claim-support eligibility.
+
 ### scripts/
 
 Repository validation, setup, governance, migration, release, and audit
@@ -112,14 +152,6 @@ indexes, and harness control-plane files live here.
 **Architecture Invariant:** tracked .harness Markdown and JSON files are
 durable operating memory. Runtime databases, caches, backups, and bulk outputs
 remain local unless explicitly promoted.
-
-**Tracking Interface:** `.harness/README.md` is the canonical classification
-map for this surface. Stable policy, decisions, accepted specs/plans, intent
-packets, learning examples, curated research, validator manifests, and media
-sidecars can be repository truth. Raw command evidence, guardrail snapshots,
-metrics, run directories, local learning imports, live browser HTML, runtime
-databases, rollback markers, and generated binary media stay local by default
-until a spec, plan, PR, validator, or decision explicitly promotes them.
 
 ### .codex/
 
@@ -169,11 +201,12 @@ Treat these surfaces as compatibility boundaries:
 
 - CLI commands and machine-readable JSON output.
 - harness.contract.json and related contract schemas.
-- .harness/** durable memory, decision, intent, review, research, learning, and
-  promoted evidence files.
+- .harness/** durable memory, decision, review, and evidence files.
 - PR template and closeout evidence schemas.
 - Review artifact contracts under artifacts/reviews/ when reviewers are
   requested.
+- Review-state and external-state packet schemas that keep review truth, remote
+  checks, tracker state, and merge readiness as separate evidence families.
 - Exported downstream skill and template surfaces.
 - Generated Codex environment actions.
 - CI required-check contracts and branch-protection identities.
@@ -205,9 +238,6 @@ The following rules are intentionally stable:
   parsing, validation, and orchestration belong behind named internal seams.
 - Project Brain and Local Memory capture durable operating knowledge; chat
   narrative alone is not durable evidence.
-- .harness tracking is selective: visible control-plane candidates still require
-  an explicit promotion decision before staging, and generated runtime state is
-  not repository truth just because it sits under `.harness`.
 - Repeated human steering that implies a design principle should become a guard,
   validator, test, policy, documented exception, or tracked follow-up.
 

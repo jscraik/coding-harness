@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-24
+last_validated: 2026-05-25
 ---
 
 # Architecture bootstrap
@@ -133,12 +133,40 @@ they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `runtime-card --evidence-out`, `runtime-evidence-bundle/v1`, or related
 producer and adapter wiring changes.
 
+Runtime evidence receipts and private delivery-truth composition belong to the
+same architecture-adjacent cockpit lane when they decide whether a claim can be
+supported. Keep `evidence-receipt/v1` and `delivery-truth/v1` changes
+additive, fixture-backed, and separated from public closeout authority until the
+production verifier surface is intentionally wired. Refresh
+`AI/context/diagram-context.md` and update this guide when those contracts add
+new claim-support, freshness, head-SHA, blocker-class, or source-kind rules.
+
+Root-hygiene evidence belongs in the same deep-module lane when it supports
+delivery-truth claims. Keep repository inventory, git-tracked path resolution,
+policy digestion, freeze classification, and receipt generation inside
+`src/lib/root-hygiene/`, then expose only the narrow verifier seam through
+`src/lib/delivery-truth/root-hygiene-evidence.ts`. Update
+`ARCHITECTURE.md`, `docs/architecture/root-surface-classification.md`, and
+the generated architecture context when root-surface classification or
+`root_surface_tidy` claim-support rules change, so agent cockpit guidance
+continues to show where the work is placed.
+
 Codex runtime evidence packet changes belong in the existing runtime deep module
 before they feed the runtime-card adapter. Keep the public
 `codex-runtime-evidence/v1` surface as a narrow facade over runtime types,
 source classification, validation, and reference-integrity checks; refresh
 `AI/context/diagram-context.md` and this guide when those packet or validator
 modules change.
+
+Review-state and external-state packet changes are runtime-cockpit architecture
+work even when they do not add public CLI commands. Keep `review-state/v1`
+inside `src/lib/review-state/` as the PR review truth packet for reviewer
+artifacts, unresolved threads, CodeRabbit/GitHub review summaries, and
+validation ownership classification. Keep `external-state-snapshot/v1` inside
+`src/lib/external-state/` as the PR/CI/review/tracker freshness packet, with
+source completeness, TTL-derived staleness, head-SHA binding, and claim-support
+eligibility handled by validators before delivery-truth composition consumes
+those packets.
 
 Trust-boundary validator changes that add script-backed evidence reports, such
 as `audit-reference-report/v1`, are architecture-adjacent when they classify

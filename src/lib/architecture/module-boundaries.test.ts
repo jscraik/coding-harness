@@ -1121,6 +1121,87 @@ const RUNTIME_CARD_RUNTIME_RATCHETS = [
 	},
 ] as const;
 
+const ROOT_HYGIENE_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/root-hygiene/index.ts",
+		maxLines: 45,
+		reason:
+			"Root-hygiene public surface must stay a small facade over classifier, policy, and typed contract modules.",
+	},
+	{
+		path: "src/lib/root-hygiene/types.ts",
+		maxLines: 120,
+		reason:
+			"Root-hygiene types must stay focused on report, inventory, summary, policy, and classified-entry contracts.",
+	},
+	{
+		path: "src/lib/root-hygiene/policy.ts",
+		maxLines: 160,
+		reason:
+			"Root-hygiene policy must stay a compact projection of the root-surface classification contract.",
+	},
+	{
+		path: "src/lib/root-hygiene/policy-digest.ts",
+		maxLines: 45,
+		reason:
+			"Root-hygiene policy digesting must stay separate from the policy row projection.",
+	},
+	{
+		path: "src/lib/root-hygiene/policy-coverage.ts",
+		maxLines: 35,
+		reason:
+			"Root-hygiene policy coverage comparison must stay separate from classifier orchestration.",
+	},
+	{
+		path: "src/lib/root-hygiene/inventory.ts",
+		maxLines: 70,
+		reason:
+			"Root-hygiene inventory proof must stay focused on complete coverage metadata and input digests.",
+	},
+	{
+		path: "src/lib/root-hygiene/git-tracked-paths.ts",
+		maxLines: 45,
+		reason:
+			"Root-hygiene git inventory reading must stay a small no-shell tracked-path adapter.",
+	},
+	{
+		path: "src/lib/root-hygiene/git-tracked-stage-record.ts",
+		maxLines: 30,
+		reason:
+			"Root-hygiene git stage-record parsing must stay separate from git process execution.",
+	},
+	{
+		path: "src/lib/root-hygiene/tracked-paths.ts",
+		maxLines: 60,
+		reason:
+			"Root-hygiene tracked-path projection must stay separate from policy and classifier trust logic.",
+	},
+	{
+		path: "src/lib/root-hygiene/entry-classification.ts",
+		maxLines: 80,
+		reason:
+			"Root-hygiene entry classification and summary counting must stay separate from git inventory orchestration.",
+	},
+	{
+		path: "src/lib/root-hygiene/receipt.ts",
+		maxLines: 70,
+		reason:
+			"Root-hygiene receipt construction must stay separate from policy lookup and tracked-path trust logic.",
+	},
+	{
+		path: "src/lib/root-hygiene/report-freeze.ts",
+		maxLines: 30,
+		reason:
+			"Root-hygiene report freezing must stay separate from policy lookup and classifier orchestration.",
+	},
+	{
+		path: "src/lib/root-hygiene/classifier.ts",
+		maxLines: 135,
+		reason:
+			"Root-hygiene classifier must stay focused on tracked-path orchestration, policy lookup, and blocker summary.",
+	},
+] as const;
+
 const LOCAL_RUNTIME_CARD_SURFACE_RATCHETS = [
 	{
 		path: "src/lib/runtime/local-runtime-card.ts",
@@ -1325,7 +1406,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 const COMMAND_IMPORT_PATTERN = /^(?:\.\.\/)+commands\//;
 const EFFECT_IMPORT_PATTERN = /^effect(?:\/.*)?$/;
 const PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN =
-	/^.*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|evidence|evidence-summaries|evaluator|recovery|status|types)\.js$/;
+	/^.*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|delivery-truth|evidence|evidence-summaries|evaluator|recovery|report-helpers|status|types)\.js$/;
 const IMPORT_SPECIFIER_PATTERN =
 	/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["'](?<specifier>[^"']+)["']/g;
 const APPROVED_EFFECT_BOUNDARIES = new Set([
@@ -1449,7 +1530,9 @@ const REMEDIATE_COMMAND_SUBMODULES = [
 	"./remediate-run-record.js",
 ] as const;
 const PR_CLOSEOUT_EVALUATOR_SUBMODULES = [
+	"./delivery-truth.js",
 	"./evidence-summaries.js",
+	"./report-helpers.js",
 	"./recovery.js",
 ] as const;
 const REVIEW_GATE_CORE_SUBMODULES = [
@@ -1761,6 +1844,10 @@ describe("module boundaries", () => {
 
 	it("keeps runtime-card surfaces split after decomposition", () => {
 		expectRatchetsWithinBudget(RUNTIME_CARD_SURFACE_RATCHETS);
+	});
+
+	it("keeps root-hygiene surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(ROOT_HYGIENE_SURFACE_RATCHETS);
 	});
 
 	it("keeps replay surfaces split after decomposition", () => {
@@ -2243,6 +2330,29 @@ describe("module boundaries", () => {
 
 	it("keeps runtime-card contract and validation seams split after decomposition", () => {
 		expectRatchetsWithinBudget(RUNTIME_CARD_RUNTIME_RATCHETS);
+	});
+
+	it("keeps root-hygiene policy and classification behind the public facade", () => {
+		const facadeContent = readFileSync(
+			join(process.cwd(), "src/lib/root-hygiene/index.ts"),
+			"utf-8",
+		);
+
+		expect(facadeContent).toContain("./classifier.js");
+		expect(facadeContent).toContain("./git-tracked-paths.js");
+		expect(facadeContent).toContain("./inventory.js");
+		expect(facadeContent).toContain("./policy.js");
+		expect(facadeContent).toContain("./policy-digest.js");
+		expect(facadeContent).toContain("./receipt.js");
+		expect(facadeContent).toContain("./tracked-paths.js");
+		expect(facadeContent).toContain("./types.js");
+
+		const gitTrackedPathsContent = readFileSync(
+			join(process.cwd(), "src/lib/root-hygiene/git-tracked-paths.ts"),
+			"utf-8",
+		);
+		expect(gitTrackedPathsContent).toContain("./git-tracked-stage-record.js");
+		expect(gitTrackedPathsContent).toContain("parseGitTrackedPathEntry");
 	});
 
 	it("keeps runtime-card validation behind the public contract seam", () => {

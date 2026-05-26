@@ -1,0 +1,118 @@
+{
+	"schemaVersion": "slice-intent/v1",
+	"intentId": "pu-010-delivery-truth-production-verifier",
+	"objective": "Promote delivery-truth/v1 into a production verifier module and additive pr-closeout consumer seam.",
+	"ownedAcceptanceIds": [
+		"FR-006",
+		"FR-007",
+		"FR-010",
+		"SA-006",
+		"SA-007",
+		"SA-010",
+		"SA-011",
+		"SA-015",
+		"SA-016",
+		"SA-017",
+		"SA-018"
+	],
+	"deepModuleBoundary": "src/lib/delivery-truth/** production verifier core plus a narrow src/lib/pr-closeout/** adapter/helper seam; no new command family and no harness next implementation in this slice.",
+	"inScope": [
+		"production delivery-truth verdict contracts",
+		"verifier-owned freshness and head policy",
+		"separate evidence-family enforcement",
+		"additive pr-closeout consumption tests",
+		"slice receipts"
+	],
+	"outOfScope": [
+		"new public commands",
+		"live external connectors",
+		"root hygiene production classifier",
+		"Codex producer bridge",
+		"cockpit command implementation",
+		"Judge/PM audit packet"
+	],
+	"baselineRef": {
+		"branch": "codex/jsc-363-runtime-evidence-pu009",
+		"headSha": "493848559e2e85bad8a706e4a8cbea22765c41cd",
+		"remote": "origin"
+	},
+	"reviewStatus": "reviewed_plan_aligned",
+	"reviewedBy": [
+		"planning-specialist-agent",
+		"adversarial-reviewer",
+		"agent-native-reviewer"
+	],
+	"reviewReceiptRefs": [
+		"artifacts/reviews/pu010-intent-adversarial-review.md",
+		"artifacts/reviews/pu010-intent-agent-native-review.md",
+		"artifacts/reviews/pu010-intent-recheck-adversarial.md",
+		"artifacts/reviews/pu010-intent-recheck-agent-native.md",
+		"artifacts/reviews/pu010-intent-final-adversarial.md",
+		"artifacts/reviews/pu010-intent-final-agent-native.md"
+	],
+	"reviewCoverageGap": "planning-specialist-agent returned PASS mailbox findings on the final recheck but did not persist artifacts/reviews/pu010-intent-final-planning.md after one focused retry; coordinator proceeds with explicit planning artifact gap and two final pass artifacts.",
+	"planAlignmentRef": {
+		"path": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+		"slice": "PU-010",
+		"decision": "PU-010 excludes src/commands/next*.ts implementation and validation; PU-013 owns cockpit command projection after production verdicts exist."
+	},
+	"automationPlan": [
+		{
+			"acceptanceId": "FR-006",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "production verdict fields and claim status coverage"
+		},
+		{
+			"acceptanceId": "FR-007",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "stale, unknown, missing, and non-claim-support receipts block pass verdicts"
+		},
+		{
+			"acceptanceId": "FR-010",
+			"command": "pnpm vitest run src/lib/pr-closeout.test.ts",
+			"proof": "additive closeout consumption or downgrade behavior"
+		},
+		{
+			"acceptanceId": "SA-006",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "mixed-head and missing-head fixtures"
+		},
+		{
+			"acceptanceId": "SA-007",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "separate external_state, review_state, and pr_closeout evidence families"
+		},
+		{
+			"acceptanceId": "SA-010",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "producer TTL overreach and verifier timestamp fixtures"
+		},
+		{
+			"acceptanceId": "SA-011",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "missing artifact receipt and invalid evidence-ref fixtures"
+		},
+		{
+			"acceptanceId": "SA-015",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "mixed-head merge-ready evidence"
+		},
+		{
+			"acceptanceId": "SA-016",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts",
+			"proof": "freshness-policy override evidence"
+		},
+		{
+			"acceptanceId": "SA-017",
+			"command": "intent re-review artifact verification",
+			"proof": "intent reviewed before runtime code"
+		},
+		{
+			"acceptanceId": "SA-018",
+			"command": "goal-board receipt validation",
+			"proof": "acceptance map and slice receipt before PR handoff"
+		}
+	],
+	"requiredFreshnessGate": "git rev-parse codex/jsc-363-runtime-evidence-pu009 && git ls-remote origin refs/heads/codex/jsc-363-runtime-evidence-pu009",
+	"createdAt": "2026-05-25T18:55:00Z"
+}
