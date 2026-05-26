@@ -854,8 +854,10 @@ pnpm check
 
 Hook setup must go through `make hooks`, `make setup`, or
 `node scripts/setup-git-hooks.js`. The wrapper patches generated `prek` shims
-for `pre-commit`, `pre-push`, and `commit-msg` so `PREK_HOME` points at the
-active worktree's `.cache/prek` cache instead of the shared git directory,
+for `pre-commit`, `pre-push`, and `commit-msg` after resolving the repo root
+with `git rev-parse --show-toplevel`, so `PREK_HOME` points at the active
+worktree's `.cache/prek` cache instead of the shared git directory. The
+same generated installer derives `.git/hooks` from the resolved worktree root,
 and `scripts/check-environment.sh` validates that drift before push.
 Environment-only pushes that change only `.codex/environments/environment.toml`
 run `scripts/check-environment.sh` instead of the full pre-push governance
