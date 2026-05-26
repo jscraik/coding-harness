@@ -1191,6 +1191,10 @@ Required review before PR handoff:
 - harness-dev-tools-reviewer if validator scripts, package scripts, or internal tooling surfaces change.
 - harness-doc-history-reviewer if this plan, the source spec, root classification docs, or governance docs change.
 - adversarial-reviewer or project-local equivalent for any delivery-truth or closeout claim semantics that can produce false success.
+- agent-native-reviewer for every slice that changes agent-facing evidence, cockpit,
+  closeout, runtime-card, reviewer, or Project Brain behavior.
+- best-practices-researcher for every slice before done-claim, with findings
+  grounded in the current repo and trusted local or external technical evidence.
 
 Reviewer artifact expectations:
 
@@ -1198,6 +1202,16 @@ Reviewer artifact expectations:
 - Severity-ranked findings with file:line evidence.
 - Validation ownership classification for any reported gate failure.
 - Coordinator verifies artifact existence and non-empty content before synthesis.
+- Slice receipts must carry `skill_lens_results` for
+  `improve-codebase-architecture`, `simplify`, `unslopify`, and `testing`,
+  plus `independent_reviewer_results` for `agent-native-reviewer`,
+  `adversarial-reviewer`, and `best-practices-researcher`.
+- Slice receipts must pass `python3 scripts/check-goal-slice-assurance.py
+  docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl
+  --receipt-id <R-ID> --repo .` before a slice is marked done. The checker
+  must reject duplicate lens or reviewer rows, reused reviewer evidence,
+  non-pass statuses, missing artifacts, and evidence paths outside
+  `artifacts/reviews/`.
 
 ## Rollback Plan
 

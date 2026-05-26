@@ -57,14 +57,23 @@ export function validLifecycleIntent(): Record<string, unknown> {
 		],
 		reviewPlan: {
 			requiredBeforeImplementation: true,
-			reviewers: ["adversarial-reviewer", "agent-native-reviewer"],
+			reviewers: [
+				"adversarial-reviewer",
+				"agent-native-reviewer",
+				"best-practices-researcher",
+			],
 			artifactPaths: [
 				"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-adversarial.md",
 				"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-agent-native.md",
+				"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-best-practices.md",
 			],
 		},
 		reviewStatus: "reviewed",
-		reviewedBy: ["adversarial-reviewer", "agent-native-reviewer"],
+		reviewedBy: [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher",
+		],
 		reviewReceiptRef:
 			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-000-review-receipt.json",
 		reviewedAt: "2026-05-24T22:00:00Z",
@@ -74,10 +83,15 @@ export function validLifecycleIntent(): Record<string, unknown> {
 		reviewReceiptRequirements: {
 			intentId: "codex-runtime-evidence-verifier-cockpit-pu-000",
 			intentSha256Field: "reviewedIntentSha256",
-			requiredReviewerRoles: ["adversarial-reviewer", "agent-native-reviewer"],
+			requiredReviewerRoles: [
+				"adversarial-reviewer",
+				"agent-native-reviewer",
+				"best-practices-researcher",
+			],
 			requiredArtifactRefs: [
 				"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-adversarial.md",
 				"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-agent-native.md",
+				"artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-best-practices.md",
 			],
 			requiredStatus: "pass",
 			allowedEvidenceUse: ["claim_support", "audit_trail"],
@@ -119,6 +133,12 @@ export function validReviewReceipt(): Record<string, unknown> {
 				role: "agent-native-reviewer",
 				ref: "artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-agent-native.md",
 				sha256: "c".repeat(64),
+				status: "pass",
+			},
+			{
+				role: "best-practices-researcher",
+				ref: "artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-best-practices.md",
+				sha256: "d".repeat(64),
 				status: "pass",
 			},
 		],

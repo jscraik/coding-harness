@@ -224,17 +224,28 @@ Parallel continuation rule:
 
 After each slice, validate with these skill lenses or their repo-owned deterministic equivalents:
 
+- `$improve-codebase-architecture`: confirm the slice fits the current deep-module architecture and does not create shallow pass-through, orphaned, or misplaced modules.
 - `$simplify`: confirm the slice did not add unnecessary abstractions, duplicate truth layers, or broad public surfaces.
 - `$unslopify`: remove vague claims, placeholder wording, speculative assertions, and AI-shaped docs or PR text.
-- `$he-code-review`: review the slice against Harness Engineering expectations, evidence contracts, and implementation-risk boundaries.
 - `$testing`: prove the touched behavior with the narrowest meaningful tests first, then broaden according to risk.
 
 Before marking any slice done, also run independent review with:
 
 - `@adversarial-reviewer`
 - `@agent-native-reviewer`
+- `@best-practices-researcher`
 
 Reviewer outputs must be artifact-first when a swarm is requested. Verify expected review artifacts exist and are non-empty before synthesis. Mailbox status is not enough.
+
+Slice receipts must record `skill_lens_results` and `independent_reviewer_results`
+for the required lenses and reviewers. Validate those fields with
+`python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id <R-ID> --repo .`
+before claiming a slice done.
+
+The slice assurance checker only credits canonical `pass` results with
+non-empty evidence under `artifacts/reviews/`. Duplicate lens or reviewer rows,
+reviewer evidence reuse, traversal paths, missing artifacts, and non-pass
+statuses must fail the done claim.
 
 Every validation report must classify results as exactly one of:
 
