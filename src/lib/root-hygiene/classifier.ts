@@ -1,7 +1,7 @@
 import { formatRootHygieneError } from "./errors.js";
 import { buildRootHygieneReceipt } from "./receipt.js";
 import { ROOT_HYGIENE_CLASSIFICATION_SCHEMA_VERSION } from "./types.js";
-import { readGitTrackedPaths } from "./git-tracked-paths.js";
+import { readGitTrackedPathEntries } from "./git-tracked-paths.js";
 import { freezeRootHygieneReport } from "./report-freeze.js";
 import { rootHygieneRepositoryIdentity } from "./repository-identity.js";
 import { ROOT_SURFACE_POLICY_SOURCE_REF } from "./policy.js";
@@ -29,8 +29,8 @@ export function classifyGitTrackedRoot(
 	try {
 		const trackedPaths =
 			input.gitLsFilesMaxBufferBytes === undefined
-				? readGitTrackedPaths(input.repoRoot)
-				: readGitTrackedPaths(input.repoRoot, {
+				? readGitTrackedPathEntries(input.repoRoot)
+				: readGitTrackedPathEntries(input.repoRoot, {
 						maxBufferBytes: input.gitLsFilesMaxBufferBytes,
 					});
 		const entries = rootSurfaceEntriesFromTrackedPaths(trackedPaths);
@@ -96,7 +96,11 @@ function classifyRootSurfaceInternal(
 			status,
 		}),
 	};
-	return markVerifierOwnedRootHygieneReport(report);
+	if (allowGitTrackedInventory) {
+		return markVerifierOwnedRootHygieneReport(report);
+	}
+	freezeRootHygieneReport(report);
+	return report;
 }
 
 /** Return whether the report object came from the live verifier seam. */

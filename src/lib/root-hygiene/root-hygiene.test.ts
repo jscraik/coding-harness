@@ -7,10 +7,14 @@ import { validateEvidenceReceipt } from "../evidence/evidence-receipt.js";
 import {
 	classifyGitTrackedRoot,
 	classifyRootSurface,
-	readGitTrackedPaths,
-	rootHygieneRepositoryTopLevel,
-} from "./index.js";
+	isVerifierOwnedRootHygieneReport,
+} from "./classifier.js";
 import { rootHygieneGitEnv } from "./git-env.js";
+import {
+	readGitTrackedPathEntries,
+	readGitTrackedPaths,
+} from "./git-tracked-paths.js";
+import { rootHygieneRepositoryTopLevel } from "./index.js";
 import { completeRootHygieneInventory } from "./inventory.js";
 import {
 	ROOT_SURFACE_POLICY_SOURCE_REF,
@@ -82,6 +86,7 @@ describe("root-hygiene classification", () => {
 		expect(Object.isFrozen(report.coverage)).toBe(true);
 		expect(Object.isFrozen(report.repository)).toBe(true);
 		expect(Object.isFrozen(report.receipt)).toBe(true);
+		expect(isVerifierOwnedRootHygieneReport(report)).toBe(true);
 		expect(() => {
 			(report.summary as { total: number }).total = 0;
 		}).toThrow(TypeError);
@@ -97,6 +102,18 @@ describe("root-hygiene classification", () => {
 				blocking: false,
 			});
 		}).toThrow(TypeError);
+	});
+
+	it("does not mark caller-supplied reports as verifier-owned", () => {
+		const entries = policyRootSurfaceEntries();
+		const report = classifyRootSurface({
+			entries,
+			generatedAt: GENERATED_AT,
+			inventory: completeRootHygieneInventory(entries, "git_tracked_paths"),
+		});
+
+		expect(Object.isFrozen(report)).toBe(true);
+		expect(isVerifierOwnedRootHygieneReport(report)).toBe(false);
 	});
 
 	it("records explicitly deferred should-move entries without blocking", () => {
@@ -341,6 +358,52 @@ describe("root-hygiene classification", () => {
 			{ path: "README.md", kind: "file" },
 			{ path: "src", kind: "directory" },
 		]);
+	});
+
+	it("projects root-level gitlinks as directory entries", () => {
+		expect(
+			rootSurfaceEntriesFromTrackedPaths([
+				{ mode: "160000", path: "vendor" },
+				"README.md",
+			]),
+		).toEqual([
+			{ path: "README.md", kind: "file" },
+			{ path: "vendor", kind: "directory" },
+		]);
+	});
+
+	it("preserves git index mode metadata for tracked path projection", () => {
+		const repoRoot = makeGitRepo(["README.md"]);
+		try {
+			execFileSync(
+				"git",
+				[
+					"update-index",
+					"--add",
+					"--cacheinfo",
+					"160000,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,vendor",
+				],
+				{
+					cwd: repoRoot,
+					env: rootHygieneGitEnv(),
+					stdio: "ignore",
+				},
+			);
+
+			expect(readGitTrackedPathEntries(repoRoot)).toEqual(
+				expect.arrayContaining([{ mode: "160000", path: "vendor" }]),
+			);
+			expect(
+				rootSurfaceEntriesFromTrackedPaths(readGitTrackedPathEntries(repoRoot)),
+			).toEqual(
+				expect.arrayContaining([{ path: "vendor", kind: "directory" }]),
+			);
+			expect(readGitTrackedPaths(repoRoot)).toEqual(
+				expect.arrayContaining(["vendor"]),
+			);
+		} finally {
+			rmSync(repoRoot, { force: true, recursive: true });
+		}
 	});
 });
 

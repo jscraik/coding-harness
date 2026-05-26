@@ -1159,6 +1159,12 @@ const ROOT_HYGIENE_SURFACE_RATCHETS = [
 			"Root-hygiene git inventory reading must stay a small no-shell tracked-path adapter.",
 	},
 	{
+		path: "src/lib/root-hygiene/git-tracked-stage-record.ts",
+		maxLines: 30,
+		reason:
+			"Root-hygiene git stage-record parsing must stay separate from git process execution.",
+	},
+	{
 		path: "src/lib/root-hygiene/tracked-paths.ts",
 		maxLines: 60,
 		reason:

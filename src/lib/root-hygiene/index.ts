@@ -1,6 +1,9 @@
 export { classifyGitTrackedRoot, classifyRootSurface } from "./classifier.js";
 export { rootHygieneGitEnv } from "./git-env.js";
-export { readGitTrackedPaths } from "./git-tracked-paths.js";
+export {
+	readGitTrackedPathEntries,
+	readGitTrackedPaths,
+} from "./git-tracked-paths.js";
 export {
 	completeRootHygieneInventory,
 	rootSurfaceEntryDigest,
