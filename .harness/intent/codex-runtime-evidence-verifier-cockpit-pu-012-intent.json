@@ -1,0 +1,189 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-012",
+	"createdAt": "2026-05-26T08:00:36Z",
+	"objective": "Implement PU-012 by selecting and proving a Codex runtime evidence producer bridge that admits observable Codex runtime facts into Coding Harness without scraping final assistant prose or mutating the Codex checkout.",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceSpec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+	"linearIssue": "JSC-363",
+	"ownedAcceptanceIds": ["SA-009"],
+	"deepModuleBoundary": "src/lib/runtime/codex-runtime-evidence-producer*",
+	"lifecycleUnit": "PU-012",
+	"bridgeDecision": {
+		"selectedBoundary": "harness_wrapper_import",
+		"decisionStatus": "reviewed",
+		"description": "The first producer bridge is a Harness-owned wrapper/import boundary that validates explicit Codex runtime evidence packets or structured exported facts. It must preserve source provenance and classify unsupported fields as unknown rather than inferring them.",
+		"rejectedBoundaries": [
+			{
+				"boundary": "typescript_sdk_stream_only",
+				"reason": "Inspected SDK event types expose thread.started thread_id, but turn.started is currently only a type marker and does not supply the turn_id, permission profile, or trace facts required for claim-supporting evidence."
+			},
+			{
+				"boundary": "codex_source_mutation",
+				"reason": "Mutating /Users/jamiecraik/dev/codex requires a separate Codex-owned contract, rollback path, and validation gate. PU-012 may inspect Codex source as evidence, but must not patch it in this slice."
+			},
+			{
+				"boundary": "final_response_scraping",
+				"reason": "The verifier cockpit is explicitly designed to avoid treating final assistant prose as runtime truth."
+			}
+		],
+		"sourceSnapshot": {
+			"capturedAt": "2026-05-26T08:11:43Z",
+			"repoPath": "/Users/jamiecraik/dev/codex",
+			"repoHeadSha": "951efd3392882064961e1621344178723d4887c4",
+			"freshnessPolicy": "implementation is blocked if repoHeadSha or any source blob sha differs before PU-012 source-provenance tests are updated and this intent is re-reviewed"
+		},
+		"sourceEvidence": [
+			{
+				"path": "/Users/jamiecraik/dev/codex/sdk/typescript/src/events.ts",
+				"repoHeadSha": "951efd3392882064961e1621344178723d4887c4",
+				"gitBlobSha": "3af78c9b56f328e22a540f3e2ff963a0c218ecef",
+				"observed": "ThreadStartedEvent carries thread_id; TurnStartedEvent does not expose a turn id in the inspected type surface.",
+				"confidence": "high"
+			},
+			{
+				"path": "/Users/jamiecraik/dev/codex/sdk/typescript/src/thread.ts",
+				"repoHeadSha": "951efd3392882064961e1621344178723d4887c4",
+				"gitBlobSha": "9ab425e652a95cdfb540bb3f7368b38937b51bb4",
+				"observed": "Thread execution setup includes model, sandboxMode, workingDirectory, networkAccessEnabled, webSearch settings, approvalPolicy, and additionalDirectories.",
+				"confidence": "high"
+			},
+			{
+				"path": "/Users/jamiecraik/dev/codex/codex-rs/analytics/src/facts.rs",
+				"repoHeadSha": "951efd3392882064961e1621344178723d4887c4",
+				"gitBlobSha": "d7e2c069d6c28b42e40c6c2179f6ee53b7cd11d7",
+				"observed": "Analytics facts include thread_id, turn_id, model, permission_profile, approval_policy, approvals_reviewer, sandbox network access, and token usage fields.",
+				"confidence": "high"
+			},
+			{
+				"path": "/Users/jamiecraik/dev/codex/codex-rs/app-server-protocol/src/jsonrpc_lite.rs",
+				"repoHeadSha": "951efd3392882064961e1621344178723d4887c4",
+				"gitBlobSha": "4e8858ce00a048abe5c0c7ccb056ac2380694f25",
+				"observed": "JSON-RPC request shape includes optional W3C trace context; trace availability is source-dependent and must remain unknown unless attached by the active producer.",
+				"confidence": "medium"
+			}
+		]
+	},
+	"inScope": [
+		"src/lib/runtime/codex-runtime-evidence-producer.ts",
+		"src/lib/runtime/codex-runtime-evidence-producer.test.ts",
+		"src/lib/runtime/codex-runtime-source-provenance.ts",
+		"src/lib/runtime/codex-runtime-source-provenance.test.ts",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-012-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-012-intent-adversarial.md",
+		"artifacts/reviews/codex-runtime-evidence-pu-012-intent-agent-native.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**"
+	],
+	"outOfScope": [
+		"/Users/jamiecraik/dev/codex source mutations",
+		"SDK package publication or generated app-server protocol changes",
+		"src/commands/runtime-card.ts, src/commands/next*.ts, or public cockpit command changes reserved for PU-013",
+		"review-state, external-state, delivery-truth, or pr-closeout semantic changes reserved for PU-014 and later",
+		"scraping assistant final responses, raw transcripts, prompts, secrets, credential files, or bulky telemetry",
+		"claiming full lifecycle implementation or PR merge readiness"
+	],
+	"guardedPathGlobs": [
+		"src/lib/runtime/codex-runtime-evidence-producer.ts",
+		"src/lib/runtime/codex-runtime-evidence-producer.test.ts",
+		"src/lib/runtime/codex-runtime-source-provenance.ts",
+		"src/lib/runtime/codex-runtime-source-provenance.test.ts",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-012-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-012-intent-*.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**"
+	],
+	"unknownRuntimePathPolicy": "fail_closed_until_this_intent_is_reviewed_and_updated",
+	"automationPlan": [
+		{
+			"name": "intent artifact JSON validation",
+			"command": "jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-012-intent.json >/dev/null",
+			"proves": ["intent artifact is syntactically valid JSON before review"]
+		},
+		{
+			"name": "Codex source snapshot freshness check",
+			"command": "pnpm vitest run src/lib/runtime/codex-runtime-source-provenance.test.ts",
+			"proves": [
+				"pinned Codex source observations are revalidated against commit and blob provenance before implementation starts"
+			]
+		},
+		{
+			"name": "shared runtime contract untouched check",
+			"command": "git diff --exit-code HEAD -- src/lib/runtime/codex-runtime-evidence.ts src/lib/runtime/runtime-evidence-adapter.ts",
+			"proves": [
+				"PU-012 did not silently mutate the shared codex-runtime-evidence or runtime-evidence-adapter contracts reserved for earlier and later lifecycle units"
+			]
+		},
+		{
+			"name": "Codex producer bridge tests",
+			"command": "pnpm vitest run src/lib/runtime/codex-runtime-evidence.test.ts src/lib/runtime/runtime-evidence-adapter.test.ts src/lib/runtime/codex-runtime-evidence-producer.test.ts",
+			"proves": [
+				"SA-009",
+				"producer bridge emits or imports only validated Codex runtime evidence and preserves existing adapter behavior"
+			]
+		},
+		{
+			"name": "Codex source provenance tests",
+			"command": "pnpm vitest run src/lib/runtime/codex-runtime-source-provenance.test.ts src/lib/runtime/codex-runtime-evidence-producer.test.ts",
+			"proves": [
+				"source paths, source kinds, confidence, unsupported fields, and failureClass values are machine-checked"
+			]
+		},
+		{
+			"name": "focused runtime formatting",
+			"command": "pnpm exec biome check src/lib/runtime/codex-runtime-evidence*.ts src/lib/runtime/codex-runtime-source-provenance*.ts",
+			"proves": [
+				"changed runtime deep modules satisfy formatting and lint checks"
+			]
+		},
+		{
+			"name": "goal board validation",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+			"proves": ["goal state and receipts remain valid after PU-012 updates"]
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": ["adversarial-reviewer", "agent-native-reviewer"],
+		"artifactPaths": [
+			"artifacts/reviews/codex-runtime-evidence-pu-012-intent-adversarial.md",
+			"artifacts/reviews/codex-runtime-evidence-pu-012-intent-agent-native.md"
+		]
+	},
+	"reviewStatus": "reviewed",
+	"reviewedBy": ["adversarial-reviewer", "agent-native-reviewer"],
+	"reviewReceiptRef": ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-012-review-receipt.json",
+	"reviewedAt": "2026-05-26T08:11:43Z",
+	"baselineRef": ".harness/intent/codex-runtime-evidence-verifier-cockpit-contract-baseline.json",
+	"implementationStartPolicy": "reviewed_ready_for_pu012_implementation",
+	"postReviewMutationPolicy": "any material mutation to objective, ownedAcceptanceIds, bridgeDecision, sourceSnapshot, sourceEvidence, inScope, outOfScope, guardedPathGlobs, automationPlan, reviewPlan, stopConditions, or rollback resets reviewStatus to pending",
+	"parallelPrTriageStrategy": {
+		"default": "allow_pr_triage_subagent_to_monitor_pr305_while_coordinator_performs_non_mutating_pu012_intent_review",
+		"parallelCodeWorkAllowed": "only after this PU-012 intent reaches reviewed status and branch ownership remains with the coordinator",
+		"blockedWhen": [
+			"PR #305 remote checks fail on the active branch",
+			"a reviewer requests mutation to this intent before implementation starts",
+			"the producer bridge requires /Users/jamiecraik/dev/codex mutation"
+		],
+		"safeFallback": "continue source discovery, reviewer artifact verification, and local intent refinement without touching production runtime code"
+	},
+	"stopConditions": [
+		"Stop if the adversarial or agent-native reviewer identifies a material bridge-boundary issue and the intent has not been patched and re-reviewed.",
+		"Stop if implementation would require mutating /Users/jamiecraik/dev/codex before a separate Codex-owned spec, rollback path, and validation gate exist.",
+		"Stop if /Users/jamiecraik/dev/codex sourceSnapshot repoHeadSha or any sourceEvidence gitBlobSha differs before this intent and source-provenance tests are updated and re-reviewed.",
+		"Stop if implementation requires editing src/lib/runtime/codex-runtime-evidence.ts or src/lib/runtime/runtime-evidence-adapter.ts; create a separate additive contract intent addendum before touching shared runtime contracts.",
+		"Stop if the producer cannot distinguish claim-supporting evidence from orientation-only source observations.",
+		"Stop if unsupported Codex fields would be inferred instead of represented as unknown with failureClass.",
+		"Stop if the new producer path would broaden runtime-card, harness next, delivery-truth, review-state, external-state, or pr-closeout behavior outside PU-012."
+	],
+	"rollback": [
+		"Disable or remove src/lib/runtime/codex-runtime-evidence-producer*.ts.",
+		"Retain codex-runtime-evidence/v1 schema and runtime-evidence-adapter validation unless the producer change required an invalid additive extension.",
+		"Restore this intent to pending if review evidence is invalidated.",
+		"Do not modify or roll back /Users/jamiecraik/dev/codex because this slice must not mutate it."
+	],
+	"assumptions": [
+		"JSC-363 remains the implementation owner.",
+		"The Harness-owned wrapper/import bridge is sufficient for PU-012 because it can prove the producer boundary without upstream Codex mutation.",
+		"Source observations from /Users/jamiecraik/dev/codex are pinned to the recorded repoHeadSha and gitBlobSha values; if those change, this intent returns to pending review before implementation proceeds.",
+		"PR #305 can remain draft while PU-012 intent review proceeds, but no merge-readiness claim is allowed from draft state."
+	]
+}

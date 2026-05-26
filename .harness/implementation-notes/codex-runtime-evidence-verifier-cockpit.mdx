@@ -2,7 +2,7 @@
 schema_version: implementation-notes/v1
 title: Codex Runtime Evidence Verifier Cockpit Implementation Notes
 goal: codex-runtime-evidence-verifier-cockpit
-updated_at: 2026-05-26T01:10:00Z
+updated_at: 2026-05-26T09:25:00Z
 status: present
 ---
 
@@ -29,53 +29,56 @@ Runtime evidence work stays inside the existing deep modules instead of adding a
 ## Current Slice Insertion Map
 
 <InsertionPoint
-  slice="PU-011 PR #302 review repair"
-  branch="codex/jsc-363-runtime-evidence-pu011"
-  files={[
-    "src/lib/root-hygiene/git-tracked-paths.ts",
-    "src/lib/root-hygiene/repository-identity.ts",
-    "src/lib/root-hygiene/classifier.ts",
-    "src/lib/root-hygiene/index.ts",
-    "scripts/check-goal-board.py",
-  ]}
-/>
+	  slice="PU-012 Codex runtime evidence producer bridge"
+	  branch="codex/jsc-363-runtime-evidence-cockpit-refresh"
+	  files={[
+	    "src/lib/runtime/codex-runtime-source-provenance.ts",
+	    "src/lib/runtime/codex-runtime-source-provenance.test.ts",
+	    "src/lib/runtime/codex-runtime-evidence-producer.ts",
+	    "src/lib/runtime/codex-runtime-evidence-producer.test.ts",
+	    ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-012-intent.json",
+	  ]}
+	/>
 
-The PR repair addresses current review feedback by adding contextual root-hygiene git failures, a configurable `git ls-files` buffer, facade exports for repository identity, and a repo-local goal-board validation command.
+PU-012 adds the Harness-owned producer/import bridge for `codex-runtime-evidence/v1`. The bridge stays inside `src/lib/runtime`, validates packet shape before handoff, defaults unavailable trace, permission, external-state, and review-state facts to explicit unknown blocker classes, and preserves `/Users/jamiecraik/dev/codex` as read-only source evidence.
 
 ## Runtime Truth Surface
 
 <RuntimeCardState
-  pr="302"
-  mergeable="MERGEABLE"
-  merge_state="BLOCKED"
-  checks="local gates passing; remote CI rerun pending after push"
-  review_threads="unresolved current and outdated threads remain"
-/>
+	  pr="305"
+	  mergeable="draft/open"
+	  merge_state="not merge-ready"
+	  checks="focused local PU-012 gates passing; remote CI refresh pending after push"
+	  review_threads="implementation reviewers running artifact-first"
+	/>
 
-Live PR inspection showed no merge conflict. CircleCI later failed on the root-hygiene module-boundary ratchet, so the repair keeps the facade and git adapter inside the enforced deep-module size limits before pushing a new remote CI attempt.
+PR #305 is the current draft lane for the full lifecycle implementation. Local PU-012 evidence is not a merge-readiness claim; remote CI, review state, and draft status remain separate external-state truths that must be refreshed after the next push.
 
 ## Blast Radius View
 
 <BlastRadiusMap
-  changed_modules={[
-    "root-hygiene",
-    "goal-board validation wrapper",
-    "goal-board metadata",
-  ]}
-/>
+	  changed_modules={[
+	    "runtime source provenance",
+	    "runtime evidence producer",
+	    "PU-012 intent and review artifacts",
+	  ]}
+	/>
 
-The repair is intentionally narrow: it does not alter runtime-card behavior, delivery-truth verdict policy, review-state packets, or external-state freshness.
+The slice is intentionally narrow: it does not alter runtime-card projection, `harness next --json`, delivery-truth verdict policy, review-state packets, external-state freshness, or Codex source code.
 
 ## Validation Coverage
 
 <ValidatorCoverage
-  checks={[
-    "pnpm vitest run src/lib/root-hygiene/root-hygiene.test.ts",
-    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
-    "pnpm typecheck",
-    "pnpm run quality:self-affirming",
-    "git diff --check",
-  ]}
-/>
+	  checks={[
+	    "pnpm vitest run src/lib/runtime/codex-runtime-source-provenance.test.ts src/lib/runtime/codex-runtime-evidence-producer.test.ts",
+	    "pnpm vitest run src/lib/runtime/codex-runtime-evidence.test.ts src/lib/runtime/runtime-evidence-adapter.test.ts src/lib/runtime/codex-runtime-evidence-producer.test.ts",
+	    "./node_modules/.bin/biome check src/lib/runtime/codex-runtime-evidence-producer.ts src/lib/runtime/codex-runtime-evidence-producer.test.ts src/lib/runtime/codex-runtime-source-provenance.ts src/lib/runtime/codex-runtime-source-provenance.test.ts",
+	    "pnpm typecheck",
+	    "node scripts/check-code-size.mjs",
+	    "node scripts/check-public-api-docs.mjs",
+	    "pnpm run quality:self-affirming",
+	    "bash scripts/check-related-tests.sh",
+	  ]}
+	/>
 
-Validation is recorded in PR handoff only when the command was actually run and its pass, fail, or blocked result is known.
+Validation is recorded in PR handoff only when the command was actually run and its pass, fail, or blocked result is known. The `pnpm run quality:*` aggregate wrapper stalled during this slice, so direct script invocations are the current evidence source for size, public API docs, and self-affirming tests.

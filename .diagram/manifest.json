@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-05-26T02:06:12.645Z",
+	"generatedAt": "2026-05-26T08:51:16.218Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -54,8 +54,8 @@
 			"type": "class",
 			"file": "class.mmd",
 			"outputPath": ".diagram/class.mmd",
-			"lines": 63,
-			"bytes": 1592,
+			"lines": 66,
+			"bytes": 1703,
 			"isPlaceholder": false
 		},
 		{
