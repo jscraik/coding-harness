@@ -29,6 +29,6 @@
 	"notes": [
 		"Intent review completed after adversarial and agent-native reviewers reported reviewed_no_blockers.",
 		"The intentSha256 refers to the reviewed intent content before reviewStatus/reviewedAt/reviewReceiptRef fields are advanced to reviewed.",
-		"Source observations are pinned to /Users/jamiecraik/dev/codex commit 951efd3392882064961e1621344178723d4887c4 and per-file git blob SHAs."
+		"Source observations are pinned to codex repo root commit 951efd3392882064961e1621344178723d4887c4 and per-file git blob SHAs."
 	]
 }

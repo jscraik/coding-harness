@@ -61,7 +61,22 @@ continuation_gate:
   auto_continue_allowed: "no"
 checks:
   dirty_fingerprint: "Worktree already contained uncommitted .harness research/spec/plan changes before this goal board was created; future slices must preserve unrelated changes."
-  last_verification: "2026-05-26T13:42:00Z: PU-013 runtime-card and next cockpit projection is locally implemented and reviewed. It admits codex-runtime-evidence/v1 through runtime-card --evidence, centralizes repo-contained runtime artifact loading in src/lib/runtime/repo-runtime-artifact.ts, shares that trust boundary with harness next --runtime-card and --phase-exit, rejects absolute/traversal/symlink-escaping artifacts, and patches the adversarially found TOCTOU read gap with O_NOFOLLOW descriptor reads plus fstat verification. Focused runtime-card/next tests, runtime adapter compatibility tests, Biome, typecheck, diff-check, goal-board validation, and adversarial plus agent-native implementation re-reviews pass. Commit/push/PR #305 remote refresh remains pending; local validation is not a merge-readiness claim."
+  last_verification:
+    timestamp: "2026-05-26T13:42:00Z"
+    commit_sha: "25e06c9"
+    pr_ref: "PR #305"
+    commands_run:
+      - command: "pnpm vitest run src/lib/runtime/*.test.ts src/commands/runtime-card.test.ts src/commands/next*.test.ts"
+        outcome: "pass"
+      - command: "pnpm exec biome check --apply src/lib/runtime src/commands"
+        outcome: "pass"
+      - command: "pnpm exec tsc --noEmit"
+        outcome: "pass"
+      - command: "bash scripts/validate-codestyle.sh"
+        outcome: "pass"
+      - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+        outcome: "pass"
+    summary: "PU-013 runtime-card and next cockpit projection is locally implemented and reviewed. It admits codex-runtime-evidence/v1 through runtime-card --evidence, centralizes repo-contained runtime artifact loading in src/lib/runtime/repo-runtime-artifact.ts, shares that trust boundary with harness next --runtime-card and --phase-exit, rejects absolute/traversal/symlink-escaping artifacts, and patches the adversarially found TOCTOU read gap with O_NOFOLLOW descriptor reads plus fstat verification. Adversarial plus agent-native implementation re-reviews pass. Commit/push/PR #305 remote refresh remains pending; local validation is not a merge-readiness claim."
 claims:
   - id: "C001"
     claim: "The user requested a durable full-lifecycle goal prompt, not immediate Worker implementation."

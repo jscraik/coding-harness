@@ -111,7 +111,7 @@
 			"artifacts/reviews/codex-runtime-evidence-pu-013-intent-agent-native.md"
 		]
 	},
-	"reviewStatus": "pending",
+	"reviewStatus": "reviewed",
 	"implementationStartPolicy": "blocked_until_pu013_intent_review_passes",
 	"postReviewMutationPolicy": "any material mutation to objective, implementationThesis, currentEvidence, inScope, outOfScope, guardedPathGlobs, acceptanceCriteria, automationPlan, reviewPlan, stopConditions, or rollback resets reviewStatus to pending",
 	"parallelPrTriageStrategy": {

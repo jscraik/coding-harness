@@ -166,13 +166,23 @@ function normalizePermissions(
 		isWriteCapableProfile(requestedProfile) && writableRoots.length === 0;
 	const profile = missingWritableRootEvidence ? "unknown" : requestedProfile;
 	const network = input?.network ?? "unknown";
-	const failureClass =
-		profile === "unknown" || network === "unknown"
-			? (input?.failureClass ??
-				(missingWritableRootEvidence
-					? "producer_input_missing_writable_roots"
-					: "producer_input_missing_permission_profile"))
-			: (input?.failureClass ?? null);
+
+	let failureClass: string | null;
+	if (profile === "unknown" || network === "unknown") {
+		if (input?.failureClass !== undefined) {
+			failureClass = input.failureClass;
+		} else if (missingWritableRootEvidence) {
+			failureClass = "producer_input_missing_writable_roots";
+		} else if (profile === "unknown") {
+			failureClass = "producer_input_missing_permission_profile";
+		} else {
+			// network === "unknown" and profile is known
+			failureClass = "producer_input_missing_network";
+		}
+	} else {
+		failureClass = input?.failureClass ?? null;
+	}
+
 	return {
 		profile,
 		writableRoots,

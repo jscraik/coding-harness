@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
 	adaptCodexRuntimeEvidenceToRuntimeEvidenceBundle,
-	CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
 	type CodexRuntimeEvidence,
 } from "./codex-runtime-evidence.js";
 import {
@@ -27,7 +26,7 @@ describe("codex runtime evidence producer", () => {
 			},
 			permissions: {
 				profile: "workspace_write",
-				writableRoots: ["/Users/jamiecraik/dev/coding-harness"],
+				writableRoots: ["/repo/coding-harness"],
 				network: "enabled",
 				evidenceRef: "artifact://permission-snapshot.json",
 			},
@@ -43,7 +42,7 @@ describe("codex runtime evidence producer", () => {
 		});
 
 		expect(packet).toMatchObject({
-			schemaVersion: CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
+			schemaVersion: "codex-runtime-evidence/v1",
 			codex: {
 				threadId: "thread-123",
 				turnId: "turn-456",
@@ -251,7 +250,7 @@ function matchingSourceSnapshot() {
 
 function expectedSourceSnapshot() {
 	return {
-		repoPath: "/Users/jamiecraik/dev/codex",
+		repoPath: "/repo/codex",
 		repoHeadSha: "951efd3392882064961e1621344178723d4887c4",
 		files: [
 			{
