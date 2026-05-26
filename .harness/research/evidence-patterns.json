@@ -173,6 +173,22 @@
 			],
 			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
 			"dispositionReason": "Tracked as the planning evidence behind the Codex Runtime Evidence Verifier Cockpit goal; implementation authority still flows through the accepted spec, plan, and goal artifacts."
+		},
+		{
+			"id": "2026-05-26-codex-ecosystem-operational-review",
+			"source": ".harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md",
+			"status": "adopted",
+			"owner": "codex",
+			"targetSurfaces": [
+				"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+				"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+				"src/lib/pr-closeout/evidence.ts",
+				"src/lib/pr-closeout/claim-builders.ts",
+				"src/lib/pr-closeout.test.ts"
+			],
+			"validationCommand": "pnpm vitest run src/lib/pr-closeout.test.ts",
+			"dispositionReason": "Admitted into the Codex Runtime Evidence Verifier Cockpit lifecycle and GAP-002 closeout hardening so Codex ecosystem runtime-truth findings are enforced through goal receipts and PR closeout evidence tests."
 		}
 	]
 }
