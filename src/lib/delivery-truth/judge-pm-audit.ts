@@ -29,6 +29,26 @@ const JUDGE_PM_AUDIT_REQUIRED_VERDICTS = [
 	"linear_state_aligned",
 ] satisfies readonly DeliveryTruthClaim[];
 
+const JUDGE_PM_AUDIT_REQUIRED_VERDICT_SOURCES = {
+	merge_ready: ["external_state", "review_state", "pr_closeout"],
+	root_surface_tidy: ["root_hygiene"],
+	remote_checks_current: ["external_state"],
+	review_threads_resolved: ["review_state"],
+	linear_state_aligned: ["external_state"],
+} satisfies Record<
+	(typeof JUDGE_PM_AUDIT_REQUIRED_VERDICTS)[number],
+	readonly DeliveryTruthVerdict["source"][]
+>;
+
+const AUDIT_SURFACE_REF_PREFIXES = {
+	runtime_card: "runtime-card:",
+	review_artifact: "review-state:",
+	external_state: "external-state:",
+	validation: "validation:",
+	artifact: "root-hygiene:",
+	run_record: "run-record:",
+} satisfies Record<EvidenceReceiptKind, string>;
+
 /** Reviewer artifact plus receipt proof required by the Judge/PM readiness gate. */
 export interface JudgePmAuditReviewerArtifact {
 	role: string;
@@ -385,6 +405,9 @@ function auditSurfaceBlocker(
 	if (surface.receipt.kind !== surface.expectedKind) {
 		return blocker("invalid_audit_surface", "unknown", surface.receipt.ref);
 	}
+	if (!auditSurfaceRefMatches(surface)) {
+		return blocker("invalid_audit_surface", "unknown", surface.receipt.ref);
+	}
 	if (headSha && surface.receipt.headSha !== headSha) {
 		return blocker("stale_audit_surface", "stale", surface.receipt.ref);
 	}
@@ -408,6 +431,15 @@ function auditSurfaceBlocker(
 		return blocker("missing_audit_surface", "missing", surface.receipt.ref);
 	}
 	return null;
+}
+
+function auditSurfaceRefMatches(surface: JudgePmAuditEvidenceSurface): boolean {
+	const refPrefix = AUDIT_SURFACE_REF_PREFIXES[surface.expectedKind];
+	const expectedRef = refPrefix + surface.name;
+	return (
+		surface.receipt.ref === expectedRef &&
+		/^[A-Za-z][A-Za-z0-9-]*:[A-Za-z0-9._/@:-]+$/.test(surface.receipt.ref)
+	);
 }
 
 function issueAuthorityBlocker(
@@ -548,6 +580,26 @@ function unresolvedRiskBlocker(
 	return null;
 }
 
+function verdictIsCurrentForAudit(
+	verdict: DeliveryTruthVerdict,
+	headSha: string | null,
+): boolean {
+	if (
+		verdict.status !== "pass" ||
+		verdict.freshness !== "current" ||
+		verdict.evidenceUse !== "claim_support"
+	) {
+		return false;
+	}
+	if (headSha && verdict.headSha !== headSha) {
+		return false;
+	}
+	if (headSha && verdict.verdictHeadSha !== headSha) {
+		return false;
+	}
+	return true;
+}
+
 function validNotApplicableDecision(
 	decision: JudgePmAuditNotApplicableDecision | null,
 ): decision is JudgePmAuditNotApplicableDecision {
@@ -564,32 +616,38 @@ function supportingVerdictBlocker(
 	input: JudgePmAuditVerdictInput,
 ): JudgePmAuditBlocker | null {
 	for (const claim of JUDGE_PM_AUDIT_REQUIRED_VERDICTS) {
-		const verdict = input.supportingVerdicts.find(
-			(item) => item.claim === claim,
+		const requiredSources = JUDGE_PM_AUDIT_REQUIRED_VERDICT_SOURCES[
+			claim
+		] as readonly DeliveryTruthVerdict["source"][];
+		const candidates = input.supportingVerdicts.filter(
+			(item) => item.claim === claim && requiredSources.includes(item.source),
 		);
-		if (!verdict) {
+		if (candidates.length === 0) {
 			return blocker(
 				"missing_required_verdict",
 				"missing",
 				`delivery-truth:${claim}`,
 			);
 		}
-		if (
-			verdict.status !== "pass" ||
-			verdict.freshness !== "current" ||
-			verdict.evidenceUse !== "claim_support"
-		) {
+		const currentVerdict = candidates.find((verdict) =>
+			verdictIsCurrentForAudit(verdict, input.headSha),
+		);
+		if (!currentVerdict) {
+			const [blockerVerdict] = candidates as [
+				DeliveryTruthVerdict,
+				...DeliveryTruthVerdict[],
+			];
+			const blockerFreshness =
+				input.headSha &&
+				(blockerVerdict.headSha !== input.headSha ||
+					blockerVerdict.verdictHeadSha !== input.headSha)
+					? "stale"
+					: blockerVerdict.freshness;
 			return blocker(
 				"audit_verdict_not_current",
-				verdict.freshness,
-				verdict.evidenceRef,
+				blockerFreshness,
+				blockerVerdict.evidenceRef,
 			);
-		}
-		if (input.headSha && verdict.headSha !== input.headSha) {
-			return blocker("audit_verdict_not_current", "stale", verdict.evidenceRef);
-		}
-		if (input.headSha && verdict.verdictHeadSha !== input.headSha) {
-			return blocker("audit_verdict_not_current", "stale", verdict.evidenceRef);
 		}
 	}
 	return null;

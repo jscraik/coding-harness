@@ -112,6 +112,40 @@ describe("buildJudgePmAuditVerdict", () => {
 		});
 	});
 
+	it("fails closed when an audit surface receipt uses the wrong namespace", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				rootHygieneRef: auditSurface("root-hygiene", "artifact", {
+					ref: "artifact:root-hygiene",
+				}),
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "unknown",
+			blockerCode: "invalid_audit_surface",
+			blockerRefs: ["artifact:root-hygiene"],
+		});
+	});
+
+	it("fails closed when an audit surface receipt uses the right namespace for the wrong surface", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				rootHygieneRef: auditSurface("root-hygiene", "artifact", {
+					ref: "root-hygiene:unrelated",
+				}),
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "unknown",
+			blockerCode: "invalid_audit_surface",
+			blockerRefs: ["root-hygiene:unrelated"],
+		});
+	});
+
 	it("fails closed when the issue authority map hides an unresolved parent decision", () => {
 		const verdict = buildJudgePmAuditVerdict(
 			baseInput({
@@ -178,6 +212,99 @@ describe("buildJudgePmAuditVerdict", () => {
 			freshness: "unknown",
 			blockerCode: "unclassified_risk",
 			blockerRefs: ["review-state:risk"],
+		});
+	});
+
+	it("fails closed when a required supporting verdict uses the wrong source", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				supportingVerdicts: [
+					...supportingVerdicts().filter(
+						(verdict) => verdict.claim !== "root_surface_tidy",
+					),
+					deliveryVerdict("root_surface_tidy", "external_state", {
+						evidenceRef: "external-state:root_surface_tidy",
+						evidenceRefs: ["external-state:root_surface_tidy"],
+					}),
+				],
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "missing",
+			blockerCode: "missing_required_verdict",
+			blockerRefs: ["delivery-truth:root_surface_tidy"],
+		});
+	});
+
+	it("accepts merge-ready supporting verdicts from composition-compatible sources", () => {
+		for (const source of [
+			"external_state",
+			"review_state",
+			"pr_closeout",
+		] satisfies DeliveryTruthSource[]) {
+			const verdict = buildJudgePmAuditVerdict(
+				baseInput({
+					supportingVerdicts: [
+						...supportingVerdicts().filter(
+							(verdict) => verdict.claim !== "merge_ready",
+						),
+						deliveryVerdict("merge_ready", source),
+					],
+				}),
+			);
+
+			expect(verdict).toMatchObject({
+				status: "pass",
+				freshness: "current",
+			});
+		}
+	});
+
+	it("accepts a later current merge-ready verdict when an earlier allowed source is stale", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				supportingVerdicts: [
+					...supportingVerdicts().filter(
+						(verdict) => verdict.claim !== "merge_ready",
+					),
+					deliveryVerdict("merge_ready", "external_state", {
+						freshness: "stale",
+					}),
+					deliveryVerdict("merge_ready", "pr_closeout"),
+				],
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "pass",
+			freshness: "current",
+		});
+	});
+
+	it("accepts a later current merge-ready verdict after mixed invalid allowed candidates", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				supportingVerdicts: [
+					...supportingVerdicts().filter(
+						(verdict) => verdict.claim !== "merge_ready",
+					),
+					deliveryVerdict("merge_ready", "external_state", {
+						evidenceUse: "orientation",
+					}),
+					deliveryVerdict("merge_ready", "review_state", {
+						headSha: "other-head",
+						verdictHeadSha: "other-head",
+					}),
+					deliveryVerdict("merge_ready", "pr_closeout"),
+				],
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "pass",
+			freshness: "current",
 		});
 	});
 
@@ -319,7 +446,7 @@ function sourceRefPrefixForKind(kind: EvidenceReceiptKind): string {
 		case "validation":
 			return "validation";
 		case "artifact":
-			return "artifact";
+			return "root-hygiene";
 		case "run_record":
 			return "run-record";
 	}
@@ -327,7 +454,7 @@ function sourceRefPrefixForKind(kind: EvidenceReceiptKind): string {
 
 function supportingVerdicts(): DeliveryTruthVerdict[] {
 	return [
-		deliveryVerdict("merge_ready", "external_state"),
+		deliveryVerdict("merge_ready", "pr_closeout"),
 		deliveryVerdict("root_surface_tidy", "root_hygiene"),
 		deliveryVerdict("remote_checks_current", "external_state"),
 		deliveryVerdict("review_threads_resolved", "review_state"),
