@@ -142,6 +142,135 @@ function writeRuntimeEvidenceBundle(repoRoot: string): string {
 	return evidencePath;
 }
 
+function writeCodexRuntimeEvidencePacket(
+	repoRoot: string,
+	overrides: Record<string, unknown> = {},
+): string {
+	const evidencePath = ".harness/runtime/codex-runtime-evidence.json";
+	const permissionRef = "artifact:.harness/runtime/permissions.json";
+	const validationRef = "artifact:.harness/runtime/validation.json";
+	const externalRef = "artifact:.harness/runtime/external-state.json";
+	const reviewRef = "artifact:.harness/runtime/review-state.json";
+	mkdirSync(join(repoRoot, ".harness/runtime"), { recursive: true });
+	const packet = {
+		schemaVersion: "codex-runtime-evidence/v1",
+		generatedAt: "2026-05-15T12:00:00.000Z",
+		sourceProvenance: {
+			sourceKind: "sdk_typescript",
+			codexRepoPath: "sdk/typescript/src/events.ts",
+			commitSha: "a".repeat(40),
+			dirtyState: "clean",
+			sourceFileChecksums: {
+				"sdk/typescript/src/events.ts": `sha256:${"b".repeat(64)}`,
+			},
+			capturedAt: "2026-05-15T12:00:00.000Z",
+		},
+		codex: {
+			threadId: "thread-123",
+			turnId: "turn-123",
+			traceId: "trace-123",
+			traceFailureClass: null,
+			goalState: "active",
+			model: "gpt-5.5",
+		},
+		permissions: {
+			profile: "workspace_write",
+			writableRoots: [repoRoot],
+			network: "enabled",
+			evidenceRef: permissionRef,
+			failureClass: null,
+		},
+		mcp: {
+			servers: [
+				{
+					name: "github",
+					status: "available",
+					failureClass: null,
+				},
+			],
+		},
+		receipts: [
+			{
+				schemaVersion: "evidence-receipt/v1",
+				kind: "artifact",
+				ref: permissionRef,
+				producer: "codex-runtime",
+				status: "pass",
+				freshness: "current",
+				evidenceUse: "claim_support",
+				blockerClass: null,
+				verifiedAt: "2026-05-15T12:01:00.000Z",
+				headSha: "a".repeat(40),
+			},
+			{
+				schemaVersion: "evidence-receipt/v1",
+				kind: "validation",
+				ref: validationRef,
+				producer: "codex-runtime",
+				status: "pass",
+				freshness: "current",
+				evidenceUse: "claim_support",
+				blockerClass: null,
+				verifiedAt: "2026-05-15T12:01:00.000Z",
+				headSha: "a".repeat(40),
+			},
+			{
+				schemaVersion: "evidence-receipt/v1",
+				kind: "external_state",
+				ref: externalRef,
+				producer: "codex-runtime",
+				status: "pass",
+				freshness: "current",
+				evidenceUse: "claim_support",
+				blockerClass: null,
+				verifiedAt: "2026-05-15T12:01:00.000Z",
+				headSha: "a".repeat(40),
+			},
+			{
+				schemaVersion: "evidence-receipt/v1",
+				kind: "review_artifact",
+				ref: reviewRef,
+				producer: "codex-runtime",
+				status: "pass",
+				freshness: "current",
+				evidenceUse: "claim_support",
+				blockerClass: null,
+				verifiedAt: "2026-05-15T12:01:00.000Z",
+				headSha: "a".repeat(40),
+			},
+		],
+		validationResults: [
+			{
+				name: "pnpm test",
+				status: "pass",
+				evidenceRef: validationRef,
+				verifiedAt: "2026-05-15T12:01:00.000Z",
+			},
+		],
+		externalState: {
+			status: "provided",
+			evidenceRef: externalRef,
+			failureClass: null,
+		},
+		reviewState: {
+			status: "provided",
+			evidenceRef: reviewRef,
+			failureClass: null,
+		},
+		staleState: [
+			{
+				subject: "external_state",
+				classification: "current",
+				reason: null,
+				evidenceRef: externalRef,
+			},
+		],
+		...overrides,
+	};
+	writeFileSync(join(repoRoot, evidencePath), JSON.stringify(packet, null, 2));
+	return evidencePath;
+}
+
 function writePassingPhaseExit(repoRoot: string): string {
 	const phaseExitPath = ".harness/runtime/phase-exit.json";
 	mkdirSync(join(repoRoot, ".harness/runtime"), { recursive: true });
@@ -401,6 +530,103 @@ describe("runRuntimeCardCLI", () => {
 					source.ref === "session-collector:run-123",
 			),
 		).toHaveLength(1);
+	});
+
+	it("adapts codex-runtime-evidence/v1 packets through --evidence", async () => {
+		const repoRoot = setupRepo();
+		const evidencePath = writeCodexRuntimeEvidencePacket(repoRoot);
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence",
+			evidencePath,
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		const card = JSON.parse(output);
+		expect(card.schemaVersion).toBe("runtime-card/v1");
+		expect(card.codexRuntime).toMatchObject({
+			provenanceRef: `artifact:${evidencePath}`,
+			blockerCount: 0,
+		});
+		expect(card.codexRuntime.receiptRefs).toEqual(
+			expect.arrayContaining([
+				"codex-source://sdk_typescript/sdk/typescript/src/events.ts@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"artifact:.harness/runtime/validation.json",
+				"codex-mcp://github",
+			]),
+		);
+		expect(card.codexRuntime.validationRefs).toContain(
+			"artifact:.harness/runtime/validation.json",
+		);
+		expect(card.codexRuntime.reviewRefs).toContain(
+			"artifact:.harness/runtime/review-state.json",
+		);
+		expect(card.codexRuntime.sessionRefs).toContain(
+			"artifact:.harness/runtime/permissions.json",
+		);
+	});
+
+	it("rejects malformed codex-runtime-evidence/v1 packets through --evidence", async () => {
+		const repoRoot = setupRepo();
+		const evidencePath = writeCodexRuntimeEvidencePacket(repoRoot);
+		const persistedPath = join(repoRoot, evidencePath);
+		const packet = JSON.parse(readFileSync(persistedPath, "utf8"));
+		packet.codex.turnId = "";
+		writeFileSync(persistedPath, JSON.stringify(packet, null, 2));
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence",
+			evidencePath,
+		]);
+		const error = JSON.parse(output);
+		expect(exitCode).toBe(1);
+		expect(error.error).toContain("codex runtime evidence failed validation");
+	});
+
+	it("blocks runtime cards when codex-runtime-evidence/v1 carries stale state", async () => {
+		const repoRoot = setupRepo();
+		const evidencePath = writeCodexRuntimeEvidencePacket(repoRoot, {
+			staleState: [
+				{
+					subject: "external_state",
+					classification: "stale",
+					reason: "snapshot_ttl_expired",
+					evidenceRef: "artifact:.harness/runtime/external-state.json",
+				},
+			],
+		});
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence",
+			evidencePath,
+		]);
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		const card = JSON.parse(output);
+		expect(card.lifecycle).toBe("blocked");
+		expect(card.codexRuntime).toMatchObject({
+			blockerCount: 1,
+			blockedSourceCount: 1,
+		});
+		expect(card.blockers).toContain(
+			"external_state is stale: snapshot_ttl_expired.",
+		);
+		expect(card.codexRuntime.staleStateRefs).toContain(
+			"artifact:.harness/runtime/external-state.json",
+		);
 	});
 
 	it("blocks missing phase-exit evidence in closeout context", async () => {

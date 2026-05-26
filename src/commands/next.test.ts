@@ -3,6 +3,7 @@ import {
 	mkdtempSync,
 	readdirSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -402,7 +403,47 @@ describe("runHarnessNext", () => {
 	});
 
 	it("surfaces current runtime-card evidence in operator-visible metadata", () => {
-		const card = runtimeCard();
+		const card = runtimeCard({
+			sources: [
+				{
+					kind: "validation",
+					ref: "artifact:.harness/runtime/validation.json",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+				{
+					kind: "review",
+					ref: "artifact:.harness/runtime/review-state.json",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+				{
+					kind: "session",
+					ref: "artifact:.harness/runtime/permissions.json",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+			],
+			codexRuntime: {
+				provenanceRef: "artifact:.harness/runtime/codex-runtime.json",
+				collectedAt: "2026-05-15T12:00:00.000Z",
+				sourceCount: 3,
+				blockedSourceCount: 0,
+				blockerCount: 0,
+				receiptRefs: [
+					"artifact:.harness/runtime/validation.json",
+					"artifact:.harness/runtime/review-state.json",
+					"artifact:.harness/runtime/permissions.json",
+				],
+				validationRefs: ["artifact:.harness/runtime/validation.json"],
+				reviewRefs: ["artifact:.harness/runtime/review-state.json"],
+				sessionRefs: ["artifact:.harness/runtime/permissions.json"],
+				staleStateRefs: [],
+			},
+		});
 		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
 		const decision = runHarnessNext({
 			inspectChangedFiles: () => [],
@@ -421,12 +462,16 @@ describe("runHarnessNext", () => {
 				issueKey: "JSC-311",
 				lifecycle: "active",
 				nextSafeAction: "Run harness next --json.",
+				codexRuntime: {
+					provenanceRef: "artifact:.harness/runtime/codex-runtime.json",
+					sourceCount: 3,
+				},
 				pullRequest: {
 					number: 250,
 					mergeStateStatus: "CLEAN",
 				},
 				blockers: [],
-				sourceCount: 1,
+				sourceCount: 3,
 			},
 		});
 	});
@@ -988,6 +1033,97 @@ describe("runNextCLI", () => {
 			});
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects runtime-card artifacts outside the repository", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-runtime-card-"));
+		const outsideRoot = mkdtempSync(join(tmpdir(), "harness-next-outside-"));
+		try {
+			writeFileSync(
+				join(outsideRoot, "runtime-card.json"),
+				JSON.stringify(runtimeCard()),
+			);
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--runtime-card", join(outsideRoot, "runtime-card.json")],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("runtime_card_artifact_unreadable");
+			expect(decision.meta).toMatchObject({
+				frictionClass: "repo_state",
+				error: "Error: --runtime-card must stay within --repo",
+			});
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+			rmSync(outsideRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects runtime-card artifact symlinks that escape the repository", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-runtime-card-"));
+		const outsideRoot = mkdtempSync(join(tmpdir(), "harness-next-outside-"));
+		try {
+			writeFileSync(
+				join(outsideRoot, "runtime-card.json"),
+				JSON.stringify(runtimeCard()),
+			);
+			symlinkSync(
+				join(outsideRoot, "runtime-card.json"),
+				join(repoRoot, "runtime-card.json"),
+			);
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--runtime-card", "runtime-card.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("runtime_card_artifact_unreadable");
+			expect(decision.meta).toMatchObject({
+				frictionClass: "repo_state",
+				error: "Error: --runtime-card must stay within --repo",
+			});
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+			rmSync(outsideRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects phase-exit artifacts outside the repository", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-phase-exit-"));
+		const outsideRoot = mkdtempSync(join(tmpdir(), "harness-next-outside-"));
+		try {
+			writeFileSync(
+				join(outsideRoot, "phase-exit.json"),
+				JSON.stringify(passingPhaseExit()),
+			);
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--phase-exit", join(outsideRoot, "phase-exit.json")],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("he_phase_exit_artifact_unreadable");
+			expect(decision.meta).toMatchObject({
+				frictionClass: "repo_state",
+				error: "Error: --phase-exit must stay within --repo",
+			});
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+			rmSync(outsideRoot, { recursive: true, force: true });
 		}
 	});
 
