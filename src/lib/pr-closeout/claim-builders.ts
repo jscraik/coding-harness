@@ -56,7 +56,7 @@ function checkClaimOptions(
 		required,
 		explicitlyRequired,
 		currentRequired: requiredChecksAreCurrent(checks, headSha),
-		hasPending: checks.some((check) => isPendingCheck(check)),
+		hasPending: required.some((check) => isPendingCheck(check)),
 		freshness:
 			checks.length === 0
 				? "missing"
@@ -74,8 +74,15 @@ function buildTestsPassedClaim(
 	headSha: string | null,
 	verifiedAt: string,
 ): PrCloseoutClaim {
+	const requiredTestChecks = testChecks.filter(
+		(check) => check.required === true,
+	);
 	const evidenceChecks =
-		testChecks.length > 0 ? testChecks : checkOptions.explicitlyRequired;
+		checkOptions.explicitlyRequired.length === 0
+			? testChecks
+			: requiredTestChecks.length > 0
+				? requiredTestChecks
+				: checkOptions.explicitlyRequired;
 	return buildClaim(
 		"tests_passed",
 		evidenceChecks.length === 0
@@ -103,26 +110,29 @@ function buildTestsPassedClaim(
 }
 
 function buildCiGreenClaim(
-	checks: readonly PrCloseoutCheckInput[],
 	checkOptions: CheckClaimOptions,
 	headSha: string | null,
 	verifiedAt: string,
 ): PrCloseoutClaim {
+	const evidenceChecks = checkOptions.required;
 	const allChecksPassing =
-		checks.length > 0 && checks.every((check) => isPassingCheck(check));
+		evidenceChecks.length > 0 &&
+		evidenceChecks.every((check) => isPassingCheck(check));
 	return buildClaim(
 		"ci_green",
-		checks.length === 0
+		evidenceChecks.length === 0
 			? "unknown"
 			: allChecksPassing && checkOptions.currentRequired
 				? "pass"
-				: checks.some((check) => isFailedCheck(check))
+				: evidenceChecks.some((check) => isFailedCheck(check))
 					? "fail"
 					: "blocked",
 		"checks",
 		verifiedAt,
 		{
-			evidenceRef: checks[0] ? evidenceRefFromCheck(checks[0]) : null,
+			evidenceRef: evidenceChecks[0]
+				? evidenceRefFromCheck(evidenceChecks[0])
+				: null,
 			headSha,
 			freshness: checkOptions.freshness,
 			...(checkOptions.hasPending
@@ -339,7 +349,7 @@ export function buildCloseoutClaims(
 	const hasLinear = hasLinearReference(input.pullRequest.body);
 	return [
 		buildTestsPassedClaim(testChecks, checkOptions, headSha, verifiedAt),
-		buildCiGreenClaim(checks, checkOptions, headSha, verifiedAt),
+		buildCiGreenClaim(checkOptions, headSha, verifiedAt),
 		buildReviewThreadsResolvedClaim(reviewThreads, headSha, verifiedAt),
 		buildPrMetadataReadyClaim(input.pullRequest, headSha, verifiedAt),
 		buildBranchCurrentClaim(branch, headSha, verifiedAt),
