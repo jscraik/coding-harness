@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-25T22:56:49Z
+Generated: 2026-05-26T12:45:46Z
 
 ## Table of Contents
 
@@ -29,45 +29,14 @@ Generated: 2026-05-25T22:56:49Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `src/lib/delivery-truth/composition.ts`
-- `src/lib/delivery-truth/index.ts`
-- `src/lib/delivery-truth/root-hygiene-evidence.ts`
-- `src/lib/delivery-truth/types.ts`
-- `src/lib/evidence/evidence-receipt.ts`
-- `src/lib/external-state/claim-support.ts`
-- `src/lib/external-state/index.ts`
-- `src/lib/external-state/source-validation.ts`
-- `src/lib/external-state/types.ts`
-- `src/lib/external-state/validation-helpers.ts`
-- `src/lib/external-state/validation.ts`
-- `src/lib/pr-closeout.ts`
-- `src/lib/pr-closeout/delivery-truth.ts`
-- `src/lib/pr-closeout/evaluator.ts`
-- `src/lib/pr-closeout/report-helpers.ts`
-- `src/lib/pr-closeout/types.ts`
-- `src/lib/review-state/index.ts`
-- `src/lib/review-state/types.ts`
-- `src/lib/review-state/validation.ts`
-- `src/lib/root-hygiene/classifier.ts`
-- `src/lib/root-hygiene/entry-classification.ts`
-- `src/lib/root-hygiene/git-env.ts`
-- `src/lib/root-hygiene/git-tracked-paths.ts`
-- `src/lib/root-hygiene/index.ts`
-- `src/lib/root-hygiene/inventory.ts`
-- `src/lib/root-hygiene/policy-digest.ts`
-- `src/lib/root-hygiene/policy.ts`
-- `src/lib/root-hygiene/receipt.ts`
-- `src/lib/root-hygiene/report-freeze.ts`
-- `src/lib/root-hygiene/repository-identity.ts`
-- `src/lib/root-hygiene/tracked-paths.ts`
-- `src/lib/root-hygiene/types.ts`
-- `src/lib/runtime/local-runtime-card-assembly.ts`
-- `src/lib/runtime/runtime-card-codex-runtime-validation.ts`
-- `src/lib/runtime/runtime-card-codex-runtime.ts`
-- `src/lib/runtime/runtime-card-reference-validation.ts`
-- `src/lib/runtime/runtime-card-validation.ts`
-- `src/lib/runtime/runtime-card.ts`
-- `src/lib/runtime/runtime-evidence-adapter.ts`
+- `src/commands/next-phase-exit.ts`
+- `src/commands/next-runtime-card.ts`
+- `src/commands/runtime-card.ts`
+- `src/lib/init/scaffold-environment-templates.ts`
+- `src/lib/init/scaffold-hook-templates.ts`
+- `src/lib/runtime/codex-runtime-evidence-producer.ts`
+- `src/lib/runtime/codex-runtime-source-provenance.ts`
+- `src/lib/runtime/repo-runtime-artifact.ts`
 
 ## agent
 
@@ -408,6 +377,9 @@ classDiagram
   class required_check_manifest_744e3936 {
     +src/lib/review-gate/required-check-manifest.ts
   }
+  class codex_runtime_evidence_producer_a9193270 {
+    +src/lib/runtime/codex-runtime-evidence-producer.ts
+  }
   class session_closeout_f3efb270 {
     +src/lib/session/session-closeout.ts
   }
@@ -462,8 +434,11 @@ flowchart TD
   repository_identity_9dc13d37["repository-identity"]
   UserRequest --> repository_identity_9dc13d37
   repository_identity_9dc13d37 --> repository_identity_9dc13d37_result["result"]
+  repo_runtime_artifact_139c0fbd["repo-runtime-artifact"]
+  UserRequest --> repo_runtime_artifact_139c0fbd
+  repo_runtime_artifact_139c0fbd --> repo_runtime_artifact_139c0fbd_result["result"]
   classDef dbNode fill:#0ea5e9,color:#fff
-  class fleet_plan_repo_ecdc6499,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635,query_cli_b95be64d,repository_identity_9dc13d37 dbNode
+  class fleet_plan_repo_ecdc6499,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635,query_cli_b95be64d,repository_identity_9dc13d37,repo_runtime_artifact_139c0fbd dbNode
   classDef decisionNode fill:#0284c7,color:#fff
   class Decision decisionNode
 
@@ -649,9 +624,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_metrics_capture_core_db4bf7cf_7494304c
   ext_node_fs_a15b7d96["node:fs"] --> node_metrics_tracker_98cec29c_9c4c2266
   ext_node_fs_a15b7d96["node:fs"] --> node_migration_8a6cead4_3c3cc0a4
-  ext_node_fs_a15b7d96["node:fs"] --> node_next_phase_exit_1fd996c9_a5f31003
   ext_node_fs_a15b7d96["node:fs"] --> node_next_runner_41643472_9b94424f
-  ext_node_fs_a15b7d96["node:fs"] --> node_next_runtime_card_fa7867b3_0756a883
   ext_node_fs_a15b7d96["node:fs"] --> node_normalize_diagram_manifest_259cbddf_3f92b8d6
   ext_node_fs_a15b7d96["node:fs"] --> node_normalize_workflow_contracts_8701f1c8_0fdf7d2f
   ext_node_fs_a15b7d96["node:fs"] --> node_north_star_artifact_io_9f2c34b2_6490caba
@@ -681,6 +654,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_fs_a15b7d96["node:fs"] --> node_remediate_runner_helpers_929fedcc_8714d951
   ext_node_fs_a15b7d96["node:fs"] --> node_repo_bound_paths_e218b5b3_216d0eb0
+  ext_node_fs_a15b7d96["node:fs"] --> node_repo_runtime_artifact_139c0fbd_51129f15
   ext_node_fs_a15b7d96["node:fs"] --> node_repo_scanner_core_8e9f7646_10aca705
   ext_node_fs_a15b7d96["node:fs"] --> node_repositories_a8038884_2c62efe4
   ext_node_fs_a15b7d96["node:fs"] --> node_repository_identity_9dc13d37_eaffcd1e
@@ -699,7 +673,6 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_run_state_core_25a955bc_a562e9bf
   ext_node_fs_a15b7d96["node:fs"] --> node_runner_1_6f281bf8_36f20bbb
   ext_node_fs_a15b7d96["node:fs"] --> node_runtime_budget_dfce83ae_5cbd79a2
-  ext_node_fs_a15b7d96["node:fs"] --> node_runtime_card_e06b53e1_144e4a95
   ext_node_fs_a15b7d96["node:fs"] --> node_satisfiability_6c08de4b_de8c902a
   ext_node_fs_a15b7d96["node:fs"] --> node_scaffold_ci_template_utils_1035b61c_0513532b
   ext_node_fs_a15b7d96["node:fs"] --> node_scaffold_db8a7260_1ca6adc9
@@ -847,9 +820,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_metrics_capture_core_db4bf7cf_7494304c
   ext_node_path_78811c13["node:path"] --> node_metrics_tracker_98cec29c_9c4c2266
   ext_node_path_78811c13["node:path"] --> node_migration_8a6cead4_3c3cc0a4
-  ext_node_path_78811c13["node:path"] --> node_next_phase_exit_1fd996c9_a5f31003
   ext_node_path_78811c13["node:path"] --> node_next_runner_41643472_9b94424f
-  ext_node_path_78811c13["node:path"] --> node_next_runtime_card_fa7867b3_0756a883
   ext_node_path_78811c13["node:path"] --> node_normalize_diagram_manifest_259cbddf_3f92b8d6
   ext_node_path_78811c13["node:path"] --> node_normalize_workflow_contracts_8701f1c8_0fdf7d2f
   ext_node_path_78811c13["node:path"] --> node_north_star_artifact_io_9f2c34b2_6490caba
@@ -878,6 +849,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_path_78811c13["node:path"] --> node_replay_ac203c98_115ce9a2
   ext_node_path_78811c13["node:path"] --> node_repo_bound_paths_e218b5b3_216d0eb0
+  ext_node_path_78811c13["node:path"] --> node_repo_runtime_artifact_139c0fbd_51129f15
   ext_node_path_78811c13["node:path"] --> node_repo_scanner_core_8e9f7646_10aca705
   ext_node_path_78811c13["node:path"] --> node_repositories_a8038884_2c62efe4
   ext_node_path_78811c13["node:path"] --> node_required_check_manifest_744e3936_5a20f8d5
@@ -896,7 +868,6 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_run_state_core_25a955bc_a562e9bf
   ext_node_path_78811c13["node:path"] --> node_runner_1_6f281bf8_36f20bbb
   ext_node_path_78811c13["node:path"] --> node_runtime_card_args_2b3d4b28_5cfe029c
-  ext_node_path_78811c13["node:path"] --> node_runtime_card_e06b53e1_144e4a95
   ext_node_path_78811c13["node:path"] --> node_satisfiability_6c08de4b_de8c902a
   ext_node_path_78811c13["node:path"] --> node_scaffold_ci_template_utils_1035b61c_0513532b
   ext_node_path_78811c13["node:path"] --> node_scaffold_db8a7260_1ca6adc9
@@ -1335,6 +1306,8 @@ flowchart TD
   Untrusted --> risk_tier_1_96b6ff91
   tooling_baseline_50ab2eeb["tooling-baseline"]
   Untrusted --> tooling_baseline_50ab2eeb
+  policy_coverage_dab8febe["policy-coverage"]
+  Untrusted --> policy_coverage_dab8febe
   policy_digest_ca7acf0a["policy-digest"]
   Untrusted --> policy_digest_ca7acf0a
   policy_1_fc4198db["policy"]
@@ -1355,10 +1328,8 @@ flowchart TD
   Untrusted --> orchestrator_core_d0678b53
   orchestrator_1_6b7137c5["orchestrator"]
   Untrusted --> orchestrator_1_6b7137c5
-  resume_admissibility_core_8ab84488["resume-admissibility-core"]
-  Untrusted --> resume_admissibility_core_8ab84488
   classDef securityNode fill:#dc2626,color:#fff
-  class validate_audit_references_811f872a,audit_b81f37a0,evidence_verify_3b73c290,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,policy_823412d1,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,policy_digest_ca7acf0a,policy_1_fc4198db,issue_key_305bf3db,verify_work_1_cd8e7ec3,args_1_15220d9b,cli_args_14_3481043e,runner_1_6f281bf8,types_31_eb363e20,orchestrator_core_d0678b53,orchestrator_1_6b7137c5,resume_admissibility_core_8ab84488 securityNode
+  class validate_audit_references_811f872a,audit_b81f37a0,evidence_verify_3b73c290,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,policy_823412d1,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,policy_coverage_dab8febe,policy_digest_ca7acf0a,policy_1_fc4198db,issue_key_305bf3db,verify_work_1_cd8e7ec3,args_1_15220d9b,cli_args_14_3481043e,runner_1_6f281bf8,types_31_eb363e20,orchestrator_core_d0678b53,orchestrator_1_6b7137c5 securityNode
 
 ```
 

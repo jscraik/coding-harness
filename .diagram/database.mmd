@@ -36,7 +36,10 @@ flowchart TD
   repository_identity_9dc13d37["repository-identity"]
   UserRequest --> repository_identity_9dc13d37
   repository_identity_9dc13d37 --> repository_identity_9dc13d37_result["result"]
+  repo_runtime_artifact_139c0fbd["repo-runtime-artifact"]
+  UserRequest --> repo_runtime_artifact_139c0fbd
+  repo_runtime_artifact_139c0fbd --> repo_runtime_artifact_139c0fbd_result["result"]
   classDef dbNode fill:#0ea5e9,color:#fff
-  class fleet_plan_repo_ecdc6499,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635,query_cli_b95be64d,repository_identity_9dc13d37 dbNode
+  class fleet_plan_repo_ecdc6499,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635,query_cli_b95be64d,repository_identity_9dc13d37,repo_runtime_artifact_139c0fbd dbNode
   classDef decisionNode fill:#0284c7,color:#fff
   class Decision decisionNode
