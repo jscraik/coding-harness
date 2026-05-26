@@ -69,6 +69,7 @@ gardener-report.json
 !.harness/implementation-notes/
 .harness/implementation-notes/*
 !.harness/implementation-notes/*.md
+!.harness/implementation-notes/*.mdx
 !.harness/intent/
 .harness/intent/*
 !.harness/intent/**/*.md

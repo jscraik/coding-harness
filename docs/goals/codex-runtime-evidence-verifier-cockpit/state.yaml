@@ -16,10 +16,22 @@ rules:
   one_active_task: true
   require_fresh_verification: true
   require_final_audit: true
+artifacts:
+  implementation_notes:
+    path: ".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx"
+    format: "mdx"
+    status: "present"
+    browser_preview:
+      surface: "localhost"
+      status: "blocked"
+      blocker: "The PR branch stores the reviewed MDX source; the live HTML browser preview is a local runtime projection and is not version-controlled."
+      live_update:
+        status: "blocked"
+        blocker: "No repo-owned watcher converts the MDX source into the local HTML preview yet."
 completion_contract:
   outcome: "Coding Harness implements the full Codex runtime evidence verifier cockpit lifecycle with runtime-card ingestion, evidence receipts, delivery-truth, review-state, external-state refresh, PR/CI/Linear closeout, docs accuracy, and Judge/PM-ready audit evidence."
   verification_surface:
-    - "python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+    - "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
     - ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md"
     - ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md"
     - "Slice-specific validators and tests recorded in receipts.jsonl"
@@ -103,6 +115,7 @@ tasks:
       - ".harness/intent/codex-runtime-evidence-verifier-cockpit-implementation-intent.json"
       - ".harness/intent/codex-runtime-evidence-verifier-cockpit-contract-baseline.json"
       - ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-000-review-receipt.json"
+      - ".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx"
       - "src/lib/plan-gate/lifecycle-intent*.ts"
       - "artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-*.md"
       - ".harness/implementation-notes/implementation-notes.html"

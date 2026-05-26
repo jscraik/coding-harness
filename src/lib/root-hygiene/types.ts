@@ -115,4 +115,5 @@ export interface ClassifyGitTrackedRootInput {
 	repoRoot: string;
 	generatedAt: string;
 	headSha?: string | null;
+	gitLsFilesMaxBufferBytes?: number;
 }

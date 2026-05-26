@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { realpathSync } from "node:fs";
+import { formatRootHygieneError } from "./errors.js";
 import { rootHygieneGitEnv } from "./git-env.js";
 
 export const ROOT_HYGIENE_REPOSITORY_ID_KIND =
@@ -32,7 +33,7 @@ export function rootHygieneRepositoryTopLevel(repoRoot: string): string {
 		return realpathSync(gitTopLevel);
 	} catch (error) {
 		throw new Error(
-			`Failed to resolve repository top-level for repoRoot=${repoRoot}: ${error instanceof Error ? error.message : String(error)}`,
+			`Failed to resolve root-hygiene git toplevel for repoRoot=${repoRoot}: ${formatRootHygieneError(error)}`,
 			{ cause: error },
 		);
 	}

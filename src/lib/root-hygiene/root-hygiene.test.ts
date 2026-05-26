@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { validateEvidenceReceipt } from "../evidence/evidence-receipt.js";
-import { classifyGitTrackedRoot, classifyRootSurface } from "./classifier.js";
+import {
+	classifyGitTrackedRoot,
+	classifyRootSurface,
+	readGitTrackedPaths,
+	rootHygieneRepositoryTopLevel,
+} from "./index.js";
 import { rootHygieneGitEnv } from "./git-env.js";
 import { completeRootHygieneInventory } from "./inventory.js";
 import {
@@ -228,6 +233,37 @@ describe("root-hygiene classification", () => {
 			expect(fromNestedPath.repository).toEqual(fromRoot.repository);
 			expect(fromNestedPath.coverage.digest).toBe(fromRoot.coverage.digest);
 			expect(fromNestedPath.entries).toEqual(fromRoot.entries);
+		} finally {
+			rmSync(repoRoot, { force: true, recursive: true });
+		}
+	});
+
+	it("throws contextual errors when git root resolution fails", () => {
+		const missingRepo = join(tmpdir(), "root-hygiene-missing-repo");
+
+		expect(() => rootHygieneRepositoryTopLevel(missingRepo)).toThrow(
+			/Failed to resolve root-hygiene git toplevel/,
+		);
+		expect(() => readGitTrackedPaths(missingRepo)).toThrow(
+			/Failed to read git tracked paths/,
+		);
+		expect(() =>
+			classifyGitTrackedRoot({
+				repoRoot: missingRepo,
+				generatedAt: GENERATED_AT,
+			}),
+		).toThrow(/Failed to classify git-tracked root/);
+	});
+
+	it("lets callers raise the git tracked-path buffer for large repositories", () => {
+		const repoRoot = makeGitRepo(trackedPathsForPolicyEntries());
+		try {
+			expect(() =>
+				readGitTrackedPaths(repoRoot, { maxBufferBytes: 1 }),
+			).toThrow(/Failed to read git tracked paths/);
+			expect(
+				readGitTrackedPaths(repoRoot, { maxBufferBytes: 10 * 1024 * 1024 }),
+			).toEqual(expect.arrayContaining(trackedPathsForPolicyEntries()));
 		} finally {
 			rmSync(repoRoot, { force: true, recursive: true });
 		}

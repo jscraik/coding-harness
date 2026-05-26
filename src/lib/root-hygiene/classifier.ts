@@ -1,3 +1,4 @@
+import { formatRootHygieneError } from "./errors.js";
 import { buildRootHygieneReceipt } from "./receipt.js";
 import { ROOT_HYGIENE_CLASSIFICATION_SCHEMA_VERSION } from "./types.js";
 import { readGitTrackedPaths } from "./git-tracked-paths.js";
@@ -25,18 +26,29 @@ const verifierOwnedReports = new WeakSet<RootHygieneReport>();
 export function classifyGitTrackedRoot(
 	input: ClassifyGitTrackedRootInput,
 ): RootHygieneReport {
-	const trackedPaths = readGitTrackedPaths(input.repoRoot);
-	const entries = rootSurfaceEntriesFromTrackedPaths(trackedPaths);
-	return classifyRootSurfaceInternal(
-		{
-			entries,
-			generatedAt: input.generatedAt,
-			inventory: completeRootHygieneInventory(entries, "git_tracked_paths"),
-			repository: rootHygieneRepositoryIdentity(input.repoRoot),
-			headSha: input.headSha ?? null,
-		},
-		true,
-	);
+	try {
+		const trackedPaths =
+			input.gitLsFilesMaxBufferBytes === undefined
+				? readGitTrackedPaths(input.repoRoot)
+				: readGitTrackedPaths(input.repoRoot, {
+						maxBufferBytes: input.gitLsFilesMaxBufferBytes,
+					});
+		const entries = rootSurfaceEntriesFromTrackedPaths(trackedPaths);
+		return classifyRootSurfaceInternal(
+			{
+				entries,
+				generatedAt: input.generatedAt,
+				inventory: completeRootHygieneInventory(entries, "git_tracked_paths"),
+				repository: rootHygieneRepositoryIdentity(input.repoRoot),
+				headSha: input.headSha ?? null,
+			},
+			true,
+		);
+	} catch (error) {
+		throw new Error(
+			`Failed to classify git-tracked root for repoRoot=${input.repoRoot}: ${formatRootHygieneError(error)}`,
+		);
+	}
 }
 
 /** Classify caller-supplied root entries as non-claim-support evidence. */
