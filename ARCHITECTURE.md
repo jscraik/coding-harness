@@ -153,6 +153,14 @@ indexes, and harness control-plane files live here.
 durable operating memory. Runtime databases, caches, backups, and bulk outputs
 remain local unless explicitly promoted.
 
+**Tracking Interface:** `.harness/README.md` is the canonical classification
+map for this surface. Stable policy, decisions, accepted specs/plans, intent
+packets, learning examples, curated research, validator manifests, and media
+sidecars can be repository truth. Raw command evidence, guardrail snapshots,
+metrics, run directories, local learning imports, live browser HTML, runtime
+databases, rollback markers, and generated binary media stay local by default
+until a spec, plan, PR, validator, or decision explicitly promotes them.
+
 ### .codex/
 
 Repo-local Codex runtime config, agents, hooks, skills, and environment setup
@@ -201,7 +209,8 @@ Treat these surfaces as compatibility boundaries:
 
 - CLI commands and machine-readable JSON output.
 - harness.contract.json and related contract schemas.
-- .harness/** durable memory, decision, review, and evidence files.
+- .harness/** durable memory, decision, intent, review, research, learning, and
+  promoted evidence files.
 - PR template and closeout evidence schemas.
 - Review artifact contracts under artifacts/reviews/ when reviewers are
   requested.
@@ -238,6 +247,9 @@ The following rules are intentionally stable:
   parsing, validation, and orchestration belong behind named internal seams.
 - Project Brain and Local Memory capture durable operating knowledge; chat
   narrative alone is not durable evidence.
+- .harness tracking is selective: visible control-plane candidates still require
+  an explicit promotion decision before staging, and generated runtime state is
+  not repository truth just because it sits under `.harness`.
 - Repeated human steering that implies a design principle should become a guard,
   validator, test, policy, documented exception, or tracked follow-up.
 

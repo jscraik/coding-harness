@@ -419,6 +419,9 @@ describe("composeDeliveryTruth", () => {
 	for (const claim of [
 		"root_surface_tidy",
 		"goal_ready_for_judge_pm",
+		"remote_checks_current",
+		"review_threads_resolved",
+		"linear_state_aligned",
 		"merge_ready",
 	] satisfies DeliveryTruthClaim[]) {
 		it(`builds a separate private verdict fixture for ${claim}`, () => {
@@ -438,6 +441,66 @@ describe("composeDeliveryTruth", () => {
 			);
 		});
 	}
+
+	it("refuses checks claims backed only by Linear external-state scope", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "remote_checks_current",
+			source: "external_state",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				externalStateEvidence("external-state:linear.json", {}, ["linear"]),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "claim_scope_mismatch",
+		});
+	});
+
+	it("refuses Linear claims backed only by checks external-state scope", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "linear_state_aligned",
+			source: "external_state",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				externalStateEvidence("external-state:checks.json", {}, [
+					"github_checks",
+				]),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "claim_scope_mismatch",
+		});
+	});
+
+	it("refuses review thread claims with unresolved review-state counts", () => {
+		const verdict = composeDeliveryTruth({
+			claim: "review_threads_resolved",
+			source: "review_state",
+			verifiedAt: VERIFIED_AT,
+			verdictHeadSha: CURRENT_HEAD,
+			evidence: [
+				reviewStateEvidence(
+					"review-state:threads.json",
+					{},
+					{
+						githubDecision: "review_required",
+						unresolvedThreads: { total: 1, needsHuman: 1, autofixable: 0 },
+					},
+				),
+			],
+		});
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			blockerCode: "review_threads_unresolved",
+		});
+	});
 
 	it("requires separate current evidence families before passing merge_ready", () => {
 		const verdict = composeDeliveryTruth({
@@ -974,6 +1037,19 @@ function evidenceForClaim(
 			return [supportingEvidence({ source: "root_hygiene" })];
 		case "goal_ready_for_judge_pm":
 			return [prCloseoutEvidence("pr-closeout:judge-pm.json")];
+		case "remote_checks_current":
+			return [
+				externalStateEvidence("external-state:checks.json", {}, [
+					"github_checks",
+					"circleci",
+				]),
+			];
+		case "review_threads_resolved":
+			return [reviewStateEvidence("review-state:threads.json")];
+		case "linear_state_aligned":
+			return [
+				externalStateEvidence("external-state:linear.json", {}, ["linear"]),
+			];
 		case "merge_ready":
 			return [
 				externalStateEvidence("external-state:pr.json"),
@@ -991,6 +1067,12 @@ function sourceForClaim(
 			return "root_hygiene";
 		case "goal_ready_for_judge_pm":
 			return "pr_closeout";
+		case "remote_checks_current":
+			return "external_state";
+		case "review_threads_resolved":
+			return "review_state";
+		case "linear_state_aligned":
+			return "external_state";
 		case "merge_ready":
 			return "external_state";
 	}
@@ -1018,10 +1100,11 @@ function claimForCloseoutPhrase(phrase: CloseoutPhrase): DeliveryTruthClaim {
 	switch (phrase) {
 		case "tidy":
 			return "root_surface_tidy";
+		case "green":
+			return "remote_checks_current";
 		case "merged":
 		case "ready":
 			return "merge_ready";
-		case "green":
 		case "delivered":
 			return "goal_ready_for_judge_pm";
 	}
@@ -1033,10 +1116,11 @@ function sourceForCloseoutPhrase(
 	switch (phrase) {
 		case "tidy":
 			return "root_hygiene";
+		case "green":
+			return "external_state";
 		case "merged":
 		case "ready":
 			return "external_state";
-		case "green":
 		case "delivered":
 			return "pr_closeout";
 	}
@@ -1089,6 +1173,12 @@ function evidenceForCloseoutPhrase(
 	switch (phrase) {
 		case "tidy":
 			return [supportingEvidence({ source: "root_hygiene", receipt })];
+		case "green":
+			return [
+				externalStateEvidence("external-state:checks.json", receipt, [
+					"github_checks",
+				]),
+			];
 		case "merged":
 		case "ready":
 			return [
@@ -1096,7 +1186,6 @@ function evidenceForCloseoutPhrase(
 				reviewStateEvidence("review-state:threads.json"),
 				prCloseoutEvidence("pr-closeout:merge-readiness.json"),
 			];
-		case "green":
 		case "delivered":
 			return [prCloseoutEvidence("pr-closeout:judge-pm.json", receipt)];
 	}
@@ -1145,21 +1234,32 @@ function kindForSource(
 function externalStateEvidence(
 	ref: string,
 	receipt: Partial<EvidenceReceipt> = {},
+	externalStateSources: DeliveryTruthEvidence["externalStateSources"] = [
+		"github_pr",
+	],
 ): DeliveryTruthEvidence {
-	return supportingEvidence({
+	const evidence = supportingEvidence({
 		source: "external_state",
 		receipt: { ref, kind: "external_state", ...receipt },
 	});
+	evidence.externalStateSources = externalStateSources;
+	return evidence;
 }
 
 function reviewStateEvidence(
 	ref: string,
 	receipt: Partial<EvidenceReceipt> = {},
+	reviewStateSummary: DeliveryTruthEvidence["reviewStateSummary"] = {
+		githubDecision: "approved",
+		unresolvedThreads: { total: 0, needsHuman: 0, autofixable: 0 },
+	},
 ): DeliveryTruthEvidence {
-	return supportingEvidence({
+	const evidence = supportingEvidence({
 		source: "review_state",
 		receipt: { ref, kind: "review_artifact", ...receipt },
 	});
+	evidence.reviewStateSummary = reviewStateSummary;
+	return evidence;
 }
 
 function prCloseoutEvidence(

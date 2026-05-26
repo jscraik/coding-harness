@@ -1,0 +1,148 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-013",
+	"createdAt": "2026-05-26T11:25:00Z",
+	"objective": "Implement PU-013 by making runtime-card and harness next consume validated Codex runtime evidence packets as cockpit input while preserving runtime-card/v1 as a compact summary and pointer object.",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceSpec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+	"linearIssue": "JSC-363",
+	"ownedAcceptanceIds": ["FR-004", "FR-005", "FR-006", "FR-007"],
+	"lifecycleUnit": "PU-013",
+	"deepModuleBoundary": "src/lib/runtime runtime-card ingestion and src/commands/next advisory cockpit metadata",
+	"implementationThesis": "Use additive input normalization and metadata projection: runtime-card --evidence accepts runtime-evidence-bundle/v1 or codex-runtime-evidence/v1, adapts Codex packets through the existing runtime evidence adapter, and harness next surfaces compact Codex runtime summaries as advisory metadata without executing actions or asserting merge readiness.",
+	"currentEvidence": [
+		{
+			"path": "src/commands/runtime-card.ts",
+			"observed": "--evidence parses repo-contained JSON and passes it directly into runtime-card construction as evidenceBundle.",
+			"gap": "codex-runtime-evidence/v1 packets are not normalized at the CLI boundary."
+		},
+		{
+			"path": "src/lib/runtime/codex-runtime-evidence-adapter.ts",
+			"observed": "adaptCodexRuntimeEvidenceToRuntimeEvidenceBundle maps validated Codex packets into runtime-evidence-bundle/v1.",
+			"gap": "the adapter is not wired into runtime-card --evidence ingestion."
+		},
+		{
+			"path": "src/commands/next-decision-meta.ts",
+			"observed": "harness next includes normaliseRuntimeCard(runtimeCard) in metadata.",
+			"gap": "next tests do not prove Codex runtime summary, stale-state refs, or blocked inputs remain visible as advisory metadata."
+		},
+		{
+			"path": "src/commands/next-runtime-card.ts",
+			"observed": "harness next --runtime-card loads artifact paths directly and accepts absolute paths without the repo-boundary and symlink checks used by runtime-card --evidence.",
+			"gap": "runtime-card and harness next currently have different artifact trust boundaries."
+		}
+	],
+	"inScope": [
+		"src/commands/runtime-card.ts",
+		"src/commands/runtime-card.test.ts",
+		"src/commands/next*.ts",
+		"src/commands/next-runtime-card.ts",
+		"src/commands/next.test.ts",
+		"src/lib/runtime/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-013-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-013-intent-adversarial.md",
+		"artifacts/reviews/codex-runtime-evidence-pu-013-intent-agent-native.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**"
+	],
+	"outOfScope": [
+		"mutating /Users/jamiecraik/dev/codex",
+		"adding public delivery-truth commands",
+		"changing pr-closeout, external-state, review-state, or root-hygiene semantics reserved for later PU units",
+		"expanding harness next into executable authority",
+		"embedding raw Codex events, prompts, final assistant responses, transcripts, full review bodies, secrets, credentials, or bulky telemetry in runtime-card/v1",
+		"claiming merge readiness or goal completion from runtime-card metadata alone"
+	],
+	"guardedPathGlobs": [
+		"src/commands/runtime-card.ts",
+		"src/commands/runtime-card.test.ts",
+		"src/commands/next*.ts",
+		"src/lib/runtime/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-013-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-013-intent-*.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**"
+	],
+	"acceptanceCriteria": [
+		"runtime-card --evidence accepts a repo-contained codex-runtime-evidence/v1 packet and emits a valid runtime-card/v1 with codexRuntime summary fields.",
+		"runtime-card --evidence continues to accept runtime-evidence-bundle/v1 artifacts without regression.",
+		"harness next --runtime-card enforces the same repo-contained path, traversal, and symlink-safety boundary used by runtime-card --evidence.",
+		"malformed Codex runtime packets fail closed with sanitized runtime-card-error/v1 output.",
+		"stale or blocked Codex evidence is projected as blockers/advisory metadata and cannot become merge-ready or delivery-ready proof.",
+		"harness next --json remains advisory and exposes runtime-card Codex summaries only as metadata when a runtime-card artifact is supplied.",
+		"tests prove valid packet, stale packet, malformed packet, and advisory-only unsupported-claim cases."
+	],
+	"automationPlan": [
+		{
+			"name": "intent artifact JSON validation",
+			"command": "jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-013-intent.json >/dev/null",
+			"proves": ["intent artifact is syntactically valid JSON before review"]
+		},
+		{
+			"name": "focused runtime cockpit tests",
+			"command": "pnpm vitest run src/lib/runtime/*.test.ts src/commands/runtime-card.test.ts src/commands/next*.test.ts",
+			"proves": [
+				"PU-013 runtime-card evidence ingestion, shared artifact path safety, and harness next cockpit projection behavior"
+			]
+		},
+		{
+			"name": "runtime-card smoke",
+			"command": "pnpm exec tsx src/cli.ts runtime-card --json --repo .",
+			"proves": [
+				"runtime-card CLI still emits schema-valid local cockpit output"
+			]
+		},
+		{
+			"name": "harness next smoke",
+			"command": "pnpm exec tsx src/cli.ts next --json",
+			"proves": [
+				"harness next remains a narrow advisory cockpit after metadata changes"
+			]
+		},
+		{
+			"name": "goal board validation",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+			"proves": ["goal state and receipts remain valid after PU-013 updates"]
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": ["adversarial-reviewer", "agent-native-reviewer"],
+		"artifactPaths": [
+			"artifacts/reviews/codex-runtime-evidence-pu-013-intent-adversarial.md",
+			"artifacts/reviews/codex-runtime-evidence-pu-013-intent-agent-native.md"
+		]
+	},
+	"reviewStatus": "reviewed",
+	"implementationStartPolicy": "blocked_until_pu013_intent_review_passes",
+	"postReviewMutationPolicy": "any material mutation to objective, implementationThesis, currentEvidence, inScope, outOfScope, guardedPathGlobs, acceptanceCriteria, automationPlan, reviewPlan, stopConditions, or rollback resets reviewStatus to pending",
+	"parallelPrTriageStrategy": {
+		"default": "allow a read-only PR triage subagent to monitor PR #305 while the coordinator performs PU-013 intent review and implementation on the active branch",
+		"parallelCodeWorkAllowed": "allowed only if PR #305 failures, if any, are classified as unrelated to files changed by PU-013 or are fixed before the PU-013 commit is pushed",
+		"blockedWhen": [
+			"PR #305 reports a failure caused by current branch files that PU-013 would also touch",
+			"intent reviewers identify a material cockpit authority or evidence-warehouse risk",
+			"implementation would require Codex source mutation or public delivery-truth command exposure"
+		],
+		"safeFallback": "continue read-only PR triage, fixture design, and intent refinement without touching production runtime code"
+	},
+	"stopConditions": [
+		"Stop if adversarial or agent-native intent review reports a material blocker and the intent has not been patched and re-reviewed.",
+		"Stop if runtime-card --evidence would need to read evidence outside --repo or follow unsafe symlinks.",
+		"Stop if harness next --runtime-card would need to read runtime-card artifacts outside --repo or follow unsafe symlinks.",
+		"Stop if runtime-card/v1 would need to embed raw packet bodies instead of refs and summaries.",
+		"Stop if harness next metadata would become action authority, merge-readiness proof, or closeout proof.",
+		"Stop if a malformed Codex packet can be silently ignored while a success card is emitted.",
+		"Stop if PR #305 reports a current-head failure in touched runtime-card or next surfaces that must be fixed before continuing."
+	],
+	"rollback": [
+		"Remove codex-runtime-evidence/v1 detection from runtime-card --evidence and preserve existing runtime-evidence-bundle/v1 ingestion.",
+		"Remove any added harness next Codex runtime metadata projection while preserving existing runtime-card metadata.",
+		"Keep negative tests for raw payload rejection unless they are superseded by stronger existing validation.",
+		"Do not modify or roll back /Users/jamiecraik/dev/codex because PU-013 is Harness-only."
+	],
+	"assumptions": [
+		"JSC-363 remains the lifecycle owner.",
+		"PU-012 producer bridge has already established a Harness-owned wrapper/import path; PU-013 consumes that path rather than choosing a new producer boundary.",
+		"Existing runtime-card validation and codex-runtime-evidence validation are the canonical schemas for this slice.",
+		"PR #305 may remain draft or pending while PU-013 proceeds, but no merge-ready claim is allowed without current external claim-support evidence."
+	]
+}

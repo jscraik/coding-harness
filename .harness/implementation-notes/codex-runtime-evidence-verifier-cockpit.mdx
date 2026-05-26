@@ -2,7 +2,7 @@
 schema_version: implementation-notes/v1
 title: Codex Runtime Evidence Verifier Cockpit Implementation Notes
 goal: codex-runtime-evidence-verifier-cockpit
-updated_at: 2026-05-26T01:10:00Z
+updated_at: 2026-05-26T13:42:00Z
 status: present
 ---
 
@@ -29,53 +29,69 @@ Runtime evidence work stays inside the existing deep modules instead of adding a
 ## Current Slice Insertion Map
 
 <InsertionPoint
-  slice="PU-011 PR #302 review repair"
-  branch="codex/jsc-363-runtime-evidence-pu011"
-  files={[
-    "src/lib/root-hygiene/git-tracked-paths.ts",
-    "src/lib/root-hygiene/repository-identity.ts",
-    "src/lib/root-hygiene/classifier.ts",
-    "src/lib/root-hygiene/index.ts",
-    "scripts/check-goal-board.py",
-  ]}
-/>
+	  slice="PU-013 runtime-card and next cockpit projection"
+	  branch="codex/jsc-363-runtime-evidence-cockpit-refresh"
+	  files={[
+	    "src/lib/runtime/repo-runtime-artifact.ts",
+    "src/commands/runtime-card.ts",
+    "src/commands/next-runtime-card.ts",
+    "src/commands/next-phase-exit.ts",
+    "src/commands/runtime-card.test.ts",
+    "src/commands/next.test.ts",
+    ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-013-intent.json",
+	  ]}
+	/>
 
-The PR repair addresses current review feedback by adding contextual root-hygiene git failures, a configurable `git ls-files` buffer, facade exports for repository identity, and a repo-local goal-board validation command.
+PU-013 admits codex-runtime-evidence/v1 packets at the runtime-card CLI boundary, normalizes them through the existing runtime evidence bundle seam, and projects compact runtime truth into runtime-card/v1 plus harness next --json. The artifact trust boundary is shared by runtime-card --evidence, harness next --runtime-card, and the sibling --phase-exit path so absolute, traversal, and symlink-escaping runtime artifacts fail closed inside --repo. The first adversarial implementation review found a TOCTOU risk between path validation and file read; the fix now opens the canonical artifact with O_NOFOLLOW, verifies the opened descriptor with fstat, reads from that descriptor, and closes it in finally.
 
 ## Runtime Truth Surface
 
 <RuntimeCardState
-  pr="302"
-  mergeable="MERGEABLE"
-  merge_state="BLOCKED"
-  checks="local gates passing; remote CI rerun pending after push"
-  review_threads="unresolved current and outdated threads remain"
-/>
+	  pr="305"
+	  mergeable="draft/open"
+	  merge_state="not merge-ready"
+	  checks="focused PU-013 runtime-card and next-command gates, runtime adapter compatibility, typecheck, diff-check, and Biome pass locally; PR #305 checks require a fresh remote refresh after push"
+	  review_threads="PU-013 intent, adversarial implementation, agent-native implementation, and post-fix re-review artifacts are present and non-empty"
+	/>
 
-Live PR inspection showed no merge conflict. CircleCI later failed on the root-hygiene module-boundary ratchet, so the repair keeps the facade and git adapter inside the enforced deep-module size limits before pushing a new remote CI attempt.
+PR #305 is the current draft lane for the full lifecycle implementation. Local PU-013 evidence is not a merge-readiness claim. Remote CI, review state, tracker state, draft status, and merge readiness remain separate external-state truths that need a fresh PR sweep after this slice is pushed.
 
 ## Blast Radius View
 
 <BlastRadiusMap
-  changed_modules={[
-    "root-hygiene",
-    "goal-board validation wrapper",
-    "goal-board metadata",
-  ]}
-/>
+	  changed_modules={[
+	    "runtime artifact trust boundary",
+    "runtime-card evidence CLI adapter",
+    "harness next runtime-card and phase-exit loaders",
+    "PU-013 intent and review artifacts",
+	  ]}
+	/>
 
-The repair is intentionally narrow: it does not alter runtime-card behavior, delivery-truth verdict policy, review-state packets, or external-state freshness.
+The slice is intentionally narrow: it alters runtime-card and `harness next --json` cockpit artifact ingestion only. It does not alter delivery-truth verdict policy, review-state packet semantics, external-state freshness, PR closeout policy, or Codex source code.
 
 ## Validation Coverage
 
 <ValidatorCoverage
-  checks={[
-    "pnpm vitest run src/lib/root-hygiene/root-hygiene.test.ts",
-    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
-    "pnpm typecheck",
-    "pnpm run quality:self-affirming",
-    "git diff --check",
-  ]}
+	  checks={[
+	    "git diff --check",
+    "./node_modules/.bin/biome check src/lib/runtime/repo-runtime-artifact.ts src/commands/runtime-card.ts src/commands/next-runtime-card.ts src/commands/next-phase-exit.ts src/commands/runtime-card.test.ts src/commands/next.test.ts",
+    "./node_modules/.bin/tsc --noEmit",
+    "./node_modules/.bin/vitest run src/commands/runtime-card.test.ts src/commands/next.test.ts",
+    "./node_modules/.bin/vitest run src/lib/runtime/runtime-evidence-adapter.test.ts src/lib/runtime/runtime-card-codex-runtime-projection.test.ts src/lib/runtime/codex-runtime-evidence.test.ts src/commands/runtime-card.test.ts src/commands/next.test.ts",
+	  ]}
+	/>
+
+Validation is recorded in PR handoff only when the command was actually run and its pass, fail, or blocked result is known. Formatter wrappers through `pnpm exec` stalled in this environment, so formatting and focused tests used repo-local binaries under `./node_modules/.bin`; the wrapper stall is recorded as tooling friction, not as a passing gate.
+
+## Review Findings Converted Into System Changes
+
+<ReviewFindingMap
+	findings={[
+		"intent review added same-boundary acceptance for harness next --runtime-card and --phase-exit",
+		"adversarial implementation review found the descriptor-read TOCTOU gap and forced the shared helper patch",
+		"agent-native review verified the cockpit remains advisory and does not create merge-readiness authority",
+		"post-fix adversarial and agent-native re-reviews found no material blockers",
+	]}
 />
 
-Validation is recorded in PR handoff only when the command was actually run and its pass, fail, or blocked result is known.
+The implementation keeps runtime-card and harness next as orientation surfaces. They can expose compact Codex runtime evidence, source refs, blockers, and stale-state classification, but they still cannot collapse local validation, remote checks, review state, tracker state, or merge readiness into one claim.

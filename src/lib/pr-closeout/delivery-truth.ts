@@ -7,7 +7,13 @@ import type {
 
 const PR_CLOSEOUT_DELIVERY_TRUTH_CLAIMS = new Set<
 	PrCloseoutDeliveryTruthVerdict["claim"]
->(["merge_ready", "root_surface_tidy"]);
+>([
+	"merge_ready",
+	"root_surface_tidy",
+	"remote_checks_current",
+	"review_threads_resolved",
+	"linear_state_aligned",
+]);
 
 /** Build a compact delivery-truth projection for PR closeout reports. */
 export function buildDeliveryTruthSummary(

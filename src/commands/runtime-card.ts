@@ -1,24 +1,18 @@
 import {
-	lstatSync,
-	mkdirSync,
-	readFileSync,
-	realpathSync,
-	writeFileSync,
-} from "node:fs";
-import {
-	basename,
-	dirname,
-	isAbsolute,
-	join,
-	relative,
-	resolve,
-	sep,
-} from "node:path";
-import {
 	buildLiveRuntimeCard,
 	buildLocalRuntimeCard,
 } from "../lib/runtime/local-runtime-card.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import {
+	adaptCodexRuntimeEvidenceToRuntimeEvidenceBundle,
+	CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
+	type CodexRuntimeEvidence,
+} from "../lib/runtime/codex-runtime-evidence.js";
+import {
+	readRepoRuntimeJsonArtifact,
+	resolveRepoRuntimeOutputArtifactPath,
+	writeRepoRuntimeJsonArtifact,
+} from "../lib/runtime/repo-runtime-artifact.js";
 import { buildRuntimeEvidenceBundleFromCard } from "../lib/runtime/runtime-evidence-producer.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 import {
@@ -26,9 +20,24 @@ import {
 	parseRuntimeCardArgs,
 } from "./runtime-card-args.js";
 
-function isOutsideRepo(repoRoot: string, pathToCheck: string): boolean {
-	const rel = relative(repoRoot, pathToCheck);
-	return rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel);
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeEvidenceInput(
+	evidence: unknown,
+	artifactPath: string,
+): unknown {
+	if (
+		isRecord(evidence) &&
+		evidence.schemaVersion === CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION
+	) {
+		return adaptCodexRuntimeEvidenceToRuntimeEvidenceBundle(
+			evidence as unknown as CodexRuntimeEvidence,
+			{ provenanceRef: `artifact:${artifactPath}` },
+		);
+	}
+	return evidence;
 }
 
 /**
@@ -40,115 +49,22 @@ function isOutsideRepo(repoRoot: string, pathToCheck: string): boolean {
  * @throws Error if `artifactPath` is absolute or resolves outside `repoRoot` with the message "--evidence must stay within --repo".
  */
 function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
-	if (isAbsolute(artifactPath)) {
-		throw new Error("--evidence must stay within --repo");
-	}
-	const canonicalRepo = realpathSync(repoRoot);
-	const resolvedPath = resolve(canonicalRepo, artifactPath);
-	if (isOutsideRepo(canonicalRepo, resolvedPath)) {
-		throw new Error("--evidence must stay within --repo");
-	}
-	const canonicalEvidence = realpathSync(resolvedPath);
-	if (isOutsideRepo(canonicalRepo, canonicalEvidence)) {
-		throw new Error("--evidence must stay within --repo");
-	}
-	return JSON.parse(readFileSync(canonicalEvidence, "utf8"));
-}
-
-function nearestExistingPath(pathToCheck: string): string {
-	let current = pathToCheck;
-	while (true) {
-		try {
-			lstatSync(current);
-			return current;
-		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-				throw error;
-			}
-			const parent = dirname(current);
-			if (parent === current) return current;
-			current = parent;
-		}
-	}
-}
-
-function resolveArtifactOutputPath(
-	repoRoot: string,
-	artifactPath: string,
-	flagName: string,
-): string {
-	if (isAbsolute(artifactPath)) {
-		throw new Error(`${flagName} must stay within --repo`);
-	}
-	const canonicalRepo = realpathSync(repoRoot);
-	const outputPath = resolve(canonicalRepo, artifactPath);
-	if (isOutsideRepo(canonicalRepo, outputPath)) {
-		throw new Error(`${flagName} must stay within --repo`);
-	}
-	const nearestExisting = nearestExistingPath(outputPath);
-	let canonicalNearestExisting: string;
-	try {
-		canonicalNearestExisting = realpathSync(nearestExisting);
-	} catch (error) {
-		if (lstatSync(nearestExisting).isSymbolicLink()) {
-			throw new Error(`${flagName} must stay within --repo`);
-		}
-		throw error;
-	}
-	if (isOutsideRepo(canonicalRepo, canonicalNearestExisting)) {
-		throw new Error(`${flagName} must stay within --repo`);
-	}
-	const relativeFromNearest = relative(nearestExisting, outputPath);
-	return relativeFromNearest === ""
-		? canonicalNearestExisting
-		: resolve(canonicalNearestExisting, relativeFromNearest);
-}
-
-function writeJsonArtifact(
-	repoRoot: string,
-	artifactPath: string,
-	flagName: string,
-	value: unknown,
-): void {
-	const canonicalRepo = realpathSync(repoRoot);
-	const outputPath = resolveArtifactOutputPath(
+	const evidence = readRepoRuntimeJsonArtifact(
 		repoRoot,
 		artifactPath,
-		flagName,
+		"--evidence",
 	);
-	mkdirSync(dirname(outputPath), { recursive: true });
-	const canonicalDir = realpathSync(dirname(outputPath));
-	const canonicalOutput = join(canonicalDir, basename(outputPath));
-	if (isOutsideRepo(canonicalRepo, canonicalOutput)) {
-		throw new Error(`${flagName} must stay within --repo`);
-	}
-	let outputEntryExists = false;
-	try {
-		lstatSync(canonicalOutput);
-		outputEntryExists = true;
-		const canonicalExistingOutput = realpathSync(canonicalOutput);
-		if (isOutsideRepo(canonicalRepo, canonicalExistingOutput)) {
-			throw new Error(`${flagName} must stay within --repo`);
-		}
-	} catch (error) {
-		if (outputEntryExists) {
-			throw new Error(`${flagName} must stay within --repo`);
-		}
-		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-			throw error;
-		}
-	}
-	writeFileSync(canonicalOutput, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+	return normalizeEvidenceInput(evidence, artifactPath);
 }
 
 function assertDistinctOutputArtifacts(options: RuntimeCardCLIOptions): void {
 	if (!options.outPath || !options.evidenceOutPath) return;
-	const outPath = resolveArtifactOutputPath(
+	const outPath = resolveRepoRuntimeOutputArtifactPath(
 		options.repoRoot,
 		options.outPath,
 		"--out",
 	);
-	const evidenceOutPath = resolveArtifactOutputPath(
+	const evidenceOutPath = resolveRepoRuntimeOutputArtifactPath(
 		options.repoRoot,
 		options.evidenceOutPath,
 		"--evidence-out",
@@ -215,7 +131,7 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 			: buildLocalRuntimeCard(buildOptions);
 		assertDistinctOutputArtifacts(parsed.options);
 		if (parsed.options.outPath) {
-			writeJsonArtifact(
+			writeRepoRuntimeJsonArtifact(
 				parsed.options.repoRoot,
 				parsed.options.outPath,
 				"--out",
@@ -227,7 +143,7 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 				provenanceRef: `artifact:${parsed.options.evidenceOutPath}`,
 				generatedAt: card.generatedAt,
 			});
-			writeJsonArtifact(
+			writeRepoRuntimeJsonArtifact(
 				parsed.options.repoRoot,
 				parsed.options.evidenceOutPath,
 				"--evidence-out",

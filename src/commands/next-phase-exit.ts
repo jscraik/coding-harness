@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import { validateHePhaseExit } from "../lib/decision/he-phase-exit.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { readRepoRuntimeArtifactText } from "../lib/runtime/repo-runtime-artifact.js";
 import { blockedDecision, type HarnessNextMode } from "./next-decisions.js";
 import { humanRequiredDecisionMeta } from "./next-support.js";
 
@@ -20,13 +19,14 @@ export function loadPhaseExitArtifact(
 	artifactPath: string,
 	mode: HarnessNextMode,
 ): { phaseExit: HePhaseExit } | { decision: HarnessDecision } {
-	const resolvedPath = isAbsolute(artifactPath)
-		? artifactPath
-		: join(repoRoot, artifactPath);
 	let rawArtifact: string;
 	let parsed: unknown;
 	try {
-		rawArtifact = readFileSync(resolvedPath, "utf8");
+		rawArtifact = readRepoRuntimeArtifactText(
+			repoRoot,
+			artifactPath,
+			"--phase-exit",
+		);
 	} catch (error) {
 		return {
 			decision: blockedDecision({

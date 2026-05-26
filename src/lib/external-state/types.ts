@@ -1,4 +1,5 @@
 import type {
+	EvidenceReceipt,
 	EvidenceReceiptFreshness,
 	EvidenceReceiptStatus,
 	EvidenceReceiptUse,
@@ -36,6 +37,9 @@ export const EXTERNAL_STATE_CLAIM_BLOCKERS = [
 	"source_not_current",
 	"source_not_passing",
 	"source_not_claim_support",
+	"missing_fetch_proof",
+	"fetch_proof_mismatch",
+	"blocked_stale_external_context",
 	"missing_pr_head_sha",
 	"head_sha_mismatch",
 ] as const;
@@ -70,9 +74,15 @@ export interface ExternalStateSourceSnapshot {
 export interface ExternalStateSnapshot {
 	schemaVersion: typeof EXTERNAL_STATE_SNAPSHOT_SCHEMA_VERSION;
 	generatedAt: string;
+	repository: string;
+	prNumber: number;
 	fetchedAt: string;
 	ttlSeconds: number;
 	headSha: string | null;
+	fetchReceiptRef: string;
+	fetchedArtifactHash: string;
+	verifierIdentity: string;
+	fetchReceipt: EvidenceReceipt;
 	evidenceUse: EvidenceReceiptUse;
 	stale: boolean;
 	staleReasons: string[];

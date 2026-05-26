@@ -48,6 +48,7 @@ export type ReviewStateCodeRabbitStatus =
 /** Pull request identity fields that anchor review-state to one head SHA. */
 export interface ReviewStatePullRequest {
 	number: number;
+	repository: string;
 	url: string;
 	baseRef: string;
 	headRef: string;
@@ -89,6 +90,10 @@ export interface ReviewStatePacket {
 	schemaVersion: typeof REVIEW_STATE_SCHEMA_VERSION;
 	generatedAt: string;
 	pr: ReviewStatePullRequest;
+	fetchReceiptRef: string;
+	fetchedArtifactHash: string;
+	verifierIdentity: string;
+	fetchReceipt: EvidenceReceipt;
 	githubReviews: ReviewStateGithubReviews;
 	codeRabbit: ReviewStateCodeRabbitReview;
 	unresolvedThreads: ReviewStateUnresolvedThreads;

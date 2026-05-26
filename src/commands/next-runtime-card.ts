@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { readRepoRuntimeArtifactText } from "../lib/runtime/repo-runtime-artifact.js";
 import {
 	type RuntimeCard,
 	validateRuntimeCard,
@@ -15,13 +14,14 @@ export function loadRuntimeCardArtifact(
 	artifactPath: string,
 	mode: HarnessNextMode,
 ): { runtimeCard: RuntimeCard } | { decision: HarnessDecision } {
-	const resolvedPath = isAbsolute(artifactPath)
-		? artifactPath
-		: join(repoRoot, artifactPath);
 	let rawArtifact: string;
 	let parsed: unknown;
 	try {
-		rawArtifact = readFileSync(resolvedPath, "utf8");
+		rawArtifact = readRepoRuntimeArtifactText(
+			repoRoot,
+			artifactPath,
+			"--runtime-card",
+		);
 	} catch (error) {
 		return {
 			decision: blockedDecision({

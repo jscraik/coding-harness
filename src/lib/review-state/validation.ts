@@ -39,6 +39,7 @@ export function validateReviewStatePacket(
 	);
 	requireIsoTimestamp(value.generatedAt, "generatedAt", errors);
 	validatePullRequest(value.pr, "pr", errors);
+	validateFetchProof(value, errors);
 	validateGithubReviews(value.githubReviews, "githubReviews", errors);
 	validateCodeRabbit(value.codeRabbit, "codeRabbit", errors);
 	validateUnresolvedThreads(
@@ -62,10 +63,115 @@ function validatePullRequest(
 		return;
 	}
 	requirePositiveInteger(value.number, `${path}.number`, errors);
+	requireSafeNonEmptyString(value.repository, `${path}.repository`, errors);
 	requireSafeNonEmptyString(value.url, `${path}.url`, errors);
 	requireSafeNonEmptyString(value.baseRef, `${path}.baseRef`, errors);
 	requireSafeNonEmptyString(value.headRef, `${path}.headRef`, errors);
 	requireHeadSha(value.headSha, `${path}.headSha`, errors);
+}
+
+function validateFetchProof(
+	packet: Record<string, unknown>,
+	errors: ReviewStateValidationError[],
+): void {
+	requireSafeNonEmptyString(packet.fetchReceiptRef, "fetchReceiptRef", errors);
+	requireSha256(packet.fetchedArtifactHash, "fetchedArtifactHash", errors);
+	requireSafeNonEmptyString(
+		packet.verifierIdentity,
+		"verifierIdentity",
+		errors,
+	);
+
+	const receipt = packet.fetchReceipt;
+	const validation = validateEvidenceReceipt(receipt);
+	for (const error of validation.errors) {
+		addReviewStateError(errors, error.code, `fetchReceipt.${error.path}`);
+	}
+	if (!isRecord(receipt)) return;
+
+	if (receipt.kind !== "review_artifact") {
+		addReviewStateError(
+			errors,
+			"review-state fetch receipt kind must be review_artifact",
+			"fetchReceipt.kind",
+		);
+	}
+	if (
+		typeof receipt.ref !== "string" ||
+		!receipt.ref.startsWith("review-state:")
+	) {
+		addReviewStateError(
+			errors,
+			"review-state fetch receipt ref must start with review-state:",
+			"fetchReceipt.ref",
+		);
+	}
+	if (
+		typeof packet.fetchReceiptRef === "string" &&
+		receipt.ref !== packet.fetchReceiptRef
+	) {
+		addReviewStateError(
+			errors,
+			"fetchReceiptRef must match fetchReceipt.ref",
+			"fetchReceiptRef",
+		);
+	}
+	if (
+		typeof packet.fetchedArtifactHash === "string" &&
+		receipt.checksum !== packet.fetchedArtifactHash
+	) {
+		addReviewStateError(
+			errors,
+			"fetchedArtifactHash must match fetchReceipt.checksum",
+			"fetchedArtifactHash",
+		);
+	}
+	if (
+		typeof packet.verifierIdentity === "string" &&
+		receipt.producer !== packet.verifierIdentity
+	) {
+		addReviewStateError(
+			errors,
+			"verifierIdentity must match fetchReceipt.producer",
+			"verifierIdentity",
+		);
+	}
+	const prHeadSha = isRecord(packet.pr) ? packet.pr.headSha : undefined;
+	if (typeof prHeadSha === "string" && receipt.headSha !== prHeadSha) {
+		addReviewStateError(
+			errors,
+			"fetchReceipt headSha must match PR headSha",
+			"fetchReceipt.headSha",
+		);
+	}
+	if (receipt.status !== "pass") {
+		addReviewStateError(
+			errors,
+			"review-state fetch receipt must pass",
+			"fetchReceipt.status",
+		);
+	}
+	if (receipt.freshness !== "current") {
+		addReviewStateError(
+			errors,
+			"review-state fetch receipt must be current",
+			"fetchReceipt.freshness",
+		);
+	}
+	if (receipt.evidenceUse !== "claim_support") {
+		addReviewStateError(
+			errors,
+			"review-state fetch receipt must be claim_support",
+			"fetchReceipt.evidenceUse",
+		);
+	}
+	if (typeof receipt.sizeBytes !== "number" || receipt.sizeBytes <= 0) {
+		addReviewStateError(
+			errors,
+			"review-state fetch receipt requires sizeBytes greater than zero",
+			"fetchReceipt.sizeBytes",
+		);
+	}
 }
 
 function validateGithubReviews(
@@ -328,6 +434,17 @@ function requireSafeNonEmptyString(
 	}
 	if (!isSafeEvidenceReceiptPointer(value)) {
 		addReviewStateError(errors, `${path} must be a safe compact string`, path);
+	}
+}
+
+function requireSha256(
+	value: unknown,
+	path: string,
+	errors: ReviewStateValidationError[],
+): void {
+	requireSafeNonEmptyString(value, path, errors);
+	if (typeof value === "string" && !/^[a-f0-9]{64}$/u.test(value)) {
+		addReviewStateError(errors, `${path} must be a SHA-256 hex digest`, path);
 	}
 }
 

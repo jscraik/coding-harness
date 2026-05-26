@@ -9,6 +9,7 @@ import {
 	classifyCodexRuntimeSourceKind,
 	validateCodexRuntimeEvidence,
 } from "./codex-runtime-evidence.js";
+import { validateCodexRuntimeSourceSnapshot } from "./codex-runtime-source-provenance.js";
 
 describe("codex runtime source provenance", () => {
 	it.each([
@@ -110,7 +111,66 @@ describe("codex runtime source provenance", () => {
 			}),
 		);
 	});
+
+	it("accepts pinned Codex source snapshots when head and blob evidence match", () => {
+		const result = validateCodexRuntimeSourceSnapshot(pinnedSourceSnapshot(), {
+			repoHeadSha: CODEX_REPO_HEAD_SHA,
+			gitBlobShas: {
+				"sdk/typescript/src/events.ts":
+					"3af78c9b56f328e22a540f3e2ff963a0c218ecef",
+				"sdk/typescript/src/thread.ts":
+					"9ab425e652a95cdfb540bb3f7368b38937b51bb4",
+				"codex-rs/analytics/src/facts.rs":
+					"d7e2c069d6c28b42e40c6c2179f6ee53b7cd11d7",
+				"codex-rs/app-server-protocol/src/jsonrpc_lite.rs":
+					"4e8858ce00a048abe5c0c7ccb056ac2380694f25",
+			},
+		});
+
+		expect(result).toEqual({ valid: true, findings: [] });
+	});
+
+	it("blocks implementation when the observed Codex source head drifts", () => {
+		const result = validateCodexRuntimeSourceSnapshot(pinnedSourceSnapshot(), {
+			repoHeadSha: "0000000000000000000000000000000000000000",
+			gitBlobShas: {},
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "codex_source_head_mismatch",
+				path: "repoHeadSha",
+			}),
+		);
+	});
+
+	it("blocks implementation when a pinned Codex source blob is missing or changed", () => {
+		const result = validateCodexRuntimeSourceSnapshot(pinnedSourceSnapshot(), {
+			repoHeadSha: CODEX_REPO_HEAD_SHA,
+			gitBlobShas: {
+				"sdk/typescript/src/events.ts":
+					"0000000000000000000000000000000000000000",
+			},
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "codex_source_blob_mismatch",
+					path: "files[0].gitBlobSha",
+				}),
+				expect.objectContaining({
+					code: "codex_source_blob_observation_missing",
+					path: "files[1].gitBlobSha",
+				}),
+			]),
+		);
+	});
 });
+
+const CODEX_REPO_HEAD_SHA = "951efd3392882064961e1621344178723d4887c4";
 
 function sourcePacket(options: {
 	sourceKind: CodexRuntimeSourceKind;
@@ -218,6 +278,35 @@ function sourcePacket(options: {
 				reason:
 					"Source evidence cannot support external-state closeout claims.",
 				evidenceRef: null,
+			},
+		],
+	};
+}
+
+function pinnedSourceSnapshot() {
+	return {
+		repoPath: "/Users/jamiecraik/dev/codex",
+		repoHeadSha: CODEX_REPO_HEAD_SHA,
+		files: [
+			{
+				path: "sdk/typescript/src/events.ts",
+				repoHeadSha: CODEX_REPO_HEAD_SHA,
+				gitBlobSha: "3af78c9b56f328e22a540f3e2ff963a0c218ecef",
+			},
+			{
+				path: "sdk/typescript/src/thread.ts",
+				repoHeadSha: CODEX_REPO_HEAD_SHA,
+				gitBlobSha: "9ab425e652a95cdfb540bb3f7368b38937b51bb4",
+			},
+			{
+				path: "codex-rs/analytics/src/facts.rs",
+				repoHeadSha: CODEX_REPO_HEAD_SHA,
+				gitBlobSha: "d7e2c069d6c28b42e40c6c2179f6ee53b7cd11d7",
+			},
+			{
+				path: "codex-rs/app-server-protocol/src/jsonrpc_lite.rs",
+				repoHeadSha: CODEX_REPO_HEAD_SHA,
+				gitBlobSha: "4e8858ce00a048abe5c0c7ccb056ac2380694f25",
 			},
 		],
 	};

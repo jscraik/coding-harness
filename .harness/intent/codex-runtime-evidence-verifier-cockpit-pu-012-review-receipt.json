@@ -1,0 +1,34 @@
+{
+	"schemaVersion": "evidence-receipt/v1",
+	"receiptId": "codex-runtime-evidence-verifier-cockpit-pu-012-intent-review",
+	"kind": "review_artifact",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-012",
+	"intentSha256": "739e116e01a9320bf8d6bca20deb347105936a9b7bc42f058d571050634d3b9a",
+	"producer": "Codex coordinator",
+	"producedAt": "2026-05-26T08:11:43Z",
+	"verifiedAt": "2026-05-26T08:11:43Z",
+	"status": "pass",
+	"freshness": "current",
+	"evidenceUse": "audit_trail",
+	"headSha": "544790830e31371c9379ac36d5cb399e8782742a",
+	"blockerClass": null,
+	"reviewerArtifacts": [
+		{
+			"role": "adversarial-reviewer",
+			"ref": "artifacts/reviews/codex-runtime-evidence-pu-012-intent-adversarial.md",
+			"sha256": "b270353becc938991c0214e8f3f897f3dfd0d788b48209a57416cab2cdd93051",
+			"status": "pass"
+		},
+		{
+			"role": "agent-native-reviewer",
+			"ref": "artifacts/reviews/codex-runtime-evidence-pu-012-intent-agent-native.md",
+			"sha256": "6ab75f46e47404a9113256e02d1e8eef44045e6ec412ae37904d8dbe952a43dc",
+			"status": "pass"
+		}
+	],
+	"notes": [
+		"Intent review completed after adversarial and agent-native reviewers reported reviewed_no_blockers.",
+		"The intentSha256 refers to the reviewed intent content before reviewStatus/reviewedAt/reviewReceiptRef fields are advanced to reviewed.",
+		"Source observations are pinned to codex repo root commit 951efd3392882064961e1621344178723d4887c4 and per-file git blob SHAs."
+	]
+}

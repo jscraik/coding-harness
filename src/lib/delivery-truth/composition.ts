@@ -6,6 +6,7 @@ import type {
 	EvidenceReceiptFreshness,
 	EvidenceReceiptKind,
 } from "../evidence/evidence-receipt.js";
+import type { ExternalStateSource } from "../external-state/types.js";
 import type { PrCloseoutClaimStatus } from "../pr-closeout/types.js";
 import { sameRootHygieneRepositoryIdentity } from "../root-hygiene/repository-identity.js";
 import { isTrustedRootHygieneEvidence } from "./root-hygiene-evidence.js";
@@ -132,7 +133,58 @@ function evidenceBlocker(
 	if (statusBlocker) return statusBlocker;
 	const ttlBlocker = verifierFreshnessBlocker(evidence, input);
 	if (ttlBlocker) return ttlBlocker;
+	const claimScopeBlocker = claimScopeEvidenceBlocker(evidence, input);
+	if (claimScopeBlocker) return claimScopeBlocker;
 	return recomputedHeadBlocker(evidence);
+}
+
+function claimScopeEvidenceBlocker(
+	evidence: DeliveryTruthEvidence,
+	input: DeliveryTruthCompositionInput,
+): DeliveryTruthBlocker | null {
+	switch (input.claim) {
+		case "remote_checks_current":
+			return externalSurfaceBlocker(evidence, ["github_checks", "circleci"]);
+		case "linear_state_aligned":
+			return externalSurfaceBlocker(evidence, ["linear"]);
+		case "review_threads_resolved":
+			return reviewThreadsResolvedBlocker(evidence);
+		case "root_surface_tidy":
+		case "goal_ready_for_judge_pm":
+		case "merge_ready":
+			return null;
+	}
+}
+
+function externalSurfaceBlocker(
+	evidence: DeliveryTruthEvidence,
+	requiredSurfaces: readonly ExternalStateSource[],
+): DeliveryTruthBlocker | null {
+	if (evidence.source !== "external_state") return null;
+	const surfaces = evidence.externalStateSources;
+	if (!surfaces || surfaces.length === 0) {
+		return blocked("missing_claim_scope", "missing", evidence);
+	}
+	return requiredSurfaces.some((surface) => surfaces.includes(surface))
+		? null
+		: blocked("claim_scope_mismatch", "unknown", evidence);
+}
+
+function reviewThreadsResolvedBlocker(
+	evidence: DeliveryTruthEvidence,
+): DeliveryTruthBlocker | null {
+	if (evidence.source !== "review_state") return null;
+	const summary = evidence.reviewStateSummary;
+	if (!summary) {
+		return blocked("missing_claim_scope", "missing", evidence);
+	}
+	if (summary.unresolvedThreads.total > 0) {
+		return blocked("review_threads_unresolved", "current", evidence);
+	}
+	if (summary.githubDecision === "changes_requested") {
+		return blocked("review_threads_unresolved", "current", evidence);
+	}
+	return null;
 }
 
 function rootHygieneRepositoryBlocker(
@@ -163,6 +215,12 @@ function sourceCanSupportClaim(
 			return source === "root_hygiene";
 		case "goal_ready_for_judge_pm":
 			return source === "pr_closeout";
+		case "remote_checks_current":
+			return source === "external_state";
+		case "review_threads_resolved":
+			return source === "review_state";
+		case "linear_state_aligned":
+			return source === "external_state";
 		case "merge_ready":
 			return MERGE_READY_REQUIRED_SOURCES.some(
 				(requiredSource) => requiredSource === source,
@@ -322,7 +380,12 @@ function claimHeadBlocker(
 function requiresVerdictHead(
 	claim: DeliveryTruthCompositionInput["claim"],
 ): boolean {
-	return claim === "merge_ready";
+	return (
+		claim === "merge_ready" ||
+		claim === "remote_checks_current" ||
+		claim === "review_threads_resolved" ||
+		claim === "linear_state_aligned"
+	);
 }
 
 function blocked(
