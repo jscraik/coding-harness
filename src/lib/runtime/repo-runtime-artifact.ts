@@ -147,6 +147,19 @@ export function writeRepoRuntimeJsonArtifact(
 	if (isOutsideRepo(canonicalRepo, canonicalOutput)) {
 		throw new Error(`${flagName} must stay within --repo`);
 	}
+import {
+	closeSync,
+	constants,
+	fstatSync,
+	lstatSync,
+	mkdirSync,
+	openSync,
+	realpathSync,
+	writeFileSync,
+} from "node:fs";
+
+// ... earlier code ...
+
 	let outputEntryExists = false;
 	try {
 		lstatSync(canonicalOutput);
@@ -163,5 +176,14 @@ export function writeRepoRuntimeJsonArtifact(
 			throw error;
 		}
 	}
-	writeFileSync(canonicalOutput, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+	const fd = openSync(
+		canonicalOutput,
+		constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW,
+		0o644,
+	);
+	try {
+		writeFileSync(fd, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+	} finally {
+		closeSync(fd);
+	}
 }
