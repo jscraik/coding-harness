@@ -69,6 +69,41 @@ describe("composeDeliveryTruth", () => {
 		});
 	});
 
+	it("trusts verifier-owned root-hygiene reports with missing policy blockers", () => {
+		const repoRoot = makeGitRepo(["README.md"]);
+		try {
+			const report = classifyGitTrackedRoot({
+				repoRoot,
+				generatedAt: VERIFIED_AT,
+				headSha: CURRENT_HEAD,
+			});
+			const verdict = composeDeliveryTruth({
+				claim: "root_surface_tidy",
+				source: "root_hygiene",
+				verifiedAt: VERIFIED_AT,
+				verdictHeadSha: CURRENT_HEAD,
+				evidence: [
+					supportingEvidence({
+						source: "root_hygiene",
+						rootHygieneReport: report,
+						receipt: { ...report.receipt },
+					}),
+				],
+			});
+
+			expect(report.blockers.some((entry) => entry.path === "AGENTS.md")).toBe(
+				true,
+			);
+			expect(verdict).toMatchObject({
+				status: "fail",
+				blockerCode: "receipt_failed",
+				evidenceRef: rootHygieneReceiptRef(),
+			});
+		} finally {
+			rmSync(repoRoot, { force: true, recursive: true });
+		}
+	});
+
 	it("passes root_surface_tidy without a verdict head when evidence is trusted", () => {
 		const report = rootHygieneClassifierReport();
 		const verdict = composeDeliveryTruth({
