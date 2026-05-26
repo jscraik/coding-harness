@@ -41,4 +41,3 @@
 Wait for pending remote checks to complete, keep PR #298 in draft/non-mergeable state, and treat PU-007 stack progress plus external review arrival as required before any merge-readiness claim.
 
 WROTE: artifacts/reviews/pr-298-green-sweep.md
-
