@@ -252,6 +252,15 @@ Notes:
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Judge/PM readiness changes that add or alter `goal_ready_for_judge_pm`,
+  issue-authority checks, clean-worktree classification, local-validation
+  blocker projection, or external-state eligibility are delivery-truth
+  composition changes, not a new closeout command family. Keep the public PR
+  closeout surface claim/evidence driven, keep the private audit logic under
+  `src/lib/delivery-truth/`, and synchronize `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` when docs-gate reports governance
+  surfaces.
 - Root-hygiene evidence changes that add or alter repository inventory,
   git-tracked path resolution, root-surface policy digestion, freeze
   classification, receipt generation, or `root_surface_tidy` claim support
