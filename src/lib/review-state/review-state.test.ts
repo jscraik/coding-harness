@@ -8,6 +8,10 @@ import type {
 
 const HEAD_SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const GENERATED_AT = "2026-05-25T12:00:00Z";
+const FETCH_HASH =
+	"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+const FETCH_RECEIPT_REF = "review-state:pr-299/fetch.json";
+const VERIFIER_IDENTITY = "harness:review-state-refresh";
 
 describe("review-state/v1 validation", () => {
 	it("accepts unresolved review truth without blending it with checks or tracker state", () => {
@@ -37,6 +41,38 @@ describe("review-state/v1 validation", () => {
 				expect.objectContaining({
 					path: "reviewerArtifacts.0.receipt.receipt",
 				}),
+			]),
+		);
+	});
+
+	it("rejects packets without verifier-owned fetch proof", () => {
+		const packet = {
+			...reviewStatePacket(),
+			fetchReceiptRef: undefined,
+		};
+
+		const result = validateReviewStatePacket(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ path: "fetchReceiptRef" }),
+			]),
+		);
+	});
+
+	it("rejects forged packet fetch proof that is not cross-bound", () => {
+		const packet = reviewStatePacket({
+			fetchedArtifactHash:
+				"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+		});
+
+		const result = validateReviewStatePacket(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ path: "fetchedArtifactHash" }),
 			]),
 		);
 	});
@@ -228,11 +264,16 @@ function reviewStatePacket(
 		generatedAt: GENERATED_AT,
 		pr: {
 			number: 299,
+			repository: "jscraik/coding-harness",
 			url: "https://github.com/jscraik/coding-harness/pull/299",
 			baseRef: "main",
 			headRef: "codex/jsc-363-runtime-evidence-pu009",
 			headSha: HEAD_SHA,
 		},
+		fetchReceiptRef: FETCH_RECEIPT_REF,
+		fetchedArtifactHash: FETCH_HASH,
+		verifierIdentity: VERIFIER_IDENTITY,
+		fetchReceipt: fetchReceipt(),
 		githubReviews: {
 			decision: "review_required",
 			status: "blocked",
@@ -270,6 +311,26 @@ function reviewerArtifact(
 		ownershipClassification:
 			overrides.ownershipClassification ?? "introduced_by_current_patch",
 		receipt: overrides.receipt ?? reviewReceipt({ producer: role }),
+	};
+}
+
+function fetchReceipt(
+	overrides: Partial<EvidenceReceipt> = {},
+): EvidenceReceipt {
+	return {
+		schemaVersion: "evidence-receipt/v1",
+		kind: "review_artifact",
+		ref: FETCH_RECEIPT_REF,
+		producer: VERIFIER_IDENTITY,
+		status: "pass",
+		freshness: "current",
+		evidenceUse: "claim_support",
+		blockerClass: null,
+		verifiedAt: GENERATED_AT,
+		headSha: HEAD_SHA,
+		sizeBytes: 4096,
+		checksum: FETCH_HASH,
+		...overrides,
 	};
 }
 

@@ -1,0 +1,177 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-014",
+	"createdAt": "2026-05-26T12:45:00Z",
+	"objective": "Implement PU-014 by hardening PR, CI, review, Linear, and stale-state closeout refresh so external-state and review-state packets carry verifier-owned fetch proof and pr-closeout blocks unsupported remote/review/tracker delivery claims separately.",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceSpec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+	"linearIssue": "JSC-363",
+	"ownedAcceptanceIds": ["FR-008", "FR-010", "SA-008", "SA-010"],
+	"lifecycleUnit": "PU-014",
+	"deepModuleBoundary": "src/lib/external-state, src/lib/review-state, src/lib/delivery-truth, and src/lib/pr-closeout closeout-claim evaluation only",
+	"implementationThesis": "Use additive packet proof fields and closeout blocker expansion: external-state-snapshot/v1 and review-state/v1 must prove who fetched the live state, where the fetched artifact is referenced, and the artifact hash. pr-closeout must treat remote checks, review threads, Linear alignment, and merge readiness as separate delivery-truth verdicts so stale or missing external truth cannot be hidden behind local validation or a single blended readiness claim.",
+	"currentEvidence": [
+		{
+			"path": "src/lib/external-state/types.ts",
+			"observed": "external-state-snapshot/v1 already separates GitHub PR, checks, reviews, CodeRabbit, Linear, and CircleCI sources with TTL, fetchedAt, headSha, evidenceUse, freshness, resultStatus, and staleReasons.",
+			"gap": "the packet does not yet require verifier-owned fetch proof such as fetchReceiptRef, fetchedArtifactHash, and verifierIdentity."
+		},
+		{
+			"path": "src/lib/external-state/claim-support.ts",
+			"observed": "claim support already rejects stale snapshots, non-claim-support evidence, source staleness, non-passing source status, missing head SHA, and head SHA mismatch.",
+			"gap": "fresh-looking metadata without verifier-owned fetch proof is not currently a blocker."
+		},
+		{
+			"path": "src/lib/review-state/types.ts",
+			"observed": "review-state/v1 already separates GitHub reviews, CodeRabbit status, unresolved review threads, and reviewer artifact receipts from CI and tracker state.",
+			"gap": "the packet itself does not yet carry fetchReceiptRef, fetchedArtifactHash, or verifierIdentity for the review-state fetch."
+		},
+		{
+			"path": "src/lib/review-state/validation.ts",
+			"observed": "reviewer artifact receipts are validated for kind, ref, headSha, expected producer, and non-zero size.",
+			"gap": "review-state packets can validate without proving the live review-state snapshot was fetched by a verifier-owned path."
+		},
+		{
+			"path": "src/lib/pr-closeout/delivery-truth.ts",
+			"observed": "PR closeout currently blocks delivery-truth verdicts for merge_ready and root_surface_tidy.",
+			"gap": "remote_checks_current, review_threads_resolved, and linear_state_aligned delivery verdicts are not separately closeout-blocking."
+		},
+		{
+			"path": "src/lib/delivery-truth/types.ts",
+			"observed": "delivery-truth currently models root_surface_tidy, goal_ready_for_judge_pm, and merge_ready, with merge_ready requiring separate evidence families in composition tests.",
+			"gap": "PU-014 closeout claims for current remote checks, review resolution, and Linear alignment need a typed delivery-truth claim surface before closeout can block them independently."
+		}
+	],
+	"inScope": [
+		"src/lib/external-state/types.ts",
+		"src/lib/external-state/validation.ts",
+		"src/lib/external-state/claim-support.ts",
+		"src/lib/external-state/*.test.ts",
+		"src/lib/review-state/types.ts",
+		"src/lib/review-state/validation.ts",
+		"src/lib/review-state/*.test.ts",
+		"src/lib/delivery-truth/types.ts",
+		"src/lib/delivery-truth/composition.ts",
+		"src/lib/delivery-truth/*.test.ts",
+		"src/lib/pr-closeout/delivery-truth.ts",
+		"src/lib/pr-closeout.test.ts",
+		"src/lib/pr-closeout/*.test.ts",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-014-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-014-intent-adversarial.md",
+		"artifacts/reviews/codex-runtime-evidence-pu-014-intent-agent-native.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**"
+	],
+	"outOfScope": [
+		"mutating /Users/jamiecraik/dev/codex",
+		"creating a new public GitHub, Linear, or CodeRabbit connector command unless existing code proves no narrower module path can express PU-014",
+		"performing external writes to GitHub, Linear, or CodeRabbit",
+		"self-approving independent review",
+		"treating gh CLI output as claim-supporting evidence unless it is converted into a verifier-owned receipt-backed packet",
+		"changing harness next from advisory cockpit into executable authority",
+		"embedding full PR comments, raw review bodies, transcripts, prompts, secrets, credentials, or bulky telemetry in closeout packets",
+		"claiming merge readiness, goal completion, or cleanup readiness from local validation alone"
+	],
+	"guardedPathGlobs": [
+		"src/lib/external-state/**",
+		"src/lib/review-state/**",
+		"src/lib/delivery-truth/**",
+		"src/lib/pr-closeout/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-014-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-014-intent-*.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**"
+	],
+	"acceptanceCriteria": [
+		"external-state-snapshot/v1 validation rejects packets without fetchReceiptRef, fetchedArtifactHash, or verifierIdentity.",
+		"review-state/v1 validation rejects packets without fetchReceiptRef, fetchedArtifactHash, or verifierIdentity.",
+		"external-state claim support returns a distinct blocker when otherwise-current metadata lacks verifier-owned fetch proof or when fetchReceiptRef, fetchedArtifactHash, and verifierIdentity are not cross-bound to the same verifier-owned fetched artifact.",
+		"delivery-truth types in src/lib/delivery-truth/types.ts define canonical PU-014 claim keys remote_checks_current, review_threads_resolved, and linear_state_aligned; src/lib/pr-closeout/delivery-truth.ts treats those exact keys as closeout-blocking alongside merge_ready and root_surface_tidy.",
+		"pr-closeout blocks remote_checks_current, review_threads_resolved, linear_state_aligned, merge_ready, and root_surface_tidy independently when any supplied verdict is failed, blocked, unknown, missing, stale, or not claim-supporting.",
+		"tests cover stale head SHA, failing CI, stale Linear state, unresolved review threads, missing CodeRabbit/reviewer proof where applicable, missing fetchReceiptRef, forged or mismatched fetch proof, and fresh-looking metadata without verifier-owned fetch proof.",
+		"external-state and review-state packets carry PR identity binding for repo, prNumber, and headSha where PR context applies; mismatches against the active closeout target classify as blocked_stale_external_context or the closest existing explicit stale-context blocker.",
+		"before any closeout verdict generation, external-state and review-state fetch proof must be refreshed or revalidated inside the accepted TTL window; stale triage observations cannot support claim verdicts.",
+		"no closeout path can turn local validation, remote checks, review threads, tracker state, and merge readiness into one blended success state.",
+		"live PR orientation resolves the target PR from the current branch/head when possible; fixed PR #305 commands are allowed only as this thread's orientation evidence and cannot become claim support unless transformed into receipt-backed external-state/review-state packets with matching repo, PR number, and headSha."
+	],
+	"automationPlan": [
+		{
+			"name": "intent artifact JSON validation",
+			"command": "jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-014-intent.json >/dev/null",
+			"proves": [
+				"PU-014 intent artifact is syntactically valid JSON before review"
+			]
+		},
+		{
+			"name": "focused PU-014 verifier tests",
+			"command": "pnpm vitest run src/lib/pr-closeout.test.ts src/lib/pr-closeout/*.test.ts src/lib/external-state/*.test.ts src/lib/review-state/*.test.ts src/lib/delivery-truth/*.test.ts",
+			"proves": [
+				"PR closeout, external-state, review-state, and delivery-truth verifier behavior for PU-014"
+			]
+		},
+		{
+			"name": "live PR metadata orientation",
+			"command": "gh pr view 305 --json headRefOid,statusCheckRollup,reviewDecision,mergeStateStatus,isDraft",
+			"proves": [
+				"current PR #305 orientation is known before making any closeout claim"
+			]
+		},
+		{
+			"name": "live PR checks orientation",
+			"command": "gh pr checks 305",
+			"proves": [
+				"current visible PR #305 check state is known before making any closeout claim"
+			]
+		},
+		{
+			"name": "goal board validation",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+			"proves": ["goal state and receipts remain valid after PU-014 updates"]
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": ["adversarial-reviewer", "agent-native-reviewer"],
+		"artifactPaths": [
+			"artifacts/reviews/codex-runtime-evidence-pu-014-intent-adversarial.md",
+			"artifacts/reviews/codex-runtime-evidence-pu-014-intent-agent-native.md"
+		],
+		"artifactNamingNote": "PU-specific review artifact names intentionally override default reviewer filenames so the goal board can tie findings to this lifecycle unit."
+	},
+	"reviewStatus": "pending",
+	"implementationStartPolicy": "blocked_until_pu014_intent_review_passes",
+	"postReviewMutationPolicy": "any material mutation to objective, implementationThesis, currentEvidence, inScope, outOfScope, guardedPathGlobs, acceptanceCriteria, automationPlan, reviewPlan, stopConditions, or rollback resets reviewStatus to pending",
+	"parallelPrTriageStrategy": {
+		"default": "allow a read-only PR triage subagent to monitor PR #305 while the coordinator performs PU-014 intent review and implementation on the active branch",
+		"parallelCodeWorkAllowed": "allowed only when PR #305 blockers are external, draft/review-process only, or unrelated to files touched by PU-014",
+		"blockedWhen": [
+			"PR #305 reports a current-head failure in external-state, review-state, delivery-truth, pr-closeout, or goal-board surfaces touched by PU-014",
+			"intent reviewers identify a material closeout authority, stale-state, or blended-truth risk not patched in intent",
+			"implementation would require external writes, self-approval, or public command exposure beyond the plan"
+		],
+		"safeFallback": "continue read-only PR triage, fixture design, and intent refinement without touching production closeout code"
+	},
+	"stopConditions": [
+		"Stop if adversarial or agent-native intent review reports a material blocker and the intent has not been patched and re-reviewed.",
+		"Stop if a fresh-looking external-state or review-state packet can pass validation without verifier-owned fetch proof.",
+		"Stop if pr-closeout can report readiness from one blended local/remote/review/tracker verdict.",
+		"Stop if local validation is treated as evidence for remote checks, review threads, Linear state, or merge readiness.",
+		"Stop if gh CLI orientation output is treated as claim support without a receipt-backed packet.",
+		"Stop if a verifier-owned fetch proof field is accepted by presence alone without cross-binding fetchReceiptRef, fetchedArtifactHash, verifierIdentity, and the fetched artifact/receipt relationship.",
+		"Stop if the external-state or review-state PR identity does not match the active closeout target repository, PR number, and headSha.",
+		"Stop if implementation uses stale parallel triage observations without a final TTL/headSha refresh before closeout verdict generation.",
+		"Stop if a stale head SHA, stale TTL, failed CI/check source, unresolved thread, or missing reviewer ownership can still produce a passing closeout verdict.",
+		"Stop if implementation needs to mutate Codex source or external services outside the PU-014 Harness-only contract."
+	],
+	"rollback": [
+		"Remove added verifier-owned fetch proof fields only if the packet contract is replaced by an equivalent stricter receipt-backed fetch proof.",
+		"Revert PR closeout delivery-truth blocker expansion if tests prove the expanded claims create duplicate blockers without adding independent closeout protection.",
+		"Preserve existing merge_ready separate-evidence composition tests unless replaced by stronger PU-014 tests.",
+		"Do not modify or roll back /Users/jamiecraik/dev/codex because PU-014 is Harness-only."
+	],
+	"assumptions": [
+		"JSC-363 remains the lifecycle owner.",
+		"PR #305 can remain draft while PU-014 proceeds because draft status blocks merge readiness but does not block local contract hardening.",
+		"Existing external-state, review-state, delivery-truth, and pr-closeout modules are the correct deep-module placement for PU-014.",
+		"gh pr view and gh pr checks are orientation tools in this slice, not sufficient claim-support evidence by themselves.",
+		"The first PU-014 production patch should prefer contract and fixture hardening over introducing a new connector surface unless code evidence proves one is already available and narrow."
+	]
+}

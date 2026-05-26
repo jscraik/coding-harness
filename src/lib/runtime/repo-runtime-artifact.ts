@@ -24,10 +24,7 @@ function isOutsideRepo(repoRoot: string, pathToCheck: string): boolean {
 	return rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel);
 }
 
-/**
- * Reads a runtime artifact as text after resolving the selected path inside
- * the repository root and opening it without following symlinks.
- */
+/** Read a repository-contained artifact as UTF-8 text after symlink-aware boundary checks. */
 export function readRepoRuntimeArtifactText(
 	repoRoot: string,
 	artifactPath: string,
@@ -45,23 +42,26 @@ export function readRepoRuntimeArtifactText(
 	if (isOutsideRepo(canonicalRepo, canonicalArtifact)) {
 		throw new Error(`${flagName} must stay within --repo`);
 	}
-	const descriptor = openSync(
-		canonicalArtifact,
-		constants.O_RDONLY | constants.O_NOFOLLOW,
-	);
+	let fd: number;
 	try {
-		if (!fstatSync(descriptor).isFile()) {
-			throw new Error(`${flagName} must point to a file`);
+		fd = openSync(resolvedPath, constants.O_RDONLY | constants.O_NOFOLLOW);
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ELOOP") {
+			throw new Error(`${flagName} must stay within --repo`);
 		}
-		return readFileSync(descriptor, "utf8");
+		throw error;
+	}
+	try {
+		if (!fstatSync(fd).isFile()) {
+			throw new Error(`${flagName} must be a file`);
+		}
+		return readFileSync(fd, "utf8");
 	} finally {
-		closeSync(descriptor);
+		closeSync(fd);
 	}
 }
 
-/**
- * Reads a runtime artifact as JSON after enforcing the repo-contained artifact boundary.
- */
+/** Read and parse a repository-contained JSON artifact. */
 export function readRepoRuntimeJsonArtifact(
 	repoRoot: string,
 	artifactPath: string,
@@ -89,10 +89,7 @@ function nearestExistingPath(pathToCheck: string): string {
 	}
 }
 
-/**
- * Resolves a runtime artifact output path without allowing absolute paths,
- * traversal, or symlink escapes outside the selected repository root.
- */
+/** Resolve a repository-contained output artifact path after symlink-aware boundary checks. */
 export function resolveRepoRuntimeOutputArtifactPath(
 	repoRoot: string,
 	artifactPath: string,
@@ -125,10 +122,7 @@ export function resolveRepoRuntimeOutputArtifactPath(
 		: resolve(canonicalNearestExisting, relativeFromNearest);
 }
 
-/**
- * Writes a runtime JSON artifact only after validating the destination remains
- * inside the selected repository root.
- */
+/** Write a repository-contained JSON artifact after symlink-aware boundary checks. */
 export function writeRepoRuntimeJsonArtifact(
 	repoRoot: string,
 	artifactPath: string,

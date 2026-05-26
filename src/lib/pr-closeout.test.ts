@@ -574,6 +574,74 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it.each([
+		{
+			claim: "remote_checks_current" as const,
+			source: "external_state" as const,
+			evidenceRef: "external-state:pr-258/checks",
+			reason:
+				"Delivery-truth claim remote_checks_current is missing required evidence.",
+		},
+		{
+			claim: "review_threads_resolved" as const,
+			source: "review_state" as const,
+			evidenceRef: "review-state:pr-258/threads",
+			reason:
+				"Delivery-truth claim review_threads_resolved is missing required evidence.",
+		},
+		{
+			claim: "linear_state_aligned" as const,
+			source: "external_state" as const,
+			evidenceRef: "external-state:pr-258/linear",
+			reason:
+				"Delivery-truth claim linear_state_aligned is missing required evidence.",
+		},
+	])("blocks closeout when $claim verdict is unsupported independently", ({
+		claim,
+		source,
+		evidenceRef,
+		reason,
+	}) => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				deliveryTruth: [
+					deliveryTruthVerdict({
+						claim,
+						status: "unknown",
+						statusLabel: `${claim} unknown: missing_evidence`,
+						source,
+						evidenceRef,
+						evidenceRefs: [evidenceRef],
+						freshness: "missing",
+						blockerClass: "unknown",
+						blockerCode: "missing_evidence",
+					}),
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.deliveryTruth.blockingVerdicts).toEqual([
+			expect.objectContaining({
+				claim,
+				status: "unknown",
+				freshness: "missing",
+			}),
+		]);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "delivery_truth",
+					kind: "closeout_claim",
+					reason,
+					ref: evidenceRef,
+					fixableByCodex: true,
+				}),
+			]),
+		);
+	});
+
 	it("keeps non-closeout delivery-truth verdicts informational", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

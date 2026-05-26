@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
 import {
 	evaluateExternalStateClaimSupport,
 	validateExternalStateSnapshot,
@@ -13,6 +14,10 @@ const HEAD_SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const OTHER_HEAD_SHA = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const FETCHED_AT = "2026-05-25T12:00:00Z";
 const EXPIRED_AT = "2026-05-25T13:00:00Z";
+const FETCH_HASH =
+	"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+const FETCH_RECEIPT_REF = "external-state:pr-299/fetch.json";
+const VERIFIER_IDENTITY = "harness:external-state-refresh";
 
 describe("external-state-snapshot/v1 validation", () => {
 	it("accepts a current multi-source snapshot for orientation and claim support", () => {
@@ -47,6 +52,63 @@ describe("external-state-snapshot/v1 validation", () => {
 		expect(result.errors).toEqual(
 			expect.arrayContaining([expect.objectContaining({ path: "ttlSeconds" })]),
 		);
+	});
+
+	it("rejects snapshots without verifier-owned fetch proof", () => {
+		const snapshot = {
+			...externalStateSnapshot(),
+			fetchReceiptRef: undefined,
+		};
+
+		const validation = validateExternalStateSnapshot(snapshot);
+		const claimSupport = evaluateExternalStateClaimSupport(
+			snapshot as unknown as ExternalStateSnapshot,
+			HEAD_SHA,
+		);
+
+		expect(validation.valid).toBe(false);
+		expect(validation.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ path: "fetchReceiptRef" }),
+			]),
+		);
+		expect(claimSupport).toEqual({
+			canSupportClaim: false,
+			blockers: ["missing_fetch_proof"],
+		});
+	});
+
+	it("rejects forged fetch proof that is not cross-bound to one artifact", () => {
+		const snapshot = externalStateSnapshot({
+			fetchedArtifactHash:
+				"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+		});
+
+		const validation = validateExternalStateSnapshot(snapshot);
+		const claimSupport = evaluateExternalStateClaimSupport(snapshot, HEAD_SHA);
+
+		expect(validation.valid).toBe(false);
+		expect(validation.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ path: "fetchedArtifactHash" }),
+			]),
+		);
+		expect(claimSupport).toEqual({
+			canSupportClaim: false,
+			blockers: ["fetch_proof_mismatch"],
+		});
+	});
+
+	it("classifies closeout target head drift as stale external context", () => {
+		const claimSupport = evaluateExternalStateClaimSupport(
+			externalStateSnapshot(),
+			OTHER_HEAD_SHA,
+		);
+
+		expect(claimSupport).toEqual({
+			canSupportClaim: false,
+			blockers: ["blocked_stale_external_context"],
+		});
 	});
 
 	it("rejects PR-head-sensitive sources without headSha", () => {
@@ -297,13 +359,39 @@ function externalStateSnapshot(
 	return {
 		schemaVersion: "external-state-snapshot/v1",
 		generatedAt: FETCHED_AT,
+		repository: "jscraik/coding-harness",
+		prNumber: 299,
 		fetchedAt: FETCHED_AT,
 		ttlSeconds: 300,
 		headSha: HEAD_SHA,
+		fetchReceiptRef: FETCH_RECEIPT_REF,
+		fetchedArtifactHash: FETCH_HASH,
+		verifierIdentity: VERIFIER_IDENTITY,
+		fetchReceipt: fetchReceipt(),
 		evidenceUse: "claim_support",
 		stale: false,
 		staleReasons: [],
 		sources: baseSources(),
+		...overrides,
+	};
+}
+
+function fetchReceipt(
+	overrides: Partial<EvidenceReceipt> = {},
+): EvidenceReceipt {
+	return {
+		schemaVersion: "evidence-receipt/v1",
+		kind: "external_state",
+		ref: FETCH_RECEIPT_REF,
+		producer: VERIFIER_IDENTITY,
+		status: "pass",
+		freshness: "current",
+		evidenceUse: "claim_support",
+		blockerClass: null,
+		verifiedAt: FETCHED_AT,
+		headSha: HEAD_SHA,
+		sizeBytes: 4096,
+		checksum: FETCH_HASH,
 		...overrides,
 	};
 }

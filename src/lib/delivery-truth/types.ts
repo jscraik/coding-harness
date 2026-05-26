@@ -9,6 +9,11 @@ import type {
 } from "../pr-closeout/types.js";
 import type { RootHygieneReport } from "../root-hygiene/types.js";
 import type { RootHygieneRepositoryIdentity } from "../root-hygiene/repository-identity.js";
+import type { ExternalStateSource } from "../external-state/types.js";
+import type {
+	ReviewStateGithubDecision,
+	ReviewStateUnresolvedThreads,
+} from "../review-state/types.js";
 
 /** Schema version for private delivery-truth verdict fixtures. */
 export const DELIVERY_TRUTH_SCHEMA_VERSION = "delivery-truth/v1" as const;
@@ -17,6 +22,9 @@ export const DELIVERY_TRUTH_SCHEMA_VERSION = "delivery-truth/v1" as const;
 export type DeliveryTruthClaim =
 	| "root_surface_tidy"
 	| "goal_ready_for_judge_pm"
+	| "remote_checks_current"
+	| "review_threads_resolved"
+	| "linear_state_aligned"
 	| "merge_ready";
 
 /** Evidence source families that can support private delivery-truth claims. */
@@ -41,6 +49,9 @@ export type DeliveryTruthBlockerCode =
 	| "receipt_failed"
 	| "receipt_blocked"
 	| "receipt_unknown"
+	| "missing_claim_scope"
+	| "claim_scope_mismatch"
+	| "review_threads_unresolved"
 	| "missing_separate_evidence"
 	| "missing_verdict_head_sha"
 	| "missing_head_sha"
@@ -56,6 +67,11 @@ export type DeliveryTruthBlockerCode =
 export interface DeliveryTruthEvidence {
 	receipt: EvidenceReceipt;
 	source: DeliveryTruthSource;
+	externalStateSources?: readonly ExternalStateSource[];
+	reviewStateSummary?: {
+		githubDecision?: ReviewStateGithubDecision;
+		unresolvedThreads: ReviewStateUnresolvedThreads;
+	};
 	producerTtlSeconds?: number;
 	verifierTtlSeconds?: number;
 	fetchedAt?: string;

@@ -629,6 +629,27 @@ describe("runRuntimeCardCLI", () => {
 		);
 	});
 
+	it("rejects malformed codex-runtime-evidence/v1 packets through --evidence", async () => {
+		const repoRoot = setupRepo();
+		const evidencePath = writeCodexRuntimeEvidencePacket(repoRoot);
+		const persistedPath = join(repoRoot, evidencePath);
+		const packet = JSON.parse(readFileSync(persistedPath, "utf8"));
+		packet.codex.turnId = "";
+		writeFileSync(persistedPath, JSON.stringify(packet, null, 2));
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence",
+			evidencePath,
+		]);
+		const error = JSON.parse(output);
+		expect(exitCode).toBe(1);
+		expect(error.error).toContain("codex runtime evidence failed validation");
+	});
+
 	it("blocks missing phase-exit evidence in closeout context", async () => {
 		const repoRoot = setupRepo();
 		const { exitCode, output, error } = await captureRuntimeCardCLI([
