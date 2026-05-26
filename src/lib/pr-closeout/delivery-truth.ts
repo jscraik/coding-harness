@@ -13,6 +13,7 @@ const PR_CLOSEOUT_DELIVERY_TRUTH_CLAIMS = new Set<
 	"remote_checks_current",
 	"review_threads_resolved",
 	"linear_state_aligned",
+	"goal_ready_for_judge_pm",
 ]);
 
 /** Build a compact delivery-truth projection for PR closeout reports. */
@@ -54,7 +55,9 @@ function isBlockingDeliveryTruthVerdict(
 	if (verdict.status !== "pass") {
 		return true;
 	}
-	return verdict.freshness !== "current";
+	return (
+		verdict.freshness !== "current" || verdict.evidenceUse !== "claim_support"
+	);
 }
 
 function selectMergeReadyVerdict(
@@ -85,6 +88,9 @@ function deliveryTruthBlockerReason(
 	}
 	if (verdict.status === "not_applicable") {
 		return `Delivery-truth claim ${verdict.claim} is not applicable and cannot support closeout.`;
+	}
+	if (verdict.evidenceUse !== "claim_support") {
+		return `Delivery-truth claim ${verdict.claim} is not backed by claim-support evidence.`;
 	}
 	return `Delivery-truth claim ${verdict.claim} could not be proven from verifier evidence.`;
 }

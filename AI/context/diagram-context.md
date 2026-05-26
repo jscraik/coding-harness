@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-26T12:45:46Z
+Generated: 2026-05-26T16:56:51Z
 
 ## Table of Contents
 
@@ -32,8 +32,18 @@ Generated: 2026-05-26T12:45:46Z
 - `src/commands/next-phase-exit.ts`
 - `src/commands/next-runtime-card.ts`
 - `src/commands/runtime-card.ts`
+- `src/lib/delivery-truth/composition.ts`
+- `src/lib/delivery-truth/index.ts`
+- `src/lib/delivery-truth/judge-pm-audit.ts`
+- `src/lib/delivery-truth/types.ts`
+- `src/lib/external-state/claim-support.ts`
+- `src/lib/external-state/types.ts`
+- `src/lib/external-state/validation.ts`
 - `src/lib/init/scaffold-environment-templates.ts`
 - `src/lib/init/scaffold-hook-templates.ts`
+- `src/lib/pr-closeout/delivery-truth.ts`
+- `src/lib/review-state/types.ts`
+- `src/lib/review-state/validation.ts`
 - `src/lib/runtime/codex-runtime-evidence-producer.ts`
 - `src/lib/runtime/codex-runtime-source-provenance.ts`
 - `src/lib/runtime/repo-runtime-artifact.ts`
@@ -1020,6 +1030,8 @@ flowchart TD
     policy_validators_core_714a3fe7{{"policy-validators-core"}}
     run_record_emitter_core_688049d5{{"run-record-emitter-core"}}
     run_records_core_89286dfa{{"run-records-core"}}
+    judge_pm_audit_ccd20b35{{"judge-pm-audit"}}
+    types_6_1818fb91{{"types"}}
     observed_skill_usage_ed7d5930{{"observed-skill-usage"}}
     outcome_closeout_ba497ec2{{"outcome-closeout"}}
     client_948fe603{{"client"}}
@@ -1032,11 +1044,9 @@ flowchart TD
     types_18_37582e2a{{"types"}}
     performance_overload_c685bfcf{{"performance-overload"}}
     trace_normalizer_cb1be1d2{{"trace-normalizer"}}
-    tracer_1e6243a2{{"tracer"}}
-    recovery_1_4d1804ab{{"recovery"}}
   end
   classDef eventNode fill:#db2777,color:#fff
-  class ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_e06b53e1,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_2e194d13,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,observed_skill_usage_ed7d5930,outcome_closeout_ba497ec2,client_948fe603,mutation_queue_ce5a530e,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,control_plane_core_db3b4cb2,metrics_capture_core_db4bf7cf,types_core_1_8bd0f8fd,recovery_8c585378,types_18_37582e2a,performance_overload_c685bfcf,trace_normalizer_cb1be1d2,tracer_1e6243a2,recovery_1_4d1804ab eventNode
+  class ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_e06b53e1,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_2e194d13,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,judge_pm_audit_ccd20b35,types_6_1818fb91,observed_skill_usage_ed7d5930,outcome_closeout_ba497ec2,client_948fe603,mutation_queue_ce5a530e,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,control_plane_core_db3b4cb2,metrics_capture_core_db4bf7cf,types_core_1_8bd0f8fd,recovery_8c585378,types_18_37582e2a,performance_overload_c685bfcf,trace_normalizer_cb1be1d2 eventNode
 
 ```
 
@@ -1288,6 +1298,8 @@ flowchart TD
   Untrusted --> policy_validators_6682e192
   he_gate_trust_policy_b1126dfd["he-gate-trust-policy"]
   Untrusted --> he_gate_trust_policy_b1126dfd
+  judge_pm_audit_ccd20b35["judge-pm-audit"]
+  Untrusted --> judge_pm_audit_ccd20b35
   policy_823412d1["policy"]
   Untrusted --> policy_823412d1
   scaffold_security_scan_template_55bc7465["scaffold-security-scan-template"]
@@ -1326,10 +1338,8 @@ flowchart TD
   Untrusted --> types_31_eb363e20
   orchestrator_core_d0678b53["orchestrator-core"]
   Untrusted --> orchestrator_core_d0678b53
-  orchestrator_1_6b7137c5["orchestrator"]
-  Untrusted --> orchestrator_1_6b7137c5
   classDef securityNode fill:#dc2626,color:#fff
-  class validate_audit_references_811f872a,audit_b81f37a0,evidence_verify_3b73c290,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,policy_823412d1,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,policy_coverage_dab8febe,policy_digest_ca7acf0a,policy_1_fc4198db,issue_key_305bf3db,verify_work_1_cd8e7ec3,args_1_15220d9b,cli_args_14_3481043e,runner_1_6f281bf8,types_31_eb363e20,orchestrator_core_d0678b53,orchestrator_1_6b7137c5 securityNode
+  class validate_audit_references_811f872a,audit_b81f37a0,evidence_verify_3b73c290,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,judge_pm_audit_ccd20b35,policy_823412d1,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,policy_coverage_dab8febe,policy_digest_ca7acf0a,policy_1_fc4198db,issue_key_305bf3db,verify_work_1_cd8e7ec3,args_1_15220d9b,cli_args_14_3481043e,runner_1_6f281bf8,types_31_eb363e20,orchestrator_core_d0678b53 securityNode
 
 ```
 

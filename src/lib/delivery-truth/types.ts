@@ -61,6 +61,21 @@ export type DeliveryTruthBlockerCode =
 	| "fetched_at_after_verified_at"
 	| "missing_repository_identity"
 	| "repository_identity_mismatch"
+	| "missing_reviewer_artifact"
+	| "invalid_reviewer_artifact"
+	| "reviewer_artifact_schema_invalid"
+	| "reviewer_artifact_producer_mismatch"
+	| "reviewer_artifact_stale"
+	| "reviewer_artifact_not_claim_supporting"
+	| "reviewer_artifact_empty"
+	| "missing_issue_authority"
+	| "invalid_issue_authority"
+	| "missing_audit_surface"
+	| "invalid_audit_surface"
+	| "stale_audit_surface"
+	| "unclassified_risk"
+	| "missing_required_verdict"
+	| "audit_verdict_not_current"
 	| "invalid_policy_timestamp";
 
 /** Receipt plus verifier-owned policy context for one delivery-truth proof input. */

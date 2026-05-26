@@ -1,0 +1,180 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-015",
+	"createdAt": "2026-05-26T15:39:46Z",
+	"objective": "Implement PU-015 by adding a Judge/PM audit packet and goal-closeout gate that can only support goal completion when runtime-card refs, delivery-truth verdicts, review-state, external-state, Linear state, validation receipts, root hygiene, reviewer artifacts, issue authority, and unresolved-risk classification are present, current, and separately proven.",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceSpec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+	"linearIssue": "JSC-363",
+	"ownedAcceptanceIds": ["FR-008", "FR-010", "SA-010"],
+	"lifecycleUnit": "PU-015",
+	"deepModuleBoundary": "src/lib/delivery-truth and src/lib/pr-closeout audit-readiness composition only; no public cockpit command and no external service mutation",
+	"implementationThesis": "Represent Judge/PM readiness as an evidence-bound closeout packet, not a prose summary. The packet must fail closed when required proof surfaces are missing, stale, mismatched to the authorized issue/PR lifecycle, or still carry unresolved blockers. Existing delivery-truth and pr-closeout contracts should remain additive and advisory: they may block closeout, but they must not self-approve implementation completion or merge readiness.",
+	"currentEvidence": [
+		{
+			"path": "src/lib/delivery-truth/types.ts",
+			"observed": "delivery-truth already defines the goal_ready_for_judge_pm claim and supports receipt-backed status, freshness, head SHA, blocker class, and evidence use.",
+			"gap": "there is no first-class audit packet requiring all closeout surfaces before goal completion."
+		},
+		{
+			"path": "src/lib/delivery-truth/composition.ts",
+			"observed": "goal_ready_for_judge_pm currently requires pr_closeout evidence and applies receipt/freshness checks.",
+			"gap": "the evidence is still too coarse: it does not prove runtime card refs, delivery-truth verdicts, review-state, external-state, Linear state, root hygiene, reviewer artifacts, issue authority, and unresolved-risk classification as separate audit inputs."
+		},
+		{
+			"path": "src/lib/pr-closeout/delivery-truth.ts",
+			"observed": "pr-closeout blocks supplied delivery-truth verdicts for merge_ready, root_surface_tidy, remote_checks_current, review_threads_resolved, and linear_state_aligned.",
+			"gap": "goal_ready_for_judge_pm is not yet closeout-blocking, and there is no audit-readiness summary that ties required closeout verdicts to goal completion."
+		},
+		{
+			"path": "src/lib/review-state/validation.ts",
+			"observed": "review-state validates reviewer artifact receipts for path, expected producer, head SHA, and non-zero size.",
+			"gap": "PU-015 still needs to require those artifacts as part of audit readiness rather than treating reviewer mailbox text or PR comments as sufficient."
+		},
+		{
+			"path": "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"observed": "goal status remains active and explicitly says Judge/PM-ready audit packet is required before completion.",
+			"gap": "there is no repo code or fixture that prevents an implementation from claiming the goal complete without the packet."
+		}
+	],
+	"inScope": [
+		"src/lib/delivery-truth/**",
+		"src/lib/pr-closeout/**",
+		"src/lib/review-state/** only if existing reviewer-artifact validation must be reused without expanding packet shape",
+		"src/lib/external-state/** only if existing snapshot freshness helpers must be reused without expanding packet shape",
+		"focused fixtures and tests for Judge/PM audit readiness",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-015-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-015-intent-*.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**"
+	],
+	"outOfScope": [
+		"mutating /Users/jamiecraik/dev/codex",
+		"creating a public harness audit command unless existing code proves no private verifier seam can express the gate",
+		"performing external writes to GitHub, Linear, CodeRabbit, CircleCI, Socket, Snyk, or Semgrep",
+		"claiming PR #305 merge readiness while reviewDecision is CHANGES_REQUESTED, mergeStateStatus is BLOCKED, Socket is pending, or any current-head required check is unresolved",
+		"treating reviewer mailbox text, chat summaries, or PR comments as reviewer artifact proof when an artifact path was requested",
+		"embedding raw transcripts, prompts, secrets, credentials, bulky telemetry, or full review-comment bodies in audit packets",
+		"changing harness next from advisory cockpit into executable authority",
+		"absorbing unrelated dirty Project Brain, agent-readiness, media, research, or .harness knowledge changes into PU-015 unless they become explicitly reviewed intent scope"
+	],
+	"guardedPathGlobs": [
+		"src/lib/delivery-truth/**",
+		"src/lib/pr-closeout/**",
+		"src/lib/review-state/**",
+		"src/lib/external-state/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-015-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-015-intent-*.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**"
+	],
+	"acceptanceCriteria": [
+		"A typed Judge/PM audit packet or equivalent private verifier input requires runtimeCardRefs, deliveryTruthVerdicts, reviewStateRef, externalStateRef, linearStateRef or explicit not-applicable authority, validationReceiptRefs, rootHygieneRef, reviewerArtifactRefs, requiredReviewerRoles, issueAuthorityMap, unresolvedRiskClassifications, generatedAt, verifiedAt, headSha, and schemaVersion.",
+		"Audit readiness derives reviewer artifact requirements from a canonical requiredReviewerRoles list supplied by lifecycle policy or verifier configuration; packet builders cannot shrink the required set by omitting a role from reviewerArtifactRefs.",
+		"Audit readiness fails when any mandated reviewer role is absent, any required reviewer artifact path is missing, zero bytes, mismatched to expected producer/role, not bound to the current head SHA, or only present as mailbox/status text.",
+		"issueAuthorityMap has an explicit minimum shape: lifecycleIssueId, parentIssueId or parentNotApplicable decision, prNumber or prNotApplicable decision, externalGoalId or externalGoalNotApplicable decision, authorityOwner, decisionSourceRef, decidedAt, and rationale. Any not-applicable entry requires owner, rationale, and timestamp.",
+		"Audit readiness fails when any required delivery-truth verdict is missing, non-current, non-passing, not claim-supporting, unsupported for the claim source, or attached to a different head SHA.",
+		"Audit readiness fails when external-state or review-state evidence is stale, missing verifier-owned fetch proof, orientation-only, mismatched to the active repository/PR/head, or not linked by receipt reference.",
+		"Audit readiness fails when Linear or tracker state is absent without an explicit issueAuthorityMap not-applicable decision and owner.",
+		"Audit readiness fails when the claimed closeout issue, parent issue, PR number, or external goal does not match issueAuthorityMap.",
+		"Audit readiness fails when unresolved risks are unclassified, use unknown blocker classes, or omit owner and next action.",
+		"goal_ready_for_judge_pm becomes closeout-blocking in pr-closeout delivery-truth summary unless the verifier proves it is pass/current/claim-supporting.",
+		"A deterministic goal-status transition check blocks any docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml transition to complete unless the goal board references a pass/current/claim-supporting Judge/PM audit packet or records an explicitly authorized blocked status.",
+		"The gate is agent-discoverable: implementation must expose a documented invocation path or private verifier function used by pr-closeout/delivery-truth flow, with machine-readable blocking output that agents can cite without reading prose.",
+		"Tests cover missing reviewer artifact, stale audit packet, unresolved blocker, mismatched issue ID, missing Linear/PR linkage, stale head SHA, and a passing happy path with separate evidence surfaces.",
+		"No implementation path can mark this lifecycle goal complete from local validation, CI green state, merged PR state, or a prose audit summary alone."
+	],
+	"automationPlan": [
+		{
+			"name": "intent artifact JSON validation",
+			"command": "jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-015-intent.json >/dev/null",
+			"proves": [
+				"PU-015 intent artifact is syntactically valid JSON before review"
+			]
+		},
+		{
+			"name": "pre-implementation intent review gate",
+			"command": "jq -e '.reviewStatus == \"pass\"' .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-015-intent.json >/dev/null && test -s artifacts/reviews/codex-runtime-evidence-pu-015-intent-adversarial.md && test -s artifacts/reviews/codex-runtime-evidence-pu-015-intent-agent-native.md",
+			"proves": [
+				"PU-015 implementation cannot start until reviewed intent artifacts exist and reviewStatus has been deliberately advanced to pass"
+			]
+		},
+		{
+			"name": "focused PU-015 verifier tests",
+			"command": "pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout*.test.ts src/lib/pr-closeout/*.test.ts",
+			"proves": [
+				"delivery-truth and pr-closeout audit-readiness behavior for PU-015"
+			]
+		},
+		{
+			"name": "reviewer artifact existence checks",
+			"command": "repo-owned verifier fixture or script iterates the requiredReviewerRoles list and fails when any mandated artifact ref is missing, zero bytes, producer/role mismatched, or head-SHA mismatched",
+			"proves": [
+				"all lifecycle-mandated audit reviewer artifacts exist before any PU-015 done or audit-ready claim"
+			]
+		},
+		{
+			"name": "goal-status transition guard",
+			"command": "repo-owned goal-board or delivery-truth fixture attempts a complete transition without Judge/PM audit evidence and expects failure",
+			"proves": [
+				"goal completion cannot bypass the Judge/PM audit packet by mutating goal state directly"
+			]
+		},
+		{
+			"name": "goal board validation",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+			"proves": ["goal state and receipts remain valid after PU-015 updates"]
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": ["adversarial-reviewer", "agent-native-reviewer"],
+		"artifactPaths": [
+			"artifacts/reviews/codex-runtime-evidence-pu-015-intent-adversarial.md",
+			"artifacts/reviews/codex-runtime-evidence-pu-015-intent-agent-native.md"
+		],
+		"artifactNamingNote": "PU-specific review artifact names intentionally override default reviewer filenames so the goal board can tie findings to this lifecycle unit."
+	},
+	"reviewStatus": "pass",
+	"reviewedAt": "2026-05-26T15:52:34Z",
+	"reviewArtifacts": [
+		"artifacts/reviews/codex-runtime-evidence-pu-015-intent-adversarial.md",
+		"artifacts/reviews/codex-runtime-evidence-pu-015-intent-agent-native.md",
+		"artifacts/reviews/codex-runtime-evidence-pu-015-intent-adversarial-rereview.md",
+		"artifacts/reviews/codex-runtime-evidence-pu-015-intent-agent-native-rereview.md"
+	],
+	"implementationStartPolicy": "blocked_until_pu015_intent_review_passes",
+	"postReviewMutationPolicy": "any material mutation to objective, implementationThesis, currentEvidence, inScope, outOfScope, guardedPathGlobs, acceptanceCriteria, automationPlan, reviewPlan, stopConditions, or rollback resets reviewStatus to pending",
+	"parallelPrTriageStrategy": {
+		"default": "allow read-only PR triage to monitor PR #305 while the coordinator performs PU-015 intent review and implementation only when touched files do not overlap a current-head PR blocker",
+		"parallelCodeWorkAllowed": "allowed only for private audit-readiness verifier work after intent review passes and when PR #305 blockers remain review/process/external-state only",
+		"blockedWhen": [
+			"PR #305 reports a current-head failure in delivery-truth, pr-closeout, review-state, external-state, runtime-card, goal-board, or docs-gate surfaces touched by PU-015",
+			"intent reviewers identify a material closeout authority, issue authority, stale-state, or artifact-proof risk not patched in intent",
+			"implementation would require external writes, self-approval, public command exposure, or merging unrelated dirty worktree lanes"
+		],
+		"safeFallback": "continue read-only PR triage, fixture design, and intent refinement without touching production audit-readiness code"
+	},
+	"stopConditions": [
+		"Stop if adversarial or agent-native intent review reports a material blocker and the intent has not been patched and re-reviewed.",
+		"Stop if the audit packet can pass with reviewer mailbox text but no non-empty reviewer artifact.",
+		"Stop if goal_ready_for_judge_pm can pass without separate current delivery-truth, review-state, external-state, Linear/tracker, validation, root-hygiene, and issue-authority evidence.",
+		"Stop if stale, orientation-only, missing, unknown, or head-mismatched evidence can support audit readiness.",
+		"Stop if local tests, CI green state, resolved review threads, or PR mergeability alone can mark the lifecycle complete.",
+		"Stop if issueAuthorityMap mismatches the claimed issue, parent issue, PR number, or external goal and the verifier does not block closeout.",
+		"Stop if unresolved risk classes can be omitted, unknown, ownerless, or next-actionless.",
+		"Stop if implementation touches unrelated Project Brain, agent-readiness, media, research, or .harness knowledge files without a reviewed PU-015 scope update.",
+		"Stop if implementation needs to mutate Codex source or external services outside the Harness-only contract."
+	],
+	"rollback": [
+		"Remove audit-readiness packet integration only if an equivalent stricter goal-closeout gate replaces it.",
+		"Revert goal_ready_for_judge_pm closeout-blocking behavior only if it creates duplicate blockers and tests preserve an independent Judge/PM gate.",
+		"Keep negative fixtures for missing reviewer artifacts, stale audit packets, unresolved blockers, mismatched issue IDs, and missing Linear/PR linkage unless superseded by stronger tests.",
+		"Do not modify or roll back /Users/jamiecraik/dev/codex because PU-015 is Harness-only."
+	],
+	"assumptions": [
+		"JSC-363 remains the lifecycle owner for this implementation goal.",
+		"PU-015 should prefer private verifier composition and fixtures over adding public CLI surface.",
+		"Existing delivery-truth, pr-closeout, review-state, and external-state modules are the correct deep-module placement for PU-015.",
+		"A stale or pending PR #305 external check may orient the coordinator but cannot support goal completion.",
+		"The current dirty Project Brain and agent-readiness worktree changes are outside PU-015 until separately scoped and reviewed."
+	]
+}

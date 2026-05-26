@@ -140,6 +140,13 @@ additive, fixture-backed, and separated from public closeout authority until the
 production verifier surface is intentionally wired. Refresh
 `AI/context/diagram-context.md` and update this guide when those contracts add
 new claim-support, freshness, head-SHA, blocker-class, or source-kind rules.
+Judge/PM readiness checks are part of that private delivery-truth composition
+lane. Keep issue-authority, clean-worktree, local-validation, and remote-state
+blocker classification inside `src/lib/delivery-truth/judge-pm-audit.ts`, and
+wire PR closeout through the composed `goal_ready_for_judge_pm` claim rather
+than adding another public closeout surface. The required proof is fixture-backed
+delivery-truth output plus PR-closeout coverage that shows the claim blocks when
+Judge/PM authority, validation, or external-state evidence is missing or stale.
 
 Root-hygiene evidence belongs in the same deep-module lane when it supports
 delivery-truth claims. Keep repository inventory, git-tracked path resolution,
