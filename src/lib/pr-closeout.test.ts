@@ -1373,6 +1373,55 @@ describe("buildPrCloseoutReport", () => {
 	});
 
 	it.each([
+		{
+			name: "passing conclusion overrides failed state",
+			check: { conclusion: "SUCCESS", state: "FAILED" },
+			expectedStatus: "ready",
+			expectedClaimStatus: "pass",
+		},
+		{
+			name: "non-passing conclusion overrides success state",
+			check: { conclusion: "SKIPPED", state: "SUCCESS" },
+			expectedStatus: "waiting",
+			expectedClaimStatus: "blocked",
+		},
+	] as const)("uses conclusion before state for contradictory required CI payloads: $name", ({
+		check,
+		expectedStatus,
+		expectedClaimStatus,
+	}) => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						...check,
+						headSha: "abc123",
+						required: true,
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe(expectedStatus);
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: expectedClaimStatus,
+					evidenceRef: "check:pr-pipeline",
+				}),
+				expect.objectContaining({
+					claim: "ci_green",
+					status: expectedClaimStatus,
+					evidenceRef: "check:pr-pipeline",
+				}),
+			]),
+		);
+	});
+
+	it.each([
 		"CANCELLED",
 		"TIMED_OUT",
 	] as const)("fails required CI conclusions that are terminal failures: %s", (state) => {
