@@ -158,14 +158,9 @@ source classification, validation, and reference-integrity checks; refresh
 `AI/context/diagram-context.md` and this guide when those packet or validator
 modules change.
 
-Codex runtime producer bridge changes stay in the same runtime deep-module
-lane. Keep source snapshot/provenance checks in
-`src/lib/runtime/codex-runtime-source-provenance.ts`, keep packet admission
-from explicit wrapper facts in
-`src/lib/runtime/codex-runtime-evidence-producer.ts`, and keep unsupported
-runtime facts classified as `unknown` with blocker classes until a later
-runtime-card, closeout, or external-state slice wires the fact family into a
-claim-supporting verifier.
+---
+last_validated: 2026-05-26
+---
 
 Review-state and external-state packet changes are runtime-cockpit architecture
 work even when they do not add public CLI commands. Keep `review-state/v1`
