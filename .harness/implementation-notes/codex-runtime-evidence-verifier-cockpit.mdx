@@ -48,11 +48,11 @@ PU-012 adds the Harness-owned producer/import bridge for `codex-runtime-evidence
 	  pr="305"
 	  mergeable="draft/open"
 	  merge_state="not merge-ready"
-	  checks="focused local PU-012 gates passing; PR #305 gh pr checks now exits 0 with all visible checks passing"
+	  checks="focused local PU-012 gates passing; post-evidence-push PR #305 checks require a fresh remote refresh"
 	  review_threads="PU-012 implementation reviewers passed; PR sweep artifact corrected and verified"
 	/>
 
-PR #305 is the current draft lane for the full lifecycle implementation. Local PU-012 evidence is not a merge-readiness claim; remote CI is currently green in a fresh `gh pr checks 305` refresh, while review state, tracker state, draft status, and merge readiness remain separate external-state truths. The required PR sweep artifact exists at artifacts/reviews/pr-305-pu012-green-sweep.md after one filename correction retry.
+PR #305 is the current draft lane for the full lifecycle implementation. Local PU-012 evidence is not a merge-readiness claim. Remote CI was green before the evidence follow-up commit, but that push changed PR #305's head to `ce5d324c` and reopened the remote-check cycle; review state, tracker state, draft status, and merge readiness remain separate external-state truths. The required PR sweep artifact exists at artifacts/reviews/pr-305-pu012-green-sweep.md after one filename correction retry.
 
 ## Blast Radius View
 
