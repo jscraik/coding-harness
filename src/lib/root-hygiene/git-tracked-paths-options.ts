@@ -26,8 +26,15 @@ export function gitLsFilesMaxBufferBytes(
 
 function gitLsFilesMaxBufferFromEnv(): number {
 	const value = process.env[GIT_LS_FILES_MAX_BUFFER_ENV];
-	if (value === undefined || value.trim() === "") {
+	if (value === undefined) {
 		return DEFAULT_GIT_LS_FILES_MAX_BUFFER_BYTES;
 	}
-	return Number.parseInt(value, 10);
+	const trimmed = value.trim();
+	if (trimmed === "") {
+		return DEFAULT_GIT_LS_FILES_MAX_BUFFER_BYTES;
+	}
+	if (!/^\d+$/.test(trimmed)) {
+		return NaN;
+	}
+	return Number.parseInt(trimmed, 10);
 }

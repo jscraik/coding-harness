@@ -2340,6 +2340,15 @@ describe("module boundaries", () => {
 		expect(facadeContent).toContain("./receipt.js");
 		expect(facadeContent).toContain("./tracked-paths.js");
 		expect(facadeContent).toContain("./types.js");
+
+		const gitTrackedPathsContent = readFileSync(
+			join(process.cwd(), "src/lib/root-hygiene/git-tracked-paths.ts"),
+			"utf-8",
+		);
+		expect(gitTrackedPathsContent).toContain(
+			"./git-tracked-stage-record.js",
+		);
+		expect(gitTrackedPathsContent).toContain("parseGitTrackedPathEntry");
 	});
 
 	it("keeps runtime-card validation behind the public contract seam", () => {
