@@ -104,6 +104,11 @@ describe("validateLifecycleImplementationIntent", () => {
 				ref: "artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-adversarial.md",
 				status: "pass",
 			},
+			{
+				role: "best-practices-researcher",
+				ref: "artifacts/reviews/codex-runtime-evidence-pu-000-plan-gate-best-practices.md",
+				status: "pass",
+			},
 		];
 
 		const result = validateLifecycleImplementationIntent(
