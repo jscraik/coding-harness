@@ -459,6 +459,28 @@ describe("composeDeliveryTruth", () => {
 		});
 	});
 
+	it("requires every remote-check external-state scope for checks claims", () => {
+		for (const evidence of [
+			externalStateEvidence("external-state:github-checks.json", {}, [
+				"github_checks",
+			]),
+			externalStateEvidence("external-state:circleci.json", {}, ["circleci"]),
+		]) {
+			const verdict = composeDeliveryTruth({
+				claim: "remote_checks_current",
+				source: "external_state",
+				verifiedAt: VERIFIED_AT,
+				verdictHeadSha: CURRENT_HEAD,
+				evidence: [evidence],
+			});
+
+			expect(verdict).toMatchObject({
+				status: "blocked",
+				blockerCode: "claim_scope_mismatch",
+			});
+		}
+	});
+
 	it("refuses Linear claims backed only by checks external-state scope", () => {
 		const verdict = composeDeliveryTruth({
 			claim: "linear_state_aligned",
@@ -1177,6 +1199,7 @@ function evidenceForCloseoutPhrase(
 			return [
 				externalStateEvidence("external-state:checks.json", receipt, [
 					"github_checks",
+					"circleci",
 				]),
 			];
 		case "merged":
