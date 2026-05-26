@@ -21,7 +21,7 @@ export function isPassingCheck(check: PrCloseoutCheckInput): boolean {
 	const status = normalizeStatus(
 		firstStatusValue(check.conclusion, check.state),
 	);
-	return ["SUCCESS", "PASSED", "PASS", "NEUTRAL", "SKIPPED"].includes(status);
+	return ["SUCCESS", "PASSED", "PASS"].includes(status);
 }
 
 /** Return whether a check result counts as failed closeout evidence. */

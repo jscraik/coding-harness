@@ -1196,6 +1196,219 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it.each([
+		"NEUTRAL",
+		"SKIPPED",
+	] as const)("blocks required CI conclusions that are not explicit success: %s", (state) => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state,
+						headSha: "abc123",
+						required: true,
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.checks).toEqual({
+			failed: 0,
+			passed: 0,
+			pending: 0,
+			total: 1,
+			unknown: 1,
+		});
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "blocked",
+					evidenceRef: "check:pr-pipeline",
+					freshness: "current",
+				}),
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "blocked",
+					evidenceRef: "check:pr-pipeline",
+					freshness: "current",
+				}),
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
+					status: "pass",
+				}),
+			]),
+		);
+	});
+
+	it.each([
+		"NEUTRAL",
+		"SKIPPED",
+	] as const)("keeps optional CI conclusions diagnostic when required checks pass: %s", (state) => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						headSha: "abc123",
+						required: true,
+						source: "github",
+					},
+					{
+						name: "optional-tests",
+						state,
+						headSha: "abc123",
+						required: false,
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.checks).toEqual({
+			failed: 0,
+			passed: 1,
+			pending: 0,
+			total: 2,
+			unknown: 1,
+		});
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "pass",
+					evidenceRef: "check:pr-pipeline",
+					freshness: "current",
+				}),
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "pass",
+					evidenceRef: "check:pr-pipeline",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
+	it.each([
+		"NEUTRAL",
+		"SKIPPED",
+	] as const)("blocks required CI conclusions even when state is success: %s", (conclusion) => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						conclusion,
+						state: "SUCCESS",
+						headSha: "abc123",
+						required: true,
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "blocked",
+				}),
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "blocked",
+				}),
+			]),
+		);
+	});
+
+	it.each([
+		"NEUTRAL",
+		"SKIPPED",
+	] as const)("keeps optional CI conclusions diagnostic even when state is success: %s", (conclusion) => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						headSha: "abc123",
+						required: true,
+						source: "github",
+					},
+					{
+						name: "optional-tests",
+						conclusion,
+						state: "SUCCESS",
+						headSha: "abc123",
+						required: false,
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "pass",
+					evidenceRef: "check:pr-pipeline",
+				}),
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "pass",
+					evidenceRef: "check:pr-pipeline",
+				}),
+			]),
+		);
+	});
+
+	it.each([
+		"CANCELLED",
+		"TIMED_OUT",
+	] as const)("fails required CI conclusions that are terminal failures: %s", (state) => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state,
+						headSha: "abc123",
+						required: true,
+						source: "github",
+					},
+				],
+			}),
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.claims).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "tests_passed",
+					status: "fail",
+					evidenceRef: "check:pr-pipeline",
+					freshness: "current",
+				}),
+				expect.objectContaining({
+					claim: "ci_green",
+					status: "fail",
+					evidenceRef: "check:pr-pipeline",
+					freshness: "current",
+				}),
+			]),
+		);
+	});
+
 	it("marks first-class closeout-gates input without phase-exit presence", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

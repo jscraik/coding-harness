@@ -1,0 +1,163 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-016-gap-002",
+	"createdAt": "2026-05-26T20:40:00Z",
+	"objective": "Implement the P0 GAP-002 closeout-verifier slice so required CI conclusions that are not explicit success, including neutral and skipped, cannot satisfy PR closeout claims such as tests_passed or ci_green.",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceSpec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+	"sourceAudit": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+	"sourceEcosystemReview": ".harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md",
+	"linearIssue": "JSC-363",
+	"lifecycleUnit": "PU-016-GAP-002",
+	"auditGapIds": ["GAP-002"],
+	"ecosystemReviewFindings": [
+		"Claim-vs-evidence must be canonical closeout: done, green, merge-ready, review-addressed, root-tidy, and goal-complete claims must be backed by current, explicit evidence.",
+		"Runtime proof passed requires runtime and external evidence freshness; degraded or non-success evidence should produce blocked_runtime, blocked_validation, fail, or unknown instead of green-looking pass.",
+		"Harness must stay a thin verifier cockpit over Codex-native and external runtime facts rather than blending CI, review, Linear, local validation, and final prose into one readiness truth."
+	],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/governance/knowledge.md",
+		".harness/knowledge/governance/rules.md",
+		".harness/knowledge/ci/knowledge.md",
+		".harness/knowledge/ci/rules.md",
+		".harness/research/evidence-patterns.json",
+		"/Users/jamiecraik/.codex/memories/MEMORY.md"
+	],
+	"deepModuleBoundary": "PR closeout required-check conclusion classification, claim-builder required-check input scoping, and focused tests only. This slice hardens existing pr-closeout/v1 claims; it does not introduce review-state, external-state, delivery-truth, runtime-card, or GitHub API fetching behavior.",
+	"implementationThesis": "Closeout evidence should treat only explicit successful required-check conclusions as passing. Neutral, skipped, empty, cancelled, timed-out, pending, missing, stale, or unknown required-check evidence may still orient next action, but it cannot support passing tests_passed or ci_green claims. Optional skipped or neutral checks should remain diagnostic and must not create a new false blocker when all required checks pass.",
+	"currentEvidence": [
+		{
+			"path": "src/lib/pr-closeout/evidence.ts",
+			"observed": "isPassingCheck currently returns true for SUCCESS, PASSED, PASS, NEUTRAL, and SKIPPED.",
+			"gap": "NEUTRAL and SKIPPED are pass-looking in PR closeout summaries and in ci_green/tests_passed claim builders."
+		},
+		{
+			"path": "src/lib/pr-closeout/claim-builders.ts",
+			"observed": "tests_passed and ci_green use isPassingCheck to determine pass status.",
+			"gap": "A skipped or neutral required check can currently make allChecksPassing true when the evidence is otherwise current."
+		},
+		{
+			"path": "src/lib/pr-closeout.test.ts",
+			"observed": "Existing tests cover missing, stale, pending, failed, and successful checks, but do not pin neutral/skipped as non-pass closeout evidence.",
+			"gap": "The GAP-002 regression has no focused table-driven proof."
+		},
+		{
+			"path": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+			"observed": "GAP-002 identifies skipped or neutral required CI credited as passing closeout evidence.",
+			"gap": "The audit expectation is not yet enforced by production code or tests."
+		}
+	],
+	"inScope": [
+		"src/lib/pr-closeout/evidence.ts",
+		"src/lib/pr-closeout/claim-builders.ts",
+		"src/lib/pr-closeout.test.ts",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-gap-002-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-016-gap-002-intent-*.md",
+		"artifacts/reviews/codex-runtime-evidence-pu-016-gap-002-implementation-*.md"
+	],
+	"outOfScope": [
+		"changing external-state fetch semantics",
+		"changing GitHub, CircleCI, CodeRabbit, or Linear API clients",
+		"changing delivery-truth or review-state packet schemas",
+		"changing runtime-card projection",
+		"changing status names or public pr-closeout schema versions unless tests prove a schema-compatible blocker requires it",
+		"mutating /Users/jamiecraik/dev/codex",
+		"external writes to GitHub, Linear, CI, or review services during this local implementation slice",
+		"absorbing unrelated dirty worktree changes"
+	],
+	"guardedPathGlobs": [
+		"src/lib/pr-closeout/evidence.ts",
+		"src/lib/pr-closeout/claim-builders.ts",
+		"src/lib/pr-closeout.test.ts",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-gap-002-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-016-gap-002-*.md"
+	],
+	"acceptanceCriteria": [
+		"isPassingCheck returns true only for explicit success-style statuses: SUCCESS, PASSED, and PASS.",
+		"Required checks with NEUTRAL or SKIPPED conclusions do not produce pass for tests_passed or ci_green.",
+		"Optional checks with NEUTRAL or SKIPPED conclusions do not block tests_passed or ci_green when all required checks pass.",
+		"Neutral and skipped required-check evidence is represented as blocked or unknown closeout state, not ready.",
+		"Report check summaries count neutral and skipped required checks as unknown rather than passed.",
+		"Existing successful, failed, pending, stale, and missing check behavior remains covered.",
+		"Focused tests cover success, required skipped, required neutral, optional skipped, optional neutral, cancelled, missing, stale, and timed-out closeout states or explicitly rely on existing tests for already-covered states.",
+		"Goal receipt records Project Brain inputs, GAP-002, ecosystem review alignment, validation commands, and any blocker."
+	],
+	"automationPlan": [
+		{
+			"name": "intent artifact JSON validation",
+			"command": "jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-gap-002-intent.json >/dev/null",
+			"proves": ["slice intent is syntactically valid before review"]
+		},
+		{
+			"name": "focused PR closeout regression",
+			"command": "pnpm vitest run src/lib/pr-closeout.test.ts -t \"required CI conclusions\"",
+			"proves": [
+				"neutral and skipped required checks cannot satisfy closeout pass claims, and optional neutral or skipped checks do not create false blockers when required checks pass"
+			]
+		},
+		{
+			"name": "broader PR closeout regression",
+			"command": "pnpm vitest run src/lib/pr-closeout.test.ts",
+			"proves": ["existing PR closeout behavior remains compatible"]
+		},
+		{
+			"name": "goal board validation",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+			"proves": ["goal state and receipts remain valid after slice updates"]
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": ["adversarial-reviewer", "agent-native-reviewer"],
+		"artifactPaths": [
+			"artifacts/reviews/codex-runtime-evidence-pu-016-gap-002-intent-adversarial.md",
+			"artifacts/reviews/codex-runtime-evidence-pu-016-gap-002-intent-agent-native.md"
+		],
+		"reviewQuestions": [
+			"Does this intent close GAP-002 without over-expanding into external-state or delivery-truth rewrites?",
+			"Are neutral and skipped required checks correctly treated as non-pass evidence without making optional skipped/neutral checks into false blockers or making successful, failed, pending, missing, or stale behavior ambiguous?",
+			"Are the validation gates sufficient to prove the claim-vs-evidence false-success regression?"
+		]
+	},
+	"reviewStatus": "passed_after_scope_update_rereview",
+	"reviewFindingsAdopted": [
+		{
+			"source": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-002-intent-adversarial.md",
+			"finding": "Success-only classifier hardening can falsely block closeout when optional skipped or neutral checks remain in universal claim-builder inputs.",
+			"resolution": "Expanded scope to include claim-builder required-check input scoping and optional skipped/neutral regression fixtures."
+		},
+		{
+			"source": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-002-intent-agent-native.md",
+			"finding": "The intent referenced src/lib/pr-closeout/claim-builders.ts as a regression locus while excluding it from inScope.",
+			"resolution": "Added src/lib/pr-closeout/claim-builders.ts to inScope and guardedPathGlobs."
+		}
+	],
+	"rereviewArtifacts": [
+		"artifacts/reviews/codex-runtime-evidence-pu-016-gap-002-intent-rereview-adversarial.md",
+		"artifacts/reviews/codex-runtime-evidence-pu-016-gap-002-intent-rereview-agent-native.md"
+	],
+	"implementationStartPolicy": "blocked_until_intent_review_artifacts_exist_and_material_blockers_are_resolved",
+	"postReviewMutationPolicy": "any material mutation to objective, inScope, outOfScope, acceptanceCriteria, automationPlan, reviewPlan, stopConditions, or rollback resets reviewStatus to pending",
+	"linearMutationPlan": "No external Linear mutation during this local implementation slice. JSC-363 remains linked in the intent and receipt; Linear writes are already classified as blocked by timeout in R055/R056.",
+	"stopConditions": [
+		"Stop if the required behavior needs a public schema/status change rather than a narrow classifier and required-check input-scope fix.",
+		"Stop if tests reveal that a provider uses NEUTRAL or SKIPPED as the only success signal for an explicitly required check and the repo lacks a modeled exception policy.",
+		"Stop if focused validation cannot execute the changed production classifier path.",
+		"Stop if implementation would touch runtime-card, review-state, external-state, delivery-truth, GitHub API, Linear API, or broad PR closeout schema surfaces."
+	],
+	"rollback": [
+		"Revert pr-closeout classifier/test edits if they break a documented success-only provider contract, then replace the approach with an explicit exception model reviewed by Judge/PM.",
+		"Keep the regression that prevents NEUTRAL and SKIPPED from being counted as generic passing closeout evidence unless a future exception contract is explicitly implemented.",
+		"Do not roll back unrelated dirty worktree changes."
+	],
+	"assumptions": [
+		"GitHub/CircleCI/CodeRabbit required-check closeout proof should require explicit success-style conclusions.",
+		"Neutral and skipped can orient next action but are not claim-supporting pass evidence.",
+		"JSC-363 remains the Linear owner for this lifecycle goal even though external tracker mutation is currently blocked.",
+		"The existing pr-closeout/v1 claim status vocabulary can express the fix through blocked, fail, unknown, freshness, blockerClass, and blockers without a schema migration."
+	]
+}
