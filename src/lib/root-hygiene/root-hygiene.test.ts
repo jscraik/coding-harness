@@ -256,7 +256,8 @@ describe("root-hygiene classification", () => {
 	});
 
 	it("throws contextual errors when git root resolution fails", () => {
-		const missingRepo = join(tmpdir(), "root-hygiene-missing-repo");
+		const missingRepo = mkdtempSync(join(tmpdir(), "root-hygiene-missing-repo-"));
+		rmSync(missingRepo, { force: true, recursive: true });
 
 		expect(() => rootHygieneRepositoryTopLevel(missingRepo)).toThrow(
 			/Failed to resolve root-hygiene git toplevel/,
