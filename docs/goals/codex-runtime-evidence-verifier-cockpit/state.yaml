@@ -82,7 +82,7 @@ checks:
         outcome: "pass"
       - command: "bash scripts/validate-codestyle.sh --fast"
         outcome: "pass (35 related test files, 1081 passed, 1 skipped; non-blocking size and baseline drift warnings retained)"
-      - command: "node -e "require('http').get('http://127.0.0.1:8766/implementation-notes.html',res=>{console.log(res.statusCode);res.resume();})""
+      - command: 'node -e "require(''http'').get(''http://127.0.0.1:8766/implementation-notes.html'',res=>{console.log(res.statusCode);res.resume();})"'
         outcome: "pass (returned 200 after restarting the local implementation-notes server)"
       - command: "bash scripts/refresh-diagram-context.sh --force"
         outcome: "pass (refreshed 14 diagrams after pre-push reported stale architecture artifacts)"
