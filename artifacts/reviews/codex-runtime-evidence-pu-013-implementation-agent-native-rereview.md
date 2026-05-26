@@ -31,8 +31,8 @@ None.
 None.
 
 #### Observations
-1. **Trust-boundary hardening is correctly centralized** -- [src/lib/runtime/repo-runtime-artifact.ts](/Users/jamiecraik/dev/coding-harness/src/lib/runtime/repo-runtime-artifact.ts:44) now opens canonical artifact paths with `O_RDONLY | O_NOFOLLOW`, validates file type from descriptor via `fstatSync`, reads from the descriptor, and closes in `finally`. This keeps the command surfaces composable and parity-safe while reducing TOCTOU exposure.
-2. **Structured operator-visible failures remain intact** -- [src/commands/next-runtime-card.ts](/Users/jamiecraik/dev/coding-harness/src/commands/next-runtime-card.ts:25) and [src/commands/next-phase-exit.ts](/Users/jamiecraik/dev/coding-harness/src/commands/next-phase-exit.ts:24) still classify unreadable/invalid artifacts into explicit blocked decisions with sanitized metadata, so agents and humans get identical actionable guidance.
+1. **Trust-boundary hardening is correctly centralized** — `src/lib/runtime/repo-runtime-artifact.ts` now opens canonical artifact paths with `O_RDONLY | O_NOFOLLOW`, validates file type from descriptor via `fstatSync`, reads from the descriptor, and closes in `finally`. This keeps the command surfaces composable and parity-safe while reducing TOCTOU exposure.
+2. **Structured operator-visible failures remain intact** — `src/commands/next-runtime-card.ts` and `src/commands/next-phase-exit.ts` still classify unreadable/invalid artifacts into explicit blocked decisions with sanitized metadata, so agents and humans get identical actionable guidance.
 
 ### Validation Evidence
 - Reported by coordinator post-patch:
