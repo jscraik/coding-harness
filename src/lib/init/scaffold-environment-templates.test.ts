@@ -45,8 +45,13 @@ describe("scaffold environment templates", () => {
 			"for hook_name in pre-commit pre-push commit-msg; do",
 		);
 		expect(script).toContain("/^\\[\\[repos\\.hooks\\]\\]/");
-		expect(script).toContain("missing repo-local PREK_HOME patch");
-		expect(script).toContain('PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"');
+		expect(script).toContain("missing worktree-local PREK_HOME patch");
+		expect(script).toContain(
+			'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
+		);
+		expect(script).toContain(
+			'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
+		);
 		expect(script).toContain(
 			"printf 'Fix: ensure the session activates mise first",
 		);

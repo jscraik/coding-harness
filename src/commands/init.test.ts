@@ -1723,17 +1723,20 @@ describe("runInit", () => {
 			);
 			expect(setupHooks).toContain("Installing prek git hooks");
 			expect(setupHooks).toContain(
-				'const GIT_DIR = resolve(process.cwd(), execFileSync("git", ["rev-parse", "--git-dir"]',
+				'const REPO_ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"]',
 			);
 			expect(setupHooks).toContain(
-				'const PREK_HOME = process.env.PREK_HOME ?? resolve(GIT_DIR, ".cache/prek")',
+				'const PREK_HOME = process.env.PREK_HOME ?? resolve(REPO_ROOT, ".cache/prek")',
 			);
 			expect(setupHooks).toContain(
 				'execFileSync("prek", ["install", "--overwrite"]',
 			);
 			expect(setupHooks).toContain("patchInstalledPrekHooks");
 			expect(setupHooks).toContain(
-				'PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"',
+				'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
+			);
+			expect(setupHooks).toContain(
+				'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
 			);
 			expect(setupHooks).toContain(
 				'"Error: scripts/validate-commit-msg.js is required for commit message validation."',
