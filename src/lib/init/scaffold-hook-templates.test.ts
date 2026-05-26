@@ -19,17 +19,19 @@ describe("git-hook scaffold templates", () => {
 		expect(script).toContain("const isAgentBranch = /^(codex|claude|agent)");
 	});
 
-	it("renders the prek hook installer with repo-local cache patching", () => {
+	it("renders the prek hook installer with worktree-local cache patching", () => {
 		const script = renderSetupGitHooksScript();
 
 		expect(script).toContain("Installing prek git hooks");
 		expect(script).toContain(
-			'const GIT_DIR = resolve(process.cwd(), execFileSync("git", ["rev-parse", "--git-dir"]',
+			'const REPO_ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"]',
 		);
 		expect(script).toContain(
-			'const PREK_HOME = process.env.PREK_HOME ?? resolve(GIT_DIR, ".cache/prek")',
+			'const PREK_HOME = process.env.PREK_HOME ?? resolve(REPO_ROOT, ".cache/prek")',
 		);
-		expect(script).toContain('execFileSync("git", ["rev-parse", "--git-dir"]');
+		expect(script).toContain(
+			'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
+		);
 		expect(script).toContain(
 			'execFileSync("git", ["rev-parse", "--git-path", "hooks"]',
 		);
@@ -38,7 +40,11 @@ describe("git-hook scaffold templates", () => {
 		expect(script).toContain('execFileSync("prek", ["install", "--overwrite"]');
 		expect(script).toContain("env: { ...process.env, PREK_HOME }");
 		expect(script).toContain("patchInstalledPrekHooks");
+		expect(script).toContain("LEGACY_PREK_HOOK_PATCH");
 		expect(script).toContain('PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"');
+		expect(script).toContain(
+			'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
+		);
 		expect(script).toContain("make hooks-pre-commit");
 		expect(script).toContain("make hooks-pre-push");
 		expect(script).toContain("make hooks-commit-msg");
