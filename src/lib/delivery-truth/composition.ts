@@ -165,7 +165,7 @@ function externalSurfaceBlocker(
 	if (!surfaces || surfaces.length === 0) {
 		return blocked("missing_claim_scope", "missing", evidence);
 	}
-	return requiredSurfaces.some((surface) => surfaces.includes(surface))
+	return requiredSurfaces.every((surface) => surfaces.includes(surface))
 		? null
 		: blocked("claim_scope_mismatch", "unknown", evidence);
 }

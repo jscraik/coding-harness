@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-05-26T12:45:46.020Z",
+	"generatedAt": "2026-05-26T16:56:51.524Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -87,7 +87,7 @@
 			"file": "events.mmd",
 			"outputPath": ".diagram/events.mmd",
 			"lines": 36,
-			"bytes": 2505,
+			"bytes": 2520,
 			"isPlaceholder": false
 		},
 		{
@@ -111,7 +111,7 @@
 			"file": "security.mmd",
 			"outputPath": ".diagram/security.mmd",
 			"lines": 85,
-			"bytes": 4713,
+			"bytes": 4715,
 			"isPlaceholder": false
 		},
 		{

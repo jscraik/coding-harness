@@ -642,7 +642,7 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
-	it("keeps non-closeout delivery-truth verdicts informational", () => {
+	it("blocks closeout when Judge/PM readiness is not supported", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({
 				deliveryTruth: [
@@ -651,9 +651,9 @@ describe("buildPrCloseoutReport", () => {
 						claim: "goal_ready_for_judge_pm",
 						status: "fail",
 						statusLabel: "goal_ready_for_judge_pm fail",
-						source: "runtime_card",
-						evidenceRef: "runtime-card:goal",
-						evidenceRefs: ["runtime-card:goal"],
+						source: "pr_closeout",
+						evidenceRef: "pr-closeout:judge-pm-audit.json",
+						evidenceRefs: ["pr-closeout:judge-pm-audit.json"],
 						freshness: "current",
 						blockerClass: "needs_jamie_decision",
 						blockerCode: "receipt_failed",
@@ -663,10 +663,59 @@ describe("buildPrCloseoutReport", () => {
 			{ now: new Date("2026-05-16T12:00:00.000Z") },
 		);
 
-		expect(report.status).toBe("ready");
+		expect(report.status).not.toBe("ready");
 		expect(report.deliveryTruth.verdicts).toHaveLength(2);
-		expect(report.deliveryTruth.blockingVerdicts).toEqual([]);
-		expect(report.blockers).toEqual([]);
+		expect(report.deliveryTruth.blockingVerdicts).toEqual([
+			expect.objectContaining({
+				claim: "goal_ready_for_judge_pm",
+				status: "fail",
+			}),
+		]);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "delivery_truth",
+					kind: "closeout_claim",
+					classification: "needs_jamie_decision",
+					reason:
+						"Delivery-truth claim goal_ready_for_judge_pm failed verifier evidence.",
+					ref: "pr-closeout:judge-pm-audit.json",
+					fixableByCodex: false,
+				}),
+			]),
+		);
+	});
+
+	it("blocks closeout when a required delivery-truth claim is orientation-only", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				deliveryTruth: [
+					deliveryTruthVerdict({
+						evidenceUse: "orientation",
+					}),
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).not.toBe("ready");
+		expect(report.deliveryTruth.blockingVerdicts).toEqual([
+			expect.objectContaining({
+				claim: "merge_ready",
+				evidenceUse: "orientation",
+			}),
+		]);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "delivery_truth",
+					kind: "closeout_claim",
+					reason:
+						"Delivery-truth claim merge_ready is not backed by claim-support evidence.",
+					ref: "external-state:pr-258/checks",
+				}),
+			]),
+		);
 	});
 
 	it("keeps the Effect API behind the same closeout evidence boundary", () => {
