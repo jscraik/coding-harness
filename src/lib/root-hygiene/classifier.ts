@@ -5,6 +5,7 @@ import { readGitTrackedPathEntries } from "./git-tracked-paths.js";
 import { freezeRootHygieneReport } from "./report-freeze.js";
 import { rootHygieneRepositoryIdentity } from "./repository-identity.js";
 import { ROOT_SURFACE_POLICY_SOURCE_REF } from "./policy.js";
+import { missingRequiredPolicyBlockers } from "./policy-coverage.js";
 import {
 	classifyRootHygieneEntries,
 	summarizeRootHygieneEntries,
@@ -63,8 +64,15 @@ function classifyRootSurfaceInternal(
 	allowGitTrackedInventory: boolean,
 ): RootHygieneReport {
 	const entries = classifyRootHygieneEntries(input.entries);
-	const blockers = entries.filter((entry) => entry.blocking);
+	const missingPolicyBlockers = allowGitTrackedInventory
+		? missingRequiredPolicyBlockers(input.entries)
+		: [];
+	const blockers = [
+		...entries.filter((entry) => entry.blocking),
+		...missingPolicyBlockers,
+	];
 	const inputDigest = rootSurfaceEntryDigest(input.entries);
+	const summary = summarizeRootHygieneEntries(entries);
 	const coverage = {
 		...input.inventory,
 		digest: inputDigest,
@@ -83,7 +91,7 @@ function classifyRootSurfaceInternal(
 		repository: input.repository ?? null,
 		status,
 		entries,
-		summary: summarizeRootHygieneEntries(entries),
+		summary: { ...summary, blocking: blockers.length },
 		coverage,
 		blockers,
 		deferredEntries: entries.filter(

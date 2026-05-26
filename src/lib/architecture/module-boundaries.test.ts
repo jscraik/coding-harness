@@ -1147,6 +1147,12 @@ const ROOT_HYGIENE_SURFACE_RATCHETS = [
 			"Root-hygiene policy digesting must stay separate from the policy row projection.",
 	},
 	{
+		path: "src/lib/root-hygiene/policy-coverage.ts",
+		maxLines: 35,
+		reason:
+			"Root-hygiene policy coverage comparison must stay separate from classifier orchestration.",
+	},
+	{
 		path: "src/lib/root-hygiene/inventory.ts",
 		maxLines: 70,
 		reason:
@@ -2345,9 +2351,7 @@ describe("module boundaries", () => {
 			join(process.cwd(), "src/lib/root-hygiene/git-tracked-paths.ts"),
 			"utf-8",
 		);
-		expect(gitTrackedPathsContent).toContain(
-			"./git-tracked-stage-record.js",
-		);
+		expect(gitTrackedPathsContent).toContain("./git-tracked-stage-record.js");
 		expect(gitTrackedPathsContent).toContain("parseGitTrackedPathEntry");
 	});
 

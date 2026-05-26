@@ -156,6 +156,26 @@ describe("root-hygiene classification", () => {
 		]);
 	});
 
+	it("fails closed when required policy entries are missing from live root evidence", () => {
+		const repoRoot = makeGitRepo(["README.md"]);
+		const report = classifyGitTrackedRoot({
+			repoRoot,
+			generatedAt: GENERATED_AT,
+			headSha: HEAD_SHA,
+		});
+		rmSync(repoRoot, { force: true, recursive: true });
+		const blockerPaths = report.blockers.map((entry) => entry.path);
+
+		expect(report.status).toBe("fail");
+		expect(report.summary.blocking).toBe(report.blockers.length);
+		expect(report.receipt).toMatchObject({
+			status: "fail",
+			blockerClass: "root_surface_drift",
+		});
+		expect(blockerPaths).toEqual(expect.arrayContaining(["AGENTS.md"]));
+		expect(blockerPaths).not.toContain("FORJAMIE.md");
+	});
+
 	it("fails closed when the supplied root inventory is not tracked-root evidence", () => {
 		const entries = policyRootSurfaceEntries();
 		const report = classifyRootSurface({
@@ -256,7 +276,9 @@ describe("root-hygiene classification", () => {
 	});
 
 	it("throws contextual errors when git root resolution fails", () => {
-		const missingRepo = mkdtempSync(join(tmpdir(), "root-hygiene-missing-repo-"));
+		const missingRepo = mkdtempSync(
+			join(tmpdir(), "root-hygiene-missing-repo-"),
+		);
 		rmSync(missingRepo, { force: true, recursive: true });
 
 		expect(() => rootHygieneRepositoryTopLevel(missingRepo)).toThrow(

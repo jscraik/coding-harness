@@ -14,6 +14,7 @@ export {
 	ROOT_SURFACE_POLICY_SOURCE_REF,
 	policyRootSurfaceEntries,
 } from "./policy.js";
+export { missingRequiredPolicyBlockers } from "./policy-coverage.js";
 export { rootHygienePolicyDigest } from "./policy-digest.js";
 export * from "./repository-identity.js";
 export {
