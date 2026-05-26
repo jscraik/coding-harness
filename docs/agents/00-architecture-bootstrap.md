@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-25
+last_validated: 2026-05-26
 ---
 
 # Architecture bootstrap
@@ -157,10 +157,6 @@ before they feed the runtime-card adapter. Keep the public
 source classification, validation, and reference-integrity checks; refresh
 `AI/context/diagram-context.md` and this guide when those packet or validator
 modules change.
-
----
-last_validated: 2026-05-26
----
 
 Review-state and external-state packet changes are runtime-cockpit architecture
 work even when they do not add public CLI commands. Keep `review-state/v1`

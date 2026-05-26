@@ -1722,11 +1722,12 @@ describe("runInit", () => {
 				"Co-authored-by: Codex <noreply@openai.com>",
 			);
 			expect(setupHooks).toContain("Installing prek git hooks");
+			expect(setupHooks).toContain("function getRepoRoot(): string");
 			expect(setupHooks).toContain(
-				'const REPO_ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"]',
+				'return execFileSync("git", ["rev-parse", "--show-toplevel"]',
 			);
 			expect(setupHooks).toContain(
-				'const PREK_HOME = process.env.PREK_HOME ?? resolve(REPO_ROOT, ".cache/prek")',
+				'return process.env.PREK_HOME ?? resolve(repoRoot, ".cache/prek")',
 			);
 			expect(setupHooks).toContain(
 				'execFileSync("prek", ["install", "--overwrite"]',

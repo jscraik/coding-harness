@@ -159,7 +159,10 @@ export function writeRepoRuntimeJsonArtifact(
 	}
 	const fd = openSync(
 		canonicalOutput,
-		constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW,
+		constants.O_WRONLY |
+			constants.O_CREAT |
+			constants.O_TRUNC |
+			constants.O_NOFOLLOW,
 		0o644,
 	);
 	try {

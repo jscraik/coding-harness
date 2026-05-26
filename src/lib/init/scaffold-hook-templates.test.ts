@@ -23,11 +23,12 @@ describe("git-hook scaffold templates", () => {
 		const script = renderSetupGitHooksScript();
 
 		expect(script).toContain("Installing prek git hooks");
+		expect(script).toContain("function getRepoRoot(): string");
 		expect(script).toContain(
-			'const REPO_ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"]',
+			'return execFileSync("git", ["rev-parse", "--show-toplevel"]',
 		);
 		expect(script).toContain(
-			'const PREK_HOME = process.env.PREK_HOME ?? resolve(REPO_ROOT, ".cache/prek")',
+			'return process.env.PREK_HOME ?? resolve(repoRoot, ".cache/prek")',
 		);
 		expect(script).toContain(
 			'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
@@ -35,7 +36,7 @@ describe("git-hook scaffold templates", () => {
 		expect(script).toContain(
 			'execFileSync("git", ["rev-parse", "--git-path", "hooks"]',
 		);
-		expect(script).toContain("GIT_HOOKS_DIR");
+		expect(script).toContain("const gitHooksDir = getGitHooksDir()");
 		expect(script).toContain("mkdirSync(PREK_HOME, { recursive: true })");
 		expect(script).toContain('execFileSync("prek", ["install", "--overwrite"]');
 		expect(script).toContain("env: { ...process.env, PREK_HOME }");
