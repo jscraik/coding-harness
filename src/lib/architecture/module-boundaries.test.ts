@@ -1591,6 +1591,7 @@ const LOCAL_RUNTIME_CARD_ASSEMBLY_SUBMODULES = [
 	"./local-runtime-card-attempts.js",
 ] as const;
 const COMMAND_CAPABILITY_SUBMODULES = [
+	"./command-agent-catalog-rules.js",
 	"./command-capability-rules.js",
 ] as const;
 const OUTPUT_NORMALISE_SUBMODULES = [
