@@ -1,0 +1,194 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-016-gap-001",
+	"createdAt": "2026-05-26T20:00:21Z",
+	"objective": "Implement the P0 GAP-001 trust-boundary slice by making codex preflight legacy positional invocation run the same required Local Memory and Project Brain readiness lane as flag-based required mode, preventing pass-looking preflight output when memory readiness was silently disabled.",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceSpec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+	"sourceAudit": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+	"sourceEcosystemReview": ".harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md",
+	"linearIssue": "JSC-363",
+	"lifecycleUnit": "PU-016-GAP-001",
+	"auditGapIds": ["GAP-001"],
+	"ecosystemReviewFindings": [
+		"Runtime readiness must be represented as structured evidence instead of a prose or pass-looking command summary.",
+		"Memory and runtime context are claim-supporting only when current and explicitly checked; stale or unavailable context can orient work but cannot support closeout."
+	],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/tooling/knowledge.md",
+		".harness/knowledge/tooling/rules.md",
+		".harness/knowledge/governance/knowledge.md",
+		".harness/knowledge/governance/rules.md",
+		".harness/research/evidence-patterns.json",
+		"/Users/jamiecraik/.codex/memories/MEMORY.md"
+	],
+	"deepModuleBoundary": "Codex preflight script/template contract and its scaffold tests only. This slice is a trust-boundary fix for preflight readiness, not a new runtime-card, delivery-truth, or Project Brain feature.",
+	"implementationThesis": "The legacy positional script path is still an executable preflight entrypoint, so it must not carry weaker readiness semantics than the documented required-mode path. Preserve compatibility for repo-fragment, bins, and paths positional arguments while defaulting the Local Memory lane to required; explicit --mode optional or --mode off remain deliberate operator choices through the flag-based interface.",
+	"legacyCompatibilityDecision": {
+		"policy": "map_positional_invocation_to_required_local_memory",
+		"reason": "This keeps parent-repo positional callers working while removing the implicit readiness downgrade. Fail-with-usage is rejected for this slice because it would trade a false-success fix for a compatibility break without evidence that legacy callers can be removed safely.",
+		"operatorDowngradePath": "Use the flag-based interface with --mode optional or --mode off when a weaker Local Memory lane is intentionally required."
+	},
+	"currentEvidence": [
+		{
+			"path": "scripts/codex-preflight.sh",
+			"observed": "usage text says legacy positional mode runs with Local Memory disabled unless the flag-based mode is used.",
+			"gap": "main() sets local_memory_mode='off' when the first argument is positional, so a legacy call can pass without Local Memory/Project Brain readiness."
+		},
+		{
+			"path": "src/templates/codex-preflight.sh",
+			"observed": "the emitted downstream template contains the same legacy-disabled usage text and parser behavior.",
+			"gap": "downstream harness init scaffolding would preserve the same false-success path unless the template is synchronized."
+		},
+		{
+			"path": "src/commands/init.test.ts",
+			"observed": "scaffold assertions already pin required-mode defaults and the legacy compatibility text.",
+			"gap": "tests do not yet assert that legacy positional compatibility keeps Local Memory required instead of disabled."
+		},
+		{
+			"path": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+			"observed": "GAP-001 identifies legacy preflight Local Memory downgrade as a P0 false-success trust-boundary gap.",
+			"gap": "the gap remains live in the script and template."
+		}
+	],
+	"inScope": [
+		"scripts/codex-preflight.sh",
+		"src/templates/codex-preflight.sh",
+		"src/commands/init.test.ts",
+		"scripts/sync-codex-preflight.cjs only if the existing sync check requires no behavioral change",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-gap-001-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-*.md"
+	],
+	"outOfScope": [
+		"changing the Local Memory preflight implementation itself",
+		"changing Project Brain CLI behavior or knowledge-domain files unless a validation failure proves the preflight path requires it",
+		"adding a new public harness command",
+		"changing runtime-card, delivery-truth, pr-closeout, review-state, or external-state packet schemas",
+		"mutating /Users/jamiecraik/dev/codex",
+		"external writes to GitHub, Linear, CI, or review services during implementation",
+		"absorbing unrelated dirty worktree changes into this slice"
+	],
+	"guardedPathGlobs": [
+		"scripts/codex-preflight.sh",
+		"src/templates/codex-preflight.sh",
+		"src/commands/init.test.ts",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-gap-001-intent.json",
+		"artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-*.md"
+	],
+	"acceptanceCriteria": [
+		"Legacy positional invocation preserves repo-fragment, bins CSV, and paths CSV compatibility while leaving local_memory_mode at required by default.",
+		"Legacy positional invocation is evidence-equivalent to --mode required unless the operator explicitly uses the flag-based --mode optional or --mode off downgrade path.",
+		"Usage text no longer says legacy positional mode disables Local Memory.",
+		"The emitted src/templates/codex-preflight.sh remains byte-for-byte synchronized with scripts/codex-preflight.sh according to the repo sync check.",
+		"Scaffold tests fail if the template reintroduces local_memory_mode='off' for legacy positional parsing or documents a disabled default.",
+		"A focused behavior check demonstrates that a positional legacy invocation still attempts the Local Memory preflight unless an explicit flag-based optional/off mode is used.",
+		"Explicit --mode optional and --mode off remain valid flag-based choices and are not hidden behind positional compatibility.",
+		"Goal receipt records Project Brain inputs, GAP-001, ecosystem review alignment, validation commands, and any blocker."
+	],
+	"automationPlan": [
+		{
+			"name": "intent artifact JSON validation",
+			"command": "jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-gap-001-intent.json >/dev/null",
+			"proves": ["slice intent is syntactically valid before review"]
+		},
+		{
+			"name": "pre-implementation intent review gate",
+			"command": "test -s artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-adversarial.md && test -s artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-agent-native.md",
+			"proves": ["required intent review artifacts exist before implementation"]
+		},
+		{
+			"name": "codex-preflight script/template sync",
+			"command": "pnpm codex-preflight:check",
+			"proves": [
+				"runtime preflight script and emitted downstream template remain synchronized"
+			]
+		},
+		{
+			"name": "scaffold contract regression",
+			"command": "pnpm vitest run src/commands/init.test.ts -t codex-preflight",
+			"proves": [
+				"harness init scaffolding keeps the required Local Memory semantics"
+			]
+		},
+		{
+			"name": "legacy positional behavior regression",
+			"command": "HARNESS_PREFLIGHT_FORCE_SHELL_FALLBACK=1 bash scripts/codex-preflight.sh coding-harness git,bash,sed,rg,jq,curl,node,pnpm package.json,CODESTYLE.md,scripts/codex-preflight.sh",
+			"proves": [
+				"legacy positional invocation reaches the required Local Memory readiness lane instead of silently mapping to off",
+				"repo-fragment, bins CSV, and paths CSV compatibility survive the hardening change"
+			]
+		},
+		{
+			"name": "required preflight smoke",
+			"command": "bash scripts/codex-preflight.sh --stack auto --mode required",
+			"proves": ["required preflight still exercises the live readiness lane"]
+		},
+		{
+			"name": "goal board validation",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+			"proves": ["goal state and receipts remain valid after slice updates"]
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": ["adversarial-reviewer", "agent-native-reviewer"],
+		"artifactPaths": [
+			"artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-adversarial.md",
+			"artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-agent-native.md"
+		],
+		"reviewQuestions": [
+			"Does this intent stay tight enough to fix GAP-001 without drifting into broader Project Brain or runtime-evidence implementation?",
+			"Does the chosen map-to-required compatibility behavior preserve useful legacy arguments while preventing a pass-looking Local Memory skip?",
+			"Are the validation gates sufficient to catch script/template/test drift?"
+		]
+	},
+	"reviewStatus": "passed_after_reviewer_blocker_resolution",
+	"reviewedAt": "2026-05-26T20:06:00Z",
+	"reviewFindingsAddressed": [
+		{
+			"artifact": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-adversarial.md",
+			"finding": "Acceptance criterion for legacy-path behavior was not bound to a deterministic gate command.",
+			"resolution": "Added legacy positional behavior regression command to automationPlan."
+		},
+		{
+			"artifact": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-agent-native.md",
+			"finding": "Legacy semantics decision was dual-pathed between map-to-required and fail-with-usage.",
+			"resolution": "Froze policy to map positional invocation to required Local Memory and documented explicit operator downgrade via --mode optional/off."
+		},
+		{
+			"artifact": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-rereview-adversarial.md",
+			"finding": "Re-review verdict passed with no blocker/high findings.",
+			"resolution": "Implementation may start against the reviewed map-to-required policy and legacy positional behavior regression gate."
+		},
+		{
+			"artifact": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-rereview-agent-native.md",
+			"finding": "Re-review verdict passed with no blocker/high findings.",
+			"resolution": "Agent-native execution readiness is sufficient for the narrow implementation slice."
+		}
+	],
+	"implementationStartPolicy": "blocked_until_intent_review_artifacts_exist_and_material_blockers_are_resolved",
+	"postReviewMutationPolicy": "any material mutation to objective, inScope, outOfScope, acceptanceCriteria, automationPlan, reviewPlan, stopConditions, or rollback resets reviewStatus to pending",
+	"linearMutationPlan": "No external Linear mutation during this slice implementation. JSC-363 remains linked in the intent and receipt; a Linear comment may be added after local validation if connector availability is confirmed.",
+	"stopConditions": [
+		"Stop if implementation evidence proves map-to-required breaks a documented parent-repo compatibility path that cannot be resolved without broader migration approval.",
+		"Stop if a test cannot distinguish explicit --mode off from implicit positional Local Memory disablement.",
+		"Stop if the sync check indicates scripts/codex-preflight.sh is not the canonical source for src/templates/codex-preflight.sh.",
+		"Stop if required preflight cannot run and no env-loaded recovery or explicit blocker is recorded.",
+		"Stop if implementation would touch unrelated Project Brain, agent-readiness, runtime-card, delivery-truth, or external-state files."
+	],
+	"rollback": [
+		"Revert script/template/test edits if required Local Memory mode breaks a documented parent-repo compatibility path, then pause for an explicit migration decision before replacing positional compatibility with fail-with-usage behavior.",
+		"Keep the regression that prevents implicit local_memory_mode='off' unless a stronger fail-closed parser replaces it.",
+		"Do not roll back unrelated dirty worktree changes."
+	],
+	"assumptions": [
+		"The root scripts/codex-preflight.sh file is the canonical source synchronized into src/templates/codex-preflight.sh.",
+		"Legacy positional arguments are still used by parent-repo checks and should remain accepted when they do not weaken readiness.",
+		"Required Local Memory preflight includes the current Project Brain readiness surface through PROJECT_BRAIN_REQUIRED_PATHS and local-memory-preflight.",
+		"JSC-363 remains the Linear owner for this lifecycle goal."
+	]
+}
