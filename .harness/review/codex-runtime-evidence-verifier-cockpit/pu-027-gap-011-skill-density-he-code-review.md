@@ -30,7 +30,7 @@ Validation ownership for the earlier commit-hook failure: introduced by current 
 
 ## Validation Evidence
 
-- `pnpm exec biome check --write scripts/validate-packaged-skill.cjs src/dev/validate-packaged-skill-script.test.ts` -> pass
+- `pnpm exec biome check scripts/validate-packaged-skill.cjs src/dev/validate-packaged-skill-script.test.ts` -> pass
 - `node --check scripts/validate-packaged-skill.cjs` -> pass
 - `pnpm vitest run src/dev/validate-packaged-skill-script.test.ts` -> pass
 - `pnpm skill:validate` -> pass
