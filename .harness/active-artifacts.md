@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` | Active Goal Governor board for the full lifecycle implementation. Current board status is active; PR #309 is pushed at head `f1632eee`. Live CI/security checks passed after the `Refs JSC-363` PR-body repair and CircleCI rerun, but CodeRabbit remains pending and GitHub still reports mergeStateStatus `BLOCKED`. Review-thread, Linear scope, merge-readiness, Judge/PM, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, Project Brain knowledge, and Linear JSC-363. Continue only with slices that do not contaminate PR #309 review triage, and do not route from older JSC-331 context unless the current goal explicitly references it. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` | Active Goal Governor board for the full lifecycle implementation. Current board status is active; PR #309 is pushed at head `182393dc`. Live CI, security, Socket, Snyk, CircleCI aggregate, and CodeRabbit checks pass on the current head, while GitHub still reports mergeStateStatus `BLOCKED`. Review-thread, Linear scope, merge-readiness, Judge/PM, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, Project Brain knowledge, and Linear JSC-363. The next safe action is a Judge audit packet against current evidence; do not route from older JSC-331 context unless the current goal explicitly references it. |
 
 ## Artifact Index
 
@@ -76,9 +76,10 @@ unless a live refresh is recorded in the referenced artifact.
   cockpit, keep `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`
   freshness enforced through `scripts/check-goal-board.py`, and keep Linear,
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
-  receipts. PR #309 currently has green CI/security at `f1632eee`, while
-  CodeRabbit review remains pending; that pending review blocks merge-readiness
-  and final closeout claims.
+  receipts. PR #309 currently has green CI/security/review checks at
+  `182393dc`; GitHub mergeStateStatus remains `BLOCKED`, so merge-readiness,
+  Linear scope alignment, Judge/PM readiness, and final closeout remain
+  unclaimed.
 - JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
   not use it as the coding-harness tracker for the 2026-05-18 assurance plan
   unless Linear is explicitly reparented or updated later.

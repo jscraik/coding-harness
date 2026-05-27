@@ -194,21 +194,21 @@ continuation_gate:
 checks:
   dirty_fingerprint: "Worktree already contained uncommitted .harness research/spec/plan changes before this goal board was created; future slices must preserve unrelated changes."
   last_verification:
-    timestamp: "2026-05-27T17:35:00Z"
-    commit_sha: "f1632eee"
-    pr_ref: "PR #309 at head f1632eeeb4ddbc9ca6fda4f85a6f402ff6428591"
+    timestamp: "2026-05-27T18:40:30Z"
+    commit_sha: "182393dc"
+    pr_ref: "PR #309 at head 182393dca33eeecfe803082bcaac6d332ce1c154"
     commands_run:
       - command: "git status --short --branch"
         outcome: "pass (branch aligned with origin; unrelated untracked artifacts restored and left untouched)"
       - command: "gh pr checks 309 --repo jscraik/coding-harness --watch=false"
-        outcome: "pass for CircleCI, Snyk, Socket, and security checks; CodeRabbit pending"
+        outcome: "pass for CodeRabbit, CircleCI, Snyk, Socket, pr-pipeline, and security checks"
       - command: "gh pr view 309 --repo jscraik/coding-harness --json number,url,headRefOid,mergeStateStatus,reviewDecision,isDraft"
-        outcome: "pass (head f1632eeeb4ddbc9ca6fda4f85a6f402ff6428591; isDraft false; mergeStateStatus BLOCKED; reviewDecision empty)"
+        outcome: "pass (head 182393dca33eeecfe803082bcaac6d332ce1c154; isDraft false; mergeStateStatus BLOCKED; reviewDecision empty)"
       - command: "PR_BODY/PR_TITLE from gh pr view 309; bash scripts/run-harness-gate.sh linear-gate --allow-missing-branch --branch "" --json"
         outcome: "pass"
       - command: "PR_TEMPLATE_BODY/PR_TITLE from gh pr view 309; bash scripts/run-harness-gate.sh pr-template-gate --json"
         outcome: "pass"
-    summary: "PR #309 is pushed at f1632eee and live CI/security checks are green after repairing the PR body with the required Refs JSC-363 line and rerunning the failed CircleCI workflow. The goal remains active because CodeRabbit is still pending, GitHub mergeStateStatus remains BLOCKED, Linear full-lifecycle scope alignment is not refreshed, review-thread truth is not resolved, and Judge/PM/final goal closeout are not proven. Untracked artifacts restored after the temporary CI isolation stash remain unrelated local state and are not used as delivery proof."
+    summary: "PR #309 is pushed at 182393dc and live CI/security/review checks are green after committing the runtime evidence hardening follow-up and refreshed architecture diagrams. The goal remains active because GitHub mergeStateStatus remains BLOCKED, Linear full-lifecycle scope alignment is not refreshed, review-thread truth is not resolved, and Judge/PM/final goal closeout are not proven. Untracked local artifacts remain unrelated state and are not used as delivery proof."
   previous_verification_archive:
     timestamp: "2026-05-26T21:26:30Z"
     commit_sha: "b1db37ca"
