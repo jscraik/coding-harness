@@ -20,6 +20,8 @@ flowchart LR
   User --> check_environment_core_2c16213f
   ci_migrate_core_7005b5af["ci-migrate-core"]
   User --> ci_migrate_core_7005b5af
+  decision_request_118a770d["decision-request"]
+  User --> decision_request_118a770d
   evidence_verify_3b73c290["evidence-verify"]
   User --> evidence_verify_3b73c290
   linear_prepare_0c613ba6["linear-prepare"]
@@ -48,17 +50,15 @@ flowchart LR
   User --> ui_loop_11660889
   verify_coderabbit_490b4e71["verify-coderabbit"]
   User --> verify_coderabbit_490b4e71
+  context_health_1_ceb11829["context-health"]
+  User --> context_health_1_ceb11829
+  types_1_4ecdf56e["types"]
+  User --> types_1_4ecdf56e
   resolver_439c3635["resolver"]
   User --> resolver_439c3635
   ownership_gate_2e194d13["ownership-gate"]
   User --> ownership_gate_2e194d13
   command_specs_core_1c0ffc99["command-specs-core"]
   User --> command_specs_core_1c0ffc99
-  risk_tier_command_spec_127e876c["risk-tier-command-spec"]
-  User --> risk_tier_command_spec_127e876c
-  ollama_76e3c7bf["ollama"]
-  User --> ollama_76e3c7bf
-  sync_contract_c79fa191["sync-contract"]
-  User --> sync_contract_c79fa191
   classDef userNode fill:#16a34a,color:#fff
-  class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_internal_f2eb8892,ui_loop_shared_8c83b841,ui_loop_tooling_12b2d2c7,ui_loop_11660889,verify_coderabbit_490b4e71,resolver_439c3635,ownership_gate_2e194d13,command_specs_core_1c0ffc99,risk_tier_command_spec_127e876c,ollama_76e3c7bf,sync_contract_c79fa191 userNode
+  class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_internal_f2eb8892,ui_loop_shared_8c83b841,ui_loop_tooling_12b2d2c7,ui_loop_11660889,verify_coderabbit_490b4e71,context_health_1_ceb11829,types_1_4ecdf56e,resolver_439c3635,ownership_gate_2e194d13,command_specs_core_1c0ffc99 userNode

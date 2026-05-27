@@ -2,10 +2,20 @@ flowchart TD
   Request["Authentication request"]
   Boundary{"Auth Boundary"}
   Request --> Boundary
+  session_context_e5ec72c0["session-context"]
+  Boundary --> session_context_e5ec72c0
+  session_context_command_spec_973afbb1["session-context-command-spec"]
+  Boundary --> session_context_command_spec_973afbb1
   scaffold_security_scan_template_55bc7465["scaffold-security-scan-template"]
   Boundary --> scaffold_security_scan_template_55bc7465
   repository_identity_9dc13d37["repository-identity"]
   Boundary --> repository_identity_9dc13d37
+  cli_11_338a8415["cli"]
+  Boundary --> cli_11_338a8415
+  collector_0736fd5b["collector"]
+  Boundary --> collector_0736fd5b
+  types_30_424b976c["types"]
+  Boundary --> types_30_424b976c
   session_closeout_f3efb270["session-closeout"]
   Boundary --> session_closeout_f3efb270
   overload_guard_2748c559["overload-guard"]
@@ -13,10 +23,15 @@ flowchart TD
   ext_node_crypto_879f6cbe[("node:crypto")]
   ext_node_child_process_cb73900b[("node:child_process")]
   ext_node_fs_df6b52af[("node:fs")]
+  ext_node_path_0e7d56ab[("node:path")]
   ext_node_os_e9717731[("node:os")]
   repository_identity_9dc13d37 --> ext_node_crypto_879f6cbe
   repository_identity_9dc13d37 --> ext_node_child_process_cb73900b
   repository_identity_9dc13d37 --> ext_node_fs_df6b52af
+  cli_11_338a8415 --> ext_node_fs_df6b52af
+  collector_0736fd5b --> ext_node_child_process_cb73900b
+  collector_0736fd5b --> ext_node_fs_df6b52af
+  collector_0736fd5b --> ext_node_path_0e7d56ab
   overload_guard_2748c559 --> ext_node_os_e9717731
   classDef authNode fill:#7c3aed,color:#fff
-  class scaffold_security_scan_template_55bc7465,repository_identity_9dc13d37,session_closeout_f3efb270,overload_guard_2748c559 authNode
+  class session_context_e5ec72c0,session_context_command_spec_973afbb1,scaffold_security_scan_template_55bc7465,repository_identity_9dc13d37,cli_11_338a8415,collector_0736fd5b,types_30_424b976c,session_closeout_f3efb270,overload_guard_2748c559 authNode
