@@ -1,0 +1,79 @@
+{
+	"schemaVersion": "runtime-packet-schemas-manifest/v1",
+	"generatedAt": "2026-05-27T08:10:00Z",
+	"packets": [
+		{
+			"schemaVersion": "evidence-receipt/v1",
+			"schemaPath": "contracts/evidence-receipt.schema.json",
+			"examplePath": "contracts/examples/evidence-receipt.example.json",
+			"typeSourcePath": "src/lib/evidence/evidence-receipt.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "evidence-receipt",
+			"ownerGap": "GAP-003"
+		},
+		{
+			"schemaVersion": "runtime-card/v1",
+			"schemaPath": "contracts/runtime-card.schema.json",
+			"examplePath": "contracts/examples/runtime-card.example.json",
+			"typeSourcePath": "src/lib/runtime/runtime-card.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "runtime-card",
+			"ownerGap": "GAP-003"
+		},
+		{
+			"schemaVersion": "harness-decision/v1",
+			"schemaPath": "contracts/harness-decision.schema.json",
+			"examplePath": "contracts/examples/harness-decision.example.json",
+			"typeSourcePath": "src/lib/decision/harness-decision.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "harness-decision",
+			"ownerGap": "GAP-003"
+		},
+		{
+			"schemaVersion": "review-state/v1",
+			"schemaPath": "contracts/review-state.schema.json",
+			"examplePath": "contracts/examples/review-state.example.json",
+			"typeSourcePath": "src/lib/review-state/types.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "review-state",
+			"ownerGap": "GAP-003"
+		},
+		{
+			"schemaVersion": "external-state-snapshot/v1",
+			"schemaPath": "contracts/external-state-snapshot.schema.json",
+			"examplePath": "contracts/examples/external-state-snapshot.example.json",
+			"typeSourcePath": "src/lib/external-state/types.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "external-state-snapshot",
+			"ownerGap": "GAP-003"
+		},
+		{
+			"schemaVersion": "delivery-truth/v1",
+			"schemaPath": "contracts/delivery-truth.schema.json",
+			"examplePath": "contracts/examples/delivery-truth.example.json",
+			"typeSourcePath": "src/lib/delivery-truth/types.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "delivery-truth",
+			"ownerGap": "GAP-003"
+		},
+		{
+			"schemaVersion": "decision-request/v1",
+			"schemaPath": "contracts/decision-request.schema.json",
+			"examplePath": "contracts/examples/decision-request.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"ownerGap": "GAP-005",
+			"blockedBy": "GAP-005 owns runtime emission and command integration for decision-request/v1."
+		},
+		{
+			"schemaVersion": "session-context/v1",
+			"schemaPath": "contracts/session-context.schema.json",
+			"examplePath": "contracts/examples/session-context.example.json",
+			"typeSourcePath": "src/lib/session-context/types.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "session-context",
+			"ownerGap": "GAP-004"
+		}
+	]
+}

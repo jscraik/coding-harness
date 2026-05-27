@@ -1,0 +1,93 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/delivery-truth.schema.json",
+	"title": "Delivery Truth Verdict",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"claim",
+		"status",
+		"statusLabel",
+		"source",
+		"evidenceRef",
+		"evidenceRefs",
+		"blockerRefs",
+		"headSha",
+		"verdictHeadSha",
+		"freshness",
+		"blockerClass",
+		"blockerCode",
+		"verifiedAt",
+		"evidenceUse"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "delivery-truth/v1"
+		},
+		"claim": {
+			"enum": [
+				"root_surface_tidy",
+				"goal_ready_for_judge_pm",
+				"remote_checks_current",
+				"review_threads_resolved",
+				"linear_state_aligned",
+				"merge_ready"
+			]
+		},
+		"status": {
+			"enum": ["pass", "fail", "blocked", "unknown", "not_applicable"]
+		},
+		"statusLabel": {
+			"type": "string",
+			"minLength": 1
+		},
+		"source": {
+			"enum": [
+				"validation",
+				"runtime_card",
+				"review_state",
+				"external_state",
+				"root_hygiene",
+				"pr_closeout"
+			]
+		},
+		"evidenceRef": {
+			"type": ["string", "null"]
+		},
+		"evidenceRefs": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"blockerRefs": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"headSha": {
+			"type": ["string", "null"]
+		},
+		"verdictHeadSha": {
+			"type": ["string", "null"]
+		},
+		"freshness": {
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"blockerClass": {
+			"type": ["string", "null"]
+		},
+		"blockerCode": {
+			"type": ["string", "null"]
+		},
+		"verifiedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"evidenceUse": {
+			"enum": ["orientation", "claim_support", "audit_trail", null]
+		}
+	}
+}

@@ -1,0 +1,61 @@
+{
+	"schemaVersion": "runtime-card/v1",
+	"generatedAt": "2026-05-15T12:00:00.000Z",
+	"issueKey": "JSC-311",
+	"lifecycle": "active",
+	"summary": "Runtime card is current.",
+	"nextSafeAction": "Run harness next --json.",
+	"branch": {
+		"name": "codex/jsc-311-phase-exit-next",
+		"clean": true,
+		"ref": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	},
+	"pullRequest": {
+		"number": 250,
+		"state": "OPEN",
+		"isDraft": false,
+		"mergeStateStatus": "CLEAN",
+		"url": "https://github.com/jscraik/coding-harness/pull/250"
+	},
+	"artifacts": {
+		"activeSpec": ".harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md",
+		"activePlan": ".harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md",
+		"status": "current",
+		"staleRefs": []
+	},
+	"linear": {
+		"issueKey": "JSC-311",
+		"freshness": "current",
+		"status": "In Review",
+		"statusType": "started",
+		"url": "https://linear.app/jscraik/issue/JSC-311/example",
+		"actionRequired": null
+	},
+	"phaseExit": {
+		"status": "pass",
+		"reason": "Required phase-exit gates passed."
+	},
+	"sources": [
+		{
+			"kind": "git",
+			"ref": "git:status",
+			"freshness": "current",
+			"status": "usable",
+			"failureClass": null
+		}
+	],
+	"blockers": [],
+	"attemptLedger": {
+		"schemaVersion": "attempt-ledger/v1",
+		"command": "runtime-card",
+		"attempt": 1,
+		"maxAttempts": 1,
+		"firstFailure": null,
+		"retryDecision": "none",
+		"owner": "codex",
+		"stopReason": null,
+		"nextAction": "Run harness next --json.",
+		"evidenceRefs": ["git:status"]
+	},
+	"recoveryEvent": null
+}

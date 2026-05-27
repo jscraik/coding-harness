@@ -1,0 +1,14 @@
+{
+	"schemaVersion": "evidence-receipt/v1",
+	"kind": "validation",
+	"ref": "validation:pnpm-vitest-runtime-packet-schemas",
+	"producer": "harness:runtime-packet-schema-validator",
+	"status": "pass",
+	"freshness": "current",
+	"evidenceUse": "claim_support",
+	"blockerClass": null,
+	"verifiedAt": "2026-05-27T08:10:00Z",
+	"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	"sizeBytes": 512,
+	"checksum": "1111111111111111111111111111111111111111111111111111111111111111"
+}

@@ -77,6 +77,7 @@ import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
 import { createRuntimeBudgetCommandSpec } from "./runtime-budget-command-spec.js";
 import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
+import { createSessionContextCommandSpec } from "./session-context-command-spec.js";
 import { createSilentErrorCommandSpec } from "./silent-error-command-spec.js";
 import { createSimulateCommandSpec } from "./simulate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
@@ -113,6 +114,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createAgentReadinessCommandSpec(),
 	createNextCommandSpec(),
 	createRuntimeCardCommandSpec(),
+	createSessionContextCommandSpec(),
 	createAuditCommandSpec(getVersion),
 	createDoctorCommandSpec(getVersion),
 	createHealthCommandSpec(getVersion),

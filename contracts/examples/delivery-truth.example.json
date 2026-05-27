@@ -1,0 +1,17 @@
+{
+	"schemaVersion": "delivery-truth/v1",
+	"claim": "remote_checks_current",
+	"status": "pass",
+	"statusLabel": "remote_checks_current pass",
+	"source": "external_state",
+	"evidenceRef": "external-state:fixture.json",
+	"evidenceRefs": ["external-state:fixture.json"],
+	"blockerRefs": [],
+	"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	"verdictHeadSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	"freshness": "current",
+	"blockerClass": null,
+	"blockerCode": null,
+	"verifiedAt": "2026-05-25T10:15:00Z",
+	"evidenceUse": "claim_support"
+}

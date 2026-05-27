@@ -1,0 +1,113 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/external-state-snapshot.schema.json",
+	"title": "External State Snapshot",
+	"type": "object",
+	"additionalProperties": true,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"repository",
+		"prNumber",
+		"fetchedAt",
+		"ttlSeconds",
+		"headSha",
+		"fetchReceiptRef",
+		"fetchedArtifactHash",
+		"verifierIdentity",
+		"fetchReceipt",
+		"evidenceUse",
+		"stale",
+		"staleReasons",
+		"sources"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "external-state-snapshot/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"repository": {
+			"type": "string",
+			"minLength": 1
+		},
+		"prNumber": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"fetchedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"ttlSeconds": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"headSha": {
+			"type": ["string", "null"]
+		},
+		"fetchReceiptRef": {
+			"type": "string",
+			"minLength": 1
+		},
+		"fetchedArtifactHash": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{64}$"
+		},
+		"verifierIdentity": {
+			"type": "string",
+			"minLength": 1
+		},
+		"fetchReceipt": {
+			"$ref": "evidence-receipt.schema.json"
+		},
+		"evidenceUse": {
+			"enum": ["orientation", "claim_support", "audit_trail"]
+		},
+		"stale": {
+			"type": "boolean"
+		},
+		"staleReasons": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"sources": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": [
+					"source",
+					"status",
+					"fetchedAt",
+					"ttlSeconds",
+					"headSha",
+					"prHeadSensitive",
+					"evidenceUse",
+					"evidenceRef",
+					"freshness",
+					"resultStatus",
+					"staleReasons"
+				],
+				"properties": {
+					"source": {
+						"enum": [
+							"github_pr",
+							"github_checks",
+							"github_reviews",
+							"coderabbit",
+							"linear",
+							"circleci"
+						]
+					},
+					"status": {
+						"enum": ["available", "unavailable", "stale", "unknown"]
+					}
+				}
+			}
+		}
+	}
+}

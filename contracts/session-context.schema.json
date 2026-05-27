@@ -1,0 +1,182 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/session-context.schema.json",
+	"title": "Session Context",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"producer",
+		"status",
+		"evidenceUse",
+		"runtimeStatus",
+		"repository",
+		"repoRoot",
+		"issueRef",
+		"branch",
+		"headSha",
+		"changedFiles",
+		"activeArtifacts",
+		"runtimeCards",
+		"reviewArtifacts",
+		"sessionEvidence",
+		"staleState",
+		"nextTraversalHints"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "session-context/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"producer": {
+			"const": "harness:session-context"
+		},
+		"status": {
+			"enum": ["pass", "warn", "fail"]
+		},
+		"evidenceUse": {
+			"const": "orientation"
+		},
+		"runtimeStatus": {
+			"const": "emitted"
+		},
+		"repository": {
+			"type": "string",
+			"minLength": 1
+		},
+		"repoRoot": {
+			"type": "string",
+			"minLength": 1
+		},
+		"issueRef": {
+			"type": ["string", "null"]
+		},
+		"branch": {
+			"type": ["string", "null"]
+		},
+		"headSha": {
+			"type": ["string", "null"]
+		},
+		"changedFiles": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/changedFile"
+			}
+		},
+		"activeArtifacts": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/artifactRef"
+			}
+		},
+		"runtimeCards": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/artifactRef"
+			}
+		},
+		"reviewArtifacts": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/artifactRef"
+			}
+		},
+		"sessionEvidence": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/artifactRef"
+			}
+		},
+		"staleState": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/staleState"
+			}
+		},
+		"nextTraversalHints": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/traversalHint"
+			}
+		}
+	},
+	"$defs": {
+		"changedFile": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["path", "status"],
+			"properties": {
+				"path": {
+					"type": "string",
+					"minLength": 1
+				},
+				"status": {
+					"type": "string",
+					"minLength": 1
+				}
+			}
+		},
+		"artifactRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["path", "status", "source"],
+			"properties": {
+				"path": {
+					"type": "string",
+					"minLength": 1
+				},
+				"status": {
+					"enum": ["pass", "warn", "fail"]
+				},
+				"source": {
+					"type": "string",
+					"minLength": 1
+				},
+				"sizeBytes": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		"staleState": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["surface", "freshness", "reason"],
+			"properties": {
+				"surface": {
+					"type": "string",
+					"minLength": 1
+				},
+				"freshness": {
+					"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+				},
+				"reason": {
+					"type": ["string", "null"]
+				}
+			}
+		},
+		"traversalHint": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["label", "command", "reason"],
+			"properties": {
+				"label": {
+					"type": "string",
+					"minLength": 1
+				},
+				"command": {
+					"type": "string",
+					"minLength": 1
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1
+				}
+			}
+		}
+	}
+}

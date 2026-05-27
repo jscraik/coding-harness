@@ -1,0 +1,125 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/runtime-card.schema.json",
+	"title": "Runtime Card",
+	"type": "object",
+	"additionalProperties": true,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"issueKey",
+		"lifecycle",
+		"summary",
+		"nextSafeAction",
+		"branch",
+		"pullRequest",
+		"artifacts",
+		"linear",
+		"phaseExit",
+		"sources",
+		"blockers",
+		"attemptLedger",
+		"recoveryEvent"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "runtime-card/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"issueKey": {
+			"type": ["string", "null"]
+		},
+		"lifecycle": {
+			"enum": [
+				"planned",
+				"active",
+				"implemented",
+				"locally_validated",
+				"review_pending",
+				"ci_blocked",
+				"merge_ready",
+				"merged",
+				"closeout_pending",
+				"reconciled",
+				"closed",
+				"stale",
+				"superseded",
+				"blocked",
+				"unknown"
+			]
+		},
+		"summary": {
+			"type": "string"
+		},
+		"nextSafeAction": {
+			"type": "string"
+		},
+		"branch": {
+			"type": "object"
+		},
+		"pullRequest": {
+			"type": "object"
+		},
+		"artifacts": {
+			"type": "object"
+		},
+		"linear": {
+			"type": "object"
+		},
+		"phaseExit": {
+			"type": "object"
+		},
+		"sources": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["kind", "ref", "freshness", "status", "failureClass"],
+				"properties": {
+					"kind": {
+						"enum": [
+							"git",
+							"pr",
+							"linear",
+							"artifact",
+							"validation",
+							"review",
+							"session",
+							"phase_exit"
+						]
+					},
+					"ref": {
+						"type": "string",
+						"minLength": 1
+					},
+					"freshness": {
+						"enum": ["current", "stale", "missing", "unknown"]
+					},
+					"status": {
+						"enum": ["usable", "empty", "invalid", "blocked"]
+					},
+					"failureClass": {
+						"type": ["string", "null"]
+					}
+				}
+			}
+		},
+		"codexRuntime": {
+			"type": "object"
+		},
+		"blockers": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"attemptLedger": {
+			"type": "object"
+		},
+		"recoveryEvent": {
+			"type": ["object", "null"]
+		}
+	}
+}

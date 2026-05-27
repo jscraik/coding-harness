@@ -28,6 +28,7 @@ const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
 	"agent-readiness",
 	"commands",
 	"runtime-card",
+	"session-context",
 ] as const;
 const AGENT_VERIFY_COMMAND_RAIL_NAMES = [
 	"next",
@@ -56,6 +57,7 @@ describe("command registry", () => {
 		expect(MIGRATED_COMMAND_NAMES).toEqual(capabilityNames);
 		expect(MIGRATED_COMMAND_NAMES).toContain("commands");
 		expect(MIGRATED_COMMAND_NAMES).toContain("contract");
+		expect(MIGRATED_COMMAND_NAMES).toContain("session-context");
 		expect(MIGRATED_COMMAND_NAMES).not.toContain("repo");
 		expect(MIGRATED_COMMAND_NAMES).not.toContain("gate");
 	});
@@ -64,6 +66,29 @@ describe("command registry", () => {
 		const result = dispatchRegistryCommand("commands", ["commands", "--json"]);
 		expect(result?.spec.name).toBe("commands");
 		expect(result?.result).toBe(0);
+	});
+
+	it("dispatches session-context from registry", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		try {
+			const result = dispatchRegistryCommand("session-context", [
+				"session-context",
+				"--repo-root",
+				".",
+				"--json",
+			]);
+			expect(result?.spec.name).toBe("session-context");
+			expect(result?.result).toBe(0);
+
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			expect(typeof output).toBe("string");
+			const parsed = JSON.parse(String(output));
+			expect(parsed.schemaVersion).toBe("session-context/v1");
+			expect(parsed.repoRoot).toBe(process.cwd());
+		} finally {
+			infoSpy.mockRestore();
+		}
 	});
 
 	it("rejects inherited-key-like unknown commands without crashing", () => {
@@ -560,6 +585,7 @@ describe("getRegistryCommandCapabilities", () => {
 		const expected = [
 			["check", "cockpit", "both", ["next"]],
 			["next", "cockpit", "agent", []],
+			["session-context", "domain", "agent", ["next"]],
 			["fleet-plan", "domain", "agent", ["next"]],
 			["doctor", "domain", "both", ["next"]],
 			["health", "domain", "both", ["next"]],
@@ -596,6 +622,10 @@ describe("getRegistryCommandCapabilities", () => {
 		});
 		expect(capabilitiesByName.get("validation-plan")).toMatchObject({
 			agentMode: "verify",
+			visibility: "advanced",
+		});
+		expect(capabilitiesByName.get("session-context")).toMatchObject({
+			agentMode: "orient",
 			visibility: "advanced",
 		});
 		expect(capabilitiesByName.get("review-context")).toMatchObject({

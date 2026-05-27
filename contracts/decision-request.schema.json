@@ -1,0 +1,93 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/decision-request.schema.json",
+	"title": "Decision Request",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"requestId",
+		"generatedAt",
+		"producer",
+		"status",
+		"intent",
+		"authority",
+		"defaultOptionId",
+		"options",
+		"evidenceRefs",
+		"freshness",
+		"expiresAt",
+		"runtimeStatus"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "decision-request/v1"
+		},
+		"requestId": {
+			"type": "string",
+			"minLength": 1
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"producer": {
+			"type": "string",
+			"minLength": 1
+		},
+		"status": {
+			"enum": ["open", "answered", "expired", "cancelled"]
+		},
+		"intent": {
+			"type": "string",
+			"minLength": 1
+		},
+		"authority": {
+			"enum": ["human", "operator", "maintainer", "external_service"]
+		},
+		"defaultOptionId": {
+			"type": "string",
+			"minLength": 1
+		},
+		"options": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"required": ["id", "label", "tradeoffs"],
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1
+					},
+					"label": {
+						"type": "string",
+						"minLength": 1
+					},
+					"tradeoffs": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		},
+		"evidenceRefs": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"freshness": {
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"expiresAt": {
+			"type": ["string", "null"],
+			"format": "date-time"
+		},
+		"runtimeStatus": {
+			"const": "not_yet_emitted"
+		}
+	}
+}

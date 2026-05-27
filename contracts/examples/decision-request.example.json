@@ -1,0 +1,24 @@
+{
+	"schemaVersion": "decision-request/v1",
+	"requestId": "decision-request:jsc-363:merge-readiness",
+	"generatedAt": "2026-05-27T08:10:00Z",
+	"producer": "harness:decision-request-schema-example",
+	"status": "open",
+	"intent": "Choose whether to refresh external PR state before a merge-readiness claim.",
+	"authority": "human",
+	"defaultOptionId": "refresh_external_state",
+	"options": [
+		{
+			"id": "refresh_external_state",
+			"label": "Refresh PR, CI, review, and tracker snapshots.",
+			"tradeoffs": [
+				"Requires network access.",
+				"Prevents stale closeout claims."
+			]
+		}
+	],
+	"evidenceRefs": ["runtime-card:JSC-363"],
+	"freshness": "unknown",
+	"expiresAt": null,
+	"runtimeStatus": "not_yet_emitted"
+}

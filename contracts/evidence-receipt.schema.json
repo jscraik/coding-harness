@@ -1,0 +1,75 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/evidence-receipt.schema.json",
+	"title": "Evidence Receipt",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"kind",
+		"ref",
+		"producer",
+		"status",
+		"freshness",
+		"evidenceUse",
+		"blockerClass"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "evidence-receipt/v1"
+		},
+		"kind": {
+			"enum": [
+				"validation",
+				"artifact",
+				"review_artifact",
+				"external_state",
+				"runtime_card",
+				"run_record"
+			]
+		},
+		"ref": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512
+		},
+		"producer": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512
+		},
+		"status": {
+			"enum": ["pass", "fail", "blocked", "unknown", "not_applicable"]
+		},
+		"freshness": {
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"evidenceUse": {
+			"enum": ["orientation", "claim_support", "audit_trail"]
+		},
+		"blockerClass": {
+			"type": ["string", "null"],
+			"minLength": 1
+		},
+		"producedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"verifiedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"headSha": {
+			"type": ["string", "null"],
+			"minLength": 1
+		},
+		"sizeBytes": {
+			"type": ["integer", "null"],
+			"minimum": 0
+		},
+		"checksum": {
+			"type": ["string", "null"],
+			"minLength": 1
+		}
+	}
+}
