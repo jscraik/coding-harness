@@ -204,7 +204,7 @@ checks:
         outcome: "pass for CodeRabbit, CircleCI, Snyk, Socket, pr-pipeline, and security checks"
       - command: "gh pr view 309 --repo jscraik/coding-harness --json number,url,headRefOid,mergeStateStatus,reviewDecision,isDraft"
         outcome: "pass (head 182393dca33eeecfe803082bcaac6d332ce1c154; isDraft false; mergeStateStatus BLOCKED; reviewDecision empty)"
-      - command: "PR_BODY/PR_TITLE from gh pr view 309; bash scripts/run-harness-gate.sh linear-gate --allow-missing-branch --branch "" --json"
+      - command: 'PR_BODY/PR_TITLE from gh pr view 309; bash scripts/run-harness-gate.sh linear-gate --allow-missing-branch --branch "" --json'
         outcome: "pass"
       - command: "PR_TEMPLATE_BODY/PR_TITLE from gh pr view 309; bash scripts/run-harness-gate.sh pr-template-gate --json"
         outcome: "pass"
