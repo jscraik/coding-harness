@@ -1,12 +1,17 @@
-# Architecture rules baselines — pre-existing violations excluded from blocking CI.
-# Updated: 2026-03-15
+# Architecture rules baselines — reviewed violations excluded from blocking CI.
+# Updated: 2026-05-27
 #
-# Format: "<rule-id>|<relative-file-path>|owner=<owner>|reason=<reason>|date=YYYY-MM-DD"
+# Format: "<rule-id>|<relative-file-path>|owner=<owner>|reason=<reason>|date=YYYY-MM-DD|ticket=JSC-<number>|expires=YYYY-MM-DD"
+# Dates are UTC calendar dates. Invalid or expired dates fail validation.
 # All 4 original violations have been fixed:
 #   - commands-no-cross-import: review-gate → check-authz (via lib/review-gate/authz.ts)
 #   - commands-no-cross-import: ci-migrate → init (via lib/ci-migrate/init-bridge.ts)
 #   - commands-no-cross-import: tooling-audit → org-audit (via lib/org/repositories.ts)
 #   - no-circular-deps: review-gate ↔ decision-packet (types moved to lib/review-gate/types.ts)
 #
-# This file is intentionally empty — add new entries only for deliberate tech-debt
-# that has been reviewed and accepted.
+# Add entries only for deliberate time-bounded tech debt that has been reviewed
+# and accepted. Expired entries fail architecture validation until renewed or fixed.
+auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=JSC-363 delegated-auth-command-facade debt pending follow-up refactor|date=2026-05-27|ticket=JSC-363|expires=2026-06-26
+auth-commands-use-crypto|src/commands/check-authz.ts|owner=runtime-evidence-cockpit|reason=JSC-363 delegated-auth-command-facade debt pending follow-up refactor|date=2026-05-27|ticket=JSC-363|expires=2026-06-26
+auth-commands-use-crypto|src/commands/branch-protect.ts|owner=runtime-evidence-cockpit|reason=JSC-363 delegated-auth-command-facade debt pending follow-up refactor|date=2026-05-27|ticket=JSC-363|expires=2026-06-26
+auth-commands-use-crypto|src/commands/evidence-verify.ts|owner=runtime-evidence-cockpit|reason=JSC-363 delegated-auth-command-facade debt pending follow-up refactor|date=2026-05-27|ticket=JSC-363|expires=2026-06-26

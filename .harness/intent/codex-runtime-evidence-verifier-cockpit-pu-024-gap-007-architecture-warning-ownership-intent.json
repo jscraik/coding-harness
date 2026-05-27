@@ -1,0 +1,174 @@
+{
+	"schemaVersion": "slice-intent/v1",
+	"goal": "codex-runtime-evidence-verifier-cockpit",
+	"lifecycleUnit": "PU-024-gap-007-architecture-warning-ownership",
+	"createdAt": "2026-05-27T09:40:00Z",
+	"headShaAtIntent": "29ac20979f21bc178358779e0bc50d8ddc0eee75",
+	"status": "intent_reviewed_needs_implementation",
+	"objective": "Close GAP-007 by making architecture warning ownership deterministic: unowned architecture warnings must fail the architecture gate unless explicitly accepted in .architecture-baseline.txt with owner, reason, valid UTC date, JSC ticket, and valid UTC expiry metadata.",
+	"auditGapIds": ["GAP-007"],
+	"evidenceBasis": [
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md#GAP-007",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#audit-gap-enforcement-addendum",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml#audit_gap_enforcement",
+		"scripts/check-architecture-rules.cjs",
+		".architecture-baseline.txt",
+		"package.json#architecture:check"
+	],
+	"currentFinding": {
+		"observedCommand": "pnpm architecture:check",
+		"observedStatus": "pass",
+		"observedWarnings": [
+			{
+				"rule": "auth-commands-use-crypto",
+				"file": "src/commands/ci-migrate.ts",
+				"message": "Auth-boundary command does not directly import node:crypto. Verify signing is delegated to a lib module that does."
+			},
+			{
+				"rule": "auth-commands-use-crypto",
+				"file": "src/commands/check-authz.ts",
+				"message": "Auth-boundary command does not directly import node:crypto. Verify signing is delegated to a lib module that does."
+			},
+			{
+				"rule": "auth-commands-use-crypto",
+				"file": "src/commands/branch-protect.ts",
+				"message": "Auth-boundary command does not directly import node:crypto. Verify signing is delegated to a lib module that does."
+			},
+			{
+				"rule": "auth-commands-use-crypto",
+				"file": "src/commands/evidence-verify.ts",
+				"message": "Auth-boundary command does not directly import node:crypto. Verify signing is delegated to a lib module that does."
+			}
+		],
+		"currentLoophole": "The architecture gate returns pass when warnings are unbaselined, so the repo can accumulate architecture drift that is visible in JSON but not owned by a maintainer or blocking in CI.",
+		"desiredInvariant": "A warning is either fixed, explicitly baselined with owner/reason/date/ticket/expires metadata, or treated as a failing architecture gate result."
+	},
+	"intentReviewFindingsAddressed": [
+		{
+			"source": "artifacts/reviews/pu-024-gap-007-architecture-warning-ownership-intent-adversarial.md",
+			"finding": "Baseline accepted debt can become permanent because ownership metadata has no expiry or revalidation trigger.",
+			"response": "The implementation contract now requires JSC ticket and valid UTC expires metadata, and expired or malformed baselines must fail architecture validation instead of remaining silent debt."
+		},
+		{
+			"source": "artifacts/reviews/pu-024-gap-007-architecture-warning-ownership-intent-agent-native.md",
+			"finding": "The intent validation gate references src/dev/check-architecture-rules-script.test.ts before the file exists.",
+			"response": "The test file is intentionally created by this slice; the implementation approach now says to create it as the first code artifact and run it before claiming the gate."
+		},
+		{
+			"source": "artifacts/reviews/pu-024-gap-007-architecture-warning-ownership-intent-best-practices.md",
+			"finding": "Acceptance criteria should explicitly require non-zero exit behavior for unowned warnings across output modes, not only JSON status semantics.",
+			"response": "Acceptance criteria now require non-zero exit and fail status regardless of output format."
+		}
+	],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/knowledge/governance/",
+		".harness/knowledge/tooling/",
+		".harness/research/evidence-patterns.json",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+	],
+	"memorySurfacesRead": [
+		"/Users/jamiecraik/.codex/memories/MEMORY.md",
+		".harness/memory/LEARNINGS.md"
+	],
+	"allowedFiles": [
+		"scripts/check-architecture-rules.cjs",
+		".architecture-baseline.txt",
+		"src/dev/check-architecture-rules-script.test.ts",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-024-gap-007-architecture-warning-ownership-intent.json",
+		".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx",
+		".harness/implementation-notes/implementation-notes.html",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"artifacts/reviews/pu-024-gap-007-architecture-warning-ownership-*.md"
+	],
+	"forbiddenFiles": [
+		"src/lib/runtime/**",
+		"src/lib/review-state/**",
+		"src/lib/external-state/**",
+		"src/lib/delivery-truth/**",
+		"src/commands/**",
+		"contracts/**",
+		"package.json",
+		"pnpm-lock.yaml",
+		".github/**",
+		".circleci/**",
+		"/Users/jamiecraik/dev/codex/**"
+	],
+	"assumptions": [
+		"The four current auth-commands-use-crypto warnings are either accepted delegated-auth technical debt or should be fixed before they can pass architecture validation.",
+		"Because this slice is about ownership enforcement, adding explicit baseline entries with owner/reason/valid UTC date/JSC ticket/valid UTC expires is acceptable only if those entries make the warning count non-blocking and visible as time-bounded baselined debt.",
+		"Failing unowned warnings is less broad and more repo-native than introducing dependency-cruiser or madge in this slice.",
+		"This slice does not prove a full import graph contract; it ratchets the existing custom architecture validator."
+	],
+	"nonGoals": [
+		"Do not introduce a new architecture tool or package dependency.",
+		"Do not refactor the four auth-boundary command files in this slice; if baseline ownership is deemed unacceptable, stop and create a separate delegated-auth refactor slice.",
+		"Do not change runtime evidence, review-state, external-state, delivery-truth, or public packet schemas.",
+		"Do not broaden GAP-007 into a full import graph or dependency-boundary implementation.",
+		"Do not claim the entire architecture enforcement roadmap is complete from this slice alone."
+	],
+	"implementationApproach": [
+		"Add script-level behavior that treats any unbaselined warning as a failing architecture gate result.",
+		"Preserve existing error semantics and keep baseline metadata validation strict.",
+		"Update JSON and console output so status becomes fail when either errors or unowned warnings exist.",
+		"Create src/dev/check-architecture-rules-script.test.ts as the focused script regression test for this slice.",
+		"Add a focused script regression test that creates a temporary repository with one warning and no baseline, then proves the script exits non-zero with status fail.",
+		"Add a focused regression proving the same warning can pass only when .architecture-baseline.txt contains owner, reason, valid UTC date, JSC ticket, and non-expired valid UTC expires metadata for the exact rule and relative path.",
+		"Add a focused regression proving expired baseline entries fail the gate even when rule, path, owner, reason, date, and ticket are present.",
+		"Add focused regressions proving malformed date, malformed expires, and non-JSC ticket metadata fail the gate.",
+		"Add explicit baseline entries for the four currently observed auth-boundary warnings as time-bounded delegated-auth debt for this slice.",
+		"Run pnpm architecture:check and require zero unowned warnings before recording the slice receipt."
+	],
+	"validationGates": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-024-gap-007-architecture-warning-ownership-intent.json",
+		"pnpm vitest run src/dev/check-architecture-rules-script.test.ts",
+		"pnpm architecture:check",
+		"pnpm exec biome check scripts/check-architecture-rules.cjs src/dev/check-architecture-rules-script.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-024-gap-007-architecture-warning-ownership-intent.json",
+		"git diff --check -- scripts/check-architecture-rules.cjs .architecture-baseline.txt src/dev/check-architecture-rules-script.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-024-gap-007-architecture-warning-ownership-intent.json .harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx .harness/implementation-notes/implementation-notes.html docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id R082 --repo .",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+	],
+	"reviewerRoles": [
+		"adversarial-reviewer",
+		"agent-native-reviewer",
+		"best-practices-researcher"
+	],
+	"skillLensChecks": [
+		"improve-codebase-architecture",
+		"simplify",
+		"unslopify",
+		"he-code-review",
+		"testing"
+	],
+	"riskControls": [
+		"Do not hide architecture drift by deleting warnings from the validator.",
+		"Do not convert all warning classes to permanent errors without an escape hatch; the baseline file is the reviewed owner-visible escape hatch.",
+		"Baseline entries must be exact to rule and relative file path so broad suppressions cannot mask unrelated future drift.",
+		"Baseline entries without owner, reason, valid UTC date, JSC ticket, and valid UTC expires must continue to fail.",
+		"Expired or malformed baseline entries must fail so accepted warning debt cannot silently become permanent.",
+		"If reviewers reject baselining the four existing warnings, stop and record a blocker or split out a delegated-auth refactor rather than forcing a pass."
+	],
+	"acceptanceCriteria": [
+		"An unbaselined architecture warning causes scripts/check-architecture-rules.cjs to exit non-zero and report status fail regardless of output format.",
+		"A warning with an exact baseline entry containing owner, reason, valid UTC date, JSC ticket, and non-expired valid UTC expires metadata is reported as baselined rather than warning and does not fail the gate.",
+		"Invalid baseline metadata still fails the gate.",
+		"Expired or malformed baseline metadata fails the gate.",
+		"pnpm architecture:check passes in this checkout with zero unowned warnings.",
+		"The slice receipt records GAP-007, audit hash, validation commands, skill-lens checks, and independent reviewer artifacts.",
+		"The implementation notes and goal state clearly distinguish this ratchet from a full import graph contract."
+	],
+	"blockedConditions": [
+		"Stop if intent reviewers determine that baselining the four existing warnings would institutionalize an unsafe auth boundary.",
+		"Stop if the architecture script cannot be tested in a temporary repo without broad repo rewrites.",
+		"Stop if a package/tooling change becomes required; that exceeds this slice."
+	],
+	"rollbackPath": [
+		"Revert scripts/check-architecture-rules.cjs warning-fail behavior.",
+		"Remove the PU-024 baseline entries from .architecture-baseline.txt if they are rejected.",
+		"Keep the intent and review artifacts as evidence of the attempted GAP-007 ratchet and record the blocker in receipts.jsonl."
+	]
+}
