@@ -71,7 +71,7 @@
 		},
 		{
 			"name": "goal board validation",
-			"command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+			"command": "GOAL_GOVERNOR_CHECK_GOAL_BOARD=\"${GOAL_GOVERNOR_CHECK_GOAL_BOARD:-$HOME/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py}\" PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
 		}
 	],
 	"reviewPlan": {

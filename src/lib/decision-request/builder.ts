@@ -34,6 +34,9 @@ const FRESHNESS_VALUES = new Set<DecisionRequestFreshness>([
 	"not_applicable",
 ]);
 
+const RFC3339_DATE_TIME =
+	/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
 /** Build and validate a decision-request/v1 packet. */
 export function buildDecisionRequest(
 	input: DecisionRequestBuildInput,
@@ -279,7 +282,7 @@ function normalizeOptionalDateTime(
 }
 
 function isDateTime(value: string): boolean {
-	return !Number.isNaN(Date.parse(value));
+	return RFC3339_DATE_TIME.test(value) && !Number.isNaN(Date.parse(value));
 }
 
 function isDecisionRequestAuthority(

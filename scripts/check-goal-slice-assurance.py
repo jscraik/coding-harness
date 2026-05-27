@@ -126,6 +126,8 @@ def resolve_evidence_ref(value: Any, field: str, repo: Path, changed_files: set[
         raise ValidationError(f"{field} must resolve to a file: {lexical}")
     if candidate.stat().st_size == 0:
         raise ValidationError(f"{field} points to a zero-byte file: {lexical}")
+    if lexical not in changed_files and resolved_relative not in changed_files:
+        raise ValidationError(f"{field} must be listed in changed_files: {lexical}")
     return resolved_relative
 
 

@@ -187,4 +187,43 @@ describe("decision-request command", () => {
 			code: "decision-request.default_option_unknown",
 		});
 	});
+
+	it("rejects date-only values for date-time fields", () => {
+		const generatedAt = buildDecisionRequest({
+			generatedAt: "2026-05-27",
+			intent: "Choose a default.",
+			defaultOptionId: "refresh",
+			options: [{ id: "refresh", label: "Refresh now.", tradeoffs: [] }],
+		});
+		expect(generatedAt).toMatchObject({
+			ok: false,
+			code: "decision-request.invalid_datetime",
+		});
+
+		const expiresAt = buildDecisionRequest({
+			generatedAt: "2026-05-27T13:30:00.000Z",
+			expiresAt: "2026-05-28",
+			intent: "Choose a default.",
+			defaultOptionId: "refresh",
+			options: [{ id: "refresh", label: "Refresh now.", tradeoffs: [] }],
+		});
+		expect(expiresAt).toMatchObject({
+			ok: false,
+			code: "decision-request.invalid_datetime",
+		});
+
+		const requestedAt = buildDecisionRequest({
+			generatedAt: "2026-05-27T13:30:00.000Z",
+			intent: "Choose a default.",
+			defaultOptionId: "refresh",
+			options: [{ id: "refresh", label: "Refresh now.", tradeoffs: [] }],
+			escalation: {
+				requestedAt: "2026-05-27",
+			},
+		});
+		expect(requestedAt).toMatchObject({
+			ok: false,
+			code: "decision-request.escalation_required",
+		});
+	});
 });

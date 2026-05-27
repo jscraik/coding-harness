@@ -202,6 +202,26 @@ describe("check-goal-slice-assurance.py", () => {
 		);
 	});
 
+	it("fails when pass evidence is not listed in changed_files", () => {
+		const root = createTempRoot("slice-assurance-not-listed-");
+		const receipt = baseReceipt();
+		const testing = receipt.slice_skill_lens_results.testing as Record<
+			string,
+			string
+		>;
+		testing.evidence_ref = "artifacts/reviews/testing-not-listed.md";
+		writeReceiptArtifacts(root, receipt);
+		writeArtifact(root, "artifacts/reviews/testing-not-listed.md");
+		const receiptsPath = writeReceipt(root, receipt);
+
+		const result = runValidator(root, receiptsPath);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"slice_skill_lens_results.testing.evidence_ref must be listed in changed_files",
+		);
+	});
+
 	it("fails on duplicate receipt ids", () => {
 		const root = createTempRoot("slice-assurance-duplicate-");
 		const receipt = baseReceipt();
