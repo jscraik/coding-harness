@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { cwd } from "node:process";
+import { parseRuntimeCardTraceOutPath } from "../lib/runtime-trace/runtime-card-trace.js";
 
 /** Runtime context used when building runtime-card evidence. */
 export type RuntimeCardContext = "local" | "pr" | "ci" | "closeout";
@@ -22,6 +23,8 @@ export interface RuntimeCardCLIOptions {
 	outPath?: string;
 	/** Optional runtime evidence bundle output path. */
 	evidenceOutPath?: string;
+	/** Optional canonical run-record event stream path. */
+	traceOutPath?: string;
 	/** Whether live provider state should be collected. */
 	live: boolean;
 }
@@ -45,7 +48,7 @@ function isRuntimeCardContext(value: string): value is RuntimeCardContext {
 /** Print usage syntax for the `harness runtime-card` command. */
 export function printRuntimeCardUsage(): void {
 	console.info(
-		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--context local|pr|ci|closeout] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>] [--evidence-out <path>]",
+		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--context local|pr|ci|closeout] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>] [--evidence-out <path>] [--trace-out artifacts/agent-runs/<runId>/events.jsonl]",
 	);
 	console.info("");
 	console.info(
@@ -81,6 +84,28 @@ function setPathOption(
 	if (flag === "--evidence") options.evidencePath = value;
 	if (flag === "--out") options.outPath = value;
 	if (flag === "--evidence-out") options.evidenceOutPath = value;
+	return null;
+}
+
+function setTraceOutOption(
+	options: RuntimeCardCLIOptions,
+	args: readonly string[],
+	index: number,
+): RuntimeCardParseResult | null {
+	const value = readFlagValue(args, index);
+	if (!value) {
+		console.error(
+			"runtime-card: --trace-out requires artifacts/agent-runs/<runId>/events.jsonl",
+		);
+		return { exitCode: 2 };
+	}
+	if (!parseRuntimeCardTraceOutPath(value)) {
+		console.error(
+			"runtime-card: --trace-out must be artifacts/agent-runs/<runId>/events.jsonl",
+		);
+		return { exitCode: 2 };
+	}
+	options.traceOutPath = value;
 	return null;
 }
 
@@ -145,6 +170,12 @@ export function parseRuntimeCardArgs(
 				index,
 				arg as "--phase-exit" | "--evidence" | "--out" | "--evidence-out",
 			);
+			if (parseResult) return parseResult;
+			index += 1;
+			continue;
+		}
+		if (arg === "--trace-out") {
+			const parseResult = setTraceOutOption(options, args, index);
 			if (parseResult) return parseResult;
 			index += 1;
 			continue;

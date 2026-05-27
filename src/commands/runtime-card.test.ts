@@ -4,6 +4,7 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
+	realpathSync,
 	symlinkSync,
 	writeFileSync,
 } from "node:fs";
@@ -12,6 +13,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runRuntimeCardCLI } from "./runtime-card.js";
 import { HE_PHASE_EXIT_SCHEMA_VERSION } from "../lib/decision/he-phase-exit.js";
+import { loadRunRecordBundle } from "../lib/contract/run-records.js";
 import { validateRuntimeEvidenceBundle } from "../lib/runtime/runtime-evidence-bundle.js";
 
 const CODE = String.fromCharCode(96);
@@ -692,6 +694,114 @@ describe("runRuntimeCardCLI", () => {
 				}),
 			]),
 		);
+	});
+
+	it("writes a canonical runtime-card trace run record", async () => {
+		const repoRoot = realpathSync(setupRepo());
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--context",
+			"local",
+			"--trace-out",
+			"artifacts/agent-runs/runtime-card-trace-test/events.jsonl",
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		expect(JSON.parse(output).schemaVersion).toBe("runtime-card/v1");
+
+		const bundle = loadRunRecordBundle({
+			cwd: repoRoot,
+			runId: "runtime-card-trace-test",
+		});
+		expect(bundle.manifest).toMatchObject({
+			schemaVersion: "agent-run-manifest/v1",
+			runId: "runtime-card-trace-test",
+			command: "runtime-card",
+			outcome: "success",
+			exit: {
+				code: 0,
+				classification: "ok",
+			},
+		});
+		expect(bundle.events.map((event) => event.eventType)).toEqual([
+			"phase",
+			"precondition",
+			"degraded_mode",
+			"phase",
+		]);
+		expect(bundle.events.at(-1)).toMatchObject({
+			eventType: "phase",
+			status: "completed",
+			severity: "info",
+		});
+		expect(bundle.events[1]?.prevEventHash).toBe(bundle.events[0]?.eventHash);
+	});
+
+	it("writes a failure trace when runtime-card fails after argument parsing", async () => {
+		const repoRoot = realpathSync(setupRepo());
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--evidence",
+			".harness/runtime/missing-evidence.json",
+			"--trace-out",
+			"artifacts/agent-runs/runtime-card-failure-trace/events.jsonl",
+		]);
+
+		expect(exitCode).toBe(1);
+		expect(JSON.parse(output)).toMatchObject({
+			schemaVersion: "runtime-card-error/v1",
+			status: "fail",
+		});
+
+		const bundle = loadRunRecordBundle({
+			cwd: repoRoot,
+			runId: "runtime-card-failure-trace",
+		});
+		expect(bundle.manifest).toMatchObject({
+			outcome: "failed",
+			exit: {
+				code: 1,
+				classification: "runtime_failed",
+			},
+		});
+		expect(
+			bundle.events.map((event) => [event.eventType, event.status]),
+		).toEqual([
+			["phase", "started"],
+			["precondition", "passed"],
+			["degraded_mode", "passed"],
+			["error", "failed"],
+			["phase", "failed"],
+		]);
+		expect(bundle.events.at(-1)?.prevEventHash).toBe(
+			bundle.events.at(-2)?.eventHash,
+		);
+	});
+
+	it("rejects non-canonical trace-out paths as usage errors without emitting traces", async () => {
+		const repoRoot = realpathSync(setupRepo());
+		const { exitCode, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--trace-out",
+			"artifacts/runtime-card-trace-test/events.jsonl",
+		]);
+
+		expect(exitCode).toBe(2);
+		expect(error).toContain(
+			"--trace-out must be artifacts/agent-runs/<runId>/events.jsonl",
+		);
+		expect(
+			existsSync(
+				join(repoRoot, "artifacts/runtime-card-trace-test/events.jsonl"),
+			),
+		).toBe(false);
 	});
 
 	it("returns usage errors for invalid runtime-card context", async () => {

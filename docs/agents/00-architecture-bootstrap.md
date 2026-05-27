@@ -133,6 +133,13 @@ they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `runtime-card --evidence-out`, `runtime-evidence-bundle/v1`, or related
 producer and adapter wiring changes.
 
+Runtime-card trace-out changes belong in `src/lib/runtime-trace/` and must
+reuse the canonical run-record writer under `src/lib/contract/` instead of
+inventing a second JSONL/hash-chain persistence path. Keep `--trace-out`
+constrained to `artifacts/agent-runs/<runId>/events.jsonl`; emitted traces are
+replay-ready audit/orientation evidence and must not support closeout, CI,
+review, Linear, or merge-readiness claims by themselves.
+
 Runtime evidence receipts and private delivery-truth composition belong to the
 same architecture-adjacent cockpit lane when they decide whether a claim can be
 supported. Keep `evidence-receipt/v1` and `delivery-truth/v1` changes

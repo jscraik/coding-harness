@@ -92,6 +92,12 @@ not in docs, templates, generated context, or command facades.
   artifact, runtime-card, review, external-state, and run-record proof.
 - src/lib/runtime/: Codex runtime evidence, runtime evidence bundles, runtime
   cards, producer adapters, and runtime-card projections.
+- src/lib/runtime-trace/: opt-in runtime-card trace recording that projects
+  runtime-card execution into canonical `agent-run-event/v1` event streams
+  under `artifacts/agent-runs/<runId>/events.jsonl`. It owns trace-out path
+  parsing, run-id derivation, compact payload construction, artifact refs, and
+  terminal manifest emission while reusing the shared run-record writer for
+  hash-chain continuity and replay validation.
 - src/lib/delivery-truth/: private and production verdict composition for
   delivery, root hygiene, Judge/PM readiness, and merge-readiness claims.
 - src/lib/root-hygiene/: root-surface classification and claim-support receipt

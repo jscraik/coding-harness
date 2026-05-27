@@ -2,7 +2,7 @@
 schema_version: implementation-notes/v1
 title: Codex Runtime Evidence Verifier Cockpit Implementation Notes
 goal: codex-runtime-evidence-verifier-cockpit
-updated_at: 2026-05-27T06:40:29Z
+updated_at: 2026-05-27T13:58:45Z
 status: present
 ---
 
@@ -15,6 +15,7 @@ This MDX source is the version-controlled implementation-notes artifact for the 
 <DeepModuleMap
   modules={[
     "src/lib/runtime",
+    "src/lib/runtime-trace",
     "src/lib/evidence",
     "src/lib/review-state",
     "src/lib/external-state",
@@ -25,7 +26,7 @@ This MDX source is the version-controlled implementation-notes artifact for the 
   ]}
 />
 
-Runtime evidence work stays inside the existing deep modules instead of adding a parallel truth subsystem. `src/lib/runtime` owns Codex runtime packets, adapters, and runtime-card projection. `src/lib/delivery-truth` composes claim support from receipts, review state, external state, root hygiene, and PR closeout evidence. PU-019 adds the GAP-008 stale-context orientation slice inside `src/lib/agent-readiness`, projecting existing Project Brain, runtime-card, and external-horizon signals without duplicating the canonical `context-health-report/v1` contract.
+Runtime evidence work stays inside the existing deep modules instead of adding a parallel truth subsystem. `src/lib/runtime` owns Codex runtime packets, adapters, and runtime-card projection. `src/lib/runtime-trace` owns opt-in runtime-card replay traces and delegates persistence to the canonical agent-run record writer. `src/lib/delivery-truth` composes claim support from receipts, review state, external state, root hygiene, and PR closeout evidence. PU-019 adds the GAP-008 stale-context orientation slice inside `src/lib/agent-readiness`, projecting existing Project Brain, runtime-card, and external-horizon signals without duplicating the canonical `context-health-report/v1` contract.
 
 ## Current Slice Insertion Map
 
@@ -397,3 +398,43 @@ Validation evidence for PU-024:
 - Required follow-up reviewer artifacts exist for adversarial-reviewer, agent-native-reviewer, and best-practices-researcher after the malformed-date fix.
 
 Post-receipt validation for PU-024 now passes: receipt JSONL parsing, slice assurance for R082, audit freshness, goal-board validation, reviewer artifact size verification, and bounded diff-check are green. Commit, push, PR triage, remote CI, review-thread truth, Linear truth, and final goal lifecycle closeout remain separate.
+
+## PU-026 GAP-012 Runtime-Card Trace-Out
+
+<RuntimeCardState
+  pr="not opened for this slice yet"
+  mergeable="not claimed"
+  merge_state="local slice only"
+  checks="focused runtime-card trace-out test passes locally; broader gates and reviewer implementation pass still pending"
+  review_threads="intent re-review artifacts passed with non-blocking notes after canonical run-record constraints were added"
+/>
+
+PU-026 is the first bounded GAP-012 runtime trace slice. It adds an opt-in
+`runtime-card --trace-out artifacts/agent-runs/<runId>/events.jsonl` lane that
+writes replay-ready `agent-run-event/v1` evidence and a sibling
+`agent-run-manifest/v1` manifest. The slice deliberately does not make trace
+presence a closeout, CI, review, Linear, or merge-readiness claim.
+
+<BlastRadiusMap
+  changed_modules={[
+    "src/lib/runtime-trace/runtime-card-trace.ts trace target parsing, event payloads, artifact refs, and terminal manifest emission",
+    "src/commands/runtime-card-args.ts --trace-out parsing and canonical path rejection",
+    "src/commands/runtime-card.ts runtime-card facade wiring for start/input/advisory/artifact/terminal trace events",
+    "src/commands/runtime-card.test.ts success, failure, path-rejection, and replay loading regressions",
+    "docs/cli-reference.md command documentation",
+    "ARCHITECTURE.md runtime-trace deep-module placement",
+  ]}
+/>
+
+Deep-module placement:
+
+- `src/lib/runtime-trace/runtime-card-trace.ts` is the new trace-specific deep module. It accepts only the canonical `artifacts/agent-runs/<runId>/events.jsonl` path shape, derives the run id from that path, and rejects absolute, traversal, non-events, and non-canonical trace paths at parse time.
+- The module reuses `appendCanonicalEvent` and `writeCanonicalManifest` from the existing run-record contract instead of creating a parallel JSONL or hash-chain writer.
+- The recorder canonicalizes the repo root before writing run records so macOS temp path aliases do not break replay validation.
+- `runtime-card` records start, input, advisory-mode, artifact-write, success, and runtime-failure events. Usage errors before argument parsing succeeds remain untraced by design.
+
+Validation evidence so far:
+
+- `pnpm vitest run src/commands/runtime-card.test.ts` -> pass, 25 tests.
+
+Remaining before PU-026 commit: finish docs/architecture sync, run bounded Biome and diff checks, run implementation reviewer/lens checks, append goal receipts, and commit the scoped slice without claiming broader GAP-012 default trace emission.

@@ -14,6 +14,11 @@ import {
 	writeRepoRuntimeJsonArtifact,
 } from "../lib/runtime/repo-runtime-artifact.js";
 import { buildRuntimeEvidenceBundleFromCard } from "../lib/runtime/runtime-evidence-producer.js";
+import {
+	createRuntimeCardTraceRecorder,
+	parseRuntimeCardTraceOutPath,
+	type RuntimeCardTraceRecorder,
+} from "../lib/runtime-trace/runtime-card-trace.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 import {
 	type RuntimeCardCLIOptions,
@@ -74,6 +79,44 @@ function assertDistinctOutputArtifacts(options: RuntimeCardCLIOptions): void {
 	}
 }
 
+function createTraceRecorder(
+	options: RuntimeCardCLIOptions,
+): RuntimeCardTraceRecorder | undefined {
+	if (!options.traceOutPath) return undefined;
+	const target = parseRuntimeCardTraceOutPath(options.traceOutPath);
+	if (!target) {
+		throw new Error(
+			"--trace-out must be artifacts/agent-runs/<runId>/events.jsonl",
+		);
+	}
+	return createRuntimeCardTraceRecorder({
+		repoRoot: options.repoRoot,
+		target,
+		context: options.context,
+		live: options.live,
+		...(options.issueKey ? { issueKey: options.issueKey } : {}),
+		...(options.evidencePath ? { evidencePath: options.evidencePath } : {}),
+		...(options.phaseExitPath ? { phaseExitPath: options.phaseExitPath } : {}),
+	});
+}
+
+function safelyRecordTraceFailure(
+	trace: RuntimeCardTraceRecorder | undefined,
+	message: string,
+): void {
+	if (!trace) return;
+	try {
+		trace.recordTerminal({
+			exitCode: 1,
+			outcome: "failed",
+			classification: "runtime_failed",
+			failureMessage: message,
+		});
+	} catch {
+		// Preserve the original runtime-card failure. Trace write failures are surfaced by the original thrown path when they occur before this catch.
+	}
+}
+
 /**
  * Render a human-readable summary of a runtime card to the console.
  *
@@ -113,7 +156,12 @@ function renderRuntimeCardHuman(card: RuntimeCard): void {
 export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 	const parsed = parseRuntimeCardArgs(args);
 	if ("exitCode" in parsed) return parsed.exitCode;
+	let trace: RuntimeCardTraceRecorder | undefined;
 	try {
+		trace = createTraceRecorder(parsed.options);
+		trace?.recordStart();
+		trace?.recordInputs();
+		trace?.recordAdvisoryMode();
 		const evidenceBundle = parsed.options.evidencePath
 			? loadEvidenceBundle(parsed.options.repoRoot, parsed.options.evidencePath)
 			: undefined;
@@ -131,14 +179,25 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 			: buildLocalRuntimeCard(buildOptions);
 		assertDistinctOutputArtifacts(parsed.options);
 		if (parsed.options.outPath) {
+			const outPath = resolveRepoRuntimeOutputArtifactPath(
+				parsed.options.repoRoot,
+				parsed.options.outPath,
+				"--out",
+			);
 			writeRepoRuntimeJsonArtifact(
 				parsed.options.repoRoot,
 				parsed.options.outPath,
 				"--out",
 				card,
 			);
+			trace?.recordArtifactWrite("runtime-card", outPath);
 		}
 		if (parsed.options.evidenceOutPath) {
+			const evidenceOutPath = resolveRepoRuntimeOutputArtifactPath(
+				parsed.options.repoRoot,
+				parsed.options.evidenceOutPath,
+				"--evidence-out",
+			);
 			const evidence = buildRuntimeEvidenceBundleFromCard(card, {
 				provenanceRef: `artifact:${parsed.options.evidenceOutPath}`,
 				generatedAt: card.generatedAt,
@@ -149,7 +208,14 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 				"--evidence-out",
 				evidence,
 			);
+			trace?.recordArtifactWrite("runtime-evidence-bundle", evidenceOutPath);
 		}
+		trace?.recordTerminal({
+			exitCode: 0,
+			outcome: "success",
+			classification: "ok",
+			card,
+		});
 		if (parsed.options.json) {
 			console.info(JSON.stringify(card, null, 2));
 		} else {
@@ -158,6 +224,7 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 		return 0;
 	} catch (error) {
 		const message = sanitizeError(error);
+		safelyRecordTraceFailure(trace, message);
 		if (parsed.options.json) {
 			console.info(
 				JSON.stringify(
