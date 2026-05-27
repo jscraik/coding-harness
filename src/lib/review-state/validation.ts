@@ -333,6 +333,27 @@ function validateReceiptShape(
 			`${path}.receipt.ref`,
 		);
 	}
+	if (receipt.status !== "pass") {
+		addReviewStateError(
+			errors,
+			"review artifact receipt must pass",
+			`${path}.receipt.status`,
+		);
+	}
+	if (receipt.freshness !== "current") {
+		addReviewStateError(
+			errors,
+			"review artifact receipt must be current",
+			`${path}.receipt.freshness`,
+		);
+	}
+	if (receipt.evidenceUse !== "claim_support") {
+		addReviewStateError(
+			errors,
+			"review artifact receipt must be claim_support",
+			`${path}.receipt.evidenceUse`,
+		);
+	}
 }
 
 function validateReceiptRef(
@@ -385,13 +406,10 @@ function validateReceiptSize(
 	path: string,
 	errors: ReviewStateValidationError[],
 ): void {
-	if (
-		receipt.status === "pass" &&
-		(typeof receipt.sizeBytes !== "number" || receipt.sizeBytes <= 0)
-	) {
+	if (typeof receipt.sizeBytes !== "number" || receipt.sizeBytes <= 0) {
 		addReviewStateError(
 			errors,
-			"passing reviewer artifact receipts require sizeBytes greater than zero",
+			"reviewer artifact receipts require sizeBytes greater than zero",
 			`${path}.receipt.sizeBytes`,
 		);
 	}

@@ -1,0 +1,172 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/review-state.schema.json",
+	"title": "Review State",
+	"type": "object",
+	"additionalProperties": true,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"pr",
+		"fetchReceiptRef",
+		"fetchedArtifactHash",
+		"verifierIdentity",
+		"fetchReceipt",
+		"githubReviews",
+		"codeRabbit",
+		"unresolvedThreads",
+		"reviewerArtifacts"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "review-state/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"pr": {
+			"type": "object",
+			"required": [
+				"number",
+				"repository",
+				"url",
+				"baseRef",
+				"headRef",
+				"headSha"
+			]
+		},
+		"fetchReceiptRef": {
+			"type": "string",
+			"minLength": 1
+		},
+		"fetchedArtifactHash": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{64}$"
+		},
+		"verifierIdentity": {
+			"type": "string",
+			"minLength": 1
+		},
+		"fetchReceipt": {
+			"$ref": "evidence-receipt.schema.json"
+		},
+		"githubReviews": {
+			"type": "object",
+			"required": ["decision", "status", "reviewCount"],
+			"properties": {
+				"decision": {
+					"enum": [
+						"approved",
+						"changes_requested",
+						"review_required",
+						"unknown",
+						"not_applicable"
+					]
+				},
+				"status": {
+					"enum": ["pass", "fail", "blocked", "unknown", "not_applicable"]
+				},
+				"reviewCount": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		"codeRabbit": {
+			"type": "object",
+			"required": ["status", "evidenceStatus", "commentCount"]
+		},
+		"unresolvedThreads": {
+			"type": "object",
+			"required": ["total", "needsHuman", "autofixable"]
+		},
+		"reviewerArtifacts": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": [
+					"role",
+					"path",
+					"expectedProducer",
+					"ownershipClassification",
+					"receipt"
+				],
+				"properties": {
+					"role": {
+						"type": "string",
+						"minLength": 1
+					},
+					"path": {
+						"type": "string",
+						"minLength": 1
+					},
+					"expectedProducer": {
+						"type": "string",
+						"minLength": 1
+					},
+					"ownershipClassification": {
+						"enum": [
+							"introduced_by_current_patch",
+							"pre_existing",
+							"unrelated_dirty_worktree",
+							"environment_or_tooling_failure"
+						]
+					},
+					"receipt": {
+						"type": "object",
+						"additionalProperties": true,
+						"required": [
+							"schemaVersion",
+							"kind",
+							"ref",
+							"producer",
+							"status",
+							"freshness",
+							"evidenceUse",
+							"blockerClass",
+							"headSha",
+							"sizeBytes"
+						],
+						"properties": {
+							"schemaVersion": {
+								"const": "evidence-receipt/v1"
+							},
+							"kind": {
+								"const": "review_artifact"
+							},
+							"ref": {
+								"type": "string",
+								"minLength": 1
+							},
+							"producer": {
+								"type": "string",
+								"minLength": 1
+							},
+							"status": {
+								"const": "pass"
+							},
+							"freshness": {
+								"const": "current"
+							},
+							"evidenceUse": {
+								"const": "claim_support"
+							},
+							"blockerClass": {
+								"type": ["string", "null"]
+							},
+							"headSha": {
+								"type": "string",
+								"minLength": 1
+							},
+							"sizeBytes": {
+								"type": "integer",
+								"minimum": 1
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
