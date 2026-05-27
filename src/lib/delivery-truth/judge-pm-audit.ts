@@ -49,6 +49,20 @@ const AUDIT_SURFACE_REF_PREFIXES = {
 	run_record: "run-record:",
 } satisfies Record<EvidenceReceiptKind, string>;
 
+const REQUIRED_AUDIT_SURFACE_NAMES = {
+	runtimeCard: "runtime-card",
+	reviewState: "review-state",
+	externalState: "external-state",
+	linearState: "linear-state",
+	validation: "validation",
+	rootHygiene: "root-hygiene",
+} as const;
+
+const MULTI_RECEIPT_AUDIT_SURFACE_NAMES = new Set<string>([
+	REQUIRED_AUDIT_SURFACE_NAMES.runtimeCard,
+	REQUIRED_AUDIT_SURFACE_NAMES.validation,
+]);
+
 /** Reviewer artifact plus receipt proof required by the Judge/PM readiness gate. */
 export interface JudgePmAuditReviewerArtifact {
 	role: string;
@@ -154,6 +168,11 @@ interface JudgePmAuditBlocker {
 	code: DeliveryTruthBlockerCode;
 	blockerClass: PrCloseoutBlockerClassification;
 	ref: string | null;
+}
+
+interface RequiredJudgePmAuditEvidenceSurface
+	extends JudgePmAuditEvidenceSurface {
+	canonicalName: string;
 }
 
 /** Build the closeout-blocking Judge/PM readiness verdict from explicit audit proof. */
@@ -374,32 +393,69 @@ function requiredAuditSurfaceBlocker(
 			"needs_jamie_decision",
 		);
 	}
-	for (const surface of auditEvidenceSurfaces(input)) {
+	for (const surface of requiredAuditEvidenceSurfaces(input)) {
 		const surfaceBlocker = auditSurfaceBlocker(surface, input.headSha);
 		if (surfaceBlocker) return surfaceBlocker;
 	}
 	return null;
 }
 
-function auditEvidenceSurfaces(
+function requiredAuditEvidenceSurfaces(
 	input: JudgePmAuditVerdictInput,
-): JudgePmAuditEvidenceSurface[] {
+): RequiredJudgePmAuditEvidenceSurface[] {
 	return [
-		...input.runtimeCardRefs,
-		input.reviewStateRef,
-		input.externalStateRef,
-		...(input.linearStateRef ? [input.linearStateRef] : []),
-		...input.validationReceiptRefs,
-		input.rootHygieneRef,
+		...input.runtimeCardRefs.map((surface) =>
+			withCanonicalSurfaceName(
+				surface,
+				REQUIRED_AUDIT_SURFACE_NAMES.runtimeCard,
+			),
+		),
+		withCanonicalSurfaceName(
+			input.reviewStateRef,
+			REQUIRED_AUDIT_SURFACE_NAMES.reviewState,
+		),
+		withCanonicalSurfaceName(
+			input.externalStateRef,
+			REQUIRED_AUDIT_SURFACE_NAMES.externalState,
+		),
+		...(input.linearStateRef
+			? [
+					withCanonicalSurfaceName(
+						input.linearStateRef,
+						REQUIRED_AUDIT_SURFACE_NAMES.linearState,
+					),
+				]
+			: []),
+		...input.validationReceiptRefs.map((surface) =>
+			withCanonicalSurfaceName(
+				surface,
+				REQUIRED_AUDIT_SURFACE_NAMES.validation,
+			),
+		),
+		withCanonicalSurfaceName(
+			input.rootHygieneRef,
+			REQUIRED_AUDIT_SURFACE_NAMES.rootHygiene,
+		),
 	];
 }
 
-function auditSurfaceBlocker(
+function withCanonicalSurfaceName(
 	surface: JudgePmAuditEvidenceSurface,
+	canonicalName: string,
+): RequiredJudgePmAuditEvidenceSurface {
+	return { ...surface, canonicalName };
+}
+
+function auditSurfaceBlocker(
+	surface: RequiredJudgePmAuditEvidenceSurface,
 	headSha: string | null,
 ): JudgePmAuditBlocker | null {
 	const validation = validateEvidenceReceipt(surface.receipt);
-	if (!validation.valid || !safeRef(surface.name)) {
+	if (
+		!validation.valid ||
+		!safeRef(surface.name) ||
+		surface.name !== surface.canonicalName
+	) {
 		return blocker("invalid_audit_surface", "unknown", surface.receipt.ref);
 	}
 	if (surface.receipt.kind !== surface.expectedKind) {
@@ -435,11 +491,18 @@ function auditSurfaceBlocker(
 
 function auditSurfaceRefMatches(surface: JudgePmAuditEvidenceSurface): boolean {
 	const refPrefix = AUDIT_SURFACE_REF_PREFIXES[surface.expectedKind];
-	const expectedRef = refPrefix + surface.name;
-	return (
-		surface.receipt.ref === expectedRef &&
-		/^[A-Za-z][A-Za-z0-9-]*:[A-Za-z0-9._/@:-]+$/.test(surface.receipt.ref)
+	const surfaceName =
+		"canonicalName" in surface
+			? (surface as RequiredJudgePmAuditEvidenceSurface).canonicalName
+			: surface.name;
+	const validRef = /^[A-Za-z][A-Za-z0-9-]*:[A-Za-z0-9._/@:-]+$/.test(
+		surface.receipt.ref,
 	);
+	if (!validRef) return false;
+	if (MULTI_RECEIPT_AUDIT_SURFACE_NAMES.has(surfaceName)) {
+		return surface.receipt.ref.startsWith(refPrefix);
+	}
+	return surface.receipt.ref === refPrefix + surfaceName;
 }
 
 function issueAuthorityBlocker(
@@ -546,11 +609,11 @@ function issueAuthorityBlocker(
 function auditSurfaceSummaries(
 	input: JudgePmAuditVerdictInput,
 ): JudgePmAuditPacket["auditSurfaces"] {
-	return auditEvidenceSurfaces(input).map((surface) => {
+	return requiredAuditEvidenceSurfaces(input).map((surface) => {
 		const surfaceBlocker = auditSurfaceBlocker(surface, input.headSha);
 
 		return {
-			name: surface.name,
+			name: surface.canonicalName,
 			status: surfaceBlocker?.status ?? "pass",
 			freshness: surfaceBlocker?.freshness ?? "current",
 			evidenceRef: safeRef(surface.receipt.ref),
@@ -595,6 +658,9 @@ function verdictIsCurrentForAudit(
 		return false;
 	}
 	if (headSha && verdict.verdictHeadSha !== headSha) {
+		return false;
+	}
+	if (!safeRef(verdict.evidenceRef)) {
 		return false;
 	}
 	return true;
