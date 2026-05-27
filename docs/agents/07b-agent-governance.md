@@ -104,9 +104,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - runtime-card trace-out changes should keep trace persistence in
   `src/lib/runtime-trace/`, reuse canonical run-record append/manifest
   helpers, constrain `--trace-out` to
-  `artifacts/agent-runs/<runId>/events.jsonl`, and treat emitted trace records
-  as replay-ready audit/orientation evidence only, not closeout, CI, review,
-  Linear, or merge-readiness proof
+  `artifacts/agent-runs/<runId>/events.jsonl`, require a fresh run id with a
+  pre-append claim so repeated executions cannot share a replay stream, and
+  treat emitted trace records as replay-ready audit/orientation evidence only,
+  not closeout, CI, review, Linear, or merge-readiness proof
 - codex-runtime-evidence packet changes should stay inside the existing
   `src/lib/runtime` deep module as a narrow public facade plus typed contract,
   source-classification, validation, and reference-integrity internals before

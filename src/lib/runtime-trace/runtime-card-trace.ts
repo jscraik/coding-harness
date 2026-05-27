@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { isAbsolute, relative } from "node:path";
+import { existsSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
+import { isAbsolute, join, relative } from "node:path";
 import {
 	AGENT_RUN_EVENT_SCHEMA_VERSION,
 	AGENT_RUN_MANIFEST_SCHEMA_VERSION,
@@ -23,11 +23,8 @@ const HASH_INPUT = "runtime-card-trace-out/v1";
 
 /** Parsed canonical trace-out target for runtime-card run records. */
 export interface RuntimeCardTraceTarget {
-	/** Run identifier derived from artifacts/agent-runs/<runId>/events.jsonl. */
 	runId: string;
-	/** Canonical run-record base directory relative to repo root. */
 	baseDir: "artifacts/agent-runs";
-	/** Original canonical events path relative to repo root. */
 	eventsPath: string;
 }
 
@@ -43,51 +40,32 @@ export interface RuntimeCardTraceEventInput {
 
 /** Configuration for a runtime-card trace recorder. */
 export interface RuntimeCardTraceRecorderOptions {
-	/** Repository root used as canonical run-record cwd. */
 	repoRoot: string;
-	/** Canonical trace target parsed from --trace-out. */
 	target: RuntimeCardTraceTarget;
-	/** Runtime-card context flag. */
 	context: string;
-	/** Whether live provider state was requested. */
 	live: boolean;
-	/** Optional tracker issue key. */
 	issueKey?: string;
-	/** Optional evidence input path. */
 	evidencePath?: string;
-	/** Optional phase-exit input path. */
 	phaseExitPath?: string;
-	/** Optional deterministic clock for tests. */
 	now?: () => Date;
 }
 
 /** Inputs for terminal manifest emission after runtime-card finishes. */
 export interface RuntimeCardTraceTerminalOptions {
-	/** Runtime-card process exit code. */
 	exitCode: number;
-	/** Terminal outcome for the run manifest. */
 	outcome: RunOutcome;
-	/** Exit classification for the run manifest. */
 	classification: ExitClassification;
-	/** Runtime card when generation succeeded. */
 	card?: RuntimeCard;
-	/** Sanitized failure message when generation failed. */
 	failureMessage?: string;
 }
 
 /** Runtime-card trace recorder backed by canonical agent-run records. */
 export interface RuntimeCardTraceRecorder {
-	/** Append a single schema-validated, hash-chained event. */
 	recordEvent(input: RuntimeCardTraceEventInput): void;
-	/** Record the command-start event. */
 	recordStart(): void;
-	/** Record compact input/precondition evidence. */
 	recordInputs(): void;
-	/** Record advisory/degraded mode when live external state was not refreshed. */
 	recordAdvisoryMode(): void;
-	/** Record a runtime-card or runtime-evidence artifact write. */
 	recordArtifactWrite(type: string, artifactPath: string): void;
-	/** Record terminal success or failure and write the sibling manifest. */
 	recordTerminal(options: RuntimeCardTraceTerminalOptions): void;
 }
 
@@ -173,8 +151,10 @@ interface RuntimeCardTraceState {
 function createTraceState(
 	options: RuntimeCardTraceRecorderOptions,
 ): RuntimeCardTraceState {
+	const repoRoot = realpathSync(options.repoRoot);
+	claimFreshTraceTarget(repoRoot, options.target);
 	return {
-		repoRoot: realpathSync(options.repoRoot),
+		repoRoot,
 		target: options.target,
 		context: options.context,
 		live: options.live,
@@ -187,6 +167,20 @@ function createTraceState(
 		clock: options.now ?? (() => new Date()),
 		contractHash: hashText(HASH_INPUT),
 	};
+}
+
+function claimFreshTraceTarget(
+	repoRoot: string,
+	target: RuntimeCardTraceTarget,
+): void {
+	mkdirSync(join(repoRoot, target.baseDir), { recursive: true });
+	try {
+		mkdirSync(join(repoRoot, target.baseDir, target.runId));
+	} catch {
+		throw new Error(
+			"--trace-out runId already exists; choose a fresh artifacts/agent-runs/<runId>/events.jsonl path",
+		);
+	}
 }
 
 function traceEvent(
