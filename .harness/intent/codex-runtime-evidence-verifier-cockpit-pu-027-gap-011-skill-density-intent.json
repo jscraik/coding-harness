@@ -24,7 +24,7 @@
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
-		"/Users/jamiecraik/.codex/memories/MEMORY.md"
+		"<LOCAL_MEMORY_REGISTRY>"
 	],
 	"deepModuleBoundary": "Repo-owned skill validation only. The implementation should live behind scripts/validate-packaged-skill.cjs or a small helper it owns, and should inspect .agents/skills/**/SKILL.md plus adjacent executable/proof assets. It must not create a new runtime packet, public CLI rail, or generalized skill marketplace.",
 	"implementationThesis": "GAP-011 is a low-severity but real control-plane gap: individual skill files can validate while the repo has no deterministic check for prompt-only skills, weak workflow ownership, or overlapping trigger language. The smallest useful fix is to make the existing pnpm skill:validate lane produce fail-closed checks for repo-owned skills using required structured frontmatter, deterministic trigger-surface overlap, and validation-command-to-asset linkage.",
@@ -122,8 +122,8 @@
 		"adding LLM-based quality scoring",
 		"installing new parser dependencies",
 		"rewriting skill content for style only",
-		"changing global /Users/jamiecraik/dev/agent-skills skills",
-		"mutating /Users/jamiecraik/dev/codex",
+		"changing global agent-skills checkout skills",
+		"mutating an external Codex checkout",
 		"absorbing unrelated Project Brain WIP or .harness media/research files into this slice",
 		"claiming PR, CI, Linear, review-thread, merge-readiness, or final goal completion truth"
 	],
@@ -162,7 +162,7 @@
 		},
 		{
 			"name": "focused validator regression",
-			"command": "pnpm vitest run src/dev/*skill*test.ts",
+			"command": "pnpm exec vitest run src/dev/*skill*test.ts",
 			"proves": [
 				"negative fixtures catch prompt-only and overlap failures without needing live repo mutation"
 			]

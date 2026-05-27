@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-const { existsSync, readFileSync } = require("node:fs");
-const { dirname, resolve } = require("node:path");
+const { existsSync, readFileSync, realpathSync } = require("node:fs");
+const { dirname, isAbsolute, relative, resolve } = require("node:path");
 
 const REPO_ROOT = process.cwd();
+const REPO_ROOT_REAL = realpathSync(REPO_ROOT);
 const DEFAULT_MANIFEST = "contracts/runtime-packet-schemas.manifest.json";
 const DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema";
 const VALID_RUNTIME_STATUSES = new Set(["emitted", "not_yet_emitted"]);
@@ -58,8 +59,20 @@ function parseArgs(argv) {
 }
 
 function loadJson(relativePath) {
-	const absolutePath = resolve(REPO_ROOT, relativePath);
+	const absolutePath = resolveRepoContainedPath(relativePath, relativePath);
 	return JSON.parse(readFileSync(absolutePath, "utf8"));
+}
+
+function resolveRepoContainedPath(inputPath, label) {
+	const resolvedPath = resolve(REPO_ROOT_REAL, inputPath);
+	const targetPath = existsSync(resolvedPath)
+		? realpathSync(resolvedPath)
+		: resolvedPath;
+	const relativePath = relative(REPO_ROOT_REAL, targetPath);
+	if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+		throw new Error(`${label} must resolve inside repository root`);
+	}
+	return targetPath;
 }
 
 function isObject(value) {
@@ -124,9 +137,19 @@ function decodeRefFragment(fragment, ref, errors, contextPath) {
 function resolveReferencedSchema(ref, baseSchemaPath, errors, contextPath) {
 	if (typeof ref !== "string" || ref.trim() === "") return null;
 	const [filePart, fragment = ""] = ref.split("#", 2);
-	const referencedSchemaPath = filePart
+	const referencedSchemaCandidate = filePart
 		? resolve(dirname(baseSchemaPath), filePart)
 		: baseSchemaPath;
+	let referencedSchemaPath;
+	try {
+		referencedSchemaPath = resolveRepoContainedPath(
+			referencedSchemaCandidate,
+			`${contextPath} ref ${ref}`,
+		);
+	} catch (error) {
+		errors.push(error.message);
+		return null;
+	}
 	if (!existsSync(referencedSchemaPath)) {
 		errors.push(`${contextPath} references missing schema ${ref}`);
 		return null;
@@ -296,11 +319,19 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 		) {
 			errors.push(`${valuePath} must have maxLength ${schema.maxLength}`);
 		}
-		if (
-			typeof schema.pattern === "string" &&
-			!new RegExp(schema.pattern).test(value)
-		) {
-			errors.push(`${valuePath} must match pattern ${schema.pattern}`);
+		if (typeof schema.pattern === "string") {
+			let pattern;
+			try {
+				pattern = new RegExp(schema.pattern);
+			} catch (error) {
+				errors.push(
+					`${valuePath} has invalid schema pattern ${schema.pattern}: ${error.message}`,
+				);
+				pattern = null;
+			}
+			if (pattern && !pattern.test(value)) {
+				errors.push(`${valuePath} must match pattern ${schema.pattern}`);
+			}
 		}
 		if (schema.format === "date-time" && Number.isNaN(Date.parse(value))) {
 			errors.push(`${valuePath} must be a date-time string`);
@@ -424,29 +455,47 @@ function validatePacketEntry(entry, index, seen, errors) {
 }
 
 function validateSchemaAndExample(entry, errors) {
+	const resolvedPaths = {};
 	for (const field of ["schemaPath", "examplePath"]) {
-		if (!existsSync(resolve(REPO_ROOT, entry[field]))) {
+		try {
+			resolvedPaths[field] = resolveRepoContainedPath(
+				entry[field],
+				`${entry.schemaVersion} ${field}`,
+			);
+		} catch (error) {
+			errors.push(error.message);
+			continue;
+		}
+		if (!existsSync(resolvedPaths[field])) {
 			errors.push(
 				`${entry.schemaVersion} ${field} does not exist: ${entry[field]}`,
 			);
 		}
 	}
-	if (
-		entry.typeSourcePath &&
-		!existsSync(resolve(REPO_ROOT, entry.typeSourcePath))
-	) {
-		errors.push(
-			`${entry.schemaVersion} typeSourcePath does not exist: ${entry.typeSourcePath}`,
-		);
+	if (entry.typeSourcePath) {
+		let resolvedTypeSourcePath = null;
+		try {
+			resolvedTypeSourcePath = resolveRepoContainedPath(
+				entry.typeSourcePath,
+				`${entry.schemaVersion} typeSourcePath`,
+			);
+		} catch (error) {
+			errors.push(error.message);
+		}
+		if (resolvedTypeSourcePath && !existsSync(resolvedTypeSourcePath)) {
+			errors.push(
+				`${entry.schemaVersion} typeSourcePath does not exist: ${entry.typeSourcePath}`,
+			);
+		}
 	}
 	if (
-		!existsSync(resolve(REPO_ROOT, entry.schemaPath)) ||
-		!existsSync(resolve(REPO_ROOT, entry.examplePath))
+		!existsSync(resolvedPaths.schemaPath) ||
+		!existsSync(resolvedPaths.examplePath)
 	) {
 		return;
 	}
-	const schema = loadJson(entry.schemaPath);
-	const example = loadJson(entry.examplePath);
+	const schema = loadJson(resolvedPaths.schemaPath);
+	const example = loadJson(resolvedPaths.examplePath);
 	validateSupportedSchemaKeywords(schema, entry.schemaPath, errors, "");
 	if (schema.$schema !== DRAFT_2020_12) {
 		errors.push(`${entry.schemaPath} must use JSON Schema Draft 2020-12`);

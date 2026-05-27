@@ -1,6 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
@@ -22,7 +27,9 @@ const MANIFEST_PATH = join(
 const tempRoots: string[] = [];
 
 function createTempRoot(prefix: string) {
-	const root = mkdtempSync(join(tmpdir(), prefix));
+	const baseRoot = join(process.cwd(), ".cache", "runtime-packet-schema-tests");
+	mkdirSync(baseRoot, { recursive: true });
+	const root = mkdtempSync(join(baseRoot, prefix));
 	tempRoots.push(root);
 	return root;
 }
@@ -276,6 +283,66 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report.errors).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining("references invalid URI fragment"),
+			]),
+		);
+	});
+
+	it("rejects manifest paths that escape the repository root", () => {
+		const manifestPath = manifestWithPatch((entry) => ({
+			...entry,
+			schemaPath: "/tmp/runtime-card.schema.json",
+		}));
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"runtime-card/v1 schemaPath must resolve inside repository root",
+				),
+			]),
+		);
+	});
+
+	it("reports invalid regex patterns as schema validation failures", () => {
+		const root = createTempRoot("runtime-packet-schema-invalid-pattern-");
+		const badSchema = readJson("contracts/evidence-receipt.schema.json") as {
+			properties: Record<string, unknown>;
+		};
+		badSchema.properties = {
+			...badSchema.properties,
+			ref: { type: "string", pattern: "[" },
+		};
+		const badSchemaPath = join(
+			root,
+			"evidence-receipt-invalid-pattern.schema.json",
+		);
+		writeFileSync(badSchemaPath, JSON.stringify(badSchema, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"evidence-receipt/v1",
+			(entry) => ({
+				...entry,
+				schemaPath: badSchemaPath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(".ref has invalid schema pattern ["),
 			]),
 		);
 	});

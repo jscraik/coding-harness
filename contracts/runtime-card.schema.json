@@ -58,19 +58,103 @@
 			"type": "string"
 		},
 		"branch": {
-			"type": "object"
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["name", "clean", "ref"],
+			"properties": {
+				"name": {
+					"type": ["string", "null"]
+				},
+				"clean": {
+					"type": ["boolean", "null"]
+				},
+				"ref": {
+					"type": ["string", "null"]
+				}
+			}
 		},
 		"pullRequest": {
-			"type": "object"
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["number", "state", "isDraft", "mergeStateStatus", "url"],
+			"properties": {
+				"number": {
+					"type": ["integer", "null"],
+					"minimum": 0
+				},
+				"state": {
+					"type": ["string", "null"]
+				},
+				"isDraft": {
+					"type": ["boolean", "null"]
+				},
+				"mergeStateStatus": {
+					"type": ["string", "null"]
+				},
+				"url": {
+					"type": ["string", "null"]
+				}
+			}
 		},
 		"artifacts": {
-			"type": "object"
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["activeSpec", "activePlan", "status", "staleRefs"],
+			"properties": {
+				"activeSpec": {
+					"type": ["string", "null"]
+				},
+				"activePlan": {
+					"type": ["string", "null"]
+				},
+				"status": {
+					"enum": ["current", "stale", "missing", "superseded", "unknown"]
+				},
+				"staleRefs": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			}
 		},
 		"linear": {
-			"type": "object"
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["issueKey", "freshness", "actionRequired"],
+			"properties": {
+				"issueKey": {
+					"type": ["string", "null"]
+				},
+				"freshness": {
+					"enum": ["current", "stale", "missing", "unknown"]
+				},
+				"status": {
+					"type": ["string", "null"]
+				},
+				"statusType": {
+					"type": ["string", "null"]
+				},
+				"url": {
+					"type": ["string", "null"]
+				},
+				"actionRequired": {
+					"type": ["string", "null"]
+				}
+			}
 		},
 		"phaseExit": {
-			"type": "object"
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["status", "reason"],
+			"properties": {
+				"status": {
+					"enum": ["pass", "fail", "blocked", "not_run", "unknown"]
+				},
+				"reason": {
+					"type": ["string", "null"]
+				}
+			}
 		},
 		"sources": {
 			"type": "array",
@@ -107,7 +191,9 @@
 			}
 		},
 		"codexRuntime": {
-			"type": "object"
+			"type": "object",
+			"additionalProperties": true,
+			"description": "Compact Codex runtime projection. This nested object intentionally remains extensible because it is validated by the TypeScript codex-runtime projection validator."
 		},
 		"blockers": {
 			"type": "array",
@@ -116,7 +202,58 @@
 			}
 		},
 		"attemptLedger": {
-			"type": "object"
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"schemaVersion",
+				"command",
+				"attempt",
+				"maxAttempts",
+				"firstFailure",
+				"retryDecision",
+				"owner",
+				"stopReason",
+				"nextAction",
+				"evidenceRefs"
+			],
+			"properties": {
+				"schemaVersion": {
+					"const": "attempt-ledger/v1"
+				},
+				"command": {
+					"const": "runtime-card"
+				},
+				"attempt": {
+					"type": "integer",
+					"minimum": 1
+				},
+				"maxAttempts": {
+					"type": "integer",
+					"minimum": 1
+				},
+				"firstFailure": {
+					"type": ["object", "null"],
+					"additionalProperties": true
+				},
+				"retryDecision": {
+					"enum": ["none", "wait", "stop"]
+				},
+				"owner": {
+					"enum": ["codex", "external_service", "operator"]
+				},
+				"stopReason": {
+					"type": ["string", "null"]
+				},
+				"nextAction": {
+					"type": "string"
+				},
+				"evidenceRefs": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			}
 		},
 		"recoveryEvent": {
 			"type": ["object", "null"]

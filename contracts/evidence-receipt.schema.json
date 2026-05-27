@@ -2,6 +2,7 @@
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
 	"$id": "https://brainwav.dev/schemas/evidence-receipt.schema.json",
 	"title": "Evidence Receipt",
+	"description": "Shared receipt contract for validation, artifact, review, external-state, runtime-card, and run-record evidence. Receipts are compact pointers to proof, not embedded logs or raw transcripts.",
 	"type": "object",
 	"additionalProperties": false,
 	"required": [
@@ -16,9 +17,11 @@
 	],
 	"properties": {
 		"schemaVersion": {
+			"description": "Contract version for this receipt packet.",
 			"const": "evidence-receipt/v1"
 		},
 		"kind": {
+			"description": "Evidence category represented by this receipt.",
 			"enum": [
 				"validation",
 				"artifact",
@@ -29,45 +32,56 @@
 			]
 		},
 		"ref": {
+			"description": "Compact evidence pointer such as a repo-relative path, artifact id, or verifier-owned reference. Must not contain raw prompts, secrets, transcripts, or bulky evidence.",
 			"type": "string",
 			"minLength": 1,
 			"maxLength": 512
 		},
 		"producer": {
+			"description": "Tool, command, verifier, or agent role that produced the evidence pointer.",
 			"type": "string",
 			"minLength": 1,
 			"maxLength": 512
 		},
 		"status": {
+			"description": "Outcome represented by the receipt.",
 			"enum": ["pass", "fail", "blocked", "unknown", "not_applicable"]
 		},
 		"freshness": {
+			"description": "Freshness of the receipt relative to the claim or orientation surface using it.",
 			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
 		},
 		"evidenceUse": {
+			"description": "Declares whether the receipt may orient an agent, support a claim, or remain audit-trail-only.",
 			"enum": ["orientation", "claim_support", "audit_trail"]
 		},
 		"blockerClass": {
+			"description": "Stable blocker class when status or freshness blocks use of the evidence; explicitly null when no blocker exists.",
 			"type": ["string", "null"],
 			"minLength": 1
 		},
 		"producedAt": {
+			"description": "ISO 8601 timestamp for when the evidence was produced, when known.",
 			"type": "string",
 			"format": "date-time"
 		},
 		"verifiedAt": {
+			"description": "ISO 8601 timestamp for when the evidence was verified, when known.",
 			"type": "string",
 			"format": "date-time"
 		},
 		"headSha": {
+			"description": "Git head SHA the evidence is bound to, or null when the evidence is not head-specific.",
 			"type": ["string", "null"],
 			"minLength": 1
 		},
 		"sizeBytes": {
+			"description": "Artifact size in bytes when the receipt proves a file-backed artifact; null when not applicable.",
 			"type": ["integer", "null"],
 			"minimum": 0
 		},
 		"checksum": {
+			"description": "Checksum for the referenced evidence artifact when available; null when not applicable.",
 			"type": ["string", "null"],
 			"minLength": 1
 		}

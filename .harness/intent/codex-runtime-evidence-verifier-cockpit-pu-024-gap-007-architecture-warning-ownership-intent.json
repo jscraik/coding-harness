@@ -45,17 +45,17 @@
 	},
 	"intentReviewFindingsAddressed": [
 		{
-			"source": "artifacts/reviews/pu-024-gap-007-architecture-warning-ownership-intent-adversarial.md",
+			"source": ".harness/review/pu-024-gap-007-architecture-warning-ownership-intent-adversarial.md",
 			"finding": "Baseline accepted debt can become permanent because ownership metadata has no expiry or revalidation trigger.",
 			"response": "The implementation contract now requires JSC ticket and valid UTC expires metadata, and expired or malformed baselines must fail architecture validation instead of remaining silent debt."
 		},
 		{
-			"source": "artifacts/reviews/pu-024-gap-007-architecture-warning-ownership-intent-agent-native.md",
+			"source": ".harness/review/pu-024-gap-007-architecture-warning-ownership-intent-agent-native.md",
 			"finding": "The intent validation gate references src/dev/check-architecture-rules-script.test.ts before the file exists.",
 			"response": "The test file is intentionally created by this slice; the implementation approach now says to create it as the first code artifact and run it before claiming the gate."
 		},
 		{
-			"source": "artifacts/reviews/pu-024-gap-007-architecture-warning-ownership-intent-best-practices.md",
+			"source": ".harness/review/pu-024-gap-007-architecture-warning-ownership-intent-best-practices.md",
 			"finding": "Acceptance criteria should explicitly require non-zero exit behavior for unowned warnings across output modes, not only JSON status semantics.",
 			"response": "Acceptance criteria now require non-zero exit and fail status regardless of output format."
 		}
@@ -71,7 +71,7 @@
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
 	],
 	"memorySurfacesRead": [
-		"/Users/jamiecraik/.codex/memories/MEMORY.md",
+		"<LOCAL_MEMORY_REGISTRY>",
 		".harness/memory/LEARNINGS.md"
 	],
 	"allowedFiles": [
@@ -83,7 +83,7 @@
 		".harness/implementation-notes/implementation-notes.html",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
-		"artifacts/reviews/pu-024-gap-007-architecture-warning-ownership-*.md"
+		".harness/review/pu-024-gap-007-architecture-warning-ownership-*.md"
 	],
 	"forbiddenFiles": [
 		"src/lib/runtime/**",
@@ -96,7 +96,7 @@
 		"pnpm-lock.yaml",
 		".github/**",
 		".circleci/**",
-		"/Users/jamiecraik/dev/codex/**"
+		"<EXTERNAL_CODEX_CHECKOUT>/**"
 	],
 	"assumptions": [
 		"The four current auth-commands-use-crypto warnings are either accepted delegated-auth technical debt or should be fixed before they can pass architecture validation.",
@@ -125,7 +125,7 @@
 	],
 	"validationGates": [
 		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-024-gap-007-architecture-warning-ownership-intent.json",
-		"pnpm vitest run src/dev/check-architecture-rules-script.test.ts",
+		"pnpm exec vitest run src/dev/check-architecture-rules-script.test.ts",
 		"pnpm architecture:check",
 		"pnpm exec biome check scripts/check-architecture-rules.cjs src/dev/check-architecture-rules-script.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-024-gap-007-architecture-warning-ownership-intent.json",
 		"git diff --check -- scripts/check-architecture-rules.cjs .architecture-baseline.txt src/dev/check-architecture-rules-script.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-024-gap-007-architecture-warning-ownership-intent.json .harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx .harness/implementation-notes/implementation-notes.html docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",

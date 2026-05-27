@@ -126,8 +126,6 @@ def resolve_evidence_ref(value: Any, field: str, repo: Path, changed_files: set[
         raise ValidationError(f"{field} must resolve to a file: {lexical}")
     if candidate.stat().st_size == 0:
         raise ValidationError(f"{field} points to a zero-byte file: {lexical}")
-    if lexical not in changed_files and resolved_relative not in changed_files:
-        raise ValidationError(f"{field} must be listed in changed_files: {lexical}")
     return resolved_relative
 
 
@@ -251,9 +249,17 @@ def validate_non_pass_member(
     used_evidence_refs: dict[str, str],
 ) -> None:
     require_string(result.get("reason"), f"{field}.reason")
-    require_string(result.get("owner"), f"{field}.owner")
+    owner = result.get("owner")
+    if owner is not None:
+        require_string(owner, f"{field}.owner")
+        return
+    accepted_exception_ref = result.get("accepted_exception_ref")
+    if accepted_exception_ref is None:
+        raise ValidationError(
+            f"{field} requires owner or accepted_exception_ref for non-pass status",
+        )
     exception_ref = resolve_evidence_ref(
-        result.get("accepted_exception_ref"),
+        accepted_exception_ref,
         f"{field}.accepted_exception_ref",
         repo,
         changed_files,

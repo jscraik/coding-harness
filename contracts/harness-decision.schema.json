@@ -3,7 +3,7 @@
 	"$id": "https://brainwav.dev/schemas/harness-decision.schema.json",
 	"title": "Harness Decision",
 	"type": "object",
-	"additionalProperties": true,
+	"additionalProperties": false,
 	"required": [
 		"schemaVersion",
 		"producer",

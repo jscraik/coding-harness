@@ -79,6 +79,7 @@
 			"type": "array",
 			"items": {
 				"type": "object",
+				"additionalProperties": false,
 				"required": [
 					"source",
 					"status",
@@ -105,6 +106,41 @@
 					},
 					"status": {
 						"enum": ["available", "unavailable", "stale", "unknown"]
+					},
+					"fetchedAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"ttlSeconds": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"headSha": {
+						"type": ["string", "null"],
+						"minLength": 1
+					},
+					"prHeadSensitive": {
+						"type": "boolean"
+					},
+					"evidenceUse": {
+						"enum": ["orientation", "claim_support", "audit_trail"]
+					},
+					"evidenceRef": {
+						"type": "string",
+						"minLength": 1
+					},
+					"freshness": {
+						"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+					},
+					"resultStatus": {
+						"enum": ["pass", "fail", "blocked", "unknown", "not_applicable"]
+					},
+					"staleReasons": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1
+						}
 					}
 				}
 			}

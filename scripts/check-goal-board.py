@@ -114,7 +114,7 @@ def resolve_runtime_evidence_goal_path(argv: list[str]) -> Path | None:
             continue
         candidate = Path(value).expanduser()
         if not candidate.is_absolute():
-            candidate = (Path.cwd() / candidate).resolve()
+            candidate = (REPO_ROOT / candidate).resolve()
         else:
             candidate = candidate.resolve()
         if candidate == expected_goal_path:

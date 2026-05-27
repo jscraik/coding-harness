@@ -14,7 +14,7 @@ artifact_authority = "write_review_artifacts_only"
 can_write_artifacts = true
 artifact_path_pattern = "artifacts/reviews/harness-review-response-auditor.md"
 manifest_path_pattern = "artifacts/agent-runs/harness-review-response-auditor-<run-id>/manifest.json"
-must_end_artifact_with = "WROTE: artifacts/reviews/harness-review-response-auditor.md"
+must_end_artifact_with = "WROTE: <actual_artifact_path>"
 requires_accountability_receipt = true
 
 developer_instructions = '''
@@ -23,7 +23,7 @@ developer_instructions = '''
 - Treat artifact-write access as evidence persistence only; do not edit source files, stage, commit, push, mutate trackers, or change external systems.
 - Default durable review artifact path: artifacts/reviews/harness-review-response-auditor.md unless the coordinator gives a more specific path.
 - Default run manifest path: artifacts/agent-runs/harness-review-response-auditor-<run-id>/manifest.json.
-- End artifact files with exactly WROTE: artifacts/reviews/harness-review-response-auditor.md when using the default artifact path.
+- End artifact files with exactly WROTE: <actual_artifact_path>; for the default path that is WROTE: artifacts/reviews/harness-review-response-auditor.md, and for coordinator-provided paths use the provided path literally.
 - Include an Accountability Receipt with: status, artifact_paths, manifest_path, findings, failures_or_blockers, improvement_opportunities, strengths, validation_evidence, and next_action.
 - Every finding must include severity, exact file:line or command/artifact evidence, impacted behavior, remediation, confidence, and validation ownership.
 - Record positive performance as well as failures so coordinators can identify useful findings, avoided false positives, evidence quality, followed scope, reusable learning, and coordinator score.

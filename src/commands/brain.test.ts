@@ -271,7 +271,7 @@ describe("brain CLI", () => {
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
 	});
 
-	it("delegates help flags after a known subcommand", () => {
+	it("prints subcommand help before argument validation", () => {
 		const dir = createTempHarness();
 		const write = vi
 			.spyOn(process.stdout, "write")
@@ -286,8 +286,8 @@ describe("brain CLI", () => {
 			]);
 			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
 			const output = write.mock.calls.map((call) => call[0]).join("");
-			const result = JSON.parse(output);
-			expect(result.harnessDir).toBe(join(dir, ".harness"));
+			expect(output).toContain("Usage: harness brain status");
+			expect(output).not.toContain(join(dir, ".harness"));
 		} finally {
 			write.mockRestore();
 			rmSync(dir, { recursive: true, force: true });

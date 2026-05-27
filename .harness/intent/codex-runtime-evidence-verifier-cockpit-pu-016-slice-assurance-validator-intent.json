@@ -19,7 +19,7 @@
 		".harness/knowledge/testing/knowledge.md",
 		".harness/knowledge/testing/rules.md",
 		".harness/research/evidence-patterns.json",
-		"/Users/jamiecraik/.codex/memories/MEMORY.md"
+		"<LOCAL_MEMORY_REGISTRY>"
 	],
 	"deepModuleBoundary": "A repo-owned validator script plus focused script tests only. This slice makes the already-reviewed goal/plan/state slice-assurance contract executable; it does not implement runtime packet ingestion, delivery-truth production paths, or historical PU backfill.",
 	"implementationThesis": "The goal board now requires every post-R064 slice done claim to include improve-codebase-architecture, simplify, unslopify, he-code-review, testing, adversarial-reviewer, agent-native-reviewer, and best-practices-researcher coverage with supported member evidence. A deterministic validator should fail closed on missing members, unsupported pass claims, stale or unresolvable refs, reviewer artifact reuse, traversal/absolute refs, duplicate receipt IDs, and malformed result objects.",
@@ -31,13 +31,13 @@
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
 		".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
 		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-slice-assurance-validator-intent.json",
-		"artifacts/reviews/codex-runtime-evidence-slice-assurance-validator-*.md"
+		".harness/review/codex-runtime-evidence-slice-assurance-validator-*.md"
 	],
 	"outOfScope": [
 		"historical PU-001 through PU-016 backfill or ratification ledger",
 		"runtime-card, codex-runtime-evidence, delivery-truth, review-state, external-state, or pr-closeout behavior changes",
 		"GitHub, Linear, CI, or branch-protection mutation",
-		"mutating /Users/jamiecraik/dev/codex",
+		"mutating an external Codex checkout",
 		"absorbing unrelated dirty worktree changes into this slice"
 	],
 	"acceptanceCriteria": [
@@ -63,7 +63,7 @@
 		},
 		{
 			"name": "focused validator tests",
-			"command": "pnpm vitest run src/dev/check-goal-slice-assurance-script.test.ts"
+			"command": "pnpm exec vitest run src/dev/check-goal-slice-assurance-script.test.ts"
 		},
 		{
 			"name": "live receipt check",
@@ -82,9 +82,9 @@
 			"best-practices-researcher"
 		],
 		"artifactPaths": [
-			"artifacts/reviews/codex-runtime-evidence-slice-assurance-validator-intent-adversarial.md",
-			"artifacts/reviews/codex-runtime-evidence-slice-assurance-validator-intent-agent-native.md",
-			"artifacts/reviews/codex-runtime-evidence-slice-assurance-validator-intent-best-practices.md"
+			".harness/review/codex-runtime-evidence-slice-assurance-validator-intent-adversarial.md",
+			".harness/review/codex-runtime-evidence-slice-assurance-validator-intent-agent-native.md",
+			".harness/review/codex-runtime-evidence-slice-assurance-validator-intent-best-practices.md"
 		],
 		"reviewQuestions": [
 			"Is this slice narrow enough to implement only the missing deterministic assurance validator?",

@@ -38,10 +38,10 @@
 		"docs/cli-reference.md",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
-		"artifacts/reviews/pu-025-gap-005-decision-request-governance-*.md"
+		".harness/review/codex-runtime-evidence-verifier-cockpit/pu-025-gap-005-decision-request-governance-*.md"
 	],
 	"forbiddenFiles": [
-		"/Users/jamiecraik/dev/codex/**",
+		"<EXTERNAL_CODEX_CHECKOUT>/**",
 		"src/lib/project-brain/**",
 		".harness/research/**",
 		".harness/media/**",
@@ -78,13 +78,13 @@
 	},
 	"validationGates": [
 		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-025-gap-005-decision-request-governance-intent.json",
-		"pnpm vitest run src/commands/decision-request.test.ts src/lib/cli/command-registry.test.ts src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"pnpm exec vitest run src/commands/decision-request.test.ts src/lib/cli/command-registry.test.ts src/dev/validate-runtime-packet-schemas-script.test.ts",
 		"node scripts/validate-runtime-packet-schemas.cjs --all",
 		"node --import tsx src/cli.ts decision-request --json --intent <intent> --default-option <id> --option <id=label> --tradeoff <id=tradeoff>",
-		"pnpm vitest run src/commands/decision-request.test.ts -- --runInBand equivalent not required; tests must include duplicate option id, unknown tradeoff id, expired/current conflict normalization, and missing escalation field coverage",
+		"pnpm exec vitest run src/commands/decision-request.test.ts",
 		"node --import tsx src/cli.ts commands --json --for-agent --mode handoff",
-		"pnpm exec biome check <slice files>",
-		"git diff --check -- <slice files>",
+		"pnpm exec biome check src/commands/decision-request.ts src/commands/decision-request.test.ts src/lib/decision-request src/lib/cli/registry/decision-request-command-spec.ts contracts/decision-request.schema.json contracts/examples/decision-request.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-runtime-packet-schemas.cjs",
+		"git diff --check -- src/commands/decision-request.ts src/commands/decision-request.test.ts src/lib/decision-request src/lib/cli/registry/decision-request-command-spec.ts contracts/decision-request.schema.json contracts/examples/decision-request.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-runtime-packet-schemas.cjs",
 		"jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null",
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
 	],
@@ -107,6 +107,7 @@
 		"Expired or explicitly stale decision requests include staleState and cannot be mistaken for current closeout proof.",
 		"Default option validation fails closed when it does not match an option id.",
 		"Duplicate option ids and tradeoffs for unknown option ids fail closed with deterministic usage errors.",
+		"Focused tests cover duplicate option id, unknown tradeoff id, expired/current conflict normalization, and missing escalation field behavior.",
 		"Expired decisions normalize status/freshness before staleState derivation even when caller input claims current/open state.",
 		"Command catalog metadata exposes decision-request as safe, read-only, agent-usable governance handoff.",
 		"Schema/example validation covers the emitted packet shape.",

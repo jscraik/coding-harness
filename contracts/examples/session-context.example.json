@@ -6,7 +6,7 @@
 	"evidenceUse": "orientation",
 	"runtimeStatus": "emitted",
 	"repository": "jscraik/coding-harness",
-	"repoRoot": "/Users/jamiecraik/dev/coding-harness",
+	"repoRoot": "<REPO_ROOT>",
 	"issueRef": "JSC-363",
 	"branch": "codex/jsc-363-runtime-evidence-cockpit-refresh",
 	"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -56,22 +56,22 @@
 	"nextTraversalHints": [
 		{
 			"label": "agent cockpit",
-			"command": "cd '/Users/jamiecraik/dev/coding-harness' && node --import tsx src/cli.ts next --json",
+			"command": "cd '<REPO_ROOT>' && node --import tsx src/cli.ts next --json",
 			"reason": "Ask the narrow cockpit for the next safe command before acting."
 		},
 		{
 			"label": "runtime card",
-			"command": "node --import tsx src/cli.ts runtime-card --json --repo '/Users/jamiecraik/dev/coding-harness'",
+			"command": "node --import tsx src/cli.ts runtime-card --json --repo '<REPO_ROOT>'",
 			"reason": "Refresh the runtime-card summary when local runtime evidence is missing or stale."
 		},
 		{
 			"label": "agent readiness",
-			"command": "node --import tsx src/cli.ts agent-readiness --json --repo-root '/Users/jamiecraik/dev/coding-harness'",
+			"command": "node --import tsx src/cli.ts agent-readiness --json --repo-root '<REPO_ROOT>'",
 			"reason": "Check instruction, artifact, capability, approval, traceability, and context-health surfaces."
 		},
 		{
 			"label": "orientation rail",
-			"command": "cd '/Users/jamiecraik/dev/coding-harness' && node --import tsx src/cli.ts commands --json --for-agent --mode orient",
+			"command": "cd '<REPO_ROOT>' && node --import tsx src/cli.ts commands --json --for-agent --mode orient",
 			"reason": "List the compact orient-mode command rail available to agents."
 		}
 	]

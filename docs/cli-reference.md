@@ -41,12 +41,14 @@ harness runtime-card --json --live \
   --out .harness/runtime/JSC-311.json \
   --evidence-out .harness/runtime/JSC-311-evidence.json
 harness runtime-card --json --evidence .harness/runtime/session-evidence.json --out .harness/runtime/JSC-311.json
-harness runtime-card --json --trace-out artifacts/agent-runs/runtime-card-local/events.jsonl
+harness runtime-card --json --trace-out artifacts/agent-runs/<runId>/events.jsonl
 harness next --json --files src/cli.ts docs/cli-reference.md
 harness next --json --phase-exit .harness/runs/phase-exit.json
 harness next --json --runtime-card .harness/runtime/JSC-311.json
 harness next --json --mode pr
 ```
+
+Replace `<runId>` with a fresh run identifier for each trace-out attempt.
 
 `--phase-exit` accepts a local `HePhaseExit/v1` JSON artifact. When supplied,
 `harness next` normalizes the phase-exit result into `meta.hePhaseExit` and

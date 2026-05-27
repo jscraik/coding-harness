@@ -22,7 +22,7 @@
 		".harness/knowledge/governance/knowledge.md",
 		".harness/knowledge/governance/rules.md",
 		".harness/research/evidence-patterns.json",
-		"/Users/jamiecraik/.codex/memories/MEMORY.md"
+		"<LOCAL_MEMORY_REGISTRY>"
 	],
 	"deepModuleBoundary": "Codex preflight script/template contract and its scaffold tests only. This slice is a trust-boundary fix for preflight readiness, not a new runtime-card, delivery-truth, or Project Brain feature.",
 	"implementationThesis": "The legacy positional script path is still an executable preflight entrypoint, so it must not carry weaker readiness semantics than the documented required-mode path. Preserve compatibility for repo-fragment, bins, and paths positional arguments while defaulting the Local Memory lane to required; explicit --mode optional or --mode off remain deliberate operator choices through the flag-based interface.",
@@ -60,14 +60,14 @@
 		"scripts/sync-codex-preflight.cjs only if the existing sync check requires no behavioral change",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
 		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-gap-001-intent.json",
-		"artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-*.md"
+		".harness/review/codex-runtime-evidence-pu-016-gap-001-intent-*.md"
 	],
 	"outOfScope": [
 		"changing the Local Memory preflight implementation itself",
 		"changing Project Brain CLI behavior or knowledge-domain files unless a validation failure proves the preflight path requires it",
 		"adding a new public harness command",
 		"changing runtime-card, delivery-truth, pr-closeout, review-state, or external-state packet schemas",
-		"mutating /Users/jamiecraik/dev/codex",
+		"mutating an external Codex checkout",
 		"external writes to GitHub, Linear, CI, or review services during implementation",
 		"absorbing unrelated dirty worktree changes into this slice"
 	],
@@ -77,7 +77,7 @@
 		"src/commands/init.test.ts",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
 		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-gap-001-intent.json",
-		"artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-*.md"
+		".harness/review/codex-runtime-evidence-pu-016-gap-001-intent-*.md"
 	],
 	"acceptanceCriteria": [
 		"Legacy positional invocation preserves repo-fragment, bins CSV, and paths CSV compatibility while leaving local_memory_mode at required by default.",
@@ -97,7 +97,7 @@
 		},
 		{
 			"name": "pre-implementation intent review gate",
-			"command": "test -s artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-adversarial.md && test -s artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-agent-native.md",
+			"command": "test -s .harness/review/codex-runtime-evidence-pu-016-gap-001-intent-adversarial.md && test -s .harness/review/codex-runtime-evidence-pu-016-gap-001-intent-agent-native.md",
 			"proves": ["required intent review artifacts exist before implementation"]
 		},
 		{
@@ -109,7 +109,7 @@
 		},
 		{
 			"name": "scaffold contract regression",
-			"command": "pnpm vitest run src/commands/init.test.ts -t codex-preflight",
+			"command": "pnpm exec vitest run src/commands/init.test.ts -t codex-preflight",
 			"proves": [
 				"harness init scaffolding keeps the required Local Memory semantics"
 			]
@@ -137,8 +137,8 @@
 		"requiredBeforeImplementation": true,
 		"reviewers": ["adversarial-reviewer", "agent-native-reviewer"],
 		"artifactPaths": [
-			"artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-adversarial.md",
-			"artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-agent-native.md"
+			".harness/review/codex-runtime-evidence-pu-016-gap-001-intent-adversarial.md",
+			".harness/review/codex-runtime-evidence-pu-016-gap-001-intent-agent-native.md"
 		],
 		"reviewQuestions": [
 			"Does this intent stay tight enough to fix GAP-001 without drifting into broader Project Brain or runtime-evidence implementation?",
@@ -150,22 +150,22 @@
 	"reviewedAt": "2026-05-26T20:06:00Z",
 	"reviewFindingsAddressed": [
 		{
-			"artifact": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-adversarial.md",
+			"artifact": ".harness/review/codex-runtime-evidence-pu-016-gap-001-intent-adversarial.md",
 			"finding": "Acceptance criterion for legacy-path behavior was not bound to a deterministic gate command.",
 			"resolution": "Added legacy positional behavior regression command to automationPlan."
 		},
 		{
-			"artifact": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-agent-native.md",
+			"artifact": ".harness/review/codex-runtime-evidence-pu-016-gap-001-intent-agent-native.md",
 			"finding": "Legacy semantics decision was dual-pathed between map-to-required and fail-with-usage.",
 			"resolution": "Froze policy to map positional invocation to required Local Memory and documented explicit operator downgrade via --mode optional/off."
 		},
 		{
-			"artifact": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-rereview-adversarial.md",
+			"artifact": ".harness/review/codex-runtime-evidence-pu-016-gap-001-intent-rereview-adversarial.md",
 			"finding": "Re-review verdict passed with no blocker/high findings.",
 			"resolution": "Implementation may start against the reviewed map-to-required policy and legacy positional behavior regression gate."
 		},
 		{
-			"artifact": "artifacts/reviews/codex-runtime-evidence-pu-016-gap-001-intent-rereview-agent-native.md",
+			"artifact": ".harness/review/codex-runtime-evidence-pu-016-gap-001-intent-rereview-agent-native.md",
 			"finding": "Re-review verdict passed with no blocker/high findings.",
 			"resolution": "Agent-native execution readiness is sufficient for the narrow implementation slice."
 		}

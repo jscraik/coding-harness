@@ -6,18 +6,16 @@
 
 import { cliBrainAdd } from "./add-cli.js";
 import { EXIT_CODES } from "./cli-types.js";
+import {
+	BRAIN_SUBCOMMAND_SET,
+	renderBrainSubcommandHelp,
+	renderBrainTopLevelHelp,
+} from "./help.js";
+import { cliBrainLint } from "./lint-cli.js";
 import { cliBrainPreflight } from "./preflight-cli.js";
 import { cliBrainQuery } from "./query-cli.js";
 import { cliBrainStale } from "./stale-cli.js";
 import { cliBrainStatus } from "./status-cli.js";
-
-const BRAIN_SUBCOMMANDS = new Set([
-	"status",
-	"query",
-	"add",
-	"preflight",
-	"stale",
-]);
 
 export { runBrainAdd } from "./add-cli.js";
 export {
@@ -32,6 +30,8 @@ export {
 	type BrainStaleResult,
 	type BrainStatusResult,
 } from "./cli-types.js";
+export type { BrainLintResult } from "./lint-types.js";
+export { runBrainLint } from "./lint-cli.js";
 export { runBrainPreflight } from "./preflight-cli.js";
 export { runBrainQuery } from "./query-cli.js";
 export { runBrainStale } from "./stale-cli.js";
@@ -48,36 +48,25 @@ export function runBrainCLI(args: string[]): number {
 	const shouldShowTopLevelHelp =
 		args.length === 0 || subcommand === "--help" || subcommand === "-h";
 	if (shouldShowTopLevelHelp) {
-		process.stdout.write(`Usage: harness brain <subcommand> [options]
-
-Subcommands:
-  status              Health summary of Project Brain artifacts
-  query               Search across knowledge, rules, and quality criteria
-  add                 Capture a learning, decision, rule, or hypothesis
-  preflight           Load relevant context for a set of changed files
-  stale               Report staleness of Project Brain artifacts
-
-Options:
-  --json              Output in JSON format
-  --dir <path>        Target directory (default: current directory)
-  --help, -h          Show this help
-
-Examples:
-  harness brain status --json
-  harness brain query --query "vitest" --json
-  harness brain add --type rule --domain api --content "All commands must have --help"
-  harness brain add --type learning --content "Biome requires tabs for JSON"
-`);
+		process.stdout.write(renderBrainTopLevelHelp());
 		return EXIT_CODES.SUCCESS;
 	}
 
 	const subArgs = args.slice(1);
 
-	if (!BRAIN_SUBCOMMANDS.has(subcommand ?? "")) {
+	if (!BRAIN_SUBCOMMAND_SET.has(subcommand ?? "")) {
 		process.stderr.write(
-			`Error: Unknown brain subcommand "${subcommand}"\n  Available: ${[...BRAIN_SUBCOMMANDS].join(", ")}\n`,
+			`Error: Unknown brain subcommand "${subcommand}"\n  Available: ${[...BRAIN_SUBCOMMAND_SET].join(", ")}\n`,
 		);
 		return EXIT_CODES.INVALID_ARGS;
+	}
+
+	if (subArgs.includes("--help") || subArgs.includes("-h")) {
+		const help = renderBrainSubcommandHelp(subcommand ?? "");
+		if (help) {
+			process.stdout.write(help);
+			return EXIT_CODES.SUCCESS;
+		}
 	}
 
 	switch (subcommand) {
@@ -99,6 +88,10 @@ Examples:
 		}
 		case "stale": {
 			const r = cliBrainStale(subArgs);
+			return r.exitCode;
+		}
+		case "lint": {
+			const r = cliBrainLint(subArgs);
 			return r.exitCode;
 		}
 		default:

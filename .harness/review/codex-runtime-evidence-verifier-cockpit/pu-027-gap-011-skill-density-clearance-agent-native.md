@@ -48,7 +48,7 @@ The specific blocker conditions for this clearance request are resolved in curre
 - validation_evidence:
   - zsh -lc 'nl -ba .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-gap-011-skill-density-intent.json'
   - zsh -lc 'rg -n "artifacts/reviews|trackedReviewArtifactRepair|artifactVerification|rereviewOutcome" .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-gap-011-skill-density-intent.json'
-  - zsh -lc 'rg -n "Verdict|STATUS|blocked|do not proceed|proceed" .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-*.md'
+  - zsh -lc 'rg -n --glob "!*clearance*.md" "Verdict|STATUS|blocked|do not proceed|proceed" .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-*.md'
 - next_action:
   - coordinator can advance PU-027 from blocker-clearance into implementation sequencing using this artifact as the superseding agent-native decision
 - manifest_path:

@@ -53,18 +53,21 @@
 			]
 		},
 		"evidenceRef": {
-			"type": ["string", "null"]
+			"type": ["string", "null"],
+			"minLength": 1
 		},
 		"evidenceRefs": {
 			"type": "array",
 			"items": {
-				"type": "string"
+				"type": "string",
+				"minLength": 1
 			}
 		},
 		"blockerRefs": {
 			"type": "array",
 			"items": {
-				"type": "string"
+				"type": "string",
+				"minLength": 1
 			}
 		},
 		"headSha": {

@@ -29,7 +29,7 @@
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
 	],
 	"memorySurfacesRead": [
-		"/Users/jamiecraik/.codex/memories/MEMORY.md",
+		"<LOCAL_MEMORY_REGISTRY>",
 		".harness/memory/LEARNINGS.md",
 		".harness/knowledge/INDEX.md"
 	],
@@ -47,17 +47,17 @@
 	},
 	"intentReviewFindingsAddressed": [
 		{
-			"source": "artifacts/reviews/pu-023-gap-009-reviewer-artifact-intent-adversarial.md",
+			"source": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-023-gap-009-reviewer-artifact-intent-adversarial.md",
 			"finding": "Strict packet rejection can collapse stale or non-claim-supporting reviewer artifact evidence into generic invalid-packet failures.",
 			"response": "The implementation must preserve role-addressable error paths in review-state validation and add Judge/PM regression evidence that downstream blocker semantics remain explicit for stale and non-claim-supporting reviewer artifacts."
 		},
 		{
-			"source": "artifacts/reviews/pu-023-gap-009-reviewer-artifact-intent-adversarial.md",
+			"source": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-023-gap-009-reviewer-artifact-intent-adversarial.md",
 			"finding": "The test matrix under-specified not_applicable and missing freshness branches.",
 			"response": "The validation plan now requires explicit not_applicable status and missing/not_applicable freshness cases with exact error-path assertions."
 		},
 		{
-			"source": "artifacts/reviews/pu-023-gap-009-reviewer-artifact-intent-agent-native.md",
+			"source": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-023-gap-009-reviewer-artifact-intent-agent-native.md",
 			"finding": "Schema discoverability may drift from runtime invariants.",
 			"response": "The schema must encode representable invariants with supported JSON Schema keywords, while path/ref, producer, and head-SHA cross-field rules remain TypeScript runtime validator proof."
 		}
@@ -73,10 +73,10 @@
 		".harness/implementation-notes/implementation-notes.html",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
-		"artifacts/reviews/pu-023-gap-009-reviewer-artifact-*.md"
+		".harness/review/codex-runtime-evidence-verifier-cockpit/pu-023-gap-009-reviewer-artifact-*.md"
 	],
 	"forbiddenFiles": [
-		"/Users/jamiecraik/dev/codex/**",
+		"<EXTERNAL_CODEX_CHECKOUT>/**",
 		"src/lib/pr-closeout/**",
 		"src/lib/external-state/**",
 		"src/lib/runtime/**",
@@ -113,8 +113,8 @@
 	],
 	"validationGates": [
 		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-023-gap-009-reviewer-artifact-claim-support-intent.json",
-		"pnpm vitest run src/lib/review-state/review-state.test.ts",
-		"pnpm vitest run src/lib/delivery-truth/judge-pm-audit.test.ts",
+		"pnpm exec vitest run src/lib/review-state/review-state.test.ts",
+		"pnpm exec vitest run src/lib/delivery-truth/judge-pm-audit.test.ts",
 		"node scripts/validate-runtime-packet-schemas.cjs --all",
 		"pnpm exec biome check src/lib/review-state/validation.ts src/lib/review-state/review-state.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts contracts/review-state.schema.json contracts/examples/review-state.example.json .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-023-gap-009-reviewer-artifact-claim-support-intent.json",
 		"git diff --check -- src/lib/review-state/validation.ts src/lib/review-state/review-state.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts contracts/review-state.schema.json contracts/examples/review-state.example.json .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-023-gap-009-reviewer-artifact-claim-support-intent.json .harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx .harness/implementation-notes/implementation-notes.html docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",

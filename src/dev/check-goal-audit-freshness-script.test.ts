@@ -18,15 +18,36 @@ const SCRIPT_PATH = join(
 const GOAL_DIR = "docs/goals/codex-runtime-evidence-verifier-cockpit";
 const AUDIT_PATH =
 	".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md";
-const HEAD_SHA = "29ac20979f21bc178358779e0bc50d8ddc0eee75";
 
 const tempRoots: string[] = [];
+const tempRootHeads = new Map<string, string>();
+
+function runGit(root: string, args: string[]) {
+	const result = spawnSync("git", args, {
+		cwd: root,
+		encoding: "utf8",
+		env: {
+			...process.env,
+			GIT_AUTHOR_EMAIL: "codex@example.test",
+			GIT_AUTHOR_NAME: "Codex Test",
+			GIT_COMMITTER_EMAIL: "codex@example.test",
+			GIT_COMMITTER_NAME: "Codex Test",
+		},
+	});
+	if (result.status !== 0) {
+		throw new Error(result.stderr || result.stdout);
+	}
+	return result.stdout.trim();
+}
 
 function createTempRoot(prefix: string) {
 	const root = mkdtempSync(join(tmpdir(), prefix));
 	tempRoots.push(root);
 	mkdirSync(join(root, GOAL_DIR), { recursive: true });
 	mkdirSync(join(root, AUDIT_PATH, ".."), { recursive: true });
+	runGit(root, ["init", "-q"]);
+	runGit(root, ["commit", "--allow-empty", "-m", "baseline"]);
+	tempRootHeads.set(root, runGit(root, ["rev-parse", "HEAD"]));
 	return root;
 }
 
@@ -50,17 +71,19 @@ function writeReceipts(root: string, receipts: unknown[]) {
 	return path;
 }
 
-function receipt(overrides: Record<string, unknown> = {}) {
+function receipt(root: string, overrides: Record<string, unknown> = {}) {
 	const content = "audit content";
+	const headSha = tempRootHeads.get(root);
+	if (!headSha) throw new Error(`missing test repository head for ${root}`);
 	return {
 		id: "R072",
-		head_sha: HEAD_SHA,
+		head_sha: headSha,
 		audit_sources_checked: [
 			{
 				path: AUDIT_PATH,
 				sha256: sha256(content),
 				checked_at: "2026-05-27T01:10:00Z",
-				head_sha: HEAD_SHA,
+				head_sha: headSha,
 				...overrides,
 			},
 		],
@@ -85,6 +108,7 @@ describe("check-goal-audit-freshness.py", () => {
 	afterEach(() => {
 		for (const root of tempRoots.splice(0)) {
 			rmSync(root, { force: true, recursive: true });
+			tempRootHeads.delete(root);
 		}
 	});
 
@@ -94,17 +118,17 @@ describe("check-goal-audit-freshness.py", () => {
 		writeReceipts(root, [
 			{
 				id: "R071",
-				head_sha: HEAD_SHA,
+				head_sha: tempRootHeads.get(root),
 				audit_sources_checked: [
 					{
 						path: AUDIT_PATH,
 						sha256: "0".repeat(64),
 						checked_at: "2026-05-27T00:00:00Z",
-						head_sha: HEAD_SHA,
+						head_sha: tempRootHeads.get(root),
 					},
 				],
 			},
-			receipt(),
+			receipt(root),
 		]);
 
 		const result = runValidator(root);
@@ -117,7 +141,7 @@ describe("check-goal-audit-freshness.py", () => {
 	it("fails when the current audit content no longer matches the latest relevant receipt hash", () => {
 		const root = createTempRoot("audit-freshness-stale-hash-");
 		writeAudit(root, "updated audit content", new Date("2026-05-27T01:00:00Z"));
-		writeReceipts(root, [receipt()]);
+		writeReceipts(root, [receipt(root)]);
 
 		const result = runValidator(root);
 
@@ -128,7 +152,7 @@ describe("check-goal-audit-freshness.py", () => {
 	it("fails when matching content is acknowledged before the current audit timestamp", () => {
 		const root = createTempRoot("audit-freshness-stale-timestamp-");
 		writeAudit(root, "audit content", new Date("2026-05-27T02:00:00Z"));
-		writeReceipts(root, [receipt()]);
+		writeReceipts(root, [receipt(root)]);
 
 		const result = runValidator(root);
 
@@ -144,13 +168,13 @@ describe("check-goal-audit-freshness.py", () => {
 		writeReceipts(root, [
 			{
 				id: "R072",
-				head_sha: HEAD_SHA,
+				head_sha: tempRootHeads.get(root),
 				audit_sources_checked: [
 					{
 						path: ".harness/research/audits/other.md",
 						sha256: sha256("audit content"),
 						checked_at: "2026-05-27T01:10:00Z",
-						head_sha: HEAD_SHA,
+						head_sha: tempRootHeads.get(root),
 					},
 				],
 			},
@@ -165,7 +189,7 @@ describe("check-goal-audit-freshness.py", () => {
 	it("fails when required-mode validation is pointed at an alternate audit path", () => {
 		const root = createTempRoot("audit-freshness-alternate-path-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
-		writeReceipts(root, [receipt()]);
+		writeReceipts(root, [receipt(root)]);
 
 		const result = runValidator(root, [
 			"--audit",
@@ -179,7 +203,7 @@ describe("check-goal-audit-freshness.py", () => {
 	it("fails when receipt source paths use non-canonical syntax", () => {
 		const root = createTempRoot("audit-freshness-noncanonical-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
-		writeReceipts(root, [receipt({ path: `./${AUDIT_PATH}` })]);
+		writeReceipts(root, [receipt(root, { path: `./${AUDIT_PATH}` })]);
 
 		const result = runValidator(root);
 
@@ -190,7 +214,7 @@ describe("check-goal-audit-freshness.py", () => {
 	it("fails when the audit source omits required provenance fields", () => {
 		const root = createTempRoot("audit-freshness-missing-fields-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
-		const incomplete = receipt();
+		const incomplete = receipt(root);
 		delete (incomplete.audit_sources_checked[0] as Record<string, unknown>)
 			.head_sha;
 		writeReceipts(root, [incomplete]);
@@ -199,5 +223,23 @@ describe("check-goal-audit-freshness.py", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("missing required field(s): head_sha");
+	});
+
+	it("fails when the recorded evidence head is not reachable from repository history", () => {
+		const root = createTempRoot("audit-freshness-unreachable-head-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const staleReceipt = receipt(root);
+		staleReceipt.head_sha = "f".repeat(40);
+		const staleSource = staleReceipt.audit_sources_checked[0];
+		if (!staleSource) throw new Error("missing test audit source");
+		staleSource.head_sha = "f".repeat(40);
+		writeReceipts(root, [staleReceipt]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"must be reachable from current repository HEAD",
+		);
 	});
 });

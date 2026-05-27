@@ -47,6 +47,8 @@ Rationale: the blocking condition in this recovery pass was missing tracked revi
 - validation_evidence:
   - jq/contract evidence lines above and required tracked-path list in intent
 - next_action:
-  - run `wc -c .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-*.md` and update review status from pending to satisfied in coordinator flow
+  - Run `wc -c .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-*.md` and expect one output line per matched file in the form `<bytes> <filename>`, followed by an optional `total` line.
+  - Pass condition: every matched intent review file reports a byte count greater than zero, for example `2431 .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-adversarial.md`.
+  - Blocker condition: no files match, any matched file reports `0` bytes, or the command errors. The coordinator owns remediation and must keep review status pending until the pass condition is met.
 
 WROTE: .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-best-practices.md

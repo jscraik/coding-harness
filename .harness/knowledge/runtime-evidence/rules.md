@@ -20,7 +20,7 @@ sensitivity: internal
   - Severity: must
   - Rationale: Runtime proof can otherwise overstate delivery readiness and hide stale or partial external-state evidence.
   - Last promoted: 2026-05-26
-  - Promoted from: Project Brain setup audit with Codex runtime-context review
+  - Promoted from: .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md#harness-engineering-insights
   - Source: AGENTS.md
 
 ## Promotion guide

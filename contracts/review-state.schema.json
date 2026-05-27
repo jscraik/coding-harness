@@ -27,6 +27,7 @@
 		},
 		"pr": {
 			"type": "object",
+			"additionalProperties": false,
 			"required": [
 				"number",
 				"repository",
@@ -34,7 +35,33 @@
 				"baseRef",
 				"headRef",
 				"headSha"
-			]
+			],
+			"properties": {
+				"number": {
+					"type": "integer",
+					"minimum": 1
+				},
+				"repository": {
+					"type": "string",
+					"minLength": 1
+				},
+				"url": {
+					"type": "string",
+					"format": "uri"
+				},
+				"baseRef": {
+					"type": "string",
+					"minLength": 1
+				},
+				"headRef": {
+					"type": "string",
+					"minLength": 1
+				},
+				"headSha": {
+					"type": "string",
+					"pattern": "^[0-9a-fA-F]{40}$"
+				}
+			}
 		},
 		"fetchReceiptRef": {
 			"type": "string",
@@ -53,6 +80,7 @@
 		},
 		"githubReviews": {
 			"type": "object",
+			"additionalProperties": false,
 			"required": ["decision", "status", "reviewCount"],
 			"properties": {
 				"decision": {
@@ -75,11 +103,46 @@
 		},
 		"codeRabbit": {
 			"type": "object",
-			"required": ["status", "evidenceStatus", "commentCount"]
+			"additionalProperties": false,
+			"required": ["status", "evidenceStatus", "commentCount"],
+			"properties": {
+				"status": {
+					"enum": [
+						"completed",
+						"skipped_draft",
+						"unavailable",
+						"failed",
+						"unknown",
+						"not_applicable"
+					]
+				},
+				"evidenceStatus": {
+					"enum": ["pass", "fail", "blocked", "unknown", "not_applicable"]
+				},
+				"commentCount": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
 		},
 		"unresolvedThreads": {
 			"type": "object",
-			"required": ["total", "needsHuman", "autofixable"]
+			"additionalProperties": false,
+			"required": ["total", "needsHuman", "autofixable"],
+			"properties": {
+				"total": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"needsHuman": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"autofixable": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
 		},
 		"reviewerArtifacts": {
 			"type": "array",

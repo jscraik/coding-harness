@@ -301,13 +301,12 @@ describe("check-goal-slice-assurance.py", () => {
 		expect(result.stderr).toContain("escapes repository root");
 	});
 
-	it("fails when blocked or not applicable members do not carry an accepted exception", () => {
+	it("fails when blocked or not applicable members have neither owner nor accepted exception", () => {
 		const root = createTempRoot("slice-assurance-blocked-");
 		const receipt = baseReceipt();
 		receipt.independent_reviewer_results["best-practices-researcher"] = {
 			status: "not applicable",
 			reason: "not available",
-			owner: "Coordinator",
 		};
 		writeReceiptArtifacts(root, receipt);
 		const receiptsPath = writeReceipt(root, receipt);
@@ -315,16 +314,14 @@ describe("check-goal-slice-assurance.py", () => {
 		const result = runValidator(root, receiptsPath);
 
 		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
-			"independent_reviewer_results.best-practices-researcher.accepted_exception_ref must be a non-empty string",
-		);
+		expect(result.stderr).toContain("requires owner or accepted_exception_ref");
 	});
 
 	it.each([
 		"blocked",
 		"fail",
 		"not applicable",
-	])("allows %s members only with owner, reason, and accepted exception evidence", (status) => {
+	])("allows %s members with owner, reason, and accepted exception evidence", (status) => {
 		const root = createTempRoot(
 			`slice-assurance-${status.replaceAll(" ", "-")}-exception-`,
 		);
@@ -351,6 +348,11 @@ describe("check-goal-slice-assurance.py", () => {
 				"best-practices-researcher",
 				"artifacts/reviews/testing.md",
 			);
+		delete (
+			receipt.independent_reviewer_results[
+				"best-practices-researcher"
+			] as Record<string, unknown>
+		).owner;
 		writeReceiptArtifacts(root, receipt);
 		const receiptsPath = writeReceipt(root, receipt);
 

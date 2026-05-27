@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-26
+last_validated: 2026-05-27
 ---
 
 # Architecture bootstrap
@@ -140,6 +140,13 @@ constrained to `artifacts/agent-runs/<runId>/events.jsonl`, require a fresh
 run id with a pre-append claim, and fail closed on reused or pre-claimed run
 ids; emitted traces are replay-ready audit/orientation evidence and must not
 support closeout, CI, review, Linear, or merge-readiness claims by themselves.
+
+Rollback expectations: the runtime-card trace-out owner must revert the trace
+policy, CLI examples, generated architecture context, and any run-record writer
+adapter changes in the same rollback. Any run IDs claimed before rollback must
+be treated as invalid for closeout or replay support until a fresh
+`runtime-card --trace-out artifacts/agent-runs/<runId>/events.jsonl` run proves
+the restored contract.
 
 Runtime evidence receipts and private delivery-truth composition belong to the
 same architecture-adjacent cockpit lane when they decide whether a claim can be
