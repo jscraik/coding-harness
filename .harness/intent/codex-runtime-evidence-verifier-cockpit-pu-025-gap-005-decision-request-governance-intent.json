@@ -80,7 +80,7 @@
 		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-025-gap-005-decision-request-governance-intent.json",
 		"pnpm exec vitest run src/commands/decision-request.test.ts src/lib/cli/command-registry.test.ts src/dev/validate-runtime-packet-schemas-script.test.ts",
 		"node scripts/validate-runtime-packet-schemas.cjs --all",
-		"node --import tsx src/cli.ts decision-request --json --intent <intent> --default-option <id> --option <id=label> --tradeoff <id=tradeoff>",
+		"node --import tsx src/cli.ts decision-request --json --intent 'Confirm runtime packet emission path' --default-option keep --option 'keep=Keep current gate' --tradeoff 'keep=No migration needed for this slice' --authority 'repo-maintainer' --escalation-target 'maintainer' --escalation-channel 'github-pr' --escalation-reason 'slice-governance-review'",
 		"pnpm exec vitest run src/commands/decision-request.test.ts",
 		"node --import tsx src/cli.ts commands --json --for-agent --mode handoff",
 		"pnpm exec biome check src/commands/decision-request.ts src/commands/decision-request.test.ts src/lib/decision-request src/lib/cli/registry/decision-request-command-spec.ts contracts/decision-request.schema.json contracts/examples/decision-request.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-runtime-packet-schemas.cjs",
