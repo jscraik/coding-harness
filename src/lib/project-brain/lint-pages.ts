@@ -16,7 +16,8 @@ export function readBrainMarkdownPage(
 	const fullPath = join(harnessDir, path);
 	if (!existsSync(fullPath)) return null;
 	const content = readFileSync(fullPath, "utf-8");
-	return { path, content, lines: content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split("\n") };
+	const normalizedContent = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+	return { path, content, lines: normalizedContent.split("\n") };
 }
 
 /** Collect the Project Brain markdown pages checked by brain lint. */
