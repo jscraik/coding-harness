@@ -73,6 +73,16 @@
 			"runtimeStatus": "emitted",
 			"parityValidator": "session-context",
 			"ownerGap": "GAP-004"
+		},
+		{
+			"schemaVersion": "prompt-context-receipt/v1",
+			"schemaPath": "contracts/prompt-context-receipt.schema.json",
+			"examplePath": "contracts/examples/prompt-context-receipt.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"ownerGap": "SPG-001",
+			"blockedBy": "PU-027 adds the contract first; runtime emission requires a later producer slice that binds actual prompt contributors using pointer-only capture."
 		}
 	]
 }

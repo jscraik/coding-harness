@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Current board status is active; the latest externally verified PR #309 head before this control-plane refresh is `aaaa29fc`. Live CodeRabbit, CircleCI, pr-pipeline, security-scan, Socket, and Snyk checks passed on that head, while GitHub still reported mergeStateStatus `BLOCKED` and no review decision. Any later pushed commit requires a new external-state refresh before closeout. Review-thread, Linear scope, merge-readiness, Judge/PM, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is a Judge audit packet against current evidence; do not route from older JSC-331 context unless the current goal explicitly references it. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Current board status is active; the latest externally verified PR #309 head is `403ea218`. Live CodeRabbit, CircleCI, pr-pipeline, security-scan, Socket, and Snyk checks passed on that head; GitHub still reports mergeStateStatus `BLOCKED` with no review decision. Review-thread, Linear scope, merge-readiness, Judge/PM, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is to commit/push the bounded PU-027 PromptContextReceipt/v1 contract slice, refresh PR/review/Linear/Judge truth, and continue the next SPG slice; do not route from older JSC-331 context unless the current goal explicitly references it. |
 
 ## Artifact Index
 
@@ -76,11 +76,10 @@ unless a live refresh is recorded in the referenced artifact.
   cockpit, keep `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`
   freshness enforced through `scripts/check-goal-board.py`, and keep Linear,
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
-  receipts. PR #309 had green CodeRabbit, CI, security, Socket, and Snyk checks
-  at latest externally verified head `aaaa29fc`; any later pushed commit must
-  be refreshed before closeout, and GitHub mergeStateStatus remains `BLOCKED`, so merge-readiness,
-  Linear scope alignment, Judge/PM readiness, and final closeout remain
-  unclaimed.
+  receipts. PR #309 has green CodeRabbit, CircleCI, security, Socket, and
+  Snyk checks at latest externally verified head `403ea218`; GitHub
+  mergeStateStatus remains `BLOCKED`, so merge-readiness, Linear scope
+  alignment, Judge/PM readiness, and final closeout remain unclaimed.
 - JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
   not use it as the coding-harness tracker for the 2026-05-18 assurance plan
   unless Linear is explicitly reparented or updated later.

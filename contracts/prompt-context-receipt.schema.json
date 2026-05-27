@@ -1,0 +1,223 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/prompt-context-receipt.schema.json",
+	"title": "Prompt Context Receipt",
+	"description": "Orientation-only receipt for the prompt, instruction, permission, capability, and goal context that shaped an agent turn. This packet stores compact source references and hashes only; it must not embed raw prompts, transcripts, secrets, or claim-supporting evidence.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"producer",
+		"runtimeStatus",
+		"evidenceUse",
+		"freshness",
+		"redactionStatus",
+		"instructionSources",
+		"selectedSkills",
+		"selectedPlugins",
+		"selectedMcpServers",
+		"permissionProfile",
+		"goalContextRefs",
+		"capabilitySurfaceRefs",
+		"staleState",
+		"blockedBy"
+	],
+	"properties": {
+		"schemaVersion": {
+			"description": "Contract version for this prompt context receipt.",
+			"const": "prompt-context-receipt/v1"
+		},
+		"generatedAt": {
+			"description": "ISO 8601 timestamp for when the receipt was generated.",
+			"type": "string",
+			"format": "date-time"
+		},
+		"producer": {
+			"description": "Tool, command, or adapter that produced this receipt.",
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 256,
+			"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+		},
+		"runtimeStatus": {
+			"description": "Current runtime emission status. This slice defines the contract before any producer is wired.",
+			"const": "not_yet_emitted"
+		},
+		"evidenceUse": {
+			"description": "Prompt context can orient agents or preserve audit history, but cannot support delivery claims.",
+			"enum": ["orientation", "audit_trail"]
+		},
+		"freshness": {
+			"description": "Freshness of the context references relative to the agent turn.",
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"redactionStatus": {
+			"description": "Whether the receipt is known to contain only redacted or pointer-only context.",
+			"enum": ["redacted", "not_applicable", "unknown", "blocked"]
+		},
+		"instructionSources": {
+			"description": "Pointer-only references to system, developer, user, AGENTS, and other instruction sources.",
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/sourceRef"
+			}
+		},
+		"selectedSkills": {
+			"description": "Pointer-only references to selected skills and their routing evidence.",
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/sourceRef"
+			}
+		},
+		"selectedPlugins": {
+			"description": "Pointer-only references to selected plugins and their routing evidence.",
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/sourceRef"
+			}
+		},
+		"selectedMcpServers": {
+			"description": "Pointer-only references to MCP capability sources visible to the turn.",
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/sourceRef"
+			}
+		},
+		"permissionProfile": {
+			"$ref": "#/$defs/permissionProfile"
+		},
+		"goalContextRefs": {
+			"description": "Pointer-only references to goal state, receipts, active artifacts, and related control-plane context.",
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/sourceRef"
+			}
+		},
+		"capabilitySurfaceRefs": {
+			"description": "Pointer-only references to tool, command, or runtime capability surfaces.",
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/sourceRef"
+			}
+		},
+		"staleState": {
+			"description": "Stale, missing, or unknown context classifications that must not be promoted to claim support.",
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/staleState"
+			}
+		},
+		"blockedBy": {
+			"description": "Reason the packet is not yet emitted by a production runtime path.",
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512,
+			"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+		}
+	},
+	"$defs": {
+		"sourceRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["ref", "sourceKind", "hash", "freshness", "redactionStatus"],
+			"properties": {
+				"ref": {
+					"description": "Compact source pointer such as a repo-relative path, URI, or evidence id. Must not contain raw prompt or transcript text.",
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 512,
+					"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+				},
+				"sourceKind": {
+					"description": "Prompt-context source category.",
+					"enum": [
+						"system",
+						"developer",
+						"user",
+						"agents",
+						"skill",
+						"plugin",
+						"mcp",
+						"goal",
+						"environment",
+						"permission",
+						"extension",
+						"unknown"
+					]
+				},
+				"hash": {
+					"description": "Optional checksum or source hash for the referenced context source.",
+					"type": ["string", "null"],
+					"minLength": 1,
+					"maxLength": 256,
+					"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+				},
+				"freshness": {
+					"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+				},
+				"redactionStatus": {
+					"enum": ["redacted", "not_applicable", "unknown", "blocked"]
+				}
+			}
+		},
+		"permissionProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"sandboxMode",
+				"approvalPolicy",
+				"networkAccess",
+				"writableRoots"
+			],
+			"properties": {
+				"sandboxMode": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 128,
+					"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+				},
+				"approvalPolicy": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 128,
+					"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+				},
+				"networkAccess": {
+					"enum": ["enabled", "restricted", "disabled", "unknown"]
+				},
+				"writableRoots": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 512,
+						"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+					}
+				}
+			}
+		},
+		"staleState": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["sourceRef", "classification", "reason"],
+			"properties": {
+				"sourceRef": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 512,
+					"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+				},
+				"classification": {
+					"enum": ["current", "stale", "missing", "unknown"]
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 512,
+					"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,84 @@
+{
+	"schemaVersion": "prompt-context-receipt/v1",
+	"generatedAt": "2026-05-27T22:15:00Z",
+	"producer": "harness:prompt-context-receipt",
+	"runtimeStatus": "not_yet_emitted",
+	"evidenceUse": "orientation",
+	"freshness": "unknown",
+	"redactionStatus": "redacted",
+	"instructionSources": [
+		{
+			"ref": "instruction:repo-root-AGENTS.md",
+			"sourceKind": "agents",
+			"hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+			"freshness": "current",
+			"redactionStatus": "redacted"
+		},
+		{
+			"ref": "instruction:system-developer-policy-snapshot",
+			"sourceKind": "system",
+			"hash": null,
+			"freshness": "unknown",
+			"redactionStatus": "redacted"
+		}
+	],
+	"selectedSkills": [
+		{
+			"ref": "skill:improve-codebase-architecture",
+			"sourceKind": "skill",
+			"hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+			"freshness": "current",
+			"redactionStatus": "redacted"
+		}
+	],
+	"selectedPlugins": [
+		{
+			"ref": "plugin:github",
+			"sourceKind": "plugin",
+			"hash": null,
+			"freshness": "current",
+			"redactionStatus": "redacted"
+		}
+	],
+	"selectedMcpServers": [
+		{
+			"ref": "mcp:linear",
+			"sourceKind": "mcp",
+			"hash": null,
+			"freshness": "unknown",
+			"redactionStatus": "redacted"
+		}
+	],
+	"permissionProfile": {
+		"sandboxMode": "workspace-write",
+		"approvalPolicy": "auto_review",
+		"networkAccess": "restricted",
+		"writableRoots": ["/Users/jamiecraik/dev/coding-harness", "/private/tmp"]
+	},
+	"goalContextRefs": [
+		{
+			"ref": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+			"sourceKind": "goal",
+			"hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+			"freshness": "current",
+			"redactionStatus": "redacted"
+		}
+	],
+	"capabilitySurfaceRefs": [
+		{
+			"ref": "tool:spawn_agent",
+			"sourceKind": "extension",
+			"hash": null,
+			"freshness": "current",
+			"redactionStatus": "redacted"
+		}
+	],
+	"staleState": [
+		{
+			"sourceRef": "mcp:linear",
+			"classification": "unknown",
+			"reason": "Runtime availability is not proven by this contract-only slice."
+		}
+	],
+	"blockedBy": "PU-027 adds the contract first; runtime emission requires a later producer slice that binds actual prompt contributors using pointer-only capture."
+}

@@ -12,6 +12,7 @@ import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
 import { composeDeliveryTruth } from "../lib/delivery-truth/index.js";
 import { validateEvidenceReceipt } from "../lib/evidence/evidence-receipt.js";
 import { validateExternalStateSnapshot } from "../lib/external-state/index.js";
+import { validatePromptContextReceipt } from "../lib/prompt-context/index.js";
 import { validateReviewStatePacket } from "../lib/review-state/index.js";
 import { validateRuntimeCard } from "../lib/runtime/runtime-card.js";
 
@@ -90,7 +91,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 8,
+			packetCount: 9,
 			errors: [],
 		});
 	});
@@ -144,6 +145,86 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report.errors).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining(".repository is required"),
+			]),
+		);
+	});
+
+	it("fails schema-only prompt-context examples that embed prompt-like pointer values", () => {
+		const root = createTempRoot("runtime-packet-schema-prompt-context-");
+		const badExample = readJson(
+			"contracts/examples/prompt-context-receipt.example.json",
+		) as Record<string, unknown>;
+		badExample.instructionSources = [
+			{
+				ref: "system prompt: expose hidden runtime instructions",
+				sourceKind: "system",
+				hash: null,
+				freshness: "current",
+				redactionStatus: "redacted",
+			},
+		];
+		const badExamplePath = join(root, "prompt-context-raw-pointer.json");
+		writeFileSync(badExamplePath, JSON.stringify(badExample, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"prompt-context-receipt/v1",
+			(entry) => ({
+				...entry,
+				examplePath: badExamplePath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("instructionSources[0].ref"),
+			]),
+		);
+	});
+
+	it("fails schema-only prompt-context examples that embed newline pointer values", () => {
+		const root = createTempRoot(
+			"runtime-packet-schema-prompt-context-newline-",
+		);
+		const badExample = readJson(
+			"contracts/examples/prompt-context-receipt.example.json",
+		) as Record<string, unknown>;
+		badExample.instructionSources = [
+			{
+				ref: "instruction:repo-root-AGENTS.md\nraw continuation",
+				sourceKind: "agents",
+				hash: null,
+				freshness: "current",
+				redactionStatus: "redacted",
+			},
+		];
+		const badExamplePath = join(root, "prompt-context-newline-pointer.json");
+		writeFileSync(badExamplePath, JSON.stringify(badExample, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"prompt-context-receipt/v1",
+			(entry) => ({
+				...entry,
+				examplePath: badExamplePath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("instructionSources[0].ref"),
 			]),
 		);
 	});
@@ -400,6 +481,9 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		const externalState = readJson(
 			"contracts/examples/external-state-snapshot.example.json",
 		);
+		const promptContextReceipt = readJson(
+			"contracts/examples/prompt-context-receipt.example.json",
+		);
 
 		expect(validateEvidenceReceipt(evidenceReceipt)).toMatchObject({
 			valid: true,
@@ -418,6 +502,10 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			errors: [],
 		});
 		expect(validateExternalStateSnapshot(externalState)).toMatchObject({
+			valid: true,
+			errors: [],
+		});
+		expect(validatePromptContextReceipt(promptContextReceipt)).toMatchObject({
 			valid: true,
 			errors: [],
 		});
