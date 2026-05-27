@@ -22,6 +22,17 @@ RELATIVE_SKILL_VALIDATOR = Path(
     "Skills/agent-ops/goal-governor/scripts/check_goal_board.py",
 )
 ENV_OVERRIDES = ("GOAL_GOVERNOR_CHECK_GOAL_BOARD", "GOAL_GOVERNOR_CHECK_BOARD")
+RUNTIME_EVIDENCE_COCKPIT_GOAL = Path(
+    "docs/goals/codex-runtime-evidence-verifier-cockpit",
+)
+AUDIT_FRESHNESS_VALIDATOR = REPO_ROOT / "scripts/check-goal-audit-freshness.py"
+ACTIVE_ARTIFACTS_PATH = REPO_ROOT / ".harness/active-artifacts.md"
+REQUIRED_RUNTIME_EVIDENCE_ROUTE_REFS = (
+    ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+    ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+    ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+)
 
 
 def source_checkout_root() -> Path | None:
@@ -73,7 +84,133 @@ def resolve_validator() -> Path:
     )
 
 
+def normalize_exit_code(value: object) -> int:
+    if value is None:
+        return 0
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        return 0 if value == "" else 1
+    return 1
+
+
+def run_goal_board_validator(validator: Path, argv: list[str]) -> int:
+    previous_argv = sys.argv
+    sys.argv = [str(validator), *argv]
+    try:
+        try:
+            runpy.run_path(str(validator), run_name="__main__")
+        except SystemExit as exc:
+            return normalize_exit_code(exc.code)
+    finally:
+        sys.argv = previous_argv
+    return 0
+
+
+def resolve_runtime_evidence_goal_path(argv: list[str]) -> Path | None:
+    expected_goal_path = (REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL).resolve()
+    for value in argv:
+        if value.startswith("-"):
+            continue
+        candidate = Path(value).expanduser()
+        if not candidate.is_absolute():
+            candidate = (Path.cwd() / candidate).resolve()
+        else:
+            candidate = candidate.resolve()
+        if candidate == expected_goal_path:
+            return candidate
+    return None
+
+
+def markdown_section_lines(content: str, heading: str) -> list[str]:
+    section_lines: list[str] = []
+    in_section = False
+    heading_marker = f"## {heading}"
+    for line in content.splitlines():
+        if line.startswith("## "):
+            if in_section:
+                break
+            if line.strip() == heading_marker:
+                in_section = True
+            continue
+        if in_section:
+            section_lines.append(line)
+    return section_lines
+
+
+def run_goal_extensions(argv: list[str]) -> int:
+    goal_path = resolve_runtime_evidence_goal_path(argv)
+    if goal_path is None:
+        return 0
+
+    if not AUDIT_FRESHNESS_VALIDATOR.is_file():
+        print(
+            "Required audit freshness validator is missing: "
+            f"{AUDIT_FRESHNESS_VALIDATOR}",
+            file=sys.stderr,
+        )
+        return 1
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(AUDIT_FRESHNESS_VALIDATOR),
+            str(goal_path),
+            "--repo",
+            str(REPO_ROOT),
+        ],
+        check=False,
+    )
+    if result.returncode != 0:
+        return result.returncode
+
+    if not ACTIVE_ARTIFACTS_PATH.is_file():
+        print(
+            "Required Project Brain active-artifacts index is missing: "
+            f"{ACTIVE_ARTIFACTS_PATH}",
+            file=sys.stderr,
+        )
+        return 1
+
+    active_artifacts = ACTIVE_ARTIFACTS_PATH.read_text(encoding="utf-8")
+    current_route_lines = markdown_section_lines(
+        active_artifacts,
+        "Current Active Route",
+    )
+    jsc_363_rows = [
+        line
+        for line in current_route_lines
+        if line.lstrip().startswith("|") and "JSC-363" in line
+    ]
+    if not jsc_363_rows:
+        print(
+            "Project Brain active-artifacts index does not route the runtime "
+            "evidence cockpit goal from Current Active Route. Missing JSC-363 "
+            "route row.",
+            file=sys.stderr,
+        )
+        return 1
+
+    missing_refs = [
+        ref
+        for ref in REQUIRED_RUNTIME_EVIDENCE_ROUTE_REFS
+        if not any(ref in row for row in jsc_363_rows)
+    ]
+    if missing_refs:
+        print(
+            "Project Brain active-artifacts index does not route the runtime "
+            "evidence cockpit goal. Missing refs: "
+            + ", ".join(missing_refs),
+            file=sys.stderr,
+        )
+        return 1
+
+    return 0
+
+
 if __name__ == "__main__":
     validator = resolve_validator()
-    sys.argv = [str(validator), *sys.argv[1:]]
-    runpy.run_path(str(validator), run_name="__main__")
+    validator_status = run_goal_board_validator(validator, sys.argv[1:])
+    if validator_status != 0:
+        raise SystemExit(validator_status)
+    raise SystemExit(run_goal_extensions(sys.argv[1:]))
