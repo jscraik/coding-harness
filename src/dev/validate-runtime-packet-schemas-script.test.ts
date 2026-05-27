@@ -366,7 +366,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			evidence: [
 				{
 					source: "external_state",
-					externalStateSources: ["github_checks"],
+					externalStateSources: ["github_checks", "circleci"],
 					receipt: {
 						schemaVersion: "evidence-receipt/v1",
 						kind: "external_state",
