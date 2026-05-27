@@ -1,6 +1,9 @@
 ---
 name: coding-harness
 description: "Use when users need to install, bootstrap, upgrade, audit, diagnose, or explain @brainwav/coding-harness in a repository, including harness init/upgrade, CI migration, governance gates, command discovery, and Codex environment action sync; do not use for unrelated feature delivery."
+skill_kind: executable
+owned_workflow: harness-install-upgrade-and-governance
+validation_command: pnpm skill:validate
 ---
 
 # Coding Harness Skill

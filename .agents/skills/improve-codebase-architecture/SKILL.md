@@ -1,6 +1,9 @@
 ---
 name: improve-codebase-architecture
 description: Use inside coding-harness when the user wants to find architecture deepening opportunities, reduce shallow/pass-through modules, improve testability, or make the Codex-first harness easier for agents to navigate while staying aligned with docs/roadmap/north-star.md.
+skill_kind: advisory
+owned_workflow: coding-harness-architecture-deepening-review
+validation_command: pnpm skill:validate
 ---
 
 # Improve Codebase Architecture
@@ -22,6 +25,7 @@ rollback safety.
 - [Candidate Output](#candidate-output)
 - [Deepening Loop](#deepening-loop)
 - [Constraints](#constraints)
+- [Validation](#validation)
 - [References](#references)
 
 ## Source Material
@@ -140,6 +144,10 @@ When the user picks a candidate:
 - Do not collapse independent review into self-approval.
 - Do not use architecture vocabulary as decoration; use it to make trade-offs
   sharper.
+
+## Validation
+
+- Source-repo skill-density guard: `pnpm skill:validate`
 
 ## References
 
