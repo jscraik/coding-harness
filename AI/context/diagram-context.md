@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-27T22:40:27Z
+Generated: 2026-05-27T23:30:37Z
 
 ## Table of Contents
 
@@ -631,6 +631,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_record_emitter_core_688049d5_2036fd6f
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_records_core_89286dfa_4ce958f7
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_state_core_25a955bc_a562e9bf
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_runtime_card_handoff_1c8c4766_687facef
   ext_node_crypto_c7dfc512["node:crypto"] --> node_runtime_card_trace_64a5ca95_a26c03d1
   ext_node_crypto_c7dfc512["node:crypto"] --> node_scan_cache_fc02c79c_11793337
   ext_node_crypto_c7dfc512["node:crypto"] --> node_sources_878a52fc_cd312fcd
@@ -782,6 +783,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_run_state_core_25a955bc_a562e9bf
   ext_node_fs_a15b7d96["node:fs"] --> node_runner_1_6f281bf8_36f20bbb
   ext_node_fs_a15b7d96["node:fs"] --> node_runtime_budget_dfce83ae_5cbd79a2
+  ext_node_fs_a15b7d96["node:fs"] --> node_runtime_card_handoff_1c8c4766_687facef
   ext_node_fs_a15b7d96["node:fs"] --> node_runtime_card_trace_64a5ca95_a26c03d1
   ext_node_fs_a15b7d96["node:fs"] --> node_satisfiability_6c08de4b_de8c902a
   ext_node_fs_a15b7d96["node:fs"] --> node_scaffold_ci_template_utils_1035b61c_0513532b
@@ -1129,6 +1131,7 @@ flowchart TD
     replay_output_993eda9e{{"replay-output"}}
     replay_run_record_9a08cce2{{"replay-run-record"}}
     runtime_card_args_2b3d4b28{{"runtime-card-args"}}
+    runtime_card_artifacts_143b799c{{"runtime-card-artifacts"}}
     runtime_card_options_c9156ad5{{"runtime-card-options"}}
     runtime_card_e06b53e1{{"runtime-card"}}
     cli_args_1_6144b055{{"cli-args"}}
@@ -1152,10 +1155,9 @@ flowchart TD
     metrics_capture_core_db4bf7cf{{"metrics-capture-core"}}
     types_core_1_8bd0f8fd{{"types-core"}}
     recovery_8c585378{{"recovery"}}
-    types_20_071a0112{{"types"}}
   end
   classDef eventNode fill:#db2777,color:#fff
-  class ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_args_2b3d4b28,runtime_card_options_c9156ad5,runtime_card_e06b53e1,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_2e194d13,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,judge_pm_audit_ccd20b35,types_8_f6283648,observed_skill_usage_ed7d5930,outcome_closeout_ba497ec2,client_948fe603,mutation_queue_ce5a530e,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,control_plane_core_db3b4cb2,metrics_capture_core_db4bf7cf,types_core_1_8bd0f8fd,recovery_8c585378,types_20_071a0112 eventNode
+  class ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_args_2b3d4b28,runtime_card_artifacts_143b799c,runtime_card_options_c9156ad5,runtime_card_e06b53e1,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_2e194d13,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,judge_pm_audit_ccd20b35,types_8_f6283648,observed_skill_usage_ed7d5930,outcome_closeout_ba497ec2,client_948fe603,mutation_queue_ce5a530e,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,control_plane_core_db3b4cb2,metrics_capture_core_db4bf7cf,types_core_1_8bd0f8fd,recovery_8c585378 eventNode
 
 ```
 

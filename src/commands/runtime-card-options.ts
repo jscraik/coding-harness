@@ -19,6 +19,8 @@ export interface RuntimeCardCLIOptions {
 	outPath?: string;
 	/** Optional runtime evidence bundle output path. */
 	evidenceOutPath?: string;
+	/** Optional runtime-card handoff receipt output path. */
+	handoffOutPath?: string;
 	/** Optional canonical run-record event stream path. */
 	traceOutPath?: string;
 	/** Whether live provider state should be collected. */
@@ -42,7 +44,7 @@ export function isRuntimeCardContext(
 /** Print usage syntax for the `harness runtime-card` command. */
 export function printRuntimeCardUsage(): void {
 	console.info(
-		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--context local|pr|ci|closeout] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>] [--evidence-out <path>] [--trace-out artifacts/agent-runs/<runId>/events.jsonl]",
+		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--context local|pr|ci|closeout] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>] [--evidence-out <path>] [--handoff-out <path>] [--trace-out artifacts/agent-runs/<runId>/events.jsonl]",
 	);
 	console.info("");
 	console.info(

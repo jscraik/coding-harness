@@ -10,6 +10,7 @@ const VALID_RUNTIME_STATUSES = new Set(["emitted", "not_yet_emitted"]);
 const VALID_PARITY_VALIDATORS = new Set([
 	"evidence-receipt",
 	"runtime-card",
+	"runtime-card-handoff",
 	"harness-decision",
 	"review-state",
 	"external-state-snapshot",

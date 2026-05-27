@@ -77,6 +77,12 @@ under src/lib/** when they grow beyond a small adapter.
 boundaries. Changes must be deliberate, documented, and validated through the
 repo command contract.
 
+Runtime-card CLI artifact emission uses a dedicated command adapter:
+`src/commands/runtime-card-artifacts.ts` owns `--out`, `--evidence-out`, and
+`--handoff-out` path distinctness, repository-constrained writes, and trace
+artifact-write recording so `src/commands/runtime-card.ts` remains a thin
+runtime-card orchestration facade.
+
 ### src/lib/
 
 Domain behavior lives here: policy gates, evidence evaluators, memory and
@@ -91,7 +97,11 @@ not in docs, templates, generated context, or command facades.
 - src/lib/evidence/: shared receipt contracts that classify validation,
   artifact, runtime-card, review, external-state, and run-record proof.
 - src/lib/runtime/: Codex runtime evidence, runtime evidence bundles, runtime
-  cards, producer adapters, and runtime-card projections.
+  cards, producer adapters, runtime-card projections, and
+  `runtime-card-handoff/v1` contracts. The runtime-card handoff module binds a
+  persisted runtime card to its produced runtime-evidence bundle with a shared
+  binding id, checksums, source/provenance refs, head SHA, and orientation-only
+  evidence-use policy before any handoff can feed agent cockpit state.
 - src/lib/runtime-trace/: opt-in runtime-card trace recording that projects
   runtime-card execution into canonical `agent-run-event/v1` event streams
   under `artifacts/agent-runs/<runId>/events.jsonl`. It owns trace-out path

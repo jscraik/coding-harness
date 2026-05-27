@@ -762,6 +762,33 @@ const RUNTIME_CARD_SURFACE_RATCHETS = [
 		reason:
 			"Runtime-card argument parsing must stay focused on CLI token parsing and runtime-card option shape.",
 	},
+	{
+		path: "src/commands/runtime-card-artifacts.ts",
+		maxLines: 150,
+		reason:
+			"Runtime-card artifact writing must stay behind a focused seam for output safety, evidence bundle projection, and handoff emission.",
+	},
+] as const;
+
+const RUNTIME_CARD_HANDOFF_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/runtime/runtime-card-handoff.ts",
+		maxLines: 200,
+		reason:
+			"Runtime-card handoff construction must stay focused on pairing persisted runtime artifacts and checksum metadata.",
+	},
+	{
+		path: "src/lib/runtime/runtime-card-handoff-contract.ts",
+		maxLines: 120,
+		reason:
+			"Runtime-card handoff contracts must stay small enough for validators, schemas, and CLI adapters to share.",
+	},
+	{
+		path: "src/lib/runtime/runtime-card-handoff-validation.ts",
+		maxLines: 320,
+		reason:
+			"Runtime-card handoff validation must stay focused on packet shape, advisory evidence use, and artifact pairing invariants.",
+	},
 ] as const;
 
 const REPLAY_SURFACE_RATCHETS = [
@@ -1560,7 +1587,10 @@ const REVIEW_GATE_DECISION_PACKET_FORBIDDEN_SYMBOLS = [
 	"function resolveRunRecordEventStatus",
 	"function resolveRunRecordEventSeverity",
 ] as const;
-const RUNTIME_CARD_COMMAND_SUBMODULES = ["./runtime-card-args.js"] as const;
+const RUNTIME_CARD_COMMAND_SUBMODULES = [
+	"./runtime-card-args.js",
+	"./runtime-card-artifacts.js",
+] as const;
 const RUNTIME_CARD_CONTRACT_SUBMODULES = [
 	"./runtime-card-validation.js",
 ] as const;
@@ -1847,6 +1877,10 @@ describe("module boundaries", () => {
 
 	it("keeps runtime-card surfaces split after decomposition", () => {
 		expectRatchetsWithinBudget(RUNTIME_CARD_SURFACE_RATCHETS);
+	});
+
+	it("keeps runtime-card handoff surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(RUNTIME_CARD_HANDOFF_SURFACE_RATCHETS);
 	});
 
 	it("keeps root-hygiene surfaces split after decomposition", () => {

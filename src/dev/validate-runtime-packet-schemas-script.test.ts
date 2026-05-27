@@ -15,6 +15,7 @@ import { validateExternalStateSnapshot } from "../lib/external-state/index.js";
 import { validatePromptContextReceipt } from "../lib/prompt-context/index.js";
 import { validateReviewStatePacket } from "../lib/review-state/index.js";
 import { validateRuntimeCard } from "../lib/runtime/runtime-card.js";
+import { validateRuntimeCardHandoff } from "../lib/runtime/runtime-card-handoff.js";
 
 const SCRIPT_PATH = join(
 	process.cwd(),
@@ -91,7 +92,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 9,
+			packetCount: 10,
 			errors: [],
 		});
 	});
@@ -472,6 +473,9 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		const runtimeCard = readJson(
 			"contracts/examples/runtime-card.example.json",
 		);
+		const runtimeCardHandoff = readJson(
+			"contracts/examples/runtime-card-handoff.example.json",
+		);
 		const harnessDecision = readJson(
 			"contracts/examples/harness-decision.example.json",
 		);
@@ -490,6 +494,10 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			errors: [],
 		});
 		expect(validateRuntimeCard(runtimeCard)).toMatchObject({
+			valid: true,
+			errors: [],
+		});
+		expect(validateRuntimeCardHandoff(runtimeCardHandoff)).toMatchObject({
 			valid: true,
 			errors: [],
 		});

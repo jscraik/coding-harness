@@ -21,6 +21,15 @@
 			"ownerGap": "GAP-003"
 		},
 		{
+			"schemaVersion": "runtime-card-handoff/v1",
+			"schemaPath": "contracts/runtime-card-handoff.schema.json",
+			"examplePath": "contracts/examples/runtime-card-handoff.example.json",
+			"typeSourcePath": "src/lib/runtime/runtime-card-handoff.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "runtime-card-handoff",
+			"ownerGap": "SPG-002"
+		},
+		{
 			"schemaVersion": "harness-decision/v1",
 			"schemaPath": "contracts/harness-decision.schema.json",
 			"examplePath": "contracts/examples/harness-decision.example.json",

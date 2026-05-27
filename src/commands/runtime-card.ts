@@ -8,12 +8,7 @@ import {
 	CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
 	type CodexRuntimeEvidence,
 } from "../lib/runtime/codex-runtime-evidence.js";
-import {
-	readRepoRuntimeJsonArtifact,
-	resolveRepoRuntimeOutputArtifactPath,
-	writeRepoRuntimeJsonArtifact,
-} from "../lib/runtime/repo-runtime-artifact.js";
-import { buildRuntimeEvidenceBundleFromCard } from "../lib/runtime/runtime-evidence-producer.js";
+import { readRepoRuntimeJsonArtifact } from "../lib/runtime/repo-runtime-artifact.js";
 import {
 	createRuntimeCardTraceRecorder,
 	parseRuntimeCardTraceOutPath,
@@ -24,6 +19,7 @@ import {
 	type RuntimeCardCLIOptions,
 	parseRuntimeCardArgs,
 } from "./runtime-card-args.js";
+import { writeRuntimeCardArtifacts } from "./runtime-card-artifacts.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -60,23 +56,6 @@ function loadEvidenceBundle(repoRoot: string, artifactPath: string): unknown {
 		"--evidence",
 	);
 	return normalizeEvidenceInput(evidence, artifactPath);
-}
-
-function assertDistinctOutputArtifacts(options: RuntimeCardCLIOptions): void {
-	if (!options.outPath || !options.evidenceOutPath) return;
-	const outPath = resolveRepoRuntimeOutputArtifactPath(
-		options.repoRoot,
-		options.outPath,
-		"--out",
-	);
-	const evidenceOutPath = resolveRepoRuntimeOutputArtifactPath(
-		options.repoRoot,
-		options.evidenceOutPath,
-		"--evidence-out",
-	);
-	if (outPath === evidenceOutPath) {
-		throw new Error("--out and --evidence-out must target different files");
-	}
 }
 
 function createTraceRecorder(
@@ -177,39 +156,7 @@ export async function runRuntimeCardCLI(args: string[]): Promise<number> {
 		const card = parsed.options.live
 			? await buildLiveRuntimeCard(buildOptions)
 			: buildLocalRuntimeCard(buildOptions);
-		assertDistinctOutputArtifacts(parsed.options);
-		if (parsed.options.outPath) {
-			const outPath = resolveRepoRuntimeOutputArtifactPath(
-				parsed.options.repoRoot,
-				parsed.options.outPath,
-				"--out",
-			);
-			writeRepoRuntimeJsonArtifact(
-				parsed.options.repoRoot,
-				parsed.options.outPath,
-				"--out",
-				card,
-			);
-			trace?.recordArtifactWrite("runtime-card", outPath);
-		}
-		if (parsed.options.evidenceOutPath) {
-			const evidenceOutPath = resolveRepoRuntimeOutputArtifactPath(
-				parsed.options.repoRoot,
-				parsed.options.evidenceOutPath,
-				"--evidence-out",
-			);
-			const evidence = buildRuntimeEvidenceBundleFromCard(card, {
-				provenanceRef: `artifact:${parsed.options.evidenceOutPath}`,
-				generatedAt: card.generatedAt,
-			});
-			writeRepoRuntimeJsonArtifact(
-				parsed.options.repoRoot,
-				parsed.options.evidenceOutPath,
-				"--evidence-out",
-				evidence,
-			);
-			trace?.recordArtifactWrite("runtime-evidence-bundle", evidenceOutPath);
-		}
+		writeRuntimeCardArtifacts(parsed.options, card, trace);
 		trace?.recordTerminal({
 			exitCode: 0,
 			outcome: "success",

@@ -30,7 +30,12 @@ function setPathOption(
 	options: RuntimeCardCLIOptions,
 	args: readonly string[],
 	index: number,
-	flag: "--phase-exit" | "--evidence" | "--out" | "--evidence-out",
+	flag:
+		| "--phase-exit"
+		| "--evidence"
+		| "--out"
+		| "--evidence-out"
+		| "--handoff-out",
 ): RuntimeCardParseResult | null {
 	const value = readFlagValue(args, index);
 	if (!value) {
@@ -45,6 +50,7 @@ function setPathOption(
 	if (flag === "--evidence") options.evidencePath = value;
 	if (flag === "--out") options.outPath = value;
 	if (flag === "--evidence-out") options.evidenceOutPath = value;
+	if (flag === "--handoff-out") options.handoffOutPath = value;
 	return null;
 }
 
@@ -121,15 +127,24 @@ export function parseRuntimeCardArgs(
 			continue;
 		}
 		if (
-			["--phase-exit", "--evidence", "--out", "--evidence-out"].includes(
-				arg ?? "",
-			)
+			[
+				"--phase-exit",
+				"--evidence",
+				"--out",
+				"--evidence-out",
+				"--handoff-out",
+			].includes(arg ?? "")
 		) {
 			const parseResult = setPathOption(
 				options,
 				args,
 				index,
-				arg as "--phase-exit" | "--evidence" | "--out" | "--evidence-out",
+				arg as
+					| "--phase-exit"
+					| "--evidence"
+					| "--out"
+					| "--evidence-out"
+					| "--handoff-out",
 			);
 			if (parseResult) return parseResult;
 			index += 1;

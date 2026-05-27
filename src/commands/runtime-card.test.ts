@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { runRuntimeCardCLI } from "./runtime-card.js";
 import { HE_PHASE_EXIT_SCHEMA_VERSION } from "../lib/decision/he-phase-exit.js";
 import { loadRunRecordBundle } from "../lib/contract/run-records.js";
+import { validateRuntimeCardHandoff } from "../lib/runtime/runtime-card-handoff.js";
 import { validateRuntimeEvidenceBundle } from "../lib/runtime/runtime-evidence-bundle.js";
 
 const CODE = String.fromCharCode(96);
@@ -399,6 +400,55 @@ describe("runRuntimeCardCLI", () => {
 		expect(
 			evidence.sources.map((source: { kind: string }) => source.kind),
 		).toEqual(["git", "artifact"]);
+	});
+
+	it("persists a paired runtime-card handoff when --handoff-out is supplied", async () => {
+		const repoRoot = setupRepo();
+		const outputPath = ".harness/runtime/JSC-311-card.json";
+		const evidenceOutPath = ".harness/runtime/JSC-311-evidence.json";
+		const handoffOutPath = ".harness/runtime/JSC-311-handoff.json";
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--out",
+			outputPath,
+			"--evidence-out",
+			evidenceOutPath,
+			"--handoff-out",
+			handoffOutPath,
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		expect(JSON.parse(output).schemaVersion).toBe("runtime-card/v1");
+		const handoff = JSON.parse(
+			readFileSync(join(repoRoot, handoffOutPath), "utf8"),
+		);
+		expect(validateRuntimeCardHandoff(handoff)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(handoff).toMatchObject({
+			schemaVersion: "runtime-card-handoff/v1",
+			evidenceUse: "orientation",
+			issueKey: "JSC-311",
+			runtimeCard: {
+				path: outputPath,
+				schemaVersion: "runtime-card/v1",
+			},
+			evidenceBundle: {
+				path: evidenceOutPath,
+				schemaVersion: "runtime-evidence-bundle/v1",
+			},
+			runtimeIdentity: {
+				provenanceRef: `artifact:${evidenceOutPath}`,
+			},
+		});
+		expect(handoff.runtimeCard.sha256).toMatch(/^sha256:[a-f0-9]{64}$/u);
+		expect(handoff.evidenceBundle.sha256).toMatch(/^sha256:[a-f0-9]{64}$/u);
 	});
 
 	it("marks runtime-card-derived phase-exit evidence as summary-only", async () => {
@@ -923,6 +973,31 @@ describe("runRuntimeCardCLI", () => {
 		expect(error).toContain("--evidence-out requires a file path");
 	});
 
+	it("returns usage errors for missing handoff output path", async () => {
+		const { exitCode, error } = await captureRuntimeCardCLI(["--handoff-out"]);
+
+		expect(exitCode).toBe(2);
+		expect(error).toContain("--handoff-out requires a file path");
+	});
+
+	it("requires card and evidence outputs before writing a handoff", async () => {
+		const repoRoot = setupRepo();
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--handoff-out",
+			".harness/runtime/JSC-311-handoff.json",
+		]);
+
+		expect(exitCode).toBe(1);
+		expect(JSON.parse(output)).toMatchObject({
+			schemaVersion: "runtime-card-error/v1",
+			status: "fail",
+			error: "Error: --handoff-out requires --out and --evidence-out",
+		});
+	});
+
 	it("rejects evidence paths outside the repository", async () => {
 		const repoRoot = setupRepo();
 		const { exitCode, output } = await captureRuntimeCardCLI([
@@ -976,6 +1051,29 @@ describe("runRuntimeCardCLI", () => {
 			schemaVersion: "runtime-card-error/v1",
 			status: "fail",
 			error: "Error: --out and --evidence-out must target different files",
+		});
+	});
+
+	it("rejects colliding handoff output paths", async () => {
+		const repoRoot = setupRepo();
+		const { exitCode, output } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--out",
+			".harness/runtime/card.json",
+			"--evidence-out",
+			".harness/runtime/evidence.json",
+			"--handoff-out",
+			".harness/runtime/evidence.json",
+		]);
+
+		expect(exitCode).toBe(1);
+		expect(JSON.parse(output)).toMatchObject({
+			schemaVersion: "runtime-card-error/v1",
+			status: "fail",
+			error:
+				"Error: --evidence-out and --handoff-out must target different files",
 		});
 	});
 
