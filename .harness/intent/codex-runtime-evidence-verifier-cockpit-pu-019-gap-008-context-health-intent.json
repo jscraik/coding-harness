@@ -1,0 +1,203 @@
+{
+	"schemaVersion": "harness-slice-intent/v1",
+	"goal": "codex-runtime-evidence-verifier-cockpit",
+	"lifecycleUnit": "PU-019-GAP-008-context-health",
+	"createdAt": "2026-05-27T00:59:07Z",
+	"headSha": "29ac20979f21bc178358779e0bc50d8ddc0eee75",
+	"status": "ready_for_intent_review",
+	"objective": "Make stale context detection routine by adding a lightweight agent-readiness context-health projection to the existing agent-readiness deep module, with tests that classify missing or stale Project Brain, active artifact, runtime-card, and external-horizon context before agents act on old evidence.",
+	"sourceArtifacts": {
+		"goal": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"state": "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"plan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+		"spec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+		"audit": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+		"ecosystemReview": ".harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md",
+		"activeArtifacts": ".harness/active-artifacts.md"
+	},
+	"auditGapIds": ["GAP-008"],
+	"feedbackSignal": "Goal continuation after confirming audit freshness linkage; next progress must close another adopted evidence-led gap instead of stopping at audit-link validation.",
+	"rootOperationalFailure": "Context freshness is still distributed across individual docs, active-artifact routing, runtime cards, and memory surfaces; agents can orient from stale context unless a routine command reports context-health explicitly.",
+	"failureCategory": "stale_state",
+	"durableSystemImprovement": "agent-readiness emits agent-readiness-context-health/v1 with machine-readable surface statuses, evidence-use classification, stale reasons, and suggested refresh commands, while preserving the existing context-health command as the heavier context-integrity artifact generator.",
+	"allowedFiles": [
+		"src/lib/agent-readiness/**",
+		"src/commands/agent-readiness.ts",
+		"src/commands/agent-readiness.test.ts",
+		"src/lib/cli/registry/agent-readiness-command-spec.ts",
+		"docs/cli-reference.md",
+		"README.md",
+		".harness/core/agent-readiness-contract.md",
+		".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"artifacts/reviews/pu-019-*"
+	],
+	"forbiddenFiles": [
+		"src/commands/next.ts",
+		"src/lib/decision/**",
+		"src/lib/pr-closeout/**",
+		"src/lib/runtime/**",
+		".github/**",
+		"harness.contract.json"
+	],
+	"scope": {
+		"inScope": [
+			"Add agent-readiness-context-health/v1 as a summary field on agent-readiness/v1 reports.",
+			"Classify Project Brain active-artifacts presence, active-route references, Project Brain memory/knowledge presence, runtime-card recency absence, and unobserved external horizon as context-health surfaces.",
+			"Emit suggested refresh commands that are advisory and do not mutate repository state.",
+			"Reference the existing harness context-health command as a deeper refresh path instead of duplicating its context-integrity report engine.",
+			"Keep the projection advisory and non-blocking by default; do not add a strict-context mode in this slice.",
+			"Add focused tests for passing context health, missing referenced active-route files, missing Project Brain memory/knowledge, and JSON CLI visibility."
+		],
+		"outOfScope": [
+			"Changing harness next behavior.",
+			"Fetching live GitHub, CI, Linear, or CodeRabbit state.",
+			"Implementing runtime-card or external-state producers.",
+			"Treating stale context orientation evidence as delivery claim support."
+		]
+	},
+	"assumptions": [
+		"agent-readiness is the narrowest existing cockpit command for routine local context-health without widening harness next.",
+		"The existing context-health command remains the canonical context-integrity artifact/report lane; this slice only adds fast readiness metadata and suggestions.",
+		"The first patch can use local filesystem and current repo evidence only; network-backed PR/CI/Linear freshness remains a later external-state slice.",
+		"Warnings are acceptable for absent optional runtime-card or external-horizon context, while missing mandatory Project Brain route evidence can fail."
+	],
+	"acceptanceCriteria": [
+		"agent-readiness JSON includes a contextHealth object with schemaVersion agent-readiness-context-health/v1.",
+		"contextHealth surfaces include active_artifacts, active_route_refs, project_brain_memory, project_brain_knowledge, runtime_card, and external_horizon.",
+		"contextHealth suggested refresh commands include the existing context-health command for deeper context-integrity evidence.",
+		"Missing active-artifacts route references produce a context_health finding with concrete missing paths and a refresh/remediation recommendation.",
+		"Missing Project Brain memory or knowledge surfaces are classified before closeout rather than hidden in prose.",
+		"Runtime-card and external-horizon absence are marked orientation-only warnings, not delivery claim support.",
+		"Focused tests prove the report shape and at least one stale/missing context failure path.",
+		"Focused tests prove default context-health projection findings are warnings unless they reflect an existing required readiness failure outside the projection.",
+		"Focused tests prove agent-readiness does not emit context-health-report/v1 fields such as artifactRefs, coverage metrics, contradiction history, or inventory metrics.",
+		"Focused tests prove suggested context-health refresh guidance is prerequisite-aware: recommend the deeper context-health report when harness.contract.json has contextIntegrityPolicy, otherwise recommend bootstrap/contract remediation before the deep command.",
+		"Goal-board validation still passes after the slice receipt is recorded."
+	],
+	"projectionContract": {
+		"projectionSchemaVersion": "agent-readiness-context-health/v1",
+		"canonicalDeepReportSchemaVersion": "context-health-report/v1",
+		"precedenceRule": "agent-readiness-context-health/v1 is advisory readiness metadata for orientation only. context-health-report/v1 remains the canonical artifact-grade context-integrity report.",
+		"antiDuplicationRule": "agent-readiness must not duplicate contradiction history, coverage-rate, inventory, memory-metrics snapshot, or context-integrity artifact generation logic from src/commands/context-health.ts.",
+		"defaultExitPolicy": "The context-health projection must not introduce new exit-1 behavior in default agent-readiness runs. Missing or stale projection surfaces are warn unless the same condition already fails an existing required readiness check.",
+		"suggestionPrerequisites": {
+			"contextHealthReportCommand": "Suggest node --import tsx src/cli.ts context-health --json only when harness.contract.json exists and declares contextIntegrityPolicy.",
+			"fallbackCommand": "When context-health prerequisites are absent, suggest node --import tsx src/cli.ts --help --all-commands or node --import tsx src/cli.ts init --dry-run --json before the report command."
+		},
+		"surfaceSeverityMatrix": [
+			{
+				"surface": "active_artifacts",
+				"condition": ".harness/active-artifacts.md exists and has Current Active Route plus Artifact Index",
+				"status": "pass",
+				"evidenceUse": "orientation"
+			},
+			{
+				"surface": "active_artifacts",
+				"condition": ".harness/active-artifacts.md is missing or lacks required headings",
+				"status": "warn",
+				"evidenceUse": "orientation"
+			},
+			{
+				"surface": "active_route_refs",
+				"condition": "Current Active Route references repo paths and every referenced path exists",
+				"status": "pass",
+				"evidenceUse": "orientation"
+			},
+			{
+				"surface": "active_route_refs",
+				"condition": "Current Active Route references missing repo paths",
+				"status": "warn",
+				"evidenceUse": "orientation"
+			},
+			{
+				"surface": "project_brain_memory",
+				"condition": ".harness/memory/LEARNINGS.md exists",
+				"status": "pass",
+				"evidenceUse": "orientation"
+			},
+			{
+				"surface": "project_brain_memory",
+				"condition": ".harness/memory/LEARNINGS.md is missing",
+				"status": "warn",
+				"evidenceUse": "orientation"
+			},
+			{
+				"surface": "project_brain_knowledge",
+				"condition": ".harness/knowledge/INDEX.md exists",
+				"status": "pass",
+				"evidenceUse": "orientation"
+			},
+			{
+				"surface": "project_brain_knowledge",
+				"condition": ".harness/knowledge/INDEX.md is missing",
+				"status": "warn",
+				"evidenceUse": "orientation"
+			},
+			{
+				"surface": "runtime_card",
+				"condition": "No local runtime-card artifact is discoverable for the current slice",
+				"status": "warn",
+				"evidenceUse": "orientation"
+			},
+			{
+				"surface": "external_horizon",
+				"condition": "No live PR/CI/Linear/CodeRabbit snapshot is provided to agent-readiness",
+				"status": "warn",
+				"evidenceUse": "orientation"
+			}
+		]
+	},
+	"validationGates": [
+		"pnpm vitest run src/commands/agent-readiness.test.ts",
+		"node --import tsx src/cli.ts agent-readiness --json",
+		"node --import tsx src/cli.ts --help --all-commands",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"git diff --check -- src/lib/agent-readiness src/commands/agent-readiness.test.ts docs/cli-reference.md README.md .harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx docs/goals/codex-runtime-evidence-verifier-cockpit"
+	],
+	"reviewPlan": {
+		"intentReviewers": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"implementationLenses": [
+			"improve-codebase-architecture",
+			"simplify",
+			"unslopify",
+			"he-code-review",
+			"testing"
+		],
+		"implementationReviewers": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"artifactPattern": "artifacts/reviews/pu-019-gap-008-context-health-*.md"
+	},
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
+	],
+	"rollback": [
+		"Remove contextHealth report fields and context_health findings from agent-readiness.",
+		"Remove PU-019 tests and receipt lines if the intent review blocks the slice before implementation.",
+		"Keep existing agent-readiness categories unchanged if context-health introduces unexpected compatibility risk."
+	],
+	"stopConditions": [
+		"Intent reviewers find the slice should live only in the existing context-health command or in harness next instead of agent-readiness.",
+		"Implementation requires network-backed external-state fetching.",
+		"Existing agent-readiness compatibility tests fail in a way that requires changing the public command contract beyond additive metadata."
+	],
+	"auditFreshness": {
+		"auditPath": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+		"latestValidatedAuditSha256": "dbf9d05c9e217baeac2a5a906676c66dac04634d37134985bff7d53eca01ec0a",
+		"latestFreshnessReceipt": "R074",
+		"checkedAt": "2026-05-27T00:46:00Z"
+	}
+}

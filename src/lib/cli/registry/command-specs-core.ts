@@ -35,6 +35,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createAgentReadinessCommandSpec } from "./agent-readiness-command-spec.js";
 import { createArtifactGateCommandSpec } from "./artifact-gate-command-spec.js";
 import { createAuditCommandSpec } from "./audit-command-spec.js";
 import { createBrainCommandSpec } from "./brain-command-spec.js";
@@ -109,6 +110,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createToolingAuditCommandSpec(),
 	createPresetCommandSpec(),
 	createCheckCommandSpec(),
+	createAgentReadinessCommandSpec(),
 	createNextCommandSpec(),
 	createRuntimeCardCommandSpec(),
 	createAuditCommandSpec(getVersion),

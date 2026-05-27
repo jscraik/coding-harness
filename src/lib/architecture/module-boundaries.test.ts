@@ -1346,6 +1346,7 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
+	"src/lib/cli/registry/agent-readiness-command-spec.ts",
 	"src/lib/cli/registry/artifact-gate-command-spec.ts",
 	"src/lib/cli/registry/audit-command-spec.ts",
 	"src/lib/cli/registry/brainstorm-gate-command-spec.ts",
@@ -1458,6 +1459,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./artifact-gate-command-spec.js",
+	"./agent-readiness-command-spec.js",
 	"./brain-command-spec.js",
 	"./brainstorm-gate-command-spec.js",
 	"./branch-protect-command-spec.js",

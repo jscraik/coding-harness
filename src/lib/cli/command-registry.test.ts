@@ -25,6 +25,7 @@ import {
 const AGENT_COMMAND_RAIL_NAMES = ["next"] as const;
 const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
 	"next",
+	"agent-readiness",
 	"commands",
 	"runtime-card",
 ] as const;
