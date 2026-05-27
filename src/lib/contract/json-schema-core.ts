@@ -617,7 +617,7 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						additionalProperties: false,
 						properties: {
 							allow: { type: "string", enum: [...GATE_VERDICTS] },
-							block: { type: "string", enum: [...GATE_VERDICTS] },
+							block: { type: "string", const: "fail" },
 							warn: { type: "string", enum: [...GATE_VERDICTS] },
 						},
 					},

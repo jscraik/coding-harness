@@ -1,0 +1,21 @@
+{
+	"version": "1.0",
+	"riskTierRules": {
+		"src/auth/**": "high",
+		"src/api/**": "high",
+		"src/lib/**": "medium",
+		"**/*.test.ts": "low"
+	},
+	"policyChain": {
+		"tierToAction": {
+			"high": "block",
+			"medium": "warn",
+			"low": "allow"
+		},
+		"actionToVerdict": {
+			"allow": "pass",
+			"block": "pass",
+			"warn": "pass"
+		}
+	}
+}

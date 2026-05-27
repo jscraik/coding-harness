@@ -11,7 +11,6 @@ import {
 } from "../lib/output/normalise.js";
 import {
 	evaluatePolicyChainDecision,
-	resolveGateVerdict,
 	resolvePolicyChain,
 } from "../lib/policy/policy-chain.js";
 import { resolveOverallTier } from "../lib/policy/risk-tier.js";
@@ -33,6 +32,7 @@ function isValidTier(value: unknown): value is RiskTier {
 	return typeof value === "string" && TIER_ORDER.includes(value as RiskTier);
 }
 
+/** Inputs for evaluating changed files against a harness contract policy gate. */
 export interface PolicyGateOptions {
 	contractPath: string;
 	files: string[];
@@ -40,6 +40,7 @@ export interface PolicyGateOptions {
 	maxTier?: RiskTier;
 }
 
+/** Structured policy-gate decision returned by the library and CLI renderer. */
 export interface PolicyGateOutput {
 	passed: boolean;
 	tier: RiskTier;
@@ -49,15 +50,35 @@ export interface PolicyGateOutput {
 	violatingFiles: string[];
 }
 
+/** Sanitized policy-gate validation or system error safe for JSON output. */
 export interface PolicyGateErrorOutput {
 	code: string;
 	message: string;
 	details?: unknown;
 }
 
+/** Discriminated policy-gate result used by callers before choosing an exit code. */
 export type PolicyGateResult =
 	| { ok: true; output: PolicyGateOutput }
 	| { ok: false; error: PolicyGateErrorOutput };
+
+function buildDecisionOutput(
+	tier: RiskTier,
+	action: PolicyAction,
+	verdict: GateVerdict,
+	files: string[],
+	maxAllowed?: RiskTier,
+): PolicyGateOutput {
+	const passed = verdict === "pass";
+	return {
+		passed,
+		tier,
+		action,
+		verdict,
+		...(maxAllowed ? { maxAllowed } : {}),
+		violatingFiles: passed ? [] : files,
+	};
+}
 
 /**
  * Run policy gate check and return structured result.
@@ -100,17 +121,16 @@ export function runPolicyGate(options: PolicyGateOptions): PolicyGateResult {
 		const policyChain = resolvePolicyChain(contract);
 		const decision = evaluatePolicyChainDecision(tier, policyChain);
 
-		// If no max tier specified, all pass
+		// Without a max tier, policy-chain verdicts still decide pass/fail.
 		if (!options.maxTier) {
 			return {
 				ok: true,
-				output: {
-					passed: decision.verdict === "pass",
+				output: buildDecisionOutput(
 					tier,
-					action: decision.action,
-					verdict: decision.verdict,
-					violatingFiles: [],
-				},
+					decision.action,
+					decision.verdict,
+					options.files,
+				),
 			};
 		}
 
@@ -120,29 +140,26 @@ export function runPolicyGate(options: PolicyGateOptions): PolicyGateResult {
 		// Lower index = higher severity
 		// If actual tier index is lower than max, it's more severe (violation)
 		if (actualTierIndex < maxTierIndex) {
-			const blockedVerdict = resolveGateVerdict("block", policyChain);
 			return {
 				ok: true,
-				output: {
-					passed: blockedVerdict === "pass",
+				output: buildDecisionOutput(
 					tier,
-					action: "block",
-					verdict: blockedVerdict,
-					maxAllowed: options.maxTier,
-					violatingFiles: options.files,
-				},
+					"block",
+					"fail",
+					options.files,
+					options.maxTier,
+				),
 			};
 		}
 
 		return {
 			ok: true,
-			output: {
-				passed: decision.verdict === "pass",
+			output: buildDecisionOutput(
 				tier,
-				action: decision.action,
-				verdict: decision.verdict,
-				violatingFiles: [],
-			},
+				decision.action,
+				decision.verdict,
+				options.files,
+			),
 		};
 	} catch (e) {
 		if (e instanceof ContractLoadError) {

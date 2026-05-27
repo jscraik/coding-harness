@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-21
+last_validated: 2026-05-27
 ---
 
 # Security and governance
@@ -7,6 +7,7 @@ last_validated: 2026-05-21
 - [Security posture](#security-posture)
 - [Code-style parity verification surface](#code-style-parity-verification-surface)
 - [Secret handling](#secret-handling)
+- [Policy-gate risk chain](#policy-gate-risk-chain)
 - [Execution-input governance](#execution-input-governance)
 - [Code and data governance](#code-and-data-governance)
 - [Risk controls](#risk-controls)
@@ -76,6 +77,20 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. The workflow includes the repo-run Semgrep lane and an explicit report-only Snyk dependency lane; Snyk CLI install, auth, and findings must not fail CircleCI PRs that the external GitHub Snyk delta check has cleared. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
 - `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
+
+## Policy-gate risk chain
+
+`harness policy-gate` must fail closed for governed high-risk files. The
+repository contract and default contract policy chain map `high` risk to
+`block`, and `block` must map to the `fail` verdict. Contract validation and the
+public JSON schema reject `policyChain.actionToVerdict.block` values other than
+`fail` so a local override cannot make max-tier or high-risk block decisions
+look like passes.
+
+Medium-risk files may remain `warn`/`pass` when the contract explicitly allows
+that advisory behavior. This distinction keeps low and medium-risk automation
+available while preserving the high-risk human-mediated safety floor in the
+executable gate, not only in prose.
 
 ## Execution-input governance
 

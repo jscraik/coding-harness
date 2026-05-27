@@ -383,6 +383,9 @@ function isValidPolicyChainPolicy(value: unknown): value is PolicyChainPolicy {
 			return false;
 		}
 	}
+	if (actionToVerdict.block !== "fail") {
+		return false;
+	}
 
 	return true;
 }

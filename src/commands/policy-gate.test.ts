@@ -61,7 +61,7 @@ describe("runPolicyGate", () => {
 			}
 		});
 
-		it("passes high-tier files when max-tier is high", () => {
+		it("fails high-tier files when max-tier is high and the policy chain blocks high risk", () => {
 			const result = runPolicyGate({
 				contractPath,
 				files: ["src/auth/login.ts"],
@@ -69,25 +69,29 @@ describe("runPolicyGate", () => {
 			});
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.passed).toBe(true);
-				expect(result.output.action).toBe("warn");
-				expect(result.output.verdict).toBe("pass");
+				expect(result.output.passed).toBe(false);
+				expect(result.output.action).toBe("block");
+				expect(result.output.verdict).toBe("fail");
+				expect(result.output.maxAllowed).toBeUndefined();
+				expect(result.output.violatingFiles).toContain("src/auth/login.ts");
 			}
 		});
 	});
 
 	describe("without max-tier", () => {
-		it("passes all files when no max-tier specified", () => {
+		it("fails omitted-policyChain high-tier files when no max-tier is specified because defaults block high risk", () => {
 			const result = runPolicyGate({
 				contractPath,
 				files: ["src/auth/login.ts"], // high tier
 			});
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.passed).toBe(true);
+				expect(result.output.passed).toBe(false);
 				expect(result.output.tier).toBe("high");
-				expect(result.output.action).toBe("warn");
-				expect(result.output.verdict).toBe("pass");
+				expect(result.output.action).toBe("block");
+				expect(result.output.verdict).toBe("fail");
+				expect(result.output.maxAllowed).toBeUndefined();
+				expect(result.output.violatingFiles).toContain("src/auth/login.ts");
 			}
 		});
 	});
@@ -112,7 +116,7 @@ describe("runPolicyGate", () => {
 	});
 
 	describe("tier-threshold invariants", () => {
-		it("is monotonic across max-tier thresholds", () => {
+		it("keeps max-tier thresholds monotonic without overriding policy-chain blocks", () => {
 			const corpus = [
 				"src/auth/login.ts",
 				"src/lib/cache.ts",
@@ -139,12 +143,16 @@ describe("runPolicyGate", () => {
 					throw new Error("Expected successful policy gate result");
 				}
 
-				expect(high.output.passed).toBe(true);
 				if (low.output.passed) {
 					expect(medium.output.passed).toBe(true);
 				}
 				if (medium.output.passed) {
 					expect(high.output.passed).toBe(true);
+				}
+				if (high.output.tier === "high") {
+					expect(high.output.passed).toBe(false);
+					expect(high.output.action).toBe("block");
+					expect(high.output.verdict).toBe("fail");
 				}
 			}
 		});
@@ -189,6 +197,18 @@ describe("runPolicyGate", () => {
 				expect(result.error.message).toContain("extends");
 			}
 		});
+
+		it("rejects contracts that remap block actions to pass", () => {
+			const result = runPolicyGate({
+				contractPath: "test-fixtures/contract-block-pass.json",
+				files: ["src/auth/login.ts"],
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("VALIDATION_ERROR");
+				expect(JSON.stringify(result.error.details)).toContain("policyChain");
+			}
+		});
 	});
 });
 
@@ -210,6 +230,15 @@ describe("runPolicyGateCLI", () => {
 			contractPath,
 			files: ["src/auth/login.ts"],
 			maxTier: "medium",
+			json: true,
+		});
+		expect(exitCode).toBe(EXIT_CODES.POLICY_VIOLATION);
+	});
+
+	it("returns POLICY_VIOLATION (1) for high-risk policy-chain blocks without max-tier", () => {
+		const exitCode = runPolicyGateCLI({
+			contractPath,
+			files: ["src/auth/login.ts"],
 			json: true,
 		});
 		expect(exitCode).toBe(EXIT_CODES.POLICY_VIOLATION);

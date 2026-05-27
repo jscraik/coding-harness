@@ -275,6 +275,24 @@ describe("buildContractJsonSchema", () => {
 		}
 	});
 
+	it("policyChain schema requires block actions to fail", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				policyChain: {
+					properties: {
+						actionToVerdict: {
+							properties: { block: { const: string } };
+						};
+					};
+				};
+			};
+		};
+
+		expect(
+			schema.properties.policyChain.properties.actionToVerdict.properties.block,
+		).toEqual({ type: "string", const: "fail" });
+	});
+
 	it("top-level schema includes extends for inheritance-aware loaders", () => {
 		const schema = buildContractJsonSchema() as {
 			properties: Record<string, unknown>;
