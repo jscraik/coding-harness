@@ -12,6 +12,7 @@ Record of periodic reviews for knowledge, decisions, and quality criteria.
 | Date | Reviewer | Scope | Findings | Actions |
 |------|----------|-------|----------|---------|
 | 2026-04-27 | Codex | governance Project Brain update | Added R-001 and plan linkage for Project Brain preflight/closeout loop. | Run brain status and clear unrelated placeholder domains in a later cleanup. |
+| 2026-05-27 | Codex + adversarial-reviewer + agent-native-reviewer + best-practices-researcher | PU-027 GAP-011 skill-density intent re-review | Three reviewers reported that the blocker fixes resolved the prior intent issues and implementation could proceed, but the expected artifacts/reviews/pu-027-gap-011-* files were not present in the coordinator checkout. Because artifacts/ is gitignored, mailbox summaries are recorded as routing evidence, not final artifact proof. | Keep PU-027 blocked on missing review artifact persistence; retry artifact write to a tracked destination or amend the review artifact contract before implementation starts. |
 
 ---
 
