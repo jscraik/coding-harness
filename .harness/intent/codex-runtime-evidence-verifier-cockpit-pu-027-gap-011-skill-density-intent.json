@@ -115,7 +115,7 @@
 		".agents/skills/**/references/** only if needed to document validation or workflow ownership",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
 		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-gap-011-skill-density-intent.json",
-		"artifacts/reviews/pu-027-gap-011-skill-density-*.md"
+		".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-*.md"
 	],
 	"outOfScope": [
 		"creating a new public harness command for skill governance",
@@ -134,7 +134,7 @@
 		".agents/skills/**/references/**",
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
 		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-gap-011-skill-density-intent.json",
-		"artifacts/reviews/pu-027-gap-011-skill-density-*.md"
+		".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-*.md"
 	],
 	"acceptanceCriteria": [
 		"pnpm skill:validate fails when any repo-owned skill lacks machine-readable skill_kind, owned_workflow, or validation_command frontmatter.",
@@ -190,9 +190,9 @@
 			"best-practices-researcher"
 		],
 		"artifactPaths": [
-			"artifacts/reviews/pu-027-gap-011-skill-density-intent-adversarial.md",
-			"artifacts/reviews/pu-027-gap-011-skill-density-intent-agent-native.md",
-			"artifacts/reviews/pu-027-gap-011-skill-density-intent-best-practices.md"
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-adversarial.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-agent-native.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-best-practices.md"
 		],
 		"reviewQuestions": [
 			"Does this intent stay narrow enough for GAP-011 without inventing a broad skill governance platform?",
@@ -200,51 +200,80 @@
 			"Are the proposed deterministic overlap and asset checks strong enough to prevent recurrence of the audit gap?"
 		]
 	},
-	"reviewStatus": "blocked_missing_review_artifacts_after_completion_notice",
+	"reviewStatus": "reviewed_tracked_artifacts_cleared_for_implementation",
 	"reviewFindingsAddressed": [
 		{
-			"artifact": "artifacts/reviews/pu-027-gap-011-skill-density-intent-adversarial.md",
+			"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-adversarial.md",
 			"finding": "Advisory classification was prose-only and overlap semantics lacked deterministic threshold policy.",
 			"resolution": "Added skillMetadataContract, overlapPolicy, canonical findingCodes, and fail-closed acceptance criteria."
 		},
 		{
-			"artifact": "artifacts/reviews/pu-027-gap-011-skill-density-intent-agent-native.md",
+			"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-agent-native.md",
 			"finding": "Overlap acceptance permitted report-only pass states.",
 			"resolution": "Changed overlap acceptance to fail when normalized trigger-surface overlap meets the blocking threshold without an allowlist."
 		},
 		{
-			"artifact": "artifacts/reviews/pu-027-gap-011-skill-density-intent-best-practices.md",
+			"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-best-practices.md",
 			"finding": "Machine-readable advisory/executable classification and prompt-only rule order were missing.",
 			"resolution": "Required skill_kind, owned_workflow, validation_command, class-specific requirements, and canonical finding codes."
 		}
 	],
+	"trackedReviewArtifactRepair": {
+		"status": "verified_nonempty_cleared",
+		"reason": "The first review targeted root artifacts/, which is ignored. PU-027 now requires reviewers to write curated artifacts under tracked .harness/review/ before implementation can start.",
+		"trackedArtifactPaths": [
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-adversarial.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-agent-native.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-best-practices.md"
+		],
+		"verificationCommand": "wc -c .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-*.md",
+		"verificationResult": {
+			"status": "pass",
+			"adversarialBytes": 5362,
+			"agentNativeBytes": 3494,
+			"bestPracticesBytes": 3251
+		}
+	},
+	"blockerClearance": {
+		"status": "pass",
+		"clearedAt": "2026-05-27T16:36:00Z",
+		"artifactPaths": [
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-clearance-adversarial.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-clearance-agent-native.md"
+		],
+		"verdict": "The reviewers that previously returned do-not-proceed now report proceed after stale ignored-path references were removed from active intent metadata and tracked artifact verification passed."
+	},
 	"rereviewOutcome": {
 		"mailboxEvidenceCapturedAt": "2026-05-27T16:20:00Z",
-		"agentRecommendations": [
+		"ignoredRootArtifactAttempt": {
+			"status": "superseded",
+			"reason": "The prior reviewer mailbox summaries reported root-level review paths that are intentionally ignored by repository policy; those summaries remain historical routing evidence only."
+		},
+		"trackedArtifactRereview": [
 			{
 				"agent": "adversarial-reviewer",
-				"reportedArtifact": "artifacts/reviews/pu-027-gap-011-skill-density-intent-rereview-adversarial.md",
-				"reportedOutcome": "prior blocker themes resolved; implementation can proceed"
+				"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-adversarial.md",
+				"reportedOutcome": "do not proceed before stale ignored-path metadata and pending repair state are cleaned"
 			},
 			{
 				"agent": "agent-native-reviewer",
-				"reportedArtifact": "artifacts/reviews/pu-027-gap-011-skill-density-intent-rereview-agent-native.md",
-				"reportedOutcome": "prior blocker themes resolved; implementation can proceed",
+				"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-agent-native.md",
+				"reportedOutcome": "do not proceed before all required tracked artifacts exist and the failed verification state is cleared",
 				"residualNote": "policy-path mismatch risk for agents/templates and agents/contracts.json is non-blocking for intent"
 			},
 			{
 				"agent": "best-practices-researcher",
-				"reportedArtifact": "artifacts/reviews/pu-027-gap-011-skill-density-intent-rereview-best-practices.md",
-				"reportedOutcome": "prior material blockers resolved; implementation can proceed",
+				"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-best-practices.md",
+				"reportedOutcome": "implementation can proceed after tracked artifacts are present",
 				"residualNote": "allowlist storage location is a low non-blocking clarity gap"
 			}
 		],
 		"artifactVerification": {
-			"status": "fail",
-			"checkedCommand": "find . -path '*pu-027-gap-011*' -type f",
-			"failure": "The expected artifacts were reported by agents but were not present in the coordinator checkout; artifacts/ is also gitignored, so mailbox summaries are not sufficient artifact evidence."
+			"status": "pass",
+			"checkedCommand": "wc -c .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-*.md",
+			"result": "All three tracked reviewer artifacts exist and are non-empty."
 		},
-		"coordinatorDecision": "Do not treat the mailbox updates as final review evidence. Commit this intent update and review-log entry so the next continuation can either retry artifact persistence or use a tracked artifact destination before implementation starts."
+		"coordinatorDecision": "Treat the tracked artifacts as the active review evidence and request a focused blocker-clearance pass from reviewers that previously returned do-not-proceed before implementation starts."
 	},
 	"implementationStartPolicy": "blocked_until_intent_review_artifacts_exist_and_material_blockers_are_resolved",
 	"postReviewMutationPolicy": "any material mutation to objective, inScope, outOfScope, acceptanceCriteria, automationPlan, reviewPlan, stopConditions, or rollback resets reviewStatus to pending",
