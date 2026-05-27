@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-05-27T20:19:12.580Z",
+	"generatedAt": "2026-05-27T22:40:45.252Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -22,8 +22,8 @@
 			"type": "agent",
 			"file": "agent.mmd",
 			"outputPath": ".diagram/agent.mmd",
-			"lines": 258,
-			"bytes": 33981,
+			"lines": 267,
+			"bytes": 34958,
 			"isPlaceholder": false
 		},
 		{
@@ -62,8 +62,8 @@
 			"type": "database",
 			"file": "database.mmd",
 			"outputPath": ".diagram/database.mmd",
-			"lines": 49,
-			"bytes": 2721,
+			"lines": 57,
+			"bytes": 3270,
 			"isPlaceholder": false
 		},
 		{
@@ -102,8 +102,8 @@
 			"type": "rag",
 			"file": "rag.mmd",
 			"outputPath": ".diagram/rag.mmd",
-			"lines": 182,
-			"bytes": 13945,
+			"lines": 186,
+			"bytes": 14203,
 			"isPlaceholder": false
 		},
 		{
@@ -118,8 +118,8 @@
 			"type": "sequence",
 			"file": "sequence.mmd",
 			"outputPath": ".diagram/sequence.mmd",
-			"lines": 13,
-			"bytes": 443,
+			"lines": 14,
+			"bytes": 481,
 			"isPlaceholder": false
 		},
 		{
