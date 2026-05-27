@@ -1,0 +1,126 @@
+{
+	"schemaVersion": "harness-implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-025-gap-005-decision-request-governance",
+	"createdAt": "2026-05-27T13:20:00Z",
+	"goal": "Implement GAP-005 structured decision-request governance as a narrow runtime cockpit slice.",
+	"objective": "Make decision-request/v1 an emitted, reachable, read-only governance packet with machine-readable intent, authority, default option, evidence references, freshness, expiry, and stale-state classification.",
+	"evidenceBasis": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#gap-005",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"contracts/decision-request.schema.json",
+		"contracts/examples/decision-request.example.json",
+		"contracts/runtime-packet-schemas.manifest.json",
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
+	],
+	"feedbackSignal": "GAP-005 says structured decision requests are partial: intent, authority, human escalation, and stale-state handling must be machine-readable, not prose-only.",
+	"rootOperationalFailure": "The repository already publishes a decision-request/v1 schema, but the manifest marks it not_yet_emitted and there is no reachable CLI/deep module that can produce the packet.",
+	"failureCategories": [
+		"documented_only",
+		"non_enforced",
+		"runtime_ambiguity",
+		"lack_of_verification"
+	],
+	"plannedDurableImprovement": "Add a decision-request deep module and registry command that emits decision-request/v1 packets, updates the runtime packet manifest from not_yet_emitted to emitted, and validates stale or expired decisions deterministically.",
+	"allowedFiles": [
+		"src/lib/decision-request/**",
+		"src/commands/decision-request.ts",
+		"src/commands/decision-request.test.ts",
+		"src/lib/cli/registry/decision-request-command-spec.ts",
+		"src/lib/cli/registry/command-specs-core.ts",
+		"src/lib/cli/registry/command-capability-rules.ts",
+		"src/lib/cli/command-registry.test.ts",
+		"contracts/decision-request.schema.json",
+		"contracts/examples/decision-request.example.json",
+		"contracts/runtime-packet-schemas.manifest.json",
+		"scripts/validate-runtime-packet-schemas.cjs",
+		"ARCHITECTURE.md",
+		"README.md",
+		"docs/cli-reference.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"artifacts/reviews/pu-025-gap-005-decision-request-governance-*.md"
+	],
+	"forbiddenFiles": [
+		"/Users/jamiecraik/dev/codex/**",
+		"src/lib/project-brain/**",
+		".harness/research/**",
+		".harness/media/**",
+		"generated or cache artifacts not directly owned by this slice"
+	],
+	"nonGoals": [
+		"Do not refresh GitHub, CI, review, Linear, or CodeRabbit external state.",
+		"Do not make decision-request a closeout success proof.",
+		"Do not mutate tracker, PR, branch, or repo state from the command.",
+		"Do not broaden harness next into a new multi-command surface in this slice.",
+		"Do not edit unrelated Project Brain WIP currently untracked in the worktree."
+	],
+	"implementationApproach": [
+		"Create typed decision-request packet contracts in src/lib/decision-request/types.ts.",
+		"Create a pure builder that validates required fields, parses option identity, rejects duplicate option ids, checks defaultOptionId membership, classifies expired decisions as stale, and emits staleState entries.",
+		"Create a read-only CLI that accepts --json, --intent, --default-option, repeated --option id=Label, repeated --tradeoff id=Text, --authority, --evidence, --expires-at, --generated-at, --status, --freshness, --producer, --request-id, --escalation-target, --escalation-channel, and --escalation-reason.",
+		"Use one canonical option grammar: each --option value is id=label; each --tradeoff value is id=text and attaches to the matching option id. Unknown tradeoff option ids, duplicate option ids, and missing option labels fail closed with usage errors.",
+		"Emit a required escalation object with required, targetRole, channel, reason, and requestedAt so human or operator routing stays machine-readable instead of prose-only.",
+		"Apply stale-state precedence deterministically: computed expiry at or before generatedAt overrides caller-provided status/freshness and normalizes status to expired plus freshness to stale; explicit non-current freshness or expired status then emits staleState; otherwise status/freshness remain caller-provided defaults.",
+		"Register the command through the command registry and agent handoff rail with safe/read-only metadata.",
+		"Update schema, example, and manifest to runtimeStatus emitted with a real type source and validator support.",
+		"Document the command in CLI reference surfaces without claiming it proves closeout readiness.",
+		"Record a goal receipt and state update that keeps push, PR, CI, review-thread, Linear, and merge-readiness truth separate."
+	],
+	"expectedOutputContract": {
+		"schemaVersion": "decision-request/v1",
+		"runtimeStatus": "emitted",
+		"evidenceUse": "governance_request_only",
+		"claimSupport": "not_closeout_proof",
+		"optionGrammar": "--option id=label plus --tradeoff id=text",
+		"escalation": "required object with required, targetRole, channel, reason, and requestedAt",
+		"staleState": "required machine-readable array",
+		"stalePrecedence": "expiresAt <= generatedAt normalizes status=expired and freshness=stale before staleState derivation"
+	},
+	"validationGates": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-025-gap-005-decision-request-governance-intent.json",
+		"pnpm vitest run src/commands/decision-request.test.ts src/lib/cli/command-registry.test.ts src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"node --import tsx src/cli.ts decision-request --json --intent <intent> --default-option <id> --option <id=label> --tradeoff <id=tradeoff>",
+		"pnpm vitest run src/commands/decision-request.test.ts -- --runInBand equivalent not required; tests must include duplicate option id, unknown tradeoff id, expired/current conflict normalization, and missing escalation field coverage",
+		"node --import tsx src/cli.ts commands --json --for-agent --mode handoff",
+		"pnpm exec biome check <slice files>",
+		"git diff --check -- <slice files>",
+		"jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+	],
+	"reviewerRoles": [
+		"adversarial-reviewer",
+		"agent-native-reviewer",
+		"best-practices-researcher"
+	],
+	"skillLensChecks": [
+		"improve-codebase-architecture",
+		"simplify",
+		"unslopify",
+		"he-code-review",
+		"testing"
+	],
+	"acceptanceCriteria": [
+		"decision-request/v1 can be emitted through a real command registry path.",
+		"The runtime packet manifest no longer marks decision-request/v1 as not_yet_emitted.",
+		"decision-request/v1 includes a machine-readable escalation object with required, targetRole, channel, reason, and requestedAt.",
+		"Expired or explicitly stale decision requests include staleState and cannot be mistaken for current closeout proof.",
+		"Default option validation fails closed when it does not match an option id.",
+		"Duplicate option ids and tradeoffs for unknown option ids fail closed with deterministic usage errors.",
+		"Expired decisions normalize status/freshness before staleState derivation even when caller input claims current/open state.",
+		"Command catalog metadata exposes decision-request as safe, read-only, agent-usable governance handoff.",
+		"Schema/example validation covers the emitted packet shape.",
+		"Goal receipts record local validation separately from push/PR/CI/review/Linear readiness."
+	],
+	"riskControls": [
+		"Keep the command read-only and do not write packets to disk in this slice.",
+		"Keep the module deep under src/lib/decision-request instead of inflating command registry files.",
+		"Treat external state and tracker truth as evidence references only, never as refreshed proof.",
+		"Preserve unrelated dirty and untracked worktree files."
+	],
+	"blockedConditions": [
+		"Cannot validate the command registry path.",
+		"Cannot update schema/example/manifest consistently.",
+		"Cannot isolate unrelated worktree WIP from the slice."
+	]
+}

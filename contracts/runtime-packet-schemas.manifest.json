@@ -60,11 +60,10 @@
 			"schemaVersion": "decision-request/v1",
 			"schemaPath": "contracts/decision-request.schema.json",
 			"examplePath": "contracts/examples/decision-request.example.json",
-			"typeSourcePath": null,
-			"runtimeStatus": "not_yet_emitted",
-			"parityValidator": "none",
-			"ownerGap": "GAP-005",
-			"blockedBy": "GAP-005 owns runtime emission and command integration for decision-request/v1."
+			"typeSourcePath": "src/lib/decision-request/types.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "decision-request",
+			"ownerGap": "GAP-005"
 		},
 		{
 			"schemaVersion": "session-context/v1",

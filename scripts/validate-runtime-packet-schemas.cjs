@@ -13,6 +13,7 @@ const VALID_PARITY_VALIDATORS = new Set([
 	"review-state",
 	"external-state-snapshot",
 	"delivery-truth",
+	"decision-request",
 	"session-context",
 	"none",
 ]);

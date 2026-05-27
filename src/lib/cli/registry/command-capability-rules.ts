@@ -35,6 +35,7 @@ export const COMMAND_CATEGORY_BY_NAME: Partial<
 	"symphony-check": "bootstrap-governance",
 
 	"policy-gate": "review-policy",
+	"decision-request": "review-policy",
 	"preflight-gate": "review-policy",
 	"review-gate": "review-policy",
 	"docs-gate": "review-policy",
@@ -138,6 +139,7 @@ export const RETRYABILITY_BY_NAME: Partial<
 	check: "safe",
 	next: "safe",
 	"pr-closeout": "safe",
+	"decision-request": "safe",
 	"runtime-card": "safe",
 	"session-context": "safe",
 	"runtime-budget": "safe",
@@ -178,6 +180,7 @@ export const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	next: "cockpit",
 	"runtime-card": "domain",
 	"session-context": "domain",
+	"decision-request": "domain",
 	"agent-readiness": "domain",
 	"fleet-plan": "domain",
 
@@ -229,6 +232,7 @@ export const PRIMARY_AUDIENCE_BY_NAME: Partial<
 	next: "agent",
 	"runtime-card": "agent",
 	"session-context": "agent",
+	"decision-request": "agent",
 	"fleet-plan": "agent",
 	doctor: "both",
 	health: "both",
@@ -260,6 +264,7 @@ export const ORCHESTRATED_BY_BY_NAME: Partial<
 	health: ["next"],
 	"review-gate": ["next", "pr-ready"],
 	"pr-closeout": ["next", "pr-ready"],
+	"decision-request": ["next", "pr-ready"],
 	"docs-gate": ["next", "pr-ready"],
 	"validation-plan": ["next", "pr-ready"],
 	"review-context": ["next", "pr-ready"],
@@ -287,6 +292,7 @@ export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	"verify-coderabbit": "review",
 	"review-gate": "review",
 	"pr-closeout": "handoff",
+	"decision-request": "handoff",
 	"docs-gate": "verify",
 	"validation-plan": "verify",
 	"review-context": "review",
@@ -310,6 +316,7 @@ export const COMMAND_VISIBILITY_BY_NAME: Partial<
 	init: "advanced",
 	"runtime-card": "advanced",
 	"session-context": "advanced",
+	"decision-request": "advanced",
 	doctor: "advanced",
 	health: "advanced",
 	"fleet-plan": "advanced",
@@ -338,7 +345,13 @@ export const AGENT_CATALOG_COMMAND_NAMES: Readonly<
 	],
 	verify: ["next", "runtime-card", "validation-plan", "evidence-verify"],
 	review: ["next", "runtime-card", "review-gate", "review-context"],
-	handoff: ["next", "runtime-card", "pr-closeout", "evidence-verify"],
+	handoff: [
+		"next",
+		"runtime-card",
+		"decision-request",
+		"pr-closeout",
+		"evidence-verify",
+	],
 };
 
 export const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(

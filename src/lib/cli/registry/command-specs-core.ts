@@ -45,6 +45,7 @@ import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
 import { createCIMigrateCommandSpec } from "./ci-migrate-command-spec.js";
+import { createDecisionRequestCommandSpec } from "./decision-request-command-spec.js";
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createDoctorCommandSpec } from "./doctor-command-spec.js";
 import { createDriftGateCommandSpec } from "./drift-gate-command-spec.js";
@@ -115,6 +116,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createNextCommandSpec(),
 	createRuntimeCardCommandSpec(),
 	createSessionContextCommandSpec(),
+	createDecisionRequestCommandSpec(),
 	createAuditCommandSpec(getVersion),
 	createDoctorCommandSpec(getVersion),
 	createHealthCommandSpec(getVersion),

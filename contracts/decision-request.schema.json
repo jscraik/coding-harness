@@ -17,7 +17,11 @@
 		"evidenceRefs",
 		"freshness",
 		"expiresAt",
-		"runtimeStatus"
+		"runtimeStatus",
+		"evidenceUse",
+		"claimSupport",
+		"escalation",
+		"staleState"
 	],
 	"properties": {
 		"schemaVersion": {
@@ -54,6 +58,7 @@
 			"minItems": 1,
 			"items": {
 				"type": "object",
+				"additionalProperties": false,
 				"required": ["id", "label", "tradeoffs"],
 				"properties": {
 					"id": {
@@ -87,7 +92,65 @@
 			"format": "date-time"
 		},
 		"runtimeStatus": {
-			"const": "not_yet_emitted"
+			"const": "emitted"
+		},
+		"evidenceUse": {
+			"const": "governance_request_only"
+		},
+		"claimSupport": {
+			"const": "not_closeout_proof"
+		},
+		"escalation": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"required",
+				"targetRole",
+				"channel",
+				"reason",
+				"requestedAt"
+			],
+			"properties": {
+				"required": {
+					"type": "boolean"
+				},
+				"targetRole": {
+					"enum": ["human", "operator", "maintainer", "external_service"]
+				},
+				"channel": {
+					"type": "string",
+					"minLength": 1
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1
+				},
+				"requestedAt": {
+					"type": "string",
+					"format": "date-time"
+				}
+			}
+		},
+		"staleState": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["surface", "freshness", "reason"],
+				"properties": {
+					"surface": {
+						"type": "string",
+						"minLength": 1
+					},
+					"freshness": {
+						"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+					},
+					"reason": {
+						"type": "string",
+						"minLength": 1
+					}
+				}
+			}
 		}
 	}
 }

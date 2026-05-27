@@ -289,7 +289,13 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			...manifest,
 			packets: manifest.packets.map((entry) =>
 				entry.schemaVersion === "decision-request/v1"
-					? { ...entry, blockedBy: "" }
+					? {
+							...entry,
+							typeSourcePath: null,
+							runtimeStatus: "not_yet_emitted",
+							parityValidator: "none",
+							blockedBy: "",
+						}
 					: entry,
 			),
 		};

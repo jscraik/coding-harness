@@ -2,7 +2,7 @@
 	"schemaVersion": "decision-request/v1",
 	"requestId": "decision-request:jsc-363:merge-readiness",
 	"generatedAt": "2026-05-27T08:10:00Z",
-	"producer": "harness:decision-request-schema-example",
+	"producer": "harness:decision-request",
 	"status": "open",
 	"intent": "Choose whether to refresh external PR state before a merge-readiness claim.",
 	"authority": "human",
@@ -18,7 +18,17 @@
 		}
 	],
 	"evidenceRefs": ["runtime-card:JSC-363"],
-	"freshness": "unknown",
+	"freshness": "current",
 	"expiresAt": null,
-	"runtimeStatus": "not_yet_emitted"
+	"runtimeStatus": "emitted",
+	"evidenceUse": "governance_request_only",
+	"claimSupport": "not_closeout_proof",
+	"escalation": {
+		"required": true,
+		"targetRole": "human",
+		"channel": "codex_thread",
+		"reason": "Choose whether to refresh external PR state before a merge-readiness claim.",
+		"requestedAt": "2026-05-27T08:10:00Z"
+	},
+	"staleState": []
 }

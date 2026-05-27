@@ -125,6 +125,11 @@ not in docs, templates, generated context, or command facades.
 - src/lib/external-state/: live PR/CI/review/tracker snapshot packets,
   freshness/TTL/head-SHA validation, stale-state classification, and
   claim-support eligibility.
+- src/lib/decision-request/: read-only governance request packet emission for
+  human or operator escalation. It owns intent, authority, option grammar,
+  evidence references, escalation metadata, expiry/freshness normalization, and
+  stale-state classification for decision-request/v1 while explicitly keeping
+  the packet out of closeout and merge-readiness claim support.
 
 ### scripts/
 

@@ -45,6 +45,7 @@ const AGENT_REVIEW_COMMAND_RAIL_NAMES = [
 const AGENT_HANDOFF_COMMAND_RAIL_NAMES = [
 	"next",
 	"runtime-card",
+	"decision-request",
 	"pr-closeout",
 	"evidence-verify",
 ] as const;
@@ -58,6 +59,7 @@ describe("command registry", () => {
 		expect(MIGRATED_COMMAND_NAMES).toContain("commands");
 		expect(MIGRATED_COMMAND_NAMES).toContain("contract");
 		expect(MIGRATED_COMMAND_NAMES).toContain("session-context");
+		expect(MIGRATED_COMMAND_NAMES).toContain("decision-request");
 		expect(MIGRATED_COMMAND_NAMES).not.toContain("repo");
 		expect(MIGRATED_COMMAND_NAMES).not.toContain("gate");
 	});
@@ -86,6 +88,36 @@ describe("command registry", () => {
 			const parsed = JSON.parse(String(output));
 			expect(parsed.schemaVersion).toBe("session-context/v1");
 			expect(parsed.repoRoot).toBe(process.cwd());
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("dispatches decision-request from registry", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		try {
+			const result = dispatchRegistryCommand("decision-request", [
+				"decision-request",
+				"--json",
+				"--generated-at",
+				"2026-05-27T13:30:00.000Z",
+				"--intent",
+				"Choose whether to refresh external state.",
+				"--default-option",
+				"refresh",
+				"--option",
+				"refresh=Refresh external state.",
+			]);
+			expect(result?.spec.name).toBe("decision-request");
+			expect(result?.result).toBe(0);
+
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			expect(typeof output).toBe("string");
+			const parsed = JSON.parse(String(output));
+			expect(parsed.schemaVersion).toBe("decision-request/v1");
+			expect(parsed.runtimeStatus).toBe("emitted");
+			expect(parsed.claimSupport).toBe("not_closeout_proof");
 		} finally {
 			infoSpy.mockRestore();
 		}
@@ -586,6 +618,7 @@ describe("getRegistryCommandCapabilities", () => {
 			["check", "cockpit", "both", ["next"]],
 			["next", "cockpit", "agent", []],
 			["session-context", "domain", "agent", ["next"]],
+			["decision-request", "domain", "agent", ["next", "pr-ready"]],
 			["fleet-plan", "domain", "agent", ["next"]],
 			["doctor", "domain", "both", ["next"]],
 			["health", "domain", "both", ["next"]],
@@ -626,6 +659,10 @@ describe("getRegistryCommandCapabilities", () => {
 		});
 		expect(capabilitiesByName.get("session-context")).toMatchObject({
 			agentMode: "orient",
+			visibility: "advanced",
+		});
+		expect(capabilitiesByName.get("decision-request")).toMatchObject({
+			agentMode: "handoff",
 			visibility: "advanced",
 		});
 		expect(capabilitiesByName.get("review-context")).toMatchObject({
