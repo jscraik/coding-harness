@@ -877,7 +877,7 @@ default.
 | GoalCompletionAuditReceipt/v1 | Critical | P0 | Verifier-owned goal audit with objective hash, requirement matrix, evidence refs, blocked-turn count, and verdict. | Fixtures for complete, partial, stale, one-turn blocker, three-turn blocker. |
 | SteeringQueue/v1 | Critical | P0 | Queue packet with expected turn/head/artifact ids, delivery mode, expiry, stale checks, and applied/rejected state. | Unit tests for queue vs trigger-turn vs non-steerable modes. |
 | Permission/tool exposure receipts | High | P0 | Normalize sandbox, approval, network, reviewer, writable roots, tool names, exposure classes, hidden/deferred counts. | Runtime-card validation fixtures for degraded and full tool environments. |
-| decision-request/v1 emission | High | P1 | Emit existing schema from policy/next/closeout actions requiring authority or judgment. | Tests for destructive, merge, ambiguous, external blocker, and no-op cases. |
+| decision-request/v1 emission | High | P1 | Emit existing schema only when agent-native execution reaches a legitimate HILT boundary. | Tests for destructive, merge, ambiguous, external blocker, policy-gated, and weak-request rejection cases. |
 | ReviewLifecycle/v1 | High | P1 | Compose review-state with target, base/head, reviewer, tool limits, artifacts, findings, selectable comments, coverage gaps. | Fixture validator for stale target, missing artifact, blocked reviewer, valid no-finding review. |
 | ActionReviewReceipt/v1 | High | P1 | Guardian-style exact action envelope, policy verdict, evidence refs, and executed-action match check. | Golden allow/block/mismatch fixtures. |
 | Hook provenance in replay | Medium | P2 | Include hook source, event, input rewrite, block/stop decision, output replacement, and ordering in replay packet. | Replay test where hook rewrite explains final result. |
@@ -1191,3 +1191,5 @@ Validation run:
 
 - Command: zsh -lc 'pnpm exec markdownlint-cli2 ".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md" ".harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md"' -> pass.
 - Command: zsh -lc 'pnpm research:evidence:validate' -> pass.
+- Command: zsh -lc 'pnpm exec markdownlint-cli2 ".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"' -> pass after HILT row tightening.
+- Command: zsh -lc 'pnpm research:evidence:validate' -> pass after HILT row tightening.

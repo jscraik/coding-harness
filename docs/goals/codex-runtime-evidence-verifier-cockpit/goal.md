@@ -11,6 +11,7 @@
 - [Lifecycle Slices](#lifecycle-slices)
 - [Audit Gap Enforcement Addendum](#audit-gap-enforcement-addendum)
 - [Codex Ecosystem Operational Review Addendum](#codex-ecosystem-operational-review-addendum)
+- [Codex System Prompt Operational Analysis Addendum](#codex-system-prompt-operational-analysis-addendum)
 - [Project Brain Memory Contract](#project-brain-memory-contract)
 - [Slice Execution Contract](#slice-execution-contract)
 - [Review and Validation Contract](#review-and-validation-contract)
@@ -63,6 +64,7 @@ Supporting audit:
 Supporting operational review:
 
 - `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md`
+- `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md`
 
 Project Brain and memory authority:
 
@@ -124,15 +126,15 @@ Protected or constrained scope:
 
 Execute the plan's PU units in lifecycle order unless a reviewed intent artifact proves a safer split:
 
-| Stage | Units                                           | Completion Meaning                                                                                                                                                                                                                                |
-| ----- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| L0    | steering admission                              | Human correction is captured as a repo artifact before normal implementation resumes.                                                                                                                                                             |
-| L1    | PU-000                                          | Intent, review receipt, baseline, and acceptance coverage exist before runtime implementation.                                                                                                                                                    |
-| L2    | PU-001 through PU-008                           | Fixture-backed verifier foundation exists, including receipts, Codex packet validation, adapter projection, private delivery-truth, root, redaction, and non-blending tests.                                                                      |
-| L3    | PU-009 through PU-011                           | Production review-state, external-state, delivery-truth, and root hygiene paths are wired.                                                                                                                                                        |
-| L4    | PU-012 through PU-013                           | Codex runtime producer bridge feeds validated runtime evidence into runtime cards and the cockpit.                                                                                                                                                |
-| L5    | PU-014 through PU-015                           | PR, CI, review, Linear, root tidiness, and Judge/PM audit readiness become claim-verifiable.                                                                                                                                                      |
-| L6    | PU-016 plus audit and ecosystem review adoption | Documentation, architecture context, CI, validators, maintenance ownership, Project Brain memory use, Linear tracker alignment, the 2026-05-26 audit gap closure plan, and the Codex ecosystem operational review adoption plan are synchronized. |
+| Stage | Units                                             | Completion Meaning                                                                                                                                                                                                                                                                                |
+| ----- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L0    | steering admission                                | Human correction is captured as a repo artifact before normal implementation resumes.                                                                                                                                                                                                             |
+| L1    | PU-000                                            | Intent, review receipt, baseline, and acceptance coverage exist before runtime implementation.                                                                                                                                                                                                    |
+| L2    | PU-001 through PU-008                             | Fixture-backed verifier foundation exists, including receipts, Codex packet validation, adapter projection, private delivery-truth, root, redaction, and non-blending tests.                                                                                                                      |
+| L3    | PU-009 through PU-011                             | Production review-state, external-state, delivery-truth, and root hygiene paths are wired.                                                                                                                                                                                                        |
+| L4    | PU-012 through PU-013                             | Codex runtime producer bridge feeds validated runtime evidence into runtime cards and the cockpit.                                                                                                                                                                                                |
+| L5    | PU-014 through PU-015                             | PR, CI, review, Linear, root tidiness, and Judge/PM audit readiness become claim-verifiable.                                                                                                                                                                                                      |
+| L6    | PU-016 plus audit and operational review adoption | Documentation, architecture context, CI, validators, maintenance ownership, Project Brain memory use, Linear tracker alignment, the 2026-05-26 audit gap closure plan, the Codex ecosystem operational review adoption plan, and the Codex system-prompt operational gap matrix are synchronized. |
 
 Each slice should be small enough for one clear branch, one PR, one primary module family, and one unambiguous validation story.
 
@@ -194,6 +196,35 @@ Adoption rules:
 - Runtime cards remain cockpit summaries and pointers, not warehouses for raw prompts, raw telemetry, review bodies, secrets, or bulky artifacts.
 - Linear `JSC-363` remains the tracker anchor for this goal. If the Linear issue title or description still says Phase 1, future closeout must record that mismatch and either update Linear or add an accepted scope note before claiming full-lifecycle tracker alignment.
 - Every future Worker/Judge/PM receipt should include `ecosystem_review_findings` when a slice touches runtime identity, runtime state, claim verification, queueing, tool exposure, review mode, artifacts, memory/retrieval, recovery, schemas, telemetry, hooks, instruction provenance, runtime provenance, or Codex parity.
+
+## Codex System Prompt Operational Analysis Addendum
+
+The 2026-05-27 Codex system-prompt operational analysis is adopted as a goal gap source. It is advisory research until adopted here; after adoption, the listed findings are execution constraints for future Worker, Judge, and PM receipts. The goal must extract durable invariants from the analysis, not copy Codex prompt text, private runtime instructions, secrets, or app-server internals into Coding Harness.
+
+Use these gaps to keep the implementation aligned with the mantra: small deep modules, intent as an artifact, intent review before implementation, and automation where the behavior can be made deterministic.
+
+| Gap                                                             | Required Goal Treatment                                                                                                                                                                                                  | Minimum Proof                                                                                                                                     |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SPG-001 PromptContextReceipt/v1 missing                         | Add prompt-layer provenance as a receipt that records instruction/source refs, hashes, selected capability surfaces, permission posture, goal context, and redaction status without storing full prompt text by default. | Schema/types, fixtures for current/missing/stale/conflicting source refs, and a validator that rejects claim support from unbound prompt context. |
+| SPG-002 durable runtime-card handoff incomplete                 | Persist a durable runtime-card and paired evidence bundle path for issue/branch handoff, including expiry, freshness, head SHA, and source references.                                                                   | Runtime-card fixture or command evidence proving a future session can discover the current handoff path and classify stale/missing cards.         |
+| SPG-003 GoalCompletionAuditReceipt/v1 missing                   | Add a final audit receipt that compares objective, requirement matrix, evidence refs, blockers, and verdict before goal-ready or done claims.                                                                            | Fixtures for complete, partial, stale, one-turn blocker, and repeated-blocker cases.                                                              |
+| SPG-004 SteeringQueue/v1 missing                                | Model queued steering, delayed continuation, expected turn/head/artifact ids, expiry, stale-precondition checks, and applied/rejected state before autonomous continuation relies on prior human steering.               | Queue fixtures for stale turn, stale head, superseded artifact, expired queue, rejected steering, and applied steering.                           |
+| SPG-005 permission and tool exposure projection incomplete      | Project sandbox, approval policy, network posture, tool exposure counts/classes, key tool names, deferred availability, hidden capability classes, and blocked permission attempts into runtime-card evidence.           | Runtime-card and verifier fixtures distinguishing tool unavailable, permission blocked, not attempted, and claim failed.                          |
+| SPG-006 decision-request/v1 not limited to real HILT boundaries | Emit structured decision requests only for human-in-the-loop authority boundaries, not routine uncertainty; bind requests to stale-state and claim-support checks.                                                       | Tests proving routine uncertainty does not create decision debt, while destructive/external/security-sensitive boundaries do.                     |
+| SPG-007 ReviewLifecycle/v1 missing                              | Compose review-state into a lifecycle packet with target/base/head, mode, role/tool exposure, artifact lineage, findings, selectable comments, unresolved threads, coverage, and verdict.                                | Review lifecycle fixtures for stale review mode, unresolved active threads, missing artifact lineage, and current covered review.                 |
+| SPG-008 ActionReviewReceipt/v1 missing                          | Add guardian-style action review receipts for merge, release, destructive cleanup, and external tracker mutation with exact action envelope and allow/block/mismatch verdict.                                            | Allow/block/mismatch fixtures and policy-gate or delivery-truth integration evidence.                                                             |
+| SPG-009 ArtifactRuntimeSurface/v1 missing                       | Treat implementation notes, review artifacts, screenshots, CSV/PDF/doc outputs, runtime cards, and reports as runtime surfaces only when they steer execution or claims.                                                 | Artifact fixtures for missing path, stale front matter, broken preview, unsupported claim, mismatched lineage, and reviewable current artifact.   |
+| SPG-010 ReplayPacket/v1 and hook provenance missing             | Emit minimal replay packets for runtime identity, prompt receipt id, runtime-card id, tool events, hook events, queue decisions, validator outputs, and final claims without secrets or full transcripts.                | JSONL schema/fixtures plus replay-seed validation for hook rewrites, blocked runtime, stale PR head, and repeated steering.                       |
+| SPG-011 prompt/context drift validator missing                  | Add drift detection across prompt/source refs, goal board, Project Brain, active artifacts, runtime-card evidence, and receipt head SHA where those sources support claims.                                              | Validator fails on stale prompt context, stale active route, mismatched head SHA, and missing source hash.                                        |
+| SPG-012 real-time and intermediary receipt coverage incomplete  | Classify real-time/intermediary messages as orientation unless bound by receipt, source freshness, and claim-support eligibility. This may be deferred if no current slice depends on real-time evidence.                | Explicit implementation, blocked decision, or accepted P3 follow-up with owner and risk note.                                                     |
+
+System-prompt gap closure rules:
+
+- A system-prompt gap is not closed by prose. It needs a schema, validator, receipt, fixture-backed implementation, runtime-card projection, delivery-truth integration, or accepted blocked/follow-up decision.
+- Future receipts must include `system_prompt_gap_ids` when a slice touches prompt provenance, runtime cards, goal completion, steering, permissions, tools, review lifecycle, action review, artifact surfaces, replay, hook provenance, context drift, or intermediary messages.
+- The Judge/PM audit must reconcile SPG-001 through SPG-012 before any full-lifecycle completion claim.
+- Prompt context, Project Brain recall, browser/intermediary state, and compaction history are orientation-only unless a current receipt binds them to repo, branch, head SHA, source refs, freshness, and slice intent.
+- Harness must remain the verifier cockpit. It must not become a second Codex prompt composer, app-server, scheduler, tool registry, or thread engine.
 
 ## Project Brain Memory Contract
 
@@ -293,6 +324,7 @@ The goal is complete only when all of the following are true:
 
 - PU-000 through PU-016 are implemented, explicitly marked not applicable with evidence, or explicitly blocked with owner-visible evidence.
 - GAP-001 through GAP-012 from `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` are implemented, explicitly blocked, or tracked as accepted follow-ups by the Judge/PM audit.
+- SPG-001 through SPG-012 from `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` are implemented, explicitly blocked, or tracked as accepted follow-ups by the Judge/PM audit.
 - `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .` proves the latest relevant receipt acknowledges the current `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` content hash after the audit file timestamp; otherwise audit-gap closeout is stale and blocked.
 - `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit` also passes, proving the normal goal-board path executes audit-freshness and active-artifacts route enforcement for this goal.
 - Each implemented slice has an intent artifact, validation evidence, review evidence, commit, PR truth, and receipt.
@@ -337,7 +369,7 @@ Before that phrase appears, allowed work is limited to setup validation, board r
 2. Reconcile native goal state against this board.
 3. Check current branch, worktree dirt, and uncommitted user changes.
 4. Run the Goal Governor board validator.
-5. Read the implementation plan, associated spec, and the 2026-05-26 evidence-led gap audit.
+5. Read the implementation plan, associated spec, the 2026-05-26 evidence-led gap audit, the 2026-05-26 ecosystem operational review, and the 2026-05-27 system-prompt operational analysis.
 6. Refresh Project Brain memory inputs: `.harness/active-artifacts.md`, `.harness/memory/LEARNINGS.md`, relevant `.harness/knowledge/**`, and `.harness/research/evidence-patterns.json`.
 7. Confirm whether the activation phrase is present.
 8. If not activated, stop after readiness reporting.
