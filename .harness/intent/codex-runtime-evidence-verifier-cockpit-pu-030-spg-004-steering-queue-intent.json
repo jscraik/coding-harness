@@ -86,6 +86,8 @@
 		"node scripts/validate-steering-queue.cjs contracts/examples/steering-queue.example.json",
 		"node scripts/validate-runtime-packet-schemas.cjs --all",
 		"pnpm exec biome check src/lib/steering-queue/index.ts src/lib/steering-queue/steering-queue.ts src/lib/steering-queue/steering-queue.test.ts contracts/steering-queue.schema.json contracts/examples/steering-queue.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-steering-queue.cjs src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"bash scripts/validate-codestyle.sh --fast",
+		"bash scripts/verify-work.sh --fast",
 		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-030-spg-004-steering-queue-intent.json src/lib/steering-queue/index.ts src/lib/steering-queue/steering-queue.ts src/lib/steering-queue/steering-queue.test.ts contracts/steering-queue.schema.json contracts/examples/steering-queue.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-steering-queue.cjs src/dev/validate-runtime-packet-schemas-script.test.ts docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-030-spg-004-steering-queue-intent-adversarial-reviewer.md artifacts/reviews/pu-030-spg-004-steering-queue-intent-agent-native-reviewer.md artifacts/reviews/pu-030-spg-004-steering-queue-intent-best-practices-researcher.md"
 	],
 	"projectBrainInputs": [
