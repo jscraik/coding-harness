@@ -208,12 +208,18 @@ function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
 		}
 	}
 
-	if (
-		!hasAcceptanceIds &&
-		PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace) &&
-		PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN.test(acceptanceTrace)
-	) {
-		return [];
+	if (!hasAcceptanceIds) {
+		if (issueKeys.length === 1) {
+			if (
+				PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace) &&
+				PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN.test(acceptanceTrace)
+			) {
+				return [];
+			}
+		} else if (traceCoversEveryLinkedIssue(issueKeys, acceptanceTrace)) {
+			return [];
+		}
+	}
 	}
 
 	const issueKeyList = issueKeys.join(", ");
