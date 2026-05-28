@@ -60,6 +60,13 @@ This repository follows conservative defaults:
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `security/openssf-scorecard-policy.json` and `scripts/check-scorecard-regressions.mjs`.
 - Greptile is a legacy cleanup concern only. Keep active review governance, scaffold defaults, and runtime verification aligned to CodeRabbit, and treat any live Greptile scaffold path as contract drift unless it exists solely to remove or quarantine old artifacts.
 - Security/policy hook configuration files must fail closed because of findings, not because the config is syntactically broken; keep Semgrep rule YAML quoted where patterns include mapping-like text such as `shell: true`.
+- Action-review receipts for merge, release, destructive cleanup, or external
+  tracker mutation are governance/audit evidence only. Keep
+  `action-review-receipt/v1` under `src/lib/action-review/`, require
+  independent reviewer identity and canonical actor identity separation, bind
+  allow decisions to current evidence refs, and preserve allow/block/mismatch
+  semantics. A receipt must not authorize the action, satisfy delivery-truth,
+  prove merge readiness, or replace policy-gate, PR closeout, or human approval.
 
 ## Code-style parity verification surface
 

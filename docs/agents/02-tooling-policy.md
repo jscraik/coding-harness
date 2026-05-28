@@ -48,6 +48,14 @@ external systems. Updates to the index should be small, reviewed, and auditable:
 record the source artifact, Linear key when present, lifecycle status, and the
 validation or reconciliation evidence that made the entry active.
 
+High-risk action-review evidence follows the same read-only posture.
+`action-review-receipt/v1` packets may document reviewer independence,
+canonical actor identity separation, high-risk action envelopes, allow/block/
+mismatch decisions, and current evidence refs, but they are audit artifacts
+only. They must not be treated as command authority, delivery-truth claim
+support, merge-readiness proof, or replacement approval for policy-gate,
+PR closeout, or a human reviewer.
+
 ## Tool and shell defaults
 
 - Shell: `zsh -lc`.

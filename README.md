@@ -761,6 +761,15 @@ validation, stale-state normalization, and escalation metadata live in
 `src/lib/decision-request/`. `decision-request/v1` is governance-request
 evidence only; it is not closeout or merge-readiness proof.
 
+Action-review receipts follow the same runtime-cockpit discipline without
+becoming a public command surface. `action-review-receipt/v1` lives in
+`src/lib/action-review/` and records reviewer independence, canonical actor
+identity separation, high-risk action envelopes, allow/block/mismatch
+semantics, current evidence refs, and stable validation errors. These receipts
+are orientation, governance, and audit artifacts only; they do not authorize
+commands, satisfy delivery-truth claims, prove merge readiness, or replace
+policy-gate, PR closeout, or human approval.
+
 ### Pilot, Remediation, And Automation
 
 | Command          | Purpose                                                                   |

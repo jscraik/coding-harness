@@ -25,6 +25,10 @@
 - Required checks must pass before merge.
 - CodeRabbit + Codex review artifacts are required before merge.
 - The coding agent must not approve its own PR; review must be independent.
+- High-risk action-review receipts are audit artifacts only: they must prove
+  reviewer independence, canonical actor identity separation, current evidence,
+  and allow/block/mismatch semantics, but they must not authorize commands or
+  substitute for delivery-truth, policy-gate, PR closeout, or human approval.
 - Flow Ops closure-evidence changes that reroute validation or source
   classification must refresh `AI/context/diagram-context.md` and the
   docs-gate-required governance surfaces in the same PR.
