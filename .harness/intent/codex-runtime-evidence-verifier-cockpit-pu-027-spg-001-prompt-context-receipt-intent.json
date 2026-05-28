@@ -18,7 +18,7 @@
 			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-spg-001-prompt-context-receipt-intent.json"
 		],
 		"forbiddenFiles": [
-			"/Users/jamiecraik/dev/codex/**",
+			"**/codex/**",
 			"**/*prompt*/** when used as raw prompt source content rather than a source-ref/hash fixture",
 			"**/*transcript*/** when used as raw transcript content rather than a source-ref/hash fixture",
 			"**/.env",
