@@ -239,14 +239,32 @@ the report as an advisory `prompt_context_drift` context surface, but it must
 not authorize commands, satisfy delivery-truth claims, close JSC-363
 acceptance criteria, or prove merge readiness.
 
+Intermediary receipt coverage changes are real-time-truth cockpit work, not a
+new closeout, delivery-truth, review-state, or external-state rail. Keep
+`intermediary-receipt-coverage/v1` inside
+`src/lib/intermediary-receipts/` as the contract-first,
+`not_yet_emitted` packet for browser state, streamed status, mailbox status,
+compaction summaries, visual state, real-time event snippets, external check
+snapshots, operator steering echoes, and subagent status text. Validators must
+prove full source-kind taxonomy coverage, complete deny-by-default
+source-kind/claim-family policy entries, deterministic blocker-to-next-action
+mapping, most-restrictive-wins summary aggregation, raw/secret leakage
+rejection, current receipt/head-SHA binding for claim support, and
+canonical-packet routing for protected external-state, review-state,
+delivery-truth, Linear, Judge/PM, and merge-readiness claim families. Unbound
+intermediary observations may orient agents, but they must not support
+delivery, closeout, tracker, review, root-hygiene, Judge/PM, or merge-readiness
+claims without a current `evidence-receipt/v1` plus the matching canonical
+packet route.
+
 Steering-queue packet changes are continuation-recovery cockpit work, not a new
 agent execution rail. Keep `steering-queue/v1` inside
-`src/lib/steering-queue/` as an advisory packet for deferred operator
+`src/lib/steering-queue/` as an advisory packet for pending operator
 steering, with instruction-source hashing, artifact identity, supersession,
 stale-precondition classification, deterministic selected-item rules, and a
 script-backed semantic validator. The packet may support orientation and audit
 trails, but it must not authorize commands, satisfy delivery-truth claims, or
-prove merge readiness until a later runtime-card integration explicitly defines
+prove merge readiness until a separate runtime-card integration explicitly defines
 that consumption boundary.
 
 Trust-boundary validator changes that add script-backed evidence reports, such

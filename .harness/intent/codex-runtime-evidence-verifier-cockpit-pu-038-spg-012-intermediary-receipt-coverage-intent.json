@@ -1,0 +1,137 @@
+{
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-038-spg-012-intermediary-receipt-coverage",
+	"schemaVersion": "lifecycle-intent/v1",
+	"createdAt": "2026-05-28T19:16:00Z",
+	"linearIssue": "JSC-363",
+	"goal": "Add a deterministic intermediary receipt coverage contract that classifies realtime, browser, compaction, mailbox, streamed status, and other intermediary state as orientation unless a current receipt, source freshness, head binding, and claim-support policy make it eligible.",
+	"lifecycleUnit": "PU-038-spg-012-intermediary-receipt-coverage",
+	"scope": {
+		"primaryModule": "src/lib/intermediary-receipts",
+		"allowedFiles": [
+			"src/lib/intermediary-receipts/**",
+			"contracts/intermediary-receipt-coverage.schema.json",
+			"contracts/examples/intermediary-receipt-coverage.example.json",
+			"contracts/runtime-packet-schemas.manifest.json",
+			"scripts/validate-intermediary-receipt-coverage.cjs",
+			"src/dev/validate-runtime-packet-schemas-script.test.ts",
+			"ARCHITECTURE.md",
+			"README.md",
+			"AGENTS.md",
+			"docs/agents/00-architecture-bootstrap.md",
+			"docs/agents/07b-agent-governance.md",
+			"AI/context/diagram-context.md",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			".harness/active-artifacts.md",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-038-spg-012-intermediary-receipt-coverage-intent.json",
+			"artifacts/reviews/pu-038-spg-012-intermediary-receipt-coverage-*.md"
+		],
+		"forbiddenFiles": [
+			"external Codex repository modifications",
+			"GitHub, CodeRabbit, Linear, CircleCI, release, merge, or destructive cleanup mutations",
+			"public command authority changes beyond a narrow standalone validator",
+			"delivery-truth pass-claim promotion from realtime or intermediary state in this slice",
+			"raw browser DOM dumps, screenshots, transcripts, streamed tool payloads, mailbox bodies, full compaction summaries, secrets, tokens, credentials, or unredacted environment values in packet payloads"
+		]
+	},
+	"designConstraints": [
+		"Intermediary receipt coverage must live in a deep module under src/lib/intermediary-receipts, with a narrow validator script wrapper.",
+		"The packet must cover intermediary surfaces that frequently mislead agents: browser state, streamed status, mailbox/subagent status text, compaction summaries, current UI screenshots, realtime event snippets, external check snapshots, and operator steering echoes.",
+		"Intermediary sources are orientation by default. Claim support requires a referenced evidence-receipt/v1 with evidenceUse claim_support, status pass, freshness current, verifiedAt, current head SHA when head-bound, source freshness current, and explicit policy eligibility for the target claim.",
+		"Unbound intermediary orientation is allowed only as low-confidence navigation evidence when the source is pointer-only, redacted, non-raw, bounded, and marked ineligible for claim support. Receipt-bound orientation is preferred, but lack of a receipt must not force fake receipt generation for navigation-only state.",
+		"Claim policy must be deny-by-default. Every sourceKind and claimFamily combination that is not explicitly allowlisted must be ineligible with a machine-readable policy_matrix_denied blocker.",
+		"Intermediary sources must not satisfy canonical external-state, review-state, merge-readiness, Linear-alignment, or Judge/PM claim families unless the source is a canonical packet ref from that family and the receipt proves that canonical packet; an intermediary snapshot cannot impersonate external-state or review-state authority.",
+		"Mixed-source aggregation must be most-restrictive-wins for each claim family: fail or blocked sources outrank warnings, warnings outrank pass, head mismatches outrank stale state, stale state outranks missing optional source details, and blockers must be preserved rather than cherry-picked away.",
+		"The required intermediary taxonomy is browser_state, streamed_status, mailbox_status, compaction_summary, screenshot_or_visual_state, realtime_event_snippet, external_check_snapshot, operator_steering_echo, and subagent_status_text. Fixtures must exercise every source kind so a partial implementation cannot silently pass SPG-012.",
+		"Each blockerClass must map to a deterministic nextActionClass such as refresh_receipt, capture_hash, rebind_head, route_to_canonical_packet, request_policy_exception, redact_source, or use_orientation_only; unknown nextActionClass values must fail validation.",
+		"Mailbox text, browser page presence, screenshots, remembered summaries, and compaction history must be rejected as claim support unless they point to a current receipt-bound artifact with path, hash, producer, freshness, and allowed claim family.",
+		"The validator must separate source status from claim eligibility so realtime orientation can still guide next action while closeout, merge readiness, review addressed, Linear alignment, Judge/PM readiness, and delivery-truth pass claims fail closed.",
+		"The packet must reject raw or bulky payloads and store only bounded source refs, receipt refs, hashes, freshness, status, claim families, blockers, and next actions.",
+		"Head-bound intermediary evidence must fail claim eligibility when observedHeadSha and currentHeadSha differ.",
+		"Expired, stale, missing, unknown, unverifiable, external-only, or orientation-only intermediary sources must produce machine-readable blockers rather than ambiguous warnings.",
+		"Schema, TypeScript constants, example, semantic validator, and tests must keep enum values aligned.",
+		"Architecture/governance docs must explain that this module prevents realtime/intermediary signals from becoming hidden delivery proof; it does not create a scheduler, browser recorder, subagent mailbox parser, or Codex runtime event bus."
+	],
+	"acceptanceCriteria": [
+		"IntermediaryReceiptCoverage has schemaVersion intermediary-receipt-coverage/v1 and records generatedAt, producer, runtimeStatus, evidenceUse, currentHeadSha, sources, claimPolicy, blockers, overallStatus, and nextAction.",
+		"Closed enum values for sourceKind, sourceStatus, freshness, evidenceUse, claimFamily, claimEligibility, blockerClass, overallStatus, and nextActionClass are pinned in TypeScript and schema; tests reject unknown values.",
+		"Validation accepts low-confidence unbound orientation only when intermediary source refs are pointer-only, redacted, non-raw, bounded, and explicitly ineligible for claim support.",
+		"Validation accepts higher-confidence receipt-bound orientation when intermediary source refs point to current receipts, but still marks the packet orientation-only unless claimPolicy explicitly allows a claim family.",
+		"Validation accepts claim-support eligibility only when the source is current, the linked evidence receipt is pass/current/claim_support, the receipt has verifiedAt, the head SHA matches when head-bound, and claimPolicy allows the requested claim family.",
+		"Validation rejects claim-support eligibility when the sourceKind and claimFamily pair is missing, unknown, partial, or not explicitly allowlisted in the claim policy matrix.",
+		"Validation rejects intermediary external_check_snapshot, mailbox_status, streamed_status, browser_state, compaction_summary, screenshot_or_visual_state, realtime_event_snippet, operator_steering_echo, and subagent_status_text sources as support for external-state, review-state, merge-readiness, Linear-alignment, or Judge/PM claim families unless they route through a canonical packet receipt from that family.",
+		"Validation applies most-restrictive-wins aggregation and rejects mixed-source conflicts where one source passes but another source for the same claim family is stale, head-mismatched, blocked, or policy-denied.",
+		"Validation includes at least one positive or negative fixture for every required sourceKind in the intermediary taxonomy.",
+		"Validation rejects blockers without a deterministic nextActionClass mapping and rejects unknown nextActionClass values.",
+		"Validation rejects claim-support eligibility from orientation-only evidence receipts, stale receipts, missing receipts, missing verifiedAt, missing or mismatched head SHA, stale source freshness, expired source TTL, and policy-disallowed claim families.",
+		"Validation rejects raw browser DOM dumps, screenshots/image bytes, transcripts, mailbox bodies, streamed tool payloads, compaction bodies, secret-like keys, secret-like scalar values, unknown top-level fields, and unknown nested fields.",
+		"Validation classifies stale realtime/intermediary sources as orientation_blocked or audit_only rather than pass for claim support.",
+		"Standalone script validation can validate the example fixture and return machine-readable JSON on failure.",
+		"Runtime packet schema manifest admits intermediary-receipt-coverage/v1 with schema, example, and semantic validator pointers.",
+		"Tests cover positive unbound orientation, positive receipt-bound orientation, positive claim support, deny-by-default matrix gaps, partial policy objects, canonical-packet-only claim families, orientation-only receipt rejected for claim support, stale receipt, missing verifiedAt, head mismatch, mixed-source conflict, policy-disallowed claim, expired source, raw payload rejection, secret rejection, unknown next action rejection, unknown enum rejection, per-source-kind taxonomy coverage, and schema parity.",
+		"The module is discoverable from ARCHITECTURE.md and agent-governance docs without requiring implementers to inspect broad command files.",
+		"Slice review artifacts include improve-codebase-architecture, simplify, unslopify, he-code-review, testing, adversarial-reviewer, agent-native-reviewer, and best-practices-researcher results or explicit blocked/not-applicable evidence before done is claimed."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-038-spg-012-intermediary-receipt-coverage-intent.json >/dev/null",
+		"pnpm vitest run src/lib/intermediary-receipts/intermediary-receipt-coverage.test.ts --reporter=dot",
+		"node scripts/validate-intermediary-receipt-coverage.cjs contracts/examples/intermediary-receipt-coverage.example.json --repo-root .",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts --reporter=dot",
+		"pnpm typecheck",
+		"pnpm exec biome check .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-038-spg-012-intermediary-receipt-coverage-intent.json src/lib/intermediary-receipts contracts/intermediary-receipt-coverage.schema.json contracts/examples/intermediary-receipt-coverage.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-intermediary-receipt-coverage.cjs src/dev/validate-runtime-packet-schemas-script.test.ts ARCHITECTURE.md AGENTS.md docs/agents/00-architecture-bootstrap.md docs/agents/07b-agent-governance.md",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"node --import tsx src/cli.ts docs-gate --mode required --json",
+		"bash scripts/validate-codestyle.sh --fast",
+		"bash scripts/verify-work.sh --fast",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-038-spg-012-intermediary-receipt-coverage-intent.json src/lib/intermediary-receipts contracts/intermediary-receipt-coverage.schema.json contracts/examples/intermediary-receipt-coverage.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-intermediary-receipt-coverage.cjs src/dev/validate-runtime-packet-schemas-script.test.ts ARCHITECTURE.md AGENTS.md docs/agents/00-architecture-bootstrap.md docs/agents/07b-agent-governance.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/active-artifacts.md artifacts/reviews/pu-038-spg-012-intermediary-receipt-coverage-*.md"
+	],
+	"reviewPlan": {
+		"preImplementation": [
+			"adversarial-reviewer intent review",
+			"agent-native-reviewer intent review"
+		],
+		"beforeDone": [
+			"improve-codebase-architecture lens",
+			"simplify lens",
+			"unslopify lens",
+			"he-code-review lens",
+			"testing lens",
+			"adversarial-reviewer implementation review",
+			"agent-native-reviewer implementation review",
+			"best-practices-researcher implementation review"
+		]
+	},
+	"rollbackPlan": [
+		"Remove IntermediaryReceiptCoverage/v1 schema, example, validator, module, script, manifest entry, and tests.",
+		"Remove intermediary receipt coverage references from architecture and governance docs.",
+		"Preserve existing evidence-receipt, prompt-context, prompt-context-drift, runtime-card, delivery-truth, review-state, external-state, and PR closeout behavior unchanged unless a separate explicit wiring slice consumes the coverage packet."
+	],
+	"evidenceUse": "orientation_or_audit_trail_by_default_claim_support_only_when_receipt_bound_and_policy_eligible",
+	"auditGapIds": ["GAP-003", "GAP-008", "GAP-012"],
+	"systemPromptGapIds": ["SPG-012"],
+	"projectBrainInputs": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/knowledge/runtime-evidence/README.md",
+		".harness/knowledge/agent-context/README.md",
+		".harness/research/evidence-patterns.json",
+		".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"
+	],
+	"currentStateNotes": [
+		"Current branch is codex/jsc-363-intermediary-receipt-coverage at head 43aa212986e721f885fe7dffbf756b0b9703b9cb before this intent artifact.",
+		"PR #314 is green at the same head and remains a separate stacked PR truth lane; this slice starts only after PU-037 handoff was committed and pushed.",
+		"Untracked files already exist outside this slice and must not be staged, deleted, or used as proof for SPG-012.",
+		"~/.codex/.env is not read or sourced by this local contract slice unless live CircleCI or GitHub triage becomes necessary."
+	],
+	"stopConditions": [
+		"Stop if intermediary receipt coverage requires embedding raw browser state, transcripts, mailbox text, compaction bodies, streamed tool payloads, screenshots, secrets, tokens, or bulky telemetry.",
+		"Stop if realtime/intermediary state would be treated as merge_ready, review_addressed, Linear-aligned, goal-ready, Judge/PM-ready, or delivery-truth pass proof without current receipt-bound claim eligibility.",
+		"Stop if the implementation would replace existing evidence-receipt, prompt-context-drift, runtime-card, review-state, external-state, or delivery-truth contracts instead of adding a bounded coverage packet.",
+		"Stop if the design requires mutating Codex upstream, live PRs, Linear, CircleCI, CodeRabbit, release state, or merge state."
+	]
+}

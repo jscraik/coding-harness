@@ -179,6 +179,17 @@
 			"parityValidator": "prompt-context-drift-report",
 			"semanticValidatorPath": "scripts/validate-prompt-context-drift.cjs",
 			"ownerGap": "SPG-011"
+		},
+		{
+			"schemaVersion": "intermediary-receipt-coverage/v1",
+			"schemaPath": "contracts/intermediary-receipt-coverage.schema.json",
+			"examplePath": "contracts/examples/intermediary-receipt-coverage.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-intermediary-receipt-coverage.cjs",
+			"ownerGap": "SPG-012",
+			"blockedBy": "PU-038 adds the intermediary receipt coverage contract before production realtime, browser, mailbox, stream, or compaction producers emit claim-routable runtime evidence."
 		}
 	]
 }
