@@ -23,6 +23,7 @@ export type AgentReadinessContextSurfaceId =
 	| "project_brain_memory"
 	| "project_brain_knowledge"
 	| "runtime_card"
+	| "prompt_context_drift"
 	| "external_horizon";
 
 /** Single readiness check result with concrete file evidence. */

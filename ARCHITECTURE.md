@@ -119,6 +119,15 @@ not in docs, templates, generated context, or command facades.
   repo-relative path safety, SHA-256 integrity, hook identity, TTL/head
   freshness semantics, and absence of raw prompts, transcripts, command output,
   screenshots, images, or secret-like values.
+- src/lib/prompt-context-drift/: prompt-context integrity reports for agent
+  cockpit orientation. It owns `prompt-context-drift-report/v1` types,
+  semantic validation, repo-contained SHA-256 source refs, symlink/realpath
+  containment, stale Project Brain/runtime-card/receipt classification, and
+  claim-support eligibility checks for required local context surfaces. The
+  first consumer is `src/lib/agent-readiness/context-health.ts`, which exposes
+  the report as an advisory `prompt_context_drift` context surface; the packet
+  must not authorize commands, close JSC-363 acceptance criteria, support
+  delivery-truth, or prove merge readiness.
 - src/lib/delivery-truth/: private and production verdict composition for
   delivery, root hygiene, Judge/PM readiness, and merge-readiness claims.
 - src/lib/root-hygiene/: root-surface classification and claim-support receipt

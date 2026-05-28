@@ -1,10 +1,12 @@
 import {
 	mkdirSync,
 	mkdtempSync,
+	readFileSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -51,6 +53,7 @@ describe("agent-readiness command", () => {
 			"project_brain_memory",
 			"project_brain_knowledge",
 			"runtime_card",
+			"prompt_context_drift",
 			"external_horizon",
 		]);
 		expect(report.summary.fail).toBe(0);
@@ -151,6 +154,146 @@ describe("agent-readiness command", () => {
 				status: "warn",
 			}),
 		);
+	});
+
+	it("warns when prompt-context drift report spoofs pass without validating", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			"artifacts/context-integrity/prompt-context-drift-report.json",
+			JSON.stringify({ overallStatus: "pass" }),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(report.status).toBe("warn");
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			staleReasons: [
+				expect.stringContaining(
+					"Prompt-context-drift report failed validation",
+				),
+			],
+		});
+	});
+
+	it("warns when prompt-context drift report is empty", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			"artifacts/context-integrity/prompt-context-drift-report.json",
+			"",
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			staleReasons: ["Prompt-context-drift report is empty."],
+		});
+	});
+
+	it("warns when prompt-context drift report is invalid JSON", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			"artifacts/context-integrity/prompt-context-drift-report.json",
+			"{not-json",
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			staleReasons: [
+				expect.stringContaining(
+					"Prompt-context-drift report is not valid JSON",
+				),
+			],
+		});
+	});
+
+	it("warns when prompt-context drift report validates but is not pass", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const driftReport = promptContextDriftReportForReadyRepo(repoRoot);
+		driftReport.evidenceUse = "orientation";
+		driftReport.overallStatus = "warn";
+		driftReport.surfaces = driftReport.surfaces.map((surface) => ({
+			...surface,
+			status: "warn",
+			evidenceUse: "orientation",
+			requiredForClaimSupport: false,
+			sourceRefs: surface.sourceRefs.map((sourceRef) => ({
+				...sourceRef,
+				evidenceUse: "orientation",
+				requiredForClaimSupport: false,
+			})),
+		}));
+		writeRepoFile(
+			repoRoot,
+			"artifacts/context-integrity/prompt-context-drift-report.json",
+			JSON.stringify(driftReport),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			staleReasons: [
+				"Prompt-context-drift report is not pass for orientation.",
+			],
+		});
+	});
+
+	it("warns when multiple prompt-context drift reports create ambiguous authority", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			"artifacts/prompt-context-drift-report.json",
+			JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(report.status).toBe("warn");
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			staleReasons: [
+				expect.stringContaining(
+					"Multiple prompt-context-drift reports were discovered",
+				),
+			],
+		});
 	});
 
 	it("warns when current active route mixes in a row marked not current", () => {
@@ -580,6 +723,11 @@ function makeAgentReadyRepo(tempDirs: string[]): string {
 	);
 	writeRepoFile(
 		repoRoot,
+		"artifacts/context-integrity/prompt-context-drift-report.json",
+		JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
+	);
+	writeRepoFile(
+		repoRoot,
 		"package.json",
 		JSON.stringify({
 			scripts: { test: "vitest run", "test:deep": "vitest run" },
@@ -619,6 +767,61 @@ function makeAgentReadyRepo(tempDirs: string[]): string {
 		"Linear GitHub branch commit validation evidence links are required.\n",
 	);
 	return repoRoot;
+}
+
+function promptContextDriftReportForReadyRepo(repoRoot: string) {
+	const currentHeadSha = "1".repeat(40);
+	const surfaces = [
+		["prompt_context", "AGENTS.md"],
+		["active_artifacts", ".harness/active-artifacts.md"],
+		["active_route", ".harness/plan/ready.md"],
+		["project_brain_memory", ".harness/memory/LEARNINGS.md"],
+		["project_brain_knowledge", ".harness/knowledge/INDEX.md"],
+		["runtime_card_or_handoff", ".harness/runtime/runtime-card.json"],
+		["receipt_head_sha", "harness.contract.json"],
+	] as const;
+
+	return {
+		schemaVersion: "prompt-context-drift-report/v1",
+		generatedAt: "2026-05-26T12:00:00Z",
+		producer: "agent-readiness-test",
+		repoRootRef: "test-repo",
+		currentHeadSha,
+		evidenceUse: "claim_support",
+		overallStatus: "pass",
+		surfaces: surfaces.map(([surfaceId, ref]) => ({
+			surfaceId,
+			status: "pass",
+			evidenceUse: "claim_support",
+			freshness: "current",
+			requiredForClaimSupport: true,
+			observedHeadSha: currentHeadSha,
+			currentHeadSha,
+			sourceRefs: [
+				{
+					refId: `test:${surfaceId}`,
+					surfaceId,
+					refKind: "repo_file",
+					ref,
+					hashAlgorithm: "sha256",
+					sha256: sha256RepoFile(repoRoot, ref),
+					freshness: "current",
+					evidenceUse: "claim_support",
+					requiredForClaimSupport: true,
+					requiresFilesystemExistence: true,
+				},
+			],
+			blockers: [],
+		})),
+		blockers: [],
+		nextAction: "none",
+	};
+}
+
+function sha256RepoFile(repoRoot: string, path: string): string {
+	return createHash("sha256")
+		.update(readFileSync(join(repoRoot, path)))
+		.digest("hex");
 }
 
 function writeRepoFile(repoRoot: string, path: string, content: string): void {

@@ -242,6 +242,16 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   repo-relative path containment, checksum/size checks, and value-level leakage
   rejection before any artifact supports delivery, review, root, external-state,
   merge-readiness, or Judge/PM claims
+- prompt-context drift report changes should keep context freshness truth in
+  `src/lib/prompt-context-drift/`, with pointer-only payloads, repo-contained
+  SHA-256 source refs, prompt-context receipt freshness, Project Brain route
+  and memory/knowledge freshness, runtime-card or handoff freshness, receipt
+  head-SHA checks, symlink/realpath containment, stale-state classification,
+  closed enum validation, and value-level leakage rejection before the report
+  can support any advisory context-health projection. `agent-readiness` may
+  expose `prompt_context_drift` for orientation, but the report must not become
+  command authority, delivery-truth claim support, JSC-363 acceptance closure,
+  or merge-readiness proof
 - `pr-closeout/v1` success must come from current structured
   claim/evidence status rather than model-written summary text. Missing or
   stale required evidence should resolve to blocked or unknown with source,
