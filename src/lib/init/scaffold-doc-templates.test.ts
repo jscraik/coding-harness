@@ -11,6 +11,8 @@ import { REQUIRED_WORK_FIELDS } from "../pr-template-validator-rules.js";
 
 const requiredWorkPerformedLabels = [
 	"Plan IDs",
+	"Linear reference",
+	"Linked issue relationship",
 	"Phase / slice",
 	"Session IDs",
 	"Trace IDs",
@@ -35,6 +37,11 @@ const requiredWorkPerformedLabels = [
 
 const completedWorkPerformedValues = new Map<string, string>([
 	["Plan IDs", "JSC-999; .harness/plan/generated-template.md"],
+	["Linear reference", "Refs JSC-999."],
+	[
+		"Linked issue relationship",
+		"implementation closure for SA-999-001 only; no parent-goal acceptance is implied.",
+	],
 	["Phase / slice", "Generated template parity"],
 	["Session IDs", "codex-session-generated-template-test"],
 	["Trace IDs", "harness-run-generated-template-test"],

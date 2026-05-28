@@ -242,17 +242,19 @@ This repository uses `action-review-receipt/v1` as a narrow guardian-style recei
 - **High-risk action envelopes**: merge, release, destructive cleanup, and external tracker mutation require current evidence refs and head SHA
 - **Reviewer independence**: reviewer must not be the same as requester/producer (no self-approval)
 - **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not only by display alias or shared runtime/source identity ref)
-- **Decision semantics**: allow, block, mismatch, unknown, not_applicable
+- **Decision semantics**: allow, block, mismatch, unknown, and not applicable
   - `allow` verdicts require current supporting evidence, non-expired review time, independent reviewer identity, differing canonical identity refs, and no unresolved blockers
   - `block` and `unknown` verdicts must carry blocker classes and next action text
   - `mismatch` verdicts must require expected and actual action envelopes plus explicit mismatch reason
-  - `not_applicable` is forbidden for merge, release, destructive cleanup, and external tracker mutation envelopes
+  - the not-applicable verdict is forbidden for merge, release, destructive cleanup, and external tracker mutation envelopes
 - **Docs-gate requirement**: these companion documentation surfaces must be updated in the same PR as any action-review governance change
 - **Reference diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
 
 ## Plan traceability
 
 - Pull requests must declare `Plan IDs` in the PR template `## Work performed` ledger.
+- Pull requests must declare `Linear reference` separately from `Linked issue relationship`. A `Refs JSC-N` value is traceability only; the relationship field must state whether the PR closes implementation acceptance, is preparatory/enabling work, is standalone/untracked, or is not applicable.
+- Parent-goal issue references must list completed acceptance IDs or explicitly say `none`; linked-issue checks should treat omitted acceptance evidence as inconclusive rather than successful closure.
 - Each declared ID must resolve to a `docs/plans/*` document with matching `plan_id` frontmatter.
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.
@@ -328,7 +330,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
 
 - ## Summary (1-3 bullet points)
-- ## Work performed (plan IDs, phase/slice, session IDs, trace IDs, AI session/traceability mapping, completed work, acceptance trace, validation evidence, review artifacts, learning/reinforcement, deferred work)
+- ## Work performed (plan IDs, phase/slice, Linear reference, linked issue relationship, session IDs, trace IDs, AI session/traceability mapping, completed work, acceptance trace, validation evidence, review artifacts, learning/reinforcement, deferred work)
 - ## Checklist (all items checked)
 - ## Testing (test commands and evidence)
 - ## Review artifacts (links to review outputs)

@@ -62,6 +62,16 @@ export const REQUIRED_WORK_FIELDS = [
 			"list Linear keys, spec paths, plan paths, or `n.a.` with reason",
 	},
 	{
+		label: "Linear reference",
+		placeholder:
+			"list `Refs JSC-N`, `Closes JSC-N`, issue URLs, or `n.a.` with reason",
+	},
+	{
+		label: "Linked issue relationship",
+		placeholder:
+			"classify the linked issue relationship as implementation closure, preparatory/enabling work, standalone/untracked work, or `n.a.` with reason; for parent-goal references, state completed acceptance IDs or `none`",
+	},
+	{
 		label: "Phase / slice",
 		placeholder:
 			"list completed phase, implementation slice, or `n.a.` with reason",

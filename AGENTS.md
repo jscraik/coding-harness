@@ -349,6 +349,7 @@ Notes:
 - Branch from `main` and never push directly to `main`.
 - Use `codex/<linear-key>-<short-description>` when the work is tracked in Linear, and open a PR for every merge to `main`.
 - PR description linking: use `Refs JSC-N` while the issue is in review; use `Closes JSC-N` only when the merge fully completes the issue.
+- PR bodies must keep `Linear reference` separate from `Linked issue relationship`: link the issue in the former, and state whether the PR is implementation closure, preparatory/enabling work, standalone, or `n.a.` with reason in the latter. Parent-goal references must list completed acceptance IDs or explicitly say none.
 - CodeRabbit review must remain independent; the coding agent cannot self-approve.
 - If you touch tooling/runtime contract surfaces such as hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions, update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.
 - See [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md) for the full GitHub to Linear automation config and known gaps.

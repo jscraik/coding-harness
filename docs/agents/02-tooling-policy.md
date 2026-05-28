@@ -237,6 +237,7 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 | North-star feedback            | `harness north-star-feedback --source .harness/learnings/coderabbit.local.json --json`              | Measure learning-loop hits, promoted learnings, high-usage unenforced items, and review feedback reduction signals for closeout evidence                                                |
 | Artifact provenance gate       | `harness artifact-gate --files <files> --json`                                                      | Check generated artifact changes against `.harness/artifact-provenance.json` so source/template changes accompany runtime mirrors                                                       |
 | CI ownership gate              | `harness ci-ownership-gate --json`                                                                  | Validate that CircleCI owns the primary PR workflow while CodeRabbit and Semgrep Cloud remain independent required checks                                                               |
+| PR template gate               | `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file <file> --json`                    | Validate that the PR body keeps `Linear reference` traceability separate from `Linked issue relationship` acceptance-closure claims                                                 |
 | PR closeout evidence           | `harness pr-closeout --pr <number> --gates artifacts/pr-closeout/closeout-gates.json --json`        | Build read-only handoff evidence from GitHub PR state, required checks, Coding Harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness |
 | Existing-repo upgrade matrix   | `pnpm test:harness-upgrade-matrix -- <repo>...`                                                     | Run the built CLI package `init --update --dry-run --json` path across existing repos and fail if any target git status changes or omits update-mode evidence                           |
 | Fleet remediation plan         | `harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json`                        | Convert the upgrade matrix artifact into agent-native next commands with safe dry-run boundaries and approval-required mutation steps                                                   |
@@ -253,6 +254,8 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 **Phase 4** starts artifact provenance checks with `harness artifact-gate` plus CI ownership checks with `harness ci-ownership-gate`.
 
 **Phase 4d** starts PR closeout evidence with `harness pr-closeout`. Supply first-class Coding Harness closeout gate evidence with `--gates <path>`; `--phase-exit <path>` remains a compatibility alias for older workflows. The command is read-only and may load `~/.codex/.env` for CLI credentials, but its report must describe tool availability rather than printing secrets. Missing optional CLIs stay visible as tool evidence; blocked required evidence must prevent a ready-to-merge recommendation.
+
+PR body validation must not treat an issue reference as completion evidence. Use `Linear reference` for traceability such as `Refs JSC-363`; use `Linked issue relationship` to classify whether the PR is implementation closure, preparatory/enabling work, standalone/untracked work, or not applicable. Parent-goal references must name completed acceptance IDs or state `none` so linked-issue automation can distinguish preparatory governance from accepted delivery.
 
 **Phase 4c** promotes the highest-signal scaffold-default learnings into generated-repo regression coverage for auth-free `.npmrc`, repo-local `scripts/harness-cli.sh`, real `CODESTYLE.md` templates, wrapper-first environment checks, first-class `toolingPolicy`, and Codex environment action sync.
 
@@ -479,7 +482,7 @@ When working with high-risk action governance:
 - **High-risk action envelopes** require current evidence refs and head SHA where the action touches repository or PR state
 - **Reviewer independence requirement**: reviewer must not be the same as requester/producer
 - **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not just display alias)
-- **Decision semantics**: allow, block, mismatch, unknown, not_applicable; `not_applicable` is forbidden for high-risk action kinds
+- **Decision semantics**: allow, block, mismatch, unknown, and not applicable; the not-applicable verdict is forbidden for high-risk action kinds
 - **Docs-gate requirement**: companion documentation surfaces must be updated in the same PR as any action-review governance change
 - **Diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
 
