@@ -32,6 +32,22 @@ function normalizeFieldValue(value: string): string {
 	return normalized.replace(/\s+/g, " ").trim();
 }
 
+function normalizeFieldBlockValue(value: string): string {
+	let normalized = value.trim();
+
+	const fencedMatch = normalized.match(/^```[\w-]*\s*([\s\S]*?)\s*```$/);
+	if (fencedMatch) {
+		normalized = fencedMatch[1] ?? "";
+	}
+
+	const inlineCodeMatch = normalized.match(/^`([^`]+)`$/);
+	if (inlineCodeMatch) {
+		normalized = inlineCodeMatch[1] ?? "";
+	}
+
+	return normalized.trim();
+}
+
 function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[.*+?^${}()|[\]]/g, "\\$&");
 	const pattern = new RegExp(
@@ -156,15 +172,7 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 	);
 }
 
-/**
- * Retrieves the normalized value of a labeled field from a specific markdown section.
- *
- * @param body - The full PR body markdown to search
- * @param sectionHeading - The section heading to extract (e.g., `## Work performed`)
- * @param label - The field label to find (e.g., `Meta-behavior proof`)
- * @returns The field's normalized text value if present, `null` if the section or labeled field is missing
- */
-function extractFieldValue(
+function extractFieldBlockValue(
 	body: string,
 	sectionHeading: string,
 	label: string,
@@ -180,7 +188,7 @@ function extractFieldValue(
 		"im",
 	);
 	const match = sectionBody.match(pattern);
-	return match ? normalizeFieldValue(match[1] ?? "") : null;
+	return match ? normalizeFieldBlockValue(match[1] ?? "") : null;
 }
 
 /**
@@ -242,7 +250,9 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectWorkPerformedFieldErrors(body));
-	errors.push(...collectWorkEvidenceIntegrityErrors(body, extractFieldValue));
+	errors.push(
+		...collectWorkEvidenceIntegrityErrors(body, extractFieldBlockValue),
+	);
 	errors.push(...collectChecklistErrors(body));
 	errors.push(...collectTestingFieldErrors(body));
 	errors.push(...collectPlaceholderErrors(body));

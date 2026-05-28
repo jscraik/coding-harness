@@ -188,6 +188,18 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("accepts multiline durable evidence map entries without flattening pairing boundaries", () => {
+		const body = VALID_BODY.replace(
+			"- Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.",
+			"- Review artifacts: Codex: artifacts/reviews/codex-review.md",
+		).replace(
+			"- Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
+			"- Durable evidence map:\n  - ignored-local artifacts/reviews/codex-review.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
 	it("fails when durable evidence map aliases the local artifact path", () => {
 		const body = VALID_BODY.replace(
 			"- Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.",
