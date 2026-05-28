@@ -2,7 +2,7 @@
 schema_version: implementation-notes/v1
 title: Codex Runtime Evidence Verifier Cockpit Implementation Notes
 goal: codex-runtime-evidence-verifier-cockpit
-updated_at: 2026-05-26T13:42:00Z
+updated_at: 2026-05-27T13:58:45Z
 status: present
 ---
 
@@ -15,21 +15,44 @@ This MDX source is the version-controlled implementation-notes artifact for the 
 <DeepModuleMap
   modules={[
     "src/lib/runtime",
+    "src/lib/runtime-trace",
     "src/lib/evidence",
     "src/lib/review-state",
     "src/lib/external-state",
     "src/lib/delivery-truth",
-    "src/lib/root-hygiene",
-    "src/lib/pr-closeout",
+	"src/lib/root-hygiene",
+	"src/lib/pr-closeout",
+	"src/lib/agent-readiness",
   ]}
 />
 
-Runtime evidence work stays inside the existing deep modules instead of adding a parallel truth subsystem. `src/lib/runtime` owns Codex runtime packets, adapters, and runtime-card projection. `src/lib/delivery-truth` composes claim support from receipts, review state, external state, root hygiene, and PR closeout evidence.
+Runtime evidence work stays inside the existing deep modules instead of adding a parallel truth subsystem. `src/lib/runtime` owns Codex runtime packets, adapters, and runtime-card projection. `src/lib/runtime-trace` owns opt-in runtime-card replay traces and delegates persistence to the canonical agent-run record writer. `src/lib/delivery-truth` composes claim support from receipts, review state, external state, root hygiene, and PR closeout evidence. PU-019 adds the GAP-008 stale-context orientation slice inside `src/lib/agent-readiness`, projecting existing Project Brain, runtime-card, and external-horizon signals without duplicating the canonical `context-health-report/v1` contract.
 
 ## Current Slice Insertion Map
 
 <InsertionPoint
-	  slice="PU-013 runtime-card and next cockpit projection"
+	  slice="PU-019 GAP-008 context-health orientation projection"
+	  branch="codex/jsc-363-runtime-evidence-cockpit-refresh"
+	  files={[
+	    ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-019-gap-008-context-health-intent.json",
+	    "src/lib/agent-readiness/context-health.ts",
+    "src/lib/agent-readiness/types.ts",
+    "src/lib/agent-readiness/checker.ts",
+    "src/lib/agent-readiness/cli.ts",
+    "src/commands/agent-readiness.test.ts",
+    "src/lib/cli/registry/agent-readiness-command-spec.ts",
+    ".harness/core/agent-readiness-contract.md",
+	  ]}
+	/>
+
+PU-019 places stale-context detection in the existing `agent-readiness` deep module. The new `agent-readiness-context-health/v1` projection is advisory and orientation-only: it can warn that active artifacts, Project Brain memory, Project Brain knowledge, runtime-card artifacts, or external horizon snapshots are missing or stale, but it cannot support closeout, merge-readiness, or delivery-truth claims. The projection links to the canonical `context-health-report/v1` command when the repo has a context-integrity policy and falls back to help/init guidance when the deep command is not safely runnable.
+
+Validation exposed one implementation detail that was not explicit in the plan: `agent-readiness` instruction discovery must not walk runtime-output trees such as `artifacts/**`, `.harness/media/**`, `.harness/runs/**`, or local worktree/cache directories. The scanner now ignores those generated surfaces while still finding source/docs scoped `AGENTS.md` files, and the regression is covered in `src/commands/agent-readiness.test.ts`.
+
+Reviewer coverage then tightened the projection boundary: active-route extraction now accepts safe repo-relative refs rather than a hardcoded prefix list, rejects absolute/traversal/URL/shell-like tokens, preserves valid paths containing spaces, and avoids suggesting local context-health refreshes as proof of external PR/CI/Linear/CodeRabbit freshness. The contract note in `.harness/core/agent-readiness-contract.md` makes `suggestedRefreshCommands` explicitly advisory and per-surface, so agents cannot treat a projection-level command list as delivery evidence.
+
+<InsertionPoint
+		  slice="PU-013 runtime-card and next cockpit projection"
 	  branch="codex/jsc-363-runtime-evidence-cockpit-refresh"
 	  files={[
 	    "src/lib/runtime/repo-runtime-artifact.ts",
@@ -73,15 +96,15 @@ The slice is intentionally narrow: it alters runtime-card and `harness next --js
 
 <ValidatorCoverage
 	  checks={[
-	    "git diff --check",
-    "./node_modules/.bin/biome check src/lib/runtime/repo-runtime-artifact.ts src/commands/runtime-card.ts src/commands/next-runtime-card.ts src/commands/next-phase-exit.ts src/commands/runtime-card.test.ts src/commands/next.test.ts",
-    "./node_modules/.bin/tsc --noEmit",
-    "./node_modules/.bin/vitest run src/commands/runtime-card.test.ts src/commands/next.test.ts",
-    "./node_modules/.bin/vitest run src/lib/runtime/runtime-evidence-adapter.test.ts src/lib/runtime/runtime-card-codex-runtime-projection.test.ts src/lib/runtime/codex-runtime-evidence.test.ts src/commands/runtime-card.test.ts src/commands/next.test.ts",
+	    "pnpm vitest run src/commands/agent-readiness.test.ts -> pass, 18 tests",
+    "node_modules/.bin/biome check src/lib/agent-readiness/context-health.ts src/lib/agent-readiness/cli.ts src/commands/agent-readiness.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-019-gap-008-context-health-intent.json -> pass",
+    "node --import tsx src/cli.ts agent-readiness --repo-root . --json -> pass with expected warn status: 18 pass, 3 warn, 0 fail",
+    "wc -c required PU-019 skill-lens and reviewer artifacts -> pass, all non-empty",
+    "git diff --check -- PU-019 bounded files -> pass",
 	  ]}
 	/>
 
-Validation is recorded in PR handoff only when the command was actually run and its pass, fail, or blocked result is known. Formatter wrappers through `pnpm exec` stalled in this environment, so formatting and focused tests used repo-local binaries under `./node_modules/.bin`; the wrapper stall is recorded as tooling friction, not as a passing gate.
+Validation is recorded only when the command was actually run and its pass, fail, or blocked result is known. PU-019's live `agent-readiness --json` path intentionally returns `status: "warn"`, not `fail`, because missing runtime-card and external-horizon artifacts are stale-state orientation signals. Those warnings are not closeout proof and must be refreshed through runtime-card, PR/CI/review/Linear, and review-state surfaces before any delivery claim.
 
 ## Review Findings Converted Into System Changes
 
@@ -95,3 +118,333 @@ Validation is recorded in PR handoff only when the command was actually run and 
 />
 
 The implementation keeps runtime-card and harness next as orientation surfaces. They can expose compact Codex runtime evidence, source refs, blockers, and stale-state classification, but they still cannot collapse local validation, remote checks, review state, tracker state, or merge readiness into one claim.
+
+## Project Brain Route Guard
+
+<ProjectBrainRouteGuard
+  source=".harness/active-artifacts.md"
+  enforced_by="scripts/check-goal-board.py"
+  goal="docs/goals/codex-runtime-evidence-verifier-cockpit"
+  required_refs={[
+    "JSC-363",
+    ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+    ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+    ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+  ]}
+/>
+
+The active Project Brain route was stale and still pointed the operator toward the older JSC-331 assurance lane as the current route. That contradicted the goal board requirement to use Project Brain before each slice. The fix is deliberately small: .harness/active-artifacts.md now names JSC-363 as the current execution cockpit, and the standard goal-board wrapper fails if those required route refs disappear. This keeps Project Brain useful as slice orientation without letting stale control-plane context support closeout claims.
+
+Initial reviewer coverage found that the first route guard was still too loose: JSC-363 could appear in Artifact Index while Current Active Route pointed elsewhere, and the runtime cockpit extension only ran when the goal path was argv[0]. The validator now scans non-flag argv entries for the governed goal path, extracts only the Current Active Route markdown section, and checks the JSC-363 row inside that section. This deliberately makes heading drift fail closed instead of silently accepting stale Project Brain routing.
+
+Validation evidence for this route guard:
+
+- pnpm vitest run src/dev/check-goal-board-script.test.ts src/dev/check-goal-audit-freshness-script.test.ts -> pass, 14 tests.
+- PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass.
+- git diff --check -- scripts/check-goal-board.py src/dev/check-goal-board-script.test.ts docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md .harness/active-artifacts.md .harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx -> pass.
+- adversarial-reviewer, agent-native-reviewer, and best-practices-researcher re-reviewed the patched guard and reported no material findings.
+
+## PU-020 Policy Gate Safety Floor
+
+<RuntimeCardState
+  pr="305"
+  mergeable="not claimed"
+  merge_state="local slice only"
+  checks="policy-gate focused tests, contract validator tests, schema assertion, CLI probes, Biome, docs-gate, diff-check, and three implementation re-reviews pass locally"
+  review_threads="PU-020 intent review, skill-lens artifacts, initial implementation review, and post-fix re-review artifacts are present"
+/>
+
+PU-020 closes GAP-006 from the 2026-05-26 evidence-led audit by making high-risk policy-gate behavior fail closed in executable code instead of relying on the prose safety floor. The work is deliberately placed in the existing policy-gate and contract deep modules:
+
+<BlastRadiusMap
+  changed_modules={[
+    "harness.contract.json governed policyChain",
+    "src/lib/contract/types-core.ts default policyChain",
+    "src/lib/contract/validator-core.ts contract validation invariant",
+    "src/lib/contract/json-schema-core.ts public schema invariant",
+    "src/commands/policy-gate.ts CLI decision path",
+    "src/lib/output/normalise-policy-gate.ts JSON report wording",
+    "src/commands/policy-gate.test.ts and contract tests",
+  ]}
+/>
+
+The first implementation re-review found a real false-success path: a custom contract could map `policyChain.actionToVerdict.block` to `pass`, which could greenlight a max-tier violation. The post-review patch closes it in depth:
+
+- max-tier violations now return literal `passed=false` and `verdict=fail`;
+- contract validation rejects `actionToVerdict.block` unless it is `fail`;
+- the generated JSON schema exposes `actionToVerdict.block` as `const: "fail"`;
+- `test-fixtures/contract-block-pass.json` captures the invalid drift case;
+- documentation says policy-gate is part of the executable safety floor.
+
+Validation evidence for PU-020:
+
+- `jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-020-gap-006-policy-gate-risk-chain-intent.json` -> pass.
+- `pnpm vitest run src/commands/policy-gate.test.ts` -> pass, 23 tests.
+- `pnpm vitest run src/commands/policy-gate.test.ts -t omitted-policyChain` -> pass, 2 tests.
+- `pnpm vitest run src/commands/policy-gate.test.ts -t block` -> pass, 3 tests.
+- `pnpm vitest run src/lib/contract/validator.test.ts -t policyChain` -> pass, 4 tests.
+- `pnpm vitest run src/commands/contract.test.ts -t policyChain` -> pass, 1 test.
+- `node --import tsx src/cli.ts policy-gate --contract harness.contract.json --files src/auth/login.ts --json` -> expected fail exit 1, policy action block/verdict fail.
+- `node --import tsx src/cli.ts policy-gate --contract test-fixtures/contract.json --files src/auth/login.ts --json` -> expected fail exit 1, omitted-policyChain default fail-closed.
+- `node --import tsx src/cli.ts policy-gate --contract test-fixtures/contract-block-pass.json --files src/auth/login.ts --json` -> expected validation fail exit 1.
+- `node --import tsx src/cli.ts policy-gate --contract harness.contract.json --files src/lib/utils.ts --max-tier medium --json` -> pass exit 0.
+- `node_modules/.bin/biome check` over bounded PU-020 files -> pass.
+- `bash scripts/run-harness-gate.sh docs-gate --mode required --json` -> pass.
+- `git diff --check --` bounded PU-020 files -> pass.
+
+Re-review status: adversarial, agent-native, and best-practices re-reviews report no material blockers. The low-severity residual note is that normalized CLI JSON groups invalid contract shape under an internal-error finding bucket; this is safe for GAP-006 because it exits 1 and cannot support a pass claim.
+
+## PU-021 Public Runtime Packet Schemas
+
+<RuntimeCardState
+  pr="not opened for this slice yet"
+  mergeable="not claimed"
+  merge_state="local slice only"
+  checks="runtime-packet schema validator, focused Vitest regression, Biome, diff-check, and goal-board audit freshness pass locally"
+  review_threads="intent review passed; implementation review found structural and ref-target validation gaps; fixes are under closure review"
+/>
+
+PU-021 closes the first implementation slice for GAP-003 by publishing public JSON Schema contracts for runtime cockpit packets without changing production runtime behavior. The work is intentionally placed in the repo contract surface rather than the existing runtime deep modules because this slice is a publication and drift-detection layer:
+
+<BlastRadiusMap
+  changed_modules={[
+    "contracts/*.schema.json public packet contracts",
+    "contracts/examples/*.example.json positive examples",
+    "contracts/examples/invalid/runtime-packet-schema-version-drift.example.json negative drift fixture",
+    "contracts/runtime-packet-schemas.manifest.json schemaVersion to source/status map",
+    "scripts/validate-runtime-packet-schemas.cjs dependency-free manifest/schema/example validator",
+    "src/dev/validate-runtime-packet-schemas-script.test.ts regression coverage",
+  ]}
+/>
+
+The manifest now maps eight public packet families:
+
+- \`evidence-receipt/v1\`
+- \`runtime-card/v1\`
+- \`harness-decision/v1\`
+- \`review-state/v1\`
+- \`external-state-snapshot/v1\`
+- \`delivery-truth/v1\`
+- \`decision-request/v1\`, marked \`not_yet_emitted\` and owned by GAP-005
+- \`session-context/v1\`, originally published as GAP-004 future contract in PU-021 and now emitted by the PU-022 read-only orientation command
+
+Implementation decision: the validator stays dependency-free for now. It checks manifest shape, schemaVersion const alignment, example schemaVersion alignment, required \`schemaVersion\`, not-yet-emitted blocker metadata, structural example-vs-schema parity for the JSON Schema subset used by these contracts, existing TypeScript validator parity where validators exist, and negative drift fixtures. This avoids adding AJV before the package-review surface has accepted that dependency, while still making public packet drift executable.
+
+Reviewer-driven hardening: the first implementation review found that the validator was too shallow because it primarily checked \`schemaVersion\` and selected manifest invariants. The slice now validates nested required fields, enum/const/type constraints, arrays, date-time strings, patterns, sibling \`$ref\`, \`anyOf\`, and \`additionalProperties: false\`. It also fails if a schema introduces unsupported JSON Schema keywords such as \`oneOf\` without extending the validator, including when the unsupported keyword appears inside a referenced schema. That turns future schema-vocabulary drift into a deterministic failure instead of a remembered caution.
+
+Validation evidence for PU-021 so far:
+
+- \`node scripts/validate-runtime-packet-schemas.cjs --all\` -> pass, 8 packet entries.
+- \`pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts\` -> pass, 9 tests.
+- \`pnpm exec biome check\` over the bounded PU-021 schema/example/script/test files -> pass.
+- \`git diff --check\` over the bounded PU-021 files plus intent review artifacts -> pass.
+- \`PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit\` -> pass and revalidates the 2026-05-26 audit freshness link.
+
+The first test pass exposed one real fixture drift: \`external-state-snapshot.example.json\` omitted \`github_reviews\`, \`coderabbit\`, and \`circleci\`, which made it fail the existing TypeScript validator even though the schema/manifest validator passed. The example now includes all required external-state sources, so public schema examples are checked against runtime truth where runtime validators exist.
+
+The first implementation-review pass exposed a second real gap: examples could still violate schema shape as long as their \`schemaVersion\` matched. The final adversarial pass then found a referenced-schema bypass. The new negative tests remove the required \`repository\` field from an external-state example, add unsupported \`oneOf\` directly to an evidence-receipt schema, add unsupported \`oneOf\` behind a percent-encoded local \`$ref\`, and prove malformed URI fragments produce structured validation failures; all four now fail through the repo-owned validator.
+
+## PU-022 GAP-004 Session Context Orientation
+
+<RuntimeCardState
+  pr="not opened for this slice yet"
+  mergeable="not claimed"
+  merge_state="local slice only"
+  checks="focused session-context tests, packet schema validator, command registry tests, typecheck, Biome, CLI smoke, and orient-rail probe pass locally"
+  review_threads="intent rereview passed; implementation review found two medium issues; both were patched; closure and final reviewer artifacts pass"
+/>
+
+PU-022 closes the first implementation slice for GAP-004 by adding a read-only \`harness session-context --json\` orientation packet. The command is deliberately placed in a new narrow \`src/lib/session-context/**\` deep module plus the command registry facade, not in \`runtime-card\`, \`next\`, \`pr-closeout\`, or delivery-truth. Its job is to help an agent traverse current local workstream state; it cannot refresh remote PR/CI/Linear state and cannot support merge-readiness or closeout claims.
+
+<BlastRadiusMap
+  changed_modules={[
+    "src/lib/session-context/** local read-only collector, CLI, and typed contract",
+    "src/commands/session-context.ts command facade",
+    "src/lib/cli/registry/session-context-command-spec.ts and command registry rail metadata",
+    "contracts/session-context.schema.json and contracts/examples/session-context.example.json",
+    "contracts/runtime-packet-schemas.manifest.json emitted status and source mapping",
+    "scripts/validate-runtime-packet-schemas.cjs schema subset support for $defs traversal",
+    "docs/cli-reference.md command documentation",
+  ]}
+/>
+
+Deep-module placement:
+
+- \`src/lib/session-context/collector.ts\` owns the local traversal packet and only emits bounded metadata: branch/head SHA, changed file paths, active artifact refs, runtime-card refs, top-level review artifact refs, allow-listed session evidence refs, stale-state classifications, and next traversal hints.
+- \`src/lib/session-context/cli.ts\` owns argument parsing and exit semantics. Invalid repo roots and usage errors emit \`session-context-error/v1\` and exit \`2\`; packet status \`fail\` exits \`1\`; \`pass\` and \`warn\` remain successful orientation results.
+- \`src/lib/session-context/types.ts\` owns the packet contract. \`evidenceUse\` is fixed to \`orientation\`, and \`runtimeStatus\` is fixed to \`emitted\`.
+- \`src/lib/cli/registry/session-context-command-spec.ts\` places the command on the agent orient rail so \`harness commands --json --for-agent --mode orient\` can discover it.
+
+Trust-boundary decisions:
+
+- The collector resolves the repo root through canonical realpath containment before admitting local refs.
+- Session evidence is allow-listed to repo-owned evidence locations only: \`.harness/runtime\`, \`artifacts/runtime\`, \`artifacts/reviews\`, and the cockpit goal receipts file.
+- The packet never reads raw Codex session transcripts, prompts, secrets, or \`~/.codex/.env\`.
+- Missing or unknown required local surfaces downgrade the packet to \`warn\` with explicit \`staleState\` entries instead of allowing a false \`pass\`.
+- External-state freshness is intentionally \`not_applicable\` because this command is local orientation only.
+
+Validation evidence for PU-022 after reviewer fixes:
+
+- \`pnpm vitest run src/commands/session-context.test.ts\` -> pass, 8 tests.
+- \`node scripts/validate-runtime-packet-schemas.cjs --all\` -> pass, 8 packet entries.
+- \`pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts\` -> pass, 9 tests.
+- \`pnpm vitest run src/lib/cli/command-registry.test.ts src/lib/cli/registry/command-specs.test.ts\` -> pass, 306 tests.
+- \`pnpm exec tsc --noEmit\` -> pass.
+- \`pnpm exec biome check\` over the bounded PU-022 files -> pass.
+- \`node --import tsx src/cli.ts session-context --json --repo-root .\` -> pass and emits \`session-context/v1\` with \`status: warn\` because no local runtime-card artifact is present in the allow-listed paths.
+- \`node --import tsx src/cli.ts commands --json --for-agent --mode orient | jq -e '.commands[] | select(.name=="session-context" and .mutability=="read" and .agentMode=="orient" and .retryability=="safe")'\` -> pass.
+
+Reviewer findings adopted:
+
+- Implementation adversarial review found that traversal hints were hard-coded to the process cwd instead of the requested \`--repo-root\`; traversal hints now bind to the canonical repo root and have a cwd-diff regression.
+- Implementation best-practices review found that missing review artifacts did not downgrade stale state; the collector now emits a \`review_artifacts\` stale-state entry and regression coverage when no review artifacts are present.
+- Closure agent-native review found stale public example traversal hints; \`contracts/examples/session-context.example.json\` now matches the emitted four root-bound traversal hints and the packet-schema validator passes.
+- Final adversarial and agent-native reviews passed after the example fix.
+
+Remaining after PU-022 local assurance: append the slice receipt, rerun receipt JSON validation, audit freshness, and goal-board validation. Commit, push, PR triage, remote CI, review-thread truth, Linear truth, and final goal lifecycle closeout remain separate.
+
+## PU-023 GAP-009 Reviewer Artifact Claim Support
+
+<RuntimeCardState
+  pr="not opened for this slice yet"
+  mergeable="not claimed"
+  merge_state="local slice only"
+  checks="focused review-state and Judge/PM tests, runtime packet schema validator, Biome over processed files, and diff-check pass locally"
+  review_threads="intent rereview passed; implementation adversarial, agent-native, and best-practices reviews pass with one pre-existing template-path observation"
+/>
+
+PU-023 closes the current GAP-009 loophole inside the existing review-state deep module. The problem was not missing reviewer artifact fields in general; it was that a reviewer artifact receipt could be present while still being stale, blocked, unknown, not claim-supporting, or zero-byte. The slice tightens admissibility before review-state/v1 can be used as closeout evidence.
+
+<BlastRadiusMap
+  changed_modules={[
+    "src/lib/review-state/validation.ts reviewer artifact receipt admissibility",
+    "src/lib/review-state/review-state.test.ts status, freshness, evidenceUse, size, producer, path, and head-SHA regressions",
+    "src/lib/delivery-truth/judge-pm-audit.test.ts reviewer-specific blocker preservation",
+    "contracts/review-state.schema.json representable public schema constraints",
+    "artifacts/reviews/pu-023-gap-009-reviewer-artifact-*.md assurance artifacts",
+  ]}
+/>
+
+Deep-module placement:
+
+- `src/lib/review-state/validation.ts` now requires reviewer artifact receipts to be `status: pass`, `freshness: current`, `evidenceUse: claim_support`, and positive `sizeBytes`.
+- Existing review-state checks still bind reviewer artifacts to expected producer, expected ref/path, and PR head SHA.
+- `contracts/review-state.schema.json` now publishes the representable parts of that contract for external schema consumers: pass/current/claim_support, non-empty head SHA, and positive size.
+- `src/lib/delivery-truth/judge-pm-audit.test.ts` now proves Judge/PM readiness keeps reviewer-specific blocker codes for stale and non-claim-supporting artifacts instead of collapsing the condition into a generic invalid-packet failure.
+
+Validation evidence for PU-023:
+
+- `pnpm vitest run src/lib/review-state/review-state.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts` -> pass, 33 tests.
+- `node scripts/validate-runtime-packet-schemas.cjs --all` -> pass, 8 packet entries.
+- `pnpm exec biome check` over the bounded PU-023 source, test, schema, example, and intent files -> pass for the 6 files processed by Biome.
+- `git diff --check` over the bounded PU-023 files and review artifacts -> pass.
+- Required skill-lens artifacts exist for improve-codebase-architecture, simplify, unslopify, he-code-review, and testing.
+- Required implementation reviewer artifacts exist for adversarial-reviewer, agent-native-reviewer, and best-practices-researcher.
+
+Reviewer findings adopted or classified:
+
+- Intent reviewers required schema/runtime parity and explicit preservation of Judge/PM blocker taxonomy; both are implemented.
+- Implementation reviewers found no scoped blocking findings.
+- Agent-native and best-practices reviewers observed that repository-level reviewer template/contract files at `agents/templates/review-artifact.md` and `agents/contracts.json` were not present in this checkout. The reports followed the requested artifact-first contract directly. This is recorded as a pre-existing discoverability follow-up, not a blocker for the review-state validator slice.
+
+Post-receipt validation for PU-023 now passes: receipt JSONL parsing, slice assurance for R081, audit freshness, goal-board validation, and bounded diff-check are green. Commit, push, PR triage, remote CI, review-thread truth, Linear truth, and final goal lifecycle closeout remain separate.
+
+## PU-024 GAP-007 Architecture Warning Ownership
+
+<RuntimeCardState
+  pr="not opened for this slice yet"
+  mergeable="not claimed"
+  merge_state="local slice only"
+  checks="focused architecture validator tests, architecture:check, bounded Biome, reviewer artifact verification, and diff-check pass locally"
+  review_threads="intent review passed after adopting expiry/test-path/exit-code hardening; implementation review found malformed-date loophole; follow-up adversarial, agent-native, and best-practices reviews pass after strict UTC date validation"
+/>
+
+PU-024 closes the current GAP-007 loophole in the architecture validator: architecture warnings were visible but could still pass without explicit ownership. The slice makes warning ownership executable. Unowned warnings now fail the architecture check, while owned warning debt must be recorded in `.architecture-baseline.txt` with owner, reason, valid UTC date, JSC ticket, and valid non-expired UTC expiry metadata.
+
+<BlastRadiusMap
+  changed_modules={[
+    "scripts/check-architecture-rules.cjs architecture warning ownership and fail-closed exit semantics",
+    ".architecture-baseline.txt explicit expiring debt register for the current auth command facade warnings",
+    "src/dev/check-architecture-rules-script.test.ts deterministic script-level proof for JSON and console modes",
+    ".harness/intent/*pu-024* reviewed intent and reviewer finding adoption",
+    "artifacts/reviews/pu-024-gap-007-architecture-warning-ownership-*.md assurance artifacts",
+  ]}
+/>
+
+Deep-module placement:
+
+- `scripts/check-architecture-rules.cjs` remains the repo-owned architecture guard. The change is intentionally placed in the existing validator rather than a parallel policy document.
+- `.architecture-baseline.txt` is the operator-visible debt register. It now accepts warning debt only when each entry is traceable to a JSC ticket and has an explicit expiry.
+- `src/dev/check-architecture-rules-script.test.ts` proves the script behavior at the process boundary, including JSON output and console exit semantics.
+- The current four `auth-commands-use-crypto` warnings are baselined as JSC-363 follow-up debt expiring on 2026-06-26; they no longer disappear as unowned warnings.
+
+Reviewer findings adopted or classified:
+
+- Intent adversarial review found that baseline debt could become permanent without expiry and revalidation; expiry metadata is now required and expired entries fail validation.
+- Intent agent-native review found that the planned test path did not exist yet; the path now exists and carries the focused script-level regression suite.
+- Intent best-practices review required non-zero exit coverage in both JSON and console modes; both are covered.
+- Implementation adversarial and best-practices reviews found that regex-only date validation would accept impossible dates such as `2026-99-99`; strict UTC calendar validation now rejects malformed dates and impossible calendar dates for both `date` and `expires`.
+- Follow-up adversarial, agent-native, and best-practices reviews found no scoped blocking issues. A duplicate-metadata-key rejection was noted as optional future hardening, not a PU-024 blocker.
+
+Validation evidence for PU-024:
+
+- `jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-024-gap-007-architecture-warning-ownership-intent.json >/dev/null` -> pass.
+- `pnpm vitest run src/dev/check-architecture-rules-script.test.ts` -> pass, 8 tests.
+- `pnpm architecture:check` -> pass with `status: pass`, 0 errors, 0 warnings, and 4 baselined warnings.
+- `pnpm exec biome check` over the bounded PU-024 script, test, baseline, and intent files -> pass for the files processed by Biome.
+- `git diff --check` over the bounded PU-024 files and review artifacts -> pass.
+- Required skill-lens artifacts exist for improve-codebase-architecture, simplify, unslopify, he-code-review, and testing.
+- Required follow-up reviewer artifacts exist for adversarial-reviewer, agent-native-reviewer, and best-practices-researcher after the malformed-date fix.
+
+Post-receipt validation for PU-024 now passes: receipt JSONL parsing, slice assurance for R082, audit freshness, goal-board validation, reviewer artifact size verification, and bounded diff-check are green. Commit, push, PR triage, remote CI, review-thread truth, Linear truth, and final goal lifecycle closeout remain separate.
+
+## PU-026 GAP-012 Runtime-Card Trace-Out
+
+<RuntimeCardState
+  pr="not opened for this slice yet"
+  mergeable="not claimed"
+  merge_state="local slice only"
+  checks="runtime-card trace-out tests pass locally after reviewer-driven guardrail patch; broader PR/CI truth remains unobserved"
+  review_threads="implementation reviews found replay/reuse and policy-pinning gaps; patched and re-reviewed to 97 percent best-practices confidence"
+/>
+
+PU-026 is the first bounded GAP-012 runtime trace slice. It adds an opt-in
+`runtime-card --trace-out artifacts/agent-runs/<runId>/events.jsonl` lane that
+writes replay-ready `agent-run-event/v1` evidence and a sibling
+`agent-run-manifest/v1` manifest. The slice deliberately does not make trace
+presence a closeout, CI, review, Linear, or merge-readiness claim.
+
+<BlastRadiusMap
+  changed_modules={[
+    "src/lib/runtime-trace/runtime-card-trace.ts trace target parsing, event payloads, artifact refs, and terminal manifest emission",
+    "src/commands/runtime-card-args.ts --trace-out parsing and canonical path rejection",
+    "src/commands/runtime-card.ts runtime-card facade wiring for start/input/advisory/artifact/terminal trace events",
+    "src/commands/runtime-card.test.ts success, failure, path-rejection, and replay loading regressions",
+    "docs/cli-reference.md command documentation",
+    "ARCHITECTURE.md runtime-trace deep-module placement",
+  ]}
+/>
+
+Deep-module placement:
+
+- `src/lib/runtime-trace/runtime-card-trace.ts` is the new trace-specific deep module. It accepts only the canonical `artifacts/agent-runs/<runId>/events.jsonl` path shape, derives the run id from that path, and rejects absolute, traversal, non-events, and non-canonical trace paths at parse time.
+- The module claims a fresh `artifacts/agent-runs/<runId>/` directory before the first event append. Reused or pre-claimed run ids fail closed so a replay stream cannot silently blend two runtime-card executions.
+- The module reuses `appendCanonicalEvent` and `writeCanonicalManifest` from the existing run-record contract instead of creating a parallel JSONL or hash-chain writer.
+- The recorder canonicalizes the repo root before writing run records so macOS temp path aliases do not break replay validation.
+- `runtime-card` records start, input, advisory-mode, artifact-write, success, and runtime-failure events. Usage errors before argument parsing succeeds remain untraced by design.
+
+Validation evidence so far:
+
+- `pnpm vitest run src/commands/runtime-card.test.ts` -> pass, 26 tests after adding run-id reuse, pre-claimed run-id, invalid path, and policyContext assertions.
+- `pnpm run quality:docstrings` -> pass.
+- `pnpm run quality:size` -> pass with pre-existing size warnings only; `src/lib/runtime-trace/runtime-card-trace.ts` is below the new-file ratchet.
+- `git diff --check -- src/lib/runtime-trace/runtime-card-trace.ts src/commands/runtime-card.test.ts` -> pass.
+
+Reviewer loop:
+
+- Agent-native re-review: no material remaining findings for the requested trace-out closures.
+- Adversarial re-review: prior mixed-run replay findings closed; optional future parallel stress test noted but not required for this slice.
+- Best-practices final closure: no material remaining findings; confidence 97 percent after atomic pre-append run-id claim and full policyContext assertions.
+
+Remaining before PU-026 commit: append the goal receipt, update active Project Brain routing, run the board/assurance validators, and commit the scoped slice without claiming broader PR, CI, Linear, or merge-readiness truth.

@@ -98,6 +98,106 @@ describe("review-state/v1 validation", () => {
 		);
 	});
 
+	it.each([
+		"fail",
+		"blocked",
+		"unknown",
+		"not_applicable",
+	] as const)("rejects reviewer artifact receipts with status %s", (status) => {
+		const packet = reviewStatePacket({
+			reviewerArtifacts: [
+				reviewerArtifact({
+					receipt: reviewReceipt({ status }),
+				}),
+			],
+		});
+
+		const result = validateReviewStatePacket(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "reviewerArtifacts.0.receipt.status",
+				}),
+			]),
+		);
+	});
+
+	it.each([
+		"stale",
+		"missing",
+		"unknown",
+		"not_applicable",
+	] as const)("rejects reviewer artifact receipts with freshness %s", (freshness) => {
+		const packet = reviewStatePacket({
+			reviewerArtifacts: [
+				reviewerArtifact({
+					receipt: reviewReceipt({ freshness }),
+				}),
+			],
+		});
+
+		const result = validateReviewStatePacket(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "reviewerArtifacts.0.receipt.freshness",
+				}),
+			]),
+		);
+	});
+
+	it.each([
+		"orientation",
+		"audit_trail",
+	] as const)("rejects reviewer artifact receipts with evidenceUse %s", (evidenceUse) => {
+		const packet = reviewStatePacket({
+			reviewerArtifacts: [
+				reviewerArtifact({
+					receipt: reviewReceipt({ evidenceUse }),
+				}),
+			],
+		});
+
+		const result = validateReviewStatePacket(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "reviewerArtifacts.0.receipt.evidenceUse",
+				}),
+			]),
+		);
+	});
+
+	it("rejects blocked reviewer artifact receipts without non-zero size", () => {
+		const packet = reviewStatePacket({
+			reviewerArtifacts: [
+				reviewerArtifact({
+					receipt: reviewReceipt({ status: "blocked", sizeBytes: 0 }),
+				}),
+			],
+		});
+
+		const result = validateReviewStatePacket(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "reviewerArtifacts.0.receipt.status",
+				}),
+				expect.objectContaining({
+					path: "reviewerArtifacts.0.receipt.sizeBytes",
+				}),
+			]),
+		);
+	});
+
 	it("rejects mismatched reviewer artifact producers", () => {
 		const packet = reviewStatePacket({
 			reviewerArtifacts: [

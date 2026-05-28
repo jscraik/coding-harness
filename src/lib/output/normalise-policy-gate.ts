@@ -25,7 +25,9 @@ function buildPolicyViolationFindings(
 			id: `policy-gate.result.error.${index}`,
 			severity: "error",
 			gate,
-			message: `File '${file}' exceeds policy tier (actual: ${result.tier}, max: ${result.maxAllowed ?? "unset"})`,
+			message: result.maxAllowed
+				? `File '${file}' exceeds policy tier (actual: ${result.tier}, max: ${result.maxAllowed})`
+				: `Policy action '${result.action}' failed for file '${file}' (tier: ${result.tier})`,
 			...(file ? { path: file } : {}),
 			baseline: false,
 			fix: { suppressible: false },
@@ -103,7 +105,9 @@ export function normalisePolicyGateResult(
 			action: result.output.action,
 		},
 		decision: {
-			reason: `Tier '${result.output.tier}' exceeds allowed '${result.output.maxAllowed ?? "unset"}'.`,
+			reason: result.output.maxAllowed
+				? `Tier '${result.output.tier}' exceeds allowed '${result.output.maxAllowed}'.`
+				: `Policy action '${result.output.action}' failed for tier '${result.output.tier}'.`,
 			evidenceRef,
 		},
 	});

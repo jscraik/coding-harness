@@ -1,0 +1,113 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-016-slice-assurance-validator",
+	"createdAt": "2026-05-26T23:30:12Z",
+	"objective": "Implement the deterministic validator promised by receipts R068 through R070 so post-R064 slice receipts cannot claim required skill-lens or independent-reviewer coverage without supported member evidence.",
+	"sourceGoal": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+	"sourceState": "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceAudit": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+	"linearIssue": "JSC-363",
+	"lifecycleUnit": "PU-016-slice-assurance-validator",
+	"auditGapIds": ["GAP-009", "GAP-011"],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/knowledge/governance/knowledge.md",
+		".harness/knowledge/governance/rules.md",
+		".harness/knowledge/testing/knowledge.md",
+		".harness/knowledge/testing/rules.md",
+		".harness/research/evidence-patterns.json",
+		"<LOCAL_MEMORY_REGISTRY>"
+	],
+	"deepModuleBoundary": "A repo-owned validator script plus focused script tests only. This slice makes the already-reviewed goal/plan/state slice-assurance contract executable; it does not implement runtime packet ingestion, delivery-truth production paths, or historical PU backfill.",
+	"implementationThesis": "The goal board now requires every post-R064 slice done claim to include improve-codebase-architecture, simplify, unslopify, he-code-review, testing, adversarial-reviewer, agent-native-reviewer, and best-practices-researcher coverage with supported member evidence. A deterministic validator should fail closed on missing members, unsupported pass claims, stale or unresolvable refs, reviewer artifact reuse, traversal/absolute refs, duplicate receipt IDs, and malformed result objects.",
+	"inScope": [
+		"scripts/check-goal-slice-assurance.py",
+		"src/dev/check-goal-slice-assurance-script.test.ts",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-slice-assurance-validator-intent.json",
+		".harness/review/codex-runtime-evidence-slice-assurance-validator-*.md"
+	],
+	"outOfScope": [
+		"historical PU-001 through PU-016 backfill or ratification ledger",
+		"runtime-card, codex-runtime-evidence, delivery-truth, review-state, external-state, or pr-closeout behavior changes",
+		"GitHub, Linear, CI, or branch-protection mutation",
+		"mutating an external Codex checkout",
+		"absorbing unrelated dirty worktree changes into this slice"
+	],
+	"acceptanceCriteria": [
+		"Validator accepts exactly one target receipt by ID and fails on duplicate receipt IDs.",
+		"Validator requires slice_skill_lens_results entries for improve-codebase-architecture, simplify, unslopify, he-code-review, and testing.",
+		"Validator requires independent_reviewer_results entries for adversarial-reviewer, agent-native-reviewer, and best-practices-researcher.",
+		"A pass member requires a structured object with status=pass, role matching the required member key, producer, receipt_id matching the target receipt, lifecycle_unit matching the target receipt lifecycle_unit, head_sha matching the target receipt head_sha, freshness=current, and a repo-relative resolvable evidence_ref to a non-empty file listed in changed_files.",
+		"The canonical freshness source for this validator is the structured member freshness field plus receipt-bound provenance fields; file mtime alone must never prove freshness.",
+		"Blocked, fail, and not applicable members require reason, owner, and accepted_exception_ref before a receipt can support a done claim; fail members cannot support done without the accepted exception.",
+		"Pass evidence refs cannot be reused across any required skill-lens or reviewer member unless a future accepted exception explicitly introduces member-scoped provenance semantics.",
+		"Absolute paths, lexical path aliases, path traversal, symlink-escaped refs, missing files, zero-byte files, stale freshness, stale receipt_id/lifecycle_unit/head_sha provenance, string-only result maps, and missing changed_files fail closed.",
+		"Focused tests cover positive and negative fixtures for the contract.",
+		"Goal/state/plan record the new validator command without claiming historical backfill completion."
+	],
+	"automationPlan": [
+		{
+			"name": "intent JSON validation",
+			"command": "jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-016-slice-assurance-validator-intent.json >/dev/null"
+		},
+		{
+			"name": "script syntax",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile scripts/check-goal-slice-assurance.py"
+		},
+		{
+			"name": "focused validator tests",
+			"command": "pnpm exec vitest run src/dev/check-goal-slice-assurance-script.test.ts"
+		},
+		{
+			"name": "live receipt check",
+			"command": "python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id R071 --repo ."
+		},
+		{
+			"name": "goal board validation",
+			"command": "GOAL_GOVERNOR_CHECK_GOAL_BOARD=\"${GOAL_GOVERNOR_CHECK_GOAL_BOARD:-$HOME/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py}\" PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"artifactPaths": [
+			".harness/review/codex-runtime-evidence-slice-assurance-validator-intent-adversarial.md",
+			".harness/review/codex-runtime-evidence-slice-assurance-validator-intent-agent-native.md",
+			".harness/review/codex-runtime-evidence-slice-assurance-validator-intent-best-practices.md"
+		],
+		"reviewQuestions": [
+			"Is this slice narrow enough to implement only the missing deterministic assurance validator?",
+			"Are the acceptance criteria sufficient to close the R068-R070 automation gap without pretending historical backfill is complete?",
+			"Are any evidence-ref or reviewer-artifact loopholes still missing from the validator contract?"
+		]
+	},
+	"reviewStatus": "complete_with_findings_adopted",
+	"implementationStartPolicy": "blocked_until_intent_review_artifacts_exist_and_material_blockers_are_resolved",
+	"stopConditions": [
+		"Stop if reviewers identify a material acceptance gap before implementation.",
+		"Stop if existing dirty work overlaps a required validator file in a way that cannot be safely preserved.",
+		"Stop if script tests require broad repo validation changes outside this slice.",
+		"Stop if the validator would need to claim historical PU backfill rather than only checking a named receipt."
+	],
+	"rollback": [
+		"Remove the new validator script and focused test file if the contract is rejected.",
+		"Revert only this intent, receipt, goal/state/plan wording, and artifacts if validation proves the approach is unsound.",
+		"Do not roll back unrelated dirty worktree changes."
+	],
+	"assumptions": [
+		"Receipt R071 will be the first current receipt using the stricter structured slice_skill_lens_results and independent_reviewer_results member evidence shape.",
+		"Historical pre-R064 receipts remain evidence as written and require a separate backfill or accepted exception ledger before final goal closeout.",
+		"JSC-363 remains the tracker owner for this lifecycle."
+	]
+}

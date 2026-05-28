@@ -1,0 +1,628 @@
+import {
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { findScopedInstructionFiles } from "../lib/agent-readiness/repo-evidence.js";
+
+import {
+	assessAgentReadiness,
+	runAgentReadinessCLI,
+} from "./agent-readiness.js";
+
+describe("agent-readiness command", () => {
+	const tempDirs: string[] = [];
+
+	afterEach(() => {
+		for (const tempDir of tempDirs.splice(0)) {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+		vi.restoreAllMocks();
+	});
+
+	it("passes when all core agent-readiness surfaces are present", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+
+		expect(report.schemaVersion).toBe("agent-readiness/v1");
+		expect(report.status).toBe("pass");
+		expect(report.contextHealth).toMatchObject({
+			schemaVersion: "agent-readiness-context-health/v1",
+			status: "pass",
+			evidenceUse: "orientation",
+			canonicalReport: {
+				schemaVersion: "context-health-report/v1",
+				command: "node --import tsx src/cli.ts context-health --json",
+				prerequisiteStatus: "pass",
+			},
+		});
+		expect(report.contextHealth.surfaces.map((surface) => surface.id)).toEqual([
+			"active_artifacts",
+			"active_route_refs",
+			"project_brain_memory",
+			"project_brain_knowledge",
+			"runtime_card",
+			"external_horizon",
+		]);
+		expect(report.summary.fail).toBe(0);
+		expect(report.findings.map((finding) => finding.id)).toContain(
+			"capabilities.browser_or_screenshot",
+		);
+		expect(
+			report.findings.find(
+				(finding) => finding.id === "traceability.session_records",
+			)?.evidence,
+		).toEqual(["docs/architecture/agent-run-records.md"]);
+	});
+
+	it("fails when baseline instructions, artifacts, tests, and gates are missing", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "agent-readiness-empty-"));
+		tempDirs.push(repoRoot);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "instructions.root_agents",
+					status: "fail",
+				}),
+				expect.objectContaining({
+					id: "artifacts.harness_map",
+					status: "fail",
+				}),
+				expect.objectContaining({
+					id: "capabilities.tests",
+					status: "fail",
+				}),
+				expect.objectContaining({
+					id: "approval_gates.destructive_actions",
+					status: "fail",
+				}),
+			]),
+		);
+	});
+
+	it("prints JSON and returns success for warning-free readiness", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runAgentReadinessCLI(["--repo-root", repoRoot, "--json"]);
+
+		expect(exitCode).toBe(0);
+		expect(String(infoSpy.mock.calls[0]?.[0])).toContain(
+			'"schemaVersion": "agent-readiness/v1"',
+		);
+		expect(String(infoSpy.mock.calls[0]?.[0])).toContain(
+			'"schemaVersion": "agent-readiness-context-health/v1"',
+		);
+		expect(String(infoSpy.mock.calls[0]?.[0])).toContain('"status": "pass"');
+	});
+
+	it("warns when current active route references missing files", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			".harness/active-artifacts.md",
+			[
+				"# Active",
+				"",
+				"## Current Active Route",
+				"",
+				"| Work | Refs |",
+				"|---|---|",
+				"| Missing | `.harness/specs/missing.md` |",
+				"",
+				"## Artifact Index",
+			].join("\n"),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const activeRouteSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "active_route_refs",
+		);
+
+		expect(report.status).toBe("warn");
+		expect(activeRouteSurface).toMatchObject({
+			status: "warn",
+			evidenceUse: "orientation",
+			staleReasons: [".harness/specs/missing.md is missing."],
+		});
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				id: "context_health.active_route_refs",
+				category: "context_health",
+				status: "warn",
+			}),
+		);
+	});
+
+	it("warns when current active route mixes in a row marked not current", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			".harness/active-artifacts.md",
+			[
+				"# Active",
+				"",
+				"## Current Active Route",
+				"",
+				"| Work | Refs | Status |",
+				"|---|---|---|",
+				"| Current | `.harness/specs/ready.md` | Current active route |",
+				"| Old | `.harness/plan/ready.md` | Active but not the current execution route |",
+				"",
+				"## Artifact Index",
+			].join("\n"),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const activeRouteSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "active_route_refs",
+		);
+
+		expect(report.status).toBe("warn");
+		expect(activeRouteSurface).toMatchObject({
+			status: "warn",
+			staleReasons: [
+				"Current Active Route contains a row marked not the current execution route.",
+			],
+		});
+	});
+
+	it("accepts safe repo-relative active-route refs outside common path prefixes", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(repoRoot, ".github/workflows/ci.yml", "name: CI\n");
+		writeRepoFile(repoRoot, "templates/runtime-card.md", "# Template\n");
+		writeRepoFile(repoRoot, "contracts/runtime-card.json", "{}\n");
+		writeRepoFile(repoRoot, "docs/specs/with spaces.md", "# Spec\n");
+		writeRepoFile(
+			repoRoot,
+			".harness/active-artifacts.md",
+			[
+				"# Active",
+				"",
+				"## Current Active Route",
+				"",
+				"| Work | Refs |",
+				"|---|---|",
+				"| Ready | `.github/workflows/ci.yml`; `templates/runtime-card.md`; `contracts/runtime-card.json`; `docs/specs/with spaces.md` |",
+				"",
+				"## Artifact Index",
+			].join("\n"),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const activeRouteSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "active_route_refs",
+		);
+
+		expect(activeRouteSurface).toMatchObject({
+			status: "pass",
+			staleReasons: [],
+		});
+		expect(activeRouteSurface?.evidence).toEqual(
+			expect.arrayContaining([
+				".github/workflows/ci.yml",
+				"templates/runtime-card.md",
+				"contracts/runtime-card.json",
+				"docs/specs/with spaces.md",
+			]),
+		);
+	});
+
+	it("ignores unsafe active-route tokens before checking repo evidence", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			".harness/active-artifacts.md",
+			[
+				"# Active",
+				"",
+				"## Current Active Route",
+				"",
+				"| Work | Refs |",
+				"|---|---|",
+				"| Unsafe | `/tmp/outside.md`; `../outside.md`; `https://example.test/spec.md`; `docs/spec.md; rm -rf .` |",
+				"",
+				"## Artifact Index",
+			].join("\n"),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const activeRouteSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "active_route_refs",
+		);
+
+		expect(activeRouteSurface).toMatchObject({
+			status: "warn",
+			evidence: [".harness/active-artifacts.md"],
+			staleReasons: [
+				"Current Active Route does not contain repo-relative artifact refs.",
+			],
+		});
+	});
+
+	it("explains malformed active-artifacts context instead of emitting an empty warning", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			".harness/active-artifacts.md",
+			["# Active", "", "## Artifact Index"].join("\n"),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const activeArtifactsSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "active_artifacts",
+		);
+
+		expect(report.status).toBe("warn");
+		expect(activeArtifactsSurface).toMatchObject({
+			status: "warn",
+			staleReasons: [
+				".harness/active-artifacts.md is missing the Current Active Route section.",
+			],
+		});
+	});
+
+	it("warns rather than fails when Project Brain memory or knowledge is absent", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		rmSync(join(repoRoot, ".harness", "memory"), {
+			recursive: true,
+			force: true,
+		});
+		rmSync(join(repoRoot, ".harness", "knowledge"), {
+			recursive: true,
+			force: true,
+		});
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("warn");
+		expect(report.summary.fail).toBe(0);
+		expect(report.contextHealth.surfaces).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "project_brain_memory",
+					status: "warn",
+					evidenceUse: "orientation",
+				}),
+				expect.objectContaining({
+					id: "project_brain_knowledge",
+					status: "warn",
+					evidenceUse: "orientation",
+				}),
+			]),
+		);
+	});
+
+	it("uses prerequisite-aware context-health refresh guidance", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const readyReport = assessAgentReadiness({ repoRoot });
+		const missingContractRepo = makeAgentReadyRepo(tempDirs);
+		rmSync(join(missingContractRepo, "harness.contract.json"), { force: true });
+		const missingContractReport = assessAgentReadiness({
+			repoRoot: missingContractRepo,
+		});
+
+		expect(readyReport.contextHealth.suggestedRefreshCommands).toContain(
+			"node --import tsx src/cli.ts context-health --json",
+		);
+		expect(
+			missingContractReport.contextHealth.suggestedRefreshCommands,
+		).toEqual(
+			expect.arrayContaining([
+				"node --import tsx src/cli.ts --help --all-commands",
+				"node --import tsx src/cli.ts init --dry-run --json",
+			]),
+		);
+		expect(
+			missingContractReport.contextHealth.suggestedRefreshCommands,
+		).not.toContain("node --import tsx src/cli.ts context-health --json");
+	});
+
+	it("presents context refresh commands as separate options, not a shell chain", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		rmSync(join(repoRoot, "harness.contract.json"), { force: true });
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runAgentReadinessCLI([repoRoot]);
+		const output = infoSpy.mock.calls.map((call) => String(call[0])).join("\n");
+
+		expect(exitCode).toBe(0);
+		expect(output).toContain("context-refresh options:");
+		expect(output).toContain(
+			"  - node --import tsx src/cli.ts --help --all-commands",
+		);
+		expect(output).toContain(
+			"  - node --import tsx src/cli.ts init --dry-run --json",
+		);
+		expect(output).not.toContain(" && ");
+		expect(output).not.toContain("; node --import");
+	});
+
+	it("does not suggest local context-health as an external horizon refresh", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		rmSync(join(repoRoot, "artifacts", "external-state-snapshot.json"), {
+			force: true,
+		});
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const externalHorizonSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "external_horizon",
+		);
+
+		expect(externalHorizonSurface).toMatchObject({
+			status: "warn",
+			evidenceUse: "orientation",
+			suggestedRefreshCommands: [],
+		});
+		expect(
+			report.findings.find(
+				(finding) => finding.id === "context_health.external_horizon",
+			)?.recommendation,
+		).toBeUndefined();
+		expect(report.contextHealth.suggestedRefreshCommands).toContain(
+			"node --import tsx src/cli.ts context-health --json",
+		);
+	});
+
+	it("does not duplicate the canonical context-health report contract", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const contextHealth = report.contextHealth as unknown as Record<
+			string,
+			unknown
+		>;
+
+		expect(report.contextHealth.schemaVersion).toBe(
+			"agent-readiness-context-health/v1",
+		);
+		expect(report.contextHealth.canonicalReport.schemaVersion).toBe(
+			"context-health-report/v1",
+		);
+		expect(contextHealth).not.toHaveProperty("artifactRefs");
+		expect(contextHealth).not.toHaveProperty("metrics");
+		expect(contextHealth).not.toHaveProperty("contradictionHistory");
+		expect(contextHealth).not.toHaveProperty("inventoryMetrics");
+	});
+
+	it("returns usage error when repo-root flag value is missing", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runAgentReadinessCLI(["--repo-root", "--json"]);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+
+		expect(exitCode).toBe(2);
+		expect(payload).toEqual({
+			schemaVersion: "agent-readiness-error/v1",
+			status: "error",
+			error: {
+				code: "agent-readiness.flag_value_required",
+				message: "harness agent-readiness requires a value after --repo-root.",
+			},
+		});
+	});
+
+	it("lets repo-root flag override a positional path", () => {
+		const emptyRepoRoot = mkdtempSync(join(tmpdir(), "agent-readiness-empty-"));
+		tempDirs.push(emptyRepoRoot);
+		const readyRepoRoot = makeAgentReadyRepo(tempDirs);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runAgentReadinessCLI([
+			emptyRepoRoot,
+			"--repo-root",
+			readyRepoRoot,
+			"--json",
+		]);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+
+		expect(exitCode).toBe(0);
+		expect(payload.repoRoot).toBe(readyRepoRoot);
+		expect(payload.status).toBe("pass");
+	});
+
+	it("rejects placeholder package test scripts", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			"package.json",
+			JSON.stringify({
+				scripts: {
+					test: 'echo "Error: no test specified" && exit 1',
+					"test:deep": "vitest run",
+				},
+			}),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				id: "capabilities.tests",
+				status: "fail",
+			}),
+		);
+	});
+
+	it("does not follow symlinked directories while finding scoped instructions", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "agent-readiness-symlink-"));
+		const externalRoot = mkdtempSync(
+			join(tmpdir(), "agent-readiness-external-"),
+		);
+		tempDirs.push(repoRoot, externalRoot);
+		mkdirSync(join(repoRoot, "docs"), { recursive: true });
+		writeRepoFile(externalRoot, "AGENTS.md", "# External instructions\n");
+		symlinkSync(externalRoot, join(repoRoot, "docs", "external"), "dir");
+
+		expect(findScopedInstructionFiles(repoRoot)).toEqual([]);
+	});
+
+	it("ignores runtime output directories while finding scoped instructions", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "agent-readiness-ignored-"));
+		tempDirs.push(repoRoot);
+		writeRepoFile(repoRoot, "AGENTS.md", "# Root instructions\n");
+		writeRepoFile(repoRoot, "docs/team/AGENTS.md", "# Team instructions\n");
+		writeRepoFile(
+			repoRoot,
+			".harness/media/AGENTS.md",
+			"# Generated media instructions\n",
+		);
+		writeRepoFile(
+			repoRoot,
+			"artifacts/reviews/AGENTS.md",
+			"# Review artifact instructions\n",
+		);
+
+		expect(findScopedInstructionFiles(repoRoot)).toEqual([
+			"docs/team/AGENTS.md",
+		]);
+	});
+});
+
+function makeAgentReadyRepo(tempDirs: string[]): string {
+	const repoRoot = mkdtempSync(join(tmpdir(), "agent-readiness-ready-"));
+	tempDirs.push(repoRoot);
+	writeRepoFile(
+		repoRoot,
+		"AGENTS.md",
+		[
+			"# Agent Instructions",
+			"PR bodies require a session or traceability reference.",
+			"Use task-specific docs and codestyle before edits.",
+		].join("\n"),
+	);
+	writeRepoFile(repoRoot, "CODESTYLE.md", "# Codestyle\n");
+	writeRepoFile(repoRoot, "codestyle/README.md", "# Codestyle Map\n");
+	writeRepoFile(
+		repoRoot,
+		"docs/agents/01-instruction-map.md",
+		[
+			"# Instruction Map",
+			"AGENTS.md is the baseline.",
+			"Use task-specific docs/agents routes for scoped work.",
+		].join("\n"),
+	);
+	writeRepoFile(
+		repoRoot,
+		".harness/README.md",
+		"Durable execution-input authority for harness artifacts.\n",
+	);
+	writeRepoFile(
+		repoRoot,
+		".harness/active-artifacts.md",
+		[
+			"# Active",
+			"",
+			"## Current Active Route",
+			"",
+			"| Work | Refs |",
+			"|---|---|",
+			"| Ready | `.harness/plan/ready.md`; `.harness/specs/ready.md` |",
+			"",
+			"## Artifact Index",
+		].join("\n"),
+	);
+	mkdirSync(join(repoRoot, ".harness/plan"), { recursive: true });
+	writeRepoFile(repoRoot, ".harness/plan/ready.md", "# Ready Plan\n");
+	writeRepoFile(repoRoot, ".harness/specs/ready.md", "# Ready Spec\n");
+	writeRepoFile(repoRoot, ".harness/memory/LEARNINGS.md", "# Learnings\n");
+	writeRepoFile(repoRoot, ".harness/knowledge/INDEX.md", "# Knowledge\n");
+	writeRepoFile(repoRoot, ".harness/runtime/runtime-card.json", "{}\n");
+	writeRepoFile(repoRoot, "artifacts/external-state-snapshot.json", "{}\n");
+	writeRepoFile(repoRoot, "src/commands/context-health.ts", "export {};\n");
+	writeRepoFile(
+		repoRoot,
+		"harness.contract.json",
+		JSON.stringify({ contextIntegrityPolicy: { mode: "advisory" } }),
+	);
+	writeRepoFile(
+		repoRoot,
+		"package.json",
+		JSON.stringify({
+			scripts: { test: "vitest run", "test:deep": "vitest run" },
+		}),
+	);
+	writeRepoFile(
+		repoRoot,
+		"docs/agents/02-tooling-policy.md",
+		[
+			"agent-browser and screenshot proof are available.",
+			"Artifact routing is not permission to stage, commit, push, merge, or deploy.",
+		].join("\n"),
+	);
+	writeRepoFile(
+		repoRoot,
+		"docs/agents/09-audit-trail-policy.md",
+		"# Audit Trail\n",
+	);
+	writeRepoFile(
+		repoRoot,
+		"docs/architecture/agent-run-records.md",
+		"Session trace headSha artifact references are recorded.\n",
+	);
+	writeRepoFile(
+		repoRoot,
+		"docs/agents/06-security-and-governance.md",
+		"Destructive, global, and unsafe side effects require approval.\n",
+	);
+	writeRepoFile(
+		repoRoot,
+		".agents/skills/coding-harness/SKILL.md",
+		"Use dry-run before destructive or approval-sensitive actions.\n",
+	);
+	writeRepoFile(
+		repoRoot,
+		"docs/agents/13-linear-production-workflow.md",
+		"Linear GitHub branch commit validation evidence links are required.\n",
+	);
+	return repoRoot;
+}
+
+function writeRepoFile(repoRoot: string, path: string, content: string): void {
+	const fullPath = join(repoRoot, path);
+	mkdirSync(dirname(fullPath), { recursive: true });
+	writeFileSync(fullPath, content, "utf8");
+}

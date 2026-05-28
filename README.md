@@ -637,11 +637,14 @@ harness commands --json | jq '
 | Command             | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                                                                                                                                                                                                                                                                                           |
+| `agent-readiness`   | Audit agent-readable instructions, artifacts, capabilities, approval gates, traceability, and context freshness (`--json`, optional path, optional `--repo-root`)                                                                                                                                                                                                                                                                                   |
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                                                                                                                                                                                           |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                                                                                                                                                                                                  |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                                                                                                                                                                                          |
 | `next`              | Agent-native cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                                                                                                                                                                                                  |
 | `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`)                                                                                                                                                      |
+| `session-context`   | Emit a read-only `session-context/v1` orientation packet for repo, issue, branch, artifact, runtime-card, review-evidence, stale-state, and traversal hints (`--json`, optional `--repo-root`)                                                                                                                                                                                                                                                      |
+| `decision-request`  | Emit a read-only `decision-request/v1` governance packet for human or operator escalation, including intent, authority, options, evidence refs, expiry/freshness, escalation metadata, and stale-state classification (`--json`, `--intent`, `--default-option`, repeated `--option id=label`, optional repeated `--tradeoff id=text`)                                                                                                              |
 | `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including claim/evidence closeout truth, PR metadata, check state, repo-scoped Coding Harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--gates`, compatibility `--phase-exit`, optional shell-style `--env-file`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                                                                                                                                                                                                  |
 | `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -750,6 +753,22 @@ stays in `src/lib/project-brain/cli-args.ts`, the dispatcher and public export
 surface stay in `src/lib/project-brain/cli.ts`, and subcommand behavior stays
 in `src/lib/project-brain/*-cli.ts` so future Project Brain behavior does not
 widen the registry core.
+
+The `decision-request` command follows the runtime-cockpit deep-module rule.
+The public command facade stays a compatibility export surface, the registry
+spec delegates through `decision-request-command-spec.ts`, and packet parsing,
+validation, stale-state normalization, and escalation metadata live in
+`src/lib/decision-request/`. `decision-request/v1` is governance-request
+evidence only; it is not closeout or merge-readiness proof.
+
+Action-review receipts follow the same runtime-cockpit discipline without
+becoming a public command surface. `action-review-receipt/v1` lives in
+`src/lib/action-review/` and records reviewer independence, canonical actor
+identity separation, high-risk action envelopes, allow/block/mismatch
+semantics, current evidence refs, and stable validation errors. These receipts
+are orientation, governance, and audit artifacts only; they do not authorize
+commands, satisfy delivery-truth claims, prove merge readiness, or replace
+policy-gate, PR closeout, or human approval.
 
 ### Pilot, Remediation, And Automation
 
@@ -906,6 +925,17 @@ Repository-local skills follow the same convention:
 
 This repository uses **Linear-first** intake. Create or update work in the
 [coding-harness project](https://linear.app/jscraik/project/coding-harness-bb735dbbda79).
+
+## Action Review Governance
+
+This repository uses `action-review-receipt/v1` as a narrow guardian-style receipt contract for high-risk actions:
+
+- **High-risk actions**: merge, release, destructive cleanup, and external tracker mutation envelopes require current evidence refs and head SHA
+- **Reviewer independence**: reviewer must not be the same as the requester/producer
+- **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ
+- **Decision semantics**: allow, block, mismatch, unknown, and `not_applicable`; `not_applicable` is forbidden for high-risk action kinds
+- **Docs-gate requirement**: companion documentation surfaces (README, CONTRIBUTING, AGENTS, agent docs) must be updated in the same PR as any action-review governance change
+- **Diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
 
 ## Trust Artifacts
 

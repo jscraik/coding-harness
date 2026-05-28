@@ -1,0 +1,78 @@
+schema_version: 1
+mode: "repair"
+goal_path: "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
+native_goal_status: "unknown"
+board_status: "valid"
+next_action: "continue"
+truth_lanes:
+  local_validation: "pass"
+  generated_artifacts: "pass"
+  remote_pr_checks: "not applicable"
+  review_threads: "not applicable"
+  tracker_state: "pass"
+  merge_readiness: "not applicable"
+continuation_gate:
+  decision: "continue"
+  read_order:
+    - "read goal.md and state.yaml first"
+    - "receipts.jsonl"
+  pending_work: "present"
+  required_before_next_slice:
+    - "Use Project Brain and repo-local memory surfaces before slice intent."
+    - "Map touched work to GAP-001 through GAP-012 and adopted ecosystem review findings."
+    - "Refresh Linear JSC-363 before tracker-alignment or full-lifecycle closeout claims."
+    - "Carry expanded ecosystem findings into the isolated GAP-002 PR branch before pushing current slice work."
+native_blocker_audit:
+  gate_met: false
+  worker_must_pause: false
+  work_should_pause: false
+  reason: "This pass updated the durable goal board only; implementation gaps remain pending."
+validation_evidence:
+  - command: "git diff --check -- docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
+    outcome: "pass"
+  - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+    outcome: "pass"
+  - command: "Linear get_issue JSC-363"
+    outcome: "pass"
+  - command: "Linear save_comment JSC-363"
+    outcome: "pass (comment e45becc9-0af1-4b31-9c27-ede7b3c19347 linked the issue to the adopted ecosystem review, goal board, and receipt R062)"
+  - command: "jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null"
+    outcome: "pass"
+claim_ledger:
+  - claim: "2026-05-26 audit gaps are enforceable goal completion gates."
+    status: "supported"
+    evidence_surface:
+      - ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
+      - "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
+      - "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
+    remaining_uncertainty: "Implementation, explicit blocker evidence, or Judge/PM-accepted follow-up remains required for each GAP-001 through GAP-012 item."
+  - claim: "Project Brain and repo-local memory are required inputs for future slices and closeout claims."
+    status: "supported"
+    evidence_surface:
+      - ".harness/README.md"
+      - ".harness/active-artifacts.md"
+      - ".harness/memory/LEARNINGS.md"
+      - ".harness/knowledge/**"
+      - ".harness/research/evidence-patterns.json"
+    remaining_uncertainty: "Future receipts must prove current memory use or record blocked/not-applicable status."
+  - claim: "The Codex ecosystem operational review is adopted steering for runtime identity, runtime state, claim verification, tool exposure, review mode, retrieval provenance, recovery classification, schema parity, telemetry, artifacts, hooks, instruction provenance, runtime provenance, and Codex parity."
+    status: "supported"
+    evidence_surface:
+      - ".harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md"
+      - "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
+      - "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
+    remaining_uncertainty: "The adopted findings still need implementation, explicit blockers, or accepted deferrals before final goal completion."
+  - claim: "Linear JSC-363 is linked as the tracker anchor, with current Phase 1 wording that must be reconciled before full-lifecycle closeout."
+    status: "supported"
+    evidence_surface:
+      - "Linear get_issue JSC-363"
+      - "Linear comment e45becc9-0af1-4b31-9c27-ede7b3c19347"
+      - "https://linear.app/jscraik/issue/JSC-363/coding-harness-implement-codex-runtime-evidence-verifier-cockpit-phase"
+    remaining_uncertainty: "Linear issue content was not rewritten in this patch; closeout must refresh live Linear state and update or scope-note the tracker before claiming tracker alignment."
+risks:
+  - "The branch remains dirty and divergent; implementation must preserve unrelated worktree changes."
+  - "The goal board now gates audit and expanded ecosystem findings, but the code fixes remain pending."
+  - "Linear now has a persisted linkage comment, but still frames JSC-363 as Phase 1 while the repo goal is full lifecycle; tracker-alignment claims must not pass until reconciled."
+artifact:
+  path: "goal-governor-output.yaml"
+  marker: "goal-governor-output.yaml"

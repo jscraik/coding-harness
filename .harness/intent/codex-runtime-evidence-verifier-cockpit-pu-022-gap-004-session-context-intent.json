@@ -1,0 +1,162 @@
+{
+	"schemaVersion": "slice-intent/v1",
+	"goal": "codex-runtime-evidence-verifier-cockpit",
+	"lifecycleUnit": "PU-022-gap-004-session-context",
+	"createdAt": "2026-05-27T09:20:00Z",
+	"headShaAtIntent": "29ac20979f21bc178358779e0bc50d8ddc0eee75",
+	"status": "intent_reviewed_pass",
+	"objective": "Close GAP-004 by adding a first-class read-only session-context command that returns one narrow JSON packet for current issue, branch, commit, changed files, active artifacts, runtime-card artifacts, review artifacts, local session references, stale evidence, and next traversal hints.",
+	"auditGapIds": ["GAP-004"],
+	"evidenceBasis": [
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md#GAP-004",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#audit-gap-enforcement-addendum",
+		".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md#pu-004-runtime-card-projection-and-source-refs",
+		".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+		"contracts/session-context.schema.json",
+		"src/lib/agent-readiness/context-health.ts",
+		"src/lib/session/session-closeout.ts",
+		"src/lib/cli/registry/command-specs-core.ts"
+	],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/research/evidence-patterns.json",
+		".harness/knowledge/runtime-evidence/",
+		".harness/knowledge/memory-provenance/",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
+	],
+	"linearSnapshot": {
+		"issueId": "JSC-363",
+		"status": "In Progress",
+		"statusType": "started",
+		"observedAt": "2026-05-27T09:20:00Z",
+		"scopeNote": "Linear still describes Phase 1 while this goal governs the full lifecycle. This slice records Linear as planning ownership context only; it does not use Linear as runtime, implementation, CI, review, or closeout proof."
+	},
+	"allowedFiles": [
+		"src/lib/session-context/**",
+		"src/commands/session-context.ts",
+		"src/commands/session-context.test.ts",
+		"src/lib/cli/registry/session-context-command-spec.ts",
+		"src/lib/cli/registry/command-specs-core.ts",
+		"src/lib/cli/command-registry.test.ts",
+		"src/lib/cli/registry/command-specs.test.ts",
+		"contracts/session-context.schema.json",
+		"contracts/runtime-packet-schemas.manifest.json",
+		"contracts/examples/session-context.example.json",
+		"scripts/validate-runtime-packet-schemas.cjs",
+		"src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"docs/cli-reference.md",
+		".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx",
+		".harness/implementation-notes/implementation-notes.html",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"artifacts/reviews/pu-022-gap-004-session-context-*.md"
+	],
+	"forbiddenFiles": [
+		"/Users/jamiecraik/dev/codex/**",
+		"src/lib/pr-closeout/**",
+		"src/lib/delivery-truth/**",
+		"src/lib/external-state/**",
+		"src/lib/review-state/**",
+		"src/commands/next*.ts",
+		"src/commands/runtime-card.ts",
+		"package.json",
+		"pnpm-lock.yaml",
+		".github/**",
+		".circleci/**"
+	],
+	"assumptions": [
+		"The first GAP-004 implementation should be a read-only repo-local traversal packet, not a session database or Codex source integration.",
+		"The command may summarize local evidence paths and stale/missing diagnostics, but it must not claim remote PR, CI, review, or Linear freshness unless a separate current snapshot exists.",
+		"The existing session-context/v1 schema from PU-021 can be promoted from not_yet_emitted to emitted only if the command output and example satisfy the schema and parity validator.",
+		"Git branch, head SHA, and changed-file discovery may use local git commands through child_process because the command is read-only.",
+		"Runtime-card and review-artifact discovery must be bounded to repo-owned artifact directories and must avoid reading bulky raw logs or transcripts.",
+		"Path safety must use canonical realpath-style containment checks for existing files and directories so symlinks cannot escape --repo-root.",
+		"A top-level pass status is allowed only when required local orientation surfaces are current. Missing, stale, or unknown local evidence must downgrade the packet status to warn; bounds or usage failures may return fail or usage errors."
+	],
+	"nonGoals": [
+		"Do not create a public delivery-truth or closeout authority command.",
+		"Do not ingest or persist raw Codex transcripts, prompts, secrets, credentials, or bulky session telemetry.",
+		"Do not mutate /Users/jamiecraik/dev/codex or depend on Codex source branch cleanliness.",
+		"Do not refresh live GitHub, CI, CodeRabbit, or Linear state in this slice.",
+		"Do not make harness next --json depend on session-context in this slice.",
+		"Do not treat Project Brain, memory, or rollout-search references as claim support."
+	],
+	"implementationApproach": [
+		"Add a deep module under src/lib/session-context/ with typed contracts, local artifact discovery, stale/missing diagnostics, and a read-only collector.",
+		"Add src/commands/session-context.ts as a compatibility facade that exports the CLI runner and types.",
+		"Add a command registry seam for harness session-context with --json and optional --repo-root support.",
+		"Project local git branch, headSha, changed files, active artifact refs, runtime-card refs, review artifact refs, session evidence refs, Project Brain refs, and next traversal hints into session-context/v1.",
+		"Keep evidenceUse orientation-only unless a future slice binds a ref to a current receipt.",
+		"Update the session-context schema/example/manifest from not_yet_emitted to emitted with typeSource set to the new deep module.",
+		"Add regression tests for read-only behavior, missing/stale artifact diagnostics, command registry visibility, canonical symlink path bounds, status downgrade semantics, redacted session-evidence metadata, and schema/example parity."
+	],
+	"validationGates": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-022-gap-004-session-context-intent.json",
+		"pnpm vitest run src/commands/session-context.test.ts",
+		"pnpm vitest run src/lib/cli/command-registry.test.ts src/lib/cli/registry/command-specs.test.ts -t session-context",
+		"node --import tsx src/cli.ts session-context --repo-root . --json",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"pnpm exec biome check src/lib/session-context src/commands/session-context.ts src/commands/session-context.test.ts src/lib/cli/registry/session-context-command-spec.ts contracts/session-context.schema.json contracts/runtime-packet-schemas.manifest.json contracts/examples/session-context.example.json scripts/validate-runtime-packet-schemas.cjs src/dev/validate-runtime-packet-schemas-script.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-022-gap-004-session-context-intent.json",
+		"git diff --check -- src/lib/session-context src/commands/session-context.ts src/commands/session-context.test.ts src/lib/cli/registry/session-context-command-spec.ts src/lib/cli/registry/command-specs-core.ts src/lib/cli/command-registry.test.ts src/lib/cli/registry/command-specs.test.ts contracts/session-context.schema.json contracts/runtime-packet-schemas.manifest.json contracts/examples/session-context.example.json scripts/validate-runtime-packet-schemas.cjs src/dev/validate-runtime-packet-schemas-script.test.ts docs/cli-reference.md .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-022-gap-004-session-context-intent.json .harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx .harness/implementation-notes/implementation-notes.html docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+	],
+	"reviewerRoles": [
+		"adversarial-reviewer",
+		"agent-native-reviewer",
+		"best-practices-researcher"
+	],
+	"reviewerPolicyNote": "This slice uses the explicit goal-required independent reviewers for intent and done checks. Harness-first review remains required for implementation-sensitive source changes through the he-code-review skill lens and any project-local harness reviewer required by the final review scope.",
+	"skillLensChecks": [
+		"improve-codebase-architecture",
+		"simplify",
+		"unslopify",
+		"he-code-review",
+		"testing"
+	],
+	"expectedOutputContract": {
+		"command": "harness session-context --repo-root . --json",
+		"schemaVersion": "session-context/v1",
+		"status": ["pass", "warn", "fail"],
+		"evidenceUse": "orientation",
+		"mustInclude": [
+			"repository",
+			"issueRef",
+			"branch",
+			"headSha",
+			"changedFiles",
+			"activeArtifacts",
+			"runtimeCards",
+			"reviewArtifacts",
+			"sessionEvidence",
+			"staleState",
+			"nextTraversalHints"
+		]
+	},
+	"riskControls": [
+		"The command must not follow paths outside --repo-root and must use canonical containment checks for symlinked existing paths.",
+		"The command must not include file contents for review artifacts, session logs, runtime cards, or transcripts; only repo-relative refs, allow-listed basename/path metadata, size, freshness, and diagnostic status.",
+		"Session evidence discovery must be allow-listed to repo-owned locations such as .harness/runtime, artifacts/runtime, artifacts/reviews, and docs/goals receipts; it must not scan .codex/sessions, raw transcript stores, environment files, or arbitrary home-directory paths.",
+		"Top-level pass status must not be emitted when any required local traversal surface is stale, missing, or unknown.",
+		"Remote truth remains unknown unless a verifier-owned snapshot is present.",
+		"Any discovered stale/missing artifact must appear in staleState and must not become a pass claim.",
+		"The command must be listed in harness commands --json and must stay read-only under tests."
+	],
+	"acceptanceCriteria": [
+		"session-context command exits 0 and emits schemaVersion session-context/v1 for a valid repo.",
+		"JSON output includes issueRef, local branch/headSha, changed files, active route refs, runtime-card refs, review artifact refs, session evidence refs, stale state diagnostics, and traversal hints.",
+		"Missing runtime-card, session evidence, or review artifact directories classify as missing or unknown, not pass.",
+		"Schema/example/manifest parity passes with session-context marked emitted.",
+		"Command registry exposes session-context in harness commands --json.",
+		"Tests prove no write paths are used, unsafe repo-root traversal is rejected or bounded, symlink escapes are not followed, and stale/missing required local surfaces downgrade status to warn.",
+		"Receipt records Project Brain inputs, Linear snapshot freshness, GAP-004 adoption, skill-lens artifacts, and independent reviewer artifacts."
+	],
+	"blockedConditions": [
+		"Stop if implementation needs to read raw transcript bodies, prompt text, secrets, or credentials.",
+		"Stop if command output would be used as closeout or merge-readiness proof rather than orientation.",
+		"Stop if the command needs live GitHub/Linear/CodeRabbit refresh; that belongs to external-state or closeout slices.",
+		"Stop if path handling cannot be constrained to the provided repo root."
+	]
+}

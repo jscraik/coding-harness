@@ -691,6 +691,28 @@ describe("validateContract", () => {
 			expect(result.errors[0]?.path).toBe("policyChain");
 			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
 		});
+
+		it("rejects policy chain when block actions map to pass", () => {
+			const result = validateContract({
+				version: "1.0",
+				policyChain: {
+					tierToAction: {
+						high: "block",
+						medium: "warn",
+						low: "allow",
+					},
+					actionToVerdict: {
+						allow: "pass",
+						block: "pass",
+						warn: "pass",
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("policyChain");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
 	});
 
 	it("rejects invalid risk tier", () => {

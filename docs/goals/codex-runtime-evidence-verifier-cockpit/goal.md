@@ -11,6 +11,7 @@
 - [Lifecycle Slices](#lifecycle-slices)
 - [Audit Gap Enforcement Addendum](#audit-gap-enforcement-addendum)
 - [Codex Ecosystem Operational Review Addendum](#codex-ecosystem-operational-review-addendum)
+- [Codex System Prompt Operational Analysis Addendum](#codex-system-prompt-operational-analysis-addendum)
 - [Project Brain Memory Contract](#project-brain-memory-contract)
 - [Slice Execution Contract](#slice-execution-contract)
 - [Review and Validation Contract](#review-and-validation-contract)
@@ -63,6 +64,7 @@ Supporting audit:
 Supporting operational review:
 
 - `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md`
+- `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md`
 
 Project Brain and memory authority:
 
@@ -124,15 +126,15 @@ Protected or constrained scope:
 
 Execute the plan's PU units in lifecycle order unless a reviewed intent artifact proves a safer split:
 
-| Stage | Units | Completion Meaning |
-| --- | --- | --- |
-| L0 | steering admission | Human correction is captured as a repo artifact before normal implementation resumes. |
-| L1 | PU-000 | Intent, review receipt, baseline, and acceptance coverage exist before runtime implementation. |
-| L2 | PU-001 through PU-008 | Fixture-backed verifier foundation exists, including receipts, Codex packet validation, adapter projection, private delivery-truth, root, redaction, and non-blending tests. |
-| L3 | PU-009 through PU-011 | Production review-state, external-state, delivery-truth, and root hygiene paths are wired. |
-| L4 | PU-012 through PU-013 | Codex runtime producer bridge feeds validated runtime evidence into runtime cards and the cockpit. |
-| L5 | PU-014 through PU-015 | PR, CI, review, Linear, root tidiness, and Judge/PM audit readiness become claim-verifiable. |
-| L6 | PU-016 plus audit and ecosystem review adoption | Documentation, architecture context, CI, validators, maintenance ownership, Project Brain memory use, Linear tracker alignment, the 2026-05-26 audit gap closure plan, and the Codex ecosystem operational review adoption plan are synchronized. |
+| Stage | Units                                             | Completion Meaning                                                                                                                                                                                                                                                                                |
+| ----- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L0    | steering admission                                | Human correction is captured as a repo artifact before normal implementation resumes.                                                                                                                                                                                                             |
+| L1    | PU-000                                            | Intent, review receipt, baseline, and acceptance coverage exist before runtime implementation.                                                                                                                                                                                                    |
+| L2    | PU-001 through PU-008                             | Fixture-backed verifier foundation exists, including receipts, Codex packet validation, adapter projection, private delivery-truth, root, redaction, and non-blending tests.                                                                                                                      |
+| L3    | PU-009 through PU-011                             | Production review-state, external-state, delivery-truth, and root hygiene paths are wired.                                                                                                                                                                                                        |
+| L4    | PU-012 through PU-013                             | Codex runtime producer bridge feeds validated runtime evidence into runtime cards and the cockpit.                                                                                                                                                                                                |
+| L5    | PU-014 through PU-015                             | PR, CI, review, Linear, root tidiness, and Judge/PM audit readiness become claim-verifiable.                                                                                                                                                                                                      |
+| L6    | PU-016 plus audit and operational review adoption | Documentation, architecture context, CI, validators, maintenance ownership, Project Brain memory use, Linear tracker alignment, the 2026-05-26 audit gap closure plan, the Codex ecosystem operational review adoption plan, and the Codex system-prompt operational gap matrix are synchronized. |
 
 Each slice should be small enough for one clear branch, one PR, one primary module family, and one unambiguous validation story.
 
@@ -140,42 +142,52 @@ Each slice should be small enough for one clear branch, one PR, one primary modu
 
 The 2026-05-26 evidence-led audit is now part of this goal's completion contract. The goal may not be marked complete while any listed gap is merely described in research. Each gap must be implemented, explicitly blocked with owner-visible evidence, or moved to a tracked follow-up accepted by the Judge/PM audit.
 
-| Audit Gap | Required Goal Treatment | Minimum Proof |
-| --- | --- | --- |
-| GAP-001 Local Memory preflight downgrade | P0 trust-boundary slice. Required preflight cannot silently skip Local Memory or Project Brain readiness. | Failing regression for old legacy downgrade plus passing required-mode preflight evidence. |
-| GAP-002 skipped or neutral CI credited as pass | P0 closeout-verifier slice. Required CI conclusions other than success must block or become unknown unless an explicit exception exists. | Table-driven PR closeout/external-state tests for success, skipped, neutral, cancelled, missing, stale, and timed-out states. |
-| GAP-003 public runtime packet schemas missing | Public contract slice. Runtime-card, harness-decision, review-state, external-state, delivery-truth, decision-request, and session-context packets need schemas or documented blocked ownership. | Schema files, fixtures, and schema parity tests, or a tracked blocked decision. |
-| GAP-004 session and work stream traversal missing | Runtime maturity slice. Add a read-only session and work stream context command or explicitly block it with owner decision. | CLI JSON contract, tests, and docs proving traversal without write authority. |
-| GAP-005 structured decision requests partial | Governance slice. Decision request intent, authority, human escalation, and stale-state handling must be machine-readable. | Decision-request contract/tests or tracked follow-up accepted by Judge/PM. |
-| GAP-006 policy-gate risk chain contradiction | P0 safety slice. High-risk actions must fail closed where the contract says they block. | Policy-gate tests and docs/contract sync proving no warn-only contradiction remains. |
-| GAP-007 architecture enforcement too local | Mechanical enforcement slice. Critical architecture drift warnings need explicit error/warning ownership. | Focused architecture validator regression and refreshed architecture docs/context. |
-| GAP-008 stale context detection not routine | Context-health slice. Project Brain, active artifacts, runtime cards, and memory freshness need routine stale-state classification. | `harness next` or agent-readiness metadata plus tests for stale/expired/missing context. |
-| GAP-009 reviewer artifact coverage not universal | Closeout gate slice. Required reviewer artifacts must be verified by path, size, producer, head SHA, and expected role before closeout. | Reviewer-coverage tests and PR closeout/Judge audit blockers for missing or stale artifacts. |
-| GAP-010 browser evidence not routine | Validation-hardening slice. Browser evidence requirements must be explicit when UI/browser surfaces change. | Browser smoke/visual evidence gate or documented non-applicability for non-UI slices. |
-| GAP-011 skill density overlap unchecked | Skill-governance slice. Skill overlap and trigger density need a validator or accepted follow-up. | Skill-density check, fixtures, and docs, or tracked follow-up. |
-| GAP-012 repeatable trace evidence not default | Runtime trace slice. Runs should produce repeatable JSONL/session evidence or explicitly classify why not. | Trace/session output contract, tests, and closeout evidence linkage. |
+| Audit Gap                                         | Required Goal Treatment                                                                                                                                                                          | Minimum Proof                                                                                                                 |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| GAP-001 Local Memory preflight downgrade          | P0 trust-boundary slice. Required preflight cannot silently skip Local Memory or Project Brain readiness.                                                                                        | Failing regression for old legacy downgrade plus passing required-mode preflight evidence.                                    |
+| GAP-002 skipped or neutral CI credited as pass    | P0 closeout-verifier slice. Required CI conclusions other than success must block or become unknown unless an explicit exception exists.                                                         | Table-driven PR closeout/external-state tests for success, skipped, neutral, cancelled, missing, stale, and timed-out states. |
+| GAP-003 public runtime packet schemas missing     | Public contract slice. Runtime-card, harness-decision, review-state, external-state, delivery-truth, decision-request, and session-context packets need schemas or documented blocked ownership. | Schema files, fixtures, and schema parity tests, or a tracked blocked decision.                                               |
+| GAP-004 session and work stream traversal missing | Runtime maturity slice. Add a read-only session and work stream context command or explicitly block it with owner decision.                                                                      | CLI JSON contract, tests, and docs proving traversal without write authority.                                                 |
+| GAP-005 structured decision requests partial      | Governance slice. Decision request intent, authority, human escalation, and stale-state handling must be machine-readable.                                                                       | Decision-request contract/tests or tracked follow-up accepted by Judge/PM.                                                    |
+| GAP-006 policy-gate risk chain contradiction      | P0 safety slice. High-risk actions must fail closed where the contract says they block.                                                                                                          | Policy-gate tests and docs/contract sync proving no warn-only contradiction remains.                                          |
+| GAP-007 architecture enforcement too local        | Mechanical enforcement slice. Critical architecture drift warnings need explicit error/warning ownership.                                                                                        | Focused architecture validator regression and refreshed architecture docs/context.                                            |
+| GAP-008 stale context detection not routine       | Context-health slice. Project Brain, active artifacts, runtime cards, and memory freshness need routine stale-state classification.                                                              | `harness next` or agent-readiness metadata plus tests for stale/expired/missing context.                                      |
+| GAP-009 reviewer artifact coverage not universal  | Closeout gate slice. Required reviewer artifacts must be verified by path, size, producer, head SHA, and expected role before closeout.                                                          | Reviewer-coverage tests and PR closeout/Judge audit blockers for missing or stale artifacts.                                  |
+| GAP-010 browser evidence not routine              | Validation-hardening slice. Browser evidence requirements must be explicit when UI/browser surfaces change.                                                                                      | Browser smoke/visual evidence gate or documented non-applicability for non-UI slices.                                         |
+| GAP-011 skill density overlap unchecked           | Skill-governance slice. Skill overlap and trigger density need a validator or accepted follow-up.                                                                                                | Skill-density check, fixtures, and docs, or tracked follow-up.                                                                |
+| GAP-012 repeatable trace evidence not default     | Runtime trace slice. Runs should produce repeatable JSONL/session evidence or explicitly classify why not.                                                                                       | Trace/session output contract, tests, and closeout evidence linkage.                                                          |
 
 Audit gap closure rules:
 
 - P0 audit gaps are allowed to interrupt PU-016 documentation work because they reduce false-success, stale-state, unsafe-command, or missing-evidence risk.
 - A gap is not closed by prose. It needs code, a validator, a schema, a receipt, a PR-truth update, or an accepted blocked decision.
 - If a gap is deferred, the receipt must name the owner, follow-up artifact, risk accepted, and why it is safe to keep implementing later slices.
+- If `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` changes after the latest audit-adoption receipt, the next slice receipt must explicitly re-read it and either adopt, reject, or defer each new or changed gap before any done, Judge, PM, closeout, or merge-readiness claim.
+- `scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit` must run the audit-freshness validator as a required extension for this goal so stale audit adoption is caught by the standard board gate, not only by a separately remembered command.
+- The same board wrapper must fail if `.harness/active-artifacts.md` stops routing JSC-363 to this goal, plan, spec, and adopted audit. Project Brain is allowed to orient the next slice only when its active route points at the current cockpit, not stale JSC-331 context.
 - Judge and PM tasks must review the audit gap matrix before any final completion claim.
 
 ## Codex Ecosystem Operational Review Addendum
 
 The 2026-05-26 Codex ecosystem operational review is adopted as steering evidence for this goal. It does not authorize copying Codex internals into Coding Harness. It steers the implementation back toward a thin Harness verifier cockpit that ingests Codex-native runtime facts, binds them to identity, and blocks unsupported claims.
 
-| Finding | Required Goal Treatment | Minimum Proof |
-| --- | --- | --- |
-| Codex runtime state is the new control plane | Add or explicitly block `codex-runtime-state/v1` as an internal adapter output sourced from app-server, rollout trace, hook, SDK-shaped, or fixture packets. | Adapter fixtures for direct, degraded, missing, blocked, and stale packets. |
-| Identity is operational currency | Promote `RuntimeIdentity/v1` or an equivalent identity spine across runtime cards, evidence bundles, verifier receipts, artifacts, PR/CI/Linear refs, and replay seeds. | Negative tests for missing, mismatched, unknown, and stale identity fields without blocking orientation-only use too broadly. |
-| Claim-vs-evidence must be canonical closeout | Keep `ClaimIntent/v1` to required evidence to verifier receipt as the closeout model for done, merge-ready, review-addressed, root-tidy, goal-complete, and runtime-proof-valid claims. | Fixture-backed verifier decisions that allow, downgrade, block, or return unknown with owner and next action. |
-| Goal, permission, sandbox, approval, and environment parity are runtime truth | Project Codex goal status, permission profile, sandbox policy, approval reviewer, environment id, and runtime workspace roots into runtime-card summaries without storing secrets. | Fixtures for paused, blocked, budget-limited, read-only, wrong environment, missing approval reviewer, and redacted env values. |
-| Queue semantics prevent stale steering | Add or explicitly defer `SteeringQueue/v1` with `expectedTurnId`, `expectedHeadSha`, expiry, mode, and merge policy before autonomous continuation or delayed work depends on a prior turn. | Replay fixtures for stale turn, stale branch head, superseded artifact, and expired queue items. |
-| Artifacts are runtime surfaces | Treat implementation notes, review artifacts, screenshots, CSV/PDF/doc outputs, and runtime cards as artifact state that can be inspected, with lifecycle, lineage, preview, and verifier refs. | Artifact runtime fixtures for missing path, stale front matter, broken preview, unsupported claim, and mismatched lineage. |
-| Repeatable telemetry is the learning loop | Convert repeated steering, blocked runtime, auth recovery, stale PR head, review churn, and degraded observability into replay seeds or blocked decisions. | Evidence-pattern or replay-seed validation that names source event, target validator, and adoption status. |
-| Hooks make agent work attributable | Require subagent/reviewer work to bind role, subagent id/type when available, artifact path, head SHA, and producer. | Reviewer artifact receipts fail closed when producer, role, size, head SHA, or expected artifact path is missing. |
+| Finding                                                                       | Required Goal Treatment                                                                                                                                                                         | Minimum Proof                                                                                                                            |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Codex runtime state is the new control plane                                  | Add or explicitly block `codex-runtime-state/v1` as an internal adapter output sourced from app-server, rollout trace, hook, SDK-shaped, or fixture packets.                                    | Adapter fixtures for direct, degraded, missing, blocked, and stale packets.                                                              |
+| Identity is operational currency                                              | Promote `RuntimeIdentity/v1` or an equivalent identity spine across runtime cards, evidence bundles, verifier receipts, artifacts, PR/CI/Linear refs, and replay seeds.                         | Negative tests for missing, mismatched, unknown, and stale identity fields without blocking orientation-only use too broadly.            |
+| Claim-vs-evidence must be canonical closeout                                  | Keep `ClaimIntent/v1` to required evidence to verifier receipt as the closeout model for done, merge-ready, review-addressed, root-tidy, goal-complete, and runtime-proof-valid claims.         | Fixture-backed verifier decisions that allow, downgrade, block, or return unknown with owner and next action.                            |
+| Goal, permission, sandbox, approval, and environment parity are runtime truth | Project Codex goal status, permission profile, sandbox policy, approval reviewer, environment id, and runtime workspace roots into runtime-card summaries without storing secrets.              | Fixtures for paused, blocked, budget-limited, read-only, wrong environment, missing approval reviewer, and redacted env values.          |
+| Queue semantics prevent stale steering                                        | Add or explicitly defer `SteeringQueue/v1` with `expectedTurnId`, `expectedHeadSha`, expiry, mode, and merge policy before autonomous continuation or delayed work depends on a prior turn.     | Replay fixtures for stale turn, stale branch head, superseded artifact, and expired queue items.                                         |
+| Tool exposure planning is governance                                          | Add or explicitly defer a tool-exposure receipt that records visible, hidden, unavailable, deferred, and policy-blocked tool families for the run without becoming a second tool registry.      | Fixtures distinguish could not validate from did not validate and fail strong claims when required tool families were unavailable.       |
+| Review is a runtime mode                                                      | Capture review-mode state, reviewer/subagent identity, active review threads, and review artifact lineage as runtime evidence before review-addressed or reviewer-covered claims pass.          | Review-state fixtures for stale review mode, missing reviewer identity, stale comments, unresolved active threads, and stale artifacts.  |
+| Artifacts are runtime surfaces                                                | Treat implementation notes, review artifacts, screenshots, CSV/PDF/doc outputs, and runtime cards as artifact state that can be inspected, with lifecycle, lineage, preview, and verifier refs. | Artifact runtime fixtures for missing path, stale front matter, broken preview, unsupported claim, and mismatched lineage.               |
+| Rollout search makes memory operational                                       | Treat rollout/session search and Project Brain recall as orientation evidence unless receipts bind the retrieved memory to current repo, branch, head SHA, and slice intent.                    | Memory/retrieval fixtures for stale rollout evidence, missing provenance, and orientation-only recall being rejected as claim support.   |
+| Recovery is a first-class runtime class                                       | Classify auth recovery, blocked runtime, missing capability, stale state, degraded observability, retry exhaustion, and human-approval stops as verifier inputs rather than prose status.       | Recovery-class fixtures prove `blocked_runtime` and degraded evidence block strong closeout while still preserving audit trail value.    |
+| Schema generation is anti-drift infrastructure                                | Keep public packet schemas, TypeScript contracts, fixtures, and docs synchronized for adopted runtime-state, identity, receipt, review, external-state, and delivery-truth packets.             | Schema parity tests fail when docs, fixtures, exported types, or validators drift.                                                       |
+| Repeatable telemetry is the learning loop                                     | Convert repeated steering, blocked runtime, auth recovery, stale PR head, review churn, and degraded observability into replay seeds or blocked decisions.                                      | Evidence-pattern or replay-seed validation that names source event, target validator, and adoption status.                               |
+| Hooks make agent work attributable                                            | Require subagent/reviewer work to bind role, subagent id/type when available, artifact path, head SHA, and producer.                                                                            | Reviewer artifact receipts fail closed when producer, role, size, head SHA, or expected artifact path is missing.                        |
+| Instruction provenance is runtime safety                                      | Bind AGENTS, skill, plan, spec, Project Brain, and Linear tracker surfaces read for a slice to the runtime/evidence receipt so hidden instruction drift cannot silently support closeout.       | Instruction-provenance fixtures fail when required source surfaces are missing, stale, conflicting, or only conversationally remembered. |
+| Packaged runtime is a distribution contract                                   | Preserve Codex launcher/source/package provenance when runtime evidence comes from CLI, app, SDK launcher, packaged binary, or fixture source, and downgrade unknown producers.                 | Runtime-provenance fixtures for unknown launcher source, package mismatch, fixture-only evidence, and unsupported producer fields.       |
 
 Adoption rules:
 
@@ -183,7 +195,36 @@ Adoption rules:
 - Harness must not become a competing Codex app-server, goal store, scheduler, tool registry, or thread engine.
 - Runtime cards remain cockpit summaries and pointers, not warehouses for raw prompts, raw telemetry, review bodies, secrets, or bulky artifacts.
 - Linear `JSC-363` remains the tracker anchor for this goal. If the Linear issue title or description still says Phase 1, future closeout must record that mismatch and either update Linear or add an accepted scope note before claiming full-lifecycle tracker alignment.
-- Every future Worker/Judge/PM receipt should include `ecosystem_review_findings` when a slice touches runtime identity, runtime state, claim verification, queueing, artifacts, telemetry, hooks, or Codex parity.
+- Every future Worker/Judge/PM receipt should include `ecosystem_review_findings` when a slice touches runtime identity, runtime state, claim verification, queueing, tool exposure, review mode, artifacts, memory/retrieval, recovery, schemas, telemetry, hooks, instruction provenance, runtime provenance, or Codex parity.
+
+## Codex System Prompt Operational Analysis Addendum
+
+The 2026-05-27 Codex system-prompt operational analysis is adopted as a goal gap source. It is advisory research until adopted here; after adoption, the listed findings are execution constraints for future Worker, Judge, and PM receipts. The goal must extract durable invariants from the analysis, not copy Codex prompt text, private runtime instructions, secrets, or app-server internals into Coding Harness.
+
+Use these gaps to keep the implementation aligned with the mantra: small deep modules, intent as an artifact, intent review before implementation, and automation where the behavior can be made deterministic.
+
+| Gap                                                             | Required Goal Treatment                                                                                                                                                                                                  | Minimum Proof                                                                                                                                     |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SPG-001 PromptContextReceipt/v1 missing                         | Add prompt-layer provenance as a receipt that records instruction/source refs, hashes, selected capability surfaces, permission posture, goal context, and redaction status without storing full prompt text by default. | Schema/types, fixtures for current/missing/stale/conflicting source refs, and a validator that rejects claim support from unbound prompt context. |
+| SPG-002 durable runtime-card handoff incomplete                 | Persist a durable runtime-card and paired evidence bundle path for issue/branch handoff, including expiry, freshness, head SHA, and source references.                                                                   | Runtime-card fixture or command evidence proving a future session can discover the current handoff path and classify stale/missing cards.         |
+| SPG-003 GoalCompletionAuditReceipt/v1 missing                   | Add a final audit receipt that compares objective, requirement matrix, evidence refs, blockers, and verdict before goal-ready or done claims.                                                                            | Fixtures for complete, partial, stale, one-turn blocker, and repeated-blocker cases.                                                              |
+| SPG-004 SteeringQueue/v1 missing                                | Model queued steering, delayed continuation, expected turn/head/artifact ids, expiry, stale-precondition checks, and applied/rejected state before autonomous continuation relies on prior human steering.               | Queue fixtures for stale turn, stale head, superseded artifact, expired queue, rejected steering, and applied steering.                           |
+| SPG-005 permission and tool exposure projection incomplete      | Project sandbox, approval policy, network posture, tool exposure counts/classes, key tool names, deferred availability, hidden capability classes, and blocked permission attempts into runtime-card evidence.           | Runtime-card and verifier fixtures distinguishing tool unavailable, permission blocked, not attempted, and claim failed.                          |
+| SPG-006 decision-request/v1 not limited to real HILT boundaries | Emit structured decision requests only for human-in-the-loop authority boundaries, not routine uncertainty; bind requests to stale-state and claim-support checks.                                                       | Tests proving routine uncertainty does not create decision debt, while destructive/external/security-sensitive boundaries do.                     |
+| SPG-007 ReviewLifecycle/v1 missing                              | Compose review-state into a lifecycle packet with target/base/head, mode, role/tool exposure, artifact lineage, findings, selectable comments, unresolved threads, coverage, and verdict.                                | Review lifecycle fixtures for stale review mode, unresolved active threads, missing artifact lineage, and current covered review.                 |
+| SPG-008 ActionReviewReceipt/v1 missing                          | Add guardian-style action review receipts for merge, release, destructive cleanup, and external tracker mutation with exact action envelope and allow/block/mismatch verdict.                                            | Allow/block/mismatch fixtures and policy-gate or delivery-truth integration evidence.                                                             |
+| SPG-009 ArtifactRuntimeSurface/v1 missing                       | Treat implementation notes, review artifacts, screenshots, CSV/PDF/doc outputs, runtime cards, and reports as runtime surfaces only when they steer execution or claims.                                                 | Artifact fixtures for missing path, stale front matter, broken preview, unsupported claim, mismatched lineage, and reviewable current artifact.   |
+| SPG-010 ReplayPacket/v1 and hook provenance missing             | Emit minimal replay packets for runtime identity, prompt receipt id, runtime-card id, tool events, hook events, queue decisions, validator outputs, and final claims without secrets or full transcripts.                | JSONL schema/fixtures plus replay-seed validation for hook rewrites, blocked runtime, stale PR head, and repeated steering.                       |
+| SPG-011 prompt/context drift validator missing                  | Add drift detection across prompt/source refs, goal board, Project Brain, active artifacts, runtime-card evidence, and receipt head SHA where those sources support claims.                                              | Validator fails on stale prompt context, stale active route, mismatched head SHA, and missing source hash.                                        |
+| SPG-012 real-time and intermediary receipt coverage incomplete  | Classify real-time/intermediary messages as orientation unless bound by receipt, source freshness, and claim-support eligibility. This may be deferred if no current slice depends on real-time evidence.                | Explicit implementation, blocked decision, or accepted P3 follow-up with owner and risk note.                                                     |
+
+System-prompt gap closure rules:
+
+- A system-prompt gap is not closed by prose. It needs a schema, validator, receipt, fixture-backed implementation, runtime-card projection, delivery-truth integration, or accepted blocked/follow-up decision.
+- Future receipts must include `system_prompt_gap_ids` when a slice touches prompt provenance, runtime cards, goal completion, steering, permissions, tools, review lifecycle, action review, artifact surfaces, replay, hook provenance, context drift, or intermediary messages.
+- The Judge/PM audit must reconcile SPG-001 through SPG-012 before any full-lifecycle completion claim.
+- Prompt context, Project Brain recall, browser/intermediary state, and compaction history are orientation-only unless a current receipt binds them to repo, branch, head SHA, source refs, freshness, and slice intent.
+- Harness must remain the verifier cockpit. It must not become a second Codex prompt composer, app-server, scheduler, tool registry, or thread engine.
 
 ## Project Brain Memory Contract
 
@@ -224,9 +265,10 @@ Parallel continuation rule:
 
 After each slice, validate with these skill lenses or their repo-owned deterministic equivalents:
 
-- `$improve-codebase-architecture`: confirm the slice fits the current deep-module architecture and does not create shallow pass-through, orphaned, or misplaced modules.
+- `$improve-codebase-architecture`: confirm the slice stays inside the intended deep module boundary, preserves a narrow public seam, and records any architecture tradeoff in the intent or receipt.
 - `$simplify`: confirm the slice did not add unnecessary abstractions, duplicate truth layers, or broad public surfaces.
 - `$unslopify`: remove vague claims, placeholder wording, speculative assertions, and AI-shaped docs or PR text.
+- `$he-code-review`: review the slice against Harness Engineering expectations, evidence contracts, and implementation-risk boundaries.
 - `$testing`: prove the touched behavior with the narrowest meaningful tests first, then broaden according to risk.
 
 Before marking any slice done, also run independent review with:
@@ -237,15 +279,7 @@ Before marking any slice done, also run independent review with:
 
 Reviewer outputs must be artifact-first when a swarm is requested. Verify expected review artifacts exist and are non-empty before synthesis. Mailbox status is not enough.
 
-Slice receipts must record `skill_lens_results` and `independent_reviewer_results`
-for the required lenses and reviewers. Validate those fields with
-`python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id <R-ID> --repo .`
-before claiming a slice done.
-
-The slice assurance checker only credits canonical `pass` results with
-non-empty evidence under `artifacts/reviews/`. Duplicate lens or reviewer rows,
-reviewer evidence reuse, traversal paths, missing artifacts, and non-pass
-statuses must fail the done claim.
+`@best-practices-researcher` is required to check implementation approach, validation method, and operational pattern against current local/retrieved evidence when the slice introduces or changes a contract, validator, runtime packet, closeout rule, architecture boundary, or workflow automation. If the role is unavailable or no external/current evidence is needed for a pure local fixture/doc repair, record an explicit `blocked` or `not applicable` receipt with the reason.
 
 Every validation report must classify results as exactly one of:
 
@@ -253,6 +287,15 @@ Every validation report must classify results as exactly one of:
 - `fail`
 - `blocked`
 - `not applicable`
+
+Historical coverage rule:
+
+- R064 starts the enforced per-slice skill-lens and reviewer contract for future slices.
+- Pre-R064 receipts remain historical evidence, but they cannot by themselves prove the full lens/reviewer contract now required for lifecycle closeout.
+- Before Judge/PM closeout, produce a historical backfill or ratification ledger for PU-001 through PU-016. Each unit must map every required skill lens and independent reviewer to `pass`, `blocked`, or `not applicable` with an evidence ref or accepted exception.
+- A receipt or backfill row is incomplete if it includes only the top-level `slice_skill_lens_results` or `independent_reviewer_results` object but omits any required lens or reviewer key.
+- A `pass` member is unsupported unless it carries a resolvable, current evidence reference to the relevant artifact, command result, receipt, or review report. `blocked`, `fail`, and `not applicable` members must carry a reason and owner or accepted-exception reference.
+- Any required member marked `fail` blocks the slice done claim and final closeout until fixed or reclassified with accepted owner evidence.
 
 ## GitHub and PR Triage Contract
 
@@ -281,7 +324,11 @@ The goal is complete only when all of the following are true:
 
 - PU-000 through PU-016 are implemented, explicitly marked not applicable with evidence, or explicitly blocked with owner-visible evidence.
 - GAP-001 through GAP-012 from `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` are implemented, explicitly blocked, or tracked as accepted follow-ups by the Judge/PM audit.
+- SPG-001 through SPG-012 from `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` are implemented, explicitly blocked, or tracked as accepted follow-ups by the Judge/PM audit.
+- `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .` proves the latest relevant receipt acknowledges the current `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` content hash after the audit file timestamp; otherwise audit-gap closeout is stale and blocked.
+- `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit` also passes, proving the normal goal-board path executes audit-freshness and active-artifacts route enforcement for this goal.
 - Each implemented slice has an intent artifact, validation evidence, review evidence, commit, PR truth, and receipt.
+- Final closeout includes the historical review-coverage backfill or ratification ledger required by the Review and Validation Contract.
 - Each slice receipt records Project Brain memory inputs or a blocker for unavailable memory.
 - Delivery-truth separates local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness.
 - Runtime cards can cite Codex runtime evidence without scraping final response prose.
@@ -304,7 +351,7 @@ Stop and report before continuing if:
 - reviewer artifacts are missing after one focused retry
 - GitHub, PR, CI, review, or Linear state is stale where claim support requires current truth
 - a slice would require write authority outside the approved scope
-- continuing a later slice would contaminate a PR under triage
+- continuing another slice would contaminate a PR under triage
 
 ## Activation Boundary
 
@@ -322,7 +369,7 @@ Before that phrase appears, allowed work is limited to setup validation, board r
 2. Reconcile native goal state against this board.
 3. Check current branch, worktree dirt, and uncommitted user changes.
 4. Run the Goal Governor board validator.
-5. Read the implementation plan, associated spec, and the 2026-05-26 evidence-led gap audit.
+5. Read the implementation plan, associated spec, the 2026-05-26 evidence-led gap audit, the 2026-05-26 ecosystem operational review, and the 2026-05-27 system-prompt operational analysis.
 6. Refresh Project Brain memory inputs: `.harness/active-artifacts.md`, `.harness/memory/LEARNINGS.md`, relevant `.harness/knowledge/**`, and `.harness/research/evidence-patterns.json`.
 7. Confirm whether the activation phrase is present.
 8. If not activated, stop after readiness reporting.

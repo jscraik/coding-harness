@@ -11,6 +11,7 @@ import {
 	REQUIRED_PREK_HOOKS,
 	REQUIRED_PREK_INSTALL_HOOK_TYPES,
 } from "../policy/tooling-baseline.js";
+export { renderPullRequestTemplate } from "./scaffold-pr-template.js";
 
 type ContributingTemplateOptions = {
 	addCommand: string;
@@ -22,13 +23,6 @@ type ContributingTemplateOptions = {
 	localExecCommand: string;
 	memoryValidateCommand: string;
 	requiredChecksList: string;
-};
-
-type PullRequestTemplateOptions = {
-	agentBranchPrefix: string;
-	checkCommand: string;
-	codestyleCommand: string;
-	memoryValidateCommand: string;
 };
 
 /**
@@ -267,23 +261,7 @@ Recommended policy:
 - Run scanner checks in CI on pull requests and pushes to protected branches.
 - Keep Snyk monitoring disabled unless the repository explicitly approves external snapshot writes.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
-${
-	options.isCircleCI
-		? `
-## Test runner artifact configuration
-
-CI pipelines collect test results and artifacts from the \`artifacts/test-results\` directory. Your test framework must be configured to emit JUnit XML reports (or other supported formats) to this location.
-
-Example configurations:
-
-- **Vitest**: \`vitest --reporter=junit --outputFile=artifacts/test-results/junit.xml\`
-- **Jest**: Configure \`jest.config.js\` with \`reporters: [['jest-junit', { outputDirectory: 'artifacts/test-results', outputName: 'junit.xml' }]]\`
-- **Mocha**: \`mocha --reporter mocha-junit-reporter --reporter-options mochaFile=artifacts/test-results/junit.xml\`
-
-Ensure \`artifacts/test-results\` is created before running tests (CI scaffolds include a step for this).
-`
-		: ""
-}
+${renderCircleCiTestArtifactSection(options.isCircleCI)}
 ## Review artifacts requirement
 
 Each PR must include:
@@ -325,88 +303,26 @@ ${options.requiredChecksList}
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both \`pull_request\` and \`merge_group\` when using merge queue.
 - Block direct pushes to \`main\`.
-`;
+	`;
 }
 
-/**
- * Render the GitHub pull request template used for downstream repositories.
- *
- * Embeds branch-name guidance and verification commands from `options` into
- * a checklist and testing sections suitable for `.github/PULL_REQUEST_TEMPLATE.md`.
- *
- * @param options - Template options including `agentBranchPrefix` (branch-name policy)
- *   and the verification commands `codestyleCommand`, `checkCommand`, and `memoryValidateCommand`
- *   to insert into the checklist and testing sections.
- * @returns The Markdown content for `.github/PULL_REQUEST_TEMPLATE.md`
- */
-export function renderPullRequestTemplate(
-	options: PullRequestTemplateOptions,
-): string {
-	const codeRabbitChecklist = `- [ ] **(Pending)** CodeRabbit review completed and findings handled (or explicitly waived).
-- [ ] **(Pending)** CodeRabbit review was performed by an independent reviewer (not the coding agent).
-`;
-	const codeRabbitArtifacts = `- CodeRabbit: <link / artifact path / comment ID>
-- Independent reviewer evidence: <reviewer + link>
-`;
-	return `# Pull request checklist
+function renderCircleCiTestArtifactSection(isCircleCI: boolean): string {
+	if (!isCircleCI) {
+		return "";
+	}
 
-## Summary
+	return `
+## Test runner artifact configuration
 
-- What changed (brief):
-- Why this change was needed:
-- Risk and rollback plan:
+CI pipelines collect test results and artifacts from the \`artifacts/test-results\` directory. Your test framework must be configured to emit JUnit XML reports (or other supported formats) to this location.
 
-## Work performed
+Example configurations:
 
-- Plan IDs: list Linear keys, spec paths, plan paths, or \`n.a.\` with reason
-- Phase / slice: list completed phase, implementation slice, or \`n.a.\` with reason
-- Session IDs: list Codex/session-collector/harness session IDs, or \`n.a.\` with reason
-- Trace IDs: list CI, harness, eval, review, or runtime trace IDs, or \`n.a.\` with reason
-- AI session / traceability: map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body
-- Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR
-- Affected surfaces: list code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or \`n.a.\` with reason
-- Expected outcome alignment: state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark \`n.a.\` with reason
-- Pattern scope inventory: for any steering feedback, review comment, or line-level correction that implies a broader design/API principle, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence
-- Meta-behavior proof: for repeated steering or high-signal corrections, name the durable repo/system change plus concrete repo path, command, or issue ID that prevents recurrence, or \`n.a.\` with tracked exception reason
-- Repeated-error research: when the same error occurs twice, use \`Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...\`; otherwise \`n.a.\` with reason
-- Acceptance trace: map completed acceptance items to evidence refs, or \`n.a.\` with reason
-- Validation evidence: list command outcomes, CI jobs, artifact paths, or \`n.a.\` with reason
-- Review artifacts: list CodeRabbit, Codex, reviewer, or harness review artifacts, or \`n.a.\` with reason
-- Runtime impact: state direct, transitive, dev-only, CI-only, runtime-facing, or \`n.a.\` with reason
-- CodeRabbit mode coverage: list analysis, validation, gate, closeout, promotion, or \`n.a.\` with reason
-- Closeout state: classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner
-- Learning / reinforcement: list promoted learnings, memory updates, or \`none\` with reason
-- Deferred work: list follow-up work intentionally left out, or \`none\`
+- **Vitest**: \`vitest --reporter=junit --outputFile=artifacts/test-results/junit.xml\`
+- **Jest**: Configure \`jest.config.js\` with \`reporters: [['jest-junit', { outputDirectory: 'artifacts/test-results', outputName: 'junit.xml' }]]\`
+- **Mocha**: \`mocha --reporter mocha-junit-reporter --reporter-options mochaFile=artifacts/test-results/junit.xml\`
 
-## Checklist
-
-- [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
-- [ ] Branch name follows policy (\`${options.agentBranchPrefix}/*\` for agent-created branches).
-- [ ] Required local gates run: \`${options.codestyleCommand}\`, \`${options.checkCommand}\`, \`${options.memoryValidateCommand}\`.
-${codeRabbitChecklist}- [ ] **(Pending)** Codex review completed and findings handled (or explicitly waived).
-- [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
-- [ ] Merge is blocked until all required checks pass.
-- [ ] I will delete branch/worktree after merge.
-
-## Testing
-
-- verification_commands: list exact commands run here
-- verification_outcomes: record pass/fail/blocked for each command here
-- blocked_steps_reason: none if all planned steps ran
-- Command: \`${options.codestyleCommand}\` -> pass/fail
-- Command: \`${options.checkCommand}\` -> pass/fail
-- Command: \`${options.memoryValidateCommand}\` -> pass/fail
-- Any other command(s):
-
-## Review artifacts
-
-${codeRabbitArtifacts}- Codex: <link / artifact path / comment ID>
-- CodeRabbit Semgrep: fixed / waived with rationale / n.a.
-- Additional evidence (if any):
-
-## Notes
-
-Add one-paragraph merge rationale here.
+Ensure \`artifacts/test-results\` is created before running tests (CI scaffolds include a step for this).
 `;
 }
 

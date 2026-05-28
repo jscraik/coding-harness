@@ -14,13 +14,14 @@ describe("policy-chain", () => {
 			riskTierRules: {},
 		};
 		const chain = resolvePolicyChain(contract);
-		expect(chain.tierToAction.high).toBe("warn");
+		expect(chain.tierToAction.high).toBe("block");
+		expect(chain.actionToVerdict.block).toBe("fail");
 		expect(chain.actionToVerdict.warn).toBe("pass");
 	});
 
 	it("resolves action and verdict for each tier", () => {
 		const chain = resolvePolicyChain(undefined);
-		expect(resolvePolicyAction("high", chain)).toBe("warn");
+		expect(resolvePolicyAction("high", chain)).toBe("block");
 		expect(resolvePolicyAction("medium", chain)).toBe("warn");
 		expect(resolvePolicyAction("low", chain)).toBe("allow");
 

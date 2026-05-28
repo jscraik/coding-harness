@@ -1,5 +1,6 @@
 import type { BrainValidationResult } from "./brain-validator.js";
 import type { DomainMapping } from "./domain-mapper.js";
+import type { BrainLintResult } from "./lint-types.js";
 import type { StalenessReport } from "./metadata-scanner.js";
 
 /** Public API export. */
@@ -93,5 +94,6 @@ export interface BrainCliResult {
 		| BrainQueryResult
 		| BrainAddResult
 		| BrainPreflightResult
+		| BrainLintResult
 		| BrainStaleResult;
 }

@@ -1,0 +1,365 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/runtime-card.schema.json",
+	"title": "Runtime Card",
+	"type": "object",
+	"additionalProperties": true,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"issueKey",
+		"lifecycle",
+		"summary",
+		"nextSafeAction",
+		"branch",
+		"pullRequest",
+		"artifacts",
+		"linear",
+		"phaseExit",
+		"sources",
+		"blockers",
+		"attemptLedger",
+		"recoveryEvent"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "runtime-card/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"issueKey": {
+			"type": ["string", "null"]
+		},
+		"lifecycle": {
+			"enum": [
+				"planned",
+				"active",
+				"implemented",
+				"locally_validated",
+				"review_pending",
+				"ci_blocked",
+				"merge_ready",
+				"merged",
+				"closeout_pending",
+				"reconciled",
+				"closed",
+				"stale",
+				"superseded",
+				"blocked",
+				"unknown"
+			]
+		},
+		"summary": {
+			"type": "string"
+		},
+		"nextSafeAction": {
+			"type": "string"
+		},
+		"branch": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["name", "clean", "ref"],
+			"properties": {
+				"name": {
+					"type": ["string", "null"]
+				},
+				"clean": {
+					"type": ["boolean", "null"]
+				},
+				"ref": {
+					"type": ["string", "null"]
+				}
+			}
+		},
+		"pullRequest": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["number", "state", "isDraft", "mergeStateStatus", "url"],
+			"properties": {
+				"number": {
+					"type": ["integer", "null"],
+					"minimum": 1
+				},
+				"state": {
+					"type": ["string", "null"]
+				},
+				"isDraft": {
+					"type": ["boolean", "null"]
+				},
+				"mergeStateStatus": {
+					"type": ["string", "null"]
+				},
+				"url": {
+					"type": ["string", "null"]
+				}
+			}
+		},
+		"artifacts": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["activeSpec", "activePlan", "status", "staleRefs"],
+			"properties": {
+				"activeSpec": {
+					"type": ["string", "null"]
+				},
+				"activePlan": {
+					"type": ["string", "null"]
+				},
+				"status": {
+					"enum": ["current", "stale", "missing", "superseded", "unknown"]
+				},
+				"staleRefs": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			}
+		},
+		"linear": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["issueKey", "freshness", "actionRequired"],
+			"properties": {
+				"issueKey": {
+					"type": ["string", "null"]
+				},
+				"freshness": {
+					"enum": ["current", "stale", "missing", "unknown"]
+				},
+				"status": {
+					"type": ["string", "null"]
+				},
+				"statusType": {
+					"type": ["string", "null"]
+				},
+				"url": {
+					"type": ["string", "null"]
+				},
+				"actionRequired": {
+					"type": ["string", "null"]
+				}
+			}
+		},
+		"phaseExit": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["status", "reason"],
+			"properties": {
+				"status": {
+					"enum": ["pass", "fail", "blocked", "not_run", "unknown"]
+				},
+				"reason": {
+					"type": ["string", "null"]
+				}
+			}
+		},
+		"sources": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["kind", "ref", "freshness", "status", "failureClass"],
+				"properties": {
+					"kind": {
+						"enum": [
+							"git",
+							"pr",
+							"linear",
+							"artifact",
+							"validation",
+							"review",
+							"session",
+							"phase_exit"
+						]
+					},
+					"ref": {
+						"type": "string",
+						"minLength": 1
+					},
+					"freshness": {
+						"enum": ["current", "stale", "missing", "unknown"]
+					},
+					"status": {
+						"enum": ["usable", "empty", "invalid", "blocked"]
+					},
+					"failureClass": {
+						"type": ["string", "null"]
+					}
+				}
+			}
+		},
+		"codexRuntime": {
+			"type": "object",
+			"additionalProperties": false,
+			"description": "Compact Codex runtime projection. Runtime-card JSON schema consumers must reject raw or unbounded nested Codex runtime payloads.",
+			"required": [
+				"provenanceRef",
+				"collectedAt",
+				"sourceCount",
+				"blockedSourceCount",
+				"blockerCount",
+				"receiptRefs",
+				"validationRefs",
+				"reviewRefs",
+				"sessionRefs",
+				"staleStateRefs"
+			],
+			"properties": {
+				"provenanceRef": {
+					"type": ["string", "null"]
+				},
+				"collectedAt": {
+					"type": ["string", "null"]
+				},
+				"sourceCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"blockedSourceCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"blockerCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"receiptRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"validationRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"reviewRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"sessionRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"staleStateRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"toolExposure": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": [
+						"evidenceRef",
+						"evidenceUse",
+						"sandboxMode",
+						"approvalPolicy",
+						"networkAccess",
+						"visibleToolCount",
+						"deferredToolCount",
+						"hiddenToolCount",
+						"unavailableToolCount",
+						"notAttemptedToolCount",
+						"claimFailedToolCount",
+						"blockedPermissionAttemptCount",
+						"writableRootCount",
+						"keyToolNames",
+						"originalKeyToolNameCount",
+						"namesTruncated"
+					],
+					"properties": {
+						"evidenceRef": { "type": "string", "minLength": 1 },
+						"evidenceUse": { "enum": ["orientation", "audit_trail"] },
+						"sandboxMode": { "type": "string", "minLength": 1 },
+						"approvalPolicy": { "type": "string", "minLength": 1 },
+						"networkAccess": {
+							"enum": ["enabled", "restricted", "disabled", "unknown"]
+						},
+						"visibleToolCount": { "type": "integer", "minimum": 0 },
+						"deferredToolCount": { "type": "integer", "minimum": 0 },
+						"hiddenToolCount": { "type": "integer", "minimum": 0 },
+						"unavailableToolCount": { "type": "integer", "minimum": 0 },
+						"notAttemptedToolCount": { "type": "integer", "minimum": 0 },
+						"claimFailedToolCount": { "type": "integer", "minimum": 0 },
+						"blockedPermissionAttemptCount": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"writableRootCount": { "type": "integer", "minimum": 0 },
+						"keyToolNames": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						},
+						"originalKeyToolNameCount": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"namesTruncated": { "type": "boolean" }
+					}
+				}
+			}
+		},
+		"blockers": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"attemptLedger": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"schemaVersion",
+				"command",
+				"attempt",
+				"maxAttempts",
+				"firstFailure",
+				"retryDecision",
+				"owner",
+				"stopReason",
+				"nextAction",
+				"evidenceRefs"
+			],
+			"properties": {
+				"schemaVersion": {
+					"const": "attempt-ledger/v1"
+				},
+				"command": {
+					"const": "runtime-card"
+				},
+				"attempt": {
+					"type": "integer",
+					"minimum": 1
+				},
+				"maxAttempts": {
+					"type": "integer",
+					"minimum": 1
+				},
+				"firstFailure": {
+					"type": ["object", "null"],
+					"additionalProperties": true
+				},
+				"retryDecision": {
+					"enum": ["none", "wait", "stop"]
+				},
+				"owner": {
+					"enum": ["codex", "external_service", "operator"]
+				},
+				"stopReason": {
+					"type": ["string", "null"]
+				},
+				"nextAction": {
+					"type": "string"
+				},
+				"evidenceRefs": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			}
+		},
+		"recoveryEvent": {
+			"type": ["object", "null"]
+		}
+	}
+}

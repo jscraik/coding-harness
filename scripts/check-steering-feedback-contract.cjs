@@ -12,6 +12,7 @@ const REQUIRED_FILES = {
 	memory: ".harness/memory/LEARNINGS.md",
 	prTemplate: ".github/PULL_REQUEST_TEMPLATE.md",
 	prValidator: "src/lib/pr-template-validator.ts",
+	prValidatorEvidence: "src/lib/pr-template-behavior-evidence.ts",
 	solution:
 		"docs/solutions/integration-issues/2026-05-17-steering-feedback-admission.md",
 	envSolution:
@@ -1104,6 +1105,21 @@ function validatePrValidator(content) {
 	return errors;
 }
 
+function readPrValidatorContractSource() {
+	const validatorResult = readRequiredFile(
+		"prValidator",
+		REQUIRED_FILES.prValidator,
+	);
+	const evidenceResult = readRequiredFile(
+		"prValidatorEvidence",
+		REQUIRED_FILES.prValidatorEvidence,
+	);
+	return {
+		content: [validatorResult.content, evidenceResult.content].join("\n"),
+		errors: [...validatorResult.errors, ...evidenceResult.errors],
+	};
+}
+
 /**
  * Validate the memory learnings document for presence of required steering-feedback learning signals.
  * @param {string} content - Contents of the memory learnings file to check.
@@ -1376,7 +1392,10 @@ const validations = [
 const errors = [];
 for (const [label, validate] of validations) {
 	const path = REQUIRED_FILES[label];
-	const result = readRequiredFile(label, path);
+	const result =
+		label === "prValidator"
+			? readPrValidatorContractSource()
+			: readRequiredFile(label, path);
 	errors.push(...result.errors);
 	if (result.errors.length === 0) {
 		errors.push(...validate(result.content));

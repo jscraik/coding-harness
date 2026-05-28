@@ -1,0 +1,127 @@
+{
+	"schemaVersion": "slice-intent/v1",
+	"goal": "codex-runtime-evidence-verifier-cockpit",
+	"lifecycleUnit": "PU-021-gap-003-public-packet-schemas",
+	"createdAt": "2026-05-27T08:10:00Z",
+	"headShaAtIntent": "29ac20979f21bc178358779e0bc50d8ddc0eee75",
+	"status": "intent_reviewed_pass",
+	"objective": "Close GAP-003 by adding public JSON Schema contracts, examples, blocker metadata for not-yet-emitted packets, and parity validation for runtime cockpit packet surfaces without changing runtime behavior.",
+	"auditGapIds": ["GAP-003"],
+	"evidenceBasis": [
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md#GAP-003",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#audit-gap-enforcement-addendum",
+		"src/lib/runtime/runtime-card.ts",
+		"src/lib/decision/harness-decision.ts",
+		"src/lib/review-state/types.ts",
+		"src/lib/external-state/types.ts",
+		"src/lib/delivery-truth/types.ts",
+		"artifacts/reviews/pu-021-gap-003-public-packet-schemas-intent-adversarial.md",
+		"artifacts/reviews/pu-021-gap-003-public-packet-schemas-intent-agent-native.md",
+		"artifacts/reviews/pu-021-gap-003-public-packet-schemas-intent-best-practices.md"
+	],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/research/evidence-patterns.json",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
+	],
+	"allowedFiles": [
+		"contracts/runtime-card.schema.json",
+		"contracts/harness-decision.schema.json",
+		"contracts/review-state.schema.json",
+		"contracts/external-state-snapshot.schema.json",
+		"contracts/delivery-truth.schema.json",
+		"contracts/decision-request.schema.json",
+		"contracts/session-context.schema.json",
+		"contracts/evidence-receipt.schema.json",
+		"contracts/runtime-packet-schemas.manifest.json",
+		"contracts/examples/runtime-card.example.json",
+		"contracts/examples/harness-decision.example.json",
+		"contracts/examples/review-state.example.json",
+		"contracts/examples/external-state-snapshot.example.json",
+		"contracts/examples/delivery-truth.example.json",
+		"contracts/examples/evidence-receipt.example.json",
+		"contracts/examples/decision-request.example.json",
+		"contracts/examples/session-context.example.json",
+		"contracts/examples/invalid/runtime-packet-schema-version-drift.example.json",
+		"scripts/validate-runtime-packet-schemas.cjs",
+		"src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx",
+		".harness/implementation-notes/implementation-notes.html",
+		"artifacts/reviews/pu-021-gap-003-public-packet-schemas-*.md"
+	],
+	"forbiddenFiles": [
+		"package.json",
+		"pnpm-lock.yaml",
+		"src/lib/runtime/**",
+		"src/lib/decision/**",
+		"src/lib/review-state/**",
+		"src/lib/external-state/**",
+		"src/lib/delivery-truth/**",
+		"src/commands/**"
+	],
+	"assumptions": [
+		"JSON Schema Draft 2020-12 is sufficient for public contract publication.",
+		"Evidence-receipt/v1 is admitted as a shared schema dependency because review-state, external-state, runtime-card, and delivery-truth packets reference receipt-backed evidence.",
+		"Decision-request/v1 and session-context/v1 are not yet emitted production packets; this slice may publish their intended schema examples and manifest entries only when the manifest marks their runtime status as not_yet_emitted and points to GAP-005 or GAP-004 as the implementation owner.",
+		"The first slice should publish schemas for the packet shapes and add a repo-owned parity validator without adding a new dependency.",
+		"Runtime behavior, CLI output behavior, and closeout authority remain unchanged in this slice."
+	],
+	"nonGoals": [
+		"Do not wire schema validation into production command execution yet.",
+		"Do not install AJV or another schema validator in this slice.",
+		"Do not redesign existing TypeScript packet interfaces.",
+		"Do not claim broad external consumer compatibility beyond the published schema and fixture parity checks."
+	],
+	"implementationApproach": [
+		"Add JSON Schema files under contracts/ for evidence-receipt/v1 plus the GAP-003 packet surfaces: runtime-card/v1, harness-decision/v1, review-state/v1, external-state-snapshot/v1, delivery-truth/v1, decision-request/v1, and session-context/v1.",
+		"Add small example fixtures for each public packet shape under contracts/examples/.",
+		"Add a manifest mapping schemaVersion to schema path, example path, owning TypeScript source when present, runtime status, and blocker owner when not yet emitted.",
+		"Add a dependency-free validator script that verifies manifest entries, schema const values, required example fields, schemaVersion alignment, not-yet-emitted blocker metadata, and the existing TypeScript validators for packet types that already expose validators.",
+		"Add focused tests for the validator script, including a negative drift fixture."
+	],
+	"validationGates": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-021-gap-003-public-packet-schemas-intent.json",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"pnpm exec biome check contracts/runtime-card.schema.json contracts/harness-decision.schema.json contracts/review-state.schema.json contracts/external-state-snapshot.schema.json contracts/delivery-truth.schema.json contracts/decision-request.schema.json contracts/session-context.schema.json contracts/evidence-receipt.schema.json contracts/runtime-packet-schemas.manifest.json contracts/examples/runtime-card.example.json contracts/examples/harness-decision.example.json contracts/examples/review-state.example.json contracts/examples/external-state-snapshot.example.json contracts/examples/delivery-truth.example.json contracts/examples/evidence-receipt.example.json contracts/examples/decision-request.example.json contracts/examples/session-context.example.json contracts/examples/invalid/runtime-packet-schema-version-drift.example.json scripts/validate-runtime-packet-schemas.cjs src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"git diff --check -- contracts/runtime-card.schema.json contracts/harness-decision.schema.json contracts/review-state.schema.json contracts/external-state-snapshot.schema.json contracts/delivery-truth.schema.json contracts/decision-request.schema.json contracts/session-context.schema.json contracts/evidence-receipt.schema.json contracts/runtime-packet-schemas.manifest.json contracts/examples/runtime-card.example.json contracts/examples/harness-decision.example.json contracts/examples/review-state.example.json contracts/examples/external-state-snapshot.example.json contracts/examples/delivery-truth.example.json contracts/examples/evidence-receipt.example.json contracts/examples/decision-request.example.json contracts/examples/session-context.example.json contracts/examples/invalid/runtime-packet-schema-version-drift.example.json scripts/validate-runtime-packet-schemas.cjs src/dev/validate-runtime-packet-schemas-script.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-021-gap-003-public-packet-schemas-intent.json artifacts/reviews/pu-021-gap-003-public-packet-schemas-intent-adversarial.md artifacts/reviews/pu-021-gap-003-public-packet-schemas-intent-agent-native.md artifacts/reviews/pu-021-gap-003-public-packet-schemas-intent-best-practices.md",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+	],
+	"reviewerRoles": [
+		"adversarial-reviewer",
+		"agent-native-reviewer",
+		"best-practices-researcher"
+	],
+	"skillLensChecks": [
+		"improve-codebase-architecture",
+		"simplify",
+		"unslopify",
+		"he-code-review",
+		"testing"
+	],
+	"stopConditions": [
+		"Existing packet TypeScript interfaces are found to contradict the proposed public schema.",
+		"The validator would need a new package dependency or production runtime behavior change to prove useful.",
+		"Schema publication would falsely imply production enforcement or external-state freshness proof.",
+		"Decision-request or session-context schema examples cannot be marked with explicit not-yet-emitted ownership tied to GAP-005/GAP-004.",
+		"Allowed files collide with unrelated dirty worktree changes that cannot be separated safely."
+	],
+	"rollbackPath": [
+		"Remove the added contracts/* schema files, contracts/examples/* fixtures, runtime packet schema manifest, validator script, and validator test.",
+		"Remove the PU-021 receipt/state/implementation-notes updates.",
+		"Leave earlier runtime packet implementations untouched."
+	],
+	"acceptanceCriteria": [
+		"All targeted public packet schema files exist under contracts/ with Draft 2020-12 metadata and exact schemaVersion consts.",
+		"Decision-request/v1 and session-context/v1 are either schema-backed with not-yet-emitted blocker metadata or explicitly recorded as blocked by GAP-005/GAP-004 ownership.",
+		"The manifest maps every targeted schemaVersion to its schema, example fixture, owning TypeScript source when present, and runtime status.",
+		"The validator fails on schema/example version drift and passes against the checked-in schemas and examples.",
+		"Existing TypeScript validators are used as parity checks where available.",
+		"Goal receipts record GAP-003 adoption with current audit hash and local validation evidence.",
+		"No production runtime source, CLI command, package manifest, or lockfile changes are included in this slice."
+	]
+}

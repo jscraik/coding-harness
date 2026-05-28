@@ -1,0 +1,83 @@
+{
+	"schemaVersion": "tool-exposure-snapshot/v1",
+	"generatedAt": "2026-05-28T10:15:00Z",
+	"producer": "codex-runtime-tool-exposure",
+	"runtimeStatus": "not_yet_emitted",
+	"evidenceUse": "orientation",
+	"evidenceRef": "tool-exposure://turn-456",
+	"sandboxMode": "workspace-write",
+	"approvalPolicy": "auto_review",
+	"networkAccess": "restricted",
+	"writableRootCount": 4,
+	"toolClasses": [
+		{
+			"className": "shell",
+			"statusCounts": {
+				"visible": 6,
+				"deferred": 0,
+				"hidden": 0,
+				"unavailable": 0,
+				"notAttempted": 0,
+				"claimFailed": 0
+			},
+			"keyToolNames": ["exec_command", "apply_patch", "write_stdin"],
+			"originalKeyToolNameCount": 3,
+			"namesTruncated": false,
+			"failureClass": null
+		},
+		{
+			"className": "network",
+			"statusCounts": {
+				"visible": 0,
+				"deferred": 1,
+				"hidden": 0,
+				"unavailable": 0,
+				"notAttempted": 0,
+				"claimFailed": 0
+			},
+			"keyToolNames": ["request_permissions"],
+			"originalKeyToolNameCount": 1,
+			"namesTruncated": false,
+			"failureClass": null
+		},
+		{
+			"className": "mcp",
+			"statusCounts": {
+				"visible": 2,
+				"deferred": 0,
+				"hidden": 1,
+				"unavailable": 1,
+				"notAttempted": 0,
+				"claimFailed": 0
+			},
+			"keyToolNames": ["github", "linear"],
+			"originalKeyToolNameCount": 2,
+			"namesTruncated": false,
+			"failureClass": "mcp_server_unavailable"
+		}
+	],
+	"blockedPermissionAttempts": [
+		{
+			"attemptId": "permission-attempt-1",
+			"permissionKind": "network",
+			"reason": "approval_required",
+			"evidenceRef": "permission://network-request-1",
+			"failureClass": "permission_profile_restricted"
+		}
+	],
+	"summary": {
+		"totalToolClassCount": 3,
+		"visible": 8,
+		"deferred": 1,
+		"hidden": 1,
+		"unavailable": 1,
+		"notAttempted": 0,
+		"claimFailed": 0,
+		"blockedPermissionAttemptCount": 1,
+		"writableRootCount": 4,
+		"keyToolNameCount": 6,
+		"originalKeyToolNameCount": 6,
+		"namesTruncated": false
+	},
+	"blockedBy": "runtime-producer-not-wired"
+}

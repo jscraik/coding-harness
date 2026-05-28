@@ -1,0 +1,78 @@
+{
+	"schemaVersion": "session-context/v1",
+	"generatedAt": "2026-05-27T09:00:00Z",
+	"producer": "harness:session-context",
+	"status": "warn",
+	"evidenceUse": "orientation",
+	"runtimeStatus": "emitted",
+	"repository": "jscraik/coding-harness",
+	"repoRoot": "<REPO_ROOT>",
+	"issueRef": "JSC-363",
+	"branch": "codex/jsc-363-runtime-evidence-cockpit-refresh",
+	"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	"changedFiles": [
+		{
+			"path": "src/lib/session-context/collector.ts",
+			"status": "M"
+		}
+	],
+	"activeArtifacts": [
+		{
+			"path": ".harness/active-artifacts.md",
+			"status": "pass",
+			"source": "active-artifacts",
+			"sizeBytes": 128
+		}
+	],
+	"runtimeCards": [],
+	"reviewArtifacts": [
+		{
+			"path": "artifacts/reviews/pu-022-gap-004-session-context-intent-rereview-adversarial.md",
+			"status": "pass",
+			"source": "review-artifact",
+			"sizeBytes": 3865
+		}
+	],
+	"sessionEvidence": [
+		{
+			"path": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			"status": "pass",
+			"source": "session-evidence",
+			"sizeBytes": 4096
+		}
+	],
+	"staleState": [
+		{
+			"surface": "runtime_card",
+			"freshness": "missing",
+			"reason": "No local runtime-card artifact was discovered in the allow-listed repo-local paths."
+		},
+		{
+			"surface": "external_state",
+			"freshness": "not_applicable",
+			"reason": "session-context/v1 is local orientation only and does not refresh PR, CI, review, or tracker state."
+		}
+	],
+	"nextTraversalHints": [
+		{
+			"label": "agent cockpit",
+			"command": "cd '<REPO_ROOT>' && node --import tsx src/cli.ts next --json",
+			"reason": "Ask the narrow cockpit for the next safe command before acting."
+		},
+		{
+			"label": "runtime card",
+			"command": "node --import tsx src/cli.ts runtime-card --json --repo '<REPO_ROOT>'",
+			"reason": "Refresh the runtime-card summary when local runtime evidence is missing or stale."
+		},
+		{
+			"label": "agent readiness",
+			"command": "node --import tsx src/cli.ts agent-readiness --json --repo-root '<REPO_ROOT>'",
+			"reason": "Check instruction, artifact, capability, approval, traceability, and context-health surfaces."
+		},
+		{
+			"label": "orientation rail",
+			"command": "cd '<REPO_ROOT>' && node --import tsx src/cli.ts commands --json --for-agent --mode orient",
+			"reason": "List the compact orient-mode command rail available to agents."
+		}
+	]
+}

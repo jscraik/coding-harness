@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal GitHub workflow placeholders.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { validatePrTemplateBody } from "../pr-template-validator.js";
@@ -6,6 +7,7 @@ import {
 	renderPrekConfigTemplate,
 	renderPullRequestTemplate,
 } from "./scaffold-doc-templates.js";
+import { REQUIRED_WORK_FIELDS } from "../pr-template-validator-rules.js";
 
 const requiredWorkPerformedLabels = [
 	"Plan IDs",
@@ -22,6 +24,7 @@ const requiredWorkPerformedLabels = [
 	"Acceptance trace",
 	"Validation evidence",
 	"Review artifacts",
+	"Durable evidence map",
 	"Runtime impact",
 	"CodeRabbit mode coverage",
 	"Closeout state",
@@ -62,6 +65,10 @@ const completedWorkPerformedValues = new Map<string, string>([
 		"Command: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts -> pass.",
 	],
 	["Review artifacts", "Codex review artifact captured in test fixture."],
+	[
+		"Durable evidence map",
+		"n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
+	],
 	["Runtime impact", "CI-only."],
 	["CodeRabbit mode coverage", "validation."],
 	[
@@ -194,6 +201,9 @@ describe("document scaffold templates", () => {
 		for (const label of requiredWorkPerformedLabels) {
 			expect(template).toContain(`- ${label}:`);
 		}
+		for (const field of REQUIRED_WORK_FIELDS) {
+			expect(template).toContain(`- ${field.label}: ${field.placeholder}`);
+		}
 	});
 
 	it("renders a pull request template that can satisfy the validator contract", () => {
@@ -209,15 +219,22 @@ describe("document scaffold templates", () => {
 		).toEqual([]);
 	});
 
-	it("keeps the generated PR pipeline field checks aligned with the PR template contract", () => {
+	it("keeps the generated PR pipeline delegated to the shared PR template gate", () => {
 		const pipelineTemplate = readFileSync(
 			"src/templates/pr-pipeline.yml",
 			"utf8",
 		);
 
-		for (const label of requiredWorkPerformedLabels) {
-			expect(pipelineTemplate).toContain(`label: '${label}'`);
-		}
+		expect(pipelineTemplate).toContain(
+			"node --import tsx src/cli.ts pr-template-gate --json",
+		);
+		expect(pipelineTemplate).toContain(
+			"PR_TEMPLATE_BODY: ${{ github.event.pull_request.body }}",
+		);
+		expect(pipelineTemplate).not.toContain("const requiredWorkFields = [");
+		expect(pipelineTemplate).not.toContain(
+			"const body = context.payload.pull_request?.body",
+		);
 	});
 
 	it("renders prek hook config from the required tooling baseline", () => {

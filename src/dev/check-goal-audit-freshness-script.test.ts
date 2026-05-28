@@ -1,0 +1,263 @@
+import {
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	utimesSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { afterEach, describe, expect, it } from "vitest";
+
+const SCRIPT_PATH = join(
+	process.cwd(),
+	"scripts/check-goal-audit-freshness.py",
+);
+const GOAL_DIR = "docs/goals/codex-runtime-evidence-verifier-cockpit";
+const AUDIT_PATH =
+	".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md";
+
+const tempRoots: string[] = [];
+const tempRootHeads = new Map<string, string>();
+
+function runGit(root: string, args: string[]) {
+	const result = spawnSync("git", args, {
+		cwd: root,
+		encoding: "utf8",
+		env: {
+			...process.env,
+			GIT_AUTHOR_EMAIL: "codex@example.test",
+			GIT_AUTHOR_NAME: "Codex Test",
+			GIT_COMMITTER_EMAIL: "codex@example.test",
+			GIT_COMMITTER_NAME: "Codex Test",
+		},
+	});
+	if (result.status !== 0) {
+		throw new Error(result.stderr || result.stdout);
+	}
+	return result.stdout.trim();
+}
+
+function createTempRoot(prefix: string) {
+	const root = mkdtempSync(join(tmpdir(), prefix));
+	tempRoots.push(root);
+	mkdirSync(join(root, GOAL_DIR), { recursive: true });
+	mkdirSync(join(root, AUDIT_PATH, ".."), { recursive: true });
+	runGit(root, ["init", "-q"]);
+	runGit(root, ["commit", "--allow-empty", "-m", "baseline"]);
+	tempRootHeads.set(root, runGit(root, ["rev-parse", "HEAD"]));
+	return root;
+}
+
+function sha256(content: string) {
+	return createHash("sha256").update(content).digest("hex");
+}
+
+function writeAudit(root: string, content: string, mtime: Date) {
+	const path = join(root, AUDIT_PATH);
+	writeFileSync(path, content);
+	utimesSync(path, mtime, mtime);
+	return path;
+}
+
+function writeReceipts(root: string, receipts: unknown[]) {
+	const path = join(root, GOAL_DIR, "receipts.jsonl");
+	writeFileSync(
+		path,
+		receipts.map((receipt) => JSON.stringify(receipt)).join("\n"),
+	);
+	return path;
+}
+
+function receipt(root: string, overrides: Record<string, unknown> = {}) {
+	const content = "audit content";
+	const headSha = tempRootHeads.get(root);
+	if (!headSha) throw new Error(`missing test repository head for ${root}`);
+	return {
+		id: "R072",
+		head_sha: headSha,
+		audit_sources_checked: [
+			{
+				path: AUDIT_PATH,
+				sha256: sha256(content),
+				checked_at: "2026-05-27T01:10:00Z",
+				head_sha: headSha,
+				...overrides,
+			},
+		],
+	};
+}
+
+function runValidator(root: string, extraArgs: string[] = []) {
+	return spawnSync(
+		"python3",
+		[SCRIPT_PATH, join(root, GOAL_DIR), "--repo", root, ...extraArgs],
+		{
+			encoding: "utf8",
+			env: {
+				...process.env,
+				PYTHONDONTWRITEBYTECODE: "1",
+			},
+		},
+	);
+}
+
+describe("check-goal-audit-freshness.py", () => {
+	afterEach(() => {
+		for (const root of tempRoots.splice(0)) {
+			rmSync(root, { force: true, recursive: true });
+			tempRootHeads.delete(root);
+		}
+	});
+
+	it("passes when the latest matching audit source records the current hash and checked_at after audit mtime", () => {
+		const root = createTempRoot("audit-freshness-pass-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [
+			{
+				id: "R071",
+				head_sha: tempRootHeads.get(root),
+				audit_sources_checked: [
+					{
+						path: AUDIT_PATH,
+						sha256: "0".repeat(64),
+						checked_at: "2026-05-27T00:00:00Z",
+						head_sha: tempRootHeads.get(root),
+					},
+				],
+			},
+			receipt(root),
+		]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain('"status": "pass"');
+		expect(result.stdout).toContain('"receipt_id": "R072"');
+	});
+
+	it("accepts uppercase hex commit SHAs as the same current head", () => {
+		const root = createTempRoot("audit-freshness-uppercase-head-");
+		const headSha = tempRootHeads.get(root);
+		if (!headSha) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const storedReceipt = receipt(root);
+		storedReceipt.head_sha = headSha.toUpperCase();
+		const [storedSource] = storedReceipt.audit_sources_checked;
+		if (!storedSource) throw new Error("missing generated audit source");
+		storedSource.head_sha = headSha.toUpperCase();
+		writeReceipts(root, [storedReceipt]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({ head_sha: headSha });
+	});
+
+	it("fails when the current audit content no longer matches the latest relevant receipt hash", () => {
+		const root = createTempRoot("audit-freshness-stale-hash-");
+		writeAudit(root, "updated audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [receipt(root)]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("audit sha256 is stale");
+	});
+
+	it("fails when matching content is acknowledged before the current audit timestamp", () => {
+		const root = createTempRoot("audit-freshness-stale-timestamp-");
+		writeAudit(root, "audit content", new Date("2026-05-27T02:00:00Z"));
+		writeReceipts(root, [receipt(root)]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"checked_at is older than the current audit file timestamp",
+		);
+	});
+
+	it("fails when no receipt mentions the governed audit path", () => {
+		const root = createTempRoot("audit-freshness-missing-source-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [
+			{
+				id: "R072",
+				head_sha: tempRootHeads.get(root),
+				audit_sources_checked: [
+					{
+						path: ".harness/research/audits/other.md",
+						sha256: sha256("audit content"),
+						checked_at: "2026-05-27T01:10:00Z",
+						head_sha: tempRootHeads.get(root),
+					},
+				],
+			},
+		]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("no audit_sources_checked entry found");
+	});
+
+	it("fails when required-mode validation is pointed at an alternate audit path", () => {
+		const root = createTempRoot("audit-freshness-alternate-path-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [receipt(root)]);
+
+		const result = runValidator(root, [
+			"--audit",
+			".harness/research/audits/other.md",
+		]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("--audit must be the governed audit path");
+	});
+
+	it("fails when receipt source paths use non-canonical syntax", () => {
+		const root = createTempRoot("audit-freshness-noncanonical-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [receipt(root, { path: `./${AUDIT_PATH}` })]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("must be a canonical repo-relative path");
+	});
+
+	it("fails when the audit source omits required provenance fields", () => {
+		const root = createTempRoot("audit-freshness-missing-fields-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const incomplete = receipt(root);
+		delete (incomplete.audit_sources_checked[0] as Record<string, unknown>)
+			.head_sha;
+		writeReceipts(root, [incomplete]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("missing required field(s): head_sha");
+	});
+
+	it("fails when the recorded evidence head is not reachable from repository history", () => {
+		const root = createTempRoot("audit-freshness-unreachable-head-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const staleReceipt = receipt(root);
+		staleReceipt.head_sha = "f".repeat(40);
+		const staleSource = staleReceipt.audit_sources_checked[0];
+		if (!staleSource) throw new Error("missing test audit source");
+		staleSource.head_sha = "f".repeat(40);
+		writeReceipts(root, [staleReceipt]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"must be reachable from current repository HEAD",
+		);
+	});
+});

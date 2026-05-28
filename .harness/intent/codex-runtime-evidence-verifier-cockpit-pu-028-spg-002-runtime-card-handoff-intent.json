@@ -1,0 +1,99 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-028-spg-002-runtime-card-handoff",
+	"createdAt": "2026-05-27T23:10:00Z",
+	"headSha": "accd86624205ca209fad9176dfb094f3c16f4112",
+	"goal": "Add a durable runtime-card handoff receipt that binds a runtime-card artifact to its paired runtime-evidence-bundle artifact with freshness, head SHA, expiry, and repository-contained file proof.",
+	"lifecycleUnit": "PU-028-spg-002-runtime-card-handoff",
+	"ownedAcceptanceIds": ["SPG-002", "SA-017", "SA-018"],
+	"deepModuleBoundary": {
+		"primaryModule": "src/lib/runtime runtime-card handoff support plus runtime packet contracts",
+		"allowedFiles": [
+			"src/lib/runtime/runtime-card-handoff.ts",
+			"src/lib/runtime/runtime-card-handoff.test.ts",
+			"src/commands/runtime-card.ts",
+			"src/commands/runtime-card-args.ts",
+			"src/commands/runtime-card-options.ts",
+			"src/commands/runtime-card.test.ts",
+			"contracts/runtime-card-handoff.schema.json",
+			"contracts/examples/runtime-card-handoff.example.json",
+			"contracts/runtime-packet-schemas.manifest.json",
+			"src/dev/validate-runtime-packet-schemas-script.test.ts",
+			".harness/active-artifacts.md",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-028-spg-002-runtime-card-handoff-intent.json"
+		],
+		"forbiddenFiles": [
+			"/Users/jamiecraik/dev/codex/**",
+			"public closeout authority outside runtime-card handoff output",
+			"delivery-truth claim pass rules",
+			"PR merge-readiness logic",
+			"raw prompts, transcripts, secrets, or token values",
+			"absolute or repo-escaping artifact paths"
+		]
+	},
+	"nonGoals": [
+		"Do not make runtime-card handoff evidence sufficient for closeout, CI, review-thread, Linear, merge-readiness, or goal-completion claims.",
+		"Do not introduce a second runtime-card command family or broad cockpit surface.",
+		"Do not persist raw runtime-card event streams, prompts, transcripts, or secret-bearing environment data.",
+		"Do not mutate Codex source; Codex remains read-only context for this slice."
+	],
+	"implementationApproach": [
+		"Define runtime-card-handoff/v1 as a compact receipt over an already-written runtime-card/v1 artifact and its paired runtime-evidence-bundle/v1 artifact.",
+		"Add repository-contained path, size, sha256, freshness, generatedAt, expiresAt, headSha, sourceRefs, provenanceRefs, shared runtime identity, evidenceUse, and blocker fields so future sessions can classify stale or missing handoffs deterministically.",
+		"Require the runtime-card artifact and runtime-evidence-bundle artifact to share the same issue key, head SHA, generated timestamp, and producer/run binding before the handoff can be written; reject same-head but cross-run pairings.",
+		"Expose the receipt through the existing runtime-card command as an optional --handoff-out path that requires both --out and --evidence-out, keeping runtime-card as the narrow cockpit producer.",
+		"Publish JSON Schema, an example, and runtime packet manifest validation for the new handoff receipt.",
+		"Update stale goal routing metadata so the current active cockpit no longer tells the next agent to push an already-pushed PU-027 slice."
+	],
+	"riskControls": [
+		"Runtime-card handoff evidenceUse must remain orientation or audit_trail only.",
+		"The handoff writer must reject repo-escaping paths through the existing repo-runtime-artifact helpers.",
+		"The handoff must record both file size and sha256 so prose-only artifact claims cannot pass as durable proof.",
+		"The handoff must include source-reference/provenance fields that point back to the runtime-card and runtime-evidence-bundle sources rather than relying on path and checksum alone.",
+		"The handoff must record expiry and headSha so stale cards can orient future work without supporting closeout claims."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-028-spg-002-runtime-card-handoff-intent.json >/dev/null",
+		"pnpm vitest run src/lib/runtime/runtime-card-handoff.test.ts src/commands/runtime-card.test.ts",
+		"Negative test: reject a handoff where runtime-card and runtime-evidence-bundle artifacts have the same head SHA but different generatedAt or producer/run binding.",
+		"Negative test: reject any handoff or schema example that attempts evidenceUse=claim_support or otherwise presents the handoff as closeout authority.",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"node --import tsx src/cli.ts runtime-card --json --repo . --issue JSC-363 --out artifacts/runtime-card-handoff/runtime-card.json --evidence-out artifacts/runtime-card-handoff/runtime-evidence-bundle.json --handoff-out artifacts/runtime-card-handoff/handoff.json",
+		"pnpm exec biome check src/lib/runtime/runtime-card-handoff.ts src/lib/runtime/runtime-card-handoff.test.ts src/commands/runtime-card.ts src/commands/runtime-card-args.ts src/commands/runtime-card-options.ts src/commands/runtime-card.test.ts contracts/runtime-card-handoff.schema.json contracts/examples/runtime-card-handoff.example.json contracts/runtime-packet-schemas.manifest.json src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"git diff --check -- src/lib/runtime/runtime-card-handoff.ts src/lib/runtime/runtime-card-handoff.test.ts src/commands/runtime-card.ts src/commands/runtime-card-args.ts src/commands/runtime-card-options.ts src/commands/runtime-card.test.ts contracts/runtime-card-handoff.schema.json contracts/examples/runtime-card-handoff.example.json contracts/runtime-packet-schemas.manifest.json src/dev/validate-runtime-packet-schemas-script.test.ts .harness/active-artifacts.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-028-spg-002-runtime-card-handoff-intent.json"
+	],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+	],
+	"reviewStatus": {
+		"status": "intent_created_pending_review",
+		"requiredBeforeImplementation": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"requiredBeforeDone": [
+			"improve-codebase-architecture",
+			"simplify",
+			"unslopify",
+			"he-code-review",
+			"testing",
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		]
+	},
+	"rollback": [
+		"Remove runtime-card-handoff schema/example/manifest entry.",
+		"Remove runtime-card handoff helper and tests.",
+		"Remove --handoff-out parser and CLI writer support.",
+		"Delete generated artifacts/runtime-card-handoff sample outputs if produced locally."
+	]
+}

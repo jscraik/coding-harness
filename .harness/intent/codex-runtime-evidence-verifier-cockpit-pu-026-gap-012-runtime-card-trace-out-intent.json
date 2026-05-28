@@ -1,0 +1,140 @@
+{
+	"schemaVersion": "harness-implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-026-gap-012-runtime-card-trace-out",
+	"createdAt": "2026-05-27T13:25:51Z",
+	"goal": "Implement the first GAP-012 replayable trace evidence slice for runtime-card without broadening closeout authority.",
+	"objective": "Add an opt-in runtime-card --trace-out lane that writes replayable JSONL event evidence using the existing agent-run-event/v1 substrate, while keeping runtime-card advisory and artifact-backed.",
+	"evidenceBasis": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#gap-012",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md#gap-012-replayable-trace-evidence-is-not-the-default-runtime-product",
+		"docs/architecture/agent-run-records.md",
+		"contracts/agent-run-event.schema.json",
+		"src/lib/contract/run-records.ts",
+		"src/commands/runtime-card.ts"
+	],
+	"feedbackSignal": "GAP-012 says significant harness runs lack default replayable JSONL/session evidence, making final state claims hard to replay or debug.",
+	"rootOperationalFailure": "runtime-card can summarize current state and write artifacts, but it does not currently emit an event-level trace artifact that records command start, verifier/projection status, artifact writes, final status, stop reason, or failure classification.",
+	"failureCategories": [
+		"weak_observability",
+		"lack_of_verification",
+		"traceability",
+		"runtime_ambiguity"
+	],
+	"plannedDurableImprovement": "Introduce a small trace writer deep module and wire runtime-card --trace-out to append hash-chained agent-run-event/v1 JSONL records to the canonical artifacts/agent-runs/<runId>/events.jsonl stream for start, evidence/projection, artifact writes when present, and final status or error.",
+	"allowedFiles": [
+		"src/lib/runtime-trace/**",
+		"src/commands/runtime-card.ts",
+		"src/commands/runtime-card-args.ts",
+		"src/commands/runtime-card.test.ts",
+		"contracts/agent-run-event.schema.json",
+		"docs/architecture/agent-run-records.md",
+		"docs/cli-reference.md",
+		"ARCHITECTURE.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"artifacts/reviews/pu-026-gap-012-runtime-card-trace-out-*.md"
+	],
+	"forbiddenFiles": [
+		"/Users/jamiecraik/dev/codex/**",
+		"src/lib/project-brain/**",
+		".harness/research/**",
+		".harness/media/**",
+		"unrelated generated, cache, or runtime output artifacts"
+	],
+	"nonGoals": [
+		"Do not make trace output mandatory for every command in this slice.",
+		"Do not add trace output to pr-closeout or verify-work in this slice unless the intent is revised and re-reviewed.",
+		"Do not change runtime-card recommendation behavior or make traces closeout proof.",
+		"Do not persist prompts, raw command output, secrets, environment values, or bulky session transcripts.",
+		"Do not claim GAP-012 is fully closed until pr-closeout, verify-work style commands, and default-emission policy are implemented or explicitly accepted as follow-ups by Judge/PM."
+	],
+	"implementationApproach": [
+		"Create a pure runtime-trace writer that accepts a repo root, a repo-relative canonical trace-out events path, and event descriptors, then derives the run id from artifacts/agent-runs/<runId>/events.jsonl.",
+		"Constrain --trace-out to the canonical run-record event path pattern artifacts/agent-runs/<runId>/events.jsonl; reject absolute paths, path traversal, non-events.jsonl basenames, and non-canonical directories as usage errors with exit 2 and no trace emission instead of writing undiscoverable traces.",
+		"Use the existing appendCanonicalEvent run-record primitive so event writes inherit temp-copy plus append plus atomic rename semantics and hash-chain validation.",
+		"Write or refresh the sibling terminal manifest at artifacts/agent-runs/<runId>/manifest.json after runtime-card completes or fails after argument parsing so loadRunRecordBundle can replay the canonical run record end to end.",
+		"Emit line-delimited agent-run-event/v1 records with deterministic event types that fit the existing schema: phase for start/final status, precondition for input/evidence classification, artifact_write for --out/--evidence-out writes, error for failures, and degraded_mode when local evidence is advisory or external state remains unrefreshed.",
+		"Validate replayability by loading the emitted canonical run-record event stream with the existing event parser so every line validates against agent-run-event/v1 and prevEventHash/eventHash continuity.",
+		"Record stopReason, exitCode, command, context, evidencePath presence, artifact paths, and sanitized blocker/error summaries in payloads.",
+		"Update runtime-card CLI parsing and usage to accept --trace-out.",
+		"Add tests proving successful trace emission, failure trace emission, repo-bound path rejection, hash-chain continuity, and no trace file on parse-only usage errors.",
+		"Document the opt-in trace lane as advisory replay evidence, not delivery proof.",
+		"Record goal receipt/state updates that keep local trace evidence separate from push/PR/CI/review/Linear readiness."
+	],
+	"expectedOutputContract": {
+		"traceFile": "repo-relative canonical JSONL file supplied by --trace-out, constrained to artifacts/agent-runs/<runId>/events.jsonl",
+		"manifestFile": "sibling terminal manifest at artifacts/agent-runs/<runId>/manifest.json",
+		"runIdSource": "derived from the parent directory name in artifacts/agent-runs/<runId>/events.jsonl",
+		"schemaVersion": "agent-run-event/v1",
+		"events": [
+			"phase:started for command start",
+			"precondition:passed|blocked for evidence/projection inputs and path validation",
+			"degraded_mode:passed when runtime-card runs from local/advisory evidence without live external refresh",
+			"artifact_write:passed when --out or --evidence-out writes",
+			"phase:completed for successful runtime-card completion",
+			"error:failed plus phase:failed when runtime-card reaches runtime failure after argument parsing"
+		],
+		"eventMapping": {
+			"command_start": "phase:started severity=info",
+			"input_evidence_available": "precondition:passed severity=info",
+			"input_evidence_missing_or_unreadable": "precondition:blocked severity=warn",
+			"local_or_unrefreshed_external_state": "degraded_mode:passed severity=warn",
+			"runtime_card_written": "artifact_write:passed severity=info",
+			"runtime_evidence_written": "artifact_write:passed severity=info",
+			"success": "phase:completed severity=info",
+			"runtime_failure": "error:failed severity=error followed by phase:failed severity=error"
+		},
+		"hashChain": "Every event includes eventHash; every event after the first includes prevEventHash matching the prior eventHash.",
+		"invalidTraceOutHandling": "absolute, escaping, non-canonical, or non-events.jsonl --trace-out values are usage errors with exit 2 and no trace emission",
+		"claimSupport": "orientation_or_audit_trail_only"
+	},
+	"validationGates": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-026-gap-012-runtime-card-trace-out-intent.json",
+		"pnpm vitest run src/commands/runtime-card.test.ts src/lib/runtime-trace/*.test.ts",
+		"node --import tsx src/cli.ts runtime-card --repo . --context local --trace-out artifacts/agent-runs/runtime-card-trace-test/events.jsonl --json",
+		"node --import tsx -e \"import { loadRunRecordBundle } from './src/lib/contract/run-records.ts'; loadRunRecordBundle({ cwd: process.cwd(), runId: 'runtime-card-trace-test' });\"",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm exec biome check src/lib/runtime-trace src/commands/runtime-card.ts src/commands/runtime-card-args.ts src/commands/runtime-card.test.ts docs/cli-reference.md ARCHITECTURE.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-026-gap-012-runtime-card-trace-out-intent.json",
+		"git diff --check -- src/lib/runtime-trace src/commands/runtime-card.ts src/commands/runtime-card-args.ts src/commands/runtime-card.test.ts docs/cli-reference.md ARCHITECTURE.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-026-gap-012-runtime-card-trace-out-intent.json",
+		"jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+	],
+	"reviewerRoles": [
+		"adversarial-reviewer",
+		"agent-native-reviewer",
+		"best-practices-researcher"
+	],
+	"skillLensChecks": [
+		"improve-codebase-architecture",
+		"simplify",
+		"unslopify",
+		"he-code-review",
+		"testing"
+	],
+	"acceptanceCriteria": [
+		"runtime-card accepts --trace-out only for canonical artifacts/agent-runs/<runId>/events.jsonl paths and writes discoverable JSONL trace evidence on successful execution.",
+		"runtime-card writes a sibling agent-run-manifest/v1 manifest so the emitted trace is replayable through canonical run-record loading, not only readable as a loose JSONL file.",
+		"runtime-card writes an error trace when execution reaches runtime failure after argument parsing.",
+		"runtime-card treats invalid --trace-out path values as usage errors with exit 2 and no trace emission.",
+		"Trace events validate against agent-run-event/v1 through the existing run-record parser and include status, severity, payload, eventHash, and hash-chain continuity.",
+		"Trace payloads include command, context, stopReason, exitCode, artifact refs where applicable, and sanitized error/blocker summaries without secrets or raw environment values.",
+		"Trace output remains opt-in and advisory; runtime-card does not treat trace presence as closeout, CI, review, Linear, or merge-readiness proof.",
+		"Trace-out paths cannot escape the repository root and cannot bypass canonical run-record discovery.",
+		"Documentation states this is the first GAP-012 runtime-card trace slice and does not close default trace emission for all significant commands.",
+		"Goal receipt records Project Brain inputs, audit freshness, validation evidence, reviewer artifacts, and branch-divergence blocker separately."
+	],
+	"riskControls": [
+		"Reuse agent-run-event/v1 instead of inventing a competing trace schema.",
+		"Reuse appendCanonicalEvent instead of implementing a second event append/hash-chain writer.",
+		"Keep the trace writer pure and small under a deep module.",
+		"Keep event payloads compact and redacted.",
+		"Do not write traces unless --trace-out is explicitly provided.",
+		"Preserve unrelated dirty and untracked worktree files."
+	],
+	"blockedConditions": [
+		"Existing agent-run-event/v1 schema cannot represent the required trace statuses without broad schema changes.",
+		"Repo-scoped trace-out path validation cannot be made deterministic.",
+		"Runtime-card tests cannot exercise both success and failure traces without brittle process-level shelling."
+	]
+}

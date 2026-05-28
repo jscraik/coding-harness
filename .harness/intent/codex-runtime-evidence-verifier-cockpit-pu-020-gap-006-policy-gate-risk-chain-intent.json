@@ -1,0 +1,150 @@
+{
+	"schemaVersion": "harness-slice-intent/v1",
+	"goal": "codex-runtime-evidence-verifier-cockpit",
+	"lifecycleUnit": "PU-020-GAP-006-policy-gate-risk-chain",
+	"createdAt": "2026-05-27T06:51:24Z",
+	"headSha": "29ac20979f21bc178358779e0bc50d8ddc0eee75",
+	"status": "ready_for_intent_review",
+	"objective": "Close GAP-006 by aligning the policy-gate risk chain with the stated safety floor: high-risk changes must fail closed under the governed contract/defaults instead of passing as warn-only, while medium-risk advisory behavior remains explicit and tested.",
+	"sourceArtifacts": {
+		"goal": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"state": "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"plan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+		"spec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+		"audit": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+		"activeArtifacts": ".harness/active-artifacts.md",
+		"securityGovernance": "docs/agents/06-security-and-governance.md"
+	},
+	"auditGapIds": ["GAP-006"],
+	"feedbackSignal": "The adopted evidence-led audit identifies a contradiction between the contract's human-mediated safety floor for high-risk changes and policy-gate chains that can classify high-risk files as warn/pass.",
+	"rootOperationalFailure": "High-risk policy behavior is partly encoded as prose in north-star/autonomy language while the executable policyChain can still pass high-risk work through a warning action.",
+	"failureCategory": "missing_guardrails",
+	"durableSystemImprovement": "Make the contract/default policy chain and policy-gate tests fail closed for high-risk files so the executable gate matches the stated safety boundary.",
+	"allowedFiles": [
+		"harness.contract.json",
+		"src/lib/contract/types-core.ts",
+		"src/commands/policy-gate.ts",
+		"src/commands/policy-gate.test.ts",
+		"src/lib/policy/policy-chain.ts",
+		"src/lib/output/normalise-policy-gate.ts",
+		"src/lib/contract/validator-core.ts",
+		"src/lib/contract/json-schema-core.ts",
+		"src/lib/contract/validator.test.ts",
+		"src/lib/contract/loader.test.ts",
+		"src/commands/contract.test.ts",
+		"test-fixtures/contract-block-pass.json",
+		"src/commands/init.test.ts",
+		"docs/agents/06-security-and-governance.md",
+		".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx",
+		".harness/implementation-notes/implementation-notes.html",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-020-gap-006-policy-gate-risk-chain-intent.json",
+		"artifacts/reviews/pu-020-gap-006-policy-gate-*"
+	],
+	"forbiddenFiles": [
+		"src/lib/decision/**",
+		"src/lib/pr-closeout/**",
+		"src/lib/runtime/**",
+		"src/lib/external-state/**",
+		"src/lib/review-state/**",
+		".github/**",
+		".circleci/**"
+	],
+	"scope": {
+		"inScope": [
+			"Change the governed repository contract policyChain so high maps to block and block maps to fail.",
+			"Change the default contract policyChain so newly scaffolded or omitted-policyChain contracts inherit high-risk fail-closed behavior.",
+			"Update focused policy-gate tests so high-risk files fail when no max-tier is supplied and when max-tier is high.",
+			"Preserve medium-risk warn/pass behavior when the contract explicitly allows medium warnings.",
+			"Add or update focused tests that prove low-risk and empty-file cases still pass.",
+			"Update security/governance documentation only where needed to state executable policy-gate behavior without broadening the slice."
+		],
+		"outOfScope": [
+			"Do not introduce decision-request/v1, approval ledgers, or tracked exception schemas in this slice; those belong to GAP-005 or a later exception-management slice.",
+			"Do not change PR closeout, delivery-truth, runtime-card, review-state, external-state, or harness next behavior.",
+			"Do not add network-backed human approval checks or mutate GitHub/Linear state.",
+			"Do not make medium-risk files fail unless the existing contract explicitly configures medium as block/fail.",
+			"Do not claim merge readiness or external-state freshness from local policy-gate validation."
+		]
+	},
+	"assumptions": [
+		"The narrowest safe implementation is contract/default policy-chain alignment plus policy-gate regression coverage, not a new approval system.",
+		"Existing contract validation intentionally permits warn/block/allow combinations, so this slice changes governed defaults and repository contract values rather than banning all warn-on-high configurations globally.",
+		"Medium-risk warn/pass is still acceptable because the audit calls out high-risk action approval drift and the north-star text permits low and medium-risk automation when deterministic evidence and rollback are clear.",
+		"A future tracked-exception slice can reintroduce high-risk pass-through only when an explicit owner-approved exception receipt exists."
+	],
+	"acceptanceCriteria": [
+		"harness.contract.json maps policyChain.tierToAction.high to block and policyChain.actionToVerdict.block to fail.",
+		"DEFAULT_POLICY_CHAIN maps high to block while preserving medium warn and low allow.",
+		"The omitted-policyChain fallback path is explicitly covered: a minimal contract such as test-fixtures/contract.json must inherit DEFAULT_POLICY_CHAIN and fail closed for high-risk files.",
+		"A high-risk path such as src/auth/login.ts produces passed=false, action=block, verdict=fail with no max-tier.",
+		"A high-risk path such as src/auth/login.ts produces passed=false, action=block, verdict=fail even when max-tier=high.",
+		"A high-risk path with max-tier=medium continues to fail with maxAllowed=medium and the violating file listed.",
+		"A medium-risk path such as src/lib/utils.ts continues to pass with action=warn and verdict=pass when max-tier=medium.",
+		"A low-risk test path and an empty file list continue to pass.",
+		"CLI JSON behavior returns exit code 1 for the governed high-risk case and exit code 0 for medium/low pass cases.",
+		"CLI JSON for policy-chain-blocked high-risk files distinguishes policy action blocking from max-tier threshold violations instead of reporting an unset maximum as if it were a configured threshold.",
+		"Max-tier violations fail closed with verdict=fail even if a custom contract attempts to remap policyChain.actionToVerdict.block to pass.",
+		"Contract validation and JSON schema reject actionToVerdict.block values other than fail.",
+		"This slice introduces no tracked-exception schema. High-risk pass-through remains unsupported; any future exception path must be linked to GAP-005 or a dedicated exception-management slice and must not be implied by warn/pass behavior.",
+		"Documentation does not imply high-risk changes are human-mediated while the executable contract still lets them pass as warn-only.",
+		"Goal-board validation still passes after the slice receipt is recorded."
+	],
+	"validationGates": [
+		"pnpm vitest run src/commands/policy-gate.test.ts",
+		"pnpm vitest run src/commands/policy-gate.test.ts -t omitted-policyChain",
+		"pnpm vitest run src/commands/policy-gate.test.ts -t block",
+		"pnpm vitest run src/lib/contract/validator.test.ts -t policyChain",
+		"pnpm vitest run src/commands/contract.test.ts -t policyChain",
+		"node --import tsx src/cli.ts policy-gate --contract harness.contract.json --files src/auth/login.ts --json",
+		"node --import tsx src/cli.ts policy-gate --contract harness.contract.json --files src/lib/utils.ts --max-tier medium --json",
+		"node_modules/.bin/biome check harness.contract.json src/lib/contract/types-core.ts src/lib/contract/validator-core.ts src/lib/contract/json-schema-core.ts src/lib/contract/validator.test.ts src/commands/contract.test.ts src/commands/policy-gate.ts src/commands/policy-gate.test.ts src/lib/output/normalise-policy-gate.ts test-fixtures/contract-block-pass.json docs/agents/06-security-and-governance.md .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-020-gap-006-policy-gate-risk-chain-intent.json",
+		"git diff --check -- harness.contract.json src/lib/contract/types-core.ts src/lib/contract/validator-core.ts src/lib/contract/json-schema-core.ts src/lib/contract/validator.test.ts src/commands/contract.test.ts src/commands/policy-gate.ts src/commands/policy-gate.test.ts src/lib/output/normalise-policy-gate.ts test-fixtures/contract-block-pass.json docs/agents/06-security-and-governance.md .harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx .harness/implementation-notes/implementation-notes.html docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-020-gap-006-policy-gate-risk-chain-intent.json",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+	],
+	"reviewPlan": {
+		"intentReviewers": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"implementationLenses": [
+			"improve-codebase-architecture",
+			"simplify",
+			"unslopify",
+			"he-code-review",
+			"testing"
+		],
+		"implementationReviewers": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"artifactPattern": "artifacts/reviews/pu-020-gap-006-policy-gate-*.md"
+	},
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
+	],
+	"rollback": [
+		"Restore harness.contract.json policyChain.high to warn only if an explicit owner decision accepts high-risk warn-only behavior.",
+		"Restore DEFAULT_POLICY_CHAIN.high to warn only with a matching spec/goal exception and regression tests showing the accepted exception path.",
+		"Revert focused policy-gate expectations if intent review proves policy-gate is intentionally advisory and the safety floor belongs to a separate gate."
+	],
+	"stopConditions": [
+		"Intent review finds an existing tracked-exception or approval mechanism that must be wired before changing high-risk behavior.",
+		"Focused tests show downstream scaffold compatibility depends on high-risk warn/pass and cannot be safely updated in this slice.",
+		"Contract validation fails in a way that requires changing public contract schema semantics rather than repository defaults."
+	],
+	"auditFreshness": {
+		"auditPath": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+		"latestValidatedAuditSha256": "dbf9d05c9e217baeac2a5a906676c66dac04634d37134985bff7d53eca01ec0a",
+		"latestFreshnessReceipt": "R075",
+		"checkedAt": "2026-05-27T06:51:24Z"
+	}
+}

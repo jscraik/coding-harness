@@ -17,8 +17,9 @@
  *                              types with no placeholders
  *
  * Exit codes:
- *   0 - all rules pass
- *   1 - one or more rules fail (errors printed to stdout, summary to stderr)
+ *   0 - all rules pass with no unowned warnings
+ *   1 - one or more rules fail, or one or more warnings are unowned
+ *       (errors printed to stdout, summary to stderr)
  *
  * Usage:
  *   node scripts/check-architecture-rules.cjs [--format console|json] [--verbose]
@@ -56,6 +57,22 @@ const COMMAND_SPECS_CORE_PATH = path.join(
 // Load baseline: pre-existing violations that are advisory-only (not CI-blocking)
 const baselineKeys = new Set();
 const baselineMetadataViolations = [];
+const todayYmd = new Date().toISOString().slice(0, 10);
+
+function isValidYmd(value) {
+	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+	if (!match) return false;
+	const year = Number(match[1]);
+	const month = Number(match[2]);
+	const day = Number(match[3]);
+	const date = new Date(Date.UTC(year, month - 1, day));
+	return (
+		date.getUTCFullYear() === year &&
+		date.getUTCMonth() === month - 1 &&
+		date.getUTCDate() === day
+	);
+}
+
 if (fs.existsSync(BASELINE_PATH)) {
 	for (const line of fs.readFileSync(BASELINE_PATH, "utf-8").split("\n")) {
 		const trimmed = line.trim();
@@ -64,12 +81,43 @@ if (fs.existsSync(BASELINE_PATH)) {
 			const metadataText = metadata.join("|");
 			const hasOwner = /\bowner=[^|]+/.test(metadataText);
 			const hasReason = /\breason=[^|]+/.test(metadataText);
-			const hasDate = /\bdate=\d{4}-\d{2}-\d{2}\b/.test(metadataText);
-			if (!rule || !relFile || !hasOwner || !hasReason || !hasDate) {
+			const dateMatch = /\bdate=(\d{4}-\d{2}-\d{2})\b/.exec(metadataText);
+			const ticketMatch = /\bticket=(JSC-\d+)\b/.exec(metadataText);
+			const expiresMatch = /\bexpires=(\d{4}-\d{2}-\d{2})\b/.exec(metadataText);
+			if (
+				!rule ||
+				!relFile ||
+				!hasOwner ||
+				!hasReason ||
+				!dateMatch ||
+				!ticketMatch ||
+				!expiresMatch
+			) {
 				baselineMetadataViolations.push({
 					line: trimmed,
 					reason:
-						"baseline entries must use <rule-id>|<relative-file-path>|owner=<owner>|reason=<reason>|date=YYYY-MM-DD",
+						"baseline entries must use <rule-id>|<relative-file-path>|owner=<owner>|reason=<reason>|date=YYYY-MM-DD|ticket=JSC-<number>|expires=YYYY-MM-DD",
+				});
+				continue;
+			}
+			if (!isValidYmd(dateMatch[1])) {
+				baselineMetadataViolations.push({
+					line: trimmed,
+					reason: `baseline date must be a valid UTC YYYY-MM-DD calendar date: ${dateMatch[1]}`,
+				});
+				continue;
+			}
+			if (!isValidYmd(expiresMatch[1])) {
+				baselineMetadataViolations.push({
+					line: trimmed,
+					reason: `baseline expires must be a valid UTC YYYY-MM-DD calendar date: ${expiresMatch[1]}`,
+				});
+				continue;
+			}
+			if (expiresMatch[1] < todayYmd) {
+				baselineMetadataViolations.push({
+					line: trimmed,
+					reason: `baseline entry expired on ${expiresMatch[1]}; renew the owner-visible debt record or fix the architecture warning`,
 				});
 				continue;
 			}
@@ -428,12 +476,13 @@ checkDiagramFreshness();
 const errors = violations.filter((v) => v.severity === "error");
 const warnings = violations.filter((v) => v.severity === "warning");
 const baselined = violations.filter((v) => v.severity === "baseline");
+const failed = errors.length > 0 || warnings.length > 0;
 
 if (FORMAT === "json") {
 	const out = {
 		schema_version: 1,
 		command: "check-architecture-rules",
-		status: errors.length === 0 ? "pass" : "fail",
+		status: failed ? "fail" : "pass",
 		summary: {
 			total: violations.length,
 			errors: errors.length,
@@ -464,17 +513,17 @@ if (FORMAT === "json") {
 
 	if (violations.length === 0) {
 		process.stderr.write("[architecture] pass: no violations found\n");
-	} else if (errors.length === 0) {
+	} else if (failed) {
 		process.stderr.write(
-			`[architecture] pass-with-warnings: ${warnings.length} warning(s), ${baselined.length} baselined\n`,
+			`[architecture] fail: ${errors.length} error(s), ${warnings.length} warning(s), ${baselined.length} baselined\n`,
 		);
 	} else {
 		process.stderr.write(
-			`[architecture] fail: ${errors.length} error(s), ${warnings.length} warning(s), ${baselined.length} baselined\n`,
+			`[architecture] pass: ${baselined.length} baselined warning(s) owned\n`,
 		);
 	}
 }
 
-if (errors.length > 0) {
+if (failed) {
 	process.exit(1);
 }

@@ -107,6 +107,46 @@ describe("buildJudgePmAuditVerdict", () => {
 		});
 	});
 
+	it("preserves reviewer-specific blockers for stale reviewer artifacts", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				reviewerArtifacts: [
+					reviewerArtifact("adversarial-reviewer"),
+					reviewerArtifact("agent-native-reviewer", {
+						receipt: { freshness: "stale" },
+					}),
+				],
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "stale",
+			blockerCode: "reviewer_artifact_stale",
+			blockerRefs: ["review-state:artifacts/reviews/agent-native-reviewer.md"],
+		});
+	});
+
+	it("preserves reviewer-specific blockers for non-claim-supporting reviewer artifacts", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				reviewerArtifacts: [
+					reviewerArtifact("adversarial-reviewer"),
+					reviewerArtifact("agent-native-reviewer", {
+						receipt: { evidenceUse: "orientation" },
+					}),
+				],
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "unknown",
+			blockerCode: "reviewer_artifact_not_claim_supporting",
+			blockerRefs: ["review-state:artifacts/reviews/agent-native-reviewer.md"],
+		});
+	});
+
 	it("fails closed when required audit surfaces are missing or stale", () => {
 		const missingRuntimeCard = buildJudgePmAuditVerdict(
 			baseInput({ runtimeCardRefs: [] }),

@@ -1,0 +1,326 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/goal-completion-audit-receipt.schema.json",
+	"title": "Goal Completion Audit Receipt",
+	"description": "Pre-closeout audit receipt that binds the active goal objective, requirement matrix, evidence references, blocker recurrence, and final verdict before any goal-ready or done claim can be supported.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"producer",
+		"runtimeStatus",
+		"evidenceUse",
+		"headSha",
+		"objectiveIdentity",
+		"requirements",
+		"blockers",
+		"verdict",
+		"sourceRefs",
+		"blockedBy"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "goal-completion-audit-receipt/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"producer": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 256,
+			"pattern": "^[A-Za-z0-9#][A-Za-z0-9._:/#@+-]{0,511}$"
+		},
+		"runtimeStatus": {
+			"const": "not_yet_emitted"
+		},
+		"evidenceUse": {
+			"const": "audit_trail"
+		},
+		"headSha": {
+			"type": "string",
+			"minLength": 7,
+			"maxLength": 64,
+			"pattern": "^[a-f0-9]{7,64}$"
+		},
+		"objectiveIdentity": {
+			"$ref": "#/$defs/objectiveIdentity"
+		},
+		"requirements": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/requirement"
+			}
+		},
+		"blockers": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/blocker"
+			}
+		},
+		"verdict": {
+			"$ref": "#/$defs/verdict"
+		},
+		"sourceRefs": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/safePointer"
+			}
+		},
+		"blockedBy": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512
+		}
+	},
+	"$defs": {
+		"safePointer": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512,
+			"pattern": "^[A-Za-z0-9#][A-Za-z0-9._:/#@+-]{0,511}$"
+		},
+		"boundedText": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512,
+			"pattern": "^[^\\r\\n]+$"
+		},
+		"sha256": {
+			"type": "string",
+			"minLength": 71,
+			"maxLength": 71,
+			"pattern": "^sha256:[a-f0-9]{64}$"
+		},
+		"status": {
+			"enum": ["pass", "fail", "blocked", "unknown", "not_applicable"]
+		},
+		"freshness": {
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"blockerClass": {
+			"enum": [
+				"introduced",
+				"pre_existing",
+				"unrelated_dirty_worktree",
+				"external_service",
+				"needs_jamie_decision",
+				"unknown"
+			]
+		},
+		"blockerCode": {
+			"enum": [
+				"missing_objective_identity",
+				"objective_source_head_mismatch",
+				"objective_source_hash_mismatch",
+				"missing_required_requirement",
+				"requirement_not_passed",
+				"requirement_evidence_not_current",
+				"unresolved_blocker",
+				"repeated_blocker_threshold_met",
+				"missing_blocker_history",
+				"invalid_receipt"
+			]
+		},
+		"objectiveIdentity": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"objectiveRef",
+				"objectiveSourcePath",
+				"objectivePointer",
+				"objectiveSourceHeadSha",
+				"objectiveSourceSha256",
+				"objectiveHash",
+				"hashAlgorithm",
+				"canonicalizationVersion"
+			],
+			"properties": {
+				"objectiveRef": {
+					"$ref": "#/$defs/safePointer"
+				},
+				"objectiveSourcePath": {
+					"$ref": "#/$defs/safePointer"
+				},
+				"objectivePointer": {
+					"$ref": "#/$defs/safePointer"
+				},
+				"objectiveSourceHeadSha": {
+					"type": "string",
+					"minLength": 7,
+					"maxLength": 64,
+					"pattern": "^[a-f0-9]{7,64}$"
+				},
+				"objectiveSourceSha256": {
+					"$ref": "#/$defs/sha256"
+				},
+				"objectiveHash": {
+					"$ref": "#/$defs/sha256"
+				},
+				"hashAlgorithm": {
+					"const": "sha256"
+				},
+				"canonicalizationVersion": {
+					"const": "goal-objective-text-lf/v1"
+				}
+			}
+		},
+		"requirement": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"id",
+				"description",
+				"required",
+				"status",
+				"freshness",
+				"evidenceRefs",
+				"blockerRefs",
+				"verdictRef"
+			],
+			"properties": {
+				"id": {
+					"$ref": "#/$defs/safePointer"
+				},
+				"description": {
+					"$ref": "#/$defs/boundedText"
+				},
+				"required": {
+					"type": "boolean"
+				},
+				"status": {
+					"$ref": "#/$defs/status"
+				},
+				"freshness": {
+					"$ref": "#/$defs/freshness"
+				},
+				"evidenceRefs": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/safePointer"
+					}
+				},
+				"blockerRefs": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/safePointer"
+					}
+				},
+				"verdictRef": {
+					"type": ["string", "null"],
+					"minLength": 1,
+					"maxLength": 512,
+					"pattern": "^[A-Za-z0-9#][A-Za-z0-9._:/#@+-]{0,511}$"
+				}
+			}
+		},
+		"blocker": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"id",
+				"stableKey",
+				"blockerClass",
+				"owner",
+				"nextAction",
+				"evidenceRefs",
+				"consecutiveGoalTurns",
+				"firstObservedAt",
+				"latestObservedAt"
+			],
+			"properties": {
+				"id": {
+					"$ref": "#/$defs/safePointer"
+				},
+				"stableKey": {
+					"$ref": "#/$defs/safePointer"
+				},
+				"blockerClass": {
+					"$ref": "#/$defs/blockerClass"
+				},
+				"owner": {
+					"$ref": "#/$defs/safePointer"
+				},
+				"nextAction": {
+					"$ref": "#/$defs/boundedText"
+				},
+				"evidenceRefs": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/safePointer"
+					}
+				},
+				"consecutiveGoalTurns": {
+					"type": "integer",
+					"minimum": 1
+				},
+				"firstObservedAt": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"latestObservedAt": {
+					"type": "string",
+					"format": "date-time"
+				}
+			}
+		},
+		"verdict": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"status",
+				"freshness",
+				"readyForDoneClaim",
+				"goalStatusRecommendation",
+				"blockerCode",
+				"blockerClass",
+				"blockerRefs",
+				"evidenceRefs",
+				"verifiedAt"
+			],
+			"properties": {
+				"status": {
+					"$ref": "#/$defs/status"
+				},
+				"freshness": {
+					"$ref": "#/$defs/freshness"
+				},
+				"readyForDoneClaim": {
+					"type": "boolean"
+				},
+				"goalStatusRecommendation": {
+					"enum": ["complete", "continue", "blocked"]
+				},
+				"blockerCode": {
+					"anyOf": [{ "$ref": "#/$defs/blockerCode" }, { "type": "null" }]
+				},
+				"blockerClass": {
+					"anyOf": [{ "$ref": "#/$defs/blockerClass" }, { "type": "null" }]
+				},
+				"blockerRefs": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/safePointer"
+					}
+				},
+				"evidenceRefs": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/safePointer"
+					}
+				},
+				"verifiedAt": {
+					"type": "string",
+					"format": "date-time"
+				}
+			}
+		}
+	}
+}

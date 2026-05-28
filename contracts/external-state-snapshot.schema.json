@@ -1,0 +1,149 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/external-state-snapshot.schema.json",
+	"title": "External State Snapshot",
+	"type": "object",
+	"additionalProperties": true,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"repository",
+		"prNumber",
+		"fetchedAt",
+		"ttlSeconds",
+		"headSha",
+		"fetchReceiptRef",
+		"fetchedArtifactHash",
+		"verifierIdentity",
+		"fetchReceipt",
+		"evidenceUse",
+		"stale",
+		"staleReasons",
+		"sources"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "external-state-snapshot/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"repository": {
+			"type": "string",
+			"minLength": 1
+		},
+		"prNumber": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"fetchedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"ttlSeconds": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"headSha": {
+			"type": ["string", "null"]
+		},
+		"fetchReceiptRef": {
+			"type": "string",
+			"minLength": 1
+		},
+		"fetchedArtifactHash": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{64}$"
+		},
+		"verifierIdentity": {
+			"type": "string",
+			"minLength": 1
+		},
+		"fetchReceipt": {
+			"$ref": "evidence-receipt.schema.json"
+		},
+		"evidenceUse": {
+			"enum": ["orientation", "claim_support", "audit_trail"]
+		},
+		"stale": {
+			"type": "boolean"
+		},
+		"staleReasons": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"sources": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"source",
+					"status",
+					"fetchedAt",
+					"ttlSeconds",
+					"headSha",
+					"prHeadSensitive",
+					"evidenceUse",
+					"evidenceRef",
+					"freshness",
+					"resultStatus",
+					"staleReasons"
+				],
+				"properties": {
+					"source": {
+						"enum": [
+							"github_pr",
+							"github_checks",
+							"github_reviews",
+							"coderabbit",
+							"linear",
+							"circleci"
+						]
+					},
+					"status": {
+						"enum": ["available", "unavailable", "stale", "unknown"]
+					},
+					"fetchedAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"ttlSeconds": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"headSha": {
+						"type": ["string", "null"],
+						"minLength": 1
+					},
+					"prHeadSensitive": {
+						"type": "boolean"
+					},
+					"evidenceUse": {
+						"enum": ["orientation", "claim_support", "audit_trail"]
+					},
+					"evidenceRef": {
+						"type": "string",
+						"minLength": 1
+					},
+					"freshness": {
+						"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+					},
+					"resultStatus": {
+						"enum": ["pass", "fail", "blocked", "unknown", "not_applicable"]
+					},
+					"staleReasons": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1
+						}
+					}
+				}
+			}
+		}
+	}
+}

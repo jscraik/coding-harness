@@ -1,0 +1,224 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/coding-harness/contracts/action-review-receipt.schema.json",
+	"title": "ActionReviewReceipt/v1",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"receiptId",
+		"generatedAt",
+		"producer",
+		"runtimeStatus",
+		"evidenceUse",
+		"action",
+		"requestedBy",
+		"reviewer",
+		"decision",
+		"requiredEvidence",
+		"freshness",
+		"expiresAt",
+		"blockers",
+		"mismatches",
+		"nextAction",
+		"blockedBy"
+	],
+	"properties": {
+		"schemaVersion": { "const": "action-review-receipt/v1" },
+		"receiptId": { "$ref": "#/$defs/pointer" },
+		"generatedAt": { "type": "string", "format": "date-time" },
+		"producer": { "$ref": "#/$defs/pointer" },
+		"runtimeStatus": { "const": "not_yet_emitted" },
+		"evidenceUse": {
+			"type": "string",
+			"enum": ["orientation", "audit_trail", "governance"]
+		},
+		"action": { "$ref": "#/$defs/actionEnvelope" },
+		"requestedBy": { "$ref": "#/$defs/actor" },
+		"reviewer": { "$ref": "#/$defs/reviewer" },
+		"decision": {
+			"type": "string",
+			"enum": ["allow", "block", "mismatch", "unknown", "not_applicable"]
+		},
+		"requiredEvidence": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "$ref": "#/$defs/evidenceRef" }
+		},
+		"freshness": { "$ref": "#/$defs/freshness" },
+		"expiresAt": {
+			"anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+		},
+		"blockers": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/blocker" }
+		},
+		"mismatches": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/mismatch" }
+		},
+		"nextAction": { "$ref": "#/$defs/pointer" },
+		"blockedBy": { "$ref": "#/$defs/pointer" }
+	},
+	"$defs": {
+		"pointer": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 256,
+			"pattern": "^[A-Za-z0-9][A-Za-z0-9:._/@#?=&+,-]{1,255}$"
+		},
+		"nullablePointer": {
+			"anyOf": [{ "$ref": "#/$defs/pointer" }, { "type": "null" }]
+		},
+		"headSha": {
+			"anyOf": [
+				{ "type": "string", "pattern": "^[0-9a-f]{40}$" },
+				{ "type": "null" }
+			]
+		},
+		"freshness": {
+			"type": "string",
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"actionEnvelope": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"actionId",
+				"kind",
+				"riskTier",
+				"targetRef",
+				"repository",
+				"prNumber",
+				"issueRef",
+				"headSha",
+				"commandRef",
+				"requestedAt"
+			],
+			"properties": {
+				"actionId": { "$ref": "#/$defs/pointer" },
+				"kind": {
+					"type": "string",
+					"enum": [
+						"merge",
+						"release",
+						"destructive_cleanup",
+						"external_tracker_mutation"
+					]
+				},
+				"riskTier": { "type": "string", "enum": ["high", "critical"] },
+				"targetRef": { "$ref": "#/$defs/pointer" },
+				"repository": { "$ref": "#/$defs/nullablePointer" },
+				"prNumber": {
+					"anyOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+				},
+				"issueRef": { "$ref": "#/$defs/nullablePointer" },
+				"headSha": { "$ref": "#/$defs/headSha" },
+				"commandRef": { "$ref": "#/$defs/nullablePointer" },
+				"requestedAt": { "type": "string", "format": "date-time" }
+			}
+		},
+		"actor": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["actorId", "identityRef", "role", "producer", "sourceRef"],
+			"properties": {
+				"actorId": { "$ref": "#/$defs/pointer" },
+				"identityRef": { "$ref": "#/$defs/pointer" },
+				"role": { "$ref": "#/$defs/pointer" },
+				"producer": { "$ref": "#/$defs/pointer" },
+				"sourceRef": { "$ref": "#/$defs/pointer" }
+			}
+		},
+		"reviewer": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"actorId",
+				"identityRef",
+				"role",
+				"producer",
+				"sourceRef",
+				"independence",
+				"reviewedAt"
+			],
+			"properties": {
+				"actorId": { "$ref": "#/$defs/pointer" },
+				"identityRef": { "$ref": "#/$defs/pointer" },
+				"role": { "$ref": "#/$defs/pointer" },
+				"producer": { "$ref": "#/$defs/pointer" },
+				"sourceRef": { "$ref": "#/$defs/pointer" },
+				"independence": {
+					"type": "string",
+					"enum": ["independent", "self", "unknown"]
+				},
+				"reviewedAt": { "type": "string", "format": "date-time" }
+			}
+		},
+		"evidenceRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"ref",
+				"kind",
+				"status",
+				"freshness",
+				"evidenceUse",
+				"headSha",
+				"verifiedAt"
+			],
+			"properties": {
+				"ref": { "$ref": "#/$defs/pointer" },
+				"kind": { "$ref": "#/$defs/pointer" },
+				"status": {
+					"type": "string",
+					"enum": ["pass", "fail", "blocked", "unknown", "not_applicable"]
+				},
+				"freshness": { "$ref": "#/$defs/freshness" },
+				"evidenceUse": {
+					"type": "string",
+					"enum": ["claim_support", "governance", "orientation", "audit_trail"]
+				},
+				"headSha": { "$ref": "#/$defs/headSha" },
+				"verifiedAt": { "type": "string", "format": "date-time" }
+			}
+		},
+		"blocker": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["class", "reason", "nextAction"],
+			"properties": {
+				"class": {
+					"type": "string",
+					"enum": [
+						"requires_human_authority",
+						"requires_external_state_refresh",
+						"requires_review_approval",
+						"requires_security_review",
+						"requires_release_authority",
+						"requires_tracker_authority",
+						"requires_policy_gate",
+						"requires_current_head",
+						"mismatched_action_envelope"
+					]
+				},
+				"reason": { "$ref": "#/$defs/pointer" },
+				"nextAction": { "$ref": "#/$defs/pointer" }
+			}
+		},
+		"mismatch": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["class", "reason", "expected", "actual"],
+			"properties": {
+				"class": {
+					"type": "string",
+					"enum": ["action_kind", "target", "head_sha", "actor", "scope"]
+				},
+				"reason": { "$ref": "#/$defs/pointer" },
+				"expected": { "$ref": "#/$defs/actionEnvelope" },
+				"actual": { "$ref": "#/$defs/actionEnvelope" }
+			}
+		}
+	}
+}

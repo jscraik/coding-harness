@@ -25,6 +25,10 @@
 - Required checks must pass before merge.
 - CodeRabbit + Codex review artifacts are required before merge.
 - The coding agent must not approve its own PR; review must be independent.
+- High-risk action-review receipts are audit artifacts only: they must prove
+  reviewer independence, canonical actor identity separation, current evidence,
+  and allow/block/mismatch semantics, but they must not authorize commands or
+  substitute for delivery-truth, policy-gate, PR closeout, or human approval.
 - Flow Ops closure-evidence changes that reroute validation or source
   classification must refresh `AI/context/diagram-context.md` and the
   docs-gate-required governance surfaces in the same PR.
@@ -246,6 +250,17 @@ If a required review artifact is missing, block merge until it is added or expli
   - ✅ `${GITHUB_TOKEN}`
   - ❌ expanded token values
 - If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
+
+## Action review governance
+
+This repository uses `action-review-receipt/v1` as a narrow guardian-style receipt contract for high-risk actions. When making changes to action-review governance:
+
+- **High-risk action envelopes** (merge, release, destructive cleanup, external tracker mutation) must require current evidence refs and head SHA where the action touches repository or PR state
+- **Reviewer independence**: reviewer identity must not match the requested actor or producer identity (no self-approval)
+- **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not just display alias differences)
+- **Decision semantics**: allow, block, mismatch, unknown, not_applicable; `not_applicable` is forbidden for high-risk action kinds
+- **Docs-gate requirement**: these companion documentation surfaces must be updated in the same PR as any action-review governance change
+- **Architecture diagrams**: reference `AI/context/diagram-context.md` for required diagrams
 
 ## Branch protection recommendation
 

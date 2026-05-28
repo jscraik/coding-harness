@@ -1,0 +1,299 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-027-gap-011-skill-density",
+	"createdAt": "2026-05-27T15:35:00Z",
+	"headShaAtIntent": "22fc9de8440173c7c8ff47686597980f897a555e",
+	"objective": "Implement the GAP-011 skill-governance slice by adding deterministic validation for repo-owned skill density, trigger overlap, executable assets, validation proof, and prompt-prose-only risk without broadening the public harness surface.",
+	"sourcePlan": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"sourceSpec": ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+	"sourceAudit": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+	"sourceGoal": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+	"sourceEcosystemReview": ".harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md",
+	"linearIssue": "JSC-363",
+	"lifecycleUnit": "PU-027-GAP-011",
+	"auditGapIds": ["GAP-011"],
+	"ecosystemReviewFindings": [
+		"Tool exposure and skill availability claims must be receipt-bound instead of inferred from agent memory.",
+		"Instruction provenance and skill usage must be visible enough for future agents to know which workflow surface owns an action."
+	],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/research/evidence-patterns.json",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"<LOCAL_MEMORY_REGISTRY>"
+	],
+	"deepModuleBoundary": "Repo-owned skill validation only. The implementation should live behind scripts/validate-packaged-skill.cjs or a small helper it owns, and should inspect .agents/skills/**/SKILL.md plus adjacent executable/proof assets. It must not create a new runtime packet, public CLI rail, or generalized skill marketplace.",
+	"implementationThesis": "GAP-011 is a low-severity but real control-plane gap: individual skill files can validate while the repo has no deterministic check for prompt-only skills, weak workflow ownership, or overlapping trigger language. The smallest useful fix is to make the existing pnpm skill:validate lane produce fail-closed checks for repo-owned skills using required structured frontmatter, deterministic trigger-surface overlap, and validation-command-to-asset linkage.",
+	"skillMetadataContract": {
+		"requiredFrontmatterFields": [
+			"name",
+			"description",
+			"skill_kind",
+			"owned_workflow",
+			"validation_command"
+		],
+		"skillKindValues": ["executable", "advisory"],
+		"executableRequirements": [
+			"must declare skill_kind: executable",
+			"must declare a non-empty owned_workflow",
+			"must declare validation_command",
+			"validation_command must appear in the SKILL.md body or a referenced validation section",
+			"must include at least one linked executable proof asset: scripts/, references/evals.yaml, references/agent-install.json, or an explicit validator reference"
+		],
+		"advisoryRequirements": [
+			"must declare skill_kind: advisory",
+			"must declare a non-empty owned_workflow",
+			"must declare validation_command",
+			"must include a Workflow section and at least one reference file under references/",
+			"cannot bypass prompt-prose-only detection by using advisory wording in free text without frontmatter"
+		],
+		"promptOnlyFindingCode": "skill_prompt_only_risk"
+	},
+	"overlapPolicy": {
+		"triggerSurfaces": [
+			"frontmatter.description",
+			"frontmatter.triggers when present",
+			"bullets under ## Use when present"
+		],
+		"normalization": [
+			"case-fold to lowercase",
+			"strip punctuation",
+			"split on whitespace",
+			"drop deterministic stopwords",
+			"no stemming, embeddings, or LLM scoring"
+		],
+		"blockingThreshold": {
+			"minimumSharedTokens": 5,
+			"minimumJaccard": 0.45
+		},
+		"allowlist": "A pair may pass only when an explicit deterministic allowlist entry names both skill names, the shared tokens, and the reason the overlap is intentional.",
+		"blockingFindingCode": "skill_overlap_blocking",
+		"warningFindingCode": "skill_overlap_warning"
+	},
+	"findingCodes": [
+		"skill_missing_classification",
+		"skill_invalid_classification",
+		"skill_missing_owned_workflow",
+		"skill_missing_validation_command",
+		"skill_validation_command_unreferenced",
+		"skill_missing_executable_proof",
+		"skill_missing_advisory_references",
+		"skill_prompt_only_risk",
+		"skill_overlap_blocking",
+		"skill_overlap_warning"
+	],
+	"currentEvidence": [
+		{
+			"path": "package.json",
+			"observed": "pnpm check already runs pnpm skill:validate.",
+			"gap": "The skill validator checks the packaged coding-harness skill contract, but does not score density, overlap, executable assets, workflow ownership, or prompt-prose-only risk across repo-owned skills."
+		},
+		{
+			"path": "scripts/validate-packaged-skill.cjs",
+			"observed": "The existing validator enforces required packaged-skill files, stale command guidance, install JSON, eval coverage, and reference contracts.",
+			"gap": "The validator has no repo-owned skill inventory, overlap report, advisory/executable distinction, or validation-path rule."
+		},
+		{
+			"path": ".agents/skills/coding-harness/SKILL.md",
+			"observed": "The packaged skill has executable assets, evals, setup references, and validation commands.",
+			"gap": "Those assets are not compared against other repo-owned skills for trigger overlap or workflow ownership."
+		},
+		{
+			"path": ".agents/skills/improve-codebase-architecture/SKILL.md",
+			"observed": "The architecture skill is intentionally advisory and has references plus a review workflow, but no script/eval asset.",
+			"gap": "The validator should distinguish advisory skills from production executable skills instead of forcing every skill to look like the packaged install skill."
+		}
+	],
+	"inScope": [
+		"scripts/validate-packaged-skill.cjs",
+		"src/dev/*validate-packaged-skill*test.ts or an equivalent focused script test if needed",
+		".agents/skills/**/SKILL.md only if metadata is needed for deterministic classification",
+		".agents/skills/**/references/** only if needed to document validation or workflow ownership",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-gap-011-skill-density-intent.json",
+		".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-*.md"
+	],
+	"outOfScope": [
+		"creating a new public harness command for skill governance",
+		"adding LLM-based quality scoring",
+		"installing new parser dependencies",
+		"rewriting skill content for style only",
+		"changing global agent-skills checkout skills",
+		"mutating an external Codex checkout",
+		"absorbing unrelated Project Brain WIP or .harness media/research files into this slice",
+		"claiming PR, CI, Linear, review-thread, merge-readiness, or final goal completion truth"
+	],
+	"guardedPathGlobs": [
+		"scripts/validate-packaged-skill.cjs",
+		"src/dev/*skill*test.ts",
+		".agents/skills/**/SKILL.md",
+		".agents/skills/**/references/**",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/**",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-gap-011-skill-density-intent.json",
+		".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-*.md"
+	],
+	"acceptanceCriteria": [
+		"pnpm skill:validate fails when any repo-owned skill lacks machine-readable skill_kind, owned_workflow, or validation_command frontmatter.",
+		"pnpm skill:validate fails when a repo-owned executable skill has no linked executable or fixture/proof asset and no referenced runnable validation path.",
+		"pnpm skill:validate fails overlapping trigger language when normalized trigger-surface overlap meets or exceeds the blocking threshold and no explicit allowlist entry exists.",
+		"Advisory skills can pass without scripts or evals only when they declare skill_kind: advisory, owned_workflow, validation_command, a Workflow section, and reference material.",
+		"Prompt-prose-only skills are flagged with skill_prompt_only_risk when they lack scripts, evals, structured references, validation commands, and valid classification.",
+		"The validator output names the skill, canonical finding code, severity, and remediation surface without relying on LLM judgment.",
+		"Focused tests include negative fixtures for missing classification, prose-only advisory claims, blocking overlap, low-signal nonblocking overlap, and inert executable assets without validation-command linkage.",
+		"Existing repo-owned skills pass after intentional metadata or validation-path adjustments.",
+		"The slice receipt records Project Brain inputs, GAP-011, validation commands, skill-lens evidence, independent reviewer evidence, and any remaining PR/remote blockers."
+	],
+	"automationPlan": [
+		{
+			"name": "intent artifact JSON validation",
+			"command": "jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-gap-011-skill-density-intent.json >/dev/null",
+			"proves": ["slice intent is syntactically valid before review"]
+		},
+		{
+			"name": "skill density validation",
+			"command": "pnpm skill:validate",
+			"proves": [
+				"packaged skill validation and GAP-011 skill-density/overlap checks are enforced in the existing repo gate"
+			]
+		},
+		{
+			"name": "focused validator regression",
+			"command": "pnpm exec vitest run src/dev/*skill*test.ts",
+			"proves": [
+				"negative fixtures catch prompt-only and overlap failures without needing live repo mutation"
+			]
+		},
+		{
+			"name": "goal board validation",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+			"proves": [
+				"audit freshness, active-artifacts route, and receipt shape remain valid"
+			]
+		},
+		{
+			"name": "slice assurance",
+			"command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id R090 --repo .",
+			"proves": [
+				"post-R064 skill-lens and independent reviewer evidence is complete before a done claim"
+			]
+		}
+	],
+	"reviewPlan": {
+		"requiredBeforeImplementation": true,
+		"reviewers": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"artifactPaths": [
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-adversarial.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-agent-native.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-best-practices.md"
+		],
+		"reviewQuestions": [
+			"Does this intent stay narrow enough for GAP-011 without inventing a broad skill governance platform?",
+			"Are advisory skills treated fairly while still catching prompt-prose-only risk?",
+			"Are the proposed deterministic overlap and asset checks strong enough to prevent recurrence of the audit gap?"
+		]
+	},
+	"reviewStatus": "reviewed_tracked_artifacts_cleared_for_implementation",
+	"reviewFindingsAddressed": [
+		{
+			"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-adversarial.md",
+			"finding": "Advisory classification was prose-only and overlap semantics lacked deterministic threshold policy.",
+			"resolution": "Added skillMetadataContract, overlapPolicy, canonical findingCodes, and fail-closed acceptance criteria."
+		},
+		{
+			"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-agent-native.md",
+			"finding": "Overlap acceptance permitted report-only pass states.",
+			"resolution": "Changed overlap acceptance to fail when normalized trigger-surface overlap meets the blocking threshold without an allowlist."
+		},
+		{
+			"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-best-practices.md",
+			"finding": "Machine-readable advisory/executable classification and prompt-only rule order were missing.",
+			"resolution": "Required skill_kind, owned_workflow, validation_command, class-specific requirements, and canonical finding codes."
+		}
+	],
+	"trackedReviewArtifactRepair": {
+		"status": "verified_nonempty_cleared",
+		"reason": "The first review targeted root artifacts/, which is ignored. PU-027 now requires reviewers to write curated artifacts under tracked .harness/review/ before implementation can start.",
+		"trackedArtifactPaths": [
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-adversarial.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-agent-native.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-best-practices.md"
+		],
+		"verificationCommand": "wc -c .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-*.md",
+		"verificationResult": {
+			"status": "pass",
+			"adversarialBytes": 5362,
+			"agentNativeBytes": 3494,
+			"bestPracticesBytes": 3251
+		}
+	},
+	"blockerClearance": {
+		"status": "pass",
+		"clearedAt": "2026-05-27T16:36:00Z",
+		"artifactPaths": [
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-clearance-adversarial.md",
+			".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-clearance-agent-native.md"
+		],
+		"verdict": "The reviewers that previously returned do-not-proceed now report proceed after stale ignored-path references were removed from active intent metadata and tracked artifact verification passed."
+	},
+	"rereviewOutcome": {
+		"mailboxEvidenceCapturedAt": "2026-05-27T16:20:00Z",
+		"ignoredRootArtifactAttempt": {
+			"status": "superseded",
+			"reason": "The prior reviewer mailbox summaries reported root-level review paths that are intentionally ignored by repository policy; those summaries remain historical routing evidence only."
+		},
+		"trackedArtifactRereview": [
+			{
+				"agent": "adversarial-reviewer",
+				"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-adversarial.md",
+				"reportedOutcome": "do not proceed before stale ignored-path metadata and pending repair state are cleaned"
+			},
+			{
+				"agent": "agent-native-reviewer",
+				"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-agent-native.md",
+				"reportedOutcome": "do not proceed before all required tracked artifacts exist and the failed verification state is cleared",
+				"residualNote": "policy-path mismatch risk for agents/templates and agents/contracts.json is non-blocking for intent"
+			},
+			{
+				"agent": "best-practices-researcher",
+				"artifact": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-best-practices.md",
+				"reportedOutcome": "implementation can proceed after tracked artifacts are present",
+				"residualNote": "allowlist storage location is a low non-blocking clarity gap"
+			}
+		],
+		"artifactVerification": {
+			"status": "pass",
+			"checkedCommand": "wc -c .harness/review/codex-runtime-evidence-verifier-cockpit/pu-027-gap-011-skill-density-intent-*.md",
+			"result": "All three tracked reviewer artifacts exist and are non-empty."
+		},
+		"coordinatorDecision": "Treat the tracked artifacts as the active review evidence and request a focused blocker-clearance pass from reviewers that previously returned do-not-proceed before implementation starts."
+	},
+	"implementationStartPolicy": "blocked_until_intent_review_artifacts_exist_and_material_blockers_are_resolved",
+	"postReviewMutationPolicy": "any material mutation to objective, inScope, outOfScope, acceptanceCriteria, automationPlan, reviewPlan, stopConditions, or rollback resets reviewStatus to pending",
+	"linearMutationPlan": "No Linear write during this local implementation slice. JSC-363 remains linked; full tracker alignment still requires a later live refresh and Phase 1 wording reconciliation.",
+	"stopConditions": [
+		"Stop if the validator would require a new package dependency for simple frontmatter or lexical scans.",
+		"Stop if deterministic overlap rules produce false positives that cannot be explained by exact trigger evidence and a narrow allowlist entry.",
+		"Stop if enforcing executable assets on advisory skills would force misleading scripts or fixtures.",
+		"Stop if implementation would touch unrelated Project Brain WIP, global skill repositories, or broad public command surfaces.",
+		"Stop if reviewer artifacts are missing after one focused retry."
+	],
+	"rollback": [
+		"Revert validator and test changes if deterministic rules block legitimate existing skills without a narrow metadata escape.",
+		"Keep any metadata additions that clarify advisory versus executable ownership only if the validator still depends on them.",
+		"Do not roll back unrelated dirty worktree changes."
+	],
+	"assumptions": [
+		"Repo-owned skills are the skills under .agents/skills/ in this repository.",
+		"The packaged coding-harness skill is executable and should keep strong script/eval/reference requirements.",
+		"The improve-codebase-architecture skill is advisory/review-oriented and should prove density through workflow ownership and references rather than executable scripts.",
+		"pnpm skill:validate is the correct existing lane to host this GAP-011 guard because pnpm check already executes it."
+	]
+}

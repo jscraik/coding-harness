@@ -1,0 +1,46 @@
+{
+	"schemaVersion": "decision-request/v1",
+	"requestId": "decision-request:jsc-363:merge-readiness",
+	"generatedAt": "2026-05-27T08:10:00Z",
+	"producer": "harness:decision-request",
+	"status": "open",
+	"intent": "Choose whether to refresh external PR state before a merge-readiness claim.",
+	"authority": "human",
+	"defaultOptionId": "refresh_external_state",
+	"options": [
+		{
+			"id": "refresh_external_state",
+			"label": "Refresh PR, CI, review, and tracker snapshots.",
+			"tradeoffs": [
+				"Requires network access.",
+				"Prevents stale closeout claims."
+			]
+		}
+	],
+	"evidenceRefs": ["runtime-card:JSC-363", "external-state:JSC-363"],
+	"freshness": "stale",
+	"expiresAt": null,
+	"runtimeStatus": "emitted",
+	"evidenceUse": "governance_request_only",
+	"claimSupport": "not_closeout_proof",
+	"hiltBoundary": {
+		"boundaryType": "merge_readiness",
+		"riskTier": "high",
+		"reason": "Choose whether to refresh external PR state before a merge-readiness claim.",
+		"blockerClass": "requires_external_state_refresh"
+	},
+	"escalation": {
+		"required": true,
+		"targetRole": "human",
+		"channel": "codex_thread",
+		"reason": "Choose whether to refresh external PR state before a merge-readiness claim.",
+		"requestedAt": "2026-05-27T08:10:00Z"
+	},
+	"staleState": [
+		{
+			"surface": "decision_request_freshness",
+			"freshness": "stale",
+			"reason": "freshness_stale"
+		}
+	]
+}

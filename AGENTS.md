@@ -51,6 +51,7 @@ the same steering twice, the harness has failed to encode the operating system.
 - Runtime/toolchain: `pnpm@10.33.0` and Node `>=24.0.0` (see `package.json`).
 - Agent engineering proof: treat steering feedback, PR comments, failing checks, benchmark-style success, workflow-skill misses, and line-level corrections as evidence about the system, not isolated patch requests. Repeated steering is a stop-the-line environment defect: do not resume ordinary feature work until the correction is admitted into the repo operating system or explicitly rejected with a tracked reason. When Jamie says the agent is not permitted to proceed, create a current-session steering admission record first: quote the feedback class, infer the principle, list searched surfaces, choose the durable destination, name the guard or tracked exception, and run the focused validation command before any feature continuation. When Jamie says a thread is planning-only, says the agent is not making changes yet, or rejects implementation as a planning conversation, stop file edits immediately and admit the execution-mode failure before resuming implementation. When the same error or command/test failure happens twice, stop local retries, research trusted web or upstream sources, list 3-5 plausible fixes, choose the most efficient repo-fit fix, implement it, and record `Repeated-error research` in PR closeout. Every correction that implies a design principle triggers a pattern-generalization pass before the agent claims the fix: infer the rule, search sibling code/tests/docs/templates/skills/gates that could share the misbehavior, update the shared pattern or matching siblings, and record intentionally unchanged siblings with reasons. Do not wait for exact trigger words: examples, single-line requests, named-function feedback, review comments, and "generally" or "across everything" language are all principle signals until proven local. This applies across implementation, review, docs, planning, validation, and closeout, not only PR-template evidence. Before closeout, convert the signal into a design principle, search for sibling patterns, check horizontal/vertical/reflected OODA horizons, choose the narrowest durable destination, and prove repo orientation, validation, maintainability, traceability, and handoff quality. Line-level design feedback requires a pattern scope inventory: principle, sibling search, siblings changed, siblings left unchanged with reason, and deferred follow-ups. PR bodies that admit repeated steering or high-signal correction must include `Meta-behavior proof` naming the durable repo/system change and the matching learning or reinforcement destination. High-level workflow skills need a capture-the-flag-style win condition, self-reflection evidence, and iterative refinement before they are trusted. PR or heartbeat closeout completion is not equivalent to green checks: before declaring a lane complete or deleting a continuation heartbeat, prove PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting reason. If the wider horizon cannot be observed, mark it `Unobserved Horizon` and create a follow-up instead of pretending the local fix is complete.
 - Observed fixable blockers: when an agent notices a blocker, warning, risk, flaky command, stale instruction, or validation weakness in a touched file, required validation surface, generated template, or active agent-facing instruction, the default action is to fix it in the same pass and rerun the narrowest proving command. Reporting it as residual risk is allowed only when the fix is outside the current authority, needs credentials or destructive action, would expand scope across unrelated ownership boundaries, or is recorded as a tracked exception with the exact reason and next owner.
+- Tool and skill creation threshold: if the same judgment is needed twice, or a failure mode can recur across slices, the agent should promote it into the smallest durable primitive that can change future behavior: validator, guard script, CLI helper, workflow hook, fixture, or scoped skill. One-off implementation knowledge belongs in implementation notes, plan evidence, or PR closeout evidence instead of a new skill. Prefer a validator or script when the rule is deterministic, a CLI/helper when operators need a repeatable command, and a skill only when the work is a reusable routed workflow with inputs, artifacts, validation, and ownership.
 - Harness Reviewer Roles First: for coding-harness review work, project-local harness roles are first-choice subagents before generic or global reviewers. Invoke them with `spawn_agent(agent_type="harness-product-code-reviewer")` or the matching role from `.codex/agents/<role>/<role>.toml` so repository-specific review categories, skill routes, and read-only posture stay enforced. If `spawn_agent` returns `unknown agent_type`, treat it as a runtime-freshness blocker and start a fresh thread rooted in this checkout before relying on the project-local role boundary.
 - Harness Tool Builder: when recurring agent friction, reviewer findings, or validation gaps should become a Codex-usable harness primitive, use `spawn_agent(agent_type="harness-toolsmith")` to build the scoped CLI, validator, guard, eval fixture, generated action, or workflow tool. Do not simulate `harness-toolsmith` with a generic/default agent when the enforced boundary itself is required.
 - Env-backed validation recovery: before reporting `missing credential` or `unavailable credential` for local validation, inspect the approved private env surface `~/.codex/.env` for the required variable names without printing values. If required values are present, rerun the exact validation command in a shell that loads that env file, for example `zsh -lc 'set -a; source ~/.codex/.env; set +a; pnpm test:deep'`. Only classify the lane as blocked after that probe is missing, unreadable, incomplete, or the env-loaded rerun still fails.
@@ -145,6 +146,17 @@ part of the harness operating system. Keep the assignment bounded to the missing
 primitive, the repo surfaces it may touch, and the validation command that must
 prove the result.
 
+Promotion threshold:
+
+- If the same judgment is needed twice, build or request the smallest durable
+  primitive that would make the third occurrence mechanical.
+- If the failure mode can recur across slices, prefer a validator, guard, or
+  CLI helper over another reminder.
+- If the knowledge is one-off implementation context, keep it in implementation
+  notes, plan evidence, or PR closeout evidence.
+- Create or update a skill only for a reusable routed workflow with explicit
+  inputs, artifacts, validation, ownership, and review expectations.
+
 ## Codex Discovery Order
 
 1. `~/.codex/AGENTS.md`
@@ -194,6 +206,11 @@ Notes:
 - Before handoff when behavior changed, run `bash scripts/validate-codestyle.sh`; use `bash scripts/verify-work.sh` as the broader readiness gate.
 - If runtime or artifact behavior changed, run `pnpm test:deep`.
 - When docs-gate categories are affected, run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and clear warnings before merge.
+- Repo-local skill changes under `.agents/skills/**` must keep skill
+  classification, owned workflow, body-documented validation command, proof
+  assets or advisory references, and overlap allowlists synchronized through
+  `pnpm skill:validate`; this guard is part of agent-governance closeout, not
+  a prose-only review convention.
 - Rule lifecycle governance changes that alter `.harness/rule-lifecycle-manifest.json`, `docs/rule-lifecycle.schema.json`, `rule-lifecycle-gate`, or lifecycle validation behavior must keep `AGENTS.md`, `README.md`, and `docs/agents/00-architecture-bootstrap.md` synchronized when docs-gate reports contract-policy or architecture-context surfaces.
 - Agent-native cockpit, generated environment action, hook setup, and architecture-artifact changes must keep the docs-gate required surfaces synchronized in the same PR so `harness next --json` recommendations, local runtime setup, and reviewer-facing evidence describe the current contract.
 - RouteDecision lifecycle metadata is agent-native cockpit contract work. Governance constraints:
@@ -274,6 +291,28 @@ Notes:
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Action-review receipt changes that add or alter
+  `action-review-receipt/v1`, high-risk action envelopes, reviewer
+  independence, canonical actor identity separation, allow/block/mismatch
+  semantics, current evidence freshness, or machine-readable review error codes
+  are architecture-adjacent runtime cockpit changes. Keep high-risk action
+  review contracts in `src/lib/action-review/`, keep packets contract-only and
+  `not_yet_emitted` unless an emitted producer and consumer boundary is
+  implemented and validated in the same change, and do not let them authorize
+  commands, satisfy delivery-truth claims, or prove merge readiness. Refresh
+  `AI/context/diagram-context.md` and keep
+  `ARCHITECTURE.md`, `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
+- Steering-queue packet changes that add or alter `steering-queue/v1`,
+  deferred operator-steering state, instruction-source hashing, artifact
+  identity checks, supersession, stale-precondition classification, or
+  deterministic selected-item ordering are architecture-adjacent runtime
+  cockpit changes. Keep the deep module in `src/lib/steering-queue/`, keep
+  the packet advisory for orientation/audit evidence, and do not let it become
+  command authority, delivery-truth claim support, or merge-readiness proof
+  until a future runtime-card adapter intentionally wires that consumption
+  boundary and updates governance docs in the same PR.
 - Trust-boundary validator changes that add or alter script-backed evidence
   reports such as `audit-reference-report/v1` are architecture-adjacent
   agent-governance changes when they classify repository paths, git-tracked

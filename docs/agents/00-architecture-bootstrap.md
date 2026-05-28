@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-26
+last_validated: 2026-05-27
 ---
 
 # Architecture bootstrap
@@ -133,6 +133,21 @@ they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `runtime-card --evidence-out`, `runtime-evidence-bundle/v1`, or related
 producer and adapter wiring changes.
 
+Runtime-card trace-out changes belong in `src/lib/runtime-trace/` and must
+reuse the canonical run-record writer under `src/lib/contract/` instead of
+inventing a second JSONL/hash-chain persistence path. Keep `--trace-out`
+constrained to `artifacts/agent-runs/<runId>/events.jsonl`, require a fresh
+run id with a pre-append claim, and fail closed on reused or pre-claimed run
+ids; emitted traces are replay-ready audit/orientation evidence and must not
+support closeout, CI, review, Linear, or merge-readiness claims by themselves.
+
+Rollback expectations: the runtime-card trace-out owner must revert the trace
+policy, CLI examples, generated architecture context, and any run-record writer
+adapter changes in the same rollback. Any run IDs claimed before rollback must
+be treated as invalid for closeout or replay support until a fresh
+`runtime-card --trace-out artifacts/agent-runs/<runId>/events.jsonl` run proves
+the restored contract.
+
 Runtime evidence receipts and private delivery-truth composition belong to the
 same architecture-adjacent cockpit lane when they decide whether a claim can be
 supported. Keep `evidence-receipt/v1` and `delivery-truth/v1` changes
@@ -174,6 +189,28 @@ validation ownership classification. Keep `external-state-snapshot/v1` inside
 source completeness, TTL-derived staleness, head-SHA binding, and claim-support
 eligibility handled by validators before delivery-truth composition consumes
 those packets.
+
+Action-review receipt changes are high-risk-action governance packet work, not
+a new execution rail. Keep `action-review-receipt/v1` inside
+`src/lib/action-review/` as the contract-only, `not_yet_emitted` receipt for
+merge, release, destructive cleanup, and external tracker mutation review
+decisions. Validators must prove reviewer independence, canonical actor
+identity separation, current head binding, required evidence freshness,
+allow/block/mismatch semantics, and stable error codes. The packet may support
+orientation, governance, and audit trails, but it must not authorize commands,
+satisfy delivery-truth claims, or prove merge readiness unless an emitted
+producer and consumer boundary is implemented, validated, and documented in the
+same change.
+
+Steering-queue packet changes are continuation-recovery cockpit work, not a new
+agent execution rail. Keep `steering-queue/v1` inside
+`src/lib/steering-queue/` as an advisory packet for deferred operator
+steering, with instruction-source hashing, artifact identity, supersession,
+stale-precondition classification, deterministic selected-item rules, and a
+script-backed semantic validator. The packet may support orientation and audit
+trails, but it must not authorize commands, satisfy delivery-truth claims, or
+prove merge readiness until a later runtime-card integration explicitly defines
+that consumption boundary.
 
 Trust-boundary validator changes that add script-backed evidence reports, such
 as `audit-reference-report/v1`, are architecture-adjacent when they classify

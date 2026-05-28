@@ -1,5 +1,4 @@
 import type {
-	CommandAgentCatalogMode,
 	CommandAgentMode,
 	CommandCategory,
 	CommandOrchestrator,
@@ -13,12 +12,14 @@ export const COMMAND_CATEGORY_BY_NAME: Partial<
 	Record<string, CommandCategory>
 > = {
 	commands: "discovery",
+	"agent-readiness": "bootstrap-governance",
 	init: "bootstrap-governance",
 	"fleet-plan": "bootstrap-governance",
 	eject: "bootstrap-governance",
 	check: "bootstrap-governance",
 	next: "bootstrap-governance",
 	"runtime-card": "bootstrap-governance",
+	"session-context": "bootstrap-governance",
 	doctor: "bootstrap-governance",
 	audit: "bootstrap-governance",
 	brain: "bootstrap-governance",
@@ -33,6 +34,7 @@ export const COMMAND_CATEGORY_BY_NAME: Partial<
 	"symphony-check": "bootstrap-governance",
 
 	"policy-gate": "review-policy",
+	"decision-request": "review-policy",
 	"preflight-gate": "review-policy",
 	"review-gate": "review-policy",
 	"docs-gate": "review-policy",
@@ -132,10 +134,13 @@ export const RETRYABILITY_BY_NAME: Partial<
 	Record<string, CommandRetryability>
 > = {
 	commands: "safe",
+	"agent-readiness": "safe",
 	check: "safe",
 	next: "safe",
 	"pr-closeout": "safe",
+	"decision-request": "safe",
 	"runtime-card": "safe",
+	"session-context": "safe",
 	"runtime-budget": "safe",
 	"fleet-plan": "safe",
 	doctor: "safe",
@@ -173,6 +178,9 @@ export const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	check: "cockpit",
 	next: "cockpit",
 	"runtime-card": "domain",
+	"session-context": "domain",
+	"decision-request": "domain",
+	"agent-readiness": "domain",
 	"fleet-plan": "domain",
 
 	init: "domain",
@@ -218,9 +226,12 @@ export const PRIMARY_AUDIENCE_BY_NAME: Partial<
 	Record<string, CommandPrimaryAudience>
 > = {
 	commands: "agent",
+	"agent-readiness": "agent",
 	check: "both",
 	next: "agent",
 	"runtime-card": "agent",
+	"session-context": "agent",
+	"decision-request": "agent",
 	"fleet-plan": "agent",
 	doctor: "both",
 	health: "both",
@@ -243,13 +254,16 @@ export const ORCHESTRATED_BY_BY_NAME: Partial<
 	Record<string, CommandOrchestrator[]>
 > = {
 	next: [],
+	"agent-readiness": ["next"],
 	"runtime-card": ["next"],
+	"session-context": ["next"],
 	"fleet-plan": ["next"],
 	check: ["next"],
 	doctor: ["next"],
 	health: ["next"],
 	"review-gate": ["next", "pr-ready"],
 	"pr-closeout": ["next", "pr-ready"],
+	"decision-request": ["next", "pr-ready"],
 	"docs-gate": ["next", "pr-ready"],
 	"validation-plan": ["next", "pr-ready"],
 	"review-context": ["next", "pr-ready"],
@@ -263,9 +277,11 @@ export const ORCHESTRATED_BY_BY_NAME: Partial<
 
 export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	commands: "orient",
+	"agent-readiness": "orient",
 	check: "verify",
 	next: "orient",
 	"runtime-card": "orient",
+	"session-context": "orient",
 	init: "orient",
 	"fleet-plan": "plan",
 	doctor: "orient",
@@ -275,6 +291,7 @@ export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	"verify-coderabbit": "review",
 	"review-gate": "review",
 	"pr-closeout": "handoff",
+	"decision-request": "handoff",
 	"docs-gate": "verify",
 	"validation-plan": "verify",
 	"review-context": "review",
@@ -292,10 +309,13 @@ export const COMMAND_VISIBILITY_BY_NAME: Partial<
 	Record<string, CommandVisibility>
 > = {
 	next: "default",
+	"agent-readiness": "agent",
 	commands: "advanced",
 	check: "advanced",
 	init: "advanced",
 	"runtime-card": "advanced",
+	"session-context": "advanced",
+	"decision-request": "advanced",
 	doctor: "advanced",
 	health: "advanced",
 	"fleet-plan": "advanced",
@@ -310,17 +330,3 @@ export const COMMAND_VISIBILITY_BY_NAME: Partial<
 	"pr-closeout": "advanced",
 	"docs-gate": "plumbing",
 };
-
-export const AGENT_CATALOG_COMMAND_NAMES: Readonly<
-	Record<"default" | CommandAgentCatalogMode, readonly string[]>
-> = {
-	default: ["next"],
-	orient: ["next", "runtime-card", "commands"],
-	verify: ["next", "runtime-card", "validation-plan", "evidence-verify"],
-	review: ["next", "runtime-card", "review-gate", "review-context"],
-	handoff: ["next", "runtime-card", "pr-closeout", "evidence-verify"],
-};
-
-export const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(
-	AGENT_CATALOG_COMMAND_NAMES.default,
-);

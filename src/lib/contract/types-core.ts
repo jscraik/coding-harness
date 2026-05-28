@@ -1461,7 +1461,7 @@ export const DEFAULT_TOOLING_POLICY: ToolingPolicy = {
 
 export const DEFAULT_POLICY_CHAIN: PolicyChainPolicy = {
 	tierToAction: {
-		high: "warn",
+		high: "block",
 		medium: "warn",
 		low: "allow",
 	},

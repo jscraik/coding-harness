@@ -39,6 +39,7 @@ const VALID_BODY = `## Summary
 - Acceptance trace: SA-999-001 -> src/commands/pr-template-gate.test.ts.
 - Validation evidence: Command: \`pnpm vitest run src/commands/pr-template-gate.test.ts\` -> pass.
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
+- Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.
 - Runtime impact: dev-only PR body validation gate.
 - CodeRabbit mode coverage: validation and gate; promotion n.a. (single fixture change).
 - Closeout state: PR open; merge blocked on required checks; no Linear blocker.

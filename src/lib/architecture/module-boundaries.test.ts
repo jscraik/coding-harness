@@ -762,6 +762,33 @@ const RUNTIME_CARD_SURFACE_RATCHETS = [
 		reason:
 			"Runtime-card argument parsing must stay focused on CLI token parsing and runtime-card option shape.",
 	},
+	{
+		path: "src/commands/runtime-card-artifacts.ts",
+		maxLines: 150,
+		reason:
+			"Runtime-card artifact writing must stay behind a focused seam for output safety, evidence bundle projection, and handoff emission.",
+	},
+] as const;
+
+const RUNTIME_CARD_HANDOFF_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/runtime/runtime-card-handoff.ts",
+		maxLines: 200,
+		reason:
+			"Runtime-card handoff construction must stay focused on pairing persisted runtime artifacts and checksum metadata.",
+	},
+	{
+		path: "src/lib/runtime/runtime-card-handoff-contract.ts",
+		maxLines: 120,
+		reason:
+			"Runtime-card handoff contracts must stay small enough for validators, schemas, and CLI adapters to share.",
+	},
+	{
+		path: "src/lib/runtime/runtime-card-handoff-validation.ts",
+		maxLines: 320,
+		reason:
+			"Runtime-card handoff validation must stay focused on packet shape, advisory evidence use, and artifact pairing invariants.",
+	},
 ] as const;
 
 const REPLAY_SURFACE_RATCHETS = [
@@ -1346,6 +1373,7 @@ const SCAFFOLD_SURFACE_RATCHETS = [
 const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/cli/registry/command-specs.ts",
 	"src/lib/cli/registry/command-specs-core.ts",
+	"src/lib/cli/registry/agent-readiness-command-spec.ts",
 	"src/lib/cli/registry/artifact-gate-command-spec.ts",
 	"src/lib/cli/registry/audit-command-spec.ts",
 	"src/lib/cli/registry/brainstorm-gate-command-spec.ts",
@@ -1458,6 +1486,7 @@ const DOCTOR_CONFIG_SUBMODULES = [
 ] as const;
 const CLI_REGISTRY_SPEC_SUBMODULES = [
 	"./artifact-gate-command-spec.js",
+	"./agent-readiness-command-spec.js",
 	"./brain-command-spec.js",
 	"./brainstorm-gate-command-spec.js",
 	"./branch-protect-command-spec.js",
@@ -1558,7 +1587,10 @@ const REVIEW_GATE_DECISION_PACKET_FORBIDDEN_SYMBOLS = [
 	"function resolveRunRecordEventStatus",
 	"function resolveRunRecordEventSeverity",
 ] as const;
-const RUNTIME_CARD_COMMAND_SUBMODULES = ["./runtime-card-args.js"] as const;
+const RUNTIME_CARD_COMMAND_SUBMODULES = [
+	"./runtime-card-args.js",
+	"./runtime-card-artifacts.js",
+] as const;
 const RUNTIME_CARD_CONTRACT_SUBMODULES = [
 	"./runtime-card-validation.js",
 ] as const;
@@ -1589,6 +1621,7 @@ const LOCAL_RUNTIME_CARD_ASSEMBLY_SUBMODULES = [
 	"./local-runtime-card-attempts.js",
 ] as const;
 const COMMAND_CAPABILITY_SUBMODULES = [
+	"./command-agent-catalog-rules.js",
 	"./command-capability-rules.js",
 ] as const;
 const OUTPUT_NORMALISE_SUBMODULES = [
@@ -1844,6 +1877,10 @@ describe("module boundaries", () => {
 
 	it("keeps runtime-card surfaces split after decomposition", () => {
 		expectRatchetsWithinBudget(RUNTIME_CARD_SURFACE_RATCHETS);
+	});
+
+	it("keeps runtime-card handoff surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(RUNTIME_CARD_HANDOFF_SURFACE_RATCHETS);
 	});
 
 	it("keeps root-hygiene surfaces split after decomposition", () => {

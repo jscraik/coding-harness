@@ -22,6 +22,14 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 4. Report outcomes and risks.
 5. Stop on blocked checks and request next decision.
 
+Recurring judgment should become a small operating primitive. If an agent needs
+the same judgment twice, or a failure mode can recur across slices, promote it
+into the smallest durable tool that changes future behavior: validator, guard
+script, CLI helper, workflow hook, fixture, or scoped skill. Keep one-off
+implementation knowledge in implementation notes, plan evidence, or PR closeout
+evidence. Use skills only for reusable routed workflows with explicit inputs,
+artifacts, validation, ownership, and review expectations.
+
 ## Mandatory gates (when behavior changes)
 
 - `pnpm lint`
@@ -101,6 +109,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `AI/context/diagram-context.md` and keep `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized
   when docs-gate reports architecture-context or agent-governance surfaces
+- runtime-card trace-out changes should keep trace persistence in
+  `src/lib/runtime-trace/`, reuse canonical run-record append/manifest
+  helpers, constrain `--trace-out` to
+  `artifacts/agent-runs/<runId>/events.jsonl`, require a fresh run id with a
+  pre-append claim so repeated executions cannot share a replay stream, and
+  treat emitted trace records as replay-ready audit/orientation evidence only,
+  not closeout, CI, review, Linear, or merge-readiness proof
 - codex-runtime-evidence packet changes should stay inside the existing
   `src/lib/runtime` deep module as a narrow public facade plus typed contract,
   source-classification, validation, and reference-integrity internals before
@@ -139,6 +154,23 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   those packet families; refresh architecture context and keep `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized
   when docs-gate reports architecture-context or agent-governance surfaces
+- action-review receipt changes should keep high-risk action review evidence in
+  `src/lib/action-review/` as contract-only, `not_yet_emitted` governance
+  packets for merge, release, destructive cleanup, and external tracker
+  mutation decisions. Validators must prove reviewer independence, canonical
+  identity separation, current evidence freshness, action-envelope matching,
+  allow/block/mismatch semantics, and stable machine-readable error codes. The
+  packet must not become command authority, delivery-truth claim support, or
+  merge-readiness proof unless an emitted producer and consumer boundary is
+  implemented, validated, and reflected in governance docs in the same PR.
+- steering-queue packet changes should keep deferred operator steering in
+  `src/lib/steering-queue/` as advisory orientation/audit evidence. Validators
+  must prove instruction-source hash integrity, artifact identity, supersession,
+  stale-precondition classification, deterministic selected-item ordering, and
+  terminal state consistency. The packet must not become command authority,
+  delivery-truth claim support, or merge-readiness proof until a future
+  runtime-card adapter intentionally wires that boundary and updates the
+  governance docs in the same PR.
 - trust-boundary validator changes that add script-backed evidence reports
   such as `audit-reference-report/v1` should keep output machine-readable,
   path classification repo-scoped, and proof based on current tracked

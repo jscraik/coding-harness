@@ -139,7 +139,7 @@
 	},
 	"policyChain": {
 		"tierToAction": {
-			"high": "warn",
+			"high": "block",
 			"medium": "warn",
 			"low": "allow"
 		},

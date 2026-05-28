@@ -77,6 +77,12 @@ under src/lib/** when they grow beyond a small adapter.
 boundaries. Changes must be deliberate, documented, and validated through the
 repo command contract.
 
+Runtime-card CLI artifact emission uses a dedicated command adapter:
+`src/commands/runtime-card-artifacts.ts` owns `--out`, `--evidence-out`, and
+`--handoff-out` path distinctness, repository-constrained writes, and trace
+artifact-write recording so `src/commands/runtime-card.ts` remains a thin
+runtime-card orchestration facade.
+
 ### src/lib/
 
 Domain behavior lives here: policy gates, evidence evaluators, memory and
@@ -91,7 +97,18 @@ not in docs, templates, generated context, or command facades.
 - src/lib/evidence/: shared receipt contracts that classify validation,
   artifact, runtime-card, review, external-state, and run-record proof.
 - src/lib/runtime/: Codex runtime evidence, runtime evidence bundles, runtime
-  cards, producer adapters, and runtime-card projections.
+  cards, producer adapters, runtime-card projections, and
+  `runtime-card-handoff/v1` contracts. The runtime-card handoff module binds a
+  persisted runtime card to its produced runtime-evidence bundle with a shared
+  binding id, checksums, source/provenance refs, head SHA, and orientation-only
+  evidence-use policy before any handoff can feed agent cockpit state.
+- src/lib/runtime-trace/: opt-in runtime-card trace recording that projects
+  runtime-card execution into canonical `agent-run-event/v1` event streams
+  under `artifacts/agent-runs/<runId>/events.jsonl`. It owns trace-out path
+  parsing, run-id derivation, compact payload construction, artifact refs, and
+  terminal manifest emission while requiring a fresh run id before the first
+  event append and reusing the shared run-record writer for hash-chain
+  continuity and replay validation.
 - src/lib/delivery-truth/: private and production verdict composition for
   delivery, root hygiene, Judge/PM readiness, and merge-readiness claims.
 - src/lib/root-hygiene/: root-surface classification and claim-support receipt
@@ -125,6 +142,29 @@ not in docs, templates, generated context, or command facades.
 - src/lib/external-state/: live PR/CI/review/tracker snapshot packets,
   freshness/TTL/head-SHA validation, stale-state classification, and
   claim-support eligibility.
+- src/lib/action-review/: high-risk action review receipt contracts for merge,
+  release, destructive cleanup, and external tracker mutation. It owns
+  `action-review-receipt/v1` types, schema parity, semantic validation,
+  reviewer independence checks, action-envelope mismatch classification, and
+  machine-readable allow/block/mismatch error codes while keeping receipts
+  contract-only, `not_yet_emitted`, orientation/governance/audit evidence, and
+  out of delivery-truth claim support unless an emitted producer and consumer
+  boundary is implemented and validated in the same change.
+- src/lib/steering-queue/: deferred operator-steering packets for
+  continuation recovery and audit/orientation evidence. It keeps
+  `steering-queue.ts` as a compatibility facade over typed contracts, builder,
+  hash, constants, and semantic-validation modules. It owns steering-queue/v1
+  item state, instruction-source hashing, artifact identity checks,
+  supersession, stale-precondition classification, single-scope packet
+  validation, deterministic selection order, and semantic validation while
+  keeping queued steering out of execution authority, closeout proof, and
+  merge-readiness claim support until a future runtime-card adapter explicitly
+  consumes it.
+- src/lib/decision-request/: read-only governance request packet emission for
+  human or operator escalation. It owns intent, authority, option grammar,
+  evidence references, escalation metadata, expiry/freshness normalization, and
+  stale-state classification for decision-request/v1 while explicitly keeping
+  the packet out of closeout and merge-readiness claim support.
 
 ### scripts/
 

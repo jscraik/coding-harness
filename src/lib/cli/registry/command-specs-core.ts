@@ -35,6 +35,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createAgentReadinessCommandSpec } from "./agent-readiness-command-spec.js";
 import { createArtifactGateCommandSpec } from "./artifact-gate-command-spec.js";
 import { createAuditCommandSpec } from "./audit-command-spec.js";
 import { createBrainCommandSpec } from "./brain-command-spec.js";
@@ -44,6 +45,7 @@ import { createCheckAuthzCommandSpec } from "./check-authz-command-spec.js";
 import { createCheckCommandSpec } from "./check-command-spec.js";
 import { createCheckEnvironmentCommandSpec } from "./check-environment-command-spec.js";
 import { createCIMigrateCommandSpec } from "./ci-migrate-command-spec.js";
+import { createDecisionRequestCommandSpec } from "./decision-request-command-spec.js";
 import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createDoctorCommandSpec } from "./doctor-command-spec.js";
 import { createDriftGateCommandSpec } from "./drift-gate-command-spec.js";
@@ -76,6 +78,7 @@ import { createRiskTierCommandSpec } from "./risk-tier-command-spec.js";
 import { createRuntimeBudgetCommandSpec } from "./runtime-budget-command-spec.js";
 import { createRuntimeCardCommandSpec } from "./runtime-card-command-spec.js";
 import { createRuleLifecycleGateCommandSpec } from "./rule-lifecycle-gate-command-spec.js";
+import { createSessionContextCommandSpec } from "./session-context-command-spec.js";
 import { createSilentErrorCommandSpec } from "./silent-error-command-spec.js";
 import { createSimulateCommandSpec } from "./simulate-command-spec.js";
 import { createSymphonyCheckCommandSpec } from "./symphony-check-command-spec.js";
@@ -109,8 +112,11 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createToolingAuditCommandSpec(),
 	createPresetCommandSpec(),
 	createCheckCommandSpec(),
+	createAgentReadinessCommandSpec(),
 	createNextCommandSpec(),
 	createRuntimeCardCommandSpec(),
+	createSessionContextCommandSpec(),
+	createDecisionRequestCommandSpec(),
 	createAuditCommandSpec(getVersion),
 	createDoctorCommandSpec(getVersion),
 	createHealthCommandSpec(getVersion),

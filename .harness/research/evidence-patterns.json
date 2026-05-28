@@ -1,6 +1,6 @@
 {
 	"schemaVersion": "evidence-patterns/v1",
-	"lastReviewedAt": "2026-05-24",
+	"lastReviewedAt": "2026-05-27",
 	"patterns": [
 		{
 			"id": "2026-05-18-coding-harness",
@@ -189,6 +189,15 @@
 			],
 			"validationCommand": "pnpm vitest run src/lib/pr-closeout.test.ts",
 			"dispositionReason": "Admitted into the Codex Runtime Evidence Verifier Cockpit lifecycle and GAP-002 closeout hardening so Codex ecosystem runtime-truth findings are enforced through goal receipts and PR closeout evidence tests."
+		},
+		{
+			"id": "2026-05-27-codex-system-prompt-operational-analysis",
+			"source": ".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md",
+			"status": "deferred",
+			"owner": "jamie",
+			"targetSurfaces": [],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Tracked as Codex system-prompt operational research; frontmatter marks the artifact advisory until a separate adoption decision promotes specific findings into the goal, plan, or runtime evidence contracts."
 		}
 	]
 }

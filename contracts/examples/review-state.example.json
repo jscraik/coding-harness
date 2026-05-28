@@ -1,0 +1,65 @@
+{
+	"schemaVersion": "review-state/v1",
+	"generatedAt": "2026-05-25T12:00:00Z",
+	"pr": {
+		"number": 299,
+		"repository": "jscraik/coding-harness",
+		"url": "https://github.com/jscraik/coding-harness/pull/299",
+		"baseRef": "main",
+		"headRef": "codex/jsc-363-runtime-evidence-pu009",
+		"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	},
+	"fetchReceiptRef": "review-state:pr-299/fetch.json",
+	"fetchedArtifactHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+	"verifierIdentity": "harness:review-state-refresh",
+	"fetchReceipt": {
+		"schemaVersion": "evidence-receipt/v1",
+		"kind": "review_artifact",
+		"ref": "review-state:pr-299/fetch.json",
+		"producer": "harness:review-state-refresh",
+		"status": "pass",
+		"freshness": "current",
+		"evidenceUse": "claim_support",
+		"blockerClass": null,
+		"verifiedAt": "2026-05-25T12:00:00Z",
+		"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"sizeBytes": 4096,
+		"checksum": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+	},
+	"githubReviews": {
+		"decision": "review_required",
+		"status": "blocked",
+		"reviewCount": 0
+	},
+	"codeRabbit": {
+		"status": "skipped_draft",
+		"evidenceStatus": "blocked",
+		"commentCount": 1
+	},
+	"unresolvedThreads": {
+		"total": 1,
+		"needsHuman": 1,
+		"autofixable": 0
+	},
+	"reviewerArtifacts": [
+		{
+			"role": "adversarial-reviewer",
+			"path": "artifacts/reviews/adversarial-reviewer.md",
+			"expectedProducer": "adversarial-reviewer",
+			"ownershipClassification": "introduced_by_current_patch",
+			"receipt": {
+				"schemaVersion": "evidence-receipt/v1",
+				"kind": "review_artifact",
+				"ref": "review-state:artifacts/reviews/adversarial-reviewer.md",
+				"producer": "adversarial-reviewer",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceUse": "claim_support",
+				"blockerClass": null,
+				"verifiedAt": "2026-05-25T12:00:00Z",
+				"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"sizeBytes": 2048
+			}
+		}
+	]
+}

@@ -1,176 +1,344 @@
 #!/usr/bin/env python3
-"""Validate per-slice skill-lens and reviewer assurance receipts.
+"""Validate per-slice assurance evidence on a goal receipt.
 
-This deliberately checks one receipt at a time. Historical receipts may predate
-the current assurance contract, but new slice-done claims must name the exact
-receipt whose lenses and independent reviews support the claim.
+This guard makes the Codex Runtime Evidence Verifier Cockpit goal's
+skill-lens and independent-reviewer contract executable. It intentionally
+checks one named receipt at a time so slice completion cannot be inferred from
+nearby prose or older receipts.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import sys
 from pathlib import Path
 from typing import Any
 
 
-REQUIRED_SKILL_LENSES = {
+REQUIRED_SKILL_LENSES = (
     "improve-codebase-architecture",
     "simplify",
     "unslopify",
+    "he-code-review",
     "testing",
-}
-REQUIRED_REVIEWERS = {
-    "agent-native-reviewer",
+)
+REQUIRED_REVIEWERS = (
     "adversarial-reviewer",
+    "agent-native-reviewer",
     "best-practices-researcher",
-}
-PASS_STATUSES = {"pass"}
-EVIDENCE_ROOT = Path("artifacts/reviews")
+)
+ALLOWED_STATUSES = {"pass", "fail", "blocked", "not applicable"}
+
+
+class ValidationError(Exception):
+    """Raised when the receipt cannot support a slice done claim."""
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Check that a goal receipt records required slice assurance.",
+        description="Validate evidence-backed skill/reviewer assurance for one goal receipt.",
     )
-    parser.add_argument("receipts", type=Path)
-    parser.add_argument("--receipt-id", required=True)
-    parser.add_argument("--repo", type=Path, default=Path("."))
+    parser.add_argument("receipts", help="Path to receipts.jsonl")
+    parser.add_argument("--receipt-id", required=True, help="Receipt id to validate")
+    parser.add_argument(
+        "--repo",
+        default=".",
+        help="Repository root used to resolve evidence refs",
+    )
     return parser.parse_args()
 
 
-def load_receipt(path: Path, receipt_id: str) -> dict[str, Any]:
-    matches: list[tuple[int, dict[str, Any]]] = []
-    for line_number, line in enumerate(path.read_text().splitlines(), start=1):
-        if not line.strip():
+def fail(message: str) -> int:
+    print(f"fail: {message}", file=sys.stderr)
+    return 1
+
+
+def load_receipts(path: Path) -> list[dict[str, Any]]:
+    receipts: list[dict[str, Any]] = []
+    for line_number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = raw_line.strip()
+        if not line:
             continue
         try:
             receipt = json.loads(line)
-        except json.JSONDecodeError as error:
-            raise SystemExit(f"{path}:{line_number}: invalid JSON: {error}") from error
-        if receipt.get("id") == receipt_id:
-            matches.append((line_number, receipt))
-    if len(matches) > 1:
-        line_numbers = ", ".join(str(line_number) for line_number, _receipt in matches)
-        raise SystemExit(f"receipt {receipt_id!r} is duplicated in {path} at lines {line_numbers}")
-    if matches:
-        return matches[0][1]
-    raise SystemExit(f"receipt {receipt_id!r} not found in {path}")
+        except json.JSONDecodeError as exc:
+            raise ValidationError(f"{path}:{line_number} is not valid JSON: {exc}") from exc
+        if not isinstance(receipt, dict):
+            raise ValidationError(f"{path}:{line_number} is not a JSON object")
+        receipts.append(receipt)
+    return receipts
 
 
-def evidence_exists(repo: Path, ref: str | None) -> bool:
-    if not ref:
-        return False
-    ref_path = Path(ref)
-    if ref_path.is_absolute() or ".." in ref_path.parts:
-        return False
-    if not ref_path.is_relative_to(EVIDENCE_ROOT):
-        return False
-    candidate = (repo / ref_path).resolve()
+def require_string(value: Any, field: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValidationError(f"{field} must be a non-empty string")
+    return value.strip()
+
+
+def normalize_repo_relative_path(value: Any, field: str) -> str:
+    raw_value = require_string(value, field)
+    path = Path(raw_value)
+    if path.is_absolute():
+        raise ValidationError(f"{field} must be repo-relative, got absolute path {raw_value!r}")
+    path_text = raw_value.replace("\\", "/")
+    normalized = posixpath.normpath(path_text)
+    if path_text != normalized:
+        raise ValidationError(f"{field} must be a canonical repo-relative path, got {raw_value!r}")
+    if normalized in {".", ""}:
+        raise ValidationError(f"{field} must point at a file, got {raw_value!r}")
+    if normalized.startswith("../") or normalized == ".." or "/../" in f"/{normalized}/":
+        raise ValidationError(f"{field} must not contain path traversal, got {raw_value!r}")
+    return normalized.removeprefix("./")
+
+
+def relative_to_repo(path: Path, repo: Path, field: str) -> str:
     try:
-        candidate.relative_to(repo)
-    except ValueError:
-        return False
-    return candidate.is_file() and candidate.stat().st_size > 0
+        return path.relative_to(repo).as_posix()
+    except ValueError as exc:
+        raise ValidationError(f"{field} escapes repository root: {path}") from exc
 
 
-def entries_by_key(entries: Any, key: str, errors: list[str], label: str) -> dict[str, dict[str, Any]]:
-    if not isinstance(entries, list):
-        errors.append(f"{label} must be a list")
-        return {}
-    result: dict[str, dict[str, Any]] = {}
-    for entry in entries:
-        if not isinstance(entry, dict) or not isinstance(entry.get(key), str):
-            errors.append(f"{label} contains an entry without string {key}")
-            continue
-        entry_key = entry[key]
-        if entry_key in result:
-            errors.append(f"{label} contains duplicate {key} {entry_key}")
-            continue
-        result[entry_key] = entry
-    return result
-
-
-def status_passes(status: Any) -> bool:
-    return isinstance(status, str) and status in PASS_STATUSES
-
-
-def changed_file_refs(receipt: dict[str, Any]) -> set[str]:
+def changed_file_identities(receipt: dict[str, Any], repo: Path) -> set[str]:
     changed_files = receipt.get("changed_files")
-    if not isinstance(changed_files, list):
-        return set()
-    return {changed_file for changed_file in changed_files if isinstance(changed_file, str)}
+    if not isinstance(changed_files, list) or not changed_files:
+        raise ValidationError("changed_files must be a non-empty list")
+
+    identities: set[str] = set()
+    for index, entry in enumerate(changed_files):
+        lexical = normalize_repo_relative_path(entry, f"changed_files[{index}]")
+        identities.add(lexical)
+        candidate = repo / lexical
+        if candidate.exists():
+            identities.add(relative_to_repo(candidate.resolve(), repo, f"changed_files[{index}]"))
+    return identities
+
+
+def resolve_evidence_ref(value: Any, field: str, repo: Path, changed_files: set[str]) -> str:
+    lexical = normalize_repo_relative_path(value, field)
+    candidate = repo / lexical
+    if not candidate.exists():
+        raise ValidationError(f"{field} does not exist: {lexical}")
+    resolved = candidate.resolve()
+    resolved_relative = relative_to_repo(resolved, repo, field)
+    if not candidate.is_file():
+        raise ValidationError(f"{field} must resolve to a file: {lexical}")
+    if candidate.stat().st_size == 0:
+        raise ValidationError(f"{field} points to a zero-byte file: {lexical}")
+    if lexical not in changed_files and resolved_relative not in changed_files:
+        raise ValidationError(f"{field} must be listed in changed_files: {lexical}")
+    return resolved_relative
+
+
+def find_target_receipt(
+    receipts: list[dict[str, Any]],
+    receipt_id: str,
+) -> dict[str, Any]:
+    ids: dict[str, int] = {}
+    target: dict[str, Any] | None = None
+    for receipt in receipts:
+        current_id = require_string(receipt.get("id"), "receipt.id")
+        ids[current_id] = ids.get(current_id, 0) + 1
+        if current_id == receipt_id:
+            target = receipt
+    duplicates = sorted(receipt_id for receipt_id, count in ids.items() if count > 1)
+    if duplicates:
+        raise ValidationError(f"duplicate receipt id(s): {', '.join(duplicates)}")
+    if target is None:
+        raise ValidationError(f"receipt id not found: {receipt_id}")
+    return target
+
+
+def require_result_map(receipt: dict[str, Any], field: str) -> dict[str, Any]:
+    value = receipt.get(field)
+    if not isinstance(value, dict):
+        raise ValidationError(f"{field} must be an object")
+    return value
+
+
+def validate_required_member(
+    *,
+    member_key: str,
+    group_field: str,
+    result: Any,
+    receipt: dict[str, Any],
+    repo: Path,
+    changed_files: set[str],
+    used_evidence_refs: dict[str, str],
+) -> None:
+    field = f"{group_field}.{member_key}"
+    if not isinstance(result, dict):
+        raise ValidationError(f"{field} must be a structured object")
+
+    status = require_string(result.get("status"), f"{field}.status")
+    if status not in ALLOWED_STATUSES:
+        raise ValidationError(f"{field}.status has unsupported value {status!r}")
+
+    if status == "pass":
+        validate_pass_member(
+            member_key=member_key,
+            field=field,
+            result=result,
+            receipt=receipt,
+            repo=repo,
+            changed_files=changed_files,
+            used_evidence_refs=used_evidence_refs,
+        )
+        return
+
+    validate_non_pass_member(
+        field=field,
+        result=result,
+        repo=repo,
+        changed_files=changed_files,
+        used_evidence_refs=used_evidence_refs,
+    )
+
+
+def validate_pass_member(
+    *,
+    member_key: str,
+    field: str,
+    result: dict[str, Any],
+    receipt: dict[str, Any],
+    repo: Path,
+    changed_files: set[str],
+    used_evidence_refs: dict[str, str],
+) -> None:
+    expected_receipt_id = require_string(receipt.get("id"), "receipt.id")
+    expected_lifecycle_unit = require_string(receipt.get("lifecycle_unit"), "receipt.lifecycle_unit")
+    expected_head_sha = require_string(receipt.get("head_sha"), "receipt.head_sha")
+
+    role = require_string(result.get("role"), f"{field}.role")
+    if role != member_key:
+        raise ValidationError(f"{field}.role must match member key {member_key!r}")
+    require_string(result.get("producer"), f"{field}.producer")
+
+    receipt_id = require_string(result.get("receipt_id"), f"{field}.receipt_id")
+    if receipt_id != expected_receipt_id:
+        raise ValidationError(f"{field}.receipt_id must match target receipt")
+    lifecycle_unit = require_string(result.get("lifecycle_unit"), f"{field}.lifecycle_unit")
+    if lifecycle_unit != expected_lifecycle_unit:
+        raise ValidationError(f"{field}.lifecycle_unit must match target receipt")
+    head_sha = require_string(result.get("head_sha"), f"{field}.head_sha")
+    if head_sha != expected_head_sha:
+        raise ValidationError(f"{field}.head_sha must match target receipt")
+
+    freshness = require_string(result.get("freshness"), f"{field}.freshness")
+    if freshness != "current":
+        raise ValidationError(f"{field}.freshness must be current")
+
+    evidence_ref = resolve_evidence_ref(
+        result.get("evidence_ref"),
+        f"{field}.evidence_ref",
+        repo,
+        changed_files,
+    )
+    if evidence_ref in used_evidence_refs:
+        raise ValidationError(
+            f"{field}.evidence_ref reuses evidence from {used_evidence_refs[evidence_ref]}: {evidence_ref}",
+        )
+    used_evidence_refs[evidence_ref] = field
+
+
+def validate_non_pass_member(
+    *,
+    field: str,
+    result: dict[str, Any],
+    repo: Path,
+    changed_files: set[str],
+    used_evidence_refs: dict[str, str],
+) -> None:
+    require_string(result.get("reason"), f"{field}.reason")
+    owner = result.get("owner")
+    if owner is not None:
+        require_string(owner, f"{field}.owner")
+        return
+    accepted_exception_ref = result.get("accepted_exception_ref")
+    if accepted_exception_ref is None:
+        raise ValidationError(
+            f"{field} requires owner or accepted_exception_ref for non-pass status",
+        )
+    exception_ref = resolve_evidence_ref(
+        accepted_exception_ref,
+        f"{field}.accepted_exception_ref",
+        repo,
+        changed_files,
+    )
+    if exception_ref in used_evidence_refs:
+        raise ValidationError(
+            f"{field}.accepted_exception_ref reuses evidence from {used_evidence_refs[exception_ref]}: {exception_ref}",
+        )
+    used_evidence_refs[exception_ref] = field
+
+
+def validate_group(
+    *,
+    receipt: dict[str, Any],
+    group_field: str,
+    required_members: tuple[str, ...],
+    repo: Path,
+    changed_files: set[str],
+    used_evidence_refs: dict[str, str],
+) -> None:
+    result_map = require_result_map(receipt, group_field)
+    missing = [member for member in required_members if member not in result_map]
+    if missing:
+        raise ValidationError(f"{group_field} missing required member(s): {', '.join(missing)}")
+    for member in required_members:
+        validate_required_member(
+            member_key=member,
+            group_field=group_field,
+            result=result_map[member],
+            receipt=receipt,
+            repo=repo,
+            changed_files=changed_files,
+            used_evidence_refs=used_evidence_refs,
+        )
+
+
+def validate(receipts_path: Path, receipt_id: str, repo: Path) -> dict[str, Any]:
+    if not receipts_path.is_file():
+        raise ValidationError(f"receipts file does not exist: {receipts_path}")
+    repo_root = repo.resolve()
+    receipts = load_receipts(receipts_path)
+    receipt = find_target_receipt(receipts, receipt_id)
+    changed_files = changed_file_identities(receipt, repo_root)
+    used_evidence_refs: dict[str, str] = {}
+
+    validate_group(
+        receipt=receipt,
+        group_field="slice_skill_lens_results",
+        required_members=REQUIRED_SKILL_LENSES,
+        repo=repo_root,
+        changed_files=changed_files,
+        used_evidence_refs=used_evidence_refs,
+    )
+    validate_group(
+        receipt=receipt,
+        group_field="independent_reviewer_results",
+        required_members=REQUIRED_REVIEWERS,
+        repo=repo_root,
+        changed_files=changed_files,
+        used_evidence_refs=used_evidence_refs,
+    )
+
+    return {
+        "status": "pass",
+        "receipt_id": receipt_id,
+        "required_skill_lenses": list(REQUIRED_SKILL_LENSES),
+        "required_reviewers": list(REQUIRED_REVIEWERS),
+    }
 
 
 def main() -> int:
     args = parse_args()
-    repo = args.repo.resolve()
-    receipt = load_receipt(args.receipts, args.receipt_id)
-    errors: list[str] = []
-    changed_refs = changed_file_refs(receipt)
-    if not changed_refs:
-        errors.append("receipt changed_files must list the slice evidence artifacts")
-
-    skill_results = entries_by_key(
-        receipt.get("skill_lens_results"),
-        "lens",
-        errors,
-        "skill_lens_results",
-    )
-    for lens, entry in sorted(skill_results.items()):
-        if not status_passes(entry.get("status")):
-            errors.append(f"skill lens {lens} does not have a passing status")
-        if not evidence_exists(repo, entry.get("evidence_ref")):
-            errors.append(f"skill lens {lens} evidence_ref is missing or empty")
-        elif entry.get("evidence_ref") not in changed_refs:
-            errors.append(f"skill lens {lens} evidence_ref is not listed in changed_files")
-    for lens in sorted(REQUIRED_SKILL_LENSES):
-        if lens not in skill_results:
-            errors.append(f"missing skill_lens_results entry for {lens}")
-
-    reviewer_results = entries_by_key(
-        receipt.get("independent_reviewer_results"),
-        "reviewer",
-        errors,
-        "independent_reviewer_results",
-    )
-    reviewer_evidence_refs: dict[str, str] = {}
-    for reviewer, entry in sorted(reviewer_results.items()):
-        if not status_passes(entry.get("status")):
-            errors.append(f"reviewer {reviewer} does not have a passing status")
-        evidence_ref = entry.get("evidence_ref")
-        if not evidence_exists(repo, evidence_ref):
-            errors.append(f"reviewer {reviewer} evidence_ref is missing or empty")
-        elif evidence_ref not in changed_refs:
-            errors.append(f"reviewer {reviewer} evidence_ref is not listed in changed_files")
-        elif isinstance(evidence_ref, str):
-            prior_reviewer = reviewer_evidence_refs.get(evidence_ref)
-            if prior_reviewer is not None:
-                errors.append(
-                    f"reviewer {reviewer} reuses evidence_ref already used by {prior_reviewer}",
-                )
-            reviewer_evidence_refs[evidence_ref] = reviewer
-    for reviewer in sorted(REQUIRED_REVIEWERS):
-        if reviewer not in reviewer_results:
-            errors.append(f"missing independent_reviewer_results entry for {reviewer}")
-
-    if errors:
-        for error in errors:
-            print(f"fail: {error}", file=sys.stderr)
-        return 1
-
-    print(
-        json.dumps(
-            {
-                "status": "pass",
-                "receipt_id": args.receipt_id,
-                "required_skill_lenses": sorted(REQUIRED_SKILL_LENSES),
-                "required_reviewers": sorted(REQUIRED_REVIEWERS),
-            },
-            sort_keys=True,
-        ),
-    )
+    try:
+        result = validate(Path(args.receipts), args.receipt_id, Path(args.repo))
+    except ValidationError as exc:
+        return fail(str(exc))
+    print(json.dumps(result, sort_keys=True))
     return 0
 
 

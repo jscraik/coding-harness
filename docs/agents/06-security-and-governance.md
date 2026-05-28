@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-21
+last_validated: 2026-05-27
 ---
 
 # Security and governance
@@ -7,6 +7,7 @@ last_validated: 2026-05-21
 - [Security posture](#security-posture)
 - [Code-style parity verification surface](#code-style-parity-verification-surface)
 - [Secret handling](#secret-handling)
+- [Policy-gate risk chain](#policy-gate-risk-chain)
 - [Execution-input governance](#execution-input-governance)
 - [Code and data governance](#code-and-data-governance)
 - [Risk controls](#risk-controls)
@@ -59,6 +60,13 @@ This repository follows conservative defaults:
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `security/openssf-scorecard-policy.json` and `scripts/check-scorecard-regressions.mjs`.
 - Greptile is a legacy cleanup concern only. Keep active review governance, scaffold defaults, and runtime verification aligned to CodeRabbit, and treat any live Greptile scaffold path as contract drift unless it exists solely to remove or quarantine old artifacts.
 - Security/policy hook configuration files must fail closed because of findings, not because the config is syntactically broken; keep Semgrep rule YAML quoted where patterns include mapping-like text such as `shell: true`.
+- Action-review receipts for merge, release, destructive cleanup, or external
+  tracker mutation are governance/audit evidence only. Keep
+  `action-review-receipt/v1` under `src/lib/action-review/`, require
+  independent reviewer identity and canonical actor identity separation, bind
+  allow decisions to current evidence refs, and preserve allow/block/mismatch
+  semantics. A receipt must not authorize the action, satisfy delivery-truth,
+  prove merge readiness, or replace policy-gate, PR closeout, or human approval.
 
 ## Code-style parity verification surface
 
@@ -76,6 +84,20 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. The workflow includes the repo-run Semgrep lane and an explicit report-only Snyk dependency lane; Snyk CLI install, auth, and findings must not fail CircleCI PRs that the external GitHub Snyk delta check has cleared. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
 - `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
+
+## Policy-gate risk chain
+
+`harness policy-gate` must fail closed for governed high-risk files. The
+repository contract and default contract policy chain map `high` risk to
+`block`, and `block` must map to the `fail` verdict. Contract validation and the
+public JSON schema reject `policyChain.actionToVerdict.block` values other than
+`fail` so a local override cannot make max-tier or high-risk block decisions
+look like passes.
+
+Medium-risk files may remain `warn`/`pass` when the contract explicitly allows
+that advisory behavior. This distinction keeps low and medium-risk automation
+available while preserving the high-risk human-mediated safety floor in the
+executable gate, not only in prose.
 
 ## Execution-input governance
 
@@ -211,6 +233,22 @@ Port-free usage should remain scoped to app-style run actions that map to `dev`/
 - `last_validated` must use ISO date format (`YYYY-MM-DD`) and represents when the document was last verified against current tooling or governance behavior.
 - Update `last_validated` when validation wrappers, required checks, or policy contracts change and this document is re-checked.
 - Keep `last_validated` aligned with any in-body freshness marker (for example `Last updated:`) so document evidence is not contradictory.
+
+## Action review governance
+
+This repository uses `action-review-receipt/v1` as a narrow guardian-style receipt contract for high-risk actions:
+
+- **Packet type**: `action-review-receipt/v1` is a review artifact, not an executor, approval token, or delivery-truth proof
+- **High-risk action envelopes**: merge, release, destructive cleanup, and external tracker mutation require current evidence refs and head SHA
+- **Reviewer independence**: reviewer must not be the same as requester/producer (no self-approval)
+- **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not only by display alias or shared runtime/source identity ref)
+- **Decision semantics**: allow, block, mismatch, unknown, not_applicable
+  - `allow` verdicts require current supporting evidence, non-expired review time, independent reviewer identity, differing canonical identity refs, and no unresolved blockers
+  - `block` and `unknown` verdicts must carry blocker classes and next action text
+  - `mismatch` verdicts must require expected and actual action envelopes plus explicit mismatch reason
+  - `not_applicable` is forbidden for merge, release, destructive cleanup, and external tracker mutation envelopes
+- **Docs-gate requirement**: these companion documentation surfaces must be updated in the same PR as any action-review governance change
+- **Reference diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
 
 ## Plan traceability
 

@@ -17,6 +17,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_changed_files_4c0102f6_bfd165bc
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ci_migrate_core_7005b5af_7e295ae3
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_collector_0736fd5b_10bc1882
   ext_node_child_process_f62b7d19["node:child_process"] --> node_control_plane_core_db3b4cb2_27437a14
   ext_node_child_process_f62b7d19["node:child_process"] --> node_diff_budget_9da0268d_71167227
   ext_node_child_process_f62b7d19["node:child_process"] --> node_docs_gate_core_eb9b6c18_f8540503
@@ -48,6 +49,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_commit_msg_43b008fe_f9560ef9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_packaged_skill_5e32c890_9228ad58
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
   ext_node_child_process_f62b7d19["node:child_process"] --> node_version_coherence_69733bcb_00c8d5d9
   ext_node_crypto_c7dfc512["node:crypto"] --> node_analysis_f44e85c4_c68a7cb6
   ext_node_crypto_c7dfc512["node:crypto"] --> node_artifact_io_ba511748_6d1faad8
@@ -60,6 +62,8 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_enforcement_status_92d314f5_7cd48cbe
   ext_node_crypto_c7dfc512["node:crypto"] --> node_env_b77349bf_420e4120
   ext_node_crypto_c7dfc512["node:crypto"] --> node_gate_c974e17b_07549baf
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_goal_completion_audit_receipt_5e4939c3_4fb29d00
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_hash_d04b98f4_53f96e02
   ext_node_crypto_c7dfc512["node:crypto"] --> node_idempotency_f5d39a07_bce757f2
   ext_node_crypto_c7dfc512["node:crypto"] --> node_indexer_70fa78e5_97c1bb0b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_inventory_b11a85b2_efd25194
@@ -80,6 +84,8 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_record_emitter_core_688049d5_2036fd6f
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_records_core_89286dfa_4ce958f7
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_state_core_25a955bc_a562e9bf
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_runtime_card_handoff_1c8c4766_687facef
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_runtime_card_trace_64a5ca95_a26c03d1
   ext_node_crypto_c7dfc512["node:crypto"] --> node_scan_cache_fc02c79c_11793337
   ext_node_crypto_c7dfc512["node:crypto"] --> node_sources_878a52fc_cd312fcd
   ext_node_crypto_c7dfc512["node:crypto"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
@@ -112,9 +118,11 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_fs_a15b7d96["node:fs"] --> node_ci_migrate_merge_queue_window_0070bd6d_03bcdaa9
   ext_node_fs_a15b7d96["node:fs"] --> node_ci_migrate_promotion_evidence_1a2dc527_7ed1a850
-  ext_node_fs_a15b7d96["node:fs"] --> node_cli_3_9d90d3fe_507ab5a9
-  ext_node_fs_a15b7d96["node:fs"] --> node_cli_9_b54c1407_02daed87
+  ext_node_fs_a15b7d96["node:fs"] --> node_cli_11_338a8415_7b139087
+  ext_node_fs_a15b7d96["node:fs"] --> node_cli_12_01c06c37_fabaa544
+  ext_node_fs_a15b7d96["node:fs"] --> node_cli_5_9c446a0f_12d0ff9c
   ext_node_fs_a15b7d96["node:fs"] --> node_cli_99bb8840_659774ba
+  ext_node_fs_a15b7d96["node:fs"] --> node_collector_0736fd5b_10bc1882
   ext_node_fs_a15b7d96["node:fs"] --> node_config_validator_669ebc2e_d7ca485d
   ext_node_fs_a15b7d96["node:fs"] --> node_context_health_80bb7da9_169768cb
   ext_node_fs_a15b7d96["node:fs"] --> node_contract_2_79042026_5e38c659
@@ -166,6 +174,9 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_linear_gate_core_a415ae74_222bd4b9
   ext_node_fs_a15b7d96["node:fs"] --> node_linear_sync_a2fa2bf7_48e6d20b
   ext_node_fs_a15b7d96["node:fs"] --> node_link_checker_d0fa555f_abfe9020
+  ext_node_fs_a15b7d96["node:fs"] --> node_lint_checks_83522b19_3fff9a7d
+  ext_node_fs_a15b7d96["node:fs"] --> node_lint_cli_9ec62ec0_62537dee
+  ext_node_fs_a15b7d96["node:fs"] --> node_lint_pages_e33301d0_51f54ed1
   ext_node_fs_a15b7d96["node:fs"] --> node_loader_1_16749818_9255dc35
   ext_node_fs_a15b7d96["node:fs"] --> node_loader_d47712cc_1c3a0e19
   ext_node_fs_a15b7d96["node:fs"] --> node_local_memory_0db17ecc_97fe98ce
@@ -205,6 +216,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_fs_a15b7d96["node:fs"] --> node_remediate_runner_helpers_929fedcc_8714d951
   ext_node_fs_a15b7d96["node:fs"] --> node_repo_bound_paths_e218b5b3_216d0eb0
+  ext_node_fs_a15b7d96["node:fs"] --> node_repo_evidence_38bb1de5_def15798
   ext_node_fs_a15b7d96["node:fs"] --> node_repo_runtime_artifact_139c0fbd_51129f15
   ext_node_fs_a15b7d96["node:fs"] --> node_repo_scanner_core_8e9f7646_10aca705
   ext_node_fs_a15b7d96["node:fs"] --> node_repositories_a8038884_2c62efe4
@@ -224,6 +236,8 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_run_state_core_25a955bc_a562e9bf
   ext_node_fs_a15b7d96["node:fs"] --> node_runner_1_6f281bf8_36f20bbb
   ext_node_fs_a15b7d96["node:fs"] --> node_runtime_budget_dfce83ae_5cbd79a2
+  ext_node_fs_a15b7d96["node:fs"] --> node_runtime_card_handoff_1c8c4766_687facef
+  ext_node_fs_a15b7d96["node:fs"] --> node_runtime_card_trace_64a5ca95_a26c03d1
   ext_node_fs_a15b7d96["node:fs"] --> node_satisfiability_6c08de4b_de8c902a
   ext_node_fs_a15b7d96["node:fs"] --> node_scaffold_ci_template_utils_1035b61c_0513532b
   ext_node_fs_a15b7d96["node:fs"] --> node_scaffold_db8a7260_1ca6adc9
@@ -253,12 +267,18 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_ui_loop_tooling_12b2d2c7_1abedab2
   ext_node_fs_a15b7d96["node:fs"] --> node_update_core_bced358c_b710dd59
   ext_node_fs_a15b7d96["node:fs"] --> node_upgrade_1_b277486e_4a06b7a8
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_action_review_receipt_fa2f06c3_d49ef9bb
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_audit_references_811f872a_0ce355a8
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_branch_protection_alignment_09b7779a_6f299056
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_commit_msg_43b008fe_f9560ef9
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_decision_request_2e5c325e_579d9d4b
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_goal_completion_audit_receipt_100d252c_2d821c1e
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_packaged_skill_5e32c890_9228ad58
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_review_lifecycle_0b410d1e_cf9db8cc
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_reviewer_coverage_251efee3_621cd543
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_steering_queue_4bc0cc94_58b6d2b9
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_workflow_contracts_33dc063c_2f80e314
   ext_node_fs_a15b7d96["node:fs"] --> node_validator_1_0c0621d8_0e5afcb6
   ext_node_fs_a15b7d96["node:fs"] --> node_validator_2_744853f5_98bb2caf
@@ -306,14 +326,16 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_check_scorecard_regressions_5c7c6445_4b474868
   ext_node_path_78811c13["node:path"] --> node_check_self_affirming_tests_7638e575_c6155698
   ext_node_path_78811c13["node:path"] --> node_check_steering_feedback_contract_80134459_abb076fc
+  ext_node_path_78811c13["node:path"] --> node_checker_d2d2328e_303f205e
   ext_node_path_78811c13["node:path"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_path_78811c13["node:path"] --> node_ci_migrate_merge_queue_window_0070bd6d_03bcdaa9
   ext_node_path_78811c13["node:path"] --> node_ci_migrate_promotion_evidence_1a2dc527_7ed1a850
   ext_node_path_78811c13["node:path"] --> node_ci_migrate_snapshot_paths_a10de06b_30ae5166
-  ext_node_path_78811c13["node:path"] --> node_cli_3_9d90d3fe_507ab5a9
-  ext_node_path_78811c13["node:path"] --> node_cli_9_b54c1407_02daed87
+  ext_node_path_78811c13["node:path"] --> node_cli_12_01c06c37_fabaa544
+  ext_node_path_78811c13["node:path"] --> node_cli_5_9c446a0f_12d0ff9c
   ext_node_path_78811c13["node:path"] --> node_cli_99bb8840_659774ba
   ext_node_path_78811c13["node:path"] --> node_cli_args_8_d546936e_2dae0fbc
+  ext_node_path_78811c13["node:path"] --> node_collector_0736fd5b_10bc1882
   ext_node_path_78811c13["node:path"] --> node_config_validator_669ebc2e_d7ca485d
   ext_node_path_78811c13["node:path"] --> node_context_ea7792a2_08541ab6
   ext_node_path_78811c13["node:path"] --> node_context_health_80bb7da9_169768cb
@@ -363,6 +385,9 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_lexical_fallback_723e2b3e_cdb7bd33
   ext_node_path_78811c13["node:path"] --> node_linear_gate_core_a415ae74_222bd4b9
   ext_node_path_78811c13["node:path"] --> node_link_checker_d0fa555f_abfe9020
+  ext_node_path_78811c13["node:path"] --> node_lint_attachments_873c0632_8c776b17
+  ext_node_path_78811c13["node:path"] --> node_lint_checks_83522b19_3fff9a7d
+  ext_node_path_78811c13["node:path"] --> node_lint_pages_e33301d0_51f54ed1
   ext_node_path_78811c13["node:path"] --> node_loader_1_16749818_9255dc35
   ext_node_path_78811c13["node:path"] --> node_loader_d47712cc_1c3a0e19
   ext_node_path_78811c13["node:path"] --> node_local_runtime_card_artifacts_35c25816_0ad02372
@@ -400,6 +425,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_path_78811c13["node:path"] --> node_replay_ac203c98_115ce9a2
   ext_node_path_78811c13["node:path"] --> node_repo_bound_paths_e218b5b3_216d0eb0
+  ext_node_path_78811c13["node:path"] --> node_repo_evidence_38bb1de5_def15798
   ext_node_path_78811c13["node:path"] --> node_repo_runtime_artifact_139c0fbd_51129f15
   ext_node_path_78811c13["node:path"] --> node_repo_scanner_core_8e9f7646_10aca705
   ext_node_path_78811c13["node:path"] --> node_repositories_a8038884_2c62efe4
@@ -419,6 +445,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_run_state_core_25a955bc_a562e9bf
   ext_node_path_78811c13["node:path"] --> node_runner_1_6f281bf8_36f20bbb
   ext_node_path_78811c13["node:path"] --> node_runtime_card_args_2b3d4b28_5cfe029c
+  ext_node_path_78811c13["node:path"] --> node_runtime_card_trace_64a5ca95_a26c03d1
   ext_node_path_78811c13["node:path"] --> node_satisfiability_6c08de4b_de8c902a
   ext_node_path_78811c13["node:path"] --> node_scaffold_ci_template_utils_1035b61c_0513532b
   ext_node_path_78811c13["node:path"] --> node_scaffold_db8a7260_1ca6adc9
@@ -448,6 +475,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
   ext_node_path_78811c13["node:path"] --> node_validate_packaged_skill_5e32c890_9228ad58
   ext_node_path_78811c13["node:path"] --> node_validate_reviewer_coverage_251efee3_621cd543
+  ext_node_path_78811c13["node:path"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
   ext_node_path_78811c13["node:path"] --> node_validate_workflow_contracts_33dc063c_2f80e314
   ext_node_path_78811c13["node:path"] --> node_validator_1_0c0621d8_0e5afcb6
   ext_node_path_78811c13["node:path"] --> node_validator_2_744853f5_98bb2caf
@@ -464,7 +492,7 @@ graph LR
   ext_node_process_00cdf119["node:process"] --> node_check_20f65c28_48d25399
   ext_node_process_00cdf119["node:process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_process_00cdf119["node:process"] --> node_ci_migrate_signing_2d82ac3f_9e5e8974
-  ext_node_process_00cdf119["node:process"] --> node_cli_3_9d90d3fe_507ab5a9
+  ext_node_process_00cdf119["node:process"] --> node_cli_5_9c446a0f_12d0ff9c
   ext_node_process_00cdf119["node:process"] --> node_contract_cc8321d6_c0e3de0f
   ext_node_process_00cdf119["node:process"] --> node_next_c6c1c9a9_040a8dbb
   ext_node_process_00cdf119["node:process"] --> node_next_runner_41643472_9b94424f

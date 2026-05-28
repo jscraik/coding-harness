@@ -5,6 +5,7 @@ import {
 	validateNullableString,
 	validateNumber,
 } from "../decision/validators.js";
+import { validateRuntimeCardToolExposureProjection } from "../tool-exposure/validation.js";
 import { validateRuntimeCardReferenceArray } from "./runtime-card-reference-validation.js";
 
 const FORBIDDEN_RAW_EMBEDDING_FIELDS = new Set([
@@ -29,6 +30,7 @@ const CODEX_RUNTIME_PROJECTION_FIELDS = new Set([
 	"reviewRefs",
 	"sessionRefs",
 	"staleStateRefs",
+	"toolExposure",
 ]);
 
 /** Reject bulky runtime-card fields that would embed raw Codex packets or reviews. */
@@ -164,6 +166,40 @@ function validateProjectionConsistency(
 		);
 	}
 	const receiptRefSet = new Set(uniqueReceiptRefs);
+	if (isRecord(value.toolExposure)) {
+		if (
+			typeof value.toolExposure.evidenceRef === "string" &&
+			!receiptRefSet.has(value.toolExposure.evidenceRef)
+		) {
+			errors.push(
+				toValidationError(
+					"codexRuntime.toolExposure.evidenceRef must also appear in codexRuntime.receiptRefs",
+					"codexRuntime.toolExposure.evidenceRef",
+				),
+			);
+		}
+		const toolExposureHasBlockedRuntime =
+			(typeof value.toolExposure.blockedPermissionAttemptCount === "number" &&
+				value.toolExposure.blockedPermissionAttemptCount > 0) ||
+			(typeof value.toolExposure.unavailableToolCount === "number" &&
+				value.toolExposure.unavailableToolCount > 0) ||
+			(typeof value.toolExposure.notAttemptedToolCount === "number" &&
+				value.toolExposure.notAttemptedToolCount > 0) ||
+			(typeof value.toolExposure.claimFailedToolCount === "number" &&
+				value.toolExposure.claimFailedToolCount > 0);
+		if (
+			toolExposureHasBlockedRuntime &&
+			typeof value.blockerCount === "number" &&
+			value.blockerCount === 0
+		) {
+			errors.push(
+				toValidationError(
+					"codexRuntime.blockerCount must explain blocked, unavailable, not-attempted, or claim-failed tool exposure",
+					"codexRuntime.blockerCount",
+				),
+			);
+		}
+	}
 	validateRefsAreProjected(
 		value.validationRefs,
 		"codexRuntime.validationRefs",
@@ -288,5 +324,13 @@ export function validateOptionalCodexRuntimeProjection(
 		"codexRuntime.staleStateRefs",
 		errors,
 	);
+	if (value.toolExposure !== undefined) {
+		for (const error of validateRuntimeCardToolExposureProjection(
+			value.toolExposure,
+			"codexRuntime.toolExposure",
+		)) {
+			errors.push(toValidationError(error.code, error.path));
+		}
+	}
 	validateProjectionConsistency(value, errors);
 }

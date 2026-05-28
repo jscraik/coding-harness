@@ -1,0 +1,165 @@
+{
+	"schemaVersion": "slice-intent/v1",
+	"goal": "codex-runtime-evidence-verifier-cockpit",
+	"lifecycleUnit": "PU-023-gap-009-reviewer-artifact-claim-support",
+	"createdAt": "2026-05-27T10:05:00Z",
+	"headShaAtIntent": "29ac20979f21bc178358779e0bc50d8ddc0eee75",
+	"status": "intent_reviewed_pass",
+	"objective": "Close the remaining GAP-009 reviewer-artifact loophole by requiring review-state/v1 reviewer artifact receipts to be pass, current, claim_support, non-empty, and cross-bound to path, expected producer, and PR head before they can validate.",
+	"auditGapIds": ["GAP-009"],
+	"evidenceBasis": [
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md#GAP-009",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#audit-gap-enforcement-addendum",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml#audit_gap_enforcement",
+		"src/lib/review-state/validation.ts",
+		"src/lib/review-state/review-state.test.ts",
+		"src/lib/delivery-truth/judge-pm-audit.ts",
+		"src/lib/delivery-truth/judge-pm-audit.test.ts",
+		"contracts/review-state.schema.json",
+		"contracts/examples/review-state.example.json"
+	],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/knowledge/runtime-evidence/",
+		".harness/knowledge/testing/",
+		".harness/research/evidence-patterns.json",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+	],
+	"memorySurfacesRead": [
+		"<LOCAL_MEMORY_REGISTRY>",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md"
+	],
+	"linearSnapshot": {
+		"issueId": "JSC-363",
+		"status": "In Progress",
+		"statusType": "started",
+		"observedAt": "2026-05-27T10:05:00Z",
+		"scopeNote": "Linear remains planning and ownership context only for this slice. This intent does not use Linear as implementation, CI, review, or closeout proof."
+	},
+	"currentFinding": {
+		"reviewStateValidator": "Reviewer artifact receipts already require review_artifact kind, review-state ref prefix, exact path ref, expected producer match, PR head match, and positive size for pass receipts.",
+		"remainingLoophole": "A reviewer artifact receipt can currently be fail, blocked, unknown, stale, or orientation-only and still satisfy review-state/v1 validation unless another closeout layer rejects it later.",
+		"desiredInvariant": "A review-state reviewer artifact is claim-supporting only when the packet-level validator itself rejects non-pass, non-current, non-claim-support, or empty artifact receipts."
+	},
+	"intentReviewFindingsAddressed": [
+		{
+			"source": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-023-gap-009-reviewer-artifact-intent-adversarial.md",
+			"finding": "Strict packet rejection can collapse stale or non-claim-supporting reviewer artifact evidence into generic invalid-packet failures.",
+			"response": "The implementation must preserve role-addressable error paths in review-state validation and add Judge/PM regression evidence that downstream blocker semantics remain explicit for stale and non-claim-supporting reviewer artifacts."
+		},
+		{
+			"source": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-023-gap-009-reviewer-artifact-intent-adversarial.md",
+			"finding": "The test matrix under-specified not_applicable and missing freshness branches.",
+			"response": "The validation plan now requires explicit not_applicable status and missing/not_applicable freshness cases with exact error-path assertions."
+		},
+		{
+			"source": ".harness/review/codex-runtime-evidence-verifier-cockpit/pu-023-gap-009-reviewer-artifact-intent-agent-native.md",
+			"finding": "Schema discoverability may drift from runtime invariants.",
+			"response": "The schema must encode representable invariants with supported JSON Schema keywords, while path/ref, producer, and head-SHA cross-field rules remain TypeScript runtime validator proof."
+		}
+	],
+	"allowedFiles": [
+		"src/lib/review-state/validation.ts",
+		"src/lib/review-state/review-state.test.ts",
+		"src/lib/delivery-truth/judge-pm-audit.test.ts",
+		"contracts/review-state.schema.json",
+		"contracts/examples/review-state.example.json",
+		".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-023-gap-009-reviewer-artifact-claim-support-intent.json",
+		".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx",
+		".harness/implementation-notes/implementation-notes.html",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/review/codex-runtime-evidence-verifier-cockpit/pu-023-gap-009-reviewer-artifact-*.md"
+	],
+	"forbiddenFiles": [
+		"<EXTERNAL_CODEX_CHECKOUT>/**",
+		"src/lib/pr-closeout/**",
+		"src/lib/external-state/**",
+		"src/lib/runtime/**",
+		"src/commands/**",
+		"package.json",
+		"pnpm-lock.yaml",
+		".github/**",
+		".circleci/**"
+	],
+	"assumptions": [
+		"review-state/v1 reviewer artifacts are intended to support closeout/Judge coverage, not merely orient future work.",
+		"If a reviewer artifact exists only as blocked, stale, unknown, or orientation-only evidence, the review-state packet should fail validation or force an explicit blocker path rather than silently validating as coverage.",
+		"The Judge/PM audit already rejects unsupported reviewer artifacts; this slice moves the same trust boundary into the review-state packet validator and regression tests.",
+		"The schema can become stricter for reviewerArtifacts.receipt without changing the top-level evidence-receipt/v1 schema.",
+		"This slice should not refresh live GitHub, CodeRabbit, or Linear state."
+	],
+	"nonGoals": [
+		"Do not add a new PR closeout command.",
+		"Do not change external-state, runtime-card, delivery-truth verdict semantics, or harness next behavior.",
+		"Do not fetch live PR comments, CI checks, CodeRabbit state, or Linear issue data.",
+		"Do not rewrite the review-state data model beyond reviewer artifact receipt support rules.",
+		"Do not claim GAP-009 fully closed unless focused tests, schema parity, required skill lenses, and independent reviewers pass or are explicitly blocked with evidence."
+	],
+	"implementationApproach": [
+		"Add review-state validator checks that every reviewer artifact receipt has status pass, freshness current, evidenceUse claim_support, and sizeBytes greater than zero.",
+		"Keep existing path, producer, headSha, kind, and ref binding behavior intact.",
+		"Add regression tests for fail, blocked, unknown, and not_applicable reviewer artifact receipt statuses with exact reviewerArtifacts.<index>.receipt.status error paths.",
+		"Add regression tests for stale, missing, unknown, and not_applicable reviewer artifact receipt freshness with exact reviewerArtifacts.<index>.receipt.freshness error paths.",
+		"Add regression tests for orientation and audit_trail reviewer artifact evidenceUse values with exact reviewerArtifacts.<index>.receipt.evidenceUse error paths.",
+		"Add or confirm Judge/PM audit regression coverage for stale and non-claim-supporting reviewer artifacts so downstream closeout still surfaces reviewer-specific blockers rather than a generic invalid-packet collapse.",
+		"Tighten contracts/review-state.schema.json so reviewerArtifacts.receipt advertises representable status, freshness, evidenceUse, kind, and positive size requirements with validator-supported JSON Schema keywords.",
+		"Keep cross-field invariants that JSON Schema cannot express here, such as receipt.ref matching artifact.path, receipt.producer matching expectedProducer, and receipt.headSha matching pr.headSha, in TypeScript validator tests.",
+		"Run schema/example parity and focused test gates before recording the slice receipt."
+	],
+	"validationGates": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-023-gap-009-reviewer-artifact-claim-support-intent.json",
+		"pnpm exec vitest run src/lib/review-state/review-state.test.ts",
+		"pnpm exec vitest run src/lib/delivery-truth/judge-pm-audit.test.ts",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm exec biome check src/lib/review-state/validation.ts src/lib/review-state/review-state.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts contracts/review-state.schema.json contracts/examples/review-state.example.json .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-023-gap-009-reviewer-artifact-claim-support-intent.json",
+		"git diff --check -- src/lib/review-state/validation.ts src/lib/review-state/review-state.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts contracts/review-state.schema.json contracts/examples/review-state.example.json .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-023-gap-009-reviewer-artifact-claim-support-intent.json .harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx .harness/implementation-notes/implementation-notes.html docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id R081 --repo .",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+	],
+	"reviewerRoles": [
+		"adversarial-reviewer",
+		"agent-native-reviewer",
+		"best-practices-researcher"
+	],
+	"skillLensChecks": [
+		"improve-codebase-architecture",
+		"simplify",
+		"unslopify",
+		"he-code-review",
+		"testing"
+	],
+	"riskControls": [
+		"Fail closed for reviewer artifacts that are stale, blocked, unknown, fail, not_applicable, orientation-only, or audit-trail-only.",
+		"Do not reinterpret failed or blocked reviewer artifacts as missing; preserve the exact validation error path for operator action.",
+		"Keep review-state validator changes additive to evidence-receipt/v1 and do not narrow unrelated receipt kinds.",
+		"Schema parity is shape and discoverability proof only; claim-support safety is proven by review-state validator tests plus Judge/PM audit tests.",
+		"If schema validator cannot express a TypeScript cross-field rule, keep that rule in TypeScript tests and document the schema limitation in the receipt rather than pretending parity proves it.",
+		"Unavailable required skill lenses must be recorded as blocked_validation with owner and exact missing-skill evidence, not substituted with prose."
+	],
+	"acceptanceCriteria": [
+		"review-state/v1 rejects reviewer artifact receipts whose status is fail, blocked, unknown, or not_applicable.",
+		"review-state/v1 rejects reviewer artifact receipts whose freshness is stale, missing, unknown, or not_applicable.",
+		"review-state/v1 rejects reviewer artifact receipts whose evidenceUse is orientation or audit_trail.",
+		"review-state/v1 rejects reviewer artifact receipts without positive sizeBytes regardless of status.",
+		"Existing path, expectedProducer, headSha, ref, kind, and ownership-classification tests still pass.",
+		"review-state public schema/example parity remains valid.",
+		"Review-state validation tests assert exact error paths for status, freshness, evidenceUse, and sizeBytes failures so agents can route remediation without parsing prose.",
+		"Judge/PM audit tests prove stale and non-claim-supporting reviewer artifacts still produce reviewer-artifact-specific blockers.",
+		"Slice receipt records GAP-009, Project Brain inputs, memory surfaces, validation commands, skill-lens results, and independent reviewer results."
+	],
+	"blockedConditions": [
+		"Stop if tightening review-state would break a documented requirement that reviewer artifacts may be orientation-only inside review-state/v1.",
+		"Stop if the required schema parity validator cannot run and no equivalent focused proof is available.",
+		"Stop if independent reviewers report that this belongs in delivery-truth only rather than review-state validation."
+	],
+	"rollbackPath": [
+		"Revert the review-state validator additions and their tests.",
+		"Revert review-state schema constraints if they are too strict for packet admission.",
+		"Keep the intent and review artifacts as evidence of the attempted GAP-009 closure and record the blocker in receipts.jsonl."
+	]
+}

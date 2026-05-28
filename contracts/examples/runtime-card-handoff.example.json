@@ -1,0 +1,42 @@
+{
+	"schemaVersion": "runtime-card-handoff/v1",
+	"generatedAt": "2026-05-15T12:00:00.000Z",
+	"expiresAt": "2026-05-15T13:00:00.000Z",
+	"issueKey": "JSC-311",
+	"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	"evidenceUse": "orientation",
+	"freshness": "current",
+	"runtimeIdentity": {
+		"issueKey": "JSC-311",
+		"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"generatedAt": "2026-05-15T12:00:00.000Z",
+		"provenanceRef": "artifact:.harness/runtime/JSC-311-evidence.json",
+		"sourceRefs": ["git:status", "artifact:.harness/active-artifacts.md"]
+	},
+	"runtimeCard": {
+		"path": ".harness/runtime/JSC-311-card.json",
+		"schemaVersion": "runtime-card/v1",
+		"sizeBytes": 2048,
+		"sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"generatedAt": "2026-05-15T12:00:00.000Z",
+		"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"sourceRefs": ["git:status", "artifact:.harness/active-artifacts.md"],
+		"provenanceRefs": ["artifact:.harness/runtime/JSC-311-card.json"]
+	},
+	"evidenceBundle": {
+		"path": ".harness/runtime/JSC-311-evidence.json",
+		"schemaVersion": "runtime-evidence-bundle/v1",
+		"sizeBytes": 1024,
+		"sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		"generatedAt": "2026-05-15T12:00:00.000Z",
+		"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"sourceRefs": ["git:status", "artifact:.harness/active-artifacts.md"],
+		"provenanceRefs": ["artifact:.harness/runtime/JSC-311-evidence.json"]
+	},
+	"sourceRefs": ["git:status", "artifact:.harness/active-artifacts.md"],
+	"provenanceRefs": [
+		"artifact:.harness/runtime/JSC-311-card.json",
+		"artifact:.harness/runtime/JSC-311-evidence.json"
+	],
+	"blockers": []
+}

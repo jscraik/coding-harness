@@ -6,9 +6,9 @@ export function createRuntimeCardCommandSpec(): CommandSpec {
 	return {
 		name: "runtime-card",
 		summary:
-			"Build runtime-card/v1 and optional normalized evidence artifacts from git, harness evidence, normalized evidence bundles, and optional live provider state",
+			"Build runtime-card/v1 plus optional evidence-bundle and handoff artifacts from git, harness evidence, normalized evidence bundles, and optional live provider state",
 		example:
-			"runtime-card --json --evidence .harness/runtime/session-evidence.json --out .harness/runtime/JSC-311.json --evidence-out .harness/runtime/JSC-311-evidence.json",
+			"runtime-card --json --evidence .harness/runtime/session-evidence.json --out .harness/runtime/JSC-311.json --evidence-out .harness/runtime/JSC-311-evidence.json --handoff-out .harness/runtime/JSC-311-handoff.json",
 		errorLabel: "Runtime Card Error",
 		execute: (args) => runRuntimeCardCLI(args),
 	};

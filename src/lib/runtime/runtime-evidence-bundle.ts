@@ -11,6 +11,8 @@ import {
 	validateString,
 	validateStringArray,
 } from "../decision/validators.js";
+import type { RuntimeCardToolExposureProjection } from "../tool-exposure/types.js";
+import { validateRuntimeCardToolExposureProjection } from "../tool-exposure/validation.js";
 import type {
 	RuntimeCard,
 	RuntimeCardFreshness,
@@ -95,6 +97,8 @@ export interface RuntimeEvidenceBundle {
 	phaseExitSourceCompleteness?: RuntimeEvidencePhaseExitSourceCompleteness;
 	/** Normalized source refs inspected by the upstream collector or adapter. */
 	sources: RuntimeCardSource[];
+	/** Optional compact tool-exposure projection for Codex runtime capability state. */
+	toolExposure?: RuntimeCardToolExposureProjection;
 	/** Blocking conditions reported by the upstream collector or adapter. */
 	blockers: string[];
 }
@@ -283,6 +287,29 @@ function validateSources(value: unknown, errors: HeValidationError[]): void {
 	}
 }
 
+function validateToolExposureSourceRef(
+	toolExposure: unknown,
+	sources: unknown,
+	errors: HeValidationError[],
+): void {
+	if (!isRecord(toolExposure) || !Array.isArray(sources)) return;
+	if (typeof toolExposure.evidenceRef !== "string") return;
+	const sourceRefs = new Set<string>();
+	for (const source of sources) {
+		if (isRecord(source) && typeof source.ref === "string") {
+			sourceRefs.add(source.ref);
+		}
+	}
+	if (!sourceRefs.has(toolExposure.evidenceRef)) {
+		errors.push(
+			toValidationError(
+				"toolExposure.evidenceRef must be backed by runtime evidence bundle sources",
+				"toolExposure.evidenceRef",
+			),
+		);
+	}
+}
+
 /**
  * Validates a runtime evidence bundle provenance object and appends any validation errors to `errors`.
  *
@@ -371,6 +398,15 @@ export function validateRuntimeEvidenceBundle(
 		errors,
 	);
 	validateSources(value.sources, errors);
+	if (value.toolExposure !== undefined) {
+		for (const error of validateRuntimeCardToolExposureProjection(
+			value.toolExposure,
+			"toolExposure",
+		)) {
+			errors.push(toValidationError(error.code, error.path));
+		}
+		validateToolExposureSourceRef(value.toolExposure, value.sources, errors);
+	}
 	validateStringArray(value.blockers, "blockers", errors);
 	return { valid: errors.length === 0, errors };
 }

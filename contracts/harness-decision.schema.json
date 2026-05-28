@@ -1,0 +1,126 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/harness-decision.schema.json",
+	"title": "Harness Decision",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"producer",
+		"status",
+		"summary",
+		"nextAction",
+		"nextCommand",
+		"phase",
+		"objective",
+		"requiredEvidence",
+		"stopConditions",
+		"humanEscalation",
+		"followUpCommands",
+		"hiddenPlumbing",
+		"safeToRun",
+		"requiresHuman",
+		"requiresNetwork",
+		"writesFiles",
+		"evidenceRef",
+		"failureClass",
+		"retry",
+		"riskTier"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "harness-decision/v1"
+		},
+		"producer": {
+			"type": "string",
+			"minLength": 1
+		},
+		"status": {
+			"enum": ["pass", "fail", "blocked", "action_required"]
+		},
+		"summary": {
+			"type": "string",
+			"minLength": 1
+		},
+		"nextAction": {
+			"type": "string",
+			"minLength": 1
+		},
+		"nextCommand": {
+			"type": ["string", "null"],
+			"minLength": 1
+		},
+		"phase": {
+			"enum": ["orient", "verify", "review", "repair", "handoff"]
+		},
+		"objective": {
+			"type": "string",
+			"minLength": 1
+		},
+		"requiredEvidence": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"stopConditions": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"humanEscalation": {
+			"type": ["string", "null"],
+			"minLength": 1
+		},
+		"followUpCommands": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"hiddenPlumbing": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"safeToRun": {
+			"type": "boolean"
+		},
+		"requiresHuman": {
+			"type": "boolean"
+		},
+		"requiresNetwork": {
+			"type": "boolean"
+		},
+		"writesFiles": {
+			"type": "boolean"
+		},
+		"evidenceRef": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"failureClass": {
+			"type": ["string", "null"],
+			"minLength": 1
+		},
+		"retry": {
+			"enum": ["safe", "conditional", "manual"]
+		},
+		"riskTier": {
+			"enum": ["low", "medium", "high", "critical", "unknown"]
+		},
+		"meta": {
+			"type": "object"
+		}
+	}
+}

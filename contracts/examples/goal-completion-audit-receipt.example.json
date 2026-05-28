@@ -1,0 +1,46 @@
+{
+	"schemaVersion": "goal-completion-audit-receipt/v1",
+	"generatedAt": "2026-05-28T00:50:00Z",
+	"producer": "harness:goal-completion-audit-receipt",
+	"runtimeStatus": "not_yet_emitted",
+	"evidenceUse": "audit_trail",
+	"headSha": "2aab21806a744a61075625fe7a4a9d1452a0c672",
+	"objectiveIdentity": {
+		"objectiveRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#objective",
+		"objectiveSourcePath": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"objectivePointer": "#/objective",
+		"objectiveSourceHeadSha": "2aab21806a744a61075625fe7a4a9d1452a0c672",
+		"objectiveSourceSha256": "sha256:19e1f6bad5cc56de7d8db53df1a6930b35f3e38c596b74fc7b07ec3b4a666d7f",
+		"objectiveHash": "sha256:19e1f6bad5cc56de7d8db53df1a6930b35f3e38c596b74fc7b07ec3b4a666d7f",
+		"hashAlgorithm": "sha256",
+		"canonicalizationVersion": "goal-objective-text-lf/v1"
+	},
+	"requirements": [
+		{
+			"id": "SPG-003",
+			"description": "GoalCompletionAuditReceipt exists before done claims.",
+			"required": true,
+			"status": "pass",
+			"freshness": "current",
+			"evidenceRefs": ["receipt:R102"],
+			"blockerRefs": [],
+			"verdictRef": "delivery-truth:goal-completion"
+		}
+	],
+	"blockers": [],
+	"verdict": {
+		"status": "pass",
+		"freshness": "current",
+		"readyForDoneClaim": true,
+		"goalStatusRecommendation": "complete",
+		"blockerCode": null,
+		"blockerClass": null,
+		"blockerRefs": [],
+		"evidenceRefs": ["receipt:R102"],
+		"verifiedAt": "2026-05-28T00:50:00Z"
+	},
+	"sourceRefs": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R102"
+	],
+	"blockedBy": "PU-029 defines the pre-closeout receipt contract before production closeout wiring."
+}

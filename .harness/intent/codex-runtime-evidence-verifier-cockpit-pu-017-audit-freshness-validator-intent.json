@@ -1,0 +1,51 @@
+{
+	"schemaVersion": "harness-intent/v1",
+	"goal": "codex-runtime-evidence-verifier-cockpit",
+	"lifecycleUnit": "PU-017-audit-freshness-validator",
+	"createdAt": "2026-05-27T00:00:00Z",
+	"intent": {
+		"summary": "Make the adopted 2026-05-26 evidence-led gap audit mechanically freshness-checked against the goal receipt trail.",
+		"feedbackSignal": "Jamie asked whether goal.md links to the audit so updates are caught.",
+		"rootOperationalFailure": "A prose link and receipt rule can be forgotten unless current audit content is compared against receipt evidence.",
+		"failureCategory": "weak validation",
+		"durableSystemImprovement": "Add a repository-local audit freshness validator that hashes adopted audit sources and fails when the latest receipt does not acknowledge the current content."
+	},
+	"scope": {
+		"in": [
+			"Add a focused script that validates a goal receipt references the governed audit path, current audit content hash, and monotonic freshness evidence.",
+			"Add fixture tests for pass, stale hash, missing source, and unsafe path cases.",
+			"Wire the goal board completion surface to name the new validator command.",
+			"Append a receipt proving the current audit was re-read, hashed, and checked after the current audit file timestamp."
+		],
+		"out": [
+			"Do not implement runtime evidence cockpit production features in this slice.",
+			"Do not mutate the audit content itself.",
+			"Do not change external Goal Governor validator behavior.",
+			"Do not claim historical slice completion from this new guard."
+		]
+	},
+	"expectedFiles": [
+		"scripts/check-goal-audit-freshness.py",
+		"src/dev/check-goal-audit-freshness-script.test.ts",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+	],
+	"validationPlan": [
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .",
+		"pnpm vitest run src/dev/check-goal-audit-freshness-script.test.ts",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"git diff --check -- scripts/check-goal-audit-freshness.py src/dev/check-goal-audit-freshness-script.test.ts docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+	],
+	"acceptanceCriteria": [
+		"The validator passes only when the latest receipt audit_sources_checked entry for the exact governed audit path includes a sha256 matching the current audit file.",
+		"The validator requires each supporting audit_sources_checked entry to include path, sha256, checked_at, and head_sha.",
+		"The validator resolves freshness by scanning receipts in reverse order and selecting the first audit_sources_checked entry whose path exactly matches the governed audit path.",
+		"The validator requires checked_at evidence at or after the audit file timestamp so a changed-and-reverted audit cannot be over-credited by hash equality alone.",
+		"The validator fails when the audit content changes after the receipt hash.",
+		"The validator fails when an operator points required-mode validation at a non-governed audit path.",
+		"The validator fails when the receipt omits the audit source or uses a non-canonical path.",
+		"The goal completion contract names the validator so future audit updates are caught mechanically.",
+		"The receipt explicitly states this guard is prospective and does not retroactively complete earlier slices."
+	]
+}

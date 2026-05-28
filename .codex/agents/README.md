@@ -7,6 +7,7 @@
 - [Runtime Discovery](#runtime-discovery)
 - [Runtime Freshness](#runtime-freshness)
 - [Role Inventory](#role-inventory)
+- [Artifact And Accountability Contract](#artifact-and-accountability-contract)
 - [Validation](#validation)
 - [Non-Runtime Surfaces](#non-runtime-surfaces)
 
@@ -85,6 +86,33 @@ Reviewers:
 - `harness-review-response-auditor`: review comments and responses.
 - `harness-repository-automation-reviewer`: repository-management scripts.
 - `harness-dashboard-definition-reviewer`: production dashboard definitions.
+
+## Artifact And Accountability Contract
+
+Every project-local harness agent can write durable artifacts. Reviewer roles
+write evidence reports under `artifacts/reviews/` and run manifests under
+`artifacts/agent-runs/`. `harness-toolsmith` may also write the implementation
+artifacts explicitly assigned by the coordinator.
+
+Artifact output is part of the role contract, not optional prose. Each role
+declares an `[output_contract]` with:
+
+- `can_write_artifacts = true`
+- a default `artifact_path_pattern`
+- a default `manifest_path_pattern`
+- the exact `WROTE:` completion line for the default artifact
+- `requires_accountability_receipt = true`
+
+Every artifact or final report must include an Accountability Receipt with:
+status, artifact paths, manifest path, findings, failures or blockers,
+improvement opportunities, strengths, validation evidence, and next action.
+Completion cannot be inferred from mailbox/status text when an artifact was
+requested; the coordinator must verify the artifact exists and is non-empty.
+
+Agents must use `local-memory` through the CLI with `--json` when durable
+memory is needed. They must not silently fall back to Local Memory MCP or REST.
+If the CLI is unavailable, the artifact receipt must record
+`blocked_local_memory_cli` with the exact command and error.
 
 ## Validation
 

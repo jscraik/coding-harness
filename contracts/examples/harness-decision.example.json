@@ -1,0 +1,27 @@
+{
+	"schemaVersion": "harness-decision/v1",
+	"producer": "next",
+	"status": "action_required",
+	"summary": "Review-gate behavior changed and needs focused tests.",
+	"nextAction": "Run the focused review-gate tests before broader validation.",
+	"nextCommand": "pnpm vitest run src/commands/review-gate.test.ts",
+	"phase": "review",
+	"objective": "Run focused review-gate tests before broader validation.",
+	"requiredEvidence": ["git:changed-files", "harness.contract.json"],
+	"stopConditions": [],
+	"humanEscalation": null,
+	"followUpCommands": ["bash scripts/validate-codestyle.sh --fast"],
+	"hiddenPlumbing": [],
+	"safeToRun": true,
+	"requiresHuman": false,
+	"requiresNetwork": false,
+	"writesFiles": false,
+	"evidenceRef": ["git:changed-files", "harness.contract.json"],
+	"failureClass": null,
+	"retry": "safe",
+	"riskTier": "medium",
+	"meta": {
+		"changedFiles": ["src/commands/review-gate.ts"],
+		"alternatives": ["bash scripts/validate-codestyle.sh --fast"]
+	}
+}

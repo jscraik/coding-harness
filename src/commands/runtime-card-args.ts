@@ -1,57 +1,21 @@
 import { resolve } from "node:path";
 import { cwd } from "node:process";
+import { parseRuntimeCardTraceOutPath } from "../lib/runtime-trace/runtime-card-trace.js";
+import {
+	isRuntimeCardContext,
+	printRuntimeCardUsage,
+	type RuntimeCardCLIOptions,
+} from "./runtime-card-options.js";
 
-/** Runtime context used when building runtime-card evidence. */
-export type RuntimeCardContext = "local" | "pr" | "ci" | "closeout";
-
-/** Parsed CLI options for `harness runtime-card`. */
-export interface RuntimeCardCLIOptions {
-	/** Whether to print JSON output. */
-	json: boolean;
-	/** Repository root used for git and artifact resolution. */
-	repoRoot: string;
-	/** Runtime context being summarized. */
-	context: RuntimeCardContext;
-	/** Optional tracker issue key. */
-	issueKey?: string;
-	/** Optional phase-exit artifact path. */
-	phaseExitPath?: string;
-	/** Optional runtime evidence bundle path. */
-	evidencePath?: string;
-	/** Optional runtime-card output path. */
-	outPath?: string;
-	/** Optional runtime evidence bundle output path. */
-	evidenceOutPath?: string;
-	/** Whether live provider state should be collected. */
-	live: boolean;
-}
+export type {
+	RuntimeCardCLIOptions,
+	RuntimeCardContext,
+} from "./runtime-card-options.js";
 
 /** Result of parsing runtime-card CLI arguments. */
 export type RuntimeCardParseResult =
 	| { options: RuntimeCardCLIOptions }
 	| { exitCode: number };
-
-const VALID_RUNTIME_CARD_CONTEXTS: readonly RuntimeCardContext[] = [
-	"local",
-	"pr",
-	"ci",
-	"closeout",
-];
-
-function isRuntimeCardContext(value: string): value is RuntimeCardContext {
-	return VALID_RUNTIME_CARD_CONTEXTS.includes(value as RuntimeCardContext);
-}
-
-/** Print usage syntax for the `harness runtime-card` command. */
-export function printRuntimeCardUsage(): void {
-	console.info(
-		"Usage: harness runtime-card [--json] [--live] [--repo <path>] [--context local|pr|ci|closeout] [--issue <key>] [--phase-exit <path>] [--evidence <path>] [--out <path>] [--evidence-out <path>]",
-	);
-	console.info("");
-	console.info(
-		"Build a runtime-card/v1 artifact from git, .harness evidence, normalized evidence bundles, and optional live provider state.",
-	);
-}
 
 function readFlagValue(
 	args: readonly string[],
@@ -66,7 +30,12 @@ function setPathOption(
 	options: RuntimeCardCLIOptions,
 	args: readonly string[],
 	index: number,
-	flag: "--phase-exit" | "--evidence" | "--out" | "--evidence-out",
+	flag:
+		| "--phase-exit"
+		| "--evidence"
+		| "--out"
+		| "--evidence-out"
+		| "--handoff-out",
 ): RuntimeCardParseResult | null {
 	const value = readFlagValue(args, index);
 	if (!value) {
@@ -81,6 +50,29 @@ function setPathOption(
 	if (flag === "--evidence") options.evidencePath = value;
 	if (flag === "--out") options.outPath = value;
 	if (flag === "--evidence-out") options.evidenceOutPath = value;
+	if (flag === "--handoff-out") options.handoffOutPath = value;
+	return null;
+}
+
+function setTraceOutOption(
+	options: RuntimeCardCLIOptions,
+	args: readonly string[],
+	index: number,
+): RuntimeCardParseResult | null {
+	const value = readFlagValue(args, index);
+	if (!value) {
+		console.error(
+			"runtime-card: --trace-out requires artifacts/agent-runs/<runId>/events.jsonl",
+		);
+		return { exitCode: 2 };
+	}
+	if (!parseRuntimeCardTraceOutPath(value)) {
+		console.error(
+			"runtime-card: --trace-out must be artifacts/agent-runs/<runId>/events.jsonl",
+		);
+		return { exitCode: 2 };
+	}
+	options.traceOutPath = value;
 	return null;
 }
 
@@ -135,16 +127,31 @@ export function parseRuntimeCardArgs(
 			continue;
 		}
 		if (
-			["--phase-exit", "--evidence", "--out", "--evidence-out"].includes(
-				arg ?? "",
-			)
+			[
+				"--phase-exit",
+				"--evidence",
+				"--out",
+				"--evidence-out",
+				"--handoff-out",
+			].includes(arg ?? "")
 		) {
 			const parseResult = setPathOption(
 				options,
 				args,
 				index,
-				arg as "--phase-exit" | "--evidence" | "--out" | "--evidence-out",
+				arg as
+					| "--phase-exit"
+					| "--evidence"
+					| "--out"
+					| "--evidence-out"
+					| "--handoff-out",
 			);
+			if (parseResult) return parseResult;
+			index += 1;
+			continue;
+		}
+		if (arg === "--trace-out") {
+			const parseResult = setTraceOutOption(options, args, index);
 			if (parseResult) return parseResult;
 			index += 1;
 			continue;

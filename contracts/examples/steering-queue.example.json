@@ -1,0 +1,60 @@
+{
+	"schemaVersion": "steering-queue/v1",
+	"generatedAt": "2026-05-28T09:45:00Z",
+	"producer": "coding-harness:steering-queue",
+	"runtimeStatus": "not_yet_emitted",
+	"evidenceUse": "orientation",
+	"headSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96",
+	"threadId": "thread:codex-runtime-evidence-cockpit",
+	"turnId": "turn:pu-030",
+	"evaluatedAt": "2026-05-28T09:46:00Z",
+	"selectedItemId": "steering:continue-after-triage",
+	"items": [
+		{
+			"id": "steering:continue-after-triage",
+			"scopeRef": "goal:codex-runtime-evidence-verifier-cockpit",
+			"createdAt": "2026-05-28T09:40:00Z",
+			"expiresAt": "2026-05-28T12:40:00Z",
+			"sourceRef": "artifact:implementation-notes",
+			"instructionRef": "artifact:steering/continue-after-triage",
+			"instructionHash": "sha256:c9cd9c016c757cd1045a96b39a181e3804396bc419a590aefc8fa4d308184b33",
+			"instructionHashAlgorithm": "sha256",
+			"instructionCanonicalizationVersion": "steering-instruction-text-lf/v1",
+			"instructionProvenanceKind": "harness_artifact",
+			"deliveryMode": "same_thread_continuation",
+			"expectedThreadId": "thread:codex-runtime-evidence-cockpit",
+			"expectedTurnId": "turn:pu-030",
+			"expectedHeadSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96",
+			"priority": 10,
+			"requiredArtifacts": [
+				{
+					"artifactRef": "artifact:pr-triage-report",
+					"headSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96",
+					"producedAt": "2026-05-28T09:41:00Z",
+					"sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+					"receiptId": "receipt:pr-triage-report"
+				}
+			],
+			"supersedes": [],
+			"supersededBy": null,
+			"state": "applicable",
+			"stateReason": null,
+			"stateAt": "2026-05-28T09:46:00Z",
+			"appliedAt": null,
+			"rejectedAt": null,
+			"supersededAt": null,
+			"stalePreconditions": []
+		}
+	],
+	"summary": {
+		"total": 1,
+		"pending": 0,
+		"applicable": 1,
+		"applied": 0,
+		"rejected": 0,
+		"expired": 0,
+		"superseded": 0,
+		"stale": 0
+	},
+	"blockedBy": "blocked:runtime-card-continuation-wiring-not-implemented"
+}

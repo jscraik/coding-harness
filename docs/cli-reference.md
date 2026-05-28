@@ -41,11 +41,14 @@ harness runtime-card --json --live \
   --out .harness/runtime/JSC-311.json \
   --evidence-out .harness/runtime/JSC-311-evidence.json
 harness runtime-card --json --evidence .harness/runtime/session-evidence.json --out .harness/runtime/JSC-311.json
+harness runtime-card --json --trace-out artifacts/agent-runs/<runId>/events.jsonl
 harness next --json --files src/cli.ts docs/cli-reference.md
 harness next --json --phase-exit .harness/runs/phase-exit.json
 harness next --json --runtime-card .harness/runtime/JSC-311.json
 harness next --json --mode pr
 ```
+
+Replace `<runId>` with a fresh run identifier for each trace-out attempt.
 
 `--phase-exit` accepts a local `HePhaseExit/v1` JSON artifact. When supplied,
 `harness next` normalizes the phase-exit result into `meta.hePhaseExit` and
@@ -70,7 +73,13 @@ to `harness next`. Use `--out <path>` when the card should be persisted for a
 later `harness next --runtime-card <path>` call. Use `--evidence-out <path>`
 to persist a reusable `runtime-evidence-bundle/v1` that can be consumed by a
 later `harness runtime-card --evidence <path>` run without reassembling PR,
-Linear, source, and blocker state by hand.
+Linear, source, and blocker state by hand. Use `--trace-out
+artifacts/agent-runs/<runId>/events.jsonl` with a fresh run id when the run
+should also append a canonical replay-ready `agent-run-event/v1` JSONL stream
+and sibling run manifest. Existing or pre-claimed run ids fail closed before
+the first event append so replay evidence does not blend multiple executions.
+Trace output is opt-in audit/orientation evidence only; it does not prove
+closeout, review coverage, CI, Linear alignment, or merge readiness.
 
 First-slice routing is intentionally small:
 
@@ -117,11 +126,14 @@ Taxonomy note: section headings in this document represent command families. The
 | Command             | Purpose                                                                                                                                                                                                                                                                                                                                                                                      |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                                                                                                                                                                                                                                    |
+| `agent-readiness`   | Audit agent-readable instructions, artifacts, capabilities, approval gates, traceability, and context freshness (`--json`, optional path, optional `--repo-root`)                                                                                                                                                                                                                            |
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                                                                                                                                    |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                                                                                                                                           |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                                                                                                                                   |
 | `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                                                                                                                                        |
-| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`)                                                                                               |
+| `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`, optional `--trace-out artifacts/agent-runs/<runId>/events.jsonl`)                             |
+| `session-context`   | Emit a read-only `session-context/v1` orientation packet for repo, issue, branch, artifact, runtime-card, review-evidence, stale-state, and traversal hints (`--json`, optional `--repo-root`)                                                                                                                                                                                               |
+| `decision-request`  | Emit a read-only `decision-request/v1` governance packet for a bounded HILT authority boundary, including intent, authority, options, evidence refs, boundary class, expiry/freshness, escalation metadata, and stale-state classification (`--json`, `--intent`, `--default-option`, `--boundary`, repeated `--option id=label`, optional repeated `--tradeoff id=text`)                    |
 | `pr-closeout`       | Build a read-only `pr-closeout/v1` report from normalized evidence or live GitHub CLI state, including PR metadata, check state, Coding Harness closeout gates, CLI availability, dirty worktree state, and AI session/traceability completeness (`--json`, `--input <path>` or `--pr <number>`, optional `--repo`, optional `--gates`, compatibility `--phase-exit`, optional `--env-file`) |
 | `fleet-plan`        | Build an agent-native remediation plan from a harness upgrade matrix artifact (`--from`, `--json`)                                                                                                                                                                                                                                                                                           |
 | `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                                                                                                                                                                                                                                      |
@@ -136,6 +148,16 @@ Taxonomy note: section headings in this document represent command families. The
 | `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                                                                                                                                                                                                                                            |
 | `preset`            | List and inspect bundled presets                                                                                                                                                                                                                                                                                                                                                             |
 | `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                                                                                                                                                                                                                                        |
+
+`decision-request` accepts only real HILT authority boundaries for `--boundary`:
+`destructive_action`, `external_mutation`, `credential_or_secret_access`,
+`security_sensitive_action`, `public_contract_change`, `release_action`,
+`permission_escalation`, `stale_claim_support`, `merge_readiness`,
+`tracker_authority`, and `goal_completion`. Claim-sensitive boundaries
+(`stale_claim_support`, `merge_readiness`, `tracker_authority`, and
+`goal_completion`) require at least one non-empty `--evidence` ref and
+non-current stale-state evidence; routine uncertainty must stay in local
+investigation rather than becoming a decision-request packet.
 
 In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json` when the upgrade-matrix artifact exists.
 

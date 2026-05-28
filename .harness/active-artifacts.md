@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-21.
+Last reconciled: 2026-05-28.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Harness assurance and artifact handling routine | JSC-331 | `.harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md` plus `.harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md` plus `docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md` | Active local plan selected to live Linear issue; artifact routine, review stack, Codex runtime-evidence audit update, and Goal Governor kickoff board added | Use the goal board and audit as the current graded fix plan: start with governor bootstrap, harden false-success edges first, add `runtime-evidence-contract/v1`, then expand issue-loop/product-driver/Linear tracker enforcement. Keep JSC-308 as related broader artifact-policy context. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Current board status is active; the latest externally verified PR #309 head before the current local PU-034 slice is `9df3e8657e273ef754bf357a4bcc63d0f77aafd9`. Live checks were green on that pushed head, but R113 only claims local ActionReviewReceipt/v1 validation before the next push. GitHub review approval, review-thread, Linear scope, merge-readiness, Judge/PM, runtime producer emission, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is to commit and push PU-034 SPG-008 ActionReviewReceipt/v1, refresh PR #309 on the new head, launch PR triage if needed, and continue the next SPG slice; do not route from older JSC-331 context unless the current goal explicitly references it. |
 
 ## Artifact Index
 
@@ -36,6 +36,7 @@ unless a live refresh is recorded in the referenced artifact.
 | JSC-301 | route-decision-contract | `.harness/specs/2026-05-11-jsc-301-route-decision-contract-spec.md` | `.harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` | Archived PR closeout context | Not the next active implementation slice. Keep as dependency context for JSC-311 control-plane work. |
 | JSC-311 | he-phase-exit-evidence-gates | `.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | `.harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | Implemented in current checkout; validation/PR closeout pending | PR #247 merged the internal `HeGateResult/v1` / `HePhaseExit/v1` contract and worktree baseline. The current checkout adds the operator-visible `harness next --phase-exit <artifact>` path. |
 | JSC-331 | harness-assurance-artifact-handling | n.a. | `.harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md`; `.harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md`; `docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md` | Active assurance route with ready-not-started Goal Governor board | Selected instead of creating a duplicate issue because live Linear already has a coding-harness apparatus/assurance lane. The audit now adds the Codex runtime-evidence contract and `.agents` observed-state bridge as the next durable hardening targets. The Goal Governor board is prepared for owner kickoff and begins with read-only governor bootstrap, not Worker implementation. JSC-308 remains related HE artifact-policy context. |
+| JSC-363 | codex-runtime-evidence-verifier-cockpit | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` | `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`; `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`; `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md`; `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Current active Goal Governor route for this thread | The board governs the full lifecycle, not just Phase 1. The standard goal-board validator now runs audit freshness for the 2026-05-26 evidence-led audit, and the goal board now adopts the 2026-05-27 system-prompt operational analysis as SPG-001 through SPG-012. Future audit or system-prompt-analysis edits must be re-adopted in receipts before done, Judge/PM, closeout, or merge-readiness claims. |
 
 ## Duplicate Resolution
 
@@ -69,6 +70,17 @@ unless a live refresh is recorded in the referenced artifact.
   `@testing-reviewer`, `$simplify`, `$unslopify`,
   `$improve-codebase-architecture`, and `$ubiquitous-language` when
   implementation changed.
+- JSC-363 is the current execution route for the Codex Runtime Evidence
+  Verifier Cockpit goal. Use
+  `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` as the
+  cockpit, keep `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`
+  freshness enforced through `scripts/check-goal-board.py`, and keep Linear,
+  PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
+  receipts. PR #309 has green CodeRabbit, CircleCI, security, Socket, and
+  Snyk checks at latest externally verified head
+  `9df3e8657e273ef754bf357a4bcc63d0f77aafd9`; GitHub
+  mergeStateStatus remains `BLOCKED`, so merge-readiness, Linear scope
+  alignment, Judge/PM readiness, and final closeout remain unclaimed.
 - JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
   not use it as the coding-harness tracker for the 2026-05-18 assurance plan
   unless Linear is explicitly reparented or updated later.

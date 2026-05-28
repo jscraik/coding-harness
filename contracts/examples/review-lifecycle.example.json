@@ -1,0 +1,103 @@
+{
+	"schemaVersion": "review-lifecycle/v1",
+	"generatedAt": "2026-05-28T06:45:00Z",
+	"producer": "harness:review-lifecycle-validator",
+	"runtimeStatus": "not_yet_emitted",
+	"evidenceUse": "orientation",
+	"sourceReviewStateRef": "review-state:pr-309/fetch.json",
+	"sourceReviewState": {
+		"schemaVersion": "review-state/v1",
+		"ref": "review-state:pr-309/fetch.json",
+		"generatedAt": "2026-05-28T06:45:00Z",
+		"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"fetchReceiptRef": "review-state:pr-309/fetch.json",
+		"reviewerArtifactRefs": [
+			"review-lifecycle:artifacts/reviews/adversarial-reviewer.md"
+		],
+		"unresolvedThreadTotal": 0
+	},
+	"target": {
+		"repository": "jscraik/coding-harness",
+		"prNumber": 309,
+		"url": "https://github.com/jscraik/coding-harness/pull/309",
+		"baseRef": "main",
+		"headRef": "codex/jsc-363-runtime-evidence-cockpit-refresh",
+		"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"reviewStateHeadSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	},
+	"mode": {
+		"kind": "pr_review",
+		"status": "current",
+		"startedAt": "2026-05-28T06:45:00Z",
+		"completedAt": "2026-05-28T06:45:00Z"
+	},
+	"reviewer": {
+		"role": "adversarial-reviewer",
+		"producer": "adversarial-reviewer",
+		"runManifestRef": "artifacts/agent-runs/adversarial-reviewer-example/manifest.json"
+	},
+	"toolExposure": {
+		"sourceRef": "tool-exposure:pu-033.json",
+		"classes": [
+			{
+				"className": "agent",
+				"statusCounts": {
+					"visible": 1,
+					"deferred": 0,
+					"hidden": 0,
+					"unavailable": 0,
+					"policyBlocked": 0
+				},
+				"failureClass": null
+			}
+		]
+	},
+	"artifactLineage": [
+		{
+			"role": "adversarial-reviewer",
+			"path": "artifacts/reviews/adversarial-reviewer.md",
+			"producer": "adversarial-reviewer",
+			"runManifestRef": "artifacts/agent-runs/adversarial-reviewer-example/manifest.json",
+			"receipt": {
+				"schemaVersion": "evidence-receipt/v1",
+				"kind": "review_artifact",
+				"ref": "review-lifecycle:artifacts/reviews/adversarial-reviewer.md",
+				"producer": "adversarial-reviewer",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceUse": "claim_support",
+				"blockerClass": null,
+				"verifiedAt": "2026-05-28T06:45:00Z",
+				"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"sizeBytes": 2048
+			}
+		}
+	],
+	"findings": {
+		"total": 1,
+		"blocking": 0,
+		"advisory": 1,
+		"resolved": 1
+	},
+	"selectableComments": {
+		"total": 1,
+		"selected": 1,
+		"unselected": 0
+	},
+	"unresolvedThreads": {
+		"total": 0,
+		"needsHuman": 0,
+		"autofixable": 0
+	},
+	"coverage": {
+		"requiredRoles": ["adversarial-reviewer"],
+		"coveredRoles": ["adversarial-reviewer"],
+		"missingRoles": []
+	},
+	"verdict": {
+		"status": "pass",
+		"blockerClass": null,
+		"reason": "review_lifecycle_covered",
+		"readyForReviewClaim": true
+	}
+}

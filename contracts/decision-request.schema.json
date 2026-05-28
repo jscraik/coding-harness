@@ -1,0 +1,200 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/decision-request.schema.json",
+	"title": "Decision Request",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"requestId",
+		"generatedAt",
+		"producer",
+		"status",
+		"intent",
+		"authority",
+		"defaultOptionId",
+		"options",
+		"evidenceRefs",
+		"freshness",
+		"expiresAt",
+		"runtimeStatus",
+		"evidenceUse",
+		"claimSupport",
+		"hiltBoundary",
+		"escalation",
+		"staleState"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "decision-request/v1"
+		},
+		"requestId": {
+			"type": "string",
+			"minLength": 1
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"producer": {
+			"type": "string",
+			"minLength": 1
+		},
+		"status": {
+			"enum": ["open", "answered", "expired", "cancelled"]
+		},
+		"intent": {
+			"type": "string",
+			"minLength": 1
+		},
+		"authority": {
+			"enum": ["human", "operator", "maintainer", "external_service"]
+		},
+		"defaultOptionId": {
+			"type": "string",
+			"minLength": 1
+		},
+		"options": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["id", "label", "tradeoffs"],
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1
+					},
+					"label": {
+						"type": "string",
+						"minLength": 1
+					},
+					"tradeoffs": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		},
+		"evidenceRefs": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"minLength": 1,
+				"pattern": "\\S"
+			}
+		},
+		"freshness": {
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"expiresAt": {
+			"type": ["string", "null"],
+			"format": "date-time"
+		},
+		"runtimeStatus": {
+			"const": "emitted"
+		},
+		"evidenceUse": {
+			"const": "governance_request_only"
+		},
+		"claimSupport": {
+			"const": "not_closeout_proof"
+		},
+		"hiltBoundary": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["boundaryType", "riskTier", "reason", "blockerClass"],
+			"properties": {
+				"boundaryType": {
+					"enum": [
+						"destructive_action",
+						"external_mutation",
+						"credential_or_secret_access",
+						"security_sensitive_action",
+						"public_contract_change",
+						"release_action",
+						"permission_escalation",
+						"stale_claim_support",
+						"merge_readiness",
+						"tracker_authority",
+						"goal_completion"
+					]
+				},
+				"riskTier": {
+					"enum": ["high", "critical"]
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1
+				},
+				"blockerClass": {
+					"enum": [
+						"requires_human_authority",
+						"requires_external_state_refresh",
+						"requires_tracker_authority",
+						"requires_goal_completion_audit",
+						"requires_security_review",
+						"requires_release_authority",
+						"requires_permission_escalation",
+						"requires_contract_owner"
+					]
+				}
+			}
+		},
+		"escalation": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"required",
+				"targetRole",
+				"channel",
+				"reason",
+				"requestedAt"
+			],
+			"properties": {
+				"required": {
+					"type": "boolean"
+				},
+				"targetRole": {
+					"enum": ["human", "operator", "maintainer", "external_service"]
+				},
+				"channel": {
+					"type": "string",
+					"minLength": 1
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1
+				},
+				"requestedAt": {
+					"type": "string",
+					"format": "date-time"
+				}
+			}
+		},
+		"staleState": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["surface", "freshness", "reason"],
+				"properties": {
+					"surface": {
+						"type": "string",
+						"minLength": 1
+					},
+					"freshness": {
+						"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+					},
+					"reason": {
+						"type": "string",
+						"minLength": 1
+					}
+				}
+			}
+		}
+	}
+}

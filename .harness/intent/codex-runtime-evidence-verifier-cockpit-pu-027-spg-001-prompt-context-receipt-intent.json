@@ -1,0 +1,71 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-027-spg-001-prompt-context-receipt",
+	"createdAt": "2026-05-27T21:43:47Z",
+	"headSha": "403ea218770dd658529a18f5ea0824943e98bb15",
+	"goal": "Add the first bounded SPG-001 PromptContextReceipt/v1 contract surface without copying Codex prompts or claiming runtime emission.",
+	"lifecycleUnit": "PU-027-spg-001-prompt-context-receipt-contract",
+	"ownedAcceptanceIds": ["SPG-001", "SA-017", "SA-018"],
+	"deepModuleBoundary": {
+		"primaryModule": "contracts plus src/lib/prompt-context",
+		"allowedFiles": [
+			"contracts/prompt-context-receipt.schema.json",
+			"contracts/examples/prompt-context-receipt.example.json",
+			"contracts/runtime-packet-schemas.manifest.json",
+			"src/lib/prompt-context/**",
+			"src/dev/validate-runtime-packet-schemas-script.test.ts",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-spg-001-prompt-context-receipt-intent.json"
+		],
+		"forbiddenFiles": [
+			"**/codex/**",
+			"**/*prompt*/** when used as raw prompt source content rather than a source-ref/hash fixture",
+			"**/*transcript*/** when used as raw transcript content rather than a source-ref/hash fixture",
+			"**/.env",
+			"**/*.env",
+			"**/*secret*/**",
+			"**/*token*/**",
+			"public closeout hooks"
+		]
+	},
+	"nonGoals": [
+		"Do not collect or persist full Codex system prompts, developer prompts, user prompts, transcripts, or secrets.",
+		"Do not claim prompt-context-receipt/v1 is emitted by runtime paths in this slice.",
+		"Do not use prompt context as claim-support evidence for closeout, CI, review, Linear, merge readiness, or goal completion.",
+		"Do not create a competing prompt composer, tool registry, scheduler, or Codex app-server surface."
+	],
+	"implementationApproach": [
+		"Define a compact TypeScript contract for prompt-context-receipt/v1 with source refs, source hashes, authority layer names, permission posture, goal context refs, selected capability surfaces, redaction status, freshness, and a hard orientation/audit-only evidence-use discriminator.",
+		"Publish a JSON Schema and example that validate through the existing runtime packet schema manifest.",
+		"Mark runtimeStatus as not_yet_emitted until a later producer slice can bind actual runtime contributors.",
+		"Add focused validator regression coverage so the checked-in manifest count and parity validator recognize the new packet.",
+		"Add a negative validation fixture or test that rejects embedded raw prompt/transcript-like fields or claim-support evidence use."
+	],
+	"riskControls": [
+		"Source refs must be compact artifact pointers plus optional hashes, not raw prompt text.",
+		"The packet must require evidenceUse to be orientation or audit_trail only; claim_support must be rejected by schema or contract validation.",
+		"Redaction status is required so unknown or incomplete redaction cannot masquerade as safe runtime proof.",
+		"Runtime status remains not_yet_emitted to prevent false-success claims."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-spg-001-prompt-context-receipt-intent.json >/dev/null",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm exec biome check contracts/prompt-context-receipt.schema.json contracts/examples/prompt-context-receipt.example.json contracts/runtime-packet-schemas.manifest.json src/lib/prompt-context src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"git diff --check -- contracts/prompt-context-receipt.schema.json contracts/examples/prompt-context-receipt.example.json contracts/runtime-packet-schemas.manifest.json src/lib/prompt-context src/dev/validate-runtime-packet-schemas-script.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-027-spg-001-prompt-context-receipt-intent.json docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-027-spg-001-prompt-context-*.md"
+	],
+	"reviewStatus": {
+		"status": "intent_review_findings_adopted_before_implementation",
+		"requiredBeforeDone": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"note": "Adversarial and best-practices intent findings were adopted before implementation. Agent-native artifact path correction remains required before a final slice done claim."
+	},
+	"rollback": [
+		"Remove prompt-context-receipt schema/example/manifest entry.",
+		"Remove src/lib/prompt-context additions.",
+		"Restore runtime packet validator packet count expectations."
+	]
+}
