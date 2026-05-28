@@ -14,6 +14,7 @@ import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
 import { composeDeliveryTruth } from "../lib/delivery-truth/index.js";
 import { validateEvidenceReceipt } from "../lib/evidence/evidence-receipt.js";
 import { validateExternalStateSnapshot } from "../lib/external-state/index.js";
+import { validateIntermediaryReceiptCoverage } from "../lib/intermediary-receipts/index.js";
 import { validatePromptContextReceipt } from "../lib/prompt-context/index.js";
 import {
 	validateReviewLifecyclePacket,
@@ -120,7 +121,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 18,
+			packetCount: 19,
 			errors: [],
 		});
 	});
@@ -775,6 +776,9 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		const reviewLifecycle = readJson(
 			"contracts/examples/review-lifecycle.example.json",
 		);
+		const intermediaryReceiptCoverage = readJson(
+			"contracts/examples/intermediary-receipt-coverage.example.json",
+		);
 
 		expect(validateEvidenceReceipt(evidenceReceipt)).toMatchObject({
 			valid: true,
@@ -805,6 +809,12 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			errors: [],
 		});
 		expect(validateReviewLifecyclePacket(reviewLifecycle)).toMatchObject({
+			valid: true,
+			errors: [],
+		});
+		expect(
+			validateIntermediaryReceiptCoverage(intermediaryReceiptCoverage),
+		).toMatchObject({
 			valid: true,
 			errors: [],
 		});
