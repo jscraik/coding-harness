@@ -382,6 +382,64 @@ describe("docs-gate command", () => {
 		expect(missingFinding?.severity).toBe("warning");
 	});
 
+	it("blocks existing deep-module README drift in required mode", () => {
+		const root = createTestRoot("docs-gate-deep-module-readme-missing");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+		write(join(root, "src/lib/init/README.md"), "# Init module\n");
+		write(join(root, "src/lib/init/runner.ts"), "export const ok = true;\n");
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["src/lib/init/runner.ts"],
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.outcome).toBe("drift_detected");
+		expect(result.report.status).toBe("blocked");
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id === "docs.deep_module_readme.missing" &&
+					f.path === "src/lib/init/README.md" &&
+					f.severity === "error",
+			),
+		).toBe(true);
+	});
+
+	it("accepts existing deep-module README updates beside module changes", () => {
+		const root = createTestRoot("docs-gate-deep-module-readme-present");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+		write(join(root, "src/lib/init/README.md"), "# Init module\n");
+		write(join(root, "src/lib/init/runner.ts"), "export const ok = true;\n");
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["src/lib/init/runner.ts", "src/lib/init/README.md"],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.outcome).toBe("ok");
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id === "docs.deep_module_readme.present" &&
+					f.path === "src/lib/init/README.md",
+			),
+		).toBe(true);
+	});
+
 	it("skips evaluation when docs-gate is disabled", () => {
 		const root = createTestRoot("docs-gate-test-7");
 		roots.push(root);

@@ -159,6 +159,8 @@ const WORKFLOW_POLICY_SOURCE_PATHS: readonly string[] = Array.from(
 		...WORKFLOW_POLICY_ADDITIONAL_SOURCE_PATHS,
 	]),
 );
+const DEEP_MODULE_README_SOURCE_PATTERN =
+	/^src\/lib\/([^/]+)\/(?!README\.md$).+\.(?:cjs|cts|js|json|md|mjs|mts|ts|tsx|yml|yaml)$/;
 interface LoadedContract {
 	contract: HarnessContract;
 }
@@ -997,6 +999,72 @@ function checkSurfacePresence(
 }
 
 /**
+ * Require an existing deep-module README to move with code or contract changes
+ * inside its module. This keeps module-level architecture docs aligned without
+ * forcing every `src/lib/*` module to create a README before it has one.
+ */
+function collectDeepModuleReadmeFindings(
+	repoRoot: string,
+	changedFiles: string[],
+	deletedFiles: Set<string>,
+	mode: DocsGateMode,
+): { missing: string[]; findings: DocsFinding[] } {
+	const touchedModules = new Set<string>();
+
+	for (const file of changedFiles) {
+		if (deletedFiles.has(file)) {
+			continue;
+		}
+		const match = file.match(DEEP_MODULE_README_SOURCE_PATTERN);
+		if (!match?.[1]) {
+			continue;
+		}
+		touchedModules.add(match[1]);
+	}
+
+	const missing: string[] = [];
+	const findings: DocsFinding[] = [];
+	for (const moduleName of Array.from(touchedModules).sort()) {
+		const readmePath = `src/lib/${moduleName}/README.md`;
+		if (!existsSync(join(repoRoot, readmePath))) {
+			continue;
+		}
+
+		const readmeUpdated =
+			changedFiles.includes(readmePath) && !deletedFiles.has(readmePath);
+		if (readmeUpdated) {
+			findings.push({
+				rule_id: "docs.deep_module_readme.present",
+				category: "architecture_context",
+				surface: readmePath,
+				rule_result: "pass",
+				result: "pass",
+				severity: "info",
+				message: `Deep-module README '${readmePath}' was updated with module changes`,
+				path: readmePath,
+			});
+			continue;
+		}
+
+		missing.push(readmePath);
+		findings.push({
+			rule_id: "docs.deep_module_readme.missing",
+			category: "architecture_context",
+			surface: readmePath,
+			rule_result: "fail",
+			result: "fail",
+			severity: mode === "required" ? "error" : "warning",
+			message: `Deep-module README '${readmePath}' was not updated for changes under src/lib/${moduleName}/`,
+			path: readmePath,
+			details:
+				"Update the module README when module behavior, contract, validation, ownership, or architecture changed. If the module README is not affected, record that n.a. decision in the PR Documentation impact field.",
+		});
+	}
+
+	return { missing, findings };
+}
+
+/**
  * Constructs the runtime execution context used during gate evaluation.
  *
  * The context encodes chosen trigger, resolved policy mode, merge-authoritative
@@ -1443,6 +1511,20 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 		if (outcome !== "policy_error") {
 			outcome = "drift_detected";
 		}
+	}
+
+	const {
+		missing: missingDeepModuleReadmes,
+		findings: deepModuleReadmeFindings,
+	} = collectDeepModuleReadmeFindings(
+		repoRoot,
+		changedFiles,
+		deletedFiles,
+		mode,
+	);
+	findings.push(...deepModuleReadmeFindings);
+	if (missingDeepModuleReadmes.length > 0 && outcome !== "policy_error") {
+		outcome = "drift_detected";
 	}
 
 	const frontmatterMetadataFindings = collectFrontmatterMetadataViolations({

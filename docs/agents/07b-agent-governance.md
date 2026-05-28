@@ -43,6 +43,11 @@ artifacts, validation, ownership, and review expectations.
 
 When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
 
+- every implementation slice should complete a documentation-impact
+  classification before handoff: update applicable root docs (`README.md`,
+  `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed
+  docs, and existing deep-module README files, or record `n.a.` with a reason in
+  the PR `Documentation impact` field
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
 - generated diagram identity rewrites should update every dependent Mermaid reference, including class selectors, and keep AGENTS, the architecture bootstrap guide, this guide, generated diagram artifacts, and regression coverage synchronized when docs-gate reports architecture-context or agent-governance surfaces
