@@ -114,6 +114,16 @@
 			"semanticValidatorPath": "scripts/validate-steering-queue.cjs",
 			"ownerGap": "SPG-004",
 			"blockedBy": "PU-030 adds the steering queue packet contract before runtime-card or continuation wiring projects it into agent cockpit state."
+		},
+		{
+			"schemaVersion": "tool-exposure-snapshot/v1",
+			"schemaPath": "contracts/tool-exposure-snapshot.schema.json",
+			"examplePath": "contracts/examples/tool-exposure-snapshot.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"ownerGap": "SPG-005",
+			"blockedBy": "PU-031 adds the orientation-only tool exposure snapshot before a production Codex runtime producer emits live permission and tool availability data."
 		}
 	]
 }

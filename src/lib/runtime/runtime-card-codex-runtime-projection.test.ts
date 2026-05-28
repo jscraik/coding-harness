@@ -1,7 +1,14 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { projectToolExposureToRuntimeCard } from "../tool-exposure/index.js";
 import {
 	buildLocalRuntimeCard,
 	type RuntimeCardGitRunner,
@@ -95,6 +102,17 @@ function codexRuntimeEvidenceBundle(): RuntimeEvidenceBundle {
 	};
 }
 
+function toolExposureProjection() {
+	return projectToolExposureToRuntimeCard(
+		JSON.parse(
+			readFileSync(
+				"contracts/examples/tool-exposure-snapshot.example.json",
+				"utf8",
+			),
+		),
+	);
+}
+
 describe("runtime-card Codex runtime projection", () => {
 	const tempDirs: string[] = [];
 
@@ -141,6 +159,118 @@ describe("runtime-card Codex runtime projection", () => {
 		});
 		expect(JSON.stringify(card)).not.toContain("rawEvents");
 		expect(JSON.stringify(card)).not.toContain("fullReviewBody");
+	});
+
+	it("projects tool exposure into the compact Codex runtime-card surface", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: {
+				...codexRuntimeEvidenceBundle(),
+				sources: [
+					...codexRuntimeEvidenceBundle().sources,
+					{
+						kind: "artifact",
+						ref: "tool-exposure://turn-456",
+						freshness: "current",
+						status: "usable",
+						failureClass: null,
+					},
+				],
+				toolExposure: toolExposureProjection(),
+			},
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.codexRuntime?.toolExposure).toMatchObject({
+			evidenceRef: "tool-exposure://turn-456",
+			evidenceUse: "orientation",
+			sandboxMode: "workspace-write",
+			approvalPolicy: "auto_review",
+			networkAccess: "restricted",
+			blockedPermissionAttemptCount: 1,
+			writableRootCount: 4,
+			namesTruncated: false,
+		});
+		expect(JSON.stringify(card.codexRuntime?.toolExposure)).not.toContain(
+			"/Users/",
+		);
+	});
+
+	it("rejects tool exposure projections that are not backed by card receipt refs", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
+		writeActiveArtifacts(repoRoot);
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: codexRuntimeEvidenceBundle(),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+		const invalidCard = {
+			...card,
+			codexRuntime: {
+				...card.codexRuntime,
+				toolExposure: toolExposureProjection(),
+			},
+		};
+
+		expect(validateRuntimeCard(invalidCard)).toMatchObject({
+			valid: false,
+			errors: expect.arrayContaining([
+				expect.objectContaining({
+					path: "codexRuntime.toolExposure.evidenceRef",
+				}),
+			]),
+		});
+	});
+
+	it("rejects blocked tool exposure counts without a matching runtime blocker", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
+		writeActiveArtifacts(repoRoot);
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+		const invalidCard = {
+			...card,
+			sources: [
+				{
+					kind: "artifact",
+					ref: "tool-exposure://turn-456",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+			],
+			codexRuntime: {
+				provenanceRef: "codex-runtime://turn-456",
+				collectedAt: null,
+				sourceCount: 1,
+				blockedSourceCount: 0,
+				blockerCount: 0,
+				receiptRefs: ["tool-exposure://turn-456"],
+				validationRefs: [],
+				reviewRefs: [],
+				sessionRefs: [],
+				staleStateRefs: [],
+				toolExposure: toolExposureProjection(),
+			},
+		};
+
+		expect(validateRuntimeCard(invalidCard)).toMatchObject({
+			valid: false,
+			errors: expect.arrayContaining([
+				expect.objectContaining({ path: "codexRuntime.blockerCount" }),
+			]),
+		});
 	});
 
 	it("rejects runtime cards that embed raw event streams or full review bodies", () => {

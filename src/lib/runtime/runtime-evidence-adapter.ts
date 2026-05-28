@@ -172,6 +172,7 @@ function buildCodexRuntimeProjection(
 					source.freshness === "stale",
 			),
 		),
+		...(bundle.toolExposure ? { toolExposure: bundle.toolExposure } : {}),
 	};
 }
 

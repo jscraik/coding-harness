@@ -1,3 +1,5 @@
+import type { RuntimeCardToolExposureProjection } from "../tool-exposure/types.js";
+
 /** Compact Codex runtime summary projected into runtime-card/v1. */
 export interface RuntimeCardCodexRuntimeProjection {
 	provenanceRef: string | null;
@@ -11,4 +13,5 @@ export interface RuntimeCardCodexRuntimeProjection {
 	reviewRefs: string[];
 	sessionRefs: string[];
 	staleStateRefs: string[];
+	toolExposure?: RuntimeCardToolExposureProjection;
 }

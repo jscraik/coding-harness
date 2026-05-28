@@ -1,0 +1,294 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://jscraik.github.io/coding-harness/contracts/tool-exposure-snapshot.schema.json",
+	"title": "ToolExposureSnapshot",
+	"description": "Orientation-only packet that summarizes Codex tool, permission, sandbox, and blocked-permission availability without embedding raw command arguments, filesystem path lists, transcripts, or secrets.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"producer",
+		"runtimeStatus",
+		"evidenceUse",
+		"evidenceRef",
+		"sandboxMode",
+		"approvalPolicy",
+		"networkAccess",
+		"writableRootCount",
+		"toolClasses",
+		"blockedPermissionAttempts",
+		"summary",
+		"blockedBy"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "tool-exposure-snapshot/v1"
+		},
+		"generatedAt": {
+			"$ref": "#/$defs/isoTimestamp"
+		},
+		"producer": {
+			"$ref": "#/$defs/safePointer"
+		},
+		"runtimeStatus": {
+			"const": "not_yet_emitted"
+		},
+		"evidenceUse": {
+			"enum": ["orientation", "audit_trail"]
+		},
+		"evidenceRef": {
+			"$ref": "#/$defs/safePointer"
+		},
+		"sandboxMode": {
+			"$ref": "#/$defs/safePointer"
+		},
+		"approvalPolicy": {
+			"$ref": "#/$defs/safePointer"
+		},
+		"networkAccess": {
+			"enum": ["enabled", "restricted", "disabled", "unknown"]
+		},
+		"writableRootCount": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"toolClasses": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/toolClass"
+			}
+		},
+		"blockedPermissionAttempts": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/blockedPermissionAttempt"
+			}
+		},
+		"summary": {
+			"$ref": "#/$defs/summary"
+		},
+		"blockedBy": {
+			"$ref": "#/$defs/safePointer"
+		}
+	},
+	"$defs": {
+		"safePointer": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512,
+			"pattern": "^[A-Za-z0-9#][A-Za-z0-9._:/#@+-]{0,511}$"
+		},
+		"nullableSafePointer": {
+			"anyOf": [
+				{
+					"type": "null"
+				},
+				{
+					"$ref": "#/$defs/safePointer"
+				}
+			]
+		},
+		"isoTimestamp": {
+			"type": "string",
+			"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+		},
+		"counts": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"visible",
+				"deferred",
+				"hidden",
+				"unavailable",
+				"notAttempted",
+				"claimFailed"
+			],
+			"properties": {
+				"visible": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"deferred": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"hidden": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"unavailable": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"notAttempted": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"claimFailed": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		"toolClass": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"className",
+				"statusCounts",
+				"keyToolNames",
+				"originalKeyToolNameCount",
+				"namesTruncated",
+				"failureClass"
+			],
+			"properties": {
+				"className": {
+					"enum": [
+						"shell",
+						"filesystem",
+						"network",
+						"mcp",
+						"browser",
+						"agent",
+						"plugin",
+						"app",
+						"github",
+						"linear",
+						"unknown"
+					]
+				},
+				"statusCounts": {
+					"$ref": "#/$defs/counts"
+				},
+				"keyToolNames": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/safePointer"
+					}
+				},
+				"originalKeyToolNameCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"namesTruncated": {
+					"type": "boolean"
+				},
+				"failureClass": {
+					"$ref": "#/$defs/nullableSafePointer"
+				}
+			}
+		},
+		"blockedPermissionAttempt": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"attemptId",
+				"permissionKind",
+				"reason",
+				"evidenceRef",
+				"failureClass"
+			],
+			"properties": {
+				"attemptId": {
+					"$ref": "#/$defs/safePointer"
+				},
+				"permissionKind": {
+					"enum": [
+						"filesystem_read",
+						"filesystem_write",
+						"network",
+						"escalated",
+						"external_write",
+						"credential",
+						"unknown"
+					]
+				},
+				"reason": {
+					"enum": [
+						"sandbox_policy",
+						"approval_required",
+						"user_denied",
+						"not_requested",
+						"capability_unavailable",
+						"credential_missing",
+						"unknown"
+					]
+				},
+				"evidenceRef": {
+					"$ref": "#/$defs/safePointer"
+				},
+				"failureClass": {
+					"$ref": "#/$defs/safePointer"
+				}
+			}
+		},
+		"summary": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"totalToolClassCount",
+				"visible",
+				"deferred",
+				"hidden",
+				"unavailable",
+				"notAttempted",
+				"claimFailed",
+				"blockedPermissionAttemptCount",
+				"writableRootCount",
+				"keyToolNameCount",
+				"originalKeyToolNameCount",
+				"namesTruncated"
+			],
+			"properties": {
+				"totalToolClassCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"visible": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"deferred": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"hidden": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"unavailable": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"notAttempted": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"claimFailed": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"blockedPermissionAttemptCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"writableRootCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"keyToolNameCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"originalKeyToolNameCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"namesTruncated": {
+					"type": "boolean"
+				}
+			}
+		}
+	}
+}

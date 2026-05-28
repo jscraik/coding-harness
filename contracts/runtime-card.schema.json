@@ -192,8 +192,111 @@
 		},
 		"codexRuntime": {
 			"type": "object",
-			"additionalProperties": true,
-			"description": "Compact Codex runtime projection. This nested object intentionally remains extensible because it is validated by the TypeScript codex-runtime projection validator."
+			"additionalProperties": false,
+			"description": "Compact Codex runtime projection. Runtime-card JSON schema consumers must reject raw or unbounded nested Codex runtime payloads.",
+			"required": [
+				"provenanceRef",
+				"collectedAt",
+				"sourceCount",
+				"blockedSourceCount",
+				"blockerCount",
+				"receiptRefs",
+				"validationRefs",
+				"reviewRefs",
+				"sessionRefs",
+				"staleStateRefs"
+			],
+			"properties": {
+				"provenanceRef": {
+					"type": ["string", "null"]
+				},
+				"collectedAt": {
+					"type": ["string", "null"]
+				},
+				"sourceCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"blockedSourceCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"blockerCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"receiptRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"validationRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"reviewRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"sessionRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"staleStateRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"toolExposure": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": [
+						"evidenceRef",
+						"evidenceUse",
+						"sandboxMode",
+						"approvalPolicy",
+						"networkAccess",
+						"visibleToolCount",
+						"deferredToolCount",
+						"hiddenToolCount",
+						"unavailableToolCount",
+						"notAttemptedToolCount",
+						"claimFailedToolCount",
+						"blockedPermissionAttemptCount",
+						"writableRootCount",
+						"keyToolNames",
+						"originalKeyToolNameCount",
+						"namesTruncated"
+					],
+					"properties": {
+						"evidenceRef": { "type": "string", "minLength": 1 },
+						"evidenceUse": { "enum": ["orientation", "audit_trail"] },
+						"sandboxMode": { "type": "string", "minLength": 1 },
+						"approvalPolicy": { "type": "string", "minLength": 1 },
+						"networkAccess": {
+							"enum": ["enabled", "restricted", "disabled", "unknown"]
+						},
+						"visibleToolCount": { "type": "integer", "minimum": 0 },
+						"deferredToolCount": { "type": "integer", "minimum": 0 },
+						"hiddenToolCount": { "type": "integer", "minimum": 0 },
+						"unavailableToolCount": { "type": "integer", "minimum": 0 },
+						"notAttemptedToolCount": { "type": "integer", "minimum": 0 },
+						"claimFailedToolCount": { "type": "integer", "minimum": 0 },
+						"blockedPermissionAttemptCount": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"writableRootCount": { "type": "integer", "minimum": 0 },
+						"keyToolNames": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						},
+						"originalKeyToolNameCount": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"namesTruncated": { "type": "boolean" }
+					}
+				}
+			}
 		},
 		"blockers": {
 			"type": "array",

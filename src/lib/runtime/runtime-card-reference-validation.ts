@@ -24,6 +24,8 @@ const COMPACT_RUNTIME_CARD_REF_PREFIXES = [
 	"codex-stale-state://",
 	"codex-source://",
 	"codex-mcp://",
+	"tool-exposure://",
+	"permission://",
 	"session-collector:",
 	"api:",
 	"input:",
