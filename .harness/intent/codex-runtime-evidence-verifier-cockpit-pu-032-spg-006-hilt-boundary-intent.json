@@ -1,0 +1,104 @@
+{
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-032-spg-006-hilt-boundary",
+	"schemaVersion": "lifecycle-intent/v1",
+	"createdAt": "2026-05-28T09:10:00Z",
+	"linearIssue": "JSC-363",
+	"goal": "Tighten decision-request/v1 so it is emitted only for real human-in-the-loop authority boundaries, not routine uncertainty, and so stale-state or claim-support-related requests carry explicit boundary metadata.",
+	"lifecycleUnit": "PU-032-spg-006-hilt-boundary",
+	"scope": {
+		"primaryModule": "src/lib/decision-request",
+		"allowedFiles": [
+			"src/lib/decision-request/**",
+			"src/lib/cli/registry/decision-request-command-spec.ts",
+			"src/commands/decision-request.test.ts",
+			"src/lib/cli/command-registry.test.ts",
+			"contracts/decision-request.schema.json",
+			"contracts/examples/decision-request.example.json",
+			"contracts/runtime-packet-schemas.manifest.json",
+			"src/dev/validate-runtime-packet-schemas-script.test.ts",
+			"docs/cli-reference.md",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-032-spg-006-hilt-boundary-intent.json",
+			".harness/active-artifacts.md",
+			"artifacts/reviews/pu-032-spg-006-hilt-boundary-*.md"
+		],
+		"forbiddenFiles": [
+			"external Codex repository modifications",
+			"public delivery-truth command creation",
+			"pr-closeout behavior changes except tests proving decision-request is not closeout proof",
+			"Linear, GitHub, CI, or external-service mutations",
+			"raw prompt/session transcript persistence",
+			"changes that make decision-request/v1 claim-supporting evidence"
+		]
+	},
+	"designConstraints": [
+		"Decision requests remain governance_request_only and not_closeout_proof.",
+		"Routine uncertainty, preference questions, implementation-choice ambiguity, missing local context, and ordinary validation failures must not create decision debt.",
+		"Valid boundaries must be explicit and closed-taxonomy: destructive action, external mutation, credential or secret access, security-sensitive action, public contract change, release action, permission escalation, stale claim support, merge readiness, tracker authority, or goal completion.",
+		"Boundary metadata must be machine-readable so validators can distinguish true HILT authority from conversational uncertainty.",
+		"Stale-claim-support decision requests must never use freshness=current; stale-state or claim-support-related decision requests must include evidence refs and non-current staleState entries; a fresh no-evidence uncertainty request must fail closed.",
+		"Human-readable output must expose the boundary and blocker class textually, not only through JSON or color.",
+		"The slice must reuse the existing decision-request command and deep module instead of introducing a second decision workflow."
+	],
+	"acceptanceCriteria": [
+		"DecisionRequestPacket includes a hiltBoundary object with boundaryType, riskTier, reason, and blockerClass fields.",
+		"Public schema closes hiltBoundary.boundaryType, hiltBoundary.riskTier, and hiltBoundary.blockerClass with enums so non-CLI producers cannot submit unknown boundary strings.",
+		"Builder validation rejects routine uncertainty boundary types and emits a deterministic usage error.",
+		"Builder validation rejects stale_claim_support with freshness=current, and rejects stale_claim_support, merge_readiness, tracker_authority, and goal_completion boundaries without at least one evidence ref plus a non-current staleState entry.",
+		"Decision requests for destructive, external mutation, credential, security-sensitive, public contract, release, permission escalation, stale claim-support, merge-readiness, tracker-authority, and goal-completion boundaries pass with machine-readable boundary metadata.",
+		"CLI supports a bounded --boundary flag and prints boundary and blocker class in human output.",
+		"Public schema and example represent the new hiltBoundary fields and remain accepted by the runtime packet schema validator.",
+		"Routine uncertainty does not produce an open decision-request packet, so agents cannot hide ordinary ambiguity as human debt.",
+		"No delivery-truth, pr-closeout, runtime-card, or harness next behavior becomes claim-supporting because of this slice."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-032-spg-006-hilt-boundary-intent.json >/dev/null",
+		"pnpm vitest run src/commands/decision-request.test.ts --reporter=dot",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts --reporter=dot",
+		"node --import tsx src/cli.ts decision-request --json --generated-at 2026-05-28T09:10:00.000Z --intent 'Choose whether to refresh stale external state before a merge-readiness claim.' --boundary merge_readiness --freshness stale --default-option refresh_external_state --option refresh_external_state='Refresh PR, CI, review, and tracker snapshots.' --evidence external-state:pr-309 --expires-at 2026-05-28T10:10:00.000Z --escalation-channel codex_thread",
+		"node --import tsx src/cli.ts decision-request --json --intent 'I am unsure which helper name to use.' --boundary routine_uncertainty --default-option ask --option ask='Ask the user.' -> fail with exit code 2 and error.code decision-request.invalid_boundary",
+		"pnpm exec biome check .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-032-spg-006-hilt-boundary-intent.json src/lib/decision-request src/commands/decision-request.test.ts contracts/decision-request.schema.json contracts/examples/decision-request.example.json contracts/runtime-packet-schemas.manifest.json src/dev/validate-runtime-packet-schemas-script.test.ts docs/cli-reference.md",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"bash scripts/validate-codestyle.sh --fast",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-032-spg-006-hilt-boundary-intent.json src/lib/decision-request src/commands/decision-request.test.ts contracts/decision-request.schema.json contracts/examples/decision-request.example.json contracts/runtime-packet-schemas.manifest.json src/dev/validate-runtime-packet-schemas-script.test.ts docs/cli-reference.md docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml artifacts/reviews/pu-032-spg-006-hilt-boundary-*.md"
+	],
+	"reviewPlan": {
+		"preImplementation": [
+			"adversarial-reviewer intent review",
+			"agent-native-reviewer intent review"
+		],
+		"beforeDone": [
+			"improve-codebase-architecture lens",
+			"simplify lens",
+			"unslopify lens",
+			"he-code-review lens",
+			"testing lens",
+			"adversarial-reviewer implementation review",
+			"agent-native-reviewer implementation review",
+			"best-practices-researcher implementation review"
+		]
+	},
+	"rollbackPlan": [
+		"Remove hiltBoundary fields from decision-request types, builder, CLI, schema, and example.",
+		"Remove SPG-006-specific tests while preserving the existing GAP-005 decision-request governance command.",
+		"Preserve the existing governance_request_only and not_closeout_proof behavior."
+	],
+	"evidenceUse": "governance_request_only",
+	"auditGapIds": ["GAP-005", "GAP-008", "GAP-012"],
+	"systemPromptGapIds": ["SPG-006"],
+	"projectBrainInputs": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"
+	],
+	"stopConditions": [
+		"Stop if implementation requires decision-request to become closeout proof or delivery-truth evidence.",
+		"Stop if routine uncertainty cannot be rejected without adding a broad prompt-classifier or AI judgment dependency.",
+		"Stop if the change would require live external mutation, secret access, or Codex repository writes."
+	]
+}

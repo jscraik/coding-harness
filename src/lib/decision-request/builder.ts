@@ -11,6 +11,7 @@ import type {
 	DecisionRequestStatus,
 	DecisionRequestUsageErrorCode,
 } from "./types.js";
+import { buildHiltBoundary } from "./hilt-boundary.js";
 
 const AUTHORITIES = new Set<DecisionRequestAuthority>([
 	"human",
@@ -113,6 +114,14 @@ export function buildDecisionRequest(
 		status: requestedStatus,
 		freshness: requestedFreshness,
 	});
+	const hiltBoundary = buildHiltBoundary({
+		boundaryType: input.boundaryType,
+		intent,
+		evidenceRefs: input.evidenceRefs ?? [],
+		freshness: temporalState.freshness,
+		staleState: temporalState.staleState,
+	});
+	if (!hiltBoundary.ok) return hiltBoundary;
 	const escalation = buildEscalation({
 		authority,
 		generatedAt,
@@ -137,17 +146,22 @@ export function buildDecisionRequest(
 			label: option.label,
 			tradeoffs: [...option.tradeoffs],
 		})),
-		evidenceRefs: [...(input.evidenceRefs ?? [])],
+		evidenceRefs: normalizeEvidenceRefs(input.evidenceRefs ?? []),
 		freshness: temporalState.freshness,
 		expiresAt,
 		runtimeStatus: "emitted",
 		evidenceUse: "governance_request_only",
 		claimSupport: "not_closeout_proof",
+		hiltBoundary: hiltBoundary.hiltBoundary,
 		escalation: escalation.escalation,
 		staleState: temporalState.staleState,
 	};
 
 	return { ok: true, packet };
+}
+
+function normalizeEvidenceRefs(evidenceRefs: string[]): string[] {
+	return evidenceRefs.map((ref) => ref.trim()).filter((ref) => ref.length > 0);
 }
 
 function validateOptions(

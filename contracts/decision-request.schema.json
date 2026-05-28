@@ -20,6 +20,7 @@
 		"runtimeStatus",
 		"evidenceUse",
 		"claimSupport",
+		"hiltBoundary",
 		"escalation",
 		"staleState"
 	],
@@ -81,7 +82,9 @@
 		"evidenceRefs": {
 			"type": "array",
 			"items": {
-				"type": "string"
+				"type": "string",
+				"minLength": 1,
+				"pattern": "\\S"
 			}
 		},
 		"freshness": {
@@ -99,6 +102,47 @@
 		},
 		"claimSupport": {
 			"const": "not_closeout_proof"
+		},
+		"hiltBoundary": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["boundaryType", "riskTier", "reason", "blockerClass"],
+			"properties": {
+				"boundaryType": {
+					"enum": [
+						"destructive_action",
+						"external_mutation",
+						"credential_or_secret_access",
+						"security_sensitive_action",
+						"public_contract_change",
+						"release_action",
+						"permission_escalation",
+						"stale_claim_support",
+						"merge_readiness",
+						"tracker_authority",
+						"goal_completion"
+					]
+				},
+				"riskTier": {
+					"enum": ["high", "critical"]
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1
+				},
+				"blockerClass": {
+					"enum": [
+						"requires_human_authority",
+						"requires_external_state_refresh",
+						"requires_tracker_authority",
+						"requires_goal_completion_audit",
+						"requires_security_review",
+						"requires_release_authority",
+						"requires_permission_escalation",
+						"requires_contract_owner"
+					]
+				}
+			}
 		},
 		"escalation": {
 			"type": "object",

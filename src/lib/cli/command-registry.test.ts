@@ -106,6 +106,8 @@ describe("command registry", () => {
 				"Choose whether to refresh external state.",
 				"--default-option",
 				"refresh",
+				"--boundary",
+				"external_mutation",
 				"--option",
 				"refresh=Refresh external state.",
 			]);
@@ -118,6 +120,7 @@ describe("command registry", () => {
 			expect(parsed.schemaVersion).toBe("decision-request/v1");
 			expect(parsed.runtimeStatus).toBe("emitted");
 			expect(parsed.claimSupport).toBe("not_closeout_proof");
+			expect(parsed.hiltBoundary.boundaryType).toBe("external_mutation");
 		} finally {
 			infoSpy.mockRestore();
 		}

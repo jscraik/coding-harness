@@ -267,6 +267,85 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		);
 	});
 
+	it("rejects decision-request examples with whitespace-only evidence refs", () => {
+		const root = createTempRoot("decision-request-evidence-refs-");
+		const badExample = readJson(
+			"contracts/examples/decision-request.example.json",
+		) as Record<string, unknown>;
+		badExample.evidenceRefs = ["   "];
+		const badExamplePath = join(
+			root,
+			"decision-request-whitespace-evidence-ref.json",
+		);
+		writeFileSync(badExamplePath, JSON.stringify(badExample, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"decision-request/v1",
+			(entry) => ({
+				...entry,
+				examplePath: badExamplePath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"decision-request-whitespace-evidence-ref.json.evidenceRefs[0] must match pattern \\S",
+				),
+			]),
+		);
+	});
+
+	it("runs decision-request semantic validation for claim-sensitive boundaries", () => {
+		const root = createTempRoot("decision-request-semantic-");
+		const badExample = readJson(
+			"contracts/examples/decision-request.example.json",
+		) as Record<string, unknown>;
+		badExample.freshness = "current";
+		badExample.staleState = [
+			{
+				surface: "decision_request_freshness",
+				freshness: "current",
+				reason: "freshness_current",
+			},
+		];
+		const badExamplePath = join(
+			root,
+			"decision-request-current-claim-sensitive.json",
+		);
+		writeFileSync(badExamplePath, JSON.stringify(badExample, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"decision-request/v1",
+			(entry) => ({
+				...entry,
+				examplePath: badExamplePath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"decision-request/v1 semanticValidatorPath scripts/validate-decision-request.cjs failed",
+				),
+			]),
+		);
+	});
+
 	it("fails when a referenced schema uses an unsupported JSON Schema keyword", () => {
 		const root = createTempRoot("runtime-packet-schema-ref-keyword-");
 		const badSchema = readJson("contracts/evidence-receipt.schema.json") as {

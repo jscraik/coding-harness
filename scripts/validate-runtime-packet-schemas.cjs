@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { spawnSync } = require("node:child_process");
 const { existsSync, readFileSync, realpathSync } = require("node:fs");
 const { dirname, isAbsolute, relative, resolve } = require("node:path");
 
@@ -465,6 +466,7 @@ function validatePacketEntry(entry, index, seen, errors) {
 
 function validateSchemaAndExample(entry, errors) {
 	const resolvedPaths = {};
+	let resolvedSemanticValidatorPath = null;
 	for (const field of ["schemaPath", "examplePath"]) {
 		try {
 			resolvedPaths[field] = resolveRepoContainedPath(
@@ -498,7 +500,6 @@ function validateSchemaAndExample(entry, errors) {
 		}
 	}
 	if (entry.semanticValidatorPath) {
-		let resolvedSemanticValidatorPath = null;
 		try {
 			resolvedSemanticValidatorPath = resolveRepoContainedPath(
 				entry.semanticValidatorPath,
@@ -560,6 +561,50 @@ function validateSchemaAndExample(entry, errors) {
 		errors,
 		entry.schemaPath,
 	);
+	if (resolvedSemanticValidatorPath) {
+		validateExampleWithSemanticValidator(
+			entry,
+			resolvedSemanticValidatorPath,
+			resolvedPaths.examplePath,
+			errors,
+		);
+	}
+}
+
+function validateExampleWithSemanticValidator(
+	entry,
+	semanticValidatorPath,
+	examplePath,
+	errors,
+) {
+	const result = spawnSync(
+		process.execPath,
+		[semanticValidatorPath, examplePath],
+		{
+			cwd: REPO_ROOT_REAL,
+			encoding: "utf8",
+		},
+	);
+	if (result.error) {
+		errors.push(
+			`${entry.schemaVersion} semanticValidatorPath ${entry.semanticValidatorPath} failed to run: ${result.error.message}`,
+		);
+		return;
+	}
+	if (result.status !== 0) {
+		const diagnostic = (
+			result.stdout ||
+			result.stderr ||
+			"semantic validator returned failure"
+		)
+			.trim()
+			.split("\n")
+			.slice(0, 8)
+			.join(" ");
+		errors.push(
+			`${entry.schemaVersion} semanticValidatorPath ${entry.semanticValidatorPath} failed for ${entry.examplePath}: ${diagnostic}`,
+		);
+	}
 }
 
 function validate(manifestPath) {

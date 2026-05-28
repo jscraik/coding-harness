@@ -17,12 +17,18 @@
 			]
 		}
 	],
-	"evidenceRefs": ["runtime-card:JSC-363"],
-	"freshness": "current",
+	"evidenceRefs": ["runtime-card:JSC-363", "external-state:JSC-363"],
+	"freshness": "stale",
 	"expiresAt": null,
 	"runtimeStatus": "emitted",
 	"evidenceUse": "governance_request_only",
 	"claimSupport": "not_closeout_proof",
+	"hiltBoundary": {
+		"boundaryType": "merge_readiness",
+		"riskTier": "high",
+		"reason": "Choose whether to refresh external PR state before a merge-readiness claim.",
+		"blockerClass": "requires_external_state_refresh"
+	},
 	"escalation": {
 		"required": true,
 		"targetRole": "human",
@@ -30,5 +36,11 @@
 		"reason": "Choose whether to refresh external PR state before a merge-readiness claim.",
 		"requestedAt": "2026-05-27T08:10:00Z"
 	},
-	"staleState": []
+	"staleState": [
+		{
+			"surface": "decision_request_freshness",
+			"freshness": "stale",
+			"reason": "freshness_stale"
+		}
+	]
 }

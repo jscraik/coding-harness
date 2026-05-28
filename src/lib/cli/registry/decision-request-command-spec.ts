@@ -6,9 +6,9 @@ export function createDecisionRequestCommandSpec(): CommandSpec {
 	return {
 		name: "decision-request",
 		summary:
-			"Emit a read-only decision-request/v1 governance packet for human or operator escalation",
+			"Emit a read-only decision-request/v1 governance packet for a bounded HILT authority boundary",
 		example:
-			"decision-request --json --intent 'Refresh external state?' --default-option refresh --option refresh='Refresh state'",
+			"decision-request --json --intent 'Refresh external state?' --default-option refresh --boundary external_mutation --option refresh='Refresh state'",
 		errorLabel: "Decision Request Error",
 		execute: runDecisionRequestCLI,
 	};

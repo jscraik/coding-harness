@@ -22,6 +22,7 @@ export function runDecisionRequestCLI(args: string[]): number {
 		"--authority",
 		"--status",
 		"--freshness",
+		"--boundary",
 		"--expires-at",
 		"--generated-at",
 		"--producer",
@@ -48,6 +49,7 @@ export function runDecisionRequestCLI(args: string[]): number {
 	assignFlag(input, "authority", args, "--authority");
 	assignFlag(input, "status", args, "--status");
 	assignFlag(input, "freshness", args, "--freshness");
+	assignFlag(input, "boundaryType", args, "--boundary");
 	assignFlag(input, "expiresAt", args, "--expires-at");
 	assignFlag(input, "generatedAt", args, "--generated-at");
 	assignFlag(input, "producer", args, "--producer");
@@ -73,6 +75,8 @@ function emitHumanReport(packet: DecisionRequestPacket): void {
 	console.info(`default option: ${packet.defaultOptionId}`);
 	console.info(`freshness: ${packet.freshness}`);
 	console.info(`claim support: ${packet.claimSupport}`);
+	console.info(`boundary: ${packet.hiltBoundary.boundaryType}`);
+	console.info(`blocker class: ${packet.hiltBoundary.blockerClass}`);
 	console.info(
 		`escalation: ${packet.escalation.targetRole} via ${packet.escalation.channel}`,
 	);

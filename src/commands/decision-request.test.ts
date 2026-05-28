@@ -16,6 +16,10 @@ describe("decision-request command", () => {
 				"Choose whether to refresh external state before closeout.",
 				"--default-option",
 				"refresh_external_state",
+				"--boundary",
+				"merge_readiness",
+				"--freshness",
+				"stale",
 				"--option",
 				"refresh_external_state=Refresh PR, CI, review, and tracker snapshots.",
 				"--tradeoff",
@@ -37,10 +41,15 @@ describe("decision-request command", () => {
 				status: "open",
 				authority: "human",
 				defaultOptionId: "refresh_external_state",
-				freshness: "current",
+				freshness: "stale",
 				runtimeStatus: "emitted",
 				evidenceUse: "governance_request_only",
 				claimSupport: "not_closeout_proof",
+				hiltBoundary: {
+					boundaryType: "merge_readiness",
+					riskTier: "high",
+					blockerClass: "requires_external_state_refresh",
+				},
 				escalation: {
 					required: true,
 					targetRole: "human",
@@ -56,6 +65,13 @@ describe("decision-request command", () => {
 				"runtime-card:JSC-363",
 				"review-state:JSC-363",
 			]);
+			expect(packet.staleState).toEqual([
+				{
+					surface: "decision_request_freshness",
+					freshness: "stale",
+					reason: "freshness_stale",
+				},
+			]);
 		} finally {
 			infoSpy.mockRestore();
 		}
@@ -69,6 +85,8 @@ describe("decision-request command", () => {
 			freshness: "current",
 			intent: "Choose whether stale state can support closeout.",
 			defaultOptionId: "refresh",
+			boundaryType: "merge_readiness",
+			evidenceRefs: ["external-state:JSC-363"],
 			options: [
 				{ id: "refresh", label: "Refresh external state.", tradeoffs: [] },
 			],
@@ -92,6 +110,7 @@ describe("decision-request command", () => {
 			generatedAt: "2026-05-27T13:30:00.000Z",
 			intent: "Choose a default.",
 			defaultOptionId: "refresh",
+			boundaryType: "external_mutation",
 			options: [
 				{ id: "refresh", label: "Refresh now.", tradeoffs: [] },
 				{ id: "refresh", label: "Refresh later.", tradeoffs: [] },
@@ -113,6 +132,8 @@ describe("decision-request command", () => {
 				"Choose a default.",
 				"--default-option",
 				"refresh",
+				"--boundary",
+				"external_mutation",
 				"--option",
 				"refresh=Refresh now.",
 				"--tradeoff",
@@ -135,6 +156,7 @@ describe("decision-request command", () => {
 			generatedAt: "2026-05-27T13:30:00.000Z",
 			intent: "Choose a default.",
 			defaultOptionId: "refresh",
+			boundaryType: "external_mutation",
 			options: [{ id: "refresh", label: "Refresh now.", tradeoffs: [] }],
 			escalation: {
 				channel: " ",
@@ -159,6 +181,8 @@ describe("decision-request command", () => {
 				"Choose another default.",
 				"--default-option",
 				"refresh",
+				"--boundary",
+				"external_mutation",
 				"--option",
 				"refresh=Refresh now.",
 			]);
@@ -179,6 +203,7 @@ describe("decision-request command", () => {
 			generatedAt: "2026-05-27T13:30:00.000Z",
 			intent: "Choose a default.",
 			defaultOptionId: "merge",
+			boundaryType: "external_mutation",
 			options: [{ id: "refresh", label: "Refresh now.", tradeoffs: [] }],
 		});
 
@@ -193,6 +218,7 @@ describe("decision-request command", () => {
 			generatedAt: "2026-05-27",
 			intent: "Choose a default.",
 			defaultOptionId: "refresh",
+			boundaryType: "external_mutation",
 			options: [{ id: "refresh", label: "Refresh now.", tradeoffs: [] }],
 		});
 		expect(generatedAt).toMatchObject({
@@ -205,6 +231,7 @@ describe("decision-request command", () => {
 			expiresAt: "2026-05-28",
 			intent: "Choose a default.",
 			defaultOptionId: "refresh",
+			boundaryType: "external_mutation",
 			options: [{ id: "refresh", label: "Refresh now.", tradeoffs: [] }],
 		});
 		expect(expiresAt).toMatchObject({
@@ -216,6 +243,7 @@ describe("decision-request command", () => {
 			generatedAt: "2026-05-27T13:30:00.000Z",
 			intent: "Choose a default.",
 			defaultOptionId: "refresh",
+			boundaryType: "external_mutation",
 			options: [{ id: "refresh", label: "Refresh now.", tradeoffs: [] }],
 			escalation: {
 				requestedAt: "2026-05-27",
@@ -225,5 +253,114 @@ describe("decision-request command", () => {
 			ok: false,
 			code: "decision-request.escalation_required",
 		});
+	});
+
+	it("rejects routine uncertainty as a decision-request boundary", () => {
+		const result = buildDecisionRequest({
+			generatedAt: "2026-05-27T13:30:00.000Z",
+			intent: "Choose whether to keep investigating an ordinary test failure.",
+			defaultOptionId: "investigate",
+			boundaryType: "routine_uncertainty",
+			options: [
+				{
+					id: "investigate",
+					label: "Continue local investigation.",
+					tradeoffs: [],
+				},
+			],
+		});
+
+		expect(result).toMatchObject({
+			ok: false,
+			code: "decision-request.invalid_boundary",
+		});
+	});
+
+	it("returns a usage error when the CLI receives a routine uncertainty boundary", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const exitCode = runDecisionRequestCLI([
+				"--json",
+				"--intent",
+				"Choose whether to keep investigating an ordinary test failure.",
+				"--default-option",
+				"investigate",
+				"--boundary",
+				"routine_uncertainty",
+				"--option",
+				"investigate=Continue local investigation.",
+			]);
+
+			expect(exitCode).toBe(2);
+			const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+			expect(payload).toMatchObject({
+				schemaVersion: "decision-request-error/v1",
+				error: { code: "decision-request.invalid_boundary" },
+			});
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("requires evidence refs and non-current state for claim-sensitive boundaries", () => {
+		const missingEvidence = buildDecisionRequest({
+			generatedAt: "2026-05-27T13:30:00.000Z",
+			intent: "Choose whether merge readiness can be claimed.",
+			defaultOptionId: "refresh",
+			boundaryType: "merge_readiness",
+			freshness: "stale",
+			options: [{ id: "refresh", label: "Refresh state.", tradeoffs: [] }],
+		});
+		expect(missingEvidence).toMatchObject({
+			ok: false,
+			code: "decision-request.boundary_evidence_required",
+		});
+
+		const currentStaleClaim = buildDecisionRequest({
+			generatedAt: "2026-05-27T13:30:00.000Z",
+			intent: "Choose whether stale evidence can support closeout.",
+			defaultOptionId: "refresh",
+			boundaryType: "stale_claim_support",
+			evidenceRefs: ["external-state:JSC-363"],
+			options: [{ id: "refresh", label: "Refresh state.", tradeoffs: [] }],
+		});
+		expect(currentStaleClaim).toMatchObject({
+			ok: false,
+			code: "decision-request.boundary_evidence_required",
+		});
+	});
+
+	it("rejects blank evidence refs for claim-sensitive boundaries", () => {
+		const result = buildDecisionRequest({
+			generatedAt: "2026-05-27T13:30:00.000Z",
+			intent: "Choose whether merge readiness can be claimed.",
+			defaultOptionId: "refresh",
+			boundaryType: "merge_readiness",
+			freshness: "stale",
+			evidenceRefs: ["", "   "],
+			options: [{ id: "refresh", label: "Refresh state.", tradeoffs: [] }],
+		});
+
+		expect(result).toMatchObject({
+			ok: false,
+			code: "decision-request.boundary_evidence_required",
+		});
+	});
+
+	it("normalizes non-empty evidence refs before emitting packets", () => {
+		const result = buildDecisionRequest({
+			generatedAt: "2026-05-27T13:30:00.000Z",
+			intent: "Choose whether to mutate external state.",
+			defaultOptionId: "mutate",
+			boundaryType: "external_mutation",
+			evidenceRefs: [" runtime-card:JSC-363 ", ""],
+			options: [
+				{ id: "mutate", label: "Mutate external state.", tradeoffs: [] },
+			],
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.packet.evidenceRefs).toEqual(["runtime-card:JSC-363"]);
 	});
 });
