@@ -176,7 +176,11 @@ def head_from_snapshot(snapshot: object) -> str | None:
 
 def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
     if not receipts_path.is_file():
-        return None
+        print(
+            f"Runtime evidence cockpit receipts file is missing: {receipts_path}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
 
     latest_head: str | None = None
     for line_number, line in enumerate(
@@ -199,6 +203,13 @@ def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
             head = head_from_snapshot(snapshot)
             if head:
                 latest_head = head
+
+    if latest_head is None:
+        print(
+            f"No PR #309 head found in runtime evidence cockpit receipts: {receipts_path}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
 
     return latest_head
 
