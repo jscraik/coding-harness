@@ -10,6 +10,7 @@ GOAL_GOVERNOR_CHECK_BOARD override used by the shell wrapper.
 
 from __future__ import annotations
 
+import json
 import os
 import runpy
 import subprocess
@@ -27,11 +28,21 @@ RUNTIME_EVIDENCE_COCKPIT_GOAL = Path(
 )
 AUDIT_FRESHNESS_VALIDATOR = REPO_ROOT / "scripts/check-goal-audit-freshness.py"
 ACTIVE_ARTIFACTS_PATH = REPO_ROOT / ".harness/active-artifacts.md"
+RUNTIME_EVIDENCE_RECEIPTS_PATH = (
+    REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL / "receipts.jsonl"
+)
 REQUIRED_RUNTIME_EVIDENCE_ROUTE_REFS = (
     ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
     ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
     ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+)
+PR_309_HEAD_KEYS = (
+    "head_sha",
+    "observed_head_sha",
+    "headRefOid",
+    "head_ref_oid",
+    "current_head_sha",
 )
 
 
@@ -138,6 +149,60 @@ def markdown_section_lines(content: str, heading: str) -> list[str]:
     return section_lines
 
 
+def snapshot_matches_pr_309(snapshot: object) -> bool:
+    if not isinstance(snapshot, dict):
+        return False
+    pr_number = snapshot.get("pr") or snapshot.get("number") or snapshot.get("pr_number")
+    if pr_number == 309 or pr_number == "309":
+        return True
+    nested = snapshot.get("pr_309")
+    return isinstance(nested, dict)
+
+
+def head_from_snapshot(snapshot: object) -> str | None:
+    if not isinstance(snapshot, dict):
+        return None
+    candidates = [snapshot]
+    nested = snapshot.get("pr_309")
+    if isinstance(nested, dict):
+        candidates.append(nested)
+    for candidate in candidates:
+        for key in PR_309_HEAD_KEYS:
+            value = candidate.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return None
+
+
+def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
+    if not receipts_path.is_file():
+        return None
+
+    latest_head: str | None = None
+    for line_number, line in enumerate(
+        receipts_path.read_text(encoding="utf-8").splitlines(),
+        start=1,
+    ):
+        if not line.strip():
+            continue
+        try:
+            receipt = json.loads(line)
+        except json.JSONDecodeError as exc:
+            print(
+                f"Invalid JSON in runtime evidence cockpit receipts at "
+                f"{receipts_path}:{line_number}: {exc}",
+                file=sys.stderr,
+            )
+            raise SystemExit(1) from exc
+        snapshot = receipt.get("pr_state_snapshot")
+        if snapshot_matches_pr_309(snapshot):
+            head = head_from_snapshot(snapshot)
+            if head:
+                latest_head = head
+
+    return latest_head
+
+
 def run_goal_extensions(argv: list[str]) -> int:
     goal_path = resolve_runtime_evidence_goal_path(argv)
     if goal_path is None:
@@ -201,6 +266,16 @@ def run_goal_extensions(argv: list[str]) -> int:
             "Project Brain active-artifacts index does not route the runtime "
             "evidence cockpit goal. Missing refs: "
             + ", ".join(missing_refs),
+            file=sys.stderr,
+        )
+        return 1
+
+    latest_pr_head = latest_pr_309_receipt_head(RUNTIME_EVIDENCE_RECEIPTS_PATH)
+    if latest_pr_head and not any(latest_pr_head in row for row in jsc_363_rows):
+        print(
+            "Project Brain active-artifacts index routes JSC-363 with stale "
+            "PR #309 state. Latest receipt head "
+            f"{latest_pr_head} is missing from Current Active Route.",
             file=sys.stderr,
         )
         return 1

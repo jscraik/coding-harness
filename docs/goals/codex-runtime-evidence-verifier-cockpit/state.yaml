@@ -240,19 +240,19 @@ continuation_gate:
 checks:
   dirty_fingerprint: "Worktree already contained uncommitted .harness research/spec/plan changes before this goal board was created; future slices must preserve unrelated changes."
   last_verification:
-    timestamp: "2026-05-28T00:14:19Z"
-    commit_sha: "43d0aba"
-    pr_ref: "PR #309 at remote head 43d0aba59e80e9619676ab7037ce9b2251399ff5"
+    timestamp: "2026-05-28T03:45:44Z"
+    commit_sha: "aa1af4d"
+    pr_ref: "PR #309 at remote head aa1af4d74b7deed07baf5e2366f145bb13ab2917"
     commands_run:
       - command: "git status --short --branch"
         outcome: "pass (branch is synced with origin; unrelated untracked local artifacts remain unclaimed)"
       - command: "gh pr checks 309 --repo jscraik/coding-harness --watch=false"
-        outcome: "pass (all visible checks passing, including CodeRabbit, CircleCI, pr-pipeline, security-scan, Socket, and Snyk)"
-      - command: "gh pr view 309 --repo jscraik/coding-harness --json headRefOid,mergeStateStatus,mergeable,reviewDecision,statusCheckRollup,latestReviews,autoMergeRequest,url"
-        outcome: "pass (head 43d0aba59e80e9619676ab7037ce9b2251399ff5; mergeStateStatus BLOCKED; reviewDecision empty)"
-      - command: "node scripts/validate-runtime-packet-schemas.cjs --all"
-        outcome: "pass (10 packet entries including runtime-card-handoff/v1)"
-    summary: "The latest externally verified PR #309 head is 43d0aba after the PU-028 runtime-card handoff commit was pushed. Live CodeRabbit, CircleCI, pr-pipeline, security-scan, Socket, and Snyk checks are green on that head, and the earlier PR-template/pr-pipeline failure is no longer current. GitHub mergeStateStatus remains BLOCKED with no review decision. The goal remains active because GitHub review approval, review-thread truth, Linear full-lifecycle scope alignment, Judge/PM readiness, merge readiness, and final goal closeout are not proven. Untracked local artifacts remain unrelated state and are not used as delivery proof."
+        outcome: "pass (23 visible checks passing, including CodeRabbit, CircleCI, pr-pipeline, security-scan, Socket, and Snyk)"
+      - command: "gh pr view 309 --repo jscraik/coding-harness --json number,url,headRefName,headRefOid,baseRefName,mergeStateStatus,mergeable,isDraft,reviewDecision,autoMergeRequest,statusCheckRollup"
+        outcome: "pass (head aa1af4d74b7deed07baf5e2366f145bb13ab2917; mergeable MERGEABLE; mergeStateStatus BLOCKED; reviewDecision empty; auto-merge enabled)"
+      - command: "nl -ba .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-030-spg-004-steering-queue-intent.json | sed -n '23,32p'"
+        outcome: "pass (forbiddenFiles entry uses portable external Codex repository boundary wording)"
+    summary: "The latest externally verified PR #309 head is aa1af4d after the PU-030 steering intent portability repair was pushed. Live CodeRabbit, CircleCI, pr-pipeline, security-scan, Socket, and Snyk checks are green on that head, and the user-provided failing-CI screenshot is stale relative to the live PR check surface. GitHub mergeStateStatus remains BLOCKED with no review decision. The goal remains active because GitHub review approval, review-thread truth, Linear full-lifecycle scope alignment, Judge/PM readiness, merge readiness, and final goal closeout are not proven. Untracked local artifacts remain unrelated state and are not used as delivery proof."
   previous_verification_archive:
     timestamp: "2026-05-26T21:26:30Z"
     commit_sha: "b1db37ca"

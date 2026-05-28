@@ -54,6 +54,29 @@ function writeRuntimeEvidenceActiveArtifacts(repo: string, content?: string) {
 	);
 }
 
+function writeRuntimeEvidenceReceipts(repo: string, headSha: string) {
+	const receiptsDir = join(
+		repo,
+		"docs/goals/codex-runtime-evidence-verifier-cockpit",
+	);
+	mkdirSync(receiptsDir, { recursive: true });
+	writeFileSync(
+		join(receiptsDir, "receipts.jsonl"),
+		[
+			JSON.stringify({
+				id: "R999",
+				lifecycle_unit: "pr-309-current-state-refresh",
+				pr_state_snapshot: {
+					pr: 309,
+					head_sha: headSha,
+					status: "checks green",
+				},
+			}),
+			"",
+		].join("\n"),
+	);
+}
+
 describe("check-goal-board.py", () => {
 	afterEach(() => {
 		for (const root of tempRoots.splice(0)) {
@@ -394,5 +417,119 @@ describe("check-goal-board.py", () => {
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain("goal-board:--mode");
 		expect(existsSync(markerPath)).toBe(true);
+	});
+
+	it("fails when active artifacts omit the latest PR 309 receipt head", () => {
+		const root = createTempRoot("goal-board-stale-pr-head-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceReceipts(repo, "new-pr-head");
+		writeRuntimeEvidenceActiveArtifacts(
+			repo,
+			[
+				"# Active Harness Specs And Plans",
+				"",
+				"## Current Active Route",
+				"",
+				"| Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |",
+				"| --- | --- | --- | --- | --- |",
+				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md | stale old-pr-head | continue |",
+				"",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain(`goal-board:${goalDir}`);
+		expect(result.stderr).toContain("stale PR #309 state");
+		expect(result.stderr).toContain("new-pr-head");
+	});
+
+	it("passes when active artifacts include the latest PR 309 receipt head", () => {
+		const root = createTempRoot("goal-board-current-pr-head-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
+		writeRuntimeEvidenceActiveArtifacts(
+			repo,
+			[
+				"# Active Harness Specs And Plans",
+				"",
+				"## Current Active Route",
+				"",
+				"| Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |",
+				"| --- | --- | --- | --- | --- |",
+				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md | latest externally verified PR #309 head current-pr-head | continue |",
+				"",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(`goal-board:${goalDir}`);
 	});
 });

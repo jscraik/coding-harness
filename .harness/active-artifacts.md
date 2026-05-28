@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-27.
+Last reconciled: 2026-05-28.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Current board status is active; the latest externally verified PR #309 head is `403ea218`. Live CodeRabbit, CircleCI, pr-pipeline, security-scan, Socket, and Snyk checks passed on that head; GitHub still reports mergeStateStatus `BLOCKED` with no review decision. Review-thread, Linear scope, merge-readiness, Judge/PM, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is to commit/push the bounded PU-027 PromptContextReceipt/v1 contract slice, refresh PR/review/Linear/Judge truth, and continue the next SPG slice; do not route from older JSC-331 context unless the current goal explicitly references it. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Current board status is active; the latest externally verified PR #309 head is `aa1af4d74b7deed07baf5e2366f145bb13ab2917`. Live CodeRabbit, CircleCI, pr-pipeline, security-scan, Socket, and Snyk checks passed on that head; GitHub still reports mergeStateStatus `BLOCKED` with no review decision. Review-thread, Linear scope, merge-readiness, Judge/PM, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is to refresh/commit the Project Brain stale-state guard, then continue the next SPG slice; do not route from older JSC-331 context unless the current goal explicitly references it. |
 
 ## Artifact Index
 
@@ -77,7 +77,8 @@ unless a live refresh is recorded in the referenced artifact.
   freshness enforced through `scripts/check-goal-board.py`, and keep Linear,
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
   receipts. PR #309 has green CodeRabbit, CircleCI, security, Socket, and
-  Snyk checks at latest externally verified head `403ea218`; GitHub
+  Snyk checks at latest externally verified head
+  `aa1af4d74b7deed07baf5e2366f145bb13ab2917`; GitHub
   mergeStateStatus remains `BLOCKED`, so merge-readiness, Linear scope
   alignment, Judge/PM readiness, and final closeout remain unclaimed.
 - JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
