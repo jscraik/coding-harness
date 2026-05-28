@@ -66,8 +66,8 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "PU-038-spg-012-intermediary-receipt-coverage"
-  status: "local_contract_validated_reviews_passed_pending_commit_push_pr_triage"
-  reason: "PU-038 intent was reviewed before implementation, then implemented as the IntermediaryReceiptCoverage/v1 deep module, JSON schema, example packet, semantic validator, runtime packet manifest entry, architecture documentation, and diagram-context refresh. Best-practices review found a protected-claim summary policy route gap; the implementation now requires protected claim-support summaries to use policy-declared canonical packet routes and delta reviews report no remaining blocker-level findings. Local validation passes for the focused unit tests, schema validator, runtime packet schema manifest validator, Biome, typecheck, and docs-gate. Commit, push, PR creation, PR green-sweep triage, remote CI, CodeRabbit/GitHub review state, Linear scope alignment, merge readiness, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion remain separate unclaimed truth lanes."
+  status: "pr_open_green_sweep_artifact_verified_remote_checks_green_review_and_merge_truth_separate"
+  reason: "PU-038 intent was reviewed before implementation, then implemented as the IntermediaryReceiptCoverage/v1 deep module, JSON schema, example packet, semantic validator, runtime packet manifest entry, architecture documentation, and diagram-context refresh. Best-practices review found a protected-claim summary policy route gap; the implementation now requires protected claim-support summaries to use policy-declared canonical packet routes and delta reviews report no remaining blocker-level findings. Local validation passes for focused tests, schema validation, runtime packet manifest validation, Biome, typecheck, docs-gate, verify-work fast, docs lint/style, full validate-codestyle, pnpm check, tooling-audit, north-star gates, PR template gate, and Linear gate. Commit 0ef74d670c4201d9476be09f310241fe4657fd82 is pushed, PR #315 is open against codex/jsc-363-prompt-context-drift-validator, green-sweep triage ran git fetch and wrote artifacts/reviews/pr-315-green-sweep.md after one artifact retry, all visible PR #315 checks pass after CircleCI rerun, and GitHub reports mergeStateStatus CLEAN. CodeRabbit/GitHub review approval, stacked-base readiness, Linear full-lifecycle scope alignment, merge execution, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion remain separate unclaimed truth lanes."
   completed_before_local_validation_claim:
     - "Created and reviewed the PU-038 intent artifact before implementation."
     - "Added src/lib/intermediary-receipts as the deep module for source-kind policy, claim-family coverage, source summaries, next-action classification, and validation reporting."
@@ -77,9 +77,9 @@ current_slice_gate:
     - "Updated ARCHITECTURE.md, AGENTS.md, docs/agents/00-architecture-bootstrap.md, docs/agents/07b-agent-governance.md, and AI/context/diagram-context.md for the new deep module placement."
     - "Ran improve-codebase-architecture, simplify, unslopify, HE code review, testing, adversarial-reviewer, agent-native-reviewer, and best-practices-researcher coverage and recorded artifacts."
   next_required_handoff_steps:
-    - "Append and validate the PU-038 receipt, then rerun the goal-board validator against the current HEAD."
-    - "Run broad readiness gates, stage only PU-038-owned files, rerun diagram freshness after staging, commit, push, open the stacked PR, and launch PR green-sweep triage with git fetch and env-backed CircleCI/GitHub checks."
-    - "Keep remote CI, reviewDecision, stacked-base readiness, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate truth lanes until verified immediately before any closeout claim."
+    - "Append and validate R124 for PR #315 handoff, then commit and push the route evidence."
+    - "Refresh PR #315 checks after the route-evidence commit because the push will create a new head SHA and can make earlier green checks stale."
+    - "Keep reviewDecision, stacked-base readiness, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate truth lanes until verified immediately before any closeout claim."
   blocked_done_claims:
     - "merge-ready"
     - "Judge/PM-ready"
