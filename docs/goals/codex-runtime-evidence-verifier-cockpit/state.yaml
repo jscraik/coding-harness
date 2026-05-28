@@ -66,8 +66,8 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "PU-037-spg-011-prompt-context-drift-validator"
-  status: "local_validation_passed_pr_handoff_pending"
-  reason: "The PU-037 intent was patched from adversarial and agent-native findings, re-reviewed, reconciled to implementation, and validated with focused tests, schema/script checks, docs-gate, diagram freshness, validate-codestyle fast, verify-work fast, and env-backed test:deep."
+  status: "pr_handoff_green_review_and_merge_truth_separate"
+  reason: "The PU-037 intent was patched from adversarial and agent-native findings, re-reviewed, reconciled to implementation, locally validated, committed as 2fab05052da79c71dbb68254bcc9943974e65cfe, pushed, opened as PR #314 against codex/jsc-363-replay-packet-surface, and refreshed through an env-backed CircleCI rerun plus independent PR green-sweep triage. PR #314 checks are green and mergeStateStatus is CLEAN, but reviewDecision, stacked-base readiness, Linear full-lifecycle scope alignment, Judge/PM readiness, runtime producer wiring, delivery-truth consumption, merge execution, and final goal completion remain separate unclaimed truth lanes."
   completed_before_local_validation_claim:
     - "Patched the PU-037 intent to require Project Brain stale/missing/unhashed negative fixtures."
     - "Patched the PU-037 intent to require runtime-card advisory-only, stale, head-mismatch, and unhashed negative fixtures."
@@ -77,12 +77,10 @@ current_slice_gate:
     - "Patched the PU-037 intent to name the machine-readable agent consumption boundary as the advisory agent-readiness contextHealth projection."
     - "Reran adversarial-reviewer and agent-native-reviewer intent reviews and verified their artifacts are non-empty."
   next_required_handoff_steps:
-    - "Commit and push the PU-037 branch."
-    - "Open a PR against the current JSC-363 stack base."
-    - "Launch PR triage in a separate subagent with git fetch and env-backed CircleCI/GitHub checks."
-    - "Keep PR checks, reviewDecision, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate unclaimed truth lanes until verified."
+    - "Keep PR #314 checks, reviewDecision, stacked-base readiness, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate truth lanes until verified immediately before any closeout claim."
+    - "Start the next safe lifecycle slice from SPG-012 realtime/intermediary receipt coverage, or record an accepted P3 deferral with owner-visible risk if no current implementation slice depends on realtime evidence."
+    - "Do not switch branches for the next slice until the coordinator has either committed this PR #314 handoff receipt or intentionally records why no repo artifact update is required."
   blocked_done_claims:
-    - "PU-037 PR-ready"
     - "Judge/PM-ready"
     - "goal completion"
 slice_review_contract:
