@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated workflows.
 import { describe, expect, it } from "vitest";
 import { renderGitHubActionsPrPipelineWorkflowTemplate } from "./scaffold-github-actions-pr-pipeline-renderer.js";
 
@@ -25,6 +26,14 @@ describe("GitHub Actions PR pipeline renderer", () => {
 		expect(workflow).toContain("linear-gate:");
 		expect(workflow).toContain("needs: [pr-template, linear-gate]");
 		expect(workflow).toContain("needs.linear-gate.result == 'success'");
+		expect(workflow).toContain(
+			"node --import tsx src/cli.ts pr-template-gate --json",
+		);
+		expect(workflow).toContain(
+			"PR_TEMPLATE_BODY: ${{ github.event.pull_request.body }}",
+		);
+		expect(workflow).not.toContain("const classifyReference");
+		expect(workflow).not.toContain("ignored_local_path");
 		expect(workflow).toContain("run: pnpm lint");
 		expect(workflow).toContain("run: pnpm typecheck");
 		expect(workflow).toContain("run: pnpm test:ci");

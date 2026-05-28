@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal GitHub workflow placeholders.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { validatePrTemplateBody } from "../pr-template-validator.js";
@@ -218,20 +219,22 @@ describe("document scaffold templates", () => {
 		).toEqual([]);
 	});
 
-	it("keeps the generated PR pipeline field checks aligned with the PR template contract", () => {
+	it("keeps the generated PR pipeline delegated to the shared PR template gate", () => {
 		const pipelineTemplate = readFileSync(
 			"src/templates/pr-pipeline.yml",
 			"utf8",
 		);
 
-		for (const label of requiredWorkPerformedLabels) {
-			expect(pipelineTemplate).toContain(`label: '${label}'`);
-		}
-		for (const field of REQUIRED_WORK_FIELDS) {
-			expect(pipelineTemplate).toContain(
-				`{ label: '${field.label}', placeholder: '${field.placeholder}' }`,
-			);
-		}
+		expect(pipelineTemplate).toContain(
+			"node --import tsx src/cli.ts pr-template-gate --json",
+		);
+		expect(pipelineTemplate).toContain(
+			"PR_TEMPLATE_BODY: ${{ github.event.pull_request.body }}",
+		);
+		expect(pipelineTemplate).not.toContain("const requiredWorkFields = [");
+		expect(pipelineTemplate).not.toContain(
+			"const body = context.payload.pull_request?.body",
+		);
 	});
 
 	it("renders prek hook config from the required tooling baseline", () => {
