@@ -66,6 +66,26 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
 	});
 
+	it("fails linked issue bodies without acceptance IDs or preparatory relationship", () => {
+		const body = VALID_BODY.replace(
+			"- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: Tool-promotion threshold present and enforced by pnpm run docs:steering:guard.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Acceptance trace for linked issue JSC-999 must list specific acceptance IDs (for example SA-001 or AC-001) or explicitly state the preparatory/enabling relationship and that this PR does not complete the issue acceptance criteria.",
+		);
+	});
+
+	it("accepts linked issue bodies that explicitly mark preparatory relationship", () => {
+		const body = VALID_BODY.replace(
+			"- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: Preparatory relationship: supports JSC-999 by adding a governance guard; this PR does not complete the issue acceptance criteria.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
 	it("accepts template-documented n.a. command outcomes without a reason", () => {
 		const body = VALID_BODY.replace(
 			"- Command: `harness docs-gate --mode advisory` -> `n.a.` (advisory docs gate not required for this fixture)",

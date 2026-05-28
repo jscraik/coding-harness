@@ -2,6 +2,9 @@ import { collectWorkEvidenceIntegrityErrors } from "./pr-template-behavior-evide
 import {
 	MAX_BODY_LENGTH,
 	PLACEHOLDERS,
+	ACCEPTANCE_TRACE_ID_PATTERN,
+	LINKED_ISSUE_REFERENCE_PATTERN,
+	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
 	REQUIRED_SECTIONS,
 	REQUIRED_TESTING_FIELDS,
 	REQUIRED_WORK_FIELDS,
@@ -172,6 +175,36 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 	);
 }
 
+function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
+	const planIds = extractFieldBlockValue(body, "## Work performed", "Plan IDs");
+	if (planIds === null || !LINKED_ISSUE_REFERENCE_PATTERN.test(planIds)) {
+		return [];
+	}
+
+	const acceptanceTrace = extractFieldBlockValue(
+		body,
+		"## Work performed",
+		"Acceptance trace",
+	);
+	if (acceptanceTrace === null) {
+		return [];
+	}
+
+	if (
+		ACCEPTANCE_TRACE_ID_PATTERN.test(acceptanceTrace) ||
+		PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace)
+	) {
+		return [];
+	}
+
+	const issueKeys = Array.from(
+		new Set(planIds.match(/\bJSC-\d+\b/g) ?? []),
+	).join(", ");
+	return [
+		`Acceptance trace for linked issue ${issueKeys} must list specific acceptance IDs (for example SA-001 or AC-001) or explicitly state the preparatory/enabling relationship and that this PR does not complete the issue acceptance criteria.`,
+	];
+}
+
 function extractFieldBlockValue(
 	body: string,
 	sectionHeading: string,
@@ -250,6 +283,7 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectWorkPerformedFieldErrors(body));
+	errors.push(...collectLinkedIssueAcceptanceTraceErrors(body));
 	errors.push(
 		...collectWorkEvidenceIntegrityErrors(body, extractFieldBlockValue),
 	);
