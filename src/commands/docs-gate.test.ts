@@ -430,6 +430,7 @@ describe("docs-gate command", () => {
 			repoRoot: root,
 			mode: "required",
 			changedFiles: ["src/lib/init/runner.ts", "src/lib/init/README.md"],
+			deletedFiles: ["src/lib/init/README.md"],
 		});
 
 		expect(result.exitCode).toBe(10);
