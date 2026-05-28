@@ -29,7 +29,7 @@ No material adversarial findings in scoped changes.
 
 ## Residual Risks
 - The semantic validator currently runs through manifest/example validation and depends on that lane being executed in CI/local gates; if teams bypass validate-runtime-packet-schemas, semantic guarantees are not enforced at arbitrary packet ingestion points.
-- The semantic validator asserts hiltBoundary.reason equals intent exactly; this is strict and correct for integrity, but future producer diversity may require explicit normalization policy to avoid false negatives across sources.
+- The semantic validator asserts hiltBoundary.reason equals intent exactly; this is strict and correct for integrity. Any additional producer diversity requires an explicit normalization policy implemented and validated with the producer boundary.
 
 ## Validation Evidence
 - node scripts/validate-runtime-packet-schemas.cjs --all -> pass (13 packets, 0 errors)

@@ -205,7 +205,7 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		writeArchitectureFixture(
 			root,
 			[
-				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-05-27|ticket=TODO|expires=2099-12-31",
+				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-05-27|ticket=NOT-JSC|expires=2099-12-31",
 				"",
 			].join("\n"),
 		);

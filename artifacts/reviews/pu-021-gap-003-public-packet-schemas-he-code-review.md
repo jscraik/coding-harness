@@ -16,11 +16,11 @@ The validator fails closed for manifest drift, schemaVersion drift, missing not-
 
 - The external-state example initially missed three required source families; the focused test caught it and the fixture now matches the existing validator.
 - The dependency-free validator is acceptable for this slice because it checks the concrete failure modes called out by GAP-003 without changing runtime behavior.
-- The manifest keeps owner gaps explicit for not-yet-emitted packets, preventing future packet placeholders from masquerading as implemented runtime output.
+- The manifest keeps owner gaps explicit for not-yet-emitted packets, preventing packet placeholders from masquerading as implemented runtime output.
 
 ## Residual Risk
 
-The validator checks only a curated JSON Schema subset and example parity. A future implementation slice can adopt AJV or generated schema validation after package-review approval.
+The validator checks only a curated JSON Schema subset and example parity. AJV or generated schema validation requires package-review approval and must be implemented and validated in the same change that claims that validator boundary.
 
 ## Validation Evidence
 

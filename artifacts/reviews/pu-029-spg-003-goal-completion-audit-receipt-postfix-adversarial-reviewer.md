@@ -19,7 +19,7 @@
 
 ## Residual Risks
 - semanticValidatorPath is presence/exists-validated but not execution-validated by the manifest script; semantic drift inside an existing validator script still depends on dedicated tests and direct invocation lanes.
-- Timestamp strictness is UTC-only by design; any future producer emitting offset-form ISO strings (for example +01:00) will fail closed and require explicit contract migration.
+- Timestamp strictness is UTC-only by design; producers emitting offset-form ISO strings (for example +01:00) fail closed unless an explicit contract migration is implemented and validated.
 
 ## Accountability Receipt
 - status: complete

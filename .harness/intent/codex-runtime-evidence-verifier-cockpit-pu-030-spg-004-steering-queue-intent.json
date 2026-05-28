@@ -70,7 +70,7 @@
 		"When multiple items are applicable for the same continuation scope, selectedItemId must be deterministic using supersession lineage, explicit priority, createdAt descending, and id ascending tie-breaking.",
 		"Item ids, refs, and hashes must be non-empty safe strings; ids must be unique within the packet.",
 		"The schema and semantic validator must reject raw prompt, transcript, secret, token, credential, and rawSteering fields at every object level.",
-		"Agent discoverability is a follow-on wiring requirement: this slice must publish the packet and validator contract in the runtime-packet manifest, but it must not claim runtime-card or harness next discoverability until a later slice projects queue summaries into those surfaces."
+		"Agent discoverability is a separate implementation boundary: this slice must publish the packet and validator contract in the runtime-packet manifest, but it must not claim runtime-card or harness next discoverability unless queue summaries are projected into those surfaces in the same validated change."
 	],
 	"riskControls": [
 		"Keep steering content indirect through instructionRef and instructionHash so the packet can prove identity without copying sensitive text.",

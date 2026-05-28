@@ -68,9 +68,9 @@ claim_ledger:
       - "Linear get_issue JSC-363"
       - "Linear comment e45becc9-0af1-4b31-9c27-ede7b3c19347"
       - "https://linear.app/jscraik/issue/JSC-363/coding-harness-implement-codex-runtime-evidence-verifier-cockpit-phase"
-    remaining_uncertainty: "Linear issue content was not rewritten in this patch; future closeout must refresh live Linear state and update or scope-note the tracker."
+    remaining_uncertainty: "Linear issue content was not rewritten in this patch; closeout must refresh live Linear state and update or scope-note the tracker before claiming tracker alignment."
 risks:
-  - "The branch remains dirty and divergent; future implementation must preserve unrelated worktree changes."
+  - "The branch remains dirty and divergent; implementation must preserve unrelated worktree changes."
   - "The goal board now gates audit and expanded ecosystem findings, but the code fixes remain pending."
   - "Linear now has a persisted linkage comment, but still frames JSC-363 as Phase 1 while the repo goal is full lifecycle; tracker-alignment claims must not pass until reconciled."
 artifact:

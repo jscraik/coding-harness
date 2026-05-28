@@ -351,7 +351,7 @@ Stop and report before continuing if:
 - reviewer artifacts are missing after one focused retry
 - GitHub, PR, CI, review, or Linear state is stale where claim support requires current truth
 - a slice would require write authority outside the approved scope
-- continuing a later slice would contaminate a PR under triage
+- continuing another slice would contaminate a PR under triage
 
 ## Activation Boundary
 
