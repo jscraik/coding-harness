@@ -48,7 +48,7 @@ function writeRuntimeEvidenceActiveArtifacts(repo: string, content?: string) {
 				"",
 				"| Route | Linear Key | Canonical Artifacts |",
 				"| --- | --- | --- |",
-				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md |",
+				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus latest externally verified PR #309 head current-pr-head |",
 				"",
 			].join("\n"),
 	);
@@ -174,6 +174,7 @@ describe("check-goal-board.py", () => {
 		mkdirSync(goalDir, { recursive: true });
 		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
 		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
 		writeRuntimeEvidenceActiveArtifacts(repo);
 		writeFileSync(
 			join(scriptsDir, "check-goal-audit-freshness.py"),
@@ -220,6 +221,7 @@ describe("check-goal-board.py", () => {
 		mkdirSync(goalDir, { recursive: true });
 		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
 		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
 		writeRuntimeEvidenceActiveArtifacts(repo);
 		writeFileSync(
 			join(scriptsDir, "check-goal-audit-freshness.py"),
@@ -387,6 +389,7 @@ describe("check-goal-board.py", () => {
 		mkdirSync(goalDir, { recursive: true });
 		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
 		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
 		writeRuntimeEvidenceActiveArtifacts(repo);
 		writeFileSync(
 			join(scriptsDir, "check-goal-audit-freshness.py"),
