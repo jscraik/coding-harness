@@ -279,6 +279,18 @@ Notes:
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Action-review receipt changes that add or alter
+  `action-review-receipt/v1`, high-risk action envelopes, reviewer
+  independence, canonical actor identity separation, allow/block/mismatch
+  semantics, current evidence freshness, or machine-readable review error codes
+  are architecture-adjacent runtime cockpit changes. Keep high-risk action
+  review contracts in `src/lib/action-review/`, keep packets contract-only and
+  `not_yet_emitted` until an intentional producer wires them, and do not let
+  them authorize commands, satisfy delivery-truth claims, or prove merge
+  readiness. Refresh `AI/context/diagram-context.md` and keep
+  `ARCHITECTURE.md`, `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
 - Steering-queue packet changes that add or alter `steering-queue/v1`,
   deferred operator-steering state, instruction-source hashing, artifact
   identity checks, supersession, stale-precondition classification, or

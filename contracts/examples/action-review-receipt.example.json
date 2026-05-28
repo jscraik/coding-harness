@@ -1,0 +1,72 @@
+{
+	"schemaVersion": "action-review-receipt/v1",
+	"receiptId": "action-review:pr-309-merge-review",
+	"generatedAt": "2026-05-28T10:30:00Z",
+	"producer": "harness:action-review-validator",
+	"runtimeStatus": "not_yet_emitted",
+	"evidenceUse": "governance",
+	"action": {
+		"actionId": "action:merge-pr-309",
+		"kind": "merge",
+		"riskTier": "high",
+		"targetRef": "github:pr:309",
+		"repository": "github:jscraik/coding-harness",
+		"prNumber": 309,
+		"issueRef": "linear:JSC-363",
+		"headSha": "9df3e8657e273ef754bf357a4bcc63d0f77aafd9",
+		"commandRef": null,
+		"requestedAt": "2026-05-28T10:20:00Z"
+	},
+	"requestedBy": {
+		"actorId": "codex:coordinator",
+		"identityRef": "runtime-identity:codex-thread-123",
+		"role": "implementation-coordinator",
+		"producer": "codex-runtime-evidence:turn-456",
+		"sourceRef": "goal:JSC-363"
+	},
+	"reviewer": {
+		"actorId": "github:jscraik",
+		"identityRef": "github-user:jscraik",
+		"role": "human-operator",
+		"producer": "github:review-state",
+		"sourceRef": "review-state:pr-309",
+		"independence": "independent",
+		"reviewedAt": "2026-05-28T10:28:00Z"
+	},
+	"decision": "allow",
+	"requiredEvidence": [
+		{
+			"ref": "delivery-truth:merge-ready-pr-309",
+			"kind": "delivery_truth",
+			"status": "pass",
+			"freshness": "current",
+			"evidenceUse": "claim_support",
+			"headSha": "9df3e8657e273ef754bf357a4bcc63d0f77aafd9",
+			"verifiedAt": "2026-05-28T10:27:00Z"
+		},
+		{
+			"ref": "review-state:approval-pr-309",
+			"kind": "review_state",
+			"status": "pass",
+			"freshness": "current",
+			"evidenceUse": "governance",
+			"headSha": "9df3e8657e273ef754bf357a4bcc63d0f77aafd9",
+			"verifiedAt": "2026-05-28T10:27:30Z"
+		},
+		{
+			"ref": "external-state:pr-309-current-head",
+			"kind": "external_state",
+			"status": "pass",
+			"freshness": "current",
+			"evidenceUse": "claim_support",
+			"headSha": "9df3e8657e273ef754bf357a4bcc63d0f77aafd9",
+			"verifiedAt": "2026-05-28T10:27:45Z"
+		}
+	],
+	"freshness": "current",
+	"expiresAt": "2026-05-28T11:00:00Z",
+	"blockers": [],
+	"mismatches": [],
+	"nextAction": "operator-may-apply-reviewed-action",
+	"blockedBy": "PU-034-runtime-emission-not-wired"
+}

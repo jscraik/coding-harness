@@ -142,6 +142,14 @@ not in docs, templates, generated context, or command facades.
 - src/lib/external-state/: live PR/CI/review/tracker snapshot packets,
   freshness/TTL/head-SHA validation, stale-state classification, and
   claim-support eligibility.
+- src/lib/action-review/: high-risk action review receipt contracts for merge,
+  release, destructive cleanup, and external tracker mutation. It owns
+  `action-review-receipt/v1` types, schema parity, semantic validation,
+  reviewer independence checks, action-envelope mismatch classification, and
+  machine-readable allow/block/mismatch error codes while keeping receipts
+  contract-only, `not_yet_emitted`, orientation/governance/audit evidence, and
+  out of delivery-truth claim support until a future producer explicitly wires
+  an authorized runtime path.
 - src/lib/steering-queue/: deferred operator-steering packets for
   continuation recovery and audit/orientation evidence. It keeps
   `steering-queue.ts` as a compatibility facade over typed contracts, builder,

@@ -136,6 +136,17 @@
 			"semanticValidatorPath": "scripts/validate-review-lifecycle.cjs",
 			"ownerGap": "SPG-007",
 			"blockedBy": "PU-033 adds the orientation-only ReviewLifecycle packet contract before production review-mode lifecycle producers emit it from live review-state evidence."
+		},
+		{
+			"schemaVersion": "action-review-receipt/v1",
+			"schemaPath": "contracts/action-review-receipt.schema.json",
+			"examplePath": "contracts/examples/action-review-receipt.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-action-review-receipt.cjs",
+			"ownerGap": "SPG-008",
+			"blockedBy": "PU-034 adds the non-authoritative ActionReviewReceipt contract before live merge, release, destructive cleanup, or external tracker mutation review producers emit it."
 		}
 	]
 }

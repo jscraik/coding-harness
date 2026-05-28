@@ -190,6 +190,17 @@ source completeness, TTL-derived staleness, head-SHA binding, and claim-support
 eligibility handled by validators before delivery-truth composition consumes
 those packets.
 
+Action-review receipt changes are high-risk-action governance packet work, not
+a new execution rail. Keep `action-review-receipt/v1` inside
+`src/lib/action-review/` as the contract-only, `not_yet_emitted` receipt for
+merge, release, destructive cleanup, and external tracker mutation review
+decisions. Validators must prove reviewer independence, canonical actor
+identity separation, current head binding, required evidence freshness,
+allow/block/mismatch semantics, and stable error codes. The packet may support
+orientation, governance, and audit trails, but it must not authorize commands,
+satisfy delivery-truth claims, or prove merge readiness until a future producer
+and consumer boundary intentionally wires that authority.
+
 Steering-queue packet changes are continuation-recovery cockpit work, not a new
 agent execution rail. Keep `steering-queue/v1` inside
 `src/lib/steering-queue/` as an advisory packet for deferred operator

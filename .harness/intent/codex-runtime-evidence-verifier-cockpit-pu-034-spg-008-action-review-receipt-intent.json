@@ -1,0 +1,116 @@
+{
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-034-spg-008-action-review-receipt",
+	"schemaVersion": "lifecycle-intent/v1",
+	"createdAt": "2026-05-28T10:20:00Z",
+	"linearIssue": "JSC-363",
+	"goal": "Add ActionReviewReceipt/v1 as a narrow guardian-style receipt contract for merge, release, destructive cleanup, and external tracker mutation action reviews, without granting action authority or replacing delivery-truth, policy-gate, or human approval.",
+	"lifecycleUnit": "PU-034-spg-008-action-review-receipt",
+	"scope": {
+		"primaryModule": "src/lib/action-review",
+		"allowedFiles": [
+			"src/lib/action-review/**",
+			"contracts/action-review-receipt.schema.json",
+			"contracts/examples/action-review-receipt.example.json",
+			"contracts/runtime-packet-schemas.manifest.json",
+			"scripts/validate-action-review-receipt.cjs",
+			"src/dev/validate-runtime-packet-schemas-script.test.ts",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-034-spg-008-action-review-receipt-intent.json",
+			"artifacts/reviews/pu-034-spg-008-action-review-receipt-*.md"
+		],
+		"forbiddenFiles": [
+			"external Codex repository modifications",
+			"GitHub, CodeRabbit, Linear, CircleCI, release, merge, or destructive cleanup mutations",
+			"public command authority changes",
+			"policy-gate behavior changes beyond tests proving ActionReviewReceipt remains non-authoritative",
+			"delivery-truth claim support changes except tests proving action-review receipts cannot substitute for current claim evidence",
+			"raw prompt, transcript, secret, token, command output, review-body, or bulky telemetry persistence"
+		]
+	},
+	"designConstraints": [
+		"ActionReviewReceipt/v1 must be a review artifact, not an executor, approval token, or delivery-truth proof by itself.",
+		"The receipt must classify action kind, action target, requested actor, reviewer identity, canonical actor identity refs, decision, mismatch state, required evidence refs, and blocker class.",
+		"The decision taxonomy must distinguish allow, block, mismatch, unknown, and not_applicable so a missing or stale review cannot look like approval.",
+		"Action targets must be pointer-only and bounded to refs, issue IDs, PR numbers, release tags, paths, or command identifiers; raw secrets, raw command bodies, and full transcripts are forbidden.",
+		"Merge, release, destructive cleanup, and external tracker mutation envelopes must require current evidence refs and head SHA where the action touches repository or PR state.",
+		"Mismatch verdicts must require expected and actual action envelopes plus an explicit mismatch reason.",
+		"Allow verdicts must require current supporting evidence, non-expired review time, independent reviewer identity, canonical requester/reviewer identity refs that differ, and no unresolved blockers.",
+		"Block and unknown verdicts must carry blocker classes and next action text.",
+		"Not-applicable verdicts must not be accepted for the high-risk action kinds in this slice; if the action is merge, release, destructive cleanup, or external tracker mutation, the receipt must use allow, block, mismatch, or unknown.",
+		"The packet must be discoverable through the runtime packet schema manifest with schema, example, and semantic validator pointers.",
+		"The slice must not mutate live GitHub, Linear, release, merge, or filesystem cleanup state."
+	],
+	"acceptanceCriteria": [
+		"ActionReviewReceipt has schemaVersion action-review-receipt/v1 and records generatedAt, producer, runtimeStatus, evidenceUse, action, requestedBy, reviewer, decision, requiredEvidence, freshness, expiresAt, blockers, mismatches, and nextAction.",
+		"Validation accepts an allow fixture for a current merge/release/tracker/destructive-action review only when required evidence refs are current, the reviewer is independent from the requester, canonical requester/reviewer identity refs differ, the receipt is unexpired, blockers are empty, and mismatch list is empty.",
+		"Validation rejects allow verdicts with stale, missing, unknown, orientation-only, or wrong-head evidence refs.",
+		"Validation rejects allow verdicts where reviewer identity matches the requested actor or producer identity in a self-approval shape.",
+		"Validation rejects allow verdicts where reviewer and requester canonical identity refs differ only by display alias or share the same runtime/source identity ref.",
+		"Validation rejects mismatch verdicts that omit expected and actual action envelopes or mismatch reason.",
+		"Validation rejects block or unknown verdicts that omit blocker class and next action.",
+		"Validation rejects not_applicable verdicts for merge, release, destructive cleanup, and external tracker mutation envelopes.",
+		"Validation rejects raw prompt, transcript, secret-like, raw command output, raw token, and unknown top-level or nested fields.",
+		"Runtime packet schema manifest includes action-review-receipt/v1 with schema and semantic validation.",
+		"ActionReviewReceipt/v1 remains orientation/audit-trail/governance evidence and cannot satisfy delivery-truth, merge_ready, release_ready, tracker_aligned, or destructive_cleanup_safe claims by itself.",
+		"Operator-facing validator output includes textual status and stable error codes for agent decisioning."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-034-spg-008-action-review-receipt-intent.json >/dev/null",
+		"pnpm vitest run src/lib/action-review/action-review-receipt.test.ts --reporter=dot",
+		"node scripts/validate-action-review-receipt.cjs contracts/examples/action-review-receipt.example.json",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts --reporter=dot",
+		"pnpm vitest run src/lib/delivery-truth/delivery-truth-composition.test.ts --reporter=dot",
+		"pnpm typecheck",
+		"pnpm exec biome check .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-034-spg-008-action-review-receipt-intent.json src/lib/action-review contracts/action-review-receipt.schema.json contracts/examples/action-review-receipt.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-action-review-receipt.cjs src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"bash scripts/validate-codestyle.sh --fast",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-034-spg-008-action-review-receipt-intent.json src/lib/action-review contracts/action-review-receipt.schema.json contracts/examples/action-review-receipt.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-action-review-receipt.cjs src/dev/validate-runtime-packet-schemas-script.test.ts docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-034-spg-008-action-review-receipt-*.md"
+	],
+	"reviewPlan": {
+		"preImplementation": [
+			"adversarial-reviewer intent review",
+			"agent-native-reviewer intent review"
+		],
+		"beforeDone": [
+			"improve-codebase-architecture lens",
+			"simplify lens",
+			"unslopify lens",
+			"he-code-review lens",
+			"testing lens",
+			"adversarial-reviewer implementation review",
+			"agent-native-reviewer implementation review",
+			"best-practices-researcher implementation review"
+		]
+	},
+	"rollbackPlan": [
+		"Remove ActionReviewReceipt/v1 schema, example, validator, types, validation, and tests.",
+		"Remove action-review-receipt/v1 from the runtime packet schema manifest.",
+		"Preserve existing policy-gate, delivery-truth, pr-closeout, and review-state behavior unchanged."
+	],
+	"evidenceUse": "orientation_audit_trail_and_governance_only",
+	"auditGapIds": ["GAP-002", "GAP-003", "GAP-006", "GAP-009", "GAP-012"],
+	"systemPromptGapIds": ["SPG-008"],
+	"projectBrainInputs": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/research/evidence-patterns.json",
+		".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"
+	],
+	"currentStateNotes": [
+		"Repository preflight passed far enough to establish repo root, toolchain, branch, Project Brain paths, and active north-star; it reported existing unrelated untracked files that are outside this slice.",
+		"The current branch is synced with origin at 9df3e865 before this intent artifact; PR #309 has passing CI/security checks on that head except CodeRabbit was pending at the last live refresh, and GitHub mergeStateStatus remains BLOCKED.",
+		"~/.codex/.env is not read or sourced by this slice; no live external mutation is required."
+	],
+	"stopConditions": [
+		"Stop if ActionReviewReceipt/v1 requires live merge, release, Linear, GitHub, CircleCI, CodeRabbit, or destructive filesystem mutation.",
+		"Stop if implementation would make action-review receipts a substitute for policy-gate, delivery-truth, pr-closeout, external-state, or human approval.",
+		"Stop if raw prompts, transcripts, secrets, raw command bodies, raw command output, or bulky telemetry become necessary for the packet.",
+		"Stop if existing runtime packet schema validation cannot admit the contract without broad validator rewrites."
+	]
+}

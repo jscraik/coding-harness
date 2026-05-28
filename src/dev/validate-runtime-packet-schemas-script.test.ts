@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { validateActionReviewReceipt } from "../lib/action-review/index.js";
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
 import { composeDeliveryTruth } from "../lib/delivery-truth/index.js";
 import { validateEvidenceReceipt } from "../lib/evidence/evidence-receipt.js";
@@ -95,7 +96,18 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 14,
+			packetCount: 15,
+			errors: [],
+		});
+	});
+
+	it("keeps ActionReviewReceipt/v1 examples aligned with the TypeScript validator", () => {
+		const packet = readJson(
+			"contracts/examples/action-review-receipt.example.json",
+		);
+
+		expect(validateActionReviewReceipt(packet)).toEqual({
+			valid: true,
 			errors: [],
 		});
 	});
