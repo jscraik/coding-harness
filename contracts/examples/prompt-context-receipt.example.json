@@ -53,7 +53,7 @@
 		"sandboxMode": "workspace-write",
 		"approvalPolicy": "auto_review",
 		"networkAccess": "restricted",
-		"writableRoots": ["/Users/jamiecraik/dev/coding-harness", "/private/tmp"]
+		"writableRoots": ["<REPO_ROOT>", "/private/tmp"]
 	},
 	"goalContextRefs": [
 		{
