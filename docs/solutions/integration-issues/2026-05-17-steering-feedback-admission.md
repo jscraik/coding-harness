@@ -158,6 +158,9 @@ returned no matches.
   searched surfaces, durable system improvement, executable guard, forbidden
   recurrence behavior, validation outcome, and review condition.
 - The steering guard checks planning-only stop language across AGENTS.md, the validation guide, this solution record, and repo memory so planning conversations do not silently become implementation cues.
+- The steering guard checks the tool promotion threshold across AGENTS.md, the validation guide, UBIQUITOUS_LANGUAGE.md, and this solution record so recurring slice judgment becomes a durable tool, validator, guard, CLI helper, scoped skill, or explicit one-off evidence destination.
+- The steering guard checks safe PR body file handoff language across the validation guide, UBIQUITOUS_LANGUAGE.md, and this solution record so Markdown, backticks, command snippets, and generated validation output are passed through a non-interpreting body file with `--body-file`, not through shell interpolation, command substitution, or a raw `--body` string.
+- The steering guard checks CircleCI env-backed API triage language across the validation guide, UBIQUITOUS_LANGUAGE.md, and this solution record so CircleCI API, CircleCI log, and CircleCI job recovery loads `~/.codex/.env`, resolves `CIRCLECI_TOKEN`, `CIRCLE_TOKEN`, or `CIRCLE_API_TOKEN` without printing values, passes the value as `Circle-Token`, and uses bounded network calls such as `curl --max-time` before classifying CircleCI evidence unavailable.
 - The steering guard validates current-session steering admission records so
   the proof fields cannot silently collapse back into chat-only acknowledgement.
 - The GitHub pull request template requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.

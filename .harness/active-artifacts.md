@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Current board status is active; the latest externally verified PR #309 head before the current local PU-034 slice is `9df3e8657e273ef754bf357a4bcc63d0f77aafd9`. Live checks were green on that pushed head, but R113 only claims local ActionReviewReceipt/v1 validation before the next push. GitHub review approval, review-thread, Linear scope, merge-readiness, Judge/PM, runtime producer emission, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is to commit and push PU-034 SPG-008 ActionReviewReceipt/v1, refresh PR #309 on the new head, launch PR triage if needed, and continue the next SPG slice; do not route from older JSC-331 context unless the current goal explicitly references it. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. PR #309 is merged; its branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and current main includes the squash commit `75b77c2543053ade3c3e793d28f8811998b9f01c`. R114 reconciles the board to current HEAD and encodes the tool promotion threshold. GitHub review-thread truth, Linear full-lifecycle scope alignment, Judge/PM readiness, runtime producer emission, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is to start the next slice intent from current main/branch truth, keep PR #310/tool-promotion work separate, and continue only after branch/worktree state and external truth are refreshed. |
 
 ## Artifact Index
 
@@ -76,11 +76,12 @@ unless a live refresh is recorded in the referenced artifact.
   cockpit, keep `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`
   freshness enforced through `scripts/check-goal-board.py`, and keep Linear,
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
-  receipts. PR #309 has green CodeRabbit, CircleCI, security, Socket, and
-  Snyk checks at latest externally verified head
-  `9df3e8657e273ef754bf357a4bcc63d0f77aafd9`; GitHub
-  mergeStateStatus remains `BLOCKED`, so merge-readiness, Linear scope
-  alignment, Judge/PM readiness, and final closeout remain unclaimed.
+  receipts. PR #309 is merged; the PR branch head was
+  `84bd19b1a5da56800e7cf4239c9f65348ccf2d96`, and current main includes
+  squash commit `75b77c2543053ade3c3e793d28f8811998b9f01c`. R114 restores
+  current-head goal-board freshness and encodes the tool promotion threshold,
+  but merge-readiness, Linear scope alignment, review-thread truth, Judge/PM
+  readiness, runtime producer emission, and final closeout remain unclaimed.
 - JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
   not use it as the coding-harness tracker for the 2026-05-18 assurance plan
   unless Linear is explicitly reparented or updated later.

@@ -72,6 +72,10 @@ const CLOSEOUT_COMPLETION_PATTERN =
 	/(closeout completion|green checks.*not.*complete|green checks.*validation evidence|not equivalent to green checks|PR state.*merge.*Linear.*next-lane|heartbeat.*lane.*complete)/i;
 const ENV_BACKED_VALIDATION_PATTERN =
 	/(Env-Backed Validation Recovery|env-backed validation recovery|~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|inspect.*required.*variable names.*without printing values|missing credential.*env-loaded rerun)/i;
+const CIRCLECI_ENV_API_TRIAGE_PATTERN =
+	/(CircleCI API|CircleCI log|CircleCI job)[\s\S]{0,260}(~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|CIRCLECI_TOKEN|CIRCLE_TOKEN|CIRCLE_API_TOKEN|Circle-Token|bounded network call|--max-time)/i;
+const SAFE_PR_BODY_FILE_HANDOFF_PATTERN =
+	/(PR body|pull request body)[\s\S]{0,260}(--body-file|body file|non-interpreting file|shell interpolation|command substitution|backticks|pr-template-gate --pr-body-file)/i;
 const STALE_ENV_BACKED_BLOCKER_PATTERN =
 	/(current process lacks GitHub and Linear credentials|GitHub and Linear credentials are unavailable|credentials are unavailable|missing_credentials|(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}\bFIFO\b[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely)|\bFIFO\b[\s\S]{0,220}(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely))/i;
 const CLOSEOUT_STATE_FIELD_PATTERNS = [
@@ -333,6 +337,13 @@ function validateAgents(content) {
 		errors,
 		REQUIRED_FILES.agents,
 		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool promotion threshold for repeated judgments",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
 		ENV_BACKED_VALIDATION_PATTERN,
 		"env-backed validation recovery before missing-credential blockers",
 	);
@@ -539,8 +550,29 @@ function validateValidationDoc(content) {
 		errors,
 		REQUIRED_FILES.validation,
 		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool promotion threshold validation rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
 		ENV_BACKED_VALIDATION_PATTERN,
 		"env-backed validation recovery rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		CIRCLECI_ENV_API_TRIAGE_PATTERN,
+		"CircleCI env-backed API triage rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
+		SAFE_PR_BODY_FILE_HANDOFF_PATTERN,
+		"safe PR body file handoff rule",
 	);
 	requirePattern(
 		errors,
@@ -718,6 +750,7 @@ function validateGlossary(content) {
 	);
 	for (const term of [
 		"Repeat-Feedback Admission",
+		"Tool Promotion Threshold",
 		"Env-Backed Validation Recovery",
 		"Workflow Skill",
 		"Capture-The-Flag Eval",
@@ -758,6 +791,13 @@ function validateGlossary(content) {
 		errors,
 		REQUIRED_FILES.glossary,
 		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool promotion threshold language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
 		CURRENT_SESSION_ADMISSION_PATTERN,
 		"current-session steering admission record language",
 	);
@@ -774,6 +814,20 @@ function validateGlossary(content) {
 		content,
 		ENV_BACKED_VALIDATION_PATTERN,
 		"env-backed validation recovery language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		CIRCLECI_ENV_API_TRIAGE_PATTERN,
+		"CircleCI env-backed API triage language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		SAFE_PR_BODY_FILE_HANDOFF_PATTERN,
+		"safe PR body file handoff language",
 	);
 	requirePattern(
 		errors,
@@ -911,6 +965,13 @@ function validateSolution(content) {
 		errors,
 		REQUIRED_FILES.solution,
 		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool promotion threshold evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
 		/Standalone prose is not enough/i,
 		"standalone prose rejection",
 	);
@@ -941,6 +1002,20 @@ function validateSolution(content) {
 		content,
 		/`?pr-template-gate`? rejects PR bodies/i,
 		"pr-template-gate repeated-steering rejection evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		CIRCLECI_ENV_API_TRIAGE_PATTERN,
+		"CircleCI env-backed API triage evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		SAFE_PR_BODY_FILE_HANDOFF_PATTERN,
+		"safe PR body file handoff evidence",
 	);
 	requirePattern(
 		errors,
