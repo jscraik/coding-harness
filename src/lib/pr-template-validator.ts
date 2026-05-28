@@ -191,7 +191,13 @@ function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
 		return [];
 	}
 
-	const issueKeys = Array.from(new Set(planIds.match(/\bJSC-\d+\b/g) ?? []));
+	const issueKeys = Array.from(
+		new Set(
+			(planIds.match(/\bJSC-\d+\b/gi) ?? []).map((issueKey) =>
+				issueKey.toUpperCase(),
+			),
+		),
+	);
 	const hasAcceptanceIds = ACCEPTANCE_TRACE_ID_PATTERN.test(acceptanceTrace);
 	if (hasAcceptanceIds) {
 		if (
