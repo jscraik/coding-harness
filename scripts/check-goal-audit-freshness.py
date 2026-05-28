@@ -155,6 +155,18 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
     if not receipts:
         raise ValidationError("receipts file contains no receipts")
 
+    try:
+        current_head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_root,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValidationError(f"could not retrieve current repository HEAD: {exc}") from exc
+
     current_sha256 = sha256_file(audit_file)
     audit_mtime = datetime.fromtimestamp(audit_file.stat().st_mtime, tz=UTC)
     receipt, source = latest_audit_source(receipts, audit_path)
@@ -168,8 +180,12 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
     receipt_id = require_string(receipt.get("id"), "receipt.id")
     receipt_head_sha = require_string(receipt.get("head_sha"), "receipt.head_sha")
     require_reachable_head(repo_root, receipt_head_sha, "receipt.head_sha")
+    if receipt_head_sha != current_head:
+        raise ValidationError(f"receipt.head_sha must match current repository HEAD: receipt={receipt_head_sha} current={current_head}")
     source_head_sha = require_string(source.get("head_sha"), "audit_sources_checked[].head_sha")
     require_reachable_head(repo_root, source_head_sha, "audit_sources_checked[].head_sha")
+    if source_head_sha != current_head:
+        raise ValidationError(f"audit_sources_checked[].head_sha must match current repository HEAD: source={source_head_sha} current={current_head}")
     if source_head_sha != receipt_head_sha:
         raise ValidationError("audit_sources_checked[].head_sha must match receipt.head_sha")
 

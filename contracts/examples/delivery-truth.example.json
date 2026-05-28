@@ -4,7 +4,7 @@
 	"status": "pass",
 	"statusLabel": "remote_checks_current pass",
 	"source": "external_state",
-	"evidenceRef": "external-state:fixture.json",
+	"evidenceRef": null,
 	"evidenceRefs": ["external-state:fixture.json"],
 	"blockerRefs": [],
 	"headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

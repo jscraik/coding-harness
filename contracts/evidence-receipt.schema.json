@@ -56,7 +56,7 @@
 			"enum": ["orientation", "claim_support", "audit_trail"]
 		},
 		"blockerClass": {
-			"description": "Stable blocker class when status or freshness blocks use of the evidence; explicitly null when no blocker exists.",
+			"description": "Stable blocker class when status or freshness blocks use of the evidence; must be explicitly null when no blocker exists.",
 			"type": ["string", "null"],
 			"minLength": 1
 		},
