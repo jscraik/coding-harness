@@ -239,6 +239,49 @@ describe("validatePromptContextDriftReport", () => {
 		);
 	});
 
+	it("allows non-claim-support reports to classify stale head mismatches", () => {
+		const report = exampleReport();
+		report.evidenceUse = "orientation";
+		report.overallStatus = "blocked";
+		report.blockers = [
+			{
+				blockerClass: "head_sha_mismatch",
+				reason: "receipt head differs from current head",
+				nextActionClass: "refresh_receipts",
+			},
+		];
+		report.surfaces = report.surfaces.map((surface, index) => ({
+			...surface,
+			status: index === 6 ? "blocked" : "warn",
+			evidenceUse: "orientation",
+			freshness: index === 6 ? "stale" : "current",
+			requiredForClaimSupport: false,
+			sourceRefs: surface.sourceRefs.map((sourceRef) => ({
+				...sourceRef,
+				evidenceUse: "orientation",
+				requiredForClaimSupport: false,
+			})),
+		}));
+		report.surfaces[6] = {
+			...surfaceAt(report, 6),
+			observedHeadSha: "2222222222222222222222222222222222222222",
+			blockers: [
+				{
+					blockerClass: "head_sha_mismatch",
+					reason: "receipt head differs from current head",
+					nextActionClass: "refresh_receipts",
+				},
+			],
+		};
+
+		expect(validatePromptContextDriftReport(report, { repoRoot: "." })).toEqual(
+			{
+				status: "pass",
+				errors: [],
+			},
+		);
+	});
+
 	it("blocks missing source hash", () => {
 		const report = exampleReport();
 		surfaceAt(report, 0).sourceRefs[0] = {
