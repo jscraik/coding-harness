@@ -172,6 +172,27 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 	);
 }
 
+function hasCompletedAcceptanceIds(normalized: string): boolean {
+	return (
+		/\bcompleted (?:[a-z0-9-]+ )?acceptance ids\s*:\s*(?!none\b)[a-z0-9-]+\b/.test(
+			normalized,
+		) || /\bcompleted acceptance criteria\s*:\s*(?!none\b)\S+/.test(normalized)
+	);
+}
+
+function statesNoCompletedAcceptance(normalized: string): boolean {
+	return (
+		/\bcompleted (?:[a-z]+ )?acceptance (?:ids|criteria)\s*:\s*none\b/.test(
+			normalized,
+		) ||
+		/\bcompleted [a-z0-9-]+ acceptance ids\s*:\s*none\b/.test(normalized) ||
+		/\bacceptance (?:ids|criteria)\s*:\s*none\b/.test(normalized) ||
+		/\bdoes not (?:close|complete|claim)\b.*\b(?:sa-\d{3}|acceptance)\b/.test(
+			normalized,
+		)
+	);
+}
+
 function collectLinkedIssueRelationshipErrors(body: string): string[] {
 	const value = extractFieldBlockValue(
 		body,
@@ -197,20 +218,54 @@ function collectLinkedIssueRelationshipErrors(body: string): string[] {
 	}
 
 	if (/\bpreparatory\/enabling work\b/.test(normalized)) {
-		const statesNoCompletedAcceptance =
-			/\bcompleted (?:[a-z]+ )?acceptance (?:ids|criteria)\s*:\s*none\b/.test(
-				normalized,
-			) ||
-			/\bcompleted [a-z0-9-]+ acceptance ids\s*:\s*none\b/.test(normalized) ||
-			/\bacceptance (?:ids|criteria)\s*:\s*none\b/.test(normalized) ||
-			/\bdoes not (?:close|complete|claim)\b.*\b(?:sa-\d{3}|acceptance)\b/.test(
-				normalized,
-			);
-		if (!statesNoCompletedAcceptance) {
+		if (!statesNoCompletedAcceptance(normalized)) {
 			return [
 				"Preparatory/enabling linked issue relationship must state completed acceptance IDs are none or explicitly say it does not close the linked acceptance scope.",
 			];
 		}
+	}
+
+	return [];
+}
+
+function collectLinkedIssueClosureConsistencyErrors(body: string): string[] {
+	const linearReference = extractFieldBlockValue(
+		body,
+		"## Work performed",
+		"Linear reference",
+	);
+	const linkedIssueRelationship = extractFieldBlockValue(
+		body,
+		"## Work performed",
+		"Linked issue relationship",
+	);
+	if (linearReference === null || linkedIssueRelationship === null) {
+		return [];
+	}
+
+	const normalizedLinearReference =
+		normalizeFieldValue(linearReference).toLowerCase();
+	const normalizedLinkedIssueRelationship = normalizeFieldValue(
+		linkedIssueRelationship,
+	).toLowerCase();
+	const hasIssueClosureToken =
+		/\b(?:closes|close|closed|fixes|resolves)\s+[a-z]+-\d+\b/.test(
+			normalizedLinearReference,
+		);
+	if (!hasIssueClosureToken) {
+		return [];
+	}
+
+	const isImplementationClosure = /\bimplementation closure\b/.test(
+		normalizedLinkedIssueRelationship,
+	);
+	if (
+		!isImplementationClosure ||
+		!hasCompletedAcceptanceIds(normalizedLinkedIssueRelationship)
+	) {
+		return [
+			"Linear reference uses a closure token, so Linked issue relationship must be implementation closure with completed acceptance IDs; use Refs or an issue URL for preparatory/enabling or standalone work.",
+		];
 	}
 
 	return [];
@@ -295,6 +350,7 @@ export function validatePrTemplateBody(body: string): string[] {
 
 	errors.push(...collectWorkPerformedFieldErrors(body));
 	errors.push(...collectLinkedIssueRelationshipErrors(body));
+	errors.push(...collectLinkedIssueClosureConsistencyErrors(body));
 	errors.push(
 		...collectWorkEvidenceIntegrityErrors(body, extractFieldBlockValue),
 	);
