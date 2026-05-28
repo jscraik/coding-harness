@@ -86,6 +86,10 @@ export function requireRepoPath(
 		addError(errors, "unsafe_path", path, "must be a safe repo-relative path");
 		return;
 	}
+	if (value.length > 256) {
+		addError(errors, "unsafe_path", path, "must be <= 256 characters");
+		return;
+	}
 	if (
 		value.startsWith("/") ||
 		value.startsWith("~") ||
