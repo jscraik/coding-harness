@@ -144,7 +144,7 @@ returned no matches.
 - docs/automations/README.md defines the heartbeat closeout and deletion contract, including the exact-ID fallback when the app automation API is unavailable.
 - UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Tool Promotion Threshold, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
 - .harness/memory/LEARNINGS.md records current-session steering admission when a run exposes an operating failure that must not recur.
-- .harness/implementation-notes/_steering-admission_.md records the
+- .harness/implementation-notes/2026-05-20-steering-admission.md records the
   current-session feedback signal, root operational failure, failure category,
   searched surfaces, durable system improvement, executable guard, forbidden
   recurrence behavior, validation outcome, and review condition.
