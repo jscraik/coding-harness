@@ -25,7 +25,7 @@
 			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
 		],
 		"forbiddenFiles": [
-			"/Users/jamiecraik/dev/codex/**",
+			"external Codex repository modifications",
 			"public merge or release behavior",
 			"goal status mutation APIs",
 			"agent scheduler or background worker implementation",
