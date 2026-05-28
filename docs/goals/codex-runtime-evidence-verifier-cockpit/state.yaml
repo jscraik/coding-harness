@@ -256,7 +256,7 @@ checks:
         outcome: "pass (packetCount 17)"
       - command: "pnpm typecheck"
         outcome: "pass"
-      - command: "node --import tsx src/cli.ts commands --json --all > /tmp/coding-harness-replay-commands.json && jq -e '.commands[] | select(.name == "replay")' /tmp/coding-harness-replay-commands.json >/dev/null"
+      - command: "node --import tsx src/cli.ts commands --json --all > /tmp/coding-harness-replay-commands.json && jq -e '.commands[] | select(.name == \"replay\")' /tmp/coding-harness-replay-commands.json >/dev/null"
         outcome: "pass"
       - command: "node --import tsx src/cli.ts docs-gate --mode required --json"
         outcome: "pass"
