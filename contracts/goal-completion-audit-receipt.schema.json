@@ -66,6 +66,8 @@
 		},
 		"sourceRefs": {
 			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
 			"items": {
 				"$ref": "#/$defs/safePointer"
 			}
@@ -199,12 +201,16 @@
 				},
 				"evidenceRefs": {
 					"type": "array",
+					"minItems": 1,
+					"uniqueItems": true,
 					"items": {
 						"$ref": "#/$defs/safePointer"
 					}
 				},
 				"blockerRefs": {
 					"type": "array",
+					"minItems": 1,
+					"uniqueItems": true,
 					"items": {
 						"$ref": "#/$defs/safePointer"
 					}
@@ -249,6 +255,8 @@
 				},
 				"evidenceRefs": {
 					"type": "array",
+					"minItems": 1,
+					"uniqueItems": true,
 					"items": {
 						"$ref": "#/$defs/safePointer"
 					}
@@ -302,12 +310,16 @@
 				},
 				"blockerRefs": {
 					"type": "array",
+					"minItems": 1,
+					"uniqueItems": true,
 					"items": {
 						"$ref": "#/$defs/safePointer"
 					}
 				},
 				"evidenceRefs": {
 					"type": "array",
+					"minItems": 1,
+					"uniqueItems": true,
 					"items": {
 						"$ref": "#/$defs/safePointer"
 					}
