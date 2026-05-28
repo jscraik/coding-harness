@@ -249,6 +249,8 @@ Example: a PR closeout fix for one branch is not done until the loop checks sibl
 
 Example: a high-level workflow skill such as "log in", "upload attachments and start a chat", or "grant this group access to a workplace agent" is not proven because its instructions look plausible. Define a capture-the-flag eval with an observable win condition in the UI or tool surface, run the skill, retain session or trace evidence, let Codex reflect on failed attempts, commit the minimal skill or harness improvement, and rerun until the flag is captured or the blocker is named.
 
+Use the tool promotion threshold before creating a new surface: if the same judgment is needed twice, or a failure mode can recur across slices, promote it into the smallest durable operating primitive that changes future behavior, such as a validator, guard script, CLI helper, workflow hook, fixture, or scoped skill. Keep one-off implementation knowledge in implementation notes, plan evidence, or PR closeout evidence. Create or update a skill only for a reusable routed workflow with explicit inputs, artifacts, validation, ownership, and review expectations.
+
 Do not satisfy this by adding standalone prose only. If the destination is documentation, tie it to an existing docs-gate, glossary guard, PR template field, command contract, or tracked follow-up.
 
 Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps the steering-feedback rule connected across `AGENTS.md`, this validation guide, `UBIQUITOUS_LANGUAGE.md`, and the current solution record.
