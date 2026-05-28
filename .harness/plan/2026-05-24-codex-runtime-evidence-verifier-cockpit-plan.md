@@ -378,6 +378,7 @@ essential_decisions:
 - A planning, research, or spec PR cannot claim implementation delivery.
 - Contract-freeze validation must compare current contract surfaces to an immutable pre-implementation baseline snapshot or checksum manifest, not only current plan/spec files.
 - Source-derived Codex fixtures must include immutable provenance: commit SHA when available and file checksum fallback for dirty or uncommitted source evidence.
+- The tool promotion threshold applies to every slice: if the same judgment is needed twice, or the failure mode can recur across slices, promote it into the smallest durable primitive that changes future behavior. Keep one-off implementation knowledge in implementation notes, plan evidence, or PR closeout evidence; choose validators or guards for deterministic rules, CLI helpers for repeatable operator commands, and skills only for reusable routed workflows with explicit inputs, artifacts, validation, ownership, and review expectations.
 
 fillable_gaps:
 

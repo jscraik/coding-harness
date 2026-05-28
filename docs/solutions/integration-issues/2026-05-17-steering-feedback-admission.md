@@ -140,14 +140,16 @@ returned no matches.
 
 - AGENTS.md defines agent engineering proof as the compact operating rule for steering feedback, line-level corrections, OODA horizons, reflected context, and benchmark-vs-engineering proof.
 - docs/agents/04-validation.md defines the agent engineering proof loop and its closeout evidence.
+- The tool promotion threshold prevents repeated judgment from staying in chat: if the same judgment is needed twice, or the failure mode can recur across slices, promote it into the smallest durable primitive; keep one-off implementation knowledge in implementation notes, plan evidence, or PR closeout evidence; choose validators or guards for deterministic rules, CLI helpers for repeatable operator commands, and skills only for reusable routed workflows with explicit inputs, artifacts, validation, ownership, and review expectations.
 - docs/automations/README.md defines the heartbeat closeout and deletion contract, including the exact-ID fallback when the app automation API is unavailable.
-- UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
+- UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Tool Promotion Threshold, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
 - .harness/memory/LEARNINGS.md records current-session steering admission when a run exposes an operating failure that must not recur.
-- .harness/implementation-notes/*steering-admission*.md records the
+- .harness/implementation-notes/_steering-admission_.md records the
   current-session feedback signal, root operational failure, failure category,
   searched surfaces, durable system improvement, executable guard, forbidden
   recurrence behavior, validation outcome, and review condition.
 - The steering guard checks planning-only stop language across AGENTS.md, the validation guide, this solution record, and repo memory so planning conversations do not silently become implementation cues.
+- The steering guard checks the tool promotion threshold across AGENTS.md, the validation guide, UBIQUITOUS_LANGUAGE.md, and this solution record so recurring slice judgment becomes a durable tool, validator, guard, CLI helper, scoped skill, or explicit one-off evidence destination.
 - The steering guard validates current-session steering admission records so
   the proof fields cannot silently collapse back into chat-only acknowledgement.
 - The GitHub pull request template requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.

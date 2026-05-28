@@ -237,6 +237,7 @@ Before each new slice or PR closeout pass:
 3. Check `.harness/research/evidence-patterns.json` before adopting research-derived guidance.
 4. Use the repo-owned Project Brain CLI path when the slice depends on indexed knowledge, and record the exact command or blocker in the receipt.
 5. Promote any repeated steering, audit correction, or newly discovered invariant into Project Brain memory, `.harness/knowledge/**`, a validator, or a tracked explicit skip reason before marking the slice done.
+6. Apply the tool promotion threshold before closing the slice: if the same judgment is needed twice, or the failure mode can recur across slices, promote it into the smallest durable primitive that changes future behavior. Keep one-off implementation knowledge in implementation notes, plan evidence, or PR closeout evidence; choose validators or guards for deterministic rules, CLI helpers for repeatable operator commands, and skills only for reusable routed workflows with explicit inputs, artifacts, validation, ownership, and review expectations.
 
 Project Brain memory is claim support only when it is current, repo-local, and referenced by a receipt. Stale or unavailable memory can orient work, but it cannot support closeout, merge readiness, or Judge/PM-ready claims.
 

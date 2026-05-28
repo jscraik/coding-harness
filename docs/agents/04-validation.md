@@ -194,6 +194,14 @@ current repo context, implement that fix, and record the research options plus
 chosen implementation in PR closeout. This prevents agents from fighting the
 same error with repeated local guesses.
 
+Tool promotion threshold: if the same judgment is needed twice, or the failure
+mode can recur across slices, promote it into the smallest durable primitive
+that can change future behavior. Use implementation notes, plan evidence, or PR
+closeout evidence for one-off implementation knowledge; use a validator or guard
+for deterministic rules; use a CLI helper when operators need a repeatable
+command; create or update a skill only for a reusable routed workflow with
+explicit inputs, artifacts, validation, ownership, and review expectations.
+
 1. Observe: capture the concrete signal and recover relevant context, including reflected context from resumed windows, session collector evidence, runtime evidence, or agent reflection when the signal crosses compaction, harness, repo, machine, or environment boundaries.
 2. Orient: translate the signal into the design principle it implies, then search sibling implementations, tests, docs, skills, PRs, issues, automations, and stacked trajectories that share or consume that principle.
 3. Decide: classify the scope as local, pattern-wide, stack-aware, organization-aware, reflected-context-backed, or `Unobserved Horizon`; choose the narrowest durable destination that can carry the principle.

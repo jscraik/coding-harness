@@ -45,6 +45,8 @@ const PATTERN_SCOPE_INVENTORY_PATTERN =
 	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|similar misbehavior classes searched|deferred follow-ups|deferred followup)/i;
 const OBSERVED_FIXABLE_BLOCKER_PATTERN =
 	/(observed fixable blockers|fixable blocker|fix it in the same pass|rerun the narrowest proving command|tracked exception with the exact reason)/i;
+const TOOL_PROMOTION_THRESHOLD_PATTERN =
+	/(same judgment is needed twice|failure mode can recur across slices|smallest durable primitive|implementation notes.*plan evidence|validator.*guard.*CLI helper.*skill)/is;
 const PATTERN_SCOPE_VALIDATOR_PATTERN =
 	/(PATTERN_SCOPE_SIGNAL_PATTERN|collectPatternScopeInventoryErrors|Pattern scope inventory must name the inferred principle)/i;
 const PRINCIPLE_SIGNAL_PATTERN =
@@ -330,6 +332,13 @@ function validateAgents(content) {
 		errors,
 		REQUIRED_FILES.agents,
 		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool promotion threshold for repeated judgments",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
 		ENV_BACKED_VALIDATION_PATTERN,
 		"env-backed validation recovery before missing-credential blockers",
 	);
@@ -511,6 +520,13 @@ function validateValidationDoc(content) {
 		errors,
 		REQUIRED_FILES.validation,
 		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool promotion threshold validation rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
 		ENV_BACKED_VALIDATION_PATTERN,
 		"env-backed validation recovery rule",
 	);
@@ -669,6 +685,7 @@ function validateGlossary(content) {
 	);
 	for (const term of [
 		"Repeat-Feedback Admission",
+		"Tool Promotion Threshold",
 		"Env-Backed Validation Recovery",
 		"Workflow Skill",
 		"Capture-The-Flag Eval",
@@ -704,6 +721,13 @@ function validateGlossary(content) {
 		content,
 		REPEAT_FEEDBACK_ADMISSION_PATTERN,
 		"repeat-feedback admission language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool promotion threshold language",
 	);
 	requirePattern(
 		errors,
@@ -857,6 +881,13 @@ function validateSolution(content) {
 		content,
 		DURABLE_DESTINATION_PATTERN,
 		"durable destination language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool promotion threshold evidence",
 	);
 	requirePattern(
 		errors,
