@@ -1,0 +1,430 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/review-lifecycle.schema.json",
+	"title": "Review Lifecycle",
+	"description": "Orientation-only packet that summarizes review-mode lifecycle evidence from review-state/v1 without becoming CI, Linear, closeout, or merge-readiness proof.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"producer",
+		"runtimeStatus",
+		"evidenceUse",
+		"sourceReviewStateRef",
+		"sourceReviewState",
+		"target",
+		"mode",
+		"reviewer",
+		"toolExposure",
+		"artifactLineage",
+		"findings",
+		"selectableComments",
+		"unresolvedThreads",
+		"coverage",
+		"verdict"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "review-lifecycle/v1"
+		},
+		"generatedAt": {
+			"$ref": "#/$defs/isoTimestamp"
+		},
+		"producer": {
+			"$ref": "#/$defs/safeText"
+		},
+		"runtimeStatus": {
+			"const": "not_yet_emitted"
+		},
+		"evidenceUse": {
+			"enum": ["orientation", "audit_trail"]
+		},
+		"sourceReviewStateRef": {
+			"$ref": "#/$defs/safeText"
+		},
+		"sourceReviewState": {
+			"$ref": "#/$defs/sourceReviewState"
+		},
+		"target": {
+			"$ref": "#/$defs/target"
+		},
+		"mode": {
+			"$ref": "#/$defs/mode"
+		},
+		"reviewer": {
+			"$ref": "#/$defs/reviewer"
+		},
+		"toolExposure": {
+			"$ref": "#/$defs/toolExposure"
+		},
+		"artifactLineage": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/artifactLineage"
+			}
+		},
+		"findings": {
+			"$ref": "#/$defs/findings"
+		},
+		"selectableComments": {
+			"$ref": "#/$defs/selectableComments"
+		},
+		"unresolvedThreads": {
+			"$ref": "#/$defs/unresolvedThreads"
+		},
+		"coverage": {
+			"$ref": "#/$defs/coverage"
+		},
+		"verdict": {
+			"$ref": "#/$defs/verdict"
+		}
+	},
+	"$defs": {
+		"safeText": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512,
+			"pattern": "^[^\\r\\n]+$"
+		},
+		"nullableSafeText": {
+			"anyOf": [
+				{
+					"type": "null"
+				},
+				{
+					"$ref": "#/$defs/safeText"
+				}
+			]
+		},
+		"isoTimestamp": {
+			"type": "string",
+			"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+		},
+		"headSha": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{40}$"
+		},
+		"nonNegativeInteger": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"safeStringArray": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/safeText"
+			}
+		},
+		"sourceReviewState": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"schemaVersion",
+				"ref",
+				"generatedAt",
+				"headSha",
+				"fetchReceiptRef",
+				"reviewerArtifactRefs",
+				"unresolvedThreadTotal"
+			],
+			"properties": {
+				"schemaVersion": {
+					"const": "review-state/v1"
+				},
+				"ref": {
+					"$ref": "#/$defs/safeText"
+				},
+				"generatedAt": {
+					"$ref": "#/$defs/isoTimestamp"
+				},
+				"headSha": {
+					"$ref": "#/$defs/headSha"
+				},
+				"fetchReceiptRef": {
+					"$ref": "#/$defs/safeText"
+				},
+				"reviewerArtifactRefs": {
+					"$ref": "#/$defs/safeStringArray"
+				},
+				"unresolvedThreadTotal": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				}
+			}
+		},
+		"target": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"repository",
+				"prNumber",
+				"url",
+				"baseRef",
+				"headRef",
+				"headSha",
+				"reviewStateHeadSha"
+			],
+			"properties": {
+				"repository": {
+					"$ref": "#/$defs/safeText"
+				},
+				"prNumber": {
+					"type": "integer",
+					"minimum": 1
+				},
+				"url": {
+					"$ref": "#/$defs/safeText"
+				},
+				"baseRef": {
+					"$ref": "#/$defs/safeText"
+				},
+				"headRef": {
+					"$ref": "#/$defs/safeText"
+				},
+				"headSha": {
+					"$ref": "#/$defs/headSha"
+				},
+				"reviewStateHeadSha": {
+					"$ref": "#/$defs/headSha"
+				}
+			}
+		},
+		"mode": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "status", "startedAt", "completedAt"],
+			"properties": {
+				"kind": {
+					"enum": [
+						"author_review",
+						"code_review",
+						"pr_review",
+						"judge_review",
+						"pm_review"
+					]
+				},
+				"status": {
+					"enum": ["current", "stale", "missing", "unknown"]
+				},
+				"startedAt": {
+					"anyOf": [
+						{
+							"type": "null"
+						},
+						{
+							"$ref": "#/$defs/isoTimestamp"
+						}
+					]
+				},
+				"completedAt": {
+					"anyOf": [
+						{
+							"type": "null"
+						},
+						{
+							"$ref": "#/$defs/isoTimestamp"
+						}
+					]
+				}
+			}
+		},
+		"reviewer": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["role", "producer", "runManifestRef"],
+			"properties": {
+				"role": {
+					"$ref": "#/$defs/safeText"
+				},
+				"producer": {
+					"$ref": "#/$defs/safeText"
+				},
+				"runManifestRef": {
+					"$ref": "#/$defs/nullableSafeText"
+				}
+			}
+		},
+		"toolExposure": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["sourceRef", "classes"],
+			"properties": {
+				"sourceRef": {
+					"$ref": "#/$defs/nullableSafeText"
+				},
+				"classes": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/toolExposureClass"
+					}
+				}
+			}
+		},
+		"toolExposureClass": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["className", "statusCounts", "failureClass"],
+			"properties": {
+				"className": {
+					"enum": [
+						"shell",
+						"filesystem",
+						"network",
+						"mcp",
+						"browser",
+						"agent",
+						"plugin",
+						"app",
+						"github",
+						"linear",
+						"review",
+						"unknown"
+					]
+				},
+				"statusCounts": {
+					"$ref": "#/$defs/toolExposureCounts"
+				},
+				"failureClass": {
+					"$ref": "#/$defs/nullableSafeText"
+				}
+			}
+		},
+		"toolExposureCounts": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"visible",
+				"deferred",
+				"hidden",
+				"unavailable",
+				"policyBlocked"
+			],
+			"properties": {
+				"visible": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"deferred": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"hidden": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"unavailable": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"policyBlocked": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				}
+			}
+		},
+		"artifactLineage": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["role", "path", "producer", "runManifestRef", "receipt"],
+			"properties": {
+				"role": {
+					"$ref": "#/$defs/safeText"
+				},
+				"path": {
+					"$ref": "#/$defs/safeText"
+				},
+				"producer": {
+					"$ref": "#/$defs/safeText"
+				},
+				"runManifestRef": {
+					"$ref": "#/$defs/safeText"
+				},
+				"receipt": {
+					"$ref": "evidence-receipt.schema.json"
+				}
+			}
+		},
+		"findings": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["total", "blocking", "advisory", "resolved"],
+			"properties": {
+				"total": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"blocking": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"advisory": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"resolved": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				}
+			}
+		},
+		"selectableComments": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["total", "selected", "unselected"],
+			"properties": {
+				"total": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"selected": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"unselected": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				}
+			}
+		},
+		"unresolvedThreads": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["total", "needsHuman", "autofixable"],
+			"properties": {
+				"total": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"needsHuman": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				},
+				"autofixable": {
+					"$ref": "#/$defs/nonNegativeInteger"
+				}
+			}
+		},
+		"coverage": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["requiredRoles", "coveredRoles", "missingRoles"],
+			"properties": {
+				"requiredRoles": {
+					"$ref": "#/$defs/safeStringArray"
+				},
+				"coveredRoles": {
+					"$ref": "#/$defs/safeStringArray"
+				},
+				"missingRoles": {
+					"$ref": "#/$defs/safeStringArray"
+				}
+			}
+		},
+		"verdict": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["status", "blockerClass", "reason", "readyForReviewClaim"],
+			"properties": {
+				"status": {
+					"enum": ["pass", "blocked", "fail", "unknown"]
+				},
+				"blockerClass": {
+					"$ref": "#/$defs/nullableSafeText"
+				},
+				"reason": {
+					"$ref": "#/$defs/safeText"
+				},
+				"readyForReviewClaim": {
+					"type": "boolean"
+				}
+			}
+		}
+	}
+}

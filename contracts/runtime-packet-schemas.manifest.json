@@ -125,6 +125,17 @@
 			"parityValidator": "none",
 			"ownerGap": "SPG-005",
 			"blockedBy": "PU-031 adds the orientation-only tool exposure snapshot before a production Codex runtime producer emits live permission and tool availability data."
+		},
+		{
+			"schemaVersion": "review-lifecycle/v1",
+			"schemaPath": "contracts/review-lifecycle.schema.json",
+			"examplePath": "contracts/examples/review-lifecycle.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-review-lifecycle.cjs",
+			"ownerGap": "SPG-007",
+			"blockedBy": "PU-033 adds the orientation-only ReviewLifecycle packet contract before production review-mode lifecycle producers emit it from live review-state evidence."
 		}
 	]
 }

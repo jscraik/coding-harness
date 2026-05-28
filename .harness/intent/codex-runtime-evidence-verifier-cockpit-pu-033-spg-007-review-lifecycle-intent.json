@@ -1,0 +1,114 @@
+{
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-033-spg-007-review-lifecycle",
+	"schemaVersion": "lifecycle-intent/v1",
+	"createdAt": "2026-05-28T06:26:28Z",
+	"linearIssue": "JSC-363",
+	"goal": "Add ReviewLifecycle/v1 as a narrow review-mode lifecycle packet that composes existing review-state evidence into target, role, artifact lineage, unresolved-thread, coverage, and verdict metadata without becoming CI, Linear, or merge-readiness proof.",
+	"lifecycleUnit": "PU-033-spg-007-review-lifecycle",
+	"scope": {
+		"primaryModule": "src/lib/review-state",
+		"allowedFiles": [
+			"src/lib/review-state/**",
+			"contracts/review-lifecycle.schema.json",
+			"contracts/examples/review-lifecycle.example.json",
+			"contracts/runtime-packet-schemas.manifest.json",
+			"scripts/validate-review-lifecycle.cjs",
+			"scripts/validate-runtime-packet-schemas.cjs",
+			"src/dev/validate-runtime-packet-schemas-script.test.ts",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-033-spg-007-review-lifecycle-intent.json"
+		],
+		"reviewArtifactOutputs": [
+			"artifacts/reviews/pu-033-spg-007-review-lifecycle-*.md"
+		],
+		"forbiddenFiles": [
+			"external Codex repository modifications",
+			"GitHub, CodeRabbit, Linear, or CircleCI mutations",
+			"public closeout command behavior changes",
+			"delivery-truth claim support changes except tests proving review lifecycle remains non-merge proof",
+			"raw prompt, transcript, review body, or secret persistence",
+			"changes that treat ReviewLifecycle/v1 as merge_ready, ci_green, linear_state_aligned, or review_threads_resolved proof by itself"
+		]
+	},
+	"designConstraints": [
+		"ReviewLifecycle/v1 must live inside the existing review-state deep module; it must not create a second review truth subsystem.",
+		"The packet is review-mode lifecycle evidence and may orient or audit review work, but it is not closeout, merge-readiness, CI, or Linear proof by itself.",
+		"The packet must bind review target identity to repository, PR number, base ref, head ref, and head SHA.",
+		"Role and tool exposure must be compact, textual, and non-secret; raw tool payloads, raw comments, and transcripts are forbidden.",
+		"Tool exposure must classify visible, deferred, hidden, unavailable, and policy-blocked capability states without leaking raw payloads or credential material.",
+		"Artifact lineage must bind role, producer, path, head SHA, freshness, evidence use, and non-zero size before covered verdicts can pass.",
+		"Artifact lineage must distinguish independent reviewer-produced artifacts from implementation-produced or self-certified files; same-slice artifact existence alone is not proof.",
+		"Unresolved active threads, stale review mode, missing artifact lineage, or mismatched head SHA must produce blocked or unknown verdicts, not pass.",
+		"The slice must reuse existing EvidenceReceipt and ReviewStatePacket semantics wherever possible.",
+		"ReviewLifecycle/v1 must be discoverable through the runtime packet schema manifest with schema, example, and semantic validator pointers."
+	],
+	"acceptanceCriteria": [
+		"ReviewLifecyclePacket has schemaVersion review-lifecycle/v1 and records generatedAt, target, mode, reviewer, toolExposure, artifactLineage, findings, selectableComments, unresolvedThreads, coverage, verdict, and sourceReviewStateRef.",
+		"Validation accepts a current covered review lifecycle fixture with matching review-state head SHA, current claim-support reviewer artifacts, resolved threads, and pass verdict.",
+		"Validation rejects or blocks stale review mode, unresolved active threads, missing artifact lineage, zero-byte artifacts, orientation-only artifact receipts, producer mismatch, and head-SHA mismatch.",
+		"Validation rejects implementation-produced or self-certified reviewer artifacts even when path, size, and head SHA appear valid unless the lineage carries an independent reviewer producer and run-manifest reference.",
+		"Validation records toolExposure class counts for visible, deferred, hidden, unavailable, and policy-blocked capability states.",
+		"Validation rejects raw comment body fields, raw transcript fields, secret-like keys, and unknown top-level fields.",
+		"The runtime packet schema manifest includes review-lifecycle/v1 with schema and example validation plus semantic validation when JSON Schema cannot express cross-field rules.",
+		"ReviewLifecycle/v1 remains orientation/audit-trail evidence and does not alter pr-closeout, delivery-truth, harness next, or merge-ready behavior in this slice; a pass ReviewLifecycle fixture must not satisfy merge, CI, Linear, or review-thread-resolved claims without their separate evidence lanes.",
+		"Operator-facing failure messages include textual status and blocker classes, not color-only or boolean-only output."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-033-spg-007-review-lifecycle-intent.json >/dev/null",
+		"pnpm vitest run src/lib/review-state/review-lifecycle.test.ts --reporter=dot",
+		"pnpm vitest run src/lib/delivery-truth/delivery-truth-composition.test.ts src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts --reporter=dot",
+		"node scripts/validate-review-lifecycle.cjs contracts/examples/review-lifecycle.example.json",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts --reporter=dot",
+		"pnpm exec biome check .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-033-spg-007-review-lifecycle-intent.json src/lib/review-state contracts/review-lifecycle.schema.json contracts/examples/review-lifecycle.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-review-lifecycle.cjs scripts/validate-runtime-packet-schemas.cjs src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"bash scripts/validate-codestyle.sh --fast",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-033-spg-007-review-lifecycle-intent.json src/lib/review-state contracts/review-lifecycle.schema.json contracts/examples/review-lifecycle.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-review-lifecycle.cjs scripts/validate-runtime-packet-schemas.cjs src/dev/validate-runtime-packet-schemas-script.test.ts docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-033-spg-007-review-lifecycle-*.md"
+	],
+	"reviewPlan": {
+		"preImplementation": [
+			"adversarial-reviewer intent review",
+			"agent-native-reviewer intent review"
+		],
+		"beforeDone": [
+			"improve-codebase-architecture lens",
+			"simplify lens",
+			"unslopify lens",
+			"he-code-review lens",
+			"testing lens",
+			"adversarial-reviewer implementation review",
+			"agent-native-reviewer implementation review",
+			"best-practices-researcher implementation review"
+		]
+	},
+	"rollbackPlan": [
+		"Remove ReviewLifecycle/v1 schema, example, validator, types, builder, validation, and tests.",
+		"Remove review-lifecycle/v1 from the runtime packet schema manifest.",
+		"Preserve existing review-state/v1 and delivery-truth behavior unchanged."
+	],
+	"evidenceUse": "orientation_and_audit_trail_only",
+	"auditGapIds": ["GAP-003", "GAP-009", "GAP-012"],
+	"systemPromptGapIds": ["SPG-007"],
+	"projectBrainInputs": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/research/evidence-patterns.json",
+		".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"
+	],
+	"currentStateNotes": [
+		"Repository preflight passed, but Local Memory daemon health is degraded because the helper runner could not make http://127.0.0.1:3002/api/v1/health healthy in this sandbox.",
+		"The current branch is synced with origin at f051f308 before this intent artifact; unrelated untracked local files remain outside this slice.",
+		"PR #309 remote CI was green at the last live refresh, but merge readiness and review approval are not claimed by this slice."
+	],
+	"stopConditions": [
+		"Stop if ReviewLifecycle/v1 requires live GitHub, CodeRabbit, Linear, or CI mutation.",
+		"Stop if implementation would make review lifecycle a substitute for review-state, external-state, delivery-truth, or PR closeout claim support.",
+		"Stop if raw review bodies, prompts, transcripts, secrets, or bulky telemetry become necessary for the packet.",
+		"Stop if existing review-state validation cannot be reused without a broad rewrite."
+	]
+}

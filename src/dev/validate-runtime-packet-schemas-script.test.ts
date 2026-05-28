@@ -13,7 +13,10 @@ import { composeDeliveryTruth } from "../lib/delivery-truth/index.js";
 import { validateEvidenceReceipt } from "../lib/evidence/evidence-receipt.js";
 import { validateExternalStateSnapshot } from "../lib/external-state/index.js";
 import { validatePromptContextReceipt } from "../lib/prompt-context/index.js";
-import { validateReviewStatePacket } from "../lib/review-state/index.js";
+import {
+	validateReviewLifecyclePacket,
+	validateReviewStatePacket,
+} from "../lib/review-state/index.js";
 import { validateRuntimeCard } from "../lib/runtime/runtime-card.js";
 import { validateRuntimeCardHandoff } from "../lib/runtime/runtime-card-handoff.js";
 
@@ -92,7 +95,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 13,
+			packetCount: 14,
 			errors: [],
 		});
 	});
@@ -591,6 +594,9 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		const promptContextReceipt = readJson(
 			"contracts/examples/prompt-context-receipt.example.json",
 		);
+		const reviewLifecycle = readJson(
+			"contracts/examples/review-lifecycle.example.json",
+		);
 
 		expect(validateEvidenceReceipt(evidenceReceipt)).toMatchObject({
 			valid: true,
@@ -617,6 +623,10 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			errors: [],
 		});
 		expect(validatePromptContextReceipt(promptContextReceipt)).toMatchObject({
+			valid: true,
+			errors: [],
+		});
+		expect(validateReviewLifecyclePacket(reviewLifecycle)).toMatchObject({
 			valid: true,
 			errors: [],
 		});
