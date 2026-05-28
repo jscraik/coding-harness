@@ -1032,8 +1032,7 @@ function collectDeepModuleReadmeFindings(
 			continue;
 		}
 
-		const readmeUpdated =
-			changedFiles.includes(readmePath) && !readmeDeleted;
+		const readmeUpdated = changedFiles.includes(readmePath) && !readmeDeleted;
 		if (readmeUpdated) {
 			findings.push({
 				rule_id: "docs.deep_module_readme.present",
