@@ -341,6 +341,26 @@ describe("GoalCompletionAuditReceipt", () => {
 		});
 	});
 
+	it("rejects duplicate reference arrays in both semantic validators", () => {
+		const receipt = buildGoalCompletionAuditReceipt(validInput());
+		const mutatedReceipt = {
+			...receipt,
+			sourceRefs: [receipt.sourceRefs[0], receipt.sourceRefs[0]],
+		};
+		const result = validateGoalCompletionAuditReceipt(mutatedReceipt);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "sourceRefs[1]" }),
+		);
+		expect(runScriptValidator(mutatedReceipt)).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.objectContaining({ path: "sourceRefs[1]" }),
+			]),
+		});
+	});
+
 	it("rejects date-only timestamps in both validators", () => {
 		const receipt = buildGoalCompletionAuditReceipt(validInput());
 		const mutatedReceipt = {

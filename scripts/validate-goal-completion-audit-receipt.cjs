@@ -75,8 +75,14 @@ function requireSafeArray(value, path, errors) {
 		add(errors, path, "must be an array");
 		return;
 	}
+	const seen = new Set();
 	value.forEach((entry, index) => {
 		requireSafePointer(entry, `${path}[${index}]`, errors);
+		if (typeof entry !== "string") return;
+		if (seen.has(entry)) {
+			add(errors, `${path}[${index}]`, "entries must be unique");
+		}
+		seen.add(entry);
 	});
 }
 

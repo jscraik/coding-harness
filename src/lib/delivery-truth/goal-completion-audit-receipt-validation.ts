@@ -458,8 +458,16 @@ function requireSafeStringArray(
 		addError(errors, `${path} must be an array`, path);
 		return;
 	}
+	const seen = new Set<string>();
 	value.forEach((entry, index) => {
 		requireSafeString(entry, `${path}[${index}]`, errors);
+		if (typeof entry !== "string") {
+			return;
+		}
+		if (seen.has(entry)) {
+			addError(errors, `${path} entries must be unique`, `${path}[${index}]`);
+		}
+		seen.add(entry);
 	});
 }
 
