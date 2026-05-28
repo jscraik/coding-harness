@@ -40,7 +40,7 @@ const completedWorkPerformedValues = new Map<string, string>([
 	["Linear reference", "Refs JSC-999."],
 	[
 		"Linked issue relationship",
-		"implementation closure for SA-999-001 only; no parent-goal acceptance is implied.",
+		"implementation closure for JSC-999; completed acceptance IDs: SA-999-001.",
 	],
 	["Phase / slice", "Generated template parity"],
 	["Session IDs", "codex-session-generated-template-test"],

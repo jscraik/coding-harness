@@ -198,10 +198,7 @@ Teams usually adopt Coding Harness for one of four jobs:
   `harness.contract.json`, `WORKFLOW.md`, PR templates, CodeRabbit defaults,
   repo-local verification scripts, and rollback metadata instead of leaving
   each repo to invent its own setup. Generated downstream PR, workflow, and
-  worktree surfaces use `jscraik/feature/*` for agent-created branches. The
-  generated PR template separates `Linear reference` from
-  `Linked issue relationship` so parent-goal traceability is not mistaken for
-  acceptance closure.
+  worktree surfaces use `jscraik/feature/*` for agent-created branches.
   The customer-facing bar is that an agent dropped into the workspace can run
   the diagnosis and dry-run setup path itself, then report named blockers when
   credentials, permissions, or local tools are missing.
@@ -507,6 +504,14 @@ admitted, and record Repeated-error research when the same error happens twice.
 This keeps high-signal review and user steering in the repo operating system
 instead of leaving it in a chat transcript.
 
+PR bodies must separate issue traceability from issue closure. `Linear
+reference` records `Refs JSC-N` or `Closes JSC-N`; `Linked issue
+relationship` must classify the PR as implementation closure,
+preparatory/enabling work, standalone/untracked work, or `n.a.` with reason.
+Preparatory PRs that reference a parent issue must state that completed
+acceptance IDs are `none` or explicitly say they do not close that acceptance
+scope.
+
 PR bodies must also classify `Documentation impact`: list the required root
 docs, governed docs, and existing deep-module README files updated by the slice,
 or mark each unaffected class `n.a.` with a concrete reason. `docs-gate`
@@ -681,7 +686,7 @@ harness commands --json | jq '
 | `brainstorm-gate`        | Validate brainstorm artifacts                                                                                                              |
 | `prompt-gate`            | Validate prompt template section requirements while keeping CLI parsing and validation behind the prompt-gate module boundary              |
 | `gap-case`               | Manage production gap cases while keeping lifecycle parsing, validation, persistence, and presentation behind the gap-case module boundary |
-| `pr-template-gate`       | Validate PR template completion, placeholder replacement, and explicit Linear relationship evidence so linked issues do not imply unproven acceptance closure |
+| `pr-template-gate`       | Validate PR template completion and placeholder replacement                                                                                |
 | `rule-lifecycle-gate`    | Validate governance rules have owner, evidence, enforcement, freshness, and retirement metadata                                            |
 | `license-gate`           | Validate open-source license expectations                                                                                                  |
 | `check-authz`            | Validate authorization policy for mutative operations                                                                                      |

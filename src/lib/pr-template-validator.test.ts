@@ -13,7 +13,7 @@ const VALID_BODY = `## Summary
 
 - Plan IDs: JSC-999; .harness/plan/example-plan.md
 - Linear reference: Refs JSC-999.
-- Linked issue relationship: implementation closure for SA-999-001 only; no parent-goal acceptance is implied.
+- Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.
 - Phase / slice: PU-001 PR evidence ledger
 - Session IDs: codex-session-019c-example
 - Trace IDs: circleci-workflow-123; harness-gate-pr-template
@@ -239,11 +239,6 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 				"- Trace IDs: list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.",
 			)
 			.replace("- Session IDs: codex-session-019c-example\n", "")
-			.replace("- Linear reference: Refs JSC-999.\n", "")
-			.replace(
-				"- Linked issue relationship: implementation closure for SA-999-001 only; no parent-goal acceptance is implied.\n",
-				"",
-			)
 			.replace(
 				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).\n",
 				"",
@@ -257,12 +252,6 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		const errors = validatePrTemplateBody(body);
 		expect(errors).toContain(
 			"Missing required work performed field: Session IDs",
-		);
-		expect(errors).toContain(
-			"Missing required work performed field: Linear reference",
-		);
-		expect(errors).toContain(
-			"Missing required work performed field: Linked issue relationship",
 		);
 		expect(errors).toContain(
 			"Replace work performed field placeholder: Trace IDs",
@@ -279,6 +268,48 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		expect(errors).toContain(
 			"Missing required work performed field: Deferred work",
 		);
+	});
+
+	it("fails missing linked issue relationship evidence", () => {
+		const body = VALID_BODY.replace(
+			"- Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.\n",
+			"",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Missing required work performed field: Linked issue relationship",
+		);
+	});
+
+	it("fails unknown linked issue relationship classifications", () => {
+		const body = VALID_BODY.replace(
+			"- Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.",
+			"- Linked issue relationship: related to JSC-999.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Linked issue relationship must classify the PR as implementation closure, preparatory/enabling work, standalone/untracked work, or n.a. with reason.",
+		);
+	});
+
+	it("fails preparatory linked issue relationship without explicit non-closure evidence", () => {
+		const body = VALID_BODY.replace(
+			"- Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.",
+			"- Linked issue relationship: preparatory/enabling work for JSC-999.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Preparatory/enabling linked issue relationship must state completed acceptance IDs are none or explicitly say it does not close the linked acceptance scope.",
+		);
+	});
+
+	it("accepts preparatory linked issue relationship with completed acceptance IDs none", () => {
+		const body = VALID_BODY.replace(
+			"- Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.",
+			"- Linked issue relationship: preparatory/enabling work for JSC-999; completed JSC-999 acceptance IDs: none; does not close SA-001 through SA-018.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
 	it("fails repeated error admission without research options and chosen fix", () => {

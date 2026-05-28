@@ -349,7 +349,6 @@ Notes:
 - Branch from `main` and never push directly to `main`.
 - Use `codex/<linear-key>-<short-description>` when the work is tracked in Linear, and open a PR for every merge to `main`.
 - PR description linking: use `Refs JSC-N` while the issue is in review; use `Closes JSC-N` only when the merge fully completes the issue.
-- PR bodies must keep `Linear reference` separate from `Linked issue relationship`: link the issue in the former, and state whether the PR is implementation closure, preparatory/enabling work, standalone, or `n.a.` with reason in the latter. Parent-goal references must list completed acceptance IDs or explicitly say none.
 - CodeRabbit review must remain independent; the coding agent cannot self-approve.
 - If you touch tooling/runtime contract surfaces such as hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions, update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.
 - See [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md) for the full GitHub to Linear automation config and known gaps.
@@ -400,7 +399,7 @@ Core routing (Layer 2):
 - Local ESM imports must include `.js` extensions.
 - This repo publishes a harness skill to downstream repos via `harness init`; installed path is `.agents/skills/coding-harness/` in the target repo (not this repo's local skills tree). Keep skill eval cases and acceptance criteria synchronized with skill behavior changes.
 - `harness init` emits downstream PR, workflow, and worktree scaffolding with `jscraik/feature/*` as the agent-created branch prefix; keep those generated surfaces synchronized through `AGENT_BRANCH_PREFIX`.
-- CircleCI PR-context scaffolding for `pr-template` and `linear-gate` must resolve the current PR through `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`, owner-qualified branch lookup, bare branch lookup, and commit-to-PR fallback before failing closed. Keep `.circleci/config.yml`, `src/templates/circleci-config.yml`, `src/templates/circleci-linear-gate.yml`, and init scaffold regression coverage synchronized when this lookup contract changes.
+- CircleCI PR-context scaffolding for `pr-template` and `linear-gate` must resolve the current PR through `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`, owner-qualified branch lookup, bare branch lookup, and commit-to-PR fallback before failing closed. Fresh PR pipelines must retry this resolver briefly because GitHub branch and commit-to-PR association can lag the first CircleCI job. Keep `.circleci/config.yml`, `src/templates/circleci-config.yml`, `src/templates/circleci-linear-gate.yml`, and init scaffold regression coverage synchronized when this lookup contract changes.
 - Keep the repo-root code-style pack (`CODESTYLE.md` + `codestyle/`) synchronized and enforce integrity with `codestyle/CHECKSUMS.sha256` plus `bash scripts/check-codestyle-parity.sh`.
 - Use repo script contracts: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts` (see [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)).
 

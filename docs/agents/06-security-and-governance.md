@@ -83,6 +83,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. The workflow includes the repo-run Semgrep lane and an explicit report-only Snyk dependency lane; Snyk CLI install, auth, and findings must not fail CircleCI PRs that the external GitHub Snyk delta check has cleared. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
+- CircleCI PR governance checks must fail closed only after bounded PR-context resolution attempts. The `pr-template` and `linear-gate` jobs may retry `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`, branch lookups, and commit-to-PR lookup briefly, but must not bypass PR-template, Linear, or security policy gates when PR context remains unavailable.
 - `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
 
 ## Policy-gate risk chain
@@ -253,8 +254,6 @@ This repository uses `action-review-receipt/v1` as a narrow guardian-style recei
 ## Plan traceability
 
 - Pull requests must declare `Plan IDs` in the PR template `## Work performed` ledger.
-- Pull requests must declare `Linear reference` separately from `Linked issue relationship`. A `Refs JSC-N` value is traceability only; the relationship field must state whether the PR closes implementation acceptance, is preparatory/enabling work, is standalone/untracked, or is not applicable.
-- Parent-goal issue references must list completed acceptance IDs or explicitly say `none`; linked-issue checks should treat omitted acceptance evidence as inconclusive rather than successful closure.
 - Each declared ID must resolve to a `docs/plans/*` document with matching `plan_id` frontmatter.
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.
@@ -330,7 +329,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
 
 - ## Summary (1-3 bullet points)
-- ## Work performed (plan IDs, phase/slice, Linear reference, linked issue relationship, session IDs, trace IDs, AI session/traceability mapping, completed work, acceptance trace, validation evidence, review artifacts, learning/reinforcement, deferred work)
+- ## Work performed (plan IDs, phase/slice, session IDs, trace IDs, AI session/traceability mapping, completed work, acceptance trace, validation evidence, review artifacts, learning/reinforcement, deferred work)
 - ## Checklist (all items checked)
 - ## Testing (test commands and evidence)
 - ## Review artifacts (links to review outputs)

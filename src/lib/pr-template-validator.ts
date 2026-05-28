@@ -172,6 +172,50 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 	);
 }
 
+function collectLinkedIssueRelationshipErrors(body: string): string[] {
+	const value = extractFieldBlockValue(
+		body,
+		"## Work performed",
+		"Linked issue relationship",
+	);
+	if (value === null) {
+		return [];
+	}
+
+	const normalized = normalizeFieldValue(value).toLowerCase();
+	const hasKnownClassification =
+		/\bimplementation closure\b/.test(normalized) ||
+		/\bpreparatory\/enabling work\b/.test(normalized) ||
+		/\bstandalone\/untracked work\b/.test(normalized) ||
+		/\bn\.?a\.?\b/.test(normalized) ||
+		/\bnot applicable\b/.test(normalized);
+
+	if (!hasKnownClassification) {
+		return [
+			"Linked issue relationship must classify the PR as implementation closure, preparatory/enabling work, standalone/untracked work, or n.a. with reason.",
+		];
+	}
+
+	if (/\bpreparatory\/enabling work\b/.test(normalized)) {
+		const statesNoCompletedAcceptance =
+			/\bcompleted (?:[a-z]+ )?acceptance (?:ids|criteria)\s*:\s*none\b/.test(
+				normalized,
+			) ||
+			/\bcompleted [a-z0-9-]+ acceptance ids\s*:\s*none\b/.test(normalized) ||
+			/\bacceptance (?:ids|criteria)\s*:\s*none\b/.test(normalized) ||
+			/\bdoes not (?:close|complete|claim)\b.*\b(?:sa-\d{3}|acceptance)\b/.test(
+				normalized,
+			);
+		if (!statesNoCompletedAcceptance) {
+			return [
+				"Preparatory/enabling linked issue relationship must state completed acceptance IDs are none or explicitly say it does not close the linked acceptance scope.",
+			];
+		}
+	}
+
+	return [];
+}
+
 function extractFieldBlockValue(
 	body: string,
 	sectionHeading: string,
@@ -250,6 +294,7 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectWorkPerformedFieldErrors(body));
+	errors.push(...collectLinkedIssueRelationshipErrors(body));
 	errors.push(
 		...collectWorkEvidenceIntegrityErrors(body, extractFieldBlockValue),
 	);
