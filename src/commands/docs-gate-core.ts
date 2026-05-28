@@ -1026,12 +1026,14 @@ function collectDeepModuleReadmeFindings(
 	const findings: DocsFinding[] = [];
 	for (const moduleName of Array.from(touchedModules).sort()) {
 		const readmePath = `src/lib/${moduleName}/README.md`;
-		if (!existsSync(join(repoRoot, readmePath))) {
+		const readmeDeleted = deletedFiles.has(readmePath);
+		const readmeExists = existsSync(join(repoRoot, readmePath));
+		if (!readmeExists && !readmeDeleted) {
 			continue;
 		}
 
 		const readmeUpdated =
-			changedFiles.includes(readmePath) && !deletedFiles.has(readmePath);
+			changedFiles.includes(readmePath) && !readmeDeleted;
 		if (readmeUpdated) {
 			findings.push({
 				rule_id: "docs.deep_module_readme.present",
