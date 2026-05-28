@@ -325,7 +325,8 @@ function validateSurface(
 	if (
 		surface.observedHeadSha &&
 		surface.currentHeadSha &&
-		surface.observedHeadSha !== surface.currentHeadSha
+		surface.observedHeadSha !== surface.currentHeadSha &&
+		!allowsHeadMismatchDriftSurface(surface, report)
 	) {
 		errors.push(`${path}.observedHeadSha: must match currentHeadSha`);
 	}
@@ -358,6 +359,24 @@ function validateSurface(
 			errors.push(`${path}.blockers: claim support requires no blockers`);
 		}
 	}
+}
+
+function allowsHeadMismatchDriftSurface(
+	surface: Record<string, unknown>,
+	report: Record<string, unknown>,
+): boolean {
+	return (
+		report.evidenceUse !== "claim_support" &&
+		surface.evidenceUse !== "claim_support" &&
+		surface.requiredForClaimSupport !== true &&
+		surface.status !== "pass" &&
+		surface.freshness === "stale" &&
+		Array.isArray(surface.blockers) &&
+		surface.blockers.some(
+			(blocker) =>
+				isRecord(blocker) && blocker.blockerClass === "head_sha_mismatch",
+		)
+	);
 }
 
 function validateRefs(
