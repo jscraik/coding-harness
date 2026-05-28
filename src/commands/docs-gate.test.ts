@@ -412,6 +412,39 @@ describe("docs-gate command", () => {
 		).toBe(true);
 	});
 
+	it("blocks deleted deep-module README in required mode", () => {
+		const root = createTestRoot("docs-gate-deep-module-readme-deleted");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+		write(join(root, "src/lib/init/README.md"), "# Init module\n");
+		write(join(root, "src/lib/init/runner.ts"), "export const ok = true;\n");
+
+		// Delete the README before running docs-gate
+		rmSync(join(root, "src/lib/init/README.md"));
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["src/lib/init/runner.ts", "src/lib/init/README.md"],
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.outcome).toBe("drift_detected");
+		expect(result.report.status).toBe("blocked");
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id === "docs.deep_module_readme.missing" &&
+					f.path === "src/lib/init/README.md" &&
+					f.severity === "error",
+			),
+		).toBe(true);
+	});
+
 	it("accepts existing deep-module README updates beside module changes", () => {
 		const root = createTestRoot("docs-gate-deep-module-readme-present");
 		roots.push(root);
