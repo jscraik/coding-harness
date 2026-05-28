@@ -119,12 +119,17 @@ export const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Validation evidence",
 		placeholder:
-			"list command outcomes, CI jobs, artifact paths, or `n.a.` with reason",
+			"list command outcomes, CI jobs, repo-relative artifact paths, or `n.a.` with reason; do not paste local absolute paths",
 	},
 	{
 		label: "Review artifacts",
 		placeholder:
 			"list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason",
+	},
+	{
+		label: "Durable evidence map",
+		placeholder:
+			"classify every local-only artifact reference as tracked receipt, PR comment, CI artifact URL, runtime-card/evidence-bundle ref, or `n.a.` with reason; use repo-relative paths only",
 	},
 	{
 		label: "Runtime impact",

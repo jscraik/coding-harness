@@ -6,6 +6,7 @@ import {
 	renderPrekConfigTemplate,
 	renderPullRequestTemplate,
 } from "./scaffold-doc-templates.js";
+import { REQUIRED_WORK_FIELDS } from "../pr-template-validator-rules.js";
 
 const requiredWorkPerformedLabels = [
 	"Plan IDs",
@@ -22,6 +23,7 @@ const requiredWorkPerformedLabels = [
 	"Acceptance trace",
 	"Validation evidence",
 	"Review artifacts",
+	"Durable evidence map",
 	"Runtime impact",
 	"CodeRabbit mode coverage",
 	"Closeout state",
@@ -62,6 +64,10 @@ const completedWorkPerformedValues = new Map<string, string>([
 		"Command: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts -> pass.",
 	],
 	["Review artifacts", "Codex review artifact captured in test fixture."],
+	[
+		"Durable evidence map",
+		"n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
+	],
 	["Runtime impact", "CI-only."],
 	["CodeRabbit mode coverage", "validation."],
 	[
@@ -194,6 +200,9 @@ describe("document scaffold templates", () => {
 		for (const label of requiredWorkPerformedLabels) {
 			expect(template).toContain(`- ${label}:`);
 		}
+		for (const field of REQUIRED_WORK_FIELDS) {
+			expect(template).toContain(`- ${field.label}: ${field.placeholder}`);
+		}
 	});
 
 	it("renders a pull request template that can satisfy the validator contract", () => {
@@ -217,6 +226,11 @@ describe("document scaffold templates", () => {
 
 		for (const label of requiredWorkPerformedLabels) {
 			expect(pipelineTemplate).toContain(`label: '${label}'`);
+		}
+		for (const field of REQUIRED_WORK_FIELDS) {
+			expect(pipelineTemplate).toContain(
+				`{ label: '${field.label}', placeholder: '${field.placeholder}' }`,
+			);
 		}
 	});
 

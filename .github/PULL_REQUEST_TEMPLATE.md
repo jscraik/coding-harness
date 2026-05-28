@@ -20,8 +20,9 @@
 - Meta-behavior proof: for repeated steering or high-signal corrections, name the durable repo/system change plus concrete repo path, command, or issue ID that prevents recurrence, or `n.a.` with tracked exception reason
 - Repeated-error research: when the same error occurs twice, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason
 - Acceptance trace: map completed acceptance items to evidence refs, or `n.a.` with reason
-- Validation evidence: list command outcomes, CI jobs, artifact paths, or `n.a.` with reason
+- Validation evidence: list command outcomes, CI jobs, repo-relative artifact paths, or `n.a.` with reason; do not paste local absolute paths
 - Review artifacts: list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason
+- Durable evidence map: classify every local-only artifact reference as tracked receipt, PR comment, CI artifact URL, runtime-card/evidence-bundle ref, or `n.a.` with reason; use repo-relative paths only
 - Runtime impact: state direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason
 - CodeRabbit mode coverage: list analysis, validation, gate, closeout, promotion, or `n.a.` with reason
 - Closeout state: classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner

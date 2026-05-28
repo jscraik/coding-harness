@@ -20,6 +20,7 @@ jobs:
           script: |
             const body = context.payload.pull_request?.body ?? '';
             const errors = [];
+            const localAbsolutePathPattern = /(?:^|[\s\x60"'(])((?:\/Users\/|\/private\/var\/folders\/|\/var\/folders\/|\/private\/tmp\/|\/tmp\/)[^\s\x60"'<>),;]+)/g;
 
             if (body.trim().length === 0) {
               errors.push('PR body is empty. Fill out the full PR template.');
@@ -64,9 +65,9 @@ jobs:
               const requiredWorkFields = [
                 { label: 'Plan IDs', placeholder: 'list Linear keys, spec paths, plan paths, or `n.a.` with reason' },
                 { label: 'Phase / slice', placeholder: 'list completed phase, implementation slice, or `n.a.` with reason' },
-                { label: 'Session IDs', placeholder: 'list Codex/session-collector/harness session IDs, or `n.a.` with reason' },
-                { label: 'Trace IDs', placeholder: 'list CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason' },
-                { label: 'AI session / traceability', placeholder: 'map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body' },
+                { label: 'Session IDs', placeholder: 'list Codex thread/session IDs, session-collector artifact IDs or paths, harness run IDs, or `n.a.` with reason. For AI-assisted work, include at least one session reference or explain why no session artifact was captured.' },
+                { label: 'Trace IDs', placeholder: 'list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.' },
+                { label: 'AI session / traceability', placeholder: 'map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body.' },
                 { label: 'Completed work', placeholder: 'list implementation units, docs/config changes, or evidence-only work completed in this PR' },
                 { label: 'Affected surfaces', placeholder: 'list code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or `n.a.` with reason' },
                 { label: 'Expected outcome alignment', placeholder: 'state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason' },
@@ -74,14 +75,16 @@ jobs:
                 { label: 'Meta-behavior proof', placeholder: 'for repeated steering or high-signal corrections, name the durable repo/system change plus concrete repo path, command, or issue ID that prevents recurrence, or `n.a.` with tracked exception reason' },
                 { label: 'Repeated-error research', placeholder: 'when the same error occurs twice, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason' },
                 { label: 'Acceptance trace', placeholder: 'map completed acceptance items to evidence refs, or `n.a.` with reason' },
-                { label: 'Validation evidence', placeholder: 'list command outcomes, CI jobs, artifact paths, or `n.a.` with reason' },
+                { label: 'Validation evidence', placeholder: 'list command outcomes, CI jobs, repo-relative artifact paths, or `n.a.` with reason; do not paste local absolute paths' },
                 { label: 'Review artifacts', placeholder: 'list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason' },
+                { label: 'Durable evidence map', placeholder: 'classify every local-only artifact reference as tracked receipt, PR comment, CI artifact URL, runtime-card/evidence-bundle ref, or `n.a.` with reason; use repo-relative paths only' },
                 { label: 'Runtime impact', placeholder: 'state direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason' },
                 { label: 'CodeRabbit mode coverage', placeholder: 'list analysis, validation, gate, closeout, promotion, or `n.a.` with reason' },
                 { label: 'Closeout state', placeholder: 'classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner' },
                 { label: 'Learning / reinforcement', placeholder: 'list promoted learnings, memory updates, or `none` with reason' },
                 { label: 'Deferred work', placeholder: 'list follow-up work intentionally left out, or `none`' },
               ];
+              const workFieldValues = new Map();
               for (const field of requiredWorkFields) {
                 const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const match = workPerformedBody.match(
@@ -95,9 +98,71 @@ jobs:
                   continue;
                 }
                 const value = normalizeFieldValue(match[1] ?? '');
+                workFieldValues.set(field.label, value);
                 const placeholder = normalizeFieldValue(field.placeholder);
                 if (value.length === 0 || value === placeholder) {
                   errors.push('Replace work performed field placeholder: ' + field.label);
+                }
+              }
+              const normaliseReferenceToken = (token) => token.replace(/[.,;:]+$/g, '').trim();
+              const notApplicablePattern = /^(?:n\.?a\.?|n\/a|not applicable|none)(?:\b|\s|[.;:,(])/i;
+              const referenceTokenPattern = /(https?:\/\/[^\s)\]>]+|(?:\.\/)?(?:AI|artifacts|codestyle|contracts|docs|fixtures|scripts|src|test|tests|\.github|\.harness)\/[\w./-]+|(?:runtime-card|runtime-card-handoff|runtime-evidence-bundle|receipts|evidence-receipts|sync-receipts)[\w./-]*(?:\.json|\.jsonl)?)/gi;
+              const classifyReference = (reference) => {
+                const value = normaliseReferenceToken(reference);
+                if (value.length === 0) return 'unknown';
+                if (notApplicablePattern.test(value)) return 'not_applicable';
+                if (/^https?:\/\/github\.com\/[^\s/]+\/[^\s/]+\/pull\/\d+#(?:issuecomment-|discussion_r)\d+$/i.test(value)) return 'github_pr_comment';
+                if (/^https?:\/\/github\.com\/[^\s/]+\/[^\s/]+\/(?:actions\/runs|checks)\/\S+$/i.test(value)) return 'github_check_url';
+                if (/^https?:\/\/(?:circleci\.com|app\.circleci\.com|[^\s/]*buildkite\.com|[^\s/]*githubusercontent\.com)\/\S+/i.test(value)) return 'ci_artifact_url';
+                if (/^https?:\/\/\S+$/i.test(value)) return 'unknown';
+                if (/(?:^|\/)(?:runtime-card|runtime-card-handoff|runtime-evidence-bundle)(?:[\w.-]*)(?:\.json|\.jsonl)?$/i.test(value)) return 'runtime_card_ref';
+                if (/(?:^|\/)(?:receipts|evidence-receipts|sync-receipts)(?:[\w.-]*)(?:\.json|\.jsonl)$/i.test(value)) return 'evidence_receipt_ref';
+                if (/^(?:\.\/)?(?:artifacts\/|\.harness\/(?:artifacts|runs|evidence|media)\/)/i.test(value)) return 'ignored_local_path';
+                if (/^(?:\.\/)?(?:AI\/|codestyle\/|contracts\/|docs\/|fixtures\/|scripts\/|src\/|test\/|tests\/|\.github\/|\.harness\/(?:active-artifacts\.md|decisions\/|knowledge\/|linear\/|plan\/|refactors\/|research\/(?:audits|deep)\/|specs\/|memory\/LEARNINGS\.md))/i.test(value)) return 'tracked_repo_path';
+                if (/^(?:\.\/)?(?:AI|artifacts|codestyle|contracts|docs|fixtures|scripts|src|test|tests|\.github|\.harness)\/[\w./-]+$/i.test(value)) return 'untracked_local_path';
+                return 'unknown';
+              };
+              const extractReferences = (text) => Array.from(text.matchAll(referenceTokenPattern), (match) => {
+                const value = normaliseReferenceToken(match[0] ?? '');
+                return { value, durability: classifyReference(value) };
+              }).filter((reference) => reference.value.length > 0);
+              const isDurable = (reference) => [
+                'tracked_repo_path',
+                'ci_artifact_url',
+                'github_pr_comment',
+                'github_check_url',
+                'runtime_card_ref',
+                'evidence_receipt_ref',
+              ].includes(reference.durability);
+              const durableMapValue = workFieldValues.get('Durable evidence map') ?? '';
+              const evidenceText = requiredWorkFields
+                .filter((field) => field.label !== 'Durable evidence map')
+                .map((field) => workFieldValues.get(field.label) ?? '')
+                .join('\n');
+              const evidenceLocalOnlyReferences = Array.from(
+                new Set(
+                  extractReferences(evidenceText)
+                    .filter((reference) => reference.durability === 'ignored_local_path')
+                    .map((reference) => reference.value),
+                ),
+              );
+              if ((durableMapValue.length === 0 || notApplicablePattern.test(durableMapValue)) && evidenceLocalOnlyReferences.length > 0) {
+                errors.push('Durable evidence map cannot be n.a. when PR evidence fields cite ignored local artifact paths.');
+              }
+              const pairedLocalReferences = new Set();
+              for (const line of durableMapValue.split(/\r?\n/)) {
+                const lineReferences = extractReferences(line);
+                if (!lineReferences.some((reference) => reference.durability === 'ignored_local_path')) continue;
+                if (!lineReferences.some((reference) => isDurable(reference))) continue;
+                for (const reference of lineReferences) {
+                  if (reference.durability === 'ignored_local_path') {
+                    pairedLocalReferences.add(reference.value);
+                  }
+                }
+              }
+              for (const localReference of evidenceLocalOnlyReferences) {
+                if (durableMapValue.length > 0 && !notApplicablePattern.test(durableMapValue) && !pairedLocalReferences.has(localReference)) {
+                  errors.push('Durable evidence map must pair local-only artifact reference ' + localReference + ' with durable evidence on the same map entry.');
                 }
               }
             }
@@ -168,6 +233,16 @@ jobs:
               if (body.includes(placeholder)) {
                 errors.push('Replace template placeholder: ' + placeholder);
               }
+            }
+            const localAbsolutePaths = Array.from(
+              new Set(
+                Array.from(body.matchAll(localAbsolutePathPattern), (match) =>
+                  (match[1] ?? '').replace(/[.,;:]+$/g, ''),
+                ).filter((path) => path.length > 0),
+              ),
+            );
+            for (const path of localAbsolutePaths) {
+              errors.push('Replace local absolute path in PR body with a repo-relative path, PR comment, CI artifact URL, runtime-card ref, or tracked receipt: ' + path);
             }
 
 

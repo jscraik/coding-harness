@@ -1,0 +1,233 @@
+/**
+ * Durability classification for an evidence reference named in a PR body.
+ */
+export type EvidenceReferenceDurability =
+	| "tracked_repo_path"
+	| "ignored_local_path"
+	| "untracked_local_path"
+	| "ci_artifact_url"
+	| "github_pr_comment"
+	| "github_check_url"
+	| "runtime_card_ref"
+	| "evidence_receipt_ref"
+	| "not_applicable"
+	| "unknown";
+
+/**
+ * A normalized evidence reference and its recoverability class.
+ */
+export interface EvidenceReference {
+	readonly value: string;
+	readonly durability: EvidenceReferenceDurability;
+}
+
+/**
+ * Result of checking whether local-only evidence has a durable mirror.
+ */
+export interface EvidenceReferenceValidation {
+	readonly references: EvidenceReference[];
+	readonly localOnlyReferences: string[];
+	readonly durableReferences: string[];
+	readonly errors: string[];
+}
+
+const URL_PATTERN = /^https?:\/\/\S+$/i;
+const GITHUB_PR_COMMENT_PATTERN =
+	/^https?:\/\/github\.com\/[^\s/]+\/[^\s/]+\/pull\/\d+#(?:issuecomment-|discussion_r)\d+$/i;
+const GITHUB_CHECK_PATTERN =
+	/^https?:\/\/github\.com\/[^\s/]+\/[^\s/]+\/(?:actions\/runs|checks)\/\S+$/i;
+const CI_ARTIFACT_PATTERN =
+	/^https?:\/\/(?:circleci\.com|app\.circleci\.com|[^\s/]*buildkite\.com|[^\s/]*githubusercontent\.com)\/\S+/i;
+const RUNTIME_CARD_PATTERN =
+	/(?:^|\/)(?:runtime-card|runtime-card-handoff|runtime-evidence-bundle)(?:[\w.-]*)(?:\.json|\.jsonl)?$/i;
+const EVIDENCE_RECEIPT_PATTERN =
+	/(?:^|\/)(?:receipts|evidence-receipts|sync-receipts)(?:[\w.-]*)(?:\.json|\.jsonl)$/i;
+const LOCAL_ONLY_PATH_PATTERN =
+	/^(?:\.\/)?(?:artifacts\/|\.harness\/(?:artifacts|runs|evidence|media)\/)/i;
+const TRACKED_PATH_PATTERN =
+	/^(?:\.\/)?(?:AI\/|codestyle\/|contracts\/|docs\/|fixtures\/|scripts\/|src\/|test\/|tests\/|\.github\/|\.harness\/(?:active-artifacts\.md|decisions\/|knowledge\/|linear\/|plan\/|refactors\/|research\/(?:audits|deep)\/|specs\/|memory\/LEARNINGS\.md))/i;
+const LOCAL_PATH_PATTERN =
+	/^(?:\.\/)?(?:AI|artifacts|codestyle|contracts|docs|fixtures|scripts|src|test|tests|\.github|\.harness)\/[\w./-]+$/i;
+const NOT_APPLICABLE_PATTERN =
+	/^(?:n\.?a\.?|n\/a|not applicable|none)(?:\b|\s|[.;:,(])/i;
+
+const REFERENCE_TOKEN_PATTERN =
+	/(https?:\/\/[^\s)\]>]+|(?:\.\/)?(?:AI|artifacts|codestyle|contracts|docs|fixtures|scripts|src|test|tests|\.github|\.harness)\/[\w./-]+|(?:runtime-card|runtime-card-handoff|runtime-evidence-bundle|receipts|evidence-receipts|sync-receipts)[\w./-]*(?:\.json|\.jsonl)?)/gi;
+
+function normaliseReferenceToken(token: string): string {
+	return token.replace(/[.,;:]+$/g, "").trim();
+}
+
+/**
+ * Classify a single evidence reference by the kind of proof a later agent can recover.
+ *
+ * @param reference - URL, repo path, runtime-card reference, receipt reference, or n.a. marker.
+ * @returns The durability class used by PR-template validation.
+ */
+export function classifyEvidenceReference(
+	reference: string,
+): EvidenceReferenceDurability {
+	const value = normaliseReferenceToken(reference);
+	if (value.length === 0) {
+		return "unknown";
+	}
+	if (NOT_APPLICABLE_PATTERN.test(value)) {
+		return "not_applicable";
+	}
+	if (GITHUB_PR_COMMENT_PATTERN.test(value)) {
+		return "github_pr_comment";
+	}
+	if (GITHUB_CHECK_PATTERN.test(value)) {
+		return "github_check_url";
+	}
+	if (CI_ARTIFACT_PATTERN.test(value)) {
+		return "ci_artifact_url";
+	}
+	if (URL_PATTERN.test(value)) {
+		return "unknown";
+	}
+	if (RUNTIME_CARD_PATTERN.test(value)) {
+		return "runtime_card_ref";
+	}
+	if (EVIDENCE_RECEIPT_PATTERN.test(value)) {
+		return "evidence_receipt_ref";
+	}
+	if (LOCAL_ONLY_PATH_PATTERN.test(value)) {
+		return "ignored_local_path";
+	}
+	if (TRACKED_PATH_PATTERN.test(value)) {
+		return "tracked_repo_path";
+	}
+	if (LOCAL_PATH_PATTERN.test(value)) {
+		return "untracked_local_path";
+	}
+	return "unknown";
+}
+
+/**
+ * Extract path-like and URL-like evidence references from free-form PR text.
+ *
+ * @param text - PR field text to scan.
+ * @returns Normalized evidence references in encounter order.
+ */
+export function extractEvidenceReferences(text: string): EvidenceReference[] {
+	return Array.from(text.matchAll(REFERENCE_TOKEN_PATTERN), (match) => {
+		const value = normaliseReferenceToken(match[0] ?? "");
+		return {
+			value,
+			durability: classifyEvidenceReference(value),
+		};
+	}).filter((reference) => reference.value.length > 0);
+}
+
+function isDurableReference(reference: EvidenceReference): boolean {
+	return [
+		"tracked_repo_path",
+		"ci_artifact_url",
+		"github_pr_comment",
+		"github_check_url",
+		"runtime_card_ref",
+		"evidence_receipt_ref",
+	].includes(reference.durability);
+}
+
+function uniqueReferenceValues(references: EvidenceReference[]): string[] {
+	return Array.from(new Set(references.map((reference) => reference.value)));
+}
+
+function collectPairedLocalReferences(mapValue: string): Set<string> {
+	const paired = new Set<string>();
+	for (const line of mapValue.split(/\r?\n/)) {
+		const lineReferences = extractEvidenceReferences(line);
+		if (
+			!lineReferences.some(
+				(reference) => reference.durability === "ignored_local_path",
+			)
+		) {
+			continue;
+		}
+		if (!lineReferences.some((reference) => isDurableReference(reference))) {
+			continue;
+		}
+		for (const reference of lineReferences) {
+			if (reference.durability === "ignored_local_path") {
+				paired.add(reference.value);
+			}
+		}
+	}
+	return paired;
+}
+
+/**
+ * Validate that ignored local artifact references are mirrored by durable evidence.
+ *
+ * @param input - Durable evidence map field plus the review artifacts field.
+ * @returns Reference classifications and user-facing validation errors.
+ */
+export function validateDurableEvidenceMap(input: {
+	readonly durableEvidenceMap: string | null;
+	readonly evidenceText?: string | null;
+	readonly reviewArtifacts?: string | null;
+}): EvidenceReferenceValidation {
+	const mapValue = input.durableEvidenceMap?.trim() ?? "";
+	const evidenceText =
+		input.evidenceText?.trim() ?? input.reviewArtifacts?.trim() ?? "";
+	const references = extractEvidenceReferences(
+		[mapValue, evidenceText].join("\n"),
+	);
+	const mapReferences = extractEvidenceReferences(mapValue);
+	const evidenceReferences = extractEvidenceReferences(evidenceText);
+	const localOnlyReferences = uniqueReferenceValues(
+		references.filter(
+			(reference) => reference.durability === "ignored_local_path",
+		),
+	);
+	const evidenceLocalOnlyReferences = uniqueReferenceValues(
+		evidenceReferences.filter(
+			(reference) => reference.durability === "ignored_local_path",
+		),
+	);
+	const durableReferences = Array.from(
+		new Set(
+			mapReferences
+				.filter((reference) => isDurableReference(reference))
+				.map((reference) => reference.value),
+		),
+	);
+	const errors: string[] = [];
+
+	if (mapValue.length === 0 || NOT_APPLICABLE_PATTERN.test(mapValue)) {
+		if (
+			evidenceReferences.some(
+				(reference) => reference.durability === "ignored_local_path",
+			)
+		) {
+			errors.push(
+				"Durable evidence map cannot be n.a. when PR evidence fields cite ignored local artifact paths.",
+			);
+		}
+		return { references, localOnlyReferences, durableReferences, errors };
+	}
+
+	const pairedLocalReferences = collectPairedLocalReferences(mapValue);
+	for (const localReference of evidenceLocalOnlyReferences) {
+		if (!pairedLocalReferences.has(localReference)) {
+			errors.push(
+				"Durable evidence map must pair local-only artifact reference " +
+					localReference +
+					" with durable evidence on the same map entry.",
+			);
+		}
+	}
+
+	if (
+		evidenceLocalOnlyReferences.length > 0 &&
+		durableReferences.length === 0
+	) {
+		errors.push(
+			"Durable evidence map must pair ignored local artifact paths with a tracked receipt, runtime card, PR comment, GitHub check, or CI artifact URL.",
+		);
+	}
+
+	return { references, localOnlyReferences, durableReferences, errors };
+}

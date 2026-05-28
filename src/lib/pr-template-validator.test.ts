@@ -25,6 +25,7 @@ const VALID_BODY = `## Summary
 - Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.
 - Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass.
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
+- Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.
 - Runtime impact: CI-only.
 - CodeRabbit mode coverage: validation.
 - Closeout state: local branch clean, checks passed, Linear linked, no remaining blocker.
@@ -139,6 +140,68 @@ describe("validatePrTemplateBody", () => {
 		expect(errors).toContain("Missing required section: ## Notes");
 	});
 
+	it("fails local-only review artifacts without a durable evidence mirror", () => {
+		const body = VALID_BODY.replace(
+			"- Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.",
+			"- Review artifacts: Codex: artifacts/reviews/codex-review.md",
+		).replace(
+			"- Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
+			"- Durable evidence map: n.a. because no durable mirror was captured.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Durable evidence map cannot be n.a. when PR evidence fields cite ignored local artifact paths.",
+		);
+	});
+
+	it("fails local-only validation evidence without a durable evidence mirror", () => {
+		const body = VALID_BODY.replace(
+			"- Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass.",
+			"- Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass; artifacts/reviews/codex-review.md.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Durable evidence map cannot be n.a. when PR evidence fields cite ignored local artifact paths.",
+		);
+	});
+
+	it("fails local absolute paths in PR bodies", () => {
+		const body = VALID_BODY.replace(
+			"This change adds local PR-template validation so template failures are caught before PR updates.",
+			"This change was validated from /Users/jamiecraik/dev/coding-harness/artifacts/reviews/codex-review.md.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Replace local absolute path in PR body with a repo-relative path, PR comment, CI artifact URL, runtime-card ref, or tracked receipt: /Users/jamiecraik/dev/coding-harness/artifacts/reviews/codex-review.md",
+		);
+	});
+
+	it("accepts local-only review artifacts when the durable evidence map names a tracked receipt", () => {
+		const body = VALID_BODY.replace(
+			"- Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.",
+			"- Review artifacts: Codex: artifacts/reviews/codex-review.md",
+		).replace(
+			"- Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
+			"- Durable evidence map: ignored-local artifacts/reviews/codex-review.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("fails when durable evidence map aliases the local artifact path", () => {
+		const body = VALID_BODY.replace(
+			"- Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.",
+			"- Review artifacts: Codex: artifacts/reviews/codex-review.md",
+		).replace(
+			"- Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
+			"- Durable evidence map: ignored-local artifacts/reviews/codex-review.md.old -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Durable evidence map must pair local-only artifact reference artifacts/reviews/codex-review.md with durable evidence on the same map entry.",
+		);
+	});
+
 	it("fails when headings appear only in prose without markdown headers", () => {
 		const body = `## Summary
 
@@ -242,7 +305,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
-			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings left unchanged or deferred with reasons when PR text admits line-level or design-pattern correction.",
+			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings intentionally unchanged with reasons when PR text admits line-level or design-pattern correction.",
 		);
 	});
 
@@ -273,7 +336,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
-			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings left unchanged or deferred with reasons when PR text admits line-level or design-pattern correction.",
+			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings intentionally unchanged with reasons when PR text admits line-level or design-pattern correction.",
 		);
 	});
 
@@ -422,7 +485,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
-			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings left unchanged or deferred with reasons when PR text admits line-level or design-pattern correction.",
+			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings intentionally unchanged with reasons when PR text admits line-level or design-pattern correction.",
 		);
 	});
 
