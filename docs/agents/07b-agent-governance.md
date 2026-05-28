@@ -22,6 +22,14 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 4. Report outcomes and risks.
 5. Stop on blocked checks and request next decision.
 
+Recurring judgment should become a small operating primitive. If an agent needs
+the same judgment twice, or a failure mode can recur across slices, promote it
+into the smallest durable tool that changes future behavior: validator, guard
+script, CLI helper, workflow hook, fixture, or scoped skill. Keep one-off
+implementation knowledge in implementation notes, plan evidence, or PR closeout
+evidence. Use skills only for reusable routed workflows with explicit inputs,
+artifacts, validation, ownership, and review expectations.
+
 ## Mandatory gates (when behavior changes)
 
 - `pnpm lint`
