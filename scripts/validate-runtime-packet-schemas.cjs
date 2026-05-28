@@ -432,6 +432,14 @@ function validatePacketEntry(entry, index, seen, errors) {
 	if (!VALID_PARITY_VALIDATORS.has(entry.parityValidator)) {
 		errors.push(`${prefix}.parityValidator is not recognized`);
 	}
+	if (
+		Object.hasOwn(entry, "semanticValidatorPath") &&
+		typeof entry.semanticValidatorPath !== "string"
+	) {
+		errors.push(
+			`${prefix}.semanticValidatorPath must be a string when present`,
+		);
+	}
 	if (entry.runtimeStatus === "emitted") {
 		requireString(entry.typeSourcePath, `${prefix}.typeSourcePath`, errors);
 		if (entry.parityValidator === "none") {
@@ -486,6 +494,25 @@ function validateSchemaAndExample(entry, errors) {
 		if (resolvedTypeSourcePath && !existsSync(resolvedTypeSourcePath)) {
 			errors.push(
 				`${entry.schemaVersion} typeSourcePath does not exist: ${entry.typeSourcePath}`,
+			);
+		}
+	}
+	if (entry.semanticValidatorPath) {
+		let resolvedSemanticValidatorPath = null;
+		try {
+			resolvedSemanticValidatorPath = resolveRepoContainedPath(
+				entry.semanticValidatorPath,
+				`${entry.schemaVersion} semanticValidatorPath`,
+			);
+		} catch (error) {
+			errors.push(error.message);
+		}
+		if (
+			resolvedSemanticValidatorPath &&
+			!existsSync(resolvedSemanticValidatorPath)
+		) {
+			errors.push(
+				`${entry.schemaVersion} semanticValidatorPath does not exist: ${entry.semanticValidatorPath}`,
 			);
 		}
 	}

@@ -92,6 +92,17 @@
 			"parityValidator": "none",
 			"ownerGap": "SPG-001",
 			"blockedBy": "PU-027 adds the contract first; runtime emission requires a later producer slice that binds actual prompt contributors using pointer-only capture."
+		},
+		{
+			"schemaVersion": "goal-completion-audit-receipt/v1",
+			"schemaPath": "contracts/goal-completion-audit-receipt.schema.json",
+			"examplePath": "contracts/examples/goal-completion-audit-receipt.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-goal-completion-audit-receipt.cjs",
+			"ownerGap": "SPG-003",
+			"blockedBy": "PU-029 adds the pre-closeout audit receipt contract before production closeout wiring emits it."
 		}
 	]
 }

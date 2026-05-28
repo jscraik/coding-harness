@@ -92,7 +92,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 10,
+			packetCount: 11,
 			errors: [],
 		});
 	});
@@ -462,6 +462,30 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report.errors).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining("blockedBy must be a non-empty string"),
+			]),
+		);
+	});
+
+	it("fails when a semantic validator path points outside checked-in validators", () => {
+		const manifestPath = manifestWithEntryPatch(
+			"goal-completion-audit-receipt/v1",
+			(entry) => ({
+				...entry,
+				semanticValidatorPath: "scripts/missing-goal-validator.cjs",
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("semanticValidatorPath does not exist"),
 			]),
 		);
 	});
