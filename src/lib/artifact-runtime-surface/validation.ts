@@ -213,6 +213,17 @@ function validatePreview(
 			"not_applicable previews must use preview:not-applicable",
 		);
 	}
+	if (
+		value.status !== "not_applicable" &&
+		value.ref === "preview:not-applicable"
+	) {
+		addError(
+			errors,
+			"invalid_preview_ref",
+			`${path}.ref`,
+			"preview:not-applicable is only valid when status is not_applicable",
+		);
+	}
 	if (value.status !== "not_applicable" && value.ref === null) {
 		addError(
 			errors,
