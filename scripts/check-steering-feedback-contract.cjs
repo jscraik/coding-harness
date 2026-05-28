@@ -46,8 +46,6 @@ const PATTERN_SCOPE_INVENTORY_PATTERN =
 	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|similar misbehavior classes searched|deferred follow-ups|deferred followup)/i;
 const OBSERVED_FIXABLE_BLOCKER_PATTERN =
 	/(observed fixable blockers|fixable blocker|fix it in the same pass|rerun the narrowest proving command|tracked exception with the exact reason)/i;
-const TOOL_PROMOTION_THRESHOLD_PATTERN =
-	/(same judgment is needed twice|failure mode can recur across slices|smallest durable primitive|implementation notes.*plan evidence|validator.*guard.*CLI helper.*skill)/is;
 const PATTERN_SCOPE_VALIDATOR_PATTERN =
 	/(PATTERN_SCOPE_SIGNAL_PATTERN|collectPatternScopeInventoryErrors|Pattern scope inventory must name the inferred principle)/i;
 const PRINCIPLE_SIGNAL_PATTERN =
