@@ -177,8 +177,7 @@ describe("ArtifactRuntimeSurface/v1", () => {
 
 	it("rejects secret-like values in allowed fields", () => {
 		const packet = claimSupportPacket();
-		packet.nextAction =
-			"Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signaturevalue";
+		packet.nextAction = "token=redacted-secret-like-fixture";
 
 		expectInvalid(packet, "secret_like_value", "packet.nextAction");
 	});
