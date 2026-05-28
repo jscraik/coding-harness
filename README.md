@@ -504,6 +504,12 @@ admitted, and record Repeated-error research when the same error happens twice.
 This keeps high-signal review and user steering in the repo operating system
 instead of leaving it in a chat transcript.
 
+PR bodies must also classify `Documentation impact`: list the required root
+docs, governed docs, and existing deep-module README files updated by the slice,
+or mark each unaffected class `n.a.` with a concrete reason. `docs-gate`
+enforces configured governed surfaces and existing deep-module README parity;
+use docs-expert or independent reviewer evidence for high-impact docs changes.
+
 ```bash
 harness pr-template-gate --json
 ```
