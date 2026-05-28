@@ -147,6 +147,17 @@
 			"semanticValidatorPath": "scripts/validate-action-review-receipt.cjs",
 			"ownerGap": "SPG-008",
 			"blockedBy": "PU-034 adds the non-authoritative ActionReviewReceipt contract before live merge, release, destructive cleanup, or external tracker mutation review producers emit it."
+		},
+		{
+			"schemaVersion": "artifact-runtime-surface/v1",
+			"schemaPath": "contracts/artifact-runtime-surface.schema.json",
+			"examplePath": "contracts/examples/artifact-runtime-surface.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-artifact-runtime-surface.cjs",
+			"ownerGap": "SPG-009",
+			"blockedBy": "PU-035 adds the ArtifactRuntimeSurface contract before production artifact producers emit it from implementation notes, review artifacts, browser evidence, reports, runtime cards, or lifecycle artifacts."
 		}
 	]
 }

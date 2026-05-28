@@ -150,6 +150,14 @@ not in docs, templates, generated context, or command facades.
   contract-only, `not_yet_emitted`, orientation/governance/audit evidence, and
   out of delivery-truth claim support unless an emitted producer and consumer
   boundary is implemented and validated in the same change.
+- src/lib/artifact-runtime-surface/: visible artifact runtime surface
+  contracts for implementation notes, review artifacts, screenshots, CSV/PDF
+  or document outputs, reports, runtime cards, and lifecycle artifacts. It
+  owns `artifact-runtime-surface/v1` types, schema parity, semantic validation,
+  repo-relative path safety, current-head and lineage matching, preview
+  applicability, value-level leakage checks, and filesystem containment checks
+  in the standalone validator so artifacts can steer agents or support claims
+  only when their path, freshness, preview, checksum, and lineage are current.
 - src/lib/steering-queue/: deferred operator-steering packets for
   continuation recovery and audit/orientation evidence. It keeps
   `steering-queue.ts` as a compatibility facade over typed contracts, builder,

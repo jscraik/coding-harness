@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. PR #309 is merged; its branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and current main includes the squash commit `75b77c2543053ade3c3e793d28f8811998b9f01c`. R114 reconciles the board to current HEAD and encodes the tool promotion threshold. GitHub review-thread truth, Linear full-lifecycle scope alignment, Judge/PM readiness, runtime producer emission, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is to start the next slice intent from current main/branch truth, keep PR #310/tool-promotion work separate, and continue only after branch/worktree state and external truth are refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. PR #309 is merged; its branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and current main includes the squash commit `75b77c2543053ade3c3e793d28f8811998b9f01c`. R114 reconciles the board to current HEAD and encodes the tool promotion threshold. R115 records PU-035 ArtifactRuntimeSurface/v1 local contract implementation on branch `codex/jsc-363-artifact-runtime-surface` at pre-commit head `45b717bb9f0d57ec865b9806475d252d198e866e`. GitHub review-thread truth, Linear full-lifecycle scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is to commit/push PU-035, open a stacked PR, launch PR triage with git fetch and remote-truth separation, then continue the next slice only after branch/worktree state and external truth are refreshed. |
 
 ## Artifact Index
 
@@ -80,8 +80,10 @@ unless a live refresh is recorded in the referenced artifact.
   `84bd19b1a5da56800e7cf4239c9f65348ccf2d96`, and current main includes
   squash commit `75b77c2543053ade3c3e793d28f8811998b9f01c`. R114 restores
   current-head goal-board freshness and encodes the tool promotion threshold,
-  but merge-readiness, Linear scope alignment, review-thread truth, Judge/PM
-  readiness, runtime producer emission, and final closeout remain unclaimed.
+  and R115 records PU-035 ArtifactRuntimeSurface/v1 local contract evidence on
+  branch `codex/jsc-363-artifact-runtime-surface`. Merge-readiness, Linear
+  scope alignment, review-thread truth, Judge/PM readiness, runtime producer
+  emission, delivery-truth consumption, and final closeout remain unclaimed.
 - JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
   not use it as the coding-harness tracker for the 2026-05-18 assurance plan
   unless Linear is explicitly reparented or updated later.

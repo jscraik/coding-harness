@@ -202,6 +202,19 @@ satisfy delivery-truth claims, or prove merge readiness unless an emitted
 producer and consumer boundary is implemented, validated, and documented in the
 same change.
 
+Artifact runtime surface changes are artifact-truth cockpit work, not a new
+artifact warehouse. Keep `artifact-runtime-surface/v1` inside
+`src/lib/artifact-runtime-surface/` as the pointer-only contract for
+implementation notes, review artifacts, screenshots, CSV/PDF/document outputs,
+runtime cards, reports, and lifecycle artifacts that steer execution or support
+claims. Validators must prove repo-relative path safety, symlink/realpath
+containment in the standalone semantic path, checksum and size consistency,
+current-head and lineage matching, preview applicability, timestamp ordering,
+and value-level leakage rejection before an artifact can support a claim.
+Orientation or audit-trail artifacts may be stale or blocked, but they must not
+prove delivery-truth, review-state, external-state, root-hygiene, merge
+readiness, or Judge/PM readiness without current typed claim refs.
+
 Steering-queue packet changes are continuation-recovery cockpit work, not a new
 agent execution rail. Keep `steering-queue/v1` inside
 `src/lib/steering-queue/` as an advisory packet for deferred operator

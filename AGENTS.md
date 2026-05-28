@@ -304,6 +304,20 @@ Notes:
   `ARCHITECTURE.md`, `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Artifact runtime surface changes that add or alter
+  `artifact-runtime-surface/v1`, visible implementation notes, review
+  artifacts, screenshots, CSV/PDF/document outputs, runtime-card/report
+  artifacts, preview refs, artifact lineage, current-head binding, checksum,
+  repo-relative path containment, or artifact claim-support eligibility are
+  architecture-adjacent runtime cockpit changes. Keep the deep module in
+  `src/lib/artifact-runtime-surface/`, keep packet payloads pointer-only and
+  content-redacting, enforce preview applicability and filesystem containment
+  in validators before claim support, and preserve separate delivery-truth,
+  review-state, external-state, root-hygiene, and Judge/PM verdicts. Refresh
+  `AI/context/diagram-context.md` and keep
+  `ARCHITECTURE.md`, `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
 - Steering-queue packet changes that add or alter `steering-queue/v1`,
   deferred operator-steering state, instruction-source hashing, artifact
   identity checks, supersession, stale-precondition classification, or

@@ -227,6 +227,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `harness pr-closeout`, required PR metadata, or AI session/traceability
   evidence should stay read-only, tool-evidence-backed, secret-redacting, and
   synchronized with the PR template, validation docs, CLI docs, and AGENTS
+- artifact runtime surface changes should keep visible artifact truth in
+  `src/lib/artifact-runtime-surface/`, with pointer-only payloads, typed claim
+  refs, preview applicability, current-head and lineage matching,
+  repo-relative path containment, checksum/size checks, and value-level leakage
+  rejection before any artifact supports delivery, review, root, external-state,
+  merge-readiness, or Judge/PM claims
 - `pr-closeout/v1` success must come from current structured
   claim/evidence status rather than model-written summary text. Missing or
   stale required evidence should resolve to blocked or unknown with source,

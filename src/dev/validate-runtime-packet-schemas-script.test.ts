@@ -9,6 +9,7 @@ import {
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { validateActionReviewReceipt } from "../lib/action-review/index.js";
+import { validateArtifactRuntimeSurface } from "../lib/artifact-runtime-surface/index.js";
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
 import { composeDeliveryTruth } from "../lib/delivery-truth/index.js";
 import { validateEvidenceReceipt } from "../lib/evidence/evidence-receipt.js";
@@ -96,7 +97,18 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 15,
+			packetCount: 16,
+			errors: [],
+		});
+	});
+
+	it("keeps ArtifactRuntimeSurface/v1 examples aligned with the TypeScript validator", () => {
+		const packet = readJson(
+			"contracts/examples/artifact-runtime-surface.example.json",
+		);
+
+		expect(validateArtifactRuntimeSurface(packet)).toEqual({
+			valid: true,
 			errors: [],
 		});
 	});
