@@ -198,8 +198,9 @@ decisions. Validators must prove reviewer independence, canonical actor
 identity separation, current head binding, required evidence freshness,
 allow/block/mismatch semantics, and stable error codes. The packet may support
 orientation, governance, and audit trails, but it must not authorize commands,
-satisfy delivery-truth claims, or prove merge readiness until a future producer
-and consumer boundary intentionally wires that authority.
+satisfy delivery-truth claims, or prove merge readiness unless an emitted
+producer and consumer boundary is implemented, validated, and documented in the
+same change.
 
 Steering-queue packet changes are continuation-recovery cockpit work, not a new
 agent execution rail. Keep `steering-queue/v1` inside

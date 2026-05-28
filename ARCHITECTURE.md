@@ -148,8 +148,8 @@ not in docs, templates, generated context, or command facades.
   reviewer independence checks, action-envelope mismatch classification, and
   machine-readable allow/block/mismatch error codes while keeping receipts
   contract-only, `not_yet_emitted`, orientation/governance/audit evidence, and
-  out of delivery-truth claim support until a future producer explicitly wires
-  an authorized runtime path.
+  out of delivery-truth claim support unless an emitted producer and consumer
+  boundary is implemented and validated in the same change.
 - src/lib/steering-queue/: deferred operator-steering packets for
   continuation recovery and audit/orientation evidence. It keeps
   `steering-queue.ts` as a compatibility facade over typed contracts, builder,

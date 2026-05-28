@@ -153,8 +153,8 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   identity separation, current evidence freshness, action-envelope matching,
   allow/block/mismatch semantics, and stable machine-readable error codes. The
   packet must not become command authority, delivery-truth claim support, or
-  merge-readiness proof until a future producer and consumer boundary
-  intentionally wires that authority and updates governance docs in the same PR.
+  merge-readiness proof unless an emitted producer and consumer boundary is
+  implemented, validated, and reflected in governance docs in the same PR.
 - steering-queue packet changes should keep deferred operator steering in
   `src/lib/steering-queue/` as advisory orientation/audit evidence. Validators
   must prove instruction-source hash integrity, artifact identity, supersession,

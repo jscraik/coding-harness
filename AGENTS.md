@@ -285,9 +285,10 @@ Notes:
   semantics, current evidence freshness, or machine-readable review error codes
   are architecture-adjacent runtime cockpit changes. Keep high-risk action
   review contracts in `src/lib/action-review/`, keep packets contract-only and
-  `not_yet_emitted` until an intentional producer wires them, and do not let
-  them authorize commands, satisfy delivery-truth claims, or prove merge
-  readiness. Refresh `AI/context/diagram-context.md` and keep
+  `not_yet_emitted` unless an emitted producer and consumer boundary is
+  implemented and validated in the same change, and do not let them authorize
+  commands, satisfy delivery-truth claims, or prove merge readiness. Refresh
+  `AI/context/diagram-context.md` and keep
   `ARCHITECTURE.md`, `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
