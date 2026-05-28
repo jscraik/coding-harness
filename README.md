@@ -770,6 +770,17 @@ are orientation, governance, and audit artifacts only; they do not authorize
 commands, satisfy delivery-truth claims, prove merge readiness, or replace
 policy-gate, PR closeout, or human approval.
 
+Replay packets are the replay contract side of the runtime cockpit, not another
+closeout proof surface. `replay-packet/v1` lives in `src/lib/replay/` and
+records pointer-only replay seeds, content-bound source refs, hook execution
+identity, normalized event summaries, stale-state classification, and
+redaction status. The standalone validator rejects unsafe paths, SHA-256 drift,
+missing hook provenance, stale orientation packets, and raw prompts,
+transcripts, command output, screenshots, images, or secret-like fields. Replay
+packets can support orientation and audit trails; they do not satisfy
+delivery-truth, review-state, external-state, root-hygiene, Judge/PM, or
+merge-readiness claims.
+
 ### Pilot, Remediation, And Automation
 
 | Command          | Purpose                                                                   |

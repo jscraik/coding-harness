@@ -109,6 +109,16 @@ not in docs, templates, generated context, or command facades.
   terminal manifest emission while requiring a fresh run id before the first
   event append and reusing the shared run-record writer for hash-chain
   continuity and replay validation.
+- src/lib/replay/: replay and validation contracts for replayable runtime,
+  hook, and session evidence. It owns `ReplayPacket/v1` types and semantic
+  validation for pointer-only replay seeds, content-bound source refs,
+  hook-execution provenance, normalized event summaries, stale-state
+  classification, redaction guarantees, and orientation/audit-trail evidence
+  use. Replay packets are not delivery-truth claim support; they can steer
+  investigation or preserve audit evidence only after validators prove
+  repo-relative path safety, SHA-256 integrity, hook identity, TTL/head
+  freshness semantics, and absence of raw prompts, transcripts, command output,
+  screenshots, images, or secret-like values.
 - src/lib/delivery-truth/: private and production verdict composition for
   delivery, root hygiene, Judge/PM readiness, and merge-readiness claims.
 - src/lib/root-hygiene/: root-surface classification and claim-support receipt

@@ -158,6 +158,17 @@
 			"semanticValidatorPath": "scripts/validate-artifact-runtime-surface.cjs",
 			"ownerGap": "SPG-009",
 			"blockedBy": "PU-035 adds the ArtifactRuntimeSurface contract before production artifact producers emit it from implementation notes, review artifacts, browser evidence, reports, runtime cards, or lifecycle artifacts."
+		},
+		{
+			"schemaVersion": "replay-packet/v1",
+			"schemaPath": "contracts/replay-packet.schema.json",
+			"examplePath": "contracts/examples/replay-packet.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-replay-packet.cjs",
+			"ownerGap": "SPG-010",
+			"blockedBy": "PU-036 adds the ReplayPacket contract before production replay, hook, or runtime evidence producers emit replayable packet artifacts."
 		}
 	]
 }

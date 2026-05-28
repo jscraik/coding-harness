@@ -241,6 +241,14 @@ Notes:
   keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized in the same PR when
   docs-gate reports governance surfaces.
+- Replay packet changes that add or alter `replay-packet/v1`, replay seed
+  refs, hook-execution provenance, normalized event summaries, stale-state
+  classification, TTL/head freshness, or raw-payload leakage rejection are
+  architecture-adjacent runtime cockpit changes. Keep replay packets inside
+  `src/lib/replay/` as pointer-only, content-bound orientation/audit evidence;
+  they must not support delivery-truth, review-state, external-state,
+  root-hygiene, Judge/PM, or merge-readiness claims without an explicit future
+  consumer boundary and synchronized governance update.
 - Codex runtime evidence packet changes that add or alter
   `codex-runtime-evidence/v1`, source-provenance classification, packet
   validation, or evidence-reference integrity are architecture-adjacent runtime

@@ -72,18 +72,51 @@ describe("validatePrTemplateBody", () => {
 			"- Acceptance trace: Tool-promotion threshold present and enforced by pnpm run docs:steering:guard.",
 		);
 
-		expect(validatePrTemplateBody(body)).toContain(
-			"Acceptance trace for linked issue JSC-999 must list specific acceptance IDs (for example SA-001 or AC-001) or explicitly state the preparatory/enabling relationship and that this PR does not complete the issue acceptance criteria.",
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"Acceptance trace for linked issue JSC-999 must list specific acceptance IDs",
+				),
+			]),
+		);
+	});
+
+	it("fails preparatory linked issue bodies that do not state no acceptance IDs were completed", () => {
+		const body = VALID_BODY.replace(
+			"- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: Preparatory relationship: supports JSC-999 by adding a governance guard; this PR does not complete the issue acceptance criteria.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("completed issue acceptance IDs are none"),
+			]),
 		);
 	});
 
 	it("accepts linked issue bodies that explicitly mark preparatory relationship", () => {
 		const body = VALID_BODY.replace(
 			"- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.",
-			"- Acceptance trace: Preparatory relationship: supports JSC-999 by adding a governance guard; this PR does not complete the issue acceptance criteria.",
+			"- Acceptance trace: Preparatory relationship: supports JSC-999 by adding a governance guard; this PR does not complete the issue acceptance criteria. Completed JSC-999 acceptance IDs: none.",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("fails multi-issue bodies when one acceptance ID masks unmapped linked issues", () => {
+		const body = VALID_BODY.replace(
+			"- Plan IDs: JSC-999; .harness/plan/example-plan.md",
+			"- Plan IDs: JSC-999 and JSC-1000; .harness/plan/example-plan.md",
+		).replace(
+			"- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts; JSC-1000 is preparatory support.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("When multiple linked issues are listed"),
+			]),
+		);
 	});
 
 	it("accepts template-documented n.a. command outcomes without a reason", () => {

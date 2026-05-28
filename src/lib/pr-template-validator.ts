@@ -4,6 +4,7 @@ import {
 	PLACEHOLDERS,
 	ACCEPTANCE_TRACE_ID_PATTERN,
 	LINKED_ISSUE_REFERENCE_PATTERN,
+	PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN,
 	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
 	REQUIRED_SECTIONS,
 	REQUIRED_TESTING_FIELDS,
@@ -190,19 +191,48 @@ function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
 		return [];
 	}
 
+	const issueKeys = Array.from(new Set(planIds.match(/\bJSC-\d+\b/g) ?? []));
+	const hasAcceptanceIds = ACCEPTANCE_TRACE_ID_PATTERN.test(acceptanceTrace);
+	if (hasAcceptanceIds) {
+		if (
+			issueKeys.length <= 1 ||
+			traceCoversEveryLinkedIssue(issueKeys, acceptanceTrace)
+		) {
+			return [];
+		}
+	}
+
 	if (
-		ACCEPTANCE_TRACE_ID_PATTERN.test(acceptanceTrace) ||
-		PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace)
+		!hasAcceptanceIds &&
+		PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace) &&
+		PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN.test(acceptanceTrace)
 	) {
 		return [];
 	}
 
-	const issueKeys = Array.from(
-		new Set(planIds.match(/\bJSC-\d+\b/g) ?? []),
-	).join(", ");
+	const issueKeyList = issueKeys.join(", ");
 	return [
-		`Acceptance trace for linked issue ${issueKeys} must list specific acceptance IDs (for example SA-001 or AC-001) or explicitly state the preparatory/enabling relationship and that this PR does not complete the issue acceptance criteria.`,
+		`Acceptance trace for linked issue ${issueKeyList} must list specific acceptance IDs (for example SA-001 or AC-001) or explicitly state the preparatory/enabling relationship, that this PR does not complete the issue acceptance criteria, and that completed issue acceptance IDs are none. When multiple linked issues are listed, each issue key must appear in the Acceptance trace with completed acceptance IDs or an explicit no-completion classification.`,
 	];
+}
+
+function traceCoversEveryLinkedIssue(
+	issueKeys: string[],
+	acceptanceTrace: string,
+): boolean {
+	return issueKeys.every((issueKey) => {
+		const escapedIssueKey = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const segmentPattern = new RegExp(
+			`\\b${escapedIssueKey}\\b([\\s\\S]*?)(?=\\bJSC-\\d+\\b|$)`,
+			"i",
+		);
+		const segment = acceptanceTrace.match(segmentPattern)?.[0] ?? "";
+		return (
+			ACCEPTANCE_TRACE_ID_PATTERN.test(segment) ||
+			(PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(segment) &&
+				PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN.test(segment))
+		);
+	});
 }
 
 function extractFieldBlockValue(
