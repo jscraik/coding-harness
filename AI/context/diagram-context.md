@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-28T01:29:10Z
+Generated: 2026-05-28T02:33:51Z
 
 ## Table of Contents
 
@@ -624,6 +624,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_env_b77349bf_420e4120
   ext_node_crypto_c7dfc512["node:crypto"] --> node_gate_c974e17b_07549baf
   ext_node_crypto_c7dfc512["node:crypto"] --> node_goal_completion_audit_receipt_5e4939c3_4fb29d00
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_hash_d04b98f4_53f96e02
   ext_node_crypto_c7dfc512["node:crypto"] --> node_idempotency_f5d39a07_bce757f2
   ext_node_crypto_c7dfc512["node:crypto"] --> node_indexer_70fa78e5_97c1bb0b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_inventory_b11a85b2_efd25194
@@ -835,6 +836,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_packaged_skill_5e32c890_9228ad58
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_reviewer_coverage_251efee3_621cd543
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_steering_queue_4bc0cc94_58b6d2b9
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_workflow_contracts_33dc063c_2f80e314
   ext_node_fs_a15b7d96["node:fs"] --> node_validator_1_0c0621d8_0e5afcb6
   ext_node_fs_a15b7d96["node:fs"] --> node_validator_2_744853f5_98bb2caf
@@ -1139,6 +1141,7 @@ erDiagram
 ```mermaid
 flowchart TD
   subgraph Channels["Event channels / queues"]
+    validate_steering_queue_4bc0cc94{{"validate-steering-queue"}}
     ci_migrate_core_7005b5af{{"ci-migrate-core"}}
     context_health_80bb7da9{{"context-health"}}
     pilot_rollback_00c1f82c{{"pilot-rollback"}}
@@ -1168,10 +1171,9 @@ flowchart TD
     control_plane_core_db3b4cb2{{"control-plane-core"}}
     metrics_capture_core_db4bf7cf{{"metrics-capture-core"}}
     types_core_1_8bd0f8fd{{"types-core"}}
-    recovery_8c585378{{"recovery"}}
   end
   classDef eventNode fill:#db2777,color:#fff
-  class ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_args_2b3d4b28,runtime_card_artifacts_143b799c,runtime_card_options_c9156ad5,runtime_card_e06b53e1,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_2e194d13,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,judge_pm_audit_ccd20b35,types_8_f6283648,observed_skill_usage_ed7d5930,outcome_closeout_ba497ec2,client_948fe603,mutation_queue_ce5a530e,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,control_plane_core_db3b4cb2,metrics_capture_core_db4bf7cf,types_core_1_8bd0f8fd,recovery_8c585378 eventNode
+  class validate_steering_queue_4bc0cc94,ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_args_2b3d4b28,runtime_card_artifacts_143b799c,runtime_card_options_c9156ad5,runtime_card_e06b53e1,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_2e194d13,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,judge_pm_audit_ccd20b35,types_8_f6283648,observed_skill_usage_ed7d5930,outcome_closeout_ba497ec2,client_948fe603,mutation_queue_ce5a530e,scaffold_github_actions_pr_pipeline_renderer_1ee18de5,control_plane_core_db3b4cb2,metrics_capture_core_db4bf7cf,types_core_1_8bd0f8fd eventNode
 
 ```
 
@@ -1475,14 +1477,14 @@ flowchart TD
   Untrusted --> policy_1_fc4198db
   issue_key_305bf3db["issue-key"]
   Untrusted --> issue_key_305bf3db
+  hash_d04b98f4["hash"]
+  Untrusted --> hash_d04b98f4
   verify_work_1_cd8e7ec3["verify-work"]
   Untrusted --> verify_work_1_cd8e7ec3
   args_1_15220d9b["args"]
   Untrusted --> args_1_15220d9b
-  cli_args_14_3481043e["cli-args"]
-  Untrusted --> cli_args_14_3481043e
   classDef securityNode fill:#dc2626,color:#fff
-  class validate_audit_references_811f872a,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_ccd20b35,policy_823412d1,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,policy_coverage_dab8febe,policy_digest_ca7acf0a,policy_1_fc4198db,issue_key_305bf3db,verify_work_1_cd8e7ec3,args_1_15220d9b,cli_args_14_3481043e securityNode
+  class validate_audit_references_811f872a,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_ccd20b35,policy_823412d1,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,policy_coverage_dab8febe,policy_digest_ca7acf0a,policy_1_fc4198db,issue_key_305bf3db,hash_d04b98f4,verify_work_1_cd8e7ec3,args_1_15220d9b securityNode
 
 ```
 
@@ -1502,6 +1504,7 @@ sequenceDiagram
   participant index_9_32dd4d91 as index
   participant index_10_f6785a46 as index
   participant index_11_ffcd5842 as index
+  participant index_12_762ec91b as index
 
 ```
 

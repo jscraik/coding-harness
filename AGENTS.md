@@ -279,6 +279,15 @@ Notes:
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Steering-queue packet changes that add or alter `steering-queue/v1`,
+  deferred operator-steering state, instruction-source hashing, artifact
+  identity checks, supersession, stale-precondition classification, or
+  deterministic selected-item ordering are architecture-adjacent runtime
+  cockpit changes. Keep the deep module in `src/lib/steering-queue/`, keep
+  the packet advisory for orientation/audit evidence, and do not let it become
+  command authority, delivery-truth claim support, or merge-readiness proof
+  until a future runtime-card adapter intentionally wires that consumption
+  boundary and updates governance docs in the same PR.
 - Trust-boundary validator changes that add or alter script-backed evidence
   reports such as `audit-reference-report/v1` are architecture-adjacent
   agent-governance changes when they classify repository paths, git-tracked

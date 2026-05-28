@@ -1,6 +1,6 @@
 {
 	"schemaVersion": "runtime-packet-schemas-manifest/v1",
-	"generatedAt": "2026-05-27T08:10:00Z",
+	"generatedAt": "2026-05-28T09:50:00Z",
 	"packets": [
 		{
 			"schemaVersion": "evidence-receipt/v1",
@@ -103,6 +103,17 @@
 			"semanticValidatorPath": "scripts/validate-goal-completion-audit-receipt.cjs",
 			"ownerGap": "SPG-003",
 			"blockedBy": "PU-029 adds the pre-closeout audit receipt contract before production closeout wiring emits it."
+		},
+		{
+			"schemaVersion": "steering-queue/v1",
+			"schemaPath": "contracts/steering-queue.schema.json",
+			"examplePath": "contracts/examples/steering-queue.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-steering-queue.cjs",
+			"ownerGap": "SPG-004",
+			"blockedBy": "PU-030 adds the steering queue packet contract before runtime-card or continuation wiring projects it into agent cockpit state."
 		}
 	]
 }

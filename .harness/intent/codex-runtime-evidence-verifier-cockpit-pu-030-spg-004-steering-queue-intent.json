@@ -1,0 +1,127 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-030-spg-004-steering-queue",
+	"createdAt": "2026-05-28T09:40:00Z",
+	"headSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96",
+	"goal": "Add SteeringQueue/v1 as a deterministic runtime cockpit packet that records queued human steering, continuation prerequisites, stale-state checks, and applied/rejected outcomes before autonomous continuation relies on prior instructions.",
+	"lifecycleUnit": "PU-030-spg-004-steering-queue",
+	"ownedAcceptanceIds": ["SPG-004", "SA-011"],
+	"deepModuleBoundary": {
+		"primaryModule": "src/lib/steering-queue",
+		"allowedFiles": [
+			"src/lib/steering-queue/index.ts",
+			"src/lib/steering-queue/steering-queue.ts",
+			"src/lib/steering-queue/steering-queue.test.ts",
+			"contracts/steering-queue.schema.json",
+			"contracts/examples/steering-queue.example.json",
+			"contracts/runtime-packet-schemas.manifest.json",
+			"scripts/validate-steering-queue.cjs",
+			"src/dev/validate-runtime-packet-schemas-script.test.ts",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-030-spg-004-steering-queue-intent.json",
+			"artifacts/reviews/**"
+		],
+		"closeoutOnlyFiles": [
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+		],
+		"forbiddenFiles": [
+			"/Users/jamiecraik/dev/codex/**",
+			"public merge or release behavior",
+			"goal status mutation APIs",
+			"agent scheduler or background worker implementation",
+			"raw prompt transcripts, raw steering text, secrets, token values, or credential material",
+			"broad rewrite of runtime-card, delivery-truth, or pr-closeout command families"
+		]
+	},
+	"nonGoals": [
+		"Do not build the continuation runner, thread scheduler, or background queue executor in this slice.",
+		"Do not auto-apply queued steering; this packet classifies whether steering is eligible, stale, expired, rejected, superseded, or already applied.",
+		"Do not treat a steering queue item as claim-supporting delivery evidence.",
+		"Do not store raw user prompts, transcripts, secrets, or token values in the queue.",
+		"Do not mutate Codex source, Linear, GitHub, or external tracker state."
+	],
+	"implementationApproach": [
+		"Define SteeringQueue/v1 under a new deep module, src/lib/steering-queue, rather than embedding the contract inside delivery-truth or runtime-card.",
+		"Model each queue item with stable id, createdAt, expiresAt, sourceRef, instructionRef, instructionHash, instructionHashAlgorithm, instructionCanonicalizationVersion, instructionProvenanceKind, deliveryMode, expected thread/turn/head/artifact prerequisites, artifact identity refs, supersession refs, state, state timestamps, and stale precondition evidence.",
+		"Support explicit item states: pending, applicable, applied, rejected, expired, superseded, and stale.",
+		"Derive an item evaluation from current thread id, turn id, head SHA, artifact identity refs, instruction hash verification, and an explicit evaluator-supplied nowIso timestamp; do not accept caller-supplied eligibility as authoritative.",
+		"Classify stale preconditions for stale turn, stale head, instruction hash mismatch, instruction hash unverifiable, artifact identity mismatch, superseded artifact, expired queue, missing artifact, rejected steering, and already applied steering.",
+		"Define artifact prerequisites as immutable identities that include artifactRef, headSha, producedAt, and sha256 digest or receipt id; a same-path artifact with a different digest must evaluate as stale.",
+		"Use strict allowlist schemas with additionalProperties=false at every object level and bounded free-text fields, rather than relying only on sensitive-key denylists.",
+		"Define a deterministic item selection order for multiple eligible items in the same scope: supersession lineage first, explicit priority second, createdAt descending third, and id ascending as the final tie-breaker.",
+		"Expose a packet summary that counts pending, applicable, stale, expired, superseded, rejected, and applied items without embedding raw steering text.",
+		"Publish JSON Schema, example, manifest entry, TypeScript builder/evaluator, a narrow script-backed validator, and fixtures for applicable happy path, stale turn, stale head, instruction hash mismatch, hash unverifiable, same-path artifact digest mismatch, superseded artifact, expired queue, duplicate item id, rejected steering, applied steering, and conflict-precedence ordering.",
+		"Keep the packet as orientation and audit-trail evidence only; later runtime-card or continuation wiring may reference it but this slice does not give it execution authority."
+	],
+	"implementationInvariants": [
+		"SteeringQueue/v1 must be additive and not change existing runtime-card, delivery-truth, pr-closeout, or harness next behavior.",
+		"Instruction identity verification uses sha256 over canonical UTF-8 LF-normalized instruction-source bytes when the source is locally available; when the source cannot be read or recomputed, the item must classify as stale with instruction_hash_unverifiable rather than applicable.",
+		"Allowed instructionProvenanceKind values must be bounded to durable artifact classes such as harness_artifact, runtime_card, review_artifact, goal_artifact, or external_snapshot_ref; free-form conversational memory is not a trusted provenance source.",
+		"Queue items cannot be applicable when expected thread id, turn id, head SHA, or required artifact refs do not match the current evaluation context.",
+		"Queue items cannot be applicable when required artifact identity refs are missing, digest/head/producedAt values differ, or a required artifact has been superseded.",
+		"Expired items cannot be applicable, even if all other prerequisites match.",
+		"Rejected and applied items cannot be re-applied by eligibility evaluation.",
+		"Superseded items cannot be applicable when their supersededBy reference is present or a required artifact has been superseded.",
+		"Applied items must include appliedAt and must not include unresolved stale preconditions.",
+		"Rejected items must include rejectedAt and a non-empty stateReason.",
+		"Terminal states are immutable for eligibility: applied, rejected, expired, superseded, and stale cannot transition back to pending or applicable in the same packet.",
+		"State timestamps must be monotonic: createdAt <= staleAt/rejectedAt/appliedAt/supersededAt/expiredAt when those timestamps are present, and expiresAt must be later than createdAt.",
+		"Conflicting terminal signals collapse deterministically by precedence: rejected > applied > superseded > expired > stale > applicable > pending; the evaluator must report the lower-precedence conflicting signals as stalePreconditions.",
+		"When multiple items are applicable for the same continuation scope, selectedItemId must be deterministic using supersession lineage, explicit priority, createdAt descending, and id ascending tie-breaking.",
+		"Item ids, refs, and hashes must be non-empty safe strings; ids must be unique within the packet.",
+		"The schema and semantic validator must reject raw prompt, transcript, secret, token, credential, and rawSteering fields at every object level.",
+		"Agent discoverability is a follow-on wiring requirement: this slice must publish the packet and validator contract in the runtime-packet manifest, but it must not claim runtime-card or harness next discoverability until a later slice projects queue summaries into those surfaces."
+	],
+	"riskControls": [
+		"Keep steering content indirect through instructionRef and instructionHash so the packet can prove identity without copying sensitive text.",
+		"Bind continuation eligibility to thread, turn, head SHA, artifact identities, verified instruction hash, and expiry instead of conversational memory.",
+		"Separate queue orientation from claim support so stale steering cannot make delivery claims pass.",
+		"Use an evaluator-supplied nowIso timestamp for expiry classification so tests and agents can reproduce verdicts exactly.",
+		"Use deterministic fixtures for each stale-state class before exposing the packet to runtime-card or continuation workflows.",
+		"Keep the validator script read-only and artifact-local; it must validate a JSON packet and exit non-zero on schema or semantic failures."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-030-spg-004-steering-queue-intent.json >/dev/null",
+		"pnpm vitest run src/lib/steering-queue/steering-queue.test.ts src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"node scripts/validate-steering-queue.cjs contracts/examples/steering-queue.example.json",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm exec biome check src/lib/steering-queue/index.ts src/lib/steering-queue/steering-queue.ts src/lib/steering-queue/steering-queue.test.ts contracts/steering-queue.schema.json contracts/examples/steering-queue.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-steering-queue.cjs src/dev/validate-runtime-packet-schemas-script.test.ts",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-030-spg-004-steering-queue-intent.json src/lib/steering-queue/index.ts src/lib/steering-queue/steering-queue.ts src/lib/steering-queue/steering-queue.test.ts contracts/steering-queue.schema.json contracts/examples/steering-queue.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-steering-queue.cjs src/dev/validate-runtime-packet-schemas-script.test.ts docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-030-spg-004-steering-queue-intent-adversarial-reviewer.md artifacts/reviews/pu-030-spg-004-steering-queue-intent-agent-native-reviewer.md artifacts/reviews/pu-030-spg-004-steering-queue-intent-best-practices-researcher.md"
+	],
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/research/evidence-patterns.json",
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+		".harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+	],
+	"reviewStatus": {
+		"status": "intent_created_pending_review",
+		"requiredBeforeImplementation": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"requiredBeforeDone": [
+			"improve-codebase-architecture",
+			"simplify",
+			"unslopify",
+			"he-code-review",
+			"testing",
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		]
+	},
+	"rollback": [
+		"Remove SteeringQueue schema/example/manifest entry.",
+		"Remove src/lib/steering-queue module and tests.",
+		"Remove scripts/validate-steering-queue.cjs.",
+		"Remove generated local review artifacts for PU-030 if they are not promoted.",
+		"Revert goal-board state and receipt entries for PU-030 if the slice is abandoned before commit."
+	]
+}

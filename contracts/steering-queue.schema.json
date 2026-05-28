@@ -1,0 +1,235 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://jscraik.github.io/coding-harness/contracts/steering-queue.schema.json",
+	"title": "SteeringQueue",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"producer",
+		"runtimeStatus",
+		"evidenceUse",
+		"headSha",
+		"threadId",
+		"turnId",
+		"evaluatedAt",
+		"selectedItemId",
+		"items",
+		"summary",
+		"blockedBy"
+	],
+	"properties": {
+		"schemaVersion": { "const": "steering-queue/v1" },
+		"generatedAt": { "$ref": "#/$defs/isoTimestamp" },
+		"producer": { "$ref": "#/$defs/safePointer" },
+		"runtimeStatus": { "const": "not_yet_emitted" },
+		"evidenceUse": { "enum": ["orientation", "audit_trail"] },
+		"headSha": { "$ref": "#/$defs/headSha" },
+		"threadId": { "$ref": "#/$defs/nullableSafePointer" },
+		"turnId": { "$ref": "#/$defs/nullableSafePointer" },
+		"evaluatedAt": { "$ref": "#/$defs/isoTimestamp" },
+		"selectedItemId": { "$ref": "#/$defs/nullableSafePointer" },
+		"items": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/item" }
+		},
+		"summary": { "$ref": "#/$defs/summary" },
+		"blockedBy": { "$ref": "#/$defs/safePointer" }
+	},
+	"$defs": {
+		"safePointer": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512,
+			"pattern": "^[A-Za-z0-9#][A-Za-z0-9._:/#@+-]{0,511}$"
+		},
+		"nullableSafePointer": {
+			"anyOf": [{ "type": "null" }, { "$ref": "#/$defs/safePointer" }]
+		},
+		"isoTimestamp": {
+			"type": "string",
+			"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+		},
+		"headSha": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{7,64}$"
+		},
+		"sha256": {
+			"type": "string",
+			"pattern": "^sha256:[a-f0-9]{64}$"
+		},
+		"nullableSha256": {
+			"anyOf": [{ "type": "null" }, { "$ref": "#/$defs/sha256" }]
+		},
+		"artifact": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"artifactRef",
+				"headSha",
+				"producedAt",
+				"sha256",
+				"receiptId"
+			],
+			"properties": {
+				"artifactRef": { "$ref": "#/$defs/safePointer" },
+				"headSha": { "$ref": "#/$defs/headSha" },
+				"producedAt": { "$ref": "#/$defs/isoTimestamp" },
+				"sha256": { "$ref": "#/$defs/nullableSha256" },
+				"receiptId": { "$ref": "#/$defs/nullableSafePointer" }
+			}
+		},
+		"stalePrecondition": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "expected", "actual", "evidenceRef"],
+			"properties": {
+				"kind": {
+					"enum": [
+						"stale_turn",
+						"stale_thread",
+						"stale_head",
+						"instruction_hash_mismatch",
+						"instruction_hash_unverifiable",
+						"artifact_identity_mismatch",
+						"superseded_artifact",
+						"expired_queue",
+						"missing_artifact",
+						"rejected_steering",
+						"already_applied",
+						"terminal_conflict"
+					]
+				},
+				"expected": { "$ref": "#/$defs/safePointer" },
+				"actual": { "$ref": "#/$defs/safePointer" },
+				"evidenceRef": { "$ref": "#/$defs/safePointer" }
+			}
+		},
+		"item": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"id",
+				"scopeRef",
+				"createdAt",
+				"expiresAt",
+				"sourceRef",
+				"instructionRef",
+				"instructionHash",
+				"instructionHashAlgorithm",
+				"instructionCanonicalizationVersion",
+				"instructionProvenanceKind",
+				"deliveryMode",
+				"expectedThreadId",
+				"expectedTurnId",
+				"expectedHeadSha",
+				"priority",
+				"requiredArtifacts",
+				"supersedes",
+				"supersededBy",
+				"state",
+				"stateReason",
+				"stateAt",
+				"appliedAt",
+				"rejectedAt",
+				"supersededAt",
+				"stalePreconditions"
+			],
+			"properties": {
+				"id": { "$ref": "#/$defs/safePointer" },
+				"scopeRef": { "$ref": "#/$defs/safePointer" },
+				"createdAt": { "$ref": "#/$defs/isoTimestamp" },
+				"expiresAt": { "$ref": "#/$defs/isoTimestamp" },
+				"sourceRef": { "$ref": "#/$defs/safePointer" },
+				"instructionRef": { "$ref": "#/$defs/safePointer" },
+				"instructionHash": { "$ref": "#/$defs/sha256" },
+				"instructionHashAlgorithm": { "const": "sha256" },
+				"instructionCanonicalizationVersion": {
+					"const": "steering-instruction-text-lf/v1"
+				},
+				"instructionProvenanceKind": {
+					"enum": [
+						"harness_artifact",
+						"runtime_card",
+						"review_artifact",
+						"goal_artifact",
+						"external_snapshot_ref"
+					]
+				},
+				"deliveryMode": {
+					"enum": [
+						"next_turn",
+						"same_thread_continuation",
+						"pr_triage_followup",
+						"manual_resume",
+						"unknown"
+					]
+				},
+				"expectedThreadId": { "$ref": "#/$defs/nullableSafePointer" },
+				"expectedTurnId": { "$ref": "#/$defs/nullableSafePointer" },
+				"expectedHeadSha": { "$ref": "#/$defs/headSha" },
+				"priority": { "type": "integer" },
+				"requiredArtifacts": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/artifact" }
+				},
+				"supersedes": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/safePointer" }
+				},
+				"supersededBy": { "$ref": "#/$defs/nullableSafePointer" },
+				"state": {
+					"enum": [
+						"pending",
+						"applicable",
+						"applied",
+						"rejected",
+						"expired",
+						"superseded",
+						"stale"
+					]
+				},
+				"stateReason": { "$ref": "#/$defs/nullableSafePointer" },
+				"stateAt": { "$ref": "#/$defs/isoTimestamp" },
+				"appliedAt": {
+					"anyOf": [{ "type": "null" }, { "$ref": "#/$defs/isoTimestamp" }]
+				},
+				"rejectedAt": {
+					"anyOf": [{ "type": "null" }, { "$ref": "#/$defs/isoTimestamp" }]
+				},
+				"supersededAt": {
+					"anyOf": [{ "type": "null" }, { "$ref": "#/$defs/isoTimestamp" }]
+				},
+				"stalePreconditions": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/stalePrecondition" }
+				}
+			}
+		},
+		"summary": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"total",
+				"pending",
+				"applicable",
+				"applied",
+				"rejected",
+				"expired",
+				"superseded",
+				"stale"
+			],
+			"properties": {
+				"total": { "type": "integer", "minimum": 0 },
+				"pending": { "type": "integer", "minimum": 0 },
+				"applicable": { "type": "integer", "minimum": 0 },
+				"applied": { "type": "integer", "minimum": 0 },
+				"rejected": { "type": "integer", "minimum": 0 },
+				"expired": { "type": "integer", "minimum": 0 },
+				"superseded": { "type": "integer", "minimum": 0 },
+				"stale": { "type": "integer", "minimum": 0 }
+			}
+		}
+	}
+}

@@ -190,6 +190,16 @@ source completeness, TTL-derived staleness, head-SHA binding, and claim-support
 eligibility handled by validators before delivery-truth composition consumes
 those packets.
 
+Steering-queue packet changes are continuation-recovery cockpit work, not a new
+agent execution rail. Keep `steering-queue/v1` inside
+`src/lib/steering-queue/` as an advisory packet for deferred operator
+steering, with instruction-source hashing, artifact identity, supersession,
+stale-precondition classification, deterministic selected-item rules, and a
+script-backed semantic validator. The packet may support orientation and audit
+trails, but it must not authorize commands, satisfy delivery-truth claims, or
+prove merge readiness until a later runtime-card integration explicitly defines
+that consumption boundary.
+
 Trust-boundary validator changes that add script-backed evidence reports, such
 as `audit-reference-report/v1`, are architecture-adjacent when they classify
 repository paths, git-tracked proof, or stale artifacts. Refresh

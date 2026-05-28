@@ -142,6 +142,16 @@ not in docs, templates, generated context, or command facades.
 - src/lib/external-state/: live PR/CI/review/tracker snapshot packets,
   freshness/TTL/head-SHA validation, stale-state classification, and
   claim-support eligibility.
+- src/lib/steering-queue/: deferred operator-steering packets for
+  continuation recovery and audit/orientation evidence. It keeps
+  `steering-queue.ts` as a compatibility facade over typed contracts, builder,
+  hash, constants, and semantic-validation modules. It owns steering-queue/v1
+  item state, instruction-source hashing, artifact identity checks,
+  supersession, stale-precondition classification, single-scope packet
+  validation, deterministic selection order, and semantic validation while
+  keeping queued steering out of execution authority, closeout proof, and
+  merge-readiness claim support until a future runtime-card adapter explicitly
+  consumes it.
 - src/lib/decision-request/: read-only governance request packet emission for
   human or operator escalation. It owns intent, authority, option grammar,
   evidence references, escalation metadata, expiry/freshness normalization, and
