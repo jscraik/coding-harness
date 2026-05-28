@@ -18,6 +18,7 @@ const VALID_BODY = `## Summary
 - AI session / traceability: codex-session-019c-example supports the validator and PR-template-gate implementation changes.
 - Completed work: Added pr-template-gate command and docs update with evidence refs.
 - Affected surfaces: code, tests, and PR template.
+- Documentation impact: PR template and validator fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves PR body validation.
 - Expected outcome alignment: Keeps PR evidence portable and machine-checkable for greenfield and brownfield repos.
 - Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.
 - Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).
