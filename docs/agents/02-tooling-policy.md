@@ -463,6 +463,18 @@ Projects using coding-harness should adopt similar security-conscious defaults.
 
 Harness-managed repos should also keep `.harness/ci-provider-transition-status.json` under source control. Use `harness upgrade --dry-run` for routine upgrade planning; if the transition artifact is missing and must be re-scaffolded, `harness init --update` writes the baseline file with `nextGateComplete=false`. Teams must explicitly update that artifact when a CI cutover is approved before running strict `harness ci-migrate verify`.
 
+## Action review governance
+
+When working with high-risk action governance:
+
+- **Action-review-receipt/v1** is a narrow guardian-style receipt contract for merge, release, destructive cleanup, and external tracker mutation action reviews
+- **High-risk action envelopes** require current evidence refs and head SHA where the action touches repository or PR state
+- **Reviewer independence requirement**: reviewer must not be the same as requester/producer
+- **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not just display alias)
+- **Decision semantics**: allow, block, mismatch, unknown, not_applicable; `not_applicable` is forbidden for high-risk action kinds
+- **Docs-gate requirement**: companion documentation surfaces must be updated in the same PR as any action-review governance change
+- **Diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
+
 ## Project-type auto-detection
 
 `harness init` automatically detects the project type from filesystem signals and persists it into `harness.contract.json` as `projectType`. Detection is pure and read-only.

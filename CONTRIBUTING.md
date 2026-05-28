@@ -247,6 +247,17 @@ If a required review artifact is missing, block merge until it is added or expli
   - ❌ expanded token values
 - If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
 
+## Action review governance
+
+This repository uses `action-review-receipt/v1` as a narrow guardian-style receipt contract for high-risk actions. When making changes to action-review governance:
+
+- **High-risk action envelopes** (merge, release, destructive cleanup, external tracker mutation) must require current evidence refs and head SHA where the action touches repository or PR state
+- **Reviewer independence**: reviewer identity must not match the requested actor or producer identity (no self-approval)
+- **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not just display alias differences)
+- **Decision semantics**: allow, block, mismatch, unknown, not_applicable; `not_applicable` is forbidden for high-risk action kinds
+- **Docs-gate requirement**: these companion documentation surfaces must be updated in the same PR as any action-review governance change
+- **Architecture diagrams**: reference `AI/context/diagram-context.md` for required diagrams
+
 ## Branch protection recommendation
 
 Configure GitHub branch protection (or rulesets) on `main`:

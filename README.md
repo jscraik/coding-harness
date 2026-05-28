@@ -917,6 +917,17 @@ Repository-local skills follow the same convention:
 This repository uses **Linear-first** intake. Create or update work in the
 [coding-harness project](https://linear.app/jscraik/project/coding-harness-bb735dbbda79).
 
+## Action Review Governance
+
+This repository uses `action-review-receipt/v1` as a narrow guardian-style receipt contract for high-risk actions:
+
+- **High-risk actions**: merge, release, destructive cleanup, and external tracker mutation envelopes require current evidence refs and head SHA
+- **Reviewer independence**: reviewer must not be the same as the requester/producer
+- **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ
+- **Decision semantics**: allow, block, mismatch, unknown, and not_applicable; `not_applicable` is forbidden for high-risk action kinds
+- **Docs-gate requirement**: companion documentation surfaces (README, CONTRIBUTING, AGENTS, agent docs) must be updated in the same PR as any action-review governance change
+- **Diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
+
 ## Trust Artifacts
 
 Reference outputs for the main trust surfaces are in

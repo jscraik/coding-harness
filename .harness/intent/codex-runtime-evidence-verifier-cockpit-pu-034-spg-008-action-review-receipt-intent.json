@@ -66,6 +66,7 @@
 		"pnpm exec biome check .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-034-spg-008-action-review-receipt-intent.json src/lib/action-review contracts/action-review-receipt.schema.json contracts/examples/action-review-receipt.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-action-review-receipt.cjs src/dev/validate-runtime-packet-schemas-script.test.ts",
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
 		"bash scripts/validate-codestyle.sh --fast",
+		"bash scripts/verify-work.sh --fast",
 		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-034-spg-008-action-review-receipt-intent.json src/lib/action-review contracts/action-review-receipt.schema.json contracts/examples/action-review-receipt.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-action-review-receipt.cjs src/dev/validate-runtime-packet-schemas-script.test.ts docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-034-spg-008-action-review-receipt-*.md"
 	],
 	"reviewPlan": {

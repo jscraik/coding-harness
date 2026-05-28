@@ -227,6 +227,22 @@ Port-free usage should remain scoped to app-style run actions that map to `dev`/
 - Update `last_validated` when validation wrappers, required checks, or policy contracts change and this document is re-checked.
 - Keep `last_validated` aligned with any in-body freshness marker (for example `Last updated:`) so document evidence is not contradictory.
 
+## Action review governance
+
+This repository uses `action-review-receipt/v1` as a narrow guardian-style receipt contract for high-risk actions:
+
+- **Packet type**: `action-review-receipt/v1` is a review artifact, not an executor, approval token, or delivery-truth proof
+- **High-risk action envelopes**: merge, release, destructive cleanup, and external tracker mutation require current evidence refs and head SHA
+- **Reviewer independence**: reviewer must not be the same as requester/producer (no self-approval)
+- **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not only by display alias or shared runtime/source identity ref)
+- **Decision semantics**: allow, block, mismatch, unknown, not_applicable
+  - `allow` verdicts require current supporting evidence, non-expired review time, independent reviewer identity, differing canonical identity refs, and no unresolved blockers
+  - `block` and `unknown` verdicts must carry blocker classes and next action text
+  - `mismatch` verdicts must require expected and actual action envelopes plus explicit mismatch reason
+  - `not_applicable` is forbidden for merge, release, destructive cleanup, and external tracker mutation envelopes
+- **Docs-gate requirement**: these companion documentation surfaces must be updated in the same PR as any action-review governance change
+- **Reference diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
+
 ## Plan traceability
 
 - Pull requests must declare `Plan IDs` in the PR template `## Work performed` ledger.
