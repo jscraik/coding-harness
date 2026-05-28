@@ -227,6 +227,18 @@ Orientation or audit-trail artifacts may be stale or blocked, but they must not
 prove delivery-truth, review-state, external-state, root-hygiene, merge
 readiness, or Judge/PM readiness without current typed claim refs.
 
+Prompt-context drift report changes are agent-readiness cockpit work, not a
+new delivery-truth rail. Keep `prompt-context-drift-report/v1` inside
+`src/lib/prompt-context-drift/` as the pointer-only integrity report for
+prompt-context receipts, active artifacts/routes, Project Brain memory and
+knowledge refs, runtime-card or handoff evidence, and receipt head-SHA checks.
+Validators must prove repo-contained source refs, SHA-256 integrity, symlink
+and realpath containment, current head binding, closed enum values, stale-state
+classification, and raw/secret leakage rejection. `agent-readiness` may consume
+the report as an advisory `prompt_context_drift` context surface, but it must
+not authorize commands, satisfy delivery-truth claims, close JSC-363
+acceptance criteria, or prove merge readiness.
+
 Steering-queue packet changes are continuation-recovery cockpit work, not a new
 agent execution rail. Keep `steering-queue/v1` inside
 `src/lib/steering-queue/` as an advisory packet for deferred operator

@@ -20,6 +20,7 @@ const VALID_PARITY_VALIDATORS = new Set([
 	"delivery-truth",
 	"decision-request",
 	"session-context",
+	"prompt-context-drift-report",
 	"none",
 ]);
 const SUPPORTED_SCHEMA_KEYWORDS = new Set([

@@ -1,0 +1,181 @@
+{
+	"schemaVersion": "prompt-context-drift-report/v1",
+	"generatedAt": "2026-05-28T17:20:00Z",
+	"producer": "harness:prompt-context-drift",
+	"repoRootRef": "repo:.",
+	"currentHeadSha": "1111111111111111111111111111111111111111",
+	"evidenceUse": "claim_support",
+	"overallStatus": "pass",
+	"surfaces": [
+		{
+			"surfaceId": "prompt_context",
+			"status": "pass",
+			"evidenceUse": "claim_support",
+			"freshness": "current",
+			"requiredForClaimSupport": true,
+			"observedHeadSha": "1111111111111111111111111111111111111111",
+			"currentHeadSha": "1111111111111111111111111111111111111111",
+			"sourceRefs": [
+				{
+					"refId": "prompt-context-fixture",
+					"surfaceId": "prompt_context",
+					"refKind": "repo_file",
+					"ref": "contracts/fixtures/prompt-context-drift/prompt-context.json",
+					"hashAlgorithm": "sha256",
+					"sha256": "9b7ec8b4bbb3ac40ec9df6f631e377152fb0b95d9786aaa3d373f42a00be6891",
+					"freshness": "current",
+					"evidenceUse": "claim_support",
+					"requiredForClaimSupport": true,
+					"requiresFilesystemExistence": true
+				}
+			],
+			"blockers": []
+		},
+		{
+			"surfaceId": "active_artifacts",
+			"status": "pass",
+			"evidenceUse": "claim_support",
+			"freshness": "current",
+			"requiredForClaimSupport": true,
+			"observedHeadSha": "1111111111111111111111111111111111111111",
+			"currentHeadSha": "1111111111111111111111111111111111111111",
+			"sourceRefs": [
+				{
+					"refId": "active-artifacts-fixture",
+					"surfaceId": "active_artifacts",
+					"refKind": "repo_file",
+					"ref": "contracts/fixtures/prompt-context-drift/active-artifacts.md",
+					"hashAlgorithm": "sha256",
+					"sha256": "75fe04c9f42bd192d2b89b5f6a6f84a8cffd2160c6d4196b75a960b2cd33bd19",
+					"freshness": "current",
+					"evidenceUse": "claim_support",
+					"requiredForClaimSupport": true,
+					"requiresFilesystemExistence": true
+				}
+			],
+			"blockers": []
+		},
+		{
+			"surfaceId": "active_route",
+			"status": "pass",
+			"evidenceUse": "claim_support",
+			"freshness": "current",
+			"requiredForClaimSupport": true,
+			"observedHeadSha": "1111111111111111111111111111111111111111",
+			"currentHeadSha": "1111111111111111111111111111111111111111",
+			"sourceRefs": [
+				{
+					"refId": "active-route-fixture",
+					"surfaceId": "active_route",
+					"refKind": "repo_file",
+					"ref": "contracts/fixtures/prompt-context-drift/active-artifacts.md",
+					"hashAlgorithm": "sha256",
+					"sha256": "75fe04c9f42bd192d2b89b5f6a6f84a8cffd2160c6d4196b75a960b2cd33bd19",
+					"freshness": "current",
+					"evidenceUse": "claim_support",
+					"requiredForClaimSupport": true,
+					"requiresFilesystemExistence": true
+				}
+			],
+			"blockers": []
+		},
+		{
+			"surfaceId": "project_brain_memory",
+			"status": "pass",
+			"evidenceUse": "claim_support",
+			"freshness": "current",
+			"requiredForClaimSupport": true,
+			"observedHeadSha": "1111111111111111111111111111111111111111",
+			"currentHeadSha": "1111111111111111111111111111111111111111",
+			"sourceRefs": [
+				{
+					"refId": "project-brain-memory-fixture",
+					"surfaceId": "project_brain_memory",
+					"refKind": "repo_file",
+					"ref": "contracts/fixtures/prompt-context-drift/project-brain-memory.md",
+					"hashAlgorithm": "sha256",
+					"sha256": "1f0370fe3fd4bd0141b2f5f9aa0a3edfdfdb3c8ad7348455e3b9628da801bad7",
+					"freshness": "current",
+					"evidenceUse": "claim_support",
+					"requiredForClaimSupport": true,
+					"requiresFilesystemExistence": true
+				}
+			],
+			"blockers": []
+		},
+		{
+			"surfaceId": "project_brain_knowledge",
+			"status": "pass",
+			"evidenceUse": "claim_support",
+			"freshness": "current",
+			"requiredForClaimSupport": true,
+			"observedHeadSha": "1111111111111111111111111111111111111111",
+			"currentHeadSha": "1111111111111111111111111111111111111111",
+			"sourceRefs": [
+				{
+					"refId": "project-brain-knowledge-fixture",
+					"surfaceId": "project_brain_knowledge",
+					"refKind": "repo_file",
+					"ref": "contracts/fixtures/prompt-context-drift/project-brain-knowledge.md",
+					"hashAlgorithm": "sha256",
+					"sha256": "634f592ae727bbccdf63f4928809aa3c16603032e1eacaa691e3c112d76df9a8",
+					"freshness": "current",
+					"evidenceUse": "claim_support",
+					"requiredForClaimSupport": true,
+					"requiresFilesystemExistence": true
+				}
+			],
+			"blockers": []
+		},
+		{
+			"surfaceId": "runtime_card_or_handoff",
+			"status": "pass",
+			"evidenceUse": "claim_support",
+			"freshness": "current",
+			"requiredForClaimSupport": true,
+			"observedHeadSha": "1111111111111111111111111111111111111111",
+			"currentHeadSha": "1111111111111111111111111111111111111111",
+			"sourceRefs": [
+				{
+					"refId": "runtime-card-fixture",
+					"surfaceId": "runtime_card_or_handoff",
+					"refKind": "repo_file",
+					"ref": "contracts/fixtures/prompt-context-drift/runtime-card.json",
+					"hashAlgorithm": "sha256",
+					"sha256": "dcabffe6f7b846e17295877acaaef57c1b9163e939d6af92893011954add327d",
+					"freshness": "current",
+					"evidenceUse": "claim_support",
+					"requiredForClaimSupport": true,
+					"requiresFilesystemExistence": true
+				}
+			],
+			"blockers": []
+		},
+		{
+			"surfaceId": "receipt_head_sha",
+			"status": "pass",
+			"evidenceUse": "claim_support",
+			"freshness": "current",
+			"requiredForClaimSupport": true,
+			"observedHeadSha": "1111111111111111111111111111111111111111",
+			"currentHeadSha": "1111111111111111111111111111111111111111",
+			"sourceRefs": [
+				{
+					"refId": "receipt-head-fixture",
+					"surfaceId": "receipt_head_sha",
+					"refKind": "repo_file",
+					"ref": "contracts/fixtures/prompt-context-drift/receipt-head.jsonl",
+					"hashAlgorithm": "sha256",
+					"sha256": "f2ec8652497cf637c2c1a058450f0be652b4ba24a955eef993a7164059b328e1",
+					"freshness": "current",
+					"evidenceUse": "claim_support",
+					"requiredForClaimSupport": true,
+					"requiresFilesystemExistence": true
+				}
+			],
+			"blockers": []
+		}
+	],
+	"blockers": [],
+	"nextAction": "none"
+}

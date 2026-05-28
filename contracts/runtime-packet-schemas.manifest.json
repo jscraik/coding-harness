@@ -169,6 +169,16 @@
 			"semanticValidatorPath": "scripts/validate-replay-packet.cjs",
 			"ownerGap": "SPG-010",
 			"blockedBy": "PU-036 adds the ReplayPacket contract before production replay, hook, or runtime evidence producers emit replayable packet artifacts."
+		},
+		{
+			"schemaVersion": "prompt-context-drift-report/v1",
+			"schemaPath": "contracts/prompt-context-drift-report.schema.json",
+			"examplePath": "contracts/examples/prompt-context-drift-report.example.json",
+			"typeSourcePath": "src/lib/prompt-context-drift/prompt-context-drift-report.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "prompt-context-drift-report",
+			"semanticValidatorPath": "scripts/validate-prompt-context-drift.cjs",
+			"ownerGap": "SPG-011"
 		}
 	]
 }

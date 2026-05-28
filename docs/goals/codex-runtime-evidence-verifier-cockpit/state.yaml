@@ -64,6 +64,27 @@ completion_contract:
     - "Do not approach cleanup or closeout until docs-expert and agents-md accuracy checks are complete when relevant."
   iteration_policy: "Scout first, then bounded Worker slices with reviewed intent, deterministic validation, reviewer artifacts, atomic commits, GitHub PRs, pr-green-sweep triage, and append-only receipts. Continue to the next safe slice while PR triage runs only when dependency and branch state permit. PR triage must run either remote-only or in an isolated worktree created for the PR head; it must not share the coordinator checkout after the coordinator is allowed to switch branches for the next slice."
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
+current_slice_gate:
+  lifecycle_unit: "PU-037-spg-011-prompt-context-drift-validator"
+  status: "local_validation_passed_pr_handoff_pending"
+  reason: "The PU-037 intent was patched from adversarial and agent-native findings, re-reviewed, reconciled to implementation, and validated with focused tests, schema/script checks, docs-gate, diagram freshness, validate-codestyle fast, verify-work fast, and env-backed test:deep."
+  completed_before_local_validation_claim:
+    - "Patched the PU-037 intent to require Project Brain stale/missing/unhashed negative fixtures."
+    - "Patched the PU-037 intent to require runtime-card advisory-only, stale, head-mismatch, and unhashed negative fixtures."
+    - "Patched the PU-037 intent so each required local surface needs at least one repo-contained, hash-verified ref; external or unverifiable refs cannot satisfy local coverage."
+    - "Patched the PU-037 intent to require canonicalized realpath-under-repo containment and symlink-escape negative fixtures."
+    - "Patched the PU-037 intent to pin agent-readable enum fields: overallStatus, per-surface status, blockerClass, and nextAction."
+    - "Patched the PU-037 intent to name the machine-readable agent consumption boundary as the advisory agent-readiness contextHealth projection."
+    - "Reran adversarial-reviewer and agent-native-reviewer intent reviews and verified their artifacts are non-empty."
+  next_required_handoff_steps:
+    - "Commit and push the PU-037 branch."
+    - "Open a PR against the current JSC-363 stack base."
+    - "Launch PR triage in a separate subagent with git fetch and env-backed CircleCI/GitHub checks."
+    - "Keep PR checks, reviewDecision, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate unclaimed truth lanes until verified."
+  blocked_done_claims:
+    - "PU-037 PR-ready"
+    - "Judge/PM-ready"
+    - "goal completion"
 slice_review_contract:
   effective_receipt_id: "R064"
   scope: "future_slices_and_final_closeout_backfill"
