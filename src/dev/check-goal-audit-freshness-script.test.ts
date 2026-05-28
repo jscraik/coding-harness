@@ -138,6 +138,24 @@ describe("check-goal-audit-freshness.py", () => {
 		expect(result.stdout).toContain('"receipt_id": "R072"');
 	});
 
+	it("accepts uppercase hex commit SHAs as the same current head", () => {
+		const root = createTempRoot("audit-freshness-uppercase-head-");
+		const headSha = tempRootHeads.get(root);
+		if (!headSha) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const storedReceipt = receipt(root);
+		storedReceipt.head_sha = headSha.toUpperCase();
+		const [storedSource] = storedReceipt.audit_sources_checked;
+		if (!storedSource) throw new Error("missing generated audit source");
+		storedSource.head_sha = headSha.toUpperCase();
+		writeReceipts(root, [storedReceipt]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({ head_sha: headSha });
+	});
+
 	it("fails when the current audit content no longer matches the latest relevant receipt hash", () => {
 		const root = createTempRoot("audit-freshness-stale-hash-");
 		writeAudit(root, "updated audit content", new Date("2026-05-27T01:00:00Z"));

@@ -170,6 +170,7 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
     current_sha256 = sha256_file(audit_file)
     audit_mtime = datetime.fromtimestamp(audit_file.stat().st_mtime, tz=UTC)
     receipt, source = latest_audit_source(receipts, audit_path)
+    current_head_normalized = current_head.lower()
 
     missing_fields = [field for field in REQUIRED_SOURCE_FIELDS if field not in source]
     if missing_fields:
@@ -180,13 +181,15 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
     receipt_id = require_string(receipt.get("id"), "receipt.id")
     receipt_head_sha = require_string(receipt.get("head_sha"), "receipt.head_sha")
     require_reachable_head(repo_root, receipt_head_sha, "receipt.head_sha")
-    if receipt_head_sha != current_head:
+    receipt_head_sha_normalized = receipt_head_sha.lower()
+    if receipt_head_sha_normalized != current_head_normalized:
         raise ValidationError(f"receipt.head_sha must match current repository HEAD: receipt={receipt_head_sha} current={current_head}")
     source_head_sha = require_string(source.get("head_sha"), "audit_sources_checked[].head_sha")
     require_reachable_head(repo_root, source_head_sha, "audit_sources_checked[].head_sha")
-    if source_head_sha != current_head:
+    source_head_sha_normalized = source_head_sha.lower()
+    if source_head_sha_normalized != current_head_normalized:
         raise ValidationError(f"audit_sources_checked[].head_sha must match current repository HEAD: source={source_head_sha} current={current_head}")
-    if source_head_sha != receipt_head_sha:
+    if source_head_sha_normalized != receipt_head_sha_normalized:
         raise ValidationError("audit_sources_checked[].head_sha must match receipt.head_sha")
 
     source_sha256 = require_string(source.get("sha256"), "audit_sources_checked[].sha256").lower()
@@ -210,16 +213,17 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
         "audit_mtime": audit_mtime.isoformat().replace("+00:00", "Z"),
         "checked_at": checked_at.isoformat().replace("+00:00", "Z"),
         "receipt_id": receipt_id,
-        "head_sha": receipt_head_sha,
+        "head_sha": receipt_head_sha_normalized,
     }
 
 
 def require_reachable_head(repo_root: Path, head_sha: str, field: str) -> None:
     if len(head_sha) != 40 or any(character not in "0123456789abcdef" for character in head_sha.lower()):
         raise ValidationError(f"{field} must be a 40-character git commit SHA")
+    normalized_head_sha = head_sha.lower()
     try:
         completed = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", head_sha, "HEAD"],
+            ["git", "merge-base", "--is-ancestor", normalized_head_sha, "HEAD"],
             cwd=repo_root,
             check=False,
             stdout=subprocess.PIPE,
