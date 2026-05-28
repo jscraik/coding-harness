@@ -318,6 +318,42 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		);
 	});
 
+	it("rejects date-time examples without an RFC3339 timezone", () => {
+		const root = createTempRoot("runtime-packet-schema-date-time-");
+		const badExample = readJson(
+			"contracts/examples/action-review-receipt.example.json",
+		) as Record<string, unknown>;
+		badExample.generatedAt = "2026-05-27";
+		const badExamplePath = join(
+			root,
+			"action-review-date-only-generated-at.json",
+		);
+		writeFileSync(badExamplePath, JSON.stringify(badExample, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"action-review-receipt/v1",
+			(entry) => ({
+				...entry,
+				examplePath: badExamplePath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"action-review-date-only-generated-at.json.generatedAt must be an RFC3339 date-time string",
+				),
+			]),
+		);
+	});
+
 	it("runs decision-request semantic validation for claim-sensitive boundaries", () => {
 		const root = createTempRoot("decision-request-semantic-");
 		const badExample = readJson(

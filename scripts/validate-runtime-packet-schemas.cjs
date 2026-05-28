@@ -8,6 +8,8 @@ const REPO_ROOT_REAL = realpathSync(REPO_ROOT);
 const DEFAULT_MANIFEST = "contracts/runtime-packet-schemas.manifest.json";
 const DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema";
 const VALID_RUNTIME_STATUSES = new Set(["emitted", "not_yet_emitted"]);
+const RFC3339_DATE_TIME =
+	/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
 const VALID_PARITY_VALIDATORS = new Set([
 	"evidence-receipt",
 	"runtime-card",
@@ -335,8 +337,11 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 				errors.push(`${valuePath} must match pattern ${schema.pattern}`);
 			}
 		}
-		if (schema.format === "date-time" && Number.isNaN(Date.parse(value))) {
-			errors.push(`${valuePath} must be a date-time string`);
+		if (
+			schema.format === "date-time" &&
+			(!RFC3339_DATE_TIME.test(value) || !(Date.parse(value) < Infinity))
+		) {
+			errors.push(`${valuePath} must be an RFC3339 date-time string`);
 		}
 	}
 	if (

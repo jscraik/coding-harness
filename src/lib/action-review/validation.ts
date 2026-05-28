@@ -26,6 +26,9 @@ import {
 	SUPPORTING_EVIDENCE_USE,
 } from "./validation-constants.js";
 
+const RFC3339_DATE_TIME_PATTERN =
+	/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
+
 /** Validate an ActionReviewReceipt/v1 packet and its semantic invariants. */
 export function validateActionReviewReceipt(
 	value: unknown,
@@ -574,6 +577,7 @@ function evidenceRefPrefix(kind: string): string | null {
 
 function timestampMs(value: unknown): number | null {
 	if (typeof value !== "string") return null;
+	if (!RFC3339_DATE_TIME_PATTERN.test(value)) return null;
 	const parsed = Date.parse(value);
 	return Number.isNaN(parsed) ? null : parsed;
 }
@@ -689,14 +693,14 @@ function requireIso(
 ) {
 	if (
 		typeof value !== "string" ||
-		!value.includes("T") ||
-		Number.isNaN(Date.parse(value))
+		!RFC3339_DATE_TIME_PATTERN.test(value) ||
+		!(Date.parse(value) < Infinity)
 	) {
 		addError(
 			errors,
 			"invalid_datetime",
 			path,
-			"must be an ISO date-time string",
+			"must be an RFC3339 date-time string",
 		);
 	}
 }

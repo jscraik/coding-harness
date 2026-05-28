@@ -53,6 +53,14 @@ describe("ActionReviewReceipt/v1", () => {
 		});
 	});
 
+	it("rejects timezone-less date-times in TypeScript and CJS validators", () => {
+		const packet = example();
+		packet.generatedAt = "2026-05-27T08:10:00";
+
+		expect(validationCodes(packet)).toContain("invalid_datetime");
+		expect(cjsValidationCodes(packet)).toContain("invalid_datetime");
+	});
+
 	it("rejects allow when supporting evidence is stale or orientation-only", () => {
 		const packet = example();
 		const evidence = packet.requiredEvidence[0];

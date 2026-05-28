@@ -4,6 +4,8 @@ const { readFileSync } = require("node:fs");
 const SCHEMA_VERSION = "action-review-receipt/v1";
 const SAFE_POINTER = /^[A-Za-z0-9][A-Za-z0-9:._/@#?=&+,-]{1,255}$/u;
 const HEAD_SHA = /^[0-9a-f]{40}$/u;
+const RFC3339_DATE_TIME =
+	/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
 const RAW_KEY =
 	/(raw|secret|token|password|credential|transcript|prompt|commandOutput|rawOutput|reviewBody)/iu;
 
@@ -156,10 +158,15 @@ function nullablePointer(value, path, errors) {
 function iso(value, path, errors) {
 	if (
 		typeof value !== "string" ||
-		!value.includes("T") ||
-		Number.isNaN(Date.parse(value))
+		!RFC3339_DATE_TIME.test(value) ||
+		!(Date.parse(value) < Infinity)
 	) {
-		add(errors, "invalid_datetime", path, "must be an ISO date-time string");
+		add(
+			errors,
+			"invalid_datetime",
+			path,
+			"must be an RFC3339 date-time string",
+		);
 	}
 }
 
@@ -553,6 +560,7 @@ function evidenceRefPrefix(kind) {
 
 function timestampMs(value) {
 	if (typeof value !== "string") return null;
+	if (!RFC3339_DATE_TIME.test(value)) return null;
 	const parsed = Date.parse(value);
 	return Number.isNaN(parsed) ? null : parsed;
 }
