@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-28.
+Last reconciled: 2026-05-29.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and

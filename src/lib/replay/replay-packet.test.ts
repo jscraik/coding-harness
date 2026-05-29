@@ -166,6 +166,71 @@ describe("ReplayPacket/v1", () => {
 		});
 	});
 
+	it("rejects hook provenance refs with mismatched refKind bindings", () => {
+		const packet = loadExample();
+		const hook = firstHook(packet);
+		packet.hookProvenance = [
+			{
+				...hook,
+				hookRef: {
+					...hook.hookRef,
+					refKind: "repo_file",
+				},
+				inputRef: {
+					...hook.inputRef,
+					refKind: "hook_output",
+				},
+				outputRef: {
+					...hook.outputRef,
+					refKind: "hook_input",
+				},
+				hookExecutionIdentity: {
+					...hook.hookExecutionIdentity,
+					hookFileRef: {
+						...hook.hookExecutionIdentity.hookFileRef,
+						refKind: "runtime_identity",
+					},
+					resolvedCommandRef: {
+						...hook.hookExecutionIdentity.resolvedCommandRef,
+						refKind: "hook_file",
+					},
+				},
+			},
+		];
+
+		expect(validate(packet)).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.stringContaining("hookProvenance[0].hookRef.refKind"),
+				expect.stringContaining("hookProvenance[0].inputRef.refKind"),
+				expect.stringContaining("hookProvenance[0].outputRef.refKind"),
+				expect.stringContaining(
+					"hookProvenance[0].hookExecutionIdentity.hookFileRef.refKind",
+				),
+				expect.stringContaining(
+					"hookProvenance[0].hookExecutionIdentity.resolvedCommandRef.refKind",
+				),
+			]),
+		});
+	});
+
+	it("rejects malformed branch, redaction status, and next action fields", () => {
+		const packet = loadExample({
+			branch: "../escape" as ReplayPacket["branch"],
+			redactionStatus: "raw_transcript" as ReplayPacket["redactionStatus"],
+			nextAction: "" as ReplayPacket["nextAction"],
+		});
+
+		expect(validate(packet)).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.stringContaining("branch"),
+				expect.stringContaining("redactionStatus"),
+				expect.stringContaining("nextAction"),
+			]),
+		});
+	});
+
 	it("rejects normalized events that smuggle raw payload fields", () => {
 		const packet = loadExample();
 		packet.normalizedEvents = [

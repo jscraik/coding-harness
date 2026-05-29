@@ -135,6 +135,7 @@ const VERDICTS = new Set([
 	"missing",
 	"unknown",
 ]);
+const REDACTION_STATUSES = new Set(["redacted", "summary_only"]);
 
 function parseArgs(argv) {
 	const result = { packetPath: null, repoRoot: process.cwd() };
@@ -250,6 +251,18 @@ function validatePacket(packet, repoRoot, now, errors) {
 	}
 	validatePointer(packet.producer, "producer", errors);
 	validatePointer(packet.replayId, "replayId", errors);
+	validateNullablePointer(packet.branch, "branch", errors);
+	if (!REDACTION_STATUSES.has(String(packet.redactionStatus))) {
+		errors.push("redactionStatus: must be redacted or summary_only");
+	}
+	if (
+		typeof packet.nextAction !== "string" ||
+		packet.nextAction.trim() === ""
+	) {
+		errors.push("nextAction: must be a non-empty compact pointer");
+	} else {
+		validatePointer(packet.nextAction, "nextAction", errors);
+	}
 	validateDateTime(packet.generatedAt, "generatedAt", errors);
 	validateNullableHead(packet.headSha, "headSha", errors);
 	validateNullableHead(packet.observedHeadSha, "observedHeadSha", errors);
@@ -313,9 +326,15 @@ function validateHooks(value, generatedAt, repoRoot, errors) {
 		validateDateTime(hook.checkedAt, `${prefix}.checkedAt`, errors);
 		if (isAfter(hook.checkedAt, generatedAt))
 			errors.push(`${prefix}.checkedAt: must not be after generatedAt`);
-		validateRef(hook.hookRef, `${prefix}.hookRef`, repoRoot, errors);
-		validateRef(hook.inputRef, `${prefix}.inputRef`, repoRoot, errors);
-		validateRef(hook.outputRef, `${prefix}.outputRef`, repoRoot, errors);
+		validateRef(hook.hookRef, `${prefix}.hookRef`, repoRoot, errors, [
+			"hook_file",
+		]);
+		validateRef(hook.inputRef, `${prefix}.inputRef`, repoRoot, errors, [
+			"hook_input",
+		]);
+		validateRef(hook.outputRef, `${prefix}.outputRef`, repoRoot, errors, [
+			"hook_output",
+		]);
 		validateRefs(
 			hook.producedArtifactRefs,
 			`${prefix}.producedArtifactRefs`,
@@ -338,12 +357,15 @@ function validateHookIdentity(value, prefix, repoRoot, errors) {
 	}
 	validateKnownKeys(value, HOOK_IDENTITY_KEYS, prefix, errors);
 	requireFields(value, HOOK_IDENTITY_KEYS, prefix, errors);
-	validateRef(value.hookFileRef, `${prefix}.hookFileRef`, repoRoot, errors);
+	validateRef(value.hookFileRef, `${prefix}.hookFileRef`, repoRoot, errors, [
+		"hook_file",
+	]);
 	validateRef(
 		value.resolvedCommandRef,
 		`${prefix}.resolvedCommandRef`,
 		repoRoot,
 		errors,
+		["resolved_command"],
 	);
 	if (value.runCorrelationId !== null)
 		validatePointer(
@@ -433,7 +455,7 @@ function validateRefs(value, prefix, repoRoot, errors) {
 	});
 }
 
-function validateRef(value, prefix, repoRoot, errors) {
+function validateRef(value, prefix, repoRoot, errors, allowedKinds) {
 	if (!isRecord(value)) {
 		errors.push(`${prefix}: must be an object`);
 		return;
@@ -443,6 +465,11 @@ function validateRef(value, prefix, repoRoot, errors) {
 	validatePointer(value.refId, `${prefix}.refId`, errors);
 	if (!REF_KINDS.has(String(value.refKind)))
 		errors.push(`${prefix}.refKind: must be recognized`);
+	if (allowedKinds && !allowedKinds.includes(value.refKind)) {
+		errors.push(
+			`${prefix}.refKind: must be ${allowedKinds.join(" or ")} for this field`,
+		);
+	}
 	if (value.hashAlgorithm !== "sha256")
 		errors.push(`${prefix}.hashAlgorithm: must be sha256`);
 	if (typeof value.sha256 !== "string" || !SHA256.test(value.sha256))
@@ -591,6 +618,10 @@ function requireFields(value, keys, prefix, errors) {
 function validatePointer(value, prefix, errors) {
 	if (typeof value !== "string" || !POINTER.test(value))
 		errors.push(`${prefix}: must be a compact pointer`);
+}
+
+function validateNullablePointer(value, prefix, errors) {
+	if (value !== null) validatePointer(value, prefix, errors);
 }
 
 function validateDateTime(value, prefix, errors) {
