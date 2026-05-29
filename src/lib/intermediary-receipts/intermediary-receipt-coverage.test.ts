@@ -301,4 +301,50 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 			expect.arrayContaining([expect.stringContaining("runner: exited")]),
 		);
 	});
+
+	it("standalone validator fails closed when a zero-exit runner emits a malformed envelope", () => {
+		const root = createTempRoot("malformed-runner-output-");
+		const sourceRoot = join(root, "src", "lib", "intermediary-receipts");
+		mkdirSync(sourceRoot, { recursive: true });
+		writeFileSync(join(root, "packet.json"), "{}");
+		writeFileSync(
+			join(sourceRoot, "index.ts"),
+			[
+				"export function validateIntermediaryReceiptCoverage() {",
+				"  return {",
+				"    get valid() {",
+				"      process.stdout.write('malformed runner output\\n');",
+				"      return true;",
+				"    },",
+				"    errors: [],",
+				"  };",
+				"}",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			process.execPath,
+			[SCRIPT_PATH, "packet.json", "--repo-root", root],
+			{ encoding: "utf8" },
+		);
+		const parsed = JSON.parse(result.stdout) as {
+			schemaVersion: string;
+			status: string;
+			errors: string[];
+		};
+
+		expect(result.status).toBe(1);
+		expect(parsed).toMatchObject({
+			schemaVersion: "intermediary-receipt-coverage-validation/v1",
+			status: "fail",
+		});
+		expect(parsed.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"runner: exited with status 0 but did not emit intermediary-receipt-coverage-validation/v1 JSON",
+				),
+				expect.stringContaining("runner.stdout: malformed runner output"),
+			]),
+		);
+	});
 });

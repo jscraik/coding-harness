@@ -131,9 +131,14 @@ function main() {
 		process.exit(child.status === null ? 1 : child.status);
 	}
 	if (child.status === 0) {
-		if (child.stdout) process.stdout.write(child.stdout);
-		if (child.stderr) process.stderr.write(child.stderr);
-		process.exit(child.status === null ? 1 : child.status);
+		const errors = [
+			"runner: exited with status 0 but did not emit intermediary-receipt-coverage-validation/v1 JSON",
+		];
+		const stderr = summarizeText(child.stderr);
+		const stdout = summarizeText(child.stdout);
+		if (stderr) errors.push(`runner.stderr: ${stderr}`);
+		if (stdout) errors.push(`runner.stdout: ${stdout}`);
+		printResult("fail", errors, 1);
 	}
 	const childExit = child.signal
 		? `signal ${child.signal}`
