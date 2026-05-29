@@ -62,6 +62,12 @@
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .",
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-review-backfill.py docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json --repo .",
+		"UV_CACHE_DIR=/private/tmp/coding-harness-uv-cache uv run --python 3.12 ruff check scripts/check-goal-audit-freshness.py",
+		"PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile scripts/check-goal-audit-freshness.py",
+		"pnpm exec biome check scripts/check-goal-audit-freshness.py scripts/check-goal-board.py src/dev/check-goal-audit-freshness-script.test.ts src/dev/check-goal-board-script.test.ts",
+		"pnpm exec tsc --noEmit",
+		"pnpm exec pyright scripts/check-goal-audit-freshness.py",
+		"uv run --python 3.12 pytest -q",
 		"jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
 		"git diff --check"
 	]

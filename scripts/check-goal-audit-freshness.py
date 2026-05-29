@@ -15,13 +15,14 @@ import json
 import posixpath
 import subprocess
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 
 GOVERNED_AUDIT_PATH = ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
 REQUIRED_SOURCE_FIELDS = ("path", "sha256", "checked_at", "head_sha")
+CHECKED_AT_FUTURE_SKEW = timedelta(minutes=5)
 SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
     ".harness/active-artifacts.md",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
@@ -256,7 +257,17 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
             f"audit sha256 is stale for {audit_path}: receipt={source_sha256} current={current_sha256}",
         )
 
+    receipt_created_at = parse_utc_timestamp(receipt.get("created_at"), "receipt.created_at")
     checked_at = parse_utc_timestamp(source.get("checked_at"), "audit_sources_checked[].checked_at")
+    if checked_at < receipt_created_at:
+        raise ValidationError(
+            "audit_sources_checked[].checked_at must be at or after receipt.created_at",
+        )
+    now = datetime.now(UTC)
+    if checked_at > now + CHECKED_AT_FUTURE_SKEW:
+        raise ValidationError(
+            "audit_sources_checked[].checked_at must not be in the future",
+        )
     if checked_at < audit_mtime:
         raise ValidationError(
             "audit_sources_checked[].checked_at is older than the current audit file timestamp",

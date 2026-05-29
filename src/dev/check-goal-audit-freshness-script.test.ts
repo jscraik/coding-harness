@@ -77,6 +77,7 @@ function receipt(root: string, overrides: Record<string, unknown> = {}) {
 	if (!headSha) throw new Error(`missing test repository head for ${root}`);
 	return {
 		id: "R072",
+		created_at: "2026-05-27T01:05:00Z",
 		head_sha: headSha,
 		audit_sources_checked: [
 			{
@@ -252,6 +253,36 @@ describe("check-goal-audit-freshness.py", () => {
 		expect(result.stderr).toContain(
 			"checked_at is older than the current audit file timestamp",
 		);
+	});
+
+	it("fails when checked_at predates the receipt creation time", () => {
+		const root = createTempRoot("audit-freshness-before-receipt-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const staleReceipt = receipt(root);
+		staleReceipt.created_at = "2026-05-27T01:15:00Z";
+		writeReceipts(root, [staleReceipt]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"checked_at must be at or after receipt.created_at",
+		);
+	});
+
+	it("fails when checked_at is implausibly in the future", () => {
+		const root = createTempRoot("audit-freshness-future-check-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [
+			receipt(root, {
+				checked_at: "2999-01-01T00:00:00Z",
+			}),
+		]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("checked_at must not be in the future");
 	});
 
 	it("fails when no receipt mentions the governed audit path", () => {
