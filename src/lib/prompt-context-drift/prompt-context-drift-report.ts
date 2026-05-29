@@ -371,7 +371,9 @@ function validateRef(
 	}
 	if (ref.requiresFilesystemExistence === true) {
 		if (!repoRoot) {
-			errors.push(`${path}.ref: repoRoot is required when requiresFilesystemExistence is true`);
+			errors.push(
+				`${path}.ref: repoRoot is required when requiresFilesystemExistence is true`,
+			);
 			return false;
 		}
 		return validateRepoFileRef(ref, path, repoRoot, errors);
@@ -435,7 +437,9 @@ function validateRepoFileRef(
 		return false;
 	}
 	if (ref.hashAlgorithm !== "sha256" || !SHA256.test(String(ref.sha256))) {
-		errors.push(`${path}.sha256: must be a valid sha256 digest with hashAlgorithm=sha256`);
+		errors.push(
+			`${path}.sha256: must be a valid sha256 digest with hashAlgorithm=sha256`,
+		);
 		return false;
 	}
 	let actual: string;
