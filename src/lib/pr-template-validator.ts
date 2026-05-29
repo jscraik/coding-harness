@@ -228,6 +228,34 @@ function collectLinkedIssueRelationshipErrors(body: string): string[] {
 	return [];
 }
 
+function collectLinearReferenceFormatErrors(body: string): string[] {
+	const value = extractFieldBlockValue(
+		body,
+		"## Work performed",
+		"Linear reference",
+	);
+	if (value === null) {
+		return [];
+	}
+
+	const normalized = normalizeFieldValue(value).toLowerCase();
+	const isNotApplicable =
+		/\bn\.?a\.?\b/.test(normalized) || /\bnot applicable\b/.test(normalized);
+	if (isNotApplicable) {
+		return [];
+	}
+
+	const hasSupportedReferenceToken =
+		/\b(?:refs?|fix(?:es)?|clos(?:e|es|ed))\s+[a-z]+-\d+\b/.test(normalized);
+	if (hasSupportedReferenceToken) {
+		return [];
+	}
+
+	return [
+		"Linear reference must use Refs, Fixes, or Closes with a Linear issue key, or n.a. with reason; URL-only references do not satisfy linear-gate.",
+	];
+}
+
 function collectLinkedIssueClosureConsistencyErrors(body: string): string[] {
 	const linearReference = extractFieldBlockValue(
 		body,
@@ -264,7 +292,7 @@ function collectLinkedIssueClosureConsistencyErrors(body: string): string[] {
 		!hasCompletedAcceptanceIds(normalizedLinkedIssueRelationship)
 	) {
 		return [
-			"Linear reference uses a closure token, so Linked issue relationship must be implementation closure with completed acceptance IDs; use Refs or an issue URL for preparatory/enabling or standalone work.",
+			"Linear reference uses a closure token, so Linked issue relationship must be implementation closure with completed acceptance IDs; use Refs for preparatory/enabling or standalone work.",
 		];
 	}
 
@@ -349,6 +377,7 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectWorkPerformedFieldErrors(body));
+	errors.push(...collectLinearReferenceFormatErrors(body));
 	errors.push(...collectLinkedIssueRelationshipErrors(body));
 	errors.push(...collectLinkedIssueClosureConsistencyErrors(body));
 	errors.push(

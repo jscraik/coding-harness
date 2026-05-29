@@ -225,7 +225,8 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   structure, and reviewer handoff evidence synchronized so the work-performed
   ledger remains enforceable before closeout
 - PR-template linked-issue evidence must separate traceability from closure:
-  `Linear reference` records issue refs such as `Refs JSC-363`, while
+  `Linear reference` records issue refs such as `Refs JSC-363`,
+  `Fixes JSC-363`, or `Closes JSC-363`, while
   `Linked issue relationship` records whether the PR closes specific
   acceptance IDs, only prepares/enables the parent issue, is standalone, or is
   not applicable

@@ -64,7 +64,7 @@ export const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Linear reference",
 		placeholder:
-			"list `Refs JSC-N`, `Closes JSC-N`, issue URLs, or `n.a.` with reason",
+			"list `Refs JSC-N`, `Fixes JSC-N`, `Closes JSC-N`, or `n.a.` with reason",
 	},
 	{
 		label: "Linked issue relationship",

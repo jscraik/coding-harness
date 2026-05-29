@@ -303,6 +303,17 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 	});
 
+	it("fails URL-only Linear references that linear-gate cannot count", () => {
+		const body = VALID_BODY.replace(
+			"- Linear reference: Refs JSC-999.",
+			"- Linear reference: https://linear.app/jscraik/issue/JSC-999/example.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Linear reference must use Refs, Fixes, or Closes with a Linear issue key, or n.a. with reason; URL-only references do not satisfy linear-gate.",
+		);
+	});
+
 	it("accepts preparatory linked issue relationship with completed acceptance IDs none", () => {
 		const body = VALID_BODY.replace(
 			"- Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.",
@@ -322,7 +333,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
-			"Linear reference uses a closure token, so Linked issue relationship must be implementation closure with completed acceptance IDs; use Refs or an issue URL for preparatory/enabling or standalone work.",
+			"Linear reference uses a closure token, so Linked issue relationship must be implementation closure with completed acceptance IDs; use Refs for preparatory/enabling or standalone work.",
 		);
 	});
 
@@ -336,7 +347,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
-			"Linear reference uses a closure token, so Linked issue relationship must be implementation closure with completed acceptance IDs; use Refs or an issue URL for preparatory/enabling or standalone work.",
+			"Linear reference uses a closure token, so Linked issue relationship must be implementation closure with completed acceptance IDs; use Refs for preparatory/enabling or standalone work.",
 		);
 	});
 

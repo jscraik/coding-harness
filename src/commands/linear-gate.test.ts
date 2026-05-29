@@ -111,6 +111,46 @@ contact_links:
 		expect(result.output.issueKeys.pr).toEqual(["JSC-42"]);
 	});
 
+	it("accepts Closes as a closing Linear reference", () => {
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify(
+				{
+					name: "fixture",
+					bugs: "https://linear.app/acme/project/platform-123",
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+			"utf-8",
+		);
+
+		const result = runLinearGate({
+			repoRoot: tempDir,
+			branch: "codex/jsc-42-enforce-linear-policy",
+			prTitle: "JSC-42: Enforce Linear policy",
+			prBody: "Closes JSC-42",
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.output.passed).toBe(true);
+		expect(result.output.issueKeys.fixes).toEqual(["JSC-42"]);
+	});
+
 	it("fails when the branch omits the Linear issue key", () => {
 		writeFileSync(
 			join(tempDir, "package.json"),

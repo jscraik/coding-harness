@@ -9,7 +9,7 @@
 ## Work performed
 
 - Plan IDs: list Linear keys, spec paths, plan paths, or `n.a.` with reason
-- Linear reference: list `Refs JSC-N`, `Closes JSC-N`, issue URLs, or `n.a.` with reason
+- Linear reference: list `Refs JSC-N`, `Fixes JSC-N`, `Closes JSC-N`, or `n.a.` with reason
 - Linked issue relationship: classify the linked issue relationship as implementation closure, preparatory/enabling work, standalone/untracked work, or `n.a.` with reason; for parent-goal references, state completed acceptance IDs or `none`
 - Phase / slice: list completed phase, implementation slice, or `n.a.` with reason
 - Session IDs: list Codex thread/session IDs, session-collector artifact IDs or paths, harness run IDs, or `n.a.` with reason. For AI-assisted work, include at least one session reference or explain why no session artifact was captured.

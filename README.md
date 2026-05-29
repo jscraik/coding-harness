@@ -505,8 +505,8 @@ This keeps high-signal review and user steering in the repo operating system
 instead of leaving it in a chat transcript.
 
 PR bodies must separate issue traceability from issue closure. `Linear
-reference` records `Refs JSC-N` or `Closes JSC-N`; `Linked issue
-relationship` must classify the PR as implementation closure,
+reference` records `Refs JSC-N`, `Fixes JSC-N`, or `Closes JSC-N`;
+`Linked issue relationship` must classify the PR as implementation closure,
 preparatory/enabling work, standalone/untracked work, or `n.a.` with reason.
 Preparatory PRs that reference a parent issue must state that completed
 acceptance IDs are `none` or explicitly say they do not close that acceptance
