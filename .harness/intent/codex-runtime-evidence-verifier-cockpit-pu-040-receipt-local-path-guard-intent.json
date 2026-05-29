@@ -1,0 +1,74 @@
+{
+	"schemaVersion": "harness-intent/v1",
+	"id": "codex-runtime-evidence-verifier-cockpit-pu-040-receipt-local-path-guard",
+	"createdAt": "2026-05-29T20:48:43Z",
+	"status": "intent_reviewed_tightened_for_implementation",
+	"goal": "codex-runtime-evidence-verifier-cockpit",
+	"lifecycleUnit": "PU-040-receipt-local-path-guard",
+	"feedbackSignal": "Review and user steering showed that goal receipts can leak local user-profile paths and that relying on external PR review to catch them is repeatable workflow failure.",
+	"rootOperationalFailure": "The goal-board validator checked audit freshness, active route freshness, and review-backfill evidence, but it did not mechanically reject local-only home-directory references in runtime evidence receipts.",
+	"failureCategory": [
+		"weak_validation",
+		"hidden_assumptions",
+		"lack_of_verification",
+		"weak_observability"
+	],
+	"durableSystemImprovement": "Add a goal-board extension that scans runtime evidence receipts for raw local home paths and fails with redacted diagnostics before future receipts can support route truth.",
+	"scope": {
+		"in": [
+			"scripts/check-goal-board.py",
+			"src/dev/check-goal-board-script.test.ts",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-040-receipt-local-path-guard-intent.json"
+		],
+		"out": [
+			"Production runtime packet schemas",
+			"PR merge execution",
+			"Linear status mutation",
+			"Historical receipt rewriting",
+			"Generic repository-wide secret scanning"
+		]
+	},
+	"acceptanceCriteria": [
+		"Before the R151 cutover receipt exists, the guard scans the latest receipt so the current board cannot keep adding new leaks.",
+		"At and after R151, the guard scans every receipt whose id number is at least 151 so a later clean receipt cannot hide an earlier post-cutover leak.",
+		"The guard recursively checks string leaves in objects and arrays and reports the receipt id, line number, and JSON path.",
+		"The guard rejects Unix, macOS, file URI, percent-decoded file URI, Windows forward-slash, and Windows backslash user-profile paths.",
+		"Diagnostics classify the path kind but do not echo the raw local path value.",
+		"Historical pre-cutover receipts remain readable once the R151 cutover receipt exists.",
+		"Redacted placeholders and repo-relative evidence references pass."
+	],
+	"reviewArtifacts": [
+		{
+			"reviewer": "adversarial-reviewer",
+			"artifact": "artifacts/reviews/pu-040-receipt-local-path-guard-intent-adversarial.md",
+			"status": "fail_findings_accepted"
+		},
+		{
+			"reviewer": "agent-native-reviewer",
+			"artifact": "artifacts/reviews/pu-040-receipt-local-path-guard-intent-agent-native.md",
+			"status": "pass_with_minor_findings_accepted"
+		}
+	],
+	"reviewResponse": [
+		"Broadened matching from one raw prefix to normalized file URI, percent-decoded, Unix/macOS, and Windows user-profile forms.",
+		"Changed the post-cutover scan from latest-only to all receipts with id number at least 151.",
+		"Specified recursive string-leaf traversal and JSON-path diagnostics.",
+		"Added explicit no-raw-path diagnostic requirement."
+	],
+	"validationPlan": [
+		"pnpm vitest run src/dev/check-goal-board-script.test.ts --reporter=dot",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-review-backfill.py docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json --repo .",
+		"UV_CACHE_DIR=/private/tmp/coding-harness-uv-cache uv run --python 3.12 ruff check scripts/check-goal-audit-freshness.py",
+		"PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile scripts/check-goal-audit-freshness.py",
+		"pnpm exec biome check scripts/check-goal-audit-freshness.py scripts/check-goal-board.py src/dev/check-goal-audit-freshness-script.test.ts src/dev/check-goal-board-script.test.ts",
+		"pnpm exec tsc --noEmit",
+		"pnpm exec pyright scripts/check-goal-audit-freshness.py",
+		"uv run --python 3.12 pytest -q",
+		"jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		"git diff --check"
+	]
+}
