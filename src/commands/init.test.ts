@@ -475,7 +475,11 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("command: pnpm check");
 			expect(circleConfig).toContain("name: pr-template");
 			expect(circleConfig).toContain("check_name: pr-template");
-			expect(circleConfig).toContain('pr_ref="${CIRCLE_PULL_REQUESTS%%,*}"');
+			expect(circleConfig).toContain("resolve_pr_ref() {");
+			expect(circleConfig).toContain('resolved="${CIRCLE_PULL_REQUESTS%%,*}"');
+			expect(circleConfig).toContain(
+				"PR context not available yet for pr-template; retrying ($attempt/6).",
+			);
 			expect(circleConfig).toContain(
 				'--head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}"',
 			);

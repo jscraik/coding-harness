@@ -26,6 +26,8 @@ const VALID_BODY = `## Summary
 ## Work performed
 
 - Plan IDs: JSC-999; .harness/plan/example-plan.md
+- Linear reference: Refs JSC-999.
+- Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.
 - Phase / slice: PU-001 PR evidence ledger
 - Session IDs: codex-session-019c-example
 - Trace IDs: circleci-workflow-123; harness-gate-pr-template

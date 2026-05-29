@@ -232,6 +232,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - PR-template contract changes should keep local validation, GitHub PR body
   structure, and reviewer handoff evidence synchronized so the work-performed
   ledger remains enforceable before closeout
+- PR-template linked-issue evidence must separate traceability from closure:
+  `Linear reference` records issue refs such as `Refs JSC-363`,
+  `Fixes JSC-363`, or `Closes JSC-363`, while
+  `Linked issue relationship` records whether the PR closes specific
+  acceptance IDs, only prepares/enables the parent issue, is standalone, or is
+  not applicable
 - PR closeout evidence changes that add or alter `pr-closeout/v1`,
   `harness pr-closeout`, required PR metadata, or AI session/traceability
   evidence should stay read-only, tool-evidence-backed, secret-redacting, and
@@ -320,6 +326,7 @@ implementation into the harness.
 - If command tooling is unavailable: mark check as blocked and escalate environment dependency.
 - If instructions conflict: resolve precedence before further edits.
 - For this repository, agent-created branches must use `codex/<linear-key>-<short-description>` naming when the work is tracked in Linear.
+- A tracked Linear branch or PR issue reference must not imply parent-goal closure by itself; agents must keep the PR body's linked-issue relationship current and name completed acceptance IDs or `none`.
 - For downstream scaffold output, repositories scaffolded by `harness init` receive generated PR, workflow, and worktree guidance that uses `jscraik/feature/*` for agent-created branches; keep those emitted surfaces synchronized through the init scaffold prefix constant.
 - CodeRabbit review must be independent from code authorship (coding agent cannot act as approving review agent).
 - Legacy review bridge workflows may exist in downstream repositories, but they are not the primary review authority for this repository.
