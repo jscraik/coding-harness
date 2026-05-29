@@ -249,6 +249,14 @@ trails, but it must not authorize commands, satisfy delivery-truth claims, or
 prove merge readiness until a later runtime-card integration explicitly defines
 that consumption boundary.
 
+Tool promotion threshold changes are agent operating-system architecture, not
+just prose hygiene. If an operator must apply the same judgment twice, or the
+same failure mode can recur across slices, encode the rule as the smallest
+durable validator, tool, or skill hook and keep the generated architecture
+artifacts synchronized. If the knowledge is genuinely one-off implementation
+context, keep it in plan evidence or implementation notes instead of adding a
+new execution surface.
+
 Trust-boundary validator changes that add script-backed evidence reports, such
 as `audit-reference-report/v1`, are architecture-adjacent when they classify
 repository paths, git-tracked proof, or stale artifacts. Refresh

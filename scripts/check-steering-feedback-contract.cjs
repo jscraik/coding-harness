@@ -8,6 +8,7 @@ const REPO_ROOT = resolve(__dirname, "..");
 const REQUIRED_FILES = {
 	agents: "AGENTS.md",
 	validation: "docs/agents/04-validation.md",
+	agentGovernance: "docs/agents/07b-agent-governance.md",
 	glossary: "UBIQUITOUS_LANGUAGE.md",
 	memory: ".harness/memory/LEARNINGS.md",
 	prTemplate: ".github/PULL_REQUEST_TEMPLATE.md",
@@ -45,8 +46,6 @@ const PATTERN_SCOPE_INVENTORY_PATTERN =
 	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|similar misbehavior classes searched|deferred follow-ups|deferred followup)/i;
 const OBSERVED_FIXABLE_BLOCKER_PATTERN =
 	/(observed fixable blockers|fixable blocker|fix it in the same pass|rerun the narrowest proving command|tracked exception with the exact reason)/i;
-const TOOL_PROMOTION_THRESHOLD_PATTERN =
-	/(same judgment is needed twice|failure mode can recur across slices|smallest durable primitive|implementation notes.*plan evidence|validator.*guard.*CLI helper.*skill)/is;
 const PATTERN_SCOPE_VALIDATOR_PATTERN =
 	/(PATTERN_SCOPE_SIGNAL_PATTERN|collectPatternScopeInventoryErrors|Pattern scope inventory must name the inferred principle)/i;
 const PRINCIPLE_SIGNAL_PATTERN =
@@ -61,6 +60,8 @@ const ENGINEERING_PROOF_PATTERN =
 	/(software engineering proof|code production|benchmark-style|swe bench|program bench|terminal bench|maintainability|traceability|handoff quality)/i;
 const WORKFLOW_SKILL_PROOF_PATTERN =
 	/(workflow skill|capture-the-flag|capture the flag|win condition|flag is captured|skill workout|self-reflection|reflect on failures)/i;
+const TOOL_PROMOTION_THRESHOLD_PATTERN =
+	/(same judgment[\s\S]{0,160}twice|failure mode[\s\S]{0,160}recur across slices)[\s\S]{0,900}(smallest durable|small operating primitive|validator|guard script|CLI helper|workflow hook|fixture|scoped skill)[\s\S]{0,900}(one-off implementation|implementation notes|plan evidence|PR closeout evidence)[\s\S]{0,900}(skill|reusable routed workflow|inputs[\s\S]{0,120}artifacts[\s\S]{0,120}validation[\s\S]{0,120}ownership)/i;
 const CURRENT_SESSION_ADMISSION_PATTERN =
 	/(current-session steering admission record|not permitted to proceed|feedback class.*inferred principle.*searched surfaces.*durable destination|forbidden recurrence behavior)/i;
 const PLANNING_ONLY_STOP_PATTERN =
@@ -385,8 +386,33 @@ function validateAgents(content) {
 		errors,
 		REQUIRED_FILES.agents,
 		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool/validator/skill promotion threshold",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agents,
+		content,
 		CLOSEOUT_COMPLETION_PATTERN,
 		"closeout completion is not green checks rule",
+	);
+	return errors;
+}
+
+/**
+ * Validate that the agent-governance guide preserves the tool-promotion threshold.
+ *
+ * @param {string} content - Markdown content of the agent-governance guide.
+ * @returns {string[]} Contract errors, empty when the threshold remains encoded.
+ */
+function validateAgentGovernance(content) {
+	const errors = [];
+	requirePattern(
+		errors,
+		REQUIRED_FILES.agentGovernance,
+		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool/validator/skill promotion threshold",
 	);
 	return errors;
 }
@@ -608,6 +634,13 @@ function validateValidationDoc(content) {
 		errors,
 		REQUIRED_FILES.validation,
 		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool/validator/skill promotion threshold requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
 		CLOSEOUT_COMPLETION_PATTERN,
 		"closeout completion is not validation-only requirement",
 	);
@@ -700,6 +733,20 @@ function validateGlossary(content) {
 		content,
 		PRINCIPLE_SIGNAL_PATTERN,
 		"principle signal language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		/^\| Tool Promotion Threshold \|/m,
+		"canonical Tool Promotion Threshold term",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool/validator/skill promotion threshold language",
 	);
 	for (const term of [
 		"Repeat-Feedback Admission",
@@ -1009,6 +1056,13 @@ function validateSolution(content) {
 		errors,
 		REQUIRED_FILES.solution,
 		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool/validator/skill promotion threshold evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
 		CLOSEOUT_COMPLETION_PATTERN,
 		"closeout completion evidence",
 	);
@@ -1267,6 +1321,13 @@ function validateMemory(content) {
 		ENV_BACKED_VALIDATION_PATTERN,
 		"env-backed validation recovery learning",
 	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		TOOL_PROMOTION_THRESHOLD_PATTERN,
+		"tool/validator/skill promotion threshold learning",
+	);
 	return errors;
 }
 
@@ -1458,6 +1519,7 @@ function collectActiveEnvBackedValidationEvidenceErrors() {
 const validations = [
 	["agents", validateAgents],
 	["validation", validateValidationDoc],
+	["agentGovernance", validateAgentGovernance],
 	["glossary", validateGlossary],
 	["memory", validateMemory],
 	["prTemplate", validatePrTemplate],

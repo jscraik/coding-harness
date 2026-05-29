@@ -83,6 +83,7 @@
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
 		"node --import tsx src/cli.ts docs-gate --mode required --json",
 		"bash scripts/validate-codestyle.sh --fast",
+		"bash scripts/validate-codestyle.sh",
 		"bash scripts/verify-work.sh --fast",
 		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-036-spg-010-replay-packet-intent.json src/lib/replay contracts/replay-packet.schema.json contracts/examples/replay-packet.example.json contracts/fixtures/replay-packet-source.md contracts/runtime-packet-schemas.manifest.json scripts/validate-replay-packet.cjs src/dev/validate-runtime-packet-schemas-script.test.ts ARCHITECTURE.md AGENTS.md docs/agents/00-architecture-bootstrap.md docs/agents/07b-agent-governance.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-036-spg-010-replay-packet-*.md"
 	],
