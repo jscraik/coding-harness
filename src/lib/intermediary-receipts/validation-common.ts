@@ -55,17 +55,9 @@ export function validateBlockers(
 			errors,
 		);
 		if (
-		if (
 			typeof blocker.blockerClass === "string" &&
-			Object.prototype.hasOwnProperty.call(
-				INTERMEDIARY_BLOCKER_ACTIONS,
-				blocker.blockerClass,
-			) &&
+			Object.hasOwn(INTERMEDIARY_BLOCKER_ACTIONS, blocker.blockerClass) &&
 			blocker.nextActionClass !==
-				INTERMEDIARY_BLOCKER_ACTIONS[
-					blocker.blockerClass as IntermediaryBlockerClass
-				]
-		) {
 				INTERMEDIARY_BLOCKER_ACTIONS[
 					blocker.blockerClass as IntermediaryBlockerClass
 				]
