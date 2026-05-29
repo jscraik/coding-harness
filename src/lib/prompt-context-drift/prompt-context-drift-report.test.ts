@@ -172,6 +172,23 @@ describe("validatePromptContextDriftReport", () => {
 		);
 	});
 
+	it("fails closed on duplicate surface IDs", () => {
+		const report = exampleReport();
+		report.surfaces[1] = {
+			...surfaceAt(report, 1),
+			surfaceId: surfaceAt(report, 0).surfaceId,
+		};
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				"surfaces[1].surfaceId: duplicate surfaceId prompt_context is not allowed",
+			]),
+		);
+	});
+
 	it("blocks stale Project Brain refs from claim support", () => {
 		const report = exampleReport();
 		report.surfaces[3] = {
@@ -270,6 +287,21 @@ describe("validatePromptContextDriftReport", () => {
 		expect(result.status).toBe("fail");
 		expect(result.errors).toContain(
 			"surfaces[0].sourceRefs[0].sha256: digest mismatch",
+		);
+	});
+
+	it("returns validation errors when repo-root filesystem access fails", () => {
+		const report = exampleReport();
+
+		const result = validatePromptContextDriftReport(report, {
+			repoRoot: "/path/that/does/not/exist",
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("repoRoot is not accessible"),
+			]),
 		);
 	});
 

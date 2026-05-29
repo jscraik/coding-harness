@@ -256,6 +256,12 @@ function validateReportFields(
 	for (const [index, surface] of report.surfaces.entries()) {
 		validateSurface(surface, `surfaces[${index}]`, report, repoRoot, errors);
 		if (isRecord(surface) && typeof surface.surfaceId === "string") {
+			if (surfaceRecords.has(surface.surfaceId)) {
+				errors.push(
+					`surfaces[${index}].surfaceId: duplicate surfaceId ${surface.surfaceId} is not allowed`,
+				);
+				continue;
+			}
 			surfaceRecords.set(surface.surfaceId, surface);
 		}
 	}
@@ -469,6 +475,14 @@ function validateRepoFileRef(
 	repoRoot: string,
 	errors: string[],
 ): boolean {
+	let resolvedRepoRoot: string;
+	try {
+		resolvedRepoRoot = realpathSync(repoRoot);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		errors.push(`${path}.ref: repoRoot is not accessible: ${message}`);
+		return false;
+	}
 	if (ref.refKind !== "repo_file") {
 		if (ref.requiredForClaimSupport === true) {
 			errors.push(`${path}.refKind: required local evidence must be repo_file`);
@@ -476,28 +490,53 @@ function validateRepoFileRef(
 		return false;
 	}
 	const refPath = String(ref.ref);
-	const resolvedRepoRoot = realpathSync(repoRoot);
 	const candidate = resolve(resolvedRepoRoot, refPath);
 	if (!existsSync(candidate)) {
 		errors.push(`${path}.ref: required repo file does not exist`);
 		return false;
 	}
-	const realCandidate = realpathSync(candidate);
+	let realCandidate: string;
+	try {
+		realCandidate = realpathSync(candidate);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		errors.push(
+			`${path}.ref: required repo file is not accessible: ${message}`,
+		);
+		return false;
+	}
 	const containment = relative(resolvedRepoRoot, realCandidate);
 	if (containment.startsWith("..") || isAbsolute(containment)) {
 		errors.push(`${path}.ref: resolved path escapes repository root`);
 		return false;
 	}
-	if (!statSync(realCandidate).isFile()) {
+	let isFile: boolean;
+	try {
+		isFile = statSync(realCandidate).isFile();
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		errors.push(
+			`${path}.ref: required repo file metadata is not accessible: ${message}`,
+		);
+		return false;
+	}
+	if (!isFile) {
 		errors.push(`${path}.ref: required repo file is not a file`);
 		return false;
 	}
 	if (ref.hashAlgorithm !== "sha256" || !SHA256.test(String(ref.sha256))) {
 		return false;
 	}
-	const actual = createHash("sha256")
-		.update(readFileSync(realCandidate))
-		.digest("hex");
+	let actual: string;
+	try {
+		actual = createHash("sha256")
+			.update(readFileSync(realCandidate))
+			.digest("hex");
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		errors.push(`${path}.ref: required repo file cannot be read: ${message}`);
+		return false;
+	}
 	if (actual !== ref.sha256) {
 		errors.push(`${path}.sha256: digest mismatch`);
 		return false;

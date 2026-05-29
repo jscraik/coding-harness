@@ -1,4 +1,7 @@
 import { spawnSync } from "node:child_process";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("validate-prompt-context-drift script", () => {
@@ -73,5 +76,35 @@ describe("validate-prompt-context-drift script", () => {
 			status: "fail",
 			errors: ["unexpected.json: unexpected positional argument"],
 		});
+	});
+
+	it("keeps child runtime failures inside the structured JSON envelope", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "prompt-context-drift-script-"));
+		const invalidReportPath = join(tempDir, "invalid-report.json");
+		writeFileSync(invalidReportPath, "{not-json", "utf8");
+
+		const result = spawnSync(
+			process.execPath,
+			[
+				"scripts/validate-prompt-context-drift.cjs",
+				invalidReportPath,
+				"--repo-root",
+				".",
+			],
+			{ encoding: "utf8" },
+		);
+		const output = JSON.parse(result.stdout) as {
+			schemaVersion: string;
+			status: string;
+			errors: string[];
+		};
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toBe("");
+		expect(output.schemaVersion).toBe("prompt-context-drift-validation/v1");
+		expect(output.status).toBe("fail");
+		expect(output.errors).toEqual([
+			expect.stringContaining("runtime failure:"),
+		]);
 	});
 });
