@@ -397,6 +397,14 @@ function validateClaimSupportSource(
 	policies: Map<string, Record<string, unknown>>,
 	errors: IntermediaryReceiptCoverageValidationError[],
 ): void {
+	if (source.status !== "pass") {
+		addError(
+			errors,
+			"source_status_not_pass",
+			`${path}.status`,
+			"claim support requires source status pass",
+		);
+	}
 	if (source.freshness !== "current") {
 		addError(
 			errors,

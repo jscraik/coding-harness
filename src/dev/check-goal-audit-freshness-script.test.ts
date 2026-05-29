@@ -183,10 +183,8 @@ describe("check-goal-audit-freshness.py", () => {
 		});
 	});
 
-	it("accepts a self-referential receipt when all changed files are declared", () => {
+	it("rejects self-referential receipt scope from receipt-declared changed files", () => {
 		const root = createTempRoot("audit-freshness-declared-self-ref-");
-		const parentHead = tempRootHeads.get(root);
-		if (!parentHead) throw new Error("missing test repository head");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
 		mkdirSync(join(root, "scripts"), { recursive: true });
 		const storedReceipt = {
@@ -210,11 +208,10 @@ describe("check-goal-audit-freshness.py", () => {
 
 		const result = runValidator(root);
 
-		expect(result.status).toBe(0);
-		expect(JSON.parse(result.stdout)).toMatchObject({
-			head_sha: parentHead,
-			receipt_id: "R072",
-		});
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"receipt.head_sha must match current repository HEAD",
+		);
 	});
 
 	it("rejects a stale receipt head when non-goal files changed afterward", () => {

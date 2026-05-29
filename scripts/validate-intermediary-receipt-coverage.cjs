@@ -46,6 +46,34 @@ function printResult(status, errors, exitCode) {
 	process.exit(exitCode);
 }
 
+function resolvePacketPath(repoRoot, packetPath) {
+	const resolved = path.resolve(repoRoot, packetPath);
+	const relative = path.relative(repoRoot, resolved);
+	if (
+		relative === "" ||
+		relative.startsWith("..") ||
+		path.isAbsolute(relative)
+	) {
+		printResult("fail", ["packetPath: must resolve within --repo-root"], 2);
+	}
+	return resolved;
+}
+
+function hasStructuredValidationOutput(stdout) {
+	if (!stdout.trim()) return false;
+	try {
+		const parsed = JSON.parse(stdout);
+		return (
+			parsed &&
+			parsed.schemaVersion === "intermediary-receipt-coverage-validation/v1" &&
+			typeof parsed.status === "string" &&
+			Array.isArray(parsed.errors)
+		);
+	} catch (_error) {
+		return false;
+	}
+}
+
 function main() {
 	const args = parseArgs(process.argv.slice(2));
 	if (args.errors.length > 0) {
@@ -54,11 +82,12 @@ function main() {
 	if (!args.packetPath) {
 		printResult("fail", ["packetPath: is required"], 2);
 	}
-	if (!fs.existsSync(args.packetPath)) {
+	const repoRoot = path.resolve(args.repoRoot);
+	const packetPath = resolvePacketPath(repoRoot, args.packetPath);
+	if (!fs.existsSync(packetPath)) {
 		printResult("fail", ["packetPath: file does not exist"], 1);
 	}
 
-	const repoRoot = path.resolve(args.repoRoot);
 	const moduleUrl = pathToFileURL(
 		path.join(repoRoot, "src/lib/intermediary-receipts/index.ts"),
 	).href;
@@ -81,16 +110,37 @@ function main() {
 			env: {
 				...process.env,
 				INTERMEDIARY_RECEIPT_COVERAGE_MODULE_URL: moduleUrl,
-				INTERMEDIARY_RECEIPT_COVERAGE_PACKET_PATH: path.resolve(
-					args.packetPath,
-				),
+				INTERMEDIARY_RECEIPT_COVERAGE_PACKET_PATH: packetPath,
 			},
 			encoding: "utf8",
 		},
 	);
+	if (child.error) {
+		printResult("fail", [`runner: ${child.error.message}`], 1);
+	}
+	if (hasStructuredValidationOutput(child.stdout)) {
+		process.stdout.write(child.stdout);
+		if (child.stderr) process.stderr.write(child.stderr);
+		process.exit(child.status === null ? 1 : child.status);
+	}
+	if (child.status !== 0 || child.signal) {
+		const diagnostics = [child.stderr, child.stdout, child.signal]
+			.filter(Boolean)
+			.join("\n")
+			.trim();
+		printResult(
+			"fail",
+			[
+				diagnostics
+					? `runner: ${diagnostics}`
+					: "runner: failed without diagnostics",
+			],
+			child.status === null ? 1 : child.status,
+		);
+	}
 	if (child.stdout) process.stdout.write(child.stdout);
 	if (child.stderr) process.stderr.write(child.stderr);
-	process.exit(child.status === null ? 1 : child.status);
+	process.exit(0);
 }
 
 main();

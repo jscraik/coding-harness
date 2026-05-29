@@ -113,6 +113,24 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		expectInvalid(packet, "stale_receipt");
 	});
 
+	it("requires claim-support sources to have pass status", () => {
+		const packet = basePacket();
+		const source = packet.sources.find(
+			(entry) => entry.sourceId === "external-check-snapshot",
+		);
+		expect(source).toBeDefined();
+		source!.status = "warn";
+
+		expectInvalid(packet, "source_status_not_pass");
+	});
+
+	it("rejects impossible RFC3339-style timestamps", () => {
+		const packet = basePacket();
+		packet.generatedAt = "2026-02-31T10:15:00Z";
+
+		expectInvalid(packet, "invalid_timestamp");
+	});
+
 	it("keeps unbound orientation sources ineligible for claim support", () => {
 		const packet = basePacket();
 		const summary = packet.claimFamilySummaries.find(
@@ -223,5 +241,47 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		expect(result.stdout).toContain(
 			"intermediary-receipt-coverage-validation/v1",
 		);
+	});
+
+	it("standalone validator resolves packet paths relative to repo root", () => {
+		const root = createTempRoot("alternate-cwd-");
+
+		const result = spawnSync(
+			process.execPath,
+			[
+				SCRIPT_PATH,
+				"contracts/examples/intermediary-receipt-coverage.example.json",
+				"--repo-root",
+				process.cwd(),
+			],
+			{ cwd: root, encoding: "utf8" },
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(
+			"intermediary-receipt-coverage-validation/v1",
+		);
+	});
+
+	it("standalone validator returns structured JSON when runner startup fails", () => {
+		const root = createTempRoot("broken-runner-");
+		writeFileSync(
+			join(root, "packet.json"),
+			JSON.stringify(basePacket(), null, 2),
+		);
+
+		const result = spawnSync(
+			process.execPath,
+			[SCRIPT_PATH, "packet.json", "--repo-root", root],
+			{ cwd: root, encoding: "utf8" },
+		);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors.join("\n")).toContain("runner:");
 	});
 });
