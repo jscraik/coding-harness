@@ -4,7 +4,6 @@ import {
 	PLACEHOLDERS,
 	ACCEPTANCE_TRACE_ID_PATTERN,
 	LINKED_ISSUE_REFERENCE_PATTERN,
-	PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN,
 	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
 	REQUIRED_SECTIONS,
 	REQUIRED_TESTING_FIELDS,
@@ -198,28 +197,8 @@ function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
 			),
 		),
 	);
-	const hasAcceptanceIds = ACCEPTANCE_TRACE_ID_PATTERN.test(acceptanceTrace);
-	if (hasAcceptanceIds) {
-		if (
-			issueKeys.length <= 1 ||
-			traceCoversEveryLinkedIssue(issueKeys, acceptanceTrace)
-		) {
-			return [];
-		}
-	}
-
-	if (!hasAcceptanceIds) {
-		if (issueKeys.length === 1) {
-			if (
-				PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace) &&
-				PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN.test(acceptanceTrace)
-			) {
-				return [];
-			}
-		} else if (traceCoversEveryLinkedIssue(issueKeys, acceptanceTrace)) {
-			return [];
-		}
-	}
+	if (traceCoversEveryLinkedIssue(issueKeys, acceptanceTrace)) {
+		return [];
 	}
 
 	const issueKeyList = issueKeys.join(", ");
@@ -234,6 +213,11 @@ function traceCoversEveryLinkedIssue(
 ): boolean {
 	return issueKeys.every((issueKey) => {
 		const escapedIssueKey = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const issueKeyPattern = new RegExp(`\\b${escapedIssueKey}\\b`, "i");
+		if (!issueKeyPattern.test(acceptanceTrace)) {
+			return false;
+		}
+
 		const segmentPattern = new RegExp(
 			`\\b${escapedIssueKey}\\b([\\s\\S]*?)(?=\\bJSC-\\d+\\b|$)`,
 			"i",
@@ -241,10 +225,24 @@ function traceCoversEveryLinkedIssue(
 		const segment = acceptanceTrace.match(segmentPattern)?.[0] ?? "";
 		return (
 			ACCEPTANCE_TRACE_ID_PATTERN.test(segment) ||
-			(PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(segment) &&
-				PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN.test(segment))
+			issueHasPreparatoryNoCompletionTrace(issueKey, acceptanceTrace)
 		);
 	});
+}
+
+function issueHasPreparatoryNoCompletionTrace(
+	issueKey: string,
+	acceptanceTrace: string,
+): boolean {
+	const escapedIssueKey = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const issueScopedNoCompletionPattern = new RegExp(
+		`\\bcompleted\\s+${escapedIssueKey}\\s+acceptance\\s+IDs?\\s*:\\s*none\\b`,
+		"i",
+	);
+	return (
+		PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace) &&
+		issueScopedNoCompletionPattern.test(acceptanceTrace)
+	);
 }
 
 function extractFieldBlockValue(

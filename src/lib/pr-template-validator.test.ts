@@ -18,11 +18,12 @@ const VALID_BODY = `## Summary
 - AI session / traceability: codex-session-019c-example supports the validator and PR-template-gate implementation changes.
 - Completed work: Added pr-template-gate command and docs update with evidence refs.
 - Affected surfaces: code, tests, and PR template.
+- Documentation impact: PR template and validator fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves PR body validation.
 - Expected outcome alignment: Keeps PR evidence portable and machine-checkable for greenfield and brownfield repos.
 - Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.
 - Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).
 - Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).
-- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.
+- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts.
 - Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass.
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
 - Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.
@@ -68,7 +69,7 @@ describe("validatePrTemplateBody", () => {
 
 	it("fails linked issue bodies without acceptance IDs or preparatory relationship", () => {
 		const body = VALID_BODY.replace(
-			"- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts.",
 			"- Acceptance trace: Tool-promotion threshold present and enforced by pnpm run docs:steering:guard.",
 		);
 
@@ -83,7 +84,7 @@ describe("validatePrTemplateBody", () => {
 
 	it("fails preparatory linked issue bodies that do not state no acceptance IDs were completed", () => {
 		const body = VALID_BODY.replace(
-			"- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts.",
 			"- Acceptance trace: Preparatory relationship: supports JSC-999 by adding a governance guard; this PR does not complete the issue acceptance criteria.",
 		);
 
@@ -96,7 +97,7 @@ describe("validatePrTemplateBody", () => {
 
 	it("accepts linked issue bodies that explicitly mark preparatory relationship", () => {
 		const body = VALID_BODY.replace(
-			"- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts.",
 			"- Acceptance trace: Preparatory relationship: supports JSC-999 by adding a governance guard; this PR does not complete the issue acceptance criteria. Completed JSC-999 acceptance IDs: none.",
 		);
 
@@ -108,13 +109,43 @@ describe("validatePrTemplateBody", () => {
 			"- Plan IDs: JSC-999; .harness/plan/example-plan.md",
 			"- Plan IDs: JSC-999 and JSC-1000; .harness/plan/example-plan.md",
 		).replace(
-			"- Acceptance trace: SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts.",
 			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts; JSC-1000 is preparatory support.",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining("When multiple linked issues are listed"),
+			]),
+		);
+	});
+
+	it("fails single-issue bodies when acceptance IDs are bound to another issue", () => {
+		const body = VALID_BODY.replace(
+			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: JSC-1000 SA-1000-001 -> src/lib/pr-template-validator.test.ts.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"Acceptance trace for linked issue JSC-999 must list specific acceptance IDs",
+				),
+			]),
+		);
+	});
+
+	it("fails single-issue preparatory bodies that omit the linked issue key", () => {
+		const body = VALID_BODY.replace(
+			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts.",
+			"- Acceptance trace: Preparatory relationship: adds a governance guard; this PR does not complete the issue acceptance criteria. Completed linked issue acceptance IDs: none.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"Acceptance trace for linked issue JSC-999 must list specific acceptance IDs",
+				),
 			]),
 		);
 	});

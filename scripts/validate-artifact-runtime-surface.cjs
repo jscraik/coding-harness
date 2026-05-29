@@ -308,7 +308,9 @@ function validateFilesystem(packet, repoRoot, errors) {
 	try {
 		rootReal = fs.realpathSync(repoRoot);
 	} catch (error) {
-		errors.push(`artifact.path: filesystem error resolving repo root: ${error.message}`);
+		errors.push(
+			`artifact.path: filesystem error resolving repo root: ${error.message}`,
+		);
 		return;
 	}
 	const artifactPath = path.resolve(repoRoot, artifact.path);
@@ -324,7 +326,9 @@ function validateFilesystem(packet, repoRoot, errors) {
 	try {
 		artifactReal = fs.realpathSync(artifactPath);
 	} catch (error) {
-		errors.push(`artifact.path: filesystem error resolving artifact path: ${error.message}`);
+		errors.push(
+			`artifact.path: filesystem error resolving artifact path: ${error.message}`,
+		);
 		return;
 	}
 	if (!isUnderRoot(artifactReal, rootReal)) {
@@ -335,7 +339,9 @@ function validateFilesystem(packet, repoRoot, errors) {
 	try {
 		stat = fs.statSync(artifactReal);
 	} catch (error) {
-		errors.push(`artifact.path: filesystem error reading file stats: ${error.message}`);
+		errors.push(
+			`artifact.path: filesystem error reading file stats: ${error.message}`,
+		);
 		return;
 	}
 	if (!stat.isFile()) errors.push("artifact.path: must resolve to a file");
@@ -351,7 +357,9 @@ function validateFilesystem(packet, repoRoot, errors) {
 		try {
 			fileContents = fs.readFileSync(artifactReal);
 		} catch (error) {
-			errors.push(`artifact.path: filesystem error reading file contents: ${error.message}`);
+			errors.push(
+				`artifact.path: filesystem error reading file contents: ${error.message}`,
+			);
 			return;
 		}
 		const digest = crypto
