@@ -64,7 +64,7 @@ const completedWorkPerformedValues = new Map<string, string>([
 		"Repeated-error research",
 		"n.a. (no same-error-twice troubleshooting trigger in this fixture).",
 	],
-	["Acceptance trace", "SA-999-001 -> scaffold-doc-templates.test.ts."],
+	["Acceptance trace", "JSC-999 SA-999-001 -> scaffold-doc-templates.test.ts."],
 	[
 		"Validation evidence",
 		"Command: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts -> pass.",

@@ -2,6 +2,9 @@ import { collectWorkEvidenceIntegrityErrors } from "./pr-template-behavior-evide
 import {
 	MAX_BODY_LENGTH,
 	PLACEHOLDERS,
+	ACCEPTANCE_TRACE_ID_PATTERN,
+	LINKED_ISSUE_REFERENCE_PATTERN,
+	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
 	REQUIRED_SECTIONS,
 	REQUIRED_TESTING_FIELDS,
 	REQUIRED_WORK_FIELDS,
@@ -172,6 +175,76 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 	);
 }
 
+function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
+	const planIds = extractFieldBlockValue(body, "## Work performed", "Plan IDs");
+	if (planIds === null || !LINKED_ISSUE_REFERENCE_PATTERN.test(planIds)) {
+		return [];
+	}
+
+	const acceptanceTrace = extractFieldBlockValue(
+		body,
+		"## Work performed",
+		"Acceptance trace",
+	);
+	if (acceptanceTrace === null) {
+		return [];
+	}
+
+	const issueKeys = Array.from(
+		new Set(
+			(planIds.match(/\bJSC-\d+\b/gi) ?? []).map((issueKey) =>
+				issueKey.toUpperCase(),
+			),
+		),
+	);
+	if (traceCoversEveryLinkedIssue(issueKeys, acceptanceTrace)) {
+		return [];
+	}
+
+	const issueKeyList = issueKeys.join(", ");
+	return [
+		`Acceptance trace for linked issue ${issueKeyList} must list specific acceptance IDs (for example SA-001 or AC-001) or explicitly state the preparatory/enabling relationship, that this PR does not complete the issue acceptance criteria, and that completed issue acceptance IDs are none. When multiple linked issues are listed, each issue key must appear in the Acceptance trace with completed acceptance IDs or an explicit no-completion classification.`,
+	];
+}
+
+function traceCoversEveryLinkedIssue(
+	issueKeys: string[],
+	acceptanceTrace: string,
+): boolean {
+	return issueKeys.every((issueKey) => {
+		const escapedIssueKey = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const issueKeyPattern = new RegExp(`\\b${escapedIssueKey}\\b`, "i");
+		if (!issueKeyPattern.test(acceptanceTrace)) {
+			return false;
+		}
+
+		const segmentPattern = new RegExp(
+			`\\b${escapedIssueKey}\\b([\\s\\S]*?)(?=\\bJSC-\\d+\\b|$)`,
+			"i",
+		);
+		const segment = acceptanceTrace.match(segmentPattern)?.[0] ?? "";
+		return (
+			ACCEPTANCE_TRACE_ID_PATTERN.test(segment) ||
+			issueHasPreparatoryNoCompletionTrace(issueKey, acceptanceTrace)
+		);
+	});
+}
+
+function issueHasPreparatoryNoCompletionTrace(
+	issueKey: string,
+	acceptanceTrace: string,
+): boolean {
+	const escapedIssueKey = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const issueScopedNoCompletionPattern = new RegExp(
+		`\\bcompleted\\s+${escapedIssueKey}\\s+acceptance\\s+IDs?\\s*:\\s*none\\b`,
+		"i",
+	);
+	return (
+		PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace) &&
+		issueScopedNoCompletionPattern.test(acceptanceTrace)
+	);
+}
+
 function extractFieldBlockValue(
 	body: string,
 	sectionHeading: string,
@@ -250,6 +323,7 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectWorkPerformedFieldErrors(body));
+	errors.push(...collectLinkedIssueAcceptanceTraceErrors(body));
 	errors.push(
 		...collectWorkEvidenceIntegrityErrors(body, extractFieldBlockValue),
 	);

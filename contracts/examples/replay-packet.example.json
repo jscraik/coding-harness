@@ -1,0 +1,149 @@
+{
+	"schemaVersion": "replay-packet/v1",
+	"generatedAt": "2026-05-28T10:30:00Z",
+	"producer": "coding-harness/replay-packet-fixture",
+	"runtimeStatus": "not_yet_emitted",
+	"evidenceUse": "audit_trail",
+	"replayId": "replay:PU-036-SPG-010-fixture",
+	"replayKind": "hook_replay_seed",
+	"headSha": "cb6d6c8be2fb1e6f36443974cb1a7fcde60e2657",
+	"branch": "codex/jsc-363-replay-packet-surface",
+	"observedHeadSha": "cb6d6c8be2fb1e6f36443974cb1a7fcde60e2657",
+	"currentHeadSha": "cb6d6c8be2fb1e6f36443974cb1a7fcde60e2657",
+	"ttlSeconds": 86400,
+	"freshnessVerdict": "current",
+	"runtimeIdentityRefs": [
+		{
+			"refId": "runtime:codex-desktop-thread",
+			"refKind": "runtime_identity",
+			"ref": "contracts/fixtures/replay-packet-source.md",
+			"hashAlgorithm": "sha256",
+			"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8",
+			"requiredForReplay": true,
+			"requiresFilesystemExistence": true
+		}
+	],
+	"sourceRefs": [
+		{
+			"refId": "source:replay-fixture",
+			"refKind": "repo_file",
+			"ref": "contracts/fixtures/replay-packet-source.md",
+			"hashAlgorithm": "sha256",
+			"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8",
+			"requiredForReplay": true,
+			"requiresFilesystemExistence": true
+		}
+	],
+	"replaySeed": {
+		"seedId": "seed:replay-fixture",
+		"inputRefs": [
+			{
+				"refId": "seed:input-fixture",
+				"refKind": "seed",
+				"ref": "contracts/fixtures/replay-packet-source.md",
+				"hashAlgorithm": "sha256",
+				"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8",
+				"requiredForReplay": true,
+				"requiresFilesystemExistence": true
+			}
+		],
+		"artifactRefs": [
+			{
+				"refId": "seed:artifact-fixture",
+				"refKind": "produced_artifact",
+				"ref": "contracts/fixtures/replay-packet-source.md",
+				"hashAlgorithm": "sha256",
+				"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8",
+				"requiredForReplay": true,
+				"requiresFilesystemExistence": true
+			}
+		],
+		"hashAlgorithm": "sha256",
+		"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8"
+	},
+	"hookProvenance": [
+		{
+			"hookId": "hook:stop-14",
+			"triggerKind": "stop",
+			"status": "pass",
+			"blockerClass": null,
+			"checkedAt": "2026-05-28T10:25:00Z",
+			"hookRef": {
+				"refId": "hook:file-fixture",
+				"refKind": "hook_file",
+				"ref": "contracts/fixtures/replay-packet-source.md",
+				"hashAlgorithm": "sha256",
+				"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8",
+				"requiredForReplay": true,
+				"requiresFilesystemExistence": true
+			},
+			"inputRef": {
+				"refId": "hook:input-fixture",
+				"refKind": "hook_input",
+				"ref": "contracts/fixtures/replay-packet-source.md",
+				"hashAlgorithm": "sha256",
+				"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8",
+				"requiredForReplay": true,
+				"requiresFilesystemExistence": true
+			},
+			"outputRef": {
+				"refId": "hook:output-fixture",
+				"refKind": "hook_output",
+				"ref": "contracts/fixtures/replay-packet-source.md",
+				"hashAlgorithm": "sha256",
+				"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8",
+				"requiredForReplay": true,
+				"requiresFilesystemExistence": true
+			},
+			"producedArtifactRefs": [
+				{
+					"refId": "hook:artifact-fixture",
+					"refKind": "produced_artifact",
+					"ref": "contracts/fixtures/replay-packet-source.md",
+					"hashAlgorithm": "sha256",
+					"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8",
+					"requiredForReplay": true,
+					"requiresFilesystemExistence": true
+				}
+			],
+			"hookExecutionIdentity": {
+				"hookFileRef": {
+					"refId": "hook:identity-file",
+					"refKind": "hook_file",
+					"ref": "contracts/fixtures/replay-packet-source.md",
+					"hashAlgorithm": "sha256",
+					"sha256": "dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8",
+					"requiredForReplay": true,
+					"requiresFilesystemExistence": true
+				},
+				"resolvedCommandRef": {
+					"refId": "hook:resolved-command",
+					"refKind": "resolved_command",
+					"ref": "scripts/validate-replay-packet.cjs",
+					"hashAlgorithm": "sha256",
+					"sha256": "5125ae14b5205b3212e2fd47cc0593602da25e0862865a357d464a73a6e900a6",
+					"requiredForReplay": true,
+					"requiresFilesystemExistence": true
+				},
+				"runCorrelationId": "run:PU-036-SPG-010-fixture"
+			}
+		}
+	],
+	"normalizedEvents": [
+		{
+			"eventType": "hook",
+			"count": 1,
+			"observedAt": "2026-05-28T10:25:00Z",
+			"sourceRefs": ["source:replay-fixture"],
+			"hashes": [
+				"dfeace73a15dcdc083cdc97c2d59a8cacd81cf9e08917613e96dc96873faf2c8"
+			],
+			"failureClass": null
+		}
+	],
+	"redactionStatus": "summary_only",
+	"freshness": "current",
+	"staleState": [],
+	"blockers": [],
+	"nextAction": "next:wire-production-producer"
+}

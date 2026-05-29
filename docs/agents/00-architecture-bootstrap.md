@@ -148,6 +148,18 @@ be treated as invalid for closeout or replay support until a fresh
 `runtime-card --trace-out artifacts/agent-runs/<runId>/events.jsonl` run proves
 the restored contract.
 
+Replay packet changes are replay contract work, not a new claim-support
+rail. Keep `replay-packet/v1` inside `src/lib/replay/` as the pointer-only,
+content-bound packet for replay seeds, hook execution identity, normalized event
+summaries, stale-state classification, and redaction proof. Validators must
+prove repo-relative path containment, SHA-256 reference integrity, hook file and
+resolved-command provenance, timestamp ordering, TTL/head freshness semantics,
+and rejection of raw prompts, transcripts, command output, screenshots, images,
+or secret-like fields. Replay packets may support orientation and audit trails;
+they must not support delivery-truth, review-state, external-state,
+root-hygiene, merge-readiness, or Judge/PM claims without a future explicit
+consumer boundary and matching governance update.
+
 Runtime evidence receipts and private delivery-truth composition belong to the
 same architecture-adjacent cockpit lane when they decide whether a claim can be
 supported. Keep `evidence-receipt/v1` and `delivery-truth/v1` changes

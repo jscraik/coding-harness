@@ -19,6 +19,7 @@ import {
 	validateReviewLifecyclePacket,
 	validateReviewStatePacket,
 } from "../lib/review-state/index.js";
+import { validateReplayPacket } from "../lib/replay/replay-packet.js";
 import { validateRuntimeCard } from "../lib/runtime/runtime-card.js";
 import { validateRuntimeCardHandoff } from "../lib/runtime/runtime-card-handoff.js";
 
@@ -29,6 +30,10 @@ const SCRIPT_PATH = join(
 const MANIFEST_PATH = join(
 	process.cwd(),
 	"contracts/runtime-packet-schemas.manifest.json",
+);
+const REPLAY_VALIDATOR_PATH = join(
+	process.cwd(),
+	"scripts/validate-replay-packet.cjs",
 );
 
 const tempRoots: string[] = [];
@@ -47,6 +52,24 @@ function readJson(path: string): unknown {
 
 function runValidator(args: string[]) {
 	return spawnSync(process.execPath, [SCRIPT_PATH, ...args], {
+		cwd: process.cwd(),
+		encoding: "utf8",
+	});
+}
+
+function runReplayValidator(packetPath: string) {
+	return spawnSync(
+		process.execPath,
+		[REPLAY_VALIDATOR_PATH, packetPath, "--repo-root", process.cwd()],
+		{
+			cwd: process.cwd(),
+			encoding: "utf8",
+		},
+	);
+}
+
+function runReplayValidatorArgs(args: string[]) {
+	return spawnSync(process.execPath, [REPLAY_VALIDATOR_PATH, ...args], {
 		cwd: process.cwd(),
 		encoding: "utf8",
 	});
@@ -97,8 +120,103 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 16,
+			packetCount: 17,
 			errors: [],
+		});
+	});
+
+	it("keeps ReplayPacket/v1 examples aligned with the TypeScript validator", () => {
+		const packet = readJson("contracts/examples/replay-packet.example.json");
+
+		expect(validateReplayPacket(packet, { repoRoot: process.cwd() })).toEqual({
+			status: "pass",
+			errors: [],
+		});
+	});
+
+	it("keeps ReplayPacket/v1 semantic validators aligned on replay kind failures", () => {
+		const root = createTempRoot("replay-packet-invalid-kind-");
+		const packet = {
+			...(readJson("contracts/examples/replay-packet.example.json") as Record<
+				string,
+				unknown
+			>),
+			replayKind: "session_replay_seed_typo",
+		};
+		const packetPath = join(root, "packet.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+
+		expect(
+			validateReplayPacket(packet, { repoRoot: process.cwd() }),
+		).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([expect.stringContaining("replayKind")]),
+		});
+		const scriptResult = runReplayValidator(packetPath);
+		expect(scriptResult.status).toBe(1);
+		expect(scriptResult.stdout).toContain("replayKind");
+	});
+
+	it("keeps ReplayPacket/v1 semantic validators aligned on stale orientation contradictions", () => {
+		const root = createTempRoot("replay-packet-stale-orientation-");
+		const packet = {
+			...(readJson("contracts/examples/replay-packet.example.json") as Record<
+				string,
+				unknown
+			>),
+			evidenceUse: "orientation",
+			freshness: "stale",
+			staleState: [
+				{
+					surface: "replay:fixture",
+					freshness: "stale",
+					reason: "orientation contradiction fixture",
+				},
+			],
+		};
+		const packetPath = join(root, "packet.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+
+		expect(
+			validateReplayPacket(packet, { repoRoot: process.cwd() }),
+		).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.stringContaining("freshness: orientation requires current"),
+				expect.stringContaining(
+					"orientation packets must not carry stale state",
+				),
+			]),
+		});
+		const scriptResult = runReplayValidator(packetPath);
+		expect(scriptResult.status).toBe(1);
+		expect(scriptResult.stdout).toContain(
+			"freshness: orientation requires current",
+		);
+		expect(scriptResult.stdout).toContain(
+			"orientation packets must not carry stale state",
+		);
+	});
+
+	it("keeps ReplayPacket/v1 script failures parseable for invalid repo roots", () => {
+		const missingValue = runReplayValidatorArgs(["--repo-root"]);
+		expect(missingValue.status).toBe(1);
+		expect(JSON.parse(missingValue.stdout)).toMatchObject({
+			schemaVersion: "replay-packet-validation/v1",
+			status: "fail",
+			errors: expect.arrayContaining([expect.stringContaining("--repo-root")]),
+		});
+
+		const invalidRoot = runReplayValidatorArgs([
+			"contracts/examples/replay-packet.example.json",
+			"--repo-root",
+			"/path/that/does/not/exist",
+		]);
+		expect(invalidRoot.status).toBe(1);
+		expect(JSON.parse(invalidRoot.stdout)).toMatchObject({
+			schemaVersion: "replay-packet-validation/v1",
+			status: "fail",
+			errors: expect.arrayContaining([expect.stringContaining("repoRoot")]),
 		});
 	});
 

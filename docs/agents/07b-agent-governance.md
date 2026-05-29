@@ -117,6 +117,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   pre-append claim so repeated executions cannot share a replay stream, and
   treat emitted trace records as replay-ready audit/orientation evidence only,
   not closeout, CI, review, Linear, or merge-readiness proof
+- replay-packet changes should keep replay seeds and replay evidence in
+  `src/lib/replay/` as pointer-only, content-bound orientation/audit evidence.
+  Validators must prove source refs, seed refs, hook file provenance, resolved
+  command provenance, normalized event summaries, stale-state semantics,
+  SHA-256 integrity, and raw-payload or secret leakage rejection. Replay packets
+  must not become delivery-truth, review-state, external-state, root-hygiene,
+  Judge/PM, or merge-readiness claim support without a future explicit consumer
+  boundary and synchronized governance update
 - codex-runtime-evidence packet changes should stay inside the existing
   `src/lib/runtime` deep module as a narrow public facade plus typed contract,
   source-classification, validation, and reference-integrity internals before
