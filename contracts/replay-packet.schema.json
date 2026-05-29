@@ -224,22 +224,47 @@
 					"anyOf": [{ "$ref": "#/$defs/pointer" }, { "type": "null" }]
 				},
 				"checkedAt": { "type": "string", "format": "date-time" },
-				"hookRef": { "$ref": "#/$defs/ref" },
-				"inputRef": { "$ref": "#/$defs/ref" },
-				"outputRef": { "$ref": "#/$defs/ref" },
-				"producedArtifactRefs": {
-					"type": "array",
-					"minItems": 1,
-					"items": { "$ref": "#/$defs/ref" }
-				},
-				"hookExecutionIdentity": {
-					"type": "object",
-					"additionalProperties": false,
-					"required": ["hookFileRef", "resolvedCommandRef", "runCorrelationId"],
-					"properties": {
-						"hookFileRef": { "$ref": "#/$defs/ref" },
-						"resolvedCommandRef": { "$ref": "#/$defs/ref" },
-						"runCorrelationId": {
+			"hookRef": {
+			  "allOf": [
+			    { "$ref": "`#/`$defs/ref" },
+			    { "properties": { "refKind": { "const": "hook_file" } } }
+			  ]
+			},
+			"inputRef": {
+			  "allOf": [
+			    { "$ref": "`#/`$defs/ref" },
+			    { "properties": { "refKind": { "const": "hook_input" } } }
+			  ]
+			},
+			"outputRef": {
+			  "allOf": [
+			    { "$ref": "`#/`$defs/ref" },
+			    { "properties": { "refKind": { "const": "hook_output" } } }
+			  ]
+			},
+			"producedArtifactRefs": {
+				"type": "array",
+				"minItems": 1,
+				"items": { "$ref": "`#/`$defs/ref" }
+			},
+			"hookExecutionIdentity": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["hookFileRef", "resolvedCommandRef", "runCorrelationId"],
+				"properties": {
+					"hookFileRef": {
+					  "allOf": [
+					    { "$ref": "`#/`$defs/ref" },
+					    { "properties": { "refKind": { "const": "hook_file" } } }
+					  ]
+					},
+					"resolvedCommandRef": {
+					  "allOf": [
+					    { "$ref": "`#/`$defs/ref" },
+					    { "properties": { "refKind": { "const": "resolved_command" } } }
+					  ]
+					},
+					"runCorrelationId": {
 							"anyOf": [{ "$ref": "#/$defs/pointer" }, { "type": "null" }]
 						}
 					}
