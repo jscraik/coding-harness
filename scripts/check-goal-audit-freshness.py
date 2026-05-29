@@ -152,13 +152,12 @@ def permits_self_referential_goal_receipt_commit(
     changed_files = receipt.get("changed_files", [])
     if not isinstance(changed_files, list):
         return False
-    declared_paths: set[str] = set()
     for value in changed_files:
         if not isinstance(value, str):
             return False
-        declared_paths.add(normalize_repo_relative_path(value, "receipt.changed_files[]"))
+        normalize_repo_relative_path(value, "receipt.changed_files[]")
     changed_paths = changed_paths_between(repo_root, receipt_head_sha, current_head)
-    allowed_paths = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | declared_paths
+    allowed_paths = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS
     return bool(changed_paths) and changed_paths <= allowed_paths
 
 

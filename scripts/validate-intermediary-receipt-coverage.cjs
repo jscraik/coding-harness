@@ -54,11 +54,16 @@ function main() {
 	if (!args.packetPath) {
 		printResult("fail", ["packetPath: is required"], 2);
 	}
-	if (!fs.existsSync(args.packetPath)) {
+
+	const repoRoot = path.resolve(args.repoRoot);
+	const resolvedPacketPath = path.isAbsolute(args.packetPath)
+		? args.packetPath
+		: path.resolve(repoRoot, args.packetPath);
+
+	if (!fs.existsSync(resolvedPacketPath)) {
 		printResult("fail", ["packetPath: file does not exist"], 1);
 	}
 
-	const repoRoot = path.resolve(args.repoRoot);
 	const moduleUrl = pathToFileURL(
 		path.join(repoRoot, "src/lib/intermediary-receipts/index.ts"),
 	).href;
@@ -81,16 +86,27 @@ function main() {
 			env: {
 				...process.env,
 				INTERMEDIARY_RECEIPT_COVERAGE_MODULE_URL: moduleUrl,
-				INTERMEDIARY_RECEIPT_COVERAGE_PACKET_PATH: path.resolve(
-					args.packetPath,
-				),
+				INTERMEDIARY_RECEIPT_COVERAGE_PACKET_PATH: resolvedPacketPath,
 			},
 			encoding: "utf8",
 		},
 	);
+	if (child.status === null || child.status !== 0) {
+		const errorOutput = {
+			schemaVersion: "intermediary-receipt-coverage-validation/v1",
+			status: "fail",
+			exitStatus: child.status,
+			stderr: child.stderr || "",
+			stdout: child.stdout || "",
+			moduleUrl,
+			packetPath: resolvedPacketPath,
+		};
+		console.log(JSON.stringify(errorOutput, null, 2));
+		process.exit(child.status === null ? 1 : child.status);
+	}
 	if (child.stdout) process.stdout.write(child.stdout);
 	if (child.stderr) process.stderr.write(child.stderr);
-	process.exit(child.status === null ? 1 : child.status);
+	process.exit(child.status);
 }
 
 main();

@@ -42,7 +42,31 @@ export function isPointer(value: unknown): value is string {
 
 /** Returns true when a value is an RFC3339-style timestamp. */
 export function isIso(value: unknown): value is string {
-	return typeof value === "string" && RFC3339.test(value);
+	if (typeof value !== "string" || !RFC3339.test(value)) {
+		return false;
+	}
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) {
+		return false;
+	}
+	const match = value.match(
+		/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/u,
+	);
+	if (!match) {
+		return false;
+	}
+	const [, year, month, day, hour, minute, second] = match;
+	if (
+		date.getUTCFullYear() !== Number.parseInt(year!, 10) ||
+		date.getUTCMonth() + 1 !== Number.parseInt(month!, 10) ||
+		date.getUTCDate() !== Number.parseInt(day!, 10) ||
+		date.getUTCHours() !== Number.parseInt(hour!, 10) ||
+		date.getUTCMinutes() !== Number.parseInt(minute!, 10) ||
+		date.getUTCSeconds() !== Number.parseInt(second!, 10)
+	) {
+		return false;
+	}
+	return true;
 }
 
 /** Rejects object keys that are not part of the declared packet contract. */
