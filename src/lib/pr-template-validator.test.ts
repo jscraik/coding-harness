@@ -337,6 +337,20 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 	});
 
+	it("fails singular Fix linear references when linked issue relationship is preparatory", () => {
+		const body = VALID_BODY.replace(
+			"- Linear reference: Refs JSC-999.",
+			"- Linear reference: Fix JSC-999.",
+		).replace(
+			"- Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.",
+			"- Linked issue relationship: preparatory/enabling work for JSC-999; completed JSC-999 acceptance IDs: none; does not close SA-001 through SA-018.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Linear reference uses a closure token, so Linked issue relationship must be implementation closure with completed acceptance IDs; use Refs for preparatory/enabling or standalone work.",
+		);
+	});
+
 	it("fails closing linear references without completed acceptance IDs", () => {
 		const body = VALID_BODY.replace(
 			"- Linear reference: Refs JSC-999.",
@@ -355,6 +369,15 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		const body = VALID_BODY.replace(
 			"- Linear reference: Refs JSC-999.",
 			"- Linear reference: Closes JSC-999.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("accepts singular Fix linear references with implementation closure and completed acceptance IDs", () => {
+		const body = VALID_BODY.replace(
+			"- Linear reference: Refs JSC-999.",
+			"- Linear reference: Fix JSC-999.",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual([]);

@@ -277,7 +277,7 @@ function collectLinkedIssueClosureConsistencyErrors(body: string): string[] {
 		linkedIssueRelationship,
 	).toLowerCase();
 	const hasIssueClosureToken =
-		/\b(?:closes|close|closed|fixes|resolves)\s+[a-z]+-\d+\b/.test(
+		/\b(?:closes|close|closed|fix(?:es)?|resolves)\s+[a-z]+-\d+\b/.test(
 			normalizedLinearReference,
 		);
 	if (!hasIssueClosureToken) {
