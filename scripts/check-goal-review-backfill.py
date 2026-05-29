@@ -12,6 +12,7 @@ import argparse
 import json
 import posixpath
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -218,6 +219,7 @@ def validate_member_result(
     value: Any,
     repo: Path,
     receipt_cache: dict[str, dict[str, dict[str, Any]]],
+    allowed_exceptions: set[str],
 ) -> None:
     result = require_object(value, field)
     status = require_string(result.get("status"), f"{field}.status")
@@ -243,7 +245,11 @@ def validate_member_result(
         return
 
     require_string(result.get("reason"), f"{field}.reason")
-    resolve_receipt_ref(result.get("acceptedExceptionRef"), f"{field}.acceptedExceptionRef", repo, receipt_cache)
+    exception_ref = resolve_receipt_ref(result.get("acceptedExceptionRef"), f"{field}.acceptedExceptionRef", repo, receipt_cache)[0]
+
+    if exception_ref not in allowed_exceptions:
+        raise ValidationError(f"{field}.acceptedExceptionRef references fragment not in acceptedExceptionRefs: {exception_ref}")
+
     if status == "fail":
         require_string(result.get("owner"), f"{field}.owner")
         return
@@ -260,6 +266,7 @@ def validate_result_map(
     field: str,
     repo: Path,
     receipt_cache: dict[str, dict[str, dict[str, Any]]],
+    allowed_exceptions: set[str],
 ) -> None:
     result_map = require_object(value, field)
     missing = [member for member in required_members if member not in result_map]
@@ -275,6 +282,7 @@ def validate_result_map(
             value=result_map[member],
             repo=repo,
             receipt_cache=receipt_cache,
+            allowed_exceptions=allowed_exceptions,
         )
 
 
@@ -283,6 +291,7 @@ def validate_lifecycle_unit(
     *,
     repo: Path,
     receipt_cache: dict[str, dict[str, dict[str, Any]]],
+    allowed_exceptions: set[str],
 ) -> str:
     unit = require_object(entry, "lifecycleUnits[]")
     lifecycle_unit = require_string(unit.get("lifecycleUnit"), "lifecycleUnits[].lifecycleUnit")
@@ -298,6 +307,7 @@ def validate_lifecycle_unit(
         field=f"{lifecycle_unit}.sliceSkillLensResults",
         repo=repo,
         receipt_cache=receipt_cache,
+        allowed_exceptions=allowed_exceptions,
     )
     validate_result_map(
         value=unit.get("independentReviewerResults"),
@@ -305,6 +315,7 @@ def validate_lifecycle_unit(
         field=f"{lifecycle_unit}.independentReviewerResults",
         repo=repo,
         receipt_cache=receipt_cache,
+        allowed_exceptions=allowed_exceptions,
     )
     return lifecycle_unit
 
@@ -346,7 +357,11 @@ def validate(ledger_path: Path, repo: Path) -> dict[str, Any]:
     if goal_slug != EXPECTED_GOAL_SLUG:
         raise ValidationError(f"goalSlug must be {EXPECTED_GOAL_SLUG!r}")
 
-    require_string(root.get("generatedAt"), "generatedAt")
+    generated_at = require_string(root.get("generatedAt"), "generatedAt")
+    try:
+        datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+    except (ValueError, AttributeError) as exc:
+        raise ValidationError(f"generatedAt must be a valid ISO 8601 timestamp: {exc}") from exc
     validate_coverage_window(root.get("coverageWindow"))
     require_exact_members(root.get("requiredSkillLenses"), REQUIRED_SKILL_LENSES, "requiredSkillLenses")
     require_exact_members(
@@ -357,9 +372,11 @@ def validate(ledger_path: Path, repo: Path) -> dict[str, Any]:
 
     receipt_cache: dict[str, dict[str, dict[str, Any]]] = {}
     accepted_refs = require_object(root.get("acceptedExceptionRefs"), "acceptedExceptionRefs")
+    allowed_exceptions: set[str] = set()
     for key, ref in accepted_refs.items():
         require_string(key, f"acceptedExceptionRefs.{key}.key")
-        resolve_ref(ref, f"acceptedExceptionRefs.{key}", repo_root, receipt_cache)
+        resolved_ref = resolve_ref(ref, f"acceptedExceptionRefs.{key}", repo_root, receipt_cache)
+        allowed_exceptions.add(resolved_ref)
 
     units = require_list(root.get("lifecycleUnits"), "lifecycleUnits")
     observed: list[str] = []
@@ -369,6 +386,7 @@ def validate(ledger_path: Path, repo: Path) -> dict[str, Any]:
                 entry,
                 repo=repo_root,
                 receipt_cache=receipt_cache,
+                allowed_exceptions=allowed_exceptions,
             ),
         )
 

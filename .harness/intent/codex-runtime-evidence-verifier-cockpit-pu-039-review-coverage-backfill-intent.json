@@ -53,14 +53,30 @@
 		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json >/dev/null",
 		"python3 -m py_compile scripts/check-goal-review-backfill.py",
 		"uv run --python 3.12 ruff check scripts/check-goal-review-backfill.py",
-		"pyright: not applicable for this slice because the repository has no Python typecheck contract or Pyright configuration for standalone governance scripts; production behavior is covered by py_compile plus Vitest-spawned script regressions.",
-		"pytest: not applicable for this slice because the repository-owned regression harness for this Python script is src/dev/check-goal-review-backfill-script.test.ts, which executes scripts/check-goal-review-backfill.py directly through python3.",
+		"exception:EXC-python-typecheck-001",
+		"exception:EXC-python-pytest-001",
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-review-backfill.py docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json --repo .",
 		"pnpm vitest run src/dev/check-goal-review-backfill-script.test.ts --reporter=dot",
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id R139 --repo .",
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
 		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl scripts/check-goal-review-backfill.py src/dev/check-goal-review-backfill-script.test.ts artifacts/reviews/pu-039-review-coverage-backfill-*.md"
 	],
+	"validationExceptions": {
+		"EXC-python-typecheck-001": {
+			"validator": "pyright",
+			"reason": "The repository has no Python typecheck contract or Pyright configuration for standalone governance scripts; production behavior is covered by py_compile plus Vitest-spawned script regressions.",
+			"scope": "scripts/check-goal-review-backfill.py",
+			"owner": "harness-governance",
+			"acceptedAt": "2026-05-29T06:10:00Z"
+		},
+		"EXC-python-pytest-001": {
+			"validator": "pytest",
+			"reason": "The repository-owned regression harness for this Python script is src/dev/check-goal-review-backfill-script.test.ts, which executes scripts/check-goal-review-backfill.py directly through python3.",
+			"scope": "scripts/check-goal-review-backfill.py",
+			"owner": "harness-governance",
+			"acceptedAt": "2026-05-29T06:10:00Z"
+		}
+	},
 	"reviewPlan": {
 		"preImplementation": [
 			"adversarial-reviewer intent review",

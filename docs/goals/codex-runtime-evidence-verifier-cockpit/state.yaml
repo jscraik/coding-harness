@@ -104,7 +104,7 @@ slice_review_contract:
     - "slice_skill_lens_results"
     - "independent_reviewer_results"
   required_key_completeness_rule: "Each post-R064 slice receipt and each historical backfill ledger row must include every required_skill_lenses entry under slice_skill_lens_results and every required_independent_reviewers entry under independent_reviewer_results. Missing members classify as blocked_validation, even when the top-level object exists."
-  required_member_evidence_rule: "Each required member outcome must include evidence support. A pass member requires a resolvable, current evidence ref to the relevant artifact, command result, receipt, or review report. A blocked, fail, or not applicable member requires a reason plus owner or accepted-exception reference. Unsupported pass members and stale or unresolvable evidence refs classify as blocked_validation."
+  required_member_evidence_rule: "Each required member outcome must include evidence support. A pass member requires a resolvable, current evidence ref to the relevant artifact, command result, receipt, or review report. A blocked, fail, or not applicable member requires a reason plus an acceptedExceptionRef. Unsupported pass members and stale or unresolvable evidence refs classify as blocked_validation."
   allowed_outcomes:
     - "pass"
     - "fail"
@@ -117,7 +117,7 @@ slice_review_contract:
   completion_blockers:
     - "Any post-R064 slice done claim lacks slice_skill_lens_results or independent_reviewer_results."
     - "Any post-R064 slice done claim or historical backfill row omits a required skill lens or independent reviewer member inside those result objects."
-    - "Any required member is marked pass without a resolvable current evidence ref, or blocked/fail/not applicable without a reason plus owner or accepted-exception reference."
+    - "Any required member is marked pass without a resolvable current evidence ref, or blocked/fail/not applicable without a reason plus an acceptedExceptionRef."
     - "Any required member is marked fail without a later passing receipt or owner-accepted exception."
     - "Any final Judge/PM closeout lacks historical backfill or accepted exceptions for pre-R064 slices."
 audit_gap_enforcement:
