@@ -156,6 +156,83 @@ describe("check-goal-audit-freshness.py", () => {
 		expect(JSON.parse(result.stdout)).toMatchObject({ head_sha: headSha });
 	});
 
+	it("accepts a receipt-only goal evidence commit that records its parent head", () => {
+		const root = createTempRoot("audit-freshness-self-referential-");
+		const parentHead = tempRootHeads.get(root);
+		if (!parentHead) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [receipt(root)]);
+		mkdirSync(join(root, ".harness"), { recursive: true });
+		writeFileSync(
+			join(root, ".harness/active-artifacts.md"),
+			"route evidence\n",
+		);
+		runGit(root, [
+			"add",
+			join(GOAL_DIR, "receipts.jsonl"),
+			".harness/active-artifacts.md",
+		]);
+		runGit(root, ["commit", "-m", "record receipt"]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_sha: parentHead,
+			receipt_id: "R072",
+		});
+	});
+
+	it("accepts a self-referential receipt when all changed files are declared", () => {
+		const root = createTempRoot("audit-freshness-declared-self-ref-");
+		const parentHead = tempRootHeads.get(root);
+		if (!parentHead) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		mkdirSync(join(root, "scripts"), { recursive: true });
+		const storedReceipt = {
+			...receipt(root),
+			changed_files: [
+				join(GOAL_DIR, "receipts.jsonl"),
+				"scripts/check-goal-audit-freshness.py",
+			],
+		};
+		writeReceipts(root, [storedReceipt]);
+		writeFileSync(
+			join(root, "scripts/check-goal-audit-freshness.py"),
+			"# validator repair\n",
+		);
+		runGit(root, [
+			"add",
+			join(GOAL_DIR, "receipts.jsonl"),
+			"scripts/check-goal-audit-freshness.py",
+		]);
+		runGit(root, ["commit", "-m", "repair validator"]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_sha: parentHead,
+			receipt_id: "R072",
+		});
+	});
+
+	it("rejects a stale receipt head when non-goal files changed afterward", () => {
+		const root = createTempRoot("audit-freshness-stale-non-goal-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [receipt(root)]);
+		writeFileSync(join(root, "source.ts"), "export const changed = true;\n");
+		runGit(root, ["add", join(GOAL_DIR, "receipts.jsonl"), "source.ts"]);
+		runGit(root, ["commit", "-m", "change source"]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"receipt.head_sha must match current repository HEAD",
+		);
+	});
+
 	it("fails when the current audit content no longer matches the latest relevant receipt hash", () => {
 		const root = createTempRoot("audit-freshness-stale-hash-");
 		writeAudit(root, "updated audit content", new Date("2026-05-27T01:00:00Z"));

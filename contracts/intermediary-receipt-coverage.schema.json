@@ -1,0 +1,340 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/coding-harness/contracts/intermediary-receipt-coverage.schema.json",
+	"title": "IntermediaryReceiptCoverage",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"producer",
+		"repoRootRef",
+		"runtimeStatus",
+		"currentHeadSha",
+		"defaultPolicy",
+		"sources",
+		"receipts",
+		"claimPolicies",
+		"claimFamilySummaries",
+		"overallStatus",
+		"blockers",
+		"nextAction"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "intermediary-receipt-coverage/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"producer": {
+			"$ref": "#/$defs/pointer"
+		},
+		"repoRootRef": {
+			"$ref": "#/$defs/pointer"
+		},
+		"runtimeStatus": {
+			"const": "not_yet_emitted"
+		},
+		"currentHeadSha": {
+			"$ref": "#/$defs/nullableHeadSha"
+		},
+		"defaultPolicy": {
+			"const": "deny"
+		},
+		"sources": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/source"
+			}
+		},
+		"receipts": {
+			"type": "array",
+			"items": {
+				"$ref": "evidence-receipt.schema.json"
+			}
+		},
+		"claimPolicies": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/claimPolicy"
+			}
+		},
+		"claimFamilySummaries": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/claimFamilySummary"
+			}
+		},
+		"overallStatus": {
+			"$ref": "#/$defs/status"
+		},
+		"blockers": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/blocker"
+			}
+		},
+		"nextAction": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512,
+			"pattern": "^[^\\r\\n]+$"
+		}
+	},
+	"$defs": {
+		"pointer": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 256,
+			"pattern": "^[A-Za-z0-9][A-Za-z0-9:._/@#?=&+,-]{0,255}$"
+		},
+		"nullablePointer": {
+			"type": ["string", "null"],
+			"maxLength": 256,
+			"pattern": "^[A-Za-z0-9][A-Za-z0-9:._/@#?=&+,-]{0,255}$"
+		},
+		"nullableHeadSha": {
+			"type": ["string", "null"],
+			"pattern": "^[0-9a-f]{40}$"
+		},
+		"sha256OrNull": {
+			"type": ["string", "null"],
+			"pattern": "^[0-9a-f]{64}$"
+		},
+		"sourceKind": {
+			"enum": [
+				"browser_state",
+				"streamed_status",
+				"mailbox_status",
+				"compaction_summary",
+				"screenshot_or_visual_state",
+				"realtime_event_snippet",
+				"external_check_snapshot",
+				"operator_steering_echo",
+				"subagent_status_text"
+			]
+		},
+		"claimFamily": {
+			"enum": [
+				"orientation",
+				"closeout_ready",
+				"merge_readiness",
+				"review_addressed",
+				"linear_alignment",
+				"judge_pm_readiness",
+				"delivery_truth",
+				"external_state",
+				"review_state",
+				"goal_completion",
+				"root_surface_tidy"
+			]
+		},
+		"evidenceUse": {
+			"enum": ["orientation", "audit_trail", "claim_support"]
+		},
+		"freshness": {
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"status": {
+			"enum": ["pass", "warn", "fail", "blocked"]
+		},
+		"canonicalPacketSchema": {
+			"enum": [
+				"delivery-truth/v1",
+				"external-state-snapshot/v1",
+				"goal-completion-audit-receipt/v1",
+				"review-state/v1"
+			]
+		},
+		"blockerClass": {
+			"enum": [
+				"missing_receipt",
+				"stale_receipt",
+				"receipt_not_claim_support",
+				"receipt_status_not_pass",
+				"missing_source_hash",
+				"head_sha_mismatch",
+				"policy_matrix_denied",
+				"canonical_packet_required",
+				"raw_or_secret_content",
+				"unsafe_reference",
+				"freshness_not_current",
+				"unbound_orientation_only"
+			]
+		},
+		"nextActionClass": {
+			"enum": [
+				"none",
+				"refresh_receipt",
+				"capture_hash",
+				"rebind_head",
+				"route_to_canonical_packet",
+				"request_policy_exception",
+				"redact_source",
+				"use_orientation_only"
+			]
+		},
+		"blocker": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["blockerClass", "reason", "nextActionClass"],
+			"properties": {
+				"blockerClass": {
+					"$ref": "#/$defs/blockerClass"
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 256,
+					"pattern": "^[^\\r\\n]+$"
+				},
+				"nextActionClass": {
+					"$ref": "#/$defs/nextActionClass"
+				}
+			}
+		},
+		"source": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"sourceId",
+				"sourceKind",
+				"evidenceUse",
+				"status",
+				"freshness",
+				"observedAt",
+				"observedHeadSha",
+				"currentHeadSha",
+				"ref",
+				"sourceHashSha256",
+				"receiptRef",
+				"canonicalPacketRef",
+				"claimFamilies",
+				"blockers"
+			],
+			"properties": {
+				"sourceId": {
+					"$ref": "#/$defs/pointer"
+				},
+				"sourceKind": {
+					"$ref": "#/$defs/sourceKind"
+				},
+				"evidenceUse": {
+					"$ref": "#/$defs/evidenceUse"
+				},
+				"status": {
+					"$ref": "#/$defs/status"
+				},
+				"freshness": {
+					"$ref": "#/$defs/freshness"
+				},
+				"observedAt": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"observedHeadSha": {
+					"$ref": "#/$defs/nullableHeadSha"
+				},
+				"currentHeadSha": {
+					"$ref": "#/$defs/nullableHeadSha"
+				},
+				"ref": {
+					"$ref": "#/$defs/pointer"
+				},
+				"sourceHashSha256": {
+					"$ref": "#/$defs/sha256OrNull"
+				},
+				"receiptRef": {
+					"$ref": "#/$defs/nullablePointer"
+				},
+				"canonicalPacketRef": {
+					"$ref": "#/$defs/nullablePointer"
+				},
+				"claimFamilies": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/claimFamily"
+					}
+				},
+				"blockers": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/blocker"
+					}
+				}
+			}
+		},
+		"claimPolicy": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"sourceKind",
+				"claimFamily",
+				"allowed",
+				"requiredCanonicalPacketSchemas"
+			],
+			"properties": {
+				"sourceKind": {
+					"$ref": "#/$defs/sourceKind"
+				},
+				"claimFamily": {
+					"$ref": "#/$defs/claimFamily"
+				},
+				"allowed": {
+					"type": "boolean"
+				},
+				"requiredCanonicalPacketSchemas": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/canonicalPacketSchema"
+					}
+				}
+			}
+		},
+		"claimFamilySummary": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"claimFamily",
+				"status",
+				"evidenceUse",
+				"claimSupportEligible",
+				"sourceIds",
+				"blockers"
+			],
+			"properties": {
+				"claimFamily": {
+					"$ref": "#/$defs/claimFamily"
+				},
+				"status": {
+					"$ref": "#/$defs/status"
+				},
+				"evidenceUse": {
+					"$ref": "#/$defs/evidenceUse"
+				},
+				"claimSupportEligible": {
+					"type": "boolean"
+				},
+				"sourceIds": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/pointer"
+					}
+				},
+				"blockers": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/blocker"
+					}
+				}
+			}
+		}
+	}
+}
