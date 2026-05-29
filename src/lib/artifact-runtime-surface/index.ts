@@ -1,0 +1,21 @@
+export {
+	ARTIFACT_RUNTIME_SURFACE_SCHEMA_VERSION,
+	type ArtifactClaimSupportStatus,
+	type ArtifactFrontMatterStatus,
+	type ArtifactPreviewStatus,
+	type ArtifactRuntimeBlocker,
+	type ArtifactRuntimeBlockerClass,
+	type ArtifactRuntimeClaimSupport,
+	type ArtifactRuntimeEvidenceUse,
+	type ArtifactRuntimeFile,
+	type ArtifactRuntimeFreshness,
+	type ArtifactRuntimeLineage,
+	type ArtifactRuntimePreview,
+	type ArtifactRuntimeStatus,
+	type ArtifactRuntimeSurface,
+	type ArtifactRuntimeSurfaceValidationError,
+	type ArtifactRuntimeSurfaceValidationResult,
+	type ArtifactRuntimeVerifierRef,
+	type ArtifactSurfaceKind,
+} from "./types.js";
+export { validateArtifactRuntimeSurface } from "./validation.js";

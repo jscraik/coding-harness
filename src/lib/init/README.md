@@ -22,6 +22,10 @@ thin and delegate into this deep module.
   validation.
 - Scaffold template changes must keep generated downstream docs, PR templates,
   workflow files, and regression fixtures synchronized.
+- Generated PR template fixtures must use issue-scoped acceptance evidence:
+  acceptance IDs need to be bound to the linked issue key (for example,
+  `JSC-999 SA-999-001 -> evidence`), and preparatory/no-completion text must
+  name the concrete issue key rather than a generic linked issue.
 - Generated PR templates must keep `Linear reference` separate from
   `Linked issue relationship` so downstream repositories can distinguish issue
   traceability from acceptance closure before PR-template and linked-issue

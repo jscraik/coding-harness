@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-18
+last_validated: 2026-05-29
 ---
 
 # Validation and checks
@@ -128,6 +128,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - For existing-repo harness upgrades, use `pnpm test:harness-upgrade-matrix -- <repo>...` after `pnpm build` to prove `init --update --dry-run --json` emits valid update evidence (`updateMode`, `trackedManifest`, `updated`, `skipped`, `updateDetails`) without mutating target git status. For operator-facing current-repo previews, prefer `harness upgrade --dry-run --json`; it delegates to the same safe update/adoption preview contract.
 - Keep validation evidence explicit that `scripts/validate-codestyle.sh` sanitizes hook-exported `GIT_*` values before nested `pnpm run` calls, rather than assuming inherited hook env is safe.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
+- When `Plan IDs` references a Linear issue such as `JSC-363`, `Acceptance trace` must either list the exact acceptance IDs completed by the PR, such as `SA-001` or `AC-001`, or explicitly state that the PR is preparatory/enabling/supporting work, does not complete the issue acceptance criteria, and has no completed issue acceptance IDs. This keeps Linked Issues checks from treating governance or setup slices as full implementation evidence.
 - When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
 - For this repository, keep `## Work performed` in the PR body structured with `Plan IDs`, `Phase / slice`, `Session IDs`, `Trace IDs`, `AI session / traceability`, `Completed work`, `Affected surfaces`, `Documentation impact`, `Expected outcome alignment`, `Pattern scope inventory`, `Meta-behavior proof`, `Repeated-error research`, `Acceptance trace`, `Validation evidence`, `Review artifacts`, `Runtime impact`, `CodeRabbit mode coverage`, `Closeout state`, `Learning / reinforcement`, and `Deferred work` so implementation progress, provenance, evidence refs, docs alignment, durable learning, and intentionally deferred scope remain reviewable after handoff.
 - `Meta-behavior proof` must cite the durable destination and a concrete repo path, command, or issue ID when a PR admits repeated steering, high-signal correction, or current-session stop language. `Repeated-error research` must use the structured form `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; [Candidate 4: ...; Candidate 5: ...;] Chosen: ...; Implemented: ...` when the same error or command failure repeats.

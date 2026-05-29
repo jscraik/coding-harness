@@ -22,6 +22,11 @@ from typing import Any
 
 GOVERNED_AUDIT_PATH = ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
 REQUIRED_SOURCE_FIELDS = ("path", "sha256", "checked_at", "head_sha")
+SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
+    ".harness/active-artifacts.md",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+}
 
 
 class ValidationError(Exception):
@@ -118,6 +123,43 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def changed_paths_between(repo_root: Path, base_head: str, current_head: str) -> set[str]:
+    try:
+        completed = subprocess.run(
+            ["git", "diff", "--name-only", f"{base_head}..{current_head}"],
+            cwd=repo_root,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValidationError(
+            f"could not inspect files changed since receipt.head_sha: {exc}",
+        ) from exc
+    return {line.strip() for line in completed.stdout.splitlines() if line.strip()}
+
+
+def permits_self_referential_goal_receipt_commit(
+    repo_root: Path,
+    receipt: dict[str, Any],
+    receipt_head_sha: str,
+    source_head_sha: str,
+    current_head: str,
+) -> bool:
+    if receipt_head_sha != source_head_sha:
+        return False
+    changed_files = receipt.get("changed_files", [])
+    if not isinstance(changed_files, list):
+        return False
+    for value in changed_files:
+        if not isinstance(value, str):
+            return False
+        normalize_repo_relative_path(value, "receipt.changed_files[]")
+    changed_paths = changed_paths_between(repo_root, receipt_head_sha, current_head)
+    return bool(changed_paths) and changed_paths <= SELF_REFERENTIAL_GOAL_RECEIPT_PATHS
+
+
 def latest_audit_source(
     receipts: list[dict[str, Any]],
     audit_path: str,
@@ -182,15 +224,29 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
     receipt_head_sha = require_string(receipt.get("head_sha"), "receipt.head_sha")
     require_reachable_head(repo_root, receipt_head_sha, "receipt.head_sha")
     receipt_head_sha_normalized = receipt_head_sha.lower()
-    if receipt_head_sha_normalized != current_head_normalized:
-        raise ValidationError(f"receipt.head_sha must match current repository HEAD: receipt={receipt_head_sha} current={current_head}")
     source_head_sha = require_string(source.get("head_sha"), "audit_sources_checked[].head_sha")
     require_reachable_head(repo_root, source_head_sha, "audit_sources_checked[].head_sha")
     source_head_sha_normalized = source_head_sha.lower()
-    if source_head_sha_normalized != current_head_normalized:
-        raise ValidationError(f"audit_sources_checked[].head_sha must match current repository HEAD: source={source_head_sha} current={current_head}")
     if source_head_sha_normalized != receipt_head_sha_normalized:
         raise ValidationError("audit_sources_checked[].head_sha must match receipt.head_sha")
+    if receipt_head_sha_normalized != current_head_normalized:
+        if not permits_self_referential_goal_receipt_commit(
+            repo_root,
+            receipt,
+            receipt_head_sha_normalized,
+            source_head_sha_normalized,
+            current_head_normalized,
+        ):
+            raise ValidationError(f"receipt.head_sha must match current repository HEAD: receipt={receipt_head_sha} current={current_head}")
+    if source_head_sha_normalized != current_head_normalized:
+        if not permits_self_referential_goal_receipt_commit(
+            repo_root,
+            receipt,
+            receipt_head_sha_normalized,
+            source_head_sha_normalized,
+            current_head_normalized,
+        ):
+            raise ValidationError(f"audit_sources_checked[].head_sha must match current repository HEAD: source={source_head_sha} current={current_head}")
 
     source_sha256 = require_string(source.get("sha256"), "audit_sources_checked[].sha256").lower()
     if len(source_sha256) != 64 or any(character not in "0123456789abcdef" for character in source_sha256):

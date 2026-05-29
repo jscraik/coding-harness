@@ -147,6 +147,49 @@
 			"semanticValidatorPath": "scripts/validate-action-review-receipt.cjs",
 			"ownerGap": "SPG-008",
 			"blockedBy": "PU-034 adds the non-authoritative ActionReviewReceipt contract before live merge, release, destructive cleanup, or external tracker mutation review producers emit it."
+		},
+		{
+			"schemaVersion": "artifact-runtime-surface/v1",
+			"schemaPath": "contracts/artifact-runtime-surface.schema.json",
+			"examplePath": "contracts/examples/artifact-runtime-surface.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-artifact-runtime-surface.cjs",
+			"ownerGap": "SPG-009",
+			"blockedBy": "PU-035 adds the ArtifactRuntimeSurface contract before production artifact producers emit it from implementation notes, review artifacts, browser evidence, reports, runtime cards, or lifecycle artifacts."
+		},
+		{
+			"schemaVersion": "replay-packet/v1",
+			"schemaPath": "contracts/replay-packet.schema.json",
+			"examplePath": "contracts/examples/replay-packet.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-replay-packet.cjs",
+			"ownerGap": "SPG-010",
+			"blockedBy": "PU-036 adds the ReplayPacket contract before production replay, hook, or runtime evidence producers emit replayable packet artifacts."
+		},
+		{
+			"schemaVersion": "prompt-context-drift-report/v1",
+			"schemaPath": "contracts/prompt-context-drift-report.schema.json",
+			"examplePath": "contracts/examples/prompt-context-drift-report.example.json",
+			"typeSourcePath": "src/lib/prompt-context-drift/prompt-context-drift-report.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "prompt-context-drift-report",
+			"semanticValidatorPath": "scripts/validate-prompt-context-drift.cjs",
+			"ownerGap": "SPG-011"
+		},
+		{
+			"schemaVersion": "intermediary-receipt-coverage/v1",
+			"schemaPath": "contracts/intermediary-receipt-coverage.schema.json",
+			"examplePath": "contracts/examples/intermediary-receipt-coverage.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-intermediary-receipt-coverage.cjs",
+			"ownerGap": "SPG-012",
+			"blockedBy": "PU-038 adds the intermediary receipt coverage contract before production realtime, browser, mailbox, stream, or compaction producers emit claim-routable runtime evidence."
 		}
 	]
 }

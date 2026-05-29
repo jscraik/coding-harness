@@ -1,0 +1,137 @@
+{
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-036-spg-010-replay-packet",
+	"schemaVersion": "lifecycle-intent/v1",
+	"createdAt": "2026-05-28T14:13:21Z",
+	"linearIssue": "JSC-363",
+	"goal": "Add ReplayPacket/v1 as a narrow runtime packet contract for replay seeds and hook provenance that can reconstruct what evidence was available without storing secrets, raw transcripts, bulky command output, or executable authority.",
+	"lifecycleUnit": "PU-036-spg-010-replay-packet",
+	"scope": {
+		"primaryModule": "src/lib/replay",
+		"allowedFiles": [
+			"src/lib/replay/**",
+			"contracts/replay-packet.schema.json",
+			"contracts/examples/replay-packet.example.json",
+			"contracts/fixtures/replay-packet-source.md",
+			"contracts/runtime-packet-schemas.manifest.json",
+			"scripts/validate-replay-packet.cjs",
+			"src/dev/validate-runtime-packet-schemas-script.test.ts",
+			"ARCHITECTURE.md",
+			"README.md",
+			"AGENTS.md",
+			"docs/agents/00-architecture-bootstrap.md",
+			"docs/agents/07b-agent-governance.md",
+			"AI/context/diagram-context.md",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-036-spg-010-replay-packet-intent.json",
+			"artifacts/reviews/pu-036-spg-010-replay-packet-*.md"
+		],
+		"forbiddenFiles": [
+			"external Codex repository modifications",
+			"GitHub, CodeRabbit, Linear, CircleCI, release, merge, or destructive cleanup mutations",
+			"public command authority changes",
+			"delivery-truth claim-support changes",
+			"raw prompt text, raw transcript text, raw command output, full tool payloads, screenshots, image bytes, secrets, tokens, credentials, or unredacted environment values in packet payloads"
+		]
+	},
+	"designConstraints": [
+		"ReplayPacket/v1 must be a packet about replayability and provenance, not a complete session log or transcript.",
+		"The packet must classify replay inputs as source references, hashes, normalized event summaries, hook provenance, runtime identity references, and blocked/degraded recovery context.",
+		"ReplayPacket/v1 evidenceUse must be orientation or audit_trail only in this slice; it must not support delivery-truth pass claims directly.",
+		"Replay seeds must include deterministic hashes, schema versions, head SHA, branch, thread/turn/trace refs when known, and source artifact refs without embedding raw source bodies.",
+		"Every replay-critical sourceRef, seed ref, hook input/output ref, produced artifact ref, and runtime identity ref must be content-bound with hashAlgorithm sha256 and a 64-character sha256 value; semantic validation must verify digest matches for repo refs whose ref kind requires filesystem existence.",
+		"Hook provenance must record hook identity, trigger kind, inputRef, outputRef, status, blockerClass, produced artifact refs, and hookExecutionIdentity without storing hook input/output payloads.",
+		"hookExecutionIdentity must include the hook file ref plus digest, the resolved command ref plus digest, and an optional run or trace correlation id so hook provenance cannot be accepted as structure-only proof.",
+		"Normalized event summaries must use a closed event type taxonomy and bounded counts/refs, not raw event streams.",
+		"Sensitive or bulky values must be rejected by key-name and scalar-value checks, including common token, bearer, API key, private key, credential, password, rawPrompt, transcript, commandOutput, and image payload forms.",
+		"Repository paths in refs must be repo-relative, traversal-free, and bounded; absolute paths, home-directory paths, raw URLs, and symlink/realpath escapes are forbidden in the standalone semantic validator.",
+		"The packet must include redactionStatus, observedHeadSha, currentHeadSha, ttlSeconds, freshnessVerdict, freshness, staleState, blockers, and nextAction so stale replay evidence is downgraded to audit trail rather than silently used for current orientation.",
+		"Replay orientation requires freshnessVerdict current and observedHeadSha equal to currentHeadSha; stale, expired, missing, unknown, or head-mismatched packets may remain audit_trail evidence only and must carry a blocker or staleState reason.",
+		"Existing replay tracer behavior must remain compatible; this slice adds a packet contract and validators rather than replacing the trace capture library.",
+		"The runtime packet schema manifest must admit replay-packet/v1 with schema, example, and semantic validator pointers while preserving existing packet count checks.",
+		"Agents must be able to discover the replay command and replay-packet validation path from machine-readable repository surfaces instead of relying on manual file hunting.",
+		"Architecture/governance docs must place ReplayPacket/v1 inside the existing replay deep module and explain its orientation/audit-only proof boundary."
+	],
+	"acceptanceCriteria": [
+		"ReplayPacket has schemaVersion replay-packet/v1 and records generatedAt, producer, runtimeStatus, evidenceUse, replayId, replayKind, headSha, branch, observedHeadSha, currentHeadSha, ttlSeconds, freshnessVerdict, runtimeIdentityRefs, sourceRefs, replaySeed, hookProvenance, normalizedEvents, redactionStatus, freshness, staleState, blockers, and nextAction.",
+		"Validation accepts a minimal audit-trail replay packet with hashed seed inputs, bounded refs, hook provenance, normalized event summaries, redactionStatus redacted, and no blockers.",
+		"Validation rejects evidenceUse claim_support or any packet that attempts to support delivery-truth claims directly.",
+		"Validation rejects raw prompt, transcript, command output, tool payload, screenshot/image bytes, secret-like keys, secret-like scalar values, unknown top-level fields, and unknown nested fields.",
+		"Validation rejects source refs, hook input/output refs, or artifact refs that are absolute, traversal, home-directory, raw URL, empty, overlong, or outside the allowed ref taxonomy.",
+		"Validation rejects replay seeds, replay-critical source refs, hook refs, runtime identity refs, and produced artifact refs without sha256 hashes or with unsupported hash algorithms.",
+		"Validation rejects content-bound repo refs whose current file digest does not match the packet sha256 when that ref requires filesystem existence.",
+		"Validation rejects normalized event summaries with raw payload bodies instead of counts, refs, hashes, and failure classes.",
+		"Validation rejects hook provenance entries without status, trigger kind, hook ref, inputRef, outputRef, produced artifact refs, and hookExecutionIdentity with hook file digest plus resolved command digest.",
+		"Validation rejects orientation-use packets unless freshnessVerdict is current, observedHeadSha equals currentHeadSha, and the packet TTL has not expired.",
+		"Validation accepts stale or expired packets only when evidenceUse is audit_trail and staleState or blockers explain why the packet cannot orient current replay work.",
+		"Validation rejects timestamp-ordering violations where hook checkedAt or event observedAt is after packet generatedAt.",
+		"Standalone semantic validation rejects repo-relative refs that resolve outside the repository root or point at missing required artifact files when the ref kind requires filesystem existence.",
+		"Runtime packet schema manifest includes replay-packet/v1 with schema, example, and semantic validation, increasing checked packet count by one.",
+		"An agent-discoverable command-surface check proves the existing replay command remains visible through the full machine-readable commands --json --all catalog and the runtime packet schema manifest exposes replay-packet/v1 with its semantic validator, without promoting replay into first-contact command authority.",
+		"Existing replay tracer tests keep passing and ReplayPacket/v1 tests cover positive, raw-content negative, secret negative, unsafe path negative, hook provenance negative, and orientation-only evidence-use negative cases.",
+		"Slice review artifacts include improve-codebase-architecture, simplify, unslopify, he-code-review, testing, adversarial-reviewer, agent-native-reviewer, and best-practices-researcher results before done is claimed."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-036-spg-010-replay-packet-intent.json >/dev/null",
+		"pnpm vitest run src/lib/replay/replay-packet.test.ts src/lib/replay/tracer.test.ts src/lib/replay/trace-normalizer.test.ts --reporter=dot",
+		"node scripts/validate-replay-packet.cjs contracts/examples/replay-packet.example.json --repo-root .",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"node --import tsx src/cli.ts commands --json --all > /tmp/coding-harness-replay-commands.json && jq -e '.commands[] | select(.name == \"replay\")' /tmp/coding-harness-replay-commands.json >/dev/null",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts --reporter=dot",
+		"pnpm typecheck",
+		"pnpm exec biome check .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-036-spg-010-replay-packet-intent.json src/lib/replay contracts/replay-packet.schema.json contracts/examples/replay-packet.example.json contracts/fixtures/replay-packet-source.md contracts/runtime-packet-schemas.manifest.json scripts/validate-replay-packet.cjs src/dev/validate-runtime-packet-schemas-script.test.ts ARCHITECTURE.md AGENTS.md docs/agents/00-architecture-bootstrap.md docs/agents/07b-agent-governance.md",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"node --import tsx src/cli.ts docs-gate --mode required --json",
+		"bash scripts/validate-codestyle.sh --fast",
+		"bash scripts/validate-codestyle.sh",
+		"bash scripts/verify-work.sh --fast",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-036-spg-010-replay-packet-intent.json src/lib/replay contracts/replay-packet.schema.json contracts/examples/replay-packet.example.json contracts/fixtures/replay-packet-source.md contracts/runtime-packet-schemas.manifest.json scripts/validate-replay-packet.cjs src/dev/validate-runtime-packet-schemas-script.test.ts ARCHITECTURE.md AGENTS.md docs/agents/00-architecture-bootstrap.md docs/agents/07b-agent-governance.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-036-spg-010-replay-packet-*.md"
+	],
+	"reviewPlan": {
+		"preImplementation": [
+			"adversarial-reviewer intent review",
+			"agent-native-reviewer intent review"
+		],
+		"beforeDone": [
+			"improve-codebase-architecture lens",
+			"simplify lens",
+			"unslopify lens",
+			"he-code-review lens",
+			"testing lens",
+			"adversarial-reviewer implementation review",
+			"agent-native-reviewer implementation review",
+			"best-practices-researcher implementation review"
+		]
+	},
+	"rollbackPlan": [
+		"Remove ReplayPacket/v1 schema, example, validator, types, validation, and tests.",
+		"Remove replay-packet/v1 from the runtime packet schema manifest.",
+		"Preserve existing replay tracer, trace normalizer, runtime-card, delivery-truth, review-state, external-state, and PR closeout behavior unchanged."
+	],
+	"evidenceUse": "orientation_or_audit_trail_only",
+	"auditGapIds": ["GAP-003", "GAP-008", "GAP-012"],
+	"systemPromptGapIds": ["SPG-010"],
+	"projectBrainInputs": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/research/evidence-patterns.json",
+		".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"
+	],
+	"currentStateNotes": [
+		"Current branch is codex/jsc-363-replay-packet-surface at head cb6d6c8be2fb1e6f36443974cb1a7fcde60e2657 before this intent artifact.",
+		"PR #312 triage is delegated to isolated PR triage agents and remains separate from this local implementation slice.",
+		"Pre-implementation intent review found replay integrity, hook spoofing, staleness, and agent-discovery gaps; this intent has been amended before implementation to make those checks acceptance criteria.",
+		"Untracked files already exist outside this slice and must not be staged, deleted, or used as proof for SPG-010.",
+		"~/.codex/.env is not read or sourced by this local contract slice unless live CircleCI triage becomes necessary."
+	],
+	"stopConditions": [
+		"Stop if ReplayPacket/v1 requires embedding raw prompts, transcripts, command outputs, tool payloads, screenshots, secrets, tokens, or bulky telemetry.",
+		"Stop if replay evidence would be treated as delivery-truth, merge_ready, review_addressed, Linear-aligned, or Judge/PM-ready proof.",
+		"Stop if semantic validation would need to read outside the repository root or follow unsafe paths.",
+		"Stop if implementation would replace existing replay tracer behavior instead of adding an additive packet contract."
+	]
+}

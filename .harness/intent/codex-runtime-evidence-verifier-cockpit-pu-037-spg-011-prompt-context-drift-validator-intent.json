@@ -1,0 +1,143 @@
+{
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-037-spg-011-prompt-context-drift-validator",
+	"schemaVersion": "lifecycle-intent/v1",
+	"createdAt": "2026-05-28T17:02:00Z",
+	"linearIssue": "JSC-363",
+	"goal": "Add a deterministic prompt/context drift validator that compares prompt context, goal-board route, Project Brain, active artifacts, runtime-card evidence, and receipt head-SHA references before any of those surfaces can be treated as current claim support.",
+	"lifecycleUnit": "PU-037-spg-011-prompt-context-drift-validator",
+	"scope": {
+		"primaryModule": "src/lib/prompt-context-drift",
+		"allowedFiles": [
+			"src/lib/prompt-context-drift/**",
+			"src/lib/agent-readiness/context-health.ts",
+			"src/lib/agent-readiness/types.ts",
+			"src/commands/agent-readiness.test.ts",
+			"contracts/prompt-context-drift-report.schema.json",
+			"contracts/examples/prompt-context-drift-report.example.json",
+			"contracts/fixtures/prompt-context-drift/**",
+			"scripts/validate-prompt-context-drift.cjs",
+			"src/dev/validate-prompt-context-drift-script.test.ts",
+			"ARCHITECTURE.md",
+			"README.md",
+			"AGENTS.md",
+			"docs/agents/00-architecture-bootstrap.md",
+			"docs/agents/07b-agent-governance.md",
+			"AI/context/diagram-context.md",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-037-spg-011-prompt-context-drift-validator-intent.json",
+			"artifacts/reviews/pu-037-spg-011-prompt-context-drift-validator-*.md"
+		],
+		"forbiddenFiles": [
+			"external Codex repository modifications",
+			"GitHub, CodeRabbit, Linear, CircleCI, release, merge, or destructive cleanup mutations",
+			"public command authority changes unless the command is a narrow validator wrapper over this module",
+			"delivery-truth pass-claim promotion before prompt/context drift has current receipts and explicit claim-support eligibility",
+			"raw prompt text, raw transcript text, raw command output, full tool payloads, screenshots, image bytes, secrets, tokens, credentials, or unredacted environment values in report payloads"
+		]
+	},
+	"designConstraints": [
+		"Prompt/context drift validation must be a deep module under src/lib/prompt-context-drift with a narrow script wrapper; it must not be bolted into a broad command file.",
+		"The validator must consume pointer-only references and receipt metadata, not full prompt text, transcripts, tool payloads, raw command output, screenshots, or secrets.",
+		"PromptContextReceipt/v1 remains orientation or audit_trail only; this slice may reject or block stale claim-support attempts but must not make prompt context itself a delivery-truth pass source.",
+		"The report must compare source refs, source hashes, active route refs, Project Brain refs, runtime-card or handoff refs, receipt ids, observed head SHA, current head SHA, TTL or generatedAt freshness where present, and missing or stale source state.",
+		"The validator must classify each surface separately so active route, Project Brain, runtime card, receipt head SHA, prompt context, and external head truth cannot be blended into one ready verdict.",
+		"Orientation-only stale context may guide next-step routing when explicitly classified, but it must be ineligible for closeout, merge readiness, Judge/PM readiness, or delivery-truth pass claims.",
+		"Repo-relative refs must be traversal-free, absolute-path-free, home-path-free, URL-free unless explicitly classified as external metadata, and bounded to the repository root when validated locally.",
+		"Every source ref used for claim support must carry a sha256 hash and must either match the current local file digest or be explicitly classified as external/unverifiable and ineligible for claim support.",
+		"Head-SHA checks must fail closed when observedHeadSha and currentHeadSha disagree for claim-support evidence.",
+		"Active route checks must fail closed when .harness/active-artifacts.md is missing, lacks Current Active Route, has no repo-relative refs, points at missing route refs, or marks the current route as not current.",
+		"Project Brain checks must fail closed for claim support when required .harness/memory or .harness/knowledge refs are missing, unhashed, stale, or unverified.",
+		"Runtime-card evidence checks must fail closed for claim support when runtime-card evidence is missing, stale, unhashed, head-mismatched, or only advisory.",
+		"The validator should reuse the existing prompt-context receipt and context-health vocabulary where that reduces invention, but the final report contract must be deterministic and fixture-backed.",
+		"Generated reports must use closed status vocabularies and stable blocker classes so agents can automate routing from JSON output.",
+		"The first agent-readable consumer boundary is the existing agent-readiness contextHealth JSON projection; this slice may project prompt_context_drift status there, but it must not make harness next, delivery-truth, PR closeout, or runtime-card pass claims depend on the report until a later explicit wiring slice.",
+		"Claim-support coverage requires at least one repo-contained hash-verified ref for every required local surface: prompt_context, active_artifacts, active_route, project_brain_memory, project_brain_knowledge, runtime_card_or_handoff, and receipt_head_sha. External or unverifiable refs may be recorded, but they must never satisfy required-local-surface coverage.",
+		"Local digest verification must canonicalize real paths and prove the target remains under the repository root before hashing; symlink escapes and alias paths outside the repository must fail closed.",
+		"Architecture and governance docs must explain where the prompt-context-drift module lives, what it validates, and why it blocks claim support without becoming a prompt composer or scheduler."
+	],
+	"acceptanceCriteria": [
+		"PromptContextDriftReport has schemaVersion prompt-context-drift-report/v1 and records generatedAt, producer, repoRootRef, currentHeadSha, evidenceUse, overallStatus, surfaces, blockers, and nextAction.",
+		"The report contract pins closed enum values for overallStatus, per-surface status, evidenceUse, freshness, blockerClass, and nextActionClass; tests reject unknown enum values at each schema boundary.",
+		"Validation accepts a current fixture where prompt context, active route, Project Brain refs, runtime-card or handoff refs, receipt refs, source hashes, and head SHA are all current and content-bound.",
+		"Validation rejects or blocks claim-support use when prompt context is stale, missing, unknown, expired, or lacks required source hashes.",
+		"Validation rejects or blocks claim-support use when .harness/active-artifacts.md is stale, missing the Current Active Route section, contains no repo-relative route refs, points at missing route refs, or marks the route as not current.",
+		"Validation rejects or blocks claim-support use when Project Brain memory or knowledge refs are missing, stale, unhashed, externally-only, or fail local digest verification.",
+		"Validation rejects or blocks claim-support use when runtime-card or handoff refs are missing, stale, advisory-only, externally-only, head-mismatched, unhashed, or fail local digest verification.",
+		"Validation rejects or blocks claim-support use when a required local surface is satisfied only by external, unverifiable, or metadata-only refs.",
+		"Validation rejects or blocks claim-support use when observedHeadSha and currentHeadSha differ.",
+		"Validation rejects or blocks claim-support use when any claim-support source ref is missing a sha256 hash, has an unsupported hash algorithm, or fails local digest verification.",
+		"Validation rejects repo-relative refs whose canonicalized realpath escapes the repository root, including deterministic symlink escape or alias fixtures.",
+		"Validation rejects raw prompt, transcript, command output, full tool payload, screenshot/image bytes, secret-like keys, secret-like scalar values, unknown top-level fields, and unknown nested fields.",
+		"Validation classifies stale orientation-only evidence as orientation_blocked or audit_only rather than pass.",
+		"Standalone script validation can validate the example fixture and produce machine-readable JSON on failure.",
+		"Tests cover current positive, stale prompt context, stale active route, stale or missing Project Brain refs, stale/advisory/head-mismatched runtime-card refs, external-only required surfaces, mismatched head SHA, missing source hash, digest mismatch, symlink escape, raw-content rejection, secret rejection, unknown enum rejection, and orientation-only stale cases.",
+		"The existing agent-readiness --json contextHealth projection can surface prompt_context_drift as advisory machine-readable status with report evidence, status, stale reasons, and suggested validation command when a report exists or when required report evidence is missing.",
+		"The module is discoverable from ARCHITECTURE.md and the agent-governance docs without requiring implementers to search broad command files.",
+		"Slice review artifacts include improve-codebase-architecture, simplify, unslopify, he-code-review, testing, adversarial-reviewer, agent-native-reviewer, and best-practices-researcher results or explicit blocked/n.a. evidence before done is claimed."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-037-spg-011-prompt-context-drift-validator-intent.json >/dev/null",
+		"pnpm vitest run src/lib/prompt-context-drift/prompt-context-drift-report.test.ts --reporter=dot",
+		"node scripts/validate-prompt-context-drift.cjs contracts/examples/prompt-context-drift-report.example.json --repo-root .",
+		"pnpm vitest run src/dev/validate-prompt-context-drift-script.test.ts --reporter=dot",
+		"pnpm vitest run src/commands/agent-readiness.test.ts --reporter=dot",
+		"pnpm typecheck",
+		"pnpm exec biome check .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-037-spg-011-prompt-context-drift-validator-intent.json src/lib/prompt-context-drift contracts/prompt-context-drift-report.schema.json contracts/examples/prompt-context-drift-report.example.json contracts/fixtures/prompt-context-drift scripts/validate-prompt-context-drift.cjs src/dev/validate-prompt-context-drift-script.test.ts ARCHITECTURE.md AGENTS.md docs/agents/00-architecture-bootstrap.md docs/agents/07b-agent-governance.md",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"node --import tsx src/cli.ts docs-gate --mode required --json",
+		"bash scripts/validate-codestyle.sh --fast",
+		"bash scripts/verify-work.sh --fast",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-037-spg-011-prompt-context-drift-validator-intent.json src/lib/prompt-context-drift src/lib/agent-readiness/context-health.ts src/lib/agent-readiness/types.ts src/commands/agent-readiness.test.ts contracts/prompt-context-drift-report.schema.json contracts/examples/prompt-context-drift-report.example.json contracts/fixtures/prompt-context-drift scripts/validate-prompt-context-drift.cjs src/dev/validate-prompt-context-drift-script.test.ts ARCHITECTURE.md AGENTS.md docs/agents/00-architecture-bootstrap.md docs/agents/07b-agent-governance.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-037-spg-011-prompt-context-drift-validator-*.md"
+	],
+	"reviewPlan": {
+		"preImplementation": [
+			"adversarial-reviewer intent review",
+			"agent-native-reviewer intent review"
+		],
+		"beforeDone": [
+			"improve-codebase-architecture lens",
+			"simplify lens",
+			"unslopify lens",
+			"he-code-review lens",
+			"testing lens",
+			"adversarial-reviewer implementation review",
+			"agent-native-reviewer implementation review",
+			"best-practices-researcher implementation review"
+		]
+	},
+	"rollbackPlan": [
+		"Remove the prompt-context-drift report schema, example, fixtures, validator module, script wrapper, and tests.",
+		"Remove prompt-context-drift references from architecture and governance docs.",
+		"Preserve PromptContextReceipt/v1, context-health, runtime-card, delivery-truth, review-state, external-state, and PR closeout behavior unchanged unless an explicit later slice wires them through this validator."
+	],
+	"evidenceUse": "orientation_or_audit_trail_only_until_claim_support_is_current_and_content_bound",
+	"auditGapIds": ["GAP-003", "GAP-008", "GAP-012"],
+	"systemPromptGapIds": ["SPG-011"],
+	"projectBrainInputs": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/knowledge/runtime-evidence/README.md",
+		".harness/knowledge/agent-context/README.md",
+		".harness/research/evidence-patterns.json",
+		".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"
+	],
+	"currentStateNotes": [
+		"Current local branch is codex/jsc-363-prompt-context-drift-validator at head 9047a6ffc3c6a6b7d5be7b9f58557e132b116698 before this intent artifact.",
+		"Pre-implementation intent review found missing Project Brain/runtime-card negative fixtures, required-local-surface coverage ambiguity, symlink containment ambiguity, and a missing agent-readable consumer boundary; this intent has been amended before implementation to make those checks acceptance criteria.",
+		"PR #313 is delegated to a closed green-sweep subagent artifact and remains separate from this local implementation slice; current external truth still has pending CircleCI lanes and mergeStateStatus UNSTABLE.",
+		"PR #310 linked-issue ambiguity was repaired by making the PR body explicitly preparatory for JSC-363 rather than claiming JSC-363 acceptance closure.",
+		"Untracked files already exist outside this slice and must not be staged, deleted, or used as proof for SPG-011.",
+		"~/.codex/.env is not read or sourced by this local contract slice unless live CircleCI API triage becomes necessary."
+	],
+	"stopConditions": [
+		"Stop if prompt/context drift validation requires embedding raw prompts, transcripts, command outputs, tool payloads, screenshots, secrets, tokens, or bulky telemetry.",
+		"Stop if stale prompt context, stale active route, stale Project Brain, stale runtime-card evidence, or head-mismatched receipts would be treated as merge_ready, review_addressed, Linear-aligned, goal-ready, Judge/PM-ready, or delivery-truth pass proof.",
+		"Stop if local semantic validation would need to read outside the repository root, follow unsafe paths, or rely on external mutable state as deterministic proof.",
+		"Stop if the implementation would replace existing PromptContextReceipt/v1 or context-health behavior instead of adding an additive validator/report contract."
+	]
+}

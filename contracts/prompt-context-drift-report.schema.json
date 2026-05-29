@@ -1,0 +1,263 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/coding-harness/contracts/prompt-context-drift-report.schema.json",
+	"title": "PromptContextDriftReport",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"producer",
+		"repoRootRef",
+		"currentHeadSha",
+		"evidenceUse",
+		"overallStatus",
+		"surfaces",
+		"blockers",
+		"nextAction"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "prompt-context-drift-report/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"producer": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 256,
+			"pattern": "^[A-Za-z0-9][A-Za-z0-9:._/@#?=&+,-]{0,255}$"
+		},
+		"repoRootRef": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 256,
+			"pattern": "^[A-Za-z0-9][A-Za-z0-9:._/@#?=&+,-]{0,255}$"
+		},
+		"currentHeadSha": {
+			"type": ["string", "null"],
+			"pattern": "^[0-9a-f]{40}$"
+		},
+		"evidenceUse": {
+			"enum": ["orientation", "audit_trail", "claim_support"]
+		},
+		"overallStatus": {
+			"enum": ["pass", "warn", "fail", "blocked"]
+		},
+		"surfaces": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/surface"
+			}
+		},
+		"blockers": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/blocker"
+			}
+		},
+		"nextAction": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512,
+			"pattern": "^[^\\r\\n]+$"
+		}
+	},
+	"$defs": {
+		"surfaceId": {
+			"enum": [
+				"prompt_context",
+				"active_artifacts",
+				"active_route",
+				"project_brain_memory",
+				"project_brain_knowledge",
+				"runtime_card_or_handoff",
+				"receipt_head_sha"
+			]
+		},
+		"status": {
+			"enum": ["pass", "warn", "fail", "blocked"]
+		},
+		"evidenceUse": {
+			"enum": ["orientation", "audit_trail", "claim_support"]
+		},
+		"freshness": {
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"refKind": {
+			"enum": [
+				"repo_file",
+				"prompt_context_receipt",
+				"runtime_card",
+				"receipt",
+				"external_metadata"
+			]
+		},
+		"blockerClass": {
+			"enum": [
+				"none",
+				"stale_prompt_context",
+				"stale_active_route",
+				"missing_project_brain_ref",
+				"stale_project_brain_ref",
+				"stale_runtime_card",
+				"advisory_runtime_card",
+				"head_sha_mismatch",
+				"missing_source_hash",
+				"digest_mismatch",
+				"external_only_required_surface",
+				"unsafe_ref",
+				"raw_or_secret_content",
+				"unknown_schema_field"
+			]
+		},
+		"nextActionClass": {
+			"enum": [
+				"none",
+				"refresh_prompt_context",
+				"refresh_active_artifacts",
+				"refresh_project_brain",
+				"refresh_runtime_card",
+				"refresh_receipts",
+				"rerun_validator"
+			]
+		},
+		"nullableHeadSha": {
+			"type": ["string", "null"],
+			"pattern": "^[0-9a-f]{40}$"
+		},
+		"sha256OrNull": {
+			"type": ["string", "null"],
+			"pattern": "^[0-9a-f]{64}$"
+		},
+		"safeRepoRef": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 256,
+			"pattern": "^(?:[A-Za-z0-9._@+-]+/)*[A-Za-z0-9._@+-]+$"
+		},
+		"surface": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"surfaceId",
+				"status",
+				"evidenceUse",
+				"freshness",
+				"requiredForClaimSupport",
+				"observedHeadSha",
+				"currentHeadSha",
+				"sourceRefs",
+				"blockers"
+			],
+			"properties": {
+				"surfaceId": {
+					"$ref": "#/$defs/surfaceId"
+				},
+				"status": {
+					"$ref": "#/$defs/status"
+				},
+				"evidenceUse": {
+					"$ref": "#/$defs/evidenceUse"
+				},
+				"freshness": {
+					"$ref": "#/$defs/freshness"
+				},
+				"requiredForClaimSupport": {
+					"type": "boolean"
+				},
+				"observedHeadSha": {
+					"$ref": "#/$defs/nullableHeadSha"
+				},
+				"currentHeadSha": {
+					"$ref": "#/$defs/nullableHeadSha"
+				},
+				"sourceRefs": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/sourceRef"
+					}
+				},
+				"blockers": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/blocker"
+					}
+				}
+			}
+		},
+		"sourceRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"surfaceId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"freshness",
+				"evidenceUse",
+				"requiredForClaimSupport",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 256,
+					"pattern": "^[A-Za-z0-9][A-Za-z0-9:._/@#?=&+,-]{0,255}$"
+				},
+				"surfaceId": {
+					"$ref": "#/$defs/surfaceId"
+				},
+				"refKind": {
+					"$ref": "#/$defs/refKind"
+				},
+				"ref": {
+					"$ref": "#/$defs/safeRepoRef"
+				},
+				"hashAlgorithm": {
+					"enum": ["sha256", null]
+				},
+				"sha256": {
+					"$ref": "#/$defs/sha256OrNull"
+				},
+				"freshness": {
+					"$ref": "#/$defs/freshness"
+				},
+				"evidenceUse": {
+					"$ref": "#/$defs/evidenceUse"
+				},
+				"requiredForClaimSupport": {
+					"type": "boolean"
+				},
+				"requiresFilesystemExistence": {
+					"type": "boolean"
+				}
+			}
+		},
+		"blocker": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["blockerClass", "reason", "nextActionClass"],
+			"properties": {
+				"blockerClass": {
+					"$ref": "#/$defs/blockerClass"
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 512,
+					"pattern": "^[^\\r\\n]+$"
+				},
+				"nextActionClass": {
+					"$ref": "#/$defs/nextActionClass"
+				}
+			}
+		}
+	}
+}

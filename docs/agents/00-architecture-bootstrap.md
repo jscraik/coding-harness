@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-27
+last_validated: 2026-05-29
 ---
 
 # Architecture bootstrap
@@ -148,6 +148,18 @@ be treated as invalid for closeout or replay support until a fresh
 `runtime-card --trace-out artifacts/agent-runs/<runId>/events.jsonl` run proves
 the restored contract.
 
+Replay packet changes are replay contract work, not a new claim-support
+rail. Keep `replay-packet/v1` inside `src/lib/replay/` as the pointer-only,
+content-bound packet for replay seeds, hook execution identity, normalized event
+summaries, stale-state classification, and redaction proof. Validators must
+prove repo-relative path containment, SHA-256 reference integrity, hook file and
+resolved-command provenance, timestamp ordering, TTL/head freshness semantics,
+and rejection of raw prompts, transcripts, command output, screenshots, images,
+or secret-like fields. Replay packets may support orientation and audit trails;
+they must not support delivery-truth, review-state, external-state,
+root-hygiene, merge-readiness, or Judge/PM claims without a future explicit
+consumer boundary and matching governance update.
+
 Runtime evidence receipts and private delivery-truth composition belong to the
 same architecture-adjacent cockpit lane when they decide whether a claim can be
 supported. Keep `evidence-receipt/v1` and `delivery-truth/v1` changes
@@ -202,14 +214,57 @@ satisfy delivery-truth claims, or prove merge readiness unless an emitted
 producer and consumer boundary is implemented, validated, and documented in the
 same change.
 
+Artifact runtime surface changes are artifact-truth cockpit work, not a new
+artifact warehouse. Keep `artifact-runtime-surface/v1` inside
+`src/lib/artifact-runtime-surface/` as the pointer-only contract for
+implementation notes, review artifacts, screenshots, CSV/PDF/document outputs,
+runtime cards, reports, and lifecycle artifacts that steer execution or support
+claims. Validators must prove repo-relative path safety, symlink/realpath
+containment in the standalone semantic path, checksum and size consistency,
+current-head and lineage matching, preview applicability, timestamp ordering,
+and value-level leakage rejection before an artifact can support a claim.
+Orientation or audit-trail artifacts may be stale or blocked, but they must not
+prove delivery-truth, review-state, external-state, root-hygiene, merge
+readiness, or Judge/PM readiness without current typed claim refs.
+
+Prompt-context drift report changes are agent-readiness cockpit work, not a
+new delivery-truth rail. Keep `prompt-context-drift-report/v1` inside
+`src/lib/prompt-context-drift/` as the pointer-only integrity report for
+prompt-context receipts, active artifacts/routes, Project Brain memory and
+knowledge refs, runtime-card or handoff evidence, and receipt head-SHA checks.
+Validators must prove repo-contained source refs, SHA-256 integrity, symlink
+and realpath containment, current head binding, closed enum values, stale-state
+classification, and raw/secret leakage rejection. `agent-readiness` may consume
+the report as an advisory `prompt_context_drift` context surface, but it must
+not authorize commands, satisfy delivery-truth claims, close JSC-363
+acceptance criteria, or prove merge readiness.
+
+Intermediary receipt coverage changes are real-time-truth cockpit work, not a
+new closeout, delivery-truth, review-state, or external-state rail. Keep
+`intermediary-receipt-coverage/v1` inside
+`src/lib/intermediary-receipts/` as the contract-first,
+`not_yet_emitted` packet for browser state, streamed status, mailbox status,
+compaction summaries, visual state, real-time event snippets, external check
+snapshots, operator steering echoes, and subagent status text. Validators must
+prove full source-kind taxonomy coverage, complete deny-by-default
+source-kind/claim-family policy entries, deterministic blocker-to-next-action
+mapping, most-restrictive-wins summary aggregation, raw/secret leakage
+rejection, current receipt/head-SHA binding for claim support, and
+canonical-packet routing for protected external-state, review-state,
+delivery-truth, Linear, Judge/PM, and merge-readiness claim families. Unbound
+intermediary observations may orient agents, but they must not support
+delivery, closeout, tracker, review, root-hygiene, Judge/PM, or merge-readiness
+claims without a current `evidence-receipt/v1` plus the matching canonical
+packet route.
+
 Steering-queue packet changes are continuation-recovery cockpit work, not a new
 agent execution rail. Keep `steering-queue/v1` inside
-`src/lib/steering-queue/` as an advisory packet for deferred operator
+`src/lib/steering-queue/` as an advisory packet for pending operator
 steering, with instruction-source hashing, artifact identity, supersession,
 stale-precondition classification, deterministic selected-item rules, and a
 script-backed semantic validator. The packet may support orientation and audit
 trails, but it must not authorize commands, satisfy delivery-truth claims, or
-prove merge readiness until a later runtime-card integration explicitly defines
+prove merge readiness until a separate runtime-card integration explicitly defines
 that consumption boundary.
 
 Tool promotion threshold changes are agent operating-system architecture, not

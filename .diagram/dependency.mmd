@@ -45,10 +45,13 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_test_harness_6e520b98_6b3d1d32
   ext_node_child_process_f62b7d19["node:child_process"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_artifact_runtime_surface_3fb28d25_0a1d91a4
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_audit_references_811f872a_0ce355a8
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_commit_msg_43b008fe_f9560ef9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_intermediary_receipt_coverage_7d63b166_40dcf15d
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_packaged_skill_5e32c890_9228ad58
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_prompt_context_drift_8c949ef6_d32d5759
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
   ext_node_child_process_f62b7d19["node:child_process"] --> node_version_coherence_69733bcb_00c8d5d9
   ext_node_crypto_c7dfc512["node:crypto"] --> node_analysis_f44e85c4_c68a7cb6
@@ -77,7 +80,9 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_pilot_rollback_00c1f82c_b744974b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_policy_digest_ca7acf0a_bae99d76
   ext_node_crypto_c7dfc512["node:crypto"] --> node_preset_resolver_dc3dd716_3f747c75
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
   ext_node_crypto_c7dfc512["node:crypto"] --> node_remediate_apply_transactions_0738b122_7ebd0795
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_replay_packet_a1293f88_f3b4800a
   ext_node_crypto_c7dfc512["node:crypto"] --> node_repository_identity_9dc13d37_eaffcd1e
   ext_node_crypto_c7dfc512["node:crypto"] --> node_required_checks_46396214_9d882ad3
   ext_node_crypto_c7dfc512["node:crypto"] --> node_rollback_da25480f_48e45364
@@ -92,6 +97,8 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_tracer_1e6243a2_cb3d802b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_crypto_c7dfc512["node:crypto"] --> node_upgrade_1_b277486e_4a06b7a8
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_validate_artifact_runtime_surface_3fb28d25_0a1d91a4
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_validate_replay_packet_f309747e_8566b729
   ext_node_dns_828a0bbf["node:dns"] --> node_url_validator_3c5a1568_b9b1dc66
   ext_node_fs_a15b7d96["node:fs"] --> node_add_cli_7614de25_8e3f2fd7
   ext_node_fs_a15b7d96["node:fs"] --> node_analysis_f44e85c4_c68a7cb6
@@ -208,6 +215,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_preflight_gate_command_spec_c45f57f0_bdeb46cb
   ext_node_fs_a15b7d96["node:fs"] --> node_preset_detection_b0f00a17_4f7c5082
   ext_node_fs_a15b7d96["node:fs"] --> node_preset_resolver_dc3dd716_3f747c75
+  ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
   ext_node_fs_a15b7d96["node:fs"] --> node_provider_adapter_3bcf82b7_3ce4cf67
   ext_node_fs_a15b7d96["node:fs"] --> node_quality_scorer_362f2a90_2a086a0b
   ext_node_fs_a15b7d96["node:fs"] --> node_query_cli_b95be64d_1ebc13aa
@@ -215,6 +223,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_registry_core_c9990279_3e2fda38
   ext_node_fs_a15b7d96["node:fs"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_fs_a15b7d96["node:fs"] --> node_remediate_runner_helpers_929fedcc_8714d951
+  ext_node_fs_a15b7d96["node:fs"] --> node_replay_packet_a1293f88_f3b4800a
   ext_node_fs_a15b7d96["node:fs"] --> node_repo_bound_paths_e218b5b3_216d0eb0
   ext_node_fs_a15b7d96["node:fs"] --> node_repo_evidence_38bb1de5_def15798
   ext_node_fs_a15b7d96["node:fs"] --> node_repo_runtime_artifact_139c0fbd_51129f15
@@ -268,13 +277,17 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_update_core_bced358c_b710dd59
   ext_node_fs_a15b7d96["node:fs"] --> node_upgrade_1_b277486e_4a06b7a8
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_action_review_receipt_fa2f06c3_d49ef9bb
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_artifact_runtime_surface_3fb28d25_0a1d91a4
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_audit_references_811f872a_0ce355a8
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_branch_protection_alignment_09b7779a_6f299056
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_commit_msg_43b008fe_f9560ef9
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_decision_request_2e5c325e_579d9d4b
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_goal_completion_audit_receipt_100d252c_2d821c1e
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_intermediary_receipt_coverage_7d63b166_40dcf15d
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_packaged_skill_5e32c890_9228ad58
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_prompt_context_drift_8c949ef6_d32d5759
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_replay_packet_f309747e_8566b729
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_review_lifecycle_0b410d1e_cf9db8cc
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_reviewer_coverage_251efee3_621cd543
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
@@ -417,6 +430,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_preflight_cli_5d148379_72bb6ef7
   ext_node_path_78811c13["node:path"] --> node_preset_detection_b0f00a17_4f7c5082
   ext_node_path_78811c13["node:path"] --> node_preset_resolver_dc3dd716_3f747c75
+  ext_node_path_78811c13["node:path"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
   ext_node_path_78811c13["node:path"] --> node_provider_adapter_3bcf82b7_3ce4cf67
   ext_node_path_78811c13["node:path"] --> node_quality_scorer_362f2a90_2a086a0b
   ext_node_path_78811c13["node:path"] --> node_query_cli_b95be64d_1ebc13aa
@@ -424,6 +438,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_registry_core_c9990279_3e2fda38
   ext_node_path_78811c13["node:path"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_path_78811c13["node:path"] --> node_replay_ac203c98_115ce9a2
+  ext_node_path_78811c13["node:path"] --> node_replay_packet_a1293f88_f3b4800a
   ext_node_path_78811c13["node:path"] --> node_repo_bound_paths_e218b5b3_216d0eb0
   ext_node_path_78811c13["node:path"] --> node_repo_evidence_38bb1de5_def15798
   ext_node_path_78811c13["node:path"] --> node_repo_runtime_artifact_139c0fbd_51129f15
@@ -470,10 +485,14 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_ui_loop_tooling_12b2d2c7_1abedab2
   ext_node_path_78811c13["node:path"] --> node_update_core_bced358c_b710dd59
   ext_node_path_78811c13["node:path"] --> node_upgrade_1_b277486e_4a06b7a8
+  ext_node_path_78811c13["node:path"] --> node_validate_artifact_runtime_surface_3fb28d25_0a1d91a4
   ext_node_path_78811c13["node:path"] --> node_validate_audit_references_811f872a_0ce355a8
   ext_node_path_78811c13["node:path"] --> node_validate_branch_protection_alignment_09b7779a_6f299056
   ext_node_path_78811c13["node:path"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
+  ext_node_path_78811c13["node:path"] --> node_validate_intermediary_receipt_coverage_7d63b166_40dcf15d
   ext_node_path_78811c13["node:path"] --> node_validate_packaged_skill_5e32c890_9228ad58
+  ext_node_path_78811c13["node:path"] --> node_validate_prompt_context_drift_8c949ef6_d32d5759
+  ext_node_path_78811c13["node:path"] --> node_validate_replay_packet_f309747e_8566b729
   ext_node_path_78811c13["node:path"] --> node_validate_reviewer_coverage_251efee3_621cd543
   ext_node_path_78811c13["node:path"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
   ext_node_path_78811c13["node:path"] --> node_validate_workflow_contracts_33dc063c_2f80e314
@@ -519,6 +538,8 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_scaffold_worktree_templates_66a38e9a_ff3c085c
   ext_node_url_d0cb3ad7["node:url"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
   ext_node_url_d0cb3ad7["node:url"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
+  ext_node_url_d0cb3ad7["node:url"] --> node_validate_intermediary_receipt_coverage_7d63b166_40dcf15d
+  ext_node_url_d0cb3ad7["node:url"] --> node_validate_prompt_context_drift_8c949ef6_d32d5759
   ext_node_url_d0cb3ad7["node:url"] --> node_version_5ca4f385_fd75945b
   ext_picomatch_2ebdbf14["picomatch"] --> node_detector_2_b0fc2f46_7ea6b320
   ext_picomatch_2ebdbf14["picomatch"] --> node_lifecycle_intent_7b5ab084_dd36f625

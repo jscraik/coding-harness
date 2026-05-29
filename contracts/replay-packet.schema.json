@@ -1,0 +1,594 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/coding-harness/contracts/replay-packet.schema.json",
+	"title": "ReplayPacket/v1",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"producer",
+		"runtimeStatus",
+		"evidenceUse",
+		"replayId",
+		"replayKind",
+		"headSha",
+		"branch",
+		"observedHeadSha",
+		"currentHeadSha",
+		"ttlSeconds",
+		"freshnessVerdict",
+		"runtimeIdentityRefs",
+		"sourceRefs",
+		"replaySeed",
+		"hookProvenance",
+		"normalizedEvents",
+		"redactionStatus",
+		"freshness",
+		"staleState",
+		"blockers",
+		"nextAction"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "replay-packet/v1"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"producer": {
+			"$ref": "#/$defs/pointer"
+		},
+		"runtimeStatus": {
+			"const": "not_yet_emitted"
+		},
+		"evidenceUse": {
+			"type": "string",
+			"enum": ["orientation", "audit_trail"]
+		},
+		"replayId": {
+			"$ref": "#/$defs/pointer"
+		},
+		"replayKind": {
+			"type": "string",
+			"enum": [
+				"hook_replay_seed",
+				"session_replay_seed",
+				"runtime_evidence_replay"
+			]
+		},
+		"headSha": {
+			"$ref": "#/$defs/headSha"
+		},
+		"branch": {
+			"anyOf": [
+				{
+					"$ref": "#/$defs/pointer"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"observedHeadSha": {
+			"$ref": "#/$defs/headSha"
+		},
+		"currentHeadSha": {
+			"$ref": "#/$defs/headSha"
+		},
+		"ttlSeconds": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"freshnessVerdict": {
+			"type": "string",
+			"enum": [
+				"current",
+				"stale",
+				"expired",
+				"head_mismatch",
+				"missing",
+				"unknown"
+			]
+		},
+		"runtimeIdentityRefs": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/ref"
+			}
+		},
+		"sourceRefs": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/ref"
+			}
+		},
+		"replaySeed": {
+			"$ref": "#/$defs/replaySeed"
+		},
+		"hookProvenance": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/hookProvenance"
+			}
+		},
+		"normalizedEvents": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/normalizedEvent"
+			}
+		},
+		"redactionStatus": {
+			"type": "string",
+			"enum": ["redacted", "summary_only"]
+		},
+		"freshness": {
+			"$ref": "#/$defs/freshness"
+		},
+		"staleState": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/staleState"
+			}
+		},
+		"blockers": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/blocker"
+			}
+		},
+		"nextAction": {
+			"$ref": "#/$defs/pointer"
+		}
+	},
+	"$defs": {
+		"pointer": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 256,
+			"pattern": "^[A-Za-z0-9][A-Za-z0-9:._/@#?=&+,-]{1,255}$"
+		},
+		"repoRef": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 256,
+			"pattern": "^(?:[A-Za-z0-9._@+-]+/)*[A-Za-z0-9._@+-]+$"
+		},
+		"sha256": {
+			"type": "string",
+			"pattern": "^[0-9a-f]{64}$"
+		},
+		"headSha": {
+			"anyOf": [
+				{
+					"type": "string",
+					"pattern": "^[0-9a-f]{40}$"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"freshness": {
+			"type": "string",
+			"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+		},
+		"ref": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": {
+					"$ref": "#/$defs/pointer"
+				},
+				"refKind": {
+					"type": "string",
+					"enum": [
+						"repo_file",
+						"hook_file",
+						"hook_input",
+						"hook_output",
+						"produced_artifact",
+						"runtime_identity",
+						"resolved_command",
+						"seed"
+					]
+				},
+				"ref": {
+					"$ref": "#/$defs/repoRef"
+				},
+				"hashAlgorithm": {
+					"const": "sha256"
+				},
+				"sha256": {
+					"$ref": "#/$defs/sha256"
+				},
+				"requiredForReplay": {
+					"type": "boolean"
+				},
+				"requiresFilesystemExistence": {
+					"type": "boolean"
+				}
+			}
+		},
+		"replaySeed": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"seedId",
+				"inputRefs",
+				"artifactRefs",
+				"hashAlgorithm",
+				"sha256"
+			],
+			"properties": {
+				"seedId": {
+					"$ref": "#/$defs/pointer"
+				},
+				"inputRefs": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/ref"
+					}
+				},
+				"artifactRefs": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/ref"
+					}
+				},
+				"hashAlgorithm": {
+					"const": "sha256"
+				},
+				"sha256": {
+					"$ref": "#/$defs/sha256"
+				}
+			}
+		},
+		"hookProvenance": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"hookId",
+				"triggerKind",
+				"status",
+				"blockerClass",
+				"checkedAt",
+				"hookRef",
+				"inputRef",
+				"outputRef",
+				"producedArtifactRefs",
+				"hookExecutionIdentity"
+			],
+			"properties": {
+				"hookId": {
+					"$ref": "#/$defs/pointer"
+				},
+				"triggerKind": {
+					"type": "string",
+					"enum": [
+						"pre_tool_use",
+						"post_tool_use",
+						"stop",
+						"subagent_stop",
+						"notification",
+						"manual"
+					]
+				},
+				"status": {
+					"type": "string",
+					"enum": ["pass", "fail", "blocked", "unknown"]
+				},
+				"blockerClass": {
+					"anyOf": [
+						{
+							"$ref": "#/$defs/pointer"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"checkedAt": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"hookRef": {
+					"$ref": "#/$defs/hookFileRef"
+				},
+				"inputRef": {
+					"$ref": "#/$defs/hookInputRef"
+				},
+				"outputRef": {
+					"$ref": "#/$defs/hookOutputRef"
+				},
+				"producedArtifactRefs": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/ref"
+					}
+				},
+				"hookExecutionIdentity": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["hookFileRef", "resolvedCommandRef", "runCorrelationId"],
+					"properties": {
+						"hookFileRef": {
+							"$ref": "#/$defs/hookFileRef"
+						},
+						"resolvedCommandRef": {
+							"$ref": "#/$defs/resolvedCommandRef"
+						},
+						"runCorrelationId": {
+							"anyOf": [
+								{
+									"$ref": "#/$defs/pointer"
+								},
+								{
+									"type": "null"
+								}
+							]
+						}
+					}
+				}
+			}
+		},
+		"normalizedEvent": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"eventType",
+				"count",
+				"observedAt",
+				"sourceRefs",
+				"hashes",
+				"failureClass"
+			],
+			"properties": {
+				"eventType": {
+					"type": "string",
+					"enum": [
+						"tool_call",
+						"command",
+						"validation",
+						"hook",
+						"review",
+						"artifact",
+						"blocker",
+						"recovery"
+					]
+				},
+				"count": {
+					"type": "integer",
+					"minimum": 1
+				},
+				"observedAt": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"sourceRefs": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/pointer"
+					}
+				},
+				"hashes": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "#/$defs/sha256"
+					}
+				},
+				"failureClass": {
+					"anyOf": [
+						{
+							"$ref": "#/$defs/pointer"
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			}
+		},
+		"staleState": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["surface", "freshness", "reason"],
+			"properties": {
+				"surface": {
+					"$ref": "#/$defs/pointer"
+				},
+				"freshness": {
+					"$ref": "#/$defs/freshness"
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 256
+				}
+			}
+		},
+		"blocker": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["class", "reason", "nextAction"],
+			"properties": {
+				"class": {
+					"$ref": "#/$defs/pointer"
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 256
+				},
+				"nextAction": {
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 256
+				}
+			}
+		},
+		"hookFileRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": {
+					"$ref": "#/$defs/pointer"
+				},
+				"refKind": {
+					"const": "hook_file"
+				},
+				"ref": {
+					"$ref": "#/$defs/repoRef"
+				},
+				"hashAlgorithm": {
+					"const": "sha256"
+				},
+				"sha256": {
+					"$ref": "#/$defs/sha256"
+				},
+				"requiredForReplay": {
+					"type": "boolean"
+				},
+				"requiresFilesystemExistence": {
+					"type": "boolean"
+				}
+			}
+		},
+		"hookInputRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": {
+					"$ref": "#/$defs/pointer"
+				},
+				"refKind": {
+					"const": "hook_input"
+				},
+				"ref": {
+					"$ref": "#/$defs/repoRef"
+				},
+				"hashAlgorithm": {
+					"const": "sha256"
+				},
+				"sha256": {
+					"$ref": "#/$defs/sha256"
+				},
+				"requiredForReplay": {
+					"type": "boolean"
+				},
+				"requiresFilesystemExistence": {
+					"type": "boolean"
+				}
+			}
+		},
+		"hookOutputRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": {
+					"$ref": "#/$defs/pointer"
+				},
+				"refKind": {
+					"const": "hook_output"
+				},
+				"ref": {
+					"$ref": "#/$defs/repoRef"
+				},
+				"hashAlgorithm": {
+					"const": "sha256"
+				},
+				"sha256": {
+					"$ref": "#/$defs/sha256"
+				},
+				"requiredForReplay": {
+					"type": "boolean"
+				},
+				"requiresFilesystemExistence": {
+					"type": "boolean"
+				}
+			}
+		},
+		"resolvedCommandRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": {
+					"$ref": "#/$defs/pointer"
+				},
+				"refKind": {
+					"const": "resolved_command"
+				},
+				"ref": {
+					"$ref": "#/$defs/repoRef"
+				},
+				"hashAlgorithm": {
+					"const": "sha256"
+				},
+				"sha256": {
+					"$ref": "#/$defs/sha256"
+				},
+				"requiredForReplay": {
+					"type": "boolean"
+				},
+				"requiresFilesystemExistence": {
+					"type": "boolean"
+				}
+			}
+		}
+	}
+}

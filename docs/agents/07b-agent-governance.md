@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-26
+last_validated: 2026-05-29
 ---
 
 # Agent governance
@@ -117,6 +117,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   pre-append claim so repeated executions cannot share a replay stream, and
   treat emitted trace records as replay-ready audit/orientation evidence only,
   not closeout, CI, review, Linear, or merge-readiness proof
+- replay-packet changes should keep replay seeds and replay evidence in
+  `src/lib/replay/` as pointer-only, content-bound orientation/audit evidence.
+  Validators must prove source refs, seed refs, hook file provenance, resolved
+  command provenance, normalized event summaries, stale-state semantics,
+  SHA-256 integrity, and raw-payload or secret leakage rejection. Replay packets
+  must not become delivery-truth, review-state, external-state, root-hygiene,
+  Judge/PM, or merge-readiness claim support without a future explicit consumer
+  boundary and synchronized governance update
 - codex-runtime-evidence packet changes should stay inside the existing
   `src/lib/runtime` deep module as a narrow public facade plus typed contract,
   source-classification, validation, and reference-integrity internals before
@@ -164,7 +172,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   packet must not become command authority, delivery-truth claim support, or
   merge-readiness proof unless an emitted producer and consumer boundary is
   implemented, validated, and reflected in governance docs in the same PR.
-- steering-queue packet changes should keep deferred operator steering in
+- steering-queue packet changes should keep pending operator steering in
   `src/lib/steering-queue/` as advisory orientation/audit evidence. Validators
   must prove instruction-source hash integrity, artifact identity, supersession,
   stale-precondition classification, deterministic selected-item ordering, and
@@ -234,6 +242,35 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `harness pr-closeout`, required PR metadata, or AI session/traceability
   evidence should stay read-only, tool-evidence-backed, secret-redacting, and
   synchronized with the PR template, validation docs, CLI docs, and AGENTS
+- artifact runtime surface changes should keep visible artifact truth in
+  `src/lib/artifact-runtime-surface/`, with pointer-only payloads, typed claim
+  refs, preview applicability, current-head and lineage matching,
+  repo-relative path containment, checksum/size checks, and value-level leakage
+  rejection before any artifact supports delivery, review, root, external-state,
+  merge-readiness, or Judge/PM claims
+- prompt-context drift report changes should keep context freshness truth in
+  `src/lib/prompt-context-drift/`, with pointer-only payloads, repo-contained
+  SHA-256 source refs, prompt-context receipt freshness, Project Brain route
+  and memory/knowledge freshness, runtime-card or handoff freshness, receipt
+  head-SHA checks, symlink/realpath containment, stale-state classification,
+  closed enum validation, and value-level leakage rejection before the report
+  can support any advisory context-health projection. `agent-readiness` may
+  expose `prompt_context_drift` for orientation, but the report must not become
+  command authority, delivery-truth claim support, JSC-363 acceptance closure,
+  or merge-readiness proof
+- intermediary receipt coverage changes should keep real-time and intermediary
+  source truth in `src/lib/intermediary-receipts/`, with pointer-only source
+  refs, complete source-kind taxonomy coverage, deny-by-default
+  source-kind/claim-family policy entries, deterministic blocker-to-next-action
+  mapping, most-restrictive-wins summary aggregation, current receipt/head-SHA
+  claim-support checks, canonical-packet routing for protected review,
+  external-state, delivery-truth, Linear, Judge/PM, and merge-readiness
+  families, and value-level leakage rejection. Unbound browser, stream,
+  mailbox, compaction, visual, operator, and subagent observations may orient
+  agents, but they must not become delivery-truth, review-state,
+  external-state, root-hygiene, Linear, Judge/PM, or merge-readiness proof
+  without a current `evidence-receipt/v1` plus the matching canonical packet
+  route
 - `pr-closeout/v1` success must come from current structured
   claim/evidence status rather than model-written summary text. Missing or
   stale required evidence should resolve to blocked or unknown with source,

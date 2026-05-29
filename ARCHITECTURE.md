@@ -109,6 +109,40 @@ not in docs, templates, generated context, or command facades.
   terminal manifest emission while requiring a fresh run id before the first
   event append and reusing the shared run-record writer for hash-chain
   continuity and replay validation.
+- src/lib/replay/: replay and validation contracts for replayable runtime,
+  hook, and session evidence. It owns `ReplayPacket/v1` types and semantic
+  validation for pointer-only replay seeds, content-bound source refs,
+  hook-execution provenance, normalized event summaries, stale-state
+  classification, redaction guarantees, and orientation/audit-trail evidence
+  use. Replay packets are not delivery-truth claim support; they can steer
+  investigation or preserve audit evidence only after validators prove
+  repo-relative path safety, SHA-256 integrity, hook identity, TTL/head
+  freshness semantics, and absence of raw prompts, transcripts, command output,
+  screenshots, images, or secret-like values.
+- src/lib/prompt-context-drift/: prompt-context integrity reports for agent
+  cockpit orientation. It owns `prompt-context-drift-report/v1` types,
+  semantic validation, repo-contained SHA-256 source refs, symlink/realpath
+  containment, stale Project Brain/runtime-card/receipt classification, and
+  claim-support eligibility checks for required local context surfaces. The
+  first consumer is `src/lib/agent-readiness/context-health.ts`, which exposes
+  the report as an advisory `prompt_context_drift` context surface; the packet
+  must not authorize commands, close JSC-363 acceptance criteria, support
+  delivery-truth, or prove merge readiness.
+- src/lib/intermediary-receipts/: realtime and intermediary receipt coverage
+  contracts for browser state, streamed status, mailbox status, compaction
+  summaries, visual state, realtime event snippets, external check snapshots,
+  operator steering echoes, and subagent status text. It owns
+  `intermediary-receipt-coverage/v1` types, deny-by-default claim policy
+  matrix validation, source-kind taxonomy coverage, deterministic
+  blocker-to-next-action mapping, most-restrictive-wins summary aggregation,
+  raw/secret leakage rejection, current receipt/head-SHA checks for
+  claim-support evidence, and canonical-packet routing requirements for
+  protected external-state, review-state, delivery-truth, Linear, Judge/PM, and
+  merge-readiness claim families. The packet is contract-first and
+  `not_yet_emitted`; unbound realtime observations may orient agents, but they
+  cannot support closeout, delivery-truth, review-state, external-state,
+  root-hygiene, Judge/PM, Linear, or merge-readiness claims without a current
+  `evidence-receipt/v1` and the matching canonical packet route.
 - src/lib/delivery-truth/: private and production verdict composition for
   delivery, root hygiene, Judge/PM readiness, and merge-readiness claims.
 - src/lib/root-hygiene/: root-surface classification and claim-support receipt
@@ -150,7 +184,15 @@ not in docs, templates, generated context, or command facades.
   contract-only, `not_yet_emitted`, orientation/governance/audit evidence, and
   out of delivery-truth claim support unless an emitted producer and consumer
   boundary is implemented and validated in the same change.
-- src/lib/steering-queue/: deferred operator-steering packets for
+- src/lib/artifact-runtime-surface/: visible artifact runtime surface
+  contracts for implementation notes, review artifacts, screenshots, CSV/PDF
+  or document outputs, reports, runtime cards, and lifecycle artifacts. It
+  owns `artifact-runtime-surface/v1` types, schema parity, semantic validation,
+  repo-relative path safety, current-head and lineage matching, preview
+  applicability, value-level leakage checks, and filesystem containment checks
+  in the standalone validator so artifacts can steer agents or support claims
+  only when their path, freshness, preview, checksum, and lineage are current.
+- src/lib/steering-queue/: pending operator-steering packets for
   continuation recovery and audit/orientation evidence. It keeps
   `steering-queue.ts` as a compatibility facade over typed contracts, builder,
   hash, constants, and semantic-validation modules. It owns steering-queue/v1
@@ -256,6 +298,10 @@ Treat these surfaces as compatibility boundaries:
   requested.
 - Review-state and external-state packet schemas that keep review truth, remote
   checks, tracker state, and merge readiness as separate evidence families.
+- Intermediary receipt coverage schemas that keep realtime, browser, mailbox,
+  compaction, visual, operator, and subagent observations orientation-only
+  unless current receipts and canonical packet routes make claim support
+  explicit.
 - Exported downstream skill and template surfaces.
 - Generated Codex environment actions.
 - CI required-check contracts and branch-protection identities.

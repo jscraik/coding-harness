@@ -39,7 +39,7 @@ const VALID_BODY = `## Summary
 - Pattern scope inventory: validation evidence format checked in PR template gate; no sibling validators needed.
 - Meta-behavior proof: n.a. because this fixture is not driven by steering admission.
 - Repeated-error research: n.a. because this fixture does not admit the same error twice.
-- Acceptance trace: SA-999-001 -> src/commands/pr-template-gate.test.ts.
+- Acceptance trace: JSC-999 SA-999-001 -> src/commands/pr-template-gate.test.ts.
 - Validation evidence: Command: \`pnpm vitest run src/commands/pr-template-gate.test.ts\` -> pass.
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
 - Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.

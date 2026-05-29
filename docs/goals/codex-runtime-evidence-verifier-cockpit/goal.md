@@ -218,6 +218,38 @@ Use these gaps to keep the implementation aligned with the mantra: small deep mo
 | SPG-011 prompt/context drift validator missing                  | Add drift detection across prompt/source refs, goal board, Project Brain, active artifacts, runtime-card evidence, and receipt head SHA where those sources support claims.                                              | Validator fails on stale prompt context, stale active route, mismatched head SHA, and missing source hash.                                        |
 | SPG-012 real-time and intermediary receipt coverage incomplete  | Classify real-time/intermediary messages as orientation unless bound by receipt, source freshness, and claim-support eligibility. This may be deferred if no current slice depends on real-time evidence.                | Explicit implementation, blocked decision, or accepted P3 follow-up with owner and risk note.                                                     |
 
+## PU-037 Intent Correction Gate
+
+PU-037 / SPG-011 cannot proceed to a done claim from the first intent draft. The
+pre-implementation adversarial and agent-native reviews found material intent
+gaps, so the active slice must repair the intent before implementation is
+accepted as scoped evidence.
+
+Required PU-037 intent repairs:
+
+1. Add deterministic negative fixtures for stale, missing, and missing-hash Project
+   Brain refs.
+2. Add deterministic negative fixtures for runtime-card evidence that is
+   advisory-only, stale, head-mismatched, or missing hash evidence.
+3. Require at least one repo-contained, hash-verified ref for each required
+   local surface; external or unverifiable refs cannot satisfy required local
+   surface coverage.
+4. Require canonicalized realpath-under-repo containment before digest checks,
+   with symlink-escape and path-alias negative fixtures.
+5. Pin the agent-readable enum fields, including `overallStatus`, per-surface
+   status, `blockerClass`, and `nextActionClass`.
+6. Name the agent consumption boundary for the validator result, such as a
+   runtime-card projection, `harness next --json` advisory projection, or
+   receipt bridge. The boundary may be advisory in this slice, but it must be
+   explicit and machine-readable.
+
+PU-037 implementation files already present in a worktree do not prove the
+slice is ready. Before PU-037 can be marked locally validated, done, PR-ready,
+or Judge/PM-ready, the amended intent must be re-reviewed by
+`@adversarial-reviewer` and `@agent-native-reviewer`, their artifacts must be
+non-empty, and valid findings must be patched or recorded with owner-visible
+blocker evidence.
+
 System-prompt gap closure rules:
 
 - A system-prompt gap is not closed by prose. It needs a schema, validator, receipt, fixture-backed implementation, runtime-card projection, delivery-truth integration, or accepted blocked/follow-up decision.
@@ -250,6 +282,9 @@ For every slice:
 2. Refresh Project Brain memory: `.harness/active-artifacts.md`, `.harness/memory/LEARNINGS.md`, relevant `.harness/knowledge/**`, and adopted research patterns. Record the command or blocker in the slice receipt.
 3. Create or update the slice intent artifact before implementation. It must include objective, allowed files, forbidden files, assumptions, stop conditions, validation gates, reviewer roles, PR strategy, Project Brain memory inputs, audit-gap mapping, and rollback path.
 4. Review the intent before implementation. Do not write runtime code until the intent review is recorded.
+   If intent review finds material gaps after code exists in the worktree, stop the
+   done path, patch the intent, rerun the required intent reviews, and reconcile
+   the code to the amended intent before claiming validation.
 5. Implement the smallest deep-module change that satisfies the slice.
 6. Add or update deterministic tests, fixtures, schemas, validators, or receipts for the behavior changed.
 7. Run the slice validation contract.

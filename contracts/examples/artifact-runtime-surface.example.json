@@ -1,0 +1,45 @@
+{
+	"schemaVersion": "artifact-runtime-surface/v1",
+	"surfaceId": "artifact-surface:pu-035-reviewable-fixture",
+	"generatedAt": "2026-05-28T13:15:00Z",
+	"producer": "coding-harness:pu-035-fixture",
+	"runtimeStatus": "not_yet_emitted",
+	"evidenceUse": "audit_trail",
+	"surfaceKind": "review_artifact",
+	"headSha": null,
+	"currentHeadSha": null,
+	"artifact": {
+		"path": "contracts/fixtures/artifact-runtime-surface-reviewable.md",
+		"exists": true,
+		"sizeBytes": 173,
+		"sha256": "sha256:580b47b09c82ea80ee94b6e2e45be62819f7dcb2218c6fe44ba4a0ec14667647",
+		"mediaType": "text/markdown",
+		"frontMatterStatus": "not_applicable",
+		"producedAt": "2026-05-28T13:10:00Z"
+	},
+	"lineage": {
+		"producer": "coding-harness:pu-035-fixture",
+		"sourceRefs": ["intent:pu-035-spg-009-artifact-runtime-surface"],
+		"runtimeIdentityRefs": ["runtime:codex-desktop-thread"],
+		"verifierRefs": [
+			{
+				"ref": "validator:artifact-runtime-surface",
+				"verifiedAt": "2026-05-28T13:13:00Z"
+			}
+		],
+		"headSha": null
+	},
+	"preview": {
+		"status": "current",
+		"ref": "preview:file/contracts/fixtures/artifact-runtime-surface-reviewable.md",
+		"checkedAt": "2026-05-28T13:12:00Z"
+	},
+	"claimSupport": {
+		"status": "unsupported",
+		"supportedClaimRefs": [],
+		"reason": "fixture-reviewable-audit-trail"
+	},
+	"freshness": "current",
+	"blockers": [],
+	"nextAction": "use-as-fixture-only"
+}

@@ -1,0 +1,133 @@
+{
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-035-spg-009-artifact-runtime-surface",
+	"schemaVersion": "lifecycle-intent/v1",
+	"createdAt": "2026-05-28T13:11:43Z",
+	"linearIssue": "JSC-363",
+	"goal": "Add ArtifactRuntimeSurface/v1 as a narrow runtime packet contract for inspectable artifacts that steer execution or support claims, without turning artifacts, screenshots, implementation notes, or reports into proof unless freshness, lineage, preview, and claim-support semantics are validated.",
+	"lifecycleUnit": "PU-035-spg-009-artifact-runtime-surface",
+	"scope": {
+		"primaryModule": "src/lib/artifact-runtime-surface",
+		"allowedFiles": [
+			"src/lib/artifact-runtime-surface/**",
+			"contracts/artifact-runtime-surface.schema.json",
+			"contracts/examples/artifact-runtime-surface.example.json",
+			"contracts/fixtures/artifact-runtime-surface-reviewable.md",
+			"contracts/runtime-packet-schemas.manifest.json",
+			"scripts/validate-artifact-runtime-surface.cjs",
+			"src/dev/validate-runtime-packet-schemas-script.test.ts",
+			"ARCHITECTURE.md",
+			"AGENTS.md",
+			"docs/agents/00-architecture-bootstrap.md",
+			"docs/agents/07b-agent-governance.md",
+			"AI/context/diagram-context.md",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-035-spg-009-artifact-runtime-surface-intent.json",
+			"artifacts/reviews/pu-035-spg-009-artifact-runtime-surface-*.md"
+		],
+		"forbiddenFiles": [
+			"external Codex repository modifications",
+			"GitHub, CodeRabbit, Linear, CircleCI, release, merge, or destructive cleanup mutations",
+			"public command authority changes",
+			"delivery-truth claim-support changes beyond tests proving artifact surfaces cannot support claims when stale, missing, broken, or lineage-mismatched",
+			"raw prompt, transcript, secret, token, full command output, full review body, screenshot pixels, bulky telemetry, or generated media blobs in packet payloads"
+		]
+	},
+	"designConstraints": [
+		"ArtifactRuntimeSurface/v1 must be a packet about artifact inspectability, lineage, previewability, freshness, and claim eligibility; it must not embed the artifact contents.",
+		"The packet must classify implementation notes, review artifacts, screenshots, CSV, PDF, document, runtime-card, report, lifecycle artifact, and other inspectable surfaces.",
+		"Repository artifact paths must be repo-relative, traversal-free, and bounded; absolute paths and home-directory paths are forbidden in the packet.",
+		"Claim-support eligibility must fail closed when the artifact path is missing, size is zero, checksum is absent, front matter is stale, preview is broken, lineage head SHA mismatches the packet head SHA, or no supported claim refs are declared.",
+		"Orientation and audit-trail artifacts may exist with stale or blocked status, but they must not be counted as delivery proof.",
+		"Preview fields must point to a bounded preview reference or explicit not_applicable status; broken preview must block claim support.",
+		"Lineage must bind producer, producedAt, source refs, runtime identity refs, verifier refs, and head SHA without storing raw transcripts or secret-bearing content.",
+		"Supported claim refs must use a typed taxonomy such as claim:delivery-truth/<id>, claim:review-state/<id>, claim:runtime-card/<id>, claim:root-hygiene/<id>, claim:external-state/<id>, or claim:judge-pm/<id>; generic artifact-exists claims and self-references to the artifact surface packet are forbidden.",
+		"Preview refs must use bounded preview classes such as preview:browser/<id>, preview:file/<repo-relative-path>, preview:artifact/<id>, or preview:not-applicable; raw URLs, absolute paths, traversal paths, and opaque screenshot blobs are forbidden.",
+		"Timestamp ordering must be deterministic: artifact producedAt cannot be after preview checkedAt, preview checkedAt cannot be after packet generatedAt, and verifier refs cannot predate the artifact production event.",
+		"Claim-support mode must bind packet headSha, lineage headSha, and currentHeadSha together so internally self-consistent replay packets cannot masquerade as current-head proof.",
+		"Claim-support mode must enforce a surfaceKind to preview-applicability matrix: screenshots, PDFs, documents, CSV exports, implementation notes, review artifacts, reports, and lifecycle artifacts require a current preview; runtime cards and other explicitly machine-readable artifacts may use preview:not-applicable.",
+		"The standalone semantic validator must check claim-support artifact paths against the filesystem from the repo root, reject symlink or realpath escapes, reject missing files, and reject zero-byte files.",
+		"Allowed text fields must still be value-checked for secret-like strings, excessive length, and bulky embedded content; key-name denial is not sufficient.",
+		"The packet must be discoverable through the runtime packet schema manifest with schema, example, and semantic validator pointers.",
+		"The slice must preserve the deep-module shape used by the current runtime packet work: a narrow TypeScript validator, a standalone CJS semantic validator, fixture-backed schema parity, and architecture/governance docs."
+	],
+	"acceptanceCriteria": [
+		"ArtifactRuntimeSurface has schemaVersion artifact-runtime-surface/v1 and records generatedAt, producer, runtimeStatus, evidenceUse, surfaceId, surfaceKind, headSha, currentHeadSha, artifact, lineage, preview, claimSupport, freshness, blockers, and nextAction.",
+		"Validation accepts a reviewable current claim-support artifact only when path exists, size is positive, checksum is present, front matter and preview are current or not_applicable, lineage head SHA matches the packet head SHA, freshness is current, blockers are empty, and at least one supported claim ref is declared.",
+		"Validation rejects claim-support artifacts whose path is missing, whose artifact exists flag is false, or whose size is zero.",
+		"Validation rejects claim-support artifacts with stale front matter.",
+		"Validation rejects claim-support artifacts with missing or broken preview when preview is applicable.",
+		"Validation rejects claim-support artifacts with no supported claim refs or claimSupport.status unsupported.",
+		"Validation rejects supported claim refs that are self-referential, generic artifact-exists claims, or outside the typed claim-ref taxonomy.",
+		"Validation rejects unsafe preview refs and requires broken or missing preview status to block claim support when preview is applicable.",
+		"Validation rejects preview:not-applicable for preview-required surface kinds in claim-support mode.",
+		"Validation rejects lineage head SHA mismatches and stale packet freshness for claim support.",
+		"Validation rejects internally consistent but current-head-mismatched replay packets.",
+		"Validation rejects timestamp-ordering violations across artifact producedAt, preview checkedAt, verifier verifiedAt, and packet generatedAt.",
+		"Validation rejects symlink or realpath escapes in the standalone semantic validator.",
+		"Validation rejects absolute paths, traversal paths, home-directory paths, raw URL preview refs, raw prompt/transcript/secret-like keys, secret-like values in allowed fields, overlong text values, unknown top-level fields, and unknown nested fields.",
+		"Runtime packet schema manifest includes artifact-runtime-surface/v1 with schema, example, and semantic validation, increasing the checked packet count by one.",
+		"Architecture docs identify src/lib/artifact-runtime-surface as the deep module for artifact runtime surfaces and explain where work is placed.",
+		"Slice review artifacts include improve-codebase-architecture, simplify, unslopify, he-code-review, testing, adversarial-reviewer, agent-native-reviewer, and best-practices-researcher results before done is claimed."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-035-spg-009-artifact-runtime-surface-intent.json >/dev/null",
+		"pnpm vitest run src/lib/artifact-runtime-surface/artifact-runtime-surface.test.ts --reporter=dot",
+		"node scripts/validate-artifact-runtime-surface.cjs contracts/examples/artifact-runtime-surface.example.json --repo-root .",
+		"node scripts/validate-runtime-packet-schemas.cjs --all",
+		"pnpm vitest run src/dev/validate-runtime-packet-schemas-script.test.ts --reporter=dot",
+		"pnpm typecheck",
+		"pnpm exec biome check .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-035-spg-009-artifact-runtime-surface-intent.json src/lib/artifact-runtime-surface contracts/artifact-runtime-surface.schema.json contracts/examples/artifact-runtime-surface.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-artifact-runtime-surface.cjs src/dev/validate-runtime-packet-schemas-script.test.ts ARCHITECTURE.md AGENTS.md docs/agents/00-architecture-bootstrap.md docs/agents/07b-agent-governance.md",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"node --import tsx src/cli.ts docs-gate --mode required --json",
+		"bash scripts/validate-codestyle.sh --fast",
+		"bash scripts/verify-work.sh --fast",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-035-spg-009-artifact-runtime-surface-intent.json src/lib/artifact-runtime-surface contracts/artifact-runtime-surface.schema.json contracts/examples/artifact-runtime-surface.example.json contracts/runtime-packet-schemas.manifest.json scripts/validate-artifact-runtime-surface.cjs src/dev/validate-runtime-packet-schemas-script.test.ts ARCHITECTURE.md AGENTS.md docs/agents/00-architecture-bootstrap.md docs/agents/07b-agent-governance.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl artifacts/reviews/pu-035-spg-009-artifact-runtime-surface-*.md"
+	],
+	"reviewPlan": {
+		"preImplementation": [
+			"adversarial-reviewer intent review",
+			"agent-native-reviewer intent review"
+		],
+		"beforeDone": [
+			"improve-codebase-architecture lens",
+			"simplify lens",
+			"unslopify lens",
+			"he-code-review lens",
+			"testing lens",
+			"adversarial-reviewer implementation review",
+			"agent-native-reviewer implementation review",
+			"best-practices-researcher implementation review"
+		]
+	},
+	"rollbackPlan": [
+		"Remove ArtifactRuntimeSurface/v1 schema, example, validator, types, validation, and tests.",
+		"Remove artifact-runtime-surface/v1 from the runtime packet schema manifest.",
+		"Preserve existing runtime-card, review-state, external-state, delivery-truth, artifact-gate, and PR closeout behavior unchanged."
+	],
+	"evidenceUse": "orientation_audit_trail_or_claim_support_only_when_semantically_validated",
+	"auditGapIds": ["GAP-003", "GAP-008", "GAP-009", "GAP-012"],
+	"systemPromptGapIds": ["SPG-009"],
+	"projectBrainInputs": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/knowledge/INDEX.md",
+		".harness/research/evidence-patterns.json",
+		".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"
+	],
+	"currentStateNotes": [
+		"Current branch is codex/jsc-363-artifact-runtime-surface at head 45b717bb9f0d57ec865b9806475d252d198e866e before this intent artifact.",
+		"PR #311 triage is delegated to a read-only subagent and remains separate from this local implementation slice.",
+		"Untracked files already exist outside this slice and must not be staged, deleted, or used as proof for SPG-009.",
+		"~/.codex/.env is not read or sourced by this local contract slice unless live CircleCI triage becomes necessary."
+	],
+	"stopConditions": [
+		"Stop if ArtifactRuntimeSurface/v1 requires embedding raw artifact contents, screenshot image data, prompts, transcripts, tokens, raw command output, or bulky telemetry.",
+		"Stop if implementation would make stale orientation artifacts count as delivery-truth, merge_ready, root_surface_tidy, review_addressed, Linear-aligned, or Judge/PM-ready proof.",
+		"Stop if filesystem existence checks would need to read outside the repository root or follow unsafe paths.",
+		"Stop if existing runtime packet schema validation cannot admit the contract without broad validator rewrites."
+	]
+}
