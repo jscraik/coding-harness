@@ -81,6 +81,18 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		expectInvalid(packet, "missing_policy_entry");
 	});
 
+	it("rejects duplicate claim-family summaries", () => {
+		const packet = basePacket();
+		const firstSummary = packet.claimFamilySummaries[0];
+		expect(firstSummary).toBeDefined();
+		packet.claimFamilySummaries = [
+			...packet.claimFamilySummaries,
+			{ ...firstSummary! },
+		];
+
+		expectInvalid(packet, "duplicate_claim_family_summary");
+	});
+
 	it("rejects claim support denied by the policy matrix", () => {
 		const packet = basePacket();
 		const source = packet.sources.find(
@@ -263,25 +275,30 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		);
 	});
 
-	it("standalone validator returns structured JSON when runner startup fails", () => {
-		const root = createTempRoot("broken-runner-");
-		writeFileSync(
-			join(root, "packet.json"),
-			JSON.stringify(basePacket(), null, 2),
-		);
+	it("standalone validator returns structured JSON for runner bootstrap failures", () => {
+		const root = createTempRoot("runner-bootstrap-");
+		const packetPath = join(root, "packet.json");
+		writeFileSync(packetPath, JSON.stringify(basePacket(), null, 2));
 
 		const result = spawnSync(
 			process.execPath,
-			[SCRIPT_PATH, "packet.json", "--repo-root", root],
-			{ cwd: root, encoding: "utf8" },
+			[SCRIPT_PATH, packetPath, "--repo-root", root],
+			{ encoding: "utf8" },
 		);
-
-		expect(result.status).toBe(1);
-		const report = JSON.parse(result.stdout) as {
+		const parsed = JSON.parse(result.stdout) as {
+			schemaVersion: string;
 			status: string;
 			errors: string[];
 		};
-		expect(report.status).toBe("fail");
-		expect(report.errors.join("\n")).toContain("runner:");
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toBe("");
+		expect(parsed).toMatchObject({
+			schemaVersion: "intermediary-receipt-coverage-validation/v1",
+			status: "fail",
+		});
+		expect(parsed.errors).toEqual(
+			expect.arrayContaining([expect.stringContaining("runner: exited")]),
+		);
 	});
 });

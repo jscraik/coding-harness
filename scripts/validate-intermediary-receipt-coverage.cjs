@@ -59,19 +59,27 @@ function resolvePacketPath(repoRoot, packetPath) {
 	return resolved;
 }
 
-function hasStructuredValidationOutput(stdout) {
+function isValidationEnvelope(stdout) {
 	if (!stdout.trim()) return false;
 	try {
 		const parsed = JSON.parse(stdout);
 		return (
 			parsed &&
 			parsed.schemaVersion === "intermediary-receipt-coverage-validation/v1" &&
-			typeof parsed.status === "string" &&
+			(parsed.status === "pass" || parsed.status === "fail") &&
 			Array.isArray(parsed.errors)
 		);
 	} catch (_error) {
 		return false;
 	}
+}
+
+function summarizeText(value) {
+	const normalized = String(value || "")
+		.replace(/\s+/g, " ")
+		.trim();
+	if (normalized.length <= 800) return normalized;
+	return `${normalized.slice(0, 800)}...`;
 }
 
 function main() {
@@ -118,29 +126,24 @@ function main() {
 	if (child.error) {
 		printResult("fail", [`runner: ${child.error.message}`], 1);
 	}
-	if (hasStructuredValidationOutput(child.stdout)) {
+	if (isValidationEnvelope(child.stdout)) {
 		process.stdout.write(child.stdout);
+		process.exit(child.status === null ? 1 : child.status);
+	}
+	if (child.status === 0) {
+		if (child.stdout) process.stdout.write(child.stdout);
 		if (child.stderr) process.stderr.write(child.stderr);
 		process.exit(child.status === null ? 1 : child.status);
 	}
-	if (child.status !== 0 || child.signal) {
-		const diagnostics = [child.stderr, child.stdout, child.signal]
-			.filter(Boolean)
-			.join("\n")
-			.trim();
-		printResult(
-			"fail",
-			[
-				diagnostics
-					? `runner: ${diagnostics}`
-					: "runner: failed without diagnostics",
-			],
-			child.status === null ? 1 : child.status,
-		);
-	}
-	if (child.stdout) process.stdout.write(child.stdout);
-	if (child.stderr) process.stderr.write(child.stderr);
-	process.exit(0);
+	const childExit = child.signal
+		? `signal ${child.signal}`
+		: `status ${child.status ?? "unknown"}`;
+	const errors = [`runner: exited with ${childExit}`];
+	const stderr = summarizeText(child.stderr);
+	const stdout = summarizeText(child.stdout);
+	if (stderr) errors.push(`runner.stderr: ${stderr}`);
+	if (stdout) errors.push(`runner.stdout: ${stdout}`);
+	printResult("fail", errors, child.status === null ? 1 : child.status || 1);
 }
 
 main();

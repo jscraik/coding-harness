@@ -79,8 +79,9 @@ current_slice_gate:
     - "Verified skill-lens and reviewer artifacts exist, including the final adversarial no-blocker artifact."
     - "Appended R139 with artifact-backed skill-lens and independent-reviewer results."
   next_required_handoff_steps:
-    - "Finish the PR #317 conflict-resolution rebase, then rerun R139 slice assurance, goal-board validation, focused tests, diff checks, and git common-config validation in the isolated worktree."
-    - "Push the rebased PU-039 branch only after local validation passes, then refresh PR #317 current-head checks, mergeability, reviewDecision, and stacked-base readiness before any PR handoff update."
+    - "Resolve the PR #312 review-thread repair on current head ba2582592b6833e09db92002fa96b74e6e37d7eb, where live GitHub reports MERGEABLE/BLOCKED with ci/circleci: check, lint, test, and pr-pipeline failed, CodeRabbit pending, and no PR-level merge conflict."
+    - "Rerun focused validator coverage, goal-board validation, docs-gate, diff checks, and the repo quality gate after conflict resolution in the isolated worktree."
+    - "Push PR #312 only after local validation passes, then refresh current-head checks, mergeability, reviewDecision, review-thread state, and stacked PR #317 readiness before any PR handoff update."
     - "Resume the next safe lifecycle implementation slice only from an isolated clean worktree or branch context so unrelated local dirt and open PR triage do not contaminate the slice."
     - "Keep local validation, remote checks, reviewDecision, stacked-base readiness, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate truth lanes until verified immediately before any closeout claim."
   blocked_done_claims:

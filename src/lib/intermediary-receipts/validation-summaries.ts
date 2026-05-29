@@ -63,7 +63,7 @@ export function validateSummaries(
 					errors,
 					"duplicate_claim_family_summary",
 					`${path}.claimFamily`,
-					"claim family summary must be unique",
+					`duplicate summary for ${summary.claimFamily}`,
 				);
 			}
 			observedFamilies.add(summary.claimFamily);

@@ -214,6 +214,34 @@ describe("ReplayPacket/v1", () => {
 		});
 	});
 
+	it("requires hook blocker and normalized failure classes to be compact pointers or null", () => {
+		const packet = loadExample();
+		const hook = firstHook(packet);
+		const event = firstNormalizedEvent(packet);
+		packet.hookProvenance = [
+			{
+				...hook,
+				blockerClass:
+					"human prose with spaces" as ReplayPacket["hookProvenance"][number]["blockerClass"],
+			},
+		];
+		packet.normalizedEvents = [
+			{
+				...event,
+				failureClass:
+					"free form failure" as ReplayPacket["normalizedEvents"][number]["failureClass"],
+			},
+		];
+
+		expect(validate(packet)).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.stringContaining("hookProvenance[0].blockerClass"),
+				expect.stringContaining("normalizedEvents[0].failureClass"),
+			]),
+		});
+	});
+
 	it("rejects malformed branch, redaction status, and next action fields", () => {
 		const packet = loadExample({
 			branch: "../escape" as ReplayPacket["branch"],

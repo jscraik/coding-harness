@@ -14,14 +14,67 @@ import type {
 	PromptContextDriftReport,
 	PromptContextDriftSurface,
 } from "./prompt-context-drift-report.js";
-import {
-	validatePromptContextDriftReport,
-} from "./prompt-context-drift-report.js";
+import { validatePromptContextDriftReport } from "./prompt-context-drift-report.js";
 
 type JsonSchemaObject = {
 	properties: Record<string, { enum?: unknown[] }>;
 	$defs: Record<string, { enum?: unknown[] }>;
 };
+
+const EXPECTED_EVIDENCE_USES = [
+	"orientation",
+	"audit_trail",
+	"claim_support",
+] as const;
+const EXPECTED_STATUSES = ["pass", "warn", "fail", "blocked"] as const;
+const EXPECTED_FRESHNESS = [
+	"current",
+	"stale",
+	"missing",
+	"unknown",
+	"not_applicable",
+] as const;
+const EXPECTED_SURFACES = [
+	"prompt_context",
+	"active_artifacts",
+	"active_route",
+	"project_brain_memory",
+	"project_brain_knowledge",
+	"runtime_card_or_handoff",
+	"receipt_head_sha",
+] as const;
+const EXPECTED_REF_KINDS = [
+	"repo_file",
+	"prompt_context_receipt",
+	"runtime_card",
+	"receipt",
+	"external_metadata",
+] as const;
+const EXPECTED_BLOCKER_CLASSES = [
+	"none",
+	"stale_prompt_context",
+	"stale_active_route",
+	"missing_project_brain_ref",
+	"stale_project_brain_ref",
+	"stale_runtime_card",
+	"advisory_runtime_card",
+	"head_sha_mismatch",
+	"missing_source_hash",
+	"digest_mismatch",
+	"external_only_required_surface",
+	"unsafe_ref",
+	"raw_or_secret_content",
+	"unknown_schema_field",
+] as const;
+const EXPECTED_NEXT_ACTION_CLASSES = [
+	"none",
+	"refresh_prompt_context",
+	"refresh_active_artifacts",
+	"refresh_project_brain",
+	"refresh_runtime_card",
+	"refresh_receipts",
+	"rerun_validator",
+] as const;
 
 function exampleReport(): PromptContextDriftReport {
 	return JSON.parse(
@@ -86,62 +139,29 @@ describe("validatePromptContextDriftReport", () => {
 		) as JsonSchemaObject;
 
 		expect(schemaEnum(schema.properties, "evidenceUse")).toEqual([
-			"claim_support",
-			"orientation",
+			...EXPECTED_EVIDENCE_USES,
 		]);
 		expect(schemaEnum(schema.properties, "overallStatus")).toEqual([
-			"pass",
-			"warn",
-			"blocked",
+			...EXPECTED_STATUSES,
 		]);
 		expect(schemaEnum(schema.$defs, "surfaceId")).toEqual([
-			"prompt_context",
-			"prompt_receipt",
-			"active_route",
-			"project_brain",
-			"goal_board",
-			"runtime_card",
-			"receipt_head",
+			...EXPECTED_SURFACES,
 		]);
-		expect(schemaEnum(schema.$defs, "status")).toEqual([
-			"pass",
-			"warn",
-			"blocked",
-		]);
+		expect(schemaEnum(schema.$defs, "status")).toEqual([...EXPECTED_STATUSES]);
 		expect(schemaEnum(schema.$defs, "evidenceUse")).toEqual([
-			"claim_support",
-			"orientation",
+			...EXPECTED_EVIDENCE_USES,
 		]);
 		expect(schemaEnum(schema.$defs, "freshness")).toEqual([
-			"current",
-			"stale",
-			"missing",
+			...EXPECTED_FRESHNESS,
 		]);
 		expect(schemaEnum(schema.$defs, "refKind")).toEqual([
-			"repo_file",
-			"external_metadata",
+			...EXPECTED_REF_KINDS,
 		]);
 		expect(schemaEnum(schema.$defs, "blockerClass")).toEqual([
-			"stale_prompt_context",
-			"missing_prompt_receipt",
-			"stale_active_route",
-			"stale_project_brain_ref",
-			"missing_project_brain_ref",
-			"stale_goal_board",
-			"advisory_runtime_card",
-			"stale_runtime_card",
-			"missing_runtime_card",
-			"head_sha_mismatch",
-			"missing_source_hash",
+			...EXPECTED_BLOCKER_CLASSES,
 		]);
 		expect(schemaEnum(schema.$defs, "nextActionClass")).toEqual([
-			"refresh_prompt_context",
-			"refresh_active_route",
-			"refresh_project_brain",
-			"refresh_goal_board",
-			"refresh_runtime_card",
-			"refresh_receipts",
-			"capture_source_hash",
+			...EXPECTED_NEXT_ACTION_CLASSES,
 		]);
 	});
 

@@ -320,7 +320,11 @@ function validateHooks(value, generatedAt, repoRoot, errors) {
 			errors.push(`${prefix}.triggerKind: must be recognized`);
 		if (!STATUSES.has(String(hook.status)))
 			errors.push(`${prefix}.status: must be recognized`);
-		validateNullablePointer(hook.blockerClass, `${prefix}.blockerClass`, errors);
+		validateNullablePointer(
+			hook.blockerClass,
+			`${prefix}.blockerClass`,
+			errors,
+		);
 		validateDateTime(hook.checkedAt, `${prefix}.checkedAt`, errors);
 		if (isAfter(hook.checkedAt, generatedAt))
 			errors.push(`${prefix}.checkedAt: must not be after generatedAt`);
@@ -395,7 +399,11 @@ function validateEvents(value, generatedAt, errors) {
 			errors.push(`${prefix}.observedAt: must not be after generatedAt`);
 		validatePointerArray(event.sourceRefs, `${prefix}.sourceRefs`, errors);
 		validateHashArray(event.hashes, `${prefix}.hashes`, errors);
-		validateNullablePointer(event.failureClass, `${prefix}.failureClass`, errors);
+		validateNullablePointer(
+			event.failureClass,
+			`${prefix}.failureClass`,
+			errors,
+		);
 	});
 }
 
