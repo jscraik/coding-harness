@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309's branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and its current-main squash evidence is historical, not a current route blocker. R149 refreshes live GitHub state after PR #312 merged into main as squash commit `7e8cb93fa16636336194e15e53a592117b9f276a`. R150 refreshes the current PR lane after PR #318 opened: PR #318 is the only open PR, it is MERGEABLE/CLEAN with visible checks passing and its only review thread resolved. Historical stacked PRs such as #313/#314/#315/#317 can still expose stale CONFLICTING/DIRTY mergeability metadata even though they are merged and no longer open merge blockers. Linear full-lifecycle scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge execution, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Next safe action is to run the R150 board/freshness validators, keep PR #318 triage separate from next-slice work, then resume the next implementation slice in an isolated clean worktree based on current `origin/main` plus PR #318 route truth if PR #318 has not merged yet. Before any closeout, merge-ready, Judge/PM-ready, or goal-complete claim, refresh Linear JSC-363, PR/CI/review-thread truth, and runtime evidence separately. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309's branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and its current-main squash evidence is historical, not a current route blocker. R149 records PR #312 merged into main as squash commit `7e8cb93fa16636336194e15e53a592117b9f276a`. R150/R152 preserved the PR #318 lane and PU-040 validation. PR #319 merged into main on 2026-05-29 as squash commit `1afb519f7623f109b7a383688449c031541ff3dd`; R154 reanchors route truth because the pre-squash R153 branch head is no longer reachable from current main. Linear full-lifecycle scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, next-slice reviewed intent, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Next safe action is to run the post-R154 board/freshness/review-backfill validators, commit the narrow route-truth reanchor if clean, and then start the next implementation slice from reviewed intent in an isolated clean worktree based on current `origin/main`. Before any closeout, merge-ready, Judge/PM-ready, or goal-complete claim, refresh Linear JSC-363, PR/CI/review-thread truth, and runtime evidence separately. |
 
 ## Artifact Index
 
@@ -80,12 +80,14 @@ unless a live refresh is recorded in the referenced artifact.
   `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` for validator compatibility;
   it is not current route truth. R149 records the post-merge refresh after PR
   #312 merged into main as squash commit
-  `7e8cb93fa16636336194e15e53a592117b9f276a`. R150 records the current PR
-  lane after PR #318 opened: PR #318 is the only open PR, it is
-  MERGEABLE/CLEAN with visible checks passing and its only review thread
-  resolved. Historical stacked PRs may still show CONFLICTING/DIRTY metadata
-  because their old head/base refs are stale. That historical metadata is not
-  an active open-PR merge blocker. Before any closeout, refresh Linear
+  `7e8cb93fa16636336194e15e53a592117b9f276a`. R150/R152 record the PR #318
+  and PU-040 validator-hardening lane. PR #319 merged into main as squash
+  commit `1afb519f7623f109b7a383688449c031541ff3dd`; R154 is the current
+  route-truth reanchor because the latest pre-squash branch receipt R153 is no
+  longer reachable from current main. Historical stacked PRs may still show
+  CONFLICTING/DIRTY metadata because their old head/base refs are stale. That
+  historical metadata is not an active open-PR merge blocker. Before any
+  closeout, refresh Linear
   JSC-363, current PR/CI/review-thread truth, runtime producer evidence,
   delivery-truth consumption, Judge/PM readiness, merge execution, and final
   goal completion as separate lanes.
