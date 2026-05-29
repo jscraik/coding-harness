@@ -92,6 +92,11 @@ export const REQUIRED_WORK_FIELDS = [
 			"list code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or `n.a.` with reason",
 	},
 	{
+		label: "Documentation impact",
+		placeholder:
+			"classify required docs as updated or `n.a.` with reason, including README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and existing deep-module READMEs; list docs-expert or reviewer evidence for high-impact documentation changes",
+	},
+	{
 		label: "Expected outcome alignment",
 		placeholder:
 			"state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason",

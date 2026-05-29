@@ -15,6 +15,7 @@
 - AI session / traceability: map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body.
 - Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR
 - Affected surfaces: list code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or `n.a.` with reason
+- Documentation impact: classify required docs as updated or `n.a.` with reason, including README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and existing deep-module README files; list docs-expert or reviewer evidence for high-impact documentation changes
 - Expected outcome alignment: state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason
 - Pattern scope inventory: for any steering feedback, review comment, or line-level correction that implies a broader design/API principle, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence
 - Meta-behavior proof: for repeated steering or high-signal corrections, name the durable repo/system change plus concrete repo path, command, or issue ID that prevents recurrence, or `n.a.` with tracked exception reason

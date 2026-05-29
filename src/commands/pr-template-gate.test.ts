@@ -32,6 +32,7 @@ const VALID_BODY = `## Summary
 - AI session / traceability: codex-session-019c-example supports the command gate edits.
 - Completed work: Added pr-template-gate command and docs update with evidence refs.
 - Affected surfaces: code, tests, docs, PR template.
+- Documentation impact: PR template and validator fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves PR body validation.
 - Expected outcome alignment: Keeps PR evidence reviewable for downstream harness operators.
 - Pattern scope inventory: validation evidence format checked in PR template gate; no sibling validators needed.
 - Meta-behavior proof: n.a. because this fixture is not driven by steering admission.
@@ -188,7 +189,7 @@ describe("pr-template-gate command", () => {
 			.mockImplementation(() => undefined);
 		const exitCode = runPrTemplateGateCLI({
 			prBody:
-				"## Summary\n\n## Checklist\n\n- [ ] todo\n\n## Testing\n\npass/fail\n\n## Review artifacts\n\n<link / artifact path / comment ID>\n\n## Notes\n\nAdd one-paragraph merge rationale here.",
+				"## Summary\n\n## Checklist\n\n- [ ] placeholder checklist item\n\n## Testing\n\npass/fail\n\n## Review artifacts\n\n<link / artifact path / comment ID>\n\n## Notes\n\nAdd one-paragraph merge rationale here.",
 		});
 		expect(exitCode).toBe(EXIT_CODES.POLICY_VIOLATION);
 		expect(consoleError).toHaveBeenCalled();

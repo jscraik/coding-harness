@@ -203,7 +203,11 @@ export function validateTimestampOrdering(
 		lineage.verifierRefs.forEach((entry, index) => {
 			if (!isRecord(entry)) return;
 			const verifiedAt = parseIso(entry.verifiedAt);
-			if (producedAt !== null && verifiedAt !== null && verifiedAt < producedAt) {
+			if (
+				producedAt !== null &&
+				verifiedAt !== null &&
+				verifiedAt < producedAt
+			) {
 				addError(
 					errors,
 					"timestamp_order",
@@ -211,7 +215,11 @@ export function validateTimestampOrdering(
 					"verifier refs cannot predate artifact producedAt",
 				);
 			}
-			if (generatedAt !== null && verifiedAt !== null && verifiedAt > generatedAt) {
+			if (
+				generatedAt !== null &&
+				verifiedAt !== null &&
+				verifiedAt > generatedAt
+			) {
 				addError(
 					errors,
 					"timestamp_order",
