@@ -254,6 +254,8 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 
 **Phase 4d** starts PR closeout evidence with `harness pr-closeout`. Supply first-class Coding Harness closeout gate evidence with `--gates <path>`; `--phase-exit <path>` remains a compatibility alias for older workflows. The command is read-only and may load `~/.codex/.env` for CLI credentials, but its report must describe tool availability rather than printing secrets. Missing optional CLIs stay visible as tool evidence; blocked required evidence must prevent a ready-to-merge recommendation.
 
+CircleCI `pr-template` and `linear-gate` jobs resolve PR context through `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`, owner-qualified branch lookup, bare branch lookup, and commit-to-PR fallback. Fresh PR pipelines may start before GitHub exposes all association surfaces, so the resolver retries briefly before failing closed. Mirror changes across `.circleci/config.yml`, `src/templates/circleci-config.yml`, `src/templates/circleci-linear-gate.yml`, and scaffold regression tests.
+
 **Phase 4c** promotes the highest-signal scaffold-default learnings into generated-repo regression coverage for auth-free `.npmrc`, repo-local `scripts/harness-cli.sh`, real `CODESTYLE.md` templates, wrapper-first environment checks, first-class `toolingPolicy`, and Codex environment action sync.
 
 **Implementation notes:** Treat imported CodeRabbit CSV rows as local, non-live operational evidence (`source.live=false`) unless a sanitized snapshot is explicitly requested. Strict review-context mode (`requireReviewContext: true`) is supported through review-gate configuration. Keyword-only fuzzy blocking and fuzzy/keyword-only gating remain reserved for later phases and must stay rejected until those command contracts land.
@@ -479,7 +481,7 @@ When working with high-risk action governance:
 - **High-risk action envelopes** require current evidence refs and head SHA where the action touches repository or PR state
 - **Reviewer independence requirement**: reviewer must not be the same as requester/producer
 - **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not just display alias)
-- **Decision semantics**: allow, block, mismatch, unknown, not_applicable; `not_applicable` is forbidden for high-risk action kinds
+- **Decision semantics**: allow, block, mismatch, unknown, and not applicable; the not-applicable verdict is forbidden for high-risk action kinds
 - **Docs-gate requirement**: companion documentation surfaces must be updated in the same PR as any action-review governance change
 - **Diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
 

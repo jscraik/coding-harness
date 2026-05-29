@@ -268,6 +268,15 @@ Use the tool promotion threshold before creating a new surface: if the same judg
 
 Do not satisfy this by adding standalone prose only. If the destination is documentation, tie it to an existing docs-gate, glossary guard, PR template field, command contract, or tracked follow-up.
 
+When a PR references a Linear issue, the PR body must keep traceability separate
+from acceptance closure. Use `Linear reference` for the gate-countable issue
+link itself (`Refs JSC-N`, `Fixes JSC-N`, or `Closes JSC-N`), and use
+`Linked issue relationship` to state whether the PR implements/closes the
+linked acceptance criteria, is preparatory/enabling work, or is standalone. If
+a PR references a parent goal without completing its acceptance IDs, say so
+explicitly instead of letting the linked issue check infer scope from the issue
+title or broad objective.
+
 Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps the steering-feedback rule connected across `AGENTS.md`, this validation guide, `UBIQUITOUS_LANGUAGE.md`, and the current solution record.
 
 ### Process/agent instruction edits

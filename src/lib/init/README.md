@@ -22,6 +22,10 @@ thin and delegate into this deep module.
   validation.
 - Scaffold template changes must keep generated downstream docs, PR templates,
   workflow files, and regression fixtures synchronized.
+- Generated PR templates must keep `Linear reference` separate from
+  `Linked issue relationship` so downstream repositories can distinguish issue
+  traceability from acceptance closure before PR-template and linked-issue
+  gates run.
 
 ## Documentation Alignment
 
