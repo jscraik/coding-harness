@@ -280,8 +280,7 @@ export function validateReplayPacket(
 			? realpathSync(options.repoRoot)
 			: process.cwd();
 	} catch (error) {
-		const message =
-			error instanceof Error ? error.message : String(error);
+		const message = error instanceof Error ? error.message : String(error);
 		return {
 			status: "fail",
 			errors: [`repoRoot: cannot resolve path: ${message}`],

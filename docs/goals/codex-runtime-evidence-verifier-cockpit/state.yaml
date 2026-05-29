@@ -240,9 +240,9 @@ continuation_gate:
 checks:
   dirty_fingerprint: "Worktree already contained uncommitted .harness research/spec/plan changes before this goal board was created; future slices must preserve unrelated changes."
   last_verification:
-    timestamp: "2026-05-28T16:32:30Z"
-    commit_sha: "618b31c7a2237531a2d62e8f9320025fc3372cb6"
-    pr_ref: "PU-036 ReplayPacket/v1 is committed and pushed on branch codex/jsc-363-replay-packet-surface, PR #313 is open against codex/jsc-363-artifact-runtime-surface, and all visible PR #313 checks pass. R118 also records the PR #310 linked-issue and CI recovery: the live PR #310 body passes pr-template-gate and linear-gate, states preparatory_governance_support, claims no completed JSC-363 SA acceptance IDs, and all visible PR #310 checks pass. ReviewDecision, review-thread truth, Linear full-lifecycle truth, runtime producer emission, delivery-truth consumption, Judge/PM readiness, merge readiness, and final goal closeout remain separate unclaimed surfaces."
+    timestamp: "2026-05-29T08:48:27Z"
+    commit_sha: "fc60213b83b2e847a3309607da385e48b8ebe33d"
+    pr_ref: "PU-036 ReplayPacket/v1 is committed and pushed on branch codex/jsc-363-replay-packet-surface, PR #313 is open against codex/jsc-363-artifact-runtime-surface, and R119 adds local regression proof for the remaining PR #313 review-thread fixes before thread resolution. PR #314 still has five active unresolved review threads and must be fixed separately. ReviewDecision, remote checks after the next PR #313 push, Linear full-lifecycle truth, runtime producer emission, delivery-truth consumption, Judge/PM readiness, merge readiness, and final goal closeout remain separate unclaimed surfaces."
     commands_run:
       - command: "git status --short --branch"
         outcome: "pass (branch codex/jsc-363-replay-packet-surface; unrelated untracked local artifacts remain unclaimed)"
@@ -288,7 +288,15 @@ checks:
         outcome: "pass (PR #313 head 618b31c7a2237531a2d62e8f9320025fc3372cb6, mergeStateStatus CLEAN, reviewDecision empty)"
       - command: "gh pr checks 310 --repo jscraik/coding-harness --watch=false"
         outcome: "pass (all visible PR #310 checks pass)"
-    summary: "R116 records PU-036 SPG-010 ReplayPacket/v1 local implementation and assurance plus the linked-issue acceptance-trace guard repair for PR #310. R117 records the live PR #310 metadata repair required by the external Linked Issues failure: the PR remains preparatory governance support, completes no JSC-363 SA acceptance IDs, and includes the exact Linear reference line required by linear-gate. R118 records commit/push/PR handoff for PU-036, PR #313 green-check evidence, isolated PR triage with git fetch, CircleCI env-backed recovery, and PR #310 green-check recovery after the repaired body. The slice adds a public schema, example, fixture, TS validator, CJS semantic validator, manifest entry, parity tests, architecture/governance docs, and reviewer artifacts for replay/hook provenance that is orientation/audit-trail-only and not_yet_emitted. The PR template guard now separates preparatory JSC-linked governance work from completed JSC-363 SA acceptance IDs. It explicitly separates implementation proof, local validation, remote checks, PR review-thread truth, Linear scope alignment, runtime producer emission, delivery-truth consumption, Judge/PM readiness, merge readiness, and final goal closeout."
+      - command: "gh api graphql reviewThreads for PR #313 and PR #314"
+        outcome: "pass (PR #313 had three unresolved threads; PR #314 had five active unresolved threads)"
+      - command: "node scripts/validate-replay-packet.cjs --repo-root"
+        outcome: "pass as expected structured failure report (replay-packet-validation/v1 status fail)"
+      - command: "node scripts/validate-replay-packet.cjs contracts/examples/replay-packet.example.json --repo-root /path/that/does/not/exist"
+        outcome: "pass as expected structured failure report (replay-packet-validation/v1 status fail)"
+      - command: "pnpm exec vitest run src/lib/replay/replay-packet.test.ts src/dev/validate-runtime-packet-schemas-script.test.ts --reporter=verbose"
+        outcome: "pass (2 files, 38 tests)"
+    summary: "R116 records PU-036 SPG-010 ReplayPacket/v1 local implementation and assurance plus the linked-issue acceptance-trace guard repair for PR #310. R117 records the live PR #310 metadata repair required by the external Linked Issues failure. R118 records commit/push/PR handoff for PU-036, PR #313 green-check evidence, isolated PR triage with git fetch, CircleCI env-backed recovery, and PR #310 green-check recovery. R119 records the PR #313 review-thread repair pass: the remaining reviewer findings are converted into focused regression tests for invalid repoRoot handling, parseable script failures, and normalized event evidence arrays, and the replay example checksum is refreshed. It explicitly separates implementation proof, local validation, remote checks, PR review-thread truth, Linear scope alignment, runtime producer emission, delivery-truth consumption, Judge/PM readiness, merge readiness, and final goal closeout."
   previous_verification_archive:
     timestamp: "2026-05-26T21:26:30Z"
     commit_sha: "b1db37ca"
