@@ -22,6 +22,13 @@ describe("scaffold CircleCI config template", () => {
 		expect(config).toContain("version: 2.1");
 		expect(config).toContain("name: linear-gate");
 		expect(config).toContain("bash scripts/run-harness-gate.sh linear-gate");
+		expect(config).toContain("resolve_pr_ref() {");
+		expect(config).toContain(
+			"PR context not available yet for pr-template; retrying",
+		);
+		expect(config).toContain(
+			"PR context not available yet for linear-gate; retrying",
+		);
 		expect(config).toContain("name: risk-policy-gate");
 		expect(config).toContain("            - linear-gate");
 		expect(config).toContain(
@@ -59,6 +66,13 @@ describe("scaffold CircleCI config template", () => {
 
 		expect(config).not.toContain("name: linear-gate");
 		expect(config).not.toContain("linear-gate \\");
+		expect(config).toContain("resolve_pr_ref() {");
+		expect(config).toContain(
+			"PR context not available yet for pr-template; retrying",
+		);
+		expect(config).not.toContain(
+			"PR context not available yet for linear-gate; retrying",
+		);
 		expect(config).not.toContain("}}      -");
 		expect(config).toContain("            - pr-template\n");
 		expect(config).not.toContain("            - linear-gate");

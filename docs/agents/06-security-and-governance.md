@@ -83,6 +83,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. The workflow includes the repo-run Semgrep lane and an explicit report-only Snyk dependency lane; Snyk CLI install, auth, and findings must not fail CircleCI PRs that the external GitHub Snyk delta check has cleared. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
+- CircleCI PR governance checks must fail closed only after bounded PR-context resolution attempts. The `pr-template` and `linear-gate` jobs may retry `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`, branch lookups, and commit-to-PR lookup briefly, but must not bypass PR-template, Linear, or security policy gates when PR context remains unavailable.
 - `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
 
 ## Policy-gate risk chain
@@ -242,11 +243,11 @@ This repository uses `action-review-receipt/v1` as a narrow guardian-style recei
 - **High-risk action envelopes**: merge, release, destructive cleanup, and external tracker mutation require current evidence refs and head SHA
 - **Reviewer independence**: reviewer must not be the same as requester/producer (no self-approval)
 - **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not only by display alias or shared runtime/source identity ref)
-- **Decision semantics**: allow, block, mismatch, unknown, not_applicable
+- **Decision semantics**: allow, block, mismatch, unknown, and not applicable
   - `allow` verdicts require current supporting evidence, non-expired review time, independent reviewer identity, differing canonical identity refs, and no unresolved blockers
   - `block` and `unknown` verdicts must carry blocker classes and next action text
   - `mismatch` verdicts must require expected and actual action envelopes plus explicit mismatch reason
-  - `not_applicable` is forbidden for merge, release, destructive cleanup, and external tracker mutation envelopes
+  - the not-applicable verdict is forbidden for merge, release, destructive cleanup, and external tracker mutation envelopes
 - **Docs-gate requirement**: these companion documentation surfaces must be updated in the same PR as any action-review governance change
 - **Reference diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
 
