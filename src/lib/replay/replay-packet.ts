@@ -405,8 +405,7 @@ function validateHookProvenance(
 			errors.push(`${path}.triggerKind: must be a recognized hook trigger`);
 		if (!HOOK_STATUSES.has(String(hook.status)))
 			errors.push(`${path}.status: must be pass, fail, blocked, or unknown`);
-		if (hook.blockerClass !== null && typeof hook.blockerClass !== "string")
-			errors.push(`${path}.blockerClass: must be a string or null`);
+		validateNullablePointer(hook.blockerClass, `${path}.blockerClass`, errors);
 		validateDateTime(hook.checkedAt, `${path}.checkedAt`, errors);
 		if (isAfter(hook.checkedAt, generatedAt))
 			errors.push(`${path}.checkedAt: must not be after generatedAt`);
@@ -518,8 +517,7 @@ function validateEvents(
 					);
 			});
 		}
-		if (event.failureClass !== null && typeof event.failureClass !== "string")
-			errors.push(`${path}.failureClass: must be a string or null`);
+		validateNullablePointer(event.failureClass, `${path}.failureClass`, errors);
 	}
 }
 

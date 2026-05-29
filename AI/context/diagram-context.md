@@ -51,6 +51,8 @@ Generated: 2026-05-29T09:53:24Z
 - `src/lib/prompt-context-drift/prompt-context-drift-report.ts`
 - `src/lib/prompt-context-drift/prompt-context-drift-types.ts`
 - `src/lib/replay/replay-packet.ts`
+- `scripts/validate-intermediary-receipt-coverage.cjs`
+- `scripts/validate-replay-packet.cjs`
 
 ## agent
 

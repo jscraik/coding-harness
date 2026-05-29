@@ -54,7 +54,7 @@ function resolvePacketPath(repoRoot, packetPath) {
 		relative.startsWith("..") ||
 		path.isAbsolute(relative)
 	) {
-		printResult("fail", ["packetPath: must resolve within --repo-root"], 2);
+		printResult("fail", ["packetPath: must resolve within --repo-root"], 1);
 	}
 	return resolved;
 }

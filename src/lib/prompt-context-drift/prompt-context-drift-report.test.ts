@@ -15,13 +15,6 @@ import type {
 	PromptContextDriftSurface,
 } from "./prompt-context-drift-report.js";
 import {
-	PROMPT_CONTEXT_DRIFT_BLOCKER_CLASSES,
-	PROMPT_CONTEXT_DRIFT_EVIDENCE_USES,
-	PROMPT_CONTEXT_DRIFT_FRESHNESS,
-	PROMPT_CONTEXT_DRIFT_NEXT_ACTION_CLASSES,
-	PROMPT_CONTEXT_DRIFT_REF_KINDS,
-	PROMPT_CONTEXT_DRIFT_STATUSES,
-	PROMPT_CONTEXT_DRIFT_SURFACES,
 	validatePromptContextDriftReport,
 } from "./prompt-context-drift-report.js";
 
@@ -93,31 +86,62 @@ describe("validatePromptContextDriftReport", () => {
 		) as JsonSchemaObject;
 
 		expect(schemaEnum(schema.properties, "evidenceUse")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_EVIDENCE_USES,
+			"claim_support",
+			"orientation",
 		]);
 		expect(schemaEnum(schema.properties, "overallStatus")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_STATUSES,
+			"pass",
+			"warn",
+			"blocked",
 		]);
 		expect(schemaEnum(schema.$defs, "surfaceId")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_SURFACES,
+			"prompt_context",
+			"prompt_receipt",
+			"active_route",
+			"project_brain",
+			"goal_board",
+			"runtime_card",
+			"receipt_head",
 		]);
 		expect(schemaEnum(schema.$defs, "status")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_STATUSES,
+			"pass",
+			"warn",
+			"blocked",
 		]);
 		expect(schemaEnum(schema.$defs, "evidenceUse")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_EVIDENCE_USES,
+			"claim_support",
+			"orientation",
 		]);
 		expect(schemaEnum(schema.$defs, "freshness")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_FRESHNESS,
+			"current",
+			"stale",
+			"missing",
 		]);
 		expect(schemaEnum(schema.$defs, "refKind")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_REF_KINDS,
+			"repo_file",
+			"external_metadata",
 		]);
 		expect(schemaEnum(schema.$defs, "blockerClass")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_BLOCKER_CLASSES,
+			"stale_prompt_context",
+			"missing_prompt_receipt",
+			"stale_active_route",
+			"stale_project_brain_ref",
+			"missing_project_brain_ref",
+			"stale_goal_board",
+			"advisory_runtime_card",
+			"stale_runtime_card",
+			"missing_runtime_card",
+			"head_sha_mismatch",
+			"missing_source_hash",
 		]);
 		expect(schemaEnum(schema.$defs, "nextActionClass")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_NEXT_ACTION_CLASSES,
+			"refresh_prompt_context",
+			"refresh_active_route",
+			"refresh_project_brain",
+			"refresh_goal_board",
+			"refresh_runtime_card",
+			"refresh_receipts",
+			"capture_source_hash",
 		]);
 	});
 
