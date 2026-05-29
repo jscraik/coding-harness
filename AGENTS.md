@@ -333,8 +333,35 @@ Notes:
   `ARCHITECTURE.md`, `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Prompt-context drift report changes that add or alter
+  `prompt-context-drift-report/v1`, prompt-context receipt freshness, Project
+  Brain route/memory/knowledge freshness, runtime-card or handoff freshness,
+  receipt head-SHA checks, repo-contained source refs, or context-health
+  projection are architecture-adjacent agent-readiness changes. Keep the deep
+  module in `src/lib/prompt-context-drift/`, keep `agent-readiness` as the
+  first advisory consumer, and do not let the report authorize commands,
+  satisfy delivery-truth claims, close JSC-363 acceptance criteria, or prove
+  merge readiness. Refresh `AI/context/diagram-context.md` and keep
+  `ARCHITECTURE.md`, `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
+- Intermediary receipt coverage changes that add or alter
+  `intermediary-receipt-coverage/v1`, realtime/browser/mailbox/stream or
+  compaction source taxonomy, source-kind by claim-family policy entries,
+  blocker-to-next-action mapping, mixed-source aggregation, receipt/head-SHA
+  claim-support eligibility, or protected canonical-packet routing are
+  architecture-adjacent runtime cockpit changes. Keep the deep module in
+  `src/lib/intermediary-receipts/`, keep the packet contract-first and
+  `not_yet_emitted` until a production producer is intentionally wired, and
+  do not let intermediary observations support delivery-truth, review-state,
+  external-state, root-hygiene, Linear, Judge/PM, or merge-readiness claims
+  without a current `evidence-receipt/v1` plus the matching canonical packet
+  route. Refresh `AI/context/diagram-context.md` and keep
+  `ARCHITECTURE.md`, `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
 - Steering-queue packet changes that add or alter `steering-queue/v1`,
-  deferred operator-steering state, instruction-source hashing, artifact
+  pending operator-steering state, instruction-source hashing, artifact
   identity checks, supersession, stale-precondition classification, or
   deterministic selected-item ordering are architecture-adjacent runtime
   cockpit changes. Keep the deep module in `src/lib/steering-queue/`, keep

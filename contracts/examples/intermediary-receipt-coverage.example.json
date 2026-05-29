@@ -1,0 +1,860 @@
+{
+	"schemaVersion": "intermediary-receipt-coverage/v1",
+	"generatedAt": "2026-05-28T10:45:00Z",
+	"producer": "harness:intermediary-receipt-coverage-fixture",
+	"repoRootRef": "repo:coding-harness",
+	"runtimeStatus": "not_yet_emitted",
+	"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+	"defaultPolicy": "deny",
+	"sources": [
+		{
+			"sourceId": "browser-state",
+			"sourceKind": "browser_state",
+			"evidenceUse": "orientation",
+			"status": "pass",
+			"freshness": "current",
+			"observedAt": "2026-05-28T10:45:00Z",
+			"observedHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"ref": "browser:implementation-notes",
+			"sourceHashSha256": null,
+			"receiptRef": null,
+			"canonicalPacketRef": null,
+			"claimFamilies": ["orientation"],
+			"blockers": []
+		},
+		{
+			"sourceId": "streamed-status",
+			"sourceKind": "streamed_status",
+			"evidenceUse": "orientation",
+			"status": "pass",
+			"freshness": "current",
+			"observedAt": "2026-05-28T10:45:00Z",
+			"observedHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"ref": "stream:status/chunk",
+			"sourceHashSha256": null,
+			"receiptRef": null,
+			"canonicalPacketRef": null,
+			"claimFamilies": ["orientation"],
+			"blockers": []
+		},
+		{
+			"sourceId": "mailbox-status",
+			"sourceKind": "mailbox_status",
+			"evidenceUse": "orientation",
+			"status": "pass",
+			"freshness": "current",
+			"observedAt": "2026-05-28T10:45:00Z",
+			"observedHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"ref": "mailbox:agent-native-reviewer",
+			"sourceHashSha256": null,
+			"receiptRef": null,
+			"canonicalPacketRef": null,
+			"claimFamilies": ["orientation"],
+			"blockers": []
+		},
+		{
+			"sourceId": "compaction-summary",
+			"sourceKind": "compaction_summary",
+			"evidenceUse": "orientation",
+			"status": "pass",
+			"freshness": "current",
+			"observedAt": "2026-05-28T10:45:00Z",
+			"observedHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"ref": "summary:context-compaction",
+			"sourceHashSha256": null,
+			"receiptRef": null,
+			"canonicalPacketRef": null,
+			"claimFamilies": ["orientation"],
+			"blockers": []
+		},
+		{
+			"sourceId": "screenshot-visual-state",
+			"sourceKind": "screenshot_or_visual_state",
+			"evidenceUse": "orientation",
+			"status": "pass",
+			"freshness": "current",
+			"observedAt": "2026-05-28T10:45:00Z",
+			"observedHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"ref": "visual:browser-state",
+			"sourceHashSha256": null,
+			"receiptRef": null,
+			"canonicalPacketRef": null,
+			"claimFamilies": ["orientation"],
+			"blockers": []
+		},
+		{
+			"sourceId": "realtime-event-snippet",
+			"sourceKind": "realtime_event_snippet",
+			"evidenceUse": "orientation",
+			"status": "pass",
+			"freshness": "current",
+			"observedAt": "2026-05-28T10:45:00Z",
+			"observedHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"ref": "event:tool-call-output",
+			"sourceHashSha256": null,
+			"receiptRef": null,
+			"canonicalPacketRef": null,
+			"claimFamilies": ["orientation"],
+			"blockers": []
+		},
+		{
+			"sourceId": "external-check-snapshot",
+			"sourceKind": "external_check_snapshot",
+			"evidenceUse": "claim_support",
+			"status": "pass",
+			"freshness": "current",
+			"observedAt": "2026-05-28T10:45:00Z",
+			"observedHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"ref": "external-state-snapshot/v1:fixture",
+			"sourceHashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			"receiptRef": "receipt:external-state-current",
+			"canonicalPacketRef": "external-state-snapshot/v1:contracts/examples/external-state-snapshot.example.json",
+			"claimFamilies": ["external_state"],
+			"blockers": []
+		},
+		{
+			"sourceId": "operator-steering-echo",
+			"sourceKind": "operator_steering_echo",
+			"evidenceUse": "orientation",
+			"status": "pass",
+			"freshness": "current",
+			"observedAt": "2026-05-28T10:45:00Z",
+			"observedHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"ref": "operator-steering:threshold-rule",
+			"sourceHashSha256": null,
+			"receiptRef": null,
+			"canonicalPacketRef": null,
+			"claimFamilies": ["orientation"],
+			"blockers": []
+		},
+		{
+			"sourceId": "subagent-status-text",
+			"sourceKind": "subagent_status_text",
+			"evidenceUse": "orientation",
+			"status": "pass",
+			"freshness": "current",
+			"observedAt": "2026-05-28T10:45:00Z",
+			"observedHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"currentHeadSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"ref": "subagent-status:intent-review",
+			"sourceHashSha256": null,
+			"receiptRef": null,
+			"canonicalPacketRef": null,
+			"claimFamilies": ["orientation"],
+			"blockers": []
+		}
+	],
+	"receipts": [
+		{
+			"schemaVersion": "evidence-receipt/v1",
+			"kind": "external_state",
+			"ref": "receipt:external-state-current",
+			"producer": "intermediary-receipt-coverage-fixture",
+			"producedAt": "2026-05-28T10:40:00Z",
+			"verifiedAt": "2026-05-28T10:45:00Z",
+			"headSha": "45b717bb9f0d57ec865b9806475d252d198e866e",
+			"status": "pass",
+			"freshness": "current",
+			"evidenceUse": "claim_support",
+			"blockerClass": null,
+			"checksum": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+		}
+	],
+	"claimPolicies": [
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "orientation",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "closeout_ready",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "merge_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "review_addressed",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "linear_alignment",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "judge_pm_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "delivery_truth",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "external_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "review_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "goal_completion",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "browser_state",
+			"claimFamily": "root_surface_tidy",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "orientation",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "closeout_ready",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "merge_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "review_addressed",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "linear_alignment",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "judge_pm_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "delivery_truth",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "external_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "review_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "goal_completion",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "streamed_status",
+			"claimFamily": "root_surface_tidy",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "orientation",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "closeout_ready",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "merge_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "review_addressed",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "linear_alignment",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "judge_pm_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "delivery_truth",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "external_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "review_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "goal_completion",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "mailbox_status",
+			"claimFamily": "root_surface_tidy",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "orientation",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "closeout_ready",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "merge_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "review_addressed",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "linear_alignment",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "judge_pm_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "delivery_truth",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "external_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "review_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "goal_completion",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "compaction_summary",
+			"claimFamily": "root_surface_tidy",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "orientation",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "closeout_ready",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "merge_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "review_addressed",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "linear_alignment",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "judge_pm_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "delivery_truth",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "external_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "review_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "goal_completion",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "screenshot_or_visual_state",
+			"claimFamily": "root_surface_tidy",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "orientation",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "closeout_ready",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "merge_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "review_addressed",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "linear_alignment",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "judge_pm_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "delivery_truth",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "external_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "review_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "goal_completion",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "realtime_event_snippet",
+			"claimFamily": "root_surface_tidy",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "orientation",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "closeout_ready",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "merge_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "review_addressed",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "linear_alignment",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "judge_pm_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "delivery_truth",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "external_state",
+			"allowed": true,
+			"requiredCanonicalPacketSchemas": ["external-state-snapshot/v1"]
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "review_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "goal_completion",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "external_check_snapshot",
+			"claimFamily": "root_surface_tidy",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "orientation",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "closeout_ready",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "merge_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "review_addressed",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "linear_alignment",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "judge_pm_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "delivery_truth",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "external_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "review_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "goal_completion",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "operator_steering_echo",
+			"claimFamily": "root_surface_tidy",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "orientation",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "closeout_ready",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "merge_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "review_addressed",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "linear_alignment",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "judge_pm_readiness",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "delivery_truth",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "external_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "review_state",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "goal_completion",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		},
+		{
+			"sourceKind": "subagent_status_text",
+			"claimFamily": "root_surface_tidy",
+			"allowed": false,
+			"requiredCanonicalPacketSchemas": []
+		}
+	],
+	"claimFamilySummaries": [
+		{
+			"claimFamily": "orientation",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "closeout_ready",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "merge_readiness",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "review_addressed",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "linear_alignment",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "judge_pm_readiness",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "delivery_truth",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "external_state",
+			"status": "pass",
+			"evidenceUse": "claim_support",
+			"claimSupportEligible": true,
+			"sourceIds": ["external-check-snapshot"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "review_state",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "goal_completion",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		},
+		{
+			"claimFamily": "root_surface_tidy",
+			"status": "pass",
+			"evidenceUse": "orientation",
+			"claimSupportEligible": false,
+			"sourceIds": ["browser-state"],
+			"blockers": []
+		}
+	],
+	"overallStatus": "pass",
+	"blockers": [],
+	"nextAction": "use-canonical-packets-for-protected-claim-support"
+}

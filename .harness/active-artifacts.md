@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. PR #309 is merged; its branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and current main includes the squash commit `75b77c2543053ade3c3e793d28f8811998b9f01c`. R114 reconciles the board to current HEAD and encodes the tool promotion threshold. R115 records PU-035 ArtifactRuntimeSurface/v1 local contract implementation on branch `codex/jsc-363-artifact-runtime-surface`; commit `565921f7` is pushed and PR #312 is open against `codex/jsc-363-goal-board-merge-reconcile`. R116 records PU-036 ReplayPacket/v1 and linked-issue acceptance-trace guard local implementation. R118 records PU-036 commit `618b31c7a2237531a2d62e8f9320025fc3372cb6`, pushed branch `codex/jsc-363-replay-packet-surface`, PR #313 open against `codex/jsc-363-artifact-runtime-surface`, and all visible PR #313 checks passing. R118 also records PR #310 recovery: its live body passes `pr-template-gate` and `linear-gate`, states preparatory governance support, claims no completed JSC-363 SA acceptance IDs, and all visible PR #310 checks pass. GitHub review-thread truth, Linear full-lifecycle scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge readiness, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Before each slice, re-read the goal, state, receipts, audit, ecosystem review, system-prompt operational analysis, Project Brain knowledge, and Linear JSC-363. The next safe action is PU-037 / SPG-011 prompt-context drift validator intent and implementation, with Project Brain inputs, current PR-stack awareness, bounded deep-module scope, required skill-lens coverage, and adversarial, agent-native, and best-practices review before any done claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. PR #309 is merged; its branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96`, current main includes squash commit `75b77c2543053ade3c3e793d28f8811998b9f01c`, and the active stack now runs through PR #312, PR #313, PR #314, PR #315, and PR #316. R124 records PU-038 IntermediaryReceiptCoverage/v1 as PR #315, explicit about no completed JSC-363 SA acceptance IDs, independently triaged by green-sweep, and green on all visible PR checks after CircleCI rerun. R127 records live linked-issue scope repair for historical PR #310 so preparatory governance work does not claim SA-001 through SA-018. R128 records commit `921bc5ec7e70a211a65da94a5c5e2ad99c7d2601` for the linked-issue evidence repair. R129 records a live PR stack refresh that separated observed PR #315/#314 CI from PR #316 review/protection state. R130 records the live PR #315 linked-issue body repair with separate Linear reference and relationship fields, observed-head PR #315 checks green at ee9d43960f5f2a072fb5d7ddfc9522e7ef97a874 before that route-evidence commit, and PR-visible PR #316 stale-review classification at https://github.com/jscraik/coding-harness/pull/316#issuecomment-4570004834. R131 records the follow-up PR #316 linked-issue contract repair on current head `f3dd5e4f035cd547e531e3e505af2b650c54d558`: focused tests and Biome pass, all visible PR checks pass, mergeStateStatus is CLEAN, mergeable is MERGEABLE, all known review threads are resolved, and the PR still claims no JSC-363 SA-001 through SA-018 completion. R132 records the R131 route-evidence commit/push at `d7f534d3d396d748a4f30609a0679cc9be6c0cb3`, post-push PR #315 current-head checks as all visible checks passing, PR #315 CLEAN/MERGEABLE, and PR #316 still CLEAN/MERGEABLE with all visible checks passing. GitHub reviewDecision, stacked-base merge execution, Linear full-lifecycle scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Next safe action is to resume the next implementation slice in an isolated clean worktree or branch context so unrelated local dirt and open PR triage do not contaminate the slice. Before any closeout, merge-ready, Judge/PM-ready, or goal-complete claim, refresh PR #315/#316 reviewDecision, review-thread state, stacked-base readiness, Linear scope alignment, and mergeability again. Keep CI, reviewDecision, stacked-base readiness, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate truth lanes. |
 
 ## Artifact Index
 
@@ -84,9 +84,27 @@ unless a live refresh is recorded in the referenced artifact.
   branch `codex/jsc-363-artifact-runtime-surface`. R118 records that PU-036
   ReplayPacket/v1 is committed, pushed, open as PR #313, and green on all
   visible PR checks, while PR #310 has also been repaired and is green after
-  linked-issue metadata recovery. Merge-readiness, Linear scope alignment,
-  review-thread truth, Judge/PM readiness, runtime producer emission,
-  delivery-truth consumption, and final closeout remain unclaimed.
+  linked-issue metadata recovery. R121 records PU-037 as committed, pushed,
+  open as PR #314, green after env-backed CircleCI rerun, and independently
+  triaged by green-sweep. R124 records PU-038 IntermediaryReceiptCoverage/v1
+  as committed, pushed, open as PR #315, explicit about no completed JSC-363
+  SA acceptance IDs, independently triaged by green-sweep, and green on all
+  visible PR checks after CircleCI rerun. R127 repairs the historical PR #310
+  linked-issue scope ambiguity, R128 commits the linked-issue evidence repair,
+  R129 records live stack triage: PR #315 and PR #314 are green and
+  mergeable, while PR #316 needed review/protection classification. R130
+  records PR #315 observed-head green checks plus linked-issue body repair and
+  PR #316 stale-review classification comment. R131 records the follow-up
+  PR #316 linked-issue contract repair on head
+  `f3dd5e4f035cd547e531e3e505af2b650c54d558`, with focused tests,
+  Biome, all visible PR checks, mergeStateStatus CLEAN, mergeable MERGEABLE,
+  and known review threads resolved. R132 records that PR #315 current-head
+  checks passed after the R131 route-evidence push at
+  `d7f534d3d396d748a4f30609a0679cc9be6c0cb3`, with PR #315 CLEAN and
+  MERGEABLE; PR #316 also remains green, CLEAN, and MERGEABLE on its observed
+  head. Merge-readiness, Linear scope alignment, review-thread truth,
+  Judge/PM readiness, runtime producer emission, delivery-truth consumption,
+  and final closeout remain unclaimed.
 - JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
   not use it as the coding-harness tracker for the 2026-05-18 assurance plan
   unless Linear is explicitly reparented or updated later.
