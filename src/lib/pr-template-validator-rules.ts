@@ -42,8 +42,12 @@ export const CANDIDATE_FIX_PATTERN =
 export const LINKED_ISSUE_REFERENCE_PATTERN = /\bJSC-\d+\b/i;
 export const ACCEPTANCE_TRACE_ID_PATTERN =
 	/\b(?:SA|AC|FR|NFR|IU|PU)-\d+(?:-\d+)?\b/i;
-export const PREPARATORY_LINKED_ISSUE_TRACE_PATTERN =
-	/\b(?:preparatory|enabling|supporting|governance)\b[\s\S]{0,160}\b(?:relationship|slice|work|change|guard|evidence|contract)\b|\bdoes not complete\b[\s\S]{0,120}\b(?:acceptance criteria|issue|JSC-\d+)\b/i;
+export const PREPARATORY_RELATIONSHIP_WINDOW = 160;
+export const PREPARATORY_NO_COMPLETION_WINDOW = 120;
+export const PREPARATORY_LINKED_ISSUE_TRACE_PATTERN = new RegExp(
+	String.raw`\b(?:preparatory|enabling|supporting|governance)\b[\s\S]{0,${PREPARATORY_RELATIONSHIP_WINDOW}}\b(?:relationship|slice|work|change|guard|evidence|contract)\b|\bdoes not complete\b[\s\S]{0,${PREPARATORY_NO_COMPLETION_WINDOW}}\b(?:acceptance criteria|issue|JSC-\d+)\b`,
+	"i",
+);
 export const PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN =
 	/(?:completed\s+(?:JSC-\d+\s+)?(?:acceptance\s+)?(?:IDs|criteria|items)\s*:\s*(?:none|n\.a\.|n\/a)|no\s+(?:JSC-\d+\s+)?(?:SA|AC|acceptance)[\w\s-]{0,80}\s+(?:IDs?|criteria|items)\s+(?:completed|claimed))/i;
 

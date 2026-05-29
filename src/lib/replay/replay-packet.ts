@@ -268,6 +268,8 @@ const FRESHNESS_VERDICTS = new Set([
 	"unknown",
 ]);
 
+const REDACTION_STATUSES = new Set(["redacted", "summary_only"]);
+
 /** Validate ReplayPacket/v1 semantics beyond the public JSON Schema shape. */
 export function validateReplayPacket(
 	packet: unknown,
@@ -317,6 +319,18 @@ export function validateReplayPacket(
 	}
 	validatePointer(packet.producer, "producer", errors);
 	validatePointer(packet.replayId, "replayId", errors);
+	validateNullablePointer(packet.branch, "branch", errors);
+	if (!REDACTION_STATUSES.has(String(packet.redactionStatus))) {
+		errors.push("redactionStatus: must be redacted or summary_only");
+	}
+	if (
+		typeof packet.nextAction !== "string" ||
+		packet.nextAction.trim() === ""
+	) {
+		errors.push("nextAction: must be a non-empty compact pointer");
+	} else {
+		validatePointer(packet.nextAction, "nextAction", errors);
+	}
 	validateDateTime(packet.generatedAt, "generatedAt", errors);
 	validateNullableHead(packet.headSha, "headSha", errors);
 	validateNullableHead(packet.observedHeadSha, "observedHeadSha", errors);
@@ -396,9 +410,15 @@ function validateHookProvenance(
 		validateDateTime(hook.checkedAt, `${path}.checkedAt`, errors);
 		if (isAfter(hook.checkedAt, generatedAt))
 			errors.push(`${path}.checkedAt: must not be after generatedAt`);
-		validateRef(hook.hookRef, `${path}.hookRef`, repoRoot, errors);
-		validateRef(hook.inputRef, `${path}.inputRef`, repoRoot, errors);
-		validateRef(hook.outputRef, `${path}.outputRef`, repoRoot, errors);
+		validateRef(hook.hookRef, `${path}.hookRef`, repoRoot, errors, [
+			"hook_file",
+		]);
+		validateRef(hook.inputRef, `${path}.inputRef`, repoRoot, errors, [
+			"hook_input",
+		]);
+		validateRef(hook.outputRef, `${path}.outputRef`, repoRoot, errors, [
+			"hook_output",
+		]);
 		validateRefs(
 			hook.producedArtifactRefs,
 			`${path}.producedArtifactRefs`,
@@ -427,12 +447,14 @@ function validateHookProvenance(
 			`${path}.hookExecutionIdentity.hookFileRef`,
 			repoRoot,
 			errors,
+			["hook_file"],
 		);
 		validateRef(
 			identity.resolvedCommandRef,
 			`${path}.hookExecutionIdentity.resolvedCommandRef`,
 			repoRoot,
 			errors,
+			["resolved_command"],
 		);
 		if (identity.runCorrelationId !== null)
 			validatePointer(
@@ -611,6 +633,7 @@ function validateRef(
 	path: string,
 	repoRoot: string,
 	errors: string[],
+	allowedKinds?: ReplayPacketRefKind[],
 ) {
 	if (!isRecord(value)) {
 		errors.push(`${path}: must be an object`);
@@ -623,6 +646,14 @@ function validateRef(
 		errors.push(`${path}.hashAlgorithm: must be sha256`);
 	if (!REF_KINDS.has(String(value.refKind)))
 		errors.push(`${path}.refKind: must be a recognized ref kind`);
+	if (
+		allowedKinds !== undefined &&
+		!allowedKinds.includes(value.refKind as ReplayPacketRefKind)
+	) {
+		errors.push(
+			`${path}.refKind: must be ${allowedKinds.join(" or ")} for this field`,
+		);
+	}
 	if (typeof value.requiredForReplay !== "boolean")
 		errors.push(`${path}.requiredForReplay: must be a boolean`);
 	if (typeof value.requiresFilesystemExistence !== "boolean")
@@ -714,6 +745,14 @@ function requireFields(
 function validatePointer(value: unknown, path: string, errors: string[]) {
 	if (typeof value !== "string" || !POINTER.test(value))
 		errors.push(`${path}: must be a compact pointer`);
+}
+
+function validateNullablePointer(
+	value: unknown,
+	path: string,
+	errors: string[],
+) {
+	if (value !== null) validatePointer(value, path, errors);
 }
 
 function validateDateTime(value: unknown, path: string, errors: string[]) {

@@ -47,14 +47,17 @@
 		"The validator outputs stable JSON on success and stable fail text on validation errors.",
 		"Tests cover success, missing lifecycle unit, duplicate lifecycle unit, missing required member, unresolved receipt fragment, unresolved evidence file, pass without current freshness, and non-pass without owner or accepted exception.",
 		"The goal board/state references the backfill ledger as the required historical closeout evidence without claiming final goal completion.",
-		"Receipt R133 records the worktree core.worktree guard repair, validator/test evidence, skill-lens artifacts, independent reviewer artifacts, and open truth lanes."
+		"Receipt R139 records the worktree core.worktree guard repair, validator/test evidence, skill-lens artifacts, independent reviewer artifacts, and open truth lanes."
 	],
 	"validationPlan": [
 		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json >/dev/null",
 		"python3 -m py_compile scripts/check-goal-review-backfill.py",
+		"uv run --python 3.12 ruff check scripts/check-goal-review-backfill.py",
+		"pyright: not applicable for this slice because the repository has no Python typecheck contract or Pyright configuration for standalone governance scripts; production behavior is covered by py_compile plus Vitest-spawned script regressions.",
+		"pytest: not applicable for this slice because the repository-owned regression harness for this Python script is src/dev/check-goal-review-backfill-script.test.ts, which executes scripts/check-goal-review-backfill.py directly through python3.",
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-review-backfill.py docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json --repo .",
 		"pnpm vitest run src/dev/check-goal-review-backfill-script.test.ts --reporter=dot",
-		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id R133 --repo .",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id R139 --repo .",
 		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
 		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl scripts/check-goal-review-backfill.py src/dev/check-goal-review-backfill-script.test.ts artifacts/reviews/pu-039-review-coverage-backfill-*.md"
 	],

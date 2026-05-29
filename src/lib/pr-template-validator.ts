@@ -212,16 +212,12 @@ function traceCoversEveryLinkedIssue(
 	acceptanceTrace: string,
 ): boolean {
 	return issueKeys.every((issueKey) => {
-		const escapedIssueKey = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-		const issueKeyPattern = new RegExp(`\\b${escapedIssueKey}\\b`, "i");
+		const issueKeyPattern = issueKeyRegExp(issueKey);
 		if (!issueKeyPattern.test(acceptanceTrace)) {
 			return false;
 		}
 
-		const segmentPattern = new RegExp(
-			`\\b${escapedIssueKey}\\b([\\s\\S]*?)(?=\\bJSC-\\d+\\b|$)`,
-			"i",
-		);
+		const segmentPattern = issueScopedSegmentRegExp(issueKey);
 		const segment = acceptanceTrace.match(segmentPattern)?.[0] ?? "";
 		return (
 			ACCEPTANCE_TRACE_ID_PATTERN.test(segment) ||
@@ -234,15 +230,34 @@ function issueHasPreparatoryNoCompletionTrace(
 	issueKey: string,
 	acceptanceTrace: string,
 ): boolean {
-	const escapedIssueKey = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-	const issueScopedNoCompletionPattern = new RegExp(
-		`\\bcompleted\\s+${escapedIssueKey}\\s+acceptance\\s+IDs?\\s*:\\s*none\\b`,
-		"i",
-	);
+	const issueScopedNoCompletionPattern =
+		issueScopedNoCompletionRegExp(issueKey);
 	return (
 		PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace) &&
 		issueScopedNoCompletionPattern.test(acceptanceTrace)
 	);
+}
+
+function issueKeyRegExp(issueKey: string): RegExp {
+	return new RegExp(`\\b${escapeForRegExp(issueKey)}\\b`, "i");
+}
+
+function issueScopedSegmentRegExp(issueKey: string): RegExp {
+	return new RegExp(
+		`\\b${escapeForRegExp(issueKey)}\\b([\\s\\S]*?)(?=\\bJSC-\\d+\\b|$)`,
+		"i",
+	);
+}
+
+function issueScopedNoCompletionRegExp(issueKey: string): RegExp {
+	return new RegExp(
+		`\\bcompleted\\s+${escapeForRegExp(issueKey)}\\s+acceptance\\s+IDs?\\s*:\\s*none\\b`,
+		"i",
+	);
+}
+
+function escapeForRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function hasCompletedAcceptanceIds(normalized: string): boolean {

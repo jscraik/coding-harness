@@ -146,6 +146,10 @@ def load_receipts(path: Path) -> dict[str, dict[str, Any]]:
             raise ValidationError(f"{path}:{line_number} is not a JSON object")
         receipt_id = receipt.get("id")
         if isinstance(receipt_id, str) and receipt_id:
+            if receipt_id in receipts:
+                raise ValidationError(
+                    f"{path}:{line_number} duplicates receipt id {receipt_id!r}",
+                )
             receipts[receipt_id] = receipt
     return receipts
 

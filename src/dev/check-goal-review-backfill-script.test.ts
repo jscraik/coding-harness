@@ -184,6 +184,11 @@ function runValidator(root: string, ledger: unknown) {
 	});
 }
 
+function appendReceipt(root: string, receipt: unknown) {
+	const path = join(root, RECEIPTS_REF);
+	writeFileSync(path, `\n${JSON.stringify(receipt)}`, { flag: "a" });
+}
+
 describe("check-goal-review-backfill.py", () => {
 	afterEach(() => {
 		for (const root of tempRoots.splice(0)) {
@@ -269,6 +274,28 @@ describe("check-goal-review-backfill.py", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("references missing receipt fragment");
+	});
+
+	it("fails when a receipt trail duplicates a receipt id", () => {
+		const root = createTempRoot("review-backfill-duplicate-receipt-");
+		writeReceiptTrail(root);
+		appendReceipt(root, { id: "R064", summary: "duplicate exception" });
+		const ledgerPath = writeLedger(root, baseLedger());
+
+		const result = spawnSync(
+			"python3",
+			[SCRIPT_PATH, ledgerPath, "--repo", root],
+			{
+				encoding: "utf8",
+				env: {
+					...process.env,
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("duplicates receipt id 'R064'");
 	});
 
 	it("passes when pass evidence points at a current member receipt", () => {
