@@ -206,6 +206,13 @@ Notes:
 - Before handoff when behavior changed, run `bash scripts/validate-codestyle.sh`; use `bash scripts/verify-work.sh` as the broader readiness gate.
 - If runtime or artifact behavior changed, run `pnpm test:deep`.
 - When docs-gate categories are affected, run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and clear warnings before merge.
+- Every implementation slice must classify documentation impact before handoff:
+  update the applicable root docs (`README.md`, `SECURITY.md`,
+  `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and any
+  existing deep-module README touched by the slice, or record `n.a.` with a
+  concrete reason in the PR `Documentation impact` field. Use docs-expert or
+  an independent reviewer for high-impact documentation changes and cite that
+  evidence in the PR review artifacts.
 - Repo-local skill changes under `.agents/skills/**` must keep skill
   classification, owned workflow, body-documented validation command, proof
   assets or advisory references, and overlap allowlists synchronized through

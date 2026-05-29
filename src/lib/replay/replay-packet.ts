@@ -467,6 +467,9 @@ function validateEvents(
 		if (!Array.isArray(event.sourceRefs)) {
 			errors.push(`${path}.sourceRefs: must be an array`);
 		} else {
+			if (event.sourceRefs.length === 0) {
+				errors.push(`${path}.sourceRefs: must contain at least one pointer`);
+			}
 			event.sourceRefs.forEach((ref, refIndex) => {
 				validatePointer(ref, `${path}.sourceRefs[${refIndex}]`, errors);
 			});
@@ -474,6 +477,9 @@ function validateEvents(
 		if (!Array.isArray(event.hashes)) {
 			errors.push(`${path}.hashes: must be an array`);
 		} else {
+			if (event.hashes.length === 0) {
+				errors.push(`${path}.hashes: must contain at least one sha256`);
+			}
 			event.hashes.forEach((hash, hashIndex) => {
 				if (typeof hash !== "string" || !SHA256.test(hash))
 					errors.push(

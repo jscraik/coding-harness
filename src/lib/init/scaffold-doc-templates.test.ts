@@ -17,6 +17,7 @@ const requiredWorkPerformedLabels = [
 	"AI session / traceability",
 	"Completed work",
 	"Affected surfaces",
+	"Documentation impact",
 	"Expected outcome alignment",
 	"Pattern scope inventory",
 	"Meta-behavior proof",
@@ -44,6 +45,10 @@ const completedWorkPerformedValues = new Map<string, string>([
 	["Completed work", "Rendered scaffolded PR template and validated it."],
 	["Affected surfaces", "docs, PR template, workflow config, and tests."],
 	[
+		"Documentation impact",
+		"PR template and scaffold fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves generated PR template validation.",
+	],
+	[
 		"Expected outcome alignment",
 		"Keeps PR evidence portable and machine-checkable for greenfield and brownfield repos.",
 	],
@@ -59,7 +64,7 @@ const completedWorkPerformedValues = new Map<string, string>([
 		"Repeated-error research",
 		"n.a. (no same-error-twice troubleshooting trigger in this fixture).",
 	],
-	["Acceptance trace", "SA-999-001 -> scaffold-doc-templates.test.ts."],
+	["Acceptance trace", "JSC-999 SA-999-001 -> scaffold-doc-templates.test.ts."],
 	[
 		"Validation evidence",
 		"Command: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts -> pass.",

@@ -70,11 +70,15 @@ const PREVIEW_REQUIRED = new Set([
 ]);
 
 function parseArgs(argv) {
-	const result = { packetPath: null, repoRoot: process.cwd() };
+	const result = { packetPath: null, repoRoot: process.cwd(), errors: [] };
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
 		if (arg === "--repo-root") {
-			result.repoRoot = argv[index + 1];
+			if (index + 1 >= argv.length) {
+				result.errors.push("--repo-root requires a value");
+			} else {
+				result.repoRoot = argv[index + 1];
+			}
 			index += 1;
 			continue;
 		}
@@ -85,17 +89,20 @@ function parseArgs(argv) {
 
 function main() {
 	const args = parseArgs(process.argv.slice(2));
+	const errors = args.errors || [];
 	if (!args.packetPath) {
+		errors.push("missing packet path");
+	}
+	if (errors.length > 0) {
 		console.log(
 			JSON.stringify({
 				schemaVersion: "artifact-runtime-surface-validation/v1",
 				status: "fail",
-				errors: ["missing packet path"],
+				errors,
 			}),
 		);
 		process.exit(2);
 	}
-	const errors = [];
 	let packet;
 	const repoRoot = path.resolve(args.repoRoot);
 	const liveHeadSha = readGitHead(repoRoot);
@@ -297,7 +304,15 @@ function validateFilesystem(packet, repoRoot, errors) {
 	const artifact = isRecord(packet.artifact) ? packet.artifact : {};
 	if (typeof artifact.path !== "string" || !isSafeRepoPath(artifact.path))
 		return;
-	const rootReal = fs.realpathSync(repoRoot);
+	let rootReal;
+	try {
+		rootReal = fs.realpathSync(repoRoot);
+	} catch (error) {
+		errors.push(
+			`artifact.path: filesystem error resolving repo root: ${error.message}`,
+		);
+		return;
+	}
 	const artifactPath = path.resolve(repoRoot, artifact.path);
 	if (!isUnderRoot(artifactPath, rootReal)) {
 		errors.push("artifact.path: resolved path escapes repo root");
@@ -307,12 +322,28 @@ function validateFilesystem(packet, repoRoot, errors) {
 		errors.push("artifact.path: file is missing on disk");
 		return;
 	}
-	const artifactReal = fs.realpathSync(artifactPath);
+	let artifactReal;
+	try {
+		artifactReal = fs.realpathSync(artifactPath);
+	} catch (error) {
+		errors.push(
+			`artifact.path: filesystem error resolving artifact path: ${error.message}`,
+		);
+		return;
+	}
 	if (!isUnderRoot(artifactReal, rootReal)) {
 		errors.push("artifact.path: realpath or symlink target escapes repo root");
 		return;
 	}
-	const stat = fs.statSync(artifactReal);
+	let stat;
+	try {
+		stat = fs.statSync(artifactReal);
+	} catch (error) {
+		errors.push(
+			`artifact.path: filesystem error reading file stats: ${error.message}`,
+		);
+		return;
+	}
 	if (!stat.isFile()) errors.push("artifact.path: must resolve to a file");
 	if (stat.size <= 0) errors.push("artifact.path: file is zero bytes");
 	if (
@@ -322,9 +353,18 @@ function validateFilesystem(packet, repoRoot, errors) {
 		errors.push("artifact.sizeBytes: does not match file size on disk");
 	}
 	if (typeof artifact.sha256 === "string" && SHA256.test(artifact.sha256)) {
+		let fileContents;
+		try {
+			fileContents = fs.readFileSync(artifactReal);
+		} catch (error) {
+			errors.push(
+				`artifact.path: filesystem error reading file contents: ${error.message}`,
+			);
+			return;
+		}
 		const digest = crypto
 			.createHash("sha256")
-			.update(fs.readFileSync(artifactReal))
+			.update(fileContents)
 			.digest("hex");
 		if (artifact.sha256 !== `sha256:${digest}`) {
 			errors.push("artifact.sha256: does not match file contents");

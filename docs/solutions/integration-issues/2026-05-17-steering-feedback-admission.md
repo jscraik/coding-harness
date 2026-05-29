@@ -57,6 +57,15 @@ trusted web or upstream sources, list 3-5 candidate fixes, choose the most
 efficient repo-fit fix, implement it, and record the repeated-error research
 evidence in PR closeout.
 
+For tool or skill creation, use the promotion threshold instead of taste. If the
+same judgment is needed twice, or a failure mode can recur across slices, promote
+it into the smallest durable primitive that changes future behavior: validator,
+guard script, CLI helper, workflow hook, fixture, or scoped skill. If the
+knowledge is one-off implementation context, keep it in implementation notes,
+plan evidence, or PR closeout evidence. Create or update a skill only when the
+work is a reusable routed workflow with explicit inputs, artifacts, validation,
+ownership, and review expectations.
+
 Standalone prose is not enough. If the loop produces only advice, record the missing enforcement destination as a follow-up instead of treating the rule as admitted.
 
 Minimum repeat-feedback admission evidence:
@@ -139,8 +148,8 @@ returned no matches.
 ## Enforcement Surface
 
 - AGENTS.md defines agent engineering proof as the compact operating rule for steering feedback, line-level corrections, OODA horizons, reflected context, and benchmark-vs-engineering proof.
-- docs/agents/04-validation.md defines the agent engineering proof loop and its closeout evidence.
-- The tool promotion threshold prevents repeated judgment from staying in chat: if the same judgment is needed twice, or the failure mode can recur across slices, promote it into the smallest durable primitive; keep one-off implementation knowledge in implementation notes, plan evidence, or PR closeout evidence; choose validators or guards for deterministic rules, CLI helpers for repeatable operator commands, and skills only for reusable routed workflows with explicit inputs, artifacts, validation, ownership, and review expectations.
+- docs/agents/04-validation.md defines the agent engineering proof loop, closeout evidence, and tool promotion threshold.
+- docs/agents/07b-agent-governance.md defines the agent-governance operator-facing form of the tool promotion threshold.
 - docs/automations/README.md defines the heartbeat closeout and deletion contract, including the exact-ID fallback when the app automation API is unavailable.
 - UBIQUITOUS_LANGUAGE.md defines Steering Feedback, Tool Promotion Threshold, Workflow Skill, Capture-The-Flag Eval, Skill Workout, Win Condition, Pattern-Generalization Pass, Pattern Scope Inventory, OODA Horizon, Horizontal Horizon, Vertical Horizon, Reflected Context, Unobserved Horizon, Code Production, and Software Engineering Proof as canonical terms.
 - .harness/memory/LEARNINGS.md records current-session steering admission when a run exposes an operating failure that must not recur.
