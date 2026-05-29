@@ -35,7 +35,31 @@ function writeValidator(path: string, marker: string) {
 	);
 }
 
+function writeReviewBackfillValidator(repo: string, body?: string) {
+	const scriptsDir = join(repo, "scripts");
+	const ledgerPath = join(
+		repo,
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json",
+	);
+	mkdirSync(scriptsDir, { recursive: true });
+	mkdirSync(join(ledgerPath, ".."), { recursive: true });
+	writeFileSync(ledgerPath, "{}");
+	writeFileSync(
+		join(scriptsDir, "check-goal-review-backfill.py"),
+		body ??
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"import sys",
+				'print("review-backfill:" + sys.argv[1])',
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+	);
+}
+
 function writeRuntimeEvidenceActiveArtifacts(repo: string, content?: string) {
+	writeReviewBackfillValidator(repo);
 	const harnessDir = join(repo, ".harness");
 	mkdirSync(harnessDir, { recursive: true });
 	writeFileSync(
@@ -253,6 +277,62 @@ describe("check-goal-board.py", () => {
 		expect(result.status).toBe(7);
 		expect(result.stdout).toContain(`goal-board:${goalDir}`);
 		expect(result.stderr).toContain("stale audit evidence");
+	});
+
+	it("fails the runtime evidence cockpit goal when review backfill validation fails", () => {
+		const root = createTempRoot("goal-board-review-backfill-fails-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+		writeReviewBackfillValidator(
+			repo,
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"import sys",
+				'print("stale review backfill", file=sys.stderr)',
+				"raise SystemExit(6)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(6);
+		expect(result.stdout).toContain(`goal-board:${goalDir}`);
+		expect(result.stderr).toContain("stale review backfill");
 	});
 
 	it("fails the runtime evidence cockpit goal when active artifacts do not route it", () => {

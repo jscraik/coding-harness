@@ -27,6 +27,10 @@ RUNTIME_EVIDENCE_COCKPIT_GOAL = Path(
     "docs/goals/codex-runtime-evidence-verifier-cockpit",
 )
 AUDIT_FRESHNESS_VALIDATOR = REPO_ROOT / "scripts/check-goal-audit-freshness.py"
+REVIEW_BACKFILL_VALIDATOR = REPO_ROOT / "scripts/check-goal-review-backfill.py"
+REVIEW_BACKFILL_LEDGER = (
+    REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL / "notes/review-coverage-backfill.json"
+)
 ACTIVE_ARTIFACTS_PATH = REPO_ROOT / ".harness/active-artifacts.md"
 RUNTIME_EVIDENCE_RECEIPTS_PATH = (
     REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL / "receipts.jsonl"
@@ -232,6 +236,27 @@ def run_goal_extensions(argv: list[str]) -> int:
             sys.executable,
             str(AUDIT_FRESHNESS_VALIDATOR),
             str(goal_path),
+            "--repo",
+            str(REPO_ROOT),
+        ],
+        check=False,
+    )
+    if result.returncode != 0:
+        return result.returncode
+
+    if not REVIEW_BACKFILL_VALIDATOR.is_file():
+        print(
+            "Required review coverage backfill validator is missing: "
+            f"{REVIEW_BACKFILL_VALIDATOR}",
+            file=sys.stderr,
+        )
+        return 1
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REVIEW_BACKFILL_VALIDATOR),
+            str(REVIEW_BACKFILL_LEDGER),
             "--repo",
             str(REPO_ROOT),
         ],

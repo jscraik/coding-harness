@@ -42,7 +42,59 @@ export function isPointer(value: unknown): value is string {
 
 /** Returns true when a value is an RFC3339-style timestamp. */
 export function isIso(value: unknown): value is string {
-	return typeof value === "string" && RFC3339.test(value);
+	if (typeof value !== "string") return false;
+	const match = RFC3339.exec(value);
+	if (!match) return false;
+	const [datePart, timeAndZone] = value.split("T");
+	if (!datePart || !timeAndZone) return false;
+	const [yearText, monthText, dayText] = datePart.split("-");
+	const [timePart, zonePart] = timeAndZone.endsWith("Z")
+		? [timeAndZone.slice(0, -1), "Z"]
+		: [timeAndZone.slice(0, -6), timeAndZone.slice(timeAndZone.length - 6)];
+	const [hourText, minuteText, secondTextWithFraction] = timePart.split(":");
+	const secondText = secondTextWithFraction?.split(".")[0];
+	const year = Number(yearText);
+	const month = Number(monthText);
+	const day = Number(dayText);
+	const hour = Number(hourText);
+	const minute = Number(minuteText);
+	const second = Number(secondText);
+	if (
+		!Number.isInteger(year) ||
+		!Number.isInteger(month) ||
+		!Number.isInteger(day) ||
+		!Number.isInteger(hour) ||
+		!Number.isInteger(minute) ||
+		!Number.isInteger(second)
+	) {
+		return false;
+	}
+	if (month < 1 || month > 12) return false;
+	const maxDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+	if (day < 1 || day > maxDay) return false;
+	if (
+		hour < 0 ||
+		hour > 23 ||
+		minute < 0 ||
+		minute > 59 ||
+		second < 0 ||
+		second > 59
+	) {
+		return false;
+	}
+	if (zonePart !== "Z") {
+		const zoneHour = Number(zonePart.slice(1, 3));
+		const zoneMinute = Number(zonePart.slice(4, 6));
+		if (
+			!Number.isInteger(zoneHour) ||
+			!Number.isInteger(zoneMinute) ||
+			zoneHour > 23 ||
+			zoneMinute > 59
+		) {
+			return false;
+		}
+	}
+	return true;
 }
 
 /** Rejects object keys that are not part of the declared packet contract. */
