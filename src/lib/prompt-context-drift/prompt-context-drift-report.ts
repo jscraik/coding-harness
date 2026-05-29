@@ -369,7 +369,11 @@ function validateRef(
 			);
 		}
 	}
-	if (ref.requiresFilesystemExistence === true && repoRoot) {
+	if (ref.requiresFilesystemExistence === true) {
+		if (!repoRoot) {
+			errors.push(`${path}.ref: repoRoot is required when requiresFilesystemExistence is true`);
+			return false;
+		}
 		return validateRepoFileRef(ref, path, repoRoot, errors);
 	}
 	return false;
