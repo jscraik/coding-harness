@@ -274,9 +274,19 @@ export function validateReplayPacket(
 	options: ReplayPacketValidationOptions = {},
 ): ReplayPacketValidationResult {
 	const errors: string[] = [];
-	const repoRoot = options.repoRoot
-		? realpathSync(options.repoRoot)
-		: process.cwd();
+	let repoRoot: string;
+	try {
+		repoRoot = options.repoRoot
+			? realpathSync(options.repoRoot)
+			: process.cwd();
+	} catch (error) {
+		const message =
+			error instanceof Error ? error.message : String(error);
+		return {
+			status: "fail",
+			errors: [`repoRoot: cannot resolve path: ${message}`],
+		};
+	}
 	const now = options.now ?? new Date();
 	if (!isRecord(packet)) {
 		return { status: "fail", errors: ["packet: must be an object"] };

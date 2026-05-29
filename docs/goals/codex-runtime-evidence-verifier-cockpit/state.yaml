@@ -468,7 +468,7 @@ tasks:
     stop_if:
       - "A slice lacks reviewed intent."
       - "Private fixtures are used to claim production verifier completion."
-      - "PR triage can share the coordinator checkout while the coordinator switches branches for next-slice work."
+      - "PR triage must not share the coordinator checkout; it must run remote-only or in an isolated worktree created for the PR head."
     receipt_id: "R018"
   - id: "T004"
     type: "worker"

@@ -141,7 +141,15 @@ function parseArgs(argv) {
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
 		if (arg === "--repo-root") {
-			result.repoRoot = argv[index + 1];
+			const nextArg = argv[index + 1];
+			if (!nextArg || nextArg.startsWith("-")) {
+				return {
+					error: "--repo-root: requires a non-flag argument",
+					packetPath: null,
+					repoRoot: null,
+				};
+			}
+			result.repoRoot = nextArg;
 			index += 1;
 			continue;
 		}
@@ -153,6 +161,22 @@ function parseArgs(argv) {
 function main() {
 	const args = parseArgs(process.argv.slice(2));
 	const errors = [];
+	if (args.error) {
+		errors.push(args.error);
+		const status = "fail";
+		console.log(
+			JSON.stringify(
+				{
+					schemaVersion: "replay-packet-validation/v1",
+					status,
+					errors,
+				},
+				null,
+				2,
+			),
+		);
+		process.exit(1);
+	}
 	let packet;
 	if (!args.packetPath) errors.push("packetPath: is required");
 	try {
@@ -162,7 +186,25 @@ function main() {
 	} catch (error) {
 		errors.push(`packet: cannot read JSON: ${error.message}`);
 	}
-	const repoRoot = fs.realpathSync(path.resolve(args.repoRoot));
+	let repoRoot;
+	try {
+		repoRoot = fs.realpathSync(path.resolve(args.repoRoot));
+	} catch (error) {
+		errors.push(`repoRoot: cannot resolve path: ${error.message}`);
+		const status = "fail";
+		console.log(
+			JSON.stringify(
+				{
+					schemaVersion: "replay-packet-validation/v1",
+					status,
+					errors,
+				},
+				null,
+				2,
+			),
+		);
+		process.exit(1);
+	}
 	if (packet) validatePacket(packet, repoRoot, new Date(), errors);
 	const status = errors.length === 0 ? "pass" : "fail";
 	console.log(
