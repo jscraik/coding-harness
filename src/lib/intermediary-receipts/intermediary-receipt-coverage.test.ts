@@ -121,7 +121,7 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		expect(source).toBeDefined();
 		source!.status = "warn";
 
-		expectInvalid(packet, "source_status_not_pass");
+		expectInvalid(packet, "invalid_source_status");
 	});
 
 	it("rejects impossible RFC3339-style timestamps", () => {
