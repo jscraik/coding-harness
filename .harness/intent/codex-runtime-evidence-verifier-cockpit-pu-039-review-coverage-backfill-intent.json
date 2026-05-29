@@ -1,0 +1,104 @@
+{
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill",
+	"schemaVersion": "lifecycle-intent/v1",
+	"createdAt": "2026-05-29T06:10:00Z",
+	"linearIssue": "JSC-363",
+	"goal": "Make the pre-R064 PU-001 through PU-016 review-coverage backfill requirement executable through a ratification ledger, validator, tests, and goal-board evidence so final Judge/PM closeout cannot rely on prose-only historical review claims.",
+	"lifecycleUnit": "PU-039-review-coverage-backfill",
+	"scope": {
+		"primaryModule": "scripts/check-goal-review-backfill.py",
+		"allowedFiles": [
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			"scripts/check-goal-review-backfill.py",
+			"src/dev/check-goal-review-backfill-script.test.ts",
+			"artifacts/reviews/pu-039-review-coverage-backfill-*.md"
+		],
+		"forbiddenFiles": [
+			"runtime packet production modules",
+			"delivery-truth claim semantics",
+			"PR template, Linear gate, CircleCI, CodeRabbit, GitHub, release, merge, or external tracker mutation",
+			"historical receipt rewriting",
+			"fabricated pass claims for historical reviewers or skill lenses"
+		]
+	},
+	"designConstraints": [
+		"The ledger must cover PU-001 through PU-016 because the goal board explicitly requires a historical backfill or ratification ledger before final Judge/PM closeout.",
+		"The ledger must distinguish pass evidence from accepted exceptions. Pre-R064 missing review members may be ratified as not applicable only when the reason, owner, and accepted exception receipt are explicit.",
+		"The validator must fail closed on missing lifecycle units, duplicate lifecycle units, missing required skill lenses, missing required independent reviewers, unsupported statuses, pass entries without current evidence refs, and non-pass entries without reason plus owner or accepted exception.",
+		"The validator must resolve evidence refs that point to repo-relative files and receipt fragments such as docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064.",
+		"The validator must not mutate historical receipts or infer review completion from nearby prose.",
+		"The ledger must preserve the truth that PU-001 through PU-016 happened before the R064 full review contract; it must not downscope the current post-R064 per-slice review requirements.",
+		"The implementation must remain a narrow Python validator plus TypeScript dev-script tests, avoiding a new public CLI command in this slice.",
+		"The repair of shared Git core.worktree drift must be recorded as runtime/environment evidence because it blocked trustworthy worktree status before this slice began."
+	],
+	"acceptanceCriteria": [
+		"review-coverage-backfill.json uses schemaVersion goal-review-coverage-backfill/v1 and records goalSlug, generatedAt, coverageWindow, requiredSkillLenses, requiredIndependentReviewers, acceptedExceptionRefs, and lifecycleUnits.",
+		"The ledger has exactly one entry for each PU-001 through PU-016 lifecycle unit.",
+		"Each lifecycle unit entry includes sourceReceiptRefs and structured sliceSkillLensResults plus independentReviewerResults maps.",
+		"Every required skill lens is present for every lifecycle unit: improve-codebase-architecture, simplify, unslopify, he-code-review, and testing.",
+		"Every required independent reviewer is present for every lifecycle unit: adversarial-reviewer, agent-native-reviewer, and best-practices-researcher.",
+		"Pass members require role, producer, freshness current, evidenceRef, and resolvable current repo evidence.",
+		"Blocked, fail, and not applicable members require reason and either owner or acceptedExceptionRef.",
+		"Accepted exception refs must resolve to known receipt fragments in receipts.jsonl, not local-only prose.",
+		"Fail members are rejected unless an accepted exception is explicitly provided in the same member result.",
+		"The validator outputs stable JSON on success and stable fail text on validation errors.",
+		"Tests cover success, missing lifecycle unit, duplicate lifecycle unit, missing required member, unresolved receipt fragment, unresolved evidence file, pass without current freshness, and non-pass without owner or accepted exception.",
+		"The goal board/state references the backfill ledger as the required historical closeout evidence without claiming final goal completion.",
+		"Receipt R133 records the worktree core.worktree guard repair, validator/test evidence, skill-lens artifacts, independent reviewer artifacts, and open truth lanes."
+	],
+	"validationPlan": [
+		"jq -e . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json >/dev/null",
+		"python3 -m py_compile scripts/check-goal-review-backfill.py",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-review-backfill.py docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json --repo .",
+		"pnpm vitest run src/dev/check-goal-review-backfill-script.test.ts --reporter=dot",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-slice-assurance.py docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl --receipt-id R133 --repo .",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl scripts/check-goal-review-backfill.py src/dev/check-goal-review-backfill-script.test.ts artifacts/reviews/pu-039-review-coverage-backfill-*.md"
+	],
+	"reviewPlan": {
+		"preImplementation": [
+			"adversarial-reviewer intent review",
+			"agent-native-reviewer intent review"
+		],
+		"beforeDone": [
+			"improve-codebase-architecture lens",
+			"simplify lens",
+			"unslopify lens",
+			"he-code-review lens",
+			"testing lens",
+			"adversarial-reviewer implementation review",
+			"agent-native-reviewer implementation review",
+			"best-practices-researcher implementation review"
+		]
+	},
+	"rollbackPlan": [
+		"Remove the review-coverage backfill ledger, validator, dev-script tests, and PU-039 review artifacts.",
+		"Remove the state.yaml reference to PU-039 as the current historical backfill artifact.",
+		"Keep the post-R064 per-slice review contract unchanged; this slice only makes the historical ratification requirement executable."
+	],
+	"auditGapIds": ["GAP-009", "GAP-011"],
+	"systemPromptGapIds": [],
+	"projectBrainInputs": [
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
+	],
+	"currentStateNotes": [
+		"Base head is 9e453d07672784240c4ee481acca7f8e59f4390a on codex/jsc-363-review-coverage-backfill, based on origin/codex/jsc-363-intermediary-receipt-coverage.",
+		"Before this intent, the new worktree was poisoned by shared Git common config core.worktree=/private/tmp/coding-harness-linked-issue-scope. The repo-owned guard bash scripts/check-git-common-config.sh failed, bash scripts/check-git-common-config.sh --repair removed the shared core.worktree, and the guard then passed.",
+		"PR #315 and PR #316 were green, CLEAN, and mergeable on the last observed heads, but this slice does not claim review approval, merge readiness, Linear completion, or JSC-363 acceptance completion.",
+		"The live browser implementation-notes HTML is a local runtime projection; this slice only changes tracked goal evidence."
+	],
+	"stopConditions": [
+		"Stop if implementation requires rewriting historical receipt content instead of adding an append-only ratification artifact.",
+		"Stop if a historical reviewer or skill lens would need to be marked pass without a current evidence ref.",
+		"Stop if the validator cannot distinguish receipt-fragment evidence from prose-only claims.",
+		"Stop if PR, Linear, merge, or external tracker mutation becomes necessary for the local validator slice."
+	]
+}
