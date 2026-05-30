@@ -57,11 +57,16 @@ export {
 
 // Loader utilities
 export {
+	resolveEvidencePath,
 	fileExists,
 	getFileSize,
 	resolvePath,
 	getRealPath,
 	getParentRealPath,
+} from "./loader.js";
+export type {
+	EvidencePathResolution,
+	EvidencePathResolutionStatus,
 } from "./loader.js";
 
 // Logger

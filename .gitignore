@@ -55,6 +55,8 @@ gardener-report.json
 .harness/*
 !.harness/README.md
 !.harness/active-artifacts.md
+!.harness/audits/
+!.harness/audits/**/*.md
 !.harness/core/
 !.harness/core/**/*.md
 !.harness/decisions/

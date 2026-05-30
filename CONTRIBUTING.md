@@ -154,7 +154,7 @@ Recommended policy:
 - Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
 - Start new work with `bash scripts/new-task.sh <issue-key>-<slug>`, then enter the generated worktree and continue there.
 - During iteration, run `bash scripts/validate-codestyle.sh --fast` for focused code style validation.
-- Treat `pnpm run quality:docstrings`, `pnpm run quality:size`, and `pnpm run test:related` as mandatory changed-code gates; they are included in `pnpm check`, `bash scripts/validate-codestyle.sh --fast`, and local pre-commit hooks.
+- Treat `pnpm run quality:docstrings`, `pnpm run quality:size`, `pnpm run quality:self-affirming`, `pnpm run quality:behavior-tests`, `pnpm run quality:git-env-sanitizer`, and `pnpm run test:related` as mandatory changed-code and changed-test gates; they are included in `pnpm check`, `bash scripts/validate-codestyle.sh --fast`, and local pre-commit hooks.
 - When executable behavior changes, run the smallest real code path that exercises the exact production code touched before claiming verification.
 - Prefer production functions, classes, CLI commands, shell scripts, validators, or routes directly. If no existing test covers the path, create a temporary reproduction harness under `codex-scripts/`, keep it gitignored, and import or invoke production code instead of copying implementation into the harness.
 - If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, record the blocker clearly and run the nearest meaningful validation instead.
@@ -258,7 +258,7 @@ This repository uses `action-review-receipt/v1` as a narrow guardian-style recei
 - **High-risk action envelopes** (merge, release, destructive cleanup, external tracker mutation) must require current evidence refs and head SHA where the action touches repository or PR state
 - **Reviewer independence**: reviewer identity must not match the requested actor or producer identity (no self-approval)
 - **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not just display alias differences)
-- **Decision semantics**: allow, block, mismatch, unknown, not_applicable; `not_applicable` is forbidden for high-risk action kinds
+- **Decision semantics**: allow, block, mismatch, unknown, N/A; the N/A verdict is forbidden for high-risk action kinds
 - **Docs-gate requirement**: these companion documentation surfaces must be updated in the same PR as any action-review governance change
 - **Architecture diagrams**: reference `AI/context/diagram-context.md` for required diagrams
 

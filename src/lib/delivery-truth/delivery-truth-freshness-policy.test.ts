@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
+import { expectBehavior } from "../testing/expect-behavior.js";
 import { composeDeliveryTruth } from "./composition.js";
 import type { DeliveryTruthEvidence } from "./types.js";
 
@@ -22,10 +23,19 @@ describe("delivery-truth verifier freshness policy", () => {
 			],
 		});
 
-		expect(verdict).toMatchObject({
-			status: "blocked",
-			freshness: "stale",
-			blockerCode: "producer_ttl_exceeds_verifier_policy",
+		expectBehavior({
+			given: "producer TTL exceeds the verifier freshness policy",
+			should: "block claim support as stale",
+			actual: {
+				blockerCode: verdict.blockerCode,
+				freshness: verdict.freshness,
+				status: verdict.status,
+			},
+			expected: {
+				blockerCode: "producer_ttl_exceeds_verifier_policy",
+				freshness: "stale",
+				status: "blocked",
+			},
 		});
 	});
 

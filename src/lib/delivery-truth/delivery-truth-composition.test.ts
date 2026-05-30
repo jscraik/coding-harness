@@ -17,6 +17,7 @@ import type {
 	DeliveryTruthEvidence,
 	DeliveryTruthVerdict,
 } from "./types.js";
+import { expectBehavior } from "../testing/expect-behavior.js";
 
 const CURRENT_HEAD = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const OTHER_HEAD = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -33,14 +34,27 @@ describe("composeDeliveryTruth", () => {
 			evidence: [supportingEvidence({ source: "root_hygiene" })],
 		});
 
-		expect(verdict).toMatchObject({
-			schemaVersion: "delivery-truth/v1",
-			claim: "root_surface_tidy",
-			status: "pass",
-			evidenceRef: rootHygieneReceiptRef(),
-			freshness: "current",
-			blockerCode: null,
-			evidenceUse: "claim_support",
+		expectBehavior({
+			given: "current root-hygiene claim-support evidence",
+			should: "pass root_surface_tidy delivery truth",
+			actual: {
+				blockerCode: verdict.blockerCode,
+				claim: verdict.claim,
+				evidenceRef: verdict.evidenceRef,
+				evidenceUse: verdict.evidenceUse,
+				freshness: verdict.freshness,
+				schemaVersion: verdict.schemaVersion,
+				status: verdict.status,
+			},
+			expected: {
+				blockerCode: null,
+				claim: "root_surface_tidy",
+				evidenceRef: rootHygieneReceiptRef(),
+				evidenceUse: "claim_support",
+				freshness: "current",
+				schemaVersion: "delivery-truth/v1",
+				status: "pass",
+			},
 		});
 	});
 

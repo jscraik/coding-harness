@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
+import { expectBehavior } from "../testing/expect-behavior.js";
 import {
 	evaluateExternalStateClaimSupport,
 	validateExternalStateSnapshot,
@@ -25,8 +26,15 @@ describe("external-state-snapshot/v1 validation", () => {
 		const validation = validateExternalStateSnapshot(snapshot);
 		const claimSupport = evaluateExternalStateClaimSupport(snapshot, HEAD_SHA);
 
-		expect(validation).toEqual({ valid: true, errors: [] });
-		expect(claimSupport).toEqual({ canSupportClaim: true, blockers: [] });
+		expectBehavior({
+			given: "a current multi-source external-state snapshot",
+			should: "validate and support closeout claims",
+			actual: { claimSupport, validation },
+			expected: {
+				claimSupport: { canSupportClaim: true, blockers: [] },
+				validation: { valid: true, errors: [] },
+			},
+		});
 	});
 
 	it("rejects snapshots without fetchedAt", () => {

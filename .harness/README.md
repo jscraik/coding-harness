@@ -48,6 +48,7 @@ repository truth. Classify the artifact first:
 | `.harness/linear/**.md` | `execution-input` | Track |
 | `.harness/active-artifacts.md` | `execution-input` | Track |
 | `.harness/refactors/**.md` | `execution-input` | Track |
+| `.harness/audits/**.md` | `secondary-context` | Track operator-requested audit reports named `YYYY-MM-DD-<type>-audit.md`; use for repo-state visibility findings that are not research evidence by themselves |
 | `.harness/features/**.md` | `secondary-context` | Track |
 | `.harness/implementation-notes/**.md` | `secondary-context` | Track when they admit steering, capture implementation proof, or are referenced by a validator |
 | `.harness/implementation-notes/**.html` | `generated-runtime` | Keep local while used as a live browser view; promote only as a reviewed final artifact |
@@ -78,7 +79,7 @@ repository truth. Classify the artifact first:
 | `.harness/rule-lifecycle-manifest.json` | `policy` | Track |
 | `.harness/research/evidence-patterns.json` | `policy` | Track |
 | `.harness/research/README.md` | `policy` | Track as the research intake and promotion map |
-| `.harness/research/audits/**.md` | `secondary-context` | Track when referenced by adopted evidence patterns, plans, or specs |
+| `.harness/research/audits/**.md` | `secondary-context` | Track research-derived audits when referenced by adopted evidence patterns, plans, or specs; use `.harness/audits/**.md` for operator-requested worktree or change-visibility audits |
 | `.harness/research/deep/**.md` | `secondary-context` | Track when listed by `.harness/research/evidence-patterns.json` |
 | `.harness/evidence/**` | `generated-runtime` | Do not track raw command evidence by default; promote redacted fixture or closeout evidence explicitly |
 | `.harness/guardrails/**` | `generated-runtime` | Do not track generated guardrail snapshots unless a validator consumes the exact file |

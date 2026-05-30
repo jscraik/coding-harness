@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { expectBehavior } from "../lib/testing/expect-behavior.js";
 
 vi.mock("node:child_process", () => ({
 	spawnSync: vi.fn(),
@@ -122,7 +123,13 @@ describe("runLocalMemoryPreflightCLI", () => {
 			configPath,
 			daemonLogPath,
 		});
-		expect(result.passed).toBe(true);
+		expectBehavior({
+			given:
+				"healthy Local Memory config, REST health, qdrant, and smoke cycle",
+			should: "pass Local Memory preflight",
+			actual: result.passed,
+			expected: true,
+		});
 		expect(result.messages).toContain(
 			"✅ REST health ok: http://127.0.0.1:3002/api/v1/health",
 		);

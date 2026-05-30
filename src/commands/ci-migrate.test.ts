@@ -33,6 +33,7 @@ import {
 	readMergeQueueWindowIfPresent,
 	writeMergeQueueWindow,
 } from "../lib/ci/ci-migrate-merge-queue-window.js";
+import { isGitEnvironmentKey } from "../lib/git/safe-env.js";
 import { EXIT_CODES } from "../lib/init/types.js";
 import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 import type { runInitCLI as runInitCLIType } from "./init.js";
@@ -2102,7 +2103,7 @@ describe("runCIMigrateCLI", () => {
 	beforeEach(() => {
 		previousGitHookEnv = {};
 		for (const [key, value] of Object.entries(process.env)) {
-			if (key.startsWith("GIT_")) {
+			if (isGitEnvironmentKey(key)) {
 				previousGitHookEnv[key] = value;
 				Reflect.deleteProperty(process.env, key);
 			}
@@ -2163,7 +2164,7 @@ describe("runCIMigrateCLI", () => {
 
 	afterEach(() => {
 		for (const key of Object.keys(process.env)) {
-			if (key.startsWith("GIT_")) {
+			if (isGitEnvironmentKey(key)) {
 				Reflect.deleteProperty(process.env, key);
 			}
 		}

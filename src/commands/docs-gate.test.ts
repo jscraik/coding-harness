@@ -13,6 +13,10 @@ import {
 	DEFAULT_CI_PROVIDER_POLICY,
 	DEFAULT_CONTEXT_INTEGRITY_POLICY,
 } from "../lib/contract/types.js";
+import {
+	isGitEnvironmentKey,
+	sanitizeGitEnvironment,
+} from "../lib/git/safe-env.js";
 import { runDocsGate, runDocsGateCLI } from "./docs-gate.js";
 
 function write(path: string, content: string): void {
@@ -64,16 +68,14 @@ function createContractWithoutDocsGate(root: string): void {
 }
 
 function createIsolatedGitEnv(): NodeJS.ProcessEnv {
-	return Object.fromEntries(
-		Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")),
-	);
+	return sanitizeGitEnvironment({ policy: "strict" });
 }
 
 function runDocsGateWithIsolatedGitEnv(
 	options: Parameters<typeof runDocsGate>[0],
 ): ReturnType<typeof runDocsGate> {
 	const savedGitEnv = Object.entries(process.env).filter(([key]) =>
-		key.startsWith("GIT_"),
+		isGitEnvironmentKey(key),
 	);
 	for (const [key] of savedGitEnv) {
 		delete process.env[key];
@@ -82,7 +84,7 @@ function runDocsGateWithIsolatedGitEnv(
 		return runDocsGate(options);
 	} finally {
 		for (const key of Object.keys(process.env)) {
-			if (key.startsWith("GIT_")) {
+			if (isGitEnvironmentKey(key)) {
 				delete process.env[key];
 			}
 		}

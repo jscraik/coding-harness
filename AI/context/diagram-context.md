@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-29T01:57:00Z
+Generated: 2026-05-30T11:45:12Z
 
 ## Table of Contents
 
@@ -29,6 +29,7 @@ Generated: 2026-05-29T01:57:00Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
+- `package.json`
 - `src/lib/agent-readiness/context-health.ts`
 - `src/lib/agent-readiness/types.ts`
 - `src/lib/artifact-runtime-surface/claim-support-semantics.ts`
@@ -37,6 +38,25 @@ Generated: 2026-05-29T01:57:00Z
 - `src/lib/artifact-runtime-surface/validation-constants.ts`
 - `src/lib/artifact-runtime-surface/validation-helpers.ts`
 - `src/lib/artifact-runtime-surface/validation.ts`
+- `src/lib/cli/registry/README.md`
+- `src/lib/cli/registry/agent-readiness-command-spec.ts`
+- `src/lib/cli/registry/artifact-gate-command-spec.ts`
+- `src/lib/cli/registry/decision-request-command-spec.ts`
+- `src/lib/cli/registry/define-command-spec.ts`
+- `src/lib/cli/registry/fleet-plan-command-spec.ts`
+- `src/lib/cli/registry/gap-case-command-spec.ts`
+- `src/lib/cli/registry/linear-command-spec.ts`
+- `src/lib/cli/registry/memory-gate-command-spec.ts`
+- `src/lib/cli/registry/observability-gate-command-spec.ts`
+- `src/lib/cli/registry/plan-gate-command-spec.ts`
+- `src/lib/cli/registry/prompt-gate-command-spec.ts`
+- `src/lib/cli/registry/runtime-budget-command-spec.ts`
+- `src/lib/cli/registry/runtime-card-command-spec.ts`
+- `src/lib/cli/registry/session-context-command-spec.ts`
+- `src/lib/evidence/index.ts`
+- `src/lib/evidence/loader.ts`
+- `src/lib/git/README.md`
+- `src/lib/git/safe-env.ts`
 - `src/lib/init/README.md`
 - `src/lib/intermediary-receipts/constants.ts`
 - `src/lib/intermediary-receipts/index.ts`
@@ -47,9 +67,27 @@ Generated: 2026-05-29T01:57:00Z
 - `src/lib/intermediary-receipts/validation.ts`
 - `src/lib/pr-template-validator-rules.ts`
 - `src/lib/pr-template-validator.ts`
+- `src/lib/project-brain/README.md`
+- `src/lib/project-brain/cli-args.ts`
+- `src/lib/project-brain/cli-value-flags.ts`
+- `src/lib/project-brain/query-cli.ts`
+- `src/lib/project-brain/query-presenter.ts`
+- `src/lib/project-brain/rules.ts`
+- `src/lib/project-brain/stale-cli.ts`
+- `src/lib/project-brain/stale-presenter.ts`
+- `src/lib/project-brain/status-cli.ts`
+- `src/lib/project-brain/status-presenter.ts`
 - `src/lib/prompt-context-drift/index.ts`
 - `src/lib/prompt-context-drift/prompt-context-drift-report.ts`
 - `src/lib/replay/replay-packet.ts`
+- `src/lib/root-hygiene/git-env.ts`
+- `src/lib/runtime/git-environment.ts`
+- `src/lib/testing/README.md`
+- `src/lib/testing/behavior-test-suites.json`
+- `src/lib/testing/expect-behavior.ts`
+- `src/lib/verify-work/runner.ts`
+- `src/templates/codestyle/17-testing.md`
+- `src/templates/codestyle/CHECKSUMS.sha256`
 
 ## agent
 
@@ -682,9 +720,11 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_branch_protect_sync_570adb18_cc4751e4
   ext_node_fs_a15b7d96["node:fs"] --> node_check_20f65c28_48d25399
   ext_node_fs_a15b7d96["node:fs"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_fs_a15b7d96["node:fs"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_fs_a15b7d96["node:fs"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
   ext_node_fs_a15b7d96["node:fs"] --> node_check_environment_core_2c16213f_a8a456d9
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_fs_a15b7d96["node:fs"] --> node_check_pr_closeout_truth_contract_f135348c_b39f6edc
   ext_node_fs_a15b7d96["node:fs"] --> node_check_public_api_docs_a9604f1b_f824853c
   ext_node_fs_a15b7d96["node:fs"] --> node_check_root_archive_links_bba945ff_9be55643
@@ -899,9 +939,11 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_branch_protect_sync_570adb18_cc4751e4
   ext_node_path_78811c13["node:path"] --> node_check_20f65c28_48d25399
   ext_node_path_78811c13["node:path"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
+  ext_node_path_78811c13["node:path"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_path_78811c13["node:path"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_path_78811c13["node:path"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
   ext_node_path_78811c13["node:path"] --> node_check_environment_core_2c16213f_a8a456d9
+  ext_node_path_78811c13["node:path"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_path_78811c13["node:path"] --> node_check_pr_closeout_truth_contract_f135348c_b39f6edc
   ext_node_path_78811c13["node:path"] --> node_check_public_api_docs_a9604f1b_f824853c
   ext_node_path_78811c13["node:path"] --> node_check_root_archive_links_bba945ff_9be55643
@@ -1127,6 +1169,7 @@ graph LR
   ext_typescript_fb9da861["typescript"] --> node_check_public_api_docs_a9604f1b_f824853c
   ext_typescript_fb9da861["typescript"] --> node_check_self_affirming_tests_7638e575_c6155698
   ext_typescript_fb9da861["typescript"] --> node_source_outline_1_54a631fa_8582fb07
+  ext_vitest_4c9cfa13["vitest"] --> node_expect_behavior_26b3f69f_5d713658
   ext_vitest_4c9cfa13["vitest"] --> node_vitest_e2e_config_4e2a61bc_3efa3f07
   style ext_better_sqlite3_d7ed8f1a fill:#f59e0b,color:#fff
   style ext_child_process_4845fa97 fill:#f59e0b,color:#fff
@@ -1228,10 +1271,10 @@ flowchart TD
   resource_tracker_d95b6649 --> vitest_e2e_config_4e2a61bc
   check_architecture_rules_6b7347fd["check-architecture-rules"]
   vitest_e2e_config_4e2a61bc --> check_architecture_rules_6b7347fd
-  check_code_size_9c5efc3a["check-code-size"]
-  check_architecture_rules_6b7347fd --> check_code_size_9c5efc3a
+  check_behavior_tests_2577f6be["check-behavior-tests"]
+  check_architecture_rules_6b7347fd --> check_behavior_tests_2577f6be
   End(["End"])
-  check_code_size_9c5efc3a --> End
+  check_behavior_tests_2577f6be --> End
 
 ```
 

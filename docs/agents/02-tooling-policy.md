@@ -222,7 +222,7 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 | ------------------------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Install/deps                   | `pnpm install`                                                                                      | Dependency installation                                                                                                                                                                 |
 | Code-style gate                | `bash scripts/validate-codestyle.sh`                                                                | Fail-closed repo-local code-style validation                                                                                                                                            |
-| Quality gate                   | `pnpm check`                                                                                        | `lint + typecheck + self-affirming test guard + test + audit`                                                                                                                           |
+| Quality gate                   | `pnpm check`                                                                                        | `lint + typecheck + self-affirming test guard + behavior-test guard + git-env sanitizer guard + test + audit`                                                                            |
 | Lint                           | `pnpm lint`                                                                                         | `biome check .`                                                                                                                                                                         |
 | Typecheck                      | `pnpm typecheck`                                                                                    | `tsc --noEmit`                                                                                                                                                                          |
 | Tests                          | `pnpm test`                                                                                         | `vitest run`                                                                                                                                                                            |
@@ -316,8 +316,13 @@ Changed production source and tests also carry local ratchet gates:
 `pnpm run quality:docstrings` requires JSDoc on changed exported public API
 declarations, `pnpm run quality:size` enforces changed-file function/file size
 limits with explicit legacy allowlists, `pnpm run quality:self-affirming`
-scans test/spec files for self-affirming assertions, and `pnpm run
-test:related` runs Vitest related mode without a no-tests pass-through. These
+scans test/spec files for self-affirming assertions, `pnpm run
+quality:behavior-tests` requires the manifest-listed high-trust evidence suites
+in `src/lib/testing/behavior-test-suites.json` to use
+`expectBehavior({ given, should, actual, expected })`, `pnpm run
+quality:git-env-sanitizer` keeps git child-process cleanup routed through
+`src/lib/git/safe-env.ts`, and `pnpm run test:related` runs Vitest related
+mode without a no-tests pass-through. These
 commands are part of `pnpm check`, `bash scripts/validate-codestyle.sh --fast`,
 and `make hooks-pre-commit`.
 
@@ -479,7 +484,7 @@ When working with high-risk action governance:
 - **High-risk action envelopes** require current evidence refs and head SHA where the action touches repository or PR state
 - **Reviewer independence requirement**: reviewer must not be the same as requester/producer
 - **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not just display alias)
-- **Decision semantics**: allow, block, mismatch, unknown, not_applicable; `not_applicable` is forbidden for high-risk action kinds
+- **Decision semantics**: allow, block, mismatch, unknown, N/A; the N/A verdict is forbidden for high-risk action kinds
 - **Docs-gate requirement**: companion documentation surfaces must be updated in the same PR as any action-review governance change
 - **Diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
 

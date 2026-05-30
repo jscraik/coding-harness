@@ -45,6 +45,9 @@ hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	pnpm typecheck
 	pnpm run quality:docstrings
 	pnpm run quality:size
+	pnpm run quality:self-affirming
+	pnpm run quality:behavior-tests
+	pnpm run quality:git-env-sanitizer
 	$(MAKE) secrets-staged
 	$(MAKE) docs-style-changed
 	$(MAKE) related-tests-staged
