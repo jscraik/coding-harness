@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-27
+last_validated: 2026-05-29
 ---
 
 # Architecture bootstrap

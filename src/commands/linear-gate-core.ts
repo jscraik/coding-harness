@@ -67,6 +67,7 @@ export type LinearGateResult =
 const ISSUE_KEY_PATTERN = /\b[A-Z][A-Z0-9]+-\d+\b/gi;
 const REFS_KEY_PATTERN = /\brefs?\s+([A-Z][A-Z0-9]+-\d+)\b/gi;
 const FIXES_KEY_PATTERN = /\bfix(?:es)?\s+([A-Z][A-Z0-9]+-\d+)\b/gi;
+const CLOSES_KEY_PATTERN = /\bclos(?:e|es|ed)\s+([A-Z][A-Z0-9]+-\d+)\b/gi;
 
 function normalizeUrl(value: string): string {
 	return value.trim().replace(/\/+$/, "");
@@ -99,16 +100,19 @@ function extractIssueKeys(value: string | undefined): string[] {
 
 function extractLinkedIssueKeys(
 	value: string | undefined,
-	mode: "refs" | "fixes",
+	mode: "refs" | "fixes" | "closes",
 ): string[] {
 	if (!value) {
 		return [];
 	}
 
-	const pattern = new RegExp(
-		(mode === "refs" ? REFS_KEY_PATTERN : FIXES_KEY_PATTERN).source,
-		(mode === "refs" ? REFS_KEY_PATTERN : FIXES_KEY_PATTERN).flags,
-	);
+	const sourcePattern =
+		mode === "refs"
+			? REFS_KEY_PATTERN
+			: mode === "fixes"
+				? FIXES_KEY_PATTERN
+				: CLOSES_KEY_PATTERN;
+	const pattern = new RegExp(sourcePattern.source, sourcePattern.flags);
 	return Array.from(
 		new Set(
 			Array.from(value.matchAll(pattern), (match) =>
@@ -176,9 +180,18 @@ function resolveReferenceKeys(
 	mode: PrReferenceMode,
 	prText: string,
 ): { refs: string[]; fixes: string[] } {
+	const fixesIssueKeys =
+		mode === "refs"
+			? []
+			: Array.from(
+					new Set([
+						...extractLinkedIssueKeys(prText, "fixes"),
+						...extractLinkedIssueKeys(prText, "closes"),
+					]),
+				);
 	return {
 		refs: mode === "fixes" ? [] : extractLinkedIssueKeys(prText, "refs"),
-		fixes: mode === "refs" ? [] : extractLinkedIssueKeys(prText, "fixes"),
+		fixes: fixesIssueKeys,
 	};
 }
 
@@ -475,8 +488,8 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 				referenceMode === "refs"
 					? "Refs <LINEAR-KEY>"
 					: referenceMode === "fixes"
-						? "Fixes <LINEAR-KEY>"
-						: "Refs <LINEAR-KEY> or Fixes <LINEAR-KEY>";
+						? "Fixes <LINEAR-KEY> or Closes <LINEAR-KEY>"
+						: "Refs <LINEAR-KEY>, Fixes <LINEAR-KEY>, or Closes <LINEAR-KEY>";
 			addCheck(
 				checks,
 				"pr-reference-mode",

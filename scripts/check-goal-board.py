@@ -12,9 +12,11 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import runpy
 import subprocess
 import sys
+import urllib.parse
 from pathlib import Path
 
 
@@ -27,6 +29,10 @@ RUNTIME_EVIDENCE_COCKPIT_GOAL = Path(
     "docs/goals/codex-runtime-evidence-verifier-cockpit",
 )
 AUDIT_FRESHNESS_VALIDATOR = REPO_ROOT / "scripts/check-goal-audit-freshness.py"
+REVIEW_BACKFILL_VALIDATOR = REPO_ROOT / "scripts/check-goal-review-backfill.py"
+REVIEW_BACKFILL_LEDGER = (
+    REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL / "notes/review-coverage-backfill.json"
+)
 ACTIVE_ARTIFACTS_PATH = REPO_ROOT / ".harness/active-artifacts.md"
 RUNTIME_EVIDENCE_RECEIPTS_PATH = (
     REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL / "receipts.jsonl"
@@ -44,6 +50,18 @@ PR_309_HEAD_KEYS = (
     "head_ref_oid",
     "current_head_sha",
 )
+LOCAL_PATH_GUARD_CUTOFF_RECEIPT_NUMBER = 151
+JSON_OBJECT_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+UNIX_HOME_PATH = re.compile(r"(^|[^A-Za-z0-9_])/(Users|home|var/home)/[^/\s]+")
+WINDOWS_HOME_PATH = re.compile(
+    r"(^|[^A-Za-z0-9_])[A-Za-z]:/Users/[^/\s]+",
+    re.IGNORECASE,
+)
+WSL_HOME_PATH = re.compile(
+    r"(^|[^A-Za-z0-9_])/mnt/[A-Za-z]/Users/[^/\s]+",
+    re.IGNORECASE,
+)
+TILDE_HOME_PATH = re.compile(r"(^|[\s:=,])~/[^\s]+")
 
 
 def source_checkout_root() -> Path | None:
@@ -174,7 +192,7 @@ def head_from_snapshot(snapshot: object) -> str | None:
     return None
 
 
-def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
+def load_runtime_evidence_receipts(receipts_path: Path) -> list[tuple[int, dict[str, object]]]:
     if not receipts_path.is_file():
         print(
             f"Runtime evidence cockpit receipts file is missing: {receipts_path}",
@@ -182,7 +200,7 @@ def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
         )
         raise SystemExit(1)
 
-    latest_head: str | None = None
+    receipts: list[tuple[int, dict[str, object]]] = []
     for line_number, line in enumerate(
         receipts_path.read_text(encoding="utf-8").splitlines(),
         start=1,
@@ -198,6 +216,20 @@ def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
                 file=sys.stderr,
             )
             raise SystemExit(1) from exc
+        if not isinstance(receipt, dict):
+            print(
+                f"Runtime evidence cockpit receipt at {receipts_path}:{line_number} "
+                "must be a JSON object.",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+        receipts.append((line_number, receipt))
+    return receipts
+
+
+def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
+    latest_head: str | None = None
+    for _line_number, receipt in load_runtime_evidence_receipts(receipts_path):
         snapshot = receipt.get("pr_state_snapshot")
         if snapshot_matches_pr_309(snapshot):
             head = head_from_snapshot(snapshot)
@@ -212,6 +244,120 @@ def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
         raise SystemExit(1)
 
     return latest_head
+
+
+def receipt_number(receipt: dict[str, object]) -> int | None:
+    value = receipt.get("id")
+    if not isinstance(value, str):
+        return None
+    match = re.fullmatch(r"R(\d+)", value.strip())
+    if match is None:
+        return None
+    return int(match.group(1))
+
+
+def receipt_cutover_candidate_number(receipt: dict[str, object]) -> int | None:
+    value = receipt.get("id")
+    if not isinstance(value, str):
+        return None
+    match = re.match(r"R(\d+)", value.strip())
+    if match is None:
+        return None
+    return int(match.group(1))
+
+
+def json_path_child(path: str, key: object) -> str:
+    if isinstance(key, int):
+        return f"{path}[{key}]"
+    if isinstance(key, str) and JSON_OBJECT_KEY.fullmatch(key):
+        return f"{path}.{key}"
+    return f"{path}[<key>]"
+
+
+def json_path_key(path: str) -> str:
+    return f"{path}[<key>]"
+
+
+def iter_string_leaves(value: object, path: str = "$") -> list[tuple[str, str]]:
+    if isinstance(value, str):
+        return [(path, value)]
+    if isinstance(value, dict):
+        leaves: list[tuple[str, str]] = []
+        for key, child in value.items():
+            if isinstance(key, str):
+                leaves.append((json_path_key(path), key))
+            leaves.extend(iter_string_leaves(child, json_path_child(path, key)))
+        return leaves
+    if isinstance(value, list):
+        leaves: list[tuple[str, str]] = []
+        for index, child in enumerate(value):
+            leaves.extend(iter_string_leaves(child, json_path_child(path, index)))
+        return leaves
+    return []
+
+
+def normalize_path_probe(value: str) -> str:
+    decoded = urllib.parse.unquote(value)
+    if decoded.startswith("file://"):
+        decoded = urllib.parse.urlparse(decoded).path
+        decoded = urllib.parse.unquote(decoded)
+    return decoded.replace("\\", "/")
+
+
+def local_home_path_kind(value: str) -> str | None:
+    normalized = normalize_path_probe(value)
+    if WINDOWS_HOME_PATH.search(normalized):
+        return "Windows user profile path"
+    if WSL_HOME_PATH.search(normalized):
+        return "WSL user profile path"
+    if UNIX_HOME_PATH.search(normalized):
+        return "Unix or macOS home path"
+    if TILDE_HOME_PATH.search(normalized):
+        return "tilde home path"
+    return None
+
+
+def receipts_for_local_path_guard(
+    receipts: list[tuple[int, dict[str, object]]],
+) -> list[tuple[int, dict[str, object]]]:
+    post_cutover: list[tuple[int, dict[str, object]]] = []
+    cutover_seen = False
+    for line_number, receipt in receipts:
+        exact_number = receipt_number(receipt)
+        candidate_number = receipt_cutover_candidate_number(receipt)
+        if exact_number is not None and exact_number >= LOCAL_PATH_GUARD_CUTOFF_RECEIPT_NUMBER:
+            cutover_seen = True
+        if cutover_seen or (
+            candidate_number is not None
+            and candidate_number >= LOCAL_PATH_GUARD_CUTOFF_RECEIPT_NUMBER
+        ):
+            post_cutover.append((line_number, receipt))
+    if post_cutover:
+        return post_cutover
+    return receipts[-1:]
+
+
+def check_receipt_local_path_hygiene(receipts_path: Path) -> int:
+    violations: list[str] = []
+    for line_number, receipt in receipts_for_local_path_guard(
+        load_runtime_evidence_receipts(receipts_path),
+    ):
+        receipt_id = receipt.get("id")
+        receipt_label = receipt_id if isinstance(receipt_id, str) else f"line {line_number}"
+        for json_path, value in iter_string_leaves(receipt):
+            path_kind = local_home_path_kind(value)
+            if path_kind is None:
+                continue
+            violations.append(
+                "Runtime evidence cockpit receipt contains a local home path "
+                f"({path_kind}) at receipt {receipt_label}, line {line_number}, "
+                f"JSON path {json_path}. Store a repo-relative evidence ref, "
+                "durable artifact ref, or <REDACTED_HOME_PATH> placeholder instead."
+            )
+    if violations:
+        print("\n".join(violations), file=sys.stderr)
+        return 1
+    return 0
 
 
 def run_goal_extensions(argv: list[str]) -> int:
@@ -232,6 +378,27 @@ def run_goal_extensions(argv: list[str]) -> int:
             sys.executable,
             str(AUDIT_FRESHNESS_VALIDATOR),
             str(goal_path),
+            "--repo",
+            str(REPO_ROOT),
+        ],
+        check=False,
+    )
+    if result.returncode != 0:
+        return result.returncode
+
+    if not REVIEW_BACKFILL_VALIDATOR.is_file():
+        print(
+            "Required review coverage backfill validator is missing: "
+            f"{REVIEW_BACKFILL_VALIDATOR}",
+            file=sys.stderr,
+        )
+        return 1
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REVIEW_BACKFILL_VALIDATOR),
+            str(REVIEW_BACKFILL_LEDGER),
             "--repo",
             str(REPO_ROOT),
         ],
@@ -290,6 +457,12 @@ def run_goal_extensions(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
+
+    receipt_hygiene_status = check_receipt_local_path_hygiene(
+        RUNTIME_EVIDENCE_RECEIPTS_PATH,
+    )
+    if receipt_hygiene_status != 0:
+        return receipt_hygiene_status
 
     return 0
 

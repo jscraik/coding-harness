@@ -506,6 +506,14 @@ admitted, and record Repeated-error research when the same error happens twice.
 This keeps high-signal review and user steering in the repo operating system
 instead of leaving it in a chat transcript.
 
+PR bodies must separate issue traceability from issue closure. `Linear
+reference` records `Refs JSC-N`, `Fixes JSC-N`, or `Closes JSC-N`;
+`Linked issue relationship` must classify the PR as implementation closure,
+preparatory/enabling work, standalone/untracked work, or `n.a.` with reason.
+Preparatory PRs that reference a parent issue must state that completed
+acceptance IDs are `none` or explicitly say they do not close that acceptance
+scope.
+
 PR bodies must also classify `Documentation impact`: list the required root
 docs, governed docs, and existing deep-module README files updated by the slice,
 or mark each unaffected class `n.a.` with a concrete reason. `docs-gate`

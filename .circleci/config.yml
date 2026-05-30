@@ -216,7 +216,6 @@ workflows:
           name: pr-template
           check_name: pr-template
           command: |
-            pr_ref="${CIRCLE_PULL_REQUEST:-}"
             repo_slug=""
             if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" && -n "${CIRCLE_PROJECT_REPONAME:-}" ]]; then
               repo_slug="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
@@ -239,20 +238,33 @@ workflows:
             if [[ -n "$repo_slug" ]]; then
               gh_repo_args=(--repo "$repo_slug")
             fi
-            if [[ -z "$pr_ref" && -n "${CIRCLE_PULL_REQUESTS:-}" ]]; then
-              pr_ref="${CIRCLE_PULL_REQUESTS%%,*}"
-            fi
-            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
-              if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" ]]; then
-                pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
-              fi
-            fi
-            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
-              pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
-            fi
-            if [[ -z "$pr_ref" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
-              pr_ref="$(gh api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '([.[] | select(.state == "open")][0].html_url // .[0].html_url // "")' 2>/dev/null || true)"
-            fi
+            resolve_pr_ref() {
+              local resolved="${CIRCLE_PULL_REQUEST:-}"
+              local attempt=1
+              while [[ -z "$resolved" && "$attempt" -le 6 ]]; do
+                if [[ -z "$resolved" && -n "${CIRCLE_PULL_REQUESTS:-}" ]]; then
+                  resolved="${CIRCLE_PULL_REQUESTS%%,*}"
+                fi
+                if [[ -z "$resolved" && -n "${CIRCLE_BRANCH:-}" ]]; then
+                  if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" ]]; then
+                    resolved="$(gh pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+                  fi
+                fi
+                if [[ -z "$resolved" && -n "${CIRCLE_BRANCH:-}" ]]; then
+                  resolved="$(gh pr list "${gh_repo_args[@]}" --head "${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+                fi
+                if [[ -z "$resolved" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
+                  resolved="$(gh api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '([.[] | select(.state == "open")][0].html_url // .[0].html_url // "")' 2>/dev/null || true)"
+                fi
+                if [[ -z "$resolved" && "$attempt" -lt 6 ]]; then
+                  echo "PR context not available yet for pr-template; retrying ($attempt/6)." >&2
+                  sleep 10
+                fi
+                attempt=$(( attempt + 1 ))
+              done
+              printf '%s' "$resolved"
+            }
+            pr_ref="$(resolve_pr_ref)"
             if [[ -z "$pr_ref" ]]; then
               echo "Error: unable to resolve pull request context for pr-template."
               exit 1
@@ -269,7 +281,6 @@ workflows:
           requires:
             - pr-template
           command: |
-            pr_ref="${CIRCLE_PULL_REQUEST:-}"
             repo_slug=""
             if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" && -n "${CIRCLE_PROJECT_REPONAME:-}" ]]; then
               repo_slug="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
@@ -292,20 +303,33 @@ workflows:
             if [[ -n "$repo_slug" ]]; then
               gh_repo_args=(--repo "$repo_slug")
             fi
-            if [[ -z "$pr_ref" && -n "${CIRCLE_PULL_REQUESTS:-}" ]]; then
-              pr_ref="${CIRCLE_PULL_REQUESTS%%,*}"
-            fi
-            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
-              if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" ]]; then
-                pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
-              fi
-            fi
-            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
-              pr_ref="$(gh pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
-            fi
-            if [[ -z "$pr_ref" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
-              pr_ref="$(gh api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '([.[] | select(.state == "open")][0].html_url // .[0].html_url // "")' 2>/dev/null || true)"
-            fi
+            resolve_pr_ref() {
+              local resolved="${CIRCLE_PULL_REQUEST:-}"
+              local attempt=1
+              while [[ -z "$resolved" && "$attempt" -le 6 ]]; do
+                if [[ -z "$resolved" && -n "${CIRCLE_PULL_REQUESTS:-}" ]]; then
+                  resolved="${CIRCLE_PULL_REQUESTS%%,*}"
+                fi
+                if [[ -z "$resolved" && -n "${CIRCLE_BRANCH:-}" ]]; then
+                  if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" ]]; then
+                    resolved="$(gh pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+                  fi
+                fi
+                if [[ -z "$resolved" && -n "${CIRCLE_BRANCH:-}" ]]; then
+                  resolved="$(gh pr list "${gh_repo_args[@]}" --head "${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+                fi
+                if [[ -z "$resolved" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
+                  resolved="$(gh api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '([.[] | select(.state == "open")][0].html_url // .[0].html_url // "")' 2>/dev/null || true)"
+                fi
+                if [[ -z "$resolved" && "$attempt" -lt 6 ]]; then
+                  echo "PR context not available yet for linear-gate; retrying ($attempt/6)." >&2
+                  sleep 10
+                fi
+                attempt=$(( attempt + 1 ))
+              done
+              printf '%s' "$resolved"
+            }
+            pr_ref="$(resolve_pr_ref)"
             if [[ -z "$pr_ref" ]]; then
               echo "Error: unable to resolve pull request context for linear-gate."
               exit 1

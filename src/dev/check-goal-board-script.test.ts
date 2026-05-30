@@ -35,7 +35,31 @@ function writeValidator(path: string, marker: string) {
 	);
 }
 
+function writeReviewBackfillValidator(repo: string, body?: string) {
+	const scriptsDir = join(repo, "scripts");
+	const ledgerPath = join(
+		repo,
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json",
+	);
+	mkdirSync(scriptsDir, { recursive: true });
+	mkdirSync(join(ledgerPath, ".."), { recursive: true });
+	writeFileSync(ledgerPath, "{}");
+	writeFileSync(
+		join(scriptsDir, "check-goal-review-backfill.py"),
+		body ??
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"import sys",
+				'print("review-backfill:" + sys.argv[1])',
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+	);
+}
+
 function writeRuntimeEvidenceActiveArtifacts(repo: string, content?: string) {
+	writeReviewBackfillValidator(repo);
 	const harnessDir = join(repo, ".harness");
 	mkdirSync(harnessDir, { recursive: true });
 	writeFileSync(
@@ -54,7 +78,10 @@ function writeRuntimeEvidenceActiveArtifacts(repo: string, content?: string) {
 	);
 }
 
-function writeRuntimeEvidenceReceipts(repo: string, headSha: string) {
+function writeRuntimeEvidenceReceiptsFromObjects(
+	repo: string,
+	receipts: Record<string, unknown>[],
+) {
 	const receiptsDir = join(
 		repo,
 		"docs/goals/codex-runtime-evidence-verifier-cockpit",
@@ -62,19 +89,22 @@ function writeRuntimeEvidenceReceipts(repo: string, headSha: string) {
 	mkdirSync(receiptsDir, { recursive: true });
 	writeFileSync(
 		join(receiptsDir, "receipts.jsonl"),
-		[
-			JSON.stringify({
-				id: "R999",
-				lifecycle_unit: "pr-309-current-state-refresh",
-				pr_state_snapshot: {
-					pr: 309,
-					head_sha: headSha,
-					status: "checks green",
-				},
-			}),
-			"",
-		].join("\n"),
+		[...receipts.map((receipt) => JSON.stringify(receipt)), ""].join("\n"),
 	);
+}
+
+function writeRuntimeEvidenceReceipts(repo: string, headSha: string) {
+	writeRuntimeEvidenceReceiptsFromObjects(repo, [
+		{
+			id: "R999",
+			lifecycle_unit: "pr-309-current-state-refresh",
+			pr_state_snapshot: {
+				pr: 309,
+				head_sha: headSha,
+				status: "checks green",
+			},
+		},
+	]);
 }
 
 describe("check-goal-board.py", () => {
@@ -253,6 +283,62 @@ describe("check-goal-board.py", () => {
 		expect(result.status).toBe(7);
 		expect(result.stdout).toContain(`goal-board:${goalDir}`);
 		expect(result.stderr).toContain("stale audit evidence");
+	});
+
+	it("fails the runtime evidence cockpit goal when review backfill validation fails", () => {
+		const root = createTempRoot("goal-board-review-backfill-fails-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+		writeReviewBackfillValidator(
+			repo,
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"import sys",
+				'print("stale review backfill", file=sys.stderr)',
+				"raise SystemExit(6)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(6);
+		expect(result.stdout).toContain(`goal-board:${goalDir}`);
+		expect(result.stderr).toContain("stale review backfill");
 	});
 
 	it("fails the runtime evidence cockpit goal when active artifacts do not route it", () => {
@@ -534,5 +620,371 @@ describe("check-goal-board.py", () => {
 
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain(`goal-board:${goalDir}`);
+	});
+
+	it("fails when the current runtime evidence receipt contains a local home path", () => {
+		const root = createTempRoot("goal-board-local-path-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeRuntimeEvidenceReceiptsFromObjects(repo, [
+			{
+				id: "R150",
+				lifecycle_unit: "pre-cutover-latest-receipt",
+				memory_surfaces_read: ["/Users/jamiecraik/.codex/memories/MEMORY.md"],
+				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
+			},
+		]);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("local home path");
+		expect(result.stderr).toContain("receipt R150");
+		expect(result.stderr).toContain("$.memory_surfaces_read[0]");
+		expect(result.stderr).not.toContain("/Users/jamiecraik");
+	});
+
+	it("does not fail on historical local paths once the cutover receipt exists", () => {
+		const root = createTempRoot("goal-board-historical-local-path-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeRuntimeEvidenceReceiptsFromObjects(repo, [
+			{
+				id: "R150",
+				lifecycle_unit: "pre-cutover-historical-receipt",
+				memory_surfaces_read: ["/Users/jamiecraik/.codex/memories/MEMORY.md"],
+				pr_state_snapshot: { pr: 309, head_sha: "old-pr-head" },
+			},
+			{
+				id: "R151",
+				lifecycle_unit: "receipt-local-path-guard",
+				memory_surfaces_read: ["<REDACTED_HOME_PATH>/memories/MEMORY.md"],
+				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
+			},
+		]);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(`goal-board:${goalDir}`);
+	});
+
+	it("fails on post-cutover local paths even when a later receipt is clean", () => {
+		const root = createTempRoot("goal-board-hidden-local-path-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeRuntimeEvidenceReceiptsFromObjects(repo, [
+			{
+				id: "R151",
+				lifecycle_unit: "receipt-local-path-guard",
+				evidence: {
+					source: "file:///Users/jamie/.codex/memories/MEMORY.md",
+				},
+				pr_state_snapshot: { pr: 309, head_sha: "old-pr-head" },
+			},
+			{
+				id: "R152",
+				lifecycle_unit: "clean-later-receipt",
+				evidence: { source: "docs/goals/current-receipt.md" },
+				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
+			},
+		]);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("receipt R151");
+		expect(result.stderr).toContain("$.evidence.source");
+		expect(result.stderr).not.toContain("file:///Users/jamie");
+	});
+
+	it("fails on malformed post-cutover receipt IDs with local paths", () => {
+		const root = createTempRoot("goal-board-malformed-cutover-id-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeRuntimeEvidenceReceiptsFromObjects(repo, [
+			{
+				id: "R151a",
+				lifecycle_unit: "malformed-cutover-receipt",
+				evidence: {
+					source: "file:///Users/jamie/.codex/memories/MEMORY.md",
+				},
+				pr_state_snapshot: { pr: 309, head_sha: "old-pr-head" },
+			},
+			{
+				id: "R152",
+				lifecycle_unit: "clean-later-receipt",
+				evidence: { source: "docs/goals/current-receipt.md" },
+				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
+			},
+		]);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("receipt R151a");
+		expect(result.stderr).toContain("$.evidence.source");
+		expect(result.stderr).not.toContain("file:///Users/jamie");
+	});
+
+	it("fails on post-cutover local paths stored as JSON object keys", () => {
+		const root = createTempRoot("goal-board-local-path-key-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeRuntimeEvidenceReceiptsFromObjects(repo, [
+			{
+				id: "R151",
+				lifecycle_unit: "receipt-local-path-guard",
+				evidence: {
+					"/Users/jamie/.codex/memories/MEMORY.md": "memory-index",
+					"C:/Users/Jamie/.codex/memories/MEMORY.md": "windows-index",
+					"~/.codex/memories/MEMORY.md": "tilde-index",
+				},
+				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
+			},
+		]);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("receipt R151");
+		expect(result.stderr).toContain("$.evidence[<key>]");
+		expect(result.stderr).toContain("Unix or macOS home path");
+		expect(result.stderr).toContain("Windows user profile path");
+		expect(result.stderr).toContain("tilde home path");
+		expect(result.stderr).not.toContain("/Users/jamie");
+		expect(result.stderr).not.toContain("C:/Users/Jamie");
+		expect(result.stderr).not.toContain("~/.codex");
+	});
+
+	it("rejects Unix and Windows user-profile paths in nested post-cutover receipts", () => {
+		const root = createTempRoot("goal-board-cross-platform-paths-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeRuntimeEvidenceReceiptsFromObjects(repo, [
+			{
+				id: "R151",
+				lifecycle_unit: "receipt-local-path-guard",
+				evidence: {
+					unixHome: "/home/jamie/.codex/memories/MEMORY.md",
+					varHome: "/var/home/jamie/.codex/memories/MEMORY.md",
+					windowsForward: "C:/Users/Jamie/.codex/memories/MEMORY.md",
+					windowsBackslash: "C:\\Users\\Jamie\\.codex\\memories\\MEMORY.md",
+					wslHome: "/mnt/c/Users/Jamie/.codex/memories/MEMORY.md",
+					tildeHome: "~/.codex/memories/MEMORY.md",
+				},
+				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
+			},
+		]);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("receipt R151");
+		expect(result.stderr).toContain("$.evidence.unixHome");
+		expect(result.stderr).toContain("$.evidence.varHome");
+		expect(result.stderr).toContain("$.evidence.windowsForward");
+		expect(result.stderr).toContain("$.evidence.windowsBackslash");
+		expect(result.stderr).toContain("$.evidence.wslHome");
+		expect(result.stderr).toContain("$.evidence.tildeHome");
+		expect(result.stderr).toContain("Unix or macOS home path");
+		expect(result.stderr).toContain("Windows user profile path");
+		expect(result.stderr).toContain("WSL user profile path");
+		expect(result.stderr).toContain("tilde home path");
+		expect(result.stderr).not.toContain("/home/jamie");
+		expect(result.stderr).not.toContain("C:/Users/Jamie");
+		expect(result.stderr).not.toContain("~/.codex");
 	});
 });

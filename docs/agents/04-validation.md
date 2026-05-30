@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-18
+last_validated: 2026-05-29
 ---
 
 # Validation and checks
@@ -270,6 +270,15 @@ Example: a high-level workflow skill such as "log in", "upload attachments and s
 Use the tool promotion threshold before creating a new surface: if the same judgment is needed twice, or a failure mode can recur across slices, promote it into the smallest durable operating primitive that changes future behavior, such as a validator, guard script, CLI helper, workflow hook, fixture, or scoped skill. Keep one-off implementation knowledge in implementation notes, plan evidence, or PR closeout evidence. Create or update a skill only for a reusable routed workflow with explicit inputs, artifacts, validation, ownership, and review expectations.
 
 Do not satisfy this by adding standalone prose only. If the destination is documentation, tie it to an existing docs-gate, glossary guard, PR template field, command contract, or tracked follow-up.
+
+When a PR references a Linear issue, the PR body must keep traceability separate
+from acceptance closure. Use `Linear reference` for the gate-countable issue
+link itself (`Refs JSC-N`, `Fixes JSC-N`, or `Closes JSC-N`), and use
+`Linked issue relationship` to state whether the PR implements/closes the
+linked acceptance criteria, is preparatory/enabling work, or is standalone. If
+a PR references a parent goal without completing its acceptance IDs, say so
+explicitly instead of letting the linked issue check infer scope from the issue
+title or broad objective.
 
 Run `pnpm run docs:steering:guard` after changing this contract. The guard keeps the steering-feedback rule connected across `AGENTS.md`, this validation guide, `UBIQUITOUS_LANGUAGE.md`, and the current solution record.
 
