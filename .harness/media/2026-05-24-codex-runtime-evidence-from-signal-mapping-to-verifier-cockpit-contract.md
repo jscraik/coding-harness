@@ -10,8 +10,8 @@ This media sidecar records the required review-artifact image framing for the Co
 - imagegen invoked: no; blocked because no callable image generation tool is exposed in the active tool list
 - generated-image cache source path: blocked; no generated bitmap exists
 - repository .harness/media/ PNG path: blocked; no generated bitmap exists to persist
-- prompt metadata path: /Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-24-codex-runtime-evidence-from-signal-mapping-to-verifier-cockpit-contract-prompt.md
-- sidecar path: /Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-24-codex-runtime-evidence-from-signal-mapping-to-verifier-cockpit-contract.md
+- prompt metadata path: .harness/media/2026-05-24-codex-runtime-evidence-from-signal-mapping-to-verifier-cockpit-contract-prompt.md
+- sidecar path: .harness/media/2026-05-24-codex-runtime-evidence-from-signal-mapping-to-verifier-cockpit-contract.md
 - repository PNG existence verification: blocked; image generation unavailable
 - persistence method: blocked
 - final user-facing text after imagegen permitted: yes
@@ -36,8 +36,8 @@ Use the prompt metadata file to generate a 2048x1152 engineering infographic tit
 
 ## Linked Context
 
-- /Users/jamiecraik/dev/coding-harness/.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md
-- /Users/jamiecraik/dev/coding-harness/.harness/research/audits/2026-05-24-evidence-led-codebase-gap-audit.md
-- /Users/jamiecraik/dev/coding-harness/src/lib/runtime/runtime-evidence-contract.ts
-- /Users/jamiecraik/dev/coding-harness/src/lib/pr-closeout/types.ts
-- /Users/jamiecraik/dev/coding-harness/docs/architecture/root-surface-classification.md
+- .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md
+- .harness/research/audits/2026-05-24-evidence-led-codebase-gap-audit.md
+- src/lib/runtime/runtime-evidence-contract.ts
+- src/lib/pr-closeout/types.ts
+- docs/architecture/root-surface-classification.md

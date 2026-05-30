@@ -14,7 +14,8 @@ export type EvidencePathResolutionStatus =
 	| "valid"
 	| "missing_file"
 	| "missing_parent"
-	| "outside_repo";
+	| "outside_repo"
+	| "directory_target";
 
 /** Resolved evidence path metadata and blocker details. */
 export interface EvidencePathResolution {
@@ -101,6 +102,25 @@ export function resolveEvidencePath(
 			blocker: "Evidence file resolves outside the repository.",
 		};
 	}
+
+	// Check if the path is a directory
+	try {
+		const stats = statSync(realPath);
+		if (stats.isDirectory()) {
+			return {
+				status: "directory_target",
+				inputPath,
+				absolutePath,
+				realPath,
+				parentRealPath,
+				sizeBytes: null,
+				blocker: "Evidence path is a directory; expected a file.",
+			};
+		}
+	} catch {
+		// If stat fails, continue to return valid or let getFileSize handle it
+	}
+
 	return {
 		status: "valid",
 		inputPath,

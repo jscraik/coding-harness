@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from "node:fs";
-import { relative, resolve } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { relative, resolve, sep } from "node:path";
 
 const repoRoot = resolve(process.cwd());
 const manifestPath = "src/lib/testing/behavior-test-suites.json";
@@ -10,6 +10,36 @@ const findings = [];
 
 for (const entry of manifest.suites) {
 	const absolutePath = resolve(repoRoot, entry.path);
+
+	// Validate path containment before accessing
+	try {
+		const canonicalPath = realpathSync(absolutePath);
+		const relPath = relative(repoRoot, canonicalPath);
+		if (relPath.startsWith("..") || !canonicalPath.startsWith(repoRoot + sep)) {
+			findings.push({
+				...entry,
+				message: "test file path escapes repository",
+			});
+			continue;
+		}
+	} catch (error) {
+		// File doesn't exist yet, check parent containment
+		try {
+			const parentPath = resolve(absolutePath, "..");
+			const canonicalParent = realpathSync(parentPath);
+			const relPath = relative(repoRoot, canonicalParent);
+			if (relPath.startsWith("..") || !canonicalParent.startsWith(repoRoot + sep)) {
+				findings.push({
+					...entry,
+					message: "test file parent path escapes repository",
+				});
+				continue;
+			}
+		} catch {
+			// Parent doesn't exist either
+		}
+	}
+
 	if (!existsSync(absolutePath)) {
 		findings.push({
 			...entry,

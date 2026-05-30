@@ -28,6 +28,12 @@ SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
     "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
 }
+# Allowed prefixes for declared changed_files that can bypass freshness checks
+ALLOWED_DECLARED_FILE_PREFIXES = (
+    ".harness/",
+    "docs/goals/",
+    "artifacts/",
+)
 
 
 class ValidationError(Exception):
@@ -157,7 +163,14 @@ def permits_self_referential_goal_receipt_commit(
     for value in changed_files:
         if not isinstance(value, str):
             return False
-        declared_paths.add(normalize_repo_relative_path(value, "receipt.changed_files[]"))
+        normalized_path = normalize_repo_relative_path(value, "receipt.changed_files[]")
+        # Validate that declared paths match allowed prefixes
+        if not any(normalized_path.startswith(prefix) for prefix in ALLOWED_DECLARED_FILE_PREFIXES):
+            raise ValidationError(
+                f"receipt.changed_files[] contains disallowed path: {normalized_path} "
+                f"(must start with one of {ALLOWED_DECLARED_FILE_PREFIXES})"
+            )
+        declared_paths.add(normalized_path)
     changed_paths = changed_paths_between(repo_root, receipt_head_sha, current_head)
     allowed_paths = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | declared_paths
     return bool(changed_paths) and changed_paths <= allowed_paths

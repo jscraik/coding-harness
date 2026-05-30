@@ -395,9 +395,27 @@ function validateHookProvenance(
 		validateDateTime(hook.checkedAt, `${path}.checkedAt`, errors);
 		if (isAfter(hook.checkedAt, generatedAt))
 			errors.push(`${path}.checkedAt: must not be after generatedAt`);
-		validateRef(hook.hookRef, `${path}.hookRef`, repoRoot, errors);
-		validateRef(hook.inputRef, `${path}.inputRef`, repoRoot, errors);
-		validateRef(hook.outputRef, `${path}.outputRef`, repoRoot, errors);
+		validateRef(
+			hook.hookRef,
+			`${path}.hookRef`,
+			repoRoot,
+			errors,
+			new Set(["hook_file"]),
+		);
+		validateRef(
+			hook.inputRef,
+			`${path}.inputRef`,
+			repoRoot,
+			errors,
+			new Set(["hook_input", "repo_file", "produced_artifact"]),
+		);
+		validateRef(
+			hook.outputRef,
+			`${path}.outputRef`,
+			repoRoot,
+			errors,
+			new Set(["hook_output", "repo_file", "produced_artifact"]),
+		);
 		validateRefs(
 			hook.producedArtifactRefs,
 			`${path}.producedArtifactRefs`,
@@ -610,6 +628,7 @@ function validateRef(
 	path: string,
 	repoRoot: string,
 	errors: string[],
+	allowedKinds?: Set<string>,
 ) {
 	if (!isRecord(value)) {
 		errors.push(`${path}: must be an object`);
@@ -620,8 +639,11 @@ function validateRef(
 	validatePointer(value.refId, `${path}.refId`, errors);
 	if (value.hashAlgorithm !== "sha256")
 		errors.push(`${path}.hashAlgorithm: must be sha256`);
-	if (!REF_KINDS.has(String(value.refKind)))
-		errors.push(`${path}.refKind: must be a recognized ref kind`);
+	const kindsToCheck = allowedKinds ?? REF_KINDS;
+	if (!kindsToCheck.has(String(value.refKind)))
+		errors.push(
+			`${path}.refKind: must be a recognized ref kind${allowedKinds ? ` (allowed: ${Array.from(allowedKinds).join(", ")})` : ""}`,
+		);
 	if (typeof value.requiredForReplay !== "boolean")
 		errors.push(`${path}.requiredForReplay: must be a boolean`);
 	if (typeof value.requiresFilesystemExistence !== "boolean")

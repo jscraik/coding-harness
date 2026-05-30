@@ -33,5 +33,9 @@ When adding or migrating a command spec:
 
 ## Validation
 
-Run the narrow command-spec tests for registry-only changes, then widen to
-`pnpm typecheck` when helper signatures or imports change.
+Run the narrow registry tests with `pnpm run test:registry` (or equivalent test
+target) and assert the process exits with code 0 and all tests pass. Then run
+`pnpm typecheck` and assert it exits 0 with no type errors. On any failure,
+capture the failing test or typecheck output, fix the helper signature/imports
+or revert the registry-only change, and re-run until both commands succeed. If
+failures persist, notify the registry owners.

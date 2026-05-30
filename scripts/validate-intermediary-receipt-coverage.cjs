@@ -88,6 +88,16 @@ function main() {
 			encoding: "utf8",
 		},
 	);
+
+	// Handle spawn errors
+	if (child.error) {
+		printResult(
+			"fail",
+			[`Command execution failed: ${child.error.message}`],
+			1,
+		);
+	}
+
 	if (child.stdout) process.stdout.write(child.stdout);
 	if (child.stderr) process.stderr.write(child.stderr);
 	process.exit(child.status === null ? 1 : child.status);

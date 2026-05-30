@@ -10,8 +10,8 @@ This review artifact records the requested media deliverable for the Coding Harn
 * $imagegen invoked: blocked
 * generated-image cache source path: blocked - no built-in image_gen or callable $imagegen tool was available in the active tool list
 * repository .harness/media/ PNG path: blocked - no generated PNG exists
-* prompt metadata path: /Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-22-evidence-memory-telemetry-proof-boundary-transformation-prompt.md
-* sidecar path: /Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-22-evidence-memory-telemetry-proof-boundary-transformation.md
+* prompt metadata path: .harness/media/2026-05-22-evidence-memory-telemetry-proof-boundary-transformation-prompt.md
+* sidecar path: .harness/media/2026-05-22-evidence-memory-telemetry-proof-boundary-transformation.md
 * repository PNG existence verification: blocked
 * persistence method: blocked
 * final user-facing text after imagegen permitted: yes
@@ -36,7 +36,7 @@ The prompt metadata asks for a 2048x1152 technical review infographic titled "Fr
 
 ## Linked Context
 
-* /Users/jamiecraik/dev/coding-harness/.harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md
-* /Users/jamiecraik/dev/coding-harness/.harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md
-* /Users/jamiecraik/dev/coding-harness/src/lib/runtime/runtime-evidence-bundle.ts
-* /Users/jamiecraik/dev/coding-harness/src/lib/runtime/runtime-evidence-contract.ts
+* .harness/specs/2026-05-22-coding-harness-evidence-memory-telemetry-master-spec.md
+* .harness/specs/2026-05-22-jsc-331-observability-telemetry-evidence-bridge-spec.md
+* src/lib/runtime/runtime-evidence-bundle.ts
+* src/lib/runtime/runtime-evidence-contract.ts

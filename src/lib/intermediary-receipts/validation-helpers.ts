@@ -42,7 +42,40 @@ export function isPointer(value: unknown): value is string {
 
 /** Returns true when a value is an RFC3339-style timestamp. */
 export function isIso(value: unknown): value is string {
-	return typeof value === "string" && RFC3339.test(value);
+	if (typeof value !== "string" || !RFC3339.test(value)) {
+		return false;
+	}
+
+	// Parse components with more specific capture groups
+	const match = value.match(
+		/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|([+-])(\d{2}):(\d{2}))$/u,
+	);
+	if (!match) return false;
+
+	const [, , month, day, hour, minute, second, , tzPart, , tzHour, tzMinute] = match;
+	const numMonth = Number.parseInt(month ?? "0", 10);
+	const numDay = Number.parseInt(day ?? "0", 10);
+	const numHour = Number.parseInt(hour ?? "0", 10);
+	const numMinute = Number.parseInt(minute ?? "0", 10);
+	const numSecond = Number.parseInt(second ?? "0", 10);
+
+	// Validate component ranges
+	if (numMonth < 1 || numMonth > 12) return false;
+	if (numHour > 23 || numMinute > 59 || numSecond > 59) return false;
+
+	// Validate day range based on month (simplified - doesn't handle leap years)
+	const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+	const maxDay = daysInMonth[numMonth - 1];
+	if (numDay < 1 || (maxDay !== undefined && numDay > maxDay)) return false;
+
+	// Validate timezone offset
+	if (tzPart !== "Z") {
+		const numTzHour = Number.parseInt(tzHour, 10);
+		const numTzMinute = Number.parseInt(tzMinute, 10);
+		if (numTzHour > 23 || numTzMinute > 59) return false;
+	}
+
+	return true;
 }
 
 /** Rejects object keys that are not part of the declared packet contract. */

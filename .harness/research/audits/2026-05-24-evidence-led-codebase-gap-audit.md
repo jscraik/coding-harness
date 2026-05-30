@@ -8,7 +8,7 @@ Primary evidence document:
 
 Target codebase:
 
-- /Users/jamiecraik/dev/coding-harness
+- .
 
 Researcher coverage:
 

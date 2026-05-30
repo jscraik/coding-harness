@@ -4,6 +4,24 @@ import { join, relative, resolve } from "node:path";
 
 const repoRoot = resolve(process.cwd());
 const sourceRoot = resolve(repoRoot, "src");
+
+// Fail-closed: ensure src directory exists
+if (!existsSync(sourceRoot)) {
+	console.error("[check-git-env-sanitizer] src directory does not exist");
+	process.exit(1);
+}
+
+try {
+	const stats = statSync(sourceRoot);
+	if (!stats.isDirectory()) {
+		console.error("[check-git-env-sanitizer] src is not a directory");
+		process.exit(1);
+	}
+} catch (error) {
+	console.error(`[check-git-env-sanitizer] cannot access src directory: ${error.message}`);
+	process.exit(1);
+}
+
 const allowedFiles = new Set([
 	"src/lib/git/safe-env.ts",
 	"src/lib/git/safe-env.test.ts",
@@ -23,7 +41,13 @@ const forbiddenPatterns = [
 
 const findings = [];
 
-for (const file of listFiles(sourceRoot)) {
+const sourceFiles = listFiles(sourceRoot);
+if (sourceFiles.length === 0) {
+	console.error("[check-git-env-sanitizer] no source files found in src directory");
+	process.exit(1);
+}
+
+for (const file of sourceFiles) {
 	const relativePath = relative(repoRoot, file);
 	if (
 		allowedFiles.has(relativePath) ||

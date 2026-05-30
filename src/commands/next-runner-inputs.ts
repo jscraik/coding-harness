@@ -22,6 +22,7 @@ export function inspectGitChangedFiles(repoRoot: string): string[] {
 		["status", "--short", "--untracked-files=all"],
 		{
 			cwd: repoRoot,
+			env: gitEnvironmentForRepoRoot(),
 			encoding: "utf-8",
 			stdio: ["ignore", "pipe", "pipe"],
 			timeout: 10_000,
@@ -85,9 +86,11 @@ export function blocksDirtyWorktree(
 ): boolean {
 	if (role === "dirty-with-justification") return false;
 	if (!state.clean) return true;
-	if (state.upstream === null) return role === "fresh-worktree";
-	if (state.ahead === null || state.behind === null) return false;
-	if (state.ahead > 0 || state.behind > 0) return true;
+	// Block when clean but sync state is unknown
+	if (state.clean && (state.upstream === null || state.ahead === null || state.behind === null)) {
+		return true;
+	}
+	if ((state.ahead !== null && state.ahead > 0) || (state.behind !== null && state.behind > 0)) return true;
 	return false;
 }
 

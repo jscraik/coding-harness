@@ -100,4 +100,17 @@ describe("resolveEvidencePath", () => {
 			"Evidence file resolves outside the repository.",
 		);
 	});
+
+	it("rejects directory inputs", () => {
+		const repoRoot = makeTempRepo();
+		const { mkdirSync } = require("node:fs");
+		mkdirSync(join(repoRoot, "artifacts"));
+
+		const result = resolveEvidencePath(repoRoot, "artifacts");
+
+		expect(result.status).toBe("directory_target");
+		expect(result.realPath).toBe(realpathSync(join(repoRoot, "artifacts")));
+		expect(result.sizeBytes).toBeNull();
+		expect(result.blocker).toContain("directory");
+	});
 });

@@ -141,7 +141,22 @@ function parseArgs(argv) {
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
 		if (arg === "--repo-root") {
-			result.repoRoot = argv[index + 1];
+			const value = argv[index + 1];
+			if (!value || value.startsWith("-")) {
+				console.error(
+					JSON.stringify(
+						{
+							schemaVersion: "replay-packet-validation/v1",
+							status: "fail",
+							errors: ["--repo-root requires a valid value"],
+						},
+						null,
+						2,
+					),
+				);
+				process.exit(2);
+			}
+			result.repoRoot = value;
 			index += 1;
 			continue;
 		}
@@ -162,7 +177,25 @@ function main() {
 	} catch (error) {
 		errors.push(`packet: cannot read JSON: ${error.message}`);
 	}
-	const repoRoot = fs.realpathSync(path.resolve(args.repoRoot));
+
+	let repoRoot;
+	try {
+		repoRoot = fs.realpathSync(path.resolve(args.repoRoot));
+	} catch (error) {
+		console.log(
+			JSON.stringify(
+				{
+					schemaVersion: "replay-packet-validation/v1",
+					status: "fail",
+					errors: [`--repo-root: cannot resolve path: ${error.message}`],
+				},
+				null,
+				2,
+			),
+		);
+		process.exit(1);
+	}
+
 	if (packet) validatePacket(packet, repoRoot, new Date(), errors);
 	const status = errors.length === 0 ? "pass" : "fail";
 	console.log(

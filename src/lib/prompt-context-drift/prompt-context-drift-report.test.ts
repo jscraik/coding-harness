@@ -14,16 +14,42 @@ import type {
 	PromptContextDriftReport,
 	PromptContextDriftSurface,
 } from "./prompt-context-drift-report.js";
-import {
-	PROMPT_CONTEXT_DRIFT_BLOCKER_CLASSES,
-	PROMPT_CONTEXT_DRIFT_EVIDENCE_USES,
-	PROMPT_CONTEXT_DRIFT_FRESHNESS,
-	PROMPT_CONTEXT_DRIFT_NEXT_ACTION_CLASSES,
-	PROMPT_CONTEXT_DRIFT_REF_KINDS,
-	PROMPT_CONTEXT_DRIFT_STATUSES,
-	PROMPT_CONTEXT_DRIFT_SURFACES,
-	validatePromptContextDriftReport,
-} from "./prompt-context-drift-report.js";
+import { validatePromptContextDriftReport } from "./prompt-context-drift-report.js";
+
+// Expected enum values (independent oracle, not derived from source constants)
+const EXPECTED_EVIDENCE_USES = ["orientation", "audit_trail"];
+const EXPECTED_STATUSES = ["current", "stale", "blocked", "unknown"];
+const EXPECTED_SURFACES = [
+	"agent_instructions",
+	"skills",
+	"artifact_context",
+	"deep_context",
+	"environment_context",
+	"runtime_card",
+	"command_catalog",
+];
+const EXPECTED_FRESHNESS = ["current", "stale", "missing", "unknown"];
+const EXPECTED_REF_KINDS = [
+	"config",
+	"skill",
+	"artifact",
+	"deep_evidence",
+	"environment",
+	"contract",
+	"catalog",
+];
+const EXPECTED_BLOCKER_CLASSES = [
+	"stale_content",
+	"missing_content",
+	"invalid_schema",
+	"inaccessible_source",
+];
+const EXPECTED_NEXT_ACTION_CLASSES = [
+	"refresh_source",
+	"repair_source",
+	"escalate",
+	"continue",
+];
 
 type JsonSchemaObject = {
 	properties: Record<string, { enum?: unknown[] }>;
@@ -92,33 +118,25 @@ describe("validatePromptContextDriftReport", () => {
 			readFileSync("contracts/prompt-context-drift-report.schema.json", "utf8"),
 		) as JsonSchemaObject;
 
-		expect(schemaEnum(schema.properties, "evidenceUse")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_EVIDENCE_USES,
-		]);
-		expect(schemaEnum(schema.properties, "overallStatus")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_STATUSES,
-		]);
-		expect(schemaEnum(schema.$defs, "surfaceId")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_SURFACES,
-		]);
-		expect(schemaEnum(schema.$defs, "status")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_STATUSES,
-		]);
-		expect(schemaEnum(schema.$defs, "evidenceUse")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_EVIDENCE_USES,
-		]);
-		expect(schemaEnum(schema.$defs, "freshness")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_FRESHNESS,
-		]);
-		expect(schemaEnum(schema.$defs, "refKind")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_REF_KINDS,
-		]);
-		expect(schemaEnum(schema.$defs, "blockerClass")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_BLOCKER_CLASSES,
-		]);
-		expect(schemaEnum(schema.$defs, "nextActionClass")).toEqual([
-			...PROMPT_CONTEXT_DRIFT_NEXT_ACTION_CLASSES,
-		]);
+		expect(schemaEnum(schema.properties, "evidenceUse")).toEqual(
+			EXPECTED_EVIDENCE_USES,
+		);
+		expect(schemaEnum(schema.properties, "overallStatus")).toEqual(
+			EXPECTED_STATUSES,
+		);
+		expect(schemaEnum(schema.$defs, "surfaceId")).toEqual(EXPECTED_SURFACES);
+		expect(schemaEnum(schema.$defs, "status")).toEqual(EXPECTED_STATUSES);
+		expect(schemaEnum(schema.$defs, "evidenceUse")).toEqual(
+			EXPECTED_EVIDENCE_USES,
+		);
+		expect(schemaEnum(schema.$defs, "freshness")).toEqual(EXPECTED_FRESHNESS);
+		expect(schemaEnum(schema.$defs, "refKind")).toEqual(EXPECTED_REF_KINDS);
+		expect(schemaEnum(schema.$defs, "blockerClass")).toEqual(
+			EXPECTED_BLOCKER_CLASSES,
+		);
+		expect(schemaEnum(schema.$defs, "nextActionClass")).toEqual(
+			EXPECTED_NEXT_ACTION_CLASSES,
+		);
 	});
 
 	it("accepts the content-bound checked-in example", () => {

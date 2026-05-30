@@ -62,12 +62,13 @@ function summarizeLane(
 		laneClaims.map((claim) => claim.freshness),
 	);
 	let status: PrCloseoutConstraintSnapshotLane["status"] = "ready";
-	if (freshness === "missing" || freshness === "unknown") {
+	// Check blockers before freshness/missing
+	if (blockerCount > 0) {
+		status = "blocked";
+	} else if (freshness === "missing" || freshness === "unknown") {
 		status = freshness === "missing" ? "missing" : "unknown";
 	} else if (staleEvidence) {
 		status = "stale";
-	} else if (blockerCount > 0) {
-		status = "blocked";
 	}
 	if (status === "ready" && laneClaims.length === 0) {
 		status = "unknown";
