@@ -80,9 +80,9 @@ current_slice_gate:
     - "Appended R139 with artifact-backed skill-lens and independent-reviewer results."
   next_required_handoff_steps:
     - "Run the post-R154 route-truth validators before commit: jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null; PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit; PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .; PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-review-backfill.py docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json --repo .; git diff --check."
-    - "Commit and push the narrow R154 route-truth reanchor if the validators pass; this PR must not claim implementation beyond restoring current-main goal-board evidence after PR #319 merged."
+    - "Do not commit/push R154 reanchor post-merge; if a reanchor PR is required, open a targeted PR and follow PR triage procedures."
     - "Before the next implementation slice, choose the next unproven requirement from the goal, plan, receipts, adopted audits, and Project Brain surfaces; create and review intent before implementation."
-    - "If a PR is opened for the R154 reanchor, delegate remote PR triage to a subagent that fetches the PR head, checks mergeability, CI, review threads, and linked-issue scope before any route-truth closeout claim."
+    - "If a PR is opened for future reanchors, delegate remote PR triage to a subagent that fetches the PR head, checks mergeability, CI, review threads, and linked-issue scope before any route-truth closeout claim."
     - "Refresh live Linear JSC-363 before tracker-alignment, full-lifecycle closeout, or Judge/PM-ready claims; tracker truth remains separate from runtime, CI, review, and implementation proof."
     - "Keep local validation, remote checks, reviewDecision, historical stacked-PR metadata, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate truth lanes until verified immediately before any closeout claim."
   blocked_done_claims:
